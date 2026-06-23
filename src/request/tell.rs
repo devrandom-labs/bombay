@@ -910,9 +910,13 @@ mod tests {
         }
 
         let actor_ref = MyActor::spawn_with_mailbox(MyActor, mailbox::bounded(1));
-        // Mailbox is empty, this will make there be one item in the mailbox
+        // Fill the mailbox to capacity, not just to one message: the first send
+        // is dequeued by the actor (which then blocks in the 100ms handler),
+        // which FREES the single bounded(1) slot — so a second send is needed to
+        // actually occupy it. Only then does the following send time out waiting
+        // for room. Sending just one message races the actor draining it.
         #[cfg(not(feature = "hotpath"))]
-        let fill_count = 1;
+        let fill_count = 2;
         #[cfg(feature = "hotpath")]
         let fill_count = 4;
         for _ in 0..fill_count {

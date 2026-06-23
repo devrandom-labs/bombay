@@ -107,6 +107,16 @@
           # separately with `cargo test --doc` (crane's dedicated wrapper).
           bombay-doctest =
             craneLib.cargoDocTest (commonArgs // { inherit cargoArtifacts; });
+
+          # Lint the GitHub Actions workflows themselves. actionlint shells out
+          # to shellcheck for `run:` steps, so it is on PATH here too. This keeps
+          # the CI definition under the same single gate as the code.
+          bombay-actionlint = pkgs.runCommandLocal "bombay-actionlint" {
+            nativeBuildInputs = [ pkgs.actionlint pkgs.shellcheck ];
+          } ''
+            actionlint ${./.github/workflows}/*.yml
+            touch "$out"
+          '';
         };
 
         devShells.default = craneLib.devShell {

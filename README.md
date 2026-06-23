@@ -35,10 +35,14 @@ Bombay uses the same Nix-flake setup as the sibling nexus/agency repos (crane + 
 
 ```bash
 direnv allow        # or: nix develop
-nix flake check     # the single CI gate: build + clippy + fmt + audit + deny + nextest
+nix flake check     # the single gate: build + clippy + fmt + audit + deny + nextest + doctest + actionlint
 ```
 
-> **The `clippy` check is intentionally RED right now.** The vendored kameo code (~19k LOC) is not yet clean against bombay's god-level lint config ([`clippy.toml`](clippy.toml) + the `[workspace.lints.clippy]` block, adopted from nexus). It is brought up to standard crate-by-crate as M1/M7 rewrite the surviving core. The other checks (fmt/audit/deny/nextest/doc) give real signal.
+> **The `clippy` check is intentionally RED right now.** The vendored kameo code (~19k LOC) is not yet clean against bombay's god-level lint config ([`clippy.toml`](clippy.toml) + the `[workspace.lints.clippy]` block, adopted from nexus). It is brought up to standard crate-by-crate as M1/M7 rewrite the surviving core. The other checks (fmt/audit/deny/nextest/doctest/actionlint) give real signal.
+
+## Continuous integration
+
+Every pull request to `main` (and every push to a non-`main` branch) runs the single gate — `nix flake check` — on GitHub Actions ([`.github/workflows/checks.yml`](.github/workflows/checks.yml), mirroring nexus). That runs the **entire workspace test suite (`bombay-nextest`) and the doc-tests (`bombay-doctest`)** on every change, alongside fmt/audit/deny/clippy. The workflow files are themselves linted by `actionlint`, wired in two places: the `bombay-actionlint` flake check, and the `pre-commit` hook (run eagerly, but only when a workflow file is staged). CI inherits the intentionally-RED clippy gate above until the surviving core is cleaned.
 
 ## Local setup
 
@@ -48,6 +52,6 @@ Enable the tracked git hooks once per clone:
 git config core.hooksPath .githooks
 ```
 
-- **`pre-commit`** — blocks any commit that doesn't stage a `README.md` change (the README-with-every-commit discipline).
+- **`pre-commit`** — blocks any commit that doesn't stage a `README.md` change (the README-with-every-commit discipline), and runs `actionlint` whenever a GitHub Actions workflow is staged.
 - **`pre-push`** — runs the full `nix flake check` before a push; **blocks** on failure (so it will block until the clippy gate is green — bypass a push with `git push --no-verify`).
 - **`post-merge`** — runs `nix flake check` after a `git pull`/merge (advisory; git ignores its exit code).
