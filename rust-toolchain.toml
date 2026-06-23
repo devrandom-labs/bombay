@@ -1,0 +1,9 @@
+# Pinned STABLE toolchain — bombay's deliberate deviation from nexus/agency
+# (which run fenix nightly). Stable-only so non-Nix users can build with plain
+# rustup, and so Nix (via fenix `fromToolchainFile`) and rustup resolve the
+# SAME toolchain. Card #60. 1.96.0 is the latest stable as of 2026-05-25;
+# edition 2024 requires >= 1.85.
+[toolchain]
+channel = "1.96.0"
+components = ["rustfmt", "clippy", "rust-src", "rust-analyzer"]
+profile = "minimal"

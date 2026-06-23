@@ -14,11 +14,12 @@ Because we control both nexus and bombay, a Zenoh limitation is rarely a Bombay 
 
 ## Status
 
-**Planning / M0 (pre-flight).** No production Rust has landed yet. The M0 de-risking is done:
+**M0 → M1 (the fork has landed).** The M0 de-risking is done:
 - **#62 walking-skeleton spike — GO.** `ask`/`tell`/liveliness/health validated over Zenoh 1.9.0; sub-ms messaging; crash-detection 2 ms vs partition-detection ~10 s (lease); single-writer must come from nexus, not Zenoh addressing.
 - **#64 feature matrix** — Zenoh core vs zenoh-ext vs zenoh-pico mapped, with stability gates and per-card caveats.
+- **#63 fork strategy — DECIDED.** Hard-fork (no upstream rebase — the Zenoh rewrite + M7 de-handroll make rebaseability worthless), dual `MIT OR Apache-2.0` (a clean match to kameo). kameo is vendored verbatim from upstream `main` @ `821e247` (latest, identical in code to the v0.21.0 release); see [`NOTICE`](NOTICE) + [`docs/superpowers/specs`](docs/superpowers/specs).
 
-Next: **#63 fork strategy** (gate into M1, the actual fork of kameo).
+The kameo source (`src/ actors/ console/ macros/` + examples/benches/tests) now sits in-tree, wrapped in the Nix harness (#60). Next: M1 — replace `src/remote/` (libp2p) with a thin Zenoh `Session` layer.
 
 ## Reference docs
 
@@ -28,10 +29,25 @@ Distilled, AI-referenceable knowledge lives under [`docs/`](docs/). **Read the r
 
 The work is GitHub-project-cards-driven with TDD; see [`CLAUDE.md`](CLAUDE.md) for the working method, milestones, and engineering rules.
 
+## Building
+
+Bombay uses the same Nix-flake setup as the sibling nexus/agency repos (crane + fenix + flake-utils + advisory-db), with **one deliberate deviation: a pinned STABLE toolchain** (`rust-toolchain.toml`, currently 1.96.0) fed to fenix via `fromToolchainFile`, so Nix and plain `rustup` resolve the *same* toolchain and non-Nix users can build with stock stable Rust.
+
+```bash
+direnv allow        # or: nix develop
+nix flake check     # the single CI gate: build + clippy + fmt + audit + deny + nextest
+```
+
+> **The `clippy` check is intentionally RED right now.** The vendored kameo code (~19k LOC) is not yet clean against bombay's god-level lint config ([`clippy.toml`](clippy.toml) + the `[workspace.lints.clippy]` block, adopted from nexus). It is brought up to standard crate-by-crate as M1/M7 rewrite the surviving core. The other checks (fmt/audit/deny/nextest/doc) give real signal.
+
 ## Local setup
 
-Enable the pre-commit hook once per clone — it enforces the README-with-every-commit discipline (and will also run `nix flake check` once the Nix harness lands, #60):
+Enable the tracked git hooks once per clone:
 
 ```bash
 git config core.hooksPath .githooks
 ```
+
+- **`pre-commit`** — blocks any commit that doesn't stage a `README.md` change (the README-with-every-commit discipline).
+- **`pre-push`** — runs the full `nix flake check` before a push; **blocks** on failure (so it will block until the clippy gate is green — bypass a push with `git push --no-verify`).
+- **`post-merge`** — runs `nix flake check` after a `git pull`/merge (advisory; git ignores its exit code).
