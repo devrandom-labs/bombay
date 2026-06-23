@@ -27,3 +27,11 @@ Distilled, AI-referenceable knowledge lives under [`docs/`](docs/). **Read the r
 - [`docs/zenoh/capabilities.md`](docs/zenoh/capabilities.md) — Zenoh capability matrix (core/ext/pico), stability gates, and the per-card "gap → nexus/bombay coverage" flags. Read before any card touching Zenoh.
 
 The work is GitHub-project-cards-driven with TDD; see [`CLAUDE.md`](CLAUDE.md) for the working method, milestones, and engineering rules.
+
+## Local setup
+
+Enable the pre-commit hook once per clone — it enforces the README-with-every-commit discipline (and will also run `nix flake check` once the Nix harness lands, #60):
+
+```bash
+git config core.hooksPath .githooks
+```
