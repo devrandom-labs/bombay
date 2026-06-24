@@ -97,8 +97,7 @@ Feature: TUI helpers — laws over graph, layout and formatting math
   Scenario: centered_rect is always fully contained within the input area for any area and size
     Given any area Rect and any requested width w and height h
     When centered_rect(area, w, h) is computed
-    Then the result lies entirely inside area (rx >= area.x, ry >= area.y,
-         rx + rw <= area.x + area.width, ry + rh <= area.y + area.height)
+    Then the result lies entirely inside area (rx >= area.x, ry >= area.y, rx + rw <= area.x + area.width, ry + rh <= area.y + area.height)
     And the result size never exceeds the area (rw <= area.width, rh <= area.height)
     # GEN: area.{x,y,width,height} and w,h ∈ boundary-biased u16 {0, 1, u16::MAX}; include
     #      w,h larger than the area (clamp path), equal to the area, and a zero-sized area.

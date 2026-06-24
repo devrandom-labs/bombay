@@ -44,5 +44,8 @@ tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sy
 [[test]]
 name = "tui_bdd"
 
+[[test]]
+name = "tui_props_bdd"
+
 [lints]
 workspace = true
