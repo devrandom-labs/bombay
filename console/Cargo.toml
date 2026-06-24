@@ -45,6 +45,9 @@ tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sy
 name = "poller_bdd"
 
 [[test]]
+name = "poller_props_bdd"
+
+[[test]]
 name = "tui_bdd"
 
 [[test]]
