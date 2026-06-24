@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Runs after a successful `git pull` / merge — verifies the merged tree against
+# the single gate (CLAUDE.md: "nix flake check is the single gate").
+#
+# git ignores this hook's exit code (the merge has already happened), so a
+# failure here is ADVISORY: it surfaces the intentionally-RED clippy gate plus
+# anything real that got pulled in. We swallow the non-zero so `set -e` doesn't
+# abort the shell.
+#
+# Note: this fires on merge-style pulls. If you `git pull --rebase`, git runs
+# `post-rewrite` instead of `post-merge`; run `nix flake check` by hand there.
+echo "post-merge: running nix flake check (advisory)..."
+if nix flake check; then
+  echo "post-merge: nix flake check passed."
+else
+  echo "post-merge: nix flake check FAILED — the clippy gate is RED by design (M1/M7); check for any OTHER failures pulled in." >&2
+fi

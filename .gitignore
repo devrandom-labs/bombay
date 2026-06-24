@@ -1,0 +1,20 @@
+target/
+.direnv
+.DS_Store
+.makemd
+.obsidian
+.space
+
+# Devenv
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
+
+# local Claude Code settings (personal)
+.claude/settings.local.json

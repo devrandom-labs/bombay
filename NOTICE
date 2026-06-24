@@ -1,0 +1,16 @@
+Bombay
+Copyright 2026 Joel DSouza and the Bombay contributors
+
+This product is a hard-fork of kameo, a fault-tolerant async actor framework
+built on Tokio.
+
+    kameo — https://github.com/tqwewe/kameo
+    Copyright (c) the kameo authors
+    Licensed under MIT OR Apache-2.0
+
+Forked from kameo at commit 821e247a5fe4f10d647c5fc2b4d0fd786f223867
+(latest `main`, 2026-06-21; identical in code to the v0.21.0 release).
+
+The original kameo MIT and Apache-2.0 license texts are retained verbatim in
+LICENSE-MIT and LICENSE-APACHE. Bombay is likewise dual-licensed under
+MIT OR Apache-2.0.
