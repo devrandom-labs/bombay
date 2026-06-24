@@ -17,6 +17,7 @@ use cucumber::{World, given, then, when};
 use kameo_console::testing::{
     ActorCounters, ActorId, ActorSnapshot, ActorStatus, Links, MailboxKind, MailboxStats,
     RefCounts, Snapshot, Totals, check_frame_len, decode_frame, poll_once_over,
+    poll_once_over_with_read_timeout,
 };
 use kameo::console::wire::Message;
 
@@ -455,4 +456,154 @@ async fn then_slot_unchanged(world: &mut PollerWorld) {
 #[then(regex = r"^the poll loop returns so the outer loop reconnects$")]
 async fn then_poll_loop_returns(world: &mut PollerWorld) {
     assert!(world.err_kind.is_some(), "an error must have been recorded to trigger reconnect");
+}
+
+// ---------------------------------------------------------------------------
+// @boundary: truncation — short payload, short prefix, stalled MAX read
+// ---------------------------------------------------------------------------
+
+#[given(
+    regex = r"^the server sends a length prefix of N but only N-1 payload bytes then closes$"
+)]
+async fn given_truncated_payload(world: &mut PollerWorld) {
+    let (client, server) = loopback();
+
+    // N = 8 bytes (a small value that fits); send prefix, then N-1 bytes, then close.
+    let n: u32 = 8;
+    let handle = thread::spawn(move || {
+        let mut s = server;
+        // Read the single request byte first, then send the truncated reply.
+        let mut req = [0u8; 1];
+        let _ = s.read_exact(&mut req);
+        s.write_all(&n.to_be_bytes()).expect("write len prefix");
+        // Only write N-1 payload bytes.
+        let partial = vec![0u8; (n - 1) as usize];
+        s.write_all(&partial).expect("write partial payload");
+        // Drop s here: closing the connection signals EOF to the client.
+    });
+
+    let result = poll_once_over_with_read_timeout(
+        client,
+        Arc::clone(&world.slot),
+        Duration::from_secs(5),
+    );
+    handle.join().expect("server thread");
+
+    match result {
+        Ok(()) => {}
+        Err(err) => {
+            world.err_kind = Some(err.kind());
+            world.err_msg = err.to_string();
+        }
+    }
+}
+
+#[given(
+    regex = r"^the server sends only 2 bytes of the 4-byte length prefix then closes$"
+)]
+async fn given_truncated_prefix(world: &mut PollerWorld) {
+    let (client, server) = loopback();
+
+    let handle = thread::spawn(move || {
+        let mut s = server;
+        // Read the single request byte, then send only 2 of the 4 prefix bytes, then close.
+        let mut req = [0u8; 1];
+        let _ = s.read_exact(&mut req);
+        s.write_all(&[0x00, 0x00]).expect("write 2-byte partial prefix");
+        // Drop s: EOF for client.
+    });
+
+    let result = poll_once_over_with_read_timeout(
+        client,
+        Arc::clone(&world.slot),
+        Duration::from_secs(5),
+    );
+    handle.join().expect("server thread");
+
+    match result {
+        Ok(()) => {}
+        Err(err) => {
+            world.err_kind = Some(err.kind());
+            world.err_msg = err.to_string();
+        }
+    }
+}
+
+#[given(
+    regex = r"^the server replies with a length prefix of 67108864 but never sends that many bytes$"
+)]
+async fn given_max_prefix_stalled_payload(world: &mut PollerWorld) {
+    use std::sync::mpsc;
+
+    let (client, server) = loopback();
+    // Channel lets the server thread know when the client has returned so it can drop.
+    let (tx, rx) = mpsc::channel::<()>();
+
+    let handle = thread::spawn(move || {
+        let mut s = server;
+        // Read the single request byte, send MAX_FRAME_BYTES as the prefix, then send nothing.
+        let mut req = [0u8; 1];
+        let _ = s.read_exact(&mut req);
+        let max: u32 = 67_108_864;
+        s.write_all(&max.to_be_bytes()).expect("write max len prefix");
+        // Keep `s` alive until the client has returned (so the stall is genuine).
+        let _ = rx.recv();
+        // Drop s after client completes.
+    });
+
+    // Use a short read timeout so this scenario finishes in ~200ms, not 5s.
+    let result = poll_once_over_with_read_timeout(
+        client,
+        Arc::clone(&world.slot),
+        Duration::from_millis(200),
+    );
+    // Signal the server to clean up.
+    let _ = tx.send(());
+    handle.join().expect("server thread");
+
+    match result {
+        Ok(()) => {}
+        Err(err) => {
+            world.err_kind = Some(err.kind());
+            world.err_msg = err.to_string();
+        }
+    }
+}
+
+#[when(regex = r"^the poller reads the payload$")]
+async fn when_reads_payload(_world: &mut PollerWorld) {
+    // The truncated-payload scenario drives `poll_once_over_with_read_timeout` in
+    // the Given step, which exercises the real `Poller::poll` read_exact path.
+}
+
+#[when(regex = r"^the poller blocks reading the payload$")]
+async fn when_blocks_reading_payload(_world: &mut PollerWorld) {
+    // The MAX-prefix stalled scenario drives the real poller in the Given step.
+}
+
+#[then(regex = r"^read_exact returns an UnexpectedEof error$")]
+async fn then_unexpected_eof(world: &mut PollerWorld) {
+    assert_eq!(
+        world.err_kind,
+        Some(io::ErrorKind::UnexpectedEof),
+        "poll should return UnexpectedEof on a truncated read, got {:?}",
+        world.err_kind,
+    );
+}
+
+#[then(regex = r"^the poll returns that error so the poller reconnects$")]
+async fn then_poll_returns_that_error(world: &mut PollerWorld) {
+    assert!(world.err_kind.is_some(), "an error must have been recorded to trigger reconnect");
+}
+
+#[then(
+    regex = r"^the socket read timeout \(connection_timeout\.max\(1s\)\) eventually errors the poll$"
+)]
+async fn then_socket_timeout_errors_poll(world: &mut PollerWorld) {
+    // A set_read_timeout expiry surfaces as WouldBlock or TimedOut, depending on the OS.
+    let kind = world.err_kind.expect("timeout must have produced an error");
+    assert!(
+        kind == io::ErrorKind::WouldBlock || kind == io::ErrorKind::TimedOut,
+        "expected WouldBlock or TimedOut from read timeout, got {kind:?}",
+    );
 }

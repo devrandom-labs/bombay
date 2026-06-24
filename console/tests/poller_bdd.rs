@@ -30,6 +30,10 @@ const WIRED: &[&str] = &[
     "A garbage maximal length 0xFFFFFFFF is rejected before allocation",
     "A zero-length frame decodes as an empty payload and fails MessagePack decode",
     "A well-sized frame carrying invalid MessagePack triggers reconnect",
+    // Task 13: truncation / EOF boundary scenarios
+    "A truncated payload (fewer bytes than the prefix promised) errors the poll",
+    "A truncated length prefix (fewer than 4 bytes) errors the poll",
+    "A length prefix exactly at MAX with a payload that under-delivers",
 ];
 
 #[tokio::test(flavor = "multi_thread")]

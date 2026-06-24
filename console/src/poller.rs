@@ -119,6 +119,21 @@ pub fn poll_once_over(
     poller.poll()
 }
 
+/// Test-only hook: like `poll_once_over` but with a caller-specified read timeout so
+/// boundary tests that expect a stalled read can complete quickly instead of waiting for
+/// the 5-second default (CLAUDE.md rule 4).
+#[cfg(any(test, feature = "testing"))]
+pub fn poll_once_over_with_read_timeout(
+    stream: TcpStream,
+    slot: Arc<Mutex<Option<Snapshot>>>,
+    read_timeout: Duration,
+) -> io::Result<()> {
+    let clone = stream.try_clone()?;
+    clone.set_read_timeout(Some(read_timeout))?;
+    let mut poller = Poller { stream: clone, snapshot: slot };
+    poller.poll()
+}
+
 impl Poller {
     fn connect(
         addr: &SocketAddr,
