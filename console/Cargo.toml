@@ -41,5 +41,8 @@ proptest = { workspace = true }
 rstest = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync", "net", "io-util"] }
 
+[[test]]
+name = "tui_bdd"
+
 [lints]
 workspace = true
