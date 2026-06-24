@@ -6,10 +6,9 @@
 //! `nix flake check` runs `cargoNextest` across the whole workspace, the runner
 //! must be a STANDARD libtest test so nextest can enumerate it as one function.
 //!
-//! BOOTSTRAP STAGE: only the `fmt_short` scenario is wired (card #76 Task 3).
-//! `filter_run_and_exit` runs ONLY that scenario and panics if any of its steps
-//! fail, giving a genuinely green test that drives real `fmt_short` code. Later
-//! tasks broaden the filter as more steps are wired, ending with the full run.
+//! Task 4 (card #76): wires `fmt_ago`, `fmt_uptime`, `short_type_name`, and
+//! `spark_height` scenario outlines. `filter_run_and_exit` now covers all five
+//! named Scenario Outlines; later tasks broaden the filter further.
 
 mod steps;
 
@@ -25,7 +24,9 @@ async fn tui_features() {
         .fail_on_skipped()
         .with_default_cli()
         .filter_run_and_exit("../tests/features/console/tui.feature", |_, _, scenario| {
-            scenario.name.starts_with("fmt_short")
+            ["fmt_short", "fmt_ago", "fmt_uptime", "short_type_name", "spark_height"]
+                .iter()
+                .any(|p| scenario.name.starts_with(p))
         })
         .await;
 }
