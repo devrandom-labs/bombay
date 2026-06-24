@@ -36,6 +36,11 @@ async fn tui_features() {
                 "centered_rect",
                 "backpressure_style",
                 "mailbox_bar",
+                "rate_context",
+                "actor_rate",
+                "severity",
+                "compare",
+                "sort_actors",
             ]
             .iter()
             .any(|p| scenario.name.starts_with(p))
