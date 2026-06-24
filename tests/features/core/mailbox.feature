@@ -88,8 +88,13 @@ Feature: Mailbox — bounded/unbounded signal channel with restart push-front
     Given a bounded mailbox with capacity 8
     And 5 signals are queued in the channel
     When the receiver calls recv_many with limit 10 into an empty buffer
-    Then the returned count equals the number of signals appended to the buffer
-    And the count is at least 1 and at most 5
+    Then the returned count is exactly 5
+    And exactly those 5 signals are appended to the buffer, so count == buffer.len()
+    # Confirmed: front is empty, so recv_many delegates to tokio's rx.recv_many(buffer, limit)
+    # (mailbox.rs:603-610). All 5 signals are already queued and there is no concurrent sender,
+    # so tokio drains every immediately-available value up to limit (10) in one call — the count
+    # is the deterministic 5, not a 1..=5 range (the limit only caps; it does not undercount what
+    # is already buffered).
 
   @sequence
   Scenario: recv_many drains only the front buffer when the front is non-empty

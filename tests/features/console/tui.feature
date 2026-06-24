@@ -126,12 +126,15 @@ Feature: TUI rendering helpers — formatting, graph and layout math
     Then it returns Rgb(<or>,<og>,<ob>)
 
     Examples:
-      | r   | g   | b   | factor | or  | og  | ob  | note            |
-      | 200 | 200 | 200 | 1.0    | 200 | 200 | 200 | unchanged       |
-      | 200 | 200 | 200 | 0.0    | 18  | 18  | 22  | fully BG        |
-    # NOTE: factor 0.5 lands at the midpoint between the color and BG per channel, e.g.
-    # R = 18 + (200-18)*0.5 = 109 (f32 truncation to u8). Pin the exact 0.5 row at wiring
-    # time against the lerp `(target + (c-target)*factor) as u8` rounding (truncation, :1591).
+      | r   | g   | b   | factor | or  | og  | ob  | note                       |
+      | 200 | 200 | 200 | 1.0    | 200 | 200 | 200 | unchanged                  |
+      | 200 | 200 | 200 | 0.0    | 18  | 18  | 22  | fully BG                   |
+      | 200 | 200 | 200 | 0.5    | 109 | 109 | 111 | clean midpoint, no frac    |
+      | 205 | 205 | 205 | 0.5    | 111 | 111 | 113 | midpoint .5 truncates down |
+    # INVARIANT: factor 0.5 is the per-channel midpoint via lerp `(target + (c-target)*factor)
+    # as u8` (:1591). The `as u8` TRUNCATES toward zero (it does NOT round): Rgb(205,205,205)
+    # faded 0.5 lands on 111.5/111.5/113.5 and drops to 111/111/113 — never 112/.../114.
+    # BG = Rgb(18,18,22), so the R/G targets are 18 and the B target is 22.
 
   # ---------------------------------------------------------------------------
   # color_rgb(Color) → approximate RGB for named/Rgb colors; default ≈ FG  (tui.rs:1597-1608)
@@ -219,6 +222,31 @@ Feature: TUI rendering helpers — formatting, graph and layout math
     # clamped to 0.0..=1.0 so an over-full mailbox still renders a full 10-cell bar at 100%.
 
   # ---------------------------------------------------------------------------
+  # rate_context(snapshot, prev) → (prev_received map, Option<dt>)  (tui.rs:1174-1188)
+  #   dt = snapshot.captured_at.duration_since(prev.captured_at).ok()
+  # ---------------------------------------------------------------------------
+
+  @boundary
+  Scenario: rate_context yields no dt when there is no previous snapshot
+    Given a snapshot and no previous snapshot
+    When rate_context is called
+    Then the previous-received map is empty
+    And the returned dt is None
+    # INVARIANT: prev None → prev_received default-empty and dt None (:1178-1186), so every
+    # downstream actor_rate falls into its None-dt guard → rate 0 on the first frame.
+
+  @boundary
+  Scenario: rate_context yields no dt when the current snapshot predates the previous one
+    Given a previous snapshot captured at t = 10s
+    And a current snapshot captured at t = 4s (earlier than the previous)
+    When rate_context is called
+    Then the returned dt is None
+    # INVARIANT: a reversed/non-monotonic clock makes duration_since return Err, and `.ok()`
+    # maps it to None (:1186) — never a negative or wrapped Duration. With dt None, actor_rate
+    # returns 0 (tui.rs:1250-1255), so a clock that goes backwards shows a 0 rate, not a panic
+    # or a garbage spike.
+
+  # ---------------------------------------------------------------------------
   # actor_rate(actor, prev_received, dt) → msg/s, 0 when dt is None or zero  (tui.rs:1245-1257)
   # ---------------------------------------------------------------------------
 
@@ -246,6 +274,52 @@ Feature: TUI rendering helpers — formatting, graph and layout math
     Given an actor present in this snapshot but absent from the previous one
     When actor_rate is called with a 1s dt
     Then it returns 0
+
+  # ---------------------------------------------------------------------------
+  # severity(actor) → attention rank 1..=5 by status (higher = more urgent)  (tui.rs:1227-1243)
+  # ---------------------------------------------------------------------------
+
+  @boundary
+  Scenario Outline: severity ranks an actor's status for the State sort
+    Given an actor whose status is <status>
+    When severity is computed
+    Then it returns <rank>
+
+    Examples:
+      | status                       | rank | note                                  |
+      | Stopped                      | 5    | terminal — most attention-worthy      |
+      | Restarting                   | 4    | recovering                            |
+      | Running (handling >= 5s)     | 4    | stuck handler ranks WITH Restarting   |
+      | Stopping                     | 3    |                                       |
+      | Starting                     | 2    |                                       |
+      | Running (handling < 5s)      | 1    | healthy — least urgent                |
+      | Running (not handling)       | 1    | healthy idle                          |
+    # INVARIANT: a Running actor whose in-flight handler has run >= STUCK_THRESHOLD (5s,
+    # tui.rs:926) is promoted to rank 4 — the SAME rank as Restarting — so a descending State
+    # sort surfaces a stuck-but-Running actor alongside genuine restarts (:1231-1238). Only an
+    # elapsed >= 5s triggers this; a fresh handler leaves Running at 1.
+
+  # ---------------------------------------------------------------------------
+  # compare / sort_actors → column ordering with a.id as the tiebreak  (tui.rs:1204-1224)
+  # ---------------------------------------------------------------------------
+
+  @boundary
+  Scenario: compare breaks an equal primary column by ascending actor id
+    Given two actors with equal mailbox length but ids 7 and 3
+    When compare is called for SortCol::Mailbox
+    Then the actor with id 3 orders before the actor with id 7
+    # INVARIANT: every non-Id column composes its key with `.then(tie)` where
+    # tie = a.id.0.cmp(&b.id.0) (:1211,1218) — so ties resolve by ascending id, making the sort
+    # total and deterministic regardless of HashMap iteration order.
+
+  @sequence
+  Scenario: sort_actors reverses the id tiebreak too under a descending sort
+    Given two actors with equal mailbox length but ids 7 and 3
+    When sort_actors is called for SortCol::Mailbox with desc = true
+    Then the actor with id 7 orders before the actor with id 3
+    # INVARIANT: sort_actors applies `if desc { ord.reverse() }` to the WHOLE Ordering returned
+    # by compare (:1198-1201), including the id tiebreak — so descending flips the tiebreak as
+    # well (higher id first on a tie), it is not a stable-by-ascending-id secondary key.
 
   # ---------------------------------------------------------------------------
   # short_type_name(&str) → strip module path and generics: a::b::Foo<X> → Foo  (tui.rs:1859-1862)

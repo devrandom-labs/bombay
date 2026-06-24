@@ -25,6 +25,13 @@
 #   * detect_deadlocks(snapshot: &Snapshot) -> Vec<Vec<ActorId>> : cycles of the FUNCTIONAL
 #       wait-for graph (≤1 out-edge/node), each normalized to start at its min id, list sorted
 #       by first id (:1124-1171).
+#   * braille(left: u8, right: u8) -> char : bits = LEFT[left.min(4)] | RIGHT[right.min(4)],
+#       char::from_u32(0x2800 + bits).unwrap_or(' '); bits <= 0xFF so the codepoint is always a
+#       valid U+2800..=U+28FF braille cell — the ' ' fallback is unreachable (:1579-1585).
+#   * color_rgb(color: Color) -> (u8,u8,u8) : exhaustive match; any unlisted/Reset/default arm
+#       falls through to FG ≈ (205,205,212) (:1597-1608).
+#   * sparkline_line(samples: &[u64], max: u64, width: usize) -> Line : cols = width*2, data
+#       left-zero-padded / right-clipped to cols, chunked by 2 ⇒ exactly `width` cells (:1547-1566).
 
 @console @tui @phase2
 Feature: TUI helpers — laws over graph, layout and formatting math
@@ -143,6 +150,47 @@ Feature: TUI helpers — laws over graph, layout and formatting math
     # ORACLE: secs/3600, (secs%3600)/60, secs%60 — minute/second fields are mod 60 by
     #         construction (:1938-1946); hours uncapped. Total over Duration.
     # Generalizes: tui.feature "fmt_uptime is a zero-padded HH:MM:SS clock".
+
+  @property @boundary
+  Scenario: braille is always a single valid braille cell for any two column heights
+    Given any left height l and any right height r
+    When braille(l, r) is computed
+    Then it returns a single char in the closed range U+2800..=U+28FF and never panics
+    And heights above 4 produce the same glyph as 4 (columns clamped with .min(4))
+    # GEN: l, r ∈ boundary-biased u8 {0, 1, 4, 5, 9, u8::MAX}; include pairs straddling the
+    #      clamp edge (4 vs 5) and (0,0)/(4,4)/(MAX,MAX).
+    # ORACLE: bits = LEFT[l.min(4)] | RIGHT[r.min(4)] <= 0x47|0xB8 = 0xFF, so 0x2800+bits is a
+    #         valid braille codepoint — char::from_u32 is always Some and the ' ' fallback at
+    #         :1584 is unreachable. braille(l,r) == braille(l.min(4), r.min(4)) ∀ l,r.
+    # Generalizes: tui.feature "braille builds a cell glyph from two clamped column heights".
+
+  @property @boundary
+  Scenario: color_rgb is total over every Color and defaults unmapped colors to FG
+    Given any Color c
+    When color_rgb(c) is computed
+    Then it returns an (u8,u8,u8) triple and never panics
+    And any color not explicitly listed (Reset/White/Gray/Blue/…) maps to FG (205,205,212)
+    # GEN: c ∈ {every named ANSI Color variant, Rgb(0,0,0), Rgb(255,255,255), Rgb(r,g,b)
+    #      random, Color::Reset, Indexed(n)}; include the explicitly-mapped set AND unmapped ones.
+    # ORACLE: the match is exhaustive with a `_ => (205,205,212)` arm (:1606); Rgb(r,g,b) is
+    #         returned verbatim; every other variant hits a listed arm or the FG default.
+    # Generalizes: tui.feature "color_rgb maps a color to its approximate RGB triple".
+
+  @property @boundary
+  Scenario: sparkline_line always renders exactly `width` cells for any samples and max
+    Given any sample slice, any max, and any width w
+    When sparkline_line(samples, max, w) is computed
+    Then the returned Line has exactly w braille cells and never panics
+    And only the most recent w*2 samples influence the cells (older samples scroll off)
+    And when samples are fewer than w*2 the line is left-padded with idle baseline cells
+    # GEN: width w ∈ boundary-biased usize {0, 1, 9, large}; samples.len() ∈ {0, 1, w*2-1, w*2,
+    #      w*2+1, large}; sample values ∈ {0, 1, max, u64::MAX}; max ∈ {0, 1, u64::MAX}.
+    # ORACLE: cols = w*2; data = zeros(cols.saturating_sub(len)) ++ samples[len.saturating_sub(cols)..]
+    #         has length cols for every input (len<=cols ⇒ padded to cols; len>cols ⇒ last cols);
+    #         chunks(2) ⇒ exactly w spans (:1547-1565). w==0 ⇒ empty line, no panic.
+    # Generalizes: tui.feature "sparkline_line with no samples renders a full idle baseline",
+    #              "…right-aligns samples and scrolls older ones off the left",
+    #              "…marks cells with traffic active and idle cells dim".
 
   # ---------------------------------------------------------------------------
   # @model — refinement against a reference cycle/SCC finder

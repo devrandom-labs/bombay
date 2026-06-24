@@ -155,12 +155,16 @@ Feature: ActorRef — messaging, reference counting, identity, lifecycle waiters
     # (actor_ref.rs:890-892).
 
   @boundary
-  Scenario: Unlinking an actor from itself is a no-op
-    Given a single running actor
-    When the actor's ActorRef is unlinked from itself
-    Then nothing changes and no error occurs
-    # Confirmed: unlink returns early when self.id == sibling_ref.id
-    # (actor_ref.rs:1074-1076).
+  Scenario: Unlinking an actor from itself is a no-op that leaves existing links intact
+    Given a running actor A already linked to a different actor B
+    And A's link set therefore has length 1
+    When A's ActorRef is unlinked from itself
+    Then A's link set still has length 1 and still contains B
+    And no error occurs
+    # Confirmed: unlink returns immediately when self.id == sibling_ref.id, BEFORE acquiring
+    # self.links / sibling.links (actor_ref.rs:1073-1076) — so no entry is added or removed and
+    # any pre-existing link is left untouched. (links is Arc<Mutex<LinksInner>>, links.rs:38.)
+    # The length-unchanged assertion is the concrete observable for "nothing changes".
 
   @boundary
   Scenario: strong_count and weak_count track live handles

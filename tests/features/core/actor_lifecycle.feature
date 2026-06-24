@@ -208,10 +208,12 @@ Feature: Actor lifecycle — start, run, panic-recovery, link-death, stop
   Scenario: Dropping the last strong ActorRef stops the actor
     Given an actor spawned via spawn with no other strong references retained
     When the last ActorRef is dropped while only WeakActorRefs remain
-    Then the actor stops
+    Then the actor stops with reason ControlFlow::Break(ActorStopReason::Normal)
     # Confirmed: ActorRef holds the strong MailboxSender; dropping all strong
     # refs closes the mailbox so MailboxReceiver::recv yields None, which
-    # ActorBehaviour::next maps to Break(Normal) (kind.rs:66).
+    # ActorBehaviour::next maps to the EXACT Ok(Ok(None)) => Break(Normal) arm
+    # (kind.rs:64-66) — an RAII drop is a graceful Normal stop, never Killed or
+    # Panicked. is_normal() therefore returns true for this stop reason.
 
   @linearizability
   Scenario: A retained WeakActorRef does not keep the actor alive

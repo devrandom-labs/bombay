@@ -109,6 +109,42 @@ Feature: Error algebra — SendError, stop reasons, panic reasons, registry doma
     # src/error.rs:219-226 — the infallible downcast unwraps; wrong type is a programmer bug.
 
   @boundary
+  Scenario Outline: unwrap_msg returns the message only for message-bearing variants, else panics
+    Given a SendError "<variant>"
+    When unwrap_msg() is called
+    Then the outcome is <outcome>
+
+    Examples:
+      | variant            | outcome                                                          |
+      | ActorNotRunning(m) | returns m                                                        |
+      | MailboxFull(m)     | returns m                                                        |
+      | Timeout(Some(m))   | returns m                                                        |
+      | Timeout(None)      | panics "called `SendError::unwrap_msg()` on a non message error" |
+      | ActorStopped       | panics "called `SendError::unwrap_msg()` on a non message error" |
+      | HandlerError(e)    | panics "called `SendError::unwrap_msg()` on a non message error" |
+    # src/error.rs:171-176 — unwrap_msg delegates to msg() (Some for the three message-bearing
+    # variants, None for Timeout(None)/ActorStopped/HandlerError) and panics on None. Note
+    # Timeout(None) panics even though it is a Timeout — the message is the discriminator, not
+    # the variant tag (CLAUDE.md rule 3: distinct failure domains).
+
+  @boundary
+  Scenario Outline: unwrap_err returns the error only for HandlerError, else panics
+    Given a SendError "<variant>"
+    When unwrap_err() is called
+    Then the outcome is <outcome>
+
+    Examples:
+      | variant            | outcome                                                  |
+      | HandlerError(e)    | returns e                                                |
+      | ActorNotRunning(m) | panics "called `SendError::unwrap_err()` on a non error" |
+      | MailboxFull(m)     | panics "called `SendError::unwrap_err()` on a non error" |
+      | Timeout(Some(m))   | panics "called `SendError::unwrap_err()` on a non error" |
+      | ActorStopped       | panics "called `SendError::unwrap_err()` on a non error" |
+    # src/error.rs:183-188 — unwrap_err delegates to err() (Some only for HandlerError) and
+    # panics on None. These two panics are programmer-bug assertions (rule 4: panics are for
+    # bugs), not data-limit errors.
+
+  @boundary
   Scenario: PanicError from a &'static str panic payload exposes the string via with_str
     Given a PanicError constructed from a panic carrying a &'static str
     When with_str is called
@@ -181,6 +217,46 @@ Feature: Error algebra — SendError, stop reasons, panic reasons, registry doma
     Then is_lifecycle_hook() is false and is_message_processing() is false
     # src/error.rs:714-740 — Next (the `next` hook) is excluded from both sets; this is the
     # boundary the two classifiers leave uncovered between them.
+
+  # ---------------------------------------------------------------------------
+  # @lifecycle — PanicError serde round-trip is LOSSY (write→serialize→deserialize)
+  #   Serialize emits err = self.to_string() (Display) + reason  (src/error.rs:564-573)
+  #   Deserialize rebuilds PanicError::new(Box::new(err: String), reason)  (:628-655)
+  # ---------------------------------------------------------------------------
+
+  @lifecycle
+  Scenario: PanicError serde preserves only the Display string and reason, erasing the payload type
+    Given a PanicError with reason R wrapping a payload of concrete type T (not String)
+    When it is serialized and then deserialized
+    Then the recovered PanicError carries the same reason R
+    And its inner payload is a String (the original Display text), no longer type T
+    And downcast::<T>() on the recovered PanicError returns None
+    # src/error.rs:570 serializes self.to_string(); :652-655 rebuilds the inner as a boxed
+    # String. The concrete payload type is erased — this is the documented, defensible wire
+    # contract (a remote peer cannot reconstruct an arbitrary Rust type), NOT a faithful
+    # round-trip. CLAUDE.md rule 4: silent lossiness pinned as the actual behaviour.
+
+  @lifecycle
+  Scenario: PanicError serde round-trip is NOT idempotent — the reason prefix compounds
+    Given a PanicError with reason R wrapping the string payload "boom"
+    When it is serialized once and deserialized to p1
+    Then p1's inner string equals the Display "R: boom"
+    When p1 is serialized again and deserialized to p2
+    Then p2's inner string equals "R: R: boom"
+    # src/error.rs:542-545 Display is "{reason}: {payload}" when with_str finds a string; since
+    # deserialize stores that whole Display string AS the next payload, each round-trip re-reads
+    # it and prepends another "{reason}: ". The transform is therefore lossy AND non-idempotent
+    # — a defensive-boundary fact a future serialization refactor must not silently change.
+
+  @lifecycle
+  Scenario: a non-string PanicError payload loses its value entirely through serde
+    Given a PanicError with reason R wrapping a payload whose Display surfaces no string (with_str → None)
+    When it is serialized
+    Then the err field is exactly "R" (the reason alone), the payload value is absent
+    And after deserialize the inner String is "R" and the original value is unrecoverable
+    # src/error.rs:544 — Display falls back to "{reason}" when with_str yields None, so a
+    # value-less Display drops the payload before it ever reaches the wire (:570). The reason is
+    # all that survives; the original value cannot be recovered from the deserialized form.
 
   # ---------------------------------------------------------------------------
   # @boundary — RegistryError distinct failure domains (local-only variants)

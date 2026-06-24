@@ -58,7 +58,7 @@ tests/features/core/mailbox.properties.feature (Phase 2, laws)   ← this phase
 
 ## Property catalog
 
-Compiled from `tests/features/**/*.properties.feature` (21 files, **105 laws**). Each line: the
+Compiled from `tests/features/**/*.properties.feature` (21 files, **112 laws** = 81 `@property` + 31 `@model`). Each line: the
 law, its kind (`@property` / `@model`), and the oracle. `@bug` = the universal form of a Phase-1
 bug probe — must fail today. Generator strategies (with boundary values) live in each scenario's
 `# GEN:` note.
@@ -196,7 +196,7 @@ bug probe — must fail today. Generator strategies (with boundary values) live 
 - oversized L rejected before any allocation.
 - any non-msgpack byte string decodes to error, never panic.
 
-**tui** — 9 `@property`, 1 `@model` — pure helpers
+**tui** — 12 `@property`, 1 `@model` — pure helpers
 - `spark_height(v,max)` ∈ [1,4], max==0 ⇒ 1.
 - `actor_rate` ≥ 0, never panics, 0 on None/zero dt or missing prev.
 - `mailbox_bar` ratio ∈ [0,1] (clamped), 10-cell bar, pct ∈ [0,100].
@@ -204,6 +204,9 @@ bug probe — must fail today. Generator strategies (with boundary values) live 
 - `centered_rect` result always fully contained in the input area.
 - `short_type_name` never panics, idempotent, ""→"".
 - `fmt_short`/`fmt_ago`/`fmt_uptime` never panic for any Duration incl ZERO/MAX; `fmt_uptime` MM/SS ∈ [0,59].
+- `braille(l,r)` always a single valid `U+2800..=U+28FF` cell, never panics; `braille(l,r) == braille(l.min(4), r.min(4))` ∀ l,r (the `' '` fallback is unreachable).
+- `color_rgb(c)` total over every `Color`, never panics; every unlisted/Reset/default variant ⇒ `FG (205,205,212)`.
+- `sparkline_line(samples,max,width)` returns **exactly `width`** braille cells ∀ inputs, never panics; only the last `width*2` samples influence the cells; `width==0` ⇒ empty line.
 - `@model` `detect_deadlocks` returns exactly the real cycles, each once, normalized — oracle: reference successor-chase cycle finder.
 
 **server_wire** — 2 `@property`, 1 `@model`

@@ -119,6 +119,24 @@ Feature: ActorRegistry — local name-keyed actor lookup
     And contains_name("alpha") still returns true
 
   @boundary
+  Scenario: remove_by_id removes only the FIRST matching entry when one id is registered under two names
+    Given a running actor "A1" of type Foo registered under both "alpha" and "beta"
+    Then len() returns 2
+    When remove_by_id(A1's id) is called
+    Then it returns true
+    And len() returns 1
+    And exactly one of contains_name("alpha") / contains_name("beta") is now false
+    And the still-present name resolves to a ref whose id equals A1's id
+    When remove_by_id(A1's id) is called a second time
+    Then it returns true and len() returns 0
+    # Grounded: remove_by_id is extract_if(...).next().is_some() (registry.rs:123-128) — `.next()`
+    # pulls only the FIRST predicate match and stops, so one call removes a single entry even when
+    # several share the id. WHICH of the two names is removed first is HashMap-iteration-arbitrary,
+    # so the assertion pins the conserved facts (len 2→1→0, exactly one survives the first call),
+    # never a specific name. insert dedups by name only, so the same id under two names is legal
+    # (registry.rs:104-110; cf. "two distinct names for the same actor ref").
+
+  @boundary
   Scenario: an empty-string name is a valid distinct key
     Given a running actor "A1" of type Foo
     When "A1" is inserted under name ""

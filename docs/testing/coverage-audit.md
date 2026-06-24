@@ -3,7 +3,8 @@
 > **Scope.** This audits whether every behavioural invariant of the surviving kameo local
 > core is exercised across every *relevant input class* — not merely that a scenario exists.
 > Source-of-truth inputs: `docs/testing/invariants.md`, `docs/testing/properties.md`, and the
-> 42 `tests/features/**/*.feature` files (409 example scenarios + 105 property/model laws).
+> 42 `tests/features/**/*.feature` files (409 example scenarios + 105 property/model laws at
+> audit time; 457 + 112 after Phase 2b — see Addendum 2).
 > Every claim below is grounded in `file:line` (CLAUDE.md rule 0). This is an **audit only** —
 > no source or scenario was modified.
 
@@ -252,15 +253,55 @@ documenting a bug." It is instead a `@review-semantics` scenario pinning the hea
 result and flagging the guard's reachability for the wiring phase.
 
 Doc corrections #1 (`invariants.md:198` `@review-semantics`→`@boundary` mis-tag) and #3
-(`AmqpError::InvalidRoutingKey` does not yet exist) were **not** applied — they were left for
-your review since you opted only into scenario authoring; both remain accurately recorded
-above.
+(`AmqpError::InvalidRoutingKey` does not yet exist) were left for review at the end of the P0/P1
+pass. **Status update (Phase 2b):** all three corrections are now applied and verified in
+`docs/testing/invariants.md` — #1 the cap scenarios read as two `@boundary` (`:199`), #2 the
+`message_queue` routing-matrix row (`:139`), #3 the `InvalidRoutingKey`-must-be-added note
+(`:161`). This paragraph previously said #1/#3 were unapplied; that is now stale and corrected here.
 
 ---
 
-**Status:** P0 + P1 scenarios authored (see Addendum). Remaining open choices:
-- **(A)** apply the two un-applied doc corrections (`invariants.md:198` tag fix; the
-  `AmqpError::InvalidRoutingKey` note); and/or
-- **(B)** author the P2 (cosmetic/sampling) cases and tighten the four vague `Then`s; and/or
-- **(C)** proceed to Phase 3 (wire `cucumber` + step definitions), folding these scenarios in
-  per-module as each is wired.
+---
+
+## Addendum 2 — Phase 2b (2026-06, spec-only): P2 cases, vague-Then tightening, doc sync
+
+The remaining P2 input-class cases, the four vague `Then`s, and the doc-inventory sync are now
+done (still spec-only — no step definitions, no source changes). What landed:
+
+| File | Added / changed | Covers |
+|---|---|---|
+| `console/tui.feature` | +`rate_context` reversed-dt→None (×2), +`severity` outline, +`compare`/`sort_actors` id tiebreak (asc + desc-reversal), +`fade_toward_bg` 0.5 truncation rows | P2 #13 |
+| `console/tui.properties.feature` | +3 `@property` (`braille`, `color_rgb`, `sparkline_line`) | doc-sync (tui 9→12 `@property`) |
+| `core/reply.feature` | +broadened infallible Scenario Outline (unit/scalar/coll/Arc/NonZero/atomic/tuple 1·2·26), +`downcast_err` outer-fallback + `@review-semantics` unreachable-guard | P2 #14 |
+| `core/error.feature` | +`unwrap_msg`/`unwrap_err` panic outlines, +3 `@lifecycle` `PanicError` LOSSY serde (type-erasure, non-idempotent reason-prefix, value-less drop) | P2 #14 |
+| `core/actor_id.feature` | +serde round-trip, +Display/Debug outlines; **rewrote the two too-short-decode scenarios as `@bug` probes** + added serde `invalid_length` `@bug` | P2 #14 + defect |
+| `core/registry.feature` | +`remove_by_id` first-match-on-duplicate-id edge (len 2→1→0) | P2 #14 |
+| `core/mailbox.feature` | tightened `recv_many` Then: exact **5**, not 1..=5 | vague-Then |
+| `core/actor_lifecycle.feature` | tightened RAII-drop Then: `Break(ActorStopReason::Normal)` | vague-Then |
+| `core/actor_ref.feature` | tightened self-unlink Then: pre-existing link survives, `links` len unchanged | vague-Then |
+| `core/request_ask.feature` | **rewrote** the bounded(1) Then: `SendError::MailboxFull(Msg)` via the correct two-send fill mechanism (was a wrong enqueue-and-hold framing) | vague-Then + correction |
+| `docs/testing/invariants.md` | +tui helpers (braille/color_rgb/sparkline_line/severity/rate_context/compare), +on_panic→OnPanic, +on_stop side-channel, +unwrap_msg/err panics, +PanicError lossy serde, +mq dedup/delete cascades, +pool broadcast guard; **corrected** the `<8` bytes→MissingSequenceID line (it panics) | doc-sync + correction |
+| `docs/testing/properties.md` | +3 tui laws; total 105→**112** (81 `@property` + 31 `@model`) | doc-sync |
+
+**New finding (verified empirically 2026-06).** `ActorId::from_bytes` slice-indexes `bytes[0..8]`
+*before* `try_into`, so a slice shorter than 8 **panics** ("range end index 8 out of range")
+instead of returning `MissingSequenceID`; the serde visitor's `invalid_length` mapping
+(`id.rs:218-221`) is therefore unreachable dead code. The *existing* P0/P1 scenarios asserted a
+clean `Err(MissingSequenceID)` — factually wrong (a green-able test of behaviour that does not
+happen). They are now `@bug:id.rs:140-143` / `@bug:id.rs:218-221` probes asserting the *desired*
+clean error. **Unlike** the `message_queue` `@bug` probes (which need `AmqpError::InvalidRoutingKey`
+added and won't compile), these compile now and stay red **via the panic** until a length-check
+lands in `from_bytes` — a separate fix-pass card, NOT #74.
+
+**`@bug` probe inventory (all must stay RED).** Pre-existing: `pubsub.rs:125`,
+`message_queue.rs:591`, `message_queue.rs:707`. Added in 2b: `id.rs:140-143` (×2 — 4-byte +
+empty), `id.rs:218-221` (serde). `pool.rs:401` is `@review-semantics`, not a live `@bug` (its
+panic arm is unreachable, so a probe would pass green — forbidden).
+
+**Spec totals now:** 457 example scenarios + 112 property/model laws across 42 feature files.
+
+**Status:** Phase 2b complete and spec-only. P0+P1+P2 input-class cases, the four vague `Then`s,
+and the doc-inventory sync have all landed; all three audit doc-corrections are applied. Next:
+- **(C)** Phase 3 — wire `cucumber` + step definitions per crate, folding these scenarios in as
+  each module is wired; keep every `@bug` probe RED (the two `message_queue` ones need the new
+  `AmqpError::InvalidRoutingKey` variant first — a separate card).

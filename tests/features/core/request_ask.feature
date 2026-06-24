@@ -221,14 +221,20 @@ Feature: AskRequest — request/reply with mailbox and reply timeouts
     # NOTE @review-semantics: pin the exact SendError variant at wiring (reply sender dropped).
 
   @lifecycle
-  Scenario: a held PendingReply suspends the actor until it is awaited or dropped
+  Scenario: a bounded(1) mailbox returns MailboxFull only once both the in-flight and queued slots are taken
     Given the actor has a bounded mailbox of capacity 1
-    When the caller invokes "ask(MsgA).enqueue()" and holds the pending reply without awaiting it
-    And the caller then tries to "ask(MsgB).try_send()"
-    Then MsgB cannot be enqueued because the actor has not progressed past MsgA
-    # Documented invariant (enqueue rustdoc): "The actor will not progress until the
-    # pending reply has been awaited or dropped." @review-semantics: confirm the
-    # observable signal (MailboxFull on bounded(1)) at wiring.
+    And its handler blocks long enough to stay in-flight (the actor does not progress)
+    When a first message is sent and the actor dequeues it, freeing the single slot as it enters the blocked handler
+    And a second message is sent and now occupies the one bounded(1) slot
+    And the caller then calls "ask(Msg).try_send()" for a third message
+    Then the third send fails with exactly Err(SendError::MailboxFull(Msg))
+    # Confirmed by the source test request/ask.rs:1265-1289 (and its comment): the FIRST send is
+    # dequeued by the actor — which then blocks in the handler — FREEING the single slot, so it
+    # takes a SECOND send to actually occupy the mailbox before a THIRD send observes a full one.
+    # A single in-flight message races the actor draining it, so an "enqueue one and hold" framing
+    # could NOT deterministically yield MailboxFull (this corrects the earlier @review-semantics
+    # guess). try_send forwards tokio's TrySendError::Full as SendError::MailboxFull(msg) carrying
+    # the rejected message back to the caller (request/ask.rs:311-329).
 
   # ---------------------------------------------------------------------------
   # @linearizability — concurrent asks with real overlap

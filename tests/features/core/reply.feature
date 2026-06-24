@@ -53,6 +53,37 @@ Feature: Reply — reply conversion, single-use senders, forwarding, and downcas
     # to_result == Ok(self); into_any_err == None (:609-633).
 
   @sequence
+  Scenario Outline: every infallible-reply type family obeys the same identity contract
+    Given a reply value of type <type>
+    When the Reply conversions are applied
+    Then to_result returns Ok(self)
+    And into_any_err returns None
+    And into_value returns self unchanged
+    And the associated Error type is Infallible
+
+    Examples:
+      | type                  | family                          |
+      | ()                    | unit                            |
+      | u8                    | std scalar (zero-size payload)  |
+      | bool                  | std scalar                      |
+      | String                | owned std                       |
+      | Vec<u8>               | std collection                  |
+      | Arc<u8>               | shared pointer                  |
+      | NonZeroU8             | NonZero (min arity)             |
+      | NonZeroUsize          | NonZero (pointer-width)         |
+      | NonZeroI128           | NonZero (max width)             |
+      | AtomicBool            | atomic                          |
+      | AtomicUsize           | atomic (pointer-width)          |
+      | (u8,)                 | tuple arity 1                   |
+      | (u8, u16)             | tuple arity 2                   |
+      | (A, …, Z)             | tuple arity 26 (macro maximum)  |
+    # Confirmed: the impl_infallible_reply! list spans unit/scalars/collections/Arc/NonZero*
+    # /Atomic*/tuple arities 1..=26 (src/reply.rs:636-761,771-790) — every member gets the
+    # SAME generated impl (Ok=Self, Error=Infallible, the three identity methods, :609-633), so
+    # the contract is uniform across the whole family. Sampling spans the boundaries of each
+    # family: tuple arity {1, 2, 26}, NonZero {U8, Usize, I128}, atomics {Bool, Usize}.
+
+  @sequence
   Scenario: ReplySender::send maps a handler Ok into a boxed value on the wire
     Given a ReplySender for a Result reply
     When send is called with Ok(value)
@@ -163,6 +194,28 @@ Feature: Reply — reply conversion, single-use senders, forwarding, and downcas
     Then it recovers the inner error mapped through SendError::HandlerError
     # Confirmed: downcast_err first try_downcast::<N, R::Error> mapping to HandlerError,
     # only falling back to the outer SendError on failure (:554-564).
+
+  @boundary
+  Scenario: ForwardedReply downcast_err falls back to the outer SendError when the inner downcast is the wrong type
+    Given a wire BoxSendError that is the OUTER forwarding error (e.g. ActorNotRunning), not the inner R::Error
+    When ForwardedReply::downcast_err is called
+    Then try_downcast::<N, R::Error> fails and it recovers the outer SendError<N, Self::Error>
+    # Confirmed: on inner-downcast failure the unwrap_or_else branch downcasts to
+    # SendError<M, SendError<M, R::Error>> and re-targets the message type (:557-563). A
+    # message-less variant (ActorNotRunning) carries no payload, so map_msg's closure is never
+    # invoked and the recovery is clean — this exercises the "wrong inner type → outer" edge.
+
+  @boundary @review-semantics
+  Scenario: downcast_err's outer-branch map_msg closure is an unreachable wrong-type guard
+    Given the outer forwarding SendError still carried the original message (e.g. MailboxFull(msg) or Timeout(Some(msg)))
+    When downcast_err reaches the outer-SendError fallback and map_msg is applied to that message
+    Then the unreachable!(...) wrong-type guard is hit
+    # NOTE @review-semantics: the closure `|_| unreachable!("forwarded reply is only an error
+    # if it failed to forward the message")` (:559-561) runs only if the recovered outer
+    # SendError variant carries a message payload. Whether a forwarded error can retain its
+    # original message at this point (vs always being message-less ActorNotRunning) is a
+    # dispatch-reachability question — pin it before asserting this as a guarantee, mirroring
+    # the into_value Forwarded(Ok) unreachable (reply.feature "must never be converted to a value").
 
   @boundary
   Scenario: Reply::downcast_ok with a mismatched boxed type is the documented misuse boundary

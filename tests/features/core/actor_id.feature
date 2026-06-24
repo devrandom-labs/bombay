@@ -61,24 +61,82 @@ Feature: ActorId — generation, byte round-trips, identity
     Then the decoded sequence_id is 123456789
     # Confirmed: u64 little-endian round-trip is lossless (id.rs:112, 140-144).
 
+  @lifecycle
+  Scenario: serde serializes an ActorId as its bytes and deserializes them back
+    Given an ActorId created via new(123456789)
+    When it is serialized with serde and then deserialized
+    Then the deserialized ActorId equals the original
+    # Confirmed (no `remote`): Serialize calls serialize_bytes(&self.to_bytes()) (id.rs:190-196)
+    # and Deserialize's visit_bytes runs from_bytes on the 8-byte buffer (id.rs:213-235); the
+    # u64 LE payload survives, so the serde round-trip is lossless for a well-formed buffer.
+
+  # ---------------------------------------------------------------------------
+  # @boundary — Display / Debug formatting (no remote feature)
+  # ---------------------------------------------------------------------------
+
+  @boundary
+  Scenario Outline: Display renders an ActorId as "#<sequence_id>"
+    Given an ActorId created via new(<seq>)
+    When it is formatted with Display ("{}")
+    Then the output is "<display>"
+
+    Examples:
+      | seq | display |
+      | 0   | #0      |
+      | 7   | #7      |
+      | 42  | #42     |
+    # Confirmed (no `remote`): Display writes "#{sequence_id}" (id.rs:164-165). The
+    # "@{peer}"/"@local" suffix is remote-gated (id.rs:167-171) and out of local scope.
+
+  @boundary
+  Scenario Outline: Debug renders an ActorId as "ActorId(<sequence_id>)"
+    Given an ActorId created via new(<seq>)
+    When it is formatted with Debug ("{:?}")
+    Then the output is "<debug>"
+
+    Examples:
+      | seq | debug       |
+      | 0   | ActorId(0)  |
+      | 7   | ActorId(7)  |
+    # Confirmed (no `remote`): Debug writes "ActorId({sequence_id:?})" (id.rs:185-186); the
+    # two-field "ActorId(seq, peer)" form is remote-gated (id.rs:177-183), out of local scope.
+
   # ---------------------------------------------------------------------------
   # @boundary — malformed decode input, ordering edges
   # ---------------------------------------------------------------------------
 
-  @boundary
-  Scenario: Decoding fewer than eight bytes fails with MissingSequenceID
+  @boundary @bug:id.rs:140-143
+  Scenario: Decoding fewer than eight bytes should fail with MissingSequenceID, not panic
     Given a 4-byte slice
     When from_bytes is called on it
-    Then it returns Err(ActorIdFromBytesError::MissingSequenceID)
-    # Confirmed: bytes[0..8].try_into() fails for short input and maps to
-    # MissingSequenceID (id.rs:140-143).
+    Then it returns Err(ActorIdFromBytesError::MissingSequenceID) without panicking
+    # @bug (MUST FAIL today): the code INTENDS a clean error — bytes[0..8].try_into() is mapped
+    # to MissingSequenceID (id.rs:140-143) and the serde visitor maps that to invalid_length
+    # (id.rs:218-221). But `bytes[0..8]` is slice-indexed BEFORE try_into runs, so a slice
+    # shorter than 8 panics with "range end index 8 out of range for slice of length 4" and the
+    # map_err is dead code. Verified empirically 2026-06 (lengths 0/3/7 panic; only 8 decodes).
+    # Desired fix: bounds-check the length before slicing so MissingSequenceID is reachable.
 
-  @boundary
-  Scenario: Decoding an empty slice fails with MissingSequenceID
+  @boundary @bug:id.rs:140-143
+  Scenario: Decoding an empty slice should fail with MissingSequenceID, not panic
     Given an empty byte slice
     When from_bytes is called on it
-    Then it returns Err(ActorIdFromBytesError::MissingSequenceID)
-    # Confirmed: same too-short path (id.rs:140-143).
+    Then it returns Err(ActorIdFromBytesError::MissingSequenceID) without panicking
+    # @bug (MUST FAIL today): same root cause — `bytes[0..8]` panics on a length-0 slice
+    # ("range end index 8 out of range for slice of length 0") before the map_err can run
+    # (id.rs:140-143). Verified empirically 2026-06.
+
+  @boundary @bug:id.rs:218-221
+  Scenario: Deserializing a too-short byte buffer should yield a serde invalid_length error, not panic
+    Given a serialized byte buffer of only 4 bytes fed to ActorId's Deserialize
+    When the ActorIdVisitor's visit_bytes runs from_bytes on it
+    Then deserialization fails with serde invalid_length(4, "sequence ID"), no panic
+    # @bug (MUST FAIL today): visit_bytes maps MissingSequenceID -> E::invalid_length(bytes_len,
+    # "sequence ID") (id.rs:218-221), the documented defensive-boundary contract for truncated
+    # wire input (CLAUDE.md rule 3 — validate untrusted upstream input without panicking). But
+    # from_bytes panics first (see above), so this mapping is unreachable and a truncated buffer
+    # crashes the deserializer instead of returning a clean error. Wireable now (MissingSequenceID
+    # exists); it stays red via panic until the from_bytes bounds check lands.
 
   @boundary
   Scenario: Decoding exactly eight bytes succeeds without the remote feature
