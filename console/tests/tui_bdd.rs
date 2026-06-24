@@ -6,9 +6,9 @@
 //! `nix flake check` runs `cargoNextest` across the whole workspace, the runner
 //! must be a STANDARD libtest test so nextest can enumerate it as one function.
 //!
-//! Task 4 (card #76): wires `fmt_ago`, `fmt_uptime`, `short_type_name`, and
-//! `spark_height` scenario outlines. `filter_run_and_exit` now covers all five
-//! named Scenario Outlines; later tasks broaden the filter further.
+//! Task 5 (card #76): wires `braille`, `fade_toward_bg`, `color_rgb`,
+//! `centered_rect`, `backpressure_style`, and `mailbox_bar` scenario outlines.
+//! `filter_run_and_exit` now covers all eleven named Scenario Outlines.
 
 mod steps;
 
@@ -24,9 +24,21 @@ async fn tui_features() {
         .fail_on_skipped()
         .with_default_cli()
         .filter_run_and_exit("../tests/features/console/tui.feature", |_, _, scenario| {
-            ["fmt_short", "fmt_ago", "fmt_uptime", "short_type_name", "spark_height"]
-                .iter()
-                .any(|p| scenario.name.starts_with(p))
+            [
+                "fmt_short",
+                "fmt_ago",
+                "fmt_uptime",
+                "short_type_name",
+                "spark_height",
+                "braille",
+                "fade_toward_bg",
+                "color_rgb",
+                "centered_rect",
+                "backpressure_style",
+                "mailbox_bar",
+            ]
+            .iter()
+            .any(|p| scenario.name.starts_with(p))
         })
         .await;
 }
