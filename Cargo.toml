@@ -13,6 +13,9 @@ kameo = { path = ".", version = "0.21.0" }
 
 futures = "0.3"
 tokio = "1.47"
+cucumber = { version = "0.23", features = ["libtest"] }
+proptest = "1.11"
+rstest = "0.26"
 
 # ============================================================
 # Bombay — god-level lint config (adopted from nexus, verbatim).
