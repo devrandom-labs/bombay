@@ -58,7 +58,7 @@ const SPARK_ACTIVE: Color = Color::Rgb(110, 180, 200);
 const FULL_COLUMNS_MIN_WIDTH: u16 = 85;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum SortCol {
+pub enum SortCol {
     Id,
     Name,
     State,
@@ -923,7 +923,7 @@ impl App {
 }
 
 const BUSY_THRESHOLD: Duration = Duration::from_millis(500);
-const STUCK_THRESHOLD: Duration = Duration::from_secs(5);
+pub const STUCK_THRESHOLD: Duration = Duration::from_secs(5);
 
 #[derive(Clone, Copy)]
 struct MailboxView {
@@ -1121,7 +1121,7 @@ impl ActorRow {
 /// Finds deadlock cycles in the wait-for graph. Each actor waits on at most one other (it can
 /// only be blocked in one handler), so the graph is functional and a deadlock is simply a
 /// cycle — found by following each chain until it repeats or ends.
-fn detect_deadlocks(snapshot: &Snapshot) -> Vec<Vec<ActorId>> {
+pub fn detect_deadlocks(snapshot: &Snapshot) -> Vec<Vec<ActorId>> {
     let next: HashMap<ActorId, ActorId> = snapshot
         .actors
         .iter()
@@ -1171,7 +1171,7 @@ fn detect_deadlocks(snapshot: &Snapshot) -> Vec<Vec<ActorId>> {
 }
 
 /// Shared rate inputs: previous per-actor received counts and the time delta between snapshots.
-fn rate_context(
+pub fn rate_context(
     snapshot: &Snapshot,
     prev: Option<&Snapshot>,
 ) -> (HashMap<ActorId, u64>, Option<Duration>) {
@@ -1188,7 +1188,7 @@ fn rate_context(
 }
 
 /// Sorts a slice of actors by the active column/direction (id as a stable tiebreak).
-fn sort_actors(
+pub fn sort_actors(
     actors: &mut [&ActorSnapshot],
     sort: SortCol,
     desc: bool,
@@ -1201,7 +1201,7 @@ fn sort_actors(
     });
 }
 
-fn compare(
+pub fn compare(
     a: &ActorSnapshot,
     b: &ActorSnapshot,
     sort: SortCol,
@@ -1224,7 +1224,7 @@ fn compare(
 }
 
 /// Higher = more attention-worthy, so a descending State sort surfaces problems first.
-fn severity(actor: &ActorSnapshot) -> u8 {
+pub fn severity(actor: &ActorSnapshot) -> u8 {
     match &actor.status {
         ActorStatus::Stopped { .. } => 5,
         ActorStatus::Restarting => 4,
@@ -1242,7 +1242,7 @@ fn severity(actor: &ActorSnapshot) -> u8 {
     }
 }
 
-fn actor_rate(
+pub fn actor_rate(
     actor: &ActorSnapshot,
     prev_received: &HashMap<ActorId, u64>,
     dt: Option<Duration>,
@@ -1486,7 +1486,7 @@ fn flag_label(flag: Flag) -> (&'static str, Style) {
     }
 }
 
-fn backpressure_style(len: usize, capacity: usize) -> Style {
+pub fn backpressure_style(len: usize, capacity: usize) -> Style {
     let ratio = if capacity == 0 {
         0.0
     } else {
@@ -1501,7 +1501,7 @@ fn backpressure_style(len: usize, capacity: usize) -> Style {
     }
 }
 
-fn fmt_short(d: Duration) -> String {
+pub fn fmt_short(d: Duration) -> String {
     let secs = d.as_secs_f64();
     if secs < 60.0 {
         format!("{secs:.1}s")
@@ -1511,7 +1511,7 @@ fn fmt_short(d: Duration) -> String {
     }
 }
 
-fn fmt_ago(d: Duration) -> String {
+pub fn fmt_ago(d: Duration) -> String {
     let secs = d.as_secs();
     if secs < 60 {
         format!("{secs}s ago")
@@ -1544,7 +1544,7 @@ fn panel_accent(focused: bool) -> Style {
 /// is always a baseline. The series is right-aligned and zero-padded on the left, so it scrolls
 /// left as samples arrive. Cells with no traffic are dim grey; cells with activity are cyan
 /// (btop-style), one styled span per cell since a braille glyph has a single color.
-fn sparkline_line(samples: &[u64], max: u64, width: usize) -> Line<'static> {
+pub fn sparkline_line(samples: &[u64], max: u64, width: usize) -> Line<'static> {
     let cols = width * 2;
     let mut data = vec![0u64; cols.saturating_sub(samples.len())];
     data.extend_from_slice(&samples[samples.len().saturating_sub(cols)..]);
@@ -1567,7 +1567,7 @@ fn sparkline_line(samples: &[u64], max: u64, width: usize) -> Line<'static> {
 
 /// Scales a value to a 1–4 dot column. Every column keeps at least the bottom dot, so the graph
 /// shows a continuous baseline even while idle.
-fn spark_height(value: u64, max: u64) -> u8 {
+pub fn spark_height(value: u64, max: u64) -> u8 {
     if max == 0 {
         return 1;
     }
@@ -1576,7 +1576,7 @@ fn spark_height(value: u64, max: u64) -> u8 {
 
 /// A single braille cell with the left and right columns lit to the given dot heights (0–4),
 /// filled from the bottom up. Base code point U+2800.
-fn braille(left: u8, right: u8) -> char {
+pub fn braille(left: u8, right: u8) -> char {
     // Left column bottom→top dots: 7,3,2,1; right column: 8,6,5,4.
     const LEFT: [u8; 5] = [0x00, 0x40, 0x44, 0x46, 0x47];
     const RIGHT: [u8; 5] = [0x00, 0x80, 0xA0, 0xB0, 0xB8];
@@ -1585,7 +1585,7 @@ fn braille(left: u8, right: u8) -> char {
 }
 
 /// Blends a color toward `BG` by `factor` (1.0 = unchanged, 0.0 = fully `BG`).
-fn fade_toward_bg(color: Color, factor: f32) -> Color {
+pub fn fade_toward_bg(color: Color, factor: f32) -> Color {
     let (tr, tg, tb) = color_rgb(BG);
     let (r, g, b) = color_rgb(color);
     let lerp = |c: u8, target: u8| (target as f32 + (c as f32 - target as f32) * factor) as u8;
@@ -1594,7 +1594,7 @@ fn fade_toward_bg(color: Color, factor: f32) -> Color {
 
 /// Approximate RGB for a color, so the fade can blend named ANSI colors as well as `Rgb`.
 /// Unset/default fg is treated as the normal foreground.
-fn color_rgb(color: Color) -> (u8, u8, u8) {
+pub fn color_rgb(color: Color) -> (u8, u8, u8) {
     match color {
         Color::Rgb(r, g, b) => (r, g, b),
         Color::Red | Color::LightRed => (235, 80, 80),
@@ -1608,7 +1608,7 @@ fn color_rgb(color: Color) -> (u8, u8, u8) {
 }
 
 /// A `width`×`height` rectangle centered within `area` (clamped to fit).
-fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
+pub fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
     let width = width.min(area.width);
     let height = height.min(area.height);
     Rect {
@@ -1856,7 +1856,7 @@ fn build_panel_lines(
 }
 
 /// Strips the module path (and generic args) from a type name: `a::b::Foo<X>` → `Foo`.
-fn short_type_name(name: &str) -> &str {
+pub fn short_type_name(name: &str) -> &str {
     let head = name.split('<').next().unwrap_or(name);
     head.rsplit("::").next().unwrap_or(head)
 }
@@ -1920,7 +1920,7 @@ fn link_line(prefix: &str, id: ActorId, snapshot: &Snapshot) -> Line<'static> {
     }
 }
 
-fn mailbox_bar(len: usize, capacity: usize) -> (String, Style) {
+pub fn mailbox_bar(len: usize, capacity: usize) -> (String, Style) {
     let ratio = if capacity == 0 {
         0.0
     } else {
@@ -1935,7 +1935,7 @@ fn mailbox_bar(len: usize, capacity: usize) -> (String, Style) {
     )
 }
 
-fn fmt_uptime(d: Duration) -> String {
+pub fn fmt_uptime(d: Duration) -> String {
     let secs = d.as_secs();
     format!(
         "{:02}:{:02}:{:02}",

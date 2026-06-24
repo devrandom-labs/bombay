@@ -31,5 +31,15 @@ serde = { version = "1.0", features = ["derive"] }
 # Only used by `--demo`, to host the example actor system in-process on a background runtime.
 tokio = { workspace = true, features = ["rt-multi-thread", "time", "sync"] }
 
+[features]
+testing = []
+
+[dev-dependencies]
+kameo_console = { path = ".", features = ["testing"] }
+cucumber = { workspace = true }
+proptest = { workspace = true }
+rstest = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync", "net", "io-util"] }
+
 [lints]
 workspace = true
