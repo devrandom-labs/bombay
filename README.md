@@ -26,6 +26,7 @@ The kameo source (`src/ actors/ console/ macros/` + examples/benches/tests) now 
 Distilled, AI-referenceable knowledge lives under [`docs/`](docs/). **Read the relevant doc before working a card:**
 
 - [`docs/zenoh/capabilities.md`](docs/zenoh/capabilities.md) — Zenoh capability matrix (core/ext/pico), stability gates, and the per-card "gap → nexus/bombay coverage" flags. Read before any card touching Zenoh.
+- [`docs/testing/`](docs/testing/) — the **card #74 test-coverage spec** for the surviving kameo core, captured as executable `.feature` scenarios (spec-only, no wiring yet): [`README.md`](docs/testing/README.md) (Gherkin/`cucumber-rs` methodology + gap report), [`invariants.md`](docs/testing/invariants.md) (every behavioural invariant, grounded in `file:line`), [`properties.md`](docs/testing/properties.md) (the Phase-2 `@property`/`@model` law catalog), and [`coverage-audit.md`](docs/testing/coverage-audit.md) (input-class completeness audit + the gaps it closed). Scenarios live under [`tests/features/`](tests/features/) tagged `@sequence`/`@lifecycle`/`@boundary`/`@linearizability`.
 
 The work is GitHub-project-cards-driven with TDD; see [`CLAUDE.md`](CLAUDE.md) for the working method, milestones, and engineering rules.
 
