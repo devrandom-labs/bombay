@@ -6,10 +6,9 @@
 //! `nix flake check` runs `cargoNextest` across the whole workspace, the runner
 //! must be a STANDARD libtest test so nextest can enumerate it as one function.
 //!
-//! Task 5 (card #76): wires `braille`, `fade_toward_bg`, `color_rgb`,
-//! `centered_rect`, `backpressure_style`, and `mailbox_bar` scenario outlines.
-//! Task 7 (card #76): wires `sparkline_line` scenarios.
-//! `filter_run_and_exit` now covers all named Scenario Outlines and sparkline_line.
+//! Task 8 (card #76): wires `detect_deadlocks` example scenarios; tui.feature
+//! is now fully wired — the name-prefix filter is removed and `fail_on_skipped`
+//! ensures every scenario is covered with no silent gaps.
 
 mod steps;
 
@@ -21,31 +20,12 @@ async fn tui_features() {
     // `with_default_cli` stops cucumber from parsing the process argv. Without
     // it, cucumber's clap `Cli` aborts on the libtest flags nextest injects
     // (`--list`, `--exact`, `--format terse`) with exit code 2.
+    //
+    // tui.feature is fully wired — run the whole file, failing on any skipped
+    // or undefined scenario so false-greens cannot sneak in.
     TuiWorld::cucumber()
         .fail_on_skipped()
         .with_default_cli()
-        .filter_run_and_exit("../tests/features/console/tui.feature", |_, _, scenario| {
-            [
-                "fmt_short",
-                "fmt_ago",
-                "fmt_uptime",
-                "short_type_name",
-                "spark_height",
-                "braille",
-                "fade_toward_bg",
-                "color_rgb",
-                "centered_rect",
-                "backpressure_style",
-                "mailbox_bar",
-                "rate_context",
-                "actor_rate",
-                "severity",
-                "compare",
-                "sort_actors",
-                "sparkline_line",
-            ]
-            .iter()
-            .any(|p| scenario.name.starts_with(p))
-        })
+        .filter_run_and_exit("../tests/features/console/tui.feature", |_, _, _| true)
         .await;
 }

@@ -4,7 +4,7 @@ use std::time::{Duration, SystemTime};
 use cucumber::{World, given, then, when};
 use kameo_console::testing::{
     ActorCounters, ActorId, ActorSnapshot, ActorStatus, HandlerActivity, Links, MailboxKind,
-    MailboxStats, RefCounts, Snapshot, SortCol, Totals,
+    MailboxStats, RefCounts, Snapshot, SortCol, Totals, WaitEdge, WaitKind,
 };
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
@@ -33,6 +33,8 @@ pub struct TuiWorld {
     // sparkline_line scenarios
     last_line: Option<Line<'static>>,
     sparkline_samples: Vec<u64>,
+    // detect_deadlocks scenarios
+    cycles: Vec<Vec<ActorId>>,
 }
 
 // ---------------------------------------------------------------------------
@@ -562,6 +564,169 @@ async fn then_remaining_cells_idle_color(world: &mut TuiWorld) {
             span.style.fg
         );
     }
+}
+
+// ---------------------------------------------------------------------------
+// detect_deadlocks
+// ---------------------------------------------------------------------------
+
+fn waiting(mut a: ActorSnapshot, target: u64) -> ActorSnapshot {
+    a.waiting_on = Some(WaitEdge { target: ActorId(target), kind: WaitKind::Ask, elapsed: Duration::ZERO });
+    a
+}
+
+#[given(regex = r"^a snapshot where no actor has a waiting_on edge$")]
+async fn given_no_waiting_on(world: &mut TuiWorld) {
+    let snap = make_snapshot(vec![make_actor(1), make_actor(2), make_actor(3)]);
+    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+}
+
+#[given(regex = r"^actors A→B→C where C waits on nothing$")]
+async fn given_chain_a_b_c(world: &mut TuiWorld) {
+    let snap = make_snapshot(vec![
+        waiting(make_actor(1), 2),
+        waiting(make_actor(2), 3),
+        make_actor(3),
+    ]);
+    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+}
+
+#[given(regex = r"^actor A whose waiting_on target is A$")]
+async fn given_self_cycle(world: &mut TuiWorld) {
+    let snap = make_snapshot(vec![waiting(make_actor(1), 1)]);
+    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+}
+
+#[given(regex = r"^actors A→B and B→A$")]
+async fn given_two_cycle(world: &mut TuiWorld) {
+    let snap = make_snapshot(vec![waiting(make_actor(1), 2), waiting(make_actor(2), 1)]);
+    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+}
+
+#[given(regex = r"^actors A→B, B→C and C→A$")]
+async fn given_three_cycle(world: &mut TuiWorld) {
+    let snap = make_snapshot(vec![
+        waiting(make_actor(1), 2),
+        waiting(make_actor(2), 3),
+        waiting(make_actor(3), 1),
+    ]);
+    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+}
+
+#[given(regex = r"^a 3-actor cycle among ids 5, 2 and 8 in wait order 5→2→8→5$")]
+async fn given_normalize_cycle(world: &mut TuiWorld) {
+    let snap = make_snapshot(vec![
+        waiting(make_actor(5), 2),
+        waiting(make_actor(2), 8),
+        waiting(make_actor(8), 5),
+    ]);
+    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+}
+
+#[given(regex = r"^a cycle A↔B and a separate cycle C↔D in the same snapshot$")]
+async fn given_two_independent_cycles(world: &mut TuiWorld) {
+    let snap = make_snapshot(vec![
+        waiting(make_actor(1), 2),
+        waiting(make_actor(2), 1),
+        waiting(make_actor(3), 4),
+        waiting(make_actor(4), 3),
+    ]);
+    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+}
+
+#[given(regex = r"^actor A waiting on a target id that no actor in the snapshot has$")]
+async fn given_dangling_target(world: &mut TuiWorld) {
+    let snap = make_snapshot(vec![waiting(make_actor(1), 99)]);
+    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+}
+
+#[when(regex = r"^detect_deadlocks runs$")]
+async fn when_detect_deadlocks_runs(_world: &mut TuiWorld) {
+    // Given steps already ran detect_deadlocks and stored results in world.cycles.
+}
+
+#[then(regex = r"^it returns zero cycles$")]
+async fn then_zero_cycles(world: &mut TuiWorld) {
+    assert!(world.cycles.is_empty(), "expected zero cycles, got {:?}", world.cycles);
+}
+
+#[then(regex = r"^it returns zero cycles and does not panic$")]
+async fn then_zero_cycles_no_panic(world: &mut TuiWorld) {
+    assert!(world.cycles.is_empty(), "expected zero cycles, got {:?}", world.cycles);
+}
+
+#[then(regex = r"^it returns exactly one cycle containing only A$")]
+async fn then_one_cycle_only_a(world: &mut TuiWorld) {
+    assert_eq!(
+        world.cycles,
+        vec![vec![ActorId(1)]],
+        "expected exactly one cycle containing only A (id 1), got {:?}",
+        world.cycles
+    );
+}
+
+#[then(regex = r"^it returns exactly one cycle$")]
+async fn then_exactly_one_cycle(world: &mut TuiWorld) {
+    assert_eq!(world.cycles.len(), 1, "expected exactly one cycle, got {}: {:?}", world.cycles.len(), world.cycles);
+}
+
+#[then(regex = r"^it returns exactly two cycles$")]
+async fn then_exactly_two_cycles(world: &mut TuiWorld) {
+    assert_eq!(world.cycles.len(), 2, "expected exactly two cycles, got {}: {:?}", world.cycles.len(), world.cycles);
+}
+
+#[then(regex = r"^the cycle contains exactly A and B$")]
+async fn then_cycle_contains_a_and_b(world: &mut TuiWorld) {
+    let mut members: Vec<ActorId> = world.cycles[0].clone();
+    members.sort_by_key(|id| id.0);
+    assert_eq!(
+        members,
+        vec![ActorId(1), ActorId(2)],
+        "expected cycle members {{A=1, B=2}}, got {:?}",
+        members
+    );
+}
+
+#[then(regex = r"^the cycle contains exactly A, B and C$")]
+async fn then_cycle_contains_a_b_c(world: &mut TuiWorld) {
+    let mut members: Vec<ActorId> = world.cycles[0].clone();
+    members.sort_by_key(|id| id.0);
+    assert_eq!(
+        members,
+        vec![ActorId(1), ActorId(2), ActorId(3)],
+        "expected cycle members {{A=1, B=2, C=3}}, got {:?}",
+        members
+    );
+}
+
+#[then(regex = r"^the returned cycle begins with id (\d+)$")]
+async fn then_cycle_begins_with_id(world: &mut TuiWorld, id: u64) {
+    assert_eq!(
+        world.cycles[0][0],
+        ActorId(id),
+        "expected cycle to begin with id {id}, got {:?}",
+        world.cycles[0][0]
+    );
+}
+
+#[then(regex = r"^cycles are ordered by their first \(lowest\) id$")]
+async fn then_cycles_ordered_by_first_id(world: &mut TuiWorld) {
+    let first_ids: Vec<u64> = world.cycles.iter().map(|c| c[0].0).collect();
+    let mut sorted = first_ids.clone();
+    sorted.sort_unstable();
+    assert_eq!(first_ids, sorted, "cycles are not ordered by their first id: {:?}", first_ids);
+}
+
+#[then(regex = r"^neither cycle shares a member with the other$")]
+async fn then_cycles_disjoint(world: &mut TuiWorld) {
+    let set_a: std::collections::HashSet<u64> = world.cycles[0].iter().map(|id| id.0).collect();
+    let set_b: std::collections::HashSet<u64> = world.cycles[1].iter().map(|id| id.0).collect();
+    let intersection: std::collections::HashSet<u64> = set_a.intersection(&set_b).copied().collect();
+    assert!(
+        intersection.is_empty(),
+        "cycles share members: {:?}; cycle0={:?} cycle1={:?}",
+        intersection, world.cycles[0], world.cycles[1]
+    );
 }
 
 // ---------------------------------------------------------------------------
