@@ -168,6 +168,10 @@ required-features = ["remote"]
 name = "prometheus_metrics"
 required-features = ["metrics"]
 
+[[test]]
+name = "console_wire_bdd"
+required-features = ["testing"]
+
 [[bench]]
 name = "overhead"
 harness = false
