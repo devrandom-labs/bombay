@@ -107,6 +107,18 @@ struct Poller {
     snapshot: Arc<Mutex<Option<Snapshot>>>,
 }
 
+/// Test-only hook: build a real `Poller` over a caller-supplied stream + slot and run exactly
+/// one genuine `poll()`. Exercises the production request/reply/framing/publish path without
+/// exposing the private `Poller`/`connect`/`poll` API in normal builds (CLAUDE.md rule 4).
+#[cfg(any(test, feature = "testing"))]
+pub fn poll_once_over(
+    stream: TcpStream,
+    slot: Arc<Mutex<Option<Snapshot>>>,
+) -> io::Result<()> {
+    let mut poller = Poller { stream, snapshot: slot };
+    poller.poll()
+}
+
 impl Poller {
     fn connect(
         addr: &SocketAddr,

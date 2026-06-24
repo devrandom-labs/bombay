@@ -42,6 +42,9 @@ rstest = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync", "net", "io-util"] }
 
 [[test]]
+name = "poller_bdd"
+
+[[test]]
 name = "tui_bdd"
 
 [[test]]
