@@ -1,16 +1,15 @@
-//! Cucumber harness for the `kameo_console` TUI helpers' `@property` laws.
+//! Cucumber harness for the `kameo_console` TUI helpers' laws.
 //!
 //! Mirrors `tui_bdd.rs` (a STANDARD libtest test, no `harness = false`, so
 //! `cargo nextest --list` can enumerate it) but points at the laws file
-//! `tui.properties.feature` and wires the proptest-backed `@property`
-//! scenarios. The single `@model` scenario (detect_deadlocks ≡ a reference
-//! cycle finder) is Task 10 — excluded here by tag so it is filtered out (not
-//! counted as skipped) and `fail_on_skipped` stays green.
+//! `tui.properties.feature`. This runner wires the WHOLE file: all twelve
+//! proptest-backed `@property` scenarios PLUS the `@model` scenario
+//! (detect_deadlocks ≡ an independent successor-chase cycle finder, Task 10).
 //!
-//! gherkin 0.16 stores tags WITHOUT the leading `@` (parser.rs:470 consumes the
-//! `@` literal), so the `@model` tag is the string `"model"`. The closure's 3rd
-//! arg is the `gherkin::Scenario`, whose `.tags: Vec<String>` carries the
-//! scenario's tags (feature-level tags inherited too) — match on `"model"`.
+//! The tag filter is gone — the run predicate is `|_, _, _| true`, so every
+//! scenario executes and `fail_on_skipped` turns any unwired line into a hard
+//! failure (false-green elimination). Step definitions live in
+//! `steps/tui_props.rs`.
 
 mod steps;
 
@@ -24,7 +23,7 @@ async fn tui_property_laws() {
         .with_default_cli()
         .filter_run_and_exit(
             "../tests/features/console/tui.properties.feature",
-            |_, _, s| !s.tags.iter().any(|t| t == "model"),
+            |_, _, _| true,
         )
         .await;
 }

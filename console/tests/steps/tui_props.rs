@@ -12,14 +12,15 @@
 //! hit); assertions encode each `# ORACLE:` predicate, plus the explicit
 //! boundary values as direct (non-proptest) checks where practical.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use cucumber::{World, given, then, when};
 use kameo_console::testing::{
     ActorCounters, ActorId, ActorSnapshot, ActorStatus, Links, MailboxKind, MailboxStats,
-    RefCounts, actor_rate, backpressure_style, braille, centered_rect, color_rgb, fmt_ago,
-    fmt_short, fmt_uptime, mailbox_bar, short_type_name, spark_height, sparkline_line,
+    RefCounts, Snapshot, Totals, WaitEdge, WaitKind, actor_rate, backpressure_style, braille,
+    centered_rect, color_rgb, detect_deadlocks, fmt_ago, fmt_short, fmt_uptime, mailbox_bar,
+    short_type_name, spark_height, sparkline_line,
 };
 use proptest::prelude::*;
 use ratatui::layout::Rect;
@@ -709,4 +710,142 @@ fn sparkline_left_pad(_w: &mut TuiPropsWorld) {
     for span in &line.spans {
         assert_eq!(span.content.to_string(), braille(1, 1).to_string());
     }
+}
+
+// ---------------------------------------------------------------------------
+// @model — detect_deadlocks ≡ reference cycle finder (tui.rs:1124-1171)
+// ---------------------------------------------------------------------------
+
+/// Reference cycle finder for a functional graph (≤1 successor/node). Mirrors the SUT's
+/// domain (tui.rs:1124-1159): follow each node's single successor; a revisited node on the
+/// walk forms a cycle. Normalize each cycle to start at its min id; sort cycles by first id.
+/// INDEPENDENT reimplementation — does NOT call `detect_deadlocks`.
+fn cycles_oracle(edges: &HashMap<u64, u64>) -> Vec<Vec<u64>> {
+    let mut in_cycle: HashSet<u64> = HashSet::new();
+    let mut cycles: Vec<Vec<u64>> = Vec::new();
+    for &start in edges.keys() {
+        if in_cycle.contains(&start) {
+            continue;
+        }
+        let mut path = Vec::new();
+        let mut pos: HashMap<u64, usize> = HashMap::new();
+        let mut cur = start;
+        loop {
+            if let Some(&i) = pos.get(&cur) {
+                let cyc = path[i..].to_vec();
+                in_cycle.extend(cyc.iter().copied());
+                cycles.push(cyc);
+                break;
+            }
+            if in_cycle.contains(&cur) {
+                break;
+            }
+            match edges.get(&cur) {
+                Some(&n) => {
+                    pos.insert(cur, path.len());
+                    path.push(cur);
+                    cur = n;
+                }
+                None => break,
+            }
+        }
+    }
+    for c in &mut cycles {
+        if let Some(p) = (0..c.len()).min_by_key(|&i| c[i]) {
+            c.rotate_left(p);
+        }
+    }
+    cycles.sort_by_key(|c| c.first().copied());
+    cycles
+}
+
+/// Minimal deadlock fixtures (the file's other `make_actor` is 2-arg for rate laws; the
+/// deadlock graph only needs id + an optional `waiting_on` edge). Mirrors `tui.rs` steps.
+fn make_actor_dl(id: u64) -> ActorSnapshot {
+    ActorSnapshot {
+        id: ActorId(id),
+        name: format!("Actor{id}"),
+        status: ActorStatus::Running,
+        handling: None,
+        waiting_on: None,
+        strategy: None,
+        spawned_at: std::time::SystemTime::UNIX_EPOCH,
+        mailbox: MailboxStats {
+            kind: MailboxKind::Unbounded,
+            len: 0,
+            capacity: None,
+        },
+        counters: ActorCounters::default(),
+        message_types: Vec::new(),
+        refs: RefCounts { strong: 1, weak: 0 },
+        links: Links::default(),
+        supervision: None,
+    }
+}
+
+fn waiting(mut a: ActorSnapshot, target: u64) -> ActorSnapshot {
+    a.waiting_on = Some(WaitEdge {
+        target: ActorId(target),
+        kind: WaitKind::Ask,
+        elapsed: Duration::ZERO,
+    });
+    a
+}
+
+fn make_snapshot_dl(actors: Vec<ActorSnapshot>) -> Snapshot {
+    Snapshot {
+        seq: 0,
+        captured_at: std::time::SystemTime::UNIX_EPOCH,
+        uptime: Duration::ZERO,
+        actors,
+        totals: Totals::default(),
+    }
+}
+
+#[given(
+    regex = r"^any wait-for graph where each actor has at most one waiting_on edge \(functional graph\)$"
+)]
+fn g_model_graph(_w: &mut TuiPropsWorld) {}
+
+#[when(regex = r"^detect_deadlocks runs on a snapshot encoding that graph$")]
+fn w_model_run(_w: &mut TuiPropsWorld) {}
+
+#[then(regex = r"^the returned cycles are exactly the cycles of the graph, each reported once$")]
+fn model_cycles_exact(_w: &mut TuiPropsWorld) {
+    // ORACLE: an INDEPENDENT successor-chase cycle finder (`cycles_oracle`); the SUT
+    // (`detect_deadlocks`) must agree for every valid functional graph. The And lines
+    // (rotation to min id, ordering by first id, dangling-target ends a chain) are
+    // SUBSUMED by this set-equality — the oracle already encodes all three.
+    proptest!(|(edges in proptest::collection::hash_map(
+            0u64..8,
+            prop_oneof![Just(None), (0u64..8).prop_map(Some), (8u64..12).prop_map(Some)],
+            0..8))| {
+        let actors: Vec<_> = edges.keys().map(|&id| match edges[&id] {
+            Some(t) => waiting(make_actor_dl(id), t),
+            None => make_actor_dl(id),
+        }).collect();
+        let sut: Vec<Vec<u64>> = detect_deadlocks(&make_snapshot_dl(actors))
+            .into_iter().map(|c| c.into_iter().map(|x| x.0).collect()).collect();
+        // The oracle uses only edges whose target is a REAL node (a dangling target
+        // ends a chain → contributes no cycle, matching the SUT's `next.get` miss).
+        let real: HashMap<u64, u64> = edges.iter()
+            .filter_map(|(&k, &v)| v.filter(|t| edges.contains_key(t)).map(|t| (k, t)))
+            .collect();
+        prop_assert_eq!(sut, cycles_oracle(&real));
+    });
+}
+
+#[then(regex = r"^each cycle is rotated to begin at its lowest actor id$")]
+fn model_rotated(_w: &mut TuiPropsWorld) {
+    // SUBSUMED by `model_cycles_exact` (the oracle normalizes rotation).
+}
+
+#[then(regex = r"^the cycle list is ordered by each cycle's first \(lowest\) id$")]
+fn model_ordered(_w: &mut TuiPropsWorld) {
+    // SUBSUMED by `model_cycles_exact` (the oracle sorts by first id).
+}
+
+#[then(regex = r"^a wait edge to a non-existent target ends a chain and contributes no cycle$")]
+fn model_dangling(_w: &mut TuiPropsWorld) {
+    // SUBSUMED by `model_cycles_exact` (the oracle's `real` map drops dangling edges).
 }
