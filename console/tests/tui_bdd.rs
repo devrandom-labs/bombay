@@ -8,7 +8,8 @@
 //!
 //! Task 5 (card #76): wires `braille`, `fade_toward_bg`, `color_rgb`,
 //! `centered_rect`, `backpressure_style`, and `mailbox_bar` scenario outlines.
-//! `filter_run_and_exit` now covers all eleven named Scenario Outlines.
+//! Task 7 (card #76): wires `sparkline_line` scenarios.
+//! `filter_run_and_exit` now covers all named Scenario Outlines and sparkline_line.
 
 mod steps;
 
@@ -41,6 +42,7 @@ async fn tui_features() {
                 "severity",
                 "compare",
                 "sort_actors",
+                "sparkline_line",
             ]
             .iter()
             .any(|p| scenario.name.starts_with(p))

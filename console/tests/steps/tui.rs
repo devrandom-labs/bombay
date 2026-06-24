@@ -8,6 +8,7 @@ use kameo_console::testing::{
 };
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
+use ratatui::text::Line;
 
 #[derive(Debug, Default, World)]
 pub struct TuiWorld {
@@ -29,6 +30,9 @@ pub struct TuiWorld {
     actor: Option<ActorSnapshot>,
     two: Option<(ActorSnapshot, ActorSnapshot)>,
     ordered_first_id: u64,
+    // sparkline_line scenarios
+    last_line: Option<Line<'static>>,
+    sparkline_samples: Vec<u64>,
 }
 
 // ---------------------------------------------------------------------------
@@ -417,6 +421,147 @@ async fn then_text_is(world: &mut TuiWorld, expected: String) {
 async fn then_style_matches_backpressure(world: &mut TuiWorld) {
     let expected = kameo_console::testing::backpressure_style(world.mb_len, world.mb_cap);
     assert_eq!(world.last_style, expected);
+}
+
+// ---------------------------------------------------------------------------
+// sparkline_line scenarios
+// ---------------------------------------------------------------------------
+
+/// Oracle: same bit tables as braille() in tui.rs:1581-1582.
+fn braille_oracle(cl: u8, cr: u8) -> char {
+    const LEFT: [u8; 5] = [0x00, 0x40, 0x44, 0x46, 0x47];
+    const RIGHT: [u8; 5] = [0x00, 0x80, 0xA0, 0xB0, 0xB8];
+    char::from_u32(0x2800 + u32::from(LEFT[cl as usize] | RIGHT[cr as usize])).unwrap()
+}
+
+/// Oracle: same scaling as spark_height() in tui.rs:1570-1575.
+fn spark_height_oracle(value: u64, max: u64) -> u8 {
+    if max == 0 {
+        return 1;
+    }
+    ((value as f64 / max as f64 * 4.0).round() as u8).clamp(1, 4)
+}
+
+// Scenario 1: no samples → full idle baseline
+
+#[when(regex = r"^sparkline_line is called with no samples, max (\d+) and width (\d+)$")]
+async fn when_sparkline_no_samples(world: &mut TuiWorld, max: u64, width: usize) {
+    world.last_line = Some(kameo_console::testing::sparkline_line(&[], max, width));
+}
+
+#[then(regex = r"^the line has exactly (\d+) braille cells$")]
+async fn then_line_has_n_cells(world: &mut TuiWorld, n: usize) {
+    let line = world.last_line.as_ref().expect("last_line must be set");
+    assert_eq!(line.spans.len(), n, "expected {n} spans (cells), got {}", line.spans.len());
+}
+
+#[then(regex = r"^every cell shows the idle baseline \(bottom dot only\)$")]
+async fn then_every_cell_idle_baseline(world: &mut TuiWorld) {
+    let line = world.last_line.as_ref().expect("last_line must be set");
+    // max 0 → spark_height returns 1 for every column → braille(1,1)
+    let expected_glyph = braille_oracle(1, 1).to_string();
+    for (i, span) in line.spans.iter().enumerate() {
+        assert_eq!(
+            span.content.as_ref(),
+            expected_glyph.as_str(),
+            "cell {i}: expected idle baseline glyph {expected_glyph:?}, got {:?}",
+            span.content
+        );
+    }
+}
+
+// Scenario 2: right-aligns and scrolls
+
+#[given(regex = r"^more than 18 samples \(oldest first\) and width 9$")]
+async fn given_more_than_18_samples(world: &mut TuiWorld) {
+    // 20 samples so the oldest 2 are scrolled off; values increase so the
+    // newest (index 19, value 20) is the busiest.
+    world.sparkline_samples = (1u64..=20).collect();
+}
+
+#[when(regex = r"^sparkline_line is called with the busiest sample as max$")]
+async fn when_sparkline_called_with_busiest_max(world: &mut TuiWorld) {
+    let samples = world.sparkline_samples.clone();
+    let max = *samples.iter().max().expect("non-empty samples");
+    world.last_line = Some(kameo_console::testing::sparkline_line(&samples, max, 9));
+}
+
+#[then(regex = r"^only the most recent 18 samples are shown \(2 per cell\)$")]
+async fn then_most_recent_18_shown(world: &mut TuiWorld) {
+    let line = world.last_line.as_ref().expect("last_line must be set");
+    // width 9 → 9 cells (spans), each covering 2 samples
+    assert_eq!(line.spans.len(), 9, "expected 9 cells for width 9");
+}
+
+#[then(regex = r"^the newest sample occupies the rightmost cell$")]
+async fn then_newest_in_rightmost_cell(world: &mut TuiWorld) {
+    let samples = &world.sparkline_samples;
+    let line = world.last_line.as_ref().expect("last_line must be set");
+    let max = *samples.iter().max().expect("non-empty samples");
+    // The last 18 samples are used (indices 2..20 for a 20-element vec).
+    // Rightmost cell = last pair of the last 18 = samples[18] and samples[19].
+    let n = samples.len();
+    let cols = 18usize; // width * 2
+    let window_start = n.saturating_sub(cols);
+    let right_left = samples[window_start + cols - 2];
+    let right_right = samples[window_start + cols - 1];
+    let expected_glyph =
+        braille_oracle(spark_height_oracle(right_left, max), spark_height_oracle(right_right, max))
+            .to_string();
+    let rightmost = line.spans.last().expect("at least one span");
+    assert_eq!(
+        rightmost.content.as_ref(),
+        expected_glyph.as_str(),
+        "rightmost cell glyph mismatch: expected {expected_glyph:?} (samples {right_left},{right_right} max {max}), got {:?}",
+        rightmost.content
+    );
+}
+
+// Scenario 3: active / idle colors
+
+#[given(regex = r"^a width-9 sparkline where only the most recent sample is non-zero$")]
+async fn given_width9_only_recent_nonzero(world: &mut TuiWorld) {
+    // 17 zeros + 1 non-zero at the end; stored for use in When.
+    let mut samples = vec![0u64; 17];
+    samples.push(10);
+    world.sparkline_samples = samples;
+}
+
+#[when(regex = r"^the line is built$")]
+async fn when_line_is_built(world: &mut TuiWorld) {
+    let samples = world.sparkline_samples.clone();
+    let max = *samples.iter().max().expect("non-empty samples");
+    world.last_line = Some(kameo_console::testing::sparkline_line(&samples, max, 9));
+}
+
+#[then(regex = r"^the rightmost cell is drawn in the active \(cyan\) color$")]
+async fn then_rightmost_active_color(world: &mut TuiWorld) {
+    // SPARK_ACTIVE = Color::Rgb(110, 180, 200) (tui.rs:54)
+    let active = Color::Rgb(110, 180, 200);
+    let line = world.last_line.as_ref().expect("last_line must be set");
+    let rightmost = line.spans.last().expect("at least one span");
+    assert_eq!(
+        rightmost.style.fg,
+        Some(active),
+        "rightmost span fg expected active color Rgb(110,180,200), got {:?}",
+        rightmost.style.fg
+    );
+}
+
+#[then(regex = r"^the remaining cells are drawn in the idle \(grey\) color$")]
+async fn then_remaining_cells_idle_color(world: &mut TuiWorld) {
+    // SPARK_IDLE = Color::Rgb(70, 70, 80) (tui.rs:53)
+    let idle = Color::Rgb(70, 70, 80);
+    let line = world.last_line.as_ref().expect("last_line must be set");
+    let all_but_last = line.spans.len() - 1;
+    for (i, span) in line.spans.iter().take(all_but_last).enumerate() {
+        assert_eq!(
+            span.style.fg,
+            Some(idle),
+            "span {i} fg expected idle color Rgb(70,70,80), got {:?}",
+            span.style.fg
+        );
+    }
 }
 
 // ---------------------------------------------------------------------------
