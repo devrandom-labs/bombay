@@ -18,8 +18,8 @@ pub enum ConnectionState {
 #[cfg(any(test, feature = "testing"))]
 pub mod testing {
     pub use crate::poller::{
-        MAX_FRAME_BYTES, check_frame_len, decode_frame, poll_once_over,
-        poll_once_over_with_read_timeout,
+        BACKOFF, MAX_FRAME_BYTES, check_frame_len, connect_attempt, decode_frame, poll_loop_until_error,
+        poll_once_over, poll_once_over_with_read_timeout,
     };
     pub use crate::tui::{
         STUCK_THRESHOLD, SortCol, actor_rate, backpressure_style, braille, centered_rect,

@@ -1,6 +1,5 @@
 use std::{
     io::{self, Read, Write},
-    mem,
     net::{Shutdown, SocketAddr, TcpStream},
     sync::{
         Arc, Mutex,
@@ -17,6 +16,10 @@ use crate::ConnectionState;
 /// Caps a snapshot frame so a misbehaving or wrong-protocol peer can't make us allocate
 /// unbounded memory.
 pub const MAX_FRAME_BYTES: u32 = 64 * 1024 * 1024;
+
+/// Fixed backoff between failed connect attempts. Not exponential, not jittered — a flat
+/// 5-second wait before `connect_loop` retries.
+pub const BACKOFF: Duration = Duration::from_secs(5);
 
 /// The frame-size gate: accept iff `len <= MAX_FRAME_BYTES`, else InvalidData. Mirrors the
 /// inline check at the original poll() (the gate is `len > MAX_FRAME_BYTES`).
@@ -59,19 +62,37 @@ fn connect_loop(
     connection_state: &Arc<Mutex<ConnectionState>>,
 ) -> Poller {
     loop {
-        *connection_state.lock().unwrap() = ConnectionState::Connecting;
-        match Poller::connect(addr, connection_timeout, Arc::clone(snapshot)) {
-            Ok(poller) => {
-                *connection_state.lock().unwrap() = ConnectionState::Connected;
-                return poller;
-            }
-            Err(err) => {
-                *connection_state.lock().unwrap() = ConnectionState::Disconnected {
-                    error: format!("{err}"),
-                    since: Instant::now(),
-                };
-                thread::sleep(Duration::from_secs(5));
-            }
+        if let Some(poller) =
+            connect_attempt(addr, connection_timeout, snapshot, connection_state)
+        {
+            return poller;
+        }
+        thread::sleep(BACKOFF);
+    }
+}
+
+/// One connect attempt: marks `Connecting`, then on success marks `Connected` and returns the
+/// `Poller`, or on failure marks `Disconnected { error, since }` and returns `None`. The backoff
+/// sleep and retry loop stay in `connect_loop`, so this is the single, testable iteration of the
+/// connect cycle (state writes and error formatting are byte-identical to the inline loop body).
+pub fn connect_attempt(
+    addr: &SocketAddr,
+    connection_timeout: Duration,
+    snapshot: &Arc<Mutex<Option<Snapshot>>>,
+    connection_state: &Arc<Mutex<ConnectionState>>,
+) -> Option<Poller> {
+    *connection_state.lock().unwrap() = ConnectionState::Connecting;
+    match Poller::connect(addr, connection_timeout, Arc::clone(snapshot)) {
+        Ok(poller) => {
+            *connection_state.lock().unwrap() = ConnectionState::Connected;
+            Some(poller)
+        }
+        Err(err) => {
+            *connection_state.lock().unwrap() = ConnectionState::Disconnected {
+                error: format!("{err}"),
+                since: Instant::now(),
+            };
+            None
         }
     }
 }
@@ -90,19 +111,52 @@ fn poll_loop(
                 thread::sleep(sleep_duration);
             }
             Err(err) => {
-                *connection_state.lock().unwrap() = ConnectionState::Disconnected {
-                    error: format!("{err}"),
-                    since: Instant::now(),
-                };
-                let _ = poller.disconnect();
-                mem::drop(poller);
+                fail_poll(&mut poller, connection_state, &err);
                 return;
             }
         }
     }
 }
 
-struct Poller {
+/// The shared "a poll failed" reaction: record `Disconnected { error, since }`, shut the socket
+/// down, and (in the real loop) drop the poller. Used by both `poll_loop` and the bounded,
+/// testable `poll_loop_until_error`, so the disconnect behaviour stays identical between them.
+fn fail_poll(
+    poller: &mut Poller,
+    connection_state: &Arc<Mutex<ConnectionState>>,
+    err: &io::Error,
+) {
+    *connection_state.lock().unwrap() = ConnectionState::Disconnected {
+        error: format!("{err}"),
+        since: Instant::now(),
+    };
+    let _ = poller.disconnect();
+}
+
+/// Bounded, testable twin of `poll_loop`'s drive: poll until the FIRST error, then mark
+/// `Disconnected { error, since }`, disconnect, and RETURN the error (the outer `spawn_poller`
+/// loop would then reconnect). Behaviour matches `poll_loop` EXCEPT it omits the inter-poll
+/// `interval` sleep between successful polls (the sleep is pure pacing, not protocol), so tests
+/// don't have to wait on it; the state writes, error formatting, and disconnect are identical.
+#[cfg(any(test, feature = "testing"))]
+pub fn poll_loop_until_error(
+    poller: &mut Poller,
+    connection_state: &Arc<Mutex<ConnectionState>>,
+) -> io::Error {
+    loop {
+        if let Err(err) = poller.poll() {
+            fail_poll(poller, connection_state, &err);
+            return err;
+        }
+    }
+}
+
+/// The console's client-side TCP poller. Opaque: fields and the `connect`/`poll`/`disconnect`
+/// methods are private, so a normal build exposes no way to build or drive one — it is only
+/// produced via `connect_attempt` and driven by the `#[cfg]`-gated test hooks. It is `pub` only
+/// so those public signatures (`connect_attempt -> Option<Poller>`, `poll_loop_until_error(&mut
+/// Poller, …)`) type-check without leaking the internals.
+pub struct Poller {
     stream: TcpStream,
     snapshot: Arc<Mutex<Option<Snapshot>>>,
 }
