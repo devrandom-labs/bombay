@@ -88,6 +88,7 @@ include = ["/src"]
 default = ["macros", "tracing"]
 macros = ["dep:kameo_macros"]
 console = ["dep:rmp-serde", "tokio/net", "tokio/io-util"]
+testing = ["console"]
 remote = [
   "dep:const-fnv1a-hash",
   "dep:const-str",
@@ -132,6 +133,9 @@ opentelemetry = { version = "0.31", optional = true }
 tracing-opentelemetry = { version = "0.32", optional = true }
 
 [dev-dependencies]
+kameo = { path = ".", features = ["testing"] }
+cucumber = { workspace = true }
+proptest = { workspace = true }
 criterion = { version = "0.8", features = ["async_tokio"] }
 kameo_actors = { path = "actors" }
 libp2p = { version = "0.56.0", features = ["serde"] }
