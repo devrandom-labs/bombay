@@ -17,6 +17,7 @@ pub enum ConnectionState {
 /// Gated so normal builds never expose it (CLAUDE.md rule 4).
 #[cfg(any(test, feature = "testing"))]
 pub mod testing {
+    pub use crate::poller::{MAX_FRAME_BYTES, check_frame_len, decode_frame};
     pub use crate::tui::{
         STUCK_THRESHOLD, SortCol, actor_rate, backpressure_style, braille, centered_rect,
         color_rgb, compare, detect_deadlocks, fade_toward_bg, fmt_ago, fmt_short, fmt_uptime,

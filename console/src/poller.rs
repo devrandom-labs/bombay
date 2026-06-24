@@ -16,7 +16,26 @@ use crate::ConnectionState;
 
 /// Caps a snapshot frame so a misbehaving or wrong-protocol peer can't make us allocate
 /// unbounded memory.
-const MAX_FRAME_BYTES: u32 = 64 * 1024 * 1024;
+pub const MAX_FRAME_BYTES: u32 = 64 * 1024 * 1024;
+
+/// The frame-size gate: accept iff `len <= MAX_FRAME_BYTES`, else InvalidData. Mirrors the
+/// inline check at the original poll() (the gate is `len > MAX_FRAME_BYTES`).
+pub fn check_frame_len(len: u32) -> io::Result<()> {
+    if len > MAX_FRAME_BYTES {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("snapshot frame too large ({len} bytes)"),
+        ));
+    }
+    Ok(())
+}
+
+/// Decode a MessagePack payload into a Snapshot, mapping any rmp error to InvalidData.
+pub fn decode_frame(buf: &[u8]) -> io::Result<Snapshot> {
+    let Message::Snapshot(snapshot) =
+        rmp_serde::from_slice(buf).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+    Ok(snapshot)
+}
 
 pub fn spawn_poller(
     addr: SocketAddr,
@@ -110,19 +129,12 @@ impl Poller {
         let mut len = [0u8; 4];
         self.stream.read_exact(&mut len)?;
         let len = u32::from_be_bytes(len);
-        if len > MAX_FRAME_BYTES {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("snapshot frame too large ({len} bytes)"),
-            ));
-        }
+        check_frame_len(len)?;
 
         let mut buf = vec![0u8; len as usize];
         self.stream.read_exact(&mut buf)?;
 
-        let Message::Snapshot(snapshot) = rmp_serde::from_slice(&buf)
-            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
-        *self.snapshot.lock().unwrap() = Some(snapshot);
+        *self.snapshot.lock().unwrap() = Some(decode_frame(&buf)?);
 
         Ok(())
     }
