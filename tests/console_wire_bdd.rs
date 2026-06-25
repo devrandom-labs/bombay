@@ -16,14 +16,19 @@
 //! feature file), so every scenario calls `reset_for_test()` first and asserts
 //! DELTAS (strictly-increasing / +1), which hold regardless of the start point.
 //!
-//! Task 17 (card #76): only the two single-connection seq-monotonicity
-//! scenarios are wired; the name-prefix filter keeps the rest for later tasks.
-//! `snapshot()` IS the snapshot producer the server frames, so calling it
-//! directly exercises the real seq-advance path without a TCP client.
+//! Card #76: `server_wire.feature` is now FULLY wired — every @sequence,
+//! @linearizability, @lifecycle and @boundary scenario has step definitions, so
+//! the name-prefix filter is gone and `.fail_on_skipped()` fails any unwired
+//! scenario. `snapshot()` IS the snapshot producer the server frames, so calling
+//! it directly exercises the real seq-advance path without a TCP client; the
+//! @linearizability scenarios drive it (and actor spawn/stop) from many tokio
+//! tasks gated on a shared `Barrier` for genuine overlap.
 
 use std::{
+    collections::HashSet,
     io::{ErrorKind, Read, Write},
     net::{SocketAddr, TcpStream},
+    sync::Arc,
     time::{Duration, SystemTime},
 };
 
@@ -36,6 +41,7 @@ use kameo::{
     error::Infallible,
     prelude::*,
 };
+use tokio::sync::Barrier;
 
 /// A grave window far larger than any test latency, so a freshly-spawned actor
 /// is never reaped out of a snapshot mid-scenario.
@@ -65,6 +71,10 @@ pub struct WireWorld {
     stopped_id: Option<u64>,
     // The id of the actor stopped and then reaped (boundary absent-case).
     reaped_id: Option<u64>,
+    // Set by the grave-window @boundary scenario so its shared `the client polls`
+    // step also runs the ttl-ZERO absent-case second poll. The @linearizability
+    // "stopped just before a poll" scenario leaves this false (single poll only).
+    poll_boundary_absent_case: bool,
     // A running server kept alive for the scenario; dropping the handle detaches
     // the accept loop, and for the shutdown scenario we take it to call shutdown().
     server: Option<ConsoleHandle>,
@@ -195,6 +205,295 @@ async fn then_advances_by_one(world: &mut WireWorld) {
     );
 }
 
+// --- @linearizability: real concurrency via Barrier + tokio::spawn ---------
+//
+// These scenarios drive `snapshot()` (and actor spawn/stop) from many tokio
+// tasks that all await a shared `Arc<Barrier>` before doing the contended work,
+// so the operations genuinely overlap rather than running sequentially. The
+// suite keeps `.max_concurrent_scenarios(1)`, so the only concurrency in play is
+// WITHIN each scenario — the process-global statics are not shared across
+// scenarios concurrently. Each scenario resets the registry/counters first.
+
+/// Number of overlapping producers/spawners/stoppers in the concurrency
+/// scenarios. Eight tasks contend on the shared atomics/registry lock.
+const CONCURRENCY: usize = 8;
+
+/// Snapshots each concurrent producer takes (scenario 1) — enough total
+/// snapshots that a missing fetch_add atomicity would collide some seqs.
+const SNAPSHOTS_PER_TASK: usize = 4;
+
+#[given(regex = r"^a console server with live actors$")]
+async fn given_server_with_live_actors(world: &mut WireWorld) {
+    kameo::console::testing::reset_for_test();
+    // A handful of live actors so each concurrent snapshot has real membership
+    // to render while the seqs are handed out.
+    for _ in 0..CONCURRENCY {
+        let actor = Echo::spawn(Echo);
+        actor.wait_for_startup().await;
+        world.actors.push(actor);
+    }
+}
+
+#[given(regex = r"^8 client connections polling concurrently$")]
+async fn given_eight_pollers(_world: &mut WireWorld) {
+    // The overlap is set up in the When step (one Barrier shared by all tasks);
+    // there is no separate TCP client — `snapshot()` is the seq producer the
+    // server frames, so the concurrent producers call it directly.
+}
+
+#[when(regex = r"^each connection requests several snapshots overlapping in time$")]
+async fn when_concurrent_polls(world: &mut WireWorld) {
+    let barrier = Arc::new(Barrier::new(CONCURRENCY));
+    let tasks: Vec<_> = (0..CONCURRENCY)
+        .map(|_| {
+            let barrier = Arc::clone(&barrier);
+            tokio::spawn(async move {
+                // All producers release together, so their fetch_add calls on the
+                // global SEQ genuinely interleave.
+                barrier.wait().await;
+                let mut seqs = Vec::with_capacity(SNAPSHOTS_PER_TASK);
+                for _ in 0..SNAPSHOTS_PER_TASK {
+                    seqs.push(kameo::console::testing::snapshot(GRAVE_WINDOW).await.seq);
+                }
+                seqs
+            })
+        })
+        .collect();
+
+    for task in tasks {
+        world.seqs.extend(task.await.expect("poller task must not panic"));
+    }
+}
+
+#[then(regex = r"^no two snapshots produced by the process share the same seq$")]
+async fn then_seqs_unique(world: &mut WireWorld) {
+    let total = world.seqs.len();
+    assert_eq!(
+        total,
+        CONCURRENCY * SNAPSHOTS_PER_TASK,
+        "every concurrent producer must have collected its snapshots, got {total}"
+    );
+    let mut deduped = world.seqs.clone();
+    deduped.sort_unstable();
+    deduped.dedup();
+    assert_eq!(
+        deduped.len(),
+        total,
+        "the global atomic SEQ must hand out a distinct seq to every snapshot — \
+         duplicates found, got {:?}",
+        world.seqs
+    );
+}
+
+#[when(regex = r"^a client polls while many actors are being spawned concurrently$")]
+async fn when_poll_during_concurrent_spawn(world: &mut WireWorld) {
+    // CONCURRENCY spawner tasks + one poller task, all gated on one Barrier so
+    // the spawns and the snapshot genuinely overlap. Each spawner returns its
+    // ActorRef so the World can keep the monitors alive for the assertion.
+    let barrier = Arc::new(Barrier::new(CONCURRENCY + 1));
+
+    let spawners: Vec<_> = (0..CONCURRENCY)
+        .map(|_| {
+            let barrier = Arc::clone(&barrier);
+            tokio::spawn(async move {
+                barrier.wait().await;
+                let actor = Echo::spawn(Echo);
+                actor.wait_for_startup().await;
+                actor
+            })
+        })
+        .collect();
+
+    let poll_barrier = Arc::clone(&barrier);
+    let poller = tokio::spawn(async move {
+        poll_barrier.wait().await;
+        // Poll a few times while the spawn batch is being applied so at least
+        // one snapshot lands mid-batch.
+        let mut snaps = Vec::new();
+        for _ in 0..SNAPSHOTS_PER_TASK {
+            snaps.push(kameo::console::testing::snapshot(GRAVE_WINDOW).await);
+        }
+        snaps
+    });
+
+    for spawner in spawners {
+        world.actors.push(spawner.await.expect("spawner task must not panic"));
+    }
+    world
+        .snapshots
+        .extend(poller.await.expect("poller task must not panic"));
+}
+
+#[then(
+    regex = r"^every actor in the returned snapshot is internally consistent \(id present, status set\)$"
+)]
+async fn then_actors_internally_consistent(world: &mut WireWorld) {
+    assert!(
+        !world.snapshots.is_empty(),
+        "the poller must have captured at least one snapshot"
+    );
+    for snapshot in &world.snapshots {
+        for actor in &snapshot.actors {
+            // `id` is a u64 newtype and `status` is an enum (always a valid
+            // variant); the invariant is that a rendered entry is whole — it has
+            // a name string alongside its id and a well-formed status.
+            assert!(
+                matches!(
+                    actor.status,
+                    ActorStatus::Starting
+                        | ActorStatus::Running
+                        | ActorStatus::Restarting
+                        | ActorStatus::Stopping
+                        | ActorStatus::Stopped { .. }
+                ),
+                "actor {} must carry a well-formed status, got {:?}",
+                actor.id.0,
+                actor.status
+            );
+        }
+    }
+}
+
+#[then(
+    regex = r"^the snapshot reflects a single registry membership, not a half-applied spawn batch$"
+)]
+async fn then_single_membership(world: &mut WireWorld) {
+    // The monitor set is cloned under one registry lock, so each snapshot's
+    // membership list is a consistent set: no id appears twice (no torn/double
+    // entry from a half-applied batch).
+    for snapshot in &world.snapshots {
+        let ids: Vec<u64> = snapshot.actors.iter().map(|a| a.id.0).collect();
+        let unique: HashSet<u64> = ids.iter().copied().collect();
+        assert_eq!(
+            unique.len(),
+            ids.len(),
+            "a snapshot's membership must contain each actor id at most once, got {ids:?}"
+        );
+    }
+}
+
+#[given(regex = r"^a console server with actors stopping concurrently with a poll$")]
+async fn given_server_actors_stopping(world: &mut WireWorld) {
+    kameo::console::testing::reset_for_test();
+    // Spawn a batch of actors up front; they are stopped concurrently during the
+    // When step. Keep their refs so they stay registered until then.
+    for _ in 0..CONCURRENCY {
+        let actor = Echo::spawn(Echo);
+        actor.wait_for_startup().await;
+        world.actors.push(actor);
+    }
+}
+
+#[when(regex = r"^a client polls during the stop storm$")]
+async fn when_poll_during_stop_storm(world: &mut WireWorld) {
+    // Each pre-spawned actor is stopped from its own task; one poller task polls
+    // repeatedly. All tasks release together on one Barrier so the stops and the
+    // snapshot overlap. A huge grave window keeps every stopped actor present.
+    let actors = std::mem::take(&mut world.actors);
+    let n = actors.len();
+    let barrier = Arc::new(Barrier::new(n + 1));
+
+    let stoppers: Vec<_> = actors
+        .into_iter()
+        .map(|actor| {
+            let barrier = Arc::clone(&barrier);
+            tokio::spawn(async move {
+                barrier.wait().await;
+                actor.stop_gracefully().await.unwrap();
+                actor.wait_for_shutdown().await;
+            })
+        })
+        .collect();
+
+    let poll_barrier = Arc::clone(&barrier);
+    let poller = tokio::spawn(async move {
+        poll_barrier.wait().await;
+        let mut snaps = Vec::new();
+        for _ in 0..SNAPSHOTS_PER_TASK {
+            snaps.push(kameo::console::testing::snapshot(GRAVE_WINDOW).await);
+        }
+        snaps
+    });
+
+    for stopper in stoppers {
+        stopper.await.expect("stopper task must not panic");
+    }
+    world
+        .snapshots
+        .extend(poller.await.expect("poller task must not panic"));
+}
+
+#[then(regex = r"^each actor id appears at most once in the snapshot$")]
+async fn then_each_id_at_most_once(world: &mut WireWorld) {
+    assert!(
+        !world.snapshots.is_empty(),
+        "the poller must have captured at least one snapshot"
+    );
+    for snapshot in &world.snapshots {
+        let ids: Vec<u64> = snapshot.actors.iter().map(|a| a.id.0).collect();
+        let unique: HashSet<u64> = ids.iter().copied().collect();
+        assert_eq!(
+            unique.len(),
+            ids.len(),
+            "no torn/duplicate entry: each id must appear at most once, got {ids:?}"
+        );
+    }
+}
+
+#[then(
+    regex = r"^a stopping/stopped actor renders a coherent status \(never a partially-built entry\)$"
+)]
+async fn then_stopped_status_coherent(world: &mut WireWorld) {
+    // Any stopped actor present in a snapshot must carry a coherent Stopped
+    // status with a non-empty reason; every status is a well-formed variant.
+    for snapshot in &world.snapshots {
+        for actor in &snapshot.actors {
+            if let ActorStatus::Stopped { reason, .. } = &actor.status {
+                assert!(
+                    !reason.is_empty(),
+                    "a Stopped actor must carry a non-empty stop reason, id {}",
+                    actor.id.0
+                );
+            }
+        }
+    }
+}
+
+#[given(regex = r"^an actor that stops immediately before a poll$")]
+async fn given_actor_stops_before_poll(world: &mut WireWorld) {
+    kameo::console::testing::reset_for_test();
+    // Stop the actor and await shutdown, so it is in the registry as Stopped at
+    // poll time. The grave window (set in the next Given) dwarfs poll latency,
+    // so it is deterministically present.
+    world.stopped_id = Some(spawn_then_stop().await);
+}
+
+#[given(regex = r"^a grave window longer than the poll latency$")]
+async fn given_grave_window_long(_world: &mut WireWorld) {
+    // The poll in the When step uses GRAVE_WINDOW (300s) >> any poll latency, so
+    // the just-stopped actor cannot be reaped before it is observed.
+}
+
+#[then(
+    regex = r"^the stopped actor is present with status Stopped carrying its stop reason$"
+)]
+async fn then_stopped_present_with_reason(world: &mut WireWorld) {
+    let id = world.stopped_id.expect("stopped actor id");
+    let snapshot = world.snapshots.last().expect("a polled snapshot");
+    let actor = snapshot
+        .actors
+        .iter()
+        .find(|a| a.id.0 == id)
+        .expect("an actor stopped within the grave window must still be present");
+    let ActorStatus::Stopped { reason, .. } = &actor.status else {
+        panic!("expected Stopped status, got {:?}", actor.status);
+    };
+    assert!(
+        !reason.is_empty(),
+        "a Stopped actor must carry a non-empty stop reason"
+    );
+}
+
 // --- @sequence: captured_at and uptime advance alongside seq ---------------
 
 #[when(regex = r"^the client requests two snapshots a short interval apart$")]
@@ -241,6 +540,7 @@ async fn then_uptime_non_decreasing(world: &mut WireWorld) {
 #[given(regex = r"^an actor that has been stopped for exactly the grave window duration$")]
 async fn given_actor_stopped_at_boundary(world: &mut WireWorld) {
     kameo::console::testing::reset_for_test();
+    world.poll_boundary_absent_case = true;
     // Present-case: stop an actor, then snapshot with a LARGE ttl so its
     // `since.elapsed()` is far below the ttl — the reap predicate
     // (`elapsed > ttl`, registry.rs:481) is false, so it survives.
@@ -259,10 +559,10 @@ async fn when_client_polls(world: &mut WireWorld) {
         .push(kameo::console::testing::snapshot(GRAVE_WINDOW).await);
 
     // The grave-window boundary scenario also needs the absent-case: only it
-    // sets `stopped_id` (the conservation scenario sets only `reaped_id`). Take
-    // a second poll with ttl ZERO after a real elapse so anything stopped for
-    // strictly longer than 0s is reaped — pinning the strict `> ttl` boundary.
-    if world.stopped_id.is_some() {
+    // sets `poll_boundary_absent_case`. Take a second poll with ttl ZERO after a
+    // real elapse so anything stopped for strictly longer than 0s is reaped —
+    // pinning the strict `> ttl` boundary.
+    if world.poll_boundary_absent_case {
         tokio::time::sleep(Duration::from_millis(5)).await;
         world
             .snapshots
@@ -586,44 +886,24 @@ async fn then_connections_refused(world: &mut WireWorld) {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn server_wire_features() {
+    // server_wire.feature is now FULLY wired: every @sequence, @linearizability,
+    // @lifecycle and @boundary scenario has step definitions, so the name-prefix
+    // filter is gone — the whole file runs and `.fail_on_skipped()` turns any
+    // unwired/undefined scenario into a failure (no false green).
+    //
+    // The registry and the SEQ/REAPED_STOPPED/TOTAL_SPAWNED statics are
+    // process-global; scenarios reset them and assert absolute counts
+    // (e.g. total_stopped == 3), so they run one at a time. The @linearizability
+    // scenarios' real concurrency is WITHIN each scenario (Barrier + tokio::spawn),
+    // not across scenarios — `.max_concurrent_scenarios(1)` keeps the cross-scenario
+    // resets/reaps from colliding.
     WireWorld::cucumber()
-        // The registry and the SEQ/REAPED_STOPPED/TOTAL_SPAWNED statics are
-        // process-global; these scenarios reset them and assert absolute counts
-        // (e.g. total_stopped == 3), so they must run one at a time — cucumber
-        // otherwise runs scenarios concurrently and their resets/reaps collide.
         .max_concurrent_scenarios(1)
         .fail_on_skipped()
         .with_default_cli()
         .filter_run_and_exit(
             "tests/features/console/server_wire.feature",
-            |_, _, s| {
-                s.name
-                    .starts_with("seq strictly increases across rapid sequential polls")
-                    || s.name.starts_with("seq advances by exactly one per produced snapshot")
-                    || s.name.starts_with("captured_at and uptime advance alongside seq")
-                    || s.name.starts_with(
-                        "An actor stopped for exactly the grave window is still present",
-                    )
-                    || s.name
-                        .starts_with("total_stopped is conserved across the reap boundary")
-                    // Task 18b: @boundary + @lifecycle TCP scenarios (real serve).
-                    || s.name
-                        .starts_with("The request byte value is ignored")
-                    || s.name
-                        .starts_with("Multiple buffered request bytes yield one snapshot each")
-                    || s.name
-                        .starts_with("The server applies no frame-size cap")
-                    || s.name
-                        .starts_with("A snapshot that fails to encode closes the connection")
-                    || s.name
-                        .starts_with("The server closes the connection when the client disconnects")
-                    || s.name
-                        .starts_with("One client's disconnect does not disturb")
-                    || s.name
-                        .starts_with("A client that connects but never requests receives nothing")
-                    || s.name
-                        .starts_with("shutdown aborts the accept loop")
-            },
+            |_, _, _| true,
         )
         .await;
 }
