@@ -78,8 +78,7 @@ Feature: Console server + registry — laws over seq monotonicity and membership
     When a client polls while those operations run with real overlap
     Then no two snapshots produced by the process ever share the same seq
     And every actor id appears at most once in the returned snapshot
-    And the returned membership equals the registry's contents at one linearization point
-        between the concurrent spawns/stops (no half-applied batch, no torn entry)
+    And the returned membership equals the registry's contents at one linearization point between the concurrent spawns/stops (no half-applied batch, no torn entry)
     # GEN: an op sequence over {spawn(id), stop(id)} of length [1, 64] run on tokio tasks with a
     #      Barrier for real overlap; ids include reused/duplicate ids and a stop racing its poll;
     #      include the empty-registry and single-actor boundaries; >=8 concurrent pollers.

@@ -172,6 +172,10 @@ required-features = ["metrics"]
 name = "console_wire_bdd"
 required-features = ["testing"]
 
+[[test]]
+name = "console_wire_props_bdd"
+required-features = ["testing"]
+
 [[bench]]
 name = "overhead"
 harness = false
