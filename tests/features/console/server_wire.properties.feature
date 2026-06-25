@@ -40,15 +40,18 @@ Feature: Console server + registry — laws over seq monotonicity and membership
     #              "seq advances by exactly one per produced snapshot".
 
   @property @sequence
-  Scenario: captured_at and uptime are non-decreasing across any sequence of polls
+  Scenario: uptime is monotonic and captured_at is a fresh wall-clock stamp across any sequence of polls
     Given a console server and one open client connection
     And any poll count n
     When the client requests n snapshots in order
-    Then each snapshot's captured_at is at or after the previous one's
-    And each snapshot's uptime is at or after the previous one's
+    Then each snapshot's uptime is at or after the previous one's
+    And each snapshot's captured_at is a fresh wall-clock timestamp
     # GEN: n ∈ boundary-biased usize {1, 2, 8, 64}; polls issued in order on one connection.
-    # ORACLE: monotone clocks — captured_at = SystemTime::now(), uptime = START.elapsed()
-    #         (registry.rs:448-449), both non-decreasing when sampled in program order.
+    # ORACLE: uptime = START.elapsed() (an Instant, registry.rs:448-449) is MONOTONIC, so it is
+    #         non-decreasing in program order. captured_at = SystemTime::now() is a best-effort
+    #         WALL clock — NOT monotonic: a clock step can move it backward (the client handles
+    #         this; see invariants.md:201). So captured_at is asserted to be a fresh/plausible
+    #         current stamp, never ordered. (Asserting captured_at ordering was a non-invariant.)
     # Generalizes: server_wire.feature "captured_at and uptime advance alongside seq".
 
   @property @sequence

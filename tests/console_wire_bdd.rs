@@ -503,28 +503,46 @@ async fn when_requests_two_spaced(world: &mut WireWorld) {
     world
         .snapshots
         .push(kameo::console::testing::snapshot(GRAVE_WINDOW).await);
-    // A real (small) elapse so captured_at/uptime can strictly advance; the
-    // assertions only require non-decreasing, so this is not timing-fragile.
+    // A real (small) elapse between the two polls so uptime advances. captured_at
+    // is best-effort wall-clock (may regress on a clock step) — see
+    // `assert_fresh_wall_clock`; only uptime (Instant) is asserted monotonic.
     tokio::time::sleep(Duration::from_millis(1)).await;
     world
         .snapshots
         .push(kameo::console::testing::snapshot(GRAVE_WINDOW).await);
 }
 
-#[then(regex = r"^the second snapshot's captured_at is at or after the first's$")]
-async fn then_captured_at_non_decreasing(world: &mut WireWorld) {
+/// `captured_at` is `SystemTime::now()` (registry.rs) — a best-effort WALL clock, which is
+/// NOT monotonic: a virtualized/NTP-adjusted host can step it backward between two polls. The
+/// system is built for this (wire.rs documents the client diffing captured_at; `rate_context`
+/// guards a reversed clock with `duration_since().ok()` — see invariants.md:201). So the real,
+/// testable guarantee is that each snapshot is freshly stamped with a plausible current time,
+/// not that two stamps are ordered. Asserting `>=` here was the source of a CI-only flake.
+/// (Monotonic ordering is carried by `uptime`, an `Instant`, asserted separately.)
+fn assert_fresh_wall_clock(captured: SystemTime) {
+    let now = SystemTime::now();
+    let skew = match now.duration_since(captured) {
+        Ok(past) => past,
+        Err(future) => future.duration(),
+    };
+    assert!(
+        skew < Duration::from_secs(3600),
+        "captured_at {captured:?} must be a fresh wall-clock stamp near now ({now:?}); \
+         skew {skew:?} (a bogus/epoch stamp would fail this)"
+    );
+}
+
+#[then(regex = r"^each snapshot's captured_at is a fresh wall-clock timestamp$")]
+async fn then_captured_at_is_fresh(world: &mut WireWorld) {
     assert_eq!(
         world.snapshots.len(),
         2,
         "expected two snapshots, got {}",
         world.snapshots.len()
     );
-    let first: SystemTime = world.snapshots[0].captured_at;
-    let second: SystemTime = world.snapshots[1].captured_at;
-    assert!(
-        second >= first,
-        "second captured_at {second:?} must be >= first {first:?}"
-    );
+    for snap in &world.snapshots {
+        assert_fresh_wall_clock(snap.captured_at);
+    }
 }
 
 #[then(regex = r"^the second snapshot's uptime is at or after the first's$")]

@@ -211,5 +211,5 @@ bug probe — must fail today. Generator strategies (with boundary values) live 
 
 **server_wire** — 2 `@property`, 1 `@model`
 - snapshot `seq` strictly increasing (+1 single-producer) across any poll count — oracle: monotonic counter.
-- `captured_at` & uptime non-decreasing across any poll sequence.
+- uptime (monotonic `Instant`) non-decreasing across any poll sequence; `captured_at` (wall-clock `SystemTime::now()`) asserted only as a fresh/plausible stamp — it is NOT monotonic (a clock step can regress it; the client handles this, see invariants.md:201).
 - `@model` membership captured under one registry lock is a consistent snapshot for any spawn/stop interleaving — oracle: live-id set model at a valid linearization point.

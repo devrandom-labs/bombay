@@ -62,8 +62,12 @@ Feature: Console server + wire — snapshot streaming gaps beyond the happy path
   Scenario: captured_at and uptime advance alongside seq
     Given a console server and a single open client connection
     When the client requests two snapshots a short interval apart
-    Then the second snapshot's captured_at is at or after the first's
+    Then each snapshot's captured_at is a fresh wall-clock timestamp
     And the second snapshot's uptime is at or after the first's
+    # NOTE: captured_at is SystemTime::now() — a best-effort WALL clock, NOT monotonic (a
+    # clock step can move it backward; the client handles this, see invariants.md:201). The
+    # monotonic ordering guarantee is carried by uptime (an Instant). Asserting captured_at
+    # ordering was a non-invariant and caused a CI clock-step flake.
 
   # ---------------------------------------------------------------------------
   # @linearizability — concurrent clients + concurrent spawn/stop during snapshot

@@ -140,14 +140,18 @@ async fn then_seq_increasing_noop(_world: &mut WiredPropsWorld) {
 async fn then_seq_plus_one_noop(_world: &mut WiredPropsWorld) {}
 
 // ===========================================================================
-// @property @sequence — captured_at and uptime are non-decreasing
+// @property @sequence — uptime is monotonic; captured_at is a fresh wall-clock stamp
 // ===========================================================================
 //
 // GEN: n in {1, 2, 8, 64}; polls in program order on one connection.
-// ORACLE: monotone clocks — captured_at = SystemTime::now(), uptime =
-//         START.elapsed() (registry.rs:448-449), non-decreasing in program order.
+// ORACLE: uptime = START.elapsed() (an Instant, registry.rs:448-449) is monotonic →
+//         non-decreasing in program order. captured_at = SystemTime::now() is a best-effort
+//         WALL clock — NOT monotonic (a clock step can regress it; the client handles this,
+//         see invariants.md:201) — so it is asserted to be a fresh/plausible current stamp,
+//         never ordered. (Asserting captured_at ordering was a non-invariant; it caused a
+//         CI clock-step flake.)
 #[when(regex = r"^the client requests n snapshots in order$")]
-async fn law_clocks_non_decreasing(_world: &mut WiredPropsWorld) {
+async fn law_clocks(_world: &mut WiredPropsWorld) {
     for &n in &[1usize, 2, 8, 64] {
         kameo::console::testing::reset_for_test();
         let _actor = spawn_live().await;
@@ -161,19 +165,26 @@ async fn law_clocks_non_decreasing(_world: &mut WiredPropsWorld) {
         }
 
         assert_eq!(captured.len(), n, "must have n={n} captured_at samples");
-        assert!(
-            captured.windows(2).all(|w| w[1] >= w[0]),
-            "captured_at must be non-decreasing in program order, got {captured:?} for n={n}",
-        );
+        // uptime (Instant) IS monotonic — assert it strictly.
         assert!(
             uptimes.windows(2).all(|w| w[1] >= w[0]),
             "uptime must be non-decreasing in program order, got {uptimes:?} for n={n}",
         );
+        // captured_at (wall clock) — assert each is a fresh, plausible stamp, not ordered.
+        let now = SystemTime::now();
+        for c in &captured {
+            let skew = now.duration_since(*c).unwrap_or_else(|e| e.duration());
+            assert!(
+                skew < Duration::from_secs(3600),
+                "captured_at {c:?} must be a fresh wall-clock stamp near now ({now:?}); \
+                 skew {skew:?} for n={n}",
+            );
+        }
     }
 }
 
-#[then(regex = r"^each snapshot's captured_at is at or after the previous one's$")]
-async fn then_captured_non_decreasing_noop(_world: &mut WiredPropsWorld) {}
+#[then(regex = r"^each snapshot's captured_at is a fresh wall-clock timestamp$")]
+async fn then_captured_fresh_noop(_world: &mut WiredPropsWorld) {}
 
 #[then(regex = r"^each snapshot's uptime is at or after the previous one's$")]
 async fn then_uptime_non_decreasing_noop(_world: &mut WiredPropsWorld) {}
