@@ -29,4 +29,5 @@ pub use server::{Console, ConsoleHandle, serve};
 #[cfg(any(test, feature = "testing"))]
 pub mod testing {
     pub use super::registry::{reset_for_test, snapshot};
+    pub use super::server::testing::fail_next_encode;
 }

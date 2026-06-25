@@ -103,7 +103,7 @@ async fn serve_client(mut stream: TcpStream, grave_window: Duration) {
         }
 
         let message = wire::Message::Snapshot(registry::snapshot(grave_window).await);
-        let bytes = match rmp_serde::to_vec_named(&message) {
+        let bytes = match encode_snapshot(&message) {
             Ok(bytes) => bytes,
             Err(_err) => {
                 #[cfg(feature = "tracing")]
@@ -116,5 +116,43 @@ async fn serve_client(mut stream: TcpStream, grave_window: Duration) {
         if stream.write_all(&len).await.is_err() || stream.write_all(&bytes).await.is_err() {
             break;
         }
+    }
+}
+
+/// Encodes a wire message to MessagePack, returning the same `rmp_serde` error the serve loop
+/// treats as an encode failure (break before any write).
+///
+/// With the `testing` feature, [`testing::fail_next_encode`] arms a one-shot flag that makes the
+/// next call return that error path without producing bytes, so a test can drive the
+/// encode-failure teardown (no length prefix, no partial frame) without constructing an
+/// otherwise-unencodable `Snapshot`.
+fn encode_snapshot(message: &wire::Message) -> Result<Vec<u8>, rmp_serde::encode::Error> {
+    #[cfg(feature = "testing")]
+    if testing::take_fail_next_encode() {
+        return Err(rmp_serde::encode::Error::Syntax(
+            "console: encode failure injected by testing hook".to_owned(),
+        ));
+    }
+    rmp_serde::to_vec_named(message)
+}
+
+/// Test-only hooks for driving the serve loop's encode-failure teardown path.
+#[cfg(any(test, feature = "testing"))]
+pub mod testing {
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    static FAIL_NEXT_ENCODE: AtomicBool = AtomicBool::new(false);
+
+    /// Arms a one-shot flag so the next snapshot encode in any serve-client task fails, exercising
+    /// the "encode error closes the connection without a partial frame" path. The flag is consumed
+    /// by the first encode after it is set (see [`take_fail_next_encode`]).
+    pub fn fail_next_encode() {
+        FAIL_NEXT_ENCODE.store(true, Ordering::SeqCst);
+    }
+
+    /// Returns whether the one-shot encode-failure flag was armed, clearing it. Used by the serve
+    /// loop; `SeqCst` pairs the cross-task arm/observe so the very next encode sees the arm.
+    pub(super) fn take_fail_next_encode() -> bool {
+        FAIL_NEXT_ENCODE.swap(false, Ordering::SeqCst)
     }
 }

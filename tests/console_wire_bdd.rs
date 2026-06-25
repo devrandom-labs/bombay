@@ -21,11 +21,18 @@
 //! `snapshot()` IS the snapshot producer the server frames, so calling it
 //! directly exercises the real seq-advance path without a TCP client.
 
-use std::time::{Duration, SystemTime};
+use std::{
+    io::{ErrorKind, Read, Write},
+    net::{SocketAddr, TcpStream},
+    time::{Duration, SystemTime},
+};
 
 use cucumber::{World, given, then, when};
 use kameo::{
-    console::wire::{ActorStatus, Snapshot},
+    console::{
+        ConsoleHandle,
+        wire::{ActorStatus, Message, Snapshot},
+    },
     error::Infallible,
     prelude::*,
 };
@@ -58,6 +65,15 @@ pub struct WireWorld {
     stopped_id: Option<u64>,
     // The id of the actor stopped and then reaped (boundary absent-case).
     reaped_id: Option<u64>,
+    // A running server kept alive for the scenario; dropping the handle detaches
+    // the accept loop, and for the shutdown scenario we take it to call shutdown().
+    server: Option<ConsoleHandle>,
+    // The bound address of `server`, so later steps can open fresh connections.
+    addr: Option<SocketAddr>,
+    // Open client connections held across steps (e.g. two-client lifecycle).
+    clients: Vec<TcpStream>,
+    // Snapshot seqs read off the wire (boundary pipelining scenario).
+    wire_seqs: Vec<u64>,
 }
 
 async fn reset_and_spawn(world: &mut WireWorld) {
@@ -76,6 +92,43 @@ async fn spawn_then_stop() -> u64 {
     actor.stop_gracefully().await.unwrap();
     actor.wait_for_shutdown().await;
     id
+}
+
+/// Reads one length-prefixed snapshot frame from a connected client socket: a
+/// 4-byte big-endian length, then that many MessagePack payload bytes decoded as
+/// a `Message::Snapshot`. This is the CLIENT (peer) side reading the server SUT.
+fn read_one_frame(stream: &mut TcpStream) -> Snapshot {
+    let mut len = [0u8; 4];
+    stream.read_exact(&mut len).unwrap();
+    let n = u32::from_be_bytes(len) as usize;
+    let mut buf = vec![0u8; n];
+    stream.read_exact(&mut buf).unwrap();
+    let Message::Snapshot(s) = rmp_serde::from_slice(&buf).unwrap();
+    s
+}
+
+/// Starts a real console server with a live actor and records its handle + bound
+/// address in the world. A huge grave window keeps test actors in every snapshot.
+async fn start_server(world: &mut WireWorld) {
+    reset_and_spawn(world).await;
+    let handle = kameo::console::Console::builder()
+        .grave_window(GRAVE_WINDOW)
+        .serve("127.0.0.1:0")
+        .await
+        .unwrap();
+    world.addr = Some(handle.local_addr());
+    world.server = Some(handle);
+}
+
+/// Opens a fresh TCP client to the running server with a short read timeout, so
+/// no step can hang the suite waiting on a frame that will never arrive.
+fn connect(world: &WireWorld) -> TcpStream {
+    let addr = world.addr.expect("server must be started first");
+    let stream = TcpStream::connect(addr).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_secs(5)))
+        .unwrap();
+    stream
 }
 
 #[given(regex = r"^a console server with at least one live actor$")]
@@ -304,6 +357,233 @@ async fn then_total_stopped_decomposes(world: &mut WireWorld) {
     );
 }
 
+// --- @boundary + @lifecycle: real serve() over TCP sockets -----------------
+
+#[given(regex = r"^a console server and an open client connection$")]
+async fn given_server_and_open_connection(world: &mut WireWorld) {
+    start_server(world).await;
+    let stream = connect(world);
+    world.clients.push(stream);
+}
+
+#[given(regex = r"^a console server$")]
+async fn given_console_server(world: &mut WireWorld) {
+    start_server(world).await;
+}
+
+#[given(regex = r"^a console server with two open client connections$")]
+async fn given_server_two_connections(world: &mut WireWorld) {
+    start_server(world).await;
+    world.clients.push(connect(world));
+    world.clients.push(connect(world));
+}
+
+#[given(regex = r"^a console server and a client that connects but sends no byte$")]
+async fn given_server_silent_client(world: &mut WireWorld) {
+    start_server(world).await;
+    world.clients.push(connect(world));
+}
+
+#[given(regex = r"^a running console server$")]
+async fn given_running_server(world: &mut WireWorld) {
+    start_server(world).await;
+}
+
+#[given(regex = r"^a console server whose snapshot would fail MessagePack encoding$")]
+async fn given_server_encode_fails(world: &mut WireWorld) {
+    start_server(world).await;
+    world.clients.push(connect(world));
+    // Arm the one-shot encode-failure hook so the next snapshot encode in the
+    // serve loop takes the error branch (break before any write).
+    kameo::console::testing::fail_next_encode();
+}
+
+#[when(regex = r"^the client sends the byte 0xFF instead of 0x00$")]
+async fn when_sends_ff(world: &mut WireWorld) {
+    world.clients[0].write_all(&[0xFF]).unwrap();
+}
+
+#[then(regex = r"^the server still replies with exactly one length-prefixed snapshot frame$")]
+async fn then_one_frame(world: &mut WireWorld) {
+    // read_one_frame succeeding proves the server replied to the 0xFF byte.
+    let _ = read_one_frame(&mut world.clients[0]);
+}
+
+#[when(regex = r"^the client sends 3 request bytes in one write before reading any reply$")]
+async fn when_sends_three(world: &mut WireWorld) {
+    world.clients[0].write_all(&[0, 0, 0]).unwrap();
+}
+
+#[then(regex = r"^the server replies with 3 length-prefixed snapshot frames$")]
+async fn then_three_frames(world: &mut WireWorld) {
+    world.wire_seqs.clear();
+    for _ in 0..3 {
+        let s = read_one_frame(&mut world.clients[0]);
+        world.wire_seqs.push(s.seq);
+    }
+    assert_eq!(world.wire_seqs.len(), 3, "expected 3 frames");
+}
+
+#[then(regex = r"^those frames carry strictly increasing seq values$")]
+async fn then_frames_increasing(world: &mut WireWorld) {
+    assert!(
+        world.wire_seqs.windows(2).all(|w| w[1] > w[0]),
+        "frame seqs must strictly increase, got {:?}",
+        world.wire_seqs
+    );
+}
+
+#[when(regex = r"^a client sends arbitrary surplus bytes after its request byte$")]
+async fn when_sends_surplus(world: &mut WireWorld) {
+    let mut stream = connect(world);
+    // The request byte plus surplus bytes in one write: the server reads ONE
+    // byte per loop and never parses a client-supplied length, so every byte
+    // (request + "surplus") is just another trigger.
+    stream.write_all(&[0x01, 0x02, 0x03, 0x04]).unwrap();
+    world.clients.push(stream);
+}
+
+#[then(regex = r"^the server treats each byte as a fresh request trigger$")]
+async fn then_each_byte_a_trigger(world: &mut WireWorld) {
+    let stream = world.clients.last_mut().expect("surplus client");
+    // 4 bytes sent ⇒ 4 frames back, one per byte. read_one_frame succeeding
+    // four times shows no byte was consumed as a length and none was capped.
+    world.wire_seqs.clear();
+    for _ in 0..4 {
+        let s = read_one_frame(stream);
+        world.wire_seqs.push(s.seq);
+    }
+    assert_eq!(
+        world.wire_seqs.len(),
+        4,
+        "each of the 4 bytes must trigger its own frame, got {:?}",
+        world.wire_seqs
+    );
+}
+
+#[then(regex = r"^the server never parses or allocates on a client-supplied length$")]
+async fn then_no_length_parse(world: &mut WireWorld) {
+    // Observable proof: every frame decoded as a valid Snapshot with a real seq,
+    // and they advance one-per-byte. Had the server interpreted any byte as a
+    // length it would have mis-framed and read_one_frame would have failed or the
+    // frame count would differ. The strictly-increasing per-byte seqs confirm it.
+    assert_eq!(world.wire_seqs.len(), 4, "all four bytes produced a frame");
+    assert!(
+        world.wire_seqs.windows(2).all(|w| w[1] > w[0]),
+        "per-byte seqs must advance, got {:?}",
+        world.wire_seqs
+    );
+}
+
+#[when(regex = r"^the client requests a snapshot$")]
+async fn when_requests_a_snapshot(world: &mut WireWorld) {
+    world.clients[0].write_all(&[0]).unwrap();
+}
+
+#[then(regex = r"^the server writes no length prefix and closes the connection$")]
+async fn then_eof_no_partial(world: &mut WireWorld) {
+    // The serve loop breaks on the injected encode error BEFORE writing any
+    // length prefix, so the client sees EOF on the 4-byte length read — never a
+    // partial frame.
+    let mut len = [0u8; 4];
+    let err = world.clients[0]
+        .read_exact(&mut len)
+        .expect_err("encode failure must close the connection with no length prefix");
+    assert_eq!(
+        err.kind(),
+        ErrorKind::UnexpectedEof,
+        "client must see EOF (closed connection), got {err:?}"
+    );
+}
+
+#[when(regex = r"^the client closes the socket without sending a request byte$")]
+async fn when_client_closes(world: &mut WireWorld) {
+    // Drop the only client connection: the server's read_exact errors and that
+    // serve_client task ends. The accept loop (the SUT we pin) stays up.
+    world.clients.clear();
+    // Give the serve_client task a beat to observe the close and unwind.
+    tokio::time::sleep(Duration::from_millis(20)).await;
+}
+
+#[then(regex = r"^the serve_client loop's read_exact errors and the task ends cleanly$")]
+async fn then_task_ends_cleanly(world: &mut WireWorld) {
+    // Observable: the server is still serving — a fresh client gets a snapshot,
+    // proving no panic took down the accept loop when the first peer vanished.
+    let mut fresh = connect(world);
+    fresh.write_all(&[0]).unwrap();
+    let _ = read_one_frame(&mut fresh);
+}
+
+#[when(regex = r"^the first client disconnects abruptly$")]
+async fn when_first_disconnects(world: &mut WireWorld) {
+    // Drop only the first connection; keep the second.
+    let _first = world.clients.remove(0);
+    tokio::time::sleep(Duration::from_millis(20)).await;
+}
+
+#[then(regex = r"^the second client can still request and receive a fresh snapshot$")]
+async fn then_second_still_works(world: &mut WireWorld) {
+    let second = world.clients.last_mut().expect("second client survives");
+    second.write_all(&[0]).unwrap();
+    let _ = read_one_frame(second);
+}
+
+#[when(regex = r"^no request byte is ever written$")]
+async fn when_no_byte_written(world: &mut WireWorld) {
+    // Use a short read timeout to prove no frame is pushed without a request.
+    let stream = world.clients.last_mut().expect("silent client");
+    stream
+        .set_read_timeout(Some(Duration::from_millis(200)))
+        .unwrap();
+}
+
+#[then(regex = r"^the server produces no snapshot for that connection$")]
+async fn then_no_snapshot(world: &mut WireWorld) {
+    let stream = world.clients.last_mut().expect("silent client");
+    let mut byte = [0u8; 1];
+    let err = stream
+        .read(&mut byte)
+        .expect_err("a silent client must receive nothing (read should time out)");
+    assert!(
+        matches!(err.kind(), ErrorKind::WouldBlock | ErrorKind::TimedOut),
+        "pull-based: no data should arrive without a request, got {err:?}"
+    );
+}
+
+#[when(regex = r"^the handle's shutdown is called$")]
+async fn when_shutdown_called(world: &mut WireWorld) {
+    world.clients.clear();
+    world
+        .server
+        .take()
+        .expect("a running server to shut down")
+        .shutdown();
+}
+
+#[then(regex = r"^subsequent connection attempts to the bound address are refused$")]
+async fn then_connections_refused(world: &mut WireWorld) {
+    let addr = world.addr.expect("bound address");
+    // Allow a brief window for the aborted accept loop to actually close the
+    // listening socket before asserting connections are refused.
+    let mut last_ok = false;
+    for _ in 0..50 {
+        match TcpStream::connect(addr) {
+            Ok(_) => {
+                last_ok = true;
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+            Err(_) => {
+                last_ok = false;
+                break;
+            }
+        }
+    }
+    assert!(
+        !last_ok,
+        "after shutdown, connecting to {addr} must be refused"
+    );
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn server_wire_features() {
     WireWorld::cucumber()
@@ -326,6 +606,23 @@ async fn server_wire_features() {
                     )
                     || s.name
                         .starts_with("total_stopped is conserved across the reap boundary")
+                    // Task 18b: @boundary + @lifecycle TCP scenarios (real serve).
+                    || s.name
+                        .starts_with("The request byte value is ignored")
+                    || s.name
+                        .starts_with("Multiple buffered request bytes yield one snapshot each")
+                    || s.name
+                        .starts_with("The server applies no frame-size cap")
+                    || s.name
+                        .starts_with("A snapshot that fails to encode closes the connection")
+                    || s.name
+                        .starts_with("The server closes the connection when the client disconnects")
+                    || s.name
+                        .starts_with("One client's disconnect does not disturb")
+                    || s.name
+                        .starts_with("A client that connects but never requests receives nothing")
+                    || s.name
+                        .starts_with("shutdown aborts the accept loop")
             },
         )
         .await;
