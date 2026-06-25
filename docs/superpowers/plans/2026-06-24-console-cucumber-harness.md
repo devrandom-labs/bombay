@@ -33,6 +33,36 @@ docs/testing/README.md           MODIFY  document the World + step pattern
 README.md                        MODIFY  every commit
 ```
 
+## Execution notes (discovered during bootstrap — supersede the plan body where they conflict)
+
+1. **Runner pattern (NOT `harness = false`).** cucumber 0.23's `harness = false` + libtest
+   writer does not implement nextest's `--list`/`--exact` enumeration (CLI rejects them, exit 2),
+   and `nix flake check` runs `cargoNextest`. So every runner is a **standard libtest test**:
+   ```rust
+   #[tokio::test(flavor = "multi_thread")]
+   async fn <feature>_features() {
+       World::cucumber()
+           .fail_on_skipped()
+           .with_default_cli()                 // stop cucumber parsing nextest's argv
+           .filter_run_and_exit(<feature_path>, |_, _, s| <predicate>)
+           .await;
+   }
+   ```
+   `[[test]]` targets keep their name but **omit `harness = false`**. Consequence: a whole
+   feature file is ONE nextest test — there is **no per-scenario process isolation**, so the
+   server_wire global-static reset (`reset_for_test`) is essential, called per scenario.
+2. **`pub`, not `pub(crate)`, for re-exported items.** `pub use` cannot re-export `pub(crate)`
+   items at `pub` visibility (E0364/E0365). Make exposed helpers `pub` but keep their **module
+   private** (`mod tui;`, `mod poller;` — no `pub`) so the gated `testing` module stays the only
+   external door (still CLAUDE.md rule 4 compliant). Same fix applies to poller items (Task 11).
+3. **Incremental filter discipline.** Each task BROADENS the `filter_run_and_exit` predicate to
+   include its newly-wired scenarios, and VERIFIES the scenario count went up (guard against a
+   typo'd predicate that vacuously matches zero scenarios = false green). The LAST task for each
+   feature file drops the filter entirely and runs the whole file with `fail_on_skipped()` so any
+   unwired scenario fails: Task 8 for `tui.feature`, Task 10 for `tui.properties.feature`,
+   Task 14 for `poller.feature`, Task 15 for `poller.properties.feature`, Task 18+19 for
+   `server_wire.feature`, Task 20 for `server_wire.properties.feature`.
+
 ## Conventions for every task
 
 - **Toolchain:** no local cargo. Run all cargo via `nix develop -c <cmd>` (the flake dev shell), e.g. `nix develop -c cargo test -p kameo_console --test tui_bdd`.
