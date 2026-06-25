@@ -43,7 +43,7 @@ nix flake check     # the single gate: build + clippy + fmt + audit + deny + nex
 
 ## Continuous integration
 
-Every pull request to `main` (and every push to a non-`main` branch) runs the single gate — `nix flake check` — on GitHub Actions ([`.github/workflows/checks.yml`](.github/workflows/checks.yml), mirroring nexus). That runs the **entire workspace test suite (`bombay-nextest`) and the doc-tests (`bombay-doctest`)** on every change, alongside fmt/audit/deny/clippy. The workflow files are themselves linted by `actionlint`, wired in two places: the `bombay-actionlint` flake check, and the `pre-commit` hook (run eagerly, but only when a workflow file is staged). The clippy gate is green (with the bar relaxed as noted above), so CI now passes end-to-end.
+Every pull request to `main` (and every push to a non-`main` branch) runs the single gate — `nix flake check -L` — on GitHub Actions ([`.github/workflows/checks.yml`](.github/workflows/checks.yml), mirroring nexus); `-L` streams full build logs so a failed derivation shows the complete output (e.g. which test/scenario failed) instead of nix's truncated "last 25 lines". That runs the **entire workspace test suite (`bombay-nextest`) and the doc-tests (`bombay-doctest`)** on every change, alongside fmt/audit/deny/clippy. The workflow files are themselves linted by `actionlint`, wired in two places: the `bombay-actionlint` flake check, and the `pre-commit` hook (run eagerly, but only when a workflow file is staged). The clippy gate is green (with the bar relaxed as noted above), so CI now passes end-to-end.
 
 ## Local setup
 
