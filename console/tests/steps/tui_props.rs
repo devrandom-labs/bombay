@@ -73,12 +73,7 @@ fn u64_edges() -> impl Strategy<Value = u64> {
 /// allocations in `mailbox_bar`/`sparkline_line` callers bounded — values here
 /// only feed ratio math, not allocation).
 fn usize_edges() -> impl Strategy<Value = usize> {
-    prop_oneof![
-        Just(0usize),
-        Just(1usize),
-        Just(usize::MAX),
-        any::<usize>()
-    ]
+    prop_oneof![Just(0usize), Just(1usize), Just(usize::MAX), any::<usize>()]
 }
 
 /// Boundary-biased u16: {0, 1, MAX} plus random (for Rect fields + sizes).
@@ -130,8 +125,11 @@ fn type_name_edges() -> impl Strategy<Value = String> {
         Just("trailing::".to_string()),
         Just("名前::型<引数>".to_string()),
         ".*".prop_map(String::from),
-        proptest::collection::vec(prop_oneof![Just("::"), Just("<"), Just(">"), Just("a"), Just("名")], 0..8)
-            .prop_map(|parts| parts.concat()),
+        proptest::collection::vec(
+            prop_oneof![Just("::"), Just("<"), Just(">"), Just("a"), Just("名")],
+            0..8
+        )
+        .prop_map(|parts| parts.concat()),
     ]
 }
 
@@ -305,7 +303,9 @@ fn actor_rate_total(_w: &mut TuiPropsWorld) {
     });
 }
 
-#[then(regex = r"^it returns 0 when dt is None, when dt is zero, or when prev has no entry for the actor$")]
+#[then(
+    regex = r"^it returns 0 when dt is None, when dt is zero, or when prev has no entry for the actor$"
+)]
 fn actor_rate_zero_cases(_w: &mut TuiPropsWorld) {
     // ORACLE: each of the three guard-failure cases yields 0 (:1250-1255).
     let actor = make_actor(1, 100);
@@ -330,7 +330,9 @@ fn actor_rate_zero_cases(_w: &mut TuiPropsWorld) {
     });
 }
 
-#[then(regex = r"^a decreased counter \(now < prev\) saturates the delta to 0 rather than underflowing$")]
+#[then(
+    regex = r"^a decreased counter \(now < prev\) saturates the delta to 0 rather than underflowing$"
+)]
 fn actor_rate_saturates(_w: &mut TuiPropsWorld) {
     // ORACLE: delta via saturating_sub (counter reset ⇒ 0), :1252.
     proptest!(|(now in u64_edges(), prev in u64_edges())| {
@@ -463,7 +465,9 @@ fn centered_contained(_w: &mut TuiPropsWorld) {
     });
 }
 
-#[then(regex = r"^the result size never exceeds the area \(rw <= area\.width, rh <= area\.height\)$")]
+#[then(
+    regex = r"^the result size never exceeds the area \(rw <= area\.width, rh <= area\.height\)$"
+)]
 fn centered_size(_w: &mut TuiPropsWorld) {
     // ORACLE: size is .min(area.*), so rw<=aw and rh<=ah.
     proptest!(|(x in u16_edges(), y in u16_edges(), aw in u16_edges(), ah in u16_edges(),
@@ -474,11 +478,45 @@ fn centered_size(_w: &mut TuiPropsWorld) {
         prop_assert!(r.height <= area.height);
     });
     // Explicit edges: oversized request clamps to the area; equal stays equal; zero area ⇒ zero.
-    let area = Rect { x: 5, y: 6, width: 20, height: 10 };
-    assert_eq!(centered_rect(area, u16::MAX, u16::MAX), Rect { x: 5, y: 6, width: 20, height: 10 });
-    assert_eq!(centered_rect(area, 20, 10), Rect { x: 5, y: 6, width: 20, height: 10 });
-    let zero = Rect { x: 1, y: 1, width: 0, height: 0 };
-    assert_eq!(centered_rect(zero, 8, 8), Rect { x: 1, y: 1, width: 0, height: 0 });
+    let area = Rect {
+        x: 5,
+        y: 6,
+        width: 20,
+        height: 10,
+    };
+    assert_eq!(
+        centered_rect(area, u16::MAX, u16::MAX),
+        Rect {
+            x: 5,
+            y: 6,
+            width: 20,
+            height: 10
+        }
+    );
+    assert_eq!(
+        centered_rect(area, 20, 10),
+        Rect {
+            x: 5,
+            y: 6,
+            width: 20,
+            height: 10
+        }
+    );
+    let zero = Rect {
+        x: 1,
+        y: 1,
+        width: 0,
+        height: 0,
+    };
+    assert_eq!(
+        centered_rect(zero, 8, 8),
+        Rect {
+            x: 1,
+            y: 1,
+            width: 0,
+            height: 0
+        }
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -494,7 +532,9 @@ fn short_substring(_w: &mut TuiPropsWorld) {
     });
 }
 
-#[then(regex = r"^applying short_type_name again to the result returns the same value \(idempotent\)$")]
+#[then(
+    regex = r"^applying short_type_name again to the result returns the same value \(idempotent\)$"
+)]
 fn short_idempotent(_w: &mut TuiPropsWorld) {
     // ORACLE: f(f(s)) == f(s) — no '<' or "::" left after one pass.
     proptest!(|(s in type_name_edges())| {
@@ -524,7 +564,12 @@ fn fmt_short_nonempty(_w: &mut TuiPropsWorld) {
     proptest!(|(d in duration_edges())| {
         prop_assert!(!fmt_short(d).is_empty());
     });
-    for d in [Duration::ZERO, Duration::from_nanos(1), Duration::from_secs(60), Duration::MAX] {
+    for d in [
+        Duration::ZERO,
+        Duration::from_nanos(1),
+        Duration::from_secs(60),
+        Duration::MAX,
+    ] {
         assert!(!fmt_short(d).is_empty());
     }
 }
@@ -541,7 +586,12 @@ fn fmt_ago_suffix(_w: &mut TuiPropsWorld) {
         prop_assert!(!s.is_empty());
         prop_assert!(s.ends_with(" ago"), "`{}` does not end in ` ago`", s);
     });
-    for d in [Duration::ZERO, Duration::from_secs(60), Duration::from_secs(3600), Duration::MAX] {
+    for d in [
+        Duration::ZERO,
+        Duration::from_secs(60),
+        Duration::from_secs(3600),
+        Duration::MAX,
+    ] {
         assert!(fmt_ago(d).ends_with(" ago"));
     }
 }
@@ -581,7 +631,9 @@ fn uptime_hours_uncapped(_w: &mut TuiPropsWorld) {
 // Law 10 — braille: single cell ∈ U+2800..=U+28FF, clamp to 4 (:1579-1585)
 // ---------------------------------------------------------------------------
 
-#[then(regex = r"^it returns a single char in the closed range U\+2800\.\.=U\+28FF and never panics$")]
+#[then(
+    regex = r"^it returns a single char in the closed range U\+2800\.\.=U\+28FF and never panics$"
+)]
 fn braille_in_range(_w: &mut TuiPropsWorld) {
     // ORACLE: bits = LEFT|RIGHT <= 0xFF ⇒ 0x2800+bits ∈ braille block.
     proptest!(|(l in u8_edges(), r in u8_edges())| {
@@ -594,7 +646,9 @@ fn braille_in_range(_w: &mut TuiPropsWorld) {
     assert!((0x2800..=0x28FF).contains(&(braille(u8::MAX, u8::MAX) as u32)));
 }
 
-#[then(regex = r"^heights above 4 produce the same glyph as 4 \(columns clamped with \.min\(4\)\)$")]
+#[then(
+    regex = r"^heights above 4 produce the same glyph as 4 \(columns clamped with \.min\(4\)\)$"
+)]
 fn braille_clamp(_w: &mut TuiPropsWorld) {
     // ORACLE: braille(l,r) == braille(l.min(4), r.min(4)).
     proptest!(|(l in u8_edges(), r in u8_edges())| {
@@ -618,11 +672,22 @@ fn color_rgb_total(_w: &mut TuiPropsWorld) {
     });
 }
 
-#[then(regex = r"^any color not explicitly listed \(Reset/White/Gray/Blue/…\) maps to FG \(205,205,212\)$")]
+#[then(
+    regex = r"^any color not explicitly listed \(Reset/White/Gray/Blue/…\) maps to FG \(205,205,212\)$"
+)]
 fn color_rgb_default(_w: &mut TuiPropsWorld) {
     // ORACLE: the `_ => (205,205,212)` arm catches Reset/White/Gray/Blue/Magenta/Indexed.
-    for c in [Color::Reset, Color::White, Color::Gray, Color::Blue, Color::Magenta,
-              Color::LightBlue, Color::LightMagenta, Color::Indexed(7), Color::Indexed(0)] {
+    for c in [
+        Color::Reset,
+        Color::White,
+        Color::Gray,
+        Color::Blue,
+        Color::Magenta,
+        Color::LightBlue,
+        Color::LightMagenta,
+        Color::Indexed(7),
+        Color::Indexed(0),
+    ] {
         assert_eq!(color_rgb(c), FG, "{c:?} should map to FG");
     }
     // Rgb is returned verbatim.
@@ -659,11 +724,17 @@ fn sparkline_cell_count(_w: &mut TuiPropsWorld) {
     let w = 9usize;
     for n in [0usize, 1, w * 2 - 1, w * 2, w * 2 + 1, 200] {
         let samples: Vec<u64> = (0..n).map(|i| i as u64).collect();
-        assert_eq!(line_cells(&sparkline_line(&samples, u64::MAX, w)), w, "n={n}");
+        assert_eq!(
+            line_cells(&sparkline_line(&samples, u64::MAX, w)),
+            w,
+            "n={n}"
+        );
     }
 }
 
-#[then(regex = r"^only the most recent w\*2 samples influence the cells \(older samples scroll off\)$")]
+#[then(
+    regex = r"^only the most recent w\*2 samples influence the cells \(older samples scroll off\)$"
+)]
 fn sparkline_recent_window(_w: &mut TuiPropsWorld) {
     // ORACLE: data = samples[len.saturating_sub(cols)..]; prepending older samples
     // beyond the last cols must not change the rendered Line.
@@ -688,7 +759,9 @@ fn sparkline_recent_window(_w: &mut TuiPropsWorld) {
     });
 }
 
-#[then(regex = r"^when samples are fewer than w\*2 the line is left-padded with idle baseline cells$")]
+#[then(
+    regex = r"^when samples are fewer than w\*2 the line is left-padded with idle baseline cells$"
+)]
 fn sparkline_left_pad(_w: &mut TuiPropsWorld) {
     // ORACLE: cols.saturating_sub(len) zero-cells are prepended ⇒ leading idle cells.
     // An idle cell renders the braille baseline (spark_height(0,max)=1 → both

@@ -46,11 +46,18 @@
         # doc build and ordinary compilation (include_str! is evaluated at
         # compile time, not just by rustdoc). Use a fileset that keeps the cargo
         # sources plus README.md.
+        #
+        # The cucumber BDD runners (card #74/#76) read `.feature` files at RUNTIME
+        # via `filter_run_and_exit(<path>)`; `commonCargoSources` strips non-Rust
+        # files, so without this the gate's `cargoNextest` would fail with
+        # "Could not read path" even though the runners pass with the full tree
+        # checked out. Keep the whole feature catalog in the sandbox.
         src = lib.fileset.toSource {
           root = ./.;
           fileset = lib.fileset.unions [
             (craneLib.fileset.commonCargoSources ./.)
             ./README.md
+            ./tests/features
           ];
         };
 

@@ -261,7 +261,9 @@ async fn when_concurrent_polls(world: &mut WireWorld) {
         .collect();
 
     for task in tasks {
-        world.seqs.extend(task.await.expect("poller task must not panic"));
+        world
+            .seqs
+            .extend(task.await.expect("poller task must not panic"));
     }
 }
 
@@ -317,7 +319,9 @@ async fn when_poll_during_concurrent_spawn(world: &mut WireWorld) {
     });
 
     for spawner in spawners {
-        world.actors.push(spawner.await.expect("spawner task must not panic"));
+        world
+            .actors
+            .push(spawner.await.expect("spawner task must not panic"));
     }
     world
         .snapshots
@@ -474,9 +478,7 @@ async fn given_grave_window_long(_world: &mut WireWorld) {
     // the just-stopped actor cannot be reaped before it is observed.
 }
 
-#[then(
-    regex = r"^the stopped actor is present with status Stopped carrying its stop reason$"
-)]
+#[then(regex = r"^the stopped actor is present with status Stopped carrying its stop reason$")]
 async fn then_stopped_present_with_reason(world: &mut WireWorld) {
     let id = world.stopped_id.expect("stopped actor id");
     let snapshot = world.snapshots.last().expect("a polled snapshot");
@@ -588,7 +590,9 @@ async fn then_actor_present_stopped(world: &mut WireWorld) {
     );
 }
 
-#[then(regex = r"^an actor stopped for strictly longer than the grave window is absent from the snapshot$")]
+#[then(
+    regex = r"^an actor stopped for strictly longer than the grave window is absent from the snapshot$"
+)]
 async fn then_actor_absent_after_window(world: &mut WireWorld) {
     let id = world.reaped_id.expect("absent-case actor id");
     let reaped = &world.snapshots[1];
@@ -902,7 +906,15 @@ async fn server_wire_features() {
         .fail_on_skipped()
         .with_default_cli()
         .filter_run_and_exit(
-            "tests/features/console/server_wire.feature",
+            // Anchor to CARGO_MANIFEST_DIR (the crate root): nextest does not
+            // guarantee the test's cwd is the workspace root (the nix-sandbox
+            // `cargoNextest` runs from a different cwd than a bare `cargo test`),
+            // so a bare relative path makes cucumber fail with "Could not read
+            // path". The env var is the root `kameo` crate dir = workspace root.
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/features/console/server_wire.feature"
+            ),
             |_, _, _| true,
         )
         .await;

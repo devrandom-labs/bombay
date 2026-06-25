@@ -50,7 +50,11 @@ fn make_actor(id: u64) -> ActorSnapshot {
         waiting_on: None,
         strategy: None,
         spawned_at: SystemTime::UNIX_EPOCH,
-        mailbox: MailboxStats { kind: MailboxKind::Unbounded, len: 0, capacity: None },
+        mailbox: MailboxStats {
+            kind: MailboxKind::Unbounded,
+            len: 0,
+            capacity: None,
+        },
         counters: ActorCounters::default(),
         message_types: Vec::new(),
         refs: RefCounts { strong: 1, weak: 0 },
@@ -83,7 +87,11 @@ fn parse_dt(s: &str) -> Option<Duration> {
     if s == "None" {
         return None;
     }
-    let secs: u64 = s.strip_suffix('s').expect("dt token must end in 's'").parse().expect("dt secs");
+    let secs: u64 = s
+        .strip_suffix('s')
+        .expect("dt token must end in 's'")
+        .parse()
+        .expect("dt secs");
     Some(Duration::from_secs(secs))
 }
 
@@ -207,7 +215,12 @@ async fn when_color_rgb(world: &mut TuiWorld, color: String) {
 
 #[given(regex = r"^an area at \((\d+),(\d+)\) sized (\d+)x(\d+)$")]
 async fn given_area(world: &mut TuiWorld, ax: u16, ay: u16, aw: u16, ah: u16) {
-    world.area = Rect { x: ax, y: ay, width: aw, height: ah };
+    world.area = Rect {
+        x: ax,
+        y: ay,
+        width: aw,
+        height: ah,
+    };
 }
 
 #[when(regex = r"^centered_rect is requested at (\d+)x(\d+)$")]
@@ -259,7 +272,10 @@ async fn given_current_snapshot_at(world: &mut TuiWorld, secs: u64) {
 
 #[when(regex = r"^rate_context is called$")]
 async fn when_rate_context(world: &mut TuiWorld) {
-    let current = world.current_snapshot.as_ref().expect("current snapshot set");
+    let current = world
+        .current_snapshot
+        .as_ref()
+        .expect("current snapshot set");
     let prev = world.prev_snapshot.as_ref();
     let (prev_received, dt) = kameo_console::testing::rate_context(current, prev);
     world.prev_received = prev_received;
@@ -268,12 +284,19 @@ async fn when_rate_context(world: &mut TuiWorld) {
 
 #[then(regex = r"^the previous-received map is empty$")]
 async fn then_prev_received_empty(world: &mut TuiWorld) {
-    assert!(world.prev_received.is_empty(), "expected empty prev_received map");
+    assert!(
+        world.prev_received.is_empty(),
+        "expected empty prev_received map"
+    );
 }
 
 #[then(regex = r"^the returned dt is None$")]
 async fn then_dt_is_none(world: &mut TuiWorld) {
-    assert!(world.dt.is_none(), "expected dt to be None, got {:?}", world.dt);
+    assert!(
+        world.dt.is_none(),
+        "expected dt to be None, got {:?}",
+        world.dt
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -309,8 +332,11 @@ async fn given_actor_absent_from_prev(world: &mut TuiWorld) {
 #[when(regex = r"^actor_rate is called with a 1s dt$")]
 async fn when_actor_rate_1s_dt(world: &mut TuiWorld) {
     let actor = world.actor.as_ref().expect("actor set");
-    world.last_u64 =
-        kameo_console::testing::actor_rate(actor, &world.prev_received, Some(Duration::from_secs(1)));
+    world.last_u64 = kameo_console::testing::actor_rate(
+        actor,
+        &world.prev_received,
+        Some(Duration::from_secs(1)),
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -361,7 +387,11 @@ async fn when_sort_actors_mailbox_desc(world: &mut TuiWorld) {
 }
 
 #[then(regex = r"^the actor with id (\d+) orders before the actor with id (\d+)$")]
-async fn then_actor_orders_before(world: &mut TuiWorld, expected_first: u64, _expected_second: u64) {
+async fn then_actor_orders_before(
+    world: &mut TuiWorld,
+    expected_first: u64,
+    _expected_second: u64,
+) {
     assert_eq!(
         world.ordered_first_id, expected_first,
         "expected actor {expected_first} to be first, but {_expected_second} would be first"
@@ -399,7 +429,15 @@ async fn then_returns_rgb(world: &mut TuiWorld, r: u8, g: u8, b: u8) {
 
 #[then(regex = r"^the result is at \((\d+),(\d+)\) sized (\d+)x(\d+)$")]
 async fn then_rect_result(world: &mut TuiWorld, rx: u16, ry: u16, rw: u16, rh: u16) {
-    assert_eq!(world.last_rect, Rect { x: rx, y: ry, width: rw, height: rh });
+    assert_eq!(
+        world.last_rect,
+        Rect {
+            x: rx,
+            y: ry,
+            width: rw,
+            height: rh
+        }
+    );
 }
 
 #[then(regex = r"^the style is (normal|yellow|red)$")]
@@ -454,7 +492,12 @@ async fn when_sparkline_no_samples(world: &mut TuiWorld, max: u64, width: usize)
 #[then(regex = r"^the line has exactly (\d+) braille cells$")]
 async fn then_line_has_n_cells(world: &mut TuiWorld, n: usize) {
     let line = world.last_line.as_ref().expect("last_line must be set");
-    assert_eq!(line.spans.len(), n, "expected {n} spans (cells), got {}", line.spans.len());
+    assert_eq!(
+        line.spans.len(),
+        n,
+        "expected {n} spans (cells), got {}",
+        line.spans.len()
+    );
 }
 
 #[then(regex = r"^every cell shows the idle baseline \(bottom dot only\)$")]
@@ -507,9 +550,11 @@ async fn then_newest_in_rightmost_cell(world: &mut TuiWorld) {
     let window_start = n.saturating_sub(cols);
     let right_left = samples[window_start + cols - 2];
     let right_right = samples[window_start + cols - 1];
-    let expected_glyph =
-        braille_oracle(spark_height_oracle(right_left, max), spark_height_oracle(right_right, max))
-            .to_string();
+    let expected_glyph = braille_oracle(
+        spark_height_oracle(right_left, max),
+        spark_height_oracle(right_right, max),
+    )
+    .to_string();
     let rightmost = line.spans.last().expect("at least one span");
     assert_eq!(
         rightmost.content.as_ref(),
@@ -571,7 +616,11 @@ async fn then_remaining_cells_idle_color(world: &mut TuiWorld) {
 // ---------------------------------------------------------------------------
 
 fn waiting(mut a: ActorSnapshot, target: u64) -> ActorSnapshot {
-    a.waiting_on = Some(WaitEdge { target: ActorId(target), kind: WaitKind::Ask, elapsed: Duration::ZERO });
+    a.waiting_on = Some(WaitEdge {
+        target: ActorId(target),
+        kind: WaitKind::Ask,
+        elapsed: Duration::ZERO,
+    });
     a
 }
 
@@ -647,12 +696,20 @@ async fn when_detect_deadlocks_runs(_world: &mut TuiWorld) {
 
 #[then(regex = r"^it returns zero cycles$")]
 async fn then_zero_cycles(world: &mut TuiWorld) {
-    assert!(world.cycles.is_empty(), "expected zero cycles, got {:?}", world.cycles);
+    assert!(
+        world.cycles.is_empty(),
+        "expected zero cycles, got {:?}",
+        world.cycles
+    );
 }
 
 #[then(regex = r"^it returns zero cycles and does not panic$")]
 async fn then_zero_cycles_no_panic(world: &mut TuiWorld) {
-    assert!(world.cycles.is_empty(), "expected zero cycles, got {:?}", world.cycles);
+    assert!(
+        world.cycles.is_empty(),
+        "expected zero cycles, got {:?}",
+        world.cycles
+    );
 }
 
 #[then(regex = r"^it returns exactly one cycle containing only A$")]
@@ -667,12 +724,24 @@ async fn then_one_cycle_only_a(world: &mut TuiWorld) {
 
 #[then(regex = r"^it returns exactly one cycle$")]
 async fn then_exactly_one_cycle(world: &mut TuiWorld) {
-    assert_eq!(world.cycles.len(), 1, "expected exactly one cycle, got {}: {:?}", world.cycles.len(), world.cycles);
+    assert_eq!(
+        world.cycles.len(),
+        1,
+        "expected exactly one cycle, got {}: {:?}",
+        world.cycles.len(),
+        world.cycles
+    );
 }
 
 #[then(regex = r"^it returns exactly two cycles$")]
 async fn then_exactly_two_cycles(world: &mut TuiWorld) {
-    assert_eq!(world.cycles.len(), 2, "expected exactly two cycles, got {}: {:?}", world.cycles.len(), world.cycles);
+    assert_eq!(
+        world.cycles.len(),
+        2,
+        "expected exactly two cycles, got {}: {:?}",
+        world.cycles.len(),
+        world.cycles
+    );
 }
 
 #[then(regex = r"^the cycle contains exactly A and B$")]
@@ -714,18 +783,25 @@ async fn then_cycles_ordered_by_first_id(world: &mut TuiWorld) {
     let first_ids: Vec<u64> = world.cycles.iter().map(|c| c[0].0).collect();
     let mut sorted = first_ids.clone();
     sorted.sort_unstable();
-    assert_eq!(first_ids, sorted, "cycles are not ordered by their first id: {:?}", first_ids);
+    assert_eq!(
+        first_ids, sorted,
+        "cycles are not ordered by their first id: {:?}",
+        first_ids
+    );
 }
 
 #[then(regex = r"^neither cycle shares a member with the other$")]
 async fn then_cycles_disjoint(world: &mut TuiWorld) {
     let set_a: std::collections::HashSet<u64> = world.cycles[0].iter().map(|id| id.0).collect();
     let set_b: std::collections::HashSet<u64> = world.cycles[1].iter().map(|id| id.0).collect();
-    let intersection: std::collections::HashSet<u64> = set_a.intersection(&set_b).copied().collect();
+    let intersection: std::collections::HashSet<u64> =
+        set_a.intersection(&set_b).copied().collect();
     assert!(
         intersection.is_empty(),
         "cycles share members: {:?}; cycle0={:?} cycle1={:?}",
-        intersection, world.cycles[0], world.cycles[1]
+        intersection,
+        world.cycles[0],
+        world.cycles[1]
     );
 }
 
@@ -735,7 +811,10 @@ async fn then_cycles_disjoint(world: &mut TuiWorld) {
 
 fn parse_color(s: &str) -> Color {
     if let Some(inner) = s.strip_prefix("Rgb(").and_then(|s| s.strip_suffix(')')) {
-        let parts: Vec<u8> = inner.split(',').filter_map(|p| p.trim().parse().ok()).collect();
+        let parts: Vec<u8> = inner
+            .split(',')
+            .filter_map(|p| p.trim().parse().ok())
+            .collect();
         if parts.len() == 3 {
             return Color::Rgb(parts[0], parts[1], parts[2]);
         }

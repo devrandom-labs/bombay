@@ -21,8 +21,8 @@ use std::time::{Duration, SystemTime};
 use cucumber::{World, given, then, when};
 use kameo::console::wire::Message;
 use kameo_console::testing::{
-    ActorCounters, ActorId, ActorSnapshot, ActorStatus, Links, MailboxKind, MailboxStats,
-    MAX_FRAME_BYTES, RefCounts, Snapshot, Totals, check_frame_len, decode_frame,
+    ActorCounters, ActorId, ActorSnapshot, ActorStatus, Links, MAX_FRAME_BYTES, MailboxKind,
+    MailboxStats, RefCounts, Snapshot, Totals, check_frame_len, decode_frame,
 };
 use proptest::prelude::*;
 
@@ -100,7 +100,11 @@ fn actor_strategy() -> impl Strategy<Value = ActorSnapshot> {
             waiting_on: None,
             strategy: None,
             spawned_at: SystemTime::UNIX_EPOCH,
-            mailbox: MailboxStats { kind, len: 0, capacity },
+            mailbox: MailboxStats {
+                kind,
+                len: 0,
+                capacity,
+            },
             counters: ActorCounters::default(),
             message_types: Vec::new(),
             refs: RefCounts { strong: 1, weak: 0 },
@@ -236,7 +240,11 @@ async fn then_oversized_rejected_no_alloc(_world: &mut PollerPropsWorld) {
     // The named edges {MAX+1, 1<<30, 0xFFFFFFFF}, asserted concretely.
     for l in [67_108_865u32, 1u32 << 30, 0xFFFF_FFFF] {
         let err = check_frame_len(l).unwrap_err();
-        assert_eq!(err.kind(), io::ErrorKind::InvalidData, "L={l} must be rejected");
+        assert_eq!(
+            err.kind(),
+            io::ErrorKind::InvalidData,
+            "L={l} must be rejected"
+        );
     }
 }
 
@@ -261,9 +269,7 @@ async fn given_any_byte_string(_world: &mut PollerPropsWorld) {}
 #[when(regex = r"^the poller passes B through rmp_serde decode$")]
 async fn when_decode_b(_world: &mut PollerPropsWorld) {}
 
-#[then(
-    regex = r"^it returns either a decoded Snapshot or an InvalidData error, and never panics$"
-)]
+#[then(regex = r"^it returns either a decoded Snapshot or an InvalidData error, and never panics$")]
 async fn then_decode_total(_world: &mut PollerPropsWorld) {
     // ORACLE: decode is TOTAL over &[u8] — every B yields a Result, mapping any
     // rmp_serde error to ErrorKind::InvalidData; it never panics (the proptest run
@@ -273,7 +279,10 @@ async fn then_decode_total(_world: &mut PollerPropsWorld) {
         prop_assert!(r.is_ok() || r.as_ref().unwrap_err().kind() == io::ErrorKind::InvalidData);
     });
     // The named edges: empty slice and all-0xFF are not valid Message::Snapshot.
-    assert_eq!(decode_frame(&[]).unwrap_err().kind(), io::ErrorKind::InvalidData);
+    assert_eq!(
+        decode_frame(&[]).unwrap_err().kind(),
+        io::ErrorKind::InvalidData
+    );
     assert_eq!(
         decode_frame(&[0xFF; 16]).unwrap_err().kind(),
         io::ErrorKind::InvalidData
@@ -293,7 +302,10 @@ async fn then_invalid_b_is_invalid_data(_world: &mut PollerPropsWorld) {
             prop_assert_eq!(err.kind(), io::ErrorKind::InvalidData);
         }
     });
-    assert_eq!(decode_frame(&[]).unwrap_err().kind(), io::ErrorKind::InvalidData);
+    assert_eq!(
+        decode_frame(&[]).unwrap_err().kind(),
+        io::ErrorKind::InvalidData
+    );
     assert_eq!(
         decode_frame(&[0xFF; 8]).unwrap_err().kind(),
         io::ErrorKind::InvalidData
@@ -309,5 +321,8 @@ async fn then_slot_unchanged_on_error(_world: &mut PollerPropsWorld) {
     let slot: Arc<Mutex<Option<Snapshot>>> = Arc::new(Mutex::new(None));
     let err = decode_frame(&[0xFF; 8]).unwrap_err();
     assert_eq!(err.kind(), io::ErrorKind::InvalidData);
-    assert!(slot.lock().unwrap().is_none(), "decode-only failure must not write the slot");
+    assert!(
+        slot.lock().unwrap().is_none(),
+        "decode-only failure must not write the slot"
+    );
 }

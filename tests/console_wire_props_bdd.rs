@@ -128,9 +128,7 @@ async fn law_seq_strictly_increasing(_world: &mut WiredPropsWorld) {
     }
 }
 
-#[then(
-    regex = r"^the seq values observed form a strictly increasing sequence$"
-)]
+#[then(regex = r"^the seq values observed form a strictly increasing sequence$")]
 async fn then_seq_increasing_noop(_world: &mut WiredPropsWorld) {
     // The universally-quantified check ran in the When step over the whole
     // boundary set; both Then clauses are part of that one assertion.
@@ -174,9 +172,7 @@ async fn law_clocks_non_decreasing(_world: &mut WiredPropsWorld) {
     }
 }
 
-#[then(
-    regex = r"^each snapshot's captured_at is at or after the previous one's$"
-)]
+#[then(regex = r"^each snapshot's captured_at is at or after the previous one's$")]
 async fn then_captured_non_decreasing_noop(_world: &mut WiredPropsWorld) {}
 
 #[then(regex = r"^each snapshot's uptime is at or after the previous one's$")]
@@ -334,14 +330,10 @@ async fn law_total_stopped_conserved(_world: &mut WiredPropsWorld) {
     }
 }
 
-#[then(
-    regex = r"^totals.total_stopped equals the number of actors that have ever stopped$"
-)]
+#[then(regex = r"^totals.total_stopped equals the number of actors that have ever stopped$")]
 async fn then_total_stopped_eq_model_noop(_world: &mut WiredPropsWorld) {}
 
-#[then(
-    regex = r"^it never double-counts a reaped actor nor loses one mid-reap, for any schedule$"
-)]
+#[then(regex = r"^it never double-counts a reaped actor nor loses one mid-reap, for any schedule$")]
 async fn then_total_stopped_no_dup_noop(_world: &mut WiredPropsWorld) {}
 
 // ===========================================================================
@@ -376,12 +368,7 @@ const POLLERS: usize = 8;
 ///   or reaped are both valid, so they are not required to be present.
 ///
 /// Panics with a specific message on a violation.
-async fn run_membership_case(
-    n_pre_live: usize,
-    n_conc_spawn: usize,
-    n_stop: usize,
-    label: &str,
-) {
+async fn run_membership_case(n_pre_live: usize, n_conc_spawn: usize, n_stop: usize, label: &str) {
     kameo::console::testing::reset_for_test();
 
     // Pre-existing live actors, registered before any concurrency starts: kept
@@ -528,9 +515,7 @@ async fn law_membership_consistent(_world: &mut WiredPropsWorld) {
     run_membership_case(8, 40, 16, "max-8-40-16").await;
 }
 
-#[then(
-    regex = r"^no two snapshots produced by the process ever share the same seq$"
-)]
+#[then(regex = r"^no two snapshots produced by the process ever share the same seq$")]
 async fn then_membership_seqs_unique_noop(_world: &mut WiredPropsWorld) {}
 
 #[then(regex = r"^every actor id appears at most once in the returned snapshot$")]
@@ -546,9 +531,7 @@ async fn then_membership_linearizable_noop(_world: &mut WiredPropsWorld) {}
 // only need to exist (fail_on_skipped). They assert no global state up front.
 // ===========================================================================
 
-#[given(
-    regex = r"^a console server with at least one live actor and one open client connection$"
-)]
+#[given(regex = r"^a console server with at least one live actor and one open client connection$")]
 async fn given_server_live_actor_conn(_world: &mut WiredPropsWorld) {}
 
 #[given(regex = r"^a console server and one open client connection$")]
@@ -557,14 +540,10 @@ async fn given_server_one_conn(_world: &mut WiredPropsWorld) {}
 #[given(regex = r"^any poll count n$")]
 async fn given_any_poll_count(_world: &mut WiredPropsWorld) {}
 
-#[given(
-    regex = r"^any sequence of spawns and stops with reaps interleaved at arbitrary points$"
-)]
+#[given(regex = r"^any sequence of spawns and stops with reaps interleaved at arbitrary points$")]
 async fn given_any_spawn_stop_reap_sequence(_world: &mut WiredPropsWorld) {}
 
-#[given(
-    regex = r"^a console server and any concurrent interleaving of spawn and stop operations$"
-)]
+#[given(regex = r"^a console server and any concurrent interleaving of spawn and stop operations$")]
 async fn given_server_concurrent_interleaving(_world: &mut WiredPropsWorld) {}
 
 // ===========================================================================
@@ -588,7 +567,14 @@ async fn server_wire_property_laws() {
         .fail_on_skipped()
         .with_default_cli()
         .filter_run_and_exit(
-            "tests/features/console/server_wire.properties.feature",
+            // Anchor to CARGO_MANIFEST_DIR (= workspace root for the root crate):
+            // nextest does not guarantee the test cwd is the workspace root, so a
+            // bare relative path makes cucumber fail with "Could not read path"
+            // under the nix-sandbox `cargoNextest` (which runs from another cwd).
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/features/console/server_wire.properties.feature"
+            ),
             |_, _, _| true,
         )
         .await;

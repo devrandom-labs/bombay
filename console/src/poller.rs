@@ -35,8 +35,8 @@ pub fn check_frame_len(len: u32) -> io::Result<()> {
 
 /// Decode a MessagePack payload into a Snapshot, mapping any rmp error to InvalidData.
 pub fn decode_frame(buf: &[u8]) -> io::Result<Snapshot> {
-    let Message::Snapshot(snapshot) =
-        rmp_serde::from_slice(buf).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+    let Message::Snapshot(snapshot) = rmp_serde::from_slice(buf)
+        .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
     Ok(snapshot)
 }
 
@@ -62,8 +62,7 @@ fn connect_loop(
     connection_state: &Arc<Mutex<ConnectionState>>,
 ) -> Poller {
     loop {
-        if let Some(poller) =
-            connect_attempt(addr, connection_timeout, snapshot, connection_state)
+        if let Some(poller) = connect_attempt(addr, connection_timeout, snapshot, connection_state)
         {
             return poller;
         }
@@ -121,11 +120,7 @@ fn poll_loop(
 /// The shared "a poll failed" reaction: record `Disconnected { error, since }`, shut the socket
 /// down, and (in the real loop) drop the poller. Used by both `poll_loop` and the bounded,
 /// testable `poll_loop_until_error`, so the disconnect behaviour stays identical between them.
-fn fail_poll(
-    poller: &mut Poller,
-    connection_state: &Arc<Mutex<ConnectionState>>,
-    err: &io::Error,
-) {
+fn fail_poll(poller: &mut Poller, connection_state: &Arc<Mutex<ConnectionState>>, err: &io::Error) {
     *connection_state.lock().unwrap() = ConnectionState::Disconnected {
         error: format!("{err}"),
         since: Instant::now(),
@@ -165,11 +160,11 @@ pub struct Poller {
 /// one genuine `poll()`. Exercises the production request/reply/framing/publish path without
 /// exposing the private `Poller`/`connect`/`poll` API in normal builds (CLAUDE.md rule 4).
 #[cfg(any(test, feature = "testing"))]
-pub fn poll_once_over(
-    stream: TcpStream,
-    slot: Arc<Mutex<Option<Snapshot>>>,
-) -> io::Result<()> {
-    let mut poller = Poller { stream, snapshot: slot };
+pub fn poll_once_over(stream: TcpStream, slot: Arc<Mutex<Option<Snapshot>>>) -> io::Result<()> {
+    let mut poller = Poller {
+        stream,
+        snapshot: slot,
+    };
     poller.poll()
 }
 
@@ -184,7 +179,10 @@ pub fn poll_once_over_with_read_timeout(
 ) -> io::Result<()> {
     let clone = stream.try_clone()?;
     clone.set_read_timeout(Some(read_timeout))?;
-    let mut poller = Poller { stream: clone, snapshot: slot };
+    let mut poller = Poller {
+        stream: clone,
+        snapshot: slot,
+    };
     poller.poll()
 }
 

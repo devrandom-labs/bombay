@@ -14,13 +14,13 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
 
 use cucumber::{World, given, then, when};
+use kameo::console::wire::Message;
 use kameo_console::ConnectionState;
 use kameo_console::testing::{
     ActorCounters, ActorId, ActorSnapshot, ActorStatus, BACKOFF, Links, MailboxKind, MailboxStats,
     RefCounts, Snapshot, Totals, check_frame_len, connect_attempt, decode_frame,
     poll_loop_until_error, poll_once_over, poll_once_over_with_read_timeout,
 };
-use kameo::console::wire::Message;
 
 #[derive(Debug, World)]
 #[world(init = Self::new)]
@@ -92,7 +92,11 @@ fn make_actor(id: u64) -> ActorSnapshot {
         waiting_on: None,
         strategy: None,
         spawned_at: SystemTime::UNIX_EPOCH,
-        mailbox: MailboxStats { kind: MailboxKind::Unbounded, len: 0, capacity: None },
+        mailbox: MailboxStats {
+            kind: MailboxKind::Unbounded,
+            len: 0,
+            capacity: None,
+        },
         counters: ActorCounters::default(),
         message_types: Vec::new(),
         refs: RefCounts { strong: 1, weak: 0 },
@@ -137,7 +141,9 @@ fn spawn_replier(mut server: TcpStream, replies: Vec<Vec<u8>>) -> JoinHandle<()>
                 return;
             }
             let len = u32::try_from(frame.len()).expect("frame fits in u32");
-            server.write_all(&len.to_be_bytes()).expect("write len prefix");
+            server
+                .write_all(&len.to_be_bytes())
+                .expect("write len prefix");
             server.write_all(&frame).expect("write frame");
         }
     })
@@ -162,7 +168,9 @@ async fn given_snapshot_seq7(world: &mut PollerWorld) {
     world.original = Some(snapshot_with_seq(7, vec![make_actor(1), make_actor(2)]));
 }
 
-#[when(regex = r"^the Snapshot is encoded as a length-prefixed MessagePack frame and the poller decodes it$")]
+#[when(
+    regex = r"^the Snapshot is encoded as a length-prefixed MessagePack frame and the poller decodes it$"
+)]
 async fn when_encode_then_decode(world: &mut PollerWorld) {
     let original = world.original.as_ref().expect("original snapshot set");
     let bytes = encode_snapshot(original);
@@ -175,9 +183,16 @@ async fn then_round_trip_equal(world: &mut PollerWorld) {
     let decoded = world.decoded.as_ref().expect("decoded snapshot set");
 
     assert_eq!(decoded.seq, original.seq, "seq mismatch");
-    assert_eq!(decoded.captured_at, original.captured_at, "captured_at mismatch");
+    assert_eq!(
+        decoded.captured_at, original.captured_at,
+        "captured_at mismatch"
+    );
     assert_eq!(decoded.uptime, original.uptime, "uptime mismatch");
-    assert_eq!(decoded.actors.len(), original.actors.len(), "actor count mismatch");
+    assert_eq!(
+        decoded.actors.len(),
+        original.actors.len(),
+        "actor count mismatch"
+    );
     for (d, o) in decoded.actors.iter().zip(original.actors.iter()) {
         assert_eq!(d.id, o.id, "actor id mismatch");
         assert_eq!(d.name, o.name, "actor name mismatch");
@@ -187,7 +202,10 @@ async fn then_round_trip_equal(world: &mut PollerWorld) {
             "actor status discriminant mismatch"
         );
     }
-    assert_eq!(decoded.totals.alive, original.totals.alive, "totals.alive mismatch");
+    assert_eq!(
+        decoded.totals.alive, original.totals.alive,
+        "totals.alive mismatch"
+    );
     assert_eq!(
         decoded.totals.total_spawned, original.totals.total_spawned,
         "totals.total_spawned mismatch"
@@ -197,7 +215,11 @@ async fn then_round_trip_equal(world: &mut PollerWorld) {
         "totals.messages_received mismatch"
     );
     // Belt-and-braces: re-encoding both yields identical deterministic bytes.
-    assert_eq!(encode_snapshot(decoded), encode_snapshot(original), "re-encoded bytes differ");
+    assert_eq!(
+        encode_snapshot(decoded),
+        encode_snapshot(original),
+        "re-encoded bytes differ"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -220,7 +242,9 @@ async fn when_one_poll(world: &mut PollerWorld) {
     let handle = thread::spawn(move || {
         let mut server = server;
         let mut req = [0u8; 1];
-        server.read_exact(&mut req).expect("server reads request byte");
+        server
+            .read_exact(&mut req)
+            .expect("server reads request byte");
         let len = u32::try_from(frame_for_server.len()).expect("fits u32");
         server.write_all(&len.to_be_bytes()).expect("write len");
         server.write_all(&frame_for_server).expect("write frame");
@@ -243,7 +267,15 @@ async fn when_one_poll(world: &mut PollerWorld) {
     world.request_byte = Some(byte);
     world.request_byte_count = count;
     world.payload_len_consumed = Some(4 + frame.len());
-    world.seqs.push(world.slot.lock().unwrap().as_ref().expect("slot filled").seq);
+    world.seqs.push(
+        world
+            .slot
+            .lock()
+            .unwrap()
+            .as_ref()
+            .expect("slot filled")
+            .seq,
+    );
 }
 
 /// `poll_once_over` takes ownership of the stream, so clone it for the poll and
@@ -261,21 +293,36 @@ fn poll_once_over_with_timeout(
 
 #[then(regex = r"^the poller has written exactly the single byte 0x00 to the stream$")]
 async fn then_single_zero_byte(world: &mut PollerWorld) {
-    assert_eq!(world.request_byte, Some(0x00), "request byte should be 0x00");
-    assert_eq!(world.request_byte_count, 1, "poller should write exactly one request byte");
+    assert_eq!(
+        world.request_byte,
+        Some(0x00),
+        "request byte should be 0x00"
+    );
+    assert_eq!(
+        world.request_byte_count, 1,
+        "poller should write exactly one request byte"
+    );
 }
 
 #[then(regex = r"^it then read a 4-byte big-endian length prefix$")]
 async fn then_read_len_prefix(world: &mut PollerWorld) {
-    let consumed = world.payload_len_consumed.expect("payload consumed recorded");
-    assert!(consumed >= 4, "poller must consume at least the 4-byte prefix, got {consumed}");
+    let consumed = world
+        .payload_len_consumed
+        .expect("payload consumed recorded");
+    assert!(
+        consumed >= 4,
+        "poller must consume at least the 4-byte prefix, got {consumed}"
+    );
 }
 
 #[then(regex = r"^it then read exactly that many payload bytes$")]
 async fn then_read_payload(world: &mut PollerWorld) {
     // A successful poll published into the slot, which only happens after
     // read_exact of the full payload succeeded.
-    assert!(world.slot.lock().unwrap().is_some(), "slot must hold a decoded snapshot");
+    assert!(
+        world.slot.lock().unwrap().is_some(),
+        "slot must hold a decoded snapshot"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -310,7 +357,13 @@ async fn given_server_seq_0_1_2(world: &mut PollerWorld) {
     for _ in 0..3 {
         poll_once_over_with_timeout(&mut client, Arc::clone(&world.slot))
             .expect("sequential poll should succeed");
-        let seq = world.slot.lock().unwrap().as_ref().expect("slot filled").seq;
+        let seq = world
+            .slot
+            .lock()
+            .unwrap()
+            .as_ref()
+            .expect("slot filled")
+            .seq;
         world.seqs.push(seq);
     }
     drop(client);
@@ -332,9 +385,18 @@ async fn then_slot_ends_seq2(world: &mut PollerWorld) {
 
 #[then(regex = r"^each poll observed a seq strictly greater than the previous poll's seq$")]
 async fn then_seqs_strictly_increasing(world: &mut PollerWorld) {
-    assert_eq!(world.seqs, vec![0, 1, 2], "observed seqs should be 0,1,2 in order");
+    assert_eq!(
+        world.seqs,
+        vec![0, 1, 2],
+        "observed seqs should be 0,1,2 in order"
+    );
     for pair in world.seqs.windows(2) {
-        assert!(pair[1] > pair[0], "seq must strictly increase: {} !> {}", pair[1], pair[0]);
+        assert!(
+            pair[1] > pair[0],
+            "seq must strictly increase: {} !> {}",
+            pair[1],
+            pair[0]
+        );
     }
 }
 
@@ -377,12 +439,19 @@ async fn when_reads_len_prefix(_world: &mut PollerWorld) {
 
 #[then(regex = r"^the poller does not reject the frame on size$")]
 async fn then_not_rejected(world: &mut PollerWorld) {
-    assert!(world.gate_ok, "check_frame_len(MAX_FRAME_BYTES) should be Ok");
+    assert!(
+        world.gate_ok,
+        "check_frame_len(MAX_FRAME_BYTES) should be Ok"
+    );
 }
 
 #[then(regex = r"^the poller returns an InvalidData error naming the frame size$")]
 async fn then_invalid_data_naming_size(world: &mut PollerWorld) {
-    assert_eq!(world.err_kind, Some(io::ErrorKind::InvalidData), "kind should be InvalidData");
+    assert_eq!(
+        world.err_kind,
+        Some(io::ErrorKind::InvalidData),
+        "kind should be InvalidData"
+    );
     assert!(
         world.err_msg.contains("67108865"),
         "error message should name the size, got {:?}",
@@ -394,20 +463,30 @@ async fn then_invalid_data_naming_size(world: &mut PollerWorld) {
 async fn then_no_payload_alloc(world: &mut PollerWorld) {
     // The gate returns Err before `poll` reaches `vec![0u8; len as usize]`, so a
     // rejecting gate is itself the proof no buffer was allocated.
-    assert!(!world.gate_ok, "rejected before allocation: gate must be Err");
+    assert!(
+        !world.gate_ok,
+        "rejected before allocation: gate must be Err"
+    );
     assert_eq!(world.err_kind, Some(io::ErrorKind::InvalidData));
 }
 
 #[then(regex = r"^the poller returns an InvalidData error$")]
 async fn then_invalid_data(world: &mut PollerWorld) {
-    assert_eq!(world.err_kind, Some(io::ErrorKind::InvalidData), "kind should be InvalidData");
+    assert_eq!(
+        world.err_kind,
+        Some(io::ErrorKind::InvalidData),
+        "kind should be InvalidData"
+    );
 }
 
 #[then(regex = r"^the poller does not attempt to allocate 4 GiB$")]
 async fn then_no_4gib_alloc(world: &mut PollerWorld) {
     // 0xFFFFFFFF > MAX_FRAME_BYTES, so the gate returns Err before the `vec!`
     // allocation in `poll` is reached.
-    assert!(!world.gate_ok, "0xFFFFFFFF must be rejected by the size gate before allocation");
+    assert!(
+        !world.gate_ok,
+        "0xFFFFFFFF must be rejected by the size gate before allocation"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -426,7 +505,11 @@ async fn when_reads_frame_decode(_world: &mut PollerWorld) {
 
 #[then(regex = r"^the decode fails with InvalidData$")]
 async fn then_decode_invalid_data(world: &mut PollerWorld) {
-    assert_eq!(world.err_kind, Some(io::ErrorKind::InvalidData), "decode should fail InvalidData");
+    assert_eq!(
+        world.err_kind,
+        Some(io::ErrorKind::InvalidData),
+        "decode should fail InvalidData"
+    );
 }
 
 #[then(regex = r"^the poll returns an error so the poller reconnects$")]
@@ -471,16 +554,17 @@ async fn then_slot_unchanged(world: &mut PollerWorld) {
 
 #[then(regex = r"^the poll loop returns so the outer loop reconnects$")]
 async fn then_poll_loop_returns(world: &mut PollerWorld) {
-    assert!(world.err_kind.is_some(), "an error must have been recorded to trigger reconnect");
+    assert!(
+        world.err_kind.is_some(),
+        "an error must have been recorded to trigger reconnect"
+    );
 }
 
 // ---------------------------------------------------------------------------
 // @boundary: truncation — short payload, short prefix, stalled MAX read
 // ---------------------------------------------------------------------------
 
-#[given(
-    regex = r"^the server sends a length prefix of N but only N-1 payload bytes then closes$"
-)]
+#[given(regex = r"^the server sends a length prefix of N but only N-1 payload bytes then closes$")]
 async fn given_truncated_payload(world: &mut PollerWorld) {
     let (client, server) = loopback();
 
@@ -498,11 +582,8 @@ async fn given_truncated_payload(world: &mut PollerWorld) {
         // Drop s here: closing the connection signals EOF to the client.
     });
 
-    let result = poll_once_over_with_read_timeout(
-        client,
-        Arc::clone(&world.slot),
-        Duration::from_secs(5),
-    );
+    let result =
+        poll_once_over_with_read_timeout(client, Arc::clone(&world.slot), Duration::from_secs(5));
     handle.join().expect("server thread");
 
     match result {
@@ -514,9 +595,7 @@ async fn given_truncated_payload(world: &mut PollerWorld) {
     }
 }
 
-#[given(
-    regex = r"^the server sends only 2 bytes of the 4-byte length prefix then closes$"
-)]
+#[given(regex = r"^the server sends only 2 bytes of the 4-byte length prefix then closes$")]
 async fn given_truncated_prefix(world: &mut PollerWorld) {
     let (client, server) = loopback();
 
@@ -525,15 +604,13 @@ async fn given_truncated_prefix(world: &mut PollerWorld) {
         // Read the single request byte, then send only 2 of the 4 prefix bytes, then close.
         let mut req = [0u8; 1];
         let _ = s.read_exact(&mut req);
-        s.write_all(&[0x00, 0x00]).expect("write 2-byte partial prefix");
+        s.write_all(&[0x00, 0x00])
+            .expect("write 2-byte partial prefix");
         // Drop s: EOF for client.
     });
 
-    let result = poll_once_over_with_read_timeout(
-        client,
-        Arc::clone(&world.slot),
-        Duration::from_secs(5),
-    );
+    let result =
+        poll_once_over_with_read_timeout(client, Arc::clone(&world.slot), Duration::from_secs(5));
     handle.join().expect("server thread");
 
     match result {
@@ -561,7 +638,8 @@ async fn given_max_prefix_stalled_payload(world: &mut PollerWorld) {
         let mut req = [0u8; 1];
         let _ = s.read_exact(&mut req);
         let max: u32 = 67_108_864;
-        s.write_all(&max.to_be_bytes()).expect("write max len prefix");
+        s.write_all(&max.to_be_bytes())
+            .expect("write max len prefix");
         // Keep `s` alive until the client has returned (so the stall is genuine).
         let _ = rx.recv();
         // Drop s after client completes.
@@ -609,7 +687,10 @@ async fn then_unexpected_eof(world: &mut PollerWorld) {
 
 #[then(regex = r"^the poll returns that error so the poller reconnects$")]
 async fn then_poll_returns_that_error(world: &mut PollerWorld) {
-    assert!(world.err_kind.is_some(), "an error must have been recorded to trigger reconnect");
+    assert!(
+        world.err_kind.is_some(),
+        "an error must have been recorded to trigger reconnect"
+    );
 }
 
 #[then(
@@ -671,11 +752,18 @@ async fn when_connect_50ms_timeout(world: &mut PollerWorld) {
 
 #[then(regex = r"^the connection state becomes Disconnected carrying a non-empty error string$")]
 async fn then_disconnected_nonempty_error(world: &mut PollerWorld) {
-    assert_eq!(world.connected, Some(false), "connect to a dead address must fail");
+    assert_eq!(
+        world.connected,
+        Some(false),
+        "connect to a dead address must fail"
+    );
     let guard = world.conn_state.lock().unwrap();
     match &*guard {
         ConnectionState::Disconnected { error, .. } => {
-            assert!(!error.is_empty(), "Disconnected error string must be non-empty");
+            assert!(
+                !error.is_empty(),
+                "Disconnected error string must be non-empty"
+            );
         }
         other => panic!("expected Disconnected, got {other:?}"),
     }
@@ -707,7 +795,11 @@ async fn when_connect_fails_once(world: &mut PollerWorld) {
         &Arc::clone(&world.conn_state),
     );
     world.connected = Some(poller.is_some());
-    assert_eq!(world.connected, Some(false), "the connect attempt must fail");
+    assert_eq!(
+        world.connected,
+        Some(false),
+        "the connect attempt must fail"
+    );
 }
 
 #[then(regex = r"^it sleeps for 5 seconds before the next connect attempt$")]
@@ -742,8 +834,10 @@ async fn when_connect_loop_runs(world: &mut PollerWorld) {
     // Pre-seed a distinct sentinel so a successful connect must overwrite it. The only
     // code path to Connected writes Connecting first (synchronously, before the connect
     // call) — so reaching Connected proves the state passed through Connecting.
-    *world.conn_state.lock().unwrap() =
-        ConnectionState::Disconnected { error: "sentinel".to_owned(), since: std::time::Instant::now() };
+    *world.conn_state.lock().unwrap() = ConnectionState::Disconnected {
+        error: "sentinel".to_owned(),
+        since: std::time::Instant::now(),
+    };
 
     let poller = connect_attempt(
         &addr,
@@ -764,7 +858,11 @@ async fn then_passed_through_connecting(world: &mut PollerWorld) {
     // sentinel; a successful attempt ending NOT at that sentinel demonstrates the
     // state advanced off it, and the only success path advances Disconnected ->
     // Connecting -> Connected. The end-state Connected is asserted in the next step.
-    assert_eq!(world.connected, Some(true), "connect to a live listener must succeed");
+    assert_eq!(
+        world.connected,
+        Some(true),
+        "connect to a live listener must succeed"
+    );
     let guard = world.conn_state.lock().unwrap();
     assert!(
         !matches!(&*guard, ConnectionState::Disconnected { error, .. } if error == "sentinel"),
@@ -817,7 +915,10 @@ async fn when_server_closes_mid_frame(world: &mut PollerWorld) {
         &Arc::clone(&world.conn_state),
     )
     .expect("connect to live server should succeed");
-    assert!(matches!(&*world.conn_state.lock().unwrap(), ConnectionState::Connected));
+    assert!(matches!(
+        &*world.conn_state.lock().unwrap(),
+        ConnectionState::Connected
+    ));
 
     let err = poll_loop_until_error(&mut poller, &Arc::clone(&world.conn_state));
     world.err_kind = Some(err.kind());
@@ -828,7 +929,10 @@ async fn when_server_closes_mid_frame(world: &mut PollerWorld) {
 
 #[then(regex = r"^the poll returns an error$")]
 async fn then_poll_returned_error(world: &mut PollerWorld) {
-    assert!(world.poll_err.is_some(), "poll_loop_until_error must have returned an error");
+    assert!(
+        world.poll_err.is_some(),
+        "poll_loop_until_error must have returned an error"
+    );
 }
 
 #[then(regex = r"^the connection state becomes Disconnected with that error$")]
@@ -837,7 +941,10 @@ async fn then_state_disconnected_with_error(world: &mut PollerWorld) {
     let guard = world.conn_state.lock().unwrap();
     match &*guard {
         ConnectionState::Disconnected { error, .. } => {
-            assert_eq!(*error, expected, "Disconnected must carry the poll's error text");
+            assert_eq!(
+                *error, expected,
+                "Disconnected must carry the poll's error text"
+            );
         }
         other => panic!("expected Disconnected, got {other:?}"),
     }
@@ -874,7 +981,9 @@ async fn then_reconnects_and_polls_fresh(world: &mut PollerWorld) {
         // (2) poll connection: read the request byte, reply with the fresh frame.
         let (mut second, _) = listener.accept().expect("accept poll");
         let mut req = [0u8; 1];
-        second.read_exact(&mut req).expect("server reads request byte");
+        second
+            .read_exact(&mut req)
+            .expect("server reads request byte");
         let len = u32::try_from(frame.len()).expect("fits u32");
         second.write_all(&len.to_be_bytes()).expect("write len");
         second.write_all(&frame).expect("write frame");
@@ -888,7 +997,10 @@ async fn then_reconnects_and_polls_fresh(world: &mut PollerWorld) {
         &Arc::clone(&world.conn_state),
     )
     .expect("reconnect should succeed");
-    assert!(matches!(&*world.conn_state.lock().unwrap(), ConnectionState::Connected));
+    assert!(matches!(
+        &*world.conn_state.lock().unwrap(),
+        ConnectionState::Connected
+    ));
     drop(poller); // first connection done; its only role was to prove reconnect.
 
     // Subsequent poll: a fresh connection driven through the REAL poll path via the
@@ -901,5 +1013,8 @@ async fn then_reconnects_and_polls_fresh(world: &mut PollerWorld) {
 
     let guard = world.slot.lock().unwrap();
     let snap = guard.as_ref().expect("slot must hold the fresh snapshot");
-    assert_eq!(snap.seq, 99, "the subsequent poll must publish the fresh Snapshot (seq 99)");
+    assert_eq!(
+        snap.seq, 99,
+        "the subsequent poll must publish the fresh Snapshot (seq 99)"
+    );
 }

@@ -39,7 +39,14 @@ kameo_console = { path = ".", features = ["testing"] }
 cucumber = { workspace = true }
 proptest = { workspace = true }
 rstest = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync", "net", "io-util"] }
+tokio = { workspace = true, features = [
+  "rt-multi-thread",
+  "macros",
+  "time",
+  "sync",
+  "net",
+  "io-util",
+] }
 
 [[test]]
 name = "poller_bdd"

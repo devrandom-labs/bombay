@@ -19,7 +19,14 @@ async fn poller_property_laws() {
         .fail_on_skipped()
         .with_default_cli()
         .filter_run_and_exit(
-            "../tests/features/console/poller.properties.feature",
+            // Anchor to CARGO_MANIFEST_DIR (= the `console` crate dir): nextest
+            // does not guarantee the test cwd, so a bare relative path makes
+            // cucumber fail with "Could not read path" under the nix-sandbox
+            // `cargoNextest`. `/..` climbs from `console/` to the workspace root.
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../tests/features/console/poller.properties.feature"
+            ),
             |_, _, _| true,
         )
         .await;
