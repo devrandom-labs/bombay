@@ -143,6 +143,24 @@ impl App {
         Ok(())
     }
 
+    /// Test-only: drive one refresh+draw cycle into any backend (mirrors `run`'s body
+    /// without the blocking input read), so a `TestBackend` can capture the rendered frame.
+    #[cfg(any(test, feature = "testing"))]
+    pub fn render_once<B: ratatui::backend::Backend>(
+        &mut self,
+        terminal: &mut ratatui::Terminal<B>,
+    ) -> Result<(), B::Error> {
+        self.refresh();
+        terminal.draw(|frame| self.draw(frame))?;
+        Ok(())
+    }
+
+    /// Test-only: inject a synthetic keypress through the same dispatch `handle_events` uses.
+    #[cfg(any(test, feature = "testing"))]
+    pub fn press(&mut self, code: KeyCode, modifiers: KeyModifiers) {
+        self.on_key(code, modifiers);
+    }
+
     fn refresh(&mut self) {
         self.connection = self.source_connection.lock().unwrap().clone();
 
