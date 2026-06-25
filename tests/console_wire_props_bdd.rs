@@ -88,6 +88,24 @@ async fn spawn_live() -> ActorRef<Echo> {
     actor
 }
 
+/// `wait_for_shutdown()` resolves when the mailbox closes (`actor_ref.rs:620-622`), which
+/// precedes the console monitor's `set_stopped` (`spawn.rs:264`, after `on_stop`). So a just
+/// "shut down" actor can briefly still read non-`Stopped` — a gap that widens under CI load and
+/// flaked `total_stopped` low (a Stop not yet observable → not reaped / not counted). Poll the
+/// registry (non-reaping `snapshot(KEEP)`) until the actor is observably `Stopped`.
+async fn wait_until_stopped(id: u64) {
+    for _ in 0..200 {
+        let snap = kameo::console::testing::snapshot(KEEP).await;
+        if snap.actors.iter().any(|a| {
+            a.id.0 == id && matches!(a.status, kameo::console::wire::ActorStatus::Stopped { .. })
+        }) {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    panic!("actor {id} did not reach Stopped in the registry within the bound");
+}
+
 // ===========================================================================
 // @property @sequence — seq is strictly increasing and +1-stepped per poll
 // ===========================================================================
@@ -228,8 +246,12 @@ async fn run_total_stopped_schedule(ops: &[Op], label: &str) {
             Op::Spawn => live.push(spawn_live().await),
             Op::Stop => {
                 if let Some(actor) = live.pop() {
+                    let id = actor.id().sequence_id();
                     actor.stop_gracefully().await.unwrap();
                     actor.wait_for_shutdown().await;
+                    // Wait until the monitor is observably Stopped before counting it, so a
+                    // later Reap reliably reaps it and the final poll reliably counts it.
+                    wait_until_stopped(id).await;
                     ever_stopped = ever_stopped
                         .checked_add(1)
                         .expect("ever_stopped model overflow");

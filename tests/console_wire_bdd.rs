@@ -93,15 +93,42 @@ async fn reset_and_spawn(world: &mut WireWorld) {
     world.actors.push(actor);
 }
 
-/// Spawns an actor, stops it, and waits for shutdown so its monitor enters the
-/// `Stopped` state in the registry. Returns its sequence id.
+/// Spawns an actor, stops it, and waits until its console monitor OBSERVABLY reports
+/// `Stopped`. Returns its sequence id.
+///
+/// `wait_for_shutdown()` is NOT a sufficient barrier here: it resolves when the mailbox
+/// closes (`actor_ref.rs:620-622` → `mailbox_sender.closed()`), which happens at
+/// `spawn.rs:~250` (`notify_links` consumes `mailbox_rx`) — BEFORE the console monitor's
+/// `set_stopped` runs (`spawn.rs:264`, after `on_stop`). So right after `wait_for_shutdown`
+/// the monitor can still read non-`Stopped`. That gap is sub-microsecond on a fast box but
+/// widens under CI scheduling load, where it flaked `total_stopped` (the 3rd actor read as
+/// not-yet-stopped → `stopped_now` undercounted → got 2, want 3). Condition-based waiting on
+/// the observable state closes it deterministically.
 async fn spawn_then_stop() -> u64 {
     let actor = Echo::spawn(Echo);
     actor.wait_for_startup().await;
     let id = actor.id().sequence_id();
     actor.stop_gracefully().await.unwrap();
     actor.wait_for_shutdown().await;
+    wait_until_stopped(id).await;
     id
+}
+
+/// Polls the registry (via a non-reaping `snapshot(GRAVE_WINDOW)`) until the actor with `id`
+/// is observably `Stopped`, bounded so a real regression fails loudly instead of hanging.
+async fn wait_until_stopped(id: u64) {
+    for _ in 0..200 {
+        let snap = kameo::console::testing::snapshot(GRAVE_WINDOW).await;
+        if snap
+            .actors
+            .iter()
+            .any(|a| a.id.0 == id && matches!(a.status, ActorStatus::Stopped { .. }))
+        {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    panic!("actor {id} did not reach Stopped in the registry within the bound");
 }
 
 /// Reads one length-prefixed snapshot frame from a connected client socket: a
