@@ -193,6 +193,14 @@ required-features = ["testing"]
 name = "core_error_props_bdd"
 required-features = ["testing"]
 
+[[test]]
+name = "core_message_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_message_props_bdd"
+required-features = ["testing"]
+
 [[bench]]
 name = "overhead"
 harness = false
