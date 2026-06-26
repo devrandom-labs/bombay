@@ -185,6 +185,14 @@ required-features = ["testing"]
 name = "core_actor_id_props_bdd"
 required-features = ["testing"]
 
+[[test]]
+name = "core_error_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_error_props_bdd"
+required-features = ["testing"]
+
 [[bench]]
 name = "overhead"
 harness = false
