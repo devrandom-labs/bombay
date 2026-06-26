@@ -419,7 +419,7 @@ pub(crate) fn register_or_get<A: Actor>(
 
 /// Builds a full snapshot of the actor system, reaping actors that have been stopped for
 /// longer than the grave window in the same pass.
-pub(crate) async fn snapshot(grave_window: Duration) -> wire::Snapshot {
+pub async fn snapshot(grave_window: Duration) -> wire::Snapshot {
     let monitors: Vec<Arc<ActorMonitor>> = {
         let mut registry = REGISTRY.lock().unwrap();
         reap_stopped(&mut registry, grave_window);
@@ -455,6 +455,17 @@ pub(crate) async fn snapshot(grave_window: Duration) -> wire::Snapshot {
             messages_received,
         },
     }
+}
+
+/// Test-only: clear the global actor registry and zero the process-global counters so a
+/// cucumber scenario starts from a known state (`SEQ`/`REAPED_STOPPED`/`TOTAL_SPAWNED` are
+/// process-global; cucumber shares one process per feature file).
+#[cfg(any(test, feature = "testing"))]
+pub fn reset_for_test() {
+    REGISTRY.lock().unwrap().clear();
+    SEQ.store(0, Ordering::Relaxed);
+    REAPED_STOPPED.store(0, Ordering::Relaxed);
+    TOTAL_SPAWNED.store(0, Ordering::Relaxed);
 }
 
 /// Drops monitors that have been stopped for longer than `ttl`, counting them toward the

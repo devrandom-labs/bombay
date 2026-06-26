@@ -21,3 +21,13 @@ mod server;
 pub mod wire;
 
 pub use server::{Console, ConsoleHandle, serve};
+
+/// Test-only surface for driving the console source side from cucumber scenarios.
+///
+/// Gated behind the `testing` feature: exposes the snapshot producer and a hook to reset the
+/// process-global registry/counters between scenarios (cucumber shares one process per feature).
+#[cfg(any(test, feature = "testing"))]
+pub mod testing {
+    pub use super::registry::{reset_for_test, snapshot};
+    pub use super::server::testing::fail_next_encode;
+}

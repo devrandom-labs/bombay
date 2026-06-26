@@ -13,6 +13,9 @@ kameo = { path = ".", version = "0.21.0" }
 
 futures = "0.3"
 tokio = "1.47"
+cucumber = { version = "0.23", features = ["libtest"] }
+proptest = "1.11"
+rstest = "0.26"
 
 # ============================================================
 # Bombay — god-level lint config (adopted from nexus, verbatim).
@@ -85,6 +88,7 @@ include = ["/src"]
 default = ["macros", "tracing"]
 macros = ["dep:kameo_macros"]
 console = ["dep:rmp-serde", "tokio/net", "tokio/io-util"]
+testing = ["console"]
 remote = [
   "dep:const-fnv1a-hash",
   "dep:const-str",
@@ -129,6 +133,9 @@ opentelemetry = { version = "0.31", optional = true }
 tracing-opentelemetry = { version = "0.32", optional = true }
 
 [dev-dependencies]
+kameo = { path = ".", features = ["testing"] }
+cucumber = { workspace = true }
+proptest = { workspace = true }
 criterion = { version = "0.8", features = ["async_tokio"] }
 kameo_actors = { path = "actors" }
 libp2p = { version = "0.56.0", features = ["serde"] }
@@ -160,6 +167,14 @@ required-features = ["remote"]
 [[example]]
 name = "prometheus_metrics"
 required-features = ["metrics"]
+
+[[test]]
+name = "console_wire_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "console_wire_props_bdd"
+required-features = ["testing"]
 
 [[bench]]
 name = "overhead"
