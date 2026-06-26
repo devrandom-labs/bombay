@@ -36,7 +36,7 @@ Feature: ActorId — laws over byte round-trips, decode rejection, and generatio
     # Generalizes: actor_id.feature "to_bytes then from_bytes round-trips an ActorId",
     #              "sequence_id is preserved across a byte round-trip".
 
-  @property @boundary
+  @property @boundary @bug:id.rs:140-143
   Scenario: from_bytes rejects any byte string shorter than eight bytes
     Given any byte slice of length n with n in [0, 7]
     When from_bytes is called on it
