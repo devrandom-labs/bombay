@@ -209,6 +209,14 @@ required-features = ["testing"]
 name = "core_reply_props_bdd"
 required-features = ["testing"]
 
+[[test]]
+name = "core_actor_ref_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_actor_ref_props_bdd"
+required-features = ["testing"]
+
 [[bench]]
 name = "overhead"
 harness = false
