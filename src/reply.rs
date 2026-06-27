@@ -564,6 +564,32 @@ where
     }
 }
 
+/// Test-only surface for constructing the `Forwarded` arm of a [`ForwardedReply`].
+///
+/// Gated behind the `testing` feature. The `Forwarded(Ok(()))` /
+/// `Forwarded(Err(send_error))` states are produced in production ONLY by
+/// [`Context::forward`](crate::message::Context::forward) via the `pub(crate)`
+/// [`ForwardedReply::new`], which consumes the caller's reply channel and is
+/// immediately handed to the dispatcher — so those states are unreachable as
+/// standalone values from an out-of-crate test. This constructor lets the
+/// `reply` cucumber scenarios exercise the `Forwarded` arm's `into_any_err` /
+/// `into_value` / `to_result` behaviour directly. It performs no validation and
+/// is not part of the public production API.
+#[cfg(any(test, feature = "testing"))]
+pub mod testing {
+    use super::{ForwardedReply, Reply};
+    use crate::error::SendError;
+
+    /// Builds a `ForwardedReply` in the `Forwarded(res)` state — the marker the
+    /// dispatcher uses to carry a forward's send-outcome (not a value reply).
+    pub fn forwarded<M, R>(res: Result<(), SendError<M, R::Error>>) -> ForwardedReply<M, R>
+    where
+        R: Reply,
+    {
+        ForwardedReply::new(res)
+    }
+}
+
 impl<T, E> Reply for Result<T, E>
 where
     T: Send + 'static,
