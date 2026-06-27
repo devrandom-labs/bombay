@@ -30,7 +30,6 @@ use cucumber::{World, given, then, when};
 use futures::stream;
 use kameo::{
     error::{Infallible, PanicError, set_actor_error_hook},
-    mailbox,
     message::StreamMessage,
     prelude::*,
     reply::{DelegatedReply, ForwardedReply},
@@ -306,26 +305,6 @@ impl Message<Echo> for Target {
     }
 }
 
-/// A target message that blocks the handler until a shared `watch` flips to
-/// `true` — used to OCCUPY a bounded-capacity-1 mailbox so
-/// `try_forward`/`blocking_forward` hit the mailbox-full path deterministically.
-struct Hold(tokio::sync::watch::Receiver<bool>);
-
-impl Message<Hold> for Target {
-    type Reply = ();
-
-    async fn handle(&mut self, msg: Hold, _ctx: &mut Context<Self, Self::Reply>) -> Self::Reply {
-        // Park the handler (keeping the mailbox slot occupied) until the test
-        // releases it. A `watch` broadcasts to every blocked Hold at once.
-        let mut rx = msg.0;
-        while !*rx.borrow() {
-            if rx.changed().await.is_err() {
-                break; // sender dropped — release.
-            }
-        }
-    }
-}
-
 /// The router. Holds a target ref and forwards `Echo` to it.
 #[derive(Clone)]
 struct Router {
@@ -353,36 +332,6 @@ impl Message<ForwardEcho> for Router {
         ctx: &mut Context<Self, Self::Reply>,
     ) -> Self::Reply {
         ctx.forward(&self.target, Echo(msg.0)).await
-    }
-}
-
-/// `try_forward`: fails fast with MailboxFull when the target is full.
-struct TryForwardEcho(u64);
-
-impl Message<TryForwardEcho> for Router {
-    type Reply = ForwardedReply<Echo, <Target as Message<Echo>>::Reply>;
-
-    async fn handle(
-        &mut self,
-        msg: TryForwardEcho,
-        ctx: &mut Context<Self, Self::Reply>,
-    ) -> Self::Reply {
-        ctx.try_forward(&self.target, Echo(msg.0))
-    }
-}
-
-/// `blocking_forward`: waits for target capacity instead of failing.
-struct BlockingForwardEcho(u64);
-
-impl Message<BlockingForwardEcho> for Router {
-    type Reply = ForwardedReply<Echo, <Target as Message<Echo>>::Reply>;
-
-    async fn handle(
-        &mut self,
-        msg: BlockingForwardEcho,
-        ctx: &mut Context<Self, Self::Reply>,
-    ) -> Self::Reply {
-        ctx.blocking_forward(&self.target, Echo(msg.0))
     }
 }
 
@@ -556,10 +505,6 @@ pub struct MessageWorld {
     target_log: Arc<Mutex<Vec<u64>>>,
     /// Whether a tell-forward's outcome was Ok (no value reply).
     forward_tell_ok: Option<bool>,
-    /// The error a dead/full forward surfaced to the caller.
-    forward_err: Option<String>,
-    /// Whether `try_forward` reported a MailboxFull send error.
-    try_forward_full: Option<bool>,
     /// Concurrency results (linearizability scenarios).
     concurrent_replies: Vec<u64>,
     /// Final folded sum + the oracle sum for the interleaved scenario.
@@ -575,8 +520,6 @@ pub struct MessageWorld {
     counter: Option<ActorRef<Counter>>,
     /// The folder actor for the interleaved single-writer scenario.
     folder: Option<ActorRef<Folder>>,
-    /// The watch sender that releases parked `Hold` handlers (full-mailbox).
-    hold_release: Option<tokio::sync::watch::Sender<bool>>,
     /// Which `the message is sent via ask` variant the active scenario wants
     /// (set by the distinct Given): `Some(true)` = spawn-detached value-ask.
     /// `None` = the property err-ask scenario (its Given is a no-op).
@@ -962,145 +905,13 @@ async fn then_finished_last(world: &mut MessageWorld) {
 // @boundary — dead targets, full mailboxes, handler errors routed by ask/tell
 // ===========================================================================
 
-/// The router's `Reply` is `ForwardedReply<Echo, u64>` (the target's reply is a
-/// plain `u64`, so its `Error` slot is `Infallible`). A failed forward is hoisted
-/// into the caller's `SendError` as `HandlerError(inner)`, where `inner` is the
-/// forward's own `SendError<Echo, Infallible>`. This names that inner domain.
-/// `SendError`'s `Debug` omits the variant text for the message-bearing arms, so
-/// the classification is by explicit `match`, not by formatting. Generic over the
-/// outer message type `M` (the router message differs for forward vs try_forward).
-fn classify_forward_err<M>(err: &SendError<M, SendError<Echo, Infallible>>) -> String {
-    match err {
-        SendError::HandlerError(inner) => match inner {
-            SendError::ActorNotRunning(_) => "ActorNotRunning",
-            SendError::ActorStopped => "ActorStopped",
-            SendError::MailboxFull(_) => "MailboxFull",
-            SendError::Timeout(_) => "Timeout",
-            SendError::HandlerError(_) => "HandlerError",
-        },
-        SendError::ActorNotRunning(_) => "OuterActorNotRunning",
-        SendError::ActorStopped => "OuterActorStopped",
-        SendError::MailboxFull(_) => "OuterMailboxFull",
-        SendError::Timeout(_) => "OuterTimeout",
-    }
-    .to_string()
-}
-
-#[given(regex = r"^a router actor and a target actor that has been stopped$")]
-async fn given_router_and_dead_target(world: &mut MessageWorld) {
-    let target_log = Arc::clone(&world.target_log);
-    let target = Target::spawn(Target { log: target_log });
-    target.wait_for_startup().await;
-    let router = Router::spawn(Router {
-        target: target.clone(),
-    });
-    router.wait_for_startup().await;
-    // Stop the target and wait until it is observably not running.
-    target.stop_gracefully().await.unwrap();
-    target.wait_for_shutdown().await;
-    for _ in 0..200 {
-        if target.ask(Echo(0)).await.is_err() {
-            break;
-        }
-        tokio::time::sleep(Duration::from_millis(5)).await;
-    }
-    world.router_target = Some((router, target));
-}
-
-#[when(regex = r"^the original caller asks the router, whose handler forwards to the dead target$")]
-async fn when_ask_router_dead_target(world: &mut MessageWorld) {
-    let (router, _target) = world.router_target.as_ref().expect("router + dead target");
-    let result = router.ask(ForwardEcho(51)).await;
-    let err = result.expect_err("forward to dead target must fail");
-    world.forward_err = Some(classify_forward_err(&err));
-}
-
-#[then(regex = r"^the original caller receives a SendError indicating the target is not running$")]
-async fn then_caller_gets_not_running(world: &mut MessageWorld) {
-    let kind = world.forward_err.as_ref().expect("a forward error");
-    // The forward failure is hoisted into the caller's SendError as
-    // HandlerError(ActorNotRunning(..)). `classify_forward_err` matches the inner
-    // not-running domain explicitly (SendError's Debug omits the variant text).
-    assert_eq!(
-        kind, "ActorNotRunning",
-        "a dead-target forward must surface the not-running domain"
-    );
-}
-
-#[given(regex = r"^a router actor and a target actor whose bounded mailbox is full$")]
-async fn given_router_target_full(world: &mut MessageWorld) {
-    setup_full_target(world).await;
-}
-
-#[when(regex = r"^the router's handler calls try_forward to the target$")]
-async fn when_try_forward(world: &mut MessageWorld) {
-    let (router, _target) = world.router_target.as_ref().expect("router + full target");
-    // The target's single slot is occupied; try_forward must fail fast. The
-    // forward error (MailboxFull) is hoisted into the caller's SendError as
-    // HandlerError(MailboxFull(..)).
-    let result = router.ask(TryForwardEcho(61)).await;
-    let err = result.expect_err("try_forward to a full target must fail");
-    let kind = classify_forward_err(&err);
-    world.try_forward_full = Some(kind == "MailboxFull");
-    world.forward_err = Some(kind);
-}
-
-#[then(regex = r"^try_forward returns a ForwardedReply carrying a MailboxFull send error$")]
-async fn then_try_forward_full(world: &mut MessageWorld) {
-    assert_eq!(
-        world.try_forward_full,
-        Some(true),
-        "try_forward on a full target must carry a MailboxFull error, got {:?}",
-        world.forward_err
-    );
-}
-
-#[then(regex = r"^the original reply channel is restored to the router context so it can respond$")]
-async fn then_reply_channel_restored(world: &mut MessageWorld) {
-    // The router DID respond to the original ask (we received the MailboxFull Err
-    // above), which is only possible because try_forward's map_msg restored
-    // self.reply. Had the channel not been restored, the caller would have seen
-    // ActorStopped (dropped sender), not the MailboxFull HandlerError.
-    let kind = world.forward_err.as_ref().expect("a forward error");
-    assert_eq!(
-        kind, "MailboxFull",
-        "the restored channel must carry the MailboxFull outcome back to the caller"
-    );
-    release_held_target(world);
-}
-
-#[given(regex = r"^a router actor and a target actor whose bounded mailbox is momentarily full$")]
-async fn given_router_target_momentarily_full(world: &mut MessageWorld) {
-    setup_full_target(world).await;
-}
-
-#[when(regex = r"^the router's handler calls blocking_forward and a slot then frees$")]
-async fn when_blocking_forward(world: &mut MessageWorld) {
-    let (router, _target) = world.router_target.as_ref().expect("router + full target");
-    // blocking_forward waits for capacity. Spawn the router ask, then release
-    // the held slot so capacity frees and the forward completes.
-    let router = router.clone();
-    let ask = tokio::spawn(async move { router.ask(BlockingForwardEcho(71)).await });
-    // Let the blocking_forward begin waiting, then free the slot.
-    tokio::time::sleep(Duration::from_millis(20)).await;
-    release_held_target(world);
-    let reply = ask.await.expect("ask task").expect("blocking_forward eventually succeeds");
-    world.reply = Some(reply);
-}
-
-#[then(regex = r"^the message is forwarded once capacity is available$")]
-async fn then_forwarded_after_capacity(world: &mut MessageWorld) {
-    assert_eq!(
-        world.reply,
-        Some(71),
-        "blocking_forward must complete the forward once a slot frees"
-    );
-    let log = world.target_log.lock().unwrap();
-    assert!(
-        log.contains(&71),
-        "the target must have received the blocked-then-forwarded message, log={log:?}"
-    );
-}
+// NOTE: the three forward-failure scenarios (@bug:error.rs:293 / error.rs:305 /
+// ask.rs:461) are filtered out by both runners' tag filter and pinned instead by
+// the `#[should_panic]` probes in `tests/core_message_bdd.rs`. Their green-path
+// step definitions — and the `classify_forward_err` / `setup_full_target` /
+// `release_held_target` helpers plus the `Hold` / `TryForwardEcho` /
+// `BlockingForwardEcho` actors that only those steps used — were therefore dead
+// code and have been removed.
 
 #[when(regex = r"^a message whose handler returns Err\(e\) is sent via ask$")]
 async fn when_handler_err_ask(world: &mut MessageWorld) {
@@ -1580,53 +1391,3 @@ async fn run_model_case(p: usize, count: usize) {
     actor.stop_gracefully().await.unwrap();
 }
 
-// ===========================================================================
-// Shared helpers for the full-mailbox forwarding scenarios
-// ===========================================================================
-
-/// Spawns a target with a bounded mailbox of capacity 1, fills it so a further
-/// send is `MailboxFull`, and spawns a router pointing at it. The held slots are
-/// released later via `release_held_target` (which flips the shared `watch`).
-///
-/// Mailbox arithmetic (tokio mpsc, capacity 1): the first `Hold` is dequeued
-/// into the handler (which parks), freeing the buffer; the second `Hold` fills
-/// the one buffer slot. A third send therefore observes `MailboxFull` — exactly
-/// the condition `try_forward`/`blocking_forward` must distinguish.
-async fn setup_full_target(world: &mut MessageWorld) {
-    let target_log = Arc::clone(&world.target_log);
-    let target = Target::spawn_with_mailbox(Target { log: target_log }, mailbox::bounded(1));
-    target.wait_for_startup().await;
-
-    let (release_tx, release_rx) = tokio::sync::watch::channel(false);
-
-    // First Hold: dequeued into the handler, which parks on the watch.
-    target
-        .tell(Hold(release_rx.clone()))
-        .send()
-        .await
-        .expect("first hold enqueued and dequeued");
-    // Spin until the handler has actually dequeued the first Hold (so the buffer
-    // is empty again) before filling it; otherwise the second send could itself
-    // race the dequeue. A short settle is sufficient and bounded.
-    tokio::time::sleep(Duration::from_millis(20)).await;
-    // Second Hold: fills the single buffer slot. A third send is now MailboxFull.
-    target
-        .tell(Hold(release_rx))
-        .try_send()
-        .expect("second hold fills the buffer slot");
-
-    let router = Router::spawn(Router {
-        target: target.clone(),
-    });
-    router.wait_for_startup().await;
-    world.router_target = Some((router, target));
-    world.hold_release = Some(release_tx);
-}
-
-/// Releases every parked `Hold` handler so the target's mailbox drains and
-/// capacity frees. Broadcasts `true` to all `watch` receivers at once.
-fn release_held_target(world: &mut MessageWorld) {
-    if let Some(tx) = world.hold_release.take() {
-        let _ = tx.send(true);
-    }
-}
