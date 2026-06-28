@@ -170,10 +170,12 @@ Feature: ActorRef — messaging, reference counting, identity, lifecycle waiters
   Scenario: strong_count and weak_count track live handles
     Given a freshly spawned actor with exactly one strong ActorRef
     When the ActorRef is cloned once and then downgraded once
-    Then strong_count is 2 and weak_count is 1
-    # Confirmed: strong_count/weak_count delegate to the MailboxSender
-    # Arc-style counters (actor_ref.rs:220-230); clone bumps strong,
-    # downgrade bumps weak (actor_ref.rs:198-207, 1329-1340).
+    Then strong_count is 2 and the weak count increased by exactly one
+    # Confirmed: strong_count/weak_count delegate to the MailboxSender Arc-style
+    # counters (actor_ref.rs:220-230). clone bumps strong (1 -> 2, absolute).
+    # kameo's spawn machinery retains internal WeakSenders (spawn.rs:211,215), so
+    # weak_count is NOT 0 at rest; downgrade adds exactly one more over that
+    # at-rest baseline (actor_ref.rs:198-207, 1329-1340).
 
   @boundary
   Scenario: Two ActorRefs to the same actor are equal and hash equally

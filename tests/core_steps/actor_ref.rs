@@ -176,9 +176,11 @@ pub struct ActorRefWorld {
     upgraded_some: Option<bool>,
     /// A second strong clone (refcount scenario).
     clone_ref: Option<ActorRef<Echoer>>,
-    /// Captured strong/weak counts (refcount scenario).
-    strong_count: Option<usize>,
-    weak_count: Option<usize>,
+    /// At-rest weak_count measured after spawn, before clone/downgrade
+    /// (refcount scenario). kameo's spawn machinery retains internal
+    /// WeakSenders, so the at-rest weak count is non-zero; we assert only the
+    /// +1 delta a single downgrade adds over this baseline.
+    weak_baseline: Option<usize>,
     /// Identity scenario operands.
     pair_eq: Option<bool>,
     pair_hash_eq: Option<bool>,
@@ -750,12 +752,12 @@ async fn then_no_error(_world: &mut ActorRefWorld) {
 #[given(regex = r"^a freshly spawned actor with exactly one strong ActorRef$")]
 async fn given_one_strong(world: &mut ActorRefWorld) {
     let (actor, log) = spawn_echoer().await;
-    // Record the at-rest baselines BEFORE any user clone/downgrade. A freshly
-    // spawned actor's USER-visible strong handle count is 1, but kameo's spawn
-    // machinery also retains internal weak senders, so weak_count is NOT 0 at
-    // rest (see the discrepancy note on the Then below).
-    world.strong_count = Some(actor.strong_count());
-    world.weak_count = Some(actor.weak_count());
+    // Record the at-rest weak baseline BEFORE any user clone/downgrade. The
+    // absolute weak count includes kameo's internal WeakSenders, so only the +1
+    // delta a single downgrade adds is asserted (the strong side stays a
+    // meaningful absolute: a freshly spawned actor has exactly one user strong
+    // handle, so a single clone makes strong_count == 2).
+    world.weak_baseline = Some(actor.weak_count());
     world.log = log;
     world.actor = Some(actor);
 }
@@ -763,54 +765,44 @@ async fn given_one_strong(world: &mut ActorRefWorld) {
 #[when(regex = r"^the ActorRef is cloned once and then downgraded once$")]
 async fn when_clone_and_downgrade(world: &mut ActorRefWorld) {
     let actor = world.actor.as_ref().expect("actor spawned");
+    // Keep both handles alive across steps: dropping the clone would lower
+    // strong_count and dropping the weak would lower weak_count, so the Then
+    // (which polls the live actor) must see them retained.
     world.clone_ref = Some(actor.clone());
     world.weak = Some(actor.downgrade());
-    // Re-read the counts after exactly one clone + one downgrade. The deltas over
-    // the recorded baseline are the OBSERVABLE the scenario's mechanism describes
-    // ("clone bumps strong, downgrade bumps weak"): each must be +1.
-    let strong_before = world.strong_count.expect("baseline strong");
-    let weak_before = world.weak_count.expect("baseline weak");
-    world.strong_count = Some(actor.strong_count());
-    world.weak_count = Some(actor.weak_count());
-    // Stash the baselines via the upgrade slots (reused as scratch) for the Then.
-    world.recipient_reply = Some(strong_before as u64);
-    world.concurrent_count = Some(weak_before as u64);
+    // The Then asserts strong as a meaningful absolute (1 -> 2) and weak as a +1
+    // delta over the at-rest baseline ("clone bumps strong, downgrade bumps weak").
 }
 
-#[then(regex = r"^strong_count is 2 and weak_count is 1$")]
+#[then(regex = r"^strong_count is 2 and the weak count increased by exactly one$")]
 async fn then_counts_2_1(world: &mut ActorRefWorld) {
-    // DISCREPANCY (surfaced to the controller): actor_ref.feature:170-176's
-    // `# Confirmed:` note asserts the ABSOLUTE `strong_count is 2 and
-    // weak_count is 1`. The strong half is exact: a freshly spawned actor's
-    // user-visible strong_count is 1, and one clone makes it 2. The weak half is
-    // UNREACHABLE: kameo's spawn machinery retains internal weak senders, so a
-    // freshly spawned default-mailbox actor already reports weak_count == 3
-    // (deterministic), and one user downgrade makes it 4 — never 1. This is a
-    // feature-NOTE oracle bug, NOT a SUT defect: `weak_count()` faithfully
-    // reports tokio's `WeakSender` count (mailbox.rs:374). We therefore assert
-    // the genuine OBSERVABLE the note's MECHANISM describes — clone bumps strong
-    // by exactly 1 (absolute 1→2, matching the note's `strong_count is 2`), and
-    // downgrade bumps weak by exactly 1 over the at-rest baseline.
-    let strong_baseline = world.recipient_reply.expect("strong baseline") as usize;
-    let weak_baseline = world.concurrent_count.expect("weak baseline") as usize;
-    let strong_after = world.strong_count.expect("strong after");
-    let weak_after = world.weak_count.expect("weak after");
+    // The absolute weak count includes kameo's internal WeakSenders (spawn.rs
+    // retains them), so it is NOT 0 at rest; we therefore assert only the +1
+    // delta a single downgrade adds over the measured at-rest baseline. The
+    // strong side stays a meaningful absolute (2): a freshly spawned actor has
+    // exactly one user strong handle, and one clone makes strong_count == 2.
+    let actor = world.actor.as_ref().expect("actor spawned");
+    let weak_baseline = world.weak_baseline.expect("at-rest weak baseline");
+    let weak_target = weak_baseline + 1;
 
-    assert_eq!(strong_baseline, 1, "a freshly spawned actor has exactly one user strong handle");
+    // Condition-based settle-polling (borrow, never clone — an extra clone here
+    // would itself bump strong_count and break the absolute assertion).
+    settle(
+        || actor.strong_count() == 2 && actor.weak_count() == weak_target,
+        "strong_count must reach 2 and weak_count must reach baseline + 1",
+    )
+    .await;
+
     assert_eq!(
-        strong_after, 2,
-        "after one clone strong_count must be 2 (note's absolute value holds)"
+        actor.strong_count(),
+        2,
+        "after one clone strong_count must be 2 (one user strong handle + one clone)"
     );
     assert_eq!(
-        strong_after - strong_baseline,
-        1,
-        "clone must bump strong by exactly 1"
-    );
-    assert_eq!(
-        weak_after - weak_baseline,
-        1,
+        actor.weak_count(),
+        weak_target,
         "downgrade must bump weak by exactly 1 over the at-rest baseline \
-         (the note's absolute `weak_count is 1` is unreachable: baseline weak={weak_baseline})"
+         (baseline weak={weak_baseline}, includes kameo's internal WeakSenders)"
     );
 }
 
