@@ -249,6 +249,14 @@ required-features = ["testing"]
 name = "core_mailbox_props_bdd"
 required-features = ["testing"]
 
+[[test]]
+name = "core_registry_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_registry_props_bdd"
+required-features = ["testing"]
+
 [[bench]]
 name = "overhead"
 harness = false
