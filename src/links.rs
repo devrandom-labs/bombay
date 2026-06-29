@@ -408,6 +408,62 @@ pub mod testing {
         inner.children.insert(child_id, spec);
     }
 
+    /// An internal probe actor used only to satisfy the `A: Actor` bound on
+    /// [`ErasedChildSpec::signal_mailbox`] when building a spec purely to drive
+    /// [`ErasedChildSpec::should_restart`] in isolation (the decision-table /
+    /// intensity-window scenarios). It is never spawned.
+    #[derive(Clone, Debug)]
+    pub struct DecisionProbe;
+
+    impl Actor for DecisionProbe {
+        type Args = Self;
+        type Error = crate::error::Infallible;
+
+        async fn on_start(
+            state: Self::Args,
+            _: crate::actor::ActorRef<Self>,
+        ) -> Result<Self, Self::Error> {
+            Ok(state)
+        }
+    }
+
+    /// Builds an [`ErasedChildSpec`] with caller-chosen restart parameters,
+    /// purely so a scenario can drive [`ErasedChildSpec::should_restart`] in
+    /// isolation and read its decision.
+    ///
+    /// `last_restart` is taken as an explicit [`Instant`] rather than defaulting
+    /// to `now()` so the window-reset scenarios can be made deterministic WITHOUT
+    /// any sleep or clock: `should_restart` reads `std::time::Instant::now()`
+    /// (links.rs:250), which a tokio paused clock does NOT affect, so "the window
+    /// has elapsed" is modelled by passing a `last_restart` far enough in the
+    /// past, and "still within the window" by passing `Instant::now()`.
+    ///
+    /// The other fields (`factory`/`shutdown`/`signal_mailbox`/`parent_shutdown`)
+    /// are inert here — `should_restart` never touches them — so they are filled
+    /// with a never-spawned [`DecisionProbe`] mailbox.
+    pub fn decision_spec(
+        policy: RestartPolicy,
+        restart_count: u32,
+        max_restarts: u32,
+        restart_window: Duration,
+        last_restart: Instant,
+    ) -> ErasedChildSpec {
+        let (sender, _rx) = crate::mailbox::unbounded::<DecisionProbe>();
+        let factory: SpawnFactory = Box::new(|rx| Box::pin(async move { rx }));
+        let shutdown: ShutdownFn = Box::new(|| Box::pin(async {}));
+        ErasedChildSpec {
+            factory: Arc::new(factory),
+            shutdown: Arc::new(shutdown),
+            signal_mailbox: Box::new(sender),
+            parent_shutdown: Arc::new(AtomicBool::new(false)),
+            restart_policy: policy,
+            restart_count,
+            last_restart,
+            max_restarts,
+            restart_window,
+        }
+    }
+
     /// Drives `LinksInner::notify_links::<A>` on `links` for a dying actor `id`,
     /// passing `mailbox_rx` (the supervised-restart hand-off the parent receives
     /// when the `parent_shutdown` flag is false).

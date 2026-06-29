@@ -265,6 +265,14 @@ required-features = ["testing"]
 name = "core_links_props_bdd"
 required-features = ["testing"]
 
+[[test]]
+name = "core_supervision_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_supervision_props_bdd"
+required-features = ["testing"]
+
 [[bench]]
 name = "overhead"
 harness = false
