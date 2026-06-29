@@ -71,7 +71,7 @@ Feature: AskRequest — request/reply with mailbox and reply timeouts
     Then the reply is delivered to the channel, not returned to the caller
     And the forward call itself returns Ok(())
 
-  @boundary
+  @boundary @bug:error.rs:305
   Scenario: try_forward to a full bounded mailbox returns MailboxFull carrying back the channel
     Given the actor has a bounded mailbox of capacity 1 that is already full
     And a reply channel is created
@@ -82,8 +82,17 @@ Feature: AskRequest — request/reply with mailbox and reply timeouts
     # payload is `(M, ReplySender)`, so the caller recovers BOTH the un-sent message and the
     # reply channel to retry. (This differs from message.rs ctx.try_forward, which instead
     # restores ctx.reply in-handler — a separate API.)
+    # @bug:error.rs:305 — DESIRED above is ABSENT today. The `?` on `tx.try_send(signal)`
+    # converts `TrySendError<Signal>` → `SendError<(M, ReplySender), _>` via
+    # `From` (error.rs:305), which calls `signal.downcast_message::<(M, ReplySender)>().unwrap()`.
+    # But the signal stores the BARE message `Box::new(self.msg)` (ask.rs:289), NOT the
+    # `(M, ReplySender)` tuple, so the downcast is `None` and `.unwrap()` PANICS
+    # ("called `Option::unwrap()` on a `None` value") on the caller's thread — no graceful
+    # MailboxFull is ever returned. Verified by a throwaway probe (panicked at error.rs:305:71)
+    # and pinned by the `bug_try_forward_full_panics` red-on-fix probe in the runner. Same
+    # root cause as message.feature's @bug:error.rs:305.
 
-  @boundary
+  @boundary @bug:error.rs:293
   Scenario: forward to a stopped actor returns ActorNotRunning carrying back the channel
     Given the actor has been stopped
     And a reply channel is created
@@ -93,6 +102,13 @@ Feature: AskRequest — request/reply with mailbox and reply timeouts
     # NOTE (ask.rs:239-270): forward awaits `tx.send(signal).await?`; a closed mailbox yields
     # SendError::ActorNotRunning((msg, sender)) — the un-sent message and channel are returned,
     # never silently dropped (rule 3: a dead actor is ActorNotRunning, not a capacity error).
+    # @bug:error.rs:293 — DESIRED above is ABSENT today. The `?` on `tx.send(signal).await`
+    # converts `SendError<Signal>` → `SendError<(M, ReplySender), _>` via `From` (error.rs:293),
+    # calling `err.0.downcast_message::<(M, ReplySender)>().unwrap()`. The signal stores the BARE
+    # message (ask.rs:250), so the downcast is `None` and `.unwrap()` PANICS on the caller's
+    # thread — no graceful ActorNotRunning is returned. Verified by a throwaway probe (panicked
+    # at error.rs:293:66) and pinned by the `bug_forward_stopped_panics` red-on-fix probe in the
+    # runner. Same root cause as message.feature's @bug:error.rs:293.
 
   @sequence
   Scenario: blocking_forward waits for capacity then delivers the reply to the channel

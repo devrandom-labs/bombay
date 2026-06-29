@@ -86,3 +86,10 @@ Feature: AskRequest — laws over reply timing and concurrent reply isolation
     # ORACLE: per-caller predicate d < t_i; the outcome of caller i is independent of caller j.
     # Generalizes: request_ask.feature "among N concurrent asks one with a short reply_timeout
     #              fails and the rest succeed".
+    # WIRING NOTE (single-writer queueing): "each caller observes delay d, independently" is the
+    # law's intent, but a SINGLE actor is single-writer — it serialises handlers FIFO, so caller
+    # k's reply arrives at ~(k+1)·d and a t_i=d+1 caller times out from QUEUE POSITION, not its
+    # own d (probe-verified: with one bounded(100) actor, only the t=MAX callers succeed). To
+    # make d the delay each caller actually observes — the per-caller independence asserted here
+    # — the wiring gives each caller its OWN actor (delay exactly d, no queueing) while still
+    # starting all N caller tasks at one Barrier for real overlap on the paused clock.
