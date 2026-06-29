@@ -957,22 +957,23 @@ async fn when_flag_vs_notify_concurrent(world: &mut LinksWorld) {
     regex = r"^the child either notifies with mailbox_rx BEFORE the flag was visible, or drops it AFTER$"
 )]
 async fn then_legal_interleaving(world: &mut LinksWorld) {
+    // The honest, falsifiable invariant this racy scenario CAN assert without
+    // depending on the post-join flag value (which is always true here): the
+    // death produced EXACTLY ONE notification, and it is for the child that
+    // died. Whatever the interleaving, the parent must see precisely one
+    // LinkDied for this id — not zero, not two. (The "no SECOND, mailbox_rx-
+    // bearing notification after the drop" half is checked, conditionally on the
+    // drop branch, by `then_never_queue_after_true`.)
     let parts = world
         .parent_parts
         .as_ref()
         .unwrap()
         .as_ref()
         .expect("parent notified exactly once");
-    let flag = world.child_under_test_flag.as_ref().expect("flag");
-    // If the notify observed the flag as false, it MUST have queued mailbox_rx;
-    // if it observed true (drop branch), it MUST NOT carry mailbox_rx. After the
-    // join the flag is definitively true, so the only check we can make
-    // soundly is: the delivered parts are one of the two legal shapes.
-    let legal = parts.has_mailbox_rx || (!parts.has_mailbox_rx && flag.load(Ordering::Acquire));
-    assert!(
-        legal,
-        "notification shape must be a legal interleaving outcome (got has_mailbox_rx={})",
-        parts.has_mailbox_rx
+    let dead = world.dead_id.expect("dead id");
+    assert_eq!(
+        parts.id, dead,
+        "the single delivered notification must be for the child that died"
     );
 }
 
@@ -1294,15 +1295,15 @@ async fn law_release_acquire(_world: &mut LinksWorld) {
         let parts = recv_link_died(&mut parent_rx, NOTIFY_TIMEOUT)
             .await
             .expect("the parent must be notified exactly once");
-        // Legal shape: WITH mailbox_rx (queued while false) OR WITHOUT (dropped).
-        // When dropped, the flag must read true (it observed the Release store).
-        if !parts.has_mailbox_rx {
-            assert!(
-                flag.load(Ordering::Acquire),
-                "a drop-branch notify must have observed the flag as true"
-            );
-        }
-        // Exactly one notification — no forbidden second, mailbox_rx-bearing one.
+        // The deterministic, falsifiable observable that holds for EVERY
+        // interleaving: the single delivered notification is for the actor that
+        // died, and it is the ONLY one — no forbidden second, mailbox_rx-bearing
+        // notification follows. (The drop-branch shape under store-before-load —
+        // that observing the flag as true forces `!has_mailbox_rx` — is asserted
+        // deterministically by `law_never_queue_after_true`, which loads AFTER
+        // the store rather than racing it.) Post-join `flag.load()` is always
+        // true here, so it carries no falsifiable content and is not asserted.
+        assert_eq!(parts.id, dead, "the notification must be for the dead actor");
         let extra = recv_link_died(&mut parent_rx, NO_NOTIFY_TIMEOUT).await;
         assert!(extra.is_none(), "exactly one notification per death");
     }
