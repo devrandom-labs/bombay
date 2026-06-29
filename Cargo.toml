@@ -233,6 +233,14 @@ required-features = ["testing"]
 name = "core_request_ask_props_bdd"
 required-features = ["testing"]
 
+[[test]]
+name = "core_request_tell_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_request_tell_props_bdd"
+required-features = ["testing"]
+
 [[bench]]
 name = "overhead"
 harness = false
