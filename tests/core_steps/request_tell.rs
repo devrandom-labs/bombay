@@ -707,9 +707,12 @@ async fn then_timeout_some_msg(world: &mut TellWorld) {
 
 #[given(regex = r"^a tracing-enabled debug build$")]
 async fn given_tracing_debug(_world: &mut TellWorld) {
-    // Tests build with debug_assertions and the default `tracing` feature on, so
-    // warn_deadlock is compiled in. The actual warning is captured by the When
-    // via a per-thread tracing subscriber.
+    // `warn_deadlock` is gated `#[cfg(all(debug_assertions, feature = "tracing"))]`
+    // (src/request/tell.rs:31), so it is compiled IN only for debug+tracing builds
+    // and OUT of release builds. The default `tracing` feature is always on; the
+    // build profile decides debug_assertions. The Then asserts the build-correct
+    // outcome (fired iff debug_assertions). The actual warning is captured by the
+    // When via a per-thread tracing subscriber.
 }
 
 #[given(regex = r#"^an actor sending a bounded "tell" to itself from within its own handler$"#)]
@@ -727,10 +730,20 @@ async fn when_self_tell_dispatched(world: &mut TellWorld) {
 
 #[then(regex = r"^a deadlock warning is emitted naming the call site$")]
 async fn then_deadlock_warning(world: &mut TellWorld) {
+    // `warn_deadlock` is `#[cfg(all(debug_assertions, feature = "tracing"))]`
+    // (src/request/tell.rs:31), so the warning fires in a debug build and is
+    // compiled OUT of a release build. The gate (`nix flake check` → crane
+    // nextest) builds tests in release, where the warning legitimately does not
+    // fire; a plain debug `cargo test` build does fire it. Assert the
+    // build-mode-correct outcome — both arms are falsifiable (a regression that
+    // emitted the warning in release, or suppressed it in debug, breaks this).
+    let expect_warning = cfg!(debug_assertions);
     assert_eq!(
         world.deadlock_warning,
-        Some(true),
-        "a bounded self-tell in a debug+tracing build must emit the deadlock warning"
+        Some(expect_warning),
+        "the self-tell deadlock warning must fire iff debug_assertions is on \
+         (debug+tracing compiles warn_deadlock in; release compiles it out); \
+         debug_assertions={expect_warning}"
     );
 }
 
