@@ -1071,3 +1071,53 @@ where
 }
 
 dyn_clone::clone_trait_object!(SignalMailbox);
+
+/// Test-only surface for the mailbox cucumber scenarios (card #77).
+///
+/// Gated behind the `testing` feature. The scenarios pin the *channel mechanics*
+/// directly — FIFO order, the `front` push-back buffer's drain-before-channel
+/// protocol, capacity/closure boundaries — which requires constructing
+/// distinguishable [`Signal`]s and exercising the `pub(crate)`
+/// [`MailboxReceiver::push_front`]. A production `Signal::Message` is
+/// unconstructable out-of-crate (it boxes a real message + holds an
+/// [`ActorRef`](crate::actor::ActorRef) and reply channel), so this module hands
+/// the tests a cheap *tagged* signal built from the `Signal::LinkDied` arm — a
+/// real, channel-shaped signal whose tag rides in its [`ActorId`] and is read
+/// back via [`signal_tag`]. None of this is part of the production API.
+#[cfg(any(test, feature = "testing"))]
+pub mod testing {
+    use std::collections::VecDeque;
+
+    use super::{MailboxReceiver, Signal};
+    use crate::{Actor, actor::ActorId, error::ActorStopReason};
+
+    /// Builds a distinguishable [`Signal`] carrying `tag`.
+    ///
+    /// Uses the `Signal::LinkDied` arm (the cheapest channel-shaped variant) as a
+    /// carrier; the tag is stored in the [`ActorId`]'s `sequence_id` and recovered
+    /// with [`signal_tag`]. This lets a scenario assert *which* signal the receiver
+    /// yielded and in *what order*, without standing up a full message + actor.
+    pub fn tagged_signal<A: Actor>(tag: u64) -> Signal<A> {
+        Signal::LinkDied {
+            id: ActorId::new(tag),
+            reason: ActorStopReason::Normal,
+            mailbox_rx: None,
+            dead_actor_sibblings: None,
+        }
+    }
+
+    /// Recovers the tag set by [`tagged_signal`], or `None` for any other signal.
+    pub fn signal_tag<A: Actor>(signal: &Signal<A>) -> Option<u64> {
+        match signal {
+            Signal::LinkDied { id, .. } => Some(id.sequence_id()),
+            _ => None,
+        }
+    }
+
+    /// Re-queues `signals` ahead of the channel via the `pub(crate)`
+    /// [`MailboxReceiver::push_front`], so the scenarios can exercise the restart
+    /// push-back protocol directly.
+    pub fn push_front<A: Actor>(rx: &mut MailboxReceiver<A>, signals: VecDeque<Signal<A>>) {
+        rx.push_front(signals);
+    }
+}

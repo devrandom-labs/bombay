@@ -178,10 +178,14 @@ Feature: Actor lifecycle — start, run, panic-recovery, link-death, stop
     Given an actor whose on_start panics
     When the actor is spawned and startup is awaited
     Then the startup result is an error
-    And the actor stops with reason Panicked
+    And the actor stops with reason Panicked without calling on_stop
     # Confirmed: catch_unwind on on_start turns the panic into
     # PanicError::new_from_panic_any(OnStart) and the same Err arm runs
-    # (spawn.rs:204-209, 287).
+    # (spawn.rs:204-209, 287). That Err arm NEVER builds the actor and NEVER
+    # calls on_stop (on_stop needs &mut self, which never existed) — it only
+    # sets shutdown_result=Err(Panicked) and notifies links (spawn.rs:287-319).
+    # The shutdown reason is Panicked, but on_stop is NOT invoked, exactly like
+    # the on_start-returns-Err scenario.
 
   @lifecycle
   Scenario: on_stop is not called when on_start fails

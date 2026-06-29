@@ -460,6 +460,22 @@ impl<'a, S: Actor, C: Actor> SupervisedActorBuilder<'a, S, C> {
         self
     }
 
+    /// Test-only accessor for the builder's currently-configured restart
+    /// intensity limit `(max_restarts, restart_window)`.
+    ///
+    /// Gated behind the `testing` feature. The "default restart limit is 5
+    /// restarts per 5 seconds" scenario pins the builder defaults
+    /// (`new`/`new_with`: `max_restarts = 5`, `restart_window = 5s`). Those
+    /// fields are private and consumed by `spawn_inner` into an internal
+    /// `ErasedChildSpec` that is never observable out-of-crate, so a test cannot
+    /// read them back any other way without spawning and reaching into the
+    /// supervisor's private `Links`. This accessor reads the configured pair
+    /// directly off the builder without spawning. Not part of the production API.
+    #[cfg(any(test, feature = "testing"))]
+    pub fn restart_limits(&self) -> (u32, Duration) {
+        (self.max_restarts, self.restart_window)
+    }
+
     /// Spawns the supervised child actor with a default bounded mailbox.
     ///
     /// The child will be spawned with a bounded mailbox of capacity 64 (the default).
@@ -727,6 +743,26 @@ impl<T> SupervisorFactory<T> {
     fn get(&self) -> T {
         (self.0)()
     }
+}
+
+/// Test-only surface for the `supervision` cucumber scenarios (card #77).
+///
+/// Gated behind the `testing` feature. The decision-logic scenarios pin
+/// [`ErasedChildSpec::should_restart`](crate::links::ErasedChildSpec::should_restart)
+/// — the restart-policy × exit-kind × intensity-window decision — in isolation,
+/// which means constructing a spec with chosen `restart_policy` / counts /
+/// window / `last_restart` and reading the returned
+/// [`ControlFlow`](std::ops::ControlFlow). Production never builds a spec
+/// out-of-crate (the spawn machinery does), and [`NoRestartReason`] /
+/// `decision_spec` are not part of the production API. This module only
+/// re-exports those test surfaces (the builder lives in
+/// [`crate::links::testing`]); it adds no new production behaviour.
+#[cfg(any(test, feature = "testing"))]
+pub mod testing {
+    pub use crate::links::{
+        NoRestartReason,
+        testing::{DecisionProbe, decision_spec},
+    };
 }
 
 #[cfg(test)]

@@ -136,6 +136,7 @@ tracing-opentelemetry = { version = "0.32", optional = true }
 kameo = { path = ".", features = ["testing"] }
 cucumber = { workspace = true }
 proptest = { workspace = true }
+serde_bytes = "0.11"
 criterion = { version = "0.8", features = ["async_tokio"] }
 kameo_actors = { path = "actors" }
 libp2p = { version = "0.56.0", features = ["serde"] }
@@ -174,6 +175,102 @@ required-features = ["testing"]
 
 [[test]]
 name = "console_wire_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_actor_id_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_actor_id_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_error_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_error_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_message_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_message_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_reply_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_reply_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_actor_ref_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_actor_ref_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_actor_lifecycle_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_actor_lifecycle_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_request_ask_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_request_ask_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_request_tell_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_request_tell_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_mailbox_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_mailbox_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_registry_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_registry_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_links_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_links_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_supervision_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "core_supervision_props_bdd"
 required-features = ["testing"]
 
 [[bench]]

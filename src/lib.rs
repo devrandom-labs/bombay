@@ -9,6 +9,15 @@ pub mod actor;
 #[cfg(feature = "console")]
 pub mod console;
 pub mod error;
+// `links` is an internal module. Under `testing` it is exposed publicly ONLY so
+// the cucumber wiring can reach `links::testing` (and the `Links` /
+// `LinkDiedParts` types it returns); the production build keeps it `pub(crate)`.
+// The pre-existing internal items it exposes are not part of the public API, so
+// `missing_docs` is allowed on the test-only public surface.
+#[cfg(any(test, feature = "testing"))]
+#[allow(missing_docs)]
+pub mod links;
+#[cfg(not(any(test, feature = "testing")))]
 pub(crate) mod links;
 pub mod mailbox;
 pub mod message;

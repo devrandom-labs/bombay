@@ -119,7 +119,7 @@ Feature: Message — sequential handler dispatch, context, forwarding, and reply
   # @boundary — dead targets, full mailboxes, handler errors routed by ask vs tell
   # ---------------------------------------------------------------------------
 
-  @boundary
+  @boundary @bug:error.rs:293
   Scenario: forwarding to a dead target returns a SendError to the original caller
     Given a router actor and a target actor that has been stopped
     When the original caller asks the router, whose handler forwards to the dead target
@@ -127,8 +127,15 @@ Feature: Message — sequential handler dispatch, context, forwarding, and reply
     # Confirmed: forward awaits target.ask(...).forward(...); a dead target yields
     # SendError::ActorNotRunning, surfaced through the ForwardedReply (:264-277 +
     # SendError contract in src/error.rs).
+    # @bug (MUST FAIL today): desired — the caller receives a graceful
+    # SendError::ActorNotRunning. Actual — forward's failure builds the error via
+    # `From<mpsc::SendError<Signal>>` (error.rs:293) instantiated with M=(message,
+    # ReplySender), whose `signal.downcast_message::<(M, tx)>().unwrap()` is None
+    # because the signal holds a BARE message, so .unwrap() PANICS inside the
+    # router's handler; the router dies and the caller observes ActorStopped, not
+    # ActorNotRunning. Stays red until the error.rs:293 conversion is fixed.
 
-  @boundary
+  @boundary @bug:error.rs:305
   Scenario: try_forward returns immediately with a mailbox-full error rather than blocking
     Given a router actor and a target actor whose bounded mailbox is full
     When the router's handler calls try_forward to the target
@@ -136,14 +143,27 @@ Feature: Message — sequential handler dispatch, context, forwarding, and reply
     And the original reply channel is restored to the router context so it can respond
     # Confirmed: try_forward uses ask(...).try_forward(...); on error map_msg restores
     # self.reply (:300-311), distinguishing a capacity hit from a dead actor.
+    # @bug (MUST FAIL today): desired — try_forward returns a graceful
+    # SendError::MailboxFull. Actual — same root cause on the try path:
+    # `From<mpsc::TrySendError<Signal>>` (error.rs:305 Full arm) does
+    # `signal.downcast_message::<(M, tx)>().unwrap()` → None → PANICS inside the
+    # router's handler, so the caller sees ActorStopped, not MailboxFull. Stays red
+    # until the error.rs:305 conversion is fixed.
 
-  @boundary
+  @boundary @bug:ask.rs:461
   Scenario: blocking_forward waits for target capacity instead of returning Full
     Given a router actor and a target actor whose bounded mailbox is momentarily full
     When the router's handler calls blocking_forward and a slot then frees
     Then the message is forwarded once capacity is available
     # Confirmed: blocking_forward uses ask(...).blocking_forward(...) which blocks the
     # thread for capacity (:326-345), unlike try_forward which fails fast.
+    # @bug (MUST FAIL today): desired — blocking_forward blocks for capacity and
+    # forwards once a slot frees. Actual — AskRequest::blocking_forward calls tokio
+    # `tx.blocking_send(signal)` (ask.rs:461), which PANICS ("Cannot block the
+    # current thread from within a runtime") whenever called from an async context,
+    # and every kameo handler runs on a tokio runtime worker — so calling
+    # ctx.blocking_forward from a handler always panics. Stays red until the API
+    # guards the misuse-in-async or the scenario is re-specified.
 
   @boundary
   Scenario: a handler that returns Err on an ask routes the error to the caller as HandlerError

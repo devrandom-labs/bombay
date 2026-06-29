@@ -564,6 +564,55 @@ where
     }
 }
 
+/// Test-only surface for constructing the `Forwarded` arm of a [`ForwardedReply`].
+///
+/// Gated behind the `testing` feature. The `Forwarded(Ok(()))` /
+/// `Forwarded(Err(send_error))` states are produced in production ONLY by
+/// [`Context::forward`](crate::message::Context::forward) via the `pub(crate)`
+/// [`ForwardedReply::new`], which consumes the caller's reply channel and is
+/// immediately handed to the dispatcher — so those states are unreachable as
+/// standalone values from an out-of-crate test. This constructor lets the
+/// `reply` cucumber scenarios exercise the `Forwarded` arm's `into_any_err` /
+/// `into_value` / `to_result` behaviour directly. It performs no validation and
+/// is not part of the public production API.
+#[cfg(any(test, feature = "testing"))]
+pub mod testing {
+    use tokio::sync::oneshot;
+
+    use super::{ForwardedReply, Reply, ReplySender};
+    use crate::{
+        error::{BoxSendError, SendError},
+        message::BoxReply,
+    };
+
+    /// Builds a `ForwardedReply` in the `Forwarded(res)` state — the marker the
+    /// dispatcher uses to carry a forward's send-outcome (not a value reply).
+    pub fn forwarded<M, R>(res: Result<(), SendError<M, R::Error>>) -> ForwardedReply<M, R>
+    where
+        R: Reply,
+    {
+        ForwardedReply::new(res)
+    }
+
+    /// Builds a [`ReplySender`] over a fresh oneshot channel, returning it
+    /// alongside the raw receiver so a test can drive `AskRequest::forward` /
+    /// `try_forward` / `blocking_forward` (which take a `ReplySender<R::Value>`)
+    /// and then observe the value delivered to the channel.
+    ///
+    /// `ReplySender::new` is `pub(crate)`; in production a `ReplySender` is only
+    /// obtained from `ctx.reply_sender()` inside a handler, so an out-of-crate
+    /// test cannot construct one with a receiver it can read. Gated behind the
+    /// `testing` feature; performs no validation and is not part of the public
+    /// production API.
+    pub fn reply_channel<R>() -> (
+        ReplySender<R>,
+        oneshot::Receiver<Result<BoxReply, BoxSendError>>,
+    ) {
+        let (tx, rx) = oneshot::channel();
+        (ReplySender::new(tx), rx)
+    }
+}
+
 impl<T, E> Reply for Result<T, E>
 where
     T: Send + 'static,

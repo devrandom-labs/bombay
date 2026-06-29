@@ -75,7 +75,7 @@ Feature: ActorId — generation, byte round-trips, identity
   # ---------------------------------------------------------------------------
 
   @boundary
-  Scenario Outline: Display renders an ActorId as "#<sequence_id>"
+  Scenario Outline: Display renders an ActorId as "#sequence_id"
     Given an ActorId created via new(<seq>)
     When it is formatted with Display ("{}")
     Then the output is "<display>"
@@ -89,7 +89,7 @@ Feature: ActorId — generation, byte round-trips, identity
     # "@{peer}"/"@local" suffix is remote-gated (id.rs:167-171) and out of local scope.
 
   @boundary
-  Scenario Outline: Debug renders an ActorId as "ActorId(<sequence_id>)"
+  Scenario Outline: Debug renders an ActorId as "ActorId(sequence_id)"
     Given an ActorId created via new(<seq>)
     When it is formatted with Debug ("{:?}")
     Then the output is "<debug>"
