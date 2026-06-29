@@ -19,7 +19,9 @@ jobs:
     name: llvm-cov HTML report
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # `contents: write` so the report can be published to the `gh-pages`
+      # branch (deployed to GitHub Pages).
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,14 +48,23 @@ jobs:
           purge-created: 0
           purge-primary-key: never
 
-      # Builds `cargo llvm-cov test --workspace` instrumented; the HTML report
-      # lands in ./result/html (a /nix/store symlink). `-L` streams full logs.
+      # Builds the system-default coverage engine (`.#coverage`): tarpaulin on
+      # this Linux runner, llvm-cov on Darwin. `-L` streams full logs.
       - name: Build coverage report
         run: nix build .#coverage -L
 
+      # Normalise either engine's output to `coverage-html/index.html`:
+      # llvm-cov writes `result/html/`, tarpaulin writes `result/tarpaulin-report.html`.
       - name: Stage HTML out of the read-only nix store
         run: |
-          cp -rL result/html coverage-html
+          rm -rf coverage-html && mkdir coverage-html
+          if [ -d result/html ]; then
+            cp -rL result/html/. coverage-html/
+          elif [ -f result/tarpaulin-report.html ]; then
+            cp -L result/tarpaulin-report.html coverage-html/index.html
+          else
+            cp -rL result/. coverage-html/
+          fi
           chmod -R u+w coverage-html
 
       - name: Upload HTML coverage report
@@ -63,11 +74,26 @@ jobs:
           path: coverage-html
           if-no-files-found: error
 
+      # Publish to the `gh-pages` branch under /coverage/ for a stable browsable
+      # URL. `keep_files: true` + `destination_dir: coverage` so it owns ONLY the
+      # /coverage/ subtree — leaving room for a future docs site (#73) at the root.
+      - name: Deploy to GitHub Pages (/coverage/)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: coverage-html
+          destination_dir: coverage
+          keep_files: true
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          commit_message: "coverage for ${{ github.sha }}"
+
       - name: Job summary
         run: |
           {
-            echo "## Coverage (llvm-cov) for \`main\` @ ${GITHUB_SHA:0:7}"
+            echo "## Coverage for \`main\` @ ${GITHUB_SHA:0:7}"
             echo ""
-            echo "Browsable HTML is the **coverage-html** artifact on this run."
+            echo "Browsable report: https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/coverage/"
+            echo "(also the **coverage-html** artifact on this run)."
             echo "Per-file baseline + gap triage: \`docs/testing/coverage-baseline.md\`."
           } >> "$GITHUB_STEP_SUMMARY"

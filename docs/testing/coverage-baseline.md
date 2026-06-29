@@ -1,16 +1,27 @@
 # Coverage baseline (card #85)
 
-Reproducible via crane's `cargoLlvmCov`:
+Reproducible via crane, with **two engines** selected by system:
 
 ```bash
-nix build .#coverage -L      # browsable HTML report -> ./result/html/index.html
+nix build .#coverage -L            # system default: llvm-cov on Darwin, tarpaulin on Linux
+nix build .#coverage-llvm -L       # force llvm-cov (any system) -> result/html/index.html
+nix build .#coverage-tarpaulin -L  # force tarpaulin (Linux only) -> result/tarpaulin-report.html
 ```
 
-It runs `cargo llvm-cov test --workspace` with default features, instrumented by the
-version-matched `llvm-cov`/`llvm-profdata` from the toolchain's `llvm-tools` component
-(`rust-toolchain.toml`). Non-gating (instrumentation recompiles the world — too slow for the
-per-push gate). The `remote` (libp2p) layer is off by default, so it is never compiled or
-counted (M1 deletes it).
+- **`coverage-llvm`** (crane `cargoLlvmCov`) — works on every system, region/branch accurate,
+  instrumented by the version-matched `llvm-cov`/`llvm-profdata` from the toolchain's
+  `llvm-tools` component (`rust-toolchain.toml`).
+- **`coverage-tarpaulin`** (crane `cargoTarpaulin`) — Linux-only (ptrace engine; no Darwin
+  support), so it is only exposed on Linux.
+- **`coverage`** switches by system — tarpaulin on Linux (CI is x86_64-linux), llvm-cov on
+  Darwin (local dev) — so the same command works everywhere.
+
+All run `cargo … test --workspace` with default features; non-gating (instrumentation
+recompiles the world — too slow for the per-push gate). `remote` (libp2p) is off by default, so
+it is never compiled or counted (M1 deletes it). On every **merge to `main`**, the
+`coverage.yml` workflow rebuilds this and publishes the browsable HTML to GitHub Pages at
+`…/bombay/coverage/` (and as the `coverage-html` artifact). The numbers below are from
+`coverage-llvm`; tarpaulin's totals differ slightly (different instrumentation granularity).
 
 ## Baseline — 2026-06-29 (after #77)
 
