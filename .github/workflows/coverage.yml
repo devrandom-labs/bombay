@@ -1,0 +1,73 @@
+name: Coverage
+
+# Runs AFTER a PR merges (push to main) — not on PRs, since coverage
+# instrumentation recompiles the whole workspace and would slow the gate.
+# Produces the browsable llvm-cov HTML report (card #85) as an artifact so the
+# coverage of `main` is visible after every merge.
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: llvm-cov HTML report
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@v30
+        with:
+          nix_conf: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+            keep-env-derivations = true
+            keep-outputs = true
+
+      - name: Restore and save Nix store
+        uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-cov-${{ runner.os }}-${{ hashFiles('Cargo.toml', 'flake.nix', 'flake.lock', 'Cargo.lock') }}
+          restore-prefixes-first-match: nix-cov-${{ runner.os }}-
+          gc-max-store-size-linux: 1G
+          purge: true
+          purge-prefixes: nix-cov-${{ runner.os }}-
+          purge-created: 0
+          purge-primary-key: never
+
+      # Builds `cargo llvm-cov test --workspace` instrumented; the HTML report
+      # lands in ./result/html (a /nix/store symlink). `-L` streams full logs.
+      - name: Build coverage report
+        run: nix build .#coverage -L
+
+      - name: Stage HTML out of the read-only nix store
+        run: |
+          cp -rL result/html coverage-html
+          chmod -R u+w coverage-html
+
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: coverage-html
+          if-no-files-found: error
+
+      - name: Job summary
+        run: |
+          {
+            echo "## Coverage (llvm-cov) for \`main\` @ ${GITHUB_SHA:0:7}"
+            echo ""
+            echo "Browsable HTML is the **coverage-html** artifact on this run."
+            echo "Per-file baseline + gap triage: \`docs/testing/coverage-baseline.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"
