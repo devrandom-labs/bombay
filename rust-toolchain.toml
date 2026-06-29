@@ -5,5 +5,7 @@
 # edition 2024 requires >= 1.85.
 [toolchain]
 channel = "1.96.0"
-components = ["rustfmt", "clippy", "rust-src", "rust-analyzer"]
+# `llvm-tools` adds version-matched `llvm-cov`/`llvm-profdata` to the toolchain
+# sysroot, which `cargo-llvm-cov` uses for coverage (card #85).
+components = ["rustfmt", "clippy", "rust-src", "rust-analyzer", "llvm-tools"]
 profile = "minimal"

@@ -153,5 +153,42 @@
             gh
           ];
         };
+
+        # On-demand coverage reports (card #85), NOT gating checks — coverage
+        # instrumentation recompiles the world, too slow for the per-push gate.
+        # `nix build .#coverage -L` writes a browsable HTML report to ./result.
+        #
+        # TWO engines, both wired via crane (each brings its own cargo subcommand):
+        #   * coverage-llvm — `cargoLlvmCov`; works on EVERY system, region/branch
+        #     accurate. Uses the version-matched `llvm-cov`/`llvm-profdata` from
+        #     the `llvm-tools` toolchain component (rust-toolchain.toml).
+        #     Output: $out/html/index.html.
+        #   * coverage-tarpaulin — `cargoTarpaulin`; LINUX-ONLY (ptrace engine; no
+        #     Darwin support). Output: $out/tarpaulin-report.html.
+        #
+        # `packages.coverage` switches by system: tarpaulin on Linux (CI runs
+        # x86_64-linux), llvm-cov on Darwin (local dev). `--workspace` covers
+        # kameo + actors + console + macros; `remote` (libp2p, deleted in M1) is
+        # off by default, so it is neither built nor counted. The `testing`
+        # feature auto-enables via the self dev-dep, so the cucumber runners build.
+        packages =
+          let
+            covLlvm = craneLib.cargoLlvmCov (commonArgs // {
+              inherit cargoArtifacts;
+              cargoLlvmCovCommand = "test";
+              cargoLlvmCovExtraArgs = "--workspace --html --output-dir $out";
+            });
+            covTarpaulin = craneLib.cargoTarpaulin (commonArgs // {
+              inherit cargoArtifacts;
+              cargoTarpaulinExtraArgs =
+                "--skip-clean --workspace --out Html --output-dir $out";
+            });
+          in
+          {
+            coverage-llvm = covLlvm;
+            coverage = if stdenv.isDarwin then covLlvm else covTarpaulin;
+          } // lib.optionalAttrs stdenv.isLinux {
+            coverage-tarpaulin = covTarpaulin;
+          };
       });
 }
