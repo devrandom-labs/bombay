@@ -348,8 +348,7 @@ Feature: Mailbox — bounded/unbounded signal channel with restart push-front
     Given a bounded mailbox with capacity 4
     And multiple concurrent senders performing await-send
     And a single receiver draining concurrently
-    Then at every observation the count received is less than or equal to the count
-      acknowledged-sent, and capacity never reports more than the configured maximum
+    Then at every observation the count received is less than or equal to the count acknowledged-sent, and capacity never reports more than the configured maximum
 
   @linearizability
   Scenario: A single receiver preserves per-sender FIFO order under concurrency
