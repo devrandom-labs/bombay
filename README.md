@@ -39,7 +39,10 @@ Bombay uses the same Nix-flake setup as the sibling nexus/agency repos (crane + 
 ```bash
 direnv allow        # or: nix develop
 nix flake check     # the single gate: build + clippy + fmt + audit + deny + nextest + doctest + actionlint
+nix build .#coverage -L   # on-demand llvm-cov report (card #85; non-gating) -> ./result/html
 ```
+
+Coverage is wired via crane's `cargoLlvmCov` (a `packages.coverage` output, not a gate — instrumentation recompiles the world). The current baseline and the per-file gap triage live in [`docs/testing/coverage-baseline.md`](docs/testing/coverage-baseline.md): the #77-wired core is **77%** line coverage, with `src/actor/actor_ref.rs` (46%) the one large hole; the `actors` crate is 0% (#78).
 
 > **The `clippy` check passes, but the god-level bar is temporarily relaxed.** The vendored kameo code (~19k LOC) is not clean against bombay's full lint config (1200+ findings, mostly pedantic/nursery/restriction). Rather than bury those under scattered `#[allow]`s on code that ships **zero tests upstream** (notably the `actors` crate), the bar in [`clippy.toml`](clippy.toml) + the `[workspace.lints.clippy]` block (adopted from nexus) is **parked at `allow`** so the gate passes over verbatim kameo — kameo's own `#![warn(clippy::all)]` still holds. It will be re-tightened lint-by-lint, with real fixes, as the surviving core gains test coverage (M1/M7). Both files carry restore instructions. The other checks (fmt/audit/deny/nextest/doctest/actionlint) give real signal.
 

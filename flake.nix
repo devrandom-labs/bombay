@@ -153,5 +153,25 @@
             gh
           ];
         };
+
+        # On-demand coverage report (card #85), NOT a gating check — coverage
+        # instrumentation recompiles the world, too slow for the per-push gate.
+        # `nix build .#coverage -L` prints the per-file summary table and writes
+        # the browsable HTML report to ./result. Crane's `cargoLlvmCov` brings
+        # `cargo-llvm-cov`; the version-matched `llvm-cov`/`llvm-profdata` come
+        # from the `llvm-tools` toolchain component (rust-toolchain.toml). The
+        # `testing` feature auto-enables via the self dev-dep, so the core/actors
+        # cucumber runners build. `remote` (libp2p, deleted in M1) is off by
+        # default, so it is neither built nor counted.
+        packages.coverage = craneLib.cargoLlvmCov (commonArgs // {
+          inherit cargoArtifacts;
+          cargoLlvmCovCommand = "test";
+          # `--workspace` covers kameo + actors + console + macros. `remote`
+          # (libp2p) is off by default so it is never compiled and never counted.
+          # The per-file summary prints to the build log (`-L`); HTML lands in
+          # ./result. Test-harness files (`tests/`) show in the table too — read
+          # the `src/` rows for the SUT signal; an ignore-regex can refine later.
+          cargoLlvmCovExtraArgs = "--workspace --html --output-dir $out";
+        });
       });
 }
