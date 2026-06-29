@@ -251,7 +251,9 @@ impl Message<ProbeBlockingForward> for ProbeRouter {
     }
 }
 
-fn spawn_probe_router(target: ActorRef<ProbeTarget>) -> (ActorRef<ProbeRouter>, Arc<Mutex<Vec<String>>>) {
+fn spawn_probe_router(
+    target: ActorRef<ProbeTarget>,
+) -> (ActorRef<ProbeRouter>, Arc<Mutex<Vec<String>>>) {
     let panics: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
     let router = ProbeRouter::spawn(ProbeRouter {
         target,

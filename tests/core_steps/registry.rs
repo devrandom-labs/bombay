@@ -115,7 +115,11 @@ async fn stop_and_settle(actor: &ActorRef<Foo>) {
     actor.stop_gracefully().await.expect("graceful stop signal");
     actor.wait_for_shutdown().await;
     let probe = actor.clone();
-    settle(move || !probe.is_alive(), "actor never reported not-running").await;
+    settle(
+        move || !probe.is_alive(),
+        "actor never reported not-running",
+    )
+    .await;
 }
 
 // ===========================================================================
@@ -157,7 +161,11 @@ pub struct RegistryWorld {
 
 impl RegistryWorld {
     fn reg(&self) -> Reg {
-        Arc::clone(self.registry.as_ref().expect("registry initialized in Background"))
+        Arc::clone(
+            self.registry
+                .as_ref()
+                .expect("registry initialized in Background"),
+        )
     }
 
     /// Looks up a kept-alive actor's id by the name it was inserted under.
@@ -214,7 +222,9 @@ async fn given_foo_registered(world: &mut RegistryWorld, label: String, name: St
     world.actors.push((label, actor));
 }
 
-#[given(regex = r#"^a running actor "([^"]*)" of type Foo registered under both "([^"]*)" and "([^"]*)"$"#)]
+#[given(
+    regex = r#"^a running actor "([^"]*)" of type Foo registered under both "([^"]*)" and "([^"]*)"$"#
+)]
 async fn given_foo_registered_twice(
     world: &mut RegistryWorld,
     label: String,
@@ -225,8 +235,14 @@ async fn given_foo_registered_twice(
     {
         let reg = world.reg();
         let mut guard = reg.lock().unwrap();
-        assert!(guard.insert(name1, actor.clone()), "first name insert must succeed");
-        assert!(guard.insert(name2, actor.clone()), "second name insert must succeed");
+        assert!(
+            guard.insert(name1, actor.clone()),
+            "first name insert must succeed"
+        );
+        assert!(
+            guard.insert(name2, actor.clone()),
+            "second name insert must succeed"
+        );
     }
     world.actors.push((label, actor));
 }
@@ -240,7 +256,13 @@ async fn given_second_unregistered(world: &mut RegistryWorld, _label: String) {
 async fn given_inserted_two(world: &mut RegistryWorld, n1: String, n2: String) {
     for name in [n1, n2] {
         let actor = spawn_foo().await;
-        assert!(world.reg().lock().unwrap().insert(name.clone(), actor.clone()));
+        assert!(
+            world
+                .reg()
+                .lock()
+                .unwrap()
+                .insert(name.clone(), actor.clone())
+        );
         world.actors.push((name, actor));
     }
 }
@@ -344,7 +366,10 @@ async fn when_inserted_under(world: &mut RegistryWorld, label: String, name: Str
 async fn when_get_missing(world: &mut RegistryWorld) {
     let res: Result<Option<ActorRef<Foo>>, RegistryError> =
         world.reg().lock().unwrap().get("missing");
-    world.concurrent_get = Some(res.expect("get must not error on a missing name").map(|r| r.id()));
+    world.concurrent_get = Some(
+        res.expect("get must not error on a missing name")
+            .map(|r| r.id()),
+    );
 }
 
 #[when(regex = r#"^get::<Bar>\("alpha"\) is called$"#)]
@@ -390,7 +415,13 @@ fn self_id_a1(world: &RegistryWorld) -> ActorId {
 async fn when_inserted_three(world: &mut RegistryWorld, a: String, b: String, c: String) {
     for name in [a, b, c] {
         let actor = spawn_foo().await;
-        assert!(world.reg().lock().unwrap().insert(name.clone(), actor.clone()));
+        assert!(
+            world
+                .reg()
+                .lock()
+                .unwrap()
+                .insert(name.clone(), actor.clone())
+        );
         world.actors.push((name, actor));
     }
 }
@@ -402,8 +433,12 @@ async fn when_clear(world: &mut RegistryWorld) {
 
 #[when(regex = r#"^the ref obtained from get::<Foo>\("alpha"\) is told a message$"#)]
 async fn when_tell_stale(world: &mut RegistryWorld) {
-    let stale: Option<ActorRef<Foo>> =
-        world.reg().lock().unwrap().get("alpha").expect("get must not error");
+    let stale: Option<ActorRef<Foo>> = world
+        .reg()
+        .lock()
+        .unwrap()
+        .get("alpha")
+        .expect("get must not error");
     let stale = stale.expect("the stale ref must still be present in the registry");
     let res = stale.tell(Ping).await;
     world.send_err_not_running = Some(matches!(res, Err(SendError::ActorNotRunning(_))));
@@ -413,7 +448,9 @@ async fn when_tell_stale(world: &mut RegistryWorld) {
 // When — concurrent (real overlap via Barrier + tokio::spawn)
 // ===========================================================================
 
-#[when(regex = r#"^all (\d+) tasks concurrently insert under the same name "([^"]*)" under a barrier$"#)]
+#[when(
+    regex = r#"^all (\d+) tasks concurrently insert under the same name "([^"]*)" under a barrier$"#
+)]
 async fn when_concurrent_same_name(world: &mut RegistryWorld, n: usize, name: String) {
     concurrent_same_name(world, n, name).await;
 }
@@ -453,7 +490,11 @@ async fn concurrent_same_name(world: &mut RegistryWorld, n: usize, name: String)
 async fn when_concurrent_distinct(world: &mut RegistryWorld, n: usize) {
     let reg = world.reg();
     let named: Vec<(String, ActorRef<Foo>)> = world.actors.clone();
-    assert_eq!(named.len(), n, "expected exactly {n} distinct (name, actor) pairs");
+    assert_eq!(
+        named.len(),
+        n,
+        "expected exactly {n} distinct (name, actor) pairs"
+    );
     let barrier = Arc::new(Barrier::new(n));
     let tasks: Vec<_> = named
         .into_iter()
@@ -481,7 +522,11 @@ async fn when_concurrent_distinct(world: &mut RegistryWorld, n: usize) {
 #[when(
     regex = r#"^one task removes "([^"]*)" while another task concurrently calls get::<Foo>\("([^"]*)"\) under a barrier$"#
 )]
-async fn when_concurrent_get_during_remove(world: &mut RegistryWorld, rname: String, gname: String) {
+async fn when_concurrent_get_during_remove(
+    world: &mut RegistryWorld,
+    rname: String,
+    gname: String,
+) {
     let reg = world.reg();
     let barrier = Arc::new(Barrier::new(2));
 
@@ -496,7 +541,8 @@ async fn when_concurrent_get_during_remove(world: &mut RegistryWorld, rname: Str
     let get_barrier = Arc::clone(&barrier);
     let getter = tokio::spawn(async move {
         get_barrier.wait().await;
-        let res: Result<Option<ActorRef<Foo>>, RegistryError> = get_reg.lock().unwrap().get(gname.as_str());
+        let res: Result<Option<ActorRef<Foo>>, RegistryError> =
+            get_reg.lock().unwrap().get(gname.as_str());
         // Must never be Err(BadActorType): assert that here so a torn read fails loudly.
         assert!(
             !matches!(res, Err(RegistryError::BadActorType)),
@@ -520,7 +566,11 @@ async fn then_insert_true(world: &mut RegistryWorld) {
 
 #[then(regex = r"^the insert returns false$")]
 async fn then_insert_false(world: &mut RegistryWorld) {
-    assert_eq!(world.last_insert, Some(false), "duplicate insert must return false");
+    assert_eq!(
+        world.last_insert,
+        Some(false),
+        "duplicate insert must return false"
+    );
 }
 
 #[then(regex = r"^both inserts return true$")]
@@ -532,21 +582,41 @@ async fn then_both_inserts_true(world: &mut RegistryWorld) {
     );
 }
 
-#[then(regex = r#"^get::<Foo>\("([^"]*)"\) returns Some\(ref\) whose id equals ([A-Za-z0-9]+)'s id$"#)]
+#[then(
+    regex = r#"^get::<Foo>\("([^"]*)"\) returns Some\(ref\) whose id equals ([A-Za-z0-9]+)'s id$"#
+)]
 async fn then_get_some_id(world: &mut RegistryWorld, name: String, label: String) {
-    let got: Option<ActorRef<Foo>> =
-        world.reg().lock().unwrap().get(name.as_str()).expect("get must not error");
+    let got: Option<ActorRef<Foo>> = world
+        .reg()
+        .lock()
+        .unwrap()
+        .get(name.as_str())
+        .expect("get must not error");
     let got = got.expect("expected Some(ref)");
-    assert_eq!(got.id(), world.id_for(&label), "resolved ref must carry the expected id");
+    assert_eq!(
+        got.id(),
+        world.id_for(&label),
+        "resolved ref must carry the expected id"
+    );
 }
 
-#[then(regex = r"^get::<Foo>\(the long name\) returns Some\(ref\) whose id equals ([A-Za-z0-9]+)'s id$")]
+#[then(
+    regex = r"^get::<Foo>\(the long name\) returns Some\(ref\) whose id equals ([A-Za-z0-9]+)'s id$"
+)]
 async fn then_get_long_some_id(world: &mut RegistryWorld, label: String) {
     let name = world.long_name.clone().expect("long name built");
-    let got: Option<ActorRef<Foo>> =
-        world.reg().lock().unwrap().get(name.as_str()).expect("get must not error");
+    let got: Option<ActorRef<Foo>> = world
+        .reg()
+        .lock()
+        .unwrap()
+        .get(name.as_str())
+        .expect("get must not error");
     let got = got.expect("expected Some(ref) for the long name");
-    assert_eq!(got.id(), world.id_for(&label), "long-name ref must carry the expected id");
+    assert_eq!(
+        got.id(),
+        world.id_for(&label),
+        "long-name ref must carry the expected id"
+    );
 }
 
 #[then(regex = r"^it returns Ok\(None\)$")]
@@ -556,8 +626,12 @@ async fn then_returns_ok_none(world: &mut RegistryWorld) {
 
 #[then(regex = r#"^get::<Foo>\("([^"]*)"\) returns Ok\(None\)$"#)]
 async fn then_get_ok_none(world: &mut RegistryWorld, name: String) {
-    let got: Option<ActorRef<Foo>> =
-        world.reg().lock().unwrap().get(name.as_str()).expect("get must not error");
+    let got: Option<ActorRef<Foo>> = world
+        .reg()
+        .lock()
+        .unwrap()
+        .get(name.as_str())
+        .expect("get must not error");
     assert!(got.is_none(), "expected Ok(None) for {name:?}");
 }
 
@@ -568,7 +642,11 @@ async fn then_remove_true(world: &mut RegistryWorld) {
 
 #[then(regex = r"^remove returns false$")]
 async fn then_remove_false(world: &mut RegistryWorld) {
-    assert_eq!(world.last_remove, Some(false), "remove of an absent name must return false");
+    assert_eq!(
+        world.last_remove,
+        Some(false),
+        "remove of an absent name must return false"
+    );
 }
 
 #[then(regex = r"^it returns true$")]
@@ -589,33 +667,60 @@ async fn then_true_and_len(world: &mut RegistryWorld, n: usize) {
 
 #[then(regex = r#"^contains_name\("([^"]*)"\) returns false$"#)]
 async fn then_contains_false(world: &mut RegistryWorld, name: String) {
-    assert!(!world.reg().lock().unwrap().contains_name(name.as_str()), "{name:?} must be absent");
+    assert!(
+        !world.reg().lock().unwrap().contains_name(name.as_str()),
+        "{name:?} must be absent"
+    );
 }
 
 #[then(regex = r#"^contains_name\("([^"]*)"\) returns true$"#)]
 async fn then_contains_true(world: &mut RegistryWorld, name: String) {
-    assert!(world.reg().lock().unwrap().contains_name(name.as_str()), "{name:?} must be present");
+    assert!(
+        world.reg().lock().unwrap().contains_name(name.as_str()),
+        "{name:?} must be present"
+    );
 }
 
 #[then(regex = r#"^contains_name\("([^"]*)"\) still returns true$"#)]
 async fn then_contains_still_true(world: &mut RegistryWorld, name: String) {
-    assert!(world.reg().lock().unwrap().contains_name(name.as_str()), "{name:?} must still be present");
+    assert!(
+        world.reg().lock().unwrap().contains_name(name.as_str()),
+        "{name:?} must still be present"
+    );
 }
 
-#[then(regex = r#"^get::<Foo>\("([^"]*)"\) still returns the ref whose id equals ([A-Za-z0-9]+)'s id$"#)]
+#[then(
+    regex = r#"^get::<Foo>\("([^"]*)"\) still returns the ref whose id equals ([A-Za-z0-9]+)'s id$"#
+)]
 async fn then_get_still_id(world: &mut RegistryWorld, name: String, label: String) {
-    let got: Option<ActorRef<Foo>> =
-        world.reg().lock().unwrap().get(name.as_str()).expect("get must not error");
+    let got: Option<ActorRef<Foo>> = world
+        .reg()
+        .lock()
+        .unwrap()
+        .get(name.as_str())
+        .expect("get must not error");
     let got = got.expect("the original ref must remain (no overwrite)");
-    assert_eq!(got.id(), world.id_for(&label), "the existing entry must be unchanged");
+    assert_eq!(
+        got.id(),
+        world.id_for(&label),
+        "the existing entry must be unchanged"
+    );
 }
 
 #[then(regex = r#"^get::<Foo>\("([^"]*)"\) still returns ([A-Za-z0-9]+)'s ref$"#)]
 async fn then_get_still_ref(world: &mut RegistryWorld, name: String, label: String) {
-    let got: Option<ActorRef<Foo>> =
-        world.reg().lock().unwrap().get(name.as_str()).expect("get must not error");
+    let got: Option<ActorRef<Foo>> = world
+        .reg()
+        .lock()
+        .unwrap()
+        .get(name.as_str())
+        .expect("get must not error");
     let got = got.expect("the independent key must remain after the other is removed");
-    assert_eq!(got.id(), world.id_for(&label), "the surviving key must resolve to {label}");
+    assert_eq!(
+        got.id(),
+        world.id_for(&label),
+        "the surviving key must resolve to {label}"
+    );
 }
 
 #[then(regex = r"^it returns Err\(RegistryError::BadActorType\)$")]
@@ -661,10 +766,18 @@ async fn then_send_not_running(world: &mut RegistryWorld) {
 
 #[then(regex = r#"^get::<Foo>\("alpha"\) returns the ref whose id equals ([A-Za-z0-9]+)'s id$"#)]
 async fn then_get_alpha_id(world: &mut RegistryWorld, label: String) {
-    let got: Option<ActorRef<Foo>> =
-        world.reg().lock().unwrap().get("alpha").expect("get must not error");
+    let got: Option<ActorRef<Foo>> = world
+        .reg()
+        .lock()
+        .unwrap()
+        .get("alpha")
+        .expect("get must not error");
     let got = got.expect("expected Some(ref)");
-    assert_eq!(got.id(), world.id_for(&label), "resolved ref must carry the expected id");
+    assert_eq!(
+        got.id(),
+        world.id_for(&label),
+        "resolved ref must carry the expected id"
+    );
 }
 
 // ===========================================================================
@@ -716,14 +829,19 @@ fn assert_names(world: &RegistryWorld, set: &str) {
     let reg = world.reg();
     let guard = reg.lock().unwrap();
     let actual: HashSet<String> = guard.names().map(|c| c.to_string()).collect();
-    assert_eq!(actual, expected, "names() must yield exactly the expected set");
+    assert_eq!(
+        actual, expected,
+        "names() must yield exactly the expected set"
+    );
 }
 
 // ===========================================================================
 // Then — remove_by_id conserved-facts (two names, one id)
 // ===========================================================================
 
-#[then(regex = r#"^exactly one of contains_name\("([^"]*)"\) / contains_name\("([^"]*)"\) is now false$"#)]
+#[then(
+    regex = r#"^exactly one of contains_name\("([^"]*)"\) / contains_name\("([^"]*)"\) is now false$"#
+)]
 async fn then_exactly_one_false(world: &mut RegistryWorld, a: String, b: String) {
     let reg = world.reg();
     let guard = reg.lock().unwrap();
@@ -749,7 +867,11 @@ async fn then_surviving_resolves(world: &mut RegistryWorld, label: String) {
             .expect("get must not error")
             .expect("one name must survive the first remove_by_id"),
     };
-    assert_eq!(survivor.id(), id, "the surviving name must resolve to A1's id ({label})");
+    assert_eq!(
+        survivor.id(),
+        id,
+        "the surviving name must resolve to A1's id ({label})"
+    );
 }
 
 // ===========================================================================
@@ -760,7 +882,10 @@ async fn then_surviving_resolves(world: &mut RegistryWorld, label: String) {
 async fn then_one_winner(world: &mut RegistryWorld, losers: usize) {
     let wins = world.concurrent_results.iter().filter(|w| **w).count();
     let total = world.concurrent_results.len();
-    assert_eq!(wins, 1, "exactly one insert must win, got {wins} (of {total})");
+    assert_eq!(
+        wins, 1,
+        "exactly one insert must win, got {wins} (of {total})"
+    );
     assert_eq!(
         total - wins,
         losers,
@@ -771,30 +896,54 @@ async fn then_one_winner(world: &mut RegistryWorld, losers: usize) {
 #[then(regex = r"^exactly one insert returns true and the other K-1 return false$")]
 async fn then_one_winner_k(world: &mut RegistryWorld) {
     let wins = world.concurrent_results.iter().filter(|w| **w).count();
-    assert_eq!(wins, 1, "exactly one insert must win across K threads, got {wins}");
+    assert_eq!(
+        wins, 1,
+        "exactly one insert must win across K threads, got {wins}"
+    );
 }
 
 #[then(regex = r#"^get::<Foo>\("([^"]*)"\) returns the ref belonging to the single winning task$"#)]
 async fn then_get_winner(world: &mut RegistryWorld, name: String) {
     let winner = world.winner_id.expect("a single winner id");
-    let got: Option<ActorRef<Foo>> =
-        world.reg().lock().unwrap().get(name.as_str()).expect("get must not error");
+    let got: Option<ActorRef<Foo>> = world
+        .reg()
+        .lock()
+        .unwrap()
+        .get(name.as_str())
+        .expect("get must not error");
     let got = got.expect("the winning ref must be stored");
-    assert_eq!(got.id(), winner, "the stored ref must be the winning task's");
+    assert_eq!(
+        got.id(),
+        winner,
+        "the stored ref must be the winning task's"
+    );
 }
 
-#[then(regex = r#"^get::<Foo>\(name\) afterwards returns the ref belonging to the single winning thread$"#)]
+#[then(
+    regex = r#"^get::<Foo>\(name\) afterwards returns the ref belonging to the single winning thread$"#
+)]
 async fn then_get_winner_name(world: &mut RegistryWorld) {
     let winner = world.winner_id.expect("a single winner id");
-    let got: Option<ActorRef<Foo>> =
-        world.reg().lock().unwrap().get("alpha").expect("get must not error");
+    let got: Option<ActorRef<Foo>> = world
+        .reg()
+        .lock()
+        .unwrap()
+        .get("alpha")
+        .expect("get must not error");
     let got = got.expect("the winning ref must be stored");
-    assert_eq!(got.id(), winner, "the stored ref must be the winning thread's");
+    assert_eq!(
+        got.id(),
+        winner,
+        "the stored ref must be the winning thread's"
+    );
 }
 
 #[then(regex = r"^every insert returns true$")]
 async fn then_every_insert_true(world: &mut RegistryWorld) {
-    assert!(!world.distinct_pairs.is_empty(), "distinct inserts must have run");
+    assert!(
+        !world.distinct_pairs.is_empty(),
+        "distinct inserts must have run"
+    );
 }
 
 #[then(regex = r"^len\(\) returns (\d+) and each name resolves to its own actor's id$")]
@@ -803,11 +952,19 @@ async fn then_len_and_each_resolves(world: &mut RegistryWorld, n: usize) {
     assert_eq!(pairs.len(), n, "expected {n} distinct pairs");
     let reg = world.reg();
     let mut guard = reg.lock().unwrap();
-    assert_eq!(guard.len(), n, "len must equal the number of distinct names");
+    assert_eq!(
+        guard.len(),
+        n,
+        "len must equal the number of distinct names"
+    );
     for (name, id) in &pairs {
         let got: Option<ActorRef<Foo>> = guard.get(name.as_str()).expect("get must not error");
         let got = got.expect("each distinct name must be present");
-        assert_eq!(got.id(), *id, "name {name:?} must resolve to its own actor's id");
+        assert_eq!(
+            got.id(),
+            *id,
+            "name {name:?} must resolve to its own actor's id"
+        );
     }
 }
 
@@ -846,7 +1003,13 @@ async fn given_any_type_any_name(world: &mut RegistryWorld) {
     // the wrong-type get can be checked for ALL of them. Store a Bar to query.
     for name in ["", "x", &"x".repeat(100_000)] {
         let actor = spawn_foo().await;
-        assert!(world.reg().lock().unwrap().insert(name.to_string(), actor.clone()));
+        assert!(
+            world
+                .reg()
+                .lock()
+                .unwrap()
+                .insert(name.to_string(), actor.clone())
+        );
         world.actors.push((name.to_string(), actor));
     }
     world.bar = Some({
@@ -877,7 +1040,9 @@ async fn given_op_sequence(_world: &mut RegistryWorld) {
     // actors and a reference model side by side).
 }
 
-#[when(regex = r"^the operations are applied to the registry and to a reference model in the same order$")]
+#[when(
+    regex = r"^the operations are applied to the registry and to a reference model in the same order$"
+)]
 async fn when_apply_ops(world: &mut RegistryWorld) {
     run_model_check(world).await;
 }
@@ -902,20 +1067,20 @@ async fn run_model_check(world: &mut RegistryWorld) {
     // A fixed, deterministic schedule that exercises every branch including the
     // empty prefix, duplicate inserts, and remove-of-absent.
     let schedule = [
-        Op::Get(1),       // get on empty -> None
-        Op::Contains(1),  // contains on empty -> false
-        Op::Remove(1),    // remove-of-absent -> false
-        Op::Insert(0),    // "" insert
-        Op::Insert(1),    // "a" insert
-        Op::Insert(1),    // "a" duplicate -> false, no overwrite
-        Op::Insert(2),    // "b" insert
-        Op::Get(1),       // present
-        Op::Contains(2),  // present
-        Op::Remove(1),    // remove "a"
-        Op::Get(1),       // gone
-        Op::Insert(3),    // long name
-        Op::Clear,        // empty all
-        Op::Get(3),       // gone after clear
+        Op::Get(1),      // get on empty -> None
+        Op::Contains(1), // contains on empty -> false
+        Op::Remove(1),   // remove-of-absent -> false
+        Op::Insert(0),   // "" insert
+        Op::Insert(1),   // "a" insert
+        Op::Insert(1),   // "a" duplicate -> false, no overwrite
+        Op::Insert(2),   // "b" insert
+        Op::Get(1),      // present
+        Op::Contains(2), // present
+        Op::Remove(1),   // remove "a"
+        Op::Get(1),      // gone
+        Op::Insert(3),   // long name
+        Op::Clear,       // empty all
+        Op::Get(3),      // gone after clear
     ];
 
     let mut model: HashMap<usize, ActorId> = HashMap::new();
@@ -931,20 +1096,36 @@ async fn run_model_check(world: &mut RegistryWorld) {
                     model.insert(i, id);
                     true
                 };
-                assert_eq!(won, model_won, "insert bool must match the no-overwrite model for {:?}", names[i]);
+                assert_eq!(
+                    won, model_won,
+                    "insert bool must match the no-overwrite model for {:?}",
+                    names[i]
+                );
             }
             Op::Remove(i) => {
                 let removed = reg.lock().unwrap().remove(names[i]);
                 let model_removed = model.remove(&i).is_some();
-                assert_eq!(removed, model_removed, "remove bool must match the model for {:?}", names[i]);
+                assert_eq!(
+                    removed, model_removed,
+                    "remove bool must match the model for {:?}",
+                    names[i]
+                );
             }
             Op::Contains(i) => {
                 let present = reg.lock().unwrap().contains_name(names[i]);
-                assert_eq!(present, model.contains_key(&i), "contains must match the model for {:?}", names[i]);
+                assert_eq!(
+                    present,
+                    model.contains_key(&i),
+                    "contains must match the model for {:?}",
+                    names[i]
+                );
             }
             Op::Get(i) => {
-                let got: Option<ActorRef<Foo>> =
-                    reg.lock().unwrap().get(names[i]).expect("get must not error");
+                let got: Option<ActorRef<Foo>> = reg
+                    .lock()
+                    .unwrap()
+                    .get(names[i])
+                    .expect("get must not error");
                 assert_eq!(
                     got.map(|r| r.id()),
                     model.get(&i).copied(),
@@ -958,7 +1139,11 @@ async fn run_model_check(world: &mut RegistryWorld) {
             }
         }
         // Observable state equality after EVERY op.
-        assert_eq!(reg.lock().unwrap().len(), model.len(), "len must equal the model size after every op");
+        assert_eq!(
+            reg.lock().unwrap().len(),
+            model.len(),
+            "len must equal the model size after every op"
+        );
     }
     world.is_empty_obs = Some(reg.lock().unwrap().is_empty());
     world.len_obs = Some(reg.lock().unwrap().len());
@@ -968,7 +1153,11 @@ async fn run_model_check(world: &mut RegistryWorld) {
 async fn then_model_equal(world: &mut RegistryWorld) {
     // The per-op equality is asserted inside `run_model_check`; the final state
     // (empty after the closing clear) is the conserved summary.
-    assert_eq!(world.is_empty_obs, Some(true), "the schedule ends empty (closing clear)");
+    assert_eq!(
+        world.is_empty_obs,
+        Some(true),
+        "the schedule ends empty (closing clear)"
+    );
     assert_eq!(world.len_obs, Some(0), "final len must be 0");
 }
 
@@ -982,10 +1171,20 @@ async fn then_insert_no_overwrite(world: &mut RegistryWorld) {
     let first = spawn_foo().await;
     let second = spawn_foo().await;
     let first_id = first.id();
-    assert!(reg.lock().unwrap().insert("dup".to_string(), first), "first insert wins");
-    assert!(!reg.lock().unwrap().insert("dup".to_string(), second), "duplicate insert must return false");
+    assert!(
+        reg.lock().unwrap().insert("dup".to_string(), first),
+        "first insert wins"
+    );
+    assert!(
+        !reg.lock().unwrap().insert("dup".to_string(), second),
+        "duplicate insert must return false"
+    );
     let got: Option<ActorRef<Foo>> = reg.lock().unwrap().get("dup").expect("get must not error");
-    assert_eq!(got.map(|r| r.id()), Some(first_id), "the existing ref must be unchanged");
+    assert_eq!(
+        got.map(|r| r.id()),
+        Some(first_id),
+        "the existing ref must be unchanged"
+    );
 }
 
 #[given(regex = r"^any number K of threads each holding a distinct running actor of type Foo$")]

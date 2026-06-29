@@ -174,7 +174,10 @@ async fn when_serde_roundtrip(world: &mut ActorIdWorld) {
 async fn then_deserialized_equals_original(world: &mut ActorIdWorld) {
     let original = world.a.expect("an original ActorId");
     let decoded = world.decoded.expect("a deserialized ActorId");
-    assert_eq!(decoded, original, "deserialized ActorId must equal original");
+    assert_eq!(
+        decoded, original,
+        "deserialized ActorId must equal original"
+    );
 }
 
 // ===========================================================================
@@ -272,12 +275,16 @@ async fn given_1000_across_10_tasks(world: &mut ActorIdWorld) {
             let barrier = Arc::clone(&barrier);
             tokio::spawn(async move {
                 barrier.wait().await;
-                (0..per_task).map(|_| ActorId::generate()).collect::<Vec<_>>()
+                (0..per_task)
+                    .map(|_| ActorId::generate())
+                    .collect::<Vec<_>>()
             })
         })
         .collect();
     for h in handles {
-        world.ids.extend(h.await.expect("generator task must not panic"));
+        world
+            .ids
+            .extend(h.await.expect("generator task must not panic"));
     }
 }
 
@@ -313,12 +320,16 @@ async fn given_100_concurrent(world: &mut ActorIdWorld) {
             let barrier = Arc::clone(&barrier);
             tokio::spawn(async move {
                 barrier.wait().await;
-                (0..per_task).map(|_| ActorId::generate()).collect::<Vec<_>>()
+                (0..per_task)
+                    .map(|_| ActorId::generate())
+                    .collect::<Vec<_>>()
             })
         })
         .collect();
     for h in handles {
-        world.ids.extend(h.await.expect("generator task must not panic"));
+        world
+            .ids
+            .extend(h.await.expect("generator task must not panic"));
     }
 }
 
@@ -355,11 +366,7 @@ async fn when_pairs_compared(_world: &mut ActorIdWorld) {}
 async fn then_same_pair_equal(world: &mut ActorIdWorld) {
     let (a, b) = world.eq_pair.expect("equal pair");
     assert_eq!(a, b, "same-sequence ActorIds must be equal");
-    assert_eq!(
-        hash_of(&a),
-        hash_of(&b),
-        "equal ActorIds must hash equally"
-    );
+    assert_eq!(hash_of(&a), hash_of(&b), "equal ActorIds must hash equally");
 }
 
 #[then(regex = r"^the different-sequence pair is unequal$")]
@@ -465,7 +472,11 @@ async fn law_sequential_distinct(_world: &mut ActorIdWorld) {
     for n in [1usize, 2, 1000] {
         let ids: Vec<u64> = (0..n).map(|_| ActorId::generate().sequence_id()).collect();
         let set: HashSet<u64> = ids.iter().copied().collect();
-        assert_eq!(set.len(), n, "all {n} generated ids must be pairwise distinct");
+        assert_eq!(
+            set.len(),
+            n,
+            "all {n} generated ids must be pairwise distinct"
+        );
     }
 }
 

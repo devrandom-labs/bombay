@@ -98,7 +98,10 @@ impl Actor for SelfChecker {
     type Args = Self;
     type Error = Infallible;
 
-    async fn on_start(mut state: Self::Args, actor_ref: ActorRef<Self>) -> Result<Self, Self::Error> {
+    async fn on_start(
+        mut state: Self::Args,
+        actor_ref: ActorRef<Self>,
+    ) -> Result<Self, Self::Error> {
         state.self_ref = Some(actor_ref);
         Ok(state)
     }
@@ -322,7 +325,9 @@ async fn when_wait_startup_then_release(world: &mut ActorRefWorld) {
     );
     // Release on_start; the waiter must now resolve.
     release_tx.send(true).expect("release on_start");
-    waiter.await.expect("startup waiter completes after release");
+    waiter
+        .await
+        .expect("startup waiter completes after release");
     world.waiters_all_resolved = Some(true);
 }
 
@@ -335,7 +340,10 @@ async fn then_startup_after_on_start(world: &mut ActorRefWorld) {
     );
     // After startup the actor is responsive.
     let actor = world.slow.as_ref().expect("slow actor");
-    actor.ask(Ping).await.expect("actor responsive after startup");
+    actor
+        .ask(Ping)
+        .await
+        .expect("actor responsive after startup");
 }
 
 #[given(regex = r"^a running actor$")]
@@ -457,8 +465,14 @@ async fn then_both_not_alive(world: &mut ActorRefWorld) {
         "both predicates must converge to not-alive after shutdown completes",
     )
     .await;
-    assert!(!actor.is_alive(), "ActorRef::is_alive must be false post-shutdown");
-    assert!(!weak.is_alive(), "WeakActorRef::is_alive must be false post-shutdown");
+    assert!(
+        !actor.is_alive(),
+        "ActorRef::is_alive must be false post-shutdown"
+    );
+    assert!(
+        !weak.is_alive(),
+        "WeakActorRef::is_alive must be false post-shutdown"
+    );
 }
 
 #[given(regex = r"^a WeakActorRef downgraded from a live ActorRef that is still held$")]
@@ -527,7 +541,10 @@ async fn when_tell_via_recipient(world: &mut ActorRefWorld) {
     let source_id = actor.id();
     let recipient: Recipient<Echo> = actor.recipient();
     world.recipient_same_id = Some(recipient.id() == source_id);
-    recipient.tell(Echo(55)).await.expect("recipient tell delivered");
+    recipient
+        .tell(Echo(55))
+        .await
+        .expect("recipient tell delivered");
     settle(
         {
             let log = Arc::clone(&world.log);
@@ -827,7 +844,11 @@ async fn when_compared_and_hashed(world: &mut ActorRefWorld) {
 
 #[then(regex = r"^they are equal and produce the same hash$")]
 async fn then_equal_same_hash(world: &mut ActorRefWorld) {
-    assert_eq!(world.pair_eq, Some(true), "a clone must be equal to its source");
+    assert_eq!(
+        world.pair_eq,
+        Some(true),
+        "a clone must be equal to its source"
+    );
     assert_eq!(
         world.pair_hash_eq,
         Some(true),
@@ -916,7 +937,10 @@ async fn then_final_count_100(world: &mut ActorRefWorld) {
     let mut got = world.log.lock().unwrap().clone();
     got.sort_unstable();
     let expected: Vec<u64> = (0..100).collect();
-    assert_eq!(got, expected, "the 100 tells must be exactly 0..100, no gaps/dupes");
+    assert_eq!(
+        got, expected,
+        "the 100 tells must be exactly 0..100, no gaps/dupes"
+    );
 }
 
 #[given(regex = r"^an actor that echoes back the number it is asked$")]
@@ -944,7 +968,9 @@ async fn when_50_concurrent_asks(world: &mut ActorRefWorld) {
         })
         .collect();
     for h in handles {
-        world.ask_results.push(h.await.expect("ask task must not panic"));
+        world
+            .ask_results
+            .push(h.await.expect("ask task must not panic"));
     }
 }
 
@@ -1150,7 +1176,9 @@ async fn when_any_message_told_stopped(world: &mut ActorRefWorld) {
 
 // -- @model @linearizability: refcounts refine an integer model ---------------
 
-#[given(regex = r"^any interleaving of clone, downgrade, drop, and upgrade on the ActorRef and its weaks$")]
+#[given(
+    regex = r"^any interleaving of clone, downgrade, drop, and upgrade on the ActorRef and its weaks$"
+)]
 async fn given_any_ref_interleaving(_world: &mut ActorRefWorld) {}
 
 #[when(regex = r"^the operations run concurrently$")]
@@ -1352,7 +1380,10 @@ async fn run_concurrent_ask_case(n: u64) {
     let mut received: Vec<u64> = Vec::new();
     for h in handles {
         let (asked, reply) = h.await.expect("ask task must not panic");
-        assert_eq!(asked, reply, "N={n}: ask for {asked} got {reply} (cross-talk)");
+        assert_eq!(
+            asked, reply,
+            "N={n}: ask for {asked} got {reply} (cross-talk)"
+        );
         asked_set.push(asked);
         received.push(reply);
     }
@@ -1377,7 +1408,9 @@ async fn law_w_waiters_one_completion(_world: &mut ActorRefWorld) {
     // a one-shot latch fanned out to all observers — none may resolve early.
     for w in [1usize, 2, 10, 64] {
         let (release_tx, release_rx) = tokio::sync::watch::channel(false);
-        let actor = SlowStart::spawn(SlowStart { release: release_rx });
+        let actor = SlowStart::spawn(SlowStart {
+            release: release_rx,
+        });
         let barrier = Arc::new(Barrier::new(w));
         let handles: Vec<_> = (0..w)
             .map(|_| {

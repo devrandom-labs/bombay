@@ -358,7 +358,9 @@ pub mod testing {
         sender: &MailboxSender<A>,
     ) {
         let mut inner = links.lock().await;
-        inner.sibblings.insert(sibling_id, Link::Local(Box::new(sender.clone())));
+        inner
+            .sibblings
+            .insert(sibling_id, Link::Local(Box::new(sender.clone())));
     }
 
     /// Returns the shared `parent_shutdown` flag of `links` — the exact

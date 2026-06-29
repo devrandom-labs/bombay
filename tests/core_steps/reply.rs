@@ -153,11 +153,7 @@ struct SendVia(u32);
 impl Message<SendVia> for Delegator {
     type Reply = DelegatedReply<u32>;
 
-    async fn handle(
-        &mut self,
-        msg: SendVia,
-        ctx: &mut Context<Self, Self::Reply>,
-    ) -> Self::Reply {
+    async fn handle(&mut self, msg: SendVia, ctx: &mut Context<Self, Self::Reply>) -> Self::Reply {
         let (delegated, sender) = ctx.reply_sender();
         if let Some(tx) = sender {
             // `send(self, ..)` consumes the ReplySender — the single-use move.
@@ -369,7 +365,10 @@ async fn given_infallible_typed(world: &mut ReplyWorld, ty: String) {
             Ok(v.clone()),
             "to_result must be Ok(self)"
         );
-        assert!(v.clone().into_any_err().is_none(), "into_any_err must be None");
+        assert!(
+            v.clone().into_any_err().is_none(),
+            "into_any_err must be None"
+        );
         assert_eq!(Reply::into_value(v.clone()), v, "into_value must be self");
     }
     match ty.as_str() {
@@ -394,7 +393,9 @@ async fn given_infallible_typed(world: &mut ReplyWorld, ty: String) {
             let to_res = AtomicBool::new(true).to_result().expect("ok");
             assert!(to_res.load(std::sync::atomic::Ordering::SeqCst));
             assert!(AtomicBool::new(true).into_any_err().is_none());
-            assert!(Reply::into_value(AtomicBool::new(true)).load(std::sync::atomic::Ordering::SeqCst));
+            assert!(
+                Reply::into_value(AtomicBool::new(true)).load(std::sync::atomic::Ordering::SeqCst)
+            );
         }
         "AtomicUsize" => {
             let to_res = AtomicUsize::new(9).to_result().expect("ok");
@@ -413,15 +414,43 @@ async fn given_infallible_typed(world: &mut ReplyWorld, ty: String) {
         // probing a representative field (the last, index .25) on each result.
         "(A, …, Z)" => {
             fn mk() -> (
-                u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8,
-                u8, u8, u8, u8, u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
             ) {
                 (
                     0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
                     22, 23, 24, 25,
                 )
             }
-            assert_eq!(mk().to_result().expect("Ok(self)").25, 25, "to_result Ok(self)");
+            assert_eq!(
+                mk().to_result().expect("Ok(self)").25,
+                25,
+                "to_result Ok(self)"
+            );
             assert!(mk().into_any_err().is_none(), "into_any_err None");
             assert_eq!(Reply::into_value(mk()).25, 25, "into_value self");
         }
@@ -606,7 +635,10 @@ async fn then_forwarded_ok_none(world: &mut ReplyWorld) {
     if let Some(ok) = world.forwarded_ok_any_err_none {
         assert!(ok, "Forwarded(Ok) into_any_err returns res.err() == None");
     } else if let Some(deleg) = world.delegated_any_err_none {
-        assert!(deleg, "DelegatedReply::into_any_err returns None unconditionally");
+        assert!(
+            deleg,
+            "DelegatedReply::into_any_err returns None unconditionally"
+        );
     } else {
         panic!("no into_any_err None result was captured by a preceding step");
     }
@@ -618,7 +650,8 @@ async fn then_forwarded_ok_none(world: &mut ReplyWorld) {
 async fn given_forwarded_err(world: &mut ReplyWorld) {
     // The forwarding SendError is over the OUTER `SendError<M, R::Error>`; a
     // message-less ActorStopped is the canonical "failed to forward" outcome.
-    let r: ForwardedReply<TestMsg, Result<u32, Infallible>> = forwarded(Err(SendError::ActorStopped));
+    let r: ForwardedReply<TestMsg, Result<u32, Infallible>> =
+        forwarded(Err(SendError::ActorStopped));
     world.forwarded_err_any_err = Some(
         r.into_any_err()
             .map(|b| *b.downcast::<SendError<TestMsg, Infallible>>().expect("se")),
@@ -707,7 +740,9 @@ async fn given_wire_inner_err(world: &mut ReplyWorld) {
     // Inner R::Error = TestErr boxed as SendError<TestMsg, TestErr>::HandlerError.
     let inner: SendError<TestMsg, TestErr> = SendError::HandlerError(TestErr(11));
     let boxed: BoxSendError = inner.boxed();
-    world.downcast_err_inner = Some(<ForwardedReply<TestMsg, Result<u32, TestErr>> as Reply>::downcast_err::<TestMsg>(boxed));
+    world.downcast_err_inner = Some(
+        <ForwardedReply<TestMsg, Result<u32, TestErr>> as Reply>::downcast_err::<TestMsg>(boxed),
+    );
 }
 
 #[when(regex = r"^ForwardedReply::downcast_err is called$")]
@@ -715,7 +750,10 @@ async fn when_forwarded_downcast_err(_world: &mut ReplyWorld) {}
 
 #[then(regex = r"^it recovers the inner error mapped through SendError::HandlerError$")]
 async fn then_downcast_err_inner(world: &mut ReplyWorld) {
-    let got = world.downcast_err_inner.clone().expect("downcast_err captured");
+    let got = world
+        .downcast_err_inner
+        .clone()
+        .expect("downcast_err captured");
     assert_eq!(
         got,
         SendError::HandlerError(SendError::HandlerError(TestErr(11))),
@@ -732,14 +770,19 @@ async fn given_wire_outer_err(world: &mut ReplyWorld) {
     // SendError with no payload to mis-map (so the map_msg guard is never hit).
     let outer: SendError<OtherN, SendError<TestMsg, TestErr>> = SendError::ActorStopped;
     let boxed: BoxSendError = outer.boxed();
-    world.downcast_err_outer = Some(<ForwardedReply<TestMsg, Result<u32, TestErr>> as Reply>::downcast_err::<OtherN>(boxed));
+    world.downcast_err_outer = Some(
+        <ForwardedReply<TestMsg, Result<u32, TestErr>> as Reply>::downcast_err::<OtherN>(boxed),
+    );
 }
 
 #[then(
     regex = r"^try_downcast::<N, R::Error> fails and it recovers the outer SendError<N, Self::Error>$"
 )]
 async fn then_downcast_err_outer(world: &mut ReplyWorld) {
-    let got = world.downcast_err_outer.clone().expect("downcast_err captured");
+    let got = world
+        .downcast_err_outer
+        .clone()
+        .expect("downcast_err captured");
     assert!(
         matches!(got, SendError::ActorStopped),
         "the message-less outer SendError is recovered cleanly, got {got:?}"
@@ -763,7 +806,9 @@ async fn given_outer_with_message(world: &mut ReplyWorld) {
     world.downcast_err_map_msg_panicked = Some(res.is_err());
 }
 
-#[when(regex = r"^downcast_err reaches the outer-SendError fallback and map_msg is applied to that message$")]
+#[when(
+    regex = r"^downcast_err reaches the outer-SendError fallback and map_msg is applied to that message$"
+)]
 async fn when_outer_map_msg(_world: &mut ReplyWorld) {}
 
 #[then(regex = r"^the unreachable!\(\.\.\.\) wrong-type guard is hit$")]
@@ -836,7 +881,11 @@ async fn then_no_cross_talk(world: &mut ReplyWorld) {
             "task {id} received {value} — a forwarded reply crossed channels"
         );
     }
-    assert_eq!(world.concurrent.len(), 32, "all 32 forwarded asks completed");
+    assert_eq!(
+        world.concurrent.len(),
+        32,
+        "all 32 forwarded asks completed"
+    );
 }
 
 #[then(regex = r"^no reply downcast panics$")]
@@ -922,11 +971,17 @@ async fn law_sender_ok_recovers_v(_world: &mut ReplyWorld) {
     // deterministic boundary loop seeds the values; the oracle is the identity
     // (the caller recovers exactly v).
     for v in [0u32, 1, u32::MAX - 1, u32::MAX] {
-        assert_eq!(run_sender_ok(v).await, v, "send(Ok(v)) must wire v={v} verbatim");
+        assert_eq!(
+            run_sender_ok(v).await,
+            v,
+            "send(Ok(v)) must wire v={v} verbatim"
+        );
     }
 }
 
-#[then(regex = r"^on Err\(e\) the channel receives Err\(BoxSendError::HandlerError\) recovering e$")]
+#[then(
+    regex = r"^on Err\(e\) the channel receives Err\(BoxSendError::HandlerError\) recovering e$"
+)]
 async fn law_sender_err_recovers_e(_world: &mut ReplyWorld) {
     for e in [0u32, 1, u32::MAX - 1, u32::MAX] {
         assert_eq!(
@@ -993,7 +1048,9 @@ async fn law_forwarded_ok_arm(_world: &mut ReplyWorld) {
     });
 }
 
-#[then(regex = r"^a from_err\(e\) / from_result\(Err\(e\)\) yields Err\(SendError::HandlerError\(e\)\)$")]
+#[then(
+    regex = r"^a from_err\(e\) / from_result\(Err\(e\)\) yields Err\(SendError::HandlerError\(e\)\)$"
+)]
 async fn law_forwarded_err_arm(_world: &mut ReplyWorld) {
     proptest!(|(e in u32_values())| {
         let a: ForwardedReply<TestMsg, Result<u32, TestErr>> = ForwardedReply::from_err(TestErr(e));
@@ -1049,7 +1106,11 @@ async fn law_model_no_panic_no_misdelivery(_world: &mut ReplyWorld) {
     assert_eq!(got.len(), 64, "all 64 forwarded asks resolved");
     let mut ids: Vec<u64> = got.iter().map(|(id, _)| *id).collect();
     ids.sort_unstable();
-    assert_eq!(ids, (1..=64).collect::<Vec<_>>(), "exactly tasks 1..=64, no dupes");
+    assert_eq!(
+        ids,
+        (1..=64).collect::<Vec<_>>(),
+        "exactly tasks 1..=64, no dupes"
+    );
     for (id, value) in &got {
         assert_eq!(id, value, "task {id} recovered {value} (misdelivery)");
     }
@@ -1081,11 +1142,7 @@ impl Actor for Wirer {
 impl Message<WireOk> for Wirer {
     type Reply = DelegatedReply<Result<u32, TestErr>>;
 
-    async fn handle(
-        &mut self,
-        msg: WireOk,
-        ctx: &mut Context<Self, Self::Reply>,
-    ) -> Self::Reply {
+    async fn handle(&mut self, msg: WireOk, ctx: &mut Context<Self, Self::Reply>) -> Self::Reply {
         let (delegated, sender) = ctx.reply_sender();
         if let Some(tx) = sender {
             tx.send(Ok(msg.0));
@@ -1097,11 +1154,7 @@ impl Message<WireOk> for Wirer {
 impl Message<WireErr> for Wirer {
     type Reply = DelegatedReply<Result<u32, TestErr>>;
 
-    async fn handle(
-        &mut self,
-        msg: WireErr,
-        ctx: &mut Context<Self, Self::Reply>,
-    ) -> Self::Reply {
+    async fn handle(&mut self, msg: WireErr, ctx: &mut Context<Self, Self::Reply>) -> Self::Reply {
         let (delegated, sender) = ctx.reply_sender();
         if let Some(tx) = sender {
             tx.send(Err(msg.0));

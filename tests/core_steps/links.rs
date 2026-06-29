@@ -286,7 +286,12 @@ async fn then_parent_notified(world: &mut LinksWorld) {
 
 #[then(regex = r"^the notification carries the child's mailbox_rx$")]
 async fn then_carries_mailbox_rx(world: &mut LinksWorld) {
-    let parts = world.parent_parts.as_ref().unwrap().as_ref().expect("parts");
+    let parts = world
+        .parent_parts
+        .as_ref()
+        .unwrap()
+        .as_ref()
+        .expect("parts");
     assert!(
         parts.has_mailbox_rx,
         "the supervised hand-off must carry mailbox_rx so the parent can restart"
@@ -295,7 +300,12 @@ async fn then_carries_mailbox_rx(world: &mut LinksWorld) {
 
 #[then(regex = r"^the notification carries the child's sibling links$")]
 async fn then_carries_sibblings(world: &mut LinksWorld) {
-    let parts = world.parent_parts.as_ref().unwrap().as_ref().expect("parts");
+    let parts = world
+        .parent_parts
+        .as_ref()
+        .unwrap()
+        .as_ref()
+        .expect("parts");
     assert!(
         parts.has_sibblings,
         "the supervised hand-off must carry the dead actor's sibling links"
@@ -343,8 +353,14 @@ async fn collect_sibling_parts(world: &mut LinksWorld) {
         // First notification (bounded wait), then confirm no SECOND one quickly.
         if let Some(parts) = recv_link_died(rx, NOTIFY_TIMEOUT).await {
             assert_eq!(parts.id, dead, "sibling {label} got wrong dead id");
-            assert!(!parts.has_mailbox_rx, "sibling {label} must NOT receive mailbox_rx");
-            assert!(!parts.has_sibblings, "sibling {label} must NOT receive sibling links");
+            assert!(
+                !parts.has_mailbox_rx,
+                "sibling {label} must NOT receive mailbox_rx"
+            );
+            assert!(
+                !parts.has_sibblings,
+                "sibling {label} must NOT receive sibling links"
+            );
             count += 1;
         }
         if recv_link_died(rx, NO_NOTIFY_TIMEOUT).await.is_some() {
@@ -373,7 +389,10 @@ async fn then_three_each_one(
             .find(|(l, _)| *l == label)
             .map(|(_, n)| *n)
             .unwrap_or_else(|| panic!("no count for sibling {label}"));
-        assert_eq!(count, 1, "sibling {label} must receive exactly one on_link_died");
+        assert_eq!(
+            count, 1,
+            "sibling {label} must receive exactly one on_link_died"
+        );
     }
 }
 
@@ -421,7 +440,10 @@ async fn then_sibling_once(world: &mut LinksWorld, b: String) {
         .find(|(l, _)| *l == b)
         .map(|(_, n)| *n)
         .unwrap_or_else(|| panic!("no count for sibling {b}"));
-    assert_eq!(count, 1, "sibling {b} must be notified exactly once across both passes");
+    assert_eq!(
+        count, 1,
+        "sibling {b} must be notified exactly once across both passes"
+    );
 }
 
 // --- three-step child shutdown ordering ------------------------------------
@@ -493,9 +515,16 @@ async fn when_final_shutdown(world: &mut LinksWorld) {
 
 #[then(regex = r"^it first calls set_children_parent_shutdown so every child reads the flag true$")]
 async fn then_first_set_flag(world: &mut LinksWorld) {
-    assert_eq!(world.order_log.first().copied(), Some("set_flag"), "set-flag must be first");
+    assert_eq!(
+        world.order_log.first().copied(),
+        Some("set_flag"),
+        "set-flag must be first"
+    );
     for (label, flag) in &world.child_flags {
-        assert!(flag.load(Ordering::Acquire), "child {label} flag must be true");
+        assert!(
+            flag.load(Ordering::Acquire),
+            "child {label} flag must be true"
+        );
     }
 }
 
@@ -503,9 +532,17 @@ async fn then_first_set_flag(world: &mut LinksWorld) {
     regex = r"^it then calls send_children_shutdown, invoking each child's shutdown closure exactly once$"
 )]
 async fn then_then_send_shutdown(world: &mut LinksWorld) {
-    assert_eq!(world.order_log.get(1).copied(), Some("send_shutdown"), "send-shutdown second");
+    assert_eq!(
+        world.order_log.get(1).copied(),
+        Some("send_shutdown"),
+        "send-shutdown second"
+    );
     for (label, calls) in &world.child_shutdown_calls {
-        assert_eq!(calls.load(Ordering::SeqCst), 1, "child {label} shutdown once");
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            1,
+            "child {label} shutdown once"
+        );
     }
 }
 
@@ -513,7 +550,11 @@ async fn then_then_send_shutdown(world: &mut LinksWorld) {
     regex = r"^it finally calls wait_children_closed, which resolves only after every child mailbox is closed$"
 )]
 async fn then_finally_wait_closed(world: &mut LinksWorld) {
-    assert_eq!(world.order_log.get(2).copied(), Some("wait_closed"), "wait-closed last");
+    assert_eq!(
+        world.order_log.get(2).copied(),
+        Some("wait_closed"),
+        "wait-closed last"
+    );
     assert_eq!(
         world.order_log,
         vec!["set_flag", "send_shutdown", "wait_closed"],
@@ -538,7 +579,11 @@ async fn then_each_flag_true(world: &mut LinksWorld) {
             "child {label} parent_shutdown must read true"
         );
     }
-    assert_eq!(world.child_flags.len(), 3, "all three children's flags checked");
+    assert_eq!(
+        world.child_flags.len(),
+        3,
+        "all three children's flags checked"
+    );
 }
 
 #[when(regex = r"^the supervisor calls send_children_shutdown$")]
@@ -664,9 +709,19 @@ async fn then_parent_no_mailbox_no_siblings(world: &mut LinksWorld) {
         .unwrap()
         .as_ref()
         .expect("parent must still be notified in the drop branch");
-    assert_eq!(parts.id, world.dead_id.expect("dead id"), "names the dead child");
-    assert!(!parts.has_mailbox_rx, "drop branch must NOT carry mailbox_rx");
-    assert!(!parts.has_sibblings, "drop branch must NOT carry sibling links");
+    assert_eq!(
+        parts.id,
+        world.dead_id.expect("dead id"),
+        "names the dead child"
+    );
+    assert!(
+        !parts.has_mailbox_rx,
+        "drop branch must NOT carry mailbox_rx"
+    );
+    assert!(
+        !parts.has_sibblings,
+        "drop branch must NOT carry sibling links"
+    );
 }
 
 #[then(regex = r"^the child's mailbox_rx is dropped so its channel closes$")]
@@ -681,7 +736,10 @@ async fn then_mailbox_rx_dropped(world: &mut LinksWorld) {
         "the dying child's mailbox channel never closed after mailbox_rx was dropped",
     )
     .await;
-    assert!(tx.is_closed(), "the dropped mailbox_rx must close the channel");
+    assert!(
+        tx.is_closed(),
+        "the dropped mailbox_rx must close the channel"
+    );
 }
 
 #[given(regex = r"^a supervisor about to enter shutdown_children$")]
@@ -699,7 +757,11 @@ async fn given_about_to_shutdown(world: &mut LinksWorld) {
 
 #[when(regex = r"^set_children_parent_shutdown stores true with Release ordering$")]
 async fn when_store_release(world: &mut LinksWorld) {
-    world.child_under_test_flag.as_ref().expect("flag").store(true, Ordering::Release);
+    world
+        .child_under_test_flag
+        .as_ref()
+        .expect("flag")
+        .store(true, Ordering::Release);
 }
 
 #[when(regex = r"^a child later loads parent_shutdown with Acquire ordering before notifying$")]
@@ -741,11 +803,16 @@ async fn given_supervised_child_flag_true(world: &mut LinksWorld) {
     // would receive no mailbox_rx, so no restart).
     let starts = Arc::new(AtomicU32::new(0));
     let supervisor = RestartSupervisor::spawn(RestartSupervisor);
-    let child = RestartChild::supervise(&supervisor, RestartChild { starts: starts.clone() })
-        .restart_policy(RestartPolicy::Permanent)
-        .restart_limit(10, Duration::from_secs(30))
-        .spawn()
-        .await;
+    let child = RestartChild::supervise(
+        &supervisor,
+        RestartChild {
+            starts: starts.clone(),
+        },
+    )
+    .restart_policy(RestartPolicy::Permanent)
+    .restart_limit(10, Duration::from_secs(30))
+    .spawn()
+    .await;
     settle(
         {
             let s = starts.clone();
@@ -810,7 +877,10 @@ async fn then_stale_children_cleared(world: &mut LinksWorld) {
         "the restarted child is not alive/responsive",
     )
     .await;
-    assert!(child.is_alive(), "the restarted child must be alive after the clear+reset");
+    assert!(
+        child.is_alive(),
+        "the restarted child must be alive after the clear+reset"
+    );
     if let Some(s) = world.restart_supervisor.take() {
         s.kill();
     }
@@ -895,8 +965,14 @@ async fn then_no_notification(world: &mut LinksWorld) {
     let id = world.dead_id.expect("dead id");
     let (_tx, rx) = raw_pair();
     notify_links(world.links(), id, ActorStopReason::Killed, rx).await;
-    assert!(world.sibling_rx.is_empty(), "there must be no siblings to notify");
-    assert!(world.parent_rx.is_none(), "there must be no parent to notify");
+    assert!(
+        world.sibling_rx.is_empty(),
+        "there must be no siblings to notify"
+    );
+    assert!(
+        world.parent_rx.is_none(),
+        "there must be no parent to notify"
+    );
 }
 
 // ===========================================================================
@@ -915,9 +991,7 @@ async fn given_supervisor_with_child_lin(world: &mut LinksWorld, child: String) 
     world.dead_id = Some(id_for(&child));
 }
 
-#[when(
-    regex = r"^set_children_parent_shutdown and the child's independent exit run concurrently$"
-)]
+#[when(regex = r"^set_children_parent_shutdown and the child's independent exit run concurrently$")]
 async fn when_flag_vs_notify_concurrent(world: &mut LinksWorld) {
     // Real overlap: a task that sets the flag and a task that runs notify_links,
     // released together at a Barrier. The legal outcomes are exactly {queue
@@ -985,11 +1059,19 @@ async fn then_never_queue_after_true(world: &mut LinksWorld) {
     // if mailbox_rx was absent, the child took the drop branch (observed true).
     // The forbidden state — a SECOND, mailbox_rx-bearing notification after the
     // drop — never occurs: drain confirms no further notification.
-    let parts = world.parent_parts.as_ref().unwrap().as_ref().expect("notified");
+    let parts = world
+        .parent_parts
+        .as_ref()
+        .unwrap()
+        .as_ref()
+        .expect("notified");
     if !parts.has_mailbox_rx {
         // Drop branch: ensure no extra mailbox_rx-bearing notification follows.
-        let extra =
-            recv_link_died(world.parent_rx.as_mut().expect("parent rx"), NO_NOTIFY_TIMEOUT).await;
+        let extra = recv_link_died(
+            world.parent_rx.as_mut().expect("parent rx"),
+            NO_NOTIFY_TIMEOUT,
+        )
+        .await;
         assert!(
             extra.is_none(),
             "no second notification may follow the drop branch"
@@ -1045,7 +1127,9 @@ async fn when_two_children_die(world: &mut LinksWorld, c1: String, c2: String) {
     world.two_death_parts = got;
 }
 
-#[then(regex = r#"^the parent receives one death notification for "([^"]+)" and one for "([^"]+)"$"#)]
+#[then(
+    regex = r#"^the parent receives one death notification for "([^"]+)" and one for "([^"]+)"$"#
+)]
 async fn then_one_each(world: &mut LinksWorld, c1: String, c2: String) {
     let ids: Vec<ActorId> = world.two_death_parts.iter().map(|p| p.id).collect();
     let id1 = id_for(&c1);
@@ -1095,7 +1179,10 @@ async fn when_hub_dies(world: &mut LinksWorld, _hub: String) {
 async fn then_all_n_once(world: &mut LinksWorld, _hub: String) {
     assert!(!world.sibling_counts.is_empty(), "siblings present");
     for (label, count) in &world.sibling_counts {
-        assert_eq!(*count, 1, "sibling {label} must receive exactly one notification");
+        assert_eq!(
+            *count, 1,
+            "sibling {label} must receive exactly one notification"
+        );
     }
 }
 
@@ -1143,10 +1230,14 @@ async fn law_n_siblings_once(_world: &mut LinksWorld, _actor: String) {
             notify_links(&links, dead, reason.clone(), raw_pair().1).await;
             for (i, rx) in rxs.iter_mut().enumerate() {
                 let first = recv_link_died(rx, NOTIFY_TIMEOUT).await;
-                let parts = first.unwrap_or_else(|| panic!("sibling {i} (N={n}) got no notification"));
+                let parts =
+                    first.unwrap_or_else(|| panic!("sibling {i} (N={n}) got no notification"));
                 assert_eq!(parts.id, dead, "sibling {i} wrong dead id");
                 assert!(!parts.has_mailbox_rx, "sibling {i} must have no mailbox_rx");
-                assert!(!parts.has_sibblings, "sibling {i} must have no sibling links");
+                assert!(
+                    !parts.has_sibblings,
+                    "sibling {i} must have no sibling links"
+                );
                 let extra = recv_link_died(rx, NO_NOTIFY_TIMEOUT).await;
                 assert!(extra.is_none(), "sibling {i} (N={n}) was notified twice");
             }
@@ -1188,7 +1279,11 @@ async fn law_k_shutdown_once(_world: &mut LinksWorld) {
         }
         links.send_children_shutdown().await;
         for (i, c) in counters.iter().enumerate() {
-            assert_eq!(c.load(Ordering::SeqCst), 1, "child {i} (K={k}) shutdown once");
+            assert_eq!(
+                c.load(Ordering::SeqCst),
+                1,
+                "child {i} (K={k}) shutdown once"
+            );
         }
     }
 }
@@ -1303,7 +1398,10 @@ async fn law_release_acquire(_world: &mut LinksWorld) {
         // deterministically by `law_never_queue_after_true`, which loads AFTER
         // the store rather than racing it.) Post-join `flag.load()` is always
         // true here, so it carries no falsifiable content and is not asserted.
-        assert_eq!(parts.id, dead, "the notification must be for the dead actor");
+        assert_eq!(
+            parts.id, dead,
+            "the notification must be for the dead actor"
+        );
         let extra = recv_link_died(&mut parent_rx, NO_NOTIFY_TIMEOUT).await;
         assert!(extra.is_none(), "exactly one notification per death");
     }
@@ -1376,8 +1474,15 @@ async fn law_k_deaths_independent(_world: &mut LinksWorld) {
             let parts = recv_link_died(&mut parent_rx, NOTIFY_TIMEOUT)
                 .await
                 .unwrap_or_else(|| panic!("K={k}: missing a child notification"));
-            assert!(parts.has_mailbox_rx, "K={k}: each death carries its own mailbox_rx");
-            assert!(!seen.contains(&parts.id), "K={k}: duplicate notification for {:?}", parts.id);
+            assert!(
+                parts.has_mailbox_rx,
+                "K={k}: each death carries its own mailbox_rx"
+            );
+            assert!(
+                !seen.contains(&parts.id),
+                "K={k}: duplicate notification for {:?}",
+                parts.id
+            );
             seen.push(parts.id);
         }
         seen.sort_unstable_by_key(|i| i.sequence_id());

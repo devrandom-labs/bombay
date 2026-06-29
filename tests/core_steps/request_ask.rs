@@ -126,11 +126,7 @@ struct Failing(u64);
 impl Message<Failing> for Asked {
     type Reply = Result<u64, HandlerBoom>;
 
-    async fn handle(
-        &mut self,
-        msg: Failing,
-        _ctx: &mut Context<Self, Self::Reply>,
-    ) -> Self::Reply {
+    async fn handle(&mut self, msg: Failing, _ctx: &mut Context<Self, Self::Reply>) -> Self::Reply {
         Err(HandlerBoom(msg.0))
     }
 }
@@ -241,7 +237,10 @@ async fn fill_bounded1(
 /// probe never enqueues anything. Panics loudly if the mailbox never fills.
 async fn assert_full(actor: &ActorRef<Asked>) {
     for _ in 0..200 {
-        if matches!(actor.ask(Msg).try_send().await, Err(SendError::MailboxFull(_))) {
+        if matches!(
+            actor.ask(Msg).try_send().await,
+            Err(SendError::MailboxFull(_))
+        ) {
             return;
         }
         tokio::time::sleep(Duration::from_millis(5)).await;
@@ -338,9 +337,7 @@ pub struct AskWorld {
     outstanding: Option<JoinHandle<Result<bool, SendError<Sleep, Infallible>>>>,
     /// The in-flight blocking_forward thread + its reply receiver.
     blocking_forward: Option<(
-        JoinHandle<
-            Result<(), SendError<(Msg, ReplySender<bool>), Infallible>>,
-        >,
+        JoinHandle<Result<(), SendError<(Msg, ReplySender<bool>), Infallible>>>,
         oneshot::Receiver<Result<BoxReply, BoxSendError>>,
     )>,
 }
@@ -448,7 +445,9 @@ async fn then_each_returns_ok(world: &mut AskWorld) {
     );
 }
 
-#[when(regex = r#"^the caller invokes "ask\(Msg\)\.enqueue\(\)" and holds the returned pending reply$"#)]
+#[when(
+    regex = r#"^the caller invokes "ask\(Msg\)\.enqueue\(\)" and holds the returned pending reply$"#
+)]
 async fn when_enqueue_hold(world: &mut AskWorld) {
     let actor = world.actor.as_ref().expect("actor spawned");
     let pending = actor.ask(Msg).enqueue().await.expect("enqueue succeeds");
@@ -522,7 +521,9 @@ async fn given_bounded1_momentarily_full(world: &mut AskWorld) {
     world.actor = Some(actor);
 }
 
-#[when(regex = r#"^the caller invokes "ask\(Msg\)\.blocking_forward\(sender\)" on a blocking thread$"#)]
+#[when(
+    regex = r#"^the caller invokes "ask\(Msg\)\.blocking_forward\(sender\)" on a blocking thread$"#
+)]
 async fn when_blocking_forward(world: &mut AskWorld) {
     let actor = world.actor.as_ref().expect("actor spawned").clone();
     let (sender, rx) = bool_reply_channel();
@@ -652,7 +653,9 @@ async fn then_try_send_not_running(world: &mut AskWorld) {
     world.stopped_trio.push(true);
 }
 
-#[then(regex = r#"^"ask\(Msg\)\.blocking_send\(\)" also returns SendError::ActorNotRunning\(Msg\)$"#)]
+#[then(
+    regex = r#"^"ask\(Msg\)\.blocking_send\(\)" also returns SendError::ActorNotRunning\(Msg\)$"#
+)]
 async fn then_blocking_send_not_running(world: &mut AskWorld) {
     let actor = world.actor.as_ref().expect("actor spawned").clone();
     let r = tokio::task::spawn_blocking(move || actor.ask(Msg).blocking_send())
@@ -673,7 +676,11 @@ async fn given_bounded_1(world: &mut AskWorld) {
 
 #[given(regex = r"^the mailbox is filled to capacity while the actor is busy in its handler$")]
 async fn given_filled_while_busy(world: &mut AskWorld) {
-    let actor = world.actor.as_ref().expect("actor spawned (bounded 1)").clone();
+    let actor = world
+        .actor
+        .as_ref()
+        .expect("actor spawned (bounded 1)")
+        .clone();
     let (tx, rx) = watch::channel(false);
     fill_bounded1(&actor, rx).await.expect("fill bounded(1)");
     assert_full(&actor).await;
@@ -746,18 +753,26 @@ async fn then_outstanding_resolves(world: &mut AskWorld) {
     );
 }
 
-#[given(regex = r"^its handler blocks long enough to stay in-flight \(the actor does not progress\)$")]
+#[given(
+    regex = r"^its handler blocks long enough to stay in-flight \(the actor does not progress\)$"
+)]
 async fn given_handler_blocks_inflight(world: &mut AskWorld) {
     // Bounded(1) actor with a release-gated Hold handler.
     let (tx, _rx) = watch::channel(false);
     world.release = Some(tx);
 }
 
-#[when(regex = r"^a first message is sent and the actor dequeues it, freeing the single slot as it enters the blocked handler$")]
+#[when(
+    regex = r"^a first message is sent and the actor dequeues it, freeing the single slot as it enters the blocked handler$"
+)]
 async fn when_first_dequeued(world: &mut AskWorld) {
     let actor = world.actor.as_ref().expect("actor spawned (bounded 1)");
     let rx = world.release.as_ref().expect("release gate").subscribe();
-    actor.tell(Hold(rx)).send().await.expect("first hold enqueued");
+    actor
+        .tell(Hold(rx))
+        .send()
+        .await
+        .expect("first hold enqueued");
     tokio::time::sleep(Duration::from_millis(20)).await;
 }
 
@@ -847,7 +862,9 @@ async fn then_no_crosstalk_none_lost(world: &mut AskWorld) {
     );
 }
 
-#[when(regex = r#"^8 OS threads each invoke "ask\(n\)\.blocking_send\(\)" with a distinct n under a barrier$"#)]
+#[when(
+    regex = r#"^8 OS threads each invoke "ask\(n\)\.blocking_send\(\)" with a distinct n under a barrier$"#
+)]
 async fn when_8_blocking_threads(world: &mut AskWorld) {
     let actor = world.actor.as_ref().expect("actor spawned").clone();
     let barrier = Arc::new(std::sync::Barrier::new(8));
@@ -865,18 +882,27 @@ async fn when_8_blocking_threads(world: &mut AskWorld) {
         })
         .collect();
     for h in handles {
-        world.blocking_echo.push(h.await.expect("blocking echo join"));
+        world
+            .blocking_echo
+            .push(h.await.expect("blocking echo join"));
     }
 }
 
 #[then(regex = r"^each thread receives the Ok reply equal to its own n$")]
 async fn then_each_blocking_matches(world: &mut AskWorld) {
     for (n, reply) in &world.blocking_echo {
-        assert_eq!(n, reply, "blocking thread {n} received {reply} (cross-talk)");
+        assert_eq!(
+            n, reply,
+            "blocking thread {n} received {reply} (cross-talk)"
+        );
     }
     let mut got: Vec<u64> = world.blocking_echo.iter().map(|(n, _)| *n).collect();
     got.sort_unstable();
-    assert_eq!(got, (0..8).collect::<Vec<_>>(), "exactly 8 distinct replies");
+    assert_eq!(
+        got,
+        (0..8).collect::<Vec<_>>(),
+        "exactly 8 distinct replies"
+    );
 }
 
 // ===========================================================================
@@ -889,7 +915,9 @@ async fn then_each_blocking_matches(world: &mut AskWorld) {
 /// spawned inside `body` (same runtime) for its sleep to share the paused clock.
 async fn with_paused<F>(body: F) -> AskOutcome
 where
-    F: FnOnce() -> std::pin::Pin<Box<dyn std::future::Future<Output = AskOutcome>>> + Send + 'static,
+    F: FnOnce() -> std::pin::Pin<Box<dyn std::future::Future<Output = AskOutcome>>>
+        + Send
+        + 'static,
 {
     tokio::task::spawn_blocking(move || {
         let rt = tokio::runtime::Builder::new_current_thread()
@@ -959,9 +987,16 @@ async fn when_mailbox_timeout_50(world: &mut AskWorld) {
             // Occupy the single slot permanently: park a Hold handler, then fill
             // the buffer slot, so a third ask never acquires capacity.
             let (_tx, rx) = watch::channel(false);
-            actor.tell(Hold(rx.clone())).send().await.expect("first hold");
+            actor
+                .tell(Hold(rx.clone()))
+                .send()
+                .await
+                .expect("first hold");
             tokio::time::sleep(Duration::from_millis(1)).await;
-            actor.tell(Hold(rx)).try_send().expect("second hold fills slot");
+            actor
+                .tell(Hold(rx))
+                .try_send()
+                .expect("second hold fills slot");
             let r = actor
                 .ask(Sleep(Duration::from_millis(100)))
                 .mailbox_timeout(Duration::from_millis(50))
@@ -1037,16 +1072,25 @@ async fn when_reply_timeout_120(world: &mut AskWorld) {
 
 // --- both timeouts: mailbox first → Timeout(Some(Sleep(100ms))) -------------
 
-#[when(regex = r#"^the caller sends "ask\(Sleep\(100ms\)\)" with a mailbox_timeout of 50ms and a reply_timeout of 1s$"#)]
+#[when(
+    regex = r#"^the caller sends "ask\(Sleep\(100ms\)\)" with a mailbox_timeout of 50ms and a reply_timeout of 1s$"#
+)]
 async fn when_both_mailbox_first(world: &mut AskWorld) {
     let outcome = with_paused(|| {
         Box::pin(async {
             let actor = Asked::spawn_with_mailbox(Asked, mailbox::bounded(1));
             actor.wait_for_startup().await;
             let (_tx, rx) = watch::channel(false);
-            actor.tell(Hold(rx.clone())).send().await.expect("first hold");
+            actor
+                .tell(Hold(rx.clone()))
+                .send()
+                .await
+                .expect("first hold");
             tokio::time::sleep(Duration::from_millis(1)).await;
-            actor.tell(Hold(rx)).try_send().expect("second hold fills slot");
+            actor
+                .tell(Hold(rx))
+                .try_send()
+                .expect("second hold fills slot");
             let r = actor
                 .ask(Sleep(Duration::from_millis(100)))
                 .mailbox_timeout(Duration::from_millis(50))
@@ -1072,7 +1116,9 @@ async fn then_timeout_some_sleep(world: &mut AskWorld) {
 
 // --- both timeouts: enqueued then slow reply → Timeout(None) ----------------
 
-#[when(regex = r#"^the caller sends "ask\(Sleep\(200ms\)\)" with a mailbox_timeout of 1s and a reply_timeout of 50ms$"#)]
+#[when(
+    regex = r#"^the caller sends "ask\(Sleep\(200ms\)\)" with a mailbox_timeout of 1s and a reply_timeout of 50ms$"#
+)]
 async fn when_both_reply_governs(world: &mut AskWorld) {
     let outcome = with_paused(|| {
         Box::pin(async {
@@ -1150,7 +1196,9 @@ async fn given_handler_sleeps_100(world: &mut AskWorld) {
     world.handler_sleep_ms = Some(100);
 }
 
-#[when(regex = r#"^10 callers concurrently send "ask\(Sleep\(100ms\)\)" and one of them uses a reply_timeout of 10ms$"#)]
+#[when(
+    regex = r#"^10 callers concurrently send "ask\(Sleep\(100ms\)\)" and one of them uses a reply_timeout of 10ms$"#
+)]
 async fn when_10_concurrent_one_short(world: &mut AskWorld) {
     // Paused current-thread runtime: spawn the actor + all 10 asks as tasks, then
     // block_on a join. The clock auto-advances so the 10ms caller times out while
@@ -1229,7 +1277,9 @@ async fn then_others_ok(world: &mut AskWorld) {
 
 // -- @property: reply_timeout Ok iff d < t, else Timeout(None) ---------------
 
-#[given(regex = r"^a bounded mailbox of capacity 100 with spare capacity so the mailbox wait is instant$")]
+#[given(
+    regex = r"^a bounded mailbox of capacity 100 with spare capacity so the mailbox wait is instant$"
+)]
 async fn law_given_spare_instant(_world: &mut AskWorld) {}
 
 #[given(regex = r"^a handler that sleeps for any delay d before replying Ok$")]
@@ -1238,7 +1288,9 @@ async fn law_given_handler_delay_d(_world: &mut AskWorld) {}
 #[when(regex = r#"^the caller sends "ask\(Sleep\(d\)\)" with any reply_timeout t$"#)]
 async fn law_when_ask_sleep_d_t(_world: &mut AskWorld) {}
 
-#[then(regex = r"^the call returns Ok\(reply\) iff d < t, and SendError::Timeout\(None\) iff d >= t$")]
+#[then(
+    regex = r"^the call returns Ok\(reply\) iff d < t, and SendError::Timeout\(None\) iff d >= t$"
+)]
 async fn law_reply_timeout_predicate(_world: &mut AskWorld) {
     // GEN: d, t ∈ boundary-biased Duration {ZERO, 1ms, t-1, t, t+1, MAX}; include
     // d==0, t==0 (immediate Timeout(None)), t==MAX (Ok). Paused clock REQUIRED.
@@ -1311,7 +1363,9 @@ async fn law_given_cap1_occupied(_world: &mut AskWorld) {}
 #[given(regex = r"^a handler that would sleep for any delay d$")]
 async fn law_given_would_sleep_d(_world: &mut AskWorld) {}
 
-#[when(regex = r#"^the caller sends "ask\(Sleep\(d\)\)" with any mailbox_timeout tm and any reply_timeout tr$"#)]
+#[when(
+    regex = r#"^the caller sends "ask\(Sleep\(d\)\)" with any mailbox_timeout tm and any reply_timeout tr$"#
+)]
 async fn law_when_ask_tm_tr(_world: &mut AskWorld) {}
 
 #[then(regex = r"^the call returns SendError::Timeout\(Some\(Sleep\(d\)\)\) for every tm, tr$")]
@@ -1336,9 +1390,16 @@ async fn law_no_capacity_always_some(_world: &mut AskWorld) {
                     let actor = Asked::spawn_with_mailbox(Asked, mailbox::bounded(1));
                     actor.wait_for_startup().await;
                     let (_tx, rx) = watch::channel(false);
-                    actor.tell(Hold(rx.clone())).send().await.expect("first hold");
+                    actor
+                        .tell(Hold(rx.clone()))
+                        .send()
+                        .await
+                        .expect("first hold");
                     tokio::time::sleep(ms(1)).await;
-                    actor.tell(Hold(rx)).try_send().expect("second hold fills slot");
+                    actor
+                        .tell(Hold(rx))
+                        .try_send()
+                        .expect("second hold fills slot");
                     let r = actor
                         .ask(Sleep(d))
                         .mailbox_timeout(tm)
@@ -1370,9 +1431,16 @@ async fn law_reply_clock_never_starts(_world: &mut AskWorld) {
             let actor = Asked::spawn_with_mailbox(Asked, mailbox::bounded(1));
             actor.wait_for_startup().await;
             let (_tx, rx) = watch::channel(false);
-            actor.tell(Hold(rx.clone())).send().await.expect("first hold");
+            actor
+                .tell(Hold(rx.clone()))
+                .send()
+                .await
+                .expect("first hold");
             tokio::time::sleep(Duration::from_millis(1)).await;
-            actor.tell(Hold(rx)).try_send().expect("second hold fills slot");
+            actor
+                .tell(Hold(rx))
+                .try_send()
+                .expect("second hold fills slot");
             let r = actor
                 .ask(Sleep(Duration::from_millis(100)))
                 .mailbox_timeout(Duration::from_millis(50))
@@ -1393,7 +1461,9 @@ async fn law_reply_clock_never_starts(_world: &mut AskWorld) {
 
 // -- @model: N concurrent asks, per-caller reply isolation -------------------
 
-#[given(regex = r"^a bounded mailbox of any capacity c and an echo handler returning the integer it received$")]
+#[given(
+    regex = r"^a bounded mailbox of any capacity c and an echo handler returning the integer it received$"
+)]
 async fn law_given_any_cap_echo(_world: &mut AskWorld) {}
 
 #[given(regex = r"^any number N of callers each holding a distinct integer payload$")]
@@ -1412,7 +1482,9 @@ async fn law_model_per_caller(_world: &mut AskWorld) {
     }
 }
 
-#[then(regex = r"^no reply is delivered to the wrong caller and none is lost, for any N and any c$")]
+#[then(
+    regex = r"^no reply is delivered to the wrong caller and none is lost, for any N and any c$"
+)]
 async fn law_model_no_loss(_world: &mut AskWorld) {
     // Re-run a representative (c, N) so this Then is a real assertion: the
     // bijection check inside run_model_isolation is the no-cross-talk / no-loss
@@ -1460,13 +1532,19 @@ async fn run_model_isolation(c: usize, n: u64) {
 
 // -- @model @timing: per-caller short timeout decided independently ----------
 
-#[given(regex = r"^a bounded mailbox of capacity 100 and a handler that sleeps a fixed delay d before replying$")]
+#[given(
+    regex = r"^a bounded mailbox of capacity 100 and a handler that sleeps a fixed delay d before replying$"
+)]
 async fn law_given_cap100_fixed_d(_world: &mut AskWorld) {}
 
-#[when(regex = r#"^N callers concurrently send "ask\(Sleep\(d\)\)", each with its own reply_timeout t_i, under a barrier$"#)]
+#[when(
+    regex = r#"^N callers concurrently send "ask\(Sleep\(d\)\)", each with its own reply_timeout t_i, under a barrier$"#
+)]
 async fn law_when_n_per_caller_t(_world: &mut AskWorld) {}
 
-#[then(regex = r"^each caller i receives Ok iff d < t_i, else SendError::Timeout\(None\), independently of the others$")]
+#[then(
+    regex = r"^each caller i receives Ok iff d < t_i, else SendError::Timeout\(None\), independently of the others$"
+)]
 async fn law_model_per_caller_timeout(_world: &mut AskWorld) {
     // GEN: N=16; d fixed; t_i ∈ boundary-biased {d-1, d, d+1, MAX} so both
     // outcomes occur. Paused clock. ORACLE: per-caller predicate d < t_i, each
@@ -1538,4 +1616,3 @@ async fn law_model_per_caller_timeout(_world: &mut AskWorld) {
         );
     }
 }
-

@@ -169,11 +169,7 @@ struct SpawnErr(u64);
 impl Message<SpawnErr> for Recorder {
     type Reply = DelegatedReply<Result<u64, HandlerBoom>>;
 
-    async fn handle(
-        &mut self,
-        msg: SpawnErr,
-        ctx: &mut Context<Self, Self::Reply>,
-    ) -> Self::Reply {
+    async fn handle(&mut self, msg: SpawnErr, ctx: &mut Context<Self, Self::Reply>) -> Self::Reply {
         ctx.spawn(async move {
             tokio::time::sleep(Duration::from_millis(10)).await;
             Err(HandlerBoom(msg.0))
@@ -467,7 +463,10 @@ fn hook_sink() -> &'static Mutex<Vec<String>> {
 }
 
 fn recording_hook(err: &PanicError) {
-    hook_sink().lock().unwrap().push(format!("{:?}", err.reason()));
+    hook_sink()
+        .lock()
+        .unwrap()
+        .push(format!("{:?}", err.reason()));
 }
 
 /// Installs the recording hook and clears the sink. Restored to default at the
@@ -571,7 +570,9 @@ async fn then_handled_123(world: &mut MessageWorld) {
     assert_eq!(world.replies, vec![1, 2, 3], "each ask returns its own tag");
 }
 
-#[when(regex = r"^a message whose handler calls ctx\.stop\(\) and then returns a reply is sent via ask$")]
+#[when(
+    regex = r"^a message whose handler calls ctx\.stop\(\) and then returns a reply is sent via ask$"
+)]
 async fn when_stop_then_reply(world: &mut MessageWorld) {
     let actor = world.recorder.as_ref().expect("recorder spawned");
     let reply = actor.ask(StopThenReply(7)).await.expect("ask succeeds");
@@ -608,10 +609,15 @@ async fn then_actor_stops(world: &mut MessageWorld) {
     panic!("actor did not stop after a ctx.stop() handler within the bound");
 }
 
-#[when(regex = r"^a message handler calls ctx\.reply_sender\(\) and returns the DelegatedReply marker$")]
+#[when(
+    regex = r"^a message handler calls ctx\.reply_sender\(\) and returns the DelegatedReply marker$"
+)]
 async fn when_reply_sender(world: &mut MessageWorld) {
     let actor = world.recorder.as_ref().expect("recorder spawned");
-    let reply = actor.ask(DelegateViaSender(11)).await.expect("ask succeeds");
+    let reply = actor
+        .ask(DelegateViaSender(11))
+        .await
+        .expect("ask succeeds");
     world.reply = Some(reply);
 }
 
@@ -673,7 +679,9 @@ async fn then_no_duplicate_on_return(world: &mut MessageWorld) {
 // @lifecycle — spawn detached, stream lifecycle, forwarding across actors
 // ===========================================================================
 
-#[given(regex = r"^a handler that ctx\.spawns a task which completes after a delay and returns a value$")]
+#[given(
+    regex = r"^a handler that ctx\.spawns a task which completes after a delay and returns a value$"
+)]
 async fn given_spawn_value_handler(world: &mut MessageWorld) {
     // The handler is `SpawnValue` (defined above); the actor is the Background
     // recorder. Flag the shared `the message is sent via ask` When to drive it.
@@ -708,8 +716,14 @@ async fn then_actor_free_during_spawn(world: &mut MessageWorld) {
     // and the detached task replied later. Observable proof: the actor still
     // handles a subsequent command promptly.
     let actor = world.recorder.as_ref().expect("recorder spawned");
-    let reply = actor.ask(Command(22)).await.expect("actor still responsive");
-    assert_eq!(reply, 22, "the actor handled a later command after spawning");
+    let reply = actor
+        .ask(Command(22))
+        .await
+        .expect("actor still responsive");
+    assert_eq!(
+        reply, 22,
+        "the actor handled a later command after spawning"
+    );
 }
 
 #[given(regex = r"^a handler that ctx\.spawns a task returning an Err$")]
@@ -780,7 +794,10 @@ async fn given_router_and_live_target(world: &mut MessageWorld) {
 async fn when_ask_router_forwards(world: &mut MessageWorld) {
     if world.router_target.is_some() {
         let (router, _target) = world.router_target.as_ref().expect("router + target");
-        let reply = router.ask(ForwardEcho(41)).await.expect("forward ask succeeds");
+        let reply = router
+            .ask(ForwardEcho(41))
+            .await
+            .expect("forward ask succeeds");
         world.reply = Some(reply);
     }
 }
@@ -850,7 +867,10 @@ async fn when_stream_attached(world: &mut MessageWorld) {
     // pump task so all three phases have been enqueued, then poll until the
     // actor has handled Finished (the last event).
     // attach_stream's task returns the leftover stream on success; discard it.
-    let _ = handle.await.expect("attach_stream task").expect("stream ok");
+    let _ = handle
+        .await
+        .expect("attach_stream task")
+        .expect("stream ok");
     for _ in 0..200 {
         if world
             .stream_events
@@ -916,7 +936,12 @@ async fn then_finished_last(world: &mut MessageWorld) {
 #[when(regex = r"^a message whose handler returns Err\(e\) is sent via ask$")]
 async fn when_handler_err_ask(world: &mut MessageWorld) {
     let actor = world.recorder.as_ref().expect("recorder spawned");
-    let result = actor.ask(FallibleCommand { tag: 81, fail: true }).await;
+    let result = actor
+        .ask(FallibleCommand {
+            tag: 81,
+            fail: true,
+        })
+        .await;
     // `ask().await` is `Result<u64, SendError<FallibleCommand, HandlerBoom>>`;
     // a handler Err arrives as `HandlerError(HandlerBoom(81))`. Capture the inner
     // typed error (SendError's Debug elides the variant text, so we match).
@@ -943,7 +968,10 @@ async fn when_handler_err_tell(world: &mut MessageWorld) {
     let actor = PanicWatch::spawn(PanicWatch { on_panic_log });
     actor.wait_for_startup().await;
     actor
-        .tell(WatchCommand { tag: 91, fail: true })
+        .tell(WatchCommand {
+            tag: 91,
+            fail: true,
+        })
         .await
         .expect("tell delivered");
     // Poll until on_panic has recorded the panic (the run-loop treats the
@@ -957,7 +985,9 @@ async fn when_handler_err_tell(world: &mut MessageWorld) {
     panic!("on_panic was not invoked for an unhandled tell error within the bound");
 }
 
-#[then(regex = r"^handle_dyn surfaces the error via into_any_err for the run-loop to treat as a panic$")]
+#[then(
+    regex = r"^handle_dyn surfaces the error via into_any_err for the run-loop to treat as a panic$"
+)]
 async fn then_handle_dyn_surfaces_err(world: &mut MessageWorld) {
     // Observable proof: on_panic ran (the run-loop received Err(err) from
     // into_any_err and treated it as a panic).
@@ -990,7 +1020,10 @@ async fn when_handler_ok_tell(world: &mut MessageWorld) {
     let actor = PanicWatch::spawn(PanicWatch { on_panic_log });
     actor.wait_for_startup().await;
     actor
-        .tell(WatchCommand { tag: 95, fail: false })
+        .tell(WatchCommand {
+            tag: 95,
+            fail: false,
+        })
         .await
         .expect("tell delivered");
     // Let the handler run; a small settle so any (erroneous) hook would fire.
@@ -999,7 +1032,10 @@ async fn when_handler_ok_tell(world: &mut MessageWorld) {
     // is `Result<u64, HandlerBoom>`, so `ask().await` is
     // `Result<u64, SendError<_, HandlerBoom>>` — one `expect` yields the u64.
     let reply = actor
-        .ask(WatchCommand { tag: 96, fail: false })
+        .ask(WatchCommand {
+            tag: 96,
+            fail: false,
+        })
         .await
         .expect("actor still running after an Ok tell");
     world.reply = Some(reply);
@@ -1064,7 +1100,9 @@ async fn then_distinct_replies(world: &mut MessageWorld) {
     );
 }
 
-#[then(regex = r"^the set of replies is exactly the integers 1 through 50 with no gaps or duplicates$")]
+#[then(
+    regex = r"^the set of replies is exactly the integers 1 through 50 with no gaps or duplicates$"
+)]
 async fn then_replies_1_through_50(world: &mut MessageWorld) {
     let mut got = world.concurrent_replies.clone();
     got.sort_unstable();
@@ -1112,7 +1150,10 @@ async fn when_mixed_asks_tells(world: &mut MessageWorld) {
     // Each ask reply must equal its OWN command's tag (no cross-talk).
     for (h, tag) in ask_handles.into_iter().zip((2..=n).step_by(2)) {
         let reply = h.await.expect("ask task must not panic");
-        assert_eq!(reply, tag, "ask caller {tag} received another command's reply");
+        assert_eq!(
+            reply, tag,
+            "ask caller {tag} received another command's reply"
+        );
     }
     for h in tell_handles {
         h.await.expect("tell task must not panic");
@@ -1205,7 +1246,9 @@ async fn law_forward_roundtrips_v(_world: &mut MessageWorld) {
     // documented deterministic loop over a seeded RNG hits arbitrary values).
     let mut state = 0x9E37_79B9_7F4A_7C15u64;
     for _ in 0..16 {
-        state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        state = state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         check(state).await;
     }
 }
@@ -1231,7 +1274,11 @@ async fn law_ask_err_handler_carries_e(_world: &mut MessageWorld) {
         let result = actor.ask(FallibleCommand { tag: e, fail: true }).await;
         match result {
             Err(SendError::HandlerError(boom)) => {
-                assert_eq!(boom, HandlerBoom(e), "HandlerError must carry exactly e={e}");
+                assert_eq!(
+                    boom,
+                    HandlerBoom(e),
+                    "HandlerError must carry exactly e={e}"
+                );
             }
             other => panic!("e={e}: expected HandlerError(HandlerBoom({e})), got {other:?}"),
         }
@@ -1390,4 +1437,3 @@ async fn run_model_case(p: usize, count: usize) {
     );
     actor.stop_gracefully().await.unwrap();
 }
-

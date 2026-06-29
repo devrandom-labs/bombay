@@ -121,7 +121,10 @@ impl Actor for Recorder {
     type Args = Self;
     type Error = Infallible;
 
-    async fn on_start(mut state: Self::Args, actor_ref: ActorRef<Self>) -> Result<Self, Self::Error> {
+    async fn on_start(
+        mut state: Self::Args,
+        actor_ref: ActorRef<Self>,
+    ) -> Result<Self, Self::Error> {
         state.log.lock().unwrap().push(Event::Started);
         // Internal sends bypass the startup buffer (sent_within_actor): emit them
         // first so the @sequence "internal before external" scenarios can observe
@@ -145,7 +148,10 @@ impl Actor for Recorder {
         _: WeakActorRef<Self>,
         reason: ActorStopReason,
     ) -> Result<(), Self::Error> {
-        self.log.lock().unwrap().push(Event::Stopped(reason_label(&reason)));
+        self.log
+            .lock()
+            .unwrap()
+            .push(Event::Stopped(reason_label(&reason)));
         Ok(())
     }
 }
@@ -205,7 +211,10 @@ impl Actor for PanicPolicy {
         _: WeakActorRef<Self>,
         reason: ActorStopReason,
     ) -> Result<(), Self::Error> {
-        self.log.lock().unwrap().push(Event::Stopped(reason_label(&reason)));
+        self.log
+            .lock()
+            .unwrap()
+            .push(Event::Stopped(reason_label(&reason)));
         Ok(())
     }
 }
@@ -262,7 +271,10 @@ impl Actor for FailStart {
         _: WeakActorRef<Self>,
         reason: ActorStopReason,
     ) -> Result<(), Self::Error> {
-        self.log.lock().unwrap().push(Event::Stopped(reason_label(&reason)));
+        self.log
+            .lock()
+            .unwrap()
+            .push(Event::Stopped(reason_label(&reason)));
         Ok(())
     }
 }
@@ -298,7 +310,10 @@ impl Actor for Probe {
         _: WeakActorRef<Self>,
         reason: ActorStopReason,
     ) -> Result<(), Self::Error> {
-        self.log.lock().unwrap().push(Event::Stopped(reason_label(&reason)));
+        self.log
+            .lock()
+            .unwrap()
+            .push(Event::Stopped(reason_label(&reason)));
         Ok(())
     }
 }
@@ -489,9 +504,7 @@ async fn then_abc_in_order(world: &mut LifecycleWorld) {
     );
 }
 
-#[given(
-    regex = r#"^an actor that, during on_start, tells itself an internal message "init"$"#
-)]
+#[given(regex = r#"^an actor that, during on_start, tells itself an internal message "init"$"#)]
 async fn given_recorder_internal_init(world: &mut LifecycleWorld) {
     let (actor, log, tx) = spawn_recorder(vec!["init".to_string()]);
     world.log = log;
@@ -639,9 +652,7 @@ async fn then_stops_panicked(world: &mut LifecycleWorld) {
 /// NEVER builds the actor and NEVER calls on_stop (it needs `&mut self`, which
 /// never existed). So the TRUE observable is: shutdown reason == Panicked AND
 /// on_stop did NOT run. Asserting on_stop recorded anything would be false.
-#[then(
-    regex = r"^the actor stops with reason Panicked without calling on_stop$"
-)]
+#[then(regex = r"^the actor stops with reason Panicked without calling on_stop$")]
 async fn then_stops_panicked_no_on_stop(world: &mut LifecycleWorld) {
     assert_eq!(
         world.observed_reason,
@@ -820,9 +831,7 @@ async fn then_on_stop_once_normal(world: &mut LifecycleWorld) {
 // producible without the supervision machinery, so all three are pinned by
 // evaluating the SUT decision function on a real actor + a real WeakActorRef.
 
-#[given(
-    regex = r"^two linked sibling actors A and B with default on_link_died$"
-)]
+#[given(regex = r"^two linked sibling actors A and B with default on_link_died$")]
 async fn given_linked_pair(world: &mut LifecycleWorld) {
     let (a, log, tx) = spawn_recorder(Vec::new());
     tx.send(true).expect("release A on_start");
@@ -937,9 +946,7 @@ async fn when_wait_startup(_world: &mut LifecycleWorld) {
     // the actor reaches the alive/responsive state after release.
 }
 
-#[then(
-    regex = r"^the actor is alive and a default bounded mailbox of capacity 64 was used$"
-)]
+#[then(regex = r"^the actor is alive and a default bounded mailbox of capacity 64 was used$")]
 async fn then_alive_default_mailbox(world: &mut LifecycleWorld) {
     let actor = world.recorder.as_ref().expect("recorder spawned").clone();
     assert!(actor.is_alive(), "a freshly spawned actor must be alive");
@@ -1020,9 +1027,7 @@ async fn given_blocking_actor(_world: &mut LifecycleWorld) {
     // The Blocker is spawned in the When (spawn_in_thread).
 }
 
-#[when(
-    regex = r"^the actor is spawned via spawn_in_thread on a multi-threaded runtime$"
-)]
+#[when(regex = r"^the actor is spawned via spawn_in_thread on a multi-threaded runtime$")]
 async fn when_spawn_in_thread(world: &mut LifecycleWorld) {
     let log: Log = Arc::new(Mutex::new(Vec::new()));
     let actor = Blocker::spawn_in_thread(Blocker {
@@ -1136,9 +1141,7 @@ async fn given_on_start_panics(world: &mut LifecycleWorld) {
     stash_failstart(world, actor);
 }
 
-#[given(
-    regex = r"^an actor whose on_start returns Err and which records on_stop calls$"
-)]
+#[given(regex = r"^an actor whose on_start returns Err and which records on_stop calls$")]
 async fn given_on_start_err_records(world: &mut LifecycleWorld) {
     let log: Log = Arc::new(Mutex::new(Vec::new()));
     let actor = FailStart::spawn(FailStart {
@@ -1168,9 +1171,7 @@ async fn when_spawn_await_startup(world: &mut LifecycleWorld) {
     world.observed_reason = Some(observed_label_failstart(&shutdown));
 }
 
-fn observed_label_failstart(
-    res: &Result<ActorStopReason, HookError<StartError>>,
-) -> &'static str {
+fn observed_label_failstart(res: &Result<ActorStopReason, HookError<StartError>>) -> &'static str {
     match res {
         Ok(reason) => reason_label(reason),
         Err(_) => "Panicked",
@@ -1186,9 +1187,7 @@ async fn then_startup_err(world: &mut LifecycleWorld) {
     );
 }
 
-#[then(
-    regex = r"^the actor stops with reason Panicked without handling any message$"
-)]
+#[then(regex = r"^the actor stops with reason Panicked without handling any message$")]
 async fn then_panicked_no_message(world: &mut LifecycleWorld) {
     assert_eq!(
         world.observed_reason,
@@ -1263,9 +1262,7 @@ async fn then_thread_panic_msg(world: &mut LifecycleWorld) {
 // @linearizability — RAII drop-stops, concurrent spawn
 // ===========================================================================
 
-#[given(
-    regex = r"^an actor spawned via spawn with no other strong references retained$"
-)]
+#[given(regex = r"^an actor spawned via spawn with no other strong references retained$")]
 async fn given_spawn_no_strong_retained(world: &mut LifecycleWorld) {
     let log: Log = Arc::new(Mutex::new(Vec::new()));
     let actor = Probe::spawn(Probe {
@@ -1295,9 +1292,7 @@ async fn when_drop_last_strong(world: &mut LifecycleWorld) {
     world.observed_reason = Some("Normal");
 }
 
-#[then(
-    regex = r"^the actor stops with reason ControlFlow::Break\(ActorStopReason::Normal\)$"
-)]
+#[then(regex = r"^the actor stops with reason ControlFlow::Break\(ActorStopReason::Normal\)$")]
 async fn then_drop_stop_normal(world: &mut LifecycleWorld) {
     // The RAII drop is a GRACEFUL Normal stop (kind.rs:64-66): recv None =>
     // Break(Normal). Observe it via on_stop's recorded reason (the actor records
@@ -1396,7 +1391,11 @@ async fn when_each_startup_awaited(_world: &mut LifecycleWorld) {
 
 #[then(regex = r"^all 100 actors are alive and have pairwise-distinct ActorIds$")]
 async fn then_100_alive_distinct(world: &mut LifecycleWorld) {
-    assert_eq!(world.spawned_ids.len(), 100, "exactly 100 actors must be spawned");
+    assert_eq!(
+        world.spawned_ids.len(),
+        100,
+        "exactly 100 actors must be spawned"
+    );
     assert_eq!(
         world.spawned_all_alive,
         Some(true),
@@ -1568,7 +1567,10 @@ async fn law_on_panic_break_panicked(_world: &mut LifecycleWorld) {
                     "default on_panic must wrap exactly the original error"
                 );
             }
-            other => panic!("default on_panic must Break(Panicked), got {}", flow_label(&other)),
+            other => panic!(
+                "default on_panic must Break(Panicked), got {}",
+                flow_label(&other)
+            ),
         }
     }
     a.stop_gracefully().await.ok();
@@ -1576,9 +1578,7 @@ async fn law_on_panic_break_panicked(_world: &mut LifecycleWorld) {
 
 // -- @property @sequence: startup buffer replays any pre-start sequence --------
 
-#[given(
-    regex = r"^any sequence of n distinct external messages told before on_start completes$"
-)]
+#[given(regex = r"^any sequence of n distinct external messages told before on_start completes$")]
 async fn given_any_pre_start_sequence(_world: &mut LifecycleWorld) {}
 
 #[when(regex = r"^on_start is released and the startup buffer is drained$")]
@@ -1618,9 +1618,7 @@ async fn law_buffer_replay_order(_world: &mut LifecycleWorld) {
 
 // -- @property @sequence: internal-before-external for any i, e ---------------
 
-#[given(
-    regex = r"^an actor that tells itself any number i of internal messages during on_start$"
-)]
+#[given(regex = r"^an actor that tells itself any number i of internal messages during on_start$")]
 async fn given_any_internal_count(_world: &mut LifecycleWorld) {}
 
 #[given(regex = r"^any number e of external messages were told before on_start ran$")]
@@ -1629,9 +1627,7 @@ async fn given_any_external_count(_world: &mut LifecycleWorld) {}
 #[when(regex = r"^on_start completes and all messages are handled$")]
 async fn when_all_handled(_world: &mut LifecycleWorld) {}
 
-#[then(
-    regex = r"^every internal message is handled before any external buffered message$"
-)]
+#[then(regex = r"^every internal message is handled before any external buffered message$")]
 async fn law_internal_before_external(_world: &mut LifecycleWorld) {
     // i ∈ {1, 2, 8}; e ∈ {0, 1, 8} (include the no-external boundary). Internal
     // sends bypass the buffer (sent_within_actor, kind.rs:117), so the model is:
@@ -1674,8 +1670,11 @@ async fn law_internal_before_external(_world: &mut LifecycleWorld) {
                 );
             }
             // Internal order is preserved (FIFO).
-            let got_internal: Vec<String> =
-                tags.iter().filter(|t| t.starts_with("int")).cloned().collect();
+            let got_internal: Vec<String> = tags
+                .iter()
+                .filter(|t| t.starts_with("int"))
+                .cloned()
+                .collect();
             assert_eq!(
                 got_internal, internal,
                 "i={i} e={e}: internal FIFO order must be preserved"
@@ -1695,9 +1694,7 @@ async fn given_any_mailbox(_world: &mut LifecycleWorld) {}
 )]
 async fn given_any_spawn_variant(_world: &mut LifecycleWorld) {}
 
-#[when(
-    regex = r"^the actor is spawned via that variant with that mailbox and startup is awaited$"
-)]
+#[when(regex = r"^the actor is spawned via that variant with that mailbox and startup is awaited$")]
 async fn when_spawn_variant(_world: &mut LifecycleWorld) {}
 
 #[then(regex = r"^the actor is alive after startup$")]
@@ -1707,12 +1704,18 @@ async fn law_variant_alive(_world: &mut LifecycleWorld) {
     for c in [1usize, 2, 64, 1024] {
         let actor = Probe::spawn_with_mailbox(Probe::default(), mailbox::bounded(c));
         actor.wait_for_startup().await;
-        assert!(actor.is_alive(), "bounded({c}) spawn_with_mailbox must be alive");
+        assert!(
+            actor.is_alive(),
+            "bounded({c}) spawn_with_mailbox must be alive"
+        );
         actor.stop_gracefully().await.ok();
     }
     let actor = Probe::spawn_with_mailbox(Probe::default(), mailbox::unbounded());
     actor.wait_for_startup().await;
-    assert!(actor.is_alive(), "unbounded spawn_with_mailbox must be alive");
+    assert!(
+        actor.is_alive(),
+        "unbounded spawn_with_mailbox must be alive"
+    );
     actor.stop_gracefully().await.ok();
 }
 
@@ -1737,7 +1740,11 @@ async fn law_variant_same_sequence(_world: &mut LifecycleWorld) {
         }
         let n = seq.len();
         let poll = Arc::clone(&log);
-        settle(move || handled_tags(&poll).len() == n, "variant did not handle all").await;
+        settle(
+            move || handled_tags(&poll).len() == n,
+            "variant did not handle all",
+        )
+        .await;
         let out = handled_tags(&log);
         actor.stop_gracefully().await.ok();
         out
@@ -1748,7 +1755,10 @@ async fn law_variant_same_sequence(_world: &mut LifecycleWorld) {
         Probe::spawn_with_mailbox(Probe { log }, mailbox::bounded(64))
     })
     .await;
-    assert_eq!(reference, probe_seq, "reference variant must handle the fixed sequence");
+    assert_eq!(
+        reference, probe_seq,
+        "reference variant must handle the fixed sequence"
+    );
 
     // spawn_with_mailbox on every boundary capacity + unbounded.
     for c in [1usize, 2, 64, 1024] {
@@ -1756,13 +1766,19 @@ async fn law_variant_same_sequence(_world: &mut LifecycleWorld) {
             Probe::spawn_with_mailbox(Probe { log }, mailbox::bounded(c))
         })
         .await;
-        assert_eq!(got, reference, "bounded({c}) variant must match the reference sequence");
+        assert_eq!(
+            got, reference,
+            "bounded({c}) variant must match the reference sequence"
+        );
     }
     let got_unbounded = run_variant(&probe_seq, |log| {
         Probe::spawn_with_mailbox(Probe { log }, mailbox::unbounded())
     })
     .await;
-    assert_eq!(got_unbounded, reference, "unbounded variant must match the reference");
+    assert_eq!(
+        got_unbounded, reference,
+        "unbounded variant must match the reference"
+    );
 
     // prepare-then-run (run drives the loop in a spawned task so we can message it).
     {
@@ -1775,15 +1791,25 @@ async fn law_variant_same_sequence(_world: &mut LifecycleWorld) {
         });
         actor_ref.wait_for_startup().await;
         for tag in &probe_seq {
-            actor_ref.tell(Tag(tag.clone())).await.expect("prepared tell");
+            actor_ref
+                .tell(Tag(tag.clone()))
+                .await
+                .expect("prepared tell");
         }
         let poll = Arc::clone(&log);
         let n = probe_seq.len();
-        settle(move || handled_tags(&poll).len() == n, "prepared did not handle all").await;
+        settle(
+            move || handled_tags(&poll).len() == n,
+            "prepared did not handle all",
+        )
+        .await;
         let got = handled_tags(&log);
         actor_ref.stop_gracefully().await.ok();
         driver.await.expect("run driver completes");
-        assert_eq!(got, reference, "prepare-then-run variant must match the reference");
+        assert_eq!(
+            got, reference,
+            "prepare-then-run variant must match the reference"
+        );
     }
 
     // spawn_in_thread (multi-threaded runtime present).
@@ -1791,7 +1817,10 @@ async fn law_variant_same_sequence(_world: &mut LifecycleWorld) {
         Probe::spawn_in_thread_with_mailbox(Probe { log }, mailbox::bounded(64))
     })
     .await;
-    assert_eq!(got_thread, reference, "spawn_in_thread variant must match the reference");
+    assert_eq!(
+        got_thread, reference,
+        "spawn_in_thread variant must match the reference"
+    );
 }
 
 // -- @model @linearizability: strong-ref presence refines a stop-at-zero counter

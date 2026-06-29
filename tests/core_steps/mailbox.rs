@@ -298,7 +298,9 @@ async fn when_poll_recv_four(world: &mut MailboxWorld) {
     world.received = got;
 }
 
-#[then(regex = r"^poll_recv yields Ready\(F1\), Ready\(F2\), Ready\(C1\), Ready\(C2\) in that exact order$")]
+#[then(
+    regex = r"^poll_recv yields Ready\(F1\), Ready\(F2\), Ready\(C1\), Ready\(C2\) in that exact order$"
+)]
 async fn then_poll_yields_f1_f2_c1_c2(world: &mut MailboxWorld) {
     assert_eq!(world.received, vec![301, 302, 201, 202]);
 }
@@ -321,7 +323,9 @@ async fn when_push_front_then_blocking_recv_many(world: &mut MailboxWorld, limit
     world.received = tags;
 }
 
-#[then(regex = r"^the call returns exactly F1, F2 \(count 2\) and leaves C1, C2 for the next call$")]
+#[then(
+    regex = r"^the call returns exactly F1, F2 \(count 2\) and leaves C1, C2 for the next call$"
+)]
 async fn then_recv_many_front_only(world: &mut MailboxWorld) {
     assert_eq!(world.last_count, Some(2));
     assert_eq!(world.received, vec![301, 302]);
@@ -392,7 +396,9 @@ async fn then_count_exactly(world: &mut MailboxWorld, n: usize) {
     assert_eq!(world.last_count, Some(n));
 }
 
-#[then(regex = r"^exactly those (\d+) signals are appended to the buffer, so count == buffer\.len\(\)$")]
+#[then(
+    regex = r"^exactly those (\d+) signals are appended to the buffer, so count == buffer\.len\(\)$"
+)]
 async fn then_count_equals_buffer_len(world: &mut MailboxWorld, n: usize) {
     assert_eq!(world.received.len(), n);
     assert_eq!(world.last_count, Some(world.received.len()));
@@ -634,7 +640,13 @@ async fn when_try_send_one_more(world: &mut MailboxWorld) {
 
 #[then(regex = r"^try_send returns Ok$")]
 async fn then_try_send_ok(world: &mut MailboxWorld) {
-    assert!(world.try_send_result.take().expect("try_send result").is_ok());
+    assert!(
+        world
+            .try_send_result
+            .take()
+            .expect("try_send result")
+            .is_ok()
+    );
 }
 
 #[then(regex = r"^try_send returns Err with the Closed variant carrying signal S$")]
@@ -675,7 +687,11 @@ async fn when_blocking_send_parked(world: &mut MailboxWorld) {
 #[when(regex = r"^the receiver later frees one slot$")]
 async fn when_receiver_frees_slot(world: &mut MailboxWorld) {
     // Free the occupied slot so the parked blocking_send can proceed.
-    let _ = world.receiver().recv().await.expect("the pre-filled signal");
+    let _ = world
+        .receiver()
+        .recv()
+        .await
+        .expect("the pre-filled signal");
 }
 
 #[then(regex = r"^blocking_send returns Ok once the slot is available$")]
@@ -688,7 +704,9 @@ async fn then_blocking_send_ok(world: &mut MailboxWorld) {
     assert_eq!(signal_tag(&sig), Some(700));
 }
 
-#[then(regex = r"^a send_timeout\(S2, d\) on a still-full channel returns the timeout error after d elapses$")]
+#[then(
+    regex = r"^a send_timeout\(S2, d\) on a still-full channel returns the timeout error after d elapses$"
+)]
 async fn then_send_timeout_elapses(world: &mut MailboxWorld) {
     // Re-fill the capacity-1 channel, then run send_timeout in a dedicated
     // PAUSED current-thread runtime so the timeout fires deterministically with
@@ -705,13 +723,20 @@ async fn then_send_timeout_elapses(world: &mut MailboxWorld) {
             .start_paused(true)
             .build()
             .expect("paused runtime");
-        rt.block_on(async move { tx.send_timeout(tagged_signal(801), Duration::from_secs(5)).await })
+        rt.block_on(async move {
+            tx.send_timeout(tagged_signal(801), Duration::from_secs(5))
+                .await
+        })
     })
     .await
     .expect("send_timeout thread");
     match outcome {
         Err(mpsc::error::SendTimeoutError::Timeout(sig)) => {
-            assert_eq!(signal_tag(&sig), Some(801), "timeout surfaces the un-sent signal");
+            assert_eq!(
+                signal_tag(&sig),
+                Some(801),
+                "timeout surfaces the un-sent signal"
+            );
         }
         _ => panic!("expected Timeout(S2)"),
     }
@@ -762,7 +787,11 @@ async fn when_recv_once(world: &mut MailboxWorld) {
 #[when(regex = r"^the receiver calls recv once, freeing a slot$")]
 async fn when_recv_once_freeing(world: &mut MailboxWorld) {
     // Frees the single occupied slot so the parked send (given step) can proceed.
-    let _ = world.receiver().recv().await.expect("the pre-filled signal");
+    let _ = world
+        .receiver()
+        .recv()
+        .await
+        .expect("the pre-filled signal");
 }
 
 #[given(regex = r"^two bounded senders A and A2 that are clones of the same sender$")]
@@ -915,7 +944,9 @@ async fn when_concurrent_senders(world: &mut MailboxWorld, tasks: usize, per: us
             barrier.wait().await;
             for i in 0..per {
                 let tag = (t as u64) * 1_000_000 + i as u64;
-                tx.send(tagged_signal(tag)).await.expect("send under capacity");
+                tx.send(tagged_signal(tag))
+                    .await
+                    .expect("send under capacity");
             }
         }));
     }
@@ -1121,7 +1152,8 @@ async fn law_try_send_full_iff_at_cap(_world: &mut MailboxWorld) {
         for k in [0usize, c.saturating_sub(1), c] {
             let (tx, _rx) = mailbox::bounded::<Probe>(c);
             for i in 0..k {
-                tx.try_send(tagged_signal(i as u64)).expect("k <= c slots free");
+                tx.try_send(tagged_signal(i as u64))
+                    .expect("k <= c slots free");
             }
             let res = tx.try_send(tagged_signal(9999));
             if k < c {
@@ -1180,10 +1212,12 @@ async fn law_front_drains_before_channel(_world: &mut MailboxWorld) {
             // F tags use a high base so they never collide with C tags.
             let (tx, mut rx) = mailbox::bounded::<Probe>(64.max(c_len.max(1)));
             for i in 0..c_len {
-                tx.try_send(tagged_signal(i as u64)).expect("channel within cap");
+                tx.try_send(tagged_signal(i as u64))
+                    .expect("channel within cap");
             }
-            let batch: VecDeque<Sig> =
-                (0..f_len).map(|i| tagged_signal(1_000_000 + i as u64)).collect();
+            let batch: VecDeque<Sig> = (0..f_len)
+                .map(|i| tagged_signal(1_000_000 + i as u64))
+                .collect();
             push_front(&mut rx, batch);
 
             let mut got: Vec<u64> = Vec::new();
@@ -1258,7 +1292,10 @@ async fn law_close_drains_then_none(_world: &mut MailboxWorld) {
                 got.push(signal_tag(&sig).unwrap());
             }
             let expected: Vec<u64> = (0..k as u64).collect();
-            assert_eq!(got, expected, "buffered drains in order (bounded={bounded} k={k})");
+            assert_eq!(
+                got, expected,
+                "buffered drains in order (bounded={bounded} k={k})"
+            );
             assert!(rx.recv().await.is_none(), "terminal None after drain");
         }
     }
@@ -1277,7 +1314,11 @@ async fn law_post_close_send_returns_signal(_world: &mut MailboxWorld) {
         let res = tx.try_send(tagged_signal(4242));
         match res {
             Err(mpsc::error::TrySendError::Closed(sig)) => {
-                assert_eq!(signal_tag(&sig), Some(4242), "Closed carries the un-sent signal");
+                assert_eq!(
+                    signal_tag(&sig),
+                    Some(4242),
+                    "Closed carries the un-sent signal"
+                );
             }
             _ => panic!("post-close try_send must be Closed (bounded={bounded})"),
         }
@@ -1328,7 +1369,10 @@ async fn when_real_overlap(world: &mut MailboxWorld) {
         let mut sorted = received.clone();
         sorted.sort_unstable();
         expected.sort_unstable();
-        assert_eq!(sorted, expected, "every message received exactly once (P={p} k={k})");
+        assert_eq!(
+            sorted, expected,
+            "every message received exactly once (P={p} k={k})"
+        );
         // Per-sender FIFO within the received stream.
         for s in 0..p as u64 {
             assert_subsequence_strictly_increasing(&received, s);
@@ -1397,9 +1441,15 @@ async fn law_no_weak_upgrade_after_close(_world: &mut MailboxWorld) {
     // Once the last strong sender drops, every weak upgrade returns None.
     let (tx, _rx) = mailbox::bounded::<Probe>(8);
     let weak = tx.downgrade();
-    assert!(weak.upgrade().is_some(), "upgrade succeeds while strong alive");
+    assert!(
+        weak.upgrade().is_some(),
+        "upgrade succeeds while strong alive"
+    );
     drop(tx);
-    assert!(weak.upgrade().is_none(), "no upgrade after last strong dropped");
+    assert!(
+        weak.upgrade().is_none(),
+        "no upgrade after last strong dropped"
+    );
 }
 
 // ===========================================================================
@@ -1418,7 +1468,10 @@ fn assert_subsequence_strictly_increasing(received: &[u64], sender_id: u64) {
         if (lo..hi).contains(&tag) {
             let seq = tag - lo;
             if let Some(prev) = last {
-                assert!(seq > prev, "sender {sender_id} out of order: {prev} then {seq}");
+                assert!(
+                    seq > prev,
+                    "sender {sender_id} out of order: {prev} then {seq}"
+                );
             }
             last = Some(seq);
         }

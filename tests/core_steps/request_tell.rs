@@ -255,10 +255,7 @@ async fn fill_bounded1(actor: &ActorRef<Told>, release: watch::Receiver<bool>) {
 /// probe never enqueues anything. Panics loudly if the mailbox never fills.
 async fn assert_full(actor: &ActorRef<Told>) {
     for _ in 0..200 {
-        if matches!(
-            actor.tell(Msg).try_send(),
-            Err(SendError::MailboxFull(Msg))
-        ) {
+        if matches!(actor.tell(Msg).try_send(), Err(SendError::MailboxFull(Msg))) {
             return;
         }
         tokio::time::sleep(Duration::from_millis(5)).await;
@@ -639,7 +636,9 @@ async fn then_try_send_not_running(world: &mut TellWorld) {
     world.stopped_trio.push(true);
 }
 
-#[then(regex = r#"^"tell\(Msg\)\.blocking_send\(\)" also returns SendError::ActorNotRunning\(Msg\)$"#)]
+#[then(
+    regex = r#"^"tell\(Msg\)\.blocking_send\(\)" also returns SendError::ActorNotRunning\(Msg\)$"#
+)]
 async fn then_blocking_send_not_running(world: &mut TellWorld) {
     let actor = world.actor.as_ref().expect("actor spawned").clone();
     let r = tokio::task::spawn_blocking(move || actor.tell(Msg).blocking_send())
@@ -655,7 +654,9 @@ async fn then_blocking_send_not_running(world: &mut TellWorld) {
 
 // --- mailbox_timeout expiring → Timeout(Some(Sleep(100ms))) -----------------
 
-#[when(regex = r#"^the caller invokes "tell\(Sleep\(100ms\)\)\.mailbox_timeout\(50ms\)\.send\(\)"$"#)]
+#[when(
+    regex = r#"^the caller invokes "tell\(Sleep\(100ms\)\)\.mailbox_timeout\(50ms\)\.send\(\)"$"#
+)]
 async fn when_mailbox_timeout_sleep(world: &mut TellWorld) {
     let outcome = with_paused_full1(|actor| {
         Box::pin(async move {
@@ -687,13 +688,7 @@ async fn then_timeout_some_sleep(world: &mut TellWorld) {
 #[when(regex = r#"^the caller invokes "tell\(Msg\)\.mailbox_timeout\(0ms\)\.send\(\)"$"#)]
 async fn when_mailbox_timeout_zero(world: &mut TellWorld) {
     let outcome = with_paused_full1(|actor| {
-        Box::pin(async move {
-            actor
-                .tell(Msg)
-                .mailbox_timeout(Duration::ZERO)
-                .send()
-                .await
-        })
+        Box::pin(async move { actor.tell(Msg).mailbox_timeout(Duration::ZERO).send().await })
     })
     .await;
     world.timeout_some_msg = Some(matches!(outcome, Err(SendError::Timeout(Some(Msg)))));
@@ -764,11 +759,7 @@ async fn given_on_start_blocks(world: &mut TellWorld) {
 async fn when_tell_before_on_start(world: &mut TellWorld) {
     let log: Arc<Mutex<Vec<u64>>> = Arc::new(Mutex::new(Vec::new()));
     world.log = Some(Arc::clone(&log));
-    let gate = world
-        .release
-        .as_ref()
-        .expect("on_start gate")
-        .subscribe();
+    let gate = world.release.as_ref().expect("on_start gate").subscribe();
     // Spawn an actor whose on_start parks on the gate. An unbounded mailbox so the
     // pre-start tell is buffered without blocking on capacity while on_start waits.
     let actor = Blocker::spawn_with_mailbox(
@@ -825,7 +816,9 @@ async fn when_await_join_handle(_world: &mut TellWorld) {
     // Marker — see the awaiting Then.
 }
 
-#[then(regex = r"^the handle resolves to Ok\(\(\)\) and the message was delivered after the delay$")]
+#[then(
+    regex = r"^the handle resolves to Ok\(\(\)\) and the message was delivered after the delay$"
+)]
 async fn then_send_after_delivered_after_delay(world: &mut TellWorld) {
     let (handle_ok, delivered) = run_send_after(Duration::from_millis(50)).await;
     world.send_after_ok = Some(handle_ok);
@@ -851,8 +844,7 @@ async fn when_send_after_1s(_world: &mut TellWorld) {
 
 #[when(regex = r"^the caller aborts the returned JoinHandle before the delay elapses$")]
 async fn when_abort_before_delay(world: &mut TellWorld) {
-    let (delivered, cancelled) =
-        run_send_after_abort(Duration::from_secs(1)).await;
+    let (delivered, cancelled) = run_send_after_abort(Duration::from_secs(1)).await;
     world.send_after_not_delivered = Some(!delivered);
     world.send_after_cancelled = Some(cancelled);
 }
@@ -887,7 +879,11 @@ async fn then_send_after_zero_delivered(world: &mut TellWorld) {
     let (handle_ok, delivered) = run_send_after(Duration::ZERO).await;
     world.send_after_ok = Some(handle_ok);
     world.send_after_delivered = Some(delivered);
-    assert_eq!(world.send_after_ok, Some(true), "send_after(0) handle resolves Ok(())");
+    assert_eq!(
+        world.send_after_ok,
+        Some(true),
+        "send_after(0) handle resolves Ok(())"
+    );
     assert_eq!(
         world.send_after_delivered,
         Some(true),
@@ -937,7 +933,9 @@ async fn given_records_each_int(_world: &mut TellWorld) {
     // The `Num` handler records each integer; the actor is the bounded-8 actor.
 }
 
-#[when(regex = r#"^100 callers concurrently invoke "tell\(n\)\.try_send\(\)" with distinct integers under a barrier$"#)]
+#[when(
+    regex = r#"^100 callers concurrently invoke "tell\(n\)\.try_send\(\)" with distinct integers under a barrier$"#
+)]
 async fn when_100_concurrent_try_send(world: &mut TellWorld) {
     let actor = world.actor.as_ref().expect("actor spawned").clone();
     // Park every slot so the slot count is deterministic during the race, then
@@ -991,13 +989,24 @@ async fn then_ok_recorded_once(world: &mut TellWorld) {
     let log = world.log.as_ref().expect("log").lock().unwrap().clone();
     for i in &world.try_ok_ints {
         let count = log.iter().filter(|&&x| x == *i).count();
-        assert_eq!(count, 1, "Ok integer {i} must be recorded exactly once, got {count}");
+        assert_eq!(
+            count, 1,
+            "Ok integer {i} must be recorded exactly once, got {count}"
+        );
     }
 }
 
 #[then(regex = r"^every call that returned MailboxFull had its integer NOT recorded$")]
 async fn then_full_not_recorded(world: &mut TellWorld) {
-    let log: HashSet<u64> = world.log.as_ref().expect("log").lock().unwrap().iter().copied().collect();
+    let log: HashSet<u64> = world
+        .log
+        .as_ref()
+        .expect("log")
+        .lock()
+        .unwrap()
+        .iter()
+        .copied()
+        .collect();
     for i in &world.try_full_ints {
         assert!(
             !log.contains(i),
@@ -1026,7 +1035,9 @@ async fn given_records_after_delay(_world: &mut TellWorld) {
     // The `SlowNum` handler records each integer after a 1ms delay.
 }
 
-#[when(regex = r#"^20 callers concurrently invoke "tell\(n\)\.send\(\)" with distinct integers under a barrier$"#)]
+#[when(
+    regex = r#"^20 callers concurrently invoke "tell\(n\)\.send\(\)" with distinct integers under a barrier$"#
+)]
 async fn when_20_concurrent_send(world: &mut TellWorld) {
     let actor = world.actor.as_ref().expect("actor spawned").clone();
     let n = 20u64;
@@ -1038,7 +1049,11 @@ async fn when_20_concurrent_send(world: &mut TellWorld) {
             let barrier = Arc::clone(&barrier);
             tokio::spawn(async move {
                 barrier.wait().await;
-                actor.tell(SlowNum(i)).send().await.expect("bounded send delivers");
+                actor
+                    .tell(SlowNum(i))
+                    .send()
+                    .await
+                    .expect("bounded send delivers");
             })
         })
         .collect();
@@ -1055,7 +1070,10 @@ async fn then_every_int_recorded_once(world: &mut TellWorld) {
     let recorded = log.lock().unwrap().clone();
     for i in &world.sent_ints {
         let count = recorded.iter().filter(|&&x| x == *i).count();
-        assert_eq!(count, 1, "integer {i} must be recorded exactly once, got {count}");
+        assert_eq!(
+            count, 1,
+            "integer {i} must be recorded exactly once, got {count}"
+        );
     }
     assert_eq!(
         recorded.len(),
@@ -1097,9 +1115,16 @@ where
             // Occupy the single slot permanently: a parked Hold is dequeued into the
             // handler (freeing the slot), a second occupies the one buffer slot.
             let (_tx, rx) = watch::channel(false);
-            actor.tell(Hold(rx.clone())).send().await.expect("first hold");
+            actor
+                .tell(Hold(rx.clone()))
+                .send()
+                .await
+                .expect("first hold");
             tokio::time::sleep(Duration::from_millis(1)).await;
-            actor.tell(Hold(rx)).try_send().expect("second hold fills slot");
+            actor
+                .tell(Hold(rx))
+                .try_send()
+                .expect("second hold fills slot");
             let outcome = body(actor.clone()).await;
             actor.kill();
             outcome
@@ -1253,7 +1278,11 @@ async fn capture_self_tell() -> (bool, bool) {
                 mailbox::bounded(8),
             );
             actor.wait_for_startup().await;
-            actor.tell(SelfTell).send().await.expect("trigger self-tell");
+            actor
+                .tell(SelfTell)
+                .send()
+                .await
+                .expect("trigger self-tell");
             // Settle until the in-handler self-tell recorded its outcome.
             let mut ok = None;
             for _ in 0..400 {
@@ -1295,8 +1324,7 @@ where
         if visitor.0.contains("sending a `tell` request to itself")
             || visitor.0.contains("may lead to a deadlock")
         {
-            self.warned
-                .store(true, std::sync::atomic::Ordering::SeqCst);
+            self.warned.store(true, std::sync::atomic::Ordering::SeqCst);
         }
     }
 }
@@ -1362,7 +1390,9 @@ async fn law_given_k_buffered(_world: &mut TellWorld) {}
 #[when(regex = r#"^one more message is offered with "tell\(n\)\.try_send\(\)"$"#)]
 async fn law_when_offer_one_more(_world: &mut TellWorld) {}
 
-#[then(regex = r"^it returns Ok\(\(\)\) iff k < c and SendError::MailboxFull\(n\) iff k == c, with no waiting$")]
+#[then(
+    regex = r"^it returns Ok\(\(\)\) iff k < c and SendError::MailboxFull\(n\) iff k == c, with no waiting$"
+)]
 async fn law_try_send_predicate(_world: &mut TellWorld) {
     // GEN: c ∈ boundary-biased {1, 2, 64, 1024}; k ∈ {0, 1, c-1, c}. The actor is
     // held in a never-returning parked Hold handler so the buffered count is
@@ -1430,10 +1460,14 @@ fn distinct_sorted<const N: usize>(xs: [usize; N]) -> Vec<usize> {
 
 // -- @model @linearizability: Ok try_send recorded once; MailboxFull never ---
 
-#[given(regex = r"^a bounded mailbox of any capacity c whose handler records each integer it receives$")]
+#[given(
+    regex = r"^a bounded mailbox of any capacity c whose handler records each integer it receives$"
+)]
 async fn law_given_any_c_records(_world: &mut TellWorld) {}
 
-#[when(regex = r#"^N callers concurrently invoke "tell\(n\)\.try_send\(\)" with distinct integers under a barrier$"#)]
+#[when(
+    regex = r#"^N callers concurrently invoke "tell\(n\)\.try_send\(\)" with distinct integers under a barrier$"#
+)]
 async fn law_when_n_try_send(_world: &mut TellWorld) {}
 
 #[then(regex = r"^every call that returned Ok\(\(\)\) has its integer recorded exactly once$")]
@@ -1510,7 +1544,10 @@ async fn run_try_send_model(n: u64, c: usize) {
     // Each Ok integer recorded exactly once.
     for i in &ok_set {
         let count = recorded.iter().filter(|&&x| x == *i).count();
-        assert_eq!(count, 1, "N={n} c={c}: Ok integer {i} recorded {count} times");
+        assert_eq!(
+            count, 1,
+            "N={n} c={c}: Ok integer {i} recorded {count} times"
+        );
     }
     // No MailboxFull integer recorded.
     let recorded_set: HashSet<u64> = recorded.iter().copied().collect();
@@ -1530,13 +1567,19 @@ async fn run_try_send_model(n: u64, c: usize) {
 
 // -- @model @sequence: bounded send under backpressure delivers once ---------
 
-#[given(regex = r"^a bounded mailbox of any capacity c whose handler records each integer after a short delay$")]
+#[given(
+    regex = r"^a bounded mailbox of any capacity c whose handler records each integer after a short delay$"
+)]
 async fn law_given_any_c_records_slow(_world: &mut TellWorld) {}
 
-#[when(regex = r#"^N callers concurrently invoke "tell\(n\)\.send\(\)" with distinct integers under a barrier$"#)]
+#[when(
+    regex = r#"^N callers concurrently invoke "tell\(n\)\.send\(\)" with distinct integers under a barrier$"#
+)]
 async fn law_when_n_send(_world: &mut TellWorld) {}
 
-#[then(regex = r"^once all sends complete, every integer is recorded exactly once with none lost or duplicated$")]
+#[then(
+    regex = r"^once all sends complete, every integer is recorded exactly once with none lost or duplicated$"
+)]
 async fn law_model_send_exactly_once(_world: &mut TellWorld) {
     // GEN: N ∈ {1, 8, 64} (include N >> c); c ∈ {1, 2, 8}. send() backpressures on
     // a full bounded mailbox (tx.send) rather than dropping, so total delivery is
@@ -1561,7 +1604,11 @@ async fn run_send_backpressure_model(n: u64, c: usize) {
             let barrier = Arc::clone(&barrier);
             tokio::spawn(async move {
                 barrier.wait().await;
-                actor.tell(SlowNum(i)).send().await.expect("bounded send delivers");
+                actor
+                    .tell(SlowNum(i))
+                    .send()
+                    .await
+                    .expect("bounded send delivers");
             })
         })
         .collect();
@@ -1588,10 +1635,14 @@ async fn run_send_backpressure_model(n: u64, c: usize) {
 #[given(regex = r"^a bounded mailbox of capacity 100 and a handler that records each integer$")]
 async fn law_given_cap100_records(_world: &mut TellWorld) {}
 
-#[when(regex = r#"^the caller invokes "tell\(n\)\.send_after\(d\)" and then either awaits or aborts the JoinHandle at any point$"#)]
+#[when(
+    regex = r#"^the caller invokes "tell\(n\)\.send_after\(d\)" and then either awaits or aborts the JoinHandle at any point$"#
+)]
 async fn law_when_send_after_await_or_abort(_world: &mut TellWorld) {}
 
-#[then(regex = r"^if the handle is allowed to fire, n is delivered exactly once and the handle resolves Ok\(\(\)\)$")]
+#[then(
+    regex = r"^if the handle is allowed to fire, n is delivered exactly once and the handle resolves Ok\(\(\)\)$"
+)]
 async fn law_model_send_after_fires(_world: &mut TellWorld) {
     // GEN: d ∈ boundary-biased {ZERO, 1ms, 50ms, 1s}; for the fire case, never
     // abort. ORACLE: a one-shot model — fired ⇒ delivered-count == 1 and the
@@ -1603,12 +1654,20 @@ async fn law_model_send_after_fires(_world: &mut TellWorld) {
         Duration::from_secs(1),
     ] {
         let (handle_ok, delivered_count) = run_send_after_model_fire(d).await;
-        assert!(handle_ok, "d={d:?}: a fired send_after handle must resolve Ok(())");
-        assert_eq!(delivered_count, 1, "d={d:?}: a fired send_after delivers exactly once");
+        assert!(
+            handle_ok,
+            "d={d:?}: a fired send_after handle must resolve Ok(())"
+        );
+        assert_eq!(
+            delivered_count, 1,
+            "d={d:?}: a fired send_after delivers exactly once"
+        );
     }
 }
 
-#[then(regex = r"^if the handle is aborted before the delay elapses, n is never delivered and the await reports cancellation$")]
+#[then(
+    regex = r"^if the handle is aborted before the delay elapses, n is never delivered and the await reports cancellation$"
+)]
 async fn law_model_send_after_aborted(_world: &mut TellWorld) {
     // For each boundary d: abort BEFORE the delay elapses (synchronously, before
     // the clock advances). ORACLE: delivered-count == 0 and the await reports
@@ -1620,8 +1679,14 @@ async fn law_model_send_after_aborted(_world: &mut TellWorld) {
         Duration::from_secs(1),
     ] {
         let (delivered, cancelled) = run_send_after_abort(d).await;
-        assert!(!delivered, "d={d:?}: an aborted send_after must never deliver");
-        assert!(cancelled, "d={d:?}: awaiting an aborted handle must report cancellation");
+        assert!(
+            !delivered,
+            "d={d:?}: an aborted send_after must never deliver"
+        );
+        assert!(
+            cancelled,
+            "d={d:?}: awaiting an aborted handle must report cancellation"
+        );
     }
 }
 

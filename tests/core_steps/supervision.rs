@@ -52,10 +52,7 @@ use kameo::{
     error::{ActorStopReason, Infallible, PanicError, PanicReason},
     links::{ErasedChildSpec, NoRestartReason},
     prelude::*,
-    supervision::{
-        RestartPolicy, SupervisionStrategy,
-        testing::decision_spec,
-    },
+    supervision::{RestartPolicy, SupervisionStrategy, testing::decision_spec},
 };
 use tokio::sync::Barrier;
 
@@ -286,14 +283,12 @@ fn policy_of(s: &str) -> RestartPolicy {
 /// The reason an `exit_kind` produces, as the run loop would classify it.
 fn reason_of(exit_kind: &str) -> ActorStopReason {
     match exit_kind {
-        "panic" => ActorStopReason::Panicked(PanicError::new(
-            Box::new("boom"),
-            PanicReason::HandlerPanic,
-        )),
-        "error" => ActorStopReason::Panicked(PanicError::new(
-            Box::new("err"),
-            PanicReason::OnMessage,
-        )),
+        "panic" => {
+            ActorStopReason::Panicked(PanicError::new(Box::new("boom"), PanicReason::HandlerPanic))
+        }
+        "error" => {
+            ActorStopReason::Panicked(PanicError::new(Box::new("err"), PanicReason::OnMessage))
+        }
         "normal" => ActorStopReason::Normal,
         other => panic!("unknown exit kind {other}"),
     }
@@ -363,11 +358,16 @@ async fn when_child_panics_once(world: &mut SupervisionWorld) {
     if world.child.is_none() {
         let starts = Arc::new(AtomicU32::new(0));
         let sup = OneForOneSup::spawn(OneForOneSup);
-        let child = Child::supervise(&sup, Child { starts: starts.clone() })
-            .restart_policy(RestartPolicy::Permanent)
-            .restart_limit(5, Duration::from_secs(10))
-            .spawn()
-            .await;
+        let child = Child::supervise(
+            &sup,
+            Child {
+                starts: starts.clone(),
+            },
+        )
+        .restart_policy(RestartPolicy::Permanent)
+        .restart_limit(5, Duration::from_secs(10))
+        .spawn()
+        .await;
         settle(
             {
                 let s = starts.clone();
@@ -409,7 +409,10 @@ async fn then_on_start_runs_again(world: &mut SupervisionWorld) {
         "the restarted child is not alive",
     )
     .await;
-    assert!(child.is_alive(), "the child must be alive after the restart");
+    assert!(
+        child.is_alive(),
+        "the child must be alive after the restart"
+    );
     if let Some(s) = world.sup.take() {
         s.kill();
     }
@@ -423,11 +426,16 @@ async fn spawn_one_for_one(world: &mut SupervisionWorld, labels: &[&str]) {
     let sup = OneForOneSup::spawn(OneForOneSup);
     for label in labels {
         let starts = Arc::new(AtomicU32::new(0));
-        let child = Child::supervise(&sup, Child { starts: starts.clone() })
-            .restart_policy(RestartPolicy::Permanent)
-            .restart_limit(10, Duration::from_secs(30))
-            .spawn()
-            .await;
+        let child = Child::supervise(
+            &sup,
+            Child {
+                starts: starts.clone(),
+            },
+        )
+        .restart_policy(RestartPolicy::Permanent)
+        .restart_limit(10, Duration::from_secs(30))
+        .spawn()
+        .await;
         settle(
             {
                 let s = starts.clone();
@@ -445,11 +453,16 @@ async fn spawn_one_for_all(world: &mut SupervisionWorld, labels: &[&str]) {
     let sup = OneForAllSup::spawn(OneForAllSup);
     for label in labels {
         let starts = Arc::new(AtomicU32::new(0));
-        let child = Child::supervise(&sup, Child { starts: starts.clone() })
-            .restart_policy(RestartPolicy::Permanent)
-            .restart_limit(10, Duration::from_secs(30))
-            .spawn()
-            .await;
+        let child = Child::supervise(
+            &sup,
+            Child {
+                starts: starts.clone(),
+            },
+        )
+        .restart_policy(RestartPolicy::Permanent)
+        .restart_limit(10, Duration::from_secs(30))
+        .spawn()
+        .await;
         settle(
             {
                 let s = starts.clone();
@@ -467,11 +480,16 @@ async fn spawn_rest_for_one(world: &mut SupervisionWorld, labels: &[&str]) {
     let sup = RestForOneSup::spawn(RestForOneSup);
     for label in labels {
         let starts = Arc::new(AtomicU32::new(0));
-        let child = Child::supervise(&sup, Child { starts: starts.clone() })
-            .restart_policy(RestartPolicy::Permanent)
-            .restart_limit(10, Duration::from_secs(30))
-            .spawn()
-            .await;
+        let child = Child::supervise(
+            &sup,
+            Child {
+                starts: starts.clone(),
+            },
+        )
+        .restart_policy(RestartPolicy::Permanent)
+        .restart_limit(10, Duration::from_secs(30))
+        .spawn()
+        .await;
         settle(
             {
                 let s = starts.clone();
@@ -490,9 +508,7 @@ async fn given_ofo_two(world: &mut SupervisionWorld, c1: String, c2: String) {
     spawn_one_for_one(world, &[&c1, &c2]).await;
 }
 
-#[given(
-    regex = r#"^a "OneForAll" supervisor with children "([^"]+)", "([^"]+)" and "([^"]+)"$"#
-)]
+#[given(regex = r#"^a "OneForAll" supervisor with children "([^"]+)", "([^"]+)" and "([^"]+)"$"#)]
 async fn given_ofa_three(world: &mut SupervisionWorld, c1: String, c2: String, c3: String) {
     spawn_one_for_all(world, &[&c1, &c2, &c3]).await;
 }
@@ -526,7 +542,11 @@ async fn then_named_restarted(world: &mut SupervisionWorld, label: String) {
         &format!("child {label} was not restarted"),
     )
     .await;
-    assert_eq!(starts.load(Ordering::SeqCst), 2, "child {label} restarts exactly once");
+    assert_eq!(
+        starts.load(Ordering::SeqCst),
+        2,
+        "child {label} restarts exactly once"
+    );
 }
 
 #[then(regex = r#"^"([^"]+)" is not restarted$"#)]
@@ -542,9 +562,7 @@ async fn then_named_not_restarted(world: &mut SupervisionWorld, label: String) {
     .await;
 }
 
-#[then(
-    regex = r#"^"([^"]+)", "([^"]+)" and "([^"]+)" are all restarted exactly once$"#
-)]
+#[then(regex = r#"^"([^"]+)", "([^"]+)" and "([^"]+)" are all restarted exactly once$"#)]
 async fn then_three_all_restarted_once(
     world: &mut SupervisionWorld,
     c1: String,
@@ -676,18 +694,21 @@ async fn then_only_one_restarted(world: &mut SupervisionWorld, label: String) {
 // @lifecycle — restart-intensity limit (real actor + should_restart)
 // ===========================================================================
 
-#[given(
-    regex = r"^a supervised child with restart limit (\d+) restarts per (\d+) seconds$"
-)]
+#[given(regex = r"^a supervised child with restart limit (\d+) restarts per (\d+) seconds$")]
 async fn given_child_limit_secs(world: &mut SupervisionWorld, restarts: u32, secs: u64) {
     // Real supervised child for the behavioural "stops being restarted" scenario.
     let starts = Arc::new(AtomicU32::new(0));
     let sup = OneForOneSup::spawn(OneForOneSup);
-    let child = Child::supervise(&sup, Child { starts: starts.clone() })
-        .restart_policy(RestartPolicy::Permanent)
-        .restart_limit(restarts, Duration::from_secs(secs))
-        .spawn()
-        .await;
+    let child = Child::supervise(
+        &sup,
+        Child {
+            starts: starts.clone(),
+        },
+    )
+    .restart_policy(RestartPolicy::Permanent)
+    .restart_limit(restarts, Duration::from_secs(secs))
+    .spawn()
+    .await;
     settle(
         {
             let s = starts.clone();
@@ -740,7 +761,11 @@ async fn then_restarted_twice_not_thrice(world: &mut SupervisionWorld) {
         "child restarted more than twice (limit 2 not enforced)",
     )
     .await;
-    assert_eq!(starts.load(Ordering::SeqCst), 3, "1 start + exactly 2 restarts");
+    assert_eq!(
+        starts.load(Ordering::SeqCst),
+        3,
+        "1 start + exactly 2 restarts"
+    );
     if let Some(s) = world.sup.take() {
         s.kill();
     }
@@ -833,9 +858,7 @@ async fn then_last_restart_updated(world: &mut SupervisionWorld) {
 
 // --- window reset after elapse (deterministic Instant, no clock) -----------
 
-#[given(
-    regex = r"^a supervised child with restart limit (\d+) restarts per (\d+) milliseconds$"
-)]
+#[given(regex = r"^a supervised child with restart limit (\d+) restarts per (\d+) milliseconds$")]
 async fn given_child_limit_ms(world: &mut SupervisionWorld, restarts: u32, ms: u64) {
     world.spec = Some(decision_spec(
         RestartPolicy::Permanent,
@@ -895,7 +918,12 @@ async fn given_default_limit(world: &mut SupervisionWorld) {
     // Read the builder's configured limits WITHOUT calling restart_limit. The
     // builder is the SUT; its `new` sets max_restarts=5, restart_window=5s.
     let sup = OneForOneSup::spawn(OneForOneSup);
-    let builder = Child::supervise(&sup, Child { starts: Arc::new(AtomicU32::new(0)) });
+    let builder = Child::supervise(
+        &sup,
+        Child {
+            starts: Arc::new(AtomicU32::new(0)),
+        },
+    );
     world.builder_limits = Some(builder.restart_limits());
     world.sup = Some(AnySup::OneForOne(sup));
 }
@@ -977,9 +1005,7 @@ async fn then_child_not_restarted_boundary(world: &mut SupervisionWorld) {
 
 // --- restart_window ZERO (deterministic) -----------------------------------
 
-#[given(
-    regex = r"^a supervised child with restart limit (\d+) restart per (\d+) seconds$"
-)]
+#[given(regex = r"^a supervised child with restart limit (\d+) restart per (\d+) seconds$")]
 async fn given_child_limit_zero_window(world: &mut SupervisionWorld, restarts: u32, secs: u64) {
     world.spec = Some(decision_spec(
         RestartPolicy::Permanent,
@@ -1000,7 +1026,10 @@ async fn when_panic_restart_panic_zero_window(world: &mut SupervisionWorld) {
     spec.last_restart = Instant::now() - Duration::from_millis(1);
     let d2 = spec.should_restart(&reason_of("panic"));
     world.last_decision = Some(d2);
-    assert!(matches!(d1, ControlFlow::Continue(())), "first failure restarts");
+    assert!(
+        matches!(d1, ControlFlow::Continue(())),
+        "first failure restarts"
+    );
 }
 
 #[then(
@@ -1016,14 +1045,15 @@ async fn then_restarted_each_zero_window(world: &mut SupervisionWorld) {
         "ZERO window: each failure resets the count, so each one restarts"
     );
     let spec = world.spec.as_ref().expect("spec");
-    assert_eq!(spec.restart_count, 1, "count reset to 0 then incremented to 1");
+    assert_eq!(
+        spec.restart_count, 1,
+        "count reset to 0 then incremented to 1"
+    );
 }
 
 // --- restart_window MAX (deterministic) ------------------------------------
 
-#[given(
-    regex = r"^a supervised child with restart limit (\d+) restarts per Duration::MAX$"
-)]
+#[given(regex = r"^a supervised child with restart limit (\d+) restarts per Duration::MAX$")]
 async fn given_child_limit_max_window(world: &mut SupervisionWorld, restarts: u32) {
     world.spec = Some(decision_spec(
         RestartPolicy::Permanent,
@@ -1234,14 +1264,8 @@ async fn when_two_panic_concurrent(world: &mut SupervisionWorld, c1: String, c2:
     h2.await.expect("c2 panic task joins");
 }
 
-#[then(
-    regex = r#"^"([^"]+)" is restarted exactly once and "([^"]+)" is restarted exactly once$"#
-)]
-async fn then_each_restarted_exactly_once(
-    world: &mut SupervisionWorld,
-    c1: String,
-    c2: String,
-) {
+#[then(regex = r#"^"([^"]+)" is restarted exactly once and "([^"]+)" is restarted exactly once$"#)]
+async fn then_each_restarted_exactly_once(world: &mut SupervisionWorld, c1: String, c2: String) {
     for label in [&c1, &c2] {
         let starts = world.child_starts_of(label);
         settle(
@@ -1360,13 +1384,8 @@ async fn law_decision_predicate(_world: &mut SupervisionWorld) {
     ];
     for policy in policies {
         for reason in &reasons {
-            let mut spec = decision_spec(
-                policy,
-                0,
-                1000,
-                Duration::from_secs(3600),
-                Instant::now(),
-            );
+            let mut spec =
+                decision_spec(policy, 0, 1000, Duration::from_secs(3600), Instant::now());
             let got = spec.should_restart(reason);
             let expected_continue = policy != RestartPolicy::Never
                 && (matches!(reason, ActorStopReason::SupervisorRestart)
@@ -1433,11 +1452,16 @@ async fn run_strategy_trial(strat: &str, count: usize, failed: usize) -> BTreeSe
             let sup = $sup;
             for _ in 0..count {
                 let starts = Arc::new(AtomicU32::new(0));
-                let child = Child::supervise(&sup, Child { starts: starts.clone() })
-                    .restart_policy(RestartPolicy::Permanent)
-                    .restart_limit(10, Duration::from_secs(30))
-                    .spawn()
-                    .await;
+                let child = Child::supervise(
+                    &sup,
+                    Child {
+                        starts: starts.clone(),
+                    },
+                )
+                .restart_policy(RestartPolicy::Permanent)
+                .restart_limit(10, Duration::from_secs(30))
+                .spawn()
+                .await;
                 settle(
                     {
                         let s = starts.clone();
@@ -1459,7 +1483,11 @@ async fn run_strategy_trial(strat: &str, count: usize, failed: usize) -> BTreeSe
             };
             for &i in &expected {
                 let s = counters[i].clone();
-                settle(move || s.load(Ordering::SeqCst) >= 2, "expected restart missing").await;
+                settle(
+                    move || s.load(Ordering::SeqCst) >= 2,
+                    "expected restart missing",
+                )
+                .await;
             }
             // Give any spurious out-of-set restart time to manifest.
             tokio::time::sleep(NEGATIVE_BOUND).await;
@@ -1481,9 +1509,7 @@ async fn run_strategy_trial(strat: &str, count: usize, failed: usize) -> BTreeSe
 
 // -- @model @lifecycle @timing: sliding-window intensity counter -------------
 
-#[given(
-    regex = r"^a supervised child with any restart limit max over any restart_window w$"
-)]
+#[given(regex = r"^a supervised child with any restart limit max over any restart_window w$")]
 async fn given_any_limit_window(_world: &mut SupervisionWorld) {}
 
 #[when(
@@ -1516,13 +1542,7 @@ async fn law_intensity_window(_world: &mut SupervisionWorld) {
     ];
     for &max in &maxes {
         for &w in &windows {
-            let mut spec = decision_spec(
-                RestartPolicy::Permanent,
-                0,
-                max,
-                w,
-                Instant::now(),
-            );
+            let mut spec = decision_spec(RestartPolicy::Permanent, 0, max, w, Instant::now());
             // Reference model mirroring links.rs:248-261.
             let mut ref_count: u32 = 0;
             for burst in 0..12usize {
