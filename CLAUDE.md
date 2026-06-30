@@ -16,7 +16,13 @@ This project is **GitHub-project-cards-driven with test-driven development**. Do
 
 1. **Start from a card.** All work is scoped by GitHub issues ("cards") on the **Bombay** project board (project #4, owner `devrandom-labs`), organized into milestones M0→M7. Pick the next unblocked card; reference its number in branches, commits, and PRs.
 2. **Test first.** Every code change is test-driven — write the failing test, watch it fail, then implement to green. Use the `superpowers:test-driven-development` skill.
-3. **Every commit updates `README.md`.** Keep the README current with the change being committed and stage it alongside the code — never let it drift. Enforced by `.githooks/pre-commit`, which blocks any commit that doesn't stage a `README.md` change. Enable it once per clone (mirrors nexus): `git config core.hooksPath .githooks`. (The hook will also run `nix flake check` once the Nix harness lands — #60.)
+3. **Keep `README.md` a user-facing public-API document — maintain it per *card*, not per *commit*.** The README describes the public API and how to use/test it; card numbers, per-module test narratives, and internal progress never belong in it (those live in commits, PRs, and `docs/`). When you finish a card, *before the PR*, classify what it changed and update the README accordingly:
+   - **Public API changed** (new/renamed/removed public item, new feature flag, changed default behavior, new example) → update the relevant *"public API at a glance"* bullet and the usage example if user-visible. **This is the main case.**
+   - **No API change, tests/coverage moved** → update [`docs/testing/coverage-baseline.md`](docs/testing/coverage-baseline.md); the README only *links* to it and carries no coverage number (nothing to go stale).
+   - **No API change, no coverage change** (refactor / perf / robustness / bugfix) → if it makes the library meaningfully better, refresh **one** salient-feature line (what it now does *better*); otherwise no README change is needed.
+   - **Every ~10 cards, or when a section bloats / the README passes ~120 lines** → **consolidate**: re-tighten to the public-API essentials, fold or drop accumulated notes, remove anything stale.
+
+   Enable the tracked hooks once per clone (mirrors nexus): `git config core.hooksPath .githooks`. The `pre-commit` hook lints any staged GitHub Actions workflow; it no longer forces a per-commit README change (that mechanical rule is what bloated the README).
 4. **`nix flake check` is the single gate** (build + clippy + fmt + tests).
 5. **No Claude/Anthropic attribution** in commit messages or PR bodies (no `Co-Authored-By` trailer, no "Generated with" line).
 
