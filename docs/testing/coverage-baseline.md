@@ -11,10 +11,11 @@ nix build .#coverage-tarpaulin -L  # force tarpaulin (Linux only) -> result/tarp
 - **`coverage-llvm`** (crane `cargoLlvmCov`) — works on every system, region/branch accurate,
   instrumented by the version-matched `llvm-cov`/`llvm-profdata` from the toolchain's
   `llvm-tools` component (`rust-toolchain.toml`).
-- **`coverage-tarpaulin`** (crane `cargoTarpaulin`) — Linux-only (ptrace engine; no Darwin
-  support), so it is only exposed on Linux.
-- **`coverage`** switches by system — tarpaulin on Linux (CI is x86_64-linux), llvm-cov on
-  Darwin (local dev) — so the same command works everywhere.
+- **`coverage-tarpaulin`** (crane `cargoTarpaulin`) — Linux-only opt-in. NOTE: its ptrace
+  engine **hangs on this tokio-multi-threaded / async cucumber suite** (verified — the
+  post-merge run wedged 40+ min in the test phase), so it is exposed for completeness only.
+- **`coverage`** is **llvm-cov on every system** — the reliable engine that actually
+  completes here; it is what the merge workflow and the numbers below use.
 
 All run `cargo … test --workspace` with default features; non-gating (instrumentation
 recompiles the world — too slow for the per-push gate). `remote` (libp2p) is off by default, so

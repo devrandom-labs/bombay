@@ -48,12 +48,11 @@ jobs:
           purge-created: 0
           purge-primary-key: never
 
-      # Builds the system-default coverage engine (`.#coverage`): tarpaulin on
-      # this Linux runner, llvm-cov on Darwin. `-L` streams full logs. tarpaulin's
-      # ptrace engine can misbehave inside the nix build sandbox, so fall back to
-      # the always-works llvm-cov engine rather than break the post-merge report.
+      # `.#coverage` is the llvm-cov engine on every system (tarpaulin's ptrace
+      # engine hangs on this async cucumber suite — it is a Linux-only opt-in via
+      # `.#coverage-tarpaulin`). `-L` streams full logs.
       - name: Build coverage report
-        run: nix build .#coverage -L || nix build .#coverage-llvm -L
+        run: nix build .#coverage -L
 
       # Normalise either engine's output to `coverage-html/index.html`:
       # llvm-cov writes `result/html/`, tarpaulin writes `result/tarpaulin-report.html`.

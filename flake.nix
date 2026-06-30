@@ -164,10 +164,14 @@
         #     the `llvm-tools` toolchain component (rust-toolchain.toml).
         #     Output: $out/html/index.html.
         #   * coverage-tarpaulin — `cargoTarpaulin`; LINUX-ONLY (ptrace engine; no
-        #     Darwin support). Output: $out/tarpaulin-report.html.
+        #     Darwin support). Output: $out/tarpaulin-report.html. NOTE: tarpaulin's
+        #     ptrace engine hangs on this tokio-multi-threaded / async cucumber
+        #     suite (verified: the post-merge run wedged for 40+ min on the test
+        #     phase) — so it is a deliberate opt-in only, NOT the default.
         #
-        # `packages.coverage` switches by system: tarpaulin on Linux (CI runs
-        # x86_64-linux), llvm-cov on Darwin (local dev). `--workspace` covers
+        # `packages.coverage` is **llvm-cov on every system** — reliable and the
+        # one that actually completes here; `coverage-tarpaulin` stays exposed on
+        # Linux for anyone who wants the ptrace engine. `--workspace` covers
         # kameo + actors + console + macros; `remote` (libp2p, deleted in M1) is
         # off by default, so it is neither built nor counted. The `testing`
         # feature auto-enables via the self dev-dep, so the cucumber runners build.
@@ -186,7 +190,7 @@
           in
           {
             coverage-llvm = covLlvm;
-            coverage = if stdenv.isDarwin then covLlvm else covTarpaulin;
+            coverage = covLlvm;
           } // lib.optionalAttrs stdenv.isLinux {
             coverage-tarpaulin = covTarpaulin;
           };
