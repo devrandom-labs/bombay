@@ -1,4 +1,4 @@
-# Scope: kameo_actors `PubSub<M>` (actors/src/pubsub.rs) — a broadcast pub/sub actor.
+# Scope: bombay_actors `PubSub<M>` (actors/src/pubsub.rs) — a broadcast pub/sub actor.
 #        Subscribers are keyed by ActorId, each stored with a per-subscriber filter
 #        FnMut(&M) -> bool. publish(msg) clones the message to every subscriber whose
 #        filter returns true, under the configured DeliveryStrategy. Usable as a plain

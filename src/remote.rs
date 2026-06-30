@@ -23,7 +23,7 @@
 //! For quick prototyping and development:
 //!
 //! ```
-//! use kameo::remote;
+//! use bombay::remote;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -40,12 +40,12 @@
 //! For production deployments with custom configuration:
 //!
 //! ```no_run
-//! use kameo::remote;
+//! use bombay::remote;
 //! use libp2p::swarm::NetworkBehaviour;
 //!
 //! #[derive(NetworkBehaviour)]
 //! struct MyBehaviour {
-//!     kameo: remote::Behaviour,
+//!     bombay: remote::Behaviour,
 //!     // Add other libp2p behaviors as needed
 //! }
 //!
@@ -163,7 +163,7 @@ pub(crate) enum BoxRegisteredActorRef {
 /// ## Example with Derive
 ///
 /// ```
-/// use kameo::{Actor, RemoteActor};
+/// use bombay::{Actor, RemoteActor};
 ///
 /// #[derive(Actor, RemoteActor)]
 /// pub struct MyActor;
@@ -172,7 +172,7 @@ pub(crate) enum BoxRegisteredActorRef {
 /// ## Example Manual Implementation
 ///
 /// ```
-/// use kameo::remote::RemoteActor;
+/// use bombay::remote::RemoteActor;
 ///
 /// pub struct MyActor;
 ///
@@ -203,7 +203,7 @@ pub trait RemoteMessage<M> {
 /// - mDNS peer discovery (local network only)
 /// - Automatic listening on an OS-assigned port
 ///
-/// For production use or custom configuration, use `kameo::remote::Behaviour`
+/// For production use or custom configuration, use `bombay::remote::Behaviour`
 /// with your own libp2p swarm setup.
 ///
 /// # Example
@@ -227,7 +227,7 @@ pub fn bootstrap() -> Result<PeerId, Box<dyn error::Error>> {
 pub fn bootstrap_on(addr: &str) -> Result<PeerId, Box<dyn error::Error>> {
     #[derive(NetworkBehaviour)]
     struct BootstrapBehaviour {
-        kameo: Behaviour,
+        bombay: Behaviour,
         mdns: mdns::tokio::Behaviour,
     }
 
@@ -241,14 +241,14 @@ pub fn bootstrap_on(addr: &str) -> Result<PeerId, Box<dyn error::Error>> {
         .with_quic()
         .with_behaviour(|key| {
             let local_peer_id = key.public().to_peer_id();
-            let kameo = Behaviour::new(local_peer_id, messaging::Config::default());
+            let bombay = Behaviour::new(local_peer_id, messaging::Config::default());
             let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), local_peer_id)?;
 
-            Ok(BootstrapBehaviour { kameo, mdns })
+            Ok(BootstrapBehaviour { bombay, mdns })
         })?
         .build();
 
-    swarm.behaviour().kameo.try_init_global()?;
+    swarm.behaviour().bombay.try_init_global()?;
 
     swarm.listen_on(addr.parse()?)?;
 

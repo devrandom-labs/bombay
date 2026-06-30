@@ -13,14 +13,14 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
 
-use cucumber::{World, given, then, when};
-use kameo::console::wire::Message;
-use kameo_console::ConnectionState;
-use kameo_console::testing::{
+use bombay::console::wire::Message;
+use bombay_console::ConnectionState;
+use bombay_console::testing::{
     ActorCounters, ActorId, ActorSnapshot, ActorStatus, BACKOFF, Links, MailboxKind, MailboxStats,
     RefCounts, Snapshot, Totals, check_frame_len, connect_attempt, decode_frame,
     poll_loop_until_error, poll_once_over, poll_once_over_with_read_timeout,
 };
+use cucumber::{World, given, then, when};
 
 #[derive(Debug, World)]
 #[world(init = Self::new)]

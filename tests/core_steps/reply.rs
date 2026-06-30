@@ -23,7 +23,7 @@
 //!
 //! The bare `Forwarded(Ok(()))` / `Forwarded(Err(e))` STATES are produced in
 //! production only by the `pub(crate)` `ForwardedReply::new` (consumed by the
-//! dispatcher), so they are reached via the gated `kameo::reply::testing::forwarded`
+//! dispatcher), so they are reached via the gated `bombay::reply::testing::forwarded`
 //! constructor (added under the `testing` feature for exactly this).
 //!
 //! Every assertion is the SPECIFIC value confirmed in the scenario's
@@ -38,12 +38,12 @@ use std::{
     },
 };
 
-use cucumber::{World, given, then, when};
-use kameo::{
+use bombay::{
     error::{BoxSendError, Infallible, SendError},
     prelude::*,
     reply::{DelegatedReply, ForwardedReply, Reply, testing::forwarded},
 };
+use cucumber::{World, given, then, when};
 use proptest::prelude::*;
 use tokio::sync::Barrier;
 

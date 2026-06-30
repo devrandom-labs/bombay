@@ -15,13 +15,13 @@
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
-use cucumber::{World, given, then, when};
-use kameo_console::testing::{
+use bombay_console::testing::{
     ActorCounters, ActorId, ActorSnapshot, ActorStatus, Links, MailboxKind, MailboxStats,
     RefCounts, Snapshot, Totals, WaitEdge, WaitKind, actor_rate, backpressure_style, braille,
     centered_rect, color_rgb, detect_deadlocks, fmt_ago, fmt_short, fmt_uptime, mailbox_bar,
     short_type_name, spark_height, sparkline_line,
 };
+use cucumber::{World, given, then, when};
 use proptest::prelude::*;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};

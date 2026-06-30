@@ -1,4 +1,4 @@
-# Scope: kameo_actors `Scheduler` (actors/src/scheduler.rs) — an actor that owns a
+# Scope: bombay_actors `Scheduler` (actors/src/scheduler.rs) — an actor that owns a
 #        tokio JoinSet of background timer tasks. `SetTimeout<A,M>` fires a single
 #        `tell(msg)` to a (weak) actor after a deadline; `SetInterval<A,T>` fires
 #        `tell(msg.clone())` repeatedly at a period. Both handlers return a tokio

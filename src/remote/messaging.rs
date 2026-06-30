@@ -58,7 +58,7 @@ use super::_internal::{
     REMOTE_ACTORS, REMOTE_MESSAGES, RemoteActorFns, RemoteMessageFns, RemoteMessageRegistrationID,
 };
 
-const PROTO_NAME: StreamProtocol = StreamProtocol::new("/kameo/messaging/1.0.0");
+const PROTO_NAME: StreamProtocol = StreamProtocol::new("/bombay/messaging/1.0.0");
 
 static REMOTE_ACTORS_MAP: LazyLock<HashMap<&'static str, RemoteActorFns>> = LazyLock::new(|| {
     let mut existing_ids = HashSet::new();
@@ -410,7 +410,7 @@ impl<Req, Resp> From<Config> for request_response::cbor::codec::Codec<Req, Resp>
     }
 }
 
-/// `Behaviour` is a `NetworkBehaviour` that implements the kameo messaging behaviour
+/// `Behaviour` is a `NetworkBehaviour` that implements the bombay messaging behaviour
 /// on top of the request response protocol.
 #[allow(missing_debug_implementations)]
 pub struct Behaviour {

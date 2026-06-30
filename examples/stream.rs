@@ -1,7 +1,7 @@
 use std::time::Duration;
 
+use bombay::{error::Infallible, message::StreamMessage, prelude::*};
 use futures::stream;
-use kameo::{error::Infallible, message::StreamMessage, prelude::*};
 use tokio_stream::StreamExt;
 
 #[derive(Default)]

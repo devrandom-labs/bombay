@@ -1,4 +1,4 @@
-# Phase 2 — laws for kameo_actors `MessageQueue` (actors/src/message_queue.rs), layered on
+# Phase 2 — laws for bombay_actors `MessageQueue` (actors/src/message_queue.rs), layered on
 # tests/features/actors/message_queue.feature's examples.
 #
 # Conventions (see docs/testing/properties.md):

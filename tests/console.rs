@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use kameo::{
+use bombay::{
     console::{
         Console,
         wire::{ActorStatus, Message as WireMessage, RestartPolicy},
@@ -35,7 +35,7 @@ impl Message<Hi> for Echo {
     async fn handle(&mut self, _: Hi, _: &mut Context<Self, Self::Reply>) -> Self::Reply {}
 }
 
-async fn request_snapshot(addr: std::net::SocketAddr) -> kameo::console::wire::Snapshot {
+async fn request_snapshot(addr: std::net::SocketAddr) -> bombay::console::wire::Snapshot {
     let mut stream = TcpStream::connect(addr).await.unwrap();
     stream.write_all(&[0]).await.unwrap();
 
@@ -56,7 +56,7 @@ async fn serves_live_snapshot_over_tcp() {
     actor.wait_for_startup().await;
     actor.ask(Hi).await.unwrap();
 
-    let console = kameo::console::serve("127.0.0.1:0").await.unwrap();
+    let console = bombay::console::serve("127.0.0.1:0").await.unwrap();
     let snapshot = request_snapshot(console.local_addr()).await;
 
     let echo = snapshot
@@ -154,7 +154,7 @@ async fn deadlock_shows_as_a_wait_for_cycle() {
     a.tell(Tangle).await.unwrap();
     tokio::time::sleep(Duration::from_millis(200)).await;
 
-    let console = kameo::console::serve("127.0.0.1:0").await.unwrap();
+    let console = bombay::console::serve("127.0.0.1:0").await.unwrap();
     let snapshot = request_snapshot(console.local_addr()).await;
 
     let edge = |id: u64| {
@@ -199,7 +199,7 @@ async fn handler_activity_is_reported_while_handling() {
     });
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let console = kameo::console::serve("127.0.0.1:0").await.unwrap();
+    let console = bombay::console::serve("127.0.0.1:0").await.unwrap();
     let snapshot = request_snapshot(console.local_addr()).await;
 
     let echo = snapshot.actors.iter().find(|a| a.id.0 == id).unwrap();
@@ -230,7 +230,7 @@ async fn supervised_restart_increments_restarts() {
     let _ = child.tell(Boom).await;
     tokio::time::sleep(Duration::from_millis(200)).await;
 
-    let console = kameo::console::serve("127.0.0.1:0").await.unwrap();
+    let console = bombay::console::serve("127.0.0.1:0").await.unwrap();
     let snapshot = request_snapshot(console.local_addr()).await;
 
     let child = snapshot
@@ -261,7 +261,7 @@ async fn message_types_and_supervision_are_reported() {
     child.ask(Hi).await.unwrap();
     child.ask(Hi).await.unwrap();
 
-    let console = kameo::console::serve("127.0.0.1:0").await.unwrap();
+    let console = bombay::console::serve("127.0.0.1:0").await.unwrap();
     let snapshot = request_snapshot(console.local_addr()).await;
     let child = snapshot.actors.iter().find(|a| a.id.0 == id).unwrap();
 

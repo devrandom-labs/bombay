@@ -1,7 +1,7 @@
 use std::time::Duration;
 
+use bombay::prelude::*;
 use futures::{StreamExt, TryStreamExt};
-use kameo::prelude::*;
 use libp2p::{
     PeerId, mdns, noise,
     swarm::{NetworkBehaviour, SwarmEvent},
@@ -40,7 +40,7 @@ impl Message<Inc> for MyActor {
 #[derive(NetworkBehaviour)]
 struct MyBehaviour {
     // Kameo remote actor capabilities
-    kameo: remote::Behaviour,
+    bombay: remote::Behaviour,
     // mDNS for local peer discovery
     mdns: mdns::tokio::Behaviour,
     // You could add other behaviours here:
@@ -71,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let local_peer_id = key.public().to_peer_id();
 
             // Create Kameo behaviour with custom messaging config
-            let kameo = remote::Behaviour::new(
+            let bombay = remote::Behaviour::new(
                 local_peer_id,
                 remote::messaging::Config::default()
                     .with_request_timeout(Duration::from_secs(30))
@@ -81,7 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Create mDNS behaviour for local discovery
             let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), local_peer_id)?;
 
-            Ok(MyBehaviour { kameo, mdns })
+            Ok(MyBehaviour { bombay, mdns })
         })?
         .with_swarm_config(|c| {
             c.with_idle_connection_timeout(Duration::from_secs(300)) // Custom timeout
@@ -89,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build();
 
     // Initialize the global Kameo swarm
-    swarm.behaviour().kameo.init_global();
+    swarm.behaviour().bombay.init_global();
 
     // Listen on specific addresses - you have full control
     swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;

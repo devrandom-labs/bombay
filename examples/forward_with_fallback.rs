@@ -1,4 +1,4 @@
-use kameo::{error::Infallible, prelude::*};
+use bombay::{error::Infallible, prelude::*};
 
 #[derive(Debug)]
 struct ComputeRequest {

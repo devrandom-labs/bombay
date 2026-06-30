@@ -15,7 +15,7 @@
 
 @core @actors @actor_lifecycle @phase2
 Feature: Actor lifecycle — laws over hook decisions, startup replay, and spawn variants
-  As a developer spawning kameo actors
+  As a developer spawning bombay actors
   I want the documented stop/continue decisions and startup ordering to hold for ALL inputs
   So that no reason, message sequence, or mailbox shape breaks lifecycle determinism
 

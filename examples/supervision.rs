@@ -1,6 +1,6 @@
 use std::{ops::ControlFlow, time::Duration};
 
-use kameo::{error::Infallible, prelude::*, supervision::SupervisionStrategy};
+use bombay::{error::Infallible, prelude::*, supervision::SupervisionStrategy};
 use tracing::{Level, info};
 
 #[derive(Default)]

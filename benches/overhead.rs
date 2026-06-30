@@ -1,5 +1,5 @@
+use bombay::prelude::*;
 use criterion::{Criterion, criterion_group, criterion_main};
-use kameo::prelude::*;
 use tokio::runtime::Builder;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;

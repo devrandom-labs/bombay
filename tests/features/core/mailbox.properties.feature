@@ -13,7 +13,7 @@
 
 @core @mailbox @phase2
 Feature: MessageQueue mailbox — laws over capacity, ordering, and closure
-  As the kameo runtime relying on the mailbox
+  As the bombay runtime relying on the mailbox
   I want FIFO, backpressure, and closure to hold for ALL capacities and op sequences
   So that no input shape silently violates the queue contract
 

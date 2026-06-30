@@ -1,6 +1,6 @@
-//! Defines error handling constructs for kameo.
+//! Defines error handling constructs for bombay.
 //!
-//! This module centralizes error types used throughout kameo, encapsulating common failure scenarios encountered
+//! This module centralizes error types used throughout bombay, encapsulating common failure scenarios encountered
 //! in actor lifecycle management, message passing, and actor interaction. It simplifies error handling by providing
 //! a consistent set of errors that can occur in the operation of actors and their communications.
 
@@ -50,7 +50,7 @@ fn default_panic_hook(err: &PanicError) {
 /// # Example
 ///
 /// ```
-/// use kameo::error::{set_actor_error_hook, PanicError};
+/// use bombay::error::{set_actor_error_hook, PanicError};
 ///
 /// // Define a custom error hook
 /// fn my_custom_hook(err: &PanicError) {
@@ -663,7 +663,7 @@ impl<'de> Deserialize<'de> for PanicError {
 
 /// Describes the cause of an actor panic or fatal error.
 ///
-/// In kameo, several error conditions are treated as panics, triggering the
+/// In bombay, several error conditions are treated as panics, triggering the
 /// [`on_panic`](crate::actor::Actor::on_panic) lifecycle hook and potentially
 /// stopping the actor.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -706,7 +706,7 @@ impl PanicReason {
     /// # Example
     ///
     /// ```rust
-    /// use kameo::error::PanicReason;
+    /// use bombay::error::PanicReason;
     ///
     /// assert!(PanicReason::OnStart.is_lifecycle_hook());
     /// assert!(!PanicReason::HandlerPanic.is_lifecycle_hook());
@@ -729,7 +729,7 @@ impl PanicReason {
     /// # Example
     ///
     /// ```rust
-    /// use kameo::error::PanicReason;
+    /// use bombay::error::PanicReason;
     ///
     /// assert!(PanicReason::HandlerPanic.is_message_processing());
     /// assert!(PanicReason::OnMessage.is_message_processing());

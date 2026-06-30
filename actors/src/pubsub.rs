@@ -17,8 +17,8 @@
 //! # Example
 //!
 //! ```
-//! use kameo::prelude::*;
-//! use kameo_actors::{
+//! use bombay::prelude::*;
+//! use bombay_actors::{
 //!     DeliveryStrategy,
 //!     pubsub::{PubSub, Publish, Subscribe},
 //! };
@@ -49,8 +49,8 @@
 
 use std::{collections::HashMap, time::Duration};
 
+use bombay::{error::Infallible, prelude::*};
 use futures::future::BoxFuture;
-use kameo::{error::Infallible, prelude::*};
 
 use crate::DeliveryStrategy;
 
@@ -88,7 +88,7 @@ impl<M> PubSub<M> {
     /// # Example
     ///
     /// ```
-    /// use kameo_actors::{DeliveryStrategy, pubsub::PubSub};
+    /// use bombay_actors::{DeliveryStrategy, pubsub::PubSub};
     ///
     /// #[derive(Clone)]
     /// struct Msg(String);
@@ -155,8 +155,8 @@ impl<M> PubSub<M> {
     /// # Example
     ///
     /// ```
-    /// # use kameo::prelude::*;
-    /// use kameo_actors::{
+    /// # use bombay::prelude::*;
+    /// use bombay_actors::{
     ///     DeliveryStrategy,
     ///     pubsub::PubSub,
     /// };
@@ -199,8 +199,8 @@ impl<M> PubSub<M> {
     /// # Example
     ///
     /// ```
-    /// # use kameo::prelude::*;
-    /// use kameo_actors::{
+    /// # use bombay::prelude::*;
+    /// use bombay_actors::{
     ///     DeliveryStrategy,
     ///     pubsub::PubSub,
     /// };

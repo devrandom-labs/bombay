@@ -1,4 +1,4 @@
-//! Cucumber harness for the `kameo_console` TUI helpers' laws.
+//! Cucumber harness for the `bombay_console` TUI helpers' laws.
 //!
 //! Mirrors `tui_bdd.rs` (a STANDARD libtest test, no `harness = false`, so
 //! `cargo nextest --list` can enumerate it) but points at the laws file

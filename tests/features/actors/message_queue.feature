@@ -1,6 +1,6 @@
 # EXEMPLAR FEATURE — sets the authoring standard for every other .feature file.
 #
-# Scope: kameo_actors `MessageQueue` (actors/src/message_queue.rs) — an in-process
+# Scope: bombay_actors `MessageQueue` (actors/src/message_queue.rs) — an in-process
 #        AMQP-style broker actor: exchanges (Direct/Topic/Fanout/Headers), queues,
 #        bindings, consumers, BasicPublish routing.
 #

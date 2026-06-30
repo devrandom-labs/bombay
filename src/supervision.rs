@@ -20,9 +20,9 @@
 //!
 //! ```no_run
 //! use std::time::Duration;
-//! use kameo::actor::{Actor, ActorRef, Spawn};
-//! use kameo::error::Infallible;
-//! use kameo::supervision::{RestartPolicy, SupervisionStrategy};
+//! use bombay::actor::{Actor, ActorRef, Spawn};
+//! use bombay::error::Infallible;
+//! use bombay::supervision::{RestartPolicy, SupervisionStrategy};
 //!
 //! struct Supervisor;
 //! impl Actor for Supervisor {
@@ -107,9 +107,9 @@ use crate::{
 ///
 /// ```no_run
 /// use std::time::Duration;
-/// use kameo::actor::{Actor, ActorRef, Spawn};
-/// use kameo::supervision::RestartPolicy;
-/// # use kameo::error::Infallible;
+/// use bombay::actor::{Actor, ActorRef, Spawn};
+/// use bombay::supervision::RestartPolicy;
+/// # use bombay::error::Infallible;
 /// #
 /// # struct Supervisor;
 /// # impl Actor for Supervisor {
@@ -209,9 +209,9 @@ pub enum RestartPolicy {
 /// # Examples
 ///
 /// ```no_run
-/// use kameo::actor::{Actor, ActorRef};
-/// use kameo::error::Infallible;
-/// use kameo::supervision::SupervisionStrategy;
+/// use bombay::actor::{Actor, ActorRef};
+/// use bombay::error::Infallible;
+/// use bombay::supervision::SupervisionStrategy;
 ///
 /// struct Supervisor;
 /// impl Actor for Supervisor {
@@ -311,9 +311,9 @@ pub enum SupervisionStrategy {
 ///
 /// ```no_run
 /// use std::time::Duration;
-/// use kameo::actor::{Actor, ActorRef, Spawn};
-/// use kameo::error::Infallible;
-/// use kameo::supervision::RestartPolicy;
+/// use bombay::actor::{Actor, ActorRef, Spawn};
+/// use bombay::error::Infallible;
+/// use bombay::supervision::RestartPolicy;
 ///
 /// # struct Supervisor;
 /// # impl Actor for Supervisor {
@@ -390,9 +390,9 @@ impl<'a, S: Actor, C: Actor> SupervisedActorBuilder<'a, S, C> {
     /// # Examples
     ///
     /// ```no_run
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
-    /// use kameo::supervision::RestartPolicy;
-    /// # use kameo::error::Infallible;
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::supervision::RestartPolicy;
+    /// # use bombay::error::Infallible;
     /// # #[derive(Clone)] struct Worker;
     /// # impl Actor for Worker {
     /// #     type Args = Self;
@@ -434,8 +434,8 @@ impl<'a, S: Actor, C: Actor> SupervisedActorBuilder<'a, S, C> {
     ///
     /// ```no_run
     /// use std::time::Duration;
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
-    /// # use kameo::error::Infallible;
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
+    /// # use bombay::error::Infallible;
     /// # #[derive(Clone)] struct Worker;
     /// # impl Actor for Worker {
     /// #     type Args = Self;
@@ -487,8 +487,8 @@ impl<'a, S: Actor, C: Actor> SupervisedActorBuilder<'a, S, C> {
     /// # Examples
     ///
     /// ```no_run
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
-    /// # use kameo::error::Infallible;
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
+    /// # use bombay::error::Infallible;
     /// # #[derive(Clone)] struct Worker;
     /// # impl Actor for Worker {
     /// #     type Args = Self;
@@ -528,9 +528,9 @@ impl<'a, S: Actor, C: Actor> SupervisedActorBuilder<'a, S, C> {
     /// # Examples
     ///
     /// ```no_run
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
-    /// use kameo::mailbox;
-    /// # use kameo::error::Infallible;
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::mailbox;
+    /// # use bombay::error::Infallible;
     /// # #[derive(Clone)] struct Worker;
     /// # impl Actor for Worker {
     /// #     type Args = Self;
@@ -570,8 +570,8 @@ impl<'a, S: Actor, C: Actor> SupervisedActorBuilder<'a, S, C> {
     /// # Examples
     ///
     /// ```no_run
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
-    /// # use kameo::error::Infallible;
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
+    /// # use bombay::error::Infallible;
     /// # #[derive(Clone)] struct BlockingWorker;
     /// # impl Actor for BlockingWorker {
     /// #     type Args = Self;
@@ -612,9 +612,9 @@ impl<'a, S: Actor, C: Actor> SupervisedActorBuilder<'a, S, C> {
     /// # Examples
     ///
     /// ```no_run
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
-    /// use kameo::mailbox;
-    /// # use kameo::error::Infallible;
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::mailbox;
+    /// # use bombay::error::Infallible;
     /// # #[derive(Clone)] struct BlockingWorker;
     /// # impl Actor for BlockingWorker {
     /// #     type Args = Self;

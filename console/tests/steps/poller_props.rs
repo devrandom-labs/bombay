@@ -18,12 +18,12 @@ use std::io;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
-use cucumber::{World, given, then, when};
-use kameo::console::wire::Message;
-use kameo_console::testing::{
+use bombay::console::wire::Message;
+use bombay_console::testing::{
     ActorCounters, ActorId, ActorSnapshot, ActorStatus, Links, MAX_FRAME_BYTES, MailboxKind,
     MailboxStats, RefCounts, Snapshot, Totals, check_frame_len, decode_frame,
 };
+use cucumber::{World, given, then, when};
 use proptest::prelude::*;
 
 /// A unit world: proptest carries its own per-case state, so no per-scenario

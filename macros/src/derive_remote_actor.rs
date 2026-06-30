@@ -30,61 +30,61 @@ impl ToTokens for DeriveRemoteActor {
 
         tokens.extend(quote! {
             #[automatically_derived]
-            impl #impl_generics ::kameo::remote::RemoteActor for #ident #ty_generics #where_clause {
+            impl #impl_generics ::bombay::remote::RemoteActor for #ident #ty_generics #where_clause {
                 const REMOTE_ID: &'static str = #id;
             }
 
             const _: () = {
-                #[::kameo::remote::_internal::linkme::distributed_slice(
-                    ::kameo::remote::_internal::REMOTE_ACTORS
+                #[::bombay::remote::_internal::linkme::distributed_slice(
+                    ::bombay::remote::_internal::REMOTE_ACTORS
                 )]
-                #[linkme(crate = ::kameo::remote::_internal::linkme)]
+                #[linkme(crate = ::bombay::remote::_internal::linkme)]
                 static REG: (
                     &'static str,
-                    ::kameo::remote::_internal::RemoteActorFns,
+                    ::bombay::remote::_internal::RemoteActorFns,
                 ) = (
-                    <#ident #ty_generics as ::kameo::remote::RemoteActor>::REMOTE_ID,
-                    ::kameo::remote::_internal::RemoteActorFns {
+                    <#ident #ty_generics as ::bombay::remote::RemoteActor>::REMOTE_ID,
+                    ::bombay::remote::_internal::RemoteActorFns {
                         link: (
                             |
-                              actor_id: ::kameo::actor::ActorId,
-                              sibling_id: ::kameo::actor::ActorId,
+                              actor_id: ::bombay::actor::ActorId,
+                              sibling_id: ::bombay::actor::ActorId,
                               sibling_remote_id: ::std::borrow::Cow<'static, str>,
                             | {
-                                ::std::boxed::Box::pin(::kameo::remote::_internal::link::<
+                                ::std::boxed::Box::pin(::bombay::remote::_internal::link::<
                                     #ident #ty_generics,
                                 >(
                                     actor_id,
                                     sibling_id,
                                     sibling_remote_id,
                                 ))
-                            }) as ::kameo::remote::_internal::RemoteLinkFn,
+                            }) as ::bombay::remote::_internal::RemoteLinkFn,
                         unlink: (
                             |
-                              actor_id: ::kameo::actor::ActorId,
-                              sibling_id: ::kameo::actor::ActorId,
+                              actor_id: ::bombay::actor::ActorId,
+                              sibling_id: ::bombay::actor::ActorId,
                             | {
-                                ::std::boxed::Box::pin(::kameo::remote::_internal::unlink::<
+                                ::std::boxed::Box::pin(::bombay::remote::_internal::unlink::<
                                     #ident #ty_generics,
                                 >(
                                     actor_id,
                                     sibling_id,
                                 ))
-                            }) as ::kameo::remote::_internal::RemoteUnlinkFn,
+                            }) as ::bombay::remote::_internal::RemoteUnlinkFn,
                         signal_link_died: (
                             |
-                              dead_actor_id: ::kameo::actor::ActorId,
-                              notified_actor_id: ::kameo::actor::ActorId,
-                              stop_reason: kameo::error::ActorStopReason,
+                              dead_actor_id: ::bombay::actor::ActorId,
+                              notified_actor_id: ::bombay::actor::ActorId,
+                              stop_reason: bombay::error::ActorStopReason,
                             | {
-                                ::std::boxed::Box::pin(::kameo::remote::_internal::signal_link_died::<
+                                ::std::boxed::Box::pin(::bombay::remote::_internal::signal_link_died::<
                                     #ident #ty_generics,
                                 >(
                                     dead_actor_id,
                                     notified_actor_id,
                                     stop_reason,
                                 ))
-                            }) as ::kameo::remote::_internal::RemoteSignalLinkDiedFn,
+                            }) as ::bombay::remote::_internal::RemoteSignalLinkDiedFn,
                     },
                 );
             };

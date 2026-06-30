@@ -31,7 +31,7 @@ pub mod supervision;
 
 pub use actor::Actor;
 #[cfg(feature = "macros")]
-pub use kameo_macros::{Actor, RemoteActor, Reply, messages, remote_message};
+pub use bombay_macros::{Actor, RemoteActor, Reply, messages, remote_message};
 pub use reply::Reply;
 
 #[cfg(all(feature = "otel", not(feature = "tracing")))]
@@ -40,14 +40,14 @@ compile_error!("the `otel` feature requires the `tracing` feature to be enabled"
 /// Commonly used types and functions that can be imported with a single use statement.
 ///
 /// ```
-/// use kameo::prelude::*;
+/// use bombay::prelude::*;
 /// ```
 ///
 /// This module includes the most essential actor components, messaging types,
 /// and traits needed for typical actor system usage.
 pub mod prelude {
     #[cfg(feature = "macros")]
-    pub use kameo_macros::{Actor, RemoteActor, Reply, messages, remote_message};
+    pub use bombay_macros::{Actor, RemoteActor, Reply, messages, remote_message};
 
     #[cfg(feature = "remote")]
     pub use crate::actor::RemoteActorRef;

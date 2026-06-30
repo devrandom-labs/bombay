@@ -1,4 +1,4 @@
-# Scope: kameo core ActorId (src/actor/id.rs) — generate() uniqueness via an
+# Scope: bombay core ActorId (src/actor/id.rs) — generate() uniqueness via an
 #        atomic counter, byte serialization round-trips, the too-short decode
 #        error, equality/hash/ordering. Behaviour differs by the `remote`
 #        feature: without it, ActorId is just a u64 sequence_id; with it, a

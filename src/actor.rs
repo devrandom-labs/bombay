@@ -59,7 +59,7 @@ pub(crate) const DEFAULT_MAILBOX_CAPACITY: usize = 64;
 /// # Example with Derive
 ///
 /// ```
-/// use kameo::Actor;
+/// use bombay::Actor;
 ///
 /// #[derive(Actor)]
 /// struct MyActor;
@@ -68,8 +68,8 @@ pub(crate) const DEFAULT_MAILBOX_CAPACITY: usize = 64;
 /// # Example Override Behaviour
 ///
 /// ```
-/// use kameo::actor::{Actor, ActorRef, WeakActorRef};
-/// use kameo::error::{ActorStopReason, Infallible};
+/// use bombay::actor::{Actor, ActorRef, WeakActorRef};
+/// use bombay::error::{ActorStopReason, Infallible};
 ///
 /// struct MyActor;
 ///
@@ -154,9 +154,9 @@ pub trait Actor: Sized + Send + 'static {
     /// # Examples
     ///
     /// ```
-    /// use kameo::actor::{Actor, ActorRef};
-    /// use kameo::error::Infallible;
-    /// use kameo::supervision::SupervisionStrategy;
+    /// use bombay::actor::{Actor, ActorRef};
+    /// use bombay::error::Infallible;
+    /// use bombay::supervision::SupervisionStrategy;
     ///
     /// struct Supervisor;
     ///
@@ -196,8 +196,8 @@ pub trait Actor: Sized + Send + 'static {
     /// # Example
     ///
     /// ```rust
-    /// # use kameo::actor::{Actor, ActorRef};
-    /// # use kameo::error::Infallible;
+    /// # use bombay::actor::{Actor, ActorRef};
+    /// # use bombay::error::Infallible;
     /// #
     /// struct MyActor;
     ///
@@ -324,7 +324,7 @@ pub trait Actor: Sized + Send + 'static {
     ///
     /// This allows the actor to perform any necessary cleanup or release resources before being fully stopped.
     ///
-    /// The error returned by this method will be unwrapped by kameo, causing a panic in the tokio task or
+    /// The error returned by this method will be unwrapped by bombay, causing a panic in the tokio task or
     /// thread running the actor.
     #[allow(unused_variables)]
     #[inline]
@@ -373,8 +373,8 @@ pub trait Actor: Sized + Send + 'static {
 /// ## Basic Spawning
 ///
 /// ```
-/// use kameo::Actor;
-/// use kameo::actor::Spawn;
+/// use bombay::Actor;
+/// use bombay::actor::Spawn;
 ///
 /// #[derive(Actor)]
 /// struct Counter {
@@ -390,8 +390,8 @@ pub trait Actor: Sized + Send + 'static {
 /// ## Default Spawning
 ///
 /// ```
-/// use kameo::Actor;
-/// use kameo::actor::Spawn;
+/// use bombay::Actor;
+/// use bombay::actor::Spawn;
 ///
 /// #[derive(Actor, Default)]
 /// struct Counter {
@@ -407,9 +407,9 @@ pub trait Actor: Sized + Send + 'static {
 /// ## Custom Mailbox
 ///
 /// ```
-/// use kameo::Actor;
-/// use kameo::actor::Spawn;
-/// use kameo::mailbox;
+/// use bombay::Actor;
+/// use bombay::actor::Spawn;
+/// use bombay::mailbox;
 ///
 /// #[derive(Actor)]
 /// struct HighThroughput;
@@ -427,8 +427,8 @@ pub trait Actor: Sized + Send + 'static {
 ///
 /// ```no_run
 /// use std::fs::File;
-/// use kameo::Actor;
-/// use kameo::actor::Spawn;
+/// use bombay::Actor;
+/// use bombay::actor::Spawn;
 ///
 /// #[derive(Actor)]
 /// struct FileWriter {
@@ -444,8 +444,8 @@ pub trait Actor: Sized + Send + 'static {
 /// ## Supervision
 ///
 /// ```
-/// use kameo::Actor;
-/// use kameo::actor::Spawn;
+/// use bombay::Actor;
+/// use bombay::actor::Spawn;
 ///
 /// #[derive(Actor)]
 /// struct Supervisor;
@@ -483,8 +483,8 @@ pub trait Spawn: Actor + private::Sealed {
     /// # Example
     ///
     /// ```
-    /// use kameo::Actor;
-    /// use kameo::actor::Spawn;
+    /// use bombay::Actor;
+    /// use bombay::actor::Spawn;
     ///
     /// #[derive(Actor)]
     /// struct MyActor;
@@ -513,8 +513,8 @@ pub trait Spawn: Actor + private::Sealed {
     /// # Example
     ///
     /// ```
-    /// use kameo::Actor;
-    /// use kameo::actor::Spawn;
+    /// use bombay::Actor;
+    /// use bombay::actor::Spawn;
     ///
     /// #[derive(Actor, Default)]
     /// struct MyActor {
@@ -547,9 +547,9 @@ pub trait Spawn: Actor + private::Sealed {
     /// # Example
     ///
     /// ```
-    /// use kameo::Actor;
-    /// use kameo::actor::Spawn;
-    /// use kameo::mailbox;
+    /// use bombay::Actor;
+    /// use bombay::actor::Spawn;
+    /// use bombay::mailbox;
     ///
     /// #[derive(Actor)]
     /// struct MyActor;
@@ -583,8 +583,8 @@ pub trait Spawn: Actor + private::Sealed {
     /// # Example
     ///
     /// ```
-    /// use kameo::Actor;
-    /// use kameo::actor::Spawn;
+    /// use bombay::Actor;
+    /// use bombay::actor::Spawn;
     ///
     /// #[derive(Actor)]
     /// struct FooActor;
@@ -620,9 +620,9 @@ pub trait Spawn: Actor + private::Sealed {
     /// # Example
     ///
     /// ```
-    /// use kameo::Actor;
-    /// use kameo::actor::Spawn;
-    /// use kameo::mailbox;
+    /// use bombay::Actor;
+    /// use bombay::actor::Spawn;
+    /// use bombay::mailbox;
     ///
     /// #[derive(Actor)]
     /// struct FooActor;
@@ -668,9 +668,9 @@ pub trait Spawn: Actor + private::Sealed {
     /// use std::io::{self, Write};
     /// use std::fs::File;
     ///
-    /// use kameo::Actor;
-    /// use kameo::actor::Spawn;
-    /// use kameo::message::{Context, Message};
+    /// use bombay::Actor;
+    /// use bombay::actor::Spawn;
+    /// use bombay::message::{Context, Message};
     ///
     /// #[derive(Actor)]
     /// struct MyActor {
@@ -690,7 +690,7 @@ pub trait Spawn: Actor + private::Sealed {
     ///     MyActor { file: File::create("output.txt").unwrap() }
     /// );
     /// actor_ref.tell(Flush).blocking_send()?;
-    /// # Ok::<(), kameo::error::SendError<Flush>>(())
+    /// # Ok::<(), bombay::error::SendError<Flush>>(())
     /// ```
     ///
     /// This function is useful for actors that require or benefit from running blocking operations while still
@@ -710,10 +710,10 @@ pub trait Spawn: Actor + private::Sealed {
     /// use std::io::{self, Write};
     /// use std::fs::File;
     ///
-    /// use kameo::Actor;
-    /// use kameo::actor::Spawn;
-    /// use kameo::mailbox;
-    /// use kameo::message::{Context, Message};
+    /// use bombay::Actor;
+    /// use bombay::actor::Spawn;
+    /// use bombay::mailbox;
+    /// use bombay::message::{Context, Message};
     ///
     /// #[derive(Actor)]
     /// struct MyActor {
@@ -734,7 +734,7 @@ pub trait Spawn: Actor + private::Sealed {
     ///     mailbox::bounded(100)
     /// );
     /// actor_ref.tell(Flush).blocking_send()?;
-    /// # Ok::<(), kameo::error::SendError<Flush>>(())
+    /// # Ok::<(), bombay::error::SendError<Flush>>(())
     /// ```
     fn spawn_in_thread_with_mailbox(
         args: Self::Args,
@@ -751,8 +751,8 @@ pub trait Spawn: Actor + private::Sealed {
     /// # Example
     ///
     /// ```
-    /// use kameo::Actor;
-    /// use kameo::actor::Spawn;
+    /// use bombay::Actor;
+    /// use bombay::actor::Spawn;
     ///
     /// #[derive(Actor)]
     /// struct MyActor;
@@ -777,9 +777,9 @@ pub trait Spawn: Actor + private::Sealed {
     /// # Example
     ///
     /// ```
-    /// use kameo::Actor;
-    /// use kameo::actor::Spawn;
-    /// use kameo::mailbox;
+    /// use bombay::Actor;
+    /// use bombay::actor::Spawn;
+    /// use bombay::mailbox;
     ///
     ///  #[derive(Actor)]
     ///  struct MyActor;
@@ -825,9 +825,9 @@ pub trait Spawn: Actor + private::Sealed {
     ///
     /// ```no_run
     /// use std::time::Duration;
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
-    /// use kameo::error::Infallible;
-    /// use kameo::supervision::{RestartPolicy, SupervisionStrategy};
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::error::Infallible;
+    /// use bombay::supervision::{RestartPolicy, SupervisionStrategy};
     ///
     /// struct Supervisor;
     /// impl Actor for Supervisor {
@@ -903,9 +903,9 @@ pub trait Spawn: Actor + private::Sealed {
     ///
     /// ```no_run
     /// use std::time::Duration;
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
-    /// use kameo::error::Infallible;
-    /// use kameo::supervision::RestartPolicy;
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::error::Infallible;
+    /// use bombay::supervision::RestartPolicy;
     ///
     /// struct Supervisor;
     /// impl Actor for Supervisor {

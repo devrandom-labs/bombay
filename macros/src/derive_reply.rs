@@ -16,9 +16,9 @@ impl ToTokens for DeriveReply {
 
         tokens.extend(quote! {
             #[automatically_derived]
-            impl #impl_generics ::kameo::Reply for #ident #ty_generics #where_clause {
+            impl #impl_generics ::bombay::Reply for #ident #ty_generics #where_clause {
                 type Ok = Self;
-                type Error = ::kameo::error::Infallible;
+                type Error = ::bombay::error::Infallible;
                 type Value = Self;
 
                 #[inline]
@@ -27,7 +27,7 @@ impl ToTokens for DeriveReply {
                 }
 
                 #[inline]
-                fn into_any_err(self) -> ::std::option::Option<::std::boxed::Box<dyn ::kameo::reply::ReplyError>> {
+                fn into_any_err(self) -> ::std::option::Option<::std::boxed::Box<dyn ::bombay::reply::ReplyError>> {
                     ::std::option::Option::None
                 }
 

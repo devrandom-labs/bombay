@@ -17,9 +17,9 @@
 //! ```
 //! use std::collections::HashMap;
 //!
-//! use kameo::prelude::*;
-//! use kameo_actors::DeliveryStrategy;
-//! use kameo_actors::message_queue::{
+//! use bombay::prelude::*;
+//! use bombay_actors::DeliveryStrategy;
+//! use bombay_actors::message_queue::{
 //!     BasicConsume, BasicPublish, ExchangeDeclare, ExchangeType, MessageQueue, QueueBind,
 //!     QueueDeclare,
 //! };
@@ -87,8 +87,8 @@ use std::{
     collections::{HashMap, HashSet, hash_map::Entry},
 };
 
+use bombay::prelude::*;
 use glob::{MatchOptions, Pattern};
-use kameo::prelude::*;
 
 use crate::DeliveryStrategy;
 

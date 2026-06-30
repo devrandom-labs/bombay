@@ -1,4 +1,4 @@
-# Scope: kameo_actors `Broker<M>` (actors/src/broker.rs) — a topic-based pub/sub
+# Scope: bombay_actors `Broker<M>` (actors/src/broker.rs) — a topic-based pub/sub
 #        actor. Subscriptions are keyed by a `glob::Pattern`; a `Publish { topic }`
 #        carries a concrete topic String matched against every subscribed pattern with
 #        MatchOptions { case_sensitive: true, require_literal_separator: true,

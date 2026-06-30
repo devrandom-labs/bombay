@@ -5,7 +5,7 @@
 //!   * `core_actor_lifecycle_bdd.rs`       — the example feature (actor_lifecycle.feature)
 //!   * `core_actor_lifecycle_props_bdd.rs` — the property laws (actor_lifecycle.properties.feature)
 //!
-//! This module exercises the kameo core actor lifecycle SUT with REAL SPAWNED
+//! This module exercises the bombay core actor lifecycle SUT with REAL SPAWNED
 //! ACTORS: the `Actor` trait's lifecycle hooks (`on_start` / `on_panic` /
 //! `on_link_died` / `on_stop`), the run-loop in `run_actor_lifecycle`, the
 //! startup-buffer replay in `ActorBehaviour`, and the `Spawn` extension trait's
@@ -25,7 +25,7 @@
 //! inferred from `wait_for_shutdown()` (which returns when the mailbox closes,
 //! BEFORE `on_stop` and the shutdown-result are recorded).
 //!
-//! All public API is reached through `kameo::prelude::*` + `kameo::actor::*`;
+//! All public API is reached through `bombay::prelude::*` + `bombay::actor::*`;
 //! no `src/` change is needed.
 
 use std::{
@@ -35,13 +35,13 @@ use std::{
     time::Duration,
 };
 
-use cucumber::{World, given, then, when};
-use kameo::{
+use bombay::{
     actor::{ActorId, WeakActorRef},
     error::{ActorStopReason, HookError, Infallible, PanicError, PanicReason, SendError},
     mailbox,
     prelude::*,
 };
+use cucumber::{World, given, then, when};
 use tokio::sync::{Barrier, watch};
 
 // ===========================================================================
@@ -1543,7 +1543,7 @@ async fn law_on_panic_break_panicked(_world: &mut LifecycleWorld) {
     let (a, _log, _tx) = spawn_recorder(Vec::new());
     _tx.send(true).ok();
     a.wait_for_startup().await;
-    let cases: Vec<(Box<dyn kameo::reply::ReplyError>, &str)> = vec![
+    let cases: Vec<(Box<dyn bombay::reply::ReplyError>, &str)> = vec![
         (Box::new("static boom"), "static boom"),
         (Box::new(String::from("string boom")), "string boom"),
     ];

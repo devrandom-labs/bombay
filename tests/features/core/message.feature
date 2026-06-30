@@ -1,4 +1,4 @@
-# Scope: kameo core message handling (src/message.rs) — the `Message` trait handler,
+# Scope: bombay core message handling (src/message.rs) — the `Message` trait handler,
 #        the `Context<A, R>` passed to handlers (actor_ref, reply channel, stop flag),
 #        `reply_sender`/`reply`/`spawn`/`forward`/`try_forward`/`blocking_forward`,
 #        `StreamMessage`, and the `DynMessage::handle_dyn` dispatch that routes a
@@ -161,7 +161,7 @@ Feature: Message — sequential handler dispatch, context, forwarding, and reply
     # forwards once a slot frees. Actual — AskRequest::blocking_forward calls tokio
     # `tx.blocking_send(signal)` (ask.rs:461), which PANICS ("Cannot block the
     # current thread from within a runtime") whenever called from an async context,
-    # and every kameo handler runs on a tokio runtime worker — so calling
+    # and every bombay handler runs on a tokio runtime worker — so calling
     # ctx.blocking_forward from a handler always panics. Stays red until the API
     # guards the misuse-in-async or the scenario is re-specified.
 

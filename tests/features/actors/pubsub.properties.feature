@@ -1,4 +1,4 @@
-# Phase 2 — laws for kameo_actors `PubSub<M>` (actors/src/pubsub.rs), layered on
+# Phase 2 — laws for bombay_actors `PubSub<M>` (actors/src/pubsub.rs), layered on
 # tests/features/actors/pubsub.feature's examples.
 #
 # Conventions (see docs/testing/properties.md):

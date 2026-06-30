@@ -1,4 +1,4 @@
-//! Cucumber harness for the `kameo_console` TUI helpers.
+//! Cucumber harness for the `bombay_console` TUI helpers.
 //!
 //! cucumber 0.23's `harness = false` + libtest-writer path does NOT implement
 //! `cargo nextest`'s `--list` test-enumeration protocol (its `Cli` has no

@@ -1,4 +1,4 @@
-# Scope: kameo_actors `ActorPool` (actors/src/pool.rs) — a supervisor actor that owns a
+# Scope: bombay_actors `ActorPool` (actors/src/pool.rs) — a supervisor actor that owns a
 #        fixed set of worker actors and load-balances `Dispatch<M>` across them
 #        (least-connections by `Arc::weak_count` of a per-worker load counter), fans
 #        `Broadcast<M>` to all workers, and replaces dead workers in place on link death.

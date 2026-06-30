@@ -1,4 +1,4 @@
-# Scope: kameo core `AskRequest` (src/request/ask.rs + src/request.rs) — the
+# Scope: bombay core `AskRequest` (src/request/ask.rs + src/request.rs) — the
 #        request-with-reply builder: ask(M) → optional mailbox_timeout /
 #        reply_timeout → send / try_send / blocking_send / enqueue / try_enqueue /
 #        blocking_enqueue / forward / try_forward / blocking_forward / IntoFuture.

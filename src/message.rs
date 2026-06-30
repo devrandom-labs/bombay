@@ -131,10 +131,10 @@ where
     /// - The [ReplySender], if not `None`, should be used by the delegated responder to send the actual reply.
     ///
     /// ```
-    /// use kameo::message::{Context, Message};
-    /// use kameo::reply::DelegatedReply;
+    /// use bombay::message::{Context, Message};
+    /// use bombay::reply::DelegatedReply;
     ///
-    /// # #[derive(kameo::Actor)]
+    /// # #[derive(bombay::Actor)]
     /// # struct MyActor;
     /// #
     /// struct Msg;
@@ -191,7 +191,7 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use kameo::prelude::*;
+    /// use bombay::prelude::*;
     ///
     /// #[derive(Actor)]
     /// struct MyActor;

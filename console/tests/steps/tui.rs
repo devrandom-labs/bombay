@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
-use cucumber::{World, given, then, when};
-use kameo_console::testing::{
+use bombay_console::testing::{
     ActorCounters, ActorId, ActorSnapshot, ActorStatus, HandlerActivity, Links, MailboxKind,
     MailboxStats, RefCounts, Snapshot, SortCol, Totals, WaitEdge, WaitKind,
 };
+use cucumber::{World, given, then, when};
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::Line;
@@ -132,7 +132,7 @@ fn parse_status(s: &str) -> (ActorStatus, Option<HandlerActivity>) {
 
 #[when(regex = r"^fmt_short is called with (\d+) milliseconds$")]
 async fn when_fmt_short(world: &mut TuiWorld, millis: u64) {
-    world.last_string = kameo_console::testing::fmt_short(Duration::from_millis(millis));
+    world.last_string = bombay_console::testing::fmt_short(Duration::from_millis(millis));
 }
 
 // ---------------------------------------------------------------------------
@@ -141,7 +141,7 @@ async fn when_fmt_short(world: &mut TuiWorld, millis: u64) {
 
 #[when(regex = r"^fmt_ago is called with (\d+) seconds$")]
 async fn when_fmt_ago(world: &mut TuiWorld, secs: u64) {
-    world.last_string = kameo_console::testing::fmt_ago(Duration::from_secs(secs));
+    world.last_string = bombay_console::testing::fmt_ago(Duration::from_secs(secs));
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +150,7 @@ async fn when_fmt_ago(world: &mut TuiWorld, secs: u64) {
 
 #[when(regex = r"^fmt_uptime is called with (\d+) seconds$")]
 async fn when_fmt_uptime(world: &mut TuiWorld, secs: u64) {
-    world.last_string = kameo_console::testing::fmt_uptime(Duration::from_secs(secs));
+    world.last_string = bombay_console::testing::fmt_uptime(Duration::from_secs(secs));
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +159,7 @@ async fn when_fmt_uptime(world: &mut TuiWorld, secs: u64) {
 
 #[when(regex = r#"^short_type_name is called with "(.*)"$"#)]
 async fn when_short_type_name(world: &mut TuiWorld, input: String) {
-    world.last_string = kameo_console::testing::short_type_name(&input).to_string();
+    world.last_string = bombay_console::testing::short_type_name(&input).to_string();
 }
 
 // ---------------------------------------------------------------------------
@@ -168,7 +168,7 @@ async fn when_short_type_name(world: &mut TuiWorld, input: String) {
 
 #[when(regex = r"^spark_height is called with value (\d+) and max (\d+)$")]
 async fn when_spark_height(world: &mut TuiWorld, value: u64, max: u64) {
-    world.last_u64 = u64::from(kameo_console::testing::spark_height(value, max));
+    world.last_u64 = u64::from(bombay_console::testing::spark_height(value, max));
 }
 
 // ---------------------------------------------------------------------------
@@ -177,7 +177,7 @@ async fn when_spark_height(world: &mut TuiWorld, value: u64, max: u64) {
 
 #[when(regex = r"^braille is called with left (\d+) and right (\d+)$")]
 async fn when_braille(world: &mut TuiWorld, left: u8, right: u8) {
-    world.last_char = kameo_console::testing::braille(left, right);
+    world.last_char = bombay_console::testing::braille(left, right);
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +192,7 @@ async fn given_color_rgb(world: &mut TuiWorld, r: u8, g: u8, b: u8) {
 #[when(regex = r"^fade_toward_bg is called with factor (\d+\.\d+)$")]
 async fn when_fade_toward_bg(world: &mut TuiWorld, factor: f32) {
     let color = world.color.expect("color set in Given step");
-    let result = kameo_console::testing::fade_toward_bg(color, factor);
+    let result = bombay_console::testing::fade_toward_bg(color, factor);
     if let Color::Rgb(r, g, b) = result {
         world.last_rgb = (r, g, b);
     } else {
@@ -206,7 +206,7 @@ async fn when_fade_toward_bg(world: &mut TuiWorld, factor: f32) {
 
 #[when(regex = r"^color_rgb is called with (.+)$")]
 async fn when_color_rgb(world: &mut TuiWorld, color: String) {
-    world.last_rgb = kameo_console::testing::color_rgb(parse_color(&color));
+    world.last_rgb = bombay_console::testing::color_rgb(parse_color(&color));
 }
 
 // ---------------------------------------------------------------------------
@@ -225,7 +225,7 @@ async fn given_area(world: &mut TuiWorld, ax: u16, ay: u16, aw: u16, ah: u16) {
 
 #[when(regex = r"^centered_rect is requested at (\d+)x(\d+)$")]
 async fn when_centered_rect(world: &mut TuiWorld, w: u16, h: u16) {
-    world.last_rect = kameo_console::testing::centered_rect(world.area, w, h);
+    world.last_rect = bombay_console::testing::centered_rect(world.area, w, h);
 }
 
 // ---------------------------------------------------------------------------
@@ -234,7 +234,7 @@ async fn when_centered_rect(world: &mut TuiWorld, w: u16, h: u16) {
 
 #[when(regex = r"^backpressure_style is called with len (\d+) and capacity (\d+)$")]
 async fn when_backpressure_style(world: &mut TuiWorld, len: usize, cap: usize) {
-    world.last_style = kameo_console::testing::backpressure_style(len, cap);
+    world.last_style = bombay_console::testing::backpressure_style(len, cap);
 }
 
 // ---------------------------------------------------------------------------
@@ -243,7 +243,7 @@ async fn when_backpressure_style(world: &mut TuiWorld, len: usize, cap: usize) {
 
 #[when(regex = r"^mailbox_bar is called with len (\d+) and capacity (\d+)$")]
 async fn when_mailbox_bar(world: &mut TuiWorld, len: usize, cap: usize) {
-    let (text, style) = kameo_console::testing::mailbox_bar(len, cap);
+    let (text, style) = bombay_console::testing::mailbox_bar(len, cap);
     world.last_string = text;
     world.last_style = style;
     world.mb_len = len;
@@ -277,7 +277,7 @@ async fn when_rate_context(world: &mut TuiWorld) {
         .as_ref()
         .expect("current snapshot set");
     let prev = world.prev_snapshot.as_ref();
-    let (prev_received, dt) = kameo_console::testing::rate_context(current, prev);
+    let (prev_received, dt) = bombay_console::testing::rate_context(current, prev);
     world.prev_received = prev_received;
     world.dt = dt;
 }
@@ -320,7 +320,7 @@ async fn given_prev_received_count(world: &mut TuiWorld, prev: u64) {
 async fn when_actor_rate(world: &mut TuiWorld, dt_str: String) {
     let dt = parse_dt(dt_str.trim());
     let actor = world.actor.as_ref().expect("actor set");
-    world.last_u64 = kameo_console::testing::actor_rate(actor, &world.prev_received, dt);
+    world.last_u64 = bombay_console::testing::actor_rate(actor, &world.prev_received, dt);
 }
 
 #[given(regex = r"^an actor present in this snapshot but absent from the previous one$")]
@@ -332,7 +332,7 @@ async fn given_actor_absent_from_prev(world: &mut TuiWorld) {
 #[when(regex = r"^actor_rate is called with a 1s dt$")]
 async fn when_actor_rate_1s_dt(world: &mut TuiWorld) {
     let actor = world.actor.as_ref().expect("actor set");
-    world.last_u64 = kameo_console::testing::actor_rate(
+    world.last_u64 = bombay_console::testing::actor_rate(
         actor,
         &world.prev_received,
         Some(Duration::from_secs(1)),
@@ -355,7 +355,7 @@ async fn given_actor_status(world: &mut TuiWorld, status_str: String) {
 #[when(regex = r"^severity is computed$")]
 async fn when_severity(world: &mut TuiWorld) {
     let actor = world.actor.as_ref().expect("actor set");
-    world.last_u64 = u64::from(kameo_console::testing::severity(actor));
+    world.last_u64 = u64::from(bombay_console::testing::severity(actor));
 }
 
 // ---------------------------------------------------------------------------
@@ -374,7 +374,7 @@ async fn given_two_actors_equal_mailbox(world: &mut TuiWorld, id_a: u64, id_b: u
 #[when(regex = r"^compare is called for SortCol::Mailbox$")]
 async fn when_compare_mailbox(world: &mut TuiWorld) {
     let (a, b) = world.two.as_ref().expect("two actors set");
-    let ord = kameo_console::testing::compare(a, b, SortCol::Mailbox, &HashMap::new(), None);
+    let ord = bombay_console::testing::compare(a, b, SortCol::Mailbox, &HashMap::new(), None);
     world.ordered_first_id = if ord.is_le() { a.id.0 } else { b.id.0 };
 }
 
@@ -382,7 +382,7 @@ async fn when_compare_mailbox(world: &mut TuiWorld) {
 async fn when_sort_actors_mailbox_desc(world: &mut TuiWorld) {
     let (a, b) = world.two.as_ref().expect("two actors set");
     let mut v = vec![a, b];
-    kameo_console::testing::sort_actors(&mut v, SortCol::Mailbox, true, &HashMap::new(), None);
+    bombay_console::testing::sort_actors(&mut v, SortCol::Mailbox, true, &HashMap::new(), None);
     world.ordered_first_id = v[0].id.0;
 }
 
@@ -459,7 +459,7 @@ async fn then_text_is(world: &mut TuiWorld, expected: String) {
 
 #[then(regex = r"^the style matches backpressure_style for the same len and capacity$")]
 async fn then_style_matches_backpressure(world: &mut TuiWorld) {
-    let expected = kameo_console::testing::backpressure_style(world.mb_len, world.mb_cap);
+    let expected = bombay_console::testing::backpressure_style(world.mb_len, world.mb_cap);
     assert_eq!(world.last_style, expected);
 }
 
@@ -486,7 +486,7 @@ fn spark_height_oracle(value: u64, max: u64) -> u8 {
 
 #[when(regex = r"^sparkline_line is called with no samples, max (\d+) and width (\d+)$")]
 async fn when_sparkline_no_samples(world: &mut TuiWorld, max: u64, width: usize) {
-    world.last_line = Some(kameo_console::testing::sparkline_line(&[], max, width));
+    world.last_line = Some(bombay_console::testing::sparkline_line(&[], max, width));
 }
 
 #[then(regex = r"^the line has exactly (\d+) braille cells$")]
@@ -528,7 +528,7 @@ async fn given_more_than_18_samples(world: &mut TuiWorld) {
 async fn when_sparkline_called_with_busiest_max(world: &mut TuiWorld) {
     let samples = world.sparkline_samples.clone();
     let max = *samples.iter().max().expect("non-empty samples");
-    world.last_line = Some(kameo_console::testing::sparkline_line(&samples, max, 9));
+    world.last_line = Some(bombay_console::testing::sparkline_line(&samples, max, 9));
 }
 
 #[then(regex = r"^only the most recent 18 samples are shown \(2 per cell\)$")]
@@ -578,7 +578,7 @@ async fn given_width9_only_recent_nonzero(world: &mut TuiWorld) {
 async fn when_line_is_built(world: &mut TuiWorld) {
     let samples = world.sparkline_samples.clone();
     let max = *samples.iter().max().expect("non-empty samples");
-    world.last_line = Some(kameo_console::testing::sparkline_line(&samples, max, 9));
+    world.last_line = Some(bombay_console::testing::sparkline_line(&samples, max, 9));
 }
 
 #[then(regex = r"^the rightmost cell is drawn in the active \(cyan\) color$")]
@@ -627,7 +627,7 @@ fn waiting(mut a: ActorSnapshot, target: u64) -> ActorSnapshot {
 #[given(regex = r"^a snapshot where no actor has a waiting_on edge$")]
 async fn given_no_waiting_on(world: &mut TuiWorld) {
     let snap = make_snapshot(vec![make_actor(1), make_actor(2), make_actor(3)]);
-    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+    world.cycles = bombay_console::testing::detect_deadlocks(&snap);
 }
 
 #[given(regex = r"^actors A→B→C where C waits on nothing$")]
@@ -637,19 +637,19 @@ async fn given_chain_a_b_c(world: &mut TuiWorld) {
         waiting(make_actor(2), 3),
         make_actor(3),
     ]);
-    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+    world.cycles = bombay_console::testing::detect_deadlocks(&snap);
 }
 
 #[given(regex = r"^actor A whose waiting_on target is A$")]
 async fn given_self_cycle(world: &mut TuiWorld) {
     let snap = make_snapshot(vec![waiting(make_actor(1), 1)]);
-    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+    world.cycles = bombay_console::testing::detect_deadlocks(&snap);
 }
 
 #[given(regex = r"^actors A→B and B→A$")]
 async fn given_two_cycle(world: &mut TuiWorld) {
     let snap = make_snapshot(vec![waiting(make_actor(1), 2), waiting(make_actor(2), 1)]);
-    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+    world.cycles = bombay_console::testing::detect_deadlocks(&snap);
 }
 
 #[given(regex = r"^actors A→B, B→C and C→A$")]
@@ -659,7 +659,7 @@ async fn given_three_cycle(world: &mut TuiWorld) {
         waiting(make_actor(2), 3),
         waiting(make_actor(3), 1),
     ]);
-    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+    world.cycles = bombay_console::testing::detect_deadlocks(&snap);
 }
 
 #[given(regex = r"^a 3-actor cycle among ids 5, 2 and 8 in wait order 5→2→8→5$")]
@@ -669,7 +669,7 @@ async fn given_normalize_cycle(world: &mut TuiWorld) {
         waiting(make_actor(2), 8),
         waiting(make_actor(8), 5),
     ]);
-    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+    world.cycles = bombay_console::testing::detect_deadlocks(&snap);
 }
 
 #[given(regex = r"^a cycle A↔B and a separate cycle C↔D in the same snapshot$")]
@@ -680,13 +680,13 @@ async fn given_two_independent_cycles(world: &mut TuiWorld) {
         waiting(make_actor(3), 4),
         waiting(make_actor(4), 3),
     ]);
-    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+    world.cycles = bombay_console::testing::detect_deadlocks(&snap);
 }
 
 #[given(regex = r"^actor A waiting on a target id that no actor in the snapshot has$")]
 async fn given_dangling_target(world: &mut TuiWorld) {
     let snap = make_snapshot(vec![waiting(make_actor(1), 99)]);
-    world.cycles = kameo_console::testing::detect_deadlocks(&snap);
+    world.cycles = bombay_console::testing::detect_deadlocks(&snap);
 }
 
 #[when(regex = r"^detect_deadlocks runs$")]

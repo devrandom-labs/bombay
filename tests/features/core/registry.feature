@@ -1,4 +1,4 @@
-# Scope: kameo core local `ActorRegistry` (src/registry.rs) — the in-process,
+# Scope: bombay core local `ActorRegistry` (src/registry.rs) — the in-process,
 #        name → ActorRef registry behind a global Mutex (ACTOR_REGISTRY). This
 #        feature covers the LOCAL registry only (the libp2p/remote registry under
 #        feature = "remote" is out of scope here).

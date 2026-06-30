@@ -424,10 +424,10 @@ impl Messages {
 
                 quote_spanned! {sig.span()=>
                     #[automatically_derived]
-                    impl #impl_generics ::kameo::message::#trait_name<#msg_ident #msg_ty_generics> for #actor_ident #actor_ty_generics #where_clause {
+                    impl #impl_generics ::bombay::message::#trait_name<#msg_ident #msg_ty_generics> for #actor_ident #actor_ty_generics #where_clause {
                         type Reply = #reply;
 
-                        async fn handle(#self_ref, #[allow(unused_variables)] #msg, #ctx_ident: &mut ::kameo::message::Context<Self, Self::Reply>) -> Self::Reply {
+                        async fn handle(#self_ref, #[allow(unused_variables)] #msg, #ctx_ident: &mut ::bombay::message::Context<Self, Self::Reply>) -> Self::Reply {
                             self.#fn_ident(#( #params ),*) #await_tokens
                         }
                     }

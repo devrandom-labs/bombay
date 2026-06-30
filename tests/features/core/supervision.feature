@@ -1,4 +1,4 @@
-# Scope: kameo local core supervision (src/supervision.rs) — Erlang-style supervision:
+# Scope: bombay local core supervision (src/supervision.rs) — Erlang-style supervision:
 #        RestartPolicy (Permanent/Transient/Never), SupervisionStrategy
 #        (OneForOne/OneForAll/RestForOne), restart-intensity limits with a sliding window,
 #        and the `should_restart` decision on EresedChildSpec (src/links.rs:226-265).

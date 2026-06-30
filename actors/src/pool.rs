@@ -17,8 +17,8 @@
 //! # Example
 //!
 //! ```
-//! use kameo::prelude::*;
-//! use kameo_actors::pool::{ActorPool, Broadcast, Dispatch};
+//! use bombay::prelude::*;
+//! use bombay_actors::pool::{ActorPool, Broadcast, Dispatch};
 //!
 //! #[derive(Actor)]
 //! struct MyWorker;
@@ -45,11 +45,11 @@ use std::{
     sync::{Arc, Weak},
 };
 
+use bombay::{error::Infallible, prelude::*};
 use futures::{
     Future, FutureExt, TryFutureExt,
     future::{BoxFuture, join_all},
 };
-use kameo::{error::Infallible, prelude::*};
 
 enum Factory<A: Actor> {
     Sync(Box<dyn FnMut() -> ActorRef<A> + Send + Sync + 'static>),

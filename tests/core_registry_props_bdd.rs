@@ -1,5 +1,5 @@
 //! Cucumber runner for core/registry.properties.feature — the @property/@model
-//! laws over the kameo core LOCAL actor registry (`src/registry.rs`):
+//! laws over the bombay core LOCAL actor registry (`src/registry.rs`):
 //! wrong-type-get is ALWAYS BadActorType (∀ name/type), the registry refines an
 //! insert-NO-overwrite map under any op sequence, and a same-name concurrent
 //! insert elects exactly one winner.

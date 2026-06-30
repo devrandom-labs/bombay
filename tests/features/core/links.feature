@@ -1,4 +1,4 @@
-# Scope: kameo local core `Links` (src/links.rs) — the link/notification machinery
+# Scope: bombay local core `Links` (src/links.rs) — the link/notification machinery
 #        underneath supervision. A `Links` is the per-actor registry of:
 #          * parent        — the supervisor (if supervised), notified with mailbox_rx
 #                            so it can restart us;

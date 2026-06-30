@@ -18,7 +18,7 @@
 
 @console @server_wire @phase2
 Feature: Console server + registry — laws over seq monotonicity and membership atomicity
-  As an instrumented kameo process serving consoles
+  As an instrumented bombay process serving consoles
   I want seq to advance strictly and the actor membership to be a consistent snapshot
   So that no client ever sees a repeated/decreasing seq or a torn membership list
 

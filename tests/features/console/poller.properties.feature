@@ -17,7 +17,7 @@
 
 @console @poller @phase2
 Feature: Poller framing — laws over msgpack round-trip and the frame-size cap
-  As a console client decoding snapshots from an instrumented kameo app
+  As a console client decoding snapshots from an instrumented bombay app
   I want round-trip fidelity and the size cap to hold for ALL snapshots and ALL lengths
   So that no snapshot shape and no hostile length silently breaks decode or exhausts memory
 

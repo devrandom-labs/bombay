@@ -1,4 +1,4 @@
-# Scope: kameo local core error types (src/error.rs) — the pure, transport-agnostic
+# Scope: bombay local core error types (src/error.rs) — the pure, transport-agnostic
 #        error algebra exercised in-process:
 #          * SendError<M, E>     — ActorNotRunning(M) / ActorStopped / MailboxFull(M)
 #                                  / HandlerError(E) / Timeout(Option<M>), with

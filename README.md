@@ -9,7 +9,7 @@ Fault-tolerant async actors on Tokio — a Zenoh-native fork of the [kameo](http
 Derive `Actor`, implement `Message<M>` for each message a type handles, spawn it, then `ask` (request/reply) or `tell` (fire-and-forget):
 
 ```rust
-use kameo::prelude::*;
+use bombay::prelude::*;
 
 #[derive(Actor, Default)]
 struct Counter {
@@ -41,7 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### The public API at a glance
 
-Everything below is re-exported from `kameo::prelude`:
+Everything below is re-exported from `bombay::prelude`:
 
 - **Actor** — `#[derive(Actor)]` or `impl Actor` by hand. Lifecycle hooks: `on_start`, `on_panic`, `on_link_died`, `on_stop`. Spawn with `Actor::spawn`, `spawn_with_mailbox`, `spawn_in_thread`, or build one with `prepare` and run it later.
 - **Messages** — `impl Message<M> for A { type Reply; async fn handle(&mut self, msg, ctx) -> Reply }`. The `Context` exposes the actor's own `ActorRef`, the reply channel (`reply_sender`), `forward`/`try_forward` to another actor, and `attach_stream` for `StreamMessage`.
@@ -73,7 +73,7 @@ cargo run --example basic
 ```bash
 cargo nextest run                       # the whole workspace
 cargo test --doc                        # doc-tests (nextest does not run these)
-cargo test -p kameo_console             # one crate
+cargo test -p bombay_console            # one crate
 cargo test --test core_actor_id_bdd     # one cucumber suite
 ```
 

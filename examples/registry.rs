@@ -1,7 +1,7 @@
-use kameo::prelude::*;
+use bombay::prelude::*;
 
 #[derive(Actor)]
-#[cfg_attr(feature = "remote", derive(kameo::RemoteActor))]
+#[cfg_attr(feature = "remote", derive(bombay::RemoteActor))]
 pub struct MyActor;
 
 #[cfg(not(feature = "remote"))]
@@ -21,8 +21,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(feature = "remote")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use bombay::remote::messaging;
     use futures::StreamExt;
-    use kameo::remote::messaging;
     use libp2p::{noise, tcp, yamux};
 
     let mut swarm = libp2p::SwarmBuilder::with_new_identity()
@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             yamux::Config::default,
         )?
         .with_behaviour(|key| {
-            let actors = kameo::remote::Behaviour::new(
+            let actors = bombay::remote::Behaviour::new(
                 key.public().to_peer_id(),
                 messaging::Config::default(),
             );

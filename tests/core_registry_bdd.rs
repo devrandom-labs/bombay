@@ -1,5 +1,5 @@
 //! Cucumber runner for core/registry.feature — the example scenarios for the
-//! kameo core LOCAL actor registry (`src/registry.rs`): the `ActorRegistry`
+//! bombay core LOCAL actor registry (`src/registry.rs`): the `ActorRegistry`
 //! behind the process-global `ACTOR_REGISTRY` Mutex — insert (no overwrite),
 //! get with type-safe downcast (BadActorType on mismatch), remove, remove_by_id,
 //! contains_name, len/is_empty/names/clear — driven against REAL SPAWNED ACTORS.

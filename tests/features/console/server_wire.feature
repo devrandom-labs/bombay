@@ -1,5 +1,5 @@
 # Scope: in-tree console server + wire + registry (src/console/server.rs, wire.rs,
-#        registry.rs) — the source side that an instrumented kameo app exposes over TCP.
+#        registry.rs) — the source side that an instrumented bombay app exposes over TCP.
 #
 # Protocol, confirmed from source (src/console/server.rs):
 #   * serve_client loops: read exactly 1 byte (:101), build Snapshot, encode with
@@ -32,7 +32,7 @@
 
 @console @server_wire
 Feature: Console server + wire — snapshot streaming gaps beyond the happy path
-  As an instrumented kameo process serving a console
+  As an instrumented bombay process serving a console
   I want snapshot seq to advance monotonically and the actor set to be captured atomically
   So that a client never sees a stale seq, a torn membership list, or a hung connection
 

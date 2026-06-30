@@ -8,7 +8,7 @@
 //! "multi_thread")]` libtest function (no `harness = false`) so nextest's
 //! `--list` enumerates it; built only with the `testing` feature (see
 //! `required-features` in Cargo.toml — the forward scenarios use the
-//! `kameo::reply::testing::reply_channel` constructor gated by that feature).
+//! `bombay::reply::testing::reply_channel` constructor gated by that feature).
 //!
 //! `.max_concurrent_scenarios(1)`: several @timing scenarios stand up a
 //! dedicated paused current-thread runtime on a blocking thread, and the
@@ -24,13 +24,13 @@ mod request_ask;
 
 use std::time::Duration;
 
-use cucumber::World;
-use kameo::{
+use bombay::{
     error::{Infallible, SendError},
     mailbox,
     prelude::*,
     reply::testing::reply_channel,
 };
+use cucumber::World;
 use request_ask::AskWorld;
 use tokio::sync::watch;
 

@@ -4,7 +4,7 @@
 //!   * `core_registry_bdd.rs`       — the example feature (registry.feature)
 //!   * `core_registry_props_bdd.rs` — the property/model laws (registry.properties.feature)
 //!
-//! SUT: the kameo core LOCAL actor registry — `kameo::registry::ActorRegistry`
+//! SUT: the bombay core LOCAL actor registry — `bombay::registry::ActorRegistry`
 //! (`src/registry.rs`): `insert(name, ref) -> bool` (NO overwrite, dedups by
 //! name), `get::<A>(name) -> Result<Option<ActorRef<A>>, RegistryError>` (Ok(None)
 //! absent, Ok(Some) present+downcast-ok, Err(BadActorType) wrong type),
@@ -12,7 +12,7 @@
 //! `names`.
 //!
 //! PROCESS-GLOBAL STATE DISCIPLINE — the production registry behind
-//! `kameo::registry::ACTOR_REGISTRY` is a process-global `Mutex<ActorRegistry>`
+//! `bombay::registry::ACTOR_REGISTRY` is a process-global `Mutex<ActorRegistry>`
 //! shared across the whole process. cucumber runs scenarios concurrently by
 //! default, which would race it, AND these scenarios assert ABSOLUTE counts
 //! (`len() == 3`, `is_empty()`, `len() == 32`, `clear` empties). To keep those
@@ -29,8 +29,8 @@
 //! `core_actor_ref` runner's `register`/`lookup` scenarios; here the unit under
 //! test is the `ActorRegistry` value the static wraps, so no reset hook is added.
 //!
-//! All public API is reached through `kameo::prelude::*` + `kameo::registry::*` +
-//! `kameo::error::*`; no `src/` change is needed.
+//! All public API is reached through `bombay::prelude::*` + `bombay::registry::*` +
+//! `bombay::error::*`; no `src/` change is needed.
 
 use std::{
     collections::HashSet,
@@ -38,13 +38,13 @@ use std::{
     time::Duration,
 };
 
-use cucumber::{World, given, then, when};
-use kameo::{
+use bombay::{
     actor::{ActorId, ActorRef},
     error::{RegistryError, SendError},
     prelude::*,
     registry::ActorRegistry,
 };
+use cucumber::{World, given, then, when};
 use tokio::sync::Barrier;
 
 // ===========================================================================
@@ -56,7 +56,7 @@ struct Foo;
 
 impl Actor for Foo {
     type Args = Self;
-    type Error = kameo::error::Infallible;
+    type Error = bombay::error::Infallible;
 
     async fn on_start(state: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(state)
@@ -68,7 +68,7 @@ struct Bar;
 
 impl Actor for Bar {
     type Args = Self;
-    type Error = kameo::error::Infallible;
+    type Error = bombay::error::Infallible;
 
     async fn on_start(state: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(state)

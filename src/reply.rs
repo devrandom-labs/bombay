@@ -79,7 +79,7 @@ pub type BoxReplySender = oneshot::Sender<Result<BoxReply, BoxSendError>>;
 /// # Example
 ///
 /// ```
-/// use kameo::Reply;
+/// use bombay::Reply;
 ///
 /// #[derive(Reply)]
 /// pub struct Foo { }
@@ -260,7 +260,7 @@ where
 /// ## Basic forwarding
 ///
 /// ```
-/// use kameo::{prelude::*, reply::ForwardedReply};
+/// use bombay::{prelude::*, reply::ForwardedReply};
 /// use std::collections::HashMap;
 ///
 /// #[derive(Actor)]
@@ -304,7 +304,7 @@ where
 /// ## Error handling without forwarding
 ///
 /// ```
-/// use kameo::{prelude::*, reply::ForwardedReply};
+/// use bombay::{prelude::*, reply::ForwardedReply};
 ///
 /// #[derive(Debug)]
 /// enum RouterError {
@@ -415,7 +415,7 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use kameo::reply::ForwardedReply;
+    /// use bombay::reply::ForwardedReply;
     ///
     /// // Create a direct successful response
     /// let reply: ForwardedReply<(), String> = ForwardedReply::from_ok("Success!".to_string());
@@ -434,7 +434,7 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use kameo::reply::ForwardedReply;
+    /// use bombay::reply::ForwardedReply;
     /// use std::{error, fmt};
     ///
     /// #[derive(Debug)]
@@ -468,7 +468,7 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use kameo::reply::ForwardedReply;
+    /// use bombay::reply::ForwardedReply;
     /// use std::{error, fmt};
     ///
     /// #[derive(Debug)]

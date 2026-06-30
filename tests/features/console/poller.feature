@@ -1,5 +1,5 @@
 # Scope: console crate poller (console/src/poller.rs) — the client-side TCP poller thread
-#        that requests snapshots from an instrumented kameo app and decodes them.
+#        that requests snapshots from an instrumented bombay app and decodes them.
 #
 # Protocol, confirmed from source (console/src/poller.rs):
 #   * Request: the client writes exactly ONE byte `[0]` (`Poller::poll`, :108).
@@ -21,7 +21,7 @@
 
 @console @poller
 Feature: Poller — snapshot request/reply framing over TCP
-  As a console client polling an instrumented kameo app
+  As a console client polling an instrumented bombay app
   I want a length-prefixed MessagePack frame protocol with a hard size cap
   So that snapshots decode correctly and a hostile peer cannot exhaust memory
 

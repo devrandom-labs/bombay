@@ -1,6 +1,6 @@
-use kameo::prelude::*;
-use kameo_actors::DeliveryStrategy;
-use kameo_actors::message_queue::{
+use bombay::prelude::*;
+use bombay_actors::DeliveryStrategy;
+use bombay_actors::message_queue::{
     BasicConsume, BasicPublish, ExchangeDeclare, ExchangeType, MessageQueue, QueueBind,
     QueueDeclare,
 };

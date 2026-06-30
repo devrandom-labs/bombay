@@ -1,5 +1,5 @@
-use kameo::prelude::*;
-use kameo_actors::{
+use bombay::prelude::*;
+use bombay_actors::{
     DeliveryStrategy,
     broker::{Broker, Publish, Subscribe},
 };

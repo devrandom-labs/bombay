@@ -10,12 +10,12 @@ use std::sync::atomic::AtomicU64;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
-use crossterm::event::{KeyCode, KeyModifiers};
-use kameo::console::wire::{
+use bombay::console::wire::{
     ActorCounters, ActorId, ActorSnapshot, ActorStatus, Links, MailboxKind, MailboxStats,
     RefCounts, Snapshot, Totals, WaitEdge, WaitKind,
 };
-use kameo_console::{App, ConnectionState};
+use bombay_console::{App, ConnectionState};
+use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 

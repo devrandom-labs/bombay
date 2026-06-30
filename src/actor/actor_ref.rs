@@ -276,7 +276,7 @@ where
     /// ```
     /// use std::num::ParseIntError;
     ///
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
     ///
     /// struct MyActor;
     ///
@@ -328,7 +328,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
     ///
     /// struct MyActor;
     ///
@@ -380,8 +380,8 @@ where
     /// # Example
     ///
     /// ```
-    /// use kameo::actor::{Actor, ActorRef, Spawn, WeakActorRef};
-    /// use kameo::error::{ActorStopReason, Infallible};
+    /// use bombay::actor::{Actor, ActorRef, Spawn, WeakActorRef};
+    /// use bombay::error::{ActorStopReason, Infallible};
     ///
     /// struct MyActor;
     ///
@@ -438,8 +438,8 @@ where
     /// # Example
     ///
     /// ```
-    /// use kameo::actor::{Actor, ActorRef, Spawn, WeakActorRef};
-    /// use kameo::error::{ActorStopReason, Infallible};
+    /// use bombay::actor::{Actor, ActorRef, Spawn, WeakActorRef};
+    /// use bombay::error::{ActorStopReason, Infallible};
     ///
     /// struct MyActor;
     ///
@@ -485,8 +485,8 @@ where
     /// ```
     /// use std::time::Duration;
     ///
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
-    /// use kameo::error::Infallible;
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::error::Infallible;
     /// use tokio::time::sleep;
     ///
     /// struct MyActor;
@@ -526,7 +526,7 @@ where
     /// ```
     /// use std::num::ParseIntError;
     ///
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
     ///
     /// struct MyActor;
     ///
@@ -569,7 +569,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
     ///
     /// struct MyActor;
     ///
@@ -635,8 +635,8 @@ where
     /// ```
     /// use std::num::ParseIntError;
     ///
-    /// use kameo::actor::{Actor, ActorRef, Spawn, WeakActorRef};
-    /// use kameo::error::{ActorStopReason, Infallible};
+    /// use bombay::actor::{Actor, ActorRef, Spawn, WeakActorRef};
+    /// use bombay::error::{ActorStopReason, Infallible};
     ///
     /// struct MyActorWithError;
     ///
@@ -710,8 +710,8 @@ where
     /// # Example
     ///
     /// ```
-    /// use kameo::actor::{Actor, ActorRef, Spawn, WeakActorRef};
-    /// use kameo::error::{ActorStopReason, Infallible};
+    /// use bombay::actor::{Actor, ActorRef, Spawn, WeakActorRef};
+    /// use bombay::error::{ActorStopReason, Infallible};
     ///
     /// struct MyActorWithError;
     ///
@@ -785,16 +785,16 @@ where
     /// # Example
     ///
     /// ```
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
     ///
-    /// # #[derive(kameo::Actor)]
+    /// # #[derive(bombay::Actor)]
     /// # struct MyActor;
     /// #
     /// # struct Msg;
     /// #
-    /// # impl kameo::message::Message<Msg> for MyActor {
+    /// # impl bombay::message::Message<Msg> for MyActor {
     /// #     type Reply = ();
-    /// #     async fn handle(&mut self, msg: Msg, ctx: &mut kameo::message::Context<Self, Self::Reply>) -> Self::Reply { }
+    /// #     async fn handle(&mut self, msg: Msg, ctx: &mut bombay::message::Context<Self, Self::Reply>) -> Self::Reply { }
     /// # }
     /// #
     /// # tokio_test::block_on(async {
@@ -831,16 +831,16 @@ where
     /// # Example
     ///
     /// ```
-    /// use kameo::actor::{Actor, ActorRef, Spawn};
+    /// use bombay::actor::{Actor, ActorRef, Spawn};
     ///
-    /// # #[derive(kameo::Actor)]
+    /// # #[derive(bombay::Actor)]
     /// # struct MyActor;
     /// #
     /// # struct Msg;
     /// #
-    /// # impl kameo::message::Message<Msg> for MyActor {
+    /// # impl bombay::message::Message<Msg> for MyActor {
     /// #     type Reply = ();
-    /// #     async fn handle(&mut self, msg: Msg, ctx: &mut kameo::message::Context<Self, Self::Reply>) -> Self::Reply { }
+    /// #     async fn handle(&mut self, msg: Msg, ctx: &mut bombay::message::Context<Self, Self::Reply>) -> Self::Reply { }
     /// # }
     /// #
     /// # tokio_test::block_on(async {
@@ -871,8 +871,8 @@ where
     /// # Example
     ///
     /// ```
-    /// # use kameo::Actor;
-    /// # use kameo::actor::Spawn;
+    /// # use bombay::Actor;
+    /// # use bombay::actor::Spawn;
     /// #
     /// # #[derive(Actor)]
     /// # struct MyActor;
@@ -926,8 +926,8 @@ where
     /// ```
     /// use std::thread;
     ///
-    /// # use kameo::Actor;
-    /// # use kameo::actor::Spawn;
+    /// # use bombay::Actor;
+    /// # use bombay::actor::Spawn;
     /// #
     /// # #[derive(Actor)]
     /// # struct MyActor;
@@ -1004,13 +1004,13 @@ where
     /// # Example
     ///
     /// ```no_run
-    /// # use kameo::Actor;
-    /// # use kameo::actor::{RemoteActorRef, Spawn};
+    /// # use bombay::Actor;
+    /// # use bombay::actor::{RemoteActorRef, Spawn};
     /// #
-    /// # #[derive(Actor, kameo::RemoteActor)]
+    /// # #[derive(Actor, bombay::RemoteActor)]
     /// # struct MyActor;
     /// #
-    /// # #[derive(Actor, kameo::RemoteActor)]
+    /// # #[derive(Actor, bombay::RemoteActor)]
     /// # struct OtherActor;
     /// #
     /// # tokio_test::block_on(async {
@@ -1055,8 +1055,8 @@ where
     /// # Example
     ///
     /// ```
-    /// # use kameo::Actor;
-    /// # use kameo::actor::Spawn;
+    /// # use bombay::Actor;
+    /// # use bombay::actor::Spawn;
     /// #
     /// # #[derive(Actor)]
     /// # struct MyActor;
@@ -1101,8 +1101,8 @@ where
     /// ```
     /// # use std::thread;
     /// #
-    /// # use kameo::Actor;
-    /// # use kameo::actor::Spawn;
+    /// # use bombay::Actor;
+    /// # use bombay::actor::Spawn;
     /// #
     /// # #[derive(Actor)]
     /// # struct MyActor;
@@ -1145,13 +1145,13 @@ where
     /// # Example
     ///
     /// ```
-    /// # use kameo::Actor;
-    /// # use kameo::actor::{RemoteActorRef, Spawn};
+    /// # use bombay::Actor;
+    /// # use bombay::actor::{RemoteActorRef, Spawn};
     /// #
-    /// # #[derive(Actor, kameo::RemoteActor)]
+    /// # #[derive(Actor, bombay::RemoteActor)]
     /// # struct MyActor;
     /// #
-    /// # #[derive(Actor, kameo::RemoteActor)]
+    /// # #[derive(Actor, bombay::RemoteActor)]
     /// # struct OtherActor;
     /// #
     /// # tokio_test::block_on(async {
@@ -1191,11 +1191,11 @@ where
     /// # Example
     ///
     /// ```
-    /// use kameo::Actor;
-    /// use kameo::actor::Spawn;
-    /// use kameo::message::{Context, Message, StreamMessage};
+    /// use bombay::Actor;
+    /// use bombay::actor::Spawn;
+    /// use bombay::message::{Context, Message, StreamMessage};
     ///
-    /// #[derive(kameo::Actor)]
+    /// #[derive(bombay::Actor)]
     /// struct MyActor;
     ///
     /// impl Message<StreamMessage<u32, (), ()>> for MyActor {
@@ -1790,18 +1790,18 @@ where
     /// # Example
     ///
     /// ```no_run
-    /// use kameo::actor::RemoteActorRef;
+    /// use bombay::actor::RemoteActorRef;
     ///
-    /// # #[derive(kameo::Actor, kameo::RemoteActor)]
+    /// # #[derive(bombay::Actor, bombay::RemoteActor)]
     /// # struct MyActor;
     /// #
     /// # #[derive(serde::Serialize, serde::Deserialize)]
     /// # struct Msg;
     /// #
-    /// # #[kameo::remote_message("id")]
-    /// # impl kameo::message::Message<Msg> for MyActor {
+    /// # #[bombay::remote_message("id")]
+    /// # impl bombay::message::Message<Msg> for MyActor {
     /// #     type Reply = ();
-    /// #     async fn handle(&mut self, msg: Msg, ctx: &mut kameo::message::Context<Self, Self::Reply>) -> Self::Reply { }
+    /// #     async fn handle(&mut self, msg: Msg, ctx: &mut bombay::message::Context<Self, Self::Reply>) -> Self::Reply { }
     /// # }
     /// #
     /// # tokio_test::block_on(async {
@@ -1838,18 +1838,18 @@ where
     /// # Example
     ///
     /// ```no_run
-    /// use kameo::actor::RemoteActorRef;
+    /// use bombay::actor::RemoteActorRef;
     ///
-    /// # #[derive(kameo::Actor, kameo::RemoteActor)]
+    /// # #[derive(bombay::Actor, bombay::RemoteActor)]
     /// # struct MyActor;
     /// #
     /// # #[derive(serde::Serialize, serde::Deserialize)]
     /// # struct Msg;
     /// #
-    /// # #[kameo::remote_message("id")]
-    /// # impl kameo::message::Message<Msg> for MyActor {
+    /// # #[bombay::remote_message("id")]
+    /// # impl bombay::message::Message<Msg> for MyActor {
     /// #     type Reply = ();
-    /// #     async fn handle(&mut self, msg: Msg, ctx: &mut kameo::message::Context<Self, Self::Reply>) -> Self::Reply { }
+    /// #     async fn handle(&mut self, msg: Msg, ctx: &mut bombay::message::Context<Self, Self::Reply>) -> Self::Reply { }
     /// # }
     /// #
     /// # tokio_test::block_on(async {
@@ -1883,12 +1883,12 @@ where
     /// # Example
     ///
     /// ```no_run
-    /// # use kameo::actor::RemoteActorRef;
+    /// # use bombay::actor::RemoteActorRef;
     /// #
-    /// # #[derive(kameo::Actor, kameo::RemoteActor)]
+    /// # #[derive(bombay::Actor, bombay::RemoteActor)]
     /// # struct ActorA;
     /// #
-    /// # #[derive(kameo::Actor, kameo::RemoteActor)]
+    /// # #[derive(bombay::Actor, bombay::RemoteActor)]
     /// # struct ActorB;
     /// #
     /// # tokio_test::block_on(async {
@@ -1928,12 +1928,12 @@ where
     /// # Example
     ///
     /// ```no_run
-    /// # use kameo::actor::RemoteActorRef;
+    /// # use bombay::actor::RemoteActorRef;
     /// #
-    /// # #[derive(kameo::Actor, kameo::RemoteActor)]
+    /// # #[derive(bombay::Actor, bombay::RemoteActor)]
     /// # struct ActorA;
     /// #
-    /// # #[derive(kameo::Actor, kameo::RemoteActor)]
+    /// # #[derive(bombay::Actor, bombay::RemoteActor)]
     /// # struct ActorB;
     /// #
     /// # tokio_test::block_on(async {

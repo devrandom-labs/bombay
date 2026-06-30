@@ -1,4 +1,4 @@
-# Scope: kameo_actors `MessageBus` (actors/src/message_bus.rs) — a TYPE-based pub/sub
+# Scope: bombay_actors `MessageBus` (actors/src/message_bus.rs) — a TYPE-based pub/sub
 #        actor. Recipients register a Recipient<M>; the bus stores them keyed by the
 #        TypeId of M. Publish(M) routes to every recipient registered for exactly that
 #        TypeId, under the configured DeliveryStrategy. Registrations type-erase the

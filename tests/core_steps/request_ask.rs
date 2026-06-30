@@ -10,7 +10,7 @@
 //! optional `mailbox_timeout`/`reply_timeout` → `send`/`try_send`/
 //! `blocking_send`/`enqueue`/`try_enqueue`/`blocking_enqueue`/`forward`/
 //! `try_forward`/`blocking_forward`/`IntoFuture`), driven against REAL SPAWNED
-//! ACTORS reached through `kameo::prelude::*` + `kameo::request::*`.
+//! ACTORS reached through `bombay::prelude::*` + `bombay::request::*`.
 //!
 //! ## @timing (the 13 timeout scenarios)
 //!
@@ -45,14 +45,14 @@
 
 use std::{any::Any, sync::Arc, time::Duration};
 
-use cucumber::{World, given, then, when};
-use kameo::{
+use bombay::{
     error::{BoxSendError, Infallible, SendError},
     mailbox,
     message::BoxReply,
     prelude::*,
     reply::{ReplySender, testing::reply_channel},
 };
+use cucumber::{World, given, then, when};
 use tokio::{
     sync::{Barrier, oneshot, watch},
     task::JoinHandle,
@@ -251,7 +251,7 @@ async fn assert_full(actor: &ActorRef<Asked>) {
 /// Holds an enqueued `PendingReply` across two When steps. `PendingReply` does
 /// not implement `Debug`, so this wrapper supplies a manual one to keep the
 /// derived `World: Debug`.
-struct HeldPending(kameo::request::PendingReply<Msg, bool>);
+struct HeldPending(bombay::request::PendingReply<Msg, bool>);
 
 impl std::fmt::Debug for HeldPending {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

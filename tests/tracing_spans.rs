@@ -11,8 +11,8 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use kameo::error::Infallible;
-use kameo::prelude::*;
+use bombay::error::Infallible;
+use bombay::prelude::*;
 use tokio::sync::mpsc;
 use tracing::span;
 use tracing_subscriber::Layer;

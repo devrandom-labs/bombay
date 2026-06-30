@@ -27,7 +27,7 @@ pub mod testing {
         mailbox_bar, rate_context, severity, short_type_name, sort_actors, spark_height,
         sparkline_line,
     };
-    pub use kameo::console::wire::{
+    pub use bombay::console::wire::{
         ActorCounters, ActorId, ActorSnapshot, ActorStatus, HandlerActivity, Links, MailboxKind,
         MailboxStats, MessageCount, RefCounts, Snapshot, Totals, WaitEdge, WaitKind,
     };
