@@ -290,26 +290,31 @@ Feature: MessageQueue — AMQP-style exchange/queue routing
   # --- the confirmed defect + the desired behaviour it should become ---------
 
   @boundary @bug:actors/src/message_queue.rs:707
-  Scenario: A malformed Topic routing key panics the actor at publish time (BUG)
-    Given a Topic exchange "logs" is declared
-    And a queue "q" is declared
-    And queue "q" is bound to "logs" with routing key "[unclosed"
-    When a message is published to "logs" with routing key "log.warn"
-    Then the MessageQueue actor must not panic
-    And the publish fails with "InvalidRoutingKey"
-    # NOTE (:707): today Pattern::new("[unclosed").unwrap() panics the run-loop, so this
-    # FAILS. Desired (publish-side companion to the bind-side :591 bug): return an
-    # AmqpError::InvalidRoutingKey instead of panicking.
-
-  @boundary @bug:actors/src/message_queue.rs:591
-  Scenario: A malformed Topic routing key should be rejected at bind time
+  Scenario: A refused malformed Topic key never panics the actor when publishing
     Given a Topic exchange "logs" is declared
     And a queue "q" is declared
     When queue "q" is bound to "logs" with routing key "[unclosed"
     Then the bind fails with "InvalidRoutingKey"
-    # NOTE (:591): today QueueBind accepts the key with no glob validation, so this FAILS.
-    # Desired: QueueBind validates Topic routing keys and returns
-    # AmqpError::InvalidRoutingKey (mirroring the existing Headers x-match check).
+    When a message is published to "logs" with routing key "log.warn"
+    Then the publish does not error and the actor does not panic
+    # FIXED (:707, card #79): bind-time validation (:591) refuses "[unclosed", so a
+    # malformed key never reaches the store — there is no back door to plant one
+    # through the public API. The publish path no longer `unwrap`-panics (it compiles
+    # binding globs through topic_matches, returning AmqpError::InvalidRoutingKey for a
+    # bad key). The pure publish-side defence over the GEN boundary set is proven by
+    # the in-file #[cfg(test)] unit tests in message_queue.rs; here we assert the
+    # end-to-end truth: the bind is refused and a later publish neither errors nor
+    # panics the run-loop.
+
+  @boundary @bug:actors/src/message_queue.rs:591
+  Scenario: A malformed Topic routing key is rejected at bind time
+    Given a Topic exchange "logs" is declared
+    And a queue "q" is declared
+    When queue "q" is bound to "logs" with routing key "[unclosed"
+    Then the bind fails with "InvalidRoutingKey"
+    # FIXED (:591, card #79): QueueBind validates Topic routing keys (mirroring the
+    # Headers x-match check) and returns AmqpError::InvalidRoutingKey for any key
+    # glob::Pattern::new rejects, so the malformed key never reaches the publish path.
 
   @sequence
   Scenario: Topic wildcard segment-boundary semantics (glob, not AMQP)

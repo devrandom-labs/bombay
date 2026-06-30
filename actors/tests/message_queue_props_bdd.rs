@@ -10,10 +10,9 @@
 //! `.max_concurrent_scenarios(1)` keeps the bounded boundary-loops (which stand up
 //! many fresh queues + actors) deterministic.
 //!
-//! The `!t.starts_with("bug")` filter EXCLUDES the two `@bug:591` / `@bug:707`
-//! laws, whose `Then`s assert the desired `AmqpError::InvalidRoutingKey` rejection
-//! (card #79, variant not yet present). The real defect is reproduced by the
-//! separate `message_queue_bug_bdd.rs` probe.
+//! The `@bug:591` / `@bug:707` laws now run here too (card #79): bind-time glob
+//! validation rejects non-compilable Topic keys with `AmqpError::InvalidRoutingKey`
+//! and the publish path can no longer `unwrap`-panic, so every law is green.
 
 #[path = "steps/message_queue.rs"]
 mod message_queue;
@@ -32,7 +31,7 @@ async fn message_queue_props_features() {
                 env!("CARGO_MANIFEST_DIR"),
                 "/../tests/features/actors/message_queue.properties.feature"
             ),
-            |_, _, sc| !sc.tags.iter().any(|t| t.starts_with("bug")),
+            |_, _, _| true,
         )
         .await;
 }
