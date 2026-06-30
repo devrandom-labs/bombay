@@ -469,8 +469,11 @@ name = "bombay_actors"
 version = "0.5.0"
 dependencies = [
  "bombay",
+ "bombay_actors",
+ "cucumber",
  "futures",
  "glob",
+ "proptest",
  "thiserror 2.0.18",
  "tokio",
  "tokio-test",
