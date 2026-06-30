@@ -18,8 +18,30 @@ thiserror = "2.0.12"
 bombay.workspace = true
 tokio.workspace = true
 
+[features]
+# Test-only introspection surface (e.g. `message_bus::CountRegistrations`). Off by
+# default; auto-activated for this crate's own test builds via the self
+# dev-dependency below, because the `nix flake check` nextest run builds with
+# default features only (a CLI feature flag would never reach it).
+testing = []
+
 [dev-dependencies]
 tokio-test = "0.4.4"
+bombay = { workspace = true }
+bombay_actors = { path = ".", features = ["testing"] }
+cucumber = { workspace = true }
+proptest = { workspace = true }
+tokio = { workspace = true, features = [
+  "rt-multi-thread",
+  "macros",
+  "time",
+  "sync",
+] }
+
+# --- cucumber BDD runners (card #78) ---------------------------------------
+[[test]]
+name = "message_bus_bdd"
+required-features = ["testing"]
 
 [lints]
 workspace = true
