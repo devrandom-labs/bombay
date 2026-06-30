@@ -140,7 +140,10 @@ pub struct MessageBusWorld {
 // ===========================================================================
 
 fn the_bus(world: &MessageBusWorld) -> ActorRef<MessageBus> {
-    world.bus.clone().expect("a MessageBus was spawned by a Given")
+    world
+        .bus
+        .clone()
+        .expect("a MessageBus was spawned by a Given")
 }
 
 fn parse_strategy(name: &str, ms: Option<u64>) -> DeliveryStrategy {
@@ -191,7 +194,10 @@ async fn make_full(rec: &mut Rec) {
         .try_send()
         .expect("second hold fills the single buffer slot");
     for _ in 0..200 {
-        if matches!(rec.reff.tell(Probe).try_send(), Err(SendError::MailboxFull(Probe))) {
+        if matches!(
+            rec.reff.tell(Probe).try_send(),
+            Err(SendError::MailboxFull(Probe))
+        ) {
             rec.release = Some(tx);
             return;
         }
@@ -323,7 +329,9 @@ async fn given_also_registered(world: &mut MessageBusWorld, name: String, ty: St
     register(world, &name, &ty).await;
 }
 
-#[given(regex = r#"^recipient (\w+) is the only recipient registered for message type "(Ping|Pong)"$"#)]
+#[given(
+    regex = r#"^recipient (\w+) is the only recipient registered for message type "(Ping|Pong)"$"#
+)]
 async fn given_only_recipient(world: &mut MessageBusWorld, name: String, ty: String) {
     world
         .recipients
@@ -339,9 +347,7 @@ async fn given_no_recipients(_world: &mut MessageBusWorld, _ty: String) {
 
 #[given(regex = r#"^recipient (\w+) exists but is not yet registered$"#)]
 async fn given_exists_unregistered(world: &mut MessageBusWorld, name: String) {
-    world
-        .recipients
-        .insert(name, spawn_recorder(None).await);
+    world.recipients.insert(name, spawn_recorder(None).await);
 }
 
 #[given(
@@ -364,7 +370,9 @@ async fn given_full_past_timeout(world: &mut MessageBusWorld, name: String, ty: 
     register(world, &name, &ty).await;
 }
 
-#[given(regex = r#"^recipient (\w+) with spare capacity is registered for message type "(Ping|Pong)"$"#)]
+#[given(
+    regex = r#"^recipient (\w+) with spare capacity is registered for message type "(Ping|Pong)"$"#
+)]
 async fn given_spare_registered(world: &mut MessageBusWorld, name: String, ty: String) {
     world
         .recipients
@@ -398,14 +406,23 @@ async fn when_publish_n(world: &mut MessageBusWorld, n: u32, ty: String) {
 #[when(regex = r#"^recipient (\w+) is unregistered for message type "(Ping|Pong)"$"#)]
 async fn when_unregister(world: &mut MessageBusWorld, name: String, ty: String) {
     let bus = the_bus(world);
-    let id = world.recipients.get(&name).expect("recipient spawned").reff.id();
+    let id = world
+        .recipients
+        .get(&name)
+        .expect("recipient spawned")
+        .reff
+        .id();
     match ty.as_str() {
         "Ping" => {
-            bus.tell(Unregister::<Ping>::new(id)).await.expect("unregister");
+            bus.tell(Unregister::<Ping>::new(id))
+                .await
+                .expect("unregister");
             world.ping_regs = world.ping_regs.saturating_sub(1);
         }
         "Pong" => {
-            bus.tell(Unregister::<Pong>::new(id)).await.expect("unregister");
+            bus.tell(Unregister::<Pong>::new(id))
+                .await
+                .expect("unregister");
             world.pong_regs = world.pong_regs.saturating_sub(1);
         }
         _ => unreachable!(),
@@ -420,13 +437,21 @@ async fn when_unregister_unknown(world: &mut MessageBusWorld, ty: String) {
     let id = stranger.reff.id();
     stranger.reff.kill();
     match ty.as_str() {
-        "Ping" => bus.tell(Unregister::<Ping>::new(id)).await.expect("unregister"),
-        "Pong" => bus.tell(Unregister::<Pong>::new(id)).await.expect("unregister"),
+        "Ping" => bus
+            .tell(Unregister::<Ping>::new(id))
+            .await
+            .expect("unregister"),
+        "Pong" => bus
+            .tell(Unregister::<Pong>::new(id))
+            .await
+            .expect("unregister"),
         _ => unreachable!(),
     }
 }
 
-#[when(regex = r#"^(\w+) registers for message type "(Ping|Pong)" while a "(Ping|Pong)" message is published$"#)]
+#[when(
+    regex = r#"^(\w+) registers for message type "(Ping|Pong)" while a "(Ping|Pong)" message is published$"#
+)]
 async fn when_register_while_publish(
     world: &mut MessageBusWorld,
     name: String,
@@ -434,15 +459,26 @@ async fn when_register_while_publish(
     pub_ty: String,
 ) {
     let bus = the_bus(world);
-    let rec_ref = world.recipients.get(&name).expect("recipient spawned").reff.clone();
+    let rec_ref = world
+        .recipients
+        .get(&name)
+        .expect("recipient spawned")
+        .reff
+        .clone();
     let barrier = Arc::new(Barrier::new(2));
     let (b1, b2) = (Arc::clone(&barrier), Arc::clone(&barrier));
     let bus_reg = bus.clone();
     let reg = tokio::spawn(async move {
         b1.wait().await;
         match reg_ty.as_str() {
-            "Ping" => bus_reg.tell(Register(rec_ref.recipient::<Ping>())).await.unwrap(),
-            "Pong" => bus_reg.tell(Register(rec_ref.recipient::<Pong>())).await.unwrap(),
+            "Ping" => bus_reg
+                .tell(Register(rec_ref.recipient::<Ping>()))
+                .await
+                .unwrap(),
+            "Pong" => bus_reg
+                .tell(Register(rec_ref.recipient::<Pong>()))
+                .await
+                .unwrap(),
             _ => unreachable!(),
         }
     });
@@ -536,7 +572,10 @@ async fn then_receives_exactly(world: &mut MessageBusWorld, name: String, n: u32
     })
     .await;
     let got = counts_of(world, &name);
-    assert!(ok, "recipient {name} should receive exactly {n} {ty}, got {got:?}");
+    assert!(
+        ok,
+        "recipient {name} should receive exactly {n} {ty}, got {got:?}"
+    );
 }
 
 #[then(regex = r#"^recipient (\w+) receives (\d+) "(Ping|Pong)" messages$"#)]
@@ -555,10 +594,16 @@ async fn then_receives_n_typed(world: &mut MessageBusWorld, name: String, n: u32
 async fn then_receives_total(world: &mut MessageBusWorld, name: String, n: u32) {
     tokio::time::sleep(Duration::from_millis(50)).await;
     let c = counts_of(world, &name);
-    assert_eq!(c.ping + c.pong, n, "recipient {name} total received should be {n}, got {c:?}");
+    assert_eq!(
+        c.ping + c.pong,
+        n,
+        "recipient {name} total received should be {n}, got {c:?}"
+    );
 }
 
-#[then(regex = r#"^recipient (\w+) receives exactly (\d+) "(Ping|Pong)" messages with no loss or duplication$"#)]
+#[then(
+    regex = r#"^recipient (\w+) receives exactly (\d+) "(Ping|Pong)" messages with no loss or duplication$"#
+)]
 async fn then_receives_exactly_no_loss(
     world: &mut MessageBusWorld,
     name: String,
@@ -568,14 +613,20 @@ async fn then_receives_exactly_no_loss(
     then_receives_exactly(world, name, n, ty).await;
 }
 
-#[then(regex = r#"^once (\w+)'s mailbox drains, (\w+) eventually receives exactly 1 "(Ping|Pong)" message$"#)]
+#[then(
+    regex = r#"^once (\w+)'s mailbox drains, (\w+) eventually receives exactly 1 "(Ping|Pong)" message$"#
+)]
 async fn then_drains_then_receives(
     world: &mut MessageBusWorld,
     drain: String,
     name: String,
     ty: String,
 ) {
-    if let Some(tx) = world.recipients.get_mut(&drain).and_then(|r| r.release.take()) {
+    if let Some(tx) = world
+        .recipients
+        .get_mut(&drain)
+        .and_then(|r| r.release.take())
+    {
         let _ = tx.send(true);
     }
     let ok = settle(|| match ty.as_str() {
@@ -584,7 +635,10 @@ async fn then_drains_then_receives(
         _ => unreachable!(),
     })
     .await;
-    assert!(ok, "once {drain} drains, {name} must eventually receive exactly 1 {ty}");
+    assert!(
+        ok,
+        "once {drain} drains, {name} must eventually receive exactly 1 {ty}"
+    );
 }
 
 #[then(regex = r#"^recipient (\w+) does not receive the message(?: after the timeout elapses)?$"#)]
@@ -593,7 +647,11 @@ async fn then_does_not_receive(world: &mut MessageBusWorld, name: String) {
     // erroneous delivery would have landed.
     tokio::time::sleep(Duration::from_millis(120)).await;
     let c = counts_of(world, &name);
-    assert_eq!(c.ping + c.pong, 0, "recipient {name} must not receive the skipped message, got {c:?}");
+    assert_eq!(
+        c.ping + c.pong,
+        0,
+        "recipient {name} must not receive the skipped message, got {c:?}"
+    );
 }
 
 #[then(regex = r#"^recipient (\w+) remains registered$"#)]
@@ -615,22 +673,34 @@ async fn then_removed(world: &mut MessageBusWorld, _name: String, ty: String) {
     assert!(ok, "the dead recipient must be pruned from the {ty} bucket");
 }
 
-#[then(regex = r#"^recipient (\w+) is eventually removed from the registrations for "(Ping|Pong)"$"#)]
+#[then(
+    regex = r#"^recipient (\w+) is eventually removed from the registrations for "(Ping|Pong)"$"#
+)]
 async fn then_eventually_removed(world: &mut MessageBusWorld, _name: String, ty: String) {
     let bus = the_bus(world);
     let ok = settle_async(&bus, &ty, 0).await;
-    assert!(ok, "the dead recipient must eventually be pruned from the {ty} bucket");
+    assert!(
+        ok,
+        "the dead recipient must eventually be pruned from the {ty} bucket"
+    );
 }
 
 #[then(regex = r#"^message type "(Ping|Pong)" no longer has any registration$"#)]
 async fn then_no_registration(world: &mut MessageBusWorld, ty: String) {
     let bus = the_bus(world);
-    assert_eq!(count_regs(&bus, &ty).await, 0, "the {ty} bucket must be empty");
+    assert_eq!(
+        count_regs(&bus, &ty).await,
+        0,
+        "the {ty} bucket must be empty"
+    );
 }
 
 #[then(regex = r#"^the publish completes without (?:error|blocking)$"#)]
 async fn then_publish_completes(world: &mut MessageBusWorld) {
-    assert!(world.publish_elapsed.is_some(), "the publish must have returned");
+    assert!(
+        world.publish_elapsed.is_some(),
+        "the publish must have returned"
+    );
     let bus = the_bus(world);
     // Liveness: the bus answers a query => it did not panic in the run-loop.
     let _ = count_regs(&bus, "Ping").await;
@@ -640,9 +710,15 @@ async fn then_publish_completes(world: &mut MessageBusWorld) {
 async fn then_publish_after_accept(world: &mut MessageBusWorld, name: String) {
     // Guaranteed delivery `tell(..).await`s each recipient, so the publish only
     // returns once A has accepted; A then handles it.
-    assert!(world.publish_elapsed.is_some(), "the publish must have returned");
+    assert!(
+        world.publish_elapsed.is_some(),
+        "the publish must have returned"
+    );
     let ok = settle(|| ping_of(world, &name) == 1).await;
-    assert!(ok, "recipient {name} must have accepted and handled the message");
+    assert!(
+        ok,
+        "recipient {name} must have accepted and handled the message"
+    );
 }
 
 #[then(regex = r#"^the publish returns within approximately the timeout$"#)]
@@ -668,14 +744,22 @@ async fn then_no_panic(world: &mut MessageBusWorld) {
     let bus = the_bus(world);
     // If the run-loop had panicked, this ask would fail with ActorNotRunning.
     let r = bus.ask(CountRegistrations::<Ping>::new()).await;
-    assert!(r.is_ok(), "the MessageBus actor must still be running (no panic)");
+    assert!(
+        r.is_ok(),
+        "the MessageBus actor must still be running (no panic)"
+    );
 }
 
-#[then(regex = r#"^recipient (\w+) receives the message exactly once or not at all, never a partial delivery$"#)]
+#[then(
+    regex = r#"^recipient (\w+) receives the message exactly once or not at all, never a partial delivery$"#
+)]
 async fn then_atomic_delivery(world: &mut MessageBusWorld, name: String) {
     tokio::time::sleep(Duration::from_millis(50)).await;
     let got = ping_of(world, &name);
-    assert!(got <= 1, "register|publish race must deliver 0 or 1, never partial; got {got}");
+    assert!(
+        got <= 1,
+        "register|publish race must deliver 0 or 1, never partial; got {got}"
+    );
 }
 
 #[then(regex = r#"^A receives the message exactly once or not at all, never a partial delivery$"#)]

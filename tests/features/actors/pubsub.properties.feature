@@ -113,8 +113,7 @@ Feature: PubSub — laws over filter-gated delivery, id-keyed membership, and pr
     Given a running PubSub with delivery strategy "Guaranteed"
     And any fixed set of subscribers with per-subscriber filters
     When N messages are published concurrently from P tasks
-    Then each subscriber's received count equals the number of published messages its filter
-      accepts — no loss, no duplication
+    Then each subscriber's received count equals the number of published messages its filter accepts — no loss, no duplication
     And each filter is invoked exactly once per published message
     # GEN: P ∈ [2, 10]; N ∈ {1, 50, 100}; subscribers incl. one const-true, one rejecting,
     #      and one consulting a shared counter; messages hit accept and reject branches.

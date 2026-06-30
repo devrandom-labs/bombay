@@ -43,5 +43,29 @@ tokio = { workspace = true, features = [
 name = "message_bus_bdd"
 required-features = ["testing"]
 
+[[test]]
+name = "message_bus_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "broker_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "broker_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "pubsub_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "pubsub_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "pubsub_bug_bdd"
+required-features = ["testing"]
+
 [lints]
 workspace = true

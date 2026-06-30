@@ -67,10 +67,8 @@ Feature: Broker — laws over glob routing, fan-out multiplicity, and dead-actor
     Given a running Broker with any delivery strategy d
     And a subscriber S subscribed with pattern "t" whose actor is not running
     When a message is published to topic "t"
-    Then S is removed from the subscription iff d delivers inline (Guaranteed, BestEffort,
-      TimedDelivery) and surfaces ActorNotRunning, pruned synchronously after the loop
-    And for Spawned and SpawnedWithTimeout S is removed asynchronously via a self-sent
-      Unsubscribe carrying S's pattern and id
+    Then S is removed from the subscription iff d delivers inline (Guaranteed, BestEffort, TimedDelivery) and surfaces ActorNotRunning, pruned synchronously after the loop
+    And for Spawned and SpawnedWithTimeout S is removed asynchronously via a self-sent Unsubscribe carrying S's pattern and id
     And the Broker actor never panics for any d
     # GEN: d ∈ all 5 DeliveryStrategy variants incl. boundary timeouts {Duration::ZERO,
     #      50ms} for the timed/spawned-timeout variants; S always reports ActorNotRunning.
@@ -101,8 +99,7 @@ Feature: Broker — laws over glob routing, fan-out multiplicity, and dead-actor
     And a subscriber S subscribed under any set P of patterns
     When S unsubscribes with topic None
     Then S receives 0 messages for any subsequent publish to any topic
-    And separately, when S instead unsubscribes from one pattern p in P, S still receives
-      deliveries for publishes matching any other pattern in P but none matching only p
+    And separately, when S instead unsubscribes from one pattern p in P, S still receives deliveries for publishes matching any other pattern in P but none matching only p
     # GEN: P ∈ non-empty pattern sets incl. boundaries {1 pattern, 2 patterns, the same
     #      pattern twice}; pick the unsubscribe target p ∈ P and a publish topic matching p
     #      only vs. matching another pattern.
@@ -121,8 +118,7 @@ Feature: Broker — laws over glob routing, fan-out multiplicity, and dead-actor
     Given a running Broker with delivery strategy "Guaranteed"
     And any fixed set of (subscriber, pattern) registrations
     When N messages are published concurrently from P tasks to any topics
-    Then for every subscriber the received count equals, per registration matching a published
-      topic, the number of publishes to a matching topic — no loss, no duplication
+    Then for every subscriber the received count equals, per registration matching a published topic, the number of publishes to a matching topic — no loss, no duplication
     # GEN: P ∈ [2, 10]; N ∈ {1, 50, 100}; registrations incl. overlapping patterns
     #      ("a/*" and "*/x") and a duplicate registration; topics chosen so some match
     #      multiple patterns.

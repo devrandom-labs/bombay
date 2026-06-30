@@ -49,6 +49,9 @@
 
 use std::{collections::HashMap, time::Duration};
 
+#[cfg(any(test, feature = "testing"))]
+use std::marker::PhantomData;
+
 use bombay::{error::Infallible, prelude::*};
 use futures::future::BoxFuture;
 
@@ -249,6 +252,78 @@ impl<M: 'static> Actor for PubSub<M> {
 impl<M> Default for PubSub<M> {
     fn default() -> Self {
         PubSub::new(DeliveryStrategy::default())
+    }
+}
+
+/// Test-only introspection: a query that replies with how many subscribers the
+/// pubsub actor currently holds (the live length of the `subscribers` map).
+///
+/// Routed through the pubsub mailbox like any other message, so the reply
+/// observes the `subscribers` map *after* the publish/subscribe that preceded it
+/// has been handled — which is exactly what the `pubsub.feature` `@lifecycle`
+/// scenarios assert ("removed from the subscriber set", "remains in the
+/// subscriber set"). Gated to test/`testing` builds so it never appears on the
+/// public release API.
+#[cfg(any(test, feature = "testing"))]
+pub struct CountSubscribers<M>(PhantomData<fn() -> M>);
+
+#[cfg(any(test, feature = "testing"))]
+impl<M> CountSubscribers<M> {
+    /// Creates a subscriber-count query.
+    #[must_use]
+    pub fn new() -> Self {
+        CountSubscribers(PhantomData)
+    }
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl<M> Default for CountSubscribers<M> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl<M: 'static> Message<CountSubscribers<M>> for PubSub<M> {
+    type Reply = usize;
+
+    async fn handle(
+        &mut self,
+        _query: CountSubscribers<M>,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        self.subscribers.len()
+    }
+}
+
+/// Test-only introspection: a query that replies with whether the pubsub actor
+/// currently holds a subscriber entry for the given [`ActorId`].
+///
+/// Like [`CountSubscribers`], it is routed through the mailbox so the reply
+/// observes membership *after* the preceding publish/subscribe has been handled.
+/// Gated to test/`testing` builds.
+#[cfg(any(test, feature = "testing"))]
+pub struct ContainsSubscriber<M>(ActorId, PhantomData<fn() -> M>);
+
+#[cfg(any(test, feature = "testing"))]
+impl<M> ContainsSubscriber<M> {
+    /// Creates a membership query for the subscriber keyed by `actor_id`.
+    #[must_use]
+    pub fn new(actor_id: ActorId) -> Self {
+        ContainsSubscriber(actor_id, PhantomData)
+    }
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl<M: 'static> Message<ContainsSubscriber<M>> for PubSub<M> {
+    type Reply = bool;
+
+    async fn handle(
+        &mut self,
+        query: ContainsSubscriber<M>,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        self.subscribers.contains_key(&query.0)
     }
 }
 
