@@ -50,6 +50,16 @@ and compile-time-only code. The honest per-area picture:
 Well-covered (≥80%): `supervision` 95%, `spawn` 93%, `actor` 91%, `links` 89%, `reply` 89%,
 `id` 88%, `registry` 87%, `request/ask` 81%, `mailbox` 81%.
 
+### Cross-module integration (#87)
+The #77 coverage above is per-module (one isolated `World` each). `tests/core_integration.rs`
+adds 5 end-to-end scenarios over the subsystem INTERACTIONS: supervision × mailbox (no message
+lost or duplicated across a restart under concurrent producer load), supervision × registry (the
+registry entry stays resolvable and alive across a child restart), links × mailbox (`on_link_died`
+fires for a dying peer while the watcher keeps draining its own mailbox), and the OneForAll /
+RestForOne cascade restart-sets with in-flight messages preserved. These guard regressions that
+only manifest in the interaction between modules — which line coverage of isolated scenarios
+cannot catch.
+
 ### Known limitation — proc-macros read ~0%
 The `macros` crate (`messages.rs` 0/437, the `derive_*`) runs at **compile time**, in a separate
 process during the build of crates that USE the macros — runtime `llvm-cov` of the test binaries
