@@ -51,10 +51,8 @@ Feature: MessageBus — laws over TypeId routing isolation, fan-out multiplicity
     Given a running MessageBus with any delivery strategy d
     And a recipient A registered for type "Ping" whose actor is not running
     When a "Ping" message is published
-    Then A is removed from the registrations for "Ping" iff d delivers inline (Guaranteed,
-      BestEffort, TimedDelivery), pruned synchronously after the loop
-    And for Spawned and SpawnedWithTimeout A is removed asynchronously via a self-sent
-      Unregister::<Ping>::new(A)
+    Then A is removed from the registrations for "Ping" iff d delivers inline (Guaranteed, BestEffort, TimedDelivery), pruned synchronously after the loop
+    And for Spawned and SpawnedWithTimeout A is removed asynchronously via a self-sent Unregister::<Ping>::new(A)
     And A's registrations for any OTHER type are never touched by a Ping publish
     And the MessageBus actor never panics for any d
     # GEN: d ∈ all 5 DeliveryStrategy variants incl. boundary timeouts {Duration::ZERO,
@@ -89,8 +87,7 @@ Feature: MessageBus — laws over TypeId routing isolation, fan-out multiplicity
     Given a running MessageBus with delivery strategy "Guaranteed"
     And any fixed set of registrations across distinct types
     When N values are published concurrently from P tasks across the registered types
-    Then each recipient's received count of type M equals the number of M-publishes times its
-      registration count for M — no loss, no duplication
+    Then each recipient's received count of type M equals the number of M-publishes times its registration count for M — no loss, no duplication
     And no recipient ever receives a value of a type it is not registered for
     # GEN: P ∈ [2, 10]; N split across types {Ping, Pong}; registrations incl. a recipient
     #      registered for both types and a recipient registered twice for one type;

@@ -259,3 +259,46 @@ impl Registration {
         }
     }
 }
+
+/// Test-only introspection: a query that replies with how many registrations the
+/// bus currently holds for message type `M` (the live length of the
+/// `TypeId::of::<M>()` bucket, `0` when the bucket is absent).
+///
+/// Routed through the bus mailbox like any other message, so the reply observes
+/// state *after* the publish/unregister that preceded it has been handled — which
+/// is exactly what the `message_bus.feature` `@lifecycle` scenarios assert
+/// ("no longer has any registration", "removed from the registrations for …").
+/// Gated to test/`testing` builds so it never appears on the public release API.
+#[cfg(any(test, feature = "testing"))]
+pub struct CountRegistrations<M>(PhantomData<fn() -> M>);
+
+#[cfg(any(test, feature = "testing"))]
+impl<M> CountRegistrations<M> {
+    /// Creates a registration-count query for message type `M`.
+    #[must_use]
+    pub fn new() -> Self {
+        CountRegistrations(PhantomData)
+    }
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl<M> Default for CountRegistrations<M> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl<M: 'static> Message<CountRegistrations<M>> for MessageBus {
+    type Reply = usize;
+
+    async fn handle(
+        &mut self,
+        _query: CountRegistrations<M>,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        self.subscriptions
+            .get(&TypeId::of::<M>())
+            .map_or(0, Vec::len)
+    }
+}

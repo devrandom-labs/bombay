@@ -34,7 +34,7 @@ and compile-time-only code. The honest per-area picture:
 | **kameo core `src/`** (the #77-wired modules) | **76.7%** (4098/5342) | the wired surface |
 | in-tree `src/console/` | 95–98% (minus `demo.rs`, a non-SUT demo at 0%) | #76 |
 | `console` crate (`tui`/`poller`) | 69.5% | #82/#83 raise this |
-| **`actors` crate** | **0%** (0/971) | untested — **#78** |
+| **`actors` crate** | (re-measure pending) | **#78 wired** the `broker` / `pubsub` / `message_bus` / `message_queue` modules to the SUT via cucumber BDD runners (was 0% / 0–971 at the #77 baseline); the next `coverage-llvm` run on merge refreshes the exact number. `pool` / `scheduler` remain unwired. |
 | `macros` crate | ~4% | see "known limitation" below |
 
 ### The real gaps inside the #77-wired core (ranked)

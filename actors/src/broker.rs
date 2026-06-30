@@ -264,3 +264,72 @@ impl<M: Clone + Send + 'static> Message<Publish<M>> for Broker<M> {
         }
     }
 }
+
+/// Test-only introspection: a query that replies with how many times `actor_id`
+/// appears across the broker's subscription map, scoped either to one pattern or
+/// to every pattern.
+///
+/// Routed through the broker mailbox like any other message, so the reply observes
+/// state *after* whatever publish / unsubscribe preceded it has been handled — which
+/// is exactly what the `broker.feature` `@lifecycle` / `@boundary` scenarios assert
+/// ("removed from the subscription", "remains subscribed"). The count is over raw
+/// registrations (the `Vec` slot), so a recipient subscribed twice under one pattern
+/// counts twice — matching the no-dedupe routing contract.
+///
+/// Gated to test/`testing` builds so it never appears on the public release API.
+#[cfg(any(test, feature = "testing"))]
+#[derive(Clone, Debug)]
+pub struct CountSubscriptions {
+    /// When `Some`, count only within this exact pattern key; when `None`, count
+    /// the actor's registrations across every pattern.
+    pub pattern: Option<Pattern>,
+    /// The recipient actor whose registrations are counted.
+    pub actor_id: ActorId,
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl<M: Send + 'static> Message<CountSubscriptions> for Broker<M> {
+    type Reply = usize;
+
+    async fn handle(
+        &mut self,
+        CountSubscriptions { pattern, actor_id }: CountSubscriptions,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        let count_in = |recipients: &Vec<Recipient<M>>| {
+            recipients
+                .iter()
+                .filter(|recipient| recipient.id() == actor_id)
+                .count()
+        };
+        match pattern {
+            Some(pattern) => self.subscriptions.get(&pattern).map_or(0, count_in),
+            None => self.subscriptions.values().map(count_in).sum(),
+        }
+    }
+}
+
+/// Test-only introspection: a query that replies whether the broker currently holds
+/// a subscription-map entry for the exact `pattern` key.
+///
+/// Used by the `broker.feature` `@lifecycle` scenario asserting that unsubscribing
+/// the last recipient of a pattern drops the pattern key entirely.
+#[cfg(any(test, feature = "testing"))]
+#[derive(Clone, Debug)]
+pub struct HasPatternKey {
+    /// The exact pattern key to look up.
+    pub pattern: Pattern,
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl<M: Send + 'static> Message<HasPatternKey> for Broker<M> {
+    type Reply = bool;
+
+    async fn handle(
+        &mut self,
+        HasPatternKey { pattern }: HasPatternKey,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        self.subscriptions.contains_key(&pattern)
+    }
+}

@@ -780,3 +780,89 @@ impl<M: Send + 'static> Message<BasicCancel<M>> for MessageQueue {
         self.basic_cancel(msg.queue, msg.recipient)
     }
 }
+
+/// Test-only introspection: does a named queue currently exist?
+///
+/// Routed through the mailbox like any other message, so the reply observes the
+/// queue table *after* the preceding declare/delete/cancel has been handled —
+/// exactly what the `message_queue.feature` `@lifecycle` scenarios assert
+/// ("queue `q` no longer exists"). Gated to test/`testing` builds so it never
+/// appears on the public release API.
+#[cfg(any(test, feature = "testing"))]
+#[derive(Debug, Default)]
+pub struct QueueExists {
+    /// Queue name to look up.
+    pub queue: String,
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl Message<QueueExists> for MessageQueue {
+    type Reply = bool;
+
+    async fn handle(
+        &mut self,
+        query: QueueExists,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        self.queues.contains_key(&query.queue)
+    }
+}
+
+/// Test-only introspection: does a named (non-default) exchange currently exist?
+///
+/// Lets the cascade/auto-delete `@lifecycle` scenarios assert the *exact*
+/// surviving exchange set rather than inferring it from a publish error. Gated to
+/// test/`testing` builds.
+#[cfg(any(test, feature = "testing"))]
+#[derive(Debug, Default)]
+pub struct ExchangeExists {
+    /// Exchange name to look up.
+    pub exchange: String,
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl Message<ExchangeExists> for MessageQueue {
+    type Reply = bool;
+
+    async fn handle(
+        &mut self,
+        query: ExchangeExists,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        self.exchanges.contains_key(&query.exchange)
+    }
+}
+
+/// Test-only introspection: how many bindings on `exchange` name `queue`?
+///
+/// `None` reply ⇒ the exchange does not exist; `Some(n)` ⇒ it exists with `n`
+/// bindings whose `queue_name == queue`. Lets "the `durable` exchange still
+/// exists with no bindings to `q`" be asserted as the exact pair
+/// `(exists, count) == (true, 0)`. Gated to test/`testing` builds.
+#[cfg(any(test, feature = "testing"))]
+#[derive(Debug, Default)]
+pub struct CountBindings {
+    /// Exchange name to inspect.
+    pub exchange: String,
+    /// Queue name whose bindings are counted.
+    pub queue: String,
+}
+
+#[cfg(any(test, feature = "testing"))]
+impl Message<CountBindings> for MessageQueue {
+    type Reply = Option<usize>;
+
+    async fn handle(
+        &mut self,
+        query: CountBindings,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        self.exchanges.get(&query.exchange).map(|exchange| {
+            exchange
+                .bindings
+                .iter()
+                .filter(|b| b.queue_name == query.queue)
+                .count()
+        })
+    }
+}
