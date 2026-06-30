@@ -38,8 +38,7 @@ Feature: Scheduler — laws over one-shot timeouts, periodic intervals, and clea
     Given a SetTimeout scheduled for any duration d from construction against the target
     When the paused clock is advanced past construction + d and held for further ticks
     Then the target receives the message exactly once, no earlier than d after construction
-    And in the separate run where the AbortHandle is aborted before d elapses, the target
-      never receives the message however far the clock is then advanced
+    And in the separate run where the AbortHandle is aborted before d elapses, the target never receives the message however far the clock is then advanced
     # GEN: d ∈ boundary-biased Duration {ZERO, 1 tick, 1ms, 100ms, 1s}; the spawned task does
     #      one sleep_until then a single tell (it never loops), so the count is exactly 1
     #      unless aborted. Abort point ∈ before d.
@@ -55,8 +54,7 @@ Feature: Scheduler — laws over one-shot timeouts, periodic intervals, and clea
   Scenario: SetInterval fires k times by start_delay + k*period under a paused clock
     Given a SetInterval of any period p, optionally rebased by any start_delay s, against the target
     When the paused clock is advanced to start + s + k*p for any k
-    Then the number of messages the target has received equals k (the number of ticks whose
-      instant has been reached), under MissedTickBehavior::Delay so missed ticks do not replay
+    Then the number of messages the target has received equals k (the number of ticks whose instant has been reached), under MissedTickBehavior::Delay so missed ticks do not replay
     # GEN: p ∈ boundary-biased Duration {1 tick, 1ms, 100ms}; s ∈ {none, 0, 250ms}; k ∈
     #      {0, 1, 5}; advance in p-sized steps so each tick instant is reached exactly. Use
     #      Delay behaviour so the count is the number of reached tick instants, not a burst.
@@ -72,8 +70,7 @@ Feature: Scheduler — laws over one-shot timeouts, periodic intervals, and clea
   Scenario: Both handlers return a usable AbortHandle for any duration or period
     Given any SetTimeout duration d or SetInterval period p
     When the message is asked to the Scheduler
-    Then the reply is a tokio AbortHandle referencing the spawned task, returned independently
-      of whether or when the task fires
+    Then the reply is a tokio AbortHandle referencing the spawned task, returned independently of whether or when the task fires
     # GEN: d, p ∈ {Duration::ZERO, 1ms, 100ms}; for SetTimeout incl. an already-past deadline.
     # ORACLE: SetTimeout::Reply == SetInterval::Reply == AbortHandle; the handler returns
     #         tasks.spawn(..) before the task runs.
@@ -107,8 +104,7 @@ Feature: Scheduler — laws over one-shot timeouts, periodic intervals, and clea
   Scenario: Independent concurrent timers each deliver on their own schedule with no cross-talk
     Given any mix of SetTimeout and SetInterval messages on one Scheduler against the target
     When all are asked concurrently from multiple tasks and the paused clock is advanced
-    Then each timeout contributes exactly one message and each interval contributes one message
-      per reached tick instant
+    Then each timeout contributes exactly one message and each interval contributes one message per reached tick instant
     And no scheduled message is dropped, duplicated, or attributed to the wrong timer
     # GEN: a multiset of timers — SetTimeout count ∈ {0, 1, 50}, SetInterval count ∈ {0, 1, 2}
     #      with periods ∈ {1 tick, 100ms}; advance the clock in period-sized steps.

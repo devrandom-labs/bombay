@@ -418,3 +418,97 @@ impl<A: Actor> fmt::Debug for ActorPool<A> {
             .finish()
     }
 }
+
+/// Test-only introspection: a query that replies with the [`ActorId`] of every
+/// worker the pool currently holds, in worker-vector index order.
+///
+/// The pool's `workers` vec is private, so the `pool.feature` `@lifecycle`
+/// scenarios cannot otherwise observe "the pool still has exactly N workers",
+/// "the replacement occupies the same index the dead worker held", or "the
+/// replacement is a fresh actor (a different `ActorId`)". A snapshot of the
+/// per-index `Worker<A>` ids — taken through the pool mailbox so it observes
+/// state *after* the `on_link_died` replacement that preceded it has run — lets
+/// those `Then`s assert the exact size and per-index identity rather than a
+/// proxy. Gated to test/`testing` builds so it never reaches the public API.
+#[cfg(any(test, feature = "testing"))]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct PoolSnapshot;
+
+#[cfg(any(test, feature = "testing"))]
+impl<A: Actor> Message<PoolSnapshot> for ActorPool<A> {
+    type Reply = Vec<ActorId>;
+
+    async fn handle(
+        &mut self,
+        _query: PoolSnapshot,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        self.workers.iter().map(|(worker, _)| worker.id()).collect()
+    }
+}
+
+/// Test-only control: kill the `Worker<A>` actor currently at the given index and
+/// wait for its shutdown, returning the dead worker's [`ActorId`].
+///
+/// The pool's `Worker<A>` actors are private (the only escaping handle is the
+/// inner `ActorRef<A>`, and the `Worker` does NOT link to it), so a test cannot
+/// otherwise make a *worker* die to exercise `on_link_died`. This message runs
+/// inside the pool's own mailbox, kills the targeted worker, and awaits its
+/// shutdown so the subsequent link-death is already queued for the pool when the
+/// reply is observed — letting the `@lifecycle` scenarios drive replacement
+/// deterministically. An out-of-range index replies `None`. Gated to
+/// test/`testing` builds so it never reaches the public API.
+#[cfg(any(test, feature = "testing"))]
+#[derive(Clone, Copy, Debug)]
+pub struct KillWorker(pub usize);
+
+#[cfg(any(test, feature = "testing"))]
+impl<A: Actor> Message<KillWorker> for ActorPool<A> {
+    type Reply = Option<ActorId>;
+
+    async fn handle(
+        &mut self,
+        KillWorker(index): KillWorker,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        let (worker, _) = self.workers.get(index)?;
+        let id = worker.id();
+        worker.kill();
+        worker.wait_for_shutdown().await;
+        Some(id)
+    }
+}
+
+/// Test-only control: `kill()` every worker the pool currently holds *without*
+/// awaiting their shutdown, and return their [`ActorId`]s.
+///
+/// `kill()` closes a worker's mailbox synchronously, so a subsequent send fails
+/// with `SendError::ActorNotRunning` immediately — before the `on_link_died`
+/// replacement (a later mailbox event) can run. This lets a test enqueue a
+/// `Dispatch` right after `KillAllWorkers` to deterministically exercise the
+/// total-exhaustion arm (every worker unreachable → `WorkerReply::Err`) using the
+/// REAL `Dispatch` handler, with the heal serialised strictly after. Gated to
+/// test/`testing` builds so it never reaches the public API.
+#[cfg(any(test, feature = "testing"))]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct KillAllWorkers;
+
+#[cfg(any(test, feature = "testing"))]
+impl<A: Actor> Message<KillAllWorkers> for ActorPool<A> {
+    type Reply = Vec<ActorId>;
+
+    async fn handle(
+        &mut self,
+        _kill: KillAllWorkers,
+        _ctx: &mut Context<Self, Self::Reply>,
+    ) -> Self::Reply {
+        self.workers
+            .iter()
+            .map(|(worker, _)| {
+                let id = worker.id();
+                worker.kill();
+                id
+            })
+            .collect()
+    }
+}

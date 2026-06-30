@@ -79,10 +79,8 @@ Feature: ActorPool — laws over least-connections selection, fixed size, and br
   Scenario: Dispatch always selects an argmin(load) worker for any dispatch sequence
     Given a pool of any size N with all workers live
     When any sequence of dispatches runs, each holding its worker busy for a bounded window
-    Then each dispatch is routed to a worker whose in-flight load equals the current minimum
-      over all live workers at selection time
-    And no message is dropped while at least one worker is live; on total exhaustion the reply
-      is WorkerReply::Err(SendError::ActorNotRunning(msg)) carrying the original message
+    Then each dispatch is routed to a worker whose in-flight load equals the current minimum over all live workers at selection time
+    And no message is dropped while at least one worker is live; on total exhaustion the reply is WorkerReply::Err(SendError::ActorNotRunning(msg)) carrying the original message
     # GEN: N ∈ {1, 2, 4, 8}; dispatch sequence length ∈ {1, N, 4*N} with overlapping in-flight
     #      windows so loads diverge incl. the boundary where one worker is saturated and
     #      another idle; also a run where every worker is stopped (exhaustion path).

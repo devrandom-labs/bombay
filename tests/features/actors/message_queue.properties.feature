@@ -56,8 +56,7 @@ Feature: MessageQueue — laws over exchange routing, headers matching, and glob
   Scenario: Topic exchange delivers iff glob(binding key) matches the routing key
     Given a Topic exchange "x" with any set of (queue, compilable-glob-key) bindings
     When a message is published to "x" with any routing key r
-    Then a bound queue receives the message iff one of its binding globs matches r under the
-      MessageQueue MatchOptions (separator '/', '*' spans '.')
+    Then a bound queue receives the message iff one of its binding globs matches r under the MessageQueue MatchOptions (separator '/', '*' spans '.')
     # GEN: binding keys ∈ compilable globs incl. boundaries {"", "*", "log.*", "log/*",
     #      "a/*/b", literal "log.warn"}; r ∈ {"", "log.warn", "log.warn.detail", "log/x"}.
     # ORACLE: glob::Pattern::new(key).matches_with(r, MatchOptions) per binding — the glob
@@ -69,10 +68,8 @@ Feature: MessageQueue — laws over exchange routing, headers matching, and glob
   Scenario: Headers exchange delivers per its x-match all/any law over any header set
     Given a Headers exchange "x" and a queue bound with x-match and any argument map
     When a message is published to "x" with any header map h
-    Then with x-match=all the queue receives the message iff every non-"x-" argument is present
-      in h with an equal value
-    And with x-match=any the queue receives it iff at least one non-"x-" argument is present in
-      h with an equal value
+    Then with x-match=all the queue receives the message iff every non-"x-" argument is present in h with an equal value
+    And with x-match=any the queue receives it iff at least one non-"x-" argument is present in h with an equal value
     # GEN: argument map size ∈ {0, 1, 3}; header map h ∈ subsets/supersets/mismatches of the
     #      arguments incl. boundaries {empty h with HeadersRequired error path, exact match,
     #      one-off match, superset match}; x-match ∈ {all, any}.

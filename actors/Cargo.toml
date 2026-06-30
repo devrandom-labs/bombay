@@ -67,5 +67,33 @@ required-features = ["testing"]
 name = "pubsub_bug_bdd"
 required-features = ["testing"]
 
+[[test]]
+name = "scheduler_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "scheduler_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "pool_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "pool_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "message_queue_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "message_queue_props_bdd"
+required-features = ["testing"]
+
+[[test]]
+name = "message_queue_bug_bdd"
+required-features = ["testing"]
+
 [lints]
 workspace = true
