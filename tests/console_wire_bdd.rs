@@ -1,6 +1,6 @@
-//! Cucumber harness for the ROOT `kameo` crate's in-tree console server
+//! Cucumber harness for the ROOT `bombay` crate's in-tree console server
 //! (`src/console/{server,registry,wire}.rs`) — the source side an instrumented
-//! kameo app exposes over TCP. The companion `tests/console.rs` covers the six
+//! bombay app exposes over TCP. The companion `tests/console.rs` covers the six
 //! happy-path integration tests; this file wires the gap scenarios from
 //! `tests/features/console/server_wire.feature`.
 //!
@@ -32,8 +32,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use cucumber::{World, given, then, when};
-use kameo::{
+use bombay::{
     console::{
         ConsoleHandle,
         wire::{ActorStatus, Message, Snapshot},
@@ -41,6 +40,7 @@ use kameo::{
     error::Infallible,
     prelude::*,
 };
+use cucumber::{World, given, then, when};
 use tokio::sync::Barrier;
 
 /// A grave window far larger than any test latency, so a freshly-spawned actor
@@ -87,7 +87,7 @@ pub struct WireWorld {
 }
 
 async fn reset_and_spawn(world: &mut WireWorld) {
-    kameo::console::testing::reset_for_test();
+    bombay::console::testing::reset_for_test();
     let actor = Echo::spawn(Echo);
     actor.wait_for_startup().await;
     world.actors.push(actor);
@@ -118,7 +118,7 @@ async fn spawn_then_stop() -> u64 {
 /// is observably `Stopped`, bounded so a real regression fails loudly instead of hanging.
 async fn wait_until_stopped(id: u64) {
     for _ in 0..200 {
-        let snap = kameo::console::testing::snapshot(GRAVE_WINDOW).await;
+        let snap = bombay::console::testing::snapshot(GRAVE_WINDOW).await;
         if snap
             .actors
             .iter()
@@ -148,7 +148,7 @@ fn read_one_frame(stream: &mut TcpStream) -> Snapshot {
 /// address in the world. A huge grave window keeps test actors in every snapshot.
 async fn start_server(world: &mut WireWorld) {
     reset_and_spawn(world).await;
-    let handle = kameo::console::Console::builder()
+    let handle = bombay::console::Console::builder()
         .grave_window(GRAVE_WINDOW)
         .serve("127.0.0.1:0")
         .await
@@ -183,13 +183,13 @@ async fn given_single_connection(_world: &mut WireWorld) {
 async fn given_server_and_single_connection(_world: &mut WireWorld) {
     // No live actor required for the +1 step (seq advances per produced
     // snapshot regardless of actor count), but reset state to a known point.
-    kameo::console::testing::reset_for_test();
+    bombay::console::testing::reset_for_test();
 }
 
 #[when(regex = r"^the client requests 5 snapshots back to back$")]
 async fn when_requests_five(world: &mut WireWorld) {
     for _ in 0..5 {
-        let snapshot = kameo::console::testing::snapshot(GRAVE_WINDOW).await;
+        let snapshot = bombay::console::testing::snapshot(GRAVE_WINDOW).await;
         world.seqs.push(snapshot.seq);
     }
 }
@@ -197,7 +197,7 @@ async fn when_requests_five(world: &mut WireWorld) {
 #[when(regex = r"^the client requests two snapshots back to back$")]
 async fn when_requests_two(world: &mut WireWorld) {
     for _ in 0..2 {
-        let snapshot = kameo::console::testing::snapshot(GRAVE_WINDOW).await;
+        let snapshot = bombay::console::testing::snapshot(GRAVE_WINDOW).await;
         world.seqs.push(snapshot.seq);
     }
 }
@@ -251,7 +251,7 @@ const SNAPSHOTS_PER_TASK: usize = 4;
 
 #[given(regex = r"^a console server with live actors$")]
 async fn given_server_with_live_actors(world: &mut WireWorld) {
-    kameo::console::testing::reset_for_test();
+    bombay::console::testing::reset_for_test();
     // A handful of live actors so each concurrent snapshot has real membership
     // to render while the seqs are handed out.
     for _ in 0..CONCURRENCY {
@@ -280,7 +280,7 @@ async fn when_concurrent_polls(world: &mut WireWorld) {
                 barrier.wait().await;
                 let mut seqs = Vec::with_capacity(SNAPSHOTS_PER_TASK);
                 for _ in 0..SNAPSHOTS_PER_TASK {
-                    seqs.push(kameo::console::testing::snapshot(GRAVE_WINDOW).await.seq);
+                    seqs.push(bombay::console::testing::snapshot(GRAVE_WINDOW).await.seq);
                 }
                 seqs
             })
@@ -340,7 +340,7 @@ async fn when_poll_during_concurrent_spawn(world: &mut WireWorld) {
         // one snapshot lands mid-batch.
         let mut snaps = Vec::new();
         for _ in 0..SNAPSHOTS_PER_TASK {
-            snaps.push(kameo::console::testing::snapshot(GRAVE_WINDOW).await);
+            snaps.push(bombay::console::testing::snapshot(GRAVE_WINDOW).await);
         }
         snaps
     });
@@ -405,7 +405,7 @@ async fn then_single_membership(world: &mut WireWorld) {
 
 #[given(regex = r"^a console server with actors stopping concurrently with a poll$")]
 async fn given_server_actors_stopping(world: &mut WireWorld) {
-    kameo::console::testing::reset_for_test();
+    bombay::console::testing::reset_for_test();
     // Spawn a batch of actors up front; they are stopped concurrently during the
     // When step. Keep their refs so they stay registered until then.
     for _ in 0..CONCURRENCY {
@@ -441,7 +441,7 @@ async fn when_poll_during_stop_storm(world: &mut WireWorld) {
         poll_barrier.wait().await;
         let mut snaps = Vec::new();
         for _ in 0..SNAPSHOTS_PER_TASK {
-            snaps.push(kameo::console::testing::snapshot(GRAVE_WINDOW).await);
+            snaps.push(bombay::console::testing::snapshot(GRAVE_WINDOW).await);
         }
         snaps
     });
@@ -492,7 +492,7 @@ async fn then_stopped_status_coherent(world: &mut WireWorld) {
 
 #[given(regex = r"^an actor that stops immediately before a poll$")]
 async fn given_actor_stops_before_poll(world: &mut WireWorld) {
-    kameo::console::testing::reset_for_test();
+    bombay::console::testing::reset_for_test();
     // Stop the actor and await shutdown, so it is in the registry as Stopped at
     // poll time. The grave window (set in the next Given) dwarfs poll latency,
     // so it is deterministically present.
@@ -529,14 +529,14 @@ async fn then_stopped_present_with_reason(world: &mut WireWorld) {
 async fn when_requests_two_spaced(world: &mut WireWorld) {
     world
         .snapshots
-        .push(kameo::console::testing::snapshot(GRAVE_WINDOW).await);
+        .push(bombay::console::testing::snapshot(GRAVE_WINDOW).await);
     // A real (small) elapse between the two polls so uptime advances. captured_at
     // is best-effort wall-clock (may regress on a clock step) — see
     // `assert_fresh_wall_clock`; only uptime (Instant) is asserted monotonic.
     tokio::time::sleep(Duration::from_millis(1)).await;
     world
         .snapshots
-        .push(kameo::console::testing::snapshot(GRAVE_WINDOW).await);
+        .push(bombay::console::testing::snapshot(GRAVE_WINDOW).await);
 }
 
 /// `captured_at` is `SystemTime::now()` (registry.rs) — a best-effort WALL clock, which is
@@ -586,7 +586,7 @@ async fn then_uptime_non_decreasing(world: &mut WireWorld) {
 
 #[given(regex = r"^an actor that has been stopped for exactly the grave window duration$")]
 async fn given_actor_stopped_at_boundary(world: &mut WireWorld) {
-    kameo::console::testing::reset_for_test();
+    bombay::console::testing::reset_for_test();
     world.poll_boundary_absent_case = true;
     // Present-case: stop an actor, then snapshot with a LARGE ttl so its
     // `since.elapsed()` is far below the ttl — the reap predicate
@@ -603,7 +603,7 @@ async fn when_client_polls(world: &mut WireWorld) {
     // `elapsed` is far below the ttl, so the `elapsed > ttl` reap is false).
     world
         .snapshots
-        .push(kameo::console::testing::snapshot(GRAVE_WINDOW).await);
+        .push(bombay::console::testing::snapshot(GRAVE_WINDOW).await);
 
     // The grave-window boundary scenario also needs the absent-case: only it
     // sets `poll_boundary_absent_case`. Take a second poll with ttl ZERO after a
@@ -613,7 +613,7 @@ async fn when_client_polls(world: &mut WireWorld) {
         tokio::time::sleep(Duration::from_millis(5)).await;
         world
             .snapshots
-            .push(kameo::console::testing::snapshot(Duration::ZERO).await);
+            .push(bombay::console::testing::snapshot(Duration::ZERO).await);
     }
 }
 
@@ -653,13 +653,13 @@ async fn then_actor_absent_after_window(world: &mut WireWorld) {
     regex = r"^two actors have stopped and been reaped, then a third stops but is not yet reaped$"
 )]
 async fn given_two_reaped_one_present(world: &mut WireWorld) {
-    kameo::console::testing::reset_for_test();
+    bombay::console::testing::reset_for_test();
     // Two actors stop, then a ttl-ZERO poll (after a real elapse) reaps both:
     // REAPED_STOPPED becomes 2.
     spawn_then_stop().await;
     spawn_then_stop().await;
     tokio::time::sleep(Duration::from_millis(5)).await;
-    let _ = kameo::console::testing::snapshot(Duration::ZERO).await;
+    let _ = bombay::console::testing::snapshot(Duration::ZERO).await;
     // A third actor stops but is kept present by a huge grave window: it is
     // counted in `stopped_now`, not yet migrated to REAPED_STOPPED.
     world.reaped_id = Some(spawn_then_stop().await);
@@ -744,7 +744,7 @@ async fn given_server_encode_fails(world: &mut WireWorld) {
     world.clients.push(connect(world));
     // Arm the one-shot encode-failure hook so the next snapshot encode in the
     // serve loop takes the error branch (break before any write).
-    kameo::console::testing::fail_next_encode();
+    bombay::console::testing::fail_next_encode();
 }
 
 #[when(regex = r"^the client sends the byte 0xFF instead of 0x00$")]
@@ -955,7 +955,7 @@ async fn server_wire_features() {
             // guarantee the test's cwd is the workspace root (the nix-sandbox
             // `cargoNextest` runs from a different cwd than a bare `cargo test`),
             // so a bare relative path makes cucumber fail with "Could not read
-            // path". The env var is the root `kameo` crate dir = workspace root.
+            // path". The env var is the root `bombay` crate dir = workspace root.
             concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/tests/features/console/server_wire.feature"

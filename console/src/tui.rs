@@ -6,10 +6,10 @@ use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
-use kameo::console::wire::{
+use bombay::console::wire::{
     ActorId, ActorSnapshot, ActorStatus, RestartPolicy, Snapshot, SupervisorStrategy, WaitKind,
 };
+use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Layout, Rect},

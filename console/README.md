@@ -1,18 +1,18 @@
-# kameo console
+# bombay console
 
-A terminal UI for monitoring a running [kameo](https://github.com/tqwewe/kameo) actor system in
+A terminal UI for monitoring a running [bombay](https://github.com/tqwewe/kameo) actor system in
 real time. It connects to your application over TCP and shows the live supervision tree, message
 throughput, mailbox backpressure, restarts, and deadlocks.
 
-![kameo console screenshot](https://github.com/tqwewe/kameo/blob/main/console/screenshot.png?raw=true)
+![bombay console screenshot](https://github.com/tqwewe/kameo/blob/main/console/screenshot.png?raw=true)
 
 ## How it works
 
 The console has two halves:
 
-1. Your kameo application enables the `console` feature, which instruments every actor with a
-   lightweight monitor, and calls `kameo::console::serve(...)` to expose snapshots over TCP.
-2. The `kameo_console` binary connects to that address and renders the snapshots. Polling is
+1. Your bombay application enables the `console` feature, which instruments every actor with a
+   lightweight monitor, and calls `bombay::console::serve(...)` to expose snapshots over TCP.
+2. The `bombay_console` binary connects to that address and renders the snapshots. Polling is
    pull based and happens on demand, so an idle application does no extra work.
 
 The instrumentation lives behind the `console` cargo feature and has no cost when the feature is
@@ -24,7 +24,7 @@ Add the feature:
 
 ```toml
 [dependencies]
-kameo = { version = "0.21", features = ["console"] }
+bombay = { version = "0.21", features = ["console"] }
 ```
 
 Start the collector once, early in `main`:
@@ -32,7 +32,7 @@ Start the collector once, early in `main`:
 ```rust
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let console = kameo::console::serve("127.0.0.1:9999").await?;
+    let console = bombay::console::serve("127.0.0.1:9999").await?;
 
     // spawn and run your actors as usual...
 
@@ -46,7 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 `serve` returns a `ConsoleHandle`. For custom settings, use the builder:
 
 ```rust
-let console = kameo::console::Console::builder()
+let console = bombay::console::Console::builder()
     .grave_window(std::time::Duration::from_secs(10))
     .serve("127.0.0.1:9999")
     .await?;
@@ -60,32 +60,32 @@ so short lived actors stay visible for at least one poll.
 Install the console from crates.io:
 
 ```sh
-cargo install kameo_console
+cargo install bombay_console
 ```
 
-That puts a `kameo-console` binary on your `PATH`. Point it at your application's collector
+That puts a `bombay-console` binary on your `PATH`. Point it at your application's collector
 address:
 
 ```sh
-kameo-console 127.0.0.1:9999
+bombay-console 127.0.0.1:9999
 ```
 
 Or change the poll interval at startup, and try it without a running application using the built
 in demo data:
 
 ```sh
-kameo-console 127.0.0.1:9999 --interval 250ms
-kameo-console --demo
+bombay-console 127.0.0.1:9999 --interval 250ms
+bombay-console --demo
 ```
 
 ## Running from source
 
-If you are working inside the kameo repository, run it with cargo instead of installing:
+If you are working inside the bombay repository, run it with cargo instead of installing:
 
 ```sh
-cargo run -p kameo_console
-cargo run -p kameo_console -- 127.0.0.1:9999 --interval 250ms
-cargo run -p kameo_console -- --demo
+cargo run -p bombay_console
+cargo run -p bombay_console -- 127.0.0.1:9999 --interval 250ms
+cargo run -p bombay_console -- --demo
 ```
 
 ### Options
@@ -131,7 +131,7 @@ Press `?` inside the console for the full list. The essentials:
 
 ## Try the example
 
-The kameo repository ships a lively example that exercises every feature, with a supervision
+The bombay repository ships a lively example that exercises every feature, with a supervision
 tree, varied throughput, backpressure, restarts, and a deadlock:
 
 ```sh
@@ -139,17 +139,17 @@ tree, varied throughput, backpressure, restarts, and a deadlock:
 cargo run --example console --features console
 
 # terminal 2: the console
-cargo run -p kameo_console
+cargo run -p bombay_console
 ```
 
 ## Stability
 
 The wire protocol between the application and the console is unstable and may change between
-releases. Run a console build that matches the kameo version your application links against.
+releases. Run a console build that matches the bombay version your application links against.
 
 ## License
 
-`kameo_console` is dual-licensed under either:
+`bombay_console` is dual-licensed under either:
 
 - MIT License ([LICENSE-MIT](../LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 - Apache License, Version 2.0 ([LICENSE-APACHE](../LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)

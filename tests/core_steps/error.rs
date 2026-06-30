@@ -13,10 +13,10 @@
 //! generic params are `TestMsg(u32)` for the message slot and `TestErr(String)`
 //! for the handler-error slot.
 
-use cucumber::{World, given, then, when};
-use kameo::error::{
+use bombay::error::{
     ActorStopReason, BoxSendError, PanicError, PanicReason, RegistryError, SendError,
 };
+use cucumber::{World, given, then, when};
 use proptest::prelude::*;
 
 /// Concrete message payload for the message-bearing variants.
@@ -558,7 +558,7 @@ async fn given_actor_stop_reason(world: &mut ErrorWorld, token: String) {
             ActorStopReason::Panicked(PanicError::new(Box::new("x"), PanicReason::HandlerPanic))
         }
         "LinkDied" => ActorStopReason::LinkDied {
-            id: kameo::actor::ActorId::new(1),
+            id: bombay::actor::ActorId::new(1),
             reason: Box::new(ActorStopReason::Normal),
         },
         other => panic!("unknown ActorStopReason token: {other:?}"),

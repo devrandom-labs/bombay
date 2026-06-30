@@ -9,7 +9,7 @@
 //! The SUT is `src/request/tell.rs` (the `TellRequest` builder: `tell(M)` →
 //! optional `mailbox_timeout` → `send`/`try_send`/`blocking_send`/`send_after`/
 //! `IntoFuture`), driven against REAL SPAWNED ACTORS reached through
-//! `kameo::prelude::*`. `tell` is fire-and-forget: no reply channel, no forward
+//! `bombay::prelude::*`. `tell` is fire-and-forget: no reply channel, no forward
 //! variants, and every send returns `Result<(), SendError<M>>`. Because the
 //! dead-actor / full-mailbox failure boxes the BARE message, the
 //! `From<SendError<Signal>>` conversion downcasts `<M>` (not a tuple) and yields
@@ -55,8 +55,8 @@ use std::{
     time::Duration,
 };
 
+use bombay::{error::Infallible, mailbox, prelude::*};
 use cucumber::{World, given, then, when};
-use kameo::{error::Infallible, mailbox, prelude::*};
 use tokio::{
     sync::{Barrier, watch},
     task::JoinHandle,

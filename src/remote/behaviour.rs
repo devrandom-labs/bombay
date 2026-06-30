@@ -29,12 +29,12 @@ use super::{
 /// # Example
 ///
 /// ```rust
-/// use kameo::remote;
+/// use bombay::remote;
 /// use libp2p::{swarm::NetworkBehaviour, PeerId};
 ///
 /// #[derive(NetworkBehaviour)]
 /// struct MyBehaviour {
-///     kameo: remote::Behaviour,
+///     bombay: remote::Behaviour,
 ///     // other behaviours...
 /// }
 ///
@@ -63,7 +63,7 @@ impl Behaviour {
     /// # Example
     ///
     /// ```rust
-    /// use kameo::remote;
+    /// use bombay::remote;
     /// use libp2p::PeerId;
     ///
     /// let peer_id = PeerId::random();
@@ -94,7 +94,7 @@ impl Behaviour {
     /// # Example
     ///
     /// ```rust
-    /// use kameo::remote;
+    /// use bombay::remote;
     /// use libp2p::PeerId;
     ///
     /// let peer_id = PeerId::random();
@@ -259,7 +259,7 @@ impl Behaviour {
 /// # Example
 ///
 /// ```no_run
-/// use kameo::remote;
+/// use bombay::remote;
 /// use libp2p::swarm::SwarmEvent;
 /// #
 /// # let swarm_event: SwarmEvent<remote::Event> = todo!();

@@ -1,4 +1,4 @@
-# Phase 2 — laws for kameo_actors `Broker<M>` (actors/src/broker.rs), layered on
+# Phase 2 — laws for bombay_actors `Broker<M>` (actors/src/broker.rs), layered on
 # tests/features/actors/broker.feature's examples.
 #
 # Conventions (see docs/testing/properties.md):

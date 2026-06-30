@@ -4,14 +4,14 @@ use std::{
     time::Duration,
 };
 
+use bombay_console::{App, ConnectionState, spawn_poller};
 use clap::Parser;
-use kameo_console::{App, ConnectionState, spawn_poller};
 
-/// Terminal monitor for kameo actor systems.
+/// Terminal monitor for bombay actor systems.
 #[derive(Debug, Parser)]
-#[command(name = "kameo-console", version, about, long_about = None)]
+#[command(name = "bombay-console", version, about, long_about = None)]
 pub struct Args {
-    /// Address of the kameo app's console collector to connect to.
+    /// Address of the bombay app's console collector to connect to.
     #[arg(default_value = "127.0.0.1:9999")]
     pub addr: SocketAddr,
 
@@ -66,7 +66,7 @@ fn main() -> color_eyre::Result<()> {
 }
 
 /// Thread-name prefix for the demo runtime's workers, used to filter intentional panics.
-const DEMO_THREAD_PREFIX: &str = "kameo-demo-worker";
+const DEMO_THREAD_PREFIX: &str = "bombay-demo-worker";
 
 /// The demo deliberately panics actors (the console catches and restarts them via supervision)
 /// to show off restarts. Those panics fire on the demo runtime's worker threads, and since the
@@ -102,13 +102,13 @@ fn spawn_demo_server() -> SocketAddr {
             .build()
             .expect("failed to build demo runtime");
         runtime.block_on(async move {
-            let console = kameo::console::serve("127.0.0.1:0")
+            let console = bombay::console::serve("127.0.0.1:0")
                 .await
                 .expect("failed to start demo console server");
             addr_tx
                 .send(console.local_addr())
                 .expect("console exited before receiving the demo address");
-            let _system = kameo::console::demo::spawn().await;
+            let _system = bombay::console::demo::spawn().await;
             // Keep the runtime (and the actor system) alive for the life of the process.
             std::future::pending::<()>().await;
         });

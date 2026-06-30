@@ -53,9 +53,9 @@ impl RemoteMessage {
                     .to_string()
                     .replace(' ', "");
                 quote! {
-                    ::kameo::remote::_internal::const_str::format!(
+                    ::bombay::remote::_internal::const_str::format!(
                         "{:x}",
-                        ::kameo::remote::_internal::const_fnv1a_hash::fnv1a_hash_str_64(concat!(
+                        ::bombay::remote::_internal::const_fnv1a_hash::fnv1a_hash_str_64(concat!(
                             env!("CARGO_PKG_NAME"),
                             "::",
                             env!("CARGO_PKG_VERSION_MAJOR"),
@@ -79,29 +79,29 @@ impl RemoteMessage {
             #item_impl
 
             #[automatically_derived]
-            impl #impl_generics ::kameo::remote::RemoteMessage<#message_generics> for #actor_ty #ty_generics #where_clause {
+            impl #impl_generics ::bombay::remote::RemoteMessage<#message_generics> for #actor_ty #ty_generics #where_clause {
                 const REMOTE_ID: &'static str = #id;
             }
 
             const _: () = {
-                #[::kameo::remote::_internal::linkme::distributed_slice(
-                    ::kameo::remote::_internal::REMOTE_MESSAGES
+                #[::bombay::remote::_internal::linkme::distributed_slice(
+                    ::bombay::remote::_internal::REMOTE_MESSAGES
                 )]
-                #[linkme(crate = ::kameo::remote::_internal::linkme)]
+                #[linkme(crate = ::bombay::remote::_internal::linkme)]
                 static REG: (
-                    ::kameo::remote::_internal::RemoteMessageRegistrationID<'static>,
-                    ::kameo::remote::_internal::RemoteMessageFns,
+                    ::bombay::remote::_internal::RemoteMessageRegistrationID<'static>,
+                    ::bombay::remote::_internal::RemoteMessageFns,
                 ) = (
-                    ::kameo::remote::_internal::RemoteMessageRegistrationID {
-                        actor_remote_id: <#actor_ty as ::kameo::remote::RemoteActor>::REMOTE_ID,
-                        message_remote_id: <#actor_ty #ty_generics as ::kameo::remote::RemoteMessage<#message_generics>>::REMOTE_ID,
+                    ::bombay::remote::_internal::RemoteMessageRegistrationID {
+                        actor_remote_id: <#actor_ty as ::bombay::remote::RemoteActor>::REMOTE_ID,
+                        message_remote_id: <#actor_ty #ty_generics as ::bombay::remote::RemoteMessage<#message_generics>>::REMOTE_ID,
                     },
-                    ::kameo::remote::_internal::RemoteMessageFns {
-                        ask: (|actor_id: ::kameo::actor::ActorId,
+                    ::bombay::remote::_internal::RemoteMessageFns {
+                        ask: (|actor_id: ::bombay::actor::ActorId,
                               msg: ::std::vec::Vec<u8>,
                               mailbox_timeout: ::std::option::Option<::std::time::Duration>,
                               reply_timeout: ::std::option::Option<::std::time::Duration>| {
-                                ::std::boxed::Box::pin(::kameo::remote::_internal::ask::<
+                                ::std::boxed::Box::pin(::bombay::remote::_internal::ask::<
                                     #actor_ty,
                                     #message_generics,
                                 >(
@@ -110,11 +110,11 @@ impl RemoteMessage {
                                     mailbox_timeout,
                                     reply_timeout,
                                 ))
-                            }) as ::kameo::remote::_internal::RemoteAskFn,
-                        try_ask: (|actor_id: ::kameo::actor::ActorId,
+                            }) as ::bombay::remote::_internal::RemoteAskFn,
+                        try_ask: (|actor_id: ::bombay::actor::ActorId,
                               msg: ::std::vec::Vec<u8>,
                               reply_timeout: ::std::option::Option<::std::time::Duration>| {
-                                ::std::boxed::Box::pin(::kameo::remote::_internal::try_ask::<
+                                ::std::boxed::Box::pin(::bombay::remote::_internal::try_ask::<
                                     #actor_ty,
                                     #message_generics,
                                 >(
@@ -122,11 +122,11 @@ impl RemoteMessage {
                                     msg,
                                     reply_timeout,
                                 ))
-                            }) as ::kameo::remote::_internal::RemoteTryAskFn,
-                        tell: (|actor_id: ::kameo::actor::ActorId,
+                            }) as ::bombay::remote::_internal::RemoteTryAskFn,
+                        tell: (|actor_id: ::bombay::actor::ActorId,
                               msg: ::std::vec::Vec<u8>,
                               mailbox_timeout: ::std::option::Option<::std::time::Duration>| {
-                                ::std::boxed::Box::pin(::kameo::remote::_internal::tell::<
+                                ::std::boxed::Box::pin(::bombay::remote::_internal::tell::<
                                     #actor_ty,
                                     #message_generics,
                                 >(
@@ -134,17 +134,17 @@ impl RemoteMessage {
                                     msg,
                                     mailbox_timeout,
                                 ))
-                            }) as ::kameo::remote::_internal::RemoteTellFn,
-                        try_tell: (|actor_id: ::kameo::actor::ActorId,
+                            }) as ::bombay::remote::_internal::RemoteTellFn,
+                        try_tell: (|actor_id: ::bombay::actor::ActorId,
                               msg: ::std::vec::Vec<u8>| {
-                                ::std::boxed::Box::pin(::kameo::remote::_internal::try_tell::<
+                                ::std::boxed::Box::pin(::bombay::remote::_internal::try_tell::<
                                     #actor_ty,
                                     #message_generics,
                                 >(
                                     actor_id,
                                     msg,
                                 ))
-                            }) as ::kameo::remote::_internal::RemoteTryTellFn,
+                            }) as ::bombay::remote::_internal::RemoteTryTellFn,
                     },
                 );
             };
@@ -161,7 +161,7 @@ impl Parse for RemoteMessage {
         let (_, trait_path, _) = item_impl.trait_.as_ref().ok_or_else(|| {
             syn::Error::new(
                 input_span,
-                "remote message can only be used on an impl for kameo::message::Message",
+                "remote message can only be used on an impl for bombay::message::Message",
             )
         })?;
         let trait_path_span = trait_path.span();

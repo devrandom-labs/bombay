@@ -28,7 +28,7 @@ use syn::parse_macro_input;
 /// # Example
 ///
 /// ```ignore
-/// use kameo::messages;
+/// use bombay::messages;
 ///
 /// #[messages]
 /// impl Counter {
@@ -74,10 +74,10 @@ use syn::parse_macro_input;
 ///     pub amount: u32,
 /// }
 ///
-/// impl kameo::message::Message<Inc> for Counter {
+/// impl bombay::message::Message<Inc> for Counter {
 ///     type Reply = i64;
 ///
-///     async fn handle(&mut self, msg: Inc, _ctx: &mut kameo::message::Context<Self, Self::Reply>) -> Self::Reply {
+///     async fn handle(&mut self, msg: Inc, _ctx: &mut bombay::message::Context<Self, Self::Reply>) -> Self::Reply {
 ///         self.inc(msg.amount)
 ///     }
 /// }
@@ -87,10 +87,10 @@ use syn::parse_macro_input;
 ///     pub amount: u32,
 /// }
 ///
-/// impl kameo::message::Message<Dec> for Counter {
+/// impl bombay::message::Message<Dec> for Counter {
 ///     type Reply = ();
 ///
-///     async fn handle(&mut self, msg: Dec, _ctx: &mut kameo::message::Context<Self, Self::Reply>) -> Self::Reply {
+///     async fn handle(&mut self, msg: Dec, _ctx: &mut bombay::message::Context<Self, Self::Reply>) -> Self::Reply {
 ///         self.dec(msg.amount)
 ///     }
 /// }
@@ -100,20 +100,20 @@ use syn::parse_macro_input;
 ///     // Note: ctx is NOT included in the struct
 /// }
 ///
-/// impl kameo::message::Message<IncWithLogging> for Counter {
+/// impl bombay::message::Message<IncWithLogging> for Counter {
 ///     type Reply = i64;
 ///
-///     async fn handle(&mut self, msg: IncWithLogging, ctx: &mut kameo::message::Context<Self, Self::Reply>) -> Self::Reply {
+///     async fn handle(&mut self, msg: IncWithLogging, ctx: &mut bombay::message::Context<Self, Self::Reply>) -> Self::Reply {
 ///         self.inc_with_logging(msg.amount, ctx).await
 ///     }
 /// }
 ///
 /// pub struct Reset;
 ///
-/// impl kameo::message::Message<Reset> for Counter {
+/// impl bombay::message::Message<Reset> for Counter {
 ///     type Reply = ();
 ///
-///     async fn handle(&mut self, msg: Reset, my_ctx: &mut kameo::message::Context<Self, Self::Reply>) -> Self::Reply {
+///     async fn handle(&mut self, msg: Reset, my_ctx: &mut bombay::message::Context<Self, Self::Reply>) -> Self::Reply {
 ///         self.reset(my_ctx).await
 ///     }
 /// }
@@ -125,12 +125,12 @@ pub fn messages(_attr: TokenStream, item: TokenStream) -> TokenStream {
     TokenStream::from(messages.into_token_stream())
 }
 
-/// Derive macro implementing the [Actor](https://docs.rs/kameo/latest/kameo/actor/trait.Actor.html) trait with default behaviour.
+/// Derive macro implementing the [Actor](https://docs.rs/bombay/latest/bombay/actor/trait.Actor.html) trait with default behaviour.
 ///
-/// The `#[actor(name = "...")]` attribute can be specified to change the actors [Actor::name](https://docs.rs/kameo/latest/kameo/actor/trait.Actor.html#method.name).
+/// The `#[actor(name = "...")]` attribute can be specified to change the actors [Actor::name](https://docs.rs/bombay/latest/bombay/actor/trait.Actor.html#method.name).
 /// The default value is the actor's ident.
 ///
-/// The `#[actor(mailbox = ...)]` attribute can be specified to change the actors [Actor::Mailbox](https://docs.rs/kameo/latest/kameo/actor/trait.Actor.html#associatedtype.Mailbox).
+/// The `#[actor(mailbox = ...)]` attribute can be specified to change the actors [Actor::Mailbox](https://docs.rs/bombay/latest/bombay/actor/trait.Actor.html#associatedtype.Mailbox).
 /// The values can be one of:
 ///  - `bounded` (default capacity of 1000)
 ///  - `bounded(64)` (custom capacity of 64)
@@ -140,7 +140,7 @@ pub fn messages(_attr: TokenStream, item: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```ignore
-/// use kameo::Actor;
+/// use bombay::Actor;
 ///
 /// #[derive(Actor)]
 /// #[actor(name = "my_amazing_actor", mailbox = bounded(256))]
@@ -154,12 +154,12 @@ pub fn derive_actor(input: TokenStream) -> TokenStream {
     TokenStream::from(derive_actor.into_token_stream())
 }
 
-/// Derive macro implementing the [Reply](https://docs.rs/kameo/latest/kameo/reply/trait.Reply.html) trait as an infallible reply.
+/// Derive macro implementing the [Reply](https://docs.rs/bombay/latest/bombay/reply/trait.Reply.html) trait as an infallible reply.
 ///
 /// # Example
 ///
 /// ```ignore
-/// use kameo::Reply;
+/// use bombay::Reply;
 ///
 /// #[derive(Reply)]
 /// struct Foo { }
@@ -170,7 +170,7 @@ pub fn derive_reply(input: TokenStream) -> TokenStream {
     TokenStream::from(derive_reply.into_token_stream())
 }
 
-/// Derive macro implementing the [RemoteActor](https://docs.rs/kameo/latest/kameo/actor/remote/trait.RemoteActor.html)
+/// Derive macro implementing the [RemoteActor](https://docs.rs/bombay/latest/bombay/actor/remote/trait.RemoteActor.html)
 /// trait with a default remote ID being the full path of the type being implemented.
 ///
 /// The `#[remote_actor(id = "...")]` attribute can be specified to change the default remote actor ID.
@@ -178,7 +178,7 @@ pub fn derive_reply(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```ignore
-/// use kameo::RemoteActor;
+/// use bombay::RemoteActor;
 ///
 /// #[derive(RemoteActor)]
 /// struct MyActor { }
@@ -196,7 +196,7 @@ pub fn derive_remote_actor(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```ignore
-/// use kameo::{remote_message, message::Message};
+/// use bombay::{remote_message, message::Message};
 ///
 /// struct MyActor { }
 /// struct MyMessage { }

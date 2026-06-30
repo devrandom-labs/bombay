@@ -1,4 +1,4 @@
-//! Cucumber harness for the ROOT `kameo` crate's in-tree console server/registry
+//! Cucumber harness for the ROOT `bombay` crate's in-tree console server/registry
 //! **laws** — the `@property` / `@model` scenarios in
 //! `tests/features/console/server_wire.properties.feature`, layered on top of the
 //! example scenarios already wired in `tests/console_wire_bdd.rs`.
@@ -12,7 +12,7 @@
 //! ## Mechanism: deterministic boundary-loop, NOT the proptest async bridge
 //!
 //! The laws are universally-quantified over op sequences / poll counts and must
-//! `reset_for_test()` + spawn REAL kameo actors + `await` `snapshot()` inside each
+//! `reset_for_test()` + spawn REAL bombay actors + `await` `snapshot()` inside each
 //! case. `proptest!` is a SYNC macro, while the cucumber step runs in an async
 //! `#[tokio::test(flavor = "multi_thread")]` context. The documented async bridge
 //! (`block_in_place` + `Handle::current().block_on`) was evaluated but is fragile
@@ -36,8 +36,8 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+use bombay::{error::Infallible, prelude::*};
 use cucumber::{World, given, then, when};
-use kameo::{error::Infallible, prelude::*};
 use tokio::sync::Barrier;
 
 /// A grave window far larger than any test latency, so a freshly-spawned actor is
@@ -95,9 +95,9 @@ async fn spawn_live() -> ActorRef<Echo> {
 /// registry (non-reaping `snapshot(KEEP)`) until the actor is observably `Stopped`.
 async fn wait_until_stopped(id: u64) {
     for _ in 0..200 {
-        let snap = kameo::console::testing::snapshot(KEEP).await;
+        let snap = bombay::console::testing::snapshot(KEEP).await;
         if snap.actors.iter().any(|a| {
-            a.id.0 == id && matches!(a.status, kameo::console::wire::ActorStatus::Stopped { .. })
+            a.id.0 == id && matches!(a.status, bombay::console::wire::ActorStatus::Stopped { .. })
         }) {
             return;
         }
@@ -119,12 +119,12 @@ async fn law_seq_strictly_increasing(_world: &mut WiredPropsWorld) {
     // n = 0 is meaningless for "strictly increasing"; the feature's "any poll
     // count n" is checked over its boundary set, which starts at 1.
     for &n in &[1usize, 2, 5, 64, 256] {
-        kameo::console::testing::reset_for_test();
+        bombay::console::testing::reset_for_test();
         let _actor = spawn_live().await; // "at least one live actor"
 
         let mut seqs = Vec::with_capacity(n);
         for _ in 0..n {
-            seqs.push(kameo::console::testing::snapshot(KEEP).await.seq);
+            seqs.push(bombay::console::testing::snapshot(KEEP).await.seq);
         }
 
         assert_eq!(seqs.len(), n, "must have collected n={n} seqs");
@@ -171,13 +171,13 @@ async fn then_seq_plus_one_noop(_world: &mut WiredPropsWorld) {}
 #[when(regex = r"^the client requests n snapshots in order$")]
 async fn law_clocks(_world: &mut WiredPropsWorld) {
     for &n in &[1usize, 2, 8, 64] {
-        kameo::console::testing::reset_for_test();
+        bombay::console::testing::reset_for_test();
         let _actor = spawn_live().await;
 
         let mut captured: Vec<SystemTime> = Vec::with_capacity(n);
         let mut uptimes: Vec<Duration> = Vec::with_capacity(n);
         for _ in 0..n {
-            let snap = kameo::console::testing::snapshot(KEEP).await;
+            let snap = bombay::console::testing::snapshot(KEEP).await;
             captured.push(snap.captured_at);
             uptimes.push(snap.uptime);
         }
@@ -235,7 +235,7 @@ enum Op {
 /// final poll. `ever_stopped` is the integer model: incremented once per Stop.
 /// Returns nothing; panics with a specific message on a violation.
 async fn run_total_stopped_schedule(ops: &[Op], label: &str) {
-    kameo::console::testing::reset_for_test();
+    bombay::console::testing::reset_for_test();
 
     // Keep live actors alive so their monitors stay Running until we stop them.
     let mut live: Vec<ActorRef<Echo>> = Vec::new();
@@ -261,17 +261,17 @@ async fn run_total_stopped_schedule(ops: &[Op], label: &str) {
                 // A real ms-elapse so a just-stopped monitor's since.elapsed() is
                 // strictly > 0, then a ttl-ZERO poll reaps every Stopped monitor.
                 tokio::time::sleep(Duration::from_millis(2)).await;
-                let _ = kameo::console::testing::snapshot(Duration::ZERO).await;
+                let _ = bombay::console::testing::snapshot(Duration::ZERO).await;
             }
             Op::Poll => {
-                let _ = kameo::console::testing::snapshot(KEEP).await;
+                let _ = bombay::console::testing::snapshot(KEEP).await;
             }
         }
     }
 
     // Final poll with the huge ttl: anything still Stopped stays present and is
     // counted in stopped_now; previously reaped ones are in REAPED_STOPPED.
-    let snap = kameo::console::testing::snapshot(KEEP).await;
+    let snap = bombay::console::testing::snapshot(KEEP).await;
     assert_eq!(
         snap.totals.total_stopped, ever_stopped,
         "[{label}] total_stopped must equal ever_stopped model = {ever_stopped}; \
@@ -402,7 +402,7 @@ const POLLERS: usize = 8;
 ///
 /// Panics with a specific message on a violation.
 async fn run_membership_case(n_pre_live: usize, n_conc_spawn: usize, n_stop: usize, label: &str) {
-    kameo::console::testing::reset_for_test();
+    bombay::console::testing::reset_for_test();
 
     // Pre-existing live actors, registered before any concurrency starts: kept
     // alive for the whole case, so they MUST appear in every snapshot.
@@ -458,7 +458,7 @@ async fn run_membership_case(n_pre_live: usize, n_conc_spawn: usize, n_stop: usi
                 // A few polls each so snapshots land at varied interleavings.
                 let mut snaps = Vec::with_capacity(3);
                 for _ in 0..3 {
-                    snaps.push(kameo::console::testing::snapshot(KEEP).await);
+                    snaps.push(bombay::console::testing::snapshot(KEEP).await);
                 }
                 snaps
             })

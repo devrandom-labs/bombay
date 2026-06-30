@@ -11,9 +11,9 @@
 
 use std::time::Duration;
 
-use kameo::error::Infallible;
-use kameo::prelude::*;
-use kameo::supervision::RestartPolicy;
+use bombay::error::Infallible;
+use bombay::prelude::*;
+use bombay::supervision::RestartPolicy;
 use tokio::sync::mpsc;
 
 const ITERATIONS: usize = 50;

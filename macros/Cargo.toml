@@ -1,11 +1,11 @@
 [package]
-name = "kameo_macros"
+name = "bombay_macros"
 version = "0.21.0"
 edition = "2024"
 rust-version = "1.85.1"
 description = "Fault-tolerant Async Actors Built on Tokio macros"
 readme = "../README.md"
-repository = "https://github.com/tqwewe/kameo"
+repository = "https://github.com/devrandom-labs/bombay"
 license = "MIT OR Apache-2.0"
 include = ["/src"]
 

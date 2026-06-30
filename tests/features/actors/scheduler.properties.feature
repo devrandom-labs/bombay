@@ -1,4 +1,4 @@
-# Phase 2 — laws for kameo_actors `Scheduler` (actors/src/scheduler.rs), layered on
+# Phase 2 — laws for bombay_actors `Scheduler` (actors/src/scheduler.rs), layered on
 # tests/features/actors/scheduler.feature's examples.
 #
 # Conventions (see docs/testing/properties.md):

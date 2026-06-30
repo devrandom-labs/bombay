@@ -1,4 +1,4 @@
-use kameo::prelude::*;
+use bombay::prelude::*;
 
 #[derive(Actor, Default)]
 pub struct MyActor {

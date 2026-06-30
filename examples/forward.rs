@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use kameo::{prelude::*, reply::ForwardedReply};
+use bombay::{prelude::*, reply::ForwardedReply};
 
 #[derive(Actor)]
 struct PlayersActor {

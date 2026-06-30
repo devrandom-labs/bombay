@@ -108,9 +108,9 @@ impl<A: Actor> PreparedActor<A> {
     /// # Example
     ///
     /// ```no_run
-    /// # use kameo::Actor;
-    /// # use kameo::actor::{PreparedActor, Spawn};
-    /// # use kameo::message::{Context, Message};
+    /// # use bombay::Actor;
+    /// # use bombay::actor::{PreparedActor, Spawn};
+    /// # use bombay::message::{Context, Message};
     ///
     /// # #[derive(Actor)]
     /// # struct MyActor;

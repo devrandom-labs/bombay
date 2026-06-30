@@ -3,7 +3,7 @@
 //! [`spawn`] builds a small supervision tree plus a few standalone actors driven with
 //! organic-looking random traffic, exercising every feature the console surfaces: a nested
 //! tree, varied throughput, mailbox backpressure, restarts, a slow handler, and a deadlock.
-//! Both the `console` example and the `kameo_console --demo` mode run this exact code.
+//! Both the `console` example and the `bombay_console --demo` mode run this exact code.
 
 use std::{
     f64::consts::TAU,

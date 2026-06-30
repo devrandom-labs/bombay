@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use kameo::prelude::*;
-use kameo_actors::pool::{ActorPool, Broadcast, Dispatch};
+use bombay::prelude::*;
+use bombay_actors::pool::{ActorPool, Broadcast, Dispatch};
 
 #[derive(Actor, Default)]
 struct MyActor;

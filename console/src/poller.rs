@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use kameo::console::wire::{Message, Snapshot};
+use bombay::console::wire::{Message, Snapshot};
 
 use crate::ConnectionState;
 

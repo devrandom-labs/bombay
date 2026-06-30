@@ -13,7 +13,7 @@
 //!
 //! Two surfaces are used, chosen per scenario from its `# Confirmed:` note:
 //!
-//!   * **Raw `should_restart`** (`kameo::supervision::testing::decision_spec` +
+//!   * **Raw `should_restart`** (`bombay::supervision::testing::decision_spec` +
 //!     `ErasedChildSpec::should_restart`): scenarios that pin the DECISION
 //!     itself — the policy × exit-kind matrix, the `SupervisorRestart` bypass,
 //!     the `Never` precedence, and the intensity-window arithmetic
@@ -24,7 +24,7 @@
 //!     does NOT affect. So "the window has elapsed" is modelled by passing a
 //!     `last_restart` far in the past and "still within the window" by passing
 //!     `Instant::now()` — no real sleep, fully deterministic.
-//!   * **Real spawned actors** (`kameo::prelude::*`): the end-to-end strategy
+//!   * **Real spawned actors** (`bombay::prelude::*`): the end-to-end strategy
 //!     scenarios (which siblings restart under OneForOne/OneForAll/RestForOne)
 //!     and the intensity behaviour observed through the real supervisor loop.
 //!     Each child records its start count in a shared `AtomicU32`; a restart
@@ -46,14 +46,14 @@ use std::{
     time::{Duration, Instant},
 };
 
-use cucumber::{World, given, then, when};
-use kameo::{
+use bombay::{
     actor::ActorId,
     error::{ActorStopReason, Infallible, PanicError, PanicReason},
     links::{ErasedChildSpec, NoRestartReason},
     prelude::*,
     supervision::{RestartPolicy, SupervisionStrategy, testing::decision_spec},
 };
+use cucumber::{World, given, then, when};
 use tokio::sync::Barrier;
 
 // ===========================================================================

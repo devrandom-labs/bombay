@@ -16,9 +16,9 @@
 //! ```
 //! use std::time::Duration;
 //!
-//! use kameo::prelude::*;
-//! use kameo_actors::broker::{Broker, Subscribe, Publish};
-//! use kameo_actors::DeliveryStrategy;
+//! use bombay::prelude::*;
+//! use bombay_actors::broker::{Broker, Subscribe, Publish};
+//! use bombay_actors::DeliveryStrategy;
 //! use glob::Pattern;
 //!
 //! #[derive(Actor, Clone)]
@@ -58,8 +58,8 @@
 
 use std::collections::HashMap;
 
+use bombay::prelude::*;
 use glob::{MatchOptions, Pattern};
-use kameo::prelude::*;
 
 use crate::DeliveryStrategy;
 

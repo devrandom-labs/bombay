@@ -27,9 +27,9 @@ impl ToTokens for DeriveActor {
 
         tokens.extend(quote! {
             #[automatically_derived]
-            impl #impl_generics ::kameo::actor::Actor for #ident #ty_generics #where_clause {
+            impl #impl_generics ::bombay::actor::Actor for #ident #ty_generics #where_clause {
                 type Args = Self;
-                type Error = ::kameo::error::Infallible;
+                type Error = ::bombay::error::Infallible;
 
                 fn name() -> &'static str {
                     #name
@@ -37,7 +37,7 @@ impl ToTokens for DeriveActor {
 
                 async fn on_start(
                     state: Self::Args,
-                    _actor_ref: ::kameo::actor::ActorRef<Self>,
+                    _actor_ref: ::bombay::actor::ActorRef<Self>,
                 ) -> ::std::result::Result<Self, Self::Error> {
                     ::std::result::Result::Ok(state)
                 }

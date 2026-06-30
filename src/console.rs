@@ -1,11 +1,11 @@
-//! Live monitoring of a running actor system for the kameo console.
+//! Live monitoring of a running actor system for the bombay console.
 //!
 //! Enabling the `console` feature instruments every actor with a lightweight per-instance
 //! monitor (counters, status, mailbox depth) kept in a global registry. Call [`serve`] (or
 //! build one with [`Console`]) to expose those snapshots over TCP to a console client.
 
 // A ready-made demo actor system for showcasing the console (used by the `console` example and
-// `kameo_console --demo`). Hidden from the docs as it isn't part of the public API; its docs live
+// `bombay_console --demo`). Hidden from the docs as it isn't part of the public API; its docs live
 // in the module's own `//!` comment so intra-doc links resolve in the module's scope.
 #[doc(hidden)]
 #[allow(missing_docs, missing_debug_implementations)]

@@ -1,4 +1,4 @@
-//! Cucumber harness for the `kameo_console` poller's framing laws.
+//! Cucumber harness for the `bombay_console` poller's framing laws.
 //!
 //! Mirrors `poller_bdd.rs` / `tui_props_bdd.rs` (a STANDARD libtest test, no
 //! `harness = false`, so `cargo nextest --list` can enumerate it) but points at

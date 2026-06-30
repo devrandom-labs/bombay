@@ -33,11 +33,11 @@
 //! different defect: `ctx.blocking_forward` → `AskRequest::blocking_forward`
 //! (src/request/ask.rs:461) calls tokio `blocking_send`, which PANICS ("Cannot
 //! block the current thread from within a runtime") in any async handler (every
-//! kameo handler is async, driven on a runtime worker).
+//! bombay handler is async, driven on a runtime worker).
 //!
 //! ## Probe mechanism: the router's own `on_panic` hook (not the global hook)
 //!
-//! All three panics happen INSIDE the router's message handler. kameo's actor
+//! All three panics happen INSIDE the router's message handler. bombay's actor
 //! loop catches the unwind (`kind.rs:176/181`) and turns it into
 //! `ActorStopReason::Panicked(PanicError { reason: HandlerPanic, .. })`, which is
 //! delivered to the actor's OWN `on_panic` hook (`kind.rs:401-414`). The
@@ -66,13 +66,13 @@ use std::{
     time::Duration,
 };
 
-use cucumber::World;
-use kameo::{
+use bombay::{
     error::{ActorStopReason, Infallible, PanicError},
     mailbox,
     prelude::*,
     reply::ForwardedReply,
 };
+use cucumber::World;
 use message::MessageWorld;
 
 #[tokio::test(flavor = "multi_thread")]
@@ -264,7 +264,7 @@ fn spawn_probe_router(
 
 /// Defect 1 (error.rs:293) — forwarding to a DEAD target. The router's handler
 /// panics on `downcast_message::<(M, ReplySender)>().unwrap()` returning `None`,
-/// which kameo's actor loop catches and routes to the router's `on_panic`. GREEN
+/// which bombay's actor loop catches and routes to the router's `on_panic`. GREEN
 /// today: `on_panic` records the unwrap/`None` panic. RED on fix: a graceful
 /// `ActorNotRunning` conversion means NO panic → `on_panic` never fires → the
 /// recorder is empty → the `assert!(!recorded.is_empty())` fails.
@@ -359,7 +359,7 @@ async fn bug_try_forward_full_target_panics_router() {
 
 /// Defect 3 (ask.rs:461) — `ctx.blocking_forward` from an async handler. tokio's
 /// `blocking_send` panics ("Cannot block the current thread from within a
-/// runtime") because every kameo handler runs on a runtime worker; the panic is
+/// runtime") because every bombay handler runs on a runtime worker; the panic is
 /// caught and routed to the router's `on_panic`. GREEN today: `on_panic` records
 /// the "Cannot block the current thread" panic. RED on fix: an API guard (or a
 /// non-blocking re-spec) means no panic → `on_panic` never fires → empty recorder

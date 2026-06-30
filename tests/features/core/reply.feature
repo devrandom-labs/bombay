@@ -1,4 +1,4 @@
-# Scope: kameo core reply machinery (src/reply.rs) — the `Reply` trait (Ok/Error/Value
+# Scope: bombay core reply machinery (src/reply.rs) — the `Reply` trait (Ok/Error/Value
 #        associated types, to_result/into_any_err/into_value/downcast_ok/downcast_err),
 #        `Result<T,E>` and `impl_infallible_reply!` blanket impls, the `DelegatedReply`
 #        marker, `ReplySender` single-use send, and `ForwardedReply`

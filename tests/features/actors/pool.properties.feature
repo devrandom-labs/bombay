@@ -1,4 +1,4 @@
-# Phase 2 — laws for kameo_actors `ActorPool` (actors/src/pool.rs), layered on
+# Phase 2 — laws for bombay_actors `ActorPool` (actors/src/pool.rs), layered on
 # tests/features/actors/pool.feature's examples.
 #
 # Conventions (see docs/testing/properties.md):

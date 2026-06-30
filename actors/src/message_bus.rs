@@ -14,9 +14,9 @@
 //! # Example
 //!
 //! ```
-//! use kameo::prelude::*;
-//! use kameo_actors::message_bus::{MessageBus, Register, Publish};
-//! use kameo_actors::DeliveryStrategy;
+//! use bombay::prelude::*;
+//! use bombay_actors::message_bus::{MessageBus, Register, Publish};
+//! use bombay_actors::DeliveryStrategy;
 //!
 //! #[derive(Clone)]
 //! struct TemperatureUpdate(f32);
@@ -53,7 +53,7 @@ use std::{
     marker::PhantomData,
 };
 
-use kameo::prelude::*;
+use bombay::prelude::*;
 
 use crate::DeliveryStrategy;
 

@@ -1,4 +1,4 @@
-//! Cucumber harness for the `kameo_console` poller (`console/src/poller.rs`).
+//! Cucumber harness for the `bombay_console` poller (`console/src/poller.rs`).
 //!
 //! Like `tui_bdd`, this must be a STANDARD libtest test (no `harness = false`):
 //! cucumber 0.23's libtest-writer path does not implement nextest's `--list`

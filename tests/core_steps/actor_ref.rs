@@ -13,7 +13,7 @@
 //! Every assertion is the SPECIFIC value confirmed in the scenario's
 //! `# Confirmed:` / `# ORACLE:` note (facts only — no vague `contains`).
 //!
-//! All public API is reached through `kameo::prelude::*` + `kameo::actor::*`;
+//! All public API is reached through `bombay::prelude::*` + `bombay::actor::*`;
 //! no `src/` change is needed.
 //!
 //! CONCURRENCY DISCIPLINE (these cost real time if ignored):
@@ -35,8 +35,8 @@ use std::{
     time::Duration,
 };
 
+use bombay::{actor::ActorId, error::Infallible, prelude::*};
 use cucumber::{World, given, then, when};
-use kameo::{actor::ActorId, error::Infallible, prelude::*};
 use proptest::prelude::*;
 use tokio::sync::Barrier;
 
@@ -180,7 +180,7 @@ pub struct ActorRefWorld {
     /// A second strong clone (refcount scenario).
     clone_ref: Option<ActorRef<Echoer>>,
     /// At-rest weak_count measured after spawn, before clone/downgrade
-    /// (refcount scenario). kameo's spawn machinery retains internal
+    /// (refcount scenario). bombay's spawn machinery retains internal
     /// WeakSenders, so the at-rest weak count is non-zero; we assert only the
     /// +1 delta a single downgrade adds over this baseline.
     weak_baseline: Option<usize>,
@@ -770,7 +770,7 @@ async fn then_no_error(_world: &mut ActorRefWorld) {
 async fn given_one_strong(world: &mut ActorRefWorld) {
     let (actor, log) = spawn_echoer().await;
     // Record the at-rest weak baseline BEFORE any user clone/downgrade. The
-    // absolute weak count includes kameo's internal WeakSenders, so only the +1
+    // absolute weak count includes bombay's internal WeakSenders, so only the +1
     // delta a single downgrade adds is asserted (the strong side stays a
     // meaningful absolute: a freshly spawned actor has exactly one user strong
     // handle, so a single clone makes strong_count == 2).
@@ -793,7 +793,7 @@ async fn when_clone_and_downgrade(world: &mut ActorRefWorld) {
 
 #[then(regex = r"^strong_count is 2 and the weak count increased by exactly one$")]
 async fn then_counts_2_1(world: &mut ActorRefWorld) {
-    // The absolute weak count includes kameo's internal WeakSenders (spawn.rs
+    // The absolute weak count includes bombay's internal WeakSenders (spawn.rs
     // retains them), so it is NOT 0 at rest; we therefore assert only the +1
     // delta a single downgrade adds over the measured at-rest baseline. The
     // strong side stays a meaningful absolute (2): a freshly spawned actor has
@@ -819,7 +819,7 @@ async fn then_counts_2_1(world: &mut ActorRefWorld) {
         actor.weak_count(),
         weak_target,
         "downgrade must bump weak by exactly 1 over the at-rest baseline \
-         (baseline weak={weak_baseline}, includes kameo's internal WeakSenders)"
+         (baseline weak={weak_baseline}, includes bombay's internal WeakSenders)"
     );
 }
 
@@ -1187,7 +1187,7 @@ async fn when_ref_ops_concurrent(_world: &mut ActorRefWorld) {}
 #[then(regex = r"^strong_count always equals the model's count of live strong handles$")]
 async fn law_strong_count_refines_model(_world: &mut ActorRefWorld) {
     // Documented deterministic sweep with REAL overlap. The oracle is an
-    // INDEPENDENT integer DELTA over a measured baseline: kameo's spawn machinery
+    // INDEPENDENT integer DELTA over a measured baseline: bombay's spawn machinery
     // retains a fixed number of internal strong senders, so the law asserts the
     // Arc-style REFINEMENT (clone bumps strong by 1, drop decrements by 1) rather
     // than an absolute count. Each task captures ONE strong clone (the moved
@@ -1245,7 +1245,7 @@ async fn law_strong_count_refines_model(_world: &mut ActorRefWorld) {
 
 #[then(regex = r"^weak_count always equals the model's count of live weak handles$")]
 async fn law_weak_count_refines_model(_world: &mut ActorRefWorld) {
-    // Independent integer DELTA oracle over a measured baseline: kameo's spawn
+    // Independent integer DELTA oracle over a measured baseline: bombay's spawn
     // machinery retains a fixed number of internal weak senders, so the law
     // asserts the refinement (each downgrade bumps weak by 1, drop decrements by
     // 1). Each task captures a STRONG clone (no weak bump) and creates W weaks,

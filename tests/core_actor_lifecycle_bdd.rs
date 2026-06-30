@@ -1,5 +1,5 @@
 //! Cucumber runner for core/actor_lifecycle.feature — the example scenarios for
-//! the kameo core actor lifecycle (`src/actor.rs`, `src/actor/spawn.rs`,
+//! the bombay core actor lifecycle (`src/actor.rs`, `src/actor/spawn.rs`,
 //! `src/actor/kind.rs`): the `Actor` trait's lifecycle hooks (`on_start` /
 //! `on_panic` / `on_link_died` / `on_stop`), the run-loop in
 //! `run_actor_lifecycle`, the startup-buffer replay in `ActorBehaviour`, and the

@@ -1,4 +1,4 @@
-# Scope: kameo core actor lifecycle (src/actor.rs, src/actor/spawn.rs,
+# Scope: bombay core actor lifecycle (src/actor.rs, src/actor/spawn.rs,
 #        src/actor/kind.rs) — the Actor trait's lifecycle hooks (on_start /
 #        on_panic / on_link_died / on_stop), the run-loop in
 #        run_actor_lifecycle, the startup-buffer replay in ActorBehaviour, and
@@ -15,7 +15,7 @@
 
 @core @actors @actor_lifecycle
 Feature: Actor lifecycle — start, run, panic-recovery, link-death, stop
-  As a developer spawning kameo actors
+  As a developer spawning bombay actors
   I want the lifecycle hooks and spawn variants to behave deterministically
   So that initialization, fault recovery, and cleanup are predictable
 

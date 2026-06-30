@@ -1,4 +1,4 @@
-# Scope: kameo core `TellRequest` (src/request/tell.rs + src/request.rs) — the
+# Scope: bombay core `TellRequest` (src/request/tell.rs + src/request.rs) — the
 #        fire-and-forget builder: tell(M) → optional mailbox_timeout →
 #        send / try_send / blocking_send / send_after / IntoFuture.
 #

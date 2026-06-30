@@ -1,4 +1,4 @@
-# Scope: kameo core ActorRef and its weak/recipient variants
+# Scope: bombay core ActorRef and its weak/recipient variants
 #        (src/actor/actor_ref.rs) — ask/tell messaging, the alive/dead state
 #        machine, strong/weak reference counting, downgrade/upgrade, is_current,
 #        identity (id/eq/hash/ord), startup/shutdown waiters, Recipient and
@@ -173,7 +173,7 @@ Feature: ActorRef — messaging, reference counting, identity, lifecycle waiters
     Then strong_count is 2 and the weak count increased by exactly one
     # Confirmed: strong_count/weak_count delegate to the MailboxSender Arc-style
     # counters (actor_ref.rs:220-230). clone bumps strong (1 -> 2, absolute).
-    # kameo's spawn machinery retains internal WeakSenders (spawn.rs:211,215), so
+    # bombay's spawn machinery retains internal WeakSenders (spawn.rs:211,215), so
     # weak_count is NOT 0 at rest; downgrade adds exactly one more over that
     # at-rest baseline (actor_ref.rs:198-207, 1329-1340).
 

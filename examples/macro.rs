@@ -1,6 +1,6 @@
 #![warn(clippy::pedantic)]
 
-use kameo::prelude::*;
+use bombay::prelude::*;
 
 #[derive(Actor)]
 pub struct MyActor {

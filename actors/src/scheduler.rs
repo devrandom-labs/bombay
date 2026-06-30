@@ -11,8 +11,8 @@
 //! use std::sync::atomic::{AtomicU64, Ordering};
 //! use std::sync::Arc;
 //!
-//! use kameo::prelude::*;
-//! use kameo_actors::scheduler::{Scheduler, SetInterval};
+//! use bombay::prelude::*;
+//! use bombay_actors::scheduler::{Scheduler, SetInterval};
 //!
 //! #[derive(Actor)]
 //! struct Counter(Arc<AtomicU64>);
@@ -50,7 +50,7 @@
 
 use std::time::Duration;
 
-use kameo::{error::Infallible, mailbox::Signal, prelude::*};
+use bombay::{error::Infallible, mailbox::Signal, prelude::*};
 use tokio::{
     task::{AbortHandle, JoinSet},
     time::{Instant, Interval, MissedTickBehavior},

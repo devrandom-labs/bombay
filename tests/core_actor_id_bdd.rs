@@ -12,8 +12,8 @@
 mod actor_id;
 
 use actor_id::ActorIdWorld;
+use bombay::actor::ActorId;
 use cucumber::World;
-use kameo::actor::ActorId;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn actor_id_features() {

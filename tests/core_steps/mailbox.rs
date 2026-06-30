@@ -50,8 +50,7 @@ use std::{
     time::Duration,
 };
 
-use cucumber::{World, given, then, when};
-use kameo::{
+use bombay::{
     error::{Infallible, SendError},
     mailbox::{
         self, MailboxReceiver, MailboxSender, Signal, SignalMailbox, WeakMailboxSender,
@@ -59,6 +58,7 @@ use kameo::{
     },
     prelude::*,
 };
+use cucumber::{World, given, then, when};
 use proptest::prelude::*;
 use tokio::{
     sync::{Barrier, mpsc, oneshot},

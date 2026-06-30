@@ -432,6 +432,80 @@ dependencies = [
 ]
 
 [[package]]
+name = "bombay"
+version = "0.21.0"
+dependencies = [
+ "bombay",
+ "bombay_actors",
+ "bombay_macros",
+ "const-fnv1a-hash",
+ "const-str 1.1.0",
+ "criterion",
+ "cucumber",
+ "downcast-rs",
+ "dyn-clone",
+ "either",
+ "futures",
+ "hotpath",
+ "libp2p",
+ "linkme",
+ "metrics",
+ "metrics-exporter-prometheus",
+ "opentelemetry",
+ "proptest",
+ "rmp-serde",
+ "serde",
+ "serde_bytes",
+ "tokio",
+ "tokio-stream",
+ "tokio-test",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "bombay_actors"
+version = "0.5.0"
+dependencies = [
+ "bombay",
+ "futures",
+ "glob",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-test",
+]
+
+[[package]]
+name = "bombay_console"
+version = "0.1.0"
+dependencies = [
+ "bombay",
+ "bombay_console",
+ "clap",
+ "color-eyre",
+ "crossterm",
+ "cucumber",
+ "humantime",
+ "proptest",
+ "ratatui",
+ "rmp-serde",
+ "rstest",
+ "serde",
+ "tokio",
+]
+
+[[package]]
+name = "bombay_macros"
+version = "0.21.0"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
+]
+
+[[package]]
 name = "bs58"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2362,80 +2436,6 @@ dependencies = [
  "cfg-if",
  "futures-util",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "kameo"
-version = "0.21.0"
-dependencies = [
- "const-fnv1a-hash",
- "const-str 1.1.0",
- "criterion",
- "cucumber",
- "downcast-rs",
- "dyn-clone",
- "either",
- "futures",
- "hotpath",
- "kameo",
- "kameo_actors",
- "kameo_macros",
- "libp2p",
- "linkme",
- "metrics",
- "metrics-exporter-prometheus",
- "opentelemetry",
- "proptest",
- "rmp-serde",
- "serde",
- "serde_bytes",
- "tokio",
- "tokio-stream",
- "tokio-test",
- "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "kameo_actors"
-version = "0.5.0"
-dependencies = [
- "futures",
- "glob",
- "kameo",
- "thiserror 2.0.18",
- "tokio",
- "tokio-test",
-]
-
-[[package]]
-name = "kameo_console"
-version = "0.1.0"
-dependencies = [
- "clap",
- "color-eyre",
- "crossterm",
- "cucumber",
- "humantime",
- "kameo",
- "kameo_console",
- "proptest",
- "ratatui",
- "rmp-serde",
- "rstest",
- "serde",
- "tokio",
-]
-
-[[package]]
-name = "kameo_macros"
-version = "0.21.0"
-dependencies = [
- "heck",
- "proc-macro2",
- "quote",
- "syn 2.0.118",
 ]
 
 [[package]]

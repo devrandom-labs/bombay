@@ -1,4 +1,4 @@
-# Phase 2 — laws for kameo_actors `MessageBus` (actors/src/message_bus.rs), layered on
+# Phase 2 — laws for bombay_actors `MessageBus` (actors/src/message_bus.rs), layered on
 # tests/features/actors/message_bus.feature's examples.
 #
 # Conventions (see docs/testing/properties.md):

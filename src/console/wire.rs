@@ -1,7 +1,7 @@
 //! Console wire protocol.
 //!
 //! **Unstable:** these types are the serialization contract between an
-//! instrumented kameo app and a console client. The format may change in any
+//! instrumented bombay app and a console client. The format may change in any
 //! release. Enable via the `console` feature
 
 use std::time::{Duration, SystemTime};
@@ -177,7 +177,7 @@ pub struct RefCounts {
 }
 
 /// Topology. Supervision (`parent`/`children`) is distinct from non-supervising
-/// peer `links`, mirroring kameo's `Links` (children carry a restart policy).
+/// peer `links`, mirroring bombay's `Links` (children carry a restart policy).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Links {
     pub parent: Option<ActorId>,

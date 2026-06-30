@@ -25,8 +25,8 @@ use std::{
     sync::Arc,
 };
 
+use bombay::actor::ActorId;
 use cucumber::{World, given, then, when};
-use kameo::actor::ActorId;
 use proptest::prelude::*;
 use tokio::sync::Barrier;
 

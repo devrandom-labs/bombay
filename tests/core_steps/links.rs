@@ -12,7 +12,7 @@
 //!
 //! Two surfaces are used, chosen per scenario from its `# Confirmed:` note:
 //!
-//!   * **Raw `Links`** (`kameo::links::testing`): scenarios that pin the link
+//!   * **Raw `Links`** (`bombay::links::testing`): scenarios that pin the link
 //!     DATA STRUCTURE / notify mechanics directly — who is notified, with or
 //!     without the dying actor's `mailbox_rx` / sibling links, drain-once, the
 //!     parent_shutdown flag store/load, and the three-step child-shutdown
@@ -20,7 +20,7 @@
 //!     whose `MailboxReceiver` the test keeps, so the exact delivered
 //!     `Signal::LinkDied` (and its `mailbox_rx`/sibblings presence bits) is read
 //!     back via `recv_link_died`.
-//!   * **Real spawned actors** (`kameo::prelude::*`): the one scenario that is
+//!   * **Real spawned actors** (`bombay::prelude::*`): the one scenario that is
 //!     about end-to-end restart behaviour across a supervised child's spawn
 //!     factory (parent_shutdown reset / stale-children cleared) drives a real
 //!     supervised child through repeated panic→restart and asserts the restart
@@ -39,8 +39,7 @@ use std::{
     time::Duration,
 };
 
-use cucumber::{World, given, then, when};
-use kameo::{
+use bombay::{
     actor::ActorId,
     error::{ActorStopReason, Infallible},
     links::{
@@ -54,6 +53,7 @@ use kameo::{
     prelude::*,
     supervision::RestartPolicy,
 };
+use cucumber::{World, given, then, when};
 use tokio::sync::Barrier;
 
 // ===========================================================================

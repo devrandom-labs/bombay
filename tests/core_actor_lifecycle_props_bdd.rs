@@ -1,7 +1,7 @@
 //! Cucumber runner for core/actor_lifecycle.properties.feature — the
 //! @property/@model laws over the default `on_panic`/`on_link_died` hook
 //! decisions, the startup-buffer replay ordering, and spawn-variant equivalence
-//! for the kameo core actor lifecycle (`src/actor.rs`, `src/actor/spawn.rs`,
+//! for the bombay core actor lifecycle (`src/actor.rs`, `src/actor/spawn.rs`,
 //! `src/actor/kind.rs`).
 //!
 //! Shares the `LifecycleWorld` + step definitions with

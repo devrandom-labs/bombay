@@ -1,6 +1,6 @@
 use std::{net::SocketAddr, str::FromStr};
 
-use kameo::prelude::*;
+use bombay::prelude::*;
 use metrics_exporter_prometheus::PrometheusBuilder;
 
 #[derive(Actor, Default)]

@@ -57,7 +57,7 @@ use crate::{
     error::RegistryError,
 };
 
-const PROTO_NAME: StreamProtocol = StreamProtocol::new("/kameo/registry/1.0.0");
+const PROTO_NAME: StreamProtocol = StreamProtocol::new("/bombay/registry/1.0.0");
 
 type RegisterResult = Result<(), RegistryError>;
 pub(super) type LookupResult = Result<ActorRegistration<'static>, RegistryError>;
@@ -161,7 +161,7 @@ pub enum Event {
     },
 }
 
-/// `Behaviour` is a `NetworkBehaviour` that implements the kameo registry behaviour
+/// `Behaviour` is a `NetworkBehaviour` that implements the bombay registry behaviour
 /// on top of the Kademlia protocol.
 #[allow(missing_debug_implementations)]
 pub struct Behaviour {

@@ -13,7 +13,7 @@
 //! Every assertion is the SPECIFIC value confirmed in the scenario's
 //! `# Confirmed:` / `# ORACLE:` note (facts only — no vague `contains`).
 //!
-//! All public API is reached through `kameo::prelude::*` + `kameo::message::*`;
+//! All public API is reached through `bombay::prelude::*` + `bombay::message::*`;
 //! no `src/` change is needed. The global error hook (`set_actor_error_hook`,
 //! error.rs:70) is PROCESS-GLOBAL, so the two scenarios that observe it install
 //! a hook into an `Arc<Mutex<..>>` sink, run, then restore the default. Both
@@ -26,14 +26,14 @@ use std::{
     time::Duration,
 };
 
-use cucumber::{World, given, then, when};
-use futures::stream;
-use kameo::{
+use bombay::{
     error::{Infallible, PanicError, set_actor_error_hook},
     message::StreamMessage,
     prelude::*,
     reply::{DelegatedReply, ForwardedReply},
 };
+use cucumber::{World, given, then, when};
+use futures::stream;
 use tokio::sync::Barrier;
 
 // ===========================================================================

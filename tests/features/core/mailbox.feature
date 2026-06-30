@@ -1,4 +1,4 @@
-# Scope: kameo core `Mailbox` (src/mailbox.rs) — a multi-producer single-consumer
+# Scope: bombay core `Mailbox` (src/mailbox.rs) — a multi-producer single-consumer
 #        signal channel between actors. Thin typed wrapper over tokio's
 #        `mpsc::channel` (bounded) and `mpsc::unbounded_channel` (unbounded), plus a
 #        `front: VecDeque<Signal<A>>` push-back buffer used to re-queue pending signals
