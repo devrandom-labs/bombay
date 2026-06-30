@@ -228,6 +228,35 @@ pub enum AmqpError {
     ExchangeInUse,
     #[error("Queue in use")]
     QueueInUse,
+    #[error("Invalid routing key")]
+    InvalidRoutingKey,
+}
+
+/// `MatchOptions` for Topic routing: separator `'/'`, `'*'` spans `'.'`. Shared by
+/// bind-time validation and publish-time matching so both agree on the glob
+/// semantics (see [`topic_matches`]).
+const TOPIC_MATCH_OPTIONS: MatchOptions = MatchOptions {
+    case_sensitive: true,
+    require_literal_separator: true,
+    require_literal_leading_dot: false,
+};
+
+/// Compile a Topic binding glob and test it against `msg_key`, returning
+/// `Err(AmqpError::InvalidRoutingKey)` for a non-compilable key instead of
+/// panicking. This is the ONLY place the run-loop compiles stored binding data, so
+/// it must never `unwrap` — a malformed key would otherwise kill the actor.
+fn topic_matches(binding_key: &str, msg_key: &str) -> Result<bool, AmqpError> {
+    let pattern = Pattern::new(binding_key).map_err(|_| AmqpError::InvalidRoutingKey)?;
+    Ok(pattern.matches_with(msg_key, TOPIC_MATCH_OPTIONS))
+}
+
+/// Reject a non-compilable Topic routing key at bind time with
+/// `AmqpError::InvalidRoutingKey` (mirrors the Headers `x-match` validation), so a
+/// malformed glob can never reach the publish path.
+fn validate_topic_key(key: &str) -> Result<(), AmqpError> {
+    Pattern::new(key)
+        .map(|_| ())
+        .map_err(|_| AmqpError::InvalidRoutingKey)
 }
 
 /// Message for declaring a new exchange
@@ -613,6 +642,12 @@ impl Message<QueueBind> for MessageQueue {
             return Err(AmqpError::BindingAlreadyExists);
         }
 
+        // Topic keys are globs compiled at publish; reject a non-compilable key here
+        // so it can never reach the publish path (the run-loop must not panic).
+        if exchange.kind == ExchangeType::Topic {
+            validate_topic_key(&msg.routing_key)?;
+        }
+
         let header_match = if exchange.kind == ExchangeType::Headers {
             let x_match = msg
                 .arguments
@@ -697,17 +732,8 @@ where
                 }
             }
             ExchangeType::Topic => {
-                let options = MatchOptions {
-                    case_sensitive: true,
-                    require_literal_separator: true,
-                    require_literal_leading_dot: false,
-                };
-
                 for binding in &exchange.bindings {
-                    if Pattern::new(&binding.routing_key)
-                        .unwrap()
-                        .matches_with(&msg.routing_key, options)
-                    {
+                    if topic_matches(&binding.routing_key, &msg.routing_key)? {
                         target_queues.insert(binding.queue_name.clone());
                     }
                 }
@@ -864,5 +890,66 @@ impl Message<CountBindings> for MessageQueue {
                 .filter(|b| b.queue_name == query.queue)
                 .count()
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The boundary set of NON-compilable Topic globs. Oracle: each is rejected by
+    /// `glob::Pattern::new`. Mirrors the `# GEN:` set in
+    /// `message_queue.properties.feature` (:591/:707).
+    const BAD_GLOBS: &[&str] = &["[unclosed", "[a-", "[", "a[b"];
+    /// Compilable globs incl. boundaries — these must NEVER be rejected.
+    const GOOD_GLOBS: &[&str] = &["", "*", "log.*", "log/*", "a/*/b", "log.warn"];
+
+    #[test]
+    fn topic_matches_errors_on_non_compilable_key_instead_of_panicking() {
+        for &bad in BAD_GLOBS {
+            assert!(
+                Pattern::new(bad).is_err(),
+                "GEN guard: {bad:?} must be a non-compilable glob"
+            );
+            assert!(
+                matches!(
+                    topic_matches(bad, "log.warn"),
+                    Err(AmqpError::InvalidRoutingKey)
+                ),
+                "a non-compilable binding key {bad:?} must yield InvalidRoutingKey, never panic"
+            );
+        }
+    }
+
+    #[test]
+    fn topic_matches_follows_glob_oracle_for_compilable_keys() {
+        let rs = ["", "log.warn", "log.warn.detail", "log/x"];
+        for &key in GOOD_GLOBS {
+            let pat = Pattern::new(key).expect("GEN keys are all compilable globs");
+            for &r in &rs {
+                let want = pat.matches_with(r, TOPIC_MATCH_OPTIONS);
+                assert_eq!(
+                    topic_matches(key, r).expect("a compilable key must never error"),
+                    want,
+                    "topic_matches({key:?}, {r:?}) must follow the glob oracle"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn validate_topic_key_rejects_only_non_compilable_keys() {
+        for &good in GOOD_GLOBS {
+            assert!(
+                validate_topic_key(good).is_ok(),
+                "compilable key {good:?} must be accepted at bind"
+            );
+        }
+        for &bad in BAD_GLOBS {
+            assert!(
+                matches!(validate_topic_key(bad), Err(AmqpError::InvalidRoutingKey)),
+                "non-compilable key {bad:?} must be rejected with InvalidRoutingKey"
+            );
+        }
     }
 }

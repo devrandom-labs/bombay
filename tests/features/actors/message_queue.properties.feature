@@ -84,30 +84,33 @@ Feature: MessageQueue — laws over exchange routing, headers matching, and glob
     Given a Topic exchange "x" and a declared queue "q"
     When "q" is bound to "x" with any routing key that is not a compilable glob
     Then the bind fails with "InvalidRoutingKey"
-    # NOTE (:591): today QueueBind stores the key with no glob validation, so this FAILS.
-    # Desired: QueueBind validates Topic routing keys (mirroring the Headers x-match check)
-    # and returns AmqpError::InvalidRoutingKey for any key glob::Pattern::new rejects.
-    # GEN: keys ∈ non-compilable globs incl. boundaries {"[unclosed", "[a-", "[", "\\",
-    #      "a[b"}; oracle compilability via glob::Pattern::new(key).is_err().
+    # FIXED (:591, card #79): QueueBind validates Topic routing keys (mirroring the Headers
+    # x-match check) and returns AmqpError::InvalidRoutingKey for any key glob::Pattern::new
+    # rejects.
+    # GEN: keys ∈ non-compilable globs incl. boundaries {"[unclosed", "[a-", "[", "a[b"};
+    #      oracle compilability via glob::Pattern::new(key).is_err().
     # ORACLE: glob::Pattern::new(key).is_err() ⇒ bind must Err(InvalidRoutingKey).
-    # Generalizes: message_queue.feature "A malformed Topic routing key should be rejected at
+    # Generalizes: message_queue.feature "A malformed Topic routing key is rejected at
     #   bind time" (@bug:591).
 
   @property @boundary @bug:actors/src/message_queue.rs:707
-  Scenario: A non-compilable Topic binding key makes publish return an error, never panic
-    Given a Topic exchange "x" with a queue bound using any non-compilable glob key
-    When a message is published to "x" with any routing key r
-    Then the MessageQueue actor does not panic
-    And the publish fails with "InvalidRoutingKey"
-    # NOTE (:707): today Pattern::new(&binding.routing_key).unwrap() panics the run-loop for a
-    # non-compilable key, so this FAILS for every such binding. Desired (publish-side
-    # companion to :591): surface AmqpError::InvalidRoutingKey instead of panicking.
+  Scenario: Refusing every non-compilable Topic key keeps the actor publish-safe
+    Given a Topic exchange "x" and a declared queue "q"
+    When "q" is bound to "x" with any routing key that is not a compilable glob
+    Then the MessageQueue actor does not panic and publishing to "x" never errors
+    # FIXED (:707, card #79): bind-time validation (:591) means a non-compilable key can no
+    # longer reach the store through the public API — there is no back door to plant one — so
+    # the end-to-end law is: every such bind is refused and a subsequent publish neither
+    # errors nor panics the run-loop. The pure publish-side defence (a malformed key already
+    # in the store yields AmqpError::InvalidRoutingKey, never a panic, because the publish
+    # path compiles globs through topic_matches instead of unwrap) is proven over this exact
+    # GEN set by the in-file #[cfg(test)] unit tests in message_queue.rs.
     # GEN: binding keys ∈ non-compilable globs {"[unclosed", "[a-", "[", "a[b"}; r ∈ any
-    #      routing key incl. {"", "log.warn"}.
-    # ORACLE: glob::Pattern::new(key).is_err() ⇒ publish must Err(InvalidRoutingKey) and the
-    #         actor stays alive (no panic / run-loop death).
-    # Generalizes: message_queue.feature "A malformed Topic routing key panics the actor at
-    #   publish time (BUG)" (@bug:707).
+    #      routing key incl. {"", "log.warn", "log.warn.detail"}.
+    # ORACLE: glob::Pattern::new(key).is_err() ⇒ bind Err(InvalidRoutingKey); the actor stays
+    #         alive and every later publish returns Ok.
+    # Generalizes: message_queue.feature "A refused malformed Topic key never panics the actor
+    #   when publishing" (@bug:707).
 
   @property @lifecycle
   Scenario: BasicConsume is idempotent per (queue, type, actor_id) for any repeat count

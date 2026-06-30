@@ -14,10 +14,10 @@
 //! serializing scenarios keeps the windows deterministic. The @linearizability
 //! scenarios still use real overlap (`tokio::spawn` + `Barrier`) WITHIN a scenario.
 //!
-//! The `!t.starts_with("bug")` filter EXCLUDES the three `@bug:707` / `@bug:591`
-//! scenarios, whose `Then`s assert the desired `AmqpError::InvalidRoutingKey`
-//! rejection — a variant that does not exist yet (card #79). The real defect is
-//! reproduced by the separate `message_queue_bug_bdd.rs` probe.
+//! The `@bug:591` / `@bug:707` scenarios now run here too (card #79): `QueueBind`
+//! rejects a non-compilable Topic key with `AmqpError::InvalidRoutingKey` and the
+//! publish path compiles binding globs through `topic_matches` instead of
+//! `unwrap`-panicking, so every scenario is green.
 
 #[path = "steps/message_queue.rs"]
 mod message_queue;
@@ -36,7 +36,7 @@ async fn message_queue_features() {
                 env!("CARGO_MANIFEST_DIR"),
                 "/../tests/features/actors/message_queue.feature"
             ),
-            |_, _, sc| !sc.tags.iter().any(|t| t.starts_with("bug")),
+            |_, _, _| true,
         )
         .await;
 }

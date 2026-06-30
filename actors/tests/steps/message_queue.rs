@@ -26,17 +26,17 @@
 //! (the crate the queue uses) or an AMQP set-membership model written from
 //! scratch, never the queue itself.
 //!
-//! @bug GATING (card #79): three scenarios carry `@bug:.../message_queue.rs:707`
-//! or `:591` and assert the DESIRED `AmqpError::InvalidRoutingKey` rejection — a
-//! variant that does NOT exist in the enum yet (adding it is card #79). Both
-//! runners exclude every `@bug` scenario via their `!t.starts_with("bug")` filter,
-//! so those scenarios never run here and their steps are never bound. To keep the
-//! crate COMPILING, NO step definition in this module names the missing variant.
-//! The REAL defect (a malformed Topic key panics the run-loop at publish, because
-//! `QueueBind` never validates a Topic key is a compilable glob) is reproduced —
-//! WITHOUT the missing variant — by the separate `message_queue_bug_bdd.rs` probe,
-//! which is `#[ignore]`d (RED today, will pass once :591/:707 are fixed) via the
-//! `malformed_topic_key_panics_at_publish` helper exported below.
+//! @bug FIXED (card #79): the `@bug:.../message_queue.rs:591` / `:707` scenarios
+//! now run in the green runners (the `!t.starts_with("bug")` filter is gone).
+//! `QueueBind` validates that a Topic routing key is a compilable glob and rejects
+//! a malformed one with `AmqpError::InvalidRoutingKey` (:591), and the publish path
+//! compiles stored binding globs through `topic_matches`, returning that error
+//! instead of `unwrap`-panicking the run-loop (:707). The pure publish-side defence
+//! (a malformed key already in the store yields an error, never a panic) is proven
+//! by the in-file `#[cfg(test)]` unit tests in `message_queue.rs` — bind-time
+//! validation means a malformed key can no longer reach the store through the
+//! public API, so the BDD `:707` scenarios assert the end-to-end truth instead:
+//! the bind is refused and a subsequent publish neither errors nor panics.
 
 use std::{
     collections::HashMap,
@@ -202,8 +202,7 @@ fn parse_kind(name: &str) -> ExchangeType {
 
 /// The error-variant name asserted by the `Then`s. An INDEPENDENT mapping (not
 /// `format!("{e:?}")`) so a renamed variant is caught by a compile error here, not
-/// silently. Deliberately does NOT include any `InvalidRoutingKey` arm — that
-/// variant does not exist yet (card #79).
+/// silently.
 /// Extracts the handler's `AmqpError` from an `ask` reply. The SUT handlers reply
 /// `Result<(), AmqpError>`, which kameo's `Reply` impl flattens: `ask(..).await`
 /// returns `Result<(), SendError<M, AmqpError>>`, surfacing a handler `Err` as
@@ -227,6 +226,7 @@ fn err_name(e: &AmqpError) -> &'static str {
         AmqpError::InvalidHeaderMatch => "InvalidHeaderMatch",
         AmqpError::ExchangeInUse => "ExchangeInUse",
         AmqpError::QueueInUse => "QueueInUse",
+        AmqpError::InvalidRoutingKey => "InvalidRoutingKey",
     }
 }
 
@@ -1923,75 +1923,106 @@ async fn model_then_counts(_w: &mut MessageQueueWorld) {
 }
 
 // ===========================================================================
-// @bug probe (card #79) — REAL defect, no missing variant referenced
+// @bug laws — malformed Topic routing keys (:591 bind / :707 publish, card #79)
+//
+// Bounded boundary-loops over the `# GEN:` non-compilable-glob set, with the glob
+// crate itself as the independent oracle. Bind-time validation means a malformed
+// key can no longer reach the store through the public API (no back door), so the
+// :707 law asserts the end-to-end truth — refused bind + publish-safe survival —
+// while the pure publish-side defence lives in the in-file unit tests in
+// message_queue.rs.
 // ===========================================================================
 
-/// Drives the SUT exactly as the `@bug:707` / `@bug:591` scenarios describe — bind
-/// a Topic queue with a NON-COMPILABLE glob key (`"[unclosed"`), which `QueueBind`
-/// accepts without validation (the :591 gap), then publish, which reaches
-/// `Pattern::new(&binding.routing_key).unwrap()` (the :707 panic). Returns whether
-/// the MessageQueue actor SURVIVED the publish (the DESIRED behaviour).
-///
-/// Today the run-loop panics, so this returns `false` (RED). Once :591/:707 are
-/// fixed to return an error instead of panicking (card #79), it returns `true`.
-/// This reproduces the defect WITHOUT naming `AmqpError::InvalidRoutingKey` (which
-/// does not exist yet), so the crate compiles. Only `message_queue_bug_bdd.rs`
-/// calls it; the other runners include this module without it.
-#[allow(dead_code)]
-pub async fn malformed_topic_key_survives_publish() -> bool {
+/// The boundary set of NON-compilable Topic globs. Oracle: each is rejected by
+/// `glob::Pattern::new`. Mirrors the `# GEN:` set in the `.properties.feature`.
+const NON_COMPILABLE_GLOBS: &[&str] = &["[unclosed", "[a-", "[", "a[b"];
+
+/// A fresh `MessageQueue` with a Topic exchange `"x"` and a declared queue `"q"`,
+/// the common fixture for the malformed-key laws.
+async fn fresh_topic_x_with_q() -> ActorRef<MessageQueue> {
     let mq = MessageQueue::spawn(MessageQueue::new(DeliveryStrategy::BestEffort));
     mq.wait_for_startup().await;
     mq.tell(ExchangeDeclare {
-        exchange: "logs".to_owned(),
+        exchange: "x".to_owned(),
         kind: ExchangeType::Topic,
         auto_delete: false,
     })
     .await
-    .expect("declare exchange");
+    .expect("declare Topic exchange x");
     mq.tell(QueueDeclare {
         queue: "q".to_owned(),
         auto_delete: false,
     })
     .await
-    .expect("declare queue");
-    // QueueBind accepts the malformed Topic key with NO glob validation (:591 gap).
-    mq.tell(QueueBind {
-        queue: "q".to_owned(),
-        exchange: "logs".to_owned(),
-        routing_key: "[unclosed".to_owned(),
-        arguments: HashMap::new(),
-    })
-    .await
-    .expect("malformed bind is (today) accepted");
-    // Publish reaches Pattern::new("[unclosed").unwrap() at :707 and panics the
-    // run-loop today. We don't care about the publish Result here (the run-loop may
-    // die mid-handle); we probe LIVENESS afterwards.
-    let _ = mq
-        .tell(BasicPublish {
-            exchange: "logs".to_owned(),
-            routing_key: "log.warn".to_owned(),
-            message: Note {
-                tag: "m".to_owned(),
-            },
-            properties: MessageProperties::default(),
-        })
-        .await;
-    // The actor survives iff it still answers a query. Poll briefly: a panicked
-    // run-loop closes the mailbox.
-    for _ in 0..100 {
-        if mq
-            .ask(QueueExists {
+    .expect("declare queue q");
+    mq
+}
+
+#[given(regex = r#"^a Topic exchange "x" and a declared queue "q"$"#)]
+async fn law_given_topic_x_q(_w: &mut MessageQueueWorld) {}
+
+#[when(regex = r#"^"q" is bound to "x" with any routing key that is not a compilable glob$"#)]
+async fn law_when_bind_non_compilable(world: &mut MessageQueueWorld) {
+    for &bad in NON_COMPILABLE_GLOBS {
+        assert!(
+            Pattern::new(bad).is_err(),
+            "GEN guard: {bad:?} must be a non-compilable glob"
+        );
+        let mq = fresh_topic_x_with_q().await;
+        let res = mq
+            .ask(QueueBind {
                 queue: "q".to_owned(),
+                exchange: "x".to_owned(),
+                routing_key: bad.to_owned(),
+                arguments: HashMap::new(),
             })
-            .await
-            .is_ok()
-        {
-            return true; // survived => bug fixed
-        }
-        if !mq.is_alive() {
-            return false; // run-loop died => bug live
-        }
-        tokio::time::sleep(Duration::from_millis(5)).await;
+            .await;
+        let err = amqp_err(res);
+        assert!(
+            matches!(err, Some(AmqpError::InvalidRoutingKey)),
+            "bind of non-compilable key {bad:?} must fail with InvalidRoutingKey, got {err:?}"
+        );
+        // Leave the last error for the `:591` `Then the bind fails with ...` check.
+        world.last_error = err;
+        mq.kill();
     }
-    mq.is_alive()
+}
+
+#[then(regex = r#"^the MessageQueue actor does not panic and publishing to "x" never errors$"#)]
+async fn law_then_publish_safe_after_refused_bind(_w: &mut MessageQueueWorld) {
+    let rs = ["", "log.warn", "log.warn.detail"];
+    for &bad in NON_COMPILABLE_GLOBS {
+        let mq = fresh_topic_x_with_q().await;
+        // The malformed bind is refused, so no binding lands in the store ...
+        let _ = mq
+            .ask(QueueBind {
+                queue: "q".to_owned(),
+                exchange: "x".to_owned(),
+                routing_key: bad.to_owned(),
+                arguments: HashMap::new(),
+            })
+            .await;
+        // ... and publishing afterwards neither errors nor panics the run-loop.
+        for &r in &rs {
+            let res = mq
+                .ask(BasicPublish {
+                    exchange: "x".to_owned(),
+                    routing_key: r.to_owned(),
+                    message: Note {
+                        tag: "m".to_owned(),
+                    },
+                    properties: MessageProperties::default(),
+                })
+                .await;
+            assert!(
+                amqp_err(res).is_none(),
+                "publish r={r:?} after a refused {bad:?} bind must not error"
+            );
+        }
+        assert!(
+            mq.is_alive(),
+            "the MessageQueue actor must survive a refused {bad:?} bind + publish"
+        );
+        mq.kill();
+    }
 }

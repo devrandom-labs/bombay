@@ -91,9 +91,5 @@ required-features = ["testing"]
 name = "message_queue_props_bdd"
 required-features = ["testing"]
 
-[[test]]
-name = "message_queue_bug_bdd"
-required-features = ["testing"]
-
 [lints]
 workspace = true
