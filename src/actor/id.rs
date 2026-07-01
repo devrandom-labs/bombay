@@ -136,11 +136,14 @@ impl ActorId {
     ///
     /// A `Result` containing either the deserialized `ActorId` or an `ActorIdFromBytesError`.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, ActorIdFromBytesError> {
-        // Extract the ID
+        // Extract the ID. Bounds-check the length before slicing: `bytes[0..8]`
+        // on a slice shorter than 8 would panic, so a truncated (untrusted) wire
+        // buffer must be rejected with `MissingSequenceID`, never a panic.
         let sequence_id = u64::from_le_bytes(
-            bytes[0..8]
-                .try_into()
-                .map_err(|_| ActorIdFromBytesError::MissingSequenceID)?,
+            bytes
+                .get(0..8)
+                .and_then(|head| head.try_into().ok())
+                .ok_or(ActorIdFromBytesError::MissingSequenceID)?,
         );
 
         // Extract the peer id

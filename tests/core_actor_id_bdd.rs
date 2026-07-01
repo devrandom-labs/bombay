@@ -1,18 +1,16 @@
-//! Cucumber runner for core/actor_id.feature, plus the @bug:id.rs probes.
+//! Cucumber runner for core/actor_id.feature.
 //!
-//! The 3 @bug scenarios in actor_id.feature assert the DESIRED behaviour
-//! (from_bytes returns Err(MissingSequenceID) on a short slice). The source
-//! panics on `bytes[0..8]` (id.rs:140) BEFORE the map_err can run, so those
-//! scenarios are excluded from the green cucumber run (the filter predicate
-//! drops any @bug tag) and the live defect is pinned by the #[should_panic]
-//! tests below instead. They pass GREEN while the bug lives and flip RED the
-//! moment fix(actor_id) lands.
+//! The `@boundary` decode-rejection scenarios (a slice shorter than 8 bytes,
+//! and a truncated buffer through serde `Deserialize`) exercise the fix from
+//! card #80: `from_bytes` bounds-checks before slicing `bytes[0..8]`, so a
+//! truncated buffer returns `Err(MissingSequenceID)` / serde `invalid_length`
+//! instead of panicking. Before the fix these panicked; they now run green in
+//! the ordinary cucumber pass (no tag filter).
 
 #[path = "core_steps/actor_id.rs"]
 mod actor_id;
 
 use actor_id::ActorIdWorld;
-use bombay::actor::ActorId;
 use cucumber::World;
 
 #[tokio::test(flavor = "multi_thread")]
@@ -25,31 +23,7 @@ async fn actor_id_features() {
                 env!("CARGO_MANIFEST_DIR"),
                 "/tests/features/core/actor_id.feature"
             ),
-            |_, _, sc| !sc.tags.iter().any(|t| t.starts_with("bug")),
+            |_, _, _| true,
         )
         .await;
-}
-
-#[tokio::test]
-#[should_panic(expected = "out of range for slice")]
-async fn bug_id_140_from_bytes_panics_on_short_slice() {
-    let _ = ActorId::from_bytes(&[0u8; 4]);
-}
-
-#[tokio::test]
-#[should_panic(expected = "out of range for slice")]
-async fn bug_id_140_from_bytes_panics_on_empty_slice() {
-    let _ = ActorId::from_bytes(&[]);
-}
-
-#[tokio::test]
-#[should_panic(expected = "out of range for slice")]
-async fn bug_id_218_deserialize_panics_on_short_buffer() {
-    // serde's visit_bytes runs from_bytes, which panics before the
-    // invalid_length mapping (id.rs:218-221) can run. `serde_bytes::Bytes`
-    // serializes to a MessagePack `bin` payload, which rmp_serde routes to
-    // `ActorIdVisitor::visit_bytes` — the same root cause (id.rs:140) the
-    // direct probes hit, exercised through the real Deserialize path.
-    let buf = rmp_serde::to_vec(&serde_bytes::Bytes::new(&[0u8; 4])).unwrap();
-    let _: ActorId = rmp_serde::from_slice(&buf).unwrap();
 }
