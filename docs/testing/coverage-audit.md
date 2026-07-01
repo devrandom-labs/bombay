@@ -291,12 +291,15 @@ clean `Err(MissingSequenceID)` — factually wrong (a green-able test of behavio
 happen). They are now `@bug:id.rs:140-143` / `@bug:id.rs:218-221` probes asserting the *desired*
 clean error. **Unlike** the `message_queue` `@bug` probes (which need `AmqpError::InvalidRoutingKey`
 added and won't compile), these compile now and stay red **via the panic** until a length-check
-lands in `from_bytes` — a separate fix-pass card, NOT #74.
+lands in `from_bytes` — a separate fix-pass card, NOT #74. **Fixed by card #80** (2026-07):
+`from_bytes` now bounds-checks with `bytes.get(0..8)`; the probes lost their `@bug` tags and run
+green as `@boundary` decode-rejection scenarios, and the serde `invalid_length` mapping is live.
 
 **`@bug` probe inventory (all must stay RED).** Pre-existing: `pubsub.rs:125`,
 `message_queue.rs:591`, `message_queue.rs:707`. Added in 2b: `id.rs:140-143` (×2 — 4-byte +
-empty), `id.rs:218-221` (serde). `pool.rs:401` is `@review-semantics`, not a live `@bug` (its
-panic arm is unreachable, so a probe would pass green — forbidden).
+empty), `id.rs:218-221` (serde) — **resolved by card #80**, tags dropped, now green. `pool.rs:401`
+is `@review-semantics`, not a live `@bug` (its panic arm is unreachable, so a probe would pass
+green — forbidden).
 
 **Spec totals now:** 457 example scenarios + 112 property/model laws across 42 feature files.
 

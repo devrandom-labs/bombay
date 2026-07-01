@@ -6,11 +6,10 @@
 //! `harness = false`) so nextest's `--list` enumerates it; built only with the
 //! `testing` feature (see `required-features` in Cargo.toml).
 //!
-//! The `from_bytes rejects any byte string shorter than eight bytes` scenario
-//! is tagged `@bug:id.rs:140-143` (it asserts Err(MissingSequenceID) which
-//! panics today); the filter predicate drops any `bug*` tag, so it is excluded
-//! from this green run. The live defect is pinned by the `#[should_panic]`
-//! probes in `core_actor_id_bdd.rs`.
+//! The `from_bytes rejects any byte string shorter than eight bytes` law
+//! asserts Err(MissingSequenceID) over n ∈ [0, 8). It panicked before card #80
+//! bounds-checked `from_bytes`; it now runs green in the ordinary pass (no tag
+//! filter).
 
 #[path = "core_steps/actor_id.rs"]
 mod actor_id;
@@ -28,7 +27,7 @@ async fn actor_id_props_features() {
                 env!("CARGO_MANIFEST_DIR"),
                 "/tests/features/core/actor_id.properties.feature"
             ),
-            |_, _, sc| !sc.tags.iter().any(|t| t.starts_with("bug")),
+            |_, _, _| true,
         )
         .await;
 }

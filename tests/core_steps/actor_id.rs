@@ -7,11 +7,12 @@
 //! Every assertion is the SPECIFIC value confirmed in the scenario's
 //! `# Confirmed:` / `# ORACLE:` note (facts only — no vague `contains`).
 //!
-//! The `@bug:id.rs:140-143` / `:218-221` scenarios assert DESIRED behaviour the
-//! source does not yet have (a short slice panics on `bytes[0..8]` before the
-//! `MissingSequenceID` map_err can run). Both runners' filter predicates drop
-//! any `bug*` tag, so no step here tries to make them green; the live defect is
-//! pinned by the `#[should_panic]` probes in `core_actor_id_bdd.rs`.
+//! The `@boundary` decode-rejection scenarios (a slice shorter than 8 bytes,
+//! and a truncated buffer fed through serde `Deserialize`) assert the
+//! defensive-boundary contract: `from_bytes` returns `MissingSequenceID` and
+//! the serde visitor maps it to `invalid_length`, WITHOUT panicking. These
+//! pinned the `@bug:id.rs:140-143` / `:218-221` defect fixed under card #80
+//! (bounds-check before slicing `bytes[0..8]`); before the fix they panicked.
 //!
 //! `ActorId::generate()` increments one PROCESS-GLOBAL `AtomicUsize`
 //! (`fetch_add(1, Relaxed)`, id.rs:72-79), shared across every scenario in the
@@ -25,7 +26,7 @@ use std::{
     sync::Arc,
 };
 
-use bombay::actor::ActorId;
+use bombay::actor::{ActorId, ActorIdFromBytesError};
 use cucumber::{World, given, then, when};
 use proptest::prelude::*;
 use tokio::sync::Barrier;
@@ -45,6 +46,12 @@ pub struct ActorIdWorld {
     bytes: Vec<u8>,
     /// Decoded ActorId from a byte round-trip.
     decoded: Option<ActorId>,
+    /// Result of a `from_bytes` decode attempt on a (possibly truncated) slice
+    /// (the @boundary decode-rejection scenarios).
+    decode_result: Option<Result<ActorId, ActorIdFromBytesError>>,
+    /// Result of deserializing a (possibly truncated) buffer through the real
+    /// serde `Deserialize` path; the Err arm holds the serde error's `Display`.
+    serde_result: Option<Result<ActorId, String>>,
     /// Last formatted (Display/Debug) string.
     last_string: String,
 }
@@ -219,6 +226,74 @@ async fn then_returns_actorid_with_seq(world: &mut ActorIdWorld, expected: u64) 
         decoded.sequence_id(),
         expected,
         "decoded sequence_id must be {expected}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// @boundary — truncated decode input must error, not panic (card #80)
+// ---------------------------------------------------------------------------
+
+#[given(regex = r"^a 4-byte slice$")]
+async fn given_4_byte_slice(world: &mut ActorIdWorld) {
+    world.bytes = vec![0u8; 4];
+}
+
+#[given(regex = r"^an empty byte slice$")]
+async fn given_empty_slice(world: &mut ActorIdWorld) {
+    world.bytes = Vec::new();
+}
+
+#[when(regex = r"^from_bytes is called on it$")]
+async fn when_from_bytes_on_it(world: &mut ActorIdWorld) {
+    // No unwrap: capture the Result so the Then can assert the clean error.
+    // Before the bounds-check fix this call panicked on `bytes[0..8]`.
+    world.decode_result = Some(ActorId::from_bytes(&world.bytes));
+}
+
+#[then(regex = r"^it returns Err\(ActorIdFromBytesError::MissingSequenceID\) without panicking$")]
+async fn then_err_missing_sequence_id(world: &mut ActorIdWorld) {
+    let result = world
+        .decode_result
+        .as_ref()
+        .expect("from_bytes must have been called");
+    assert!(
+        matches!(result, Err(ActorIdFromBytesError::MissingSequenceID)),
+        "from_bytes on a slice shorter than 8 bytes must return \
+         Err(MissingSequenceID) without panicking, got {result:?}"
+    );
+}
+
+#[given(regex = r"^a serialized byte buffer of only 4 bytes fed to ActorId's Deserialize$")]
+async fn given_serialized_4_byte_buffer(world: &mut ActorIdWorld) {
+    // A MessagePack `bin` payload of 4 bytes; rmp_serde routes it to
+    // ActorIdVisitor::visit_bytes — the real Deserialize path a truncated
+    // wire buffer would take.
+    world.bytes = rmp_serde::to_vec(&serde_bytes::Bytes::new(&[0u8; 4]))
+        .expect("serialize 4-byte bin payload");
+}
+
+#[when(regex = r"^the ActorIdVisitor's visit_bytes runs from_bytes on it$")]
+async fn when_visit_bytes_runs(world: &mut ActorIdWorld) {
+    let result: Result<ActorId, rmp_serde::decode::Error> = rmp_serde::from_slice(&world.bytes);
+    world.serde_result = Some(result.map_err(|err| err.to_string()));
+}
+
+#[then(
+    regex = r#"^deserialization fails with serde invalid_length\(4, "sequence ID"\), no panic$"#
+)]
+async fn then_deserialize_invalid_length(world: &mut ActorIdWorld) {
+    let result = world
+        .serde_result
+        .as_ref()
+        .expect("deserialization must have been attempted");
+    let message = result
+        .as_ref()
+        .err()
+        .expect("deserializing a 4-byte buffer must fail, not succeed");
+    assert!(
+        message.contains("invalid length 4, expected sequence ID"),
+        "serde must reject the truncated buffer with invalid_length(4, \"sequence ID\"), \
+         got: {message}"
     );
 }
 
@@ -419,10 +494,35 @@ async fn law_roundtrip_seq_identity(_world: &mut ActorIdWorld) {
 // scenario asserts BOTH lines; the second is the law driver.)
 
 #[given(regex = r"^any byte slice of length n with n in \[0, 7\]$")]
-async fn given_short_slice(_world: &mut ActorIdWorld) {
-    // Filtered out: this Given belongs to the @bug:id.rs:140-143 property
-    // (from_bytes on a short slice panics today). Both runners drop bug* tags,
-    // so this body is never reached; present only so the parser binds it.
+async fn given_short_slice(world: &mut ActorIdWorld) {
+    // A representative too-short slice so the shared `from_bytes is called on
+    // it` When runs; the exhaustive n ∈ {0, 1, 7} + proptest sweep lives in the
+    // Then below (this file's law-driver-in-the-Then convention).
+    world.bytes = vec![0u8; 3];
+}
+
+#[then(regex = r"^it returns Err\(ActorIdFromBytesError::MissingSequenceID\)$")]
+async fn law_reject_short_slice(_world: &mut ActorIdWorld) {
+    // GEN: n ∈ {0, 1, 7} — empty, the smallest non-empty, and the largest
+    // too-short length — plus a uniform proptest over every length in [0, 8).
+    // ORACLE: any slice shorter than 8 bytes -> Err(MissingSequenceID), never a
+    // panic (id.rs bounds-checks before slicing `bytes[0..8]`).
+    for n in [0usize, 1, 7] {
+        let bytes = vec![0u8; n];
+        assert!(
+            matches!(
+                ActorId::from_bytes(&bytes),
+                Err(ActorIdFromBytesError::MissingSequenceID)
+            ),
+            "a {n}-byte slice must decode to Err(MissingSequenceID), not panic"
+        );
+    }
+    proptest!(|(bytes in prop::collection::vec(any::<u8>(), 0..8))| {
+        prop_assert!(matches!(
+            ActorId::from_bytes(&bytes),
+            Err(ActorIdFromBytesError::MissingSequenceID)
+        ));
+    });
 }
 
 #[given(regex = r"^any u64 value v encoded as its 8 little-endian bytes$")]

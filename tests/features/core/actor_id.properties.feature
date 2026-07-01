@@ -36,14 +36,14 @@ Feature: ActorId — laws over byte round-trips, decode rejection, and generatio
     # Generalizes: actor_id.feature "to_bytes then from_bytes round-trips an ActorId",
     #              "sequence_id is preserved across a byte round-trip".
 
-  @property @boundary @bug:id.rs:140-143
+  @property @boundary
   Scenario: from_bytes rejects any byte string shorter than eight bytes
     Given any byte slice of length n with n in [0, 7]
     When from_bytes is called on it
     Then it returns Err(ActorIdFromBytesError::MissingSequenceID)
     # GEN: n ∈ {0, 1, 7} (include empty and the largest too-short length); bytes uniform.
-    # ORACLE: bytes[0..8].try_into() fails for any len < 8 -> MissingSequenceID
-    #         (id.rs:140-143).
+    # ORACLE: from_bytes bounds-checks the length, so any len < 8 -> MissingSequenceID with no
+    #         panic (card #80; id.rs). Confirmed empirically.
     # Generalizes: actor_id.feature "Decoding fewer than eight bytes fails…",
     #              "Decoding an empty slice fails…".
 

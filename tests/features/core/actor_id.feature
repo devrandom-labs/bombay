@@ -105,38 +105,33 @@ Feature: ActorId — generation, byte round-trips, identity
   # @boundary — malformed decode input, ordering edges
   # ---------------------------------------------------------------------------
 
-  @boundary @bug:id.rs:140-143
+  @boundary
   Scenario: Decoding fewer than eight bytes should fail with MissingSequenceID, not panic
     Given a 4-byte slice
     When from_bytes is called on it
     Then it returns Err(ActorIdFromBytesError::MissingSequenceID) without panicking
-    # @bug (MUST FAIL today): the code INTENDS a clean error — bytes[0..8].try_into() is mapped
-    # to MissingSequenceID (id.rs:140-143) and the serde visitor maps that to invalid_length
-    # (id.rs:218-221). But `bytes[0..8]` is slice-indexed BEFORE try_into runs, so a slice
-    # shorter than 8 panics with "range end index 8 out of range for slice of length 4" and the
-    # map_err is dead code. Verified empirically 2026-06 (lengths 0/3/7 panic; only 8 decodes).
-    # Desired fix: bounds-check the length before slicing so MissingSequenceID is reachable.
+    # Confirmed (card #80): from_bytes bounds-checks the length before slicing `bytes[0..8]`, so
+    # a slice shorter than 8 returns MissingSequenceID (id.rs) instead of panicking. Before the
+    # fix this panicked with "range end index 8 out of range for slice of length 4".
 
-  @boundary @bug:id.rs:140-143
+  @boundary
   Scenario: Decoding an empty slice should fail with MissingSequenceID, not panic
     Given an empty byte slice
     When from_bytes is called on it
     Then it returns Err(ActorIdFromBytesError::MissingSequenceID) without panicking
-    # @bug (MUST FAIL today): same root cause — `bytes[0..8]` panics on a length-0 slice
-    # ("range end index 8 out of range for slice of length 0") before the map_err can run
-    # (id.rs:140-143). Verified empirically 2026-06.
+    # Confirmed (card #80): the same bounds check makes a length-0 slice return MissingSequenceID
+    # instead of panicking ("range end index 8 out of range for slice of length 0").
 
-  @boundary @bug:id.rs:218-221
+  @boundary
   Scenario: Deserializing a too-short byte buffer should yield a serde invalid_length error, not panic
     Given a serialized byte buffer of only 4 bytes fed to ActorId's Deserialize
     When the ActorIdVisitor's visit_bytes runs from_bytes on it
     Then deserialization fails with serde invalid_length(4, "sequence ID"), no panic
-    # @bug (MUST FAIL today): visit_bytes maps MissingSequenceID -> E::invalid_length(bytes_len,
-    # "sequence ID") (id.rs:218-221), the documented defensive-boundary contract for truncated
-    # wire input (CLAUDE.md rule 3 — validate untrusted upstream input without panicking). But
-    # from_bytes panics first (see above), so this mapping is unreachable and a truncated buffer
-    # crashes the deserializer instead of returning a clean error. Wireable now (MissingSequenceID
-    # exists); it stays red via panic until the from_bytes bounds check lands.
+    # Confirmed (card #80): with from_bytes bounds-checked, visit_bytes now reaches its
+    # MissingSequenceID -> E::invalid_length(bytes_len, "sequence ID") mapping (id.rs:218-221),
+    # the defensive-boundary contract for truncated wire input (CLAUDE.md rule 3 — validate
+    # untrusted upstream input without panicking). Before the fix from_bytes panicked first,
+    # leaving that mapping unreachable dead code.
 
   @boundary
   Scenario: Decoding exactly eight bytes succeeds without the remote feature
