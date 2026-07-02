@@ -7,11 +7,11 @@
 //! - `pool`: Actor pool for managing concurrent task execution
 //! - `pubsub`: Publish-subscribe pattern implementation for actor communication
 //!
-//! # When to use MessageBus vs Broker vs PubSub
+//! # When to use `MessageBus` vs `Broker` vs `PubSub`
 //!
-//! - Use **MessageBus** when you want to route messages based on their type without explicit topics.
-//! - Use **Broker** when you need hierarchical topics, pattern-based subscriptions, or explicit routing.
-//! - Use **PubSub** when you need simple broadcast to all listeners with optional predicate-based filtering.
+//! - Use `MessageBus` when you want to route messages based on their type without explicit topics.
+//! - Use `Broker` when you need hierarchical topics, pattern-based subscriptions, or explicit routing.
+//! - Use `PubSub` when you need simple broadcast to all listeners with optional predicate-based filtering.
 
 use std::time::Duration;
 

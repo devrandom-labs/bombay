@@ -1,41 +1,40 @@
 # ============================================================
-# Bombay — Elite Clippy Configuration (adopted from nexus, verbatim — card #61)
+# Bombay — Elite Clippy Configuration (adopted from nexus — card #61)
 #
-# TEMPORARILY PARKED alongside the relaxed `[workspace.lints.clippy]` bar
-# in Cargo.toml. kameo's `src/lib.rs` carries `#![warn(clippy::all)]`,
-# which a source attribute keeps active even with the workspace groups set
-# to `allow`; this file's `disallowed-*` entries and tightened thresholds
-# are what make that re-enabled `clippy::all` bite on verbatim kameo
-# (e.g. its `std::sync::Mutex`/`RwLock` use). With them gone, kameo passes
-# `clippy::all` cleanly, as it does upstream.
+# RESTORED (was parked): pairs with the god-level `[workspace.lints.clippy]`
+# wall in Cargo.toml. Legacy/vendored kameo files that fail the bar carry a
+# documented per-file `#![allow(..., reason = "…#61")]` quarantine header;
+# they are re-linted file-by-file or deleted under M1/M7. NEW code is never
+# exempt — it is born under the full bar.
 #
-# TO RESTORE the god-level bar: re-enable the `[workspace.lints.clippy]`
-# wall in Cargo.toml AND uncomment the config below.
+# DELIBERATE DEVIATION from nexus-verbatim: the `disallowed-types` ban on
+# `std::sync::Mutex` / `RwLock` is NOT adopted. That ban encodes a false
+# premise — the real rule is "never hold a lock across `.await`", not "never
+# use a std mutex". A short synchronous critical section is *correctly* a
+# `std::sync`/`parking_lot` mutex; `tokio::sync::Mutex` is for guards held
+# across await points. The choice is per-site (see card #52), which a blanket
+# type-ban cannot express. Bombay has zero `std::sync::Mutex` in production
+# today, so the ban would only forbid a future-correct use.
 # ============================================================
 
-# Tests get escape hatches for unwrap/expect (the only mercy)
-# allow-unwrap-in-tests = true
-# allow-expect-in-tests = true
+# Tests get escape hatches for unwrap/expect (the only mercy).
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
 
-# 1. BRAIN-CAPACITY LIMITS
-# cognitive-complexity-threshold = 9
-# too-many-arguments-threshold = 5
-# too-many-lines-threshold = 80
+# 1. BRAIN-CAPACITY LIMITS (these lints live in pedantic/nursery groups).
+cognitive-complexity-threshold = 9
+too-many-arguments-threshold = 5
+too-many-lines-threshold = 80
 
 # 2. BAN DANGEROUS METHODS
-# [[disallowed-methods]]
-# path = "std::process::exit"
-# reason = "Return a `Result` or `ExitCode` from main instead."
-#
-# [[disallowed-methods]]
-# path = "std::thread::spawn"
-# reason = "Use `std::thread::scope` or an async runtime like Tokio."
+[[disallowed-methods]]
+path = "std::process::exit"
+reason = "Return a `Result` or `ExitCode` from main instead."
 
-# 3. BAN DANGEROUS TYPES
-# [[disallowed-types]]
-# path = "std::sync::Mutex"
-# reason = "Use `tokio::sync::Mutex` or `parking_lot::Mutex`."
-#
-# [[disallowed-types]]
-# path = "std::sync::RwLock"
-# reason = "Use `tokio::sync::RwLock` or `parking_lot::RwLock`."
+[[disallowed-methods]]
+path = "std::thread::spawn"
+reason = "Use `std::thread::scope` or an async runtime like Tokio."
+
+# 3. BAN DANGEROUS TYPES — intentionally omitted (see header). The
+#    std::sync::Mutex / RwLock ban is a per-site judgment (card #52), not a
+#    type-level rule.

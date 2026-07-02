@@ -22,47 +22,57 @@ portable-pty = "0.9"
 vt100 = "0.16"
 
 # ============================================================
-# Bombay — god-level lint config (adopted from nexus, verbatim).
+# Bombay — god-level lint config (adopted from nexus — card #61).
 #
-# TEMPORARILY RELAXED to `allow`. The vendored bombay code (~19k LOC) is
-# not clean against this bar (1200+ findings). Rather than bury them
-# under scattered #[allow]s on code that ships *zero tests upstream*
-# (notably the `actors` crate), the bar is parked at `allow` so the
-# clippy gate passes over verbatim bombay. It will be re-tightened
-# lint-by-lint, with real fixes, as test coverage lands (M1/M7).
+# RESTORED as a lint RATCHET. The bar is DENY workspace-wide, so ALL NEW
+# code is held to the nexus/agency hygiene standard from line one. Legacy
+# vendored kameo files that predate the bar carry a documented per-file
+# `#![allow(..., reason = "…#61")]` quarantine header (zero refactor, zero
+# behaviour change on code that M1/M7 will rewrite or delete). Those headers
+# are removed file-by-file as the files are cleaned or dropped; the
+# de-quarantine checklist lives on issue #61.
 #
-# TO RESTORE the god-level bar: set the three groups below back to
-# `deny` and re-add the restriction wall preserved in the comment.
+# DEVIATION from nexus-verbatim: `disallowed_types` (the std::sync::Mutex /
+# RwLock ban) is NOT adopted — see clippy.toml for the rationale (the real
+# rule is "no lock held across .await", a per-site call, not a type ban).
 # ============================================================
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable)'] }
+# NOTE (#61 tail): the optional `[workspace.lints.rust]` tightening —
+# `unsafe_code` (kameo's `error.rs` transmute needs a per-site allow),
+# `missing_docs`, `unreachable_pub`, `dead_code` — is deferred. Turning it on
+# means covering rust-level lints in the per-file quarantine headers too.
 
 [workspace.lints.clippy]
-all = { level = "allow", priority = -1 }
-pedantic = { level = "allow", priority = -1 }
-nursery = { level = "allow", priority = -1 }
+# 1. THE FOUNDATION
+all = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
 
-# Original god-level config, to be restored as the surviving core is
-# cleaned (set the groups above to `deny` and uncomment these):
-#
-# unwrap_used = "deny"
-# expect_used = "deny"
-# panic = "deny"
-# todo = "deny"
-# unimplemented = "deny"
-# dbg_macro = "deny"
-# print_stdout = "deny"
-# print_stderr = "deny"
-# disallowed_methods = "deny"
-# disallowed_types = "deny"
-# clone_on_ref_ptr = "deny"
-# as_conversions = "deny"
-# str_to_string = "deny"
-# implicit_clone = "deny"
-# shadow_reuse = "deny"
-# shadow_same = "deny"
-# shadow_unrelated = "deny"
-# allow_attributes_without_reason = "deny"
+# 2. THE RUTHLESS RESTRICTIONS (disallowed_types omitted — see header)
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+disallowed_methods = "deny"
+
+# 3. MEMORY & PERFORMANCE STRICTNESS
+clone_on_ref_ptr = "deny"
+as_conversions = "deny"
+str_to_string = "deny"
+implicit_clone = "deny"
+
+# 4. VARIABLE HYGIENE
+shadow_reuse = "deny"
+shadow_same = "deny"
+shadow_unrelated = "deny"
+
+# 5. THE "NO CHEATING" RULE — every #[allow] must carry a reason.
+allow_attributes_without_reason = "deny"
 
 [workspace.metadata.crane]
 name = "bombay"
