@@ -3,6 +3,10 @@
 # genuine false positives (crate names, deliberate abbreviations, literal test
 # data) and the one area not worth fixing yet.
 [files]
+# NOTE: the gate runs `typos <abs-nix-store-path>`, and typos matches
+# slash-bearing exclude globs relative to CWD (the build sandbox), not the walked
+# root — so a non-`**`-anchored path silently misses. Anchor every path exclude
+# with `**/`. (Same footgun cesr's _typos.toml documents.)
 extend-exclude = [
   # Dependency checksums — pure noise.
   "Cargo.lock",
@@ -10,8 +14,8 @@ extend-exclude = [
   # and rewrites over Zenoh (cards #2–#6). It carries a typo'd *public* type,
   # `DowncastRegsiteredActorRefError`; renaming a public type in code about to be
   # deleted is churn. Re-tighten (drop these) once the Zenoh remote lands.
-  "src/remote.rs",
-  "src/remote/**",
+  "**/src/remote.rs",
+  "**/src/remote/**",
 ]
 
 [default.extend-words]
