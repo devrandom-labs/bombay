@@ -9,8 +9,13 @@ on:
       - main
   workflow_dispatch:
 
+# Normalize the key to the bare branch name so a branch push and its PR (which fire
+# as separate `push` + `pull_request` events with *different* `github.ref`s — a branch
+# ref vs a `refs/pull/N/merge` ref) share one group and collapse to a single gate run
+# instead of running twice in parallel. `pull_request.head.ref` (PR events) and
+# `github.ref_name` (push events) both resolve to the branch name.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
