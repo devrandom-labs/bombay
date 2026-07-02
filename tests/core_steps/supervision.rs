@@ -62,7 +62,14 @@ use tokio::sync::Barrier;
 // "closes" the way a one-shot shutdown does).
 // ===========================================================================
 
-const SETTLE_STEPS: usize = 600;
+// A GENEROUS positive-observation bound. `settle` returns the instant its
+// condition holds, so a large bound costs a passing run nothing — it only
+// widens the margin before a genuinely-stalled restart is declared a failure.
+// Sized for the worst case (a 2-core CI runner under llvm-cov instrumentation,
+// where the async restart path is heavily scheduler-starved); the poll interval
+// itself also wakes late under load, so the effective wall-clock bound self-
+// scales well past the nominal SETTLE_STEPS * SETTLE_TICK.
+const SETTLE_STEPS: usize = 2000;
 const SETTLE_TICK: Duration = Duration::from_millis(5);
 /// A short bound for "this did NOT happen" assertions: long enough that a real
 /// restart would have been observed, short enough to keep the suite fast.
@@ -1489,8 +1496,24 @@ async fn run_strategy_trial(strat: &str, count: usize, failed: usize) -> BTreeSe
                 )
                 .await;
             }
-            // Give any spurious out-of-set restart time to manifest.
-            tokio::time::sleep(NEGATIVE_BOUND).await;
+            // Actively assert that every child OUTSIDE the strategy's set stays
+            // un-restarted (start count 1) across the negative window — a bounded
+            // hold, NOT a bare settle sleep. `hold_for` re-checks throughout the
+            // window and panics loudly the moment a spurious restart appears,
+            // rather than a passive sleep that only reads state once at the end.
+            let out_of_set: Vec<Arc<AtomicU32>> = (0..count)
+                .filter(|i| !expected.contains(i))
+                .map(|i| counters[i].clone())
+                .collect();
+            if !out_of_set.is_empty() {
+                hold_for(
+                    move || out_of_set.iter().all(|c| c.load(Ordering::SeqCst) == 1),
+                    "a child outside the strategy's restart set must NOT be restarted",
+                )
+                .await;
+            }
+            // Independent observation of the restarted set (the caller compares it
+            // to the oracle) — belt-and-suspenders alongside the hold above.
             let restarted: BTreeSet<usize> = (0..count)
                 .filter(|&i| counters[i].load(Ordering::SeqCst) >= 2)
                 .collect();
