@@ -9,13 +9,56 @@ on:
       - main
   workflow_dispatch:
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+# No `concurrency` block on purpose. GitHub offers only two ways to supersede an
+# in-flight run: cancel it (which leaves a "Cancelled" badge) or serialize behind
+# it (`cancel-in-progress: false`, which makes a new push *queue* for ~30 min
+# behind the stale gate — delaying even the cheap guard-skip). We want neither, so
+# stale runs simply finish and new runs start immediately in parallel. The
+# push/pull_request double-run is deduped by the `guard` job below, not here.
 
 jobs:
+  # Dedupe the push+pull_request double-run without a "Cancelled" badge.
+  # Once a branch has an open PR, every push emits BOTH a `push` (non-main
+  # branch) and a `pull_request` (targets main) event, so the gate would run
+  # twice. We let the pull_request run own the gate and SKIP the redundant push
+  # run — a skip is grey/neutral, never a cancellation, and does not block
+  # branch protection. A push with no open PR still runs the gate exactly once.
+  guard:
+    name: Dedupe guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - name: Decide whether the gate should run
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          # Non-push events (pull_request, workflow_dispatch) always own the gate.
+          if [ "$EVENT_NAME" != "push" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # A push only defers if an open PR for this branch will run the gate.
+          open_prs=$(gh pr list --repo "$REPO" --head "$BRANCH" \
+            --state open --json number --jq 'length')
+          if [ "$open_prs" -gt 0 ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Open PR exists for '$BRANCH' — the pull_request run owns the gate; skipping this push run." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
   checks:
     name: Nix Flake Check
+    needs: guard
+    if: needs.guard.outputs.run == 'true'
     runs-on: ubuntu-latest
     permissions:
       actions: write
