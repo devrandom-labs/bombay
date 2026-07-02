@@ -88,7 +88,7 @@ Feature: MessageQueue — laws over exchange routing, headers matching, and glob
     # x-match check) and returns AmqpError::InvalidRoutingKey for any key glob::Pattern::new
     # rejects.
     # GEN: keys ∈ non-compilable globs incl. boundaries {"[unclosed", "[a-", "[", "a[b"};
-    #      oracle compilability via glob::Pattern::new(key).is_err().
+    #      oracle compatibility via glob::Pattern::new(key).is_err().
     # ORACLE: glob::Pattern::new(key).is_err() ⇒ bind must Err(InvalidRoutingKey).
     # Generalizes: message_queue.feature "A malformed Topic routing key is rejected at
     #   bind time" (@bug:591).

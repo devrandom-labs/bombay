@@ -561,7 +561,7 @@ where
         }
     }
 
-    /// Waits for the actor to finish startup, returning the startup result with a clousre containing the error.
+    /// Waits for the actor to finish startup, returning the startup result with a closure containing the error.
     ///
     /// This method ensures the actors on_start lifecycle hook has been fully processed.
     /// If `wait_for_startup_with_result` is called after the actor has already started up, this will return immediately.

@@ -1,0 +1,47 @@
+# Dependabot keeps dependencies current and security-patched. It complements the
+# `cargo audit` + `cargo deny` gate in `nix flake check`: that gate *blocks* a PR
+# when a vulnerable/banned dependency is present, while Dependabot *continuously*
+# watches and opens the fix PR — even when CI isn't running.
+#
+# Routine version churn is kept quiet: minor/patch updates are grouped into a
+# single PR per ecosystem, and major bumps are left for deliberate, reviewed
+# adoption (a major transport/runtime bump — tokio, zenoh, libp2p — can ripple
+# into the public API and wants a human in the loop). Security updates bypass the
+# `ignore` rules below — a real advisory always gets its own PR.
+version: 2
+updates:
+  # Rust crate dependencies (Cargo.toml / Cargo.lock).
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      cargo:
+        patterns: ["*"]
+        update-types:
+          - minor
+          - patch
+
+  # GitHub Actions used by the workflows in .github/workflows/.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(deps)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types:
+          - minor
+          - patch

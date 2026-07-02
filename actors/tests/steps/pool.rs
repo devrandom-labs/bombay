@@ -105,7 +105,7 @@ impl Message<Hold> for Recorder {
 // A factory whose closures assign monotonically increasing slot ids
 // ===========================================================================
 
-/// A clonable handle to the slot allocator + shared counter map a factory uses.
+/// A cloneable handle to the slot allocator + shared counter map a factory uses.
 /// The factory built from this assigns slot ids `0, 1, 2, …` in worker-creation
 /// order, so the initial N workers get slots `0..N` (worker index == slot id),
 /// and any replacement gets a slot id `>= N`.
