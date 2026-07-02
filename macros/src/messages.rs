@@ -75,7 +75,7 @@ impl
             .map::<syn::Result<Field>, _>(|(doc_attrs, pat_type)| {
                 let ident = match pat_type.pat.as_ref() {
                     syn::Pat::Ident(pat_ident) => pat_ident.ident.clone(),
-                    _ => return Err(syn::Error::new(pat_type.span(), "unsupported pattern - argments must be named when used with the actor macro")),
+                    _ => return Err(syn::Error::new(pat_type.span(), "unsupported pattern - arguments must be named when used with the actor macro")),
                 };
                 let ty = &pat_type.ty;
 

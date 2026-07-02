@@ -47,8 +47,8 @@ Feature: Links — laws over sibling fan-out exactness and the parent_shutdown R
     Then each of the K children's shutdown closures is invoked exactly once
     And wait_children_closed resolves exactly when all K child mailboxes are closed, and immediately when K == 0
     # GEN: K ∈ boundary-biased usize {0, 1, 2, 16}; vary which children close before vs after the wait begins.
-    #      send_children_shutdown snapshots and join_alls the children's shutdown closures (links.rs:54-65);
-    #      wait_children_closed snapshots and join_alls each signal_mailbox.closed() (:67-78).
+    #      send_children_shutdown snapshots and join_all the children's shutdown closures (links.rs:54-65);
+    #      wait_children_closed snapshots and join_all each signal_mailbox.closed() (:67-78).
     # ORACLE: a per-child {shutdown-called-count, mailbox-closed} model — the shutdown histogram is K ones
     #         (0 when K==0); the wait future is pending iff ∃ an open child mailbox, resolved once all closed.
     # Generalizes: links.feature "send_children_shutdown invokes every child's shutdown closure once",

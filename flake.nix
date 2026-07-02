@@ -1,21 +1,32 @@
 {
-  description =
-    "Bombay — a Zenoh-native hard-fork of the kameo actor framework";
+  description = "Bombay — a Zenoh-native hard-fork of the kameo actor framework";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     utils.url = "github:numtide/flake-utils";
     crane.url = "github:ipetkov/crane";
     fenix = {
       url = "github:nix-community/fenix";
-      inputs = { nixpkgs.follows = "nixpkgs"; };
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+      };
     };
     advisory-db = {
       url = "github:rustsec/advisory-db";
       flake = false;
     };
   };
-  outputs = { self, nixpkgs, utils, crane, fenix, advisory-db, ... }:
-    utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      utils,
+      crane,
+      fenix,
+      advisory-db,
+      ...
+    }:
+    utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
         inherit (pkgs) lib;
@@ -70,22 +81,40 @@
           # transitive C deps pulled in by kameo's dev-dependencies (libp2p,
           # criterion, the prometheus exporter).
           buildInputs = with pkgs; [ openssl ];
-          nativeBuildInputs = with pkgs; [ cmake pkg-config perl ];
+          nativeBuildInputs = with pkgs; [
+            cmake
+            pkg-config
+            perl
+          ];
         };
 
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-      in with pkgs; {
+
+        # A lightweight non-cargo check runner: run `cmd` with `tools` on PATH;
+        # the derivation succeeds (touch $out) only if the command does. Keeps
+        # the hygiene gates (typos, nixfmt, deadnix, shellcheck, yaml) uniform.
+        lintCheck =
+          name: tools: cmd:
+          pkgs.runCommandLocal name { nativeBuildInputs = tools; } ''
+            ${cmd}
+            touch "$out"
+          '';
+      in
+      with pkgs;
+      {
         checks = {
           # Whole-workspace clippy at bombay's god-level bar. The vendored
           # kameo code is NOT yet clean against this config, so this gate is
           # RED by design until M1/M7 bring the surviving core up to standard.
-          bombay-clippy = craneLib.cargoClippy (commonArgs // {
-            inherit cargoArtifacts;
-            cargoClippyExtraArgs = "--all-targets -- --deny warnings";
-          });
+          bombay-clippy = craneLib.cargoClippy (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+            }
+          );
 
-          bombay-doc =
-            craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
+          bombay-doc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
 
           bombay-fmt = craneLib.cargoFmt { inherit src; };
 
@@ -99,32 +128,61 @@
             # `libp2p` (mDNS/DNS) — the exact layer M1 deletes when it replaces
             # `src/remote/` with Zenoh, so the vulnerable code leaves the tree
             # then. RUSTSEC-2026-0118 has no fixed upgrade available regardless.
-            cargoAuditExtraArgs =
-              "--ignore RUSTSEC-2026-0118 --ignore RUSTSEC-2026-0119";
+            cargoAuditExtraArgs = "--ignore RUSTSEC-2026-0118 --ignore RUSTSEC-2026-0119";
           };
           bombay-deny = craneLib.cargoDeny { inherit src; };
 
-          bombay-nextest = craneLib.cargoNextest (commonArgs // {
-            inherit cargoArtifacts;
-            partitions = 1;
-            partitionType = "count";
-          });
+          bombay-nextest = craneLib.cargoNextest (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              partitions = 1;
+              partitionType = "count";
+            }
+          );
 
           # nextest does NOT run doctests, so verify the doc-comment examples
           # separately with `cargo test --doc` (crane's dedicated wrapper).
-          bombay-doctest =
-            craneLib.cargoDocTest (commonArgs // { inherit cargoArtifacts; });
+          bombay-doctest = craneLib.cargoDocTest (commonArgs // { inherit cargoArtifacts; });
 
           # Lint the GitHub Actions workflows themselves. actionlint shells out
           # to shellcheck for `run:` steps, so it is on PATH here too. This keeps
           # the CI definition under the same single gate as the code.
-          bombay-actionlint = pkgs.runCommandLocal "bombay-actionlint" {
-            nativeBuildInputs = [ pkgs.actionlint pkgs.shellcheck ];
-          } ''
-            actionlint ${./.github/workflows}/*.yml
-            touch "$out"
-          '';
+          bombay-actionlint =
+            pkgs.runCommandLocal "bombay-actionlint"
+              {
+                nativeBuildInputs = [
+                  pkgs.actionlint
+                  pkgs.shellcheck
+                ];
+              }
+              ''
+                actionlint ${./.github/workflows}/*.yml
+                touch "$out"
+              '';
+
+          # ── cesr-parity hygiene gates (card #104) ──
+
+          # Spell-check first-party source + docs. Real typos are fixed in-tree;
+          # the allow-list + the one M1-doomed exclusion live in _typos.toml.
+          bombay-typos = lintCheck "bombay-typos" [ typos ] "typos --config ${./_typos.toml} ${./.}";
+
+          # flake.nix hygiene: nixfmt-formatted and free of dead bindings.
+          bombay-nixfmt = lintCheck "bombay-nixfmt" [ nixfmt ] "nixfmt --check ${./flake.nix}";
+          bombay-deadnix = lintCheck "bombay-deadnix" [ deadnix ] "deadnix --fail ${./flake.nix}";
+
+          # The tracked git hooks are shell scripts — lint them.
+          bombay-shellcheck = lintCheck "bombay-shellcheck" [ shellcheck ] "shellcheck ${./.githooks}/*";
+
+          # Non-workflow YAML (Dependabot + issue-template config); actionlint
+          # already covers the workflow YAML.
+          bombay-yaml = lintCheck "bombay-yaml" [
+            yamllint
+          ] "yamllint -d relaxed ${./.github/dependabot.yml} ${./.github/ISSUE_TEMPLATE/config.yml}";
         };
+
+        # `nix fmt` formats the flake with the same nixfmt the gate checks.
+        formatter = nixfmt;
 
         devShells.default = craneLib.devShell {
           checks = self.checks.${system};
@@ -177,22 +235,29 @@
         # feature auto-enables via the self dev-dep, so the cucumber runners build.
         packages =
           let
-            covLlvm = craneLib.cargoLlvmCov (commonArgs // {
-              inherit cargoArtifacts;
-              cargoLlvmCovCommand = "test";
-              cargoLlvmCovExtraArgs = "--workspace --html --output-dir $out";
-            });
-            covTarpaulin = craneLib.cargoTarpaulin (commonArgs // {
-              inherit cargoArtifacts;
-              cargoTarpaulinExtraArgs =
-                "--skip-clean --workspace --out Html --output-dir $out";
-            });
+            covLlvm = craneLib.cargoLlvmCov (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+                cargoLlvmCovCommand = "test";
+                cargoLlvmCovExtraArgs = "--workspace --html --output-dir $out";
+              }
+            );
+            covTarpaulin = craneLib.cargoTarpaulin (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+                cargoTarpaulinExtraArgs = "--skip-clean --workspace --out Html --output-dir $out";
+              }
+            );
           in
           {
             coverage-llvm = covLlvm;
             coverage = covLlvm;
-          } // lib.optionalAttrs stdenv.isLinux {
+          }
+          // lib.optionalAttrs stdenv.isLinux {
             coverage-tarpaulin = covTarpaulin;
           };
-      });
+      }
+    );
 }
