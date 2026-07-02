@@ -61,12 +61,28 @@ fn connect_loop(
     snapshot: &Arc<Mutex<Option<Snapshot>>>,
     connection_state: &Arc<Mutex<ConnectionState>>,
 ) -> Poller {
+    retry_until_some(
+        || connect_attempt(addr, connection_timeout, snapshot, connection_state),
+        BACKOFF,
+        thread::sleep,
+    )
+}
+
+/// Retry `attempt` until it yields `Some`, sleeping `backoff` between failures via the injected
+/// `sleep`. The generic seam under `connect_loop`: production passes the real `connect_attempt`
+/// closure + `thread::sleep`; a test passes a scripted attempt sequence + a recording sleep, so
+/// the retry-then-backoff control flow is covered without opening a socket or waiting the real
+/// 5-second `BACKOFF`. Behaviour is byte-identical to the inline `loop { attempt; sleep }`.
+fn retry_until_some<T>(
+    mut attempt: impl FnMut() -> Option<T>,
+    backoff: Duration,
+    mut sleep: impl FnMut(Duration),
+) -> T {
     loop {
-        if let Some(poller) = connect_attempt(addr, connection_timeout, snapshot, connection_state)
-        {
-            return poller;
+        if let Some(value) = attempt() {
+            return value;
         }
-        thread::sleep(BACKOFF);
+        sleep(backoff);
     }
 }
 
@@ -101,18 +117,37 @@ fn poll_loop(
     interval: &Arc<AtomicU64>,
     connection_state: &Arc<Mutex<ConnectionState>>,
 ) {
+    let err = drive_polls(|| poller.poll(), interval, thread::sleep);
+    fail_poll(&mut poller, connection_state, &err);
+}
+
+/// Sleep owed after a successful poll to hold the `interval` cadence: the interval minus the work
+/// that already `elapsed`, clamped to zero when the poll overran it (poll again immediately).
+/// Pure, so the pacing arithmetic is unit-tested at its boundaries (elapsed <, ==, > interval);
+/// `checked_sub` never underflows (`Duration` is unsigned).
+fn pacing_sleep(interval: Duration, elapsed: Duration) -> Duration {
+    interval.checked_sub(elapsed).unwrap_or(Duration::ZERO)
+}
+
+/// Drive `poll` until it returns `Err`: on `Ok`, sleep the `pacing_sleep` remainder of the current
+/// `interval` (via the injected `sleep`), then poll again; on `Err`, return that error. The generic
+/// seam under `poll_loop`: production passes the real `poller.poll()` + `thread::sleep`, so the
+/// live loop paces between snapshots; a test passes a scripted poll sequence + a recording sleep,
+/// covering the Ok-pacing branch and the Err exit without a real socket or a real wait. The
+/// `interval` is re-read each Ok so an in-flight `+`/`-` adjustment takes effect on the next poll.
+fn drive_polls(
+    mut poll: impl FnMut() -> io::Result<()>,
+    interval: &Arc<AtomicU64>,
+    mut sleep: impl FnMut(Duration),
+) -> io::Error {
     loop {
         let start = Instant::now();
-        match poller.poll() {
+        match poll() {
             Ok(()) => {
                 let interval = Duration::from_millis(interval.load(Ordering::Relaxed));
-                let sleep_duration = interval.saturating_sub(start.elapsed());
-                thread::sleep(sleep_duration);
+                sleep(pacing_sleep(interval, start.elapsed()));
             }
-            Err(err) => {
-                fail_poll(&mut poller, connection_state, &err);
-                return;
-            }
+            Err(err) => return err,
         }
     }
 }
@@ -130,20 +165,18 @@ fn fail_poll(poller: &mut Poller, connection_state: &Arc<Mutex<ConnectionState>>
 
 /// Bounded, testable twin of `poll_loop`'s drive: poll until the FIRST error, then mark
 /// `Disconnected { error, since }`, disconnect, and RETURN the error (the outer `spawn_poller`
-/// loop would then reconnect). Behaviour matches `poll_loop` EXCEPT it omits the inter-poll
-/// `interval` sleep between successful polls (the sleep is pure pacing, not protocol), so tests
-/// don't have to wait on it; the state writes, error formatting, and disconnect are identical.
+/// loop would then reconnect). Delegates to the same `drive_polls` seam as the live `poll_loop`,
+/// with a zero interval and a no-op sleep, so it omits the inter-poll pacing sleep (pure cadence,
+/// not protocol) while the state writes, error formatting, and disconnect stay byte-identical.
 #[cfg(any(test, feature = "testing"))]
 pub fn poll_loop_until_error(
     poller: &mut Poller,
     connection_state: &Arc<Mutex<ConnectionState>>,
 ) -> io::Error {
-    loop {
-        if let Err(err) = poller.poll() {
-            fail_poll(poller, connection_state, &err);
-            return err;
-        }
-    }
+    let idle = Arc::new(AtomicU64::new(0));
+    let err = drive_polls(|| poller.poll(), &idle, |_| {});
+    fail_poll(poller, connection_state, &err);
+    err
 }
 
 /// The console's client-side TCP poller. Opaque: fields and the `connect`/`poll`/`disconnect`
@@ -216,5 +249,77 @@ impl Poller {
         *self.snapshot.lock().unwrap() = Some(decode_frame(&buf)?);
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io;
+    use std::sync::Arc;
+    use std::sync::atomic::AtomicU64;
+    use std::time::Duration;
+
+    use super::{BACKOFF, drive_polls, pacing_sleep, retry_until_some};
+
+    #[test]
+    fn retry_until_some_returns_first_some_and_backs_off_between_failures() {
+        // The `connect_loop` shape: two failed connect attempts, then a success. The seam must
+        // return the first `Some` and sleep one `BACKOFF` between each failure — never after the
+        // success — all with an injected clock, so no test opens a socket or waits real seconds.
+        let mut attempts = [None, None, Some(7u32)].into_iter();
+        let mut slept: Vec<Duration> = Vec::new();
+        let value = retry_until_some(|| attempts.next().unwrap(), BACKOFF, |d| slept.push(d));
+
+        assert_eq!(value, 7, "returns the first Some payload");
+        assert_eq!(
+            slept,
+            vec![BACKOFF, BACKOFF],
+            "one BACKOFF between each of the two failures, none after the success",
+        );
+    }
+
+    #[test]
+    fn pacing_sleep_is_the_interval_remainder_and_clamps_to_zero() {
+        // Work left time to spare -> sleep the remainder.
+        assert_eq!(
+            pacing_sleep(Duration::from_millis(1000), Duration::from_millis(200)),
+            Duration::from_millis(800),
+        );
+        // Work took exactly the interval -> no sleep owed.
+        assert_eq!(
+            pacing_sleep(Duration::from_millis(1000), Duration::from_millis(1000)),
+            Duration::ZERO,
+        );
+        // Work overran the interval -> clamp to zero (poll again at once); must never underflow.
+        assert_eq!(
+            pacing_sleep(Duration::from_millis(1000), Duration::from_millis(1500)),
+            Duration::ZERO,
+        );
+    }
+
+    #[test]
+    fn drive_polls_paces_between_ok_polls_then_returns_the_first_error() {
+        // The `poll_loop` shape: two successful polls, then the connection breaks. The seam must
+        // pace once after each Ok (never after the Err) and return the first error for the outer
+        // loop to reconnect on — driven by a scripted poll + a counting sleep, no real waiting.
+        let mut results = [
+            Ok(()),
+            Ok(()),
+            Err(io::Error::new(io::ErrorKind::BrokenPipe, "server gone")),
+        ]
+        .into_iter();
+        let interval = Arc::new(AtomicU64::new(1000));
+        let mut sleeps = 0u32;
+        let err = drive_polls(|| results.next().unwrap(), &interval, |_| sleeps += 1);
+
+        assert_eq!(
+            sleeps, 2,
+            "paces once after each of the two successful polls, not after the error",
+        );
+        assert_eq!(
+            err.kind(),
+            io::ErrorKind::BrokenPipe,
+            "returns the first poll error",
+        );
     }
 }

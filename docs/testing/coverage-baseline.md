@@ -33,7 +33,8 @@ and compile-time-only code. The honest per-area picture:
 |---|---|---|
 | **kameo core `src/`** (the #77-wired modules) | **76.7%** (4098/5342) | the wired surface |
 | in-tree `src/console/` | 95–98% (minus `demo.rs`, a non-SUT demo at 0%) | #76 |
-| `console` crate (`tui`/`poller`) | 69.5% | #82/#83 raise this |
+| `console` crate — `tui.rs` | **93.24%** (1393/1494) | **#82** lifted it 73% → 93%: keystroke render scenarios for every `state_cell` arm, all sort keys + direction toggle, tree collapse/expand, the `+`/`-` poll-interval keys (with clamps), the full inspect-panel field blocks, and the focused-panel scroll edges |
+| `console` crate — `poller.rs` | **82.35%** (154/187) | **#82** lifted it ~69.5% → 82%: the reconnect-backoff loop and Ok-poll interval pacing are now covered via injectable-time seams (`retry_until_some` / `pacing_sleep` / `drive_polls`) driven by a fake clock — no real sleeps. The residue is the thin `spawn_poller`/`connect_loop`/`poll_loop` delegating shells (real forever-thread + IO, not run in tests) |
 | **`actors` crate** | (re-measure pending) | **#78 wired** the `broker` / `pubsub` / `message_bus` / `message_queue` modules to the SUT via cucumber BDD runners (was 0% / 0–971 at the #77 baseline); the next `coverage-llvm` run on merge refreshes the exact number. `pool` / `scheduler` remain unwired. |
 | `macros` crate | ~4% | see "known limitation" below |
 
