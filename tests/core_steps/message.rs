@@ -651,6 +651,14 @@ async fn when_early_reply(world: &mut MessageWorld) {
     let actor = world.recorder.as_ref().expect("recorder spawned");
     let reply = actor.ask(EarlyReply(13)).await.expect("ask succeeds");
     world.reply = Some(reply);
+    // `ctx.reply` resolves THIS ask the instant it fires — BEFORE the handler's
+    // post-reply work (the log push) runs. Asserting the log now is an
+    // assert-too-early race (green when the handler wins, `log=[]` under CI
+    // contention). Send a follow-up ask the single-writer actor can only process
+    // AFTER the EarlyReply handler fully returns (FIFO dispatch, message.rs:36-38);
+    // awaiting it makes the log push observable with no race. A distinct tag keeps
+    // the barrier transparent to the `contains(&13)` assertion downstream.
+    actor.ask(Command(999)).await.expect("barrier ask settles");
 }
 
 #[then(regex = r"^the caller receives value immediately from the early reply$")]
