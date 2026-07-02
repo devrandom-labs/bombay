@@ -39,6 +39,9 @@ bombay_console = { path = ".", features = ["testing"] }
 cucumber = { workspace = true }
 proptest = { workspace = true }
 rstest = { workspace = true }
+# Tier-2 PTY E2E smoke test (card #83) — see tests/pty_smoke.rs.
+portable-pty = { workspace = true }
+vt100 = { workspace = true }
 tokio = { workspace = true, features = [
   "rt-multi-thread",
   "macros",
@@ -59,6 +62,9 @@ name = "tui_bdd"
 
 [[test]]
 name = "tui_props_bdd"
+
+[[test]]
+name = "pty_smoke"
 
 [lints]
 workspace = true
