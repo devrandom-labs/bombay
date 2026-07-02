@@ -103,16 +103,32 @@
       with pkgs;
       {
         checks = {
-          # NOTE: the whole-workspace clippy gate is PARKED (removed from
-          # `nix flake check`) until the surviving kameo core is brought up to
-          # bombay's god-level lint bar (cards M1/M7). It is red-by-design over
-          # the ~19k LOC of vendored code — even rustc's `--deny warnings` alone
-          # trips on unused/dead code there. Re-add it here — mirroring the
-          # Cargo.toml "TO RESTORE the god-level bar" note — once the tests land:
-          #   bombay-clippy = craneLib.cargoClippy (commonArgs // {
-          #     inherit cargoArtifacts;
-          #     cargoClippyExtraArgs = "--all-targets -- --deny warnings";
-          #   });
+          # The clippy gate, RESTORED as a ratchet (card #61). The god-level bar
+          # (root Cargo.toml `[workspace.lints]` + clippy.toml) is DENY, so all NEW
+          # PRODUCTION code is held to it. Vendored kameo lib/bin files that predate
+          # the bar carry a documented per-file quarantine header
+          # (`#![allow(..., reason = "…#61")]`), removed file-by-file as the code is
+          # cleaned or deleted under M1/M7.
+          #
+          # Scope = default targets (lib + bins), NOT `--all-targets`: test /
+          # example / bench code is deliberately held to a lighter bar (consistent
+          # with clippy.toml's `allow-unwrap-in-tests` / `allow-expect-in-tests`) —
+          # the ~60 BDD-wiring files trip 2k+ pedantic/nursery style findings whose
+          # cleanup buys nothing on code whose job is test clarity. Gating the test
+          # surface is a separate #61-tail decision. `--all-features` still lints the
+          # `remote`/`console` production modules.
+          #
+          # No `-- --deny warnings`: the `deny`-level `[workspace.lints.clippy]` bar
+          # already fails the build on any god-level violation, while rust-level
+          # warnings (unused/dead-code in vendored kameo) stay non-blocking until the
+          # rust-lints tightening tracked in the #61 tail.
+          bombay-clippy = craneLib.cargoClippy (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              cargoClippyExtraArgs = "--all-features";
+            }
+          );
 
           bombay-doc = craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
 

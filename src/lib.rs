@@ -1,6 +1,8 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
-#![warn(clippy::all)]
+// `clippy::all` is governed by the workspace `[lints.clippy]` bar (deny) in the
+// root Cargo.toml — a source-level `#![warn(clippy::all)]` here would DOWNGRADE
+// it crate-wide, so it is intentionally not set (card #61).
 #![warn(rust_2018_idioms)]
 #![warn(missing_debug_implementations)]
 #![deny(unused_must_use)]
@@ -15,7 +17,10 @@ pub mod error;
 // The pre-existing internal items it exposes are not part of the public API, so
 // `missing_docs` is allowed on the test-only public surface.
 #[cfg(any(test, feature = "testing"))]
-#[allow(missing_docs)]
+#[allow(
+    missing_docs,
+    reason = "test-only public surface exposed solely for the cucumber wiring"
+)]
 pub mod links;
 #[cfg(not(any(test, feature = "testing")))]
 pub(crate) mod links;

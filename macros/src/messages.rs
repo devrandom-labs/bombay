@@ -1,3 +1,31 @@
+// --- #61 quarantine (vendored kameo, pre-god-level-bar) -------------------
+// This file predates the workspace god-level clippy bar (root Cargo.toml).
+// It is held at the prior standard and is cleaned or deleted file-by-file
+// under M1/M7. NEW code is NOT exempt — remove this block when the file is
+// brought up to the bar or dropped. De-quarantine checklist: issue #61.
+#![allow(
+    clippy::all,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::todo,
+    clippy::unimplemented,
+    clippy::dbg_macro,
+    clippy::print_stdout,
+    clippy::print_stderr,
+    clippy::disallowed_methods,
+    clippy::clone_on_ref_ptr,
+    clippy::as_conversions,
+    clippy::str_to_string,
+    clippy::implicit_clone,
+    clippy::shadow_reuse,
+    clippy::shadow_same,
+    clippy::shadow_unrelated,
+    clippy::allow_attributes_without_reason,
+    reason = "Vendored kameo predating the #61 god-level clippy bar; held at the prior standard, cleaned or deleted file-by-file under M1/M7. New code is not exempt. See #61."
+)]
 use heck::ToUpperCamelCase;
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, format_ident, quote, quote_spanned};
