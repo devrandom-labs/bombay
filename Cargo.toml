@@ -16,6 +16,10 @@ tokio = "1.47"
 cucumber = { version = "0.23", features = ["libtest"] }
 proptest = "1.11"
 rstest = "0.26"
+# Tier-2 (PTY) console E2E test only (card #83): drive the compiled binary through a
+# pseudo-terminal and re-emulate the visible screen for grid assertions.
+portable-pty = "0.9"
+vt100 = "0.16"
 
 # ============================================================
 # Bombay — god-level lint config (adopted from nexus, verbatim).

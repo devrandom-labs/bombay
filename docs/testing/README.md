@@ -221,3 +221,24 @@ Scenarios assert **deltas** (strictly-increasing seq, `+1` on spawn) which hold 
 the starting value; the one absolute assertion (`total_stopped == 3`) relies on the reset
 hook for determinism. `@linearizability` scenarios still use real overlap (`tokio::spawn` +
 `Barrier`) *within* a scenario.
+
+## The two console testing tiers
+
+The `console` crate is tested at two tiers, because one cannot reach what the other can:
+
+- **Tier-1 — in-process `TestBackend`** (#76/#82). Drives `App::render_once` / `App::press`
+  against ratatui's `TestBackend`, asserting on the captured buffer. Fast, deterministic, and
+  where the bulk of the render + `on_key` dispatch coverage lives. **Blind spot:** it bypasses
+  the binary entirely — `console/src/main.rs` (arg parsing, `spawn_poller` wiring, the `--demo`
+  runtime, `ratatui::run`, teardown) and the literal `event::read()` in `handle_events` are
+  structurally unreachable, because `App::press` substitutes for the *dispatch*, never the real
+  terminal read.
+- **Tier-2 — PTY / "Selenium-for-terminals"** (#83, `console/tests/pty_smoke.rs`). Spawns the
+  *compiled* `bombay-console --demo` binary on a pseudo-terminal (`portable-pty`), replays the
+  raw PTY bytes through a `vt100` parser, and asserts on the re-emulated grid. This is the only
+  tier that exercises startup → the input poll → clean shutdown end to end. It is inherently
+  slower/flakier than Tier-1, so it is kept to **one** bounded smoke test with hard per-step
+  timeouts and grid-polling waits (never fixed sleeps) — see the design doc
+  [`docs/superpowers/specs/2026-07-02-pty-e2e-smoke-design.md`](../superpowers/specs/2026-07-02-pty-e2e-smoke-design.md).
+  If the build sandbox ever cannot open a PTY, the documented fallback is `#[ignore]`-by-default
+  + an explicit CI opt-in — never a silently-skipped green.

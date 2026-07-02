@@ -65,8 +65,20 @@ cannot catch.
 The `macros` crate (`messages.rs` 0/437, the `derive_*`) runs at **compile time**, in a separate
 process during the build of crates that USE the macros — runtime `llvm-cov` of the test binaries
 cannot see it. Covering it needs expansion/`trybuild` tests, a distinct concern (not "write more
-runtime scenarios"). Likewise `demo.rs` and `console/src/main.rs` are demo/binary entrypoints
-(the latter tracked by #83), not library SUT.
+runtime scenarios"). Likewise `demo.rs` is a non-SUT demo entrypoint. `console/src/main.rs` and
+the literal `event::read()` poll are now exercised by the **Tier-2 PTY smoke test** (#83, below);
+note that `llvm-cov` still reports them near-0% because the test drives a *separate* compiled
+process, whose instrumentation the test-binary coverage run does not aggregate — the guarantee is
+behavioural (the binary boots, polls input, and quits cleanly), not a line-count bump.
+
+### Tier-2 (PTY / "Selenium-for-terminals") — #83
+`console/tests/pty_smoke.rs` drives the real `bombay-console --demo` binary through a
+pseudo-terminal (`portable-pty`), re-emulates the visible screen from the raw PTY bytes with
+`vt100`, and asserts on the rendered grid: dashboard renders → `?` opens the help popup (via the
+real `event::read()` poll) → `Esc` dismisses → `/`+query echoes → `q` exits cleanly. This is the
+only tier that reaches `main.rs` startup → the input poll → teardown, which are structurally
+unreachable by the in-process `TestBackend` tier (#76/#82). Bounded + non-flaky: every wait polls
+the grid until a specific string appears with a hard per-step timeout; no fixed sleeps.
 
 ## What this tells us
 Wiring scenarios (#77) ≠ covering the code: the wired core is a healthy **77%**, but
