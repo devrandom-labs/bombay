@@ -471,6 +471,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bombay-core"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "tokio",
+]
+
+[[package]]
 name = "bombay_actors"
 version = "0.5.0"
 dependencies = [
