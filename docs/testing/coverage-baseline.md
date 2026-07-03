@@ -48,8 +48,9 @@ free-floating `bounded()`). Pure transport: `send`/`try_send`/`recv`/`downgrade`
 (send-after-drop / recv-none / drain-flush), `LinkDied` boxed-slot `size_of` guard +
 monomorphic worst-case demo, weak death-watch, an 8-thread `Barrier` linearizability
 test, and a single-sender FIFO proptest. **Mutation: 0 missed** (`nix build .#mutants`).
-Criterion (`benches/mailbox.rs`): `tell` ≈ **4.7 ns**, send+recv ≈ **13 ns** (flume beat
-tokio here too). Channel eval bench: `benches/channels.rs`.
+Criterion (`benches/mailbox.rs`, realistic ~40 B command): `tell` ≈ **5.7 ns**, send+recv
+≈ **18.4 ns** (~40 % faster than the tokio v1 on the same bench). Channel eval:
+`benches/channels.rs` (ADR-0001) — flume wins at both `u64` and `~40 B` payloads.
 
 **DST posture — loom/shuttle deferred to #116/#120.** loom and shuttle can only
 model-check code compiled against *their* primitives; the real `tokio::sync::mpsc` this

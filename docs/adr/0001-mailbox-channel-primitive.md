@@ -60,30 +60,34 @@ gate the mailbox, and record the decision here.
 
 ## Evidence (measured — `cargo bench --bench channels`, aarch64, 4 workers)
 
-Throughput (higher = better); one shared tokio multi-thread runtime, `u64`
-payload, `CAP = 256`, warm-up 1 s / measure 2 s:
+Throughput (higher = better); one shared tokio multi-thread runtime,
+**realistic ~40 B `Command` payload** (a few fields — closer to a real `Signal`
+slot than a bare `u64`), `CAP = 256`, full-length runs:
 
 | Channel | Uncontended (1→1) | Contended (4→1) |
 |---|---|---|
-| crossbeam *(sync ceiling, not a mailbox)* | 53.2 M/s | — |
-| **flume** | **25.7 M/s** | **14.8 M/s** |
-| async-channel | 18.1 M/s | 11.1 M/s |
-| **tokio::mpsc** *(v1 default)* | 13.4 M/s | 4.9 M/s |
-| thingbuf | 8.6 M/s | ~4.1 M/s |
+| crossbeam *(sync ceiling, not a mailbox)* | 36.7 M/s | 20.3 M/s |
+| **flume** | **26.0 M/s** | **16.0 M/s** |
+| async-channel | 22.2 M/s | 13.0 M/s |
+| thingbuf | 14.1 M/s | 8.3 M/s |
+| **tokio::mpsc** *(v1 default)* | 13.1 M/s | 5.8 M/s |
 
 Findings:
-- **tokio::mpsc — the un-surveyed v1 default — is second-slowest, ~3× slower
-  than flume under contention.** The concrete cost of skipping #112's survey.
-- **flume is the throughput winner**, executor-agnostic, and **move-based** (no
-  extra trait bounds on the element).
-- **thingbuf is the slowest *and* requires `T: Default`** (a preallocated ring
-  initialises its slots). `Signal<A>` has no sensible `Default` (a message enum
-  cannot default) — so thingbuf's `no_std`/loom edge comes with a real fit
-  problem against our by-value design.
+- **flume is the throughput winner** — ~2× tokio uncontended, ~2.7× contended.
+  Executor-agnostic and **move-based** (no extra trait bounds on the element).
+- **tokio::mpsc — the un-surveyed v1 default — is the slowest async candidate.**
+  The concrete cost of skipping #112's survey.
+- **The pick is payload-robust:** a `u64` (16 B) run gave the *same* ordering at
+  the ends (flume fastest, tokio slowest async); only the middle two reordered
+  (thingbuf/async-channel improved as the larger copy amortised differently). So
+  the decision is not an artifact of a toy payload.
+- **thingbuf requires `T: Default`** (a preallocated ring initialises its slots).
+  `Signal<A>` has no sensible `Default` (a message enum cannot default) — so its
+  `no_std`/loom edge comes with a real fit problem against our by-value design.
 
-Caveat: this measures *raw channel* throughput with a small payload; real actor
-workloads are usually handler/IO-bound, so the absolute gap matters less than
-the *ordering* and the qualitative axes.
+Caveat: this is *raw channel* throughput; real actor workloads are usually
+handler/IO-bound, so the absolute gap matters less than the *ordering* and the
+qualitative axes.
 
 ## Decision
 

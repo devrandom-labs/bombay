@@ -6,6 +6,10 @@
 //! (not a viable mailbox — it has no async `recv`; shown to price the cost of
 //! async integration).
 //!
+//! Payload is a realistically-sized command (~40 B, `Default + Clone` so the
+//! preallocated-ring candidates can hold it), not a bare `u64` — so the by-value
+//! copy cost a real `Signal` slot pays is included.
+//!
 //! Same workload for every channel: `PRODUCERS` tasks each send `PER` messages
 //! into a `CAP`-capacity channel; one consumer drains until all senders drop.
 //! All async candidates run on one shared tokio multi-thread runtime, so the
@@ -18,6 +22,27 @@ use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_mai
 const CAP: usize = 256;
 const PER: u64 = 4_000;
 
+/// A realistically-sized actor command (~40 bytes). `Default + Clone` for the
+/// preallocated-ring channels (thingbuf).
+#[derive(Clone, Copy, Default)]
+struct Command {
+    id: u64,
+    correlation: u64,
+    kind: u32,
+    amount: i64,
+    flags: u64,
+}
+
+fn command(i: u64) -> Command {
+    Command {
+        id: i,
+        correlation: i ^ 0x5555_5555,
+        kind: (i & 0xff) as u32,
+        amount: i as i64,
+        flags: i.rotate_left(7),
+    }
+}
+
 fn runtime() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_multi_thread()
         .worker_threads(4)
@@ -26,12 +51,12 @@ fn runtime() -> tokio::runtime::Runtime {
 }
 
 async fn tokio_run(producers: u64) {
-    let (tx, mut rx) = tokio::sync::mpsc::channel::<u64>(CAP);
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<Command>(CAP);
     for _ in 0..producers {
         let tx = tx.clone();
         tokio::spawn(async move {
             for i in 0..PER {
-                tx.send(i).await.expect("send");
+                tx.send(command(i)).await.expect("send");
             }
         });
     }
@@ -44,12 +69,12 @@ async fn tokio_run(producers: u64) {
 }
 
 async fn flume_run(producers: u64) {
-    let (tx, rx) = flume::bounded::<u64>(CAP);
+    let (tx, rx) = flume::bounded::<Command>(CAP);
     for _ in 0..producers {
         let tx = tx.clone();
         tokio::spawn(async move {
             for i in 0..PER {
-                tx.send_async(i).await.expect("send");
+                tx.send_async(command(i)).await.expect("send");
             }
         });
     }
@@ -62,12 +87,12 @@ async fn flume_run(producers: u64) {
 }
 
 async fn async_channel_run(producers: u64) {
-    let (tx, rx) = async_channel::bounded::<u64>(CAP);
+    let (tx, rx) = async_channel::bounded::<Command>(CAP);
     for _ in 0..producers {
         let tx = tx.clone();
         tokio::spawn(async move {
             for i in 0..PER {
-                tx.send(i).await.expect("send");
+                tx.send(command(i)).await.expect("send");
             }
         });
     }
@@ -80,12 +105,12 @@ async fn async_channel_run(producers: u64) {
 }
 
 async fn thingbuf_run(producers: u64) {
-    let (tx, rx) = thingbuf::mpsc::channel::<u64>(CAP);
+    let (tx, rx) = thingbuf::mpsc::channel::<Command>(CAP);
     for _ in 0..producers {
         let tx = tx.clone();
         tokio::spawn(async move {
             for i in 0..PER {
-                tx.send(i).await.expect("send");
+                tx.send(command(i)).await.expect("send");
             }
         });
     }
@@ -100,13 +125,13 @@ async fn thingbuf_run(producers: u64) {
 /// Sync ceiling — std threads, not tasks. Not a viable async mailbox; here only
 /// to show the raw lock-free throughput async has to pay to integrate with.
 fn crossbeam_run(producers: u64) {
-    let (tx, rx) = crossbeam_channel::bounded::<u64>(CAP);
+    let (tx, rx) = crossbeam_channel::bounded::<Command>(CAP);
     thread::scope(|scope| {
         for _ in 0..producers {
             let tx = tx.clone();
             scope.spawn(move || {
                 for i in 0..PER {
-                    tx.send(i).expect("send");
+                    tx.send(command(i)).expect("send");
                 }
             });
         }
@@ -125,17 +150,17 @@ fn bench(c: &mut Criterion, producers: u64, label: &str) {
     group.throughput(Throughput::Elements(producers * PER));
 
     group.bench_function("tokio_mpsc", |b| {
-        b.iter(|| rt.block_on(tokio_run(producers)))
+        b.iter(|| rt.block_on(tokio_run(producers)));
     });
     group.bench_function("flume", |b| b.iter(|| rt.block_on(flume_run(producers))));
     group.bench_function("async_channel", |b| {
         b.iter(|| rt.block_on(async_channel_run(producers)));
     });
     group.bench_function("thingbuf", |b| {
-        b.iter(|| rt.block_on(thingbuf_run(producers)))
+        b.iter(|| rt.block_on(thingbuf_run(producers)));
     });
     group.bench_function("crossbeam_sync_ceiling", |b| {
-        b.iter(|| crossbeam_run(producers))
+        b.iter(|| crossbeam_run(producers));
     });
 
     group.finish();
