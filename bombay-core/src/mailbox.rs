@@ -56,6 +56,52 @@ pub trait Mailboxed {
     type Msg: Send + 'static;
 }
 
+/// Scaffold actor identity. #121 replaces this with the identity-first AID /
+/// key-expr `ActorId`; it exists here only so the mailbox's [`LinkDied`] arm has
+/// a concrete shape to carry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ActorId(u64);
+
+impl ActorId {
+    /// Wraps a raw identifier.
+    #[must_use]
+    pub const fn new(raw: u64) -> Self {
+        Self(raw)
+    }
+}
+
+/// Scaffold reason a linked actor stopped. #113/#120 own the real
+/// error/supervision model; the `String` in `Panicked` is deliberately the fat
+/// field that makes [`LinkDied`] worth boxing.
+#[derive(Debug, Clone)]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "scaffold placeholder for the #113/#120 stop-reason model"
+)]
+pub enum StopReason {
+    /// The actor returned from its run-loop normally.
+    Normal,
+    /// The actor's handler panicked, with the panic message.
+    Panicked(String),
+}
+
+/// The payload of a [`Signal::LinkDied`]: a linked actor has terminated.
+///
+/// Boxed inside [`Signal`] because it is a **cold** control path — boxing it
+/// keeps the hot [`Signal::Message`] slot small (see the large-variant
+/// discipline).
+#[derive(Debug, Clone)]
+#[expect(
+    clippy::exhaustive_structs,
+    reason = "scaffold placeholder for the #120 links/supervision payload"
+)]
+pub struct LinkDied {
+    /// The dead actor's identity.
+    pub id: ActorId,
+    /// Why it stopped.
+    pub reason: StopReason,
+}
+
 /// A signal in an actor's mailbox: a domain message or a system control signal.
 ///
 /// A **concrete, closed** envelope — no `Box<dyn>` at either layer. `tell` moves
@@ -70,12 +116,46 @@ pub enum Signal<A: Mailboxed> {
     Message(A::Msg),
     /// Asks the actor to stop after draining messages queued before it.
     Stop,
+    /// A linked actor has terminated. Boxed: this is a cold path, and inlining
+    /// its fields would inflate every message slot (large-variant discipline).
+    LinkDied(Box<LinkDied>),
 }
 
 /// Sends [`Signal`]s to an actor's mailbox. Cloneable; the channel stays open
 /// while any sender is alive.
 pub struct MailboxSender<A: Mailboxed> {
     tx: mpsc::Sender<Signal<A>>,
+}
+
+impl<A: Mailboxed> Clone for MailboxSender<A> {
+    fn clone(&self) -> Self {
+        Self { tx: self.tx.clone() }
+    }
+}
+
+/// A non-pinning handle to a mailbox: holding one does **not** keep it alive.
+///
+/// [`upgrade`](Self::upgrade) yields a strong sender only while a real
+/// [`MailboxSender`] still exists — the primitive death-watch is built on.
+pub struct WeakMailboxSender<A: Mailboxed> {
+    weak: mpsc::WeakSender<Signal<A>>,
+}
+
+impl<A: Mailboxed> WeakMailboxSender<A> {
+    /// Upgrades to a strong [`MailboxSender`], or `None` if every strong sender
+    /// has been dropped (the actor is gone).
+    #[must_use]
+    pub fn upgrade(&self) -> Option<MailboxSender<A>> {
+        self.weak.upgrade().map(|tx| MailboxSender { tx })
+    }
+}
+
+impl<A: Mailboxed> Clone for WeakMailboxSender<A> {
+    fn clone(&self) -> Self {
+        Self {
+            weak: self.weak.clone(),
+        }
+    }
 }
 
 /// The single consumer of an actor's mailbox. The run-loop pulls from it.
@@ -155,6 +235,14 @@ impl<A: Mailboxed> MailboxSender<A> {
             mpsc::error::TrySendError::Closed(undelivered) => TrySendError::Closed(undelivered),
         })
     }
+
+    /// Downgrades to a [`WeakMailboxSender`] that does not keep the mailbox open.
+    #[must_use]
+    pub fn downgrade(&self) -> WeakMailboxSender<A> {
+        WeakMailboxSender {
+            weak: self.tx.downgrade(),
+        }
+    }
 }
 
 impl<A: Mailboxed> MailboxReceiver<A> {
@@ -164,19 +252,83 @@ impl<A: Mailboxed> MailboxReceiver<A> {
     pub async fn recv(&mut self) -> Option<Signal<A>> {
         self.rx.recv().await
     }
+
+    /// Closes the mailbox: senders can no longer enqueue, but signals already
+    /// queued still drain through [`recv`](Self::recv) before it yields `None`.
+    ///
+    /// Used for a graceful stop — the run-loop finishes in-flight work rather
+    /// than dropping it.
+    pub fn close(&mut self) {
+        self.rx.close();
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use std::num::NonZeroUsize;
+    use std::{num::NonZeroUsize, sync::Arc};
+
+    use proptest::prelude::*;
+    use tokio::{runtime::Builder, sync::Barrier};
 
     /// Scaffold actor for the mailbox tests. `Mailboxed` is the seam the
     /// not-yet-rebuilt `Actor` trait (#114/#116) will later subsume.
     struct Probe;
     impl Mailboxed for Probe {
         type Msg = u64;
+    }
+
+    /// A message tagged with `(sender_id, seq)`; also proves `Msg` is any
+    /// concrete type, not just a primitive.
+    struct Tagged;
+    impl Mailboxed for Tagged {
+        type Msg = (u32, u32);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn n_senders_one_receiver_preserve_per_sender_order() {
+        const SENDERS: u32 = 8;
+        const PER_SENDER: u32 = 64;
+
+        // Small capacity so senders genuinely contend and backpressure.
+        let (tx, mut rx) = bounded::<Tagged>(cap(4));
+        let start = Arc::new(Barrier::new(SENDERS as usize));
+
+        let mut handles = Vec::with_capacity(SENDERS as usize);
+        for sender_id in 0..SENDERS {
+            let tx = tx.clone();
+            let start = Arc::clone(&start);
+            handles.push(tokio::spawn(async move {
+                start.wait().await; // all senders race from the same instant
+                for seq in 0..PER_SENDER {
+                    tx.send(Signal::Message((sender_id, seq)))
+                        .await
+                        .expect("send");
+                }
+            }));
+        }
+        drop(tx); // recv ends only once every sender has dropped its clone
+
+        let mut next_expected = vec![0u32; SENDERS as usize];
+        let mut total = 0u32;
+        while let Some(signal) = rx.recv().await {
+            let Signal::Message((sender_id, seq)) = signal else {
+                panic!("unexpected non-message signal");
+            };
+            let slot = &mut next_expected[sender_id as usize];
+            assert_eq!(seq, *slot, "FIFO-per-sender violated for sender {sender_id}");
+            *slot += 1;
+            total += 1;
+        }
+
+        assert_eq!(total, SENDERS * PER_SENDER, "lost or duplicated messages");
+        for (sender_id, &count) in next_expected.iter().enumerate() {
+            assert_eq!(count, PER_SENDER, "sender {sender_id} did not fully arrive");
+        }
+        for handle in handles {
+            handle.await.expect("sender task panicked");
+        }
     }
 
     /// Builds a valid [`Capacity`] for tests; panics on out-of-range input,
@@ -216,6 +368,70 @@ mod tests {
         // Capacity zero is unrepresentable: NonZeroUsize cannot hold it.
     }
 
+    #[test]
+    fn link_died_variant_is_boxed_so_message_slots_stay_small() {
+        use std::mem::size_of;
+
+        // The cold LinkDied variant is boxed, so a small-message actor's queue
+        // slot is bounded by the hot Message(u64) path — not inflated by
+        // LinkDied's fields (id + a String-bearing reason). Guards the
+        // "every slot = largest variant" trap; clippy::large_enum_variant is the
+        // compile-time backstop via the workspace bar.
+        assert!(
+            size_of::<Signal<Probe>>() <= 2 * size_of::<u64>(),
+            "Signal<Probe> slot is {} bytes; LinkDied is not boxed",
+            size_of::<Signal<Probe>>()
+        );
+    }
+
+    #[tokio::test]
+    async fn link_died_signal_round_trips() {
+        let (tx, mut rx) = bounded::<Probe>(cap(2));
+
+        tx.send(Signal::LinkDied(Box::new(LinkDied {
+            id: ActorId::new(7),
+            reason: StopReason::Normal,
+        })))
+        .await
+        .expect("send link-died");
+
+        let Some(Signal::LinkDied(link_died)) = rx.recv().await else {
+            panic!("expected a LinkDied signal");
+        };
+        assert_eq!(link_died.id, ActorId::new(7));
+        assert!(matches!(link_died.reason, StopReason::Normal));
+    }
+
+    #[tokio::test]
+    async fn weak_sender_tracks_the_last_strong_sender() {
+        let (tx, _rx) = bounded::<Probe>(cap(2));
+        let tx2 = tx.clone();
+        let weak = tx.downgrade();
+
+        drop(tx);
+        assert!(
+            weak.upgrade().is_some(),
+            "one strong sender remains -> still alive"
+        );
+
+        drop(tx2);
+        assert!(
+            weak.upgrade().is_none(),
+            "all strong senders gone -> non-pinning weak handle reports dead"
+        );
+    }
+
+    #[tokio::test]
+    async fn upgraded_weak_sender_can_send() {
+        let (tx, mut rx) = bounded::<Probe>(cap(2));
+        let weak = tx.downgrade();
+
+        let strong = weak.upgrade().expect("channel still alive");
+        strong.send(Signal::Message(5)).await.expect("send via upgraded");
+
+        assert!(matches!(rx.recv().await, Some(Signal::Message(5))));
+    }
+
     #[tokio::test]
     async fn stop_signal_is_delivered_in_order_after_a_message() {
         let (tx, mut rx) = bounded::<Probe>(cap(4));
@@ -226,6 +442,49 @@ mod tests {
         // FIFO: the domain message precedes the control signal that followed it.
         assert!(matches!(rx.recv().await, Some(Signal::Message(1))));
         assert!(matches!(rx.recv().await, Some(Signal::Stop)));
+    }
+
+    #[tokio::test]
+    async fn closing_the_receiver_stops_new_sends_but_drains_queued() {
+        let (tx, mut rx) = bounded::<Probe>(cap(4));
+        tx.send(Signal::Message(1)).await.expect("queued before close");
+
+        rx.close();
+
+        // New sends are rejected (the message comes back)...
+        assert!(matches!(
+            tx.send(Signal::Message(2)).await,
+            Err(SendError(Signal::Message(2)))
+        ));
+        // ...but messages queued before the close still drain, then None.
+        assert!(matches!(rx.recv().await, Some(Signal::Message(1))));
+        assert!(rx.recv().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn send_after_receiver_dropped_returns_the_message() {
+        let (tx, rx) = bounded::<Probe>(cap(4));
+        drop(rx);
+
+        assert!(matches!(
+            tx.send(Signal::Message(9)).await,
+            Err(SendError(Signal::Message(9)))
+        ));
+        assert!(matches!(
+            tx.try_send(Signal::Message(9)),
+            Err(TrySendError::Closed(Signal::Message(9)))
+        ));
+    }
+
+    #[tokio::test]
+    async fn recv_returns_none_after_all_senders_dropped_and_drained() {
+        let (tx, mut rx) = bounded::<Probe>(cap(4));
+        tx.send(Signal::Message(1)).await.expect("queued");
+        drop(tx);
+
+        // Queued message drains first, then the closed-and-empty channel ends.
+        assert!(matches!(rx.recv().await, Some(Signal::Message(1))));
+        assert!(rx.recv().await.is_none());
     }
 
     #[tokio::test]
@@ -241,5 +500,64 @@ mod tests {
         // Draining one slot frees capacity for the next try_send.
         assert!(matches!(rx.recv().await, Some(Signal::Message(1))));
         tx.try_send(Signal::Message(3)).expect("fits after drain");
+    }
+
+    proptest! {
+        /// `Capacity::new` accepts a value iff it is within `MAX`, and preserves
+        /// it. The strategy pins the interesting boundaries: `1`, `MAX-1`, `MAX`,
+        /// `MAX+1`, `usize::MAX`.
+        #[test]
+        fn prop_capacity_accepts_iff_within_max(
+            n in prop_oneof![
+                1usize..=4096,
+                Just(Capacity::MAX - 1),
+                Just(Capacity::MAX),
+                Just(Capacity::MAX + 1),
+                Just(usize::MAX),
+            ],
+        ) {
+            let value = NonZeroUsize::new(n).expect("strategy yields n >= 1");
+            let capacity = Capacity::new(value);
+
+            prop_assert_eq!(capacity.is_some(), n <= Capacity::MAX);
+            if let Some(capacity) = capacity {
+                prop_assert_eq!(capacity.get(), n);
+            }
+        }
+
+        /// A single sender's messages come out in the exact order they went in,
+        /// for any message sequence and any capacity — the queue neither drops,
+        /// duplicates, nor reorders (FIFO).
+        #[test]
+        fn prop_fifo_roundtrip_single_sender(
+            messages in prop::collection::vec(any::<u64>(), 0..200),
+            capacity in 1usize..=64,
+        ) {
+            let sent = messages.clone();
+            let received = Builder::new_current_thread()
+                .build()
+                .expect("current-thread runtime")
+                .block_on(async move {
+                    let (tx, mut rx) = bounded::<Probe>(cap(capacity));
+                    let expected = messages.len();
+                    let producer = tokio::spawn(async move {
+                        for message in messages {
+                            tx.send(Signal::Message(message)).await.expect("send");
+                        }
+                    });
+
+                    let mut got = Vec::with_capacity(expected);
+                    while got.len() < expected {
+                        let Some(Signal::Message(message)) = rx.recv().await else {
+                            break;
+                        };
+                        got.push(message);
+                    }
+                    producer.await.expect("producer task");
+                    got
+                });
+
+            prop_assert_eq!(received, sent);
+        }
     }
 }
