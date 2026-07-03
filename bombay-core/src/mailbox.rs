@@ -402,6 +402,20 @@ mod tests {
         assert!(matches!(link_died.reason, StopReason::Normal));
     }
 
+    #[test]
+    fn error_debug_formats_are_stable() {
+        // The Debug impls are hand-written (so the error types don't inherit an
+        // `A::Msg: Debug` bound); pin their output so a regression is caught.
+        let send_err: SendError<Probe> = SendError(Signal::Stop);
+        assert_eq!(format!("{send_err:?}"), "SendError(receiver dropped)");
+
+        let full: TrySendError<Probe> = TrySendError::Full(Signal::Stop);
+        assert_eq!(format!("{full:?}"), "TrySendError::Full(mailbox at capacity)");
+
+        let closed: TrySendError<Probe> = TrySendError::Closed(Signal::Stop);
+        assert_eq!(format!("{closed:?}"), "TrySendError::Closed(receiver dropped)");
+    }
+
     #[tokio::test]
     async fn weak_sender_tracks_the_last_strong_sender() {
         let (tx, _rx) = bounded::<Probe>(cap(2));
