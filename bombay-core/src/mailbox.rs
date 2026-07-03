@@ -129,7 +129,9 @@ pub struct MailboxSender<A: Mailboxed> {
 
 impl<A: Mailboxed> Clone for MailboxSender<A> {
     fn clone(&self) -> Self {
-        Self { tx: self.tx.clone() }
+        Self {
+            tx: self.tx.clone(),
+        }
     }
 }
 
@@ -317,7 +319,10 @@ mod tests {
                 panic!("unexpected non-message signal");
             };
             let slot = &mut next_expected[sender_id as usize];
-            assert_eq!(seq, *slot, "FIFO-per-sender violated for sender {sender_id}");
+            assert_eq!(
+                seq, *slot,
+                "FIFO-per-sender violated for sender {sender_id}"
+            );
             *slot += 1;
             total += 1;
         }
@@ -342,7 +347,9 @@ mod tests {
     async fn sent_message_is_received() {
         let (tx, mut rx) = bounded::<Probe>(cap(4));
 
-        tx.send(Signal::Message(42)).await.expect("send should succeed");
+        tx.send(Signal::Message(42))
+            .await
+            .expect("send should succeed");
 
         assert!(matches!(rx.recv().await, Some(Signal::Message(42))));
     }
@@ -353,7 +360,8 @@ mod tests {
         // Guards Capacity::MAX against tokio ever lowering its semaphore limit.
         let (tx, mut rx) = bounded::<Probe>(cap(Capacity::MAX));
 
-        tx.try_send(Signal::Message(7)).expect("send into max-capacity mailbox");
+        tx.try_send(Signal::Message(7))
+            .expect("send into max-capacity mailbox");
 
         assert!(matches!(rx.recv().await, Some(Signal::Message(7))));
     }
@@ -363,7 +371,8 @@ mod tests {
         assert!(Capacity::new(NonZeroUsize::MIN).is_some());
         assert!(Capacity::new(NonZeroUsize::new(Capacity::MAX).expect("nonzero")).is_some());
 
-        let too_big = NonZeroUsize::new(Capacity::MAX.checked_add(1).expect("no overflow")).expect("nonzero");
+        let too_big =
+            NonZeroUsize::new(Capacity::MAX.checked_add(1).expect("no overflow")).expect("nonzero");
         assert!(Capacity::new(too_big).is_none());
         // Capacity zero is unrepresentable: NonZeroUsize cannot hold it.
     }
@@ -410,10 +419,16 @@ mod tests {
         assert_eq!(format!("{send_err:?}"), "SendError(receiver dropped)");
 
         let full: TrySendError<Probe> = TrySendError::Full(Signal::Stop);
-        assert_eq!(format!("{full:?}"), "TrySendError::Full(mailbox at capacity)");
+        assert_eq!(
+            format!("{full:?}"),
+            "TrySendError::Full(mailbox at capacity)"
+        );
 
         let closed: TrySendError<Probe> = TrySendError::Closed(Signal::Stop);
-        assert_eq!(format!("{closed:?}"), "TrySendError::Closed(receiver dropped)");
+        assert_eq!(
+            format!("{closed:?}"),
+            "TrySendError::Closed(receiver dropped)"
+        );
     }
 
     #[tokio::test]
@@ -441,7 +456,10 @@ mod tests {
         let weak = tx.downgrade();
 
         let strong = weak.upgrade().expect("channel still alive");
-        strong.send(Signal::Message(5)).await.expect("send via upgraded");
+        strong
+            .send(Signal::Message(5))
+            .await
+            .expect("send via upgraded");
 
         assert!(matches!(rx.recv().await, Some(Signal::Message(5))));
     }
@@ -461,7 +479,9 @@ mod tests {
     #[tokio::test]
     async fn closing_the_receiver_stops_new_sends_but_drains_queued() {
         let (tx, mut rx) = bounded::<Probe>(cap(4));
-        tx.send(Signal::Message(1)).await.expect("queued before close");
+        tx.send(Signal::Message(1))
+            .await
+            .expect("queued before close");
 
         rx.close();
 
@@ -509,7 +529,10 @@ mod tests {
 
         // Mailbox is now full: try_send must reject and hand the message back.
         let rejected = tx.try_send(Signal::Message(2));
-        assert!(matches!(rejected, Err(TrySendError::Full(Signal::Message(2)))));
+        assert!(matches!(
+            rejected,
+            Err(TrySendError::Full(Signal::Message(2)))
+        ));
 
         // Draining one slot frees capacity for the next try_send.
         assert!(matches!(rx.recv().await, Some(Signal::Message(1))));

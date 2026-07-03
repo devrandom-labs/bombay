@@ -12,7 +12,13 @@ publish = false
 tokio = { workspace = true, features = ["sync", "rt", "macros", "time"] }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }
+tokio = { workspace = true, features = [
+  "rt",
+  "rt-multi-thread",
+  "macros",
+  "sync",
+  "time",
+] }
 proptest = { workspace = true }
 criterion = { version = "0.8", features = ["async_tokio"] }
 
