@@ -393,6 +393,72 @@ mod tests {
         );
     }
 
+    /// Demonstration (measured, not derived) of the **worst case** of the
+    /// monomorphic, by-value `Signal<A>`: every queue slot costs `size_of` of the
+    /// actor's *largest* `Msg` variant. One fat command variant therefore taxes
+    /// every slot — even tiny messages — unless the user boxes it (the same
+    /// discipline `LinkDied` uses). kameo's `Box<dyn DynMessage>` keeps every slot
+    /// one pointer regardless.
+    ///
+    /// Measured here (aarch64): `small = 16 B`, `fat inline = 4104 B`,
+    /// `boxed = 16 B` → for 1_000 queued messages, **4.10 MB vs 16 KB (256×)**.
+    /// See the design-risk note on epic #122.
+    #[test]
+    #[expect(
+        dead_code,
+        reason = "the Msg variants exist only to measure enum layout via size_of"
+    )]
+    fn monomorphic_slot_cost_is_the_largest_msg_variant() {
+        use std::mem::size_of;
+
+        enum SmallMsg {
+            Ping,
+            Pong(u64),
+        }
+        struct Small;
+        impl Mailboxed for Small {
+            type Msg = SmallMsg;
+        }
+
+        // One fat command variant, stored inline (the footgun).
+        enum FatMsg {
+            Ping,
+            Bulk([u8; 4096]),
+        }
+        struct Fat;
+        impl Mailboxed for Fat {
+            type Msg = FatMsg;
+        }
+
+        // The mitigation: box the fat variant, as `Signal` boxes `LinkDied`.
+        enum BoxedFatMsg {
+            Ping,
+            Bulk(Box<[u8; 4096]>),
+        }
+        struct BoxedFat;
+        impl Mailboxed for BoxedFat {
+            type Msg = BoxedFatMsg;
+        }
+
+        let small = size_of::<Signal<Small>>();
+        let fat = size_of::<Signal<Fat>>();
+        let boxed = size_of::<Signal<BoxedFat>>();
+
+        // A small enum keeps a small slot; a fat inline variant blows every slot
+        // up to the fat size; boxing the fat variant restores the small slot.
+        assert!(small <= 24, "small slot = {small}");
+        assert!(fat >= 4096, "fat inline slot = {fat}");
+        assert!(boxed <= 24, "boxed slot = {boxed}");
+
+        // Peak per-slot memory for 1_000 queued messages, whatever their variant.
+        let queued = 1_000;
+        let (fat_total, boxed_total) = (fat * queued, boxed * queued);
+        assert!(
+            fat_total > 100 * boxed_total,
+            "expected >100x blowup, got fat={fat_total} boxed={boxed_total}"
+        );
+    }
+
     #[tokio::test]
     async fn link_died_signal_round_trips() {
         let (tx, mut rx) = bounded::<Probe>(cap(2));
