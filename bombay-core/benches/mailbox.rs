@@ -7,7 +7,7 @@
 
 use std::num::NonZeroUsize;
 
-use bombay_core::mailbox::{Capacity, Mailboxed, Signal, bounded};
+use bombay_core::mailbox::{Capacity, Mailbox, Mailboxed, Signal};
 use criterion::{BatchSize, Criterion, black_box, criterion_group, criterion_main};
 
 struct Bench;
@@ -26,7 +26,7 @@ fn cap(n: usize) -> Capacity {
 fn enqueue(c: &mut Criterion) {
     c.bench_function("tell_try_send_1k_u64", |b| {
         b.iter_batched_ref(
-            || bounded::<Bench>(cap(1024)),
+            || Mailbox::<Bench>::bounded(cap(1024)),
             |(tx, _rx)| {
                 for i in 0..1000u64 {
                     tx.try_send(Signal::Message(black_box(i)))
@@ -48,7 +48,7 @@ fn roundtrip(c: &mut Criterion) {
     c.bench_function("send_recv_roundtrip_1k_u64", |b| {
         b.iter(|| {
             rt.block_on(async {
-                let (tx, mut rx) = bounded::<Bench>(cap(1024));
+                let (tx, mut rx) = Mailbox::<Bench>::bounded(cap(1024));
                 let producer = tokio::spawn(async move {
                     for i in 0..1000u64 {
                         tx.send(Signal::Message(black_box(i))).await.expect("send");

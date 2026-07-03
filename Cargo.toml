@@ -13,6 +13,9 @@ bombay = { path = ".", version = "0.21.0" }
 
 futures = "0.3"
 tokio = "1.47"
+# Mailbox channel primitive — chosen on measured evidence (ADR-0001, card #133):
+# fastest async candidate, executor-agnostic, move-based, has weak senders.
+flume = "0.12"
 cucumber = { version = "0.23", features = ["libtest"] }
 proptest = "1.11"
 rstest = "0.26"

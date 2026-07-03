@@ -37,13 +37,19 @@ nix build .#mutants -L   # cargo-mutants on bombay-core; fails if any mutant sur
 Pinned via the flake's `nixpkgs` (never `nix run nixpkgs#…`), mirroring the coverage
 package. On-demand, not a per-push gate (rebuilds+tests once per mutant).
 
-### `mailbox` (#112) — done
-Zero-box `Signal<A>` queue over `tokio::sync::mpsc`. 16 tests: round-trip, backpressure
-hand-back, `Capacity` boundaries (proptest incl. `MAX±1`/`usize::MAX`), lifecycle
-(close-drains / send-after-drop / recv-none), `LinkDied` boxed-slot `size_of` guard,
-weak death-watch, a real 8-thread `Barrier` linearizability test, and a single-sender
-FIFO proptest. **Mutation: 0 missed** (6 caught, 30 unviable, 4 detected-via-timeout).
-Criterion bench (`benches/mailbox.rs`): `tell` enqueue ≈ 5.6 ns, send+recv ≈ 21.4 ns.
+### `mailbox` (#112, redesigned #133) — done
+Zero-box `Signal<A>` queue behind a **`flume`** channel (chosen on measured evidence —
+ADR-0001; `flume` is isolated inside the sender/receiver wrappers = the seam).
+Construction hangs off the `Mailbox::<A>::bounded(cap)` namespace (composable, no
+free-floating `bounded()`). Pure transport: `send`/`try_send`/`recv`/`downgrade`/`drain`
+— **no `close()`**; graceful shutdown is `Signal::Stop` + `drain` at the run-loop (#116).
+18 tests: round-trip, backpressure hand-back, `Capacity` boundaries (proptest incl.
+`0`/`MAX±1`/`usize::MAX`) + `CapacityError`, `MAX`-constant + `Display` guards, lifecycle
+(send-after-drop / recv-none / drain-flush), `LinkDied` boxed-slot `size_of` guard +
+monomorphic worst-case demo, weak death-watch, an 8-thread `Barrier` linearizability
+test, and a single-sender FIFO proptest. **Mutation: 0 missed** (`nix build .#mutants`).
+Criterion (`benches/mailbox.rs`): `tell` ≈ **4.7 ns**, send+recv ≈ **13 ns** (flume beat
+tokio here too). Channel eval bench: `benches/channels.rs`.
 
 **DST posture — loom/shuttle deferred to #116/#120.** loom and shuttle can only
 model-check code compiled against *their* primitives; the real `tokio::sync::mpsc` this
