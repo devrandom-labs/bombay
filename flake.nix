@@ -224,6 +224,7 @@
             cloc
             cargo-edit
             cargo-expand
+            cargo-mutants
             gh
           ];
         };
@@ -251,6 +252,25 @@
         # feature auto-enables via the self dev-dep, so the cucumber runners build.
         packages =
           let
+            # Mutation testing for the rebuilt core (card #112+). On-demand, NOT a
+            # gating check — like coverage, cargo-mutants rebuilds+tests once per
+            # mutant, far too slow for the per-push gate. Pinned via the flake's
+            # nixpkgs input (never `nix run nixpkgs#…`) so the run is reproducible.
+            # `nix build .#mutants -L` writes the mutants.out report to ./result and
+            # FAILS the build if any mutant survives (zero-survivors is the bar).
+            mutants = craneLib.mkCargoDerivation (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+                pnameSuffix = "-mutants";
+                nativeBuildInputs = commonArgs.nativeBuildInputs ++ [ cargo-mutants ];
+                buildPhaseCargoCommand = ''
+                  cargo mutants --package bombay-core --no-shuffle --colors never --output "$out"
+                '';
+                doInstallCargoArtifacts = false;
+                doCheck = false;
+              }
+            );
             covLlvm = craneLib.cargoLlvmCov (
               commonArgs
               // {
@@ -268,6 +288,7 @@
             );
           in
           {
+            inherit mutants;
             coverage-llvm = covLlvm;
             coverage = covLlvm;
           }

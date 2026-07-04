@@ -24,6 +24,46 @@ it is never compiled or counted (M1 deletes it). On every **merge to `main`**, t
 `…/bombay/coverage/` (and as the `coverage-html` artifact). The numbers below are from
 `coverage-llvm`; tarpaulin's totals differ slightly (different instrumentation granularity).
 
+## bombay-core — the M1 core rebuild (#112+)
+
+The rebuilt spine lives in the `bombay-core` crate (part-by-part, epic #122), born
+under the god-level bar (no #61 quarantine). It is measured by the same
+`--workspace` coverage run and adds a **reproducible mutation gate**:
+
+```bash
+nix build .#mutants -L   # cargo-mutants on bombay-core; fails if any mutant survives
+```
+
+Pinned via the flake's `nixpkgs` (never `nix run nixpkgs#…`), mirroring the coverage
+package. On-demand, not a per-push gate (rebuilds+tests once per mutant).
+
+### `mailbox` (#112, redesigned #133) — done
+Zero-box `Signal<A>` queue behind a **`flume`** channel (chosen on measured evidence —
+ADR-0001; `flume` is isolated inside the sender/receiver wrappers = the seam).
+Construction hangs off the `Mailbox::<A>::bounded(cap)` namespace (composable, no
+free-floating `bounded()`). Pure transport: `send`/`try_send`/`recv`/`downgrade`/`drain`
+— **no `close()`**; graceful shutdown is `Signal::Stop` + `drain` at the run-loop (#116).
+18 tests: round-trip, backpressure hand-back, `Capacity` boundaries (proptest incl.
+`0`/`MAX±1`/`usize::MAX`) + `CapacityError`, `MAX`-constant + `Display` guards, lifecycle
+(send-after-drop / recv-none / drain-flush), `LinkDied` boxed-slot `size_of` guard +
+monomorphic worst-case demo, weak death-watch, an 8-thread `Barrier` linearizability
+test, and a single-sender FIFO proptest. **Mutation: 0 missed** (`nix build .#mutants`).
+Criterion (`benches/mailbox.rs`, realistic ~40 B command): `tell` ≈ **5.7 ns**, send+recv
+≈ **18.4 ns** (~40 % faster than the tokio v1 on the same bench). Channel eval:
+`benches/channels.rs` (ADR-0001) — flume wins at both `u64` and `~40 B` payloads.
+
+**DST posture — loom/shuttle deferred to #116/#120.** loom and shuttle can only
+model-check code compiled against *their* primitives; the real `tokio::sync::mpsc` this
+mailbox wraps is opaque to both ([loom](https://docs.rs/loom/latest/loom/) requires
+"the code being tested specifically uses the loom replacement types";
+[shuttle](https://github.com/awslabs/shuttle) requires replacing std primitives with
+its equivalents). The mailbox delegates all synchronization to tokio (which loom-tests
+its own channel internally), so a loom/shuttle test here would either explore nothing or
+test a reimplementation (violates the "test the actual SUT" rule). The first
+bombay-owned concurrency is the run-loop `select` over signals (#116) and the death-watch
+push (#120) — that is where loom/shuttle land. The 8-thread linearizability test is the
+mailbox's concurrency coverage until then.
+
 ## Baseline — 2026-06-29 (after #77)
 
 Workspace line coverage **60.85% (5686/9345)** — but that blends the SUT with untested crates
