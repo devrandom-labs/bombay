@@ -19,6 +19,11 @@ flume = "0.12"
 cucumber = { version = "0.23", features = ["libtest"] }
 proptest = "1.11"
 rstest = "0.26"
+# Typed error domains (card #113): thiserror for derived Display/Error (rule #3:
+# no manual impls); downcast-rs to recover a concrete panic payload from the
+# type-erased ReplyError trait object.
+thiserror = "2.0"
+downcast-rs = "2.0"
 # Tier-2 (PTY) console E2E test only (card #83): drive the compiled binary through a
 # pseudo-terminal and re-emulate the visible screen for grid assertions.
 portable-pty = "0.9"
