@@ -114,6 +114,33 @@ escape) plus three `compile_fail` (budget tripwire, generic rejected, union
 rejected). No README change —
 the rebuilt spine is not behind the umbrella yet (same as #113/#133).
 
+### `reply` (#115) — done
+`bombay-core/src/reply.rs` carries the typed single-shot reply channel:
+`ReplySender<R, E>` / `ReplyReceiver<R, E>` / `reply_channel()` over
+`tokio::sync::oneshot<Result<R, E>>` (ADR-0002). Kameo's `Box<dyn Any>`
+`Reply`-trait erasure is **dropped** — a typed port erases nothing, so any
+`R: Send + 'static` is a reply. `send`/`send_err` consume `self` (double-reply is
+a compile error, proved by a `compile_fail` doctest); a gone asker is reported as
+`AskerGone` (a unit signal — a reply to a vanished asker is un-actionable, so no
+payload is handed back). `recv` maps the oneshot outcome into #113's `AskError`
+(`Ok(Ok r)→Ok(r)`, `Ok(Err e)→Handler(e)`, sender-dropped→`Interrupted`), generic
+over the never-produced `M`. Covered by 8 tests: the `@bug` typed-handler-error
+probe, the Ok-reply sequence, the drop→`Interrupted` lifecycle (never hangs), the
+`send`-to-gone-asker defensive case, the `Infallible` (tell) roundtrip, a 2-thread
+barrier'd linearizability test, a deterministic **recv-parks-then-send-wakes** test
+(the reverse ordering — exercises the oneshot waker path the buffered-value tests
+skip), and a proptest sweeping all three handler actions. Benched
+(`benches/reply.rs`): the typed roundtrip is **≈1.5× faster than the erased
+`Box<dyn Any>` path** (21.4 µs vs 32.8 µs /1k — the box+downcast cost #115 removes;
+ADR-0002). **Mutation: 0 missed** (4 mutants: `send`/`send_err` whole-body →
+`Ok(())` both caught; `recv`/`reply_channel` whole-body replacements are
+*unviable* — they need `R: Default` / a `Default` impl the generic types lack, so
+`cargo-mutants` cannot mutate the arms of the generic `recv` individually. Those
+three arms — `Ok→Ok`, `Err→Handler`, drop→`Interrupted` — are instead pinned
+behaviorally by the ok/handler/drop tests + the DST). No bombay-owned atomics →
+loom N/A (delegated to tokio oneshot), same as #113.
+`DelegatedReply`/`ForwardedReply` deferred to #116/#118 (recorded on #115).
+
 ## Baseline — 2026-06-29 (after #77)
 
 Workspace line coverage **60.85% (5686/9345)** — but that blends the SUT with untested crates

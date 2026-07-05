@@ -37,5 +37,9 @@ harness = false
 name = "channels"
 harness = false
 
+[[bench]]
+name = "reply"
+harness = false
+
 [lints]
 workspace = true
