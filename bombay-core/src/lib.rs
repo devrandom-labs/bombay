@@ -7,6 +7,7 @@
 //! Nothing here is public API yet — the spine is assembled part-by-part and the
 //! surface is settled once the whole core lands (#112–#121).
 
+pub mod actor;
 pub mod error;
 pub mod mailbox;
 pub mod message;
