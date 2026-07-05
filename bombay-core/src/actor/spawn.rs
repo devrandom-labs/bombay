@@ -586,4 +586,234 @@ mod tests {
             Some(String::from("startup boom"))
         );
     }
+
+    /// A handler that panics mid-mutation, with an `on_stop` spy that records the
+    /// reason it received and whether it observed torn state. Shared across the
+    /// three panic guarantees below.
+    mod panic_probe {
+        use super::*;
+        use std::sync::Mutex;
+
+        pub(super) struct Torn {
+            pub(super) counter: u32,
+            pub(super) stop_reason: Arc<Mutex<Option<ActorStopReason>>>,
+            pub(super) counter_at_stop: Arc<Mutex<Option<u32>>>,
+        }
+        pub(super) struct Explode;
+        impl Msg for Explode {}
+        impl Mailboxed for Torn {
+            type Msg = Explode;
+        }
+        impl crate::actor::Actor for Torn {
+            type Args = (Arc<Mutex<Option<ActorStopReason>>>, Arc<Mutex<Option<u32>>>);
+            type Error = core::convert::Infallible;
+            async fn on_start(
+                (stop_reason, counter_at_stop): Self::Args,
+                _: ActorRef<Self>,
+            ) -> Result<Self, Self::Error> {
+                Ok(Self {
+                    counter: 0,
+                    stop_reason,
+                    counter_at_stop,
+                })
+            }
+            async fn handle(
+                &mut self,
+                _: Explode,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                self.counter = 99; // torn write BEFORE the panic
+                panic!("handler boom");
+            }
+            async fn on_stop(
+                &mut self,
+                _: WeakActorRef<Self>,
+                reason: ActorStopReason,
+            ) -> Result<(), Self::Error> {
+                // Records the reason and the poisoned field value — a real on_stop
+                // must NOT persist `self.counter` (torn); this spy only records it so
+                // the test can assert the loop DID run on_stop with the torn state
+                // present (the contract is "don't flush", enforced by review + this
+                // documented probe).
+                *self.stop_reason.lock().expect("lock") = Some(reason);
+                *self.counter_at_stop.lock().expect("lock") = Some(self.counter);
+                Ok(())
+            }
+        }
+    }
+
+    /// `@bug` Lifecycle: after a handler panic, `on_stop` STILL runs and receives
+    /// `ActorStopReason::Panicked` (OTP `terminate` precedent). Fails if the loop
+    /// skips `on_stop` on the panic path.
+    #[tokio::test]
+    async fn on_stop_runs_after_panic_with_panicked_reason() {
+        use panic_probe::*;
+        use std::sync::Mutex;
+
+        let stop_reason: Arc<Mutex<Option<ActorStopReason>>> = Arc::new(Mutex::new(None));
+        let counter_at_stop = Arc::new(Mutex::new(None));
+
+        let prepared = PreparedActor::<Torn>::new(cap(4));
+        let actor_ref = prepared.actor_ref().clone();
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Explode))
+            .await
+            .expect("send");
+
+        let outcome = prepared
+            .run((Arc::clone(&stop_reason), Arc::clone(&counter_at_stop)))
+            .await;
+
+        assert!(
+            matches!(
+                &outcome,
+                RunResult::Stopped {
+                    reason: ActorStopReason::Panicked(_),
+                    ..
+                }
+            ),
+            "panic → Stopped with Panicked, got {outcome:?}",
+        );
+        let recorded = stop_reason.lock().expect("lock").clone();
+        assert!(
+            matches!(recorded, Some(ActorStopReason::Panicked(_))),
+            "on_stop ran and saw Panicked, got {recorded:?}",
+        );
+    }
+
+    /// `@bug` Defensive (poison contract): the field mutated just before the panic
+    /// (`counter = 99`) IS still visible to `on_stop` (proving the state is torn, not
+    /// rolled back) — which is exactly why a real `on_stop` must NOT flush it. This
+    /// pins that the loop surfaces torn state to `on_stop` rather than silently
+    /// discarding before cleanup, so the "don't flush" contract is meaningful.
+    #[tokio::test]
+    async fn on_stop_after_panic_observes_torn_state() {
+        use panic_probe::*;
+        use std::sync::Mutex;
+
+        let stop_reason = Arc::new(Mutex::new(None));
+        let counter_at_stop: Arc<Mutex<Option<u32>>> = Arc::new(Mutex::new(None));
+
+        let prepared = PreparedActor::<Torn>::new(cap(4));
+        let actor_ref = prepared.actor_ref().clone();
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Explode))
+            .await
+            .expect("send");
+        let _ = prepared
+            .run((Arc::clone(&stop_reason), Arc::clone(&counter_at_stop)))
+            .await;
+
+        assert_eq!(
+            *counter_at_stop.lock().expect("lock"),
+            Some(99),
+            "on_stop sees the torn (pre-panic-mutated) field — hence must not flush it",
+        );
+    }
+
+    /// `@bug` Lifecycle: once a handler panic stops the actor, its mailbox receiver
+    /// is dropped, so a later `send` fails (the actor is gone). Fails if teardown
+    /// leaves the receiver alive on the panic path.
+    #[tokio::test]
+    async fn send_after_handler_panic_fails() {
+        struct Bomb;
+        struct Trigger;
+        impl Msg for Trigger {}
+        impl Mailboxed for Bomb {
+            type Msg = Trigger;
+        }
+        impl crate::actor::Actor for Bomb {
+            type Args = ();
+            type Error = core::convert::Infallible;
+            async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Bomb)
+            }
+            async fn handle(
+                &mut self,
+                _: Trigger,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                panic!("boom")
+            }
+        }
+
+        let prepared = PreparedActor::<Bomb>::new(cap(4));
+        let actor_ref = prepared.actor_ref().clone();
+        let handle = prepared.spawn(());
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Trigger))
+            .await
+            .expect("send trigger");
+
+        let outcome = handle.await.expect("run task");
+        assert!(matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Panicked(_),
+                ..
+            }
+        ));
+
+        let resend = actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Trigger))
+            .await;
+        assert!(
+            resend.is_err(),
+            "the actor's mailbox is closed after the panic-stop"
+        );
+    }
+
+    /// Lifecycle: a handler that RETURNS `Err` (not a panic) is a controlled crash —
+    /// it stops the actor with `Panicked(HandlerPanic)` and runs `on_stop`. This is
+    /// the only test that exercises the `Ok(Err(_))` arm of the loop's dispatch.
+    #[tokio::test]
+    async fn handle_returning_err_stops_as_panicked() {
+        #[derive(Debug)]
+        struct Nope;
+        struct Failer;
+        struct Do;
+        impl Msg for Do {}
+        impl Mailboxed for Failer {
+            type Msg = Do;
+        }
+        impl crate::actor::Actor for Failer {
+            type Args = ();
+            type Error = Nope;
+            async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Failer)
+            }
+            async fn handle(
+                &mut self,
+                _: Do,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Err(Nope)
+            }
+        }
+
+        let prepared = PreparedActor::<Failer>::new(cap(4));
+        let actor_ref = prepared.actor_ref().clone();
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Do))
+            .await
+            .expect("send");
+        let outcome = prepared.run(()).await;
+
+        let RunResult::Stopped {
+            reason: ActorStopReason::Panicked(err),
+            ..
+        } = outcome
+        else {
+            panic!("expected Stopped/Panicked, got {outcome:?}");
+        };
+        assert_eq!(err.reason(), crate::error::PanicReason::HandlerPanic);
+    }
 }
