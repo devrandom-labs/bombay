@@ -293,4 +293,90 @@ mod tests {
             "clean normal stop",
         );
     }
+
+    /// Lifecycle: `stop()` (out-of-band cancel) while a handler is mid-flight lets
+    /// that handler finish, then stops and runs `on_stop`. The queued-behind message
+    /// is abandoned (finish-current-then-stop, no drain).
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn cancel_finishes_in_flight_then_stops() {
+        use tokio::sync::oneshot;
+
+        struct Slow {
+            entered: Option<oneshot::Sender<()>>,
+            release: Option<oneshot::Receiver<()>>,
+            handled: Arc<AtomicU32>,
+        }
+        struct Work;
+        impl Msg for Work {}
+        impl Mailboxed for Slow {
+            type Msg = Work;
+        }
+        impl crate::actor::Actor for Slow {
+            type Args = (oneshot::Sender<()>, oneshot::Receiver<()>, Arc<AtomicU32>);
+            type Error = core::convert::Infallible;
+            async fn on_start(
+                (entered, release, handled): Self::Args,
+                _: ActorRef<Self>,
+            ) -> Result<Self, Self::Error> {
+                Ok(Self {
+                    entered: Some(entered),
+                    release: Some(release),
+                    handled,
+                })
+            }
+            async fn handle(
+                &mut self,
+                _: Work,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                if let Some(entered) = self.entered.take() {
+                    let _ = entered.send(());
+                }
+                if let Some(release) = self.release.take() {
+                    let _ = release.await;
+                }
+                self.handled.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }
+        }
+
+        let (entered_tx, entered_rx) = oneshot::channel();
+        let (release_tx, release_rx) = oneshot::channel();
+        let handled = Arc::new(AtomicU32::new(0));
+
+        let prepared = PreparedActor::<Slow>::new(cap(8));
+        let actor_ref = prepared.actor_ref().clone();
+        // Two messages: the first blocks until released; the second must be abandoned.
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Work))
+            .await
+            .expect("send 1");
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Work))
+            .await
+            .expect("send 2");
+
+        let run = tokio::spawn(prepared.run((entered_tx, release_rx, Arc::clone(&handled))));
+
+        entered_rx.await.expect("handler entered"); // handler #1 is mid-flight
+        actor_ref.stop(); // cancel while in-flight
+        release_tx.send(()).expect("release handler"); // let handler #1 finish
+
+        let outcome = run.await.expect("run task");
+        assert_eq!(
+            handled.load(Ordering::SeqCst),
+            1,
+            "only the in-flight message finished; the queued one was abandoned"
+        );
+        assert!(matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Normal,
+                ..
+            }
+        ));
+    }
 }
