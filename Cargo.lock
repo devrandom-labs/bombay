@@ -480,10 +480,12 @@ dependencies = [
  "crossbeam-channel",
  "downcast-rs 2.0.2",
  "flume",
+ "futures",
  "proptest",
  "thingbuf",
  "thiserror 2.0.18",
  "tokio",
+ "tokio-util",
 ]
 
 [[package]]

@@ -11,6 +11,8 @@ publish = false
 [dependencies]
 tokio = { workspace = true, features = ["sync", "rt", "macros", "time"] }
 flume = { workspace = true }
+tokio-util = { workspace = true }
+futures = { workspace = true }
 thiserror = { workspace = true }
 downcast-rs = { workspace = true }
 
