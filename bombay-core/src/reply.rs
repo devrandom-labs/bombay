@@ -30,6 +30,13 @@ impl<R, E> ReplySender<R, E> {
     pub fn send(self, reply: R) -> Result<(), AskerGone> {
         self.tx.send(Ok(reply)).map_err(|_| AskerGone)
     }
+
+    /// Sends the handler's typed domain error `E` as the reply (surfaces as
+    /// [`AskError::Handler`]). Consumes `self`. `Err(AskerGone)` if the asker is
+    /// gone.
+    pub fn send_err(self, error: E) -> Result<(), AskerGone> {
+        self.tx.send(Err(error)).map_err(|_| AskerGone)
+    }
 }
 
 /// The receive half held by the `ask`. Yields the single reply, mapped into the
@@ -73,6 +80,11 @@ pub fn reply_channel<R, E>() -> (ReplySender<R, E>, ReplyReceiver<R, E>) {
 mod tests {
     use super::*;
 
+    /// A stand-in domain error — the shape a nexus aggregate's own `thiserror`
+    /// enum takes (optimistic-concurrency `Conflict`, …).
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct Conflict;
+
     /// Sequence: a handler's `Ok` reply reaches the caller, typed and intact.
     #[tokio::test]
     async fn ask_ok_reply_reaches_caller() {
@@ -80,5 +92,16 @@ mod tests {
         tx.send(7).expect("asker still waiting");
         let got = rx.recv::<()>().await;
         assert_eq!(got.ok(), Some(7), "the Ok reply arrives typed and intact");
+    }
+
+    /// `@bug` — a handler that answers with its own domain error `E` must reach
+    /// the caller as `AskError::Handler(E)`, **typed, not erased**. Fails if the
+    /// port were `oneshot<R>` instead of `oneshot<Result<R, E>>`. (Ref #122-#2.)
+    #[tokio::test]
+    async fn ask_handler_error_reaches_caller_typed() {
+        let (tx, rx) = reply_channel::<u32, Conflict>();
+        tx.send_err(Conflict).expect("asker still waiting");
+        let recovered = rx.recv::<()>().await.err().and_then(AskError::err);
+        assert_eq!(recovered, Some(Conflict), "the domain error survives un-erased");
     }
 }
