@@ -33,3 +33,25 @@ enum Roomy {
 fn budget_attribute_overrides_the_default() {
     assert_eq!(<Roomy as Msg>::SLOT_BUDGET, 8192);
 }
+
+// Exactly at the default budget: size_of == 256 == SLOT_BUDGET must still compile
+// (guards the inclusive `<=` in the derive's static-assert against a `<` regression).
+#[derive(bombay_macros::Msg)]
+struct ExactDefault([u8; 256]);
+
+// Exactly at an overridden budget: size_of == 8192 == the raised SLOT_BUDGET.
+#[derive(bombay_macros::Msg)]
+#[msg(budget = 8192)]
+struct ExactOverride([u8; 8192]);
+
+/// A message whose `size_of` is exactly its budget compiles — the tripwire is
+/// inclusive (`size_of <= SLOT_BUDGET`), not strict. If the derive's comparison
+/// regressed to `<`, `ExactDefault`/`ExactOverride` would fail to compile and
+/// break this test's build.
+#[test]
+fn size_exactly_at_budget_compiles() {
+    assert_eq!(core::mem::size_of::<ExactDefault>(), 256);
+    assert_eq!(<ExactDefault as Msg>::SLOT_BUDGET, 256);
+    assert_eq!(core::mem::size_of::<ExactOverride>(), 8192);
+    assert_eq!(<ExactOverride as Msg>::SLOT_BUDGET, 8192);
+}

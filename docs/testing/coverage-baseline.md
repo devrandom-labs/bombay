@@ -81,10 +81,11 @@ for the generated impl on the default budget and the `#[msg(budget = N)]` overri
 `parse_budget` unit tests for the attribute grammar (value present, absent,
 non-integer, bare key, unknown key, duplicate within one `#[msg(...)]` and across two,
 negative, and overflowing-integer rejection); direct `syn::parse_str::<DeriveMsg>`
-unit tests for the generic- and union-rejection guards; and five paired `///`
-doctests on the derive in `macros/src/lib.rs` — three `compile_fail` (budget
-tripwire, generic rejected, union rejected) plus two regression doctests that must
-keep compiling (boxed-remedy, the `#[msg(budget = N)]` escape). No README change —
+unit tests for the generic- and union-rejection guards; and six paired `///`
+doctests on the derive in `macros/src/lib.rs` — three that must keep compiling
+(the initial within-budget example, the boxed-remedy, and the `#[msg(budget = N)]`
+escape) plus three `compile_fail` (budget tripwire, generic rejected, union
+rejected). No README change —
 the rebuilt spine is not behind the umbrella yet (same as #113/#133).
 
 ## Baseline — 2026-06-29 (after #77)

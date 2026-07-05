@@ -81,6 +81,9 @@ fn parse_budget(attrs: &[Attribute]) -> syn::Result<Option<usize>> {
                 if budget.is_some() {
                     return Err(meta.error("duplicate `budget`; specify it once"));
                 }
+                // `-1` is rejected because it tokenizes as `-` + LitInt (so LitInt::parse fails),
+                // and an out-of-range literal fails base10_parse::<usize>() — both surface as
+                // clean syn::Errors, not an explicit sign/range check here.
                 budget = Some(meta.value()?.parse::<LitInt>()?.base10_parse()?);
                 Ok(())
             } else {
@@ -143,20 +146,32 @@ mod tests {
 
     #[test]
     fn unknown_msg_key_is_an_error() {
-        assert!(parse_budget(&attrs(parse_quote!(#[msg(limit = 8)]))).is_err());
+        let err = parse_budget(&attrs(parse_quote!(#[msg(limit = 8)]))).unwrap_err();
+        assert!(
+            err.to_string().contains("unknown"),
+            "unexpected error: {err}"
+        );
     }
 
     #[test]
     fn duplicate_budget_is_an_error() {
         // repeated key within one #[msg(...)]
-        assert!(parse_budget(&attrs(parse_quote!(#[msg(budget = 1, budget = 2)]))).is_err());
+        let err = parse_budget(&attrs(parse_quote!(#[msg(budget = 1, budget = 2)]))).unwrap_err();
+        assert!(
+            err.to_string().contains("duplicate"),
+            "unexpected error: {err}"
+        );
     }
 
     #[test]
     fn duplicate_budget_across_attrs_is_an_error() {
         let a: Attribute = parse_quote!(#[msg(budget = 1)]);
         let b: Attribute = parse_quote!(#[msg(budget = 2)]);
-        assert!(parse_budget(&[a, b]).is_err());
+        let err = parse_budget(&[a, b]).unwrap_err();
+        assert!(
+            err.to_string().contains("duplicate"),
+            "unexpected error: {err}"
+        );
     }
 
     #[test]
