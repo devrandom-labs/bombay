@@ -9,8 +9,9 @@
 use core::{any::type_name, future::Future};
 
 use crate::{
+    actor::spawn::default_capacity,
     error::{ActorStopReason, PanicError, ReplyError},
-    mailbox::Mailboxed,
+    mailbox::{Capacity, Mailboxed},
     message::Msg,
 };
 
@@ -89,3 +90,27 @@ pub trait Actor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
         async { Ok(()) }
     }
 }
+
+/// Ergonomic spawn entry points, provided for every [`Actor`].
+///
+/// Spawns onto the current tokio runtime and returns the [`ActorRef`]; the actor
+/// stops via `Signal::Stop`, [`ActorRef::stop`], [`ActorRef::kill`], a handler
+/// crash, or startup failure (ref-count-driven stop is #117).
+pub trait Spawn: Actor {
+    /// Spawns with the [`DEFAULT_MAILBOX_CAPACITY`](spawn::DEFAULT_MAILBOX_CAPACITY).
+    #[must_use]
+    fn spawn(args: Self::Args) -> ActorRef<Self> {
+        Self::spawn_with_capacity(default_capacity(), args)
+    }
+
+    /// Spawns with an explicit mailbox `capacity`.
+    #[must_use]
+    fn spawn_with_capacity(capacity: Capacity, args: Self::Args) -> ActorRef<Self> {
+        let prepared = PreparedActor::<Self>::new(capacity);
+        let actor_ref = prepared.actor_ref().clone();
+        let _join = prepared.spawn(args);
+        actor_ref
+    }
+}
+
+impl<A: Actor> Spawn for A {}

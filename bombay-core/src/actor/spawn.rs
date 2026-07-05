@@ -26,6 +26,18 @@ use crate::{
 /// worth of slots is a sane starting point; tune with `spawn_with_capacity`).
 pub const DEFAULT_MAILBOX_CAPACITY: usize = 64;
 
+/// The default capacity as a validated [`Capacity`]. Infallible for the fixed
+/// constant 64 (in `1..=Capacity::MAX`); the `expect` is proven by
+/// `default_capacity_is_64` and can never trip at runtime.
+pub(super) fn default_capacity() -> Capacity {
+    #[expect(
+        clippy::expect_used,
+        reason = "DEFAULT_MAILBOX_CAPACITY (64) is a compile-time-valid capacity; \
+                  the conversion is infallible and pinned by a unit test"
+    )]
+    Capacity::try_from(DEFAULT_MAILBOX_CAPACITY).expect("64 is a valid capacity")
+}
+
 /// Monotonic scaffold id source (#121 replaces this with the AID).
 static NEXT_ACTOR_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -194,6 +206,7 @@ mod tests {
         atomic::{AtomicU32, Ordering},
     };
 
+    use super::DEFAULT_MAILBOX_CAPACITY;
     use crate::{
         actor::{ActorRef, PreparedActor, RunResult, WeakActorRef},
         error::ActorStopReason,
@@ -901,5 +914,91 @@ mod tests {
             0,
             "on_stop skipped on hard kill"
         );
+    }
+
+    /// The ergonomic spawn path uses the default mailbox capacity; pin the constant
+    /// and that `default_capacity()` yields exactly it (guards a wrong default).
+    #[test]
+    fn default_capacity_is_64() {
+        assert_eq!(DEFAULT_MAILBOX_CAPACITY, 64);
+        assert_eq!(super::default_capacity().get(), 64);
+    }
+
+    /// Linearizability / single-writer: many senders race messages at one actor from
+    /// the same instant; the actor handles them sequentially, so the total count is
+    /// exact (none lost or double-counted) despite real concurrency.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn concurrent_senders_single_writer_exact_count() {
+        use crate::actor::Spawn;
+        use tokio::sync::{Barrier, oneshot};
+
+        const SENDERS: u32 = 8;
+        const PER_SENDER: u32 = 50;
+
+        struct Sink {
+            count: u32,
+            done_at: u32,
+            done: Option<oneshot::Sender<u32>>,
+        }
+        struct Bump;
+        impl Msg for Bump {}
+        impl Mailboxed for Sink {
+            type Msg = Bump;
+        }
+        impl crate::actor::Actor for Sink {
+            type Args = (u32, oneshot::Sender<u32>);
+            type Error = core::convert::Infallible;
+            async fn on_start(
+                (done_at, done): Self::Args,
+                _: ActorRef<Self>,
+            ) -> Result<Self, Self::Error> {
+                Ok(Self {
+                    count: 0,
+                    done_at,
+                    done: Some(done),
+                })
+            }
+            async fn handle(
+                &mut self,
+                _: Bump,
+                _: ActorRef<Self>,
+                stop: &mut bool,
+            ) -> Result<(), Self::Error> {
+                self.count += 1;
+                if self.count == self.done_at {
+                    if let Some(done) = self.done.take() {
+                        let _ = done.send(self.count);
+                    }
+                    *stop = true;
+                }
+                Ok(())
+            }
+        }
+
+        let (done_tx, done_rx) = oneshot::channel();
+        let total = SENDERS * PER_SENDER;
+        let actor_ref = Sink::spawn_with_capacity(cap(4), (total, done_tx));
+
+        let start = Arc::new(Barrier::new(SENDERS as usize));
+        let mut tasks = Vec::new();
+        for _ in 0..SENDERS {
+            let sender = actor_ref.mailbox_sender().clone();
+            let start = Arc::clone(&start);
+            tasks.push(tokio::spawn(async move {
+                start.wait().await;
+                for _ in 0..PER_SENDER {
+                    sender.send(Signal::Message(Bump)).await.expect("send");
+                }
+            }));
+        }
+
+        let final_count = done_rx.await.expect("actor finished");
+        assert_eq!(
+            final_count, total,
+            "single writer counted every message exactly once"
+        );
+        for task in tasks {
+            task.await.expect("sender task");
+        }
     }
 }
