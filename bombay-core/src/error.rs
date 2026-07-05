@@ -15,7 +15,7 @@
 //! even name `Timeout`/`Handler`, and whether the message is returned is
 //! encoded in the type rather than left to `Option<M>`.
 
-use std::{fmt, sync::Arc};
+use std::{any::Any, fmt, sync::Arc};
 
 use downcast_rs::{DowncastSync, impl_downcast};
 
@@ -243,8 +243,24 @@ impl PanicError {
             .or_else(|| self.err.downcast_ref::<String>().map(String::as_str))
             .map(f)
     }
-    // DEFERRED — from_panic_any (Box<dyn Any> → PanicError) lands with the
-    // run-loop that catches panics (#116); nothing produces one until then.
+    /// Builds a `PanicError` from a caught unwind payload (`catch_unwind` yields
+    /// `Box<dyn Any + Send>`), tagging it with the phase that produced it.
+    ///
+    /// The common payloads — `&'static str` and `String` — are recovered as a
+    /// string. An arbitrary payload cannot be recovered as its concrete type
+    /// from `dyn Any` without naming it, so it is recorded as a stable
+    /// placeholder string (still inspectable via [`with_str`](Self::with_str)).
+    #[must_use]
+    pub fn from_panic_any(payload: Box<dyn Any + Send>, reason: PanicReason) -> Self {
+        let err: Box<dyn ReplyError> = match payload.downcast::<String>() {
+            Ok(message) => Box::new(*message),
+            Err(payload) => match payload.downcast::<&'static str>() {
+                Ok(message) => Box::new(*message),
+                Err(_unknown) => Box::new("non-string panic payload"),
+            },
+        };
+        Self::new(err, reason)
+    }
 }
 
 /// Why an actor stopped. Exhaustive (no `#[non_exhaustive]`, rule #3) and
@@ -503,6 +519,38 @@ mod tests {
         assert_eq!(cloned.reason(), PanicReason::OnPanic);
         // original still usable — clone did not consume it.
         assert_eq!(original.reason(), PanicReason::OnPanic);
+    }
+
+    /// A caught panic arrives as `Box<dyn Any + Send>` from `catch_unwind`. The two
+    /// common payloads — `&'static str` and `String` — are recovered as a string;
+    /// the phase is preserved. This is the loop's bridge from an unwind to a value.
+    #[test]
+    fn from_panic_any_recovers_string_payloads() {
+        let from_str = PanicError::from_panic_any(Box::new("boom"), PanicReason::HandlerPanic);
+        assert_eq!(from_str.with_str(str::to_owned), Some(String::from("boom")));
+        assert_eq!(from_str.reason(), PanicReason::HandlerPanic);
+
+        let from_string =
+            PanicError::from_panic_any(Box::new(String::from("kaboom")), PanicReason::OnStart);
+        assert_eq!(
+            from_string.with_str(str::to_owned),
+            Some(String::from("kaboom"))
+        );
+        assert_eq!(from_string.reason(), PanicReason::OnStart);
+    }
+
+    /// A non-string panic payload (an arbitrary type) cannot be recovered as its
+    /// concrete type from `dyn Any` without knowing it, so `from_panic_any` records
+    /// a stable placeholder string and preserves the phase. The placeholder must be
+    /// a recoverable `&str`, so a supervisor can still log *something*.
+    #[test]
+    fn from_panic_any_records_placeholder_for_non_string_payload() {
+        let panic = PanicError::from_panic_any(Box::new(42_u64), PanicReason::OnPanic);
+        assert_eq!(panic.reason(), PanicReason::OnPanic);
+        assert_eq!(
+            panic.with_str(str::to_owned),
+            Some(String::from("non-string panic payload")),
+        );
     }
 
     /// Display strings are public surface (they show up in logs and `?` chains),
