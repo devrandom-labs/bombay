@@ -25,6 +25,7 @@ criterion = { version = "0.8", features = ["async_tokio"] }
 async-channel = "2.5.0"
 thingbuf = "0.1.6"
 crossbeam-channel = "0.5.15"
+bombay_macros = { path = "../macros" }
 
 [[bench]]
 name = "mailbox"

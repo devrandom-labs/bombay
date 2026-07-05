@@ -475,6 +475,7 @@ name = "bombay-core"
 version = "0.1.0"
 dependencies = [
  "async-channel",
+ "bombay_macros",
  "criterion",
  "crossbeam-channel",
  "flume",
