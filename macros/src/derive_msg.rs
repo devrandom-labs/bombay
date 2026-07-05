@@ -4,12 +4,13 @@
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use syn::{
-    Attribute, DeriveInput, Ident, LitInt,
+    Attribute, Data, DeriveInput, Ident, LitInt,
     parse::{Parse, ParseStream},
 };
 
 /// A parsed `#[derive(Msg)]` input: the type's identifier and an optional
 /// per-type slot budget from `#[msg(budget = N)]`.
+#[derive(Debug)]
 pub struct DeriveMsg {
     ident: Ident,
     budget: Option<usize>,
@@ -18,6 +19,24 @@ pub struct DeriveMsg {
 impl Parse for DeriveMsg {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let derive: DeriveInput = input.parse()?;
+
+        // NB: the `compile_fail` doctest for generics can't regression-test this guard
+        // (an un-guarded derive also fails to compile a generic, for a different reason);
+        // `generic_type_is_rejected` below is the real guard test.
+        if let Some(param) = derive.generics.params.first() {
+            return Err(syn::Error::new_spanned(
+                param,
+                "`#[derive(Msg)]` needs a concrete type: the slot-size tripwire \
+                 cannot size an unmonomorphized generic",
+            ));
+        }
+        if let Data::Union(data) = &derive.data {
+            return Err(syn::Error::new_spanned(
+                data.union_token,
+                "`#[derive(Msg)]` supports structs and enums, not unions",
+            ));
+        }
+
         let budget = parse_budget(&derive.attrs)?;
         Ok(Self {
             ident: derive.ident,
@@ -74,11 +93,30 @@ fn parse_budget(attrs: &[Attribute]) -> syn::Result<Option<usize>> {
 
 #[cfg(test)]
 mod tests {
+    use super::DeriveMsg;
     use super::parse_budget;
     use syn::{Attribute, parse_quote};
 
     fn attrs(attr: Attribute) -> Vec<Attribute> {
         vec![attr]
+    }
+
+    #[test]
+    fn generic_type_is_rejected() {
+        let err = syn::parse_str::<DeriveMsg>("enum Generic<T> { A(T) }").unwrap_err();
+        assert!(
+            err.to_string().contains("concrete type"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn union_type_is_rejected() {
+        let err = syn::parse_str::<DeriveMsg>("union U { a: u32, b: u64 }").unwrap_err();
+        assert!(
+            err.to_string().contains("not unions"),
+            "unexpected error: {err}"
+        );
     }
 
     #[test]

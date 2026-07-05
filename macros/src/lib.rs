@@ -208,6 +208,20 @@ pub fn derive_reply(input: TokenStream) -> TokenStream {
 /// #[msg(budget = 8192)]
 /// enum Big { Bulk([u8; 4096]) }
 /// ```
+///
+/// The derive needs a concrete type — a generic is rejected:
+/// ```compile_fail
+/// use bombay_core::message::Msg;
+/// #[derive(bombay_macros::Msg)]
+/// enum Generic<T> { A(T) }
+/// ```
+///
+/// Unions are rejected (structs and enums only):
+/// ```compile_fail
+/// use bombay_core::message::Msg;
+/// #[derive(bombay_macros::Msg)]
+/// union U { a: u32, b: u64 }
+/// ```
 #[proc_macro_derive(Msg, attributes(msg))]
 pub fn derive_msg(input: TokenStream) -> TokenStream {
     let derive_msg = parse_macro_input!(input as DeriveMsg);
