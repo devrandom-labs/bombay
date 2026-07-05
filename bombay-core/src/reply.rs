@@ -27,6 +27,16 @@ pub struct ReplySender<R, E = Infallible> {
 impl<R, E> ReplySender<R, E> {
     /// Sends the successful reply `R`. Consumes `self`. `Err(AskerGone)` if the
     /// asker already dropped its receiver (the ask was abandoned).
+    ///
+    /// A second reply does not compile — `send` moves `self`:
+    ///
+    /// ```compile_fail
+    /// # use bombay_core::reply::reply_channel;
+    /// # use bombay_core::error::Infallible;
+    /// let (tx, _rx) = reply_channel::<u32, Infallible>();
+    /// let _ = tx.send(1);
+    /// let _ = tx.send(2); // ← tx already moved: E0382
+    /// ```
     pub fn send(self, reply: R) -> Result<(), AskerGone> {
         self.tx.send(Ok(reply)).map_err(|_| AskerGone)
     }
