@@ -478,9 +478,11 @@ dependencies = [
  "bombay_macros",
  "criterion",
  "crossbeam-channel",
+ "downcast-rs 2.0.2",
  "flume",
  "proptest",
  "thingbuf",
+ "thiserror 2.0.18",
  "tokio",
 ]
 

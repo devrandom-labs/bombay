@@ -64,6 +64,32 @@ bombay-owned concurrency is the run-loop `select` over signals (#116) and the de
 push (#120) — that is where loom/shuttle land. The 8-thread linearizability test is the
 mailbox's concurrency coverage until then.
 
+### `error` (#113) — done
+Typed error domains, rebuilt to diverge from kameo where the type system pays off.
+The single kameo `SendError` is **split into two honest types**: `TellError<M>`
+(fire-and-forget *delivery* failures — `ActorNotAlive`/`MailboxFull`, both hand the
+message back) and `AskError<M, E>`, which **composes** `TellError` via `Deliver(..)` and
+adds the three reply-side failures a `tell` can never have (`Timeout`, `Interrupted`,
+`Handler(E)`). So a `tell` caller cannot even *name* `Timeout`/`Handler`, and whether the
+message is returned is encoded in the variant, not an `Option<M>`. Retryability is a
+**method** (`is_retryable`/`is_terminal`), never a caller's guess — only delivery
+backpressure is retryable; a `Timeout` is not (the message is already in the actor) and a
+`Handler` domain error (where a nexus `Conflict` lives) must never be re-driven as
+backpressure (rule #3). `ActorStopReason` (`Normal`/`Killed`/`Panicked`/`SupervisorRestart`
++ `is_normal`) and `PanicError` complete the lifecycle side; `PanicError` holds the
+type-erased payload behind a plain **`Arc<dyn ReplyError>`** (no `Mutex` — the `Send + Sync`
+bound makes the shared payload thread-safe), recoverable by `downcast::<T>()` / `with_str`.
+`PanicReason` distinguishes a lifecycle-hook failure from a handler panic (the supervisor's
+restart-storm signal). **`downcast-rs`** + **`thiserror`** adopted (rule #3: no manual
+`Display`). 13 tests: retry/terminal classification (tell + ask), the `@bug`
+`conflict_is_domain_not_retryable` probe, message/error recovery, `From<TellError>`
+composition, `map_msg`/`map_err`, `PanicReason`/`is_normal` classification, `PanicError`
+downcast/`with_str`/clone-shares-`Arc`, and Display-message stability. **Mutation: 0 missed**
+(`nix build .#mutants`; 17 caught, 12 unviable). No atomics/ordering here → loom/DST N/A.
+**Deferred (tracked):** `ActorStopReason::LinkDied`/`PeerDisconnected`, `PanicReason::OnLinkDied`,
+`TellError::SendTimeout`, and `serde` on `ReplyError`/`PanicError` land with their producing
+cards (#120/#121, request builders #118, the Zenoh tier).
+
 ### `message` (#114) — done
 `bombay-core/src/message.rs` carries the `Msg` marker trait: an actor's single closed
 message type, queued **by value**, with `SLOT_BUDGET` (default 256 B / 4 cache lines)
