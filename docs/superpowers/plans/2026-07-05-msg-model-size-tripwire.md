@@ -460,9 +460,11 @@ Update `Parse` to read the budget:
 ```rust
 impl Parse for DeriveMsg {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let input: DeriveInput = input.parse()?;
-        let budget = parse_budget(&input.attrs)?;
-        Ok(Self { ident: input.ident, budget })
+        // Note: do NOT shadow `input` (god-level clippy bans `shadow-reuse`);
+        // bind the parsed AST to a distinct name.
+        let derive: DeriveInput = input.parse()?;
+        let budget = parse_budget(&derive.attrs)?;
+        Ok(Self { ident: derive.ident, budget })
     }
 }
 ```
@@ -626,24 +628,25 @@ Replace the `Parse` impl with the validating version:
 ```rust
 impl Parse for DeriveMsg {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let input: DeriveInput = input.parse()?;
+        // Do NOT shadow `input` (god-level clippy bans `shadow-reuse`).
+        let derive: DeriveInput = input.parse()?;
 
-        if let Some(param) = input.generics.params.first() {
+        if let Some(param) = derive.generics.params.first() {
             return Err(syn::Error::new_spanned(
                 param,
                 "`#[derive(Msg)]` needs a concrete type: the slot-size tripwire \
                  cannot size an unmonomorphized generic",
             ));
         }
-        if let Data::Union(data) = &input.data {
+        if let Data::Union(data) = &derive.data {
             return Err(syn::Error::new_spanned(
                 data.union_token,
                 "`#[derive(Msg)]` supports structs and enums, not unions",
             ));
         }
 
-        let budget = parse_budget(&input.attrs)?;
-        Ok(Self { ident: input.ident, budget })
+        let budget = parse_budget(&derive.attrs)?;
+        Ok(Self { ident: derive.ident, budget })
     }
 }
 ```
