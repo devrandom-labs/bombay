@@ -511,4 +511,79 @@ mod tests {
             "handled after start, in FIFO order"
         );
     }
+
+    /// Lifecycle: `on_start` returning `Err` produces `StartupFailed` (no actor, no
+    /// message ever handled) — tagged as an `OnStart`-phase panic reason.
+    #[tokio::test]
+    async fn on_start_error_yields_startup_failed() {
+        #[derive(Debug)]
+        struct Boom;
+        struct NeverStarts;
+        struct Never;
+        impl Msg for Never {}
+        impl Mailboxed for NeverStarts {
+            type Msg = Never;
+        }
+        impl crate::actor::Actor for NeverStarts {
+            type Args = ();
+            type Error = Boom;
+            async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Err(Boom)
+            }
+            async fn handle(
+                &mut self,
+                _: Never,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Ok(())
+            }
+        }
+
+        let outcome = PreparedActor::<NeverStarts>::new(cap(4)).run(()).await;
+        let RunResult::StartupFailed(err) = outcome else {
+            panic!("expected StartupFailed, got {outcome:?}");
+        };
+        assert_eq!(err.reason(), crate::error::PanicReason::OnStart);
+    }
+
+    /// Defensive: a panic in `on_start` is CAUGHT (not a process abort) and becomes
+    /// `StartupFailed` with the `OnStart` reason and the recoverable message.
+    ///
+    /// This is the card's `panic = "unwind"` pin: under `panic = "abort"` the
+    /// process aborts here instead, and the test cannot pass.
+    #[tokio::test]
+    async fn on_start_panic_is_caught_as_startup_failed() {
+        struct PanicsOnStart;
+        struct Never;
+        impl Msg for Never {}
+        impl Mailboxed for PanicsOnStart {
+            type Msg = Never;
+        }
+        impl crate::actor::Actor for PanicsOnStart {
+            type Args = ();
+            type Error = core::convert::Infallible;
+            async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                panic!("startup boom")
+            }
+            async fn handle(
+                &mut self,
+                _: Never,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Ok(())
+            }
+        }
+
+        let outcome = PreparedActor::<PanicsOnStart>::new(cap(4)).run(()).await;
+        let RunResult::StartupFailed(err) = outcome else {
+            panic!("expected StartupFailed, got {outcome:?}");
+        };
+        assert_eq!(err.reason(), crate::error::PanicReason::OnStart);
+        assert_eq!(
+            err.with_str(str::to_owned),
+            Some(String::from("startup boom"))
+        );
+    }
 }
