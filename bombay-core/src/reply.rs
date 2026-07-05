@@ -131,7 +131,11 @@ mod tests {
         let (tx, rx) = reply_channel::<u32, Conflict>();
         tx.send_err(Conflict).expect("asker still waiting");
         let recovered = rx.recv::<()>().await.err().and_then(AskError::err);
-        assert_eq!(recovered, Some(Conflict), "the domain error survives un-erased");
+        assert_eq!(
+            recovered,
+            Some(Conflict),
+            "the domain error survives un-erased"
+        );
     }
 
     /// Lifecycle: dropping the `ReplySender` without replying must surface
