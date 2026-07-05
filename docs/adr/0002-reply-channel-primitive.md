@@ -54,10 +54,28 @@ a non-tokio one-shot. Single-send is enforced by consuming `self` in
 outcome into #113's `AskError` (`RecvError → Interrupted`, `Ok(Err e) →
 Handler(e)`, `Ok(Ok r) → Ok(r)`).
 
-This is a lighter decision than ADR-0001: the shape (one-shot) rules out all but
-two candidates, both already present, so no benchmark is warranted — the mailbox
-(a hot long-lived queue) earned one; a per-`ask` one-shot on the two purpose-built
-options does not.
+The *primitive pick itself* (tokio vs. futures oneshot) is a lighter decision than
+ADR-0001: the shape (one-shot) rules out all but two candidates, both already
+present and ~1 alloc, so it earns no benchmark. What *is* measured is the thing
+this card actually changes — **removing kameo's `Box<dyn Any>` reply erasure**
+(see Evidence).
+
+### Evidence (measured — `cargo bench --bench reply`, aarch64, current-thread)
+
+Full per-`ask` reply roundtrip (fresh channel + `send` + `recv`), ×1_000:
+
+| Reply path | Time /1k | Per reply |
+|---|---|---|
+| **Typed** (`oneshot<Result<R, E>>`, this card) | **21.4 µs** | ~21.4 ns |
+| Erased (kameo mechanism: `Box::new(v) as Box<dyn Any>` on send, `downcast` on recv) | 32.8 µs | ~32.8 ns |
+
+The typed port is **≈1.5× faster** (~11 ns/reply saved) — the cost of the heap
+`Box` on send plus the `downcast` on recv that erasure pays and a typed port does
+not. So dropping the `Reply` trait is not only a typing win (the domain error
+reaches the caller un-erased) but a measured throughput win. The `erased` arm
+models kameo's mechanism faithfully rather than invoking its `ReplySender`
+(coupled to the `Reply` trait + `Context`); the isolated oneshot roundtrip is the
+honest apples-to-apples comparison of the erasure cost.
 
 ## Consequences
 
