@@ -523,6 +523,7 @@ dependencies = [
 name = "bombay_macros"
 version = "0.21.0"
 dependencies = [
+ "bombay-core",
  "heck",
  "proc-macro2",
  "quote",
