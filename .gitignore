@@ -1,4 +1,9 @@
 target/
+# cargo-mutants run output (the mutation gate writes here)
+mutants.out/
+mutants.out.old/
+# nix build result symlink
+result
 .direnv
 .DS_Store
 .makemd
