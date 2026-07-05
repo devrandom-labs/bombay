@@ -816,4 +816,90 @@ mod tests {
         };
         assert_eq!(err.reason(), crate::error::PanicReason::HandlerPanic);
     }
+
+    /// Lifecycle: `kill()` while a handler is mid-flight aborts the task at its next
+    /// await point — the handler never completes, `on_stop` does NOT run, and the
+    /// outcome is `Killed`.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn kill_skips_on_stop_and_drops_in_flight() {
+        use tokio::sync::oneshot;
+
+        struct Blocker {
+            entered: Option<oneshot::Sender<()>>,
+            finished: Arc<AtomicU32>,
+            stopped: Arc<AtomicU32>,
+        }
+        struct Block;
+        impl Msg for Block {}
+        impl Mailboxed for Blocker {
+            type Msg = Block;
+        }
+        impl crate::actor::Actor for Blocker {
+            type Args = (oneshot::Sender<()>, Arc<AtomicU32>, Arc<AtomicU32>);
+            type Error = core::convert::Infallible;
+            async fn on_start(
+                (entered, finished, stopped): Self::Args,
+                _: ActorRef<Self>,
+            ) -> Result<Self, Self::Error> {
+                Ok(Self {
+                    entered: Some(entered),
+                    finished,
+                    stopped,
+                })
+            }
+            async fn handle(
+                &mut self,
+                _: Block,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                if let Some(entered) = self.entered.take() {
+                    let _ = entered.send(());
+                }
+                std::future::pending::<()>().await; // never completes until aborted
+                self.finished.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }
+            async fn on_stop(
+                &mut self,
+                _: WeakActorRef<Self>,
+                _: ActorStopReason,
+            ) -> Result<(), Self::Error> {
+                self.stopped.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }
+        }
+
+        let (entered_tx, entered_rx) = oneshot::channel();
+        let finished = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+
+        let prepared = PreparedActor::<Blocker>::new(cap(4));
+        let actor_ref = prepared.actor_ref().clone();
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Block))
+            .await
+            .expect("send");
+        let handle = prepared.spawn((entered_tx, Arc::clone(&finished), Arc::clone(&stopped)));
+
+        entered_rx.await.expect("handler entered"); // handler is now parked forever
+        actor_ref.kill(); // hard abort
+
+        let outcome = handle.await.expect("join");
+        assert!(
+            matches!(outcome, RunResult::Killed),
+            "kill → Killed, got {outcome:?}"
+        );
+        assert_eq!(
+            finished.load(Ordering::SeqCst),
+            0,
+            "in-flight handler dropped, never finished"
+        );
+        assert_eq!(
+            stopped.load(Ordering::SeqCst),
+            0,
+            "on_stop skipped on hard kill"
+        );
+    }
 }
