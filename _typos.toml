@@ -34,3 +34,7 @@ seens = "seens"
 # `Alph` — a literal input string in a TUI render test; changing it to "Alpha"
 # alters the asserted terminal grid, so it is data, not a misspelling.
 alph = "alph"
+# `Failer` — a coined test-only actor type in the #116 run-loop tests (an actor
+# whose handler deliberately fails/panics); an agent-noun, not a misspelling of
+# "Failure".
+failer = "failer"
