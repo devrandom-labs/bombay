@@ -64,6 +64,29 @@ bombay-owned concurrency is the run-loop `select` over signals (#116) and the de
 push (#120) — that is where loom/shuttle land. The 8-thread linearizability test is the
 mailbox's concurrency coverage until then.
 
+### `message` (#114) — done
+`bombay-core/src/message.rs` carries the `Msg` marker trait: an actor's single closed
+message type, queued **by value**, with `SLOT_BUDGET` (default 256 B / 4 cache lines)
+as the per-slot byte bound. Trait covered by 3 `bombay-core` unit tests — default-256
+pin, hand-override, and usability as a generic bound. Mutation testing yields no
+signal for this module: `cargo-mutants` mutates function bodies only, so it
+generates no mutants for a trait-const-only file — the `SLOT_BUDGET` default is
+pinned by the `slot_budget_defaults_to_256` unit test instead.
+
+The `#[derive(Msg)]` proc-macro (`macros/src/derive_msg.rs`) implements the trait and
+emits a compile-time slot-size tripwire; it sits outside the `bombay-core` mutation
+gate by design (proc-macros compile out-of-process, same as the "known limitation"
+below) and is instead covered by: native runtime tests (`macros/tests/derive_msg.rs`)
+for the generated impl on the default budget and the `#[msg(budget = N)]` override;
+`parse_budget` unit tests for the attribute grammar (value present, absent,
+non-integer, bare key, unknown key, duplicate within one `#[msg(...)]` and across two,
+negative, and overflowing-integer rejection); direct `syn::parse_str::<DeriveMsg>`
+unit tests for the generic- and union-rejection guards; and five paired `///`
+doctests on the derive in `macros/src/lib.rs` — three `compile_fail` (budget
+tripwire, generic rejected, union rejected) plus two regression doctests that must
+keep compiling (boxed-remedy, the `#[msg(budget = N)]` escape). No README change —
+the rebuilt spine is not behind the umbrella yet (same as #113/#133).
+
 ## Baseline — 2026-06-29 (after #77)
 
 Workspace line coverage **60.85% (5686/9345)** — but that blends the SUT with untested crates
