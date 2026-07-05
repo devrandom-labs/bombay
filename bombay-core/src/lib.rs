@@ -9,3 +9,4 @@
 
 pub mod error;
 pub mod mailbox;
+pub mod message;
