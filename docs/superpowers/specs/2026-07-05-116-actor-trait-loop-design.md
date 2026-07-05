@@ -226,18 +226,33 @@ enqueue `Signal`s). The ergonomic `tell` / `ask` and ref-count-driven-stop are
 
 ## Spawn — `bombay-core/src/actor/spawn.rs`
 
+- **`RunResult<A>`** — the honest, total outcome of running an actor. `run()`
+  can't return `Result<(A, ActorStopReason), PanicError>`: the **kill** path drops
+  the state mid-flight (no `A`), and startup failure produces no `A` either.
+
+  ```rust
+  pub enum RunResult<A: Actor> {
+      /// Ran and stopped. If `reason` is `Panicked`, `actor` is POISONED
+      /// (torn state — resource-release only; never read domain fields).
+      Stopped { actor: A, reason: ActorStopReason },
+      /// `on_start` returned `Err` or panicked; no actor was produced.
+      StartupFailed(PanicError),
+      /// Hard-killed via `kill()`; `on_stop` was skipped, state dropped.
+      Killed,
+  }
+  ```
+
 - `PreparedActor<A>`: created before running; holds `actor_ref` + `mailbox_rx` +
   `AbortRegistration`. Methods:
   - `.actor_ref() -> &ActorRef<A>` — usable before the loop starts (pre-send).
-  - `.run(args) -> Result<(A, ActorStopReason), PanicError>` — runs in the current
-    task (deterministic tests; returns the final actor + reason).
-  - `.spawn(args) -> JoinHandle<Result<(A, ActorStopReason), PanicError>>`.
-- Convenience: `Actor::spawn(args) -> ActorRef<A>` (default cap);
-  `spawn_with_capacity(cap, args)`. `DEFAULT_MAILBOX_CAPACITY = 64`.
-- **`run`/`spawn` return contract:** `on_start` panic/`Err` → `Err(PanicError{
-  OnStart})` (no `A` to return). Handler panic → `Ok((torn A, Panicked))` (state
-  poisoned — see contract). `on_stop` panic → logged/surfaced, **original reason
-  preserved** in the returned tuple.
+  - `.run(args) -> RunResult<A>` — runs in the current task (deterministic tests).
+  - `.spawn(args) -> JoinHandle<RunResult<A>>`.
+- Convenience (`Spawn: Actor` blanket ext-trait): `A::spawn(args) -> ActorRef<A>`
+  (default cap); `A::spawn_with_capacity(cap, args) -> ActorRef<A>`.
+  `DEFAULT_MAILBOX_CAPACITY = 64`.
+- **Return contract:** `on_start` panic/`Err` → `StartupFailed`. Handler panic →
+  `Stopped { actor: torn A, reason: Panicked }` (poisoned). `on_stop` panic →
+  logged/surfaced, **original `reason` preserved** in `Stopped`. Kill → `Killed`.
 
 ## Testing (TDD — write failing first)
 
