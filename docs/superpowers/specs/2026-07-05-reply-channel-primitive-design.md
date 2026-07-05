@@ -54,13 +54,18 @@ pub struct ReplySender<R, E = Infallible> { /* wraps oneshot::Sender<Result<R, E
 
 impl<R, E> ReplySender<R, E> {
     /// Sends the successful reply. Consumes `self`, so a second reply is a
-    /// *compile* error. Returns the reply back if the asker already vanished
-    /// (its receiver was dropped) — non-lossy (rule 3), the caller may ignore it.
-    pub fn send(self, reply: R) -> Result<(), R>;
+    /// *compile* error. `Err(AskerGone)` if the asker already dropped its
+    /// receiver (the ask was abandoned) — the caller may ignore it with `let _`.
+    pub fn send(self, reply: R) -> Result<(), AskerGone>;
 
     /// Sends the handler's typed domain error as the reply.
-    pub fn send_err(self, error: E) -> Result<(), E>;
+    pub fn send_err(self, error: E) -> Result<(), AskerGone>;
 }
+
+/// The asker had already dropped its receiver, so the reply went nowhere.
+/// A unit signal, not the payload: a reply to a vanished asker is
+/// un-actionable (nothing to retry, unlike the mailbox's returned `Signal`).
+pub struct AskerGone;
 
 pub struct ReplyReceiver<R, E = Infallible> { /* wraps oneshot::Receiver<Result<R, E>> */ }
 
@@ -101,11 +106,14 @@ pub fn reply_channel<R, E>() -> (ReplySender<R, E>, ReplyReceiver<R, E>);
    narrow `ReplyFault<E> = {Handler | Interrupted}` widened by #118 — honest but
    redundant against #113's canonical `AskError`.
 
-4. **`send`/`send_err` hand the payload back on a dead asker.** `Result<(), R>` /
-   `Result<(), E>` rather than kameo's `let _ = ...`. Dropping the reply when the
-   asker is gone is *correct* (no one is listening), but surfacing it lets a
-   caller observe/measure "asker vanished" — non-lossy per rule 3, ignorable with
-   `let _`.
+4. **`send`/`send_err` report a dead asker as `AskerGone`, not the payload.**
+   `Result<(), AskerGone>` rather than kameo's `let _ = ...`. Surfacing the fact
+   lets a caller observe/measure "asker vanished". The payload is *not* handed
+   back: a `oneshot<Result<R, E>>` returns the whole `Result` on failure, so
+   recovering `R` needs a provably-dead match arm — which `cargo-mutants` can
+   never kill (a guaranteed survivor) and forces banned `unreachable!`/`expect`.
+   Unlike the mailbox's returned `Signal` (retryable), a reply to a gone asker is
+   un-actionable, so the unit signal loses nothing of value.
 
 5. **`E = Infallible` default.** Matches #113's `AskError` default. A `tell`
    carries no reply port and cannot fail with a domain error; `ReplySender<R,
@@ -127,7 +135,7 @@ named cases:
 - **Defensive boundary** — `reply_port_single_send`: `compile_fail` doctest that
   a second `send` after move does not compile. `tell_has_no_reply_port`: with
   `E = Infallible`, `send_err` is uncallable and a tell mints no channel.
-  `send`-to-a-dropped-receiver returns `Err(reply)` (payload handed back).
+  `send`-to-a-dropped-receiver returns `Err(AskerGone)`.
 - **Linearizability** — barrier'd concurrent `send` ‖ `recv` (`tokio::spawn` +
   `Barrier`), asserting the exact sent value arrives exactly once.
 - **DST** — proptest over the interleavings of {`send` | `send_err` | drop} ×
