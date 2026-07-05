@@ -1,0 +1,296 @@
+//! Spawn entry points (card #116): prepare an actor, then run it in the current
+//! task or a background tokio task. Kill is uniform across both via
+//! `futures::Abortable` wrapping the whole lifecycle (so a hard kill skips
+//! `on_stop`).
+
+use std::{
+    fmt,
+    panic::AssertUnwindSafe,
+    sync::atomic::{AtomicU64, Ordering},
+};
+
+use futures::{
+    FutureExt,
+    stream::{AbortHandle, AbortRegistration, Abortable},
+};
+use tokio::task::JoinHandle;
+use tokio_util::sync::CancellationToken;
+
+use crate::{
+    actor::{Actor, ActorRef, kind::run_message_loop},
+    error::{ActorStopReason, PanicError, PanicReason},
+    mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver},
+};
+
+/// The default mailbox capacity for the ergonomic spawn path (4 cache-lines'
+/// worth of slots is a sane starting point; tune with `spawn_with_capacity`).
+pub const DEFAULT_MAILBOX_CAPACITY: usize = 64;
+
+/// Monotonic scaffold id source (#121 replaces this with the AID).
+static NEXT_ACTOR_ID: AtomicU64 = AtomicU64::new(1);
+
+fn next_actor_id() -> ActorId {
+    // Relaxed is sufficient: correctness needs only that each `fetch_add` returns
+    // a distinct value. Uniqueness is a property of atomic increment alone and
+    // requires no happens-before with any other memory (CLAUDE rule #5).
+    ActorId::new(NEXT_ACTOR_ID.fetch_add(1, Ordering::Relaxed))
+}
+
+/// The total outcome of running an actor to completion in the current task.
+pub enum RunResult<A: Actor> {
+    /// Ran and stopped. If `reason` is [`ActorStopReason::Panicked`], `actor` is
+    /// **poisoned** (torn state): resource-release only, never read domain fields.
+    Stopped {
+        /// The final actor state.
+        actor: A,
+        /// Why it stopped.
+        reason: ActorStopReason,
+    },
+    /// `on_start` returned `Err` or panicked — no actor was produced.
+    StartupFailed(PanicError),
+    /// Hard-killed via [`ActorRef::kill`] — `on_stop` was skipped, state dropped.
+    Killed,
+}
+
+impl<A: Actor> fmt::Debug for RunResult<A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Stopped { reason, .. } => f
+                .debug_struct("Stopped")
+                .field("reason", reason)
+                .finish_non_exhaustive(),
+            Self::StartupFailed(err) => f.debug_tuple("StartupFailed").field(err).finish(),
+            Self::Killed => f.write_str("Killed"),
+        }
+    }
+}
+
+/// An actor initialized and ready to run, with its [`ActorRef`] available before
+/// the loop starts (so callers can pre-send messages).
+#[must_use = "a prepared actor must be run or spawned"]
+pub struct PreparedActor<A: Actor> {
+    actor_ref: ActorRef<A>,
+    mailbox_rx: MailboxReceiver<A>,
+    abort_registration: AbortRegistration,
+}
+
+impl<A: Actor> fmt::Debug for PreparedActor<A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PreparedActor")
+            .field("actor_ref", &self.actor_ref)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<A: Actor> PreparedActor<A> {
+    /// Prepares an actor with a mailbox of the given `capacity`.
+    pub fn new(capacity: Capacity) -> Self {
+        let (mailbox_tx, mailbox_rx) = Mailbox::<A>::bounded(capacity);
+        let (abort_handle, abort_registration) = AbortHandle::new_pair();
+        let actor_ref = ActorRef::new(
+            next_actor_id(),
+            mailbox_tx,
+            CancellationToken::new(),
+            abort_handle,
+        );
+        Self {
+            actor_ref,
+            mailbox_rx,
+            abort_registration,
+        }
+    }
+
+    /// The handle to the actor, usable before the loop starts.
+    #[must_use]
+    pub const fn actor_ref(&self) -> &ActorRef<A> {
+        &self.actor_ref
+    }
+
+    /// Runs the actor in the current task until it stops. Aborts (hard kill)
+    /// short-circuit to [`RunResult::Killed`], skipping `on_stop`.
+    pub async fn run(self, args: A::Args) -> RunResult<A> {
+        let lifecycle = run_lifecycle(args, self.actor_ref, self.mailbox_rx);
+        Abortable::new(lifecycle, self.abort_registration)
+            .await
+            .unwrap_or(RunResult::Killed)
+    }
+
+    /// Spawns the actor in a background tokio task.
+    pub fn spawn(self, args: A::Args) -> JoinHandle<RunResult<A>> {
+        tokio::spawn(self.run(args))
+    }
+}
+
+/// `on_start` (catch) → message loop → `on_stop` (catch; Err logged, reason
+/// preserved). Returns `StartupFailed` if `on_start` fails, else `Stopped`.
+async fn run_lifecycle<A: Actor>(
+    args: A::Args,
+    actor_ref: ActorRef<A>,
+    mut mailbox_rx: MailboxReceiver<A>,
+) -> RunResult<A> {
+    let started = AssertUnwindSafe(A::on_start(args, actor_ref.clone()))
+        .catch_unwind()
+        .await;
+    let mut state = match started {
+        Ok(Ok(actor)) => actor,
+        Ok(Err(err)) => {
+            return RunResult::StartupFailed(PanicError::new(Box::new(err), PanicReason::OnStart));
+        }
+        Err(payload) => {
+            return RunResult::StartupFailed(PanicError::from_panic_any(
+                payload,
+                PanicReason::OnStart,
+            ));
+        }
+    };
+
+    let reason = run_message_loop(&mut state, &actor_ref, &mut mailbox_rx).await;
+
+    let weak = actor_ref.downgrade();
+    let stop_result = AssertUnwindSafe(state.on_stop(weak, reason.clone()))
+        .catch_unwind()
+        .await;
+    log_on_stop_outcome::<A>(&reason, stop_result);
+
+    RunResult::Stopped {
+        actor: state,
+        reason,
+    }
+}
+
+/// Logs a failed/panicked `on_stop` without altering the preserved stop reason
+/// and without unwrapping (a double-panic on the shutdown path can abort the
+/// process — std `Drop` docs).
+#[expect(
+    clippy::print_stderr,
+    reason = "diagnostic-only surface until the tracing feature lands (#66); \
+              an on_stop failure must be surfaced, never swallowed"
+)]
+fn log_on_stop_outcome<A: Actor>(
+    reason: &ActorStopReason,
+    stop_result: Result<Result<(), A::Error>, Box<dyn std::any::Any + Send>>,
+) {
+    match stop_result {
+        Ok(Ok(())) => {}
+        Ok(Err(err)) => {
+            eprintln!(
+                "[bombay] on_stop for {} returned an error: {err:?} (stop reason: {reason})",
+                A::name()
+            );
+        }
+        Err(_payload) => {
+            eprintln!(
+                "[bombay] on_stop for {} panicked (stop reason: {reason})",
+                A::name()
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicU32, Ordering},
+    };
+
+    use crate::{
+        actor::{ActorRef, PreparedActor, RunResult, WeakActorRef},
+        error::ActorStopReason,
+        mailbox::{Capacity, Mailboxed, Signal},
+        message::Msg,
+    };
+
+    /// Counts handled messages and records whether `on_stop` ran, via shared
+    /// atomics the test inspects — the SUT is the real loop, not a reimpl.
+    struct Counter {
+        handled: Arc<AtomicU32>,
+        stopped: Arc<AtomicU32>,
+    }
+    struct Tick;
+    impl Msg for Tick {}
+    impl Mailboxed for Counter {
+        type Msg = Tick;
+    }
+    impl crate::actor::Actor for Counter {
+        type Args = (Arc<AtomicU32>, Arc<AtomicU32>);
+        type Error = core::convert::Infallible;
+
+        async fn on_start(
+            (handled, stopped): Self::Args,
+            _: ActorRef<Self>,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self { handled, stopped })
+        }
+
+        async fn handle(
+            &mut self,
+            _: Tick,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            self.handled.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+
+        async fn on_stop(
+            &mut self,
+            _: WeakActorRef<Self>,
+            _: ActorStopReason,
+        ) -> Result<(), Self::Error> {
+            self.stopped.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+
+    fn cap(n: usize) -> Capacity {
+        Capacity::try_from(n).expect("valid test capacity")
+    }
+
+    /// Sequence: two messages then a `Stop` — both are handled (FIFO, before the
+    /// stop), `on_stop` runs exactly once, and the outcome is a normal stop.
+    #[tokio::test]
+    async fn handles_queued_messages_then_stops_normally() {
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+
+        let prepared = PreparedActor::<Counter>::new(cap(8));
+        let actor_ref = prepared.actor_ref().clone();
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Tick))
+            .await
+            .expect("send 1");
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Tick))
+            .await
+            .expect("send 2");
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Stop)
+            .await
+            .expect("stop");
+
+        let outcome = prepared
+            .run((Arc::clone(&handled), Arc::clone(&stopped)))
+            .await;
+
+        assert_eq!(
+            handled.load(Ordering::SeqCst),
+            2,
+            "both messages handled before stop"
+        );
+        assert_eq!(stopped.load(Ordering::SeqCst), 1, "on_stop ran once");
+        assert!(
+            matches!(
+                outcome,
+                RunResult::Stopped {
+                    reason: ActorStopReason::Normal,
+                    ..
+                }
+            ),
+            "clean normal stop",
+        );
+    }
+}

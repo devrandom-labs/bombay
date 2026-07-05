@@ -15,8 +15,13 @@ use crate::{
 };
 
 mod actor_ref;
+mod kind;
+mod spawn;
 
-pub use self::actor_ref::{ActorRef, WeakActorRef};
+pub use self::{
+    actor_ref::{ActorRef, WeakActorRef},
+    spawn::{DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult},
+};
 
 /// A single-writer, identity-agnostic unit of concurrency: owned state behind a
 /// mailbox, driven by one task that handles messages sequentially.
