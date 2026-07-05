@@ -379,4 +379,63 @@ mod tests {
             }
         ));
     }
+
+    /// Sequence: a handler that sets `*stop = true` stops the actor cleanly after it
+    /// returns `Ok` — a following queued message is never handled.
+    #[tokio::test]
+    async fn stop_flag_stops_after_current_handler() {
+        struct Once {
+            handled: Arc<AtomicU32>,
+        }
+        struct Go;
+        impl Msg for Go {}
+        impl Mailboxed for Once {
+            type Msg = Go;
+        }
+        impl crate::actor::Actor for Once {
+            type Args = Arc<AtomicU32>;
+            type Error = core::convert::Infallible;
+            async fn on_start(handled: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self { handled })
+            }
+            async fn handle(
+                &mut self,
+                _: Go,
+                _: ActorRef<Self>,
+                stop: &mut bool,
+            ) -> Result<(), Self::Error> {
+                self.handled.fetch_add(1, Ordering::SeqCst);
+                *stop = true;
+                Ok(())
+            }
+        }
+
+        let handled = Arc::new(AtomicU32::new(0));
+        let prepared = PreparedActor::<Once>::new(cap(8));
+        let actor_ref = prepared.actor_ref().clone();
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Go))
+            .await
+            .expect("send 1");
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(Go))
+            .await
+            .expect("send 2");
+
+        let outcome = prepared.run(Arc::clone(&handled)).await;
+        assert_eq!(
+            handled.load(Ordering::SeqCst),
+            1,
+            "stopped after the first handler; second never ran"
+        );
+        assert!(matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Normal,
+                ..
+            }
+        ));
+    }
 }
