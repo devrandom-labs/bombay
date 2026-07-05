@@ -197,6 +197,29 @@ mod tests {
         assert_eq!(got.ok(), Some(0xABCD_1234), "the exact value arrives once");
     }
 
+    /// Sequence (the *reverse* ordering): the receiver `recv`s and **parks** on an
+    /// empty channel *before* any reply exists, then a later `send` must wake it
+    /// with the value. Every other test sends before recv (value already buffered);
+    /// this deterministically exercises the oneshot waker path instead. On a
+    /// current-thread runtime, `yield_now` after the spawn guarantees the receiver
+    /// has polled once and registered its waker before `send` runs.
+    #[tokio::test(flavor = "current_thread")]
+    async fn recv_parks_then_a_later_send_wakes_it() {
+        let (tx, rx) = reply_channel::<u32, Infallible>();
+        let receiver = tokio::spawn(async move { rx.recv::<()>().await });
+
+        // Let the receiver task run to its await point and park on the empty channel.
+        tokio::task::yield_now().await;
+
+        // The receiver is parked (not gone): send must succeed and wake it.
+        assert_eq!(tx.send(99), Ok(()), "receiver is parked and waiting, not gone");
+        assert_eq!(
+            receiver.await.expect("recv task").ok(),
+            Some(99),
+            "the parked recv wakes with the value"
+        );
+    }
+
     /// The reply-outcome mapping holds for every handler action, driven under a
     /// single-thread runtime for deterministic, replayable interleaving. Each
     /// action pins exactly one arm of `recv`'s match; proptest sweeps all three.
