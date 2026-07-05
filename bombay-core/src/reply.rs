@@ -25,10 +25,9 @@ pub struct ReplySender<R, E = Infallible> {
 }
 
 impl<R, E> ReplySender<R, E> {
-    /// Sends the successful reply `R`. Consumes `self`. `Err(AskerGone)` if the
-    /// asker already dropped its receiver (the ask was abandoned).
+    /// Sends the successful reply `R`.
     ///
-    /// A second reply does not compile — `send` moves `self`:
+    /// Consumes `self`, so a second reply does not compile — `send` moves `self`:
     ///
     /// ```compile_fail
     /// # use bombay_core::reply::reply_channel;
@@ -37,13 +36,22 @@ impl<R, E> ReplySender<R, E> {
     /// let _ = tx.send(1);
     /// let _ = tx.send(2); // ← tx already moved: E0382
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// [`AskerGone`] if the asker already dropped its receiver (the ask was
+    /// abandoned) — the reply is discarded, and the caller may ignore it.
     pub fn send(self, reply: R) -> Result<(), AskerGone> {
         self.tx.send(Ok(reply)).map_err(|_| AskerGone)
     }
 
-    /// Sends the handler's typed domain error `E` as the reply (surfaces as
-    /// [`AskError::Handler`]). Consumes `self`. `Err(AskerGone)` if the asker is
-    /// gone.
+    /// Sends the handler's typed domain error `E` as the reply.
+    ///
+    /// Surfaces to the asker as [`AskError::Handler`]. Consumes `self`.
+    ///
+    /// # Errors
+    ///
+    /// [`AskerGone`] if the asker already dropped its receiver.
     pub fn send_err(self, error: E) -> Result<(), AskerGone> {
         self.tx.send(Err(error)).map_err(|_| AskerGone)
     }
@@ -56,12 +64,18 @@ pub struct ReplyReceiver<R, E = Infallible> {
 }
 
 impl<R, E> ReplyReceiver<R, E> {
-    /// Awaits the one reply and maps the outcome into [`AskError`]:
-    /// `Ok(Ok r) → Ok(r)`, `Ok(Err e) → Handler(e)`, sender-dropped →
-    /// `Interrupted`.
+    /// Awaits the one reply, mapped into the typed [`AskError`].
+    ///
+    /// The outcome map: `Ok(Ok r) → Ok(r)`, `Ok(Err e) → Handler(e)`, and a
+    /// dropped sender → `Interrupted`.
     ///
     /// `M` is free: this layer never produces `Deliver`/`Timeout` (the ask
     /// builder's, #118), so it returns an `AskError<M, E>` ready for any `M`.
+    ///
+    /// # Errors
+    ///
+    /// [`AskError::Handler`] if the handler replied with its domain error `E`, or
+    /// [`AskError::Interrupted`] if the sender was dropped before replying.
     pub async fn recv<M>(self) -> Result<R, AskError<M, E>> {
         match self.rx.await {
             Ok(Ok(reply)) => Ok(reply),
@@ -71,16 +85,16 @@ impl<R, E> ReplyReceiver<R, E> {
     }
 }
 
-/// The asker had already dropped its receiver, so the reply went nowhere. A unit
-/// signal, not the payload: a reply to a vanished asker is un-actionable (nothing
-/// to retry, unlike the mailbox's returned `Signal`).
+/// The asker had already dropped its receiver, so the reply went nowhere.
+///
+/// A unit signal, not the payload: a reply to a vanished asker is un-actionable
+/// (nothing to retry, unlike the mailbox's returned `Signal`).
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 #[error("asker gone; reply discarded")]
 pub struct AskerGone;
 
 /// Builds a fresh reply channel: the sender for the handler, the receiver for the
 /// waiting `ask`.
-#[must_use]
 pub fn reply_channel<R, E>() -> (ReplySender<R, E>, ReplyReceiver<R, E>) {
     let (tx, rx) = oneshot::channel();
     (ReplySender { tx }, ReplyReceiver { rx })
@@ -135,13 +149,13 @@ mod tests {
     /// panicking. The reply is discarded — un-actionable, so no payload returns.
     #[tokio::test]
     async fn send_to_gone_asker_reports_asker_gone() {
-        let (tx, rx) = reply_channel::<u32, Conflict>();
-        drop(rx);
-        assert_eq!(tx.send(9), Err(AskerGone));
+        let (send_tx, send_rx) = reply_channel::<u32, Conflict>();
+        drop(send_rx);
+        assert_eq!(send_tx.send(9), Err(AskerGone));
 
-        let (tx, rx) = reply_channel::<u32, Conflict>();
-        drop(rx);
-        assert_eq!(tx.send_err(Conflict), Err(AskerGone));
+        let (err_tx, err_rx) = reply_channel::<u32, Conflict>();
+        drop(err_rx);
+        assert_eq!(err_tx.send_err(Conflict), Err(AskerGone));
     }
 
     /// A `tell` carries no reply port and cannot fail with a domain error, so its
