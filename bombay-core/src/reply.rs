@@ -212,7 +212,11 @@ mod tests {
         tokio::task::yield_now().await;
 
         // The receiver is parked (not gone): send must succeed and wake it.
-        assert_eq!(tx.send(99), Ok(()), "receiver is parked and waiting, not gone");
+        assert_eq!(
+            tx.send(99),
+            Ok(()),
+            "receiver is parked and waiting, not gone"
+        );
         assert_eq!(
             receiver.await.expect("recv task").ok(),
             Some(99),
