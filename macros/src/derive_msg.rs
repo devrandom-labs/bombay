@@ -4,20 +4,24 @@
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use syn::{
-    DeriveInput, Ident,
+    Attribute, DeriveInput, Ident, LitInt,
     parse::{Parse, ParseStream},
 };
 
-/// A parsed `#[derive(Msg)]` input: the message type's identifier.
+/// A parsed `#[derive(Msg)]` input: the type's identifier and an optional
+/// per-type slot budget from `#[msg(budget = N)]`.
 pub struct DeriveMsg {
     ident: Ident,
+    budget: Option<usize>,
 }
 
 impl Parse for DeriveMsg {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let derive: DeriveInput = input.parse()?;
+        let budget = parse_budget(&derive.attrs)?;
         Ok(Self {
             ident: derive.ident,
+            budget,
         })
     }
 }
@@ -25,13 +29,18 @@ impl Parse for DeriveMsg {
 impl ToTokens for DeriveMsg {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let ident = &self.ident;
+        let budget_const = self
+            .budget
+            .map(|n| quote! { const SLOT_BUDGET: usize = #n; });
         let over_budget = format!(
             "`{ident}` exceeds its Msg::SLOT_BUDGET — box the largest variant \
              (as Signal boxes LinkDied), or raise it with #[msg(budget = N)]"
         );
         tokens.extend(quote! {
             #[automatically_derived]
-            impl ::bombay_core::message::Msg for #ident {}
+            impl ::bombay_core::message::Msg for #ident {
+                #budget_const
+            }
 
             const _: () = ::core::assert!(
                 ::core::mem::size_of::<#ident>()
@@ -39,5 +48,91 @@ impl ToTokens for DeriveMsg {
                 #over_budget
             );
         });
+    }
+}
+
+/// Extracts `budget = N` from `#[msg(...)]` attributes, if present. Errors on a
+/// non-integer value, a bare `budget`, any key other than `budget`, or a
+/// duplicate `budget`.
+fn parse_budget(attrs: &[Attribute]) -> syn::Result<Option<usize>> {
+    let mut budget = None;
+    for attr in attrs.iter().filter(|attr| attr.path().is_ident("msg")) {
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("budget") {
+                if budget.is_some() {
+                    return Err(meta.error("duplicate `budget`; specify it once"));
+                }
+                budget = Some(meta.value()?.parse::<LitInt>()?.base10_parse()?);
+                Ok(())
+            } else {
+                Err(meta.error("unknown `msg` key; the only key is `budget`"))
+            }
+        })?;
+    }
+    Ok(budget)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_budget;
+    use syn::{Attribute, parse_quote};
+
+    fn attrs(attr: Attribute) -> Vec<Attribute> {
+        vec![attr]
+    }
+
+    #[test]
+    fn budget_attribute_yields_its_value() {
+        let parsed = parse_budget(&attrs(parse_quote!(#[msg(budget = 8192)]))).unwrap();
+        assert_eq!(parsed, Some(8192));
+    }
+
+    #[test]
+    fn absent_attribute_yields_none() {
+        let parsed = parse_budget(&attrs(parse_quote!(#[derive(Clone)]))).unwrap();
+        assert_eq!(parsed, None);
+    }
+
+    #[test]
+    fn non_integer_budget_is_an_error() {
+        assert!(parse_budget(&attrs(parse_quote!(#[msg(budget = "x")]))).is_err());
+    }
+
+    #[test]
+    fn bare_budget_without_value_is_an_error() {
+        assert!(parse_budget(&attrs(parse_quote!(#[msg(budget)]))).is_err());
+    }
+
+    #[test]
+    fn unknown_msg_key_is_an_error() {
+        assert!(parse_budget(&attrs(parse_quote!(#[msg(limit = 8)]))).is_err());
+    }
+
+    #[test]
+    fn duplicate_budget_is_an_error() {
+        // repeated key within one #[msg(...)]
+        assert!(parse_budget(&attrs(parse_quote!(#[msg(budget = 1, budget = 2)]))).is_err());
+    }
+
+    #[test]
+    fn duplicate_budget_across_attrs_is_an_error() {
+        let a: Attribute = parse_quote!(#[msg(budget = 1)]);
+        let b: Attribute = parse_quote!(#[msg(budget = 2)]);
+        assert!(parse_budget(&[a, b]).is_err());
+    }
+
+    #[test]
+    fn negative_budget_is_an_error() {
+        assert!(parse_budget(&attrs(parse_quote!(#[msg(budget = -1)]))).is_err());
+    }
+
+    #[test]
+    fn overflowing_budget_is_an_error() {
+        assert!(
+            parse_budget(&attrs(
+                parse_quote!(#[msg(budget = 999999999999999999999999999999)])
+            ))
+            .is_err()
+        );
     }
 }

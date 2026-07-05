@@ -200,6 +200,14 @@ pub fn derive_reply(input: TokenStream) -> TokenStream {
 /// #[derive(bombay_macros::Msg)]
 /// enum Fixed { Bulk(Box<[u8; 4096]>) }
 /// ```
+///
+/// Or raise the budget for a deliberately large message:
+/// ```
+/// use bombay_core::message::Msg;
+/// #[derive(bombay_macros::Msg)]
+/// #[msg(budget = 8192)]
+/// enum Big { Bulk([u8; 4096]) }
+/// ```
 #[proc_macro_derive(Msg, attributes(msg))]
 pub fn derive_msg(input: TokenStream) -> TokenStream {
     let derive_msg = parse_macro_input!(input as DeriveMsg);

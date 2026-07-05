@@ -20,3 +20,16 @@ fn derive_emits_impl_with_default_budget() {
     assert_eq!(<Small as Msg>::SLOT_BUDGET, 256);
     assert_eq!(<Unit as Msg>::SLOT_BUDGET, 256);
 }
+
+#[derive(bombay_macros::Msg)]
+#[msg(budget = 8192)]
+enum Roomy {
+    Bulk([u8; 4096]),
+}
+
+/// `#[msg(budget = N)]` overrides the default, and a message within the raised
+/// budget still compiles (the assert reads the overridden const).
+#[test]
+fn budget_attribute_overrides_the_default() {
+    assert_eq!(<Roomy as Msg>::SLOT_BUDGET, 8192);
+}
