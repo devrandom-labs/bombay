@@ -25,9 +25,19 @@ impl Parse for DeriveMsg {
 impl ToTokens for DeriveMsg {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let ident = &self.ident;
+        let over_budget = format!(
+            "`{ident}` exceeds its Msg::SLOT_BUDGET — box the largest variant \
+             (as Signal boxes LinkDied), or raise it with #[msg(budget = N)]"
+        );
         tokens.extend(quote! {
             #[automatically_derived]
             impl ::bombay_core::message::Msg for #ident {}
+
+            const _: () = ::core::assert!(
+                ::core::mem::size_of::<#ident>()
+                    <= <#ident as ::bombay_core::message::Msg>::SLOT_BUDGET,
+                #over_budget
+            );
         });
     }
 }

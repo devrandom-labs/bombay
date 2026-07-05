@@ -186,6 +186,20 @@ pub fn derive_reply(input: TokenStream) -> TokenStream {
 /// #[derive(bombay_macros::Msg)]
 /// enum Ok { Small(u64) }
 /// ```
+///
+/// A fat inline variant trips the budget:
+/// ```compile_fail
+/// use bombay_core::message::Msg;
+/// #[derive(bombay_macros::Msg)]
+/// enum Bad { Bulk([u8; 4096]) }
+/// ```
+///
+/// Boxing the fat variant fixes it (as `Signal` boxes `LinkDied`):
+/// ```
+/// use bombay_core::message::Msg;
+/// #[derive(bombay_macros::Msg)]
+/// enum Fixed { Bulk(Box<[u8; 4096]>) }
+/// ```
 #[proc_macro_derive(Msg, attributes(msg))]
 pub fn derive_msg(input: TokenStream) -> TokenStream {
     let derive_msg = parse_macro_input!(input as DeriveMsg);
