@@ -18,5 +18,8 @@ proc-macro2 = "1.0.78"
 quote = "1.0.35"
 syn = { version = "2.0.52", features = ["extra-traits", "full"] }
 
+[dev-dependencies]
+bombay-core = { path = "../bombay-core" }
+
 [lints]
 workspace = true

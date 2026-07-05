@@ -475,6 +475,7 @@ name = "bombay-core"
 version = "0.1.0"
 dependencies = [
  "async-channel",
+ "bombay_macros",
  "criterion",
  "crossbeam-channel",
  "flume",
@@ -523,6 +524,7 @@ dependencies = [
 name = "bombay_macros"
 version = "0.21.0"
 dependencies = [
+ "bombay-core",
  "heck",
  "proc-macro2",
  "quote",
