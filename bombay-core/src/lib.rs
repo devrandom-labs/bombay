@@ -8,3 +8,4 @@
 //! surface is settled once the whole core lands (#112–#121).
 
 pub mod mailbox;
+pub mod message;
