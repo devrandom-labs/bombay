@@ -104,4 +104,39 @@ mod tests {
         let recovered = rx.recv::<()>().await.err().and_then(AskError::err);
         assert_eq!(recovered, Some(Conflict), "the domain error survives un-erased");
     }
+
+    /// Lifecycle: dropping the `ReplySender` without replying must surface
+    /// `AskError::Interrupted` to the asker — and **return**, never hang. This is
+    /// the card's central "drop → error, not a deadlock" guarantee.
+    #[tokio::test]
+    async fn dropping_sender_interrupts_the_ask() {
+        let (tx, rx) = reply_channel::<u32, Conflict>();
+        drop(tx);
+        assert!(matches!(rx.recv::<()>().await, Err(AskError::Interrupted)));
+    }
+
+    /// Defensive: if the asker dropped its receiver (ask abandoned), the
+    /// handler's `send`/`send_err` report `AskerGone` rather than deadlocking or
+    /// panicking. The reply is discarded — un-actionable, so no payload returns.
+    #[tokio::test]
+    async fn send_to_gone_asker_reports_asker_gone() {
+        let (tx, rx) = reply_channel::<u32, Conflict>();
+        drop(rx);
+        assert_eq!(tx.send(9), Err(AskerGone));
+
+        let (tx, rx) = reply_channel::<u32, Conflict>();
+        drop(rx);
+        assert_eq!(tx.send_err(Conflict), Err(AskerGone));
+    }
+
+    /// A `tell` carries no reply port and cannot fail with a domain error, so its
+    /// reply type is `E = Infallible`: `send_err` is uncallable (Infallible is
+    /// uninhabited — there is no value to pass), and only the `Ok` path exists.
+    /// This pins that the Infallible-defaulted channel roundtrips a plain value.
+    #[tokio::test]
+    async fn infallible_reply_has_no_error_path() {
+        let (tx, rx) = reply_channel::<u32, Infallible>();
+        tx.send(42).expect("asker still waiting");
+        assert_eq!(rx.recv::<()>().await.ok(), Some(42));
+    }
 }
