@@ -80,6 +80,11 @@ pub fn reply_channel<R, E>() -> (ReplySender<R, E>, ReplyReceiver<R, E>) {
 mod tests {
     use super::*;
 
+    use std::sync::Arc;
+
+    use proptest::prelude::*;
+    use tokio::{runtime::Builder, sync::Barrier};
+
     /// A stand-in domain error — the shape a nexus aggregate's own `thiserror`
     /// enum takes (optimistic-concurrency `Conflict`, …).
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -138,5 +143,69 @@ mod tests {
         let (tx, rx) = reply_channel::<u32, Infallible>();
         tx.send(42).expect("asker still waiting");
         assert_eq!(rx.recv::<()>().await.ok(), Some(42));
+    }
+
+    /// Linearizability: a sender and a receiver race from the same instant on a
+    /// multi-thread runtime; the exact sent value must arrive exactly once,
+    /// whichever side wins the start. Real overlap (spawn + `Barrier`), not
+    /// sequential-then-check.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn concurrent_send_and_recv_deliver_the_exact_value() {
+        let (tx, rx) = reply_channel::<u64, Infallible>();
+        let start = Arc::new(Barrier::new(2));
+
+        let sender_start = Arc::clone(&start);
+        let sender = tokio::spawn(async move {
+            sender_start.wait().await;
+            tx.send(0xABCD_1234).expect("receiver present");
+        });
+        let receiver = tokio::spawn(async move {
+            start.wait().await;
+            rx.recv::<()>().await
+        });
+
+        sender.await.expect("sender task");
+        let got = receiver.await.expect("receiver task");
+        assert_eq!(got.ok(), Some(0xABCD_1234), "the exact value arrives once");
+    }
+
+    /// The reply-outcome mapping holds for every handler action, driven under a
+    /// single-thread runtime for deterministic, replayable interleaving. Each
+    /// action pins exactly one arm of `recv`'s match; proptest sweeps all three.
+    #[derive(Debug, Clone)]
+    enum Action {
+        Reply(u32),
+        Fail,
+        Drop,
+    }
+
+    proptest! {
+        #[test]
+        fn prop_reply_outcome_matches_action(
+            action in prop_oneof![
+                any::<u32>().prop_map(Action::Reply),
+                Just(Action::Fail),
+                Just(Action::Drop),
+            ],
+        ) {
+            let rt = Builder::new_current_thread().build().expect("current-thread rt");
+            rt.block_on(async {
+                let (tx, rx) = reply_channel::<u32, Conflict>();
+                match action.clone() {
+                    Action::Reply(v) => { let _ = tx.send(v); }
+                    Action::Fail => { let _ = tx.send_err(Conflict); }
+                    Action::Drop => drop(tx),
+                }
+                let got = rx.recv::<()>().await;
+                match action {
+                    Action::Reply(v) => prop_assert_eq!(got.ok(), Some(v)),
+                    Action::Fail => {
+                        prop_assert_eq!(got.err().and_then(AskError::err), Some(Conflict));
+                    }
+                    Action::Drop => prop_assert!(matches!(got, Err(AskError::Interrupted))),
+                }
+                Ok(())
+            })?;
+        }
     }
 }
