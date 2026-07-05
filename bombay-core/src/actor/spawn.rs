@@ -438,4 +438,77 @@ mod tests {
             }
         ));
     }
+
+    /// Sequence (no startup buffer): messages that arrive while `on_start` is still
+    /// running wait in the bounded mailbox and are handled *after* start, in FIFO
+    /// order — the ordering guarantee comes from the flume channel, not a buffer.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn messages_during_on_start_are_handled_after_in_order() {
+        use std::sync::Mutex;
+        use tokio::sync::oneshot;
+
+        struct Recorder {
+            seen: Arc<Mutex<Vec<u32>>>,
+        }
+        struct N(u32);
+        impl Msg for N {}
+        impl Mailboxed for Recorder {
+            type Msg = N;
+        }
+        impl crate::actor::Actor for Recorder {
+            type Args = (oneshot::Receiver<()>, Arc<Mutex<Vec<u32>>>);
+            type Error = core::convert::Infallible;
+            async fn on_start(
+                (gate, seen): Self::Args,
+                _: ActorRef<Self>,
+            ) -> Result<Self, Self::Error> {
+                let _ = gate.await; // block startup until the test has enqueued messages
+                Ok(Self { seen })
+            }
+            async fn handle(
+                &mut self,
+                N(n): N,
+                _: ActorRef<Self>,
+                stop: &mut bool,
+            ) -> Result<(), Self::Error> {
+                self.seen.lock().expect("lock").push(n);
+                if n == 2 {
+                    *stop = true;
+                }
+                Ok(())
+            }
+        }
+
+        let (gate_tx, gate_rx) = oneshot::channel();
+        let seen = Arc::new(Mutex::new(Vec::new()));
+
+        let prepared = PreparedActor::<Recorder>::new(cap(8));
+        let actor_ref = prepared.actor_ref().clone();
+        let run = tokio::spawn(prepared.run((gate_rx, Arc::clone(&seen))));
+
+        // Enqueue BEFORE releasing on_start — these must be buffered by the mailbox.
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(N(0)))
+            .await
+            .expect("send 0");
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(N(1)))
+            .await
+            .expect("send 1");
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Message(N(2)))
+            .await
+            .expect("send 2");
+        gate_tx.send(()).expect("release on_start");
+
+        run.await.expect("run task");
+        assert_eq!(
+            *seen.lock().expect("lock"),
+            vec![0, 1, 2],
+            "handled after start, in FIFO order"
+        );
+    }
 }
