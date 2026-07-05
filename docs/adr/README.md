@@ -23,3 +23,4 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | ADR | Title | Status |
 |---|---|---|
 | [0001](0001-mailbox-channel-primitive.md) | Mailbox channel primitive | Accepted |
+| [0002](0002-reply-channel-primitive.md) | Reply channel primitive | Accepted |
