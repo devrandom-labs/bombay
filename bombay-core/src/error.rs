@@ -254,7 +254,7 @@ impl PanicError {
     pub fn from_panic_any(payload: Box<dyn Any + Send>, reason: PanicReason) -> Self {
         let err: Box<dyn ReplyError> = match payload.downcast::<String>() {
             Ok(message) => Box::new(*message),
-            Err(payload) => match payload.downcast::<&'static str>() {
+            Err(not_a_string) => match not_a_string.downcast::<&'static str>() {
                 Ok(message) => Box::new(*message),
                 Err(_unknown) => Box::new("non-string panic payload"),
             },

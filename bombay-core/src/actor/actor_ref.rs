@@ -45,7 +45,7 @@ impl<A: Actor> fmt::Debug for ActorRef<A> {
 }
 
 impl<A: Actor> ActorRef<A> {
-    pub(crate) fn new(
+    pub(crate) const fn new(
         id: ActorId,
         mailbox: MailboxSender<A>,
         cancel: CancellationToken,

@@ -18,7 +18,7 @@ use crate::{
 /// in #116 — ref-count-driven stop is #117). The loop finishes any in-flight
 /// handler before observing a graceful stop ("finish-current-then-stop, no
 /// drain").
-pub(crate) async fn run_message_loop<A: Actor>(
+pub(super) async fn run_message_loop<A: Actor>(
     state: &mut A,
     actor_ref: &ActorRef<A>,
     mailbox_rx: &mut MailboxReceiver<A>,
@@ -26,10 +26,10 @@ pub(crate) async fn run_message_loop<A: Actor>(
     let cancel = actor_ref.cancel_token();
     loop {
         match cancel.run_until_cancelled(mailbox_rx.recv()).await {
-            // Token cancelled (out-of-band graceful stop).
-            None => return ActorStopReason::Normal,
-            // All senders dropped (unreachable in #116 — the loop holds one).
-            Some(None) => return ActorStopReason::Normal,
+            // Either the cancel token fired (out-of-band graceful stop) or
+            // every sender dropped (all-senders-gone; unreachable in #116 since
+            // the loop holds one). Both are a clean, normal stop.
+            None | Some(None) => return ActorStopReason::Normal,
             Some(Some(signal)) => match signal {
                 Signal::Message(msg) => {
                     if let ControlFlow::Break(reason) = handle_message(state, actor_ref, msg).await
