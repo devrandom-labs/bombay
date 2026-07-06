@@ -1,0 +1,10 @@
+# cargo-mutants configuration (read by default at `.cargo/mutants.toml`).
+#
+# Skip list. `log_on_stop_outcome` (bombay-core/src/actor/spawn.rs) is
+# diagnostic-only: it returns `()` and mutates no state — its sole effect is an
+# `eprintln!` on the shutdown path (it is already `#[expect(clippy::print_stderr)]`
+# for exactly that reason). The "replace ... with ()" mutant therefore has no
+# observable behavior a test can assert without capturing stderr, so it is
+# legitimately unkillable. This is the config-file equivalent of `#[mutants::skip]`,
+# used here to avoid adding the no-op `mutants` crate as a production dependency.
+exclude_re = ["replace log_on_stop_outcome"]
