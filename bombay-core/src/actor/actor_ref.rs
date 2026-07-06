@@ -196,6 +196,51 @@ mod tests {
         (actor_ref, weak)
     }
 
+    /// The `ActorRef` debug view names the struct and surfaces its id and actor
+    /// name — guards the hand-written `Debug` impl against being stubbed to an
+    /// empty formatter (`Ok(Default::default())`).
+    #[test]
+    fn actor_ref_debug_names_struct_id_and_actor() {
+        let (actor_ref, _weak) = build_ref();
+        let shown = format!("{actor_ref:?}");
+        assert!(
+            shown.contains("ActorRef"),
+            "debug names the struct: {shown}"
+        );
+        assert!(shown.contains('7'), "debug surfaces the id: {shown}");
+        assert!(
+            shown.contains("Probe"),
+            "debug surfaces the actor name: {shown}"
+        );
+    }
+
+    /// Same guard for the weak handle's `Debug` impl.
+    #[test]
+    fn weak_actor_ref_debug_names_struct_and_id() {
+        let (_actor_ref, weak) = build_ref();
+        let shown = format!("{weak:?}");
+        assert!(
+            shown.contains("WeakActorRef"),
+            "debug names the struct: {shown}"
+        );
+        assert!(shown.contains('7'), "debug surfaces the id: {shown}");
+        assert!(
+            shown.contains("Probe"),
+            "debug surfaces the actor name: {shown}"
+        );
+    }
+
+    /// `Actor::name` defaults to the concrete type name — guards the trait
+    /// default against being stubbed to a constant/empty string.
+    #[test]
+    fn actor_name_defaults_to_type_name() {
+        assert!(
+            Probe::name().contains("Probe"),
+            "name() returns the type name, got {:?}",
+            Probe::name(),
+        );
+    }
+
     /// Lifecycle: a weak ref upgrades while the mailbox is open, and returns
     /// `None` once every strong sender (incl. the one inside `ActorRef`) drops.
     #[tokio::test]

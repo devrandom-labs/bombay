@@ -378,7 +378,13 @@ mod tests {
         actor_ref.stop(); // cancel while in-flight
         release_tx.send(()).expect("release handler"); // let handler #1 finish
 
-        let outcome = run.await.expect("run task");
+        // Bounded so that if `stop` is a no-op the loop never ends (it would go on
+        // to handle the queued message and park on `recv`), FAILING FAST here
+        // rather than hanging until the harness timeout.
+        let outcome = tokio::time::timeout(std::time::Duration::from_secs(5), run)
+            .await
+            .expect("stop() must terminate the actor after the in-flight handler")
+            .expect("run task");
         assert_eq!(
             handled.load(Ordering::SeqCst),
             1,
@@ -437,7 +443,15 @@ mod tests {
             .await
             .expect("send 2");
 
-        let outcome = prepared.run(Arc::clone(&handled)).await;
+        // Bounded so that if the `stop` flag is ignored (the loop keeps running
+        // and parks on `recv`, since this test still holds a strong sender), the
+        // test FAILS FAST here rather than hanging until the harness timeout.
+        let outcome = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            prepared.run(Arc::clone(&handled)),
+        )
+        .await
+        .expect("the stop flag must terminate the actor");
         assert_eq!(
             handled.load(Ordering::SeqCst),
             1,
@@ -517,7 +531,13 @@ mod tests {
             .expect("send 2");
         gate_tx.send(()).expect("release on_start");
 
-        run.await.expect("run task");
+        // Bounded so that if the `stop` flag is ignored the loop parks on `recv`
+        // after handling all three, FAILING FAST here rather than hanging until
+        // the harness timeout.
+        tokio::time::timeout(std::time::Duration::from_secs(5), run)
+            .await
+            .expect("the stop flag must terminate the actor")
+            .expect("run task");
         assert_eq!(
             *seen.lock().expect("lock"),
             vec![0, 1, 2],
@@ -899,7 +919,12 @@ mod tests {
         entered_rx.await.expect("handler entered"); // handler is now parked forever
         actor_ref.kill(); // hard abort
 
-        let outcome = handle.await.expect("join");
+        // Bounded so that if `kill` is a no-op, the parked handler never aborts
+        // and this FAILS FAST rather than hanging until the harness timeout.
+        let outcome = tokio::time::timeout(std::time::Duration::from_secs(5), handle)
+            .await
+            .expect("kill() must abort the parked actor")
+            .expect("join");
         assert!(
             matches!(outcome, RunResult::Killed),
             "kill → Killed, got {outcome:?}"
@@ -922,6 +947,86 @@ mod tests {
     fn default_capacity_is_64() {
         assert_eq!(DEFAULT_MAILBOX_CAPACITY, 64);
         assert_eq!(super::default_capacity().get(), 64);
+    }
+
+    /// Lifecycle: `stop()` on an otherwise-idle actor (empty mailbox, loop parked
+    /// on `recv`) wakes the loop and stops it normally, running `on_stop`. Bounded
+    /// so that if `stop` is a no-op the loop parks forever and this FAILS FAST
+    /// instead of hanging until the harness timeout.
+    #[tokio::test]
+    async fn stop_terminates_idle_actor() {
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+
+        let prepared = PreparedActor::<Counter>::new(cap(4));
+        let actor_ref = prepared.actor_ref().clone();
+        let run = tokio::spawn(prepared.run((Arc::clone(&handled), Arc::clone(&stopped))));
+
+        // No messages are ever sent: the loop is parked on `recv`. The cancel must
+        // wake it. (`actor_ref` still holds a strong sender, so `recv` will NOT
+        // return `None` on its own — only the cancel can end the loop.)
+        actor_ref.stop();
+
+        let outcome = tokio::time::timeout(std::time::Duration::from_secs(5), run)
+            .await
+            .expect("stop() must terminate the idle actor")
+            .expect("run task");
+        assert!(
+            matches!(
+                outcome,
+                RunResult::Stopped {
+                    reason: ActorStopReason::Normal,
+                    ..
+                }
+            ),
+            "clean normal stop, got {outcome:?}",
+        );
+        assert_eq!(handled.load(Ordering::SeqCst), 0, "no message was handled");
+        assert_eq!(stopped.load(Ordering::SeqCst), 1, "on_stop ran once");
+    }
+
+    /// The `RunResult` debug view distinguishes each variant by name — guards the
+    /// hand-written `Debug` impl against being stubbed to an empty formatter.
+    #[test]
+    fn run_result_debug_distinguishes_variants() {
+        let killed: RunResult<Counter> = RunResult::Killed;
+        assert_eq!(format!("{killed:?}"), "Killed", "Killed prints its name");
+
+        let stopped: RunResult<Counter> = RunResult::Stopped {
+            actor: Counter {
+                handled: Arc::new(AtomicU32::new(0)),
+                stopped: Arc::new(AtomicU32::new(0)),
+            },
+            reason: ActorStopReason::Normal,
+        };
+        let shown = format!("{stopped:?}");
+        assert!(shown.contains("Stopped"), "names the variant: {shown}");
+        assert!(
+            shown.contains("reason"),
+            "surfaces the reason field: {shown}"
+        );
+
+        let failed: RunResult<Counter> =
+            RunResult::StartupFailed(crate::error::PanicError::from_panic_any(
+                Box::new("boom"),
+                crate::error::PanicReason::OnStart,
+            ));
+        assert!(
+            format!("{failed:?}").contains("StartupFailed"),
+            "names the variant: {failed:?}",
+        );
+    }
+
+    /// The `PreparedActor` debug view names the struct — guards its hand-written
+    /// `Debug` impl against being stubbed to an empty formatter.
+    #[test]
+    fn prepared_actor_debug_names_struct() {
+        let prepared = PreparedActor::<Counter>::new(cap(4));
+        let shown = format!("{prepared:?}");
+        assert!(
+            shown.contains("PreparedActor"),
+            "debug names the struct: {shown}"
+        );
     }
 
     /// Linearizability / single-writer: many senders race messages at one actor from
