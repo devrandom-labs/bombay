@@ -73,21 +73,11 @@ Once code exists, expect the usual `cargo test` / `cargo test <name>` / `cargo c
 
 ## Engineering rules (distilled from the nexus project)
 
-Bombay is the runtime/adapter for nexus and holds the **same hygiene bar** (the god-level clippy config in #61 is nexus's, verbatim). These rules are distilled from `../nexus/CLAUDE.md`; in nexus each one "exists because of a real bug found in this codebase." They are non-negotiable here too.
-
-**0. Facts only — no assumptions, no opinions.** If you don't know, say so and research it; don't fill gaps with plausible-sounding guesses about APIs, crate behavior, or performance. No "I think / cleaner / feels better." Technical claims about algorithms, concurrency, or crypto must cite a primary source (papers, the actual repo, RFCs/specs) — "common knowledge" is not a source. Uncertainty is a fact: state it rather than collapsing it into confidence.
+Bombay is the runtime/adapter for nexus and holds the **same hygiene bar** (the god-level clippy config in #61 is nexus's, verbatim). The shared devrandom engineering rules — **Facts Only, Arithmetic Safety, Error Handling, API Design, Concurrency, Functional-First/Allocate-Last style, Test Quality, Clippy policy, shared conventions** — are EXTREMELY IMPORTANT and apply here in full; canonical text lives in the user-global `~/.claude/CLAUDE.md` ("Engineering rules"). In nexus each one "exists because of a real bug found in this codebase." Only the bombay-specific rules are spelled out below.
 
 **1. Atomicity.** Any operation doing 2+ store calls (multi-key reads, read-then-write) must share one transaction/snapshot — never two independent reads. Derived state (projections, snapshots) is best-effort and re-derivable; it must never block event persistence. (Mirrors nexus contract #5/#13 in `bombay-nexus#4`.)
 
-**2. Arithmetic safety.** No bare arithmetic in production — use `checked_add`/`checked_sub`, return `Err` on overflow. `saturating_add` is banned (silently stops progress). No `try_from(...).unwrap_or(MAX)`. `debug_assert` is NOT a safety check (compiled out in release) — use a runtime check for anything that would corrupt data.
-
-**3. Error handling.** One variant = one failure domain; never reuse an unrelated variant. Never erase typed errors into `Box<dyn Error>` when callers match on them; never discard the original with `|_|` (wrap via `#[source]`/`#[from]`). Unknown values are `Option`, not sentinels (`version: 0`). Overflow/limit errors must NOT reuse a retry-eligible code like `Conflict`. All error types use `thiserror` — no manual `Display`/`Error` impls. No `#[non_exhaustive]` on enums (exhaustive matching catches real bugs). Each crate validates at its own boundary — don't trust the upstream crate's guarantees.
-
-**4. API design.** No unused generics/associated types (YAGNI — add at the second concrete use). Internal wire helpers are `pub(crate)`, not `pub`; prefer `mod` + controlled `pub use` over `pub mod`. `#[doc(hidden)]` is not access control — test-only methods are `#[cfg(test)]`/`#[cfg(feature = "testing")]`. Panics are for programmer bugs, never capacity/data limits (return `Result`; capacity hit = `Result`, not panic — see nexus contract #22). `new_unchecked` means no validation; if it `assert!`s, it's `new`. Document trait semantics (is `from` inclusive/exclusive? is `INITIAL` a valid value or a sentinel?) on the trait.
-
-**5. Concurrency.** `Relaxed` ordering requires a structural proof, not a comment about some library's behavior. Make the invariant self-contained with `Acquire`/`Release` or a mutex.
-
-**6. Functional-first, allocate-last.** Prefer combinators (`map`/`and_then`/`filter`/`fold`) over imperative `if`/`match` for simple data flow. Lazy over eager — `.collect()` only when you need the concrete collection. Borrow before own (`&T`, `Cow<'a, T>`); justify every `clone`/`to_string`/`Box::new` in a hot path; prefer `ArrayVec`/`SmallVec` for bounded collections (this is also what keeps the kernel `no_std`/`no_alloc`). `let ... else` over `if let ... else { return }`. All `use` at the top of the file — no mid-file imports, no deep inline path qualification in match arms.
+Bombay-specific addenda to the shared rules: no `#[non_exhaustive]` on enums during this phase (exhaustive matching catches real bugs); capacity hit = `Result`, not panic (nexus contract #22); the allocate-last discipline (`ArrayVec`/`SmallVec` for bounded collections) is also what keeps the kernel `no_std`/`no_alloc`.
 
 **7. Testing — the 4 cross-cutting categories come first** (before any other methodology), and pair with TDD (write them failing first):
 1. **Sequence/Protocol** — multi-step interactions on the same object, not ops in isolation.
@@ -95,9 +85,7 @@ Bombay is the runtime/adapter for nexus and holds the **same hygiene bar** (the 
 3. **Defensive boundary** — feed each crate inputs that violate its upstream crate's guarantees.
 4. **Linearizability/isolation** — concurrent readers+writers with snapshot-consistency assertions.
 
-**8. Test quality (every test must satisfy all).** Calls the actual SUT — don't reimplement prod logic and test the reimplementation. Can actually fail — no `if empty {..} else {assert..}` that passes both ways. Asserts the *specific* correct value (`assert_eq!`, not `contains('3')`); `println!` is not an assertion. "Concurrent" tests use real overlap (`tokio::spawn` + `Barrier`), not sequential-then-check. Proptest ranges include boundaries (`0, 1, MAX-1, MAX`; empty/max/max+1 strings). Bug-probe tests FAIL when the bug exists (`#[ignore]`, never a green test documenting a known bug). Benchmarks measure production code, separating setup from measurement.
-
-**Shared conventions:** Rust edition 2024; conventional commits with scope (`feat(zenoh):`, `fix(adapter):`); dual MIT OR Apache-2.0; workspace dependencies declared once in root `[workspace.dependencies]` with `workspace = true` in members; `nix flake check` is the one CI gate. Adopt **`cargo-hakari`** (workspace-hack crate) as nexus does — run `cargo hakari generate` after any dependency change.
+**Shared conventions** are in the global CLAUDE.md (edition 2024, conventional commits with scope, dual license, root workspace deps, `nix flake check` as the one gate). Bombay-specific: adopt **`cargo-hakari`** (workspace-hack crate) as nexus does — run `cargo hakari generate` after any dependency change.
 
 ## Fork etiquette
 
