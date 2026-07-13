@@ -486,4 +486,34 @@ mod tests {
         assert_eq!(recipient.id(), ActorId::new(42));
         assert_eq!(recipient.downgrade().id(), ActorId::new(42));
     }
+
+    /// The `Recipient`/`WeakRecipient` debug views name the struct and surface
+    /// the id — guards the hand-written impls against an empty formatter.
+    #[test]
+    fn recipient_debug_names_struct_and_id() {
+        let (ledger, _rx) = build::<Ledger>(7, 4);
+        let recipient: Recipient<Tick> = ledger.recipient();
+        let shown = format!("{recipient:?}");
+        assert!(shown.contains("Recipient"), "names the struct: {shown}");
+        assert!(shown.contains('7'), "surfaces the id: {shown}");
+
+        let weak = recipient.downgrade();
+        let weak_shown = format!("{weak:?}");
+        assert!(
+            weak_shown.contains("WeakRecipient"),
+            "names the weak struct: {weak_shown}"
+        );
+        assert!(weak_shown.contains('7'), "surfaces the id: {weak_shown}");
+    }
+
+    /// `is_alive` tracks the mailbox: true while open, false once the receiver
+    /// (the run-loop) is dropped.
+    #[tokio::test]
+    async fn recipient_is_alive_tracks_the_mailbox() {
+        let (ledger, rx) = build::<Ledger>(1, 4);
+        let recipient: Recipient<Tick> = ledger.recipient();
+        assert!(recipient.is_alive(), "open mailbox -> alive");
+        drop(rx);
+        assert!(!recipient.is_alive(), "receiver dropped -> not alive");
+    }
 }
