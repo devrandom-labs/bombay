@@ -210,6 +210,108 @@ No README change — the rebuilt spine is not behind the umbrella yet (same as
 #116); `tell`/`is_alive` are steps toward the already-documented kameo target
 API (ergonomic ask/tell builders are #118).
 
+### `recipient` type-erased fan-in (#145) — done
+`bombay-core/src/actor/recipient.rs` carries `Recipient<M>` / `WeakRecipient<M>`:
+type-erased, zero-box fan-in handles that broadcast one `M` to **heterogeneous**
+actors whose closed menu satisfies `A::Msg: From<M>` (ADR-0004). A private
+`ErasedRecipient<M>` / `ErasedWeakRecipient<M>` trait object (`Arc<dyn …>`) erases
+the actor; the send converts `M -> A::Msg` **by value** — the message never boxes,
+only the handle — and enqueues via `MailboxSender::try_send_message` (the new
+non-blocking sibling of `send_message`). The `M: Clone` bound is the honest price
+of "zero-box message + typed handback + erasure": there is no `A::Msg -> M`, so
+the original `M` is cloned before conversion to hand it back on failure. Sub-task
+of #117; ships the **tell-side only** — `ReplyRecipient` is deferred to #118 (no
+reply port in `Signal::Message` yet), its anticipated `ReplyRecipient<M, R, E>`
+shape recorded in ADR-0004. New public API: `Recipient`/`WeakRecipient`,
+`ActorRef::recipient::<M>()`, `From<ActorRef<A>>`, `MailboxSender::try_send_message`.
+
+**10 tests** (`recipient.rs`) + 1 (`mailbox.rs`, `try_send_message`):
+- **Sequence / erasure** — `try_tell` and async `tell` deliver the converted
+  variant; the headline `broadcast_reaches_heterogeneous_actors_as_their_own_variant`
+  fans one `Tick` over a `Vec<Recipient<Tick>>` of two DIFFERENT menus and asserts
+  each receives its own variant (`LedgerCmd::Post` / `AuditCmd::Record`) — the
+  proof that erasure routes by the real `From` impl, not a default.
+- **Defensive boundary / handback** — a full mailbox and a stopped actor hand the
+  EXACT original `M` back (`MailboxFull(Tick)` / `ActorNotAlive(Tick)`);
+  `try_send_message` likewise pins `Full`/`Closed` with the returned payload.
+- **Lifecycle** — `downgrade` → `upgrade` is `Some` while a strong sender lives,
+  `None` after all strong senders drop; `id` preserved through erasure and
+  downgrade.
+- **Guards** — hand-written `Debug` (names struct + id) and `is_alive` tracking.
+
+No README change (same target-API posture as #113/#115/#116/#117). The #117
+finalization matrix (bench/mutation/property/fuzz/MIRI/DST + exact-memory/no-leak)
+for this code is owned by #146–#152.
+
+### `actor-ref` context tests (#146) — done
+First of the #117 finalization sub-issues (split from PR #144): four behaviors
+that were only covered *incidentally* (invariants i12b/i19 exercise them through
+`tell`) now each have a canonical, falsifiable test in their natural location
+(`actor_ref.rs`). No production change; the test fixture's `ProbeMsg` gains a
+`u64` payload so a delivery-failure test can pin the *exact* handed-back message
+rather than a ZST. A "reap" is modelled by dropping the `MailboxReceiver` — what
+the run-loop does on stop.
+
+**+4 tests** (`actor_ref.rs`):
+- **Lifecycle / non-pinning** — `weak_actor_ref_does_not_pin_channel`: after the
+  sole strong `ActorRef` drops, neither a `WeakActorRef` nor a clone of it can
+  `upgrade`, and the receiver observes the channel disconnected (`recv → None`).
+- **Lifecycle / no-resurrection** (`@bug`) — `stale_ref_cannot_resurrect_reaped_actor`:
+  a weak ref captured while alive stays `None` after a full reap (senders + receiver
+  gone), re-cloning is no back door, and the `id` survives only as a tombstone.
+- **Defensive boundary / handback** — `send_to_reaped_actor_returns_actor_not_alive`:
+  a `tell` to a reaped actor fails `TellError::ActorNotAlive`, is `is_terminal`,
+  and hands the exact undelivered `ProbeMsg(42)` back.
+- **Sequence / shared liveness** — `cloned_sender_liveness_via_is_closed`:
+  `is_alive`/`is_closed` read identically across cloned senders; a surviving clone
+  keeps liveness true, and reaping flips every clone to closed at once. Verified
+  falsifiable (stubbing `is_alive` to `true` turns it red).
+
+### `watcher_fanout` bench (#147) — done
+A fan-out bench (`benches/watcher_fanout.rs`) so a future slab/registry
+optimization (#122) has a baseline to beat. It measures the **production**
+send/handle path — real `MailboxSender::try_send_message` and `Actor::handle`,
+never a reimplementation — with setup separated from measurement. The
+link/death-watch graph (#120) is not built, so the honest fan-out is one
+notification cloned to N watcher mailboxes ("a death reason fans out to every
+watcher"). Two arms, sweeping width `{16, 128, 1024}`:
+- **`watcher_fanout_dispatch`** — pure fan-out enqueue: clone one `Notify` into N
+  fresh mailboxes via `try_send_message`, no actors running (`iter_batched_ref`
+  keeps fleet construction out of the timed region). Isolates the dispatch loop
+  (iterate the registry, enqueue to each, incl. the per-send `self_sender` clone).
+- **`watcher_fanout_roundtrip`** — full send + handle: N spawned watchers whose
+  real `handle` acks, so the producer observes every watcher processed the event.
+
+Baseline (2026-07-13, current-thread runtime): both arms are **linear per
+element** — dispatch ≈ 15 Melem/s (16→~1.0 µs, 1024→~72 µs), roundtrip ≈ 2.3
+Melem/s (16→~6.6 µs, 1024→~448 µs). The flat per-element slope is exactly what a
+slab/registry would need to flatten. No production change; no README change.
+
+### `actor-ref` mutation sweep (#148) — done
+`cargo-mutants` over the #117 ref-model surface —
+`ActorRef::tell`/`is_alive`, `MailboxSender::send_message`/`is_closed`,
+`WeakActorRef::with_sender`, and `impl Drop for MailboxReceiver`: **0 missed, 0
+timeout** (21 mutants over that surface: 13 caught, 8 unviable). No production
+change.
+
+The interesting finding was **not** a survivor but three mutation *timeouts*: a
+`… -> Ok(())` stub of a send/tell path makes a message silently vanish, so any
+round-trip test that then awaited delivery hung until the harness's 20 s cap —
+which `cargo-mutants` reports as a timeout (exit 3), failing the gate exactly
+like a survivor. `cargo test` runs the whole binary in one process, so a single
+hanging test times out the run regardless of which mutant a *different* test would
+have caught. The fix is test-only: **bound the hang-prone awaits** so the mutant
+is *caught* by a fast assertion instead of a timeout, matching the
+`timeout(TERMINATE, run)` discipline `invariants.rs`/`dst_races.rs` already use.
+Nineteen hang-prone awaits across five test modules were bounded — the
+intermediate handler-gate `entered_rx`/`done_rx` oneshots and the panic-path
+`run()`/`handle` awaits in `spawn.rs` (which stop via a panic, not a stop-signal,
+so they were never wrapped), the erased-tell round trips in `recipient.rs`, the
+`send_message` round trips in `msg_mailbox_compose.rs`, and the on-start/on-stop
+gates in `dst_races.rs`.
+The sweep also cut the surface's mutation wall-clock ~30 % (fast catches replace
+20 s hangs). No README change (same target-API posture as #145–#147).
+
 ### `fuzz` — bolero workspace (#149) — done
 Isolated non-member `fuzz/` workspace (crate `bombay-fuzz`, own `Cargo.lock`) —
 the reusable verification backbone (#150/#151/#152 build on it). `bolero::check!`

@@ -1,8 +1,16 @@
 //! End-to-end: a `#[derive(Msg)]` command enum used as a real `Mailboxed::Msg`,
 //! round-tripped through the actual `bombay-core` mailbox by value (card #114).
 
+use core::time::Duration;
+
 use bombay_core::mailbox::{Capacity, Mailbox, Mailboxed, Signal};
 use bombay_core::message::Msg;
+use tokio::time::timeout;
+
+/// Upper bound on a by-value `send -> recv` round-trip: instant when the send
+/// truly enqueues, so this only fires if a send silently drops the message —
+/// converting an unbounded `recv` hang into a fast, legible failure.
+const DELIVERY: Duration = Duration::from_secs(5);
 
 /// A realistic closed actor command set. `#[derive(Msg)]` gives it the
 /// compile-time slot-size tripwire; it stays well under the 256 B default.
@@ -35,15 +43,21 @@ async fn derived_msg_command_round_trips_through_the_real_mailbox() {
         .await
         .expect("send should succeed");
 
+    let first = timeout(DELIVERY, rx.recv())
+        .await
+        .expect("the deposit must round-trip, not hang");
     assert!(matches!(
-        rx.recv().await,
+        first,
         Some(Signal::Message {
             msg: BankCmd::Deposit { cents: 250 },
             ..
         })
     ));
+    let second = timeout(DELIVERY, rx.recv())
+        .await
+        .expect("the balance query must round-trip, not hang");
     assert!(matches!(
-        rx.recv().await,
+        second,
         Some(Signal::Message {
             msg: BankCmd::Balance,
             ..
@@ -64,12 +78,18 @@ async fn stop_signal_preserves_fifo_order_with_derived_messages() {
         .expect("send should succeed");
     tx.send(Signal::Stop).await.expect("send should succeed");
 
+    let msg = timeout(DELIVERY, rx.recv())
+        .await
+        .expect("the withdraw must round-trip, not hang");
     assert!(matches!(
-        rx.recv().await,
+        msg,
         Some(Signal::Message {
             msg: BankCmd::Withdraw { cents: 100 },
             ..
         })
     ));
-    assert!(matches!(rx.recv().await, Some(Signal::Stop)));
+    let stop = timeout(DELIVERY, rx.recv())
+        .await
+        .expect("the queued Stop must arrive, not hang");
+    assert!(matches!(stop, Some(Signal::Stop)));
 }

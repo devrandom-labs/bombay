@@ -17,10 +17,12 @@ use crate::{
 
 mod actor_ref;
 mod kind;
+mod recipient;
 mod spawn;
 
 pub use self::{
     actor_ref::{ActorRef, WeakActorRef},
+    recipient::{Recipient, WeakRecipient},
     spawn::{DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult},
 };
 

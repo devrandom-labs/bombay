@@ -194,15 +194,18 @@ mod tests {
     use tokio_util::sync::CancellationToken;
 
     use crate::{
-        mailbox::{ActorId, Capacity, Mailbox, Mailboxed},
+        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed},
         message::Msg,
     };
 
     // A minimal Actor purely to key the mailbox/ref. `on_start`/`handle` are
     // never called in this task's tests (no loop yet) — they exist so the type
-    // satisfies `Actor`.
+    // satisfies `Actor`. `ProbeMsg` carries a `u64` so a delivery-failure test
+    // can prove the *exact* undelivered message is handed back, not just the
+    // variant (a ZST would make the handback unfalsifiable).
     struct Probe;
-    struct ProbeMsg;
+    #[derive(Debug)]
+    struct ProbeMsg(u64);
     impl Msg for ProbeMsg {}
     impl Mailboxed for Probe {
         type Msg = ProbeMsg;
@@ -223,12 +226,21 @@ mod tests {
         }
     }
 
-    fn build_ref() -> (ActorRef<Probe>, WeakActorRef<Probe>) {
+    // Keeps the `MailboxReceiver` alive so a test can *reap* the actor on its own
+    // terms (dropping the receiver is exactly what the run-loop does on stop —
+    // see the `mailbox` module doc). Dropping the receiver early would leave the
+    // channel already disconnected before the test even begins.
+    fn build_ref_with_rx() -> (ActorRef<Probe>, WeakActorRef<Probe>, MailboxReceiver<Probe>) {
         let cap = Capacity::try_from(4usize).expect("valid capacity");
-        let (tx, _rx) = Mailbox::<Probe>::bounded(cap);
+        let (tx, rx) = Mailbox::<Probe>::bounded(cap);
         let (abort, _reg) = AbortHandle::new_pair();
         let actor_ref = ActorRef::new(ActorId::new(7), tx, CancellationToken::new(), abort);
         let weak = actor_ref.downgrade();
+        (actor_ref, weak, rx)
+    }
+
+    fn build_ref() -> (ActorRef<Probe>, WeakActorRef<Probe>) {
+        let (actor_ref, weak, _rx) = build_ref_with_rx();
         (actor_ref, weak)
     }
 
@@ -289,6 +301,117 @@ mod tests {
         assert!(
             weak.upgrade().is_none(),
             "all strong senders dropped -> not upgradable",
+        );
+    }
+
+    /// A `WeakActorRef` — even several clones of one — carries no pinning power:
+    /// once the sole strong `ActorRef` drops, the mailbox channel is gone. Proven
+    /// from both ends: the weak handle cannot re-`upgrade` to a strong sender, and
+    /// the receiver observes the channel as disconnected (`recv` yields `None`).
+    #[tokio::test]
+    async fn weak_actor_ref_does_not_pin_channel() {
+        let (actor_ref, weak, mut rx) = build_ref_with_rx();
+        let weak_clone = weak.clone();
+
+        drop(actor_ref); // only weak handles remain
+
+        assert!(
+            weak.upgrade().is_none(),
+            "a WeakActorRef must not resurrect a strong sender",
+        );
+        assert!(
+            weak_clone.upgrade().is_none(),
+            "cloning the weak handle adds no pinning power",
+        );
+        assert!(
+            rx.recv().await.is_none(),
+            "a weak handle must not keep the mailbox channel open",
+        );
+    }
+
+    /// `@bug` — a `WeakActorRef` captured while the actor was alive must never be
+    /// a back door to resurrect it after the actor is reaped (every strong sender
+    /// dropped *and* the run-loop's receiver gone). `upgrade` stays `None`, and
+    /// re-cloning the stale handle is not a resurrection path either. The `id`
+    /// survives as a tombstone (useful for logging a dead link) but must not
+    /// imply liveness. FAILS if `upgrade` ever hands back a sender for a
+    /// disconnected channel.
+    #[tokio::test]
+    async fn stale_ref_cannot_resurrect_reaped_actor() {
+        let (actor_ref, _weak, rx) = build_ref_with_rx();
+        let stale = actor_ref.downgrade();
+
+        drop(actor_ref);
+        drop(rx); // full reap: no senders, no receiver
+
+        assert!(
+            stale.upgrade().is_none(),
+            "a reaped actor cannot be upgraded from a stale weak ref",
+        );
+        assert!(
+            stale.clone().upgrade().is_none(),
+            "cloning a stale weak ref does not resurrect the actor",
+        );
+        assert_eq!(
+            stale.id(),
+            ActorId::new(7),
+            "the id survives as a tombstone, but that is not liveness",
+        );
+    }
+
+    /// A `tell` to a reaped actor fails terminally with
+    /// [`TellError::ActorNotAlive`], handing the *bare, undelivered* message
+    /// straight back — nothing is lost into the void, and a retry loop can see
+    /// (via `is_terminal`) that re-sending would only spin.
+    #[tokio::test]
+    async fn send_to_reaped_actor_returns_actor_not_alive() {
+        let (actor_ref, _weak, rx) = build_ref_with_rx();
+
+        drop(rx); // reap: the run-loop's receiver is gone
+
+        let err = actor_ref
+            .tell(ProbeMsg(42))
+            .await
+            .expect_err("tell to a reaped actor must fail");
+
+        assert!(
+            err.is_terminal(),
+            "a reaped actor is terminal, never retryable",
+        );
+        let TellError::ActorNotAlive(ProbeMsg(returned)) = err else {
+            panic!("expected ActorNotAlive carrying the message, got {err:?}");
+        };
+        assert_eq!(returned, 42, "the exact undelivered message is handed back");
+    }
+
+    /// Liveness is a property of the shared channel, not of any one handle:
+    /// `is_alive`/`is_closed` read identically across cloned senders. A surviving
+    /// clone keeps the actor alive after the original drops; reaping the actor
+    /// (receiver gone) flips *every* clone to closed at once.
+    #[tokio::test]
+    async fn cloned_sender_liveness_via_is_closed() {
+        let (actor_ref, _weak, rx) = build_ref_with_rx();
+        let clone = actor_ref.clone();
+
+        assert!(actor_ref.is_alive(), "original sees a live actor");
+        assert!(clone.is_alive(), "clone sees the same live actor");
+        assert!(
+            !clone.mailbox_sender().is_closed(),
+            "an open channel is not closed",
+        );
+
+        // Dropping the original strong handle does not close the channel: the
+        // clone is still a strong sender and the receiver is still up.
+        drop(actor_ref);
+        assert!(clone.is_alive(), "a surviving clone keeps liveness true",);
+
+        // Reaping the actor flips liveness for the clone too — is_closed reflects
+        // the shared channel, not the individual handle.
+        drop(rx);
+        assert!(!clone.is_alive(), "the clone observes the reap");
+        assert!(
+            clone.mailbox_sender().is_closed(),
+            "and reports the channel as closed",
         );
     }
 }
