@@ -1,0 +1,253 @@
+//! Type-erased, zero-box fan-in handles (card #145).
+//!
+//! A [`Recipient<M>`] erases the actor type behind a uniform interface so a
+//! `Vec<Recipient<M>>` can address **heterogeneous** actors and broadcast one
+//! `M` to all of them. It targets any actor whose closed menu satisfies
+//! `A::Msg: From<M>`: the send converts `M -> A::Msg` **by value** (never boxing
+//! the message) and enqueues it — only the handle sits behind an `Arc<dyn …>`.
+//! See ADR-0004 and `docs/superpowers/specs/2026-07-13-145-recipient-design.md`.
+
+use std::sync::Arc;
+
+use core::{any::type_name, fmt};
+
+use crate::{
+    actor::{Actor, ActorRef},
+    error::TellError,
+    mailbox::{ActorId, TrySendError},
+};
+
+/// The erased operations a [`Recipient<M>`] needs from a concrete actor whose
+/// menu accepts `M`. `M` is the trait's parameter (not a method generic), so
+/// `dyn ErasedRecipient<M>` is object-safe.
+trait ErasedRecipient<M>: Send + Sync {
+    /// Non-blocking send: convert `M -> A::Msg` and enqueue, or hand `M` back.
+    fn try_tell(&self, msg: M) -> Result<(), TellError<M>>;
+    /// The target actor's identity (preserved through erasure).
+    fn id(&self) -> ActorId;
+    /// Whether the target's mailbox is still open.
+    fn is_alive(&self) -> bool;
+}
+
+impl<A, M> ErasedRecipient<M> for ActorRef<A>
+where
+    A: Actor,
+    A::Msg: From<M>,
+    M: Clone + Send + 'static,
+{
+    fn try_tell(&self, msg: M) -> Result<(), TellError<M>> {
+        // Clone `M` before converting: erasure leaves no `A::Msg -> M` path, so
+        // the retained original is the only way to hand a typed `M` back on
+        // failure (ADR-0004). The converted `A::Msg` lives inline in the queued
+        // signal — the message never hits the heap.
+        let converted = A::Msg::from(msg.clone());
+        match self.mailbox_sender().try_send_message(converted) {
+            Ok(()) => Ok(()),
+            Err(TrySendError::Full(_)) => Err(TellError::MailboxFull(msg)),
+            Err(TrySendError::Closed(_)) => Err(TellError::ActorNotAlive(msg)),
+        }
+    }
+
+    fn id(&self) -> ActorId {
+        ActorRef::id(self)
+    }
+
+    fn is_alive(&self) -> bool {
+        ActorRef::is_alive(self)
+    }
+}
+
+/// A cloneable, type-erased handle that delivers `M` to some actor whose menu
+/// satisfies `A::Msg: From<M>`. Exposes only the messaging surface — **not**
+/// `stop`/`kill` (a recipient is a messaging handle, not a lifecycle handle).
+pub struct Recipient<M> {
+    inner: Arc<dyn ErasedRecipient<M>>,
+}
+
+impl<M> Clone for Recipient<M> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: Arc::clone(&self.inner),
+        }
+    }
+}
+
+impl<M> fmt::Debug for Recipient<M> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Recipient")
+            .field("id", &self.inner.id())
+            .field("msg", &type_name::<M>())
+            .finish_non_exhaustive()
+    }
+}
+
+impl<M> Recipient<M> {
+    /// Non-blocking send: delivers `M` converted to the target's menu, or hands
+    /// `M` back.
+    ///
+    /// # Errors
+    ///
+    /// [`TellError::MailboxFull`] (retryable backpressure) or
+    /// [`TellError::ActorNotAlive`] (terminal) — both carry `M` back.
+    pub fn try_tell(&self, msg: M) -> Result<(), TellError<M>> {
+        self.inner.try_tell(msg)
+    }
+
+    /// The target actor's identity, preserved through erasure.
+    #[must_use]
+    pub fn id(&self) -> ActorId {
+        self.inner.id()
+    }
+
+    /// Whether the target's mailbox is still open (send-and-observe, not a
+    /// pre-send gate — mirrors [`ActorRef::is_alive`]).
+    #[must_use]
+    pub fn is_alive(&self) -> bool {
+        self.inner.is_alive()
+    }
+}
+
+impl<A, M> From<ActorRef<A>> for Recipient<M>
+where
+    A: Actor,
+    A::Msg: From<M>,
+    M: Clone + Send + 'static,
+{
+    fn from(actor_ref: ActorRef<A>) -> Self {
+        Self {
+            inner: Arc::new(actor_ref),
+        }
+    }
+}
+
+impl<A: Actor> ActorRef<A> {
+    /// Builds a type-erased [`Recipient<M>`] for this actor: any `M` its closed
+    /// menu can be built from (`A::Msg: From<M>`). Enables `Vec<Recipient<M>>`
+    /// fan-in across heterogeneous actors.
+    #[must_use]
+    pub fn recipient<M>(&self) -> Recipient<M>
+    where
+        A::Msg: From<M>,
+        M: Clone + Send + 'static,
+    {
+        Recipient::from(self.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use futures::stream::AbortHandle;
+    use tokio_util::sync::CancellationToken;
+
+    use crate::{
+        actor::{Actor, ActorRef},
+        error::TellError,
+        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
+        message::Msg,
+    };
+
+    /// The shared broadcast signal. `Clone` because `Recipient<M>` requires it
+    /// (the typed-handback consequence, ADR-0004).
+    #[derive(Clone, PartialEq, Eq, Debug)]
+    struct Tick;
+    impl Msg for Tick {}
+
+    /// Actor 1 — its own closed menu; builds `Post` from a `Tick`.
+    #[derive(PartialEq, Eq, Debug)]
+    enum LedgerCmd {
+        Credit(u64),
+        Post,
+    }
+    impl Msg for LedgerCmd {}
+    impl From<Tick> for LedgerCmd {
+        fn from(_: Tick) -> Self {
+            Self::Post
+        }
+    }
+    struct Ledger;
+    impl Mailboxed for Ledger {
+        type Msg = LedgerCmd;
+    }
+    impl Actor for Ledger {
+        type Args = ();
+        type Error = core::convert::Infallible;
+        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self)
+        }
+        async fn handle(
+            &mut self,
+            _: LedgerCmd,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+
+    /// Actor 2 — a DIFFERENT menu; builds `Record` from a `Tick`.
+    #[derive(PartialEq, Eq, Debug)]
+    enum AuditCmd {
+        Record,
+        Flush,
+    }
+    impl Msg for AuditCmd {}
+    impl From<Tick> for AuditCmd {
+        fn from(_: Tick) -> Self {
+            Self::Record
+        }
+    }
+    struct Audit;
+    impl Mailboxed for Audit {
+        type Msg = AuditCmd;
+    }
+    impl Actor for Audit {
+        type Args = ();
+        type Error = core::convert::Infallible;
+        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self)
+        }
+        async fn handle(
+            &mut self,
+            _: AuditCmd,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+
+    /// Builds an `ActorRef<A>` plus the receiver we retain to inspect what the
+    /// erased send delivered — no run-loop needed (the `actor_ref.rs` idiom).
+    fn build<A: Actor>(id: u64, capacity: usize) -> (ActorRef<A>, MailboxReceiver<A>) {
+        let cap = Capacity::try_from(capacity).expect("valid capacity");
+        let (tx, rx) = Mailbox::<A>::bounded(cap);
+        let (abort, _reg) = AbortHandle::new_pair();
+        (
+            ActorRef::new(ActorId::new(id), tx, CancellationToken::new(), abort),
+            rx,
+        )
+    }
+
+    /// The erased `try_tell` converts `M -> A::Msg` by value and delivers the
+    /// correct variant — the single-actor proof that erasure routes to the real
+    /// `From` impl (never a default).
+    #[tokio::test]
+    async fn try_tell_delivers_the_converted_variant() {
+        let (ledger, mut rx) = build::<Ledger>(1, 4);
+        let recipient: Recipient<Tick> = ledger.recipient();
+
+        recipient
+            .try_tell(Tick)
+            .expect("delivered into an open mailbox");
+
+        assert!(matches!(
+            rx.recv().await,
+            Some(Signal::Message {
+                msg: LedgerCmd::Post,
+                ..
+            })
+        ));
+    }
+}
