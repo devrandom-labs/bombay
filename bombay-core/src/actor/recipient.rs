@@ -157,6 +157,10 @@ mod tests {
     /// Actor 1 — its own closed menu; builds `Post` from a `Tick`.
     #[derive(PartialEq, Eq, Debug)]
     enum LedgerCmd {
+        #[expect(
+            dead_code,
+            reason = "a second variant so From<Tick> = Post is a real choice, not the sole variant"
+        )]
         Credit(u64),
         Post,
     }
@@ -190,6 +194,10 @@ mod tests {
     #[derive(PartialEq, Eq, Debug)]
     enum AuditCmd {
         Record,
+        #[expect(
+            dead_code,
+            reason = "a second variant so From<Tick> = Record is a real choice, not the sole variant"
+        )]
         Flush,
     }
     impl Msg for AuditCmd {}
@@ -248,6 +256,64 @@ mod tests {
                 msg: LedgerCmd::Post,
                 ..
             })
+        ));
+    }
+
+    /// THE headline: one `Vec<Recipient<Tick>>` addresses two actors with
+    /// DIFFERENT menus; broadcasting one `Tick` reaches each as its OWN
+    /// converted variant. Proves type erasure + heterogeneous dispatch.
+    #[tokio::test]
+    async fn broadcast_reaches_heterogeneous_actors_as_their_own_variant() {
+        let (ledger, mut ledger_rx) = build::<Ledger>(1, 4);
+        let (audit, mut audit_rx) = build::<Audit>(2, 4);
+
+        let group: Vec<Recipient<Tick>> = vec![ledger.recipient(), audit.recipient()];
+        for recipient in &group {
+            recipient.try_tell(Tick).expect("delivered");
+        }
+
+        assert!(matches!(
+            ledger_rx.recv().await,
+            Some(Signal::Message {
+                msg: LedgerCmd::Post,
+                ..
+            })
+        ));
+        assert!(matches!(
+            audit_rx.recv().await,
+            Some(Signal::Message {
+                msg: AuditCmd::Record,
+                ..
+            })
+        ));
+    }
+
+    /// Handback: a full mailbox bounces `try_tell` as retryable backpressure,
+    /// carrying the EXACT original `M` back (not the converted `A::Msg`).
+    #[tokio::test]
+    async fn try_tell_to_full_mailbox_hands_the_message_back() {
+        let (ledger, _rx) = build::<Ledger>(1, 1);
+        let recipient: Recipient<Tick> = ledger.recipient();
+
+        recipient.try_tell(Tick).expect("first fits");
+        // Capacity 1, now full: backpressure with the original Tick returned.
+        assert!(matches!(
+            recipient.try_tell(Tick),
+            Err(TellError::MailboxFull(Tick))
+        ));
+    }
+
+    /// Handback: a stopped actor (receiver dropped) is the terminal
+    /// `ActorNotAlive`, again carrying the original `M`.
+    #[tokio::test]
+    async fn try_tell_to_stopped_actor_reports_not_alive() {
+        let (ledger, rx) = build::<Ledger>(1, 4);
+        let recipient: Recipient<Tick> = ledger.recipient();
+        drop(rx); // receiver gone -> mailbox closed
+
+        assert!(matches!(
+            recipient.try_tell(Tick),
+            Err(TellError::ActorNotAlive(Tick))
         ));
     }
 }
