@@ -267,6 +267,26 @@ the run-loop does on stop.
   keeps liveness true, and reaping flips every clone to closed at once. Verified
   falsifiable (stubbing `is_alive` to `true` turns it red).
 
+### `watcher_fanout` bench (#147) — done
+A fan-out bench (`benches/watcher_fanout.rs`) so a future slab/registry
+optimization (#122) has a baseline to beat. It measures the **production**
+send/handle path — real `MailboxSender::try_send_message` and `Actor::handle`,
+never a reimplementation — with setup separated from measurement. The
+link/death-watch graph (#120) is not built, so the honest fan-out is one
+notification cloned to N watcher mailboxes ("a death reason fans out to every
+watcher"). Two arms, sweeping width `{16, 128, 1024}`:
+- **`watcher_fanout_dispatch`** — pure fan-out enqueue: clone one `Notify` into N
+  fresh mailboxes via `try_send_message`, no actors running (`iter_batched_ref`
+  keeps fleet construction out of the timed region). Isolates the dispatch loop
+  (iterate the registry, enqueue to each, incl. the per-send `self_sender` clone).
+- **`watcher_fanout_roundtrip`** — full send + handle: N spawned watchers whose
+  real `handle` acks, so the producer observes every watcher processed the event.
+
+Baseline (2026-07-13, current-thread runtime): both arms are **linear per
+element** — dispatch ≈ 15 Melem/s (16→~1.0 µs, 1024→~72 µs), roundtrip ≈ 2.3
+Melem/s (16→~6.6 µs, 1024→~448 µs). The flat per-element slope is exactly what a
+slab/registry would need to flatten. No production change; no README change.
+
 ## Baseline — 2026-06-29 (after #77)
 
 Workspace line coverage **60.85% (5686/9345)** — but that blends the SUT with untested crates
