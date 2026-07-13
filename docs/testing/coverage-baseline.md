@@ -210,6 +210,39 @@ No README change — the rebuilt spine is not behind the umbrella yet (same as
 #116); `tell`/`is_alive` are steps toward the already-documented kameo target
 API (ergonomic ask/tell builders are #118).
 
+### `recipient` type-erased fan-in (#145) — done
+`bombay-core/src/actor/recipient.rs` carries `Recipient<M>` / `WeakRecipient<M>`:
+type-erased, zero-box fan-in handles that broadcast one `M` to **heterogeneous**
+actors whose closed menu satisfies `A::Msg: From<M>` (ADR-0004). A private
+`ErasedRecipient<M>` / `ErasedWeakRecipient<M>` trait object (`Arc<dyn …>`) erases
+the actor; the send converts `M -> A::Msg` **by value** — the message never boxes,
+only the handle — and enqueues via `MailboxSender::try_send_message` (the new
+non-blocking sibling of `send_message`). The `M: Clone` bound is the honest price
+of "zero-box message + typed handback + erasure": there is no `A::Msg -> M`, so
+the original `M` is cloned before conversion to hand it back on failure. Sub-task
+of #117; ships the **tell-side only** — `ReplyRecipient` is deferred to #118 (no
+reply port in `Signal::Message` yet), its anticipated `ReplyRecipient<M, R, E>`
+shape recorded in ADR-0004. New public API: `Recipient`/`WeakRecipient`,
+`ActorRef::recipient::<M>()`, `From<ActorRef<A>>`, `MailboxSender::try_send_message`.
+
+**10 tests** (`recipient.rs`) + 1 (`mailbox.rs`, `try_send_message`):
+- **Sequence / erasure** — `try_tell` and async `tell` deliver the converted
+  variant; the headline `broadcast_reaches_heterogeneous_actors_as_their_own_variant`
+  fans one `Tick` over a `Vec<Recipient<Tick>>` of two DIFFERENT menus and asserts
+  each receives its own variant (`LedgerCmd::Post` / `AuditCmd::Record`) — the
+  proof that erasure routes by the real `From` impl, not a default.
+- **Defensive boundary / handback** — a full mailbox and a stopped actor hand the
+  EXACT original `M` back (`MailboxFull(Tick)` / `ActorNotAlive(Tick)`);
+  `try_send_message` likewise pins `Full`/`Closed` with the returned payload.
+- **Lifecycle** — `downgrade` → `upgrade` is `Some` while a strong sender lives,
+  `None` after all strong senders drop; `id` preserved through erasure and
+  downgrade.
+- **Guards** — hand-written `Debug` (names struct + id) and `is_alive` tracking.
+
+No README change (same target-API posture as #113/#115/#116/#117). The #117
+finalization matrix (bench/mutation/property/fuzz/MIRI/DST + exact-memory/no-leak)
+for this code is owned by #146–#152.
+
 ## Baseline — 2026-06-29 (after #77)
 
 Workspace line coverage **60.85% (5686/9345)** — but that blends the SUT with untested crates
