@@ -5,34 +5,41 @@
 use std::{ops::ControlFlow, panic::AssertUnwindSafe};
 
 use futures::FutureExt;
+use tokio_util::sync::CancellationToken;
 
 use crate::{
-    actor::{Actor, ActorRef},
+    actor::{Actor, ActorRef, WeakActorRef},
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{MailboxReceiver, Signal},
 };
 
 /// Runs the message loop until a stop condition, returning the stop reason.
 ///
-/// `state` is the live actor; `actor_ref` is its strong self-handle (kept strong
-/// in #116 — ref-count-driven stop is #117). The loop finishes any in-flight
-/// handler before observing a graceful stop ("finish-current-then-stop, no
-/// drain").
+/// `state` is the live actor; `self_ref` is its **weak** self-handle — the loop
+/// deliberately holds no strong self-ref so that dropping the last external
+/// [`ActorRef`] closes the mailbox and stops the actor (ref-count-driven stop,
+/// #117). The loop finishes any in-flight handler before observing a graceful
+/// stop ("finish-current-then-stop, no drain").
 pub(super) async fn run_message_loop<A: Actor>(
     state: &mut A,
-    actor_ref: &ActorRef<A>,
+    self_ref: &WeakActorRef<A>,
+    cancel: &CancellationToken,
     mailbox_rx: &mut MailboxReceiver<A>,
 ) -> ActorStopReason {
-    let cancel = actor_ref.cancel_token();
     loop {
         match cancel.run_until_cancelled(mailbox_rx.recv()).await {
-            // Either the cancel token fired (out-of-band graceful stop) or
-            // every sender dropped (all-senders-gone; unreachable in #116 since
-            // the loop holds one). Both are a clean, normal stop.
+            // Either the cancel token fired (out-of-band graceful stop) or every
+            // strong sender dropped (all-senders-gone — now reachable, since the
+            // loop holds only a weak self-ref). Both are a clean, normal stop.
             None | Some(None) => return ActorStopReason::Normal,
             Some(Some(signal)) => match signal {
-                Signal::Message(msg) => {
-                    if let ControlFlow::Break(reason) = handle_message(state, actor_ref, msg).await
+                Signal::Message { msg, self_sender } => {
+                    // The message carries a strong self-sender (ADR-0003), so the
+                    // loop lifts a strong self-ref out of it without ever holding
+                    // one — that is what keeps ref-count-driven stop reachable.
+                    let actor_ref = self_ref.with_sender(self_sender);
+                    if let ControlFlow::Break(reason) =
+                        handle_message(state, &actor_ref, self_ref, msg).await
                     {
                         return reason;
                     }
@@ -52,6 +59,7 @@ pub(super) async fn run_message_loop<A: Actor>(
 async fn handle_message<A: Actor>(
     state: &mut A,
     actor_ref: &ActorRef<A>,
+    self_ref: &WeakActorRef<A>,
     msg: A::Msg,
 ) -> ControlFlow<ActorStopReason> {
     let mut stop = false;
@@ -64,12 +72,12 @@ async fn handle_message<A: Actor>(
         // A returned Err is a controlled crash: observe via on_panic, then stop.
         Ok(Err(err)) => {
             let panic = PanicError::new(Box::new(err), PanicReason::HandlerPanic);
-            ControlFlow::Break(run_on_panic(state, actor_ref, panic).await)
+            ControlFlow::Break(run_on_panic(state, self_ref, panic).await)
         }
         // The handler unwound: catch, observe via on_panic, then stop.
         Err(payload) => {
             let panic = PanicError::from_panic_any(payload, PanicReason::HandlerPanic);
-            ControlFlow::Break(run_on_panic(state, actor_ref, panic).await)
+            ControlFlow::Break(run_on_panic(state, self_ref, panic).await)
         }
     }
 }
@@ -78,11 +86,10 @@ async fn handle_message<A: Actor>(
 /// itself panics, that becomes the terminal reason instead.
 async fn run_on_panic<A: Actor>(
     state: &mut A,
-    actor_ref: &ActorRef<A>,
+    self_ref: &WeakActorRef<A>,
     err: PanicError,
 ) -> ActorStopReason {
-    let weak = actor_ref.downgrade();
-    match AssertUnwindSafe(state.on_panic(weak, err))
+    match AssertUnwindSafe(state.on_panic(self_ref.clone(), err))
         .catch_unwind()
         .await
     {

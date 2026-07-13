@@ -12,6 +12,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     actor::Actor,
+    error::TellError,
     mailbox::{ActorId, MailboxSender, WeakMailboxSender},
 };
 
@@ -63,6 +64,30 @@ impl<A: Actor> ActorRef<A> {
     #[must_use]
     pub const fn id(&self) -> ActorId {
         self.id
+    }
+
+    /// Whether the actor is still running (its mailbox is still open). A
+    /// send-and-observe backup — never a pre-send gate (a send races the stop
+    /// regardless), so prefer acting on the [`TellError`] a [`tell`](Self::tell)
+    /// returns.
+    #[must_use]
+    pub fn is_alive(&self) -> bool {
+        !self.mailbox.is_closed()
+    }
+
+    /// Enqueues `msg` for the actor, waiting for mailbox capacity if it is full
+    /// (fire-and-forget). The ergonomic ask/tell **builders** — timeout, `try`,
+    /// blocking variants — are card #118; this is the basic entry point.
+    ///
+    /// # Errors
+    ///
+    /// [`TellError::ActorNotAlive`] (carrying `msg` back) if the actor has
+    /// stopped. Terminal — the target is gone, so a retry loop must not re-send.
+    pub async fn tell(&self, msg: A::Msg) -> Result<(), TellError<A::Msg>> {
+        self.mailbox
+            .send_message(msg)
+            .await
+            .map_err(TellError::ActorNotAlive)
     }
 
     /// The sender half of the actor's mailbox — used to enqueue `Signal`s. The
@@ -141,12 +166,23 @@ impl<A: Actor> WeakActorRef<A> {
     /// closed (every strong sender dropped).
     #[must_use]
     pub fn upgrade(&self) -> Option<ActorRef<A>> {
-        self.mailbox.upgrade().map(|mailbox| ActorRef {
+        self.mailbox
+            .upgrade()
+            .map(|mailbox| self.with_sender(mailbox))
+    }
+
+    /// Reassembles a strong [`ActorRef`] from this handle's cold fields
+    /// (`id`/`cancel`/`abort`) plus a provided strong mailbox `sender`
+    /// (ADR-0003). The run-loop uses it to lift the self-ref out of a
+    /// `Signal::Message` — the message carries the only liveness-bearing handle
+    /// (the sender), so the loop never holds a strong self-ref of its own.
+    pub(crate) fn with_sender(&self, sender: MailboxSender<A>) -> ActorRef<A> {
+        ActorRef {
             id: self.id,
-            mailbox,
+            mailbox: sender,
             cancel: self.cancel.clone(),
             abort: self.abort.clone(),
-        })
+        }
     }
 }
 

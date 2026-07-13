@@ -65,6 +65,7 @@ struct Spy {
     handled: Arc<AtomicU32>,
     stopped: Arc<AtomicU32>,
 }
+#[derive(Debug)]
 struct Ping;
 impl Msg for Ping {}
 impl Mailboxed for Spy {
@@ -159,11 +160,7 @@ async fn kill_during_on_start_yields_killed_no_on_stop_no_handling() {
     let prepared = PreparedActor::<StartGate>::new(cap(4));
     let actor_ref = prepared.actor_ref().clone();
     // Pre-queue a message: it must never be handled, because on_start never ends.
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Message(Ping))
-        .await
-        .expect("pre-queue");
+    actor_ref.tell(Ping).await.expect("pre-queue");
     let run = prepared.spawn((
         entered_tx,
         release_rx,
@@ -535,11 +532,20 @@ async fn send_after_graceful_stop_fails() {
     assert_eq!(stopped.load(Ordering::SeqCst), 1, "on_stop ran once");
 
     // The receiver is gone; the send must fail and return the undelivered message.
-    let resend = actor_ref.mailbox_sender().send(Signal::Message(Ping)).await;
+    let resend = actor_ref
+        .mailbox_sender()
+        .send(Signal::Message {
+            msg: Ping,
+            self_sender: actor_ref.mailbox_sender().clone(),
+        })
+        .await;
     assert!(
         matches!(
             resend,
-            Err(bombay_core::mailbox::SendError(Signal::Message(Ping)))
+            Err(bombay_core::mailbox::SendError(Signal::Message {
+                msg: Ping,
+                ..
+            }))
         ),
         "send after the actor stopped must fail with the message handed back",
     );
@@ -602,11 +608,7 @@ async fn kill_after_normal_completion_is_a_noop() {
 
     let prepared = PreparedActor::<SelfStop>::new(cap(4));
     let actor_ref = prepared.actor_ref().clone();
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Message(Ping))
-        .await
-        .expect("enqueue one message");
+    actor_ref.tell(Ping).await.expect("enqueue one message");
 
     let outcome = timeout(
         TERMINATE,

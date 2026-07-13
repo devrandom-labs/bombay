@@ -28,20 +28,26 @@ async fn derived_msg_command_round_trips_through_the_real_mailbox() {
     let cap = Capacity::try_from(8).expect("valid capacity");
     let (tx, mut rx) = Mailbox::<BankAccount>::bounded(cap);
 
-    tx.send(Signal::Message(BankCmd::Deposit { cents: 250 }))
+    tx.send_message(BankCmd::Deposit { cents: 250 })
         .await
         .expect("send should succeed");
-    tx.send(Signal::Message(BankCmd::Balance))
+    tx.send_message(BankCmd::Balance)
         .await
         .expect("send should succeed");
 
     assert!(matches!(
         rx.recv().await,
-        Some(Signal::Message(BankCmd::Deposit { cents: 250 }))
+        Some(Signal::Message {
+            msg: BankCmd::Deposit { cents: 250 },
+            ..
+        })
     ));
     assert!(matches!(
         rx.recv().await,
-        Some(Signal::Message(BankCmd::Balance))
+        Some(Signal::Message {
+            msg: BankCmd::Balance,
+            ..
+        })
     ));
 }
 
@@ -53,14 +59,17 @@ async fn stop_signal_preserves_fifo_order_with_derived_messages() {
     let cap = Capacity::try_from(8).expect("valid capacity");
     let (tx, mut rx) = Mailbox::<BankAccount>::bounded(cap);
 
-    tx.send(Signal::Message(BankCmd::Withdraw { cents: 100 }))
+    tx.send_message(BankCmd::Withdraw { cents: 100 })
         .await
         .expect("send should succeed");
     tx.send(Signal::Stop).await.expect("send should succeed");
 
     assert!(matches!(
         rx.recv().await,
-        Some(Signal::Message(BankCmd::Withdraw { cents: 100 }))
+        Some(Signal::Message {
+            msg: BankCmd::Withdraw { cents: 100 },
+            ..
+        })
     ));
     assert!(matches!(rx.recv().await, Some(Signal::Stop)));
 }

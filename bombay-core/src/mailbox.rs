@@ -17,9 +17,11 @@
 //! at the *second* impl, not pre-abstracted for one.
 //!
 //! **Shutdown** is not a channel concern: the mailbox is pure transport. A
-//! graceful stop is the run-loop's job (#116) — receive [`Signal::Stop`], flush
-//! with [`MailboxReceiver::drain`], then drop the receiver (which disconnects
-//! every sender).
+//! graceful stop is the run-loop's job (#116) — finish the in-flight handler on
+//! a [`Signal::Stop`], then drop the receiver (which disconnects every sender);
+//! queued messages are abandoned, not drained. [`MailboxReceiver::drain`] exists
+//! to release the strong `self_sender` each queued [`Signal::Message`] carries
+//! (ADR-0003) when the receiver is dropped — see [`MailboxReceiver::drop`].
 
 use std::{fmt, marker::PhantomData, num::NonZeroUsize};
 
@@ -161,8 +163,19 @@ pub struct LinkDied {
               new arms are added under their driving cards"
 )]
 pub enum Signal<A: Mailboxed> {
-    /// A domain message for the actor to handle.
-    Message(A::Msg),
+    /// A domain message for the actor to handle, carrying a **strong** clone of
+    /// the sender that enqueued it (`self_sender`). That clone keeps the mailbox
+    /// open while the message waits, so a queued message **pins the actor alive**
+    /// until it is handled (ref-count-driven stop drains the backlog), and the
+    /// run-loop lifts a strong self-[`ActorRef`](crate::actor::ActorRef) out of
+    /// it without holding one itself (ADR-0003). Only the sender is embedded —
+    /// it is the sole handle that gates liveness.
+    Message {
+        /// The domain message.
+        msg: A::Msg,
+        /// A strong clone of the enqueuing sender (the actor's own mailbox).
+        self_sender: MailboxSender<A>,
+    },
     /// Asks the actor to stop after draining messages queued before it.
     Stop,
     /// A linked actor has terminated. Boxed: this is a cold path, and inlining
@@ -231,6 +244,41 @@ impl<A: Mailboxed> MailboxSender<A> {
         })
     }
 
+    /// Enqueues a domain `msg`, embedding a **strong** clone of this sender as
+    /// the message's `self_sender` (ADR-0003) so the queued message pins the
+    /// actor alive until handled. Waits for capacity if the mailbox is full.
+    ///
+    /// # Errors
+    ///
+    /// Returns `msg` back if the mailbox has closed (the actor has stopped).
+    pub async fn send_message(&self, msg: A::Msg) -> Result<(), A::Msg> {
+        let signal = Signal::Message {
+            msg,
+            self_sender: self.clone(),
+        };
+        match self.tx.send_async(signal).await {
+            Ok(()) => Ok(()),
+            // flume hands back the exact value we sent, which is `Message`.
+            Err(err) => match err.into_inner() {
+                Signal::Message {
+                    msg: undelivered, ..
+                } => Err(undelivered),
+                Signal::Stop | Signal::LinkDied(_) => {
+                    unreachable!("send_message enqueues only Signal::Message")
+                }
+            },
+        }
+    }
+
+    /// Whether the mailbox has closed — the receiver (the actor's run-loop) has
+    /// been dropped, so no further signal can be delivered. A send-and-observe
+    /// backup to push death-detection; **not** a pre-send liveness gate (that
+    /// would be TOCTOU-wrong — a send races the close either way).
+    #[must_use]
+    pub fn is_closed(&self) -> bool {
+        self.tx.is_disconnected()
+    }
+
     /// Downgrades to a [`WeakMailboxSender`] that does not keep the mailbox open.
     #[must_use]
     pub fn downgrade(&self) -> WeakMailboxSender<A> {
@@ -280,10 +328,24 @@ impl<A: Mailboxed> MailboxReceiver<A> {
 
     /// Drains every currently-queued signal without waiting, in FIFO order.
     ///
-    /// The run-loop uses this to flush in-flight work on a graceful stop (after
-    /// a [`Signal::Stop`]) before dropping the receiver.
+    /// A queued [`Signal::Message`] holds a strong `self_sender` (ADR-0003), so
+    /// draining is what releases those senders and breaks the self-referential
+    /// cycle between the channel and its backlog — see [`Drop`](Self::drop).
     pub fn drain(&mut self) -> impl Iterator<Item = Signal<A>> + '_ {
         self.rx.drain()
+    }
+}
+
+impl<A: Mailboxed> Drop for MailboxReceiver<A> {
+    /// Drops the receiver **and** its backlog. Each queued [`Signal::Message`]
+    /// holds a strong `self_sender` clone of this very mailbox (ADR-0003), so a
+    /// non-empty queue forms a cycle: `Shared → queue → Signal → Sender →
+    /// Arc<Shared>`. Unlike tokio's mpsc, flume's `Receiver::drop` does **not**
+    /// purge its queue, so on a hard kill (the run-loop future is dropped mid-
+    /// backlog) that cycle would leak. Draining here releases the embedded
+    /// senders and lets the channel free.
+    fn drop(&mut self) {
+        self.rx.drain().for_each(drop);
     }
 }
 
@@ -346,6 +408,14 @@ mod tests {
         type Msg = (u32, u32);
     }
 
+    /// A message that owns an `Arc` canary, so a test can observe — via a
+    /// `Weak` that upgrades iff the payload is still alive — whether a queued
+    /// message is actually freed when the receiver is dropped mid-backlog.
+    struct Canary;
+    impl Mailboxed for Canary {
+        type Msg = Arc<()>;
+    }
+
     /// Builds a valid [`Capacity`] for tests; panics on out-of-range input,
     /// which in a test is a programmer error in the test itself.
     fn cap(n: usize) -> Capacity {
@@ -356,11 +426,17 @@ mod tests {
     async fn sent_message_is_received() {
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4));
 
-        tx.send(Signal::Message(42))
-            .await
-            .expect("send should succeed");
+        tx.send(Signal::Message {
+            msg: 42,
+            self_sender: tx.clone(),
+        })
+        .await
+        .expect("send should succeed");
 
-        assert!(matches!(rx.recv().await, Some(Signal::Message(42))));
+        assert!(matches!(
+            rx.recv().await,
+            Some(Signal::Message { msg: 42, .. })
+        ));
     }
 
     #[tokio::test]
@@ -368,10 +444,16 @@ mod tests {
         // A mailbox built at the capacity ceiling must not panic and must work.
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(Capacity::MAX));
 
-        tx.try_send(Signal::Message(7))
-            .expect("send into max-capacity mailbox");
+        tx.try_send(Signal::Message {
+            msg: 7,
+            self_sender: tx.clone(),
+        })
+        .expect("send into max-capacity mailbox");
 
-        assert!(matches!(rx.recv().await, Some(Signal::Message(7))));
+        assert!(matches!(
+            rx.recv().await,
+            Some(Signal::Message { msg: 7, .. })
+        ));
     }
 
     #[test]
@@ -410,11 +492,14 @@ mod tests {
         use std::mem::size_of;
 
         // The cold LinkDied variant is boxed, so a small-message actor's queue
-        // slot is bounded by the hot Message(u64) path. Guards the
-        // "every slot = largest variant" trap.
+        // slot is bounded by the hot Message path: `msg` + the embedded
+        // `self_sender` (one Arc pointer, ADR-0003) + a discriminant word. If
+        // LinkDied were inlined, its fat StopReason (a `String`) would blow this
+        // bound. Guards the "every slot = largest variant" trap.
+        let hot_bound = size_of::<u64>() + size_of::<MailboxSender<Probe>>() + size_of::<usize>();
         assert!(
-            size_of::<Signal<Probe>>() <= 2 * size_of::<u64>(),
-            "Signal<Probe> slot is {} bytes; LinkDied is not boxed",
+            size_of::<Signal<Probe>>() <= hot_bound,
+            "Signal<Probe> slot is {} bytes (hot bound {hot_bound}); LinkDied is not boxed",
             size_of::<Signal<Probe>>()
         );
     }
@@ -526,22 +611,36 @@ mod tests {
 
         let strong = weak.upgrade().expect("channel still alive");
         strong
-            .send(Signal::Message(5))
+            .send(Signal::Message {
+                msg: 5,
+                self_sender: tx.clone(),
+            })
             .await
             .expect("send via upgraded");
 
-        assert!(matches!(rx.recv().await, Some(Signal::Message(5))));
+        assert!(matches!(
+            rx.recv().await,
+            Some(Signal::Message { msg: 5, .. })
+        ));
     }
 
     #[tokio::test]
     async fn stop_signal_is_delivered_in_order_after_a_message() {
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4));
 
-        tx.send(Signal::Message(1)).await.expect("message");
+        tx.send(Signal::Message {
+            msg: 1,
+            self_sender: tx.clone(),
+        })
+        .await
+        .expect("message");
         tx.send(Signal::Stop).await.expect("stop");
 
         // FIFO: the domain message precedes the control signal that followed it.
-        assert!(matches!(rx.recv().await, Some(Signal::Message(1))));
+        assert!(matches!(
+            rx.recv().await,
+            Some(Signal::Message { msg: 1, .. })
+        ));
         assert!(matches!(rx.recv().await, Some(Signal::Stop)));
     }
 
@@ -551,15 +650,23 @@ mod tests {
         // with `drain` before dropping the receiver.
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(8));
         for i in 0..3 {
-            tx.send(Signal::Message(i)).await.expect("queued");
+            tx.send(Signal::Message {
+                msg: i,
+                self_sender: tx.clone(),
+            })
+            .await
+            .expect("queued");
         }
 
-        assert!(matches!(rx.recv().await, Some(Signal::Message(0))));
+        assert!(matches!(
+            rx.recv().await,
+            Some(Signal::Message { msg: 0, .. })
+        ));
 
         let flushed: Vec<u64> = rx
             .drain()
             .map(|signal| match signal {
-                Signal::Message(m) => m,
+                Signal::Message { msg: m, .. } => m,
                 _ => panic!("unexpected signal"),
             })
             .collect();
@@ -572,42 +679,103 @@ mod tests {
         drop(rx);
 
         assert!(matches!(
-            tx.send(Signal::Message(9)).await,
-            Err(SendError(Signal::Message(9)))
+            tx.send(Signal::Message {
+                msg: 9,
+                self_sender: tx.clone()
+            })
+            .await,
+            Err(SendError(Signal::Message { msg: 9, .. }))
         ));
         assert!(matches!(
-            tx.try_send(Signal::Message(9)),
-            Err(TrySendError::Closed(Signal::Message(9)))
+            tx.try_send(Signal::Message {
+                msg: 9,
+                self_sender: tx.clone()
+            }),
+            Err(TrySendError::Closed(Signal::Message { msg: 9, .. }))
         ));
     }
 
     #[tokio::test]
     async fn recv_returns_none_after_all_senders_dropped_and_drained() {
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4));
-        tx.send(Signal::Message(1)).await.expect("queued");
+        tx.send(Signal::Message {
+            msg: 1,
+            self_sender: tx.clone(),
+        })
+        .await
+        .expect("queued");
         drop(tx);
 
         // Queued message drains first, then the disconnected channel ends.
-        assert!(matches!(rx.recv().await, Some(Signal::Message(1))));
+        assert!(matches!(
+            rx.recv().await,
+            Some(Signal::Message { msg: 1, .. })
+        ));
         assert!(rx.recv().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn dropping_receiver_mid_backlog_frees_the_queued_message() {
+        // Each queued `Signal::Message` embeds a strong `self_sender` (ADR-0003),
+        // forming a `Shared -> queue -> Signal -> Sender -> Arc<Shared>` cycle.
+        // flume's `Receiver::drop` does NOT purge its queue, so without
+        // `MailboxReceiver::drop` draining it, a hard kill (receiver dropped mid-
+        // backlog) leaks the queued message and everything it owns.
+        let (tx, rx) = Mailbox::<Canary>::bounded(cap(4));
+
+        let canary = Arc::new(());
+        let observer = Arc::downgrade(&canary);
+
+        // Move the sole strong payload ref into the queued signal.
+        tx.try_send(Signal::Message {
+            msg: canary,
+            self_sender: tx.clone(),
+        })
+        .expect("enqueue into an open mailbox");
+
+        // Hard kill: both handles gone while the message is still queued, never
+        // received. Drop the receiver last so its `drop` sees the backlog.
+        drop(tx);
+        drop(rx);
+
+        // The drain-on-drop released the queued signal, so its payload is freed.
+        // Delete `impl Drop for MailboxReceiver` and this upgrades to `Some`.
+        assert!(
+            observer.upgrade().is_none(),
+            "queued message leaked: MailboxReceiver::drop did not drain the backlog",
+        );
     }
 
     #[tokio::test]
     async fn full_mailbox_rejects_try_send_and_returns_the_message() {
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1));
 
-        tx.try_send(Signal::Message(1)).expect("first signal fits");
+        tx.try_send(Signal::Message {
+            msg: 1,
+            self_sender: tx.clone(),
+        })
+        .expect("first signal fits");
 
         // Mailbox is now full: try_send must reject and hand the message back.
-        let rejected = tx.try_send(Signal::Message(2));
+        let rejected = tx.try_send(Signal::Message {
+            msg: 2,
+            self_sender: tx.clone(),
+        });
         assert!(matches!(
             rejected,
-            Err(TrySendError::Full(Signal::Message(2)))
+            Err(TrySendError::Full(Signal::Message { msg: 2, .. }))
         ));
 
         // Draining one slot frees capacity for the next try_send.
-        assert!(matches!(rx.recv().await, Some(Signal::Message(1))));
-        tx.try_send(Signal::Message(3)).expect("fits after drain");
+        assert!(matches!(
+            rx.recv().await,
+            Some(Signal::Message { msg: 1, .. })
+        ));
+        tx.try_send(Signal::Message {
+            msg: 3,
+            self_sender: tx.clone(),
+        })
+        .expect("fits after drain");
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -626,9 +794,12 @@ mod tests {
             handles.push(tokio::spawn(async move {
                 start.wait().await; // all senders race from the same instant
                 for seq in 0..PER_SENDER {
-                    tx.send(Signal::Message((sender_id, seq)))
-                        .await
-                        .expect("send");
+                    tx.send(Signal::Message {
+                        msg: (sender_id, seq),
+                        self_sender: tx.clone(),
+                    })
+                    .await
+                    .expect("send");
                 }
             }));
         }
@@ -637,7 +808,11 @@ mod tests {
         let mut next_expected = vec![0u32; SENDERS as usize];
         let mut total = 0u32;
         while let Some(signal) = rx.recv().await {
-            let Signal::Message((sender_id, seq)) = signal else {
+            let Signal::Message {
+                msg: (sender_id, seq),
+                ..
+            } = signal
+            else {
                 panic!("unexpected non-message signal");
             };
             let slot = &mut next_expected[sender_id as usize];
@@ -697,13 +872,13 @@ mod tests {
                     let expected = messages.len();
                     let producer = tokio::spawn(async move {
                         for message in messages {
-                            tx.send(Signal::Message(message)).await.expect("send");
+                            tx.send(Signal::Message { msg: message, self_sender: tx.clone() }).await.expect("send");
                         }
                     });
 
                     let mut got = Vec::with_capacity(expected);
                     while got.len() < expected {
-                        let Some(Signal::Message(message)) = rx.recv().await else {
+                        let Some(Signal::Message { msg: message, .. }) = rx.recv().await else {
                             break;
                         };
                         got.push(message);

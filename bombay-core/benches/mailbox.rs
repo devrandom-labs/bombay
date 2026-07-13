@@ -52,8 +52,11 @@ fn enqueue(c: &mut Criterion) {
             || Mailbox::<Bench>::bounded(cap(1024)),
             |(tx, _rx)| {
                 for i in 0..1000u64 {
-                    tx.try_send(Signal::Message(black_box(command(i))))
-                        .expect("capacity available");
+                    tx.try_send(Signal::Message {
+                        msg: black_box(command(i)),
+                        self_sender: tx.clone(),
+                    })
+                    .expect("capacity available");
                 }
             },
             BatchSize::SmallInput,
@@ -74,15 +77,18 @@ fn roundtrip(c: &mut Criterion) {
                 let (tx, mut rx) = Mailbox::<Bench>::bounded(cap(1024));
                 let producer = tokio::spawn(async move {
                     for i in 0..1000u64 {
-                        tx.send(Signal::Message(black_box(command(i))))
-                            .await
-                            .expect("send");
+                        tx.send(Signal::Message {
+                            msg: black_box(command(i)),
+                            self_sender: tx.clone(),
+                        })
+                        .await
+                        .expect("send");
                     }
                 });
 
                 let mut received = 0u32;
                 while received < 1000 {
-                    let Some(Signal::Message(_)) = rx.recv().await else {
+                    let Some(Signal::Message { .. }) = rx.recv().await else {
                         break;
                     };
                     received += 1;
