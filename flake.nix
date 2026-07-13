@@ -69,6 +69,7 @@
             (craneLib.fileset.commonCargoSources ./.)
             ./README.md
             ./tests/features
+            ./fuzz/tests/__fuzz__
           ];
         };
 
@@ -89,6 +90,11 @@
         };
 
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
+        # The fuzz workspace has its OWN Cargo.lock (bolero + bombay-core path
+        # dep). Vendor it separately so the replay check builds offline without
+        # touching the root workspace's vendored deps.
+        fuzzCargoArtifacts = craneLib.vendorCargoDeps { cargoLock = ./fuzz/Cargo.lock; };
 
         # A lightweight non-cargo check runner: run `cmd` with `tools` on PATH;
         # the derivation succeeds (touch $out) only if the command does. Keeps
@@ -154,6 +160,27 @@
               inherit cargoArtifacts;
               partitions = 1;
               partitionType = "count";
+            }
+          );
+
+          # Deterministic corpus-replay + bounded-random fuzz gate. Runs the
+          # bolero `check!` targets in the isolated `fuzz/` workspace via plain
+          # `cargo test` on the pinned STABLE toolchain (bolero's DefaultEngine
+          # needs no nightly — sanitizers, which do, live in the #152 scheduled
+          # workflow). `src` already carries the whole tree (parent crate + fuzz
+          # sources + corpus); `fuzzCargoArtifacts` vendors the fuzz lock so the
+          # build is fully offline/hermetic.
+          bombay-fuzz-replay = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              cargoVendorDir = fuzzCargoArtifacts;
+              cargoArtifacts = null;
+              pnameSuffix = "-fuzz-replay";
+              buildPhaseCargoCommand = ''
+                (cd fuzz && cargo test --no-fail-fast)
+              '';
+              doInstallCargoArtifacts = false;
+              doCheck = false;
             }
           );
 
