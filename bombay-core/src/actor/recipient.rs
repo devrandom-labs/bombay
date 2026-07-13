@@ -49,17 +49,19 @@ where
     }
 
     fn id(&self) -> ActorId {
-        ActorRef::id(self)
+        Self::id(self)
     }
 
     fn is_alive(&self) -> bool {
-        ActorRef::is_alive(self)
+        Self::is_alive(self)
     }
 }
 
 /// A cloneable, type-erased handle that delivers `M` to some actor whose menu
-/// satisfies `A::Msg: From<M>`. Exposes only the messaging surface — **not**
-/// `stop`/`kill` (a recipient is a messaging handle, not a lifecycle handle).
+/// satisfies `A::Msg: From<M>`.
+///
+/// Exposes only the messaging surface — **not** `stop`/`kill` (a recipient is a
+/// messaging handle, not a lifecycle handle).
 pub struct Recipient<M> {
     inner: Arc<dyn ErasedRecipient<M>>,
 }
