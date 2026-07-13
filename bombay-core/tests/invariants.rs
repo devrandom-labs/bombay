@@ -68,8 +68,8 @@ use tokio::{sync::oneshot, task::yield_now, time::timeout};
 
 use bombay_core::{
     actor::{Actor, ActorRef, PreparedActor, RunResult, WeakActorRef},
-    error::{ActorStopReason, PanicError, PanicReason},
-    mailbox::{Capacity, Mailboxed, SendError, Signal, TrySendError},
+    error::{ActorStopReason, PanicError, PanicReason, TellError},
+    mailbox::{Capacity, Mailboxed, Signal, TrySendError},
     message::Msg,
 };
 
@@ -90,6 +90,7 @@ struct Boom;
 struct Bank {
     handled: Arc<AtomicU32>,
 }
+#[derive(Debug)]
 struct Poke;
 impl Msg for Poke {}
 impl Mailboxed for Bank {
@@ -135,6 +136,7 @@ async fn i1_single_writer_mutual_exclusion() {
         handled: Arc<AtomicU32>,
         done_at: u32,
     }
+    #[derive(Debug)]
     struct Bump;
     impl Msg for Bump {}
     impl Mailboxed for Excl {
@@ -195,7 +197,7 @@ async fn i1_single_writer_mutual_exclusion() {
         tasks.push(tokio::spawn(async move {
             start.wait().await;
             for _ in 0..PER_SENDER {
-                sender.send(Signal::Message(Bump)).await.expect("send");
+                sender.send_message(Bump).await.expect("send");
             }
         }));
     }
@@ -242,6 +244,7 @@ async fn i3_macro_step_atomicity() {
     struct Acc {
         counter: u64,
     }
+    #[derive(Debug)]
     struct Add(u64);
     impl Msg for Add {}
     impl Mailboxed for Acc {
@@ -270,11 +273,7 @@ async fn i3_macro_step_atomicity() {
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn(());
     for n in 1..=10u64 {
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Add(n)))
-            .await
-            .expect("send add");
+        actor_ref.tell(Add(n)).await.expect("send add");
     }
     actor_ref
         .mailbox_sender()
@@ -310,6 +309,7 @@ async fn i5_fifo_exactly_once() {
     struct Rec {
         seen: Arc<Mutex<Vec<u64>>>,
     }
+    #[derive(Debug)]
     struct V(u64);
     impl Msg for V {}
     impl Mailboxed for Rec {
@@ -337,11 +337,7 @@ async fn i5_fifo_exactly_once() {
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn(Arc::clone(&seen));
     for v in 0..N {
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(V(v)))
-            .await
-            .expect("send");
+        actor_ref.tell(V(v)).await.expect("send");
     }
     actor_ref
         .mailbox_sender()
@@ -378,6 +374,7 @@ async fn i5_fifo_exactly_once() {
 /// handled order is exactly `[First, Second]`.
 #[tokio::test]
 async fn i7_no_reentrancy_self_send_is_enqueued() {
+    #[derive(Debug)]
     enum M {
         First,
         Second,
@@ -413,11 +410,7 @@ async fn i7_no_reentrancy_self_send_is_enqueued() {
                     );
                     self.in_handle.store(true, Ordering::SeqCst);
                     self.handled.lock().expect("lock").push("First");
-                    actor_ref
-                        .mailbox_sender()
-                        .send(Signal::Message(M::Second))
-                        .await
-                        .expect("self-send Second");
+                    actor_ref.tell(M::Second).await.expect("self-send Second");
                     yield_now().await; // a reentrant loop would run Second here
                     self.in_handle.store(false, Ordering::SeqCst);
                 }
@@ -439,11 +432,7 @@ async fn i7_no_reentrancy_self_send_is_enqueued() {
     let prepared = PreparedActor::<Reentry>::new(cap(8));
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((Arc::clone(&in_handle), Arc::clone(&handled)));
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Message(M::First))
-        .await
-        .expect("send First");
+    actor_ref.tell(M::First).await.expect("send First");
 
     let outcome = timeout(TERMINATE, run)
         .await
@@ -479,6 +468,7 @@ struct Life {
     panic_at: Option<u32>,
     log: Arc<Mutex<Vec<&'static str>>>,
 }
+#[derive(Debug)]
 struct Tick;
 impl Msg for Tick {}
 impl Mailboxed for Life {
@@ -532,11 +522,7 @@ async fn i8_i10_i11_lifecycle_order_normal() {
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((None, Arc::clone(&log)));
     for _ in 0..3 {
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Tick))
-            .await
-            .expect("send");
+        actor_ref.tell(Tick).await.expect("send");
     }
     actor_ref
         .mailbox_sender()
@@ -571,16 +557,8 @@ async fn i8_i10_i11_lifecycle_order_panic() {
     let prepared = PreparedActor::<Life>::new(cap(8));
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((Some(2), Arc::clone(&log)));
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Message(Tick))
-        .await
-        .expect("send 1");
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Message(Tick))
-        .await
-        .expect("send 2 (panics)");
+    actor_ref.tell(Tick).await.expect("send 1");
+    actor_ref.tell(Tick).await.expect("send 2 (panics)");
 
     let outcome = timeout(TERMINATE, run)
         .await
@@ -614,6 +592,7 @@ async fn i9c_on_stop_not_run_on_startup_failure() {
     struct MaybeStart {
         spy: Arc<AtomicU32>,
     }
+    #[derive(Debug)]
     struct Go;
     impl Msg for Go {}
     impl Mailboxed for MaybeStart {
@@ -702,11 +681,7 @@ async fn i12_alive_window() {
     let actor_ref = prepared.actor_ref().clone();
 
     // (a) enqueue before the loop starts, plus a Stop to end it.
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Message(Poke))
-        .await
-        .expect("pre-run send");
+    actor_ref.tell(Poke).await.expect("pre-run send");
     actor_ref
         .mailbox_sender()
         .send(Signal::Stop)
@@ -730,9 +705,9 @@ async fn i12_alive_window() {
     );
 
     // (b) send-after-stop is rejected with the message handed back.
-    let resend = actor_ref.mailbox_sender().send(Signal::Message(Poke)).await;
+    let resend = actor_ref.tell(Poke).await;
     assert!(
-        matches!(resend, Err(SendError(Signal::Message(Poke)))),
+        matches!(resend, Err(TellError::ActorNotAlive(Poke))),
         "send after a completed stop is rejected, not silently accepted",
     );
 }
@@ -752,6 +727,7 @@ struct Cleanup {
     handler_panics: bool,
     on_stop_mode: StopMode,
 }
+#[derive(Debug)]
 struct Do;
 impl Msg for Do {}
 impl Mailboxed for Cleanup {
@@ -848,11 +824,7 @@ async fn i14b_normal_stop_on_stop_err_preserves_normal() {
 async fn i14c_handler_panic_then_on_stop_panic_preserves_original_cause() {
     let prepared = PreparedActor::<Cleanup>::new(cap(4));
     let actor_ref = prepared.actor_ref().clone();
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Message(Do))
-        .await
-        .expect("send");
+    actor_ref.tell(Do).await.expect("send");
     let outcome = timeout(TERMINATE, prepared.run((true, StopMode::Panic)))
         .await
         .expect("must terminate");
@@ -880,6 +852,7 @@ async fn i14c_handler_panic_then_on_stop_panic_preserves_original_cause() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn i15_fault_isolation() {
     struct Faulty;
+    #[derive(Debug)]
     struct Crash;
     impl Msg for Crash {}
     impl Mailboxed for Faulty {
@@ -904,6 +877,7 @@ async fn i15_fault_isolation() {
     struct Healthy {
         handled: Arc<AtomicU32>,
     }
+    #[derive(Debug)]
     struct Work;
     impl Msg for Work {}
     impl Mailboxed for Healthy {
@@ -936,17 +910,9 @@ async fn i15_fault_isolation() {
     let b_run = b_prepared.spawn(Arc::clone(&b_spy));
 
     // A crashes.
-    a_ref
-        .mailbox_sender()
-        .send(Signal::Message(Crash))
-        .await
-        .expect("send crash to A");
+    a_ref.tell(Crash).await.expect("send crash to A");
     // B keeps working after A's crash.
-    b_ref
-        .mailbox_sender()
-        .send(Signal::Message(Work))
-        .await
-        .expect("send work to B");
+    b_ref.tell(Work).await.expect("send work to B");
     b_ref
         .mailbox_sender()
         .send(Signal::Stop)
@@ -1042,10 +1008,12 @@ async fn i19_send_and_weak_upgrade_after_termination() {
         }
     ));
 
-    // Ref-send liveness: the receiver is gone, so send fails with the message back.
-    let resend = actor_ref.mailbox_sender().send(Signal::Message(Poke)).await;
+    // Ref-send liveness: the receiver is gone, so `tell` fails with the message
+    // back (and, unlike raw `send`, drops the envelope — so it retains no strong
+    // sender that would keep the weak upgrade below alive; ADR-0003).
+    let resend = actor_ref.tell(Poke).await;
     assert!(
-        matches!(resend, Err(SendError(Signal::Message(Poke)))),
+        matches!(resend, Err(TellError::ActorNotAlive(Poke))),
         "send to a terminated actor fails with the message handed back",
     );
 
@@ -1068,6 +1036,7 @@ async fn i19_send_and_weak_upgrade_after_termination() {
 /// successfully — backpressure is transient, capacity is freed by draining.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
+    #[derive(Debug)]
     enum Cmd {
         Block,
         Drain,
@@ -1134,23 +1103,23 @@ async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
     let run = prepared.spawn((entered_tx, release_rx, drained_tx));
 
     // (1) The Block message enters the handler and parks; its slot is now free.
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Message(Cmd::Block))
-        .await
-        .expect("send Block");
+    actor_ref.tell(Cmd::Block).await.expect("send Block");
     entered_rx.await.expect("handler entered and parked");
 
     // (2) Fill the single slot.
     actor_ref
         .mailbox_sender()
-        .try_send(Signal::Message(Cmd::Drain))
+        .try_send(Signal::Message {
+            msg: Cmd::Drain,
+            self_sender: actor_ref.mailbox_sender().clone(),
+        })
         .expect("the one free slot accepts Drain");
 
     // (3) The mailbox is full: try_send is rejected and hands the message back.
-    let rejected = actor_ref
-        .mailbox_sender()
-        .try_send(Signal::Message(Cmd::Drain));
+    let rejected = actor_ref.mailbox_sender().try_send(Signal::Message {
+        msg: Cmd::Drain,
+        self_sender: actor_ref.mailbox_sender().clone(),
+    });
     let Err(TrySendError::Full(returned)) = rejected else {
         panic!("expected Full rejection, got {rejected:?}");
     };

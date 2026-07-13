@@ -156,10 +156,17 @@ async fn run_lifecycle<A: Actor>(
         }
     };
 
-    let reason = run_message_loop(&mut state, &actor_ref, &mut mailbox_rx).await;
-
+    // Ref-count-driven stop goes live (#117): the loop must not hold a strong
+    // self-ref, or the mailbox never closes and the "all-senders-gone" arm stays
+    // unreachable (kameo issue #171: a leaked strong self-ref pins the count and
+    // the actor never stops). Keep only a weak self-ref plus the cancel token.
+    let cancel = actor_ref.cancel_token().clone();
     let weak = actor_ref.downgrade();
-    let stop_result = AssertUnwindSafe(state.on_stop(weak, reason.clone()))
+    drop(actor_ref);
+
+    let reason = run_message_loop(&mut state, &weak, &cancel, &mut mailbox_rx).await;
+
+    let stop_result = AssertUnwindSafe(state.on_stop(weak.clone(), reason.clone()))
         .catch_unwind()
         .await;
     log_on_stop_outcome::<A>(&reason, stop_result);
@@ -220,6 +227,7 @@ mod tests {
         handled: Arc<AtomicU32>,
         stopped: Arc<AtomicU32>,
     }
+    #[derive(Debug)]
     struct Tick;
     impl Msg for Tick {}
     impl Mailboxed for Counter {
@@ -269,16 +277,8 @@ mod tests {
 
         let prepared = PreparedActor::<Counter>::new(cap(8));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Tick))
-            .await
-            .expect("send 1");
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Tick))
-            .await
-            .expect("send 2");
+        actor_ref.tell(Tick).await.expect("send 1");
+        actor_ref.tell(Tick).await.expect("send 2");
         actor_ref
             .mailbox_sender()
             .send(Signal::Stop)
@@ -307,6 +307,88 @@ mod tests {
         );
     }
 
+    /// Ref-count-driven stop (card #117): with no explicit stop and no messages,
+    /// dropping the **last strong `ActorRef`** closes the mailbox, so the loop's
+    /// `recv` returns `None` and the actor stops normally. In #116 the loop held a
+    /// strong self-ref, so this arm was unreachable and the actor would hang here.
+    #[tokio::test]
+    async fn dropping_last_actor_ref_stops_the_actor() {
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+
+        let prepared = PreparedActor::<Counter>::new(cap(8));
+        let actor_ref = prepared.actor_ref().clone();
+        let join = prepared.spawn((Arc::clone(&handled), Arc::clone(&stopped)));
+
+        // The only strong ref is `actor_ref`; dropping it must stop the actor.
+        drop(actor_ref);
+
+        let outcome = tokio::time::timeout(core::time::Duration::from_secs(5), join)
+            .await
+            .expect("actor stops promptly after the last ref drops")
+            .expect("join");
+
+        assert_eq!(
+            handled.load(Ordering::SeqCst),
+            0,
+            "no messages were sent before the ref dropped"
+        );
+        assert_eq!(stopped.load(Ordering::SeqCst), 1, "on_stop ran once");
+        assert!(
+            matches!(
+                outcome,
+                RunResult::Stopped {
+                    reason: ActorStopReason::Normal,
+                    ..
+                }
+            ),
+            "ref-count stop is a clean normal stop",
+        );
+    }
+
+    /// @bug (card #117) The everyday `tell` then release-the-handle pattern: a
+    /// message enqueued while a strong ref existed must still be handled even if
+    /// the last strong ref drops before the loop dequeues it. The queued message
+    /// must **pin the actor alive** (ref-count stop drains the backlog). Here the
+    /// `Tick` is enqueued before spawning while no external ref is held, so once
+    /// the loop downgrades its own ref after `on_start` the sender count hits 0
+    /// with `Tick` still queued. FAILS while the loop merely upgrades a weak
+    /// self-ref (upgrade returns `None`, the message is abandoned) — Design E
+    /// embeds the sender in the signal so the message keeps itself deliverable.
+    #[tokio::test]
+    async fn queued_message_is_handled_even_if_last_ref_drops_first() {
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+
+        let prepared = PreparedActor::<Counter>::new(cap(8));
+        prepared
+            .actor_ref()
+            .tell(Tick)
+            .await
+            .expect("enqueue before spawn");
+
+        let join = prepared.spawn((Arc::clone(&handled), Arc::clone(&stopped)));
+
+        let outcome = tokio::time::timeout(core::time::Duration::from_secs(5), join)
+            .await
+            .expect("actor stops")
+            .expect("join");
+
+        assert_eq!(
+            handled.load(Ordering::SeqCst),
+            1,
+            "the queued message is handled before the ref-count stop"
+        );
+        assert_eq!(stopped.load(Ordering::SeqCst), 1, "on_stop ran once");
+        assert!(matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Normal,
+                ..
+            }
+        ));
+    }
+
     /// Lifecycle: `stop()` (out-of-band cancel) while a handler is mid-flight lets
     /// that handler finish, then stops and runs `on_stop`. The queued-behind message
     /// is abandoned (finish-current-then-stop, no drain).
@@ -319,6 +401,7 @@ mod tests {
             release: Option<oneshot::Receiver<()>>,
             handled: Arc<AtomicU32>,
         }
+        #[derive(Debug)]
         struct Work;
         impl Msg for Work {}
         impl Mailboxed for Slow {
@@ -361,16 +444,8 @@ mod tests {
         let prepared = PreparedActor::<Slow>::new(cap(8));
         let actor_ref = prepared.actor_ref().clone();
         // Two messages: the first blocks until released; the second must be abandoned.
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Work))
-            .await
-            .expect("send 1");
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Work))
-            .await
-            .expect("send 2");
+        actor_ref.tell(Work).await.expect("send 1");
+        actor_ref.tell(Work).await.expect("send 2");
 
         let run = tokio::spawn(prepared.run((entered_tx, release_rx, Arc::clone(&handled))));
 
@@ -406,6 +481,7 @@ mod tests {
         struct Once {
             handled: Arc<AtomicU32>,
         }
+        #[derive(Debug)]
         struct Go;
         impl Msg for Go {}
         impl Mailboxed for Once {
@@ -432,16 +508,8 @@ mod tests {
         let handled = Arc::new(AtomicU32::new(0));
         let prepared = PreparedActor::<Once>::new(cap(8));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Go))
-            .await
-            .expect("send 1");
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Go))
-            .await
-            .expect("send 2");
+        actor_ref.tell(Go).await.expect("send 1");
+        actor_ref.tell(Go).await.expect("send 2");
 
         // Bounded so that if the `stop` flag is ignored (the loop keeps running
         // and parks on `recv`, since this test still holds a strong sender), the
@@ -477,6 +545,7 @@ mod tests {
         struct Recorder {
             seen: Arc<Mutex<Vec<u32>>>,
         }
+        #[derive(Debug)]
         struct N(u32);
         impl Msg for N {}
         impl Mailboxed for Recorder {
@@ -514,21 +583,9 @@ mod tests {
         let run = tokio::spawn(prepared.run((gate_rx, Arc::clone(&seen))));
 
         // Enqueue BEFORE releasing on_start — these must be buffered by the mailbox.
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(N(0)))
-            .await
-            .expect("send 0");
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(N(1)))
-            .await
-            .expect("send 1");
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(N(2)))
-            .await
-            .expect("send 2");
+        actor_ref.tell(N(0)).await.expect("send 0");
+        actor_ref.tell(N(1)).await.expect("send 1");
+        actor_ref.tell(N(2)).await.expect("send 2");
         gate_tx.send(()).expect("release on_start");
 
         // Bounded so that if the `stop` flag is ignored the loop parks on `recv`
@@ -632,6 +689,7 @@ mod tests {
             pub(super) stop_reason: Arc<Mutex<Option<ActorStopReason>>>,
             pub(super) counter_at_stop: Arc<Mutex<Option<u32>>>,
         }
+        #[derive(Debug)]
         pub(super) struct Explode;
         impl Msg for Explode {}
         impl Mailboxed for Torn {
@@ -689,11 +747,7 @@ mod tests {
 
         let prepared = PreparedActor::<Torn>::new(cap(4));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Explode))
-            .await
-            .expect("send");
+        actor_ref.tell(Explode).await.expect("send");
 
         let outcome = prepared
             .run((Arc::clone(&stop_reason), Arc::clone(&counter_at_stop)))
@@ -731,11 +785,7 @@ mod tests {
 
         let prepared = PreparedActor::<Torn>::new(cap(4));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Explode))
-            .await
-            .expect("send");
+        actor_ref.tell(Explode).await.expect("send");
         let _ = prepared
             .run((Arc::clone(&stop_reason), Arc::clone(&counter_at_stop)))
             .await;
@@ -753,6 +803,7 @@ mod tests {
     #[tokio::test]
     async fn send_after_handler_panic_fails() {
         struct Bomb;
+        #[derive(Debug)]
         struct Trigger;
         impl Msg for Trigger {}
         impl Mailboxed for Bomb {
@@ -777,11 +828,7 @@ mod tests {
         let prepared = PreparedActor::<Bomb>::new(cap(4));
         let actor_ref = prepared.actor_ref().clone();
         let handle = prepared.spawn(());
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Trigger))
-            .await
-            .expect("send trigger");
+        actor_ref.tell(Trigger).await.expect("send trigger");
 
         let outcome = handle.await.expect("run task");
         assert!(matches!(
@@ -792,10 +839,7 @@ mod tests {
             }
         ));
 
-        let resend = actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Trigger))
-            .await;
+        let resend = actor_ref.tell(Trigger).await;
         assert!(
             resend.is_err(),
             "the actor's mailbox is closed after the panic-stop"
@@ -810,6 +854,7 @@ mod tests {
         #[derive(Debug)]
         struct Nope;
         struct Failer;
+        #[derive(Debug)]
         struct Do;
         impl Msg for Do {}
         impl Mailboxed for Failer {
@@ -833,11 +878,7 @@ mod tests {
 
         let prepared = PreparedActor::<Failer>::new(cap(4));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Do))
-            .await
-            .expect("send");
+        actor_ref.tell(Do).await.expect("send");
         let outcome = prepared.run(()).await;
 
         let RunResult::Stopped {
@@ -862,6 +903,7 @@ mod tests {
             finished: Arc<AtomicU32>,
             stopped: Arc<AtomicU32>,
         }
+        #[derive(Debug)]
         struct Block;
         impl Msg for Block {}
         impl Mailboxed for Blocker {
@@ -909,11 +951,7 @@ mod tests {
 
         let prepared = PreparedActor::<Blocker>::new(cap(4));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Message(Block))
-            .await
-            .expect("send");
+        actor_ref.tell(Block).await.expect("send");
         let handle = prepared.spawn((entered_tx, Arc::clone(&finished), Arc::clone(&stopped)));
 
         entered_rx.await.expect("handler entered"); // handler is now parked forever
@@ -1045,6 +1083,7 @@ mod tests {
             done_at: u32,
             done: Option<oneshot::Sender<u32>>,
         }
+        #[derive(Debug)]
         struct Bump;
         impl Msg for Bump {}
         impl Mailboxed for Sink {
@@ -1092,7 +1131,7 @@ mod tests {
             tasks.push(tokio::spawn(async move {
                 start.wait().await;
                 for _ in 0..PER_SENDER {
-                    sender.send(Signal::Message(Bump)).await.expect("send");
+                    sender.send_message(Bump).await.expect("send");
                 }
             }));
         }

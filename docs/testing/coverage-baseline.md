@@ -179,6 +179,37 @@ the first bombay-owned concurrency the run-loop introduces (the `select` over
 signals) is the loom/shuttle target noted under `mailbox` above. No README
 change — the rebuilt spine is not behind the umbrella yet (same as #113/#115).
 
+### `actor-ref` self-reference & ref-count stop (#117) — done
+Makes the #116 "all-senders-gone" loop arm reachable (ADR-0003). The run-loop no
+longer holds a strong self-ref: `spawn.rs` downgrades and drops its `ActorRef`
+before the loop, which now takes a `&WeakActorRef` + the cancel token
+(`kind.rs`). Each `Signal::Message` gains a `self_sender: MailboxSender<A>` — a
+**strong** clone of the enqueuing sender — so a queued message pins the actor
+alive until handled (drain-then-stop), and the loop lifts a strong `ActorRef`
+out of the dequeued signal via `WeakActorRef::with_sender`. New public entry
+points: `ActorRef::tell` / `is_alive` and `MailboxSender::send_message` /
+`is_closed`; `MailboxReceiver` gains a draining `Drop`.
+
+**+3 tests** over the #116/#112 baselines:
+- **Lifecycle / ref-count stop** (`spawn.rs`) — `dropping_last_actor_ref_stops_the_actor`:
+  dropping the last strong `ActorRef` closes the mailbox and stops the actor
+  `Normal` (this arm hung in #116).
+- **Sequence / self-pin** (`spawn.rs`, `@bug`) —
+  `queued_message_is_handled_even_if_last_ref_drops_first`: the everyday
+  `tell; drop` pattern; a message enqueued while a ref existed is handled even
+  when the last ref drops before the loop dequeues it. FAILS under the rejected
+  "loop upgrades a weak self-ref" design (Design D).
+- **Lifecycle / anti-leak** (`mailbox.rs`, falsifiable) —
+  `dropping_receiver_mid_backlog_frees_the_queued_message`: an `Arc` canary in
+  the payload proves a receiver dropped mid-backlog frees the queued signal (and
+  its embedded `self_sender`), breaking the `Shared → queue → Signal → Sender`
+  cycle. Verified to FAIL with `impl Drop for MailboxReceiver` removed — it
+  guards precisely that mechanism, not incidental behavior.
+
+No README change — the rebuilt spine is not behind the umbrella yet (same as
+#116); `tell`/`is_alive` are steps toward the already-documented kameo target
+API (ergonomic ask/tell builders are #118).
+
 ## Baseline — 2026-06-29 (after #77)
 
 Workspace line coverage **60.85% (5686/9345)** — but that blends the SUT with untested crates

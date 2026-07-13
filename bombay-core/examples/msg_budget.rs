@@ -70,13 +70,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let cap = Capacity::try_from(8)?;
     let (tx, mut rx) = Mailbox::<BankAccount>::bounded(cap);
 
-    tx.send(Signal::Message(BankCmd::Deposit { cents: 500 }))
+    tx.send_message(BankCmd::Deposit { cents: 500 })
         .await
         .map_err(|err| format!("{err:?}"))?;
-    tx.send(Signal::Message(BankCmd::Withdraw { cents: 120 }))
+    tx.send_message(BankCmd::Withdraw { cents: 120 })
         .await
         .map_err(|err| format!("{err:?}"))?;
-    tx.send(Signal::Message(BankCmd::Balance))
+    tx.send_message(BankCmd::Balance)
         .await
         .map_err(|err| format!("{err:?}"))?;
     tx.send(Signal::Stop)
@@ -86,13 +86,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("draining the mailbox by value — no per-message heap box:");
     while let Some(signal) = rx.recv().await {
         match signal {
-            Signal::Message(BankCmd::Deposit { cents }) => {
+            Signal::Message {
+                msg: BankCmd::Deposit { cents },
+                ..
+            } => {
                 println!("  Signal::Message(Deposit {{ cents: {cents} }})");
             }
-            Signal::Message(BankCmd::Withdraw { cents }) => {
+            Signal::Message {
+                msg: BankCmd::Withdraw { cents },
+                ..
+            } => {
                 println!("  Signal::Message(Withdraw {{ cents: {cents} }})");
             }
-            Signal::Message(BankCmd::Balance) => println!("  Signal::Message(Balance)"),
+            Signal::Message {
+                msg: BankCmd::Balance,
+                ..
+            } => println!("  Signal::Message(Balance)"),
             Signal::Stop => {
                 println!("  Signal::Stop — done");
                 break;
