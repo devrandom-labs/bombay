@@ -43,5 +43,9 @@ harness = false
 name = "reply"
 harness = false
 
+[[bench]]
+name = "watcher_fanout"
+harness = false
+
 [lints]
 workspace = true
