@@ -126,12 +126,13 @@ Add a `bombay-fuzz-replay` check to `flake.nix`:
 
 ## Scope of "done"
 
-- [ ] `fuzz/` workspace with committed `Cargo.lock` and `[profile.fuzz]`.
-- [ ] `smoke.rs` target green under `cd fuzz && cargo test`.
-- [ ] `mailbox.rs` model-based target green (TDD: a seeded failing case first).
-- [ ] `bombay-fuzz-replay` wired into `nix flake check` (stable, hermetic).
-- [ ] a small committed corpus under `fuzz/tests/__fuzz__/`.
-- [ ] coverage-baseline note; no README change (internal test infra).
+- [x] `fuzz/` workspace with committed `Cargo.lock` and `[profile.fuzz]`.
+- [x] `smoke.rs` target green under `cd fuzz && cargo test`.
+- [x] `mailbox.rs` model-based target green (falsifiability-verified: the FIFO
+  assertion fails under a `.rev()` probe, then reverted).
+- [x] `bombay-fuzz-replay` wired into `nix flake check` (stable, hermetic).
+- [x] a small committed corpus under `fuzz/tests/__fuzz__/`.
+- [x] coverage-baseline note; no README change (internal test infra).
 
 ## Non-goals (owned by sibling cards)
 
