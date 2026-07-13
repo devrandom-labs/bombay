@@ -1,6 +1,6 @@
 # #149 — Reusable bolero fuzz workspace + property/replay in the flake gate
 
-**Status:** Design approved (2026-07-13). Sub-task of #117.
+**Status:** Implemented (2026-07-13). Sub-task of #117.
 **Backbone for:** #150 (DST), #151 (MIRI + counting allocator), #152 (nightly deep-fuzz).
 
 ## Purpose

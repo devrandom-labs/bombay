@@ -210,6 +210,21 @@ No README change — the rebuilt spine is not behind the umbrella yet (same as
 #116); `tell`/`is_alive` are steps toward the already-documented kameo target
 API (ergonomic ask/tell builders are #118).
 
+### `fuzz` — bolero workspace (#149) — done
+Isolated non-member `fuzz/` workspace (crate `bombay-fuzz`, own `Cargo.lock`) —
+the reusable verification backbone (#150/#151/#152 build on it). `bolero::check!`
+targets run on **stable** via the `bombay-fuzz-replay` flake check
+(`cd fuzz && cargo test`, DefaultEngine = deterministic corpus-replay +
+bounded-random); nightly sanitized fuzzing is #152, quarantined to CI env (no
+`fuzz/rust-toolchain.toml`).
+
+Targets: `smoke` (wiring proof) and `mailbox_state_machine` — a model-based
+differential over the **sync** mailbox surface (`try_send`/`drain`/clone/drop)
+against a `VecDeque` oracle, asserting FIFO + exactly-once + capacity
+backpressure. Sync-only so #151's MIRI job runs the same surface. Exact-memory /
+leak assertion is deferred to #151's counting allocator, which plugs into this
+same target.
+
 ## Baseline — 2026-06-29 (after #77)
 
 Workspace line coverage **60.85% (5686/9345)** — but that blends the SUT with untested crates
