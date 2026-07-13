@@ -22,7 +22,7 @@ mod spawn;
 
 pub use self::{
     actor_ref::{ActorRef, WeakActorRef},
-    recipient::Recipient,
+    recipient::{Recipient, WeakRecipient},
     spawn::{DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult},
 };
 
