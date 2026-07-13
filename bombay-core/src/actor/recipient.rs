@@ -14,7 +14,7 @@ use core::{any::type_name, fmt};
 use futures::future::BoxFuture;
 
 use crate::{
-    actor::{Actor, ActorRef},
+    actor::{Actor, ActorRef, WeakActorRef},
     error::TellError,
     mailbox::{ActorId, TrySendError},
 };
@@ -32,6 +32,8 @@ trait ErasedRecipient<M>: Send + Sync {
     fn id(&self) -> ActorId;
     /// Whether the target's mailbox is still open.
     fn is_alive(&self) -> bool;
+    /// Downgrades to a non-pinning erased handle.
+    fn downgrade(&self) -> WeakRecipient<M>;
 }
 
 impl<A, M> ErasedRecipient<M> for ActorRef<A>
@@ -70,6 +72,36 @@ where
 
     fn is_alive(&self) -> bool {
         Self::is_alive(self)
+    }
+
+    fn downgrade(&self) -> WeakRecipient<M> {
+        WeakRecipient {
+            inner: Arc::new(Self::downgrade(self)),
+        }
+    }
+}
+
+/// The erased operations a [`WeakRecipient<M>`] needs.
+///
+/// Non-pinning: upgrading yields a [`Recipient<M>`] only while a strong sender
+/// still exists.
+trait ErasedWeakRecipient<M>: Send + Sync {
+    fn upgrade(&self) -> Option<Recipient<M>>;
+    fn id(&self) -> ActorId;
+}
+
+impl<A, M> ErasedWeakRecipient<M> for WeakActorRef<A>
+where
+    A: Actor,
+    A::Msg: From<M>,
+    M: Clone + Send + 'static,
+{
+    fn upgrade(&self) -> Option<Recipient<M>> {
+        Self::upgrade(self).map(Recipient::from)
+    }
+
+    fn id(&self) -> ActorId {
+        Self::id(self)
     }
 }
 
@@ -133,6 +165,52 @@ impl<M> Recipient<M> {
     #[must_use]
     pub fn is_alive(&self) -> bool {
         self.inner.is_alive()
+    }
+
+    /// Downgrades to a non-pinning [`WeakRecipient`].
+    #[must_use]
+    pub fn downgrade(&self) -> WeakRecipient<M> {
+        self.inner.downgrade()
+    }
+}
+
+/// A non-pinning, type-erased handle.
+///
+/// [`upgrade`](WeakRecipient::upgrade) yields a strong [`Recipient`] only while
+/// the target's mailbox is still open.
+pub struct WeakRecipient<M> {
+    inner: Arc<dyn ErasedWeakRecipient<M>>,
+}
+
+impl<M> Clone for WeakRecipient<M> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: Arc::clone(&self.inner),
+        }
+    }
+}
+
+impl<M> fmt::Debug for WeakRecipient<M> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("WeakRecipient")
+            .field("id", &self.inner.id())
+            .field("msg", &type_name::<M>())
+            .finish_non_exhaustive()
+    }
+}
+
+impl<M> WeakRecipient<M> {
+    /// Upgrades to a strong [`Recipient`], or `None` if every strong sender has
+    /// dropped (the actor is gone).
+    #[must_use]
+    pub fn upgrade(&self) -> Option<Recipient<M>> {
+        self.inner.upgrade()
+    }
+
+    /// The target actor's identity, preserved through erasure.
+    #[must_use]
+    pub fn id(&self) -> ActorId {
+        self.inner.id()
     }
 }
 
@@ -375,5 +453,37 @@ mod tests {
             recipient.tell(Tick).await,
             Err(TellError::ActorNotAlive(Tick))
         ));
+    }
+
+    /// A weak recipient upgrades while a strong sender lives and returns `None`
+    /// once every strong sender drops — and preserves `id` throughout.
+    #[tokio::test]
+    async fn weak_recipient_upgrades_while_alive_then_none_after_drop() {
+        let (ledger, _rx) = build::<Ledger>(7, 4);
+        let recipient: Recipient<Tick> = ledger.recipient();
+        let weak = recipient.downgrade();
+
+        assert_eq!(
+            weak.id(),
+            ActorId::new(7),
+            "id survives erasure + downgrade"
+        );
+        assert!(weak.upgrade().is_some(), "alive -> upgradable");
+
+        drop(recipient);
+        drop(ledger); // every strong sender now gone (receiver `_rx` still held)
+        assert!(
+            weak.upgrade().is_none(),
+            "all strong senders dropped -> not upgradable"
+        );
+    }
+
+    /// `id` is preserved through the strong erasure and the downgrade.
+    #[test]
+    fn recipient_preserves_actor_id_through_erasure() {
+        let (ledger, _rx) = build::<Ledger>(42, 4);
+        let recipient: Recipient<Tick> = ledger.recipient();
+        assert_eq!(recipient.id(), ActorId::new(42));
+        assert_eq!(recipient.downgrade().id(), ActorId::new(42));
     }
 }
