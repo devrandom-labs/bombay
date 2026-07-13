@@ -243,6 +243,30 @@ No README change (same target-API posture as #113/#115/#116/#117). The #117
 finalization matrix (bench/mutation/property/fuzz/MIRI/DST + exact-memory/no-leak)
 for this code is owned by #146–#152.
 
+### `actor-ref` context tests (#146) — done
+First of the #117 finalization sub-issues (split from PR #144): four behaviors
+that were only covered *incidentally* (invariants i12b/i19 exercise them through
+`tell`) now each have a canonical, falsifiable test in their natural location
+(`actor_ref.rs`). No production change; the test fixture's `ProbeMsg` gains a
+`u64` payload so a delivery-failure test can pin the *exact* handed-back message
+rather than a ZST. A "reap" is modelled by dropping the `MailboxReceiver` — what
+the run-loop does on stop.
+
+**+4 tests** (`actor_ref.rs`):
+- **Lifecycle / non-pinning** — `weak_actor_ref_does_not_pin_channel`: after the
+  sole strong `ActorRef` drops, neither a `WeakActorRef` nor a clone of it can
+  `upgrade`, and the receiver observes the channel disconnected (`recv → None`).
+- **Lifecycle / no-resurrection** (`@bug`) — `stale_ref_cannot_resurrect_reaped_actor`:
+  a weak ref captured while alive stays `None` after a full reap (senders + receiver
+  gone), re-cloning is no back door, and the `id` survives only as a tombstone.
+- **Defensive boundary / handback** — `send_to_reaped_actor_returns_actor_not_alive`:
+  a `tell` to a reaped actor fails `TellError::ActorNotAlive`, is `is_terminal`,
+  and hands the exact undelivered `ProbeMsg(42)` back.
+- **Sequence / shared liveness** — `cloned_sender_liveness_via_is_closed`:
+  `is_alive`/`is_closed` read identically across cloned senders; a surviving clone
+  keeps liveness true, and reaping flips every clone to closed at once. Verified
+  falsifiable (stubbing `is_alive` to `true` turns it red).
+
 ## Baseline — 2026-06-29 (after #77)
 
 Workspace line coverage **60.85% (5686/9345)** — but that blends the SUT with untested crates
