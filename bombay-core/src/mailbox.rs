@@ -270,6 +270,21 @@ impl<A: Mailboxed> MailboxSender<A> {
         }
     }
 
+    /// Non-blocking sibling of [`send_message`](Self::send_message): enqueues a
+    /// domain `msg` (embedding a strong `self_sender`, ADR-0003) without waiting.
+    ///
+    /// # Errors
+    ///
+    /// [`TrySendError::Full`] if the mailbox is at capacity (retryable
+    /// backpressure) or [`TrySendError::Closed`] if the receiver has been dropped
+    /// (terminal). Both carry the undelivered [`Signal`] back.
+    pub fn try_send_message(&self, msg: A::Msg) -> Result<(), TrySendError<A>> {
+        self.try_send(Signal::Message {
+            msg,
+            self_sender: self.clone(),
+        })
+    }
+
     /// Whether the mailbox has closed — the receiver (the actor's run-loop) has
     /// been dropped, so no further signal can be delivered. A send-and-observe
     /// backup to push death-detection; **not** a pre-send liveness gate (that
@@ -776,6 +791,30 @@ mod tests {
             self_sender: tx.clone(),
         })
         .expect("fits after drain");
+    }
+
+    #[tokio::test]
+    async fn try_send_message_delivers_then_reports_full_then_closed() {
+        // Delivers into an open mailbox, embedding a self_sender (ADR-0003).
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1));
+        tx.try_send_message(1).expect("first fits");
+        // Capacity 1 and full: the next try is backpressure, not delivery.
+        assert!(matches!(
+            tx.try_send_message(2),
+            Err(TrySendError::Full(Signal::Message { msg: 2, .. }))
+        ));
+        assert!(matches!(
+            rx.recv().await,
+            Some(Signal::Message { msg: 1, .. })
+        ));
+
+        // Receiver dropped: a try now reports the terminal Closed, not Full.
+        let (closed_tx, closed_rx) = Mailbox::<Probe>::bounded(cap(1));
+        drop(closed_rx);
+        assert!(matches!(
+            closed_tx.try_send_message(9),
+            Err(TrySendError::Closed(Signal::Message { msg: 9, .. }))
+        ));
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
