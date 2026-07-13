@@ -11,6 +11,8 @@ use std::sync::Arc;
 
 use core::{any::type_name, fmt};
 
+use futures::future::BoxFuture;
+
 use crate::{
     actor::{Actor, ActorRef},
     error::TellError,
@@ -21,6 +23,9 @@ use crate::{
 /// menu accepts `M`. `M` is the trait's parameter (not a method generic), so
 /// `dyn ErasedRecipient<M>` is object-safe.
 trait ErasedRecipient<M>: Send + Sync {
+    /// Awaiting send: convert `M -> A::Msg` and enqueue, waiting for capacity.
+    /// Boxes the future (the cost of `dyn` async dispatch) — never the message.
+    fn tell(&self, msg: M) -> BoxFuture<'_, Result<(), TellError<M>>>;
     /// Non-blocking send: convert `M -> A::Msg` and enqueue, or hand `M` back.
     fn try_tell(&self, msg: M) -> Result<(), TellError<M>>;
     /// The target actor's identity (preserved through erasure).
@@ -35,6 +40,17 @@ where
     A::Msg: From<M>,
     M: Clone + Send + 'static,
 {
+    fn tell(&self, msg: M) -> BoxFuture<'_, Result<(), TellError<M>>> {
+        Box::pin(async move {
+            let converted = A::Msg::from(msg.clone());
+            match self.mailbox_sender().send_message(converted).await {
+                Ok(()) => Ok(()),
+                // The awaiting path only fails when the mailbox is closed.
+                Err(_undelivered) => Err(TellError::ActorNotAlive(msg)),
+            }
+        })
+    }
+
     fn try_tell(&self, msg: M) -> Result<(), TellError<M>> {
         // Clone `M` before converting: erasure leaves no `A::Msg -> M` path, so
         // the retained original is the only way to hand a typed `M` back on
@@ -84,6 +100,17 @@ impl<M> fmt::Debug for Recipient<M> {
 }
 
 impl<M> Recipient<M> {
+    /// Awaiting send: delivers `M` converted to the target's menu, waiting for
+    /// capacity. Parity with [`ActorRef::tell`].
+    ///
+    /// # Errors
+    ///
+    /// [`TellError::ActorNotAlive`] (terminal) carrying `M` back if the actor has
+    /// stopped. The awaiting path never returns `MailboxFull`.
+    pub async fn tell(&self, msg: M) -> Result<(), TellError<M>> {
+        self.inner.tell(msg).await
+    }
+
     /// Non-blocking send: delivers `M` converted to the target's menu, or hands
     /// `M` back.
     ///
@@ -315,6 +342,37 @@ mod tests {
 
         assert!(matches!(
             recipient.try_tell(Tick),
+            Err(TellError::ActorNotAlive(Tick))
+        ));
+    }
+
+    /// The async `tell` awaits capacity and delivers the converted variant.
+    #[tokio::test]
+    async fn tell_awaits_then_delivers_the_converted_variant() {
+        let (ledger, mut rx) = build::<Ledger>(1, 4);
+        let recipient: Recipient<Tick> = ledger.recipient();
+
+        recipient.tell(Tick).await.expect("delivered");
+
+        assert!(matches!(
+            rx.recv().await,
+            Some(Signal::Message {
+                msg: LedgerCmd::Post,
+                ..
+            })
+        ));
+    }
+
+    /// The async `tell` to a stopped actor is terminal `ActorNotAlive` with the
+    /// original `M` back (the awaiting path has no `Full`).
+    #[tokio::test]
+    async fn tell_to_stopped_actor_reports_not_alive() {
+        let (ledger, rx) = build::<Ledger>(1, 4);
+        let recipient: Recipient<Tick> = ledger.recipient();
+        drop(rx);
+
+        assert!(matches!(
+            recipient.tell(Tick).await,
             Err(TellError::ActorNotAlive(Tick))
         ));
     }
