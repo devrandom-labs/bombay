@@ -245,7 +245,10 @@ impl<A: Actor> ActorRef<A> {
 mod tests {
     use super::*;
 
+    use core::time::Duration;
+
     use futures::stream::AbortHandle;
+    use tokio::time::timeout;
     use tokio_util::sync::CancellationToken;
 
     use crate::{
@@ -254,6 +257,13 @@ mod tests {
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
         message::Msg,
     };
+
+    /// Upper bound on how long a delivered message may take to surface on the
+    /// receiver. A live round-trip is instant; this only fires if a send/tell
+    /// silently fails to enqueue — turning what would be an unbounded hang into a
+    /// fast, legible assertion failure (so a stubbed-out `tell`/`try_tell` is
+    /// *caught*, not merely a mutation-run timeout).
+    const DELIVERY: Duration = Duration::from_secs(5);
 
     /// The shared broadcast signal. `Clone` because `Recipient<M>` requires it
     /// (the typed-handback consequence, ADR-0004).
@@ -357,8 +367,11 @@ mod tests {
             .try_tell(Tick)
             .expect("delivered into an open mailbox");
 
+        let delivered = timeout(DELIVERY, rx.recv())
+            .await
+            .expect("the converted variant must arrive, not hang");
         assert!(matches!(
-            rx.recv().await,
+            delivered,
             Some(Signal::Message {
                 msg: LedgerCmd::Post,
                 ..
@@ -379,15 +392,21 @@ mod tests {
             recipient.try_tell(Tick).expect("delivered");
         }
 
+        let to_ledger = timeout(DELIVERY, ledger_rx.recv())
+            .await
+            .expect("the ledger's own variant must arrive, not hang");
         assert!(matches!(
-            ledger_rx.recv().await,
+            to_ledger,
             Some(Signal::Message {
                 msg: LedgerCmd::Post,
                 ..
             })
         ));
+        let to_audit = timeout(DELIVERY, audit_rx.recv())
+            .await
+            .expect("the audit's own variant must arrive, not hang");
         assert!(matches!(
-            audit_rx.recv().await,
+            to_audit,
             Some(Signal::Message {
                 msg: AuditCmd::Record,
                 ..
@@ -432,8 +451,11 @@ mod tests {
 
         recipient.tell(Tick).await.expect("delivered");
 
+        let delivered = timeout(DELIVERY, rx.recv())
+            .await
+            .expect("the awaited tell must deliver, not hang");
         assert!(matches!(
-            rx.recv().await,
+            delivered,
             Some(Signal::Message {
                 msg: LedgerCmd::Post,
                 ..

@@ -1104,7 +1104,10 @@ async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
 
     // (1) The Block message enters the handler and parks; its slot is now free.
     actor_ref.tell(Cmd::Block).await.expect("send Block");
-    entered_rx.await.expect("handler entered and parked");
+    timeout(TERMINATE, entered_rx)
+        .await
+        .expect("Block must reach the handler, not hang")
+        .expect("handler entered and parked");
 
     // (2) Fill the single slot.
     actor_ref
@@ -1126,8 +1129,9 @@ async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
 
     // (4) Release the handler; the loop drains the queued Drain, freeing the slot.
     release_tx.send(()).expect("release the parked handler");
-    drained_rx
+    timeout(TERMINATE, drained_rx)
         .await
+        .expect("the queued Drain must be dequeued, not hang")
         .expect("queued Drain dequeued (slot freed)");
 
     // (5) The SAME handed-back message now fits — capacity was freed by draining.

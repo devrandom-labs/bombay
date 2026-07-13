@@ -168,7 +168,10 @@ async fn kill_during_on_start_yields_killed_no_on_stop_no_handling() {
         Arc::clone(&stopped),
     ));
 
-    entered_rx.await.expect("on_start reached the gate");
+    timeout(TERMINATE, entered_rx)
+        .await
+        .expect("on_start must reach the gate, not hang")
+        .expect("on_start reached the gate");
     actor_ref.kill(); // abort while on_start is parked
 
     let outcome = timeout(TERMINATE, run)
@@ -255,7 +258,10 @@ async fn kill_during_on_stop_yields_killed_and_skips_post_park_effect() {
     let run = prepared.spawn((entered_tx, release_rx, Arc::clone(&post_park)));
 
     actor_ref.stop(); // graceful → loop returns Normal → on_stop runs
-    entered_rx.await.expect("on_stop reached the gate");
+    timeout(TERMINATE, entered_rx)
+        .await
+        .expect("on_stop must reach the gate, not hang")
+        .expect("on_stop reached the gate");
     actor_ref.kill(); // abort while on_stop is parked
 
     let outcome = timeout(TERMINATE, run)
