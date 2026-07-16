@@ -1,4 +1,5 @@
-//! Test-only helpers shared by the unit and integration suites (card #150).
+//! Test-only helpers shared by the unit and integration suites: the MIRI-aware
+//! fail-fast bound (card #150) and the exact-memory counting allocator (#151).
 //!
 //! Behind the `test-support` feature: `tests/*.rs` link the lib externally and
 //! cannot reach `pub(crate)`, and `#[doc(hidden)]` is not access control.

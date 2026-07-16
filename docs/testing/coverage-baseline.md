@@ -407,3 +407,16 @@ Falsifiability verified per the #149 precedent: a message-vanishing probe in
 Standing caveats: MIRI **samples** schedules (a green lane is evidence, not proof), and
 the #148 fail-fast bounds are MIRI-aware via `test_support::terminate_bound()` (5 s
 native, 10 min under the interpreter — MIRI's virtual clock ticks 5 µs per basic block).
+
+## Exact-memory reclamation (#151) — in-gate counting allocator
+`bombay-core/tests/alloc_exact.rs` — a **dedicated one-test binary** (a
+`#[global_allocator]` counts its whole process, and only a lone test is
+process-isolated under both nextest and plain `cargo test`) asserting the ADR-0003
+`queue → Signal → Sender → Arc<Shared>` cycle reclaims to an **exact** bytes+allocs
+baseline after a mid-backlog receiver drop. `CountingAlloc` lives on the `test-support`
+seam (signed counters; `Relaxed` with a structural single-thread proof). A warm-up round
+before the baseline excludes one-time lazy init, keeping the assertion exact with no
+whitelist. Falsifiability verified: `mem::forget(rx)` fails it (+992 bytes / +11 allocs
+observed), then reverted. #151's other half — the nightly MIRI leak/UB job — was
+delivered by #150's `miri.yml` (the leak checker is active in the sweep; the
+mid-backlog Drop test runs in both legs).
