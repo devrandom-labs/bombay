@@ -1,0 +1,103 @@
+name: miri
+
+on:
+  schedule:
+    - cron: "0 4 * * *" # nightly 04:00 UTC (an hour after cesr's deep-fuzz)
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  # Scope by event so a PR push cancels only the superseded PR run, never a
+  # concurrently running nightly on the same ref.
+  group: miri-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # PINNED (not floating `nightly`) so a MIRI finding reproduces on the exact
+  # interpreter that produced it — these are unstable `-Z` flags with no
+  # cross-version guarantee. MUST equal the date in flake.nix's `miriToolchain`.
+  # Kept out of any rust-toolchain.toml on purpose: bombay builds stable-only
+  # (#60) and nightly stays quarantined to this lane (#152).
+  MIRI_TOOLCHAIN: nightly-2026-06-15
+
+jobs:
+  # Leg 1 — UB / data-race / leak sweep over the whole spine, single seed.
+  # Measured 42 s real locally (79 passed / 3 filtered, isolation on).
+  miri-sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned nightly + miri
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.MIRI_TOOLCHAIN }}
+          components: miri, rust-src
+
+      - name: Sweep
+        # RUSTUP_TOOLCHAIN forces this step onto the pinned nightly — the
+        # repo-root rust-toolchain.toml otherwise shadows it to stable.
+        #
+        # Isolation stays ON: it gives a deterministic clock and scheduler,
+        # which is the whole point of a race lane. The cost is that proptest
+        # cannot run (it writes .proptest-regressions; filesystem I/O is what
+        # isolation forbids), hence `--skip prop_`. proptest's value is
+        # input-space breadth, which MIRI does not add to — that surface is
+        # #149/#152's bolero lane.
+        env:
+          RUSTUP_TOOLCHAIN: ${{ env.MIRI_TOOLCHAIN }}
+          MIRIFLAGS: "-Zmiri-strict-provenance"
+        run: cargo miri test -p bombay-core --lib -- --skip prop_
+
+  # Leg 2 — schedule exploration, scoped to the ref-model race tests.
+  # Measured 24.6 s real / 3 m 56 s CPU locally for all 64 seeds x 3 tests.
+  miri-seeds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned nightly + miri
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.MIRI_TOOLCHAIN }}
+          components: miri, rust-src
+
+      - name: Explore schedules over the ref-model races
+        # Scoped to the race tests on purpose: many-seeds over the FULL suite
+        # is hours on a 2-core runner. These three are the #150 scenarios
+        # (they already exist — each invariant lives in one canonical
+        # location). -Zmiri-many-seeds-keep-going reports what FRACTION of
+        # seeds fail — the difference between "flaky race" and "always
+        # broken".
+        env:
+          RUSTUP_TOOLCHAIN: ${{ env.MIRI_TOOLCHAIN }}
+          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-many-seeds=0..64 -Zmiri-many-seeds-keep-going"
+        run: |
+          cargo miri test -p bombay-core --lib -- \
+            dropping_last_actor_ref_stops_the_actor \
+            queued_message_is_handled_even_if_last_ref_drops_first \
+            dropping_receiver_mid_backlog_frees_the_queued_message
+
+  miri-gate:
+    # Single stable check name. Requiring the leg jobs directly would mean
+    # contexts that silently drift; this collapses them into one. `always()`
+    # so it still reports (as a failure) when a needed job fails or is
+    # cancelled — a skipped required check leaves a PR stuck at "Expected".
+    name: miri-gate
+    if: always()
+    needs: [miri-sweep, miri-seeds]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every MIRI leg green
+        run: |
+          for result in ${{ join(needs.*.result, ' ') }}; do
+            if [ "$result" != "success" ]; then
+              echo "::error::a MIRI leg finished with result: $result"
+              exit 1
+            fi
+          done
+          echo "all MIRI legs green"
