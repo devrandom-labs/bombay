@@ -410,6 +410,12 @@ workflow `env`, never a `fuzz/rust-toolchain.toml`, or a rustup user's plain
   (libFuzzer `-merge=1`) before re-upload. PR runs read the corpus but never write it.
 - **Durations** — dispatch input > PR smoke (60 s) > nightly (120 s).
 
+First run measured 2026-07-16 (PR #163, 60 s smoke depth, cold corpus): **3,539,931 runs
+in 61 s** (58,031 exec/s), coverage climbing 120 → 244 edges / 121 → 1,026 features, corpus
+1 → 206 inputs (7,224 b), no crash. Job wall-clock 142 s incl. the nightly toolchain +
+`cargo install cargo-bolero` + sancov build; `fuzz-gate` 3 s. The PR path was confirmed to
+restore the corpus and then **skip** Minimize/Upload, per the read-never-write rule above.
+
 A crash is only half-caught here: it must be minimized and committed as a seed under
 `fuzz/tests/__fuzz__/<target>/corpus/`, so the in-gate #149 replay reproduces it forever
 on stable. That is what stops a nightly-only find from regressing once the lane goes quiet.
@@ -417,9 +423,14 @@ on stable. That is what stops a nightly-only find from regressing once the lane 
 Falsifiability, per the #149/#150 precedent, is checked at two levels: the *gate over the
 workflow* (`bombay-actionlint`, which also shellchecks the `run:` blocks) was confirmed to
 FAIL on an injected bad input at `fuzz.yml:58`, then reverted; the *lane itself* is
-exercised by its own `pull_request` trigger — this file's numbers come from that run, not
-from a local simulation. Standing caveat: fuzzing **samples** an input space (a green
-lane is evidence, not proof), and a 60/120 s budget is a smoke depth, not a campaign.
+exercised by its own `pull_request` trigger — the numbers above come from that run, not
+from a local simulation, and rising coverage is the evidence it fuzzed rather than merely
+exited 0.
+
+Standing caveats: fuzzing **samples** an input space (a green lane is evidence, not proof);
+a 60/120 s budget is smoke depth, not a campaign; and `bombay-actionlint` — like every
+flake check — sources from the **git tree**, so it silently passes over an *untracked*
+workflow. Stage a new file before believing its green.
 
 ## MIRI lane (#150) — UB/race/leak coverage of the ref-model, incl. flume's internals
 `.github/workflows/miri.yml`, scheduled nightly + PR + dispatch; **never** the flake gate
