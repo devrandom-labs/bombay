@@ -388,3 +388,22 @@ Wiring scenarios (#77) ≠ covering the code: the wired core is a healthy **77%*
 `actor_ref.rs` at **46%** is the one wired module with a large hole, and four modules sit in the
 low-70s. Gap-closing priority: **`actor_ref` scenarios first**, then the low-70s error/edge
 branches. The `actors` 0% is the separate big hole (#78).
+
+## MIRI lane (#150) — UB/race/leak coverage of the ref-model, incl. flume's internals
+`.github/workflows/miri.yml`, scheduled nightly + PR + dispatch; **never** the flake gate
+(nightly stays quarantined per #152; reproduce locally via `nix develop .#miri`). MIRI
+interprets flume's *real* `std::sync` atomics — the only tool that reaches them, since
+loom/shuttle require opt-in instrumentation flume does not ship (ADR-0005). Two legs,
+both measured 2026-07-16:
+- **Sweep** — full `bombay-core --lib`, isolation on, `--skip prop_` (proptest's
+  failure-persistence file I/O is what isolation forbids): 79 passed / 0 failed /
+  3 filtered, **42 s real**.
+- **Schedules** — `-Zmiri-many-seeds=0..64 -Zmiri-many-seeds-keep-going` over the three
+  canonical ref-model race tests (last-ref-drop vs tell; receiver-drop vs in-flight
+  send; the enqueue-before-last-drop self-pin): 64 seeds × 3 tests, **24.6 s real**.
+
+Falsifiability verified per the #149 precedent: a message-vanishing probe in
+`send_message` makes the self-pin test FAIL (0 ≠ 1) under the lane, then reverted.
+Standing caveats: MIRI **samples** schedules (a green lane is evidence, not proof), and
+the #148 fail-fast bounds are MIRI-aware via `test_support::terminate_bound()` (5 s
+native, 10 min under the interpreter — MIRI's virtual clock ticks 5 µs per basic block).
