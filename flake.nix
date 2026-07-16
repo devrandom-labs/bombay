@@ -43,6 +43,32 @@
           sha256 = "sha256-mvUGEOHYJpn3ikC5hckneuGixaC+yGrkMM/liDIDgoU=";
         };
 
+        # Nightly toolchain for the scheduled MIRI lane (card #150). Deliberately
+        # NOT a build toolchain and NOT wired into `nix flake check` — bombay
+        # builds stable-only (#60), and this shell exists so a MIRI finding is
+        # reproducible LOCALLY instead of push-and-pray. The CI lane pins the
+        # SAME date via RUSTUP_TOOLCHAIN (cesr `fuzz.yml`'s nightly-quarantine
+        # pattern), so the two never diverge.
+        #
+        # MIRI is the only tool that can see bombay's ref-model concurrency:
+        # loom/shuttle require the code under test to opt in (`cfg(loom)` /
+        # `shuttle::sync`), and flume — which owns 100% of bombay's ref-count
+        # liveness per ADR-0003 — ships no such instrumentation. MIRI is an
+        # interpreter, so it executes flume's real `std::sync` atomics.
+        miriToolchain =
+          (fenix.packages.${system}.toolchainOf {
+            channel = "nightly";
+            date = "2026-06-15";
+            sha256 = "sha256-oXipquOa/9M0uuo8wGuRaY2+ZqLGywZOOnRK05Mm0a0=";
+          }).withComponents
+            [
+              "cargo"
+              "rustc"
+              "rust-src"
+              "rust-std"
+              "miri"
+            ];
+
         # crane 0.18.0+ wants `overrideToolchain` called with a FUNCTION that
         # builds the toolchain for a given pkgs instantiation (correct
         # cross-compilation splicing), not a bare derivation. We don't
@@ -254,6 +280,18 @@
             cargo-mutants
             gh
           ];
+        };
+
+        # `nix develop .#miri` — the scheduled MIRI lane's toolchain, on demand.
+        # Kept OUT of `devShells.default` so the everyday shell stays stable-only
+        # and nobody picks up nightly by accident. See `miriToolchain` above.
+        devShells.miri = pkgs.mkShell {
+          packages = [ miriToolchain ];
+          shellHook = ''
+            echo "bombay MIRI shell (card #150) — nightly, scheduled-lane only."
+            echo "  cargo miri setup"
+            echo "  MIRIFLAGS=\"-Zmiri-strict-provenance -Zmiri-many-seeds=64\" cargo miri test -p bombay-core"
+          '';
         };
 
         # On-demand coverage reports (card #85), NOT gating checks — coverage
