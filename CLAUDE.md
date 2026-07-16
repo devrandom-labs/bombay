@@ -16,15 +16,20 @@ This project is **GitHub-project-cards-driven with test-driven development**. Do
 
 1. **Start from a card.** All work is scoped by GitHub issues ("cards") on the **Bombay** project board (project #4, owner `devrandom-labs`), organized into milestones M0→M7. Pick the next unblocked card; reference its number in branches, commits, and PRs.
 2. **Test first.** Every code change is test-driven — write the failing test, watch it fail, then implement to green. Use the `superpowers:test-driven-development` skill.
-3. **Keep `README.md` a user-facing public-API document — maintain it per *card*, not per *commit*.** The README describes the public API and how to use/test it; card numbers, per-module test narratives, and internal progress never belong in it (those live in commits, PRs, and `docs/`). When you finish a card, *before the PR*, classify what it changed and update the README accordingly:
+3. **One invariant per checkbox — a card's scope is a checklist, never prose.** When writing *or* closing a card:
+   - **One invariant per bullet.** Never bundle several into a prose list. A card that says "assert no panic, FIFO + exactly-once, self-pin drain-or-abandon per stop mode" reads as *one checked box* when only the first ships; as three bullets it visibly reads 1/3 done, and nobody closes that.
+   - **Split wiring from invariants.** A bullet about a workspace, a flake check, or a CI lane is *wiring* — objectively done when it runs. A bullet about a property being asserted is an *invariant*. Bundled in one card, the wiring completes, the card feels done, and the invariants get silently trimmed. Prefer separate cards, or at minimum separate bullets.
+   - **Close `COMPLETED` only when every bullet is either shipped (name the file/test/check) or explicitly deferred to a named follow-up card.** Silence is not a deferral. Record deferrals in the PR body.
+   - *Why this rule exists:* #149 shipped every wiring bullet (isolated `fuzz/` workspace, in-gate replay check, nightly quarantine, capacity boundaries) and dropped its one semantic bullet (`recv`/`send_message`/self-pin drain-or-abandon per stop mode), then closed `COMPLETED`. The result was a fuzz lane pointed at flume rather than bombay's invariants — which #152 then reported green over 3.5M executions. Green lanes over the wrong surface look exactly like green lanes over the right one. See #164/#165/#166.
+4. **Keep `README.md` a user-facing public-API document — maintain it per *card*, not per *commit*.** The README describes the public API and how to use/test it; card numbers, per-module test narratives, and internal progress never belong in it (those live in commits, PRs, and `docs/`). When you finish a card, *before the PR*, classify what it changed and update the README accordingly:
    - **Public API changed** (new/renamed/removed public item, new feature flag, changed default behavior, new example) → update the relevant *"public API at a glance"* bullet and the usage example if user-visible. **This is the main case.**
    - **No API change, tests/coverage moved** → update [`docs/testing/coverage-baseline.md`](docs/testing/coverage-baseline.md); the README only *links* to it and carries no coverage number (nothing to go stale).
    - **No API change, no coverage change** (refactor / perf / robustness / bugfix) → if it makes the library meaningfully better, refresh **one** salient-feature line (what it now does *better*); otherwise no README change is needed.
    - **Every ~10 cards, or when a section bloats / the README passes ~120 lines** → **consolidate**: re-tighten to the public-API essentials, fold or drop accumulated notes, remove anything stale.
 
    Enable the tracked hooks once per clone (mirrors nexus): `git config core.hooksPath .githooks`. The `pre-commit` hook lints any staged GitHub Actions workflow; it no longer forces a per-commit README change (that mechanical rule is what bloated the README).
-4. **`nix flake check` is the single gate** (build + clippy + fmt + tests).
-5. **No Claude/Anthropic attribution** in commit messages or PR bodies (no `Co-Authored-By` trailer, no "Generated with" line).
+5. **`nix flake check` is the single gate** (build + clippy + fmt + tests). It sources from the **git tree** — an untracked file is invisible to it, so a check over a new file passes vacuously until you `git add`. A silent `nix build` means *cached*; a derivation that truly ran logs `building '...drv'`.
+6. **No Claude/Anthropic attribution** in commit messages or PR bodies (no `Co-Authored-By` trailer, no "Generated with" line).
 
 ### Checking cards — use `gh`, never Linear
 
