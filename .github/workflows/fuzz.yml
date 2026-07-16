@@ -1,0 +1,161 @@
+name: deep-fuzz
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # nightly 03:00 UTC (an hour before miri.yml)
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: "Seconds to fuzz each target"
+        required: false
+        default: "120"
+
+concurrency:
+  # Scope by event so a PR push cancels only the superseded PR run, never a
+  # concurrently running nightly on the same ref.
+  group: fuzz-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # PINNED (not floating `nightly`) so a sancov/`-Zsanitizer` finding reproduces
+  # on the exact compiler that produced it — those are unstable `-Z` flags with
+  # no cross-version guarantee. Bump deliberately in a PR. Equal to miri.yml's
+  # `MIRI_TOOLCHAIN` / flake.nix's `miriToolchain`: one nightly date for the
+  # whole repo, so a bump is one review.
+  #
+  # Kept OUT of a `fuzz/rust-toolchain.toml` on purpose: such a file would make
+  # a rustup user's plain `cd fuzz && cargo test` corpus-replay pull nightly,
+  # breaking #149's "replay needs no nightly" contract. Bombay builds
+  # stable-only (#60); nightly stays quarantined to this lane and miri.yml.
+  FUZZ_TOOLCHAIN: nightly-2026-06-15
+
+jobs:
+  # The nightly half of #149's bolero harness: the SAME `check!` targets the
+  # in-gate `bombay-fuzz-replay` check replays on stable, recompiled under
+  # nightly with ASan + sancov so they become coverage-guided fuzzers.
+  #
+  # `smoke` is deliberately NOT in this matrix — it is a total function
+  # (`let _ = input.len()`) that exists to prove the harness wires up, and
+  # cannot fail by construction. Fuzzing it would burn a runner slot nightly
+  # for zero signal. Only targets with reachable assertions belong here.
+  deep-fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read # gh run download of the previous night's corpus artifact
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - mailbox_state_machine
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned nightly toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.FUZZ_TOOLCHAIN }}
+          components: llvm-tools-preview
+
+      - name: System deps for cargo-bolero
+        run: sudo apt-get update && sudo apt-get install -y binutils-dev libunwind-dev
+
+      - name: Install cargo-bolero
+        # Built with the repo-root stable toolchain (this step runs from the
+        # repo root). Pin to the same 0.13.x series as the `bolero` lib in
+        # fuzz/Cargo.toml, so a `--force` install cannot silently pull a future
+        # release with an incompatible CLI.
+        run: cargo install cargo-bolero --version '^0.13' --locked --force
+
+      - name: Restore previous corpus
+        # Corpus compounds night over night: seed this run from the last
+        # successful nightly's uploaded corpus. Artifacts are NOT shared across
+        # runs by default, so resolve the run id explicitly. The first-ever run
+        # has no prior artifact — tolerated.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          corpus_dir="fuzz/tests/__fuzz__/${{ matrix.target }}/corpus"
+          run_id="$(gh run list --workflow fuzz.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty' 2>/dev/null || true)"
+          if [ -n "$run_id" ]; then
+            gh run download "$run_id" --name "corpus-${{ matrix.target }}" --dir "$corpus_dir" || true
+          fi
+
+      - name: Fuzz ${{ matrix.target }}
+        working-directory: fuzz
+        # RUSTUP_TOOLCHAIN forces this step — and the cargo/rustc children
+        # cargo-bolero spawns — onto the pinned nightly; the repo-root
+        # rust-toolchain.toml otherwise shadows it to stable.
+        # `-Zsanitizer=address` needs nightly.
+        #
+        # Duration: dispatch input > PR smoke (60s) > nightly default (120s).
+        env:
+          RUSTUP_TOOLCHAIN: ${{ env.FUZZ_TOOLCHAIN }}
+        run: |
+          cargo bolero test ${{ matrix.target }} \
+            --sanitizer address \
+            --engine libfuzzer \
+            -E=-max_total_time=${{ github.event.inputs.duration || (github.event_name == 'pull_request' && '60') || '120' }}
+
+      - name: Minimize corpus
+        # `cargo bolero reduce` == libFuzzer `-merge=1`, run in place on the
+        # target's corpus/ dir: keeps one input per new-feature set (prefers
+        # smaller). Only meaningful when the fuzz run found no crash, so it is
+        # skipped on failure. Corpus persistence is a nightly concern — PR smoke
+        # runs read the corpus but never write it back.
+        if: success() && github.event_name != 'pull_request'
+        working-directory: fuzz
+        env:
+          RUSTUP_TOOLCHAIN: ${{ env.FUZZ_TOOLCHAIN }}
+        run: cargo bolero reduce ${{ matrix.target }} --engine libfuzzer
+
+      - name: Upload corpus
+        # Persist the grown + minimized corpus so the next night re-seeds from
+        # it. The dir does not exist until bolero's first run, hence
+        # `if-no-files-found: ignore`.
+        if: success() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: corpus-${{ matrix.target }}
+          path: fuzz/tests/__fuzz__/${{ matrix.target }}/corpus/
+          retention-days: 90
+          if-no-files-found: ignore
+          overwrite: true
+
+      - name: Upload crashes
+        # A crash here is a real finding. It must be minimized and committed as
+        # a seed under `fuzz/tests/__fuzz__/<target>/corpus/`, so the in-gate
+        # #149 replay reproduces it forever on stable — that is what keeps a
+        # nightly-only discovery from regressing after the lane goes quiet.
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crashes-${{ matrix.target }}
+          path: fuzz/tests/__fuzz__/${{ matrix.target }}/crashes/
+          if-no-files-found: ignore
+
+  fuzz-gate:
+    # Single stable check name. Requiring the matrix job directly would mean
+    # per-target contexts that silently drift whenever a target is added or
+    # renamed; this collapses them into one. `always()` so it still reports (as
+    # a failure) when a needed job fails or is cancelled — a skipped required
+    # check leaves a PR stuck at "Expected".
+    name: fuzz-gate
+    if: always()
+    needs: [deep-fuzz]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every fuzz leg green
+        run: |
+          for result in ${{ join(needs.*.result, ' ') }}; do
+            if [ "$result" != "success" ]; then
+              echo "::error::a fuzz leg finished with result: $result"
+              exit 1
+            fi
+          done
+          echo "all fuzz legs green"

@@ -317,8 +317,8 @@ Isolated non-member `fuzz/` workspace (crate `bombay-fuzz`, own `Cargo.lock`) �
 the reusable verification backbone (#150/#151/#152 build on it). `bolero::check!`
 targets run on **stable** via the `bombay-fuzz-replay` flake check
 (`cd fuzz && cargo test`, DefaultEngine = deterministic corpus-replay +
-bounded-random); nightly sanitized fuzzing is #152, quarantined to CI env (no
-`fuzz/rust-toolchain.toml`).
+bounded-random); nightly sanitized fuzzing is the same targets under #152's
+`fuzz.yml`, quarantined to CI env (no `fuzz/rust-toolchain.toml`).
 
 Targets: `smoke` (wiring proof) and `mailbox_state_machine` — a model-based
 differential over the **sync** mailbox surface (`try_send`/`drain`/clone/drop)
@@ -389,9 +389,42 @@ Wiring scenarios (#77) ≠ covering the code: the wired core is a healthy **77%*
 low-70s. Gap-closing priority: **`actor_ref` scenarios first**, then the low-70s error/edge
 branches. The `actors` 0% is the separate big hole (#78).
 
+## deep-fuzz lane (#152) — nightly sanitized half of the #149 bolero harness
+`.github/workflows/fuzz.yml`, scheduled nightly 03:00 UTC + PR + dispatch (a `duration`
+input in seconds); **never** the flake gate. The write-once/run-both-ways payoff of #149:
+the *same* `check!` targets the in-gate `bombay-fuzz-replay` check replays on stable are
+recompiled here under a **pinned** nightly with ASan + sancov, becoming coverage-guided
+fuzzers. Pin (`FUZZ_TOOLCHAIN`) equals miri.yml's `MIRI_TOOLCHAIN` and flake.nix's
+`miriToolchain` — one nightly date repo-wide, so a bump is one review. It lives in the
+workflow `env`, never a `fuzz/rust-toolchain.toml`, or a rustup user's plain
+`cd fuzz && cargo test` replay would pull nightly and break #149's contract.
+
+- **Engine** — libFuzzer + `--sanitizer address`, one leg. cesr's second AFL++/CMPLOG
+  leg and `-use_value_profile=1` are deliberately **not** carried over: both buy their
+  keep on CESR's exact-byte gates (code tables, magic/version prefixes), which a
+  `TypeGenerator`-driven `(u16, Vec<Op>)` mailbox target does not have.
+- **Matrix** — `mailbox_state_machine` only. `smoke` is excluded: it is a total function
+  that cannot fail by construction, so fuzzing it would burn a nightly slot for no signal.
+- **Corpus** — compounds night over night via the `corpus-<target>` artifact (90-day
+  retention), restored by explicit run-id lookup, `cargo bolero reduce`-minimized
+  (libFuzzer `-merge=1`) before re-upload. PR runs read the corpus but never write it.
+- **Durations** — dispatch input > PR smoke (60 s) > nightly (120 s).
+
+A crash is only half-caught here: it must be minimized and committed as a seed under
+`fuzz/tests/__fuzz__/<target>/corpus/`, so the in-gate #149 replay reproduces it forever
+on stable. That is what stops a nightly-only find from regressing once the lane goes quiet.
+
+Falsifiability, per the #149/#150 precedent, is checked at two levels: the *gate over the
+workflow* (`bombay-actionlint`, which also shellchecks the `run:` blocks) was confirmed to
+FAIL on an injected bad input at `fuzz.yml:58`, then reverted; the *lane itself* is
+exercised by its own `pull_request` trigger — this file's numbers come from that run, not
+from a local simulation. Standing caveat: fuzzing **samples** an input space (a green
+lane is evidence, not proof), and a 60/120 s budget is a smoke depth, not a campaign.
+
 ## MIRI lane (#150) — UB/race/leak coverage of the ref-model, incl. flume's internals
 `.github/workflows/miri.yml`, scheduled nightly + PR + dispatch; **never** the flake gate
-(nightly stays quarantined per #152; reproduce locally via `nix develop .#miri`). MIRI
+(nightly stays quarantined to this lane and #152's; reproduce locally via
+`nix develop .#miri`). MIRI
 interprets flume's *real* `std::sync` atomics — the only tool that reaches them, since
 loom/shuttle require opt-in instrumentation flume does not ship (ADR-0005). Two legs,
 both measured 2026-07-16:
