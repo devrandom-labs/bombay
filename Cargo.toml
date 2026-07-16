@@ -89,6 +89,15 @@ allow_attributes_without_reason = "deny"
 name = "bombay"
 
 [profile.release]
+# NOT a size/perf knob — a correctness one (card #169). bombay-core's actor
+# supervision is built on catch_unwind (actor::kind, actor::spawn); `abort`
+# makes those boundaries catch nothing, turning an inspectable PanicError into a
+# process kill. Cargo ignores `panic` for tests, so flipping this breaks nothing
+# the suite can see. `unwind` is also cargo's default: this line exists to state
+# the requirement, and bombay-core's cfg(panic = "abort") compile_error enforces
+# it for any profile — including a downstream consumer's, which this cannot
+# reach.
+panic = "unwind"
 lto = true
 opt-level = 3
 codegen-units = 1
