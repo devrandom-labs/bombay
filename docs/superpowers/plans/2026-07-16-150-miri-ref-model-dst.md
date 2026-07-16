@@ -497,8 +497,10 @@ It must carry the verified evidence — do not paraphrase it away:
   ADR-0003 delegates all ref-count liveness to flume by design.
 - The only loom option would be a `cfg(loom)` seam swapping flume for a bombay-owned
   sender-count — i.e. testing a reimplementation, which the test-quality rule bans.
-- MIRI is an interpreter → executes flume's real atomics. tokio's `rt_threaded.rs`: 31
-  multi-thread tests, zero `cfg(not(miri))` gates. Measured on bombay: 81/82 `--lib` pass.
+- MIRI is an interpreter → executes flume's real atomics. 26 of tokio's
+  `rt_threaded.rs`'s 31 multi-thread-runtime tests run ungated under MIRI; the 5
+  excluded carry `#[cfg_attr(miri, ignore)]` tagged `// Too slow on miri` — never for
+  scheduler incompatibility. Measured on bombay: 81/82 `--lib` pass.
 - Consequence to state honestly: **MIRI samples, it does not prove.** Its weak-memory
   emulation is incomplete (per its own README, which points at loom for rigorous atomic
   work — advice that presumes you *have* atomics). A green lane is evidence, not proof.
@@ -588,8 +590,10 @@ deadlock, no leaked `self_sender`.
 
 MIRI runs bombay's real tokio + flume stack: the self-pin test passes in **1.67s**
 (zero UB, zero unsupported ops), and **81/82** of `bombay-core --lib` pass. The claim
-that MIRI cannot drive tokio's multi-thread runtime is false — tokio's
-`rt_threaded.rs` has 31 multi-thread tests with zero `cfg(not(miri))` gates.
+that MIRI cannot drive tokio's multi-thread runtime is false — 26 of tokio's
+`rt_threaded.rs`'s 31 multi-thread-runtime tests run ungated under MIRI; the 5 excluded
+carry `#[cfg_attr(miri, ignore)]` tagged `// Too slow on miri` — never for scheduler
+incompatibility.
 
 ## Caveat
 
@@ -607,10 +611,12 @@ Delete this sentence from #151's body:
 
 Replace with: MIRI does not support **real I/O** (confirmed: proptest's
 failure-persistence file I/O trips isolation), but it **does** drive the tokio
-multi-thread runtime (tokio's `rt_threaded.rs`: 31 multi-thread tests, zero MIRI gates;
-81/82 of bombay-core `--lib` pass under MIRI). The async run-loop is covered by #150's
-MIRI lane. Also soften "~10-100x slow": measured 1.67s for a single actor test — actor
-tests are scheduling-bound, not compute-bound.
+multi-thread runtime (26 of tokio's `rt_threaded.rs`'s 31 multi-thread-runtime tests run
+ungated under MIRI; the 5 excluded carry `#[cfg_attr(miri, ignore)]` tagged `// Too slow
+on miri`, never for scheduler incompatibility; 81/82 of bombay-core `--lib` pass under
+MIRI). The async run-loop is covered by #150's MIRI lane. Also soften "~10-100x slow":
+measured 1.67s for a single actor test — actor tests are scheduling-bound, not
+compute-bound.
 
 - [ ] **Step 3: Annotate #149's merged spec**
 
@@ -706,7 +712,7 @@ including the new `miri-gate` on the PR trigger — then merge.
   plausible-but-unverified model would have "found" a deadlock in bombay that does not
   exist.
 - **Do not add loom or shuttle as a dependency.** ADR-0005 exists precisely to stop that.
-- **flume risk, out of scope but worth knowing:** flume self-declares "Casually
-  Maintained", ADR-0001 made it load-bearing, and its CHANGELOG records two historical
-  async-shutdown races. This lane is bombay's only defence there. Worth its own card;
-  not this one's.
+- **flume risk, out of scope but worth knowing:** flume is in self-declared casual
+  maintenance mode (README badge verbatim: "Casual Maintenance Intended"), ADR-0001
+  made it load-bearing, and its CHANGELOG records two historical async-shutdown races.
+  This lane is bombay's only defence there. Worth its own card; not this one's.
