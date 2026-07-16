@@ -219,6 +219,7 @@ mod tests {
         error::ActorStopReason,
         mailbox::{Capacity, Mailboxed, Signal},
         message::Msg,
+        test_support::terminate_bound,
     };
 
     /// Counts handled messages and records whether `on_stop` ran, via shared
@@ -323,7 +324,7 @@ mod tests {
         // The only strong ref is `actor_ref`; dropping it must stop the actor.
         drop(actor_ref);
 
-        let outcome = tokio::time::timeout(core::time::Duration::from_secs(5), join)
+        let outcome = tokio::time::timeout(terminate_bound(), join)
             .await
             .expect("actor stops promptly after the last ref drops")
             .expect("join");
@@ -369,7 +370,7 @@ mod tests {
 
         let join = prepared.spawn((Arc::clone(&handled), Arc::clone(&stopped)));
 
-        let outcome = tokio::time::timeout(core::time::Duration::from_secs(5), join)
+        let outcome = tokio::time::timeout(terminate_bound(), join)
             .await
             .expect("actor stops")
             .expect("join");
@@ -451,7 +452,7 @@ mod tests {
 
         // Bounded: if the send is a no-op the handler never enters, so fail fast
         // here rather than hanging until the harness timeout.
-        tokio::time::timeout(std::time::Duration::from_secs(5), entered_rx)
+        tokio::time::timeout(terminate_bound(), entered_rx)
             .await
             .expect("the sent Work must reach the handler, not hang")
             .expect("handler entered"); // handler #1 is mid-flight
@@ -461,7 +462,7 @@ mod tests {
         // Bounded so that if `stop` is a no-op the loop never ends (it would go on
         // to handle the queued message and park on `recv`), FAILING FAST here
         // rather than hanging until the harness timeout.
-        let outcome = tokio::time::timeout(std::time::Duration::from_secs(5), run)
+        let outcome = tokio::time::timeout(terminate_bound(), run)
             .await
             .expect("stop() must terminate the actor after the in-flight handler")
             .expect("run task");
@@ -519,12 +520,9 @@ mod tests {
         // Bounded so that if the `stop` flag is ignored (the loop keeps running
         // and parks on `recv`, since this test still holds a strong sender), the
         // test FAILS FAST here rather than hanging until the harness timeout.
-        let outcome = tokio::time::timeout(
-            std::time::Duration::from_secs(5),
-            prepared.run(Arc::clone(&handled)),
-        )
-        .await
-        .expect("the stop flag must terminate the actor");
+        let outcome = tokio::time::timeout(terminate_bound(), prepared.run(Arc::clone(&handled)))
+            .await
+            .expect("the stop flag must terminate the actor");
         assert_eq!(
             handled.load(Ordering::SeqCst),
             1,
@@ -596,7 +594,7 @@ mod tests {
         // Bounded so that if the `stop` flag is ignored the loop parks on `recv`
         // after handling all three, FAILING FAST here rather than hanging until
         // the harness timeout.
-        tokio::time::timeout(std::time::Duration::from_secs(5), run)
+        tokio::time::timeout(terminate_bound(), run)
             .await
             .expect("the stop flag must terminate the actor")
             .expect("run task");
@@ -757,7 +755,7 @@ mod tests {
         // Bounded: if the send is a no-op the actor never panics and the loop
         // never ends, so fail fast rather than hanging until the harness timeout.
         let outcome = tokio::time::timeout(
-            std::time::Duration::from_secs(5),
+            terminate_bound(),
             prepared.run((Arc::clone(&stop_reason), Arc::clone(&counter_at_stop))),
         )
         .await
@@ -799,7 +797,7 @@ mod tests {
         // Bounded: if the send is a no-op the actor never panics and the loop
         // never ends, so fail fast rather than hanging until the harness timeout.
         let _ = tokio::time::timeout(
-            std::time::Duration::from_secs(5),
+            terminate_bound(),
             prepared.run((Arc::clone(&stop_reason), Arc::clone(&counter_at_stop))),
         )
         .await
@@ -847,7 +845,7 @@ mod tests {
 
         // Bounded: if the send is a no-op the actor never panics and the loop
         // never ends, so fail fast rather than hanging until the harness timeout.
-        let outcome = tokio::time::timeout(std::time::Duration::from_secs(5), handle)
+        let outcome = tokio::time::timeout(terminate_bound(), handle)
             .await
             .expect("the sent Trigger must panic the actor and stop the loop, not hang")
             .expect("run task");
@@ -901,7 +899,7 @@ mod tests {
         actor_ref.tell(Do).await.expect("send");
         // Bounded: if the send is a no-op the handler never returns Err and the
         // loop never ends, so fail fast rather than hanging until the harness timeout.
-        let outcome = tokio::time::timeout(std::time::Duration::from_secs(5), prepared.run(()))
+        let outcome = tokio::time::timeout(terminate_bound(), prepared.run(()))
             .await
             .expect("the sent Do must return Err and stop the loop, not hang");
 
@@ -980,7 +978,7 @@ mod tests {
 
         // Bounded: if the send is a no-op the handler never enters, so fail fast
         // here rather than hanging until the harness timeout.
-        tokio::time::timeout(std::time::Duration::from_secs(5), entered_rx)
+        tokio::time::timeout(terminate_bound(), entered_rx)
             .await
             .expect("the sent Block must reach the handler, not hang")
             .expect("handler entered"); // handler is now parked forever
@@ -988,7 +986,7 @@ mod tests {
 
         // Bounded so that if `kill` is a no-op, the parked handler never aborts
         // and this FAILS FAST rather than hanging until the harness timeout.
-        let outcome = tokio::time::timeout(std::time::Duration::from_secs(5), handle)
+        let outcome = tokio::time::timeout(terminate_bound(), handle)
             .await
             .expect("kill() must abort the parked actor")
             .expect("join");
@@ -1034,7 +1032,7 @@ mod tests {
         // return `None` on its own — only the cancel can end the loop.)
         actor_ref.stop();
 
-        let outcome = tokio::time::timeout(std::time::Duration::from_secs(5), run)
+        let outcome = tokio::time::timeout(terminate_bound(), run)
             .await
             .expect("stop() must terminate the idle actor")
             .expect("run task");
@@ -1167,7 +1165,7 @@ mod tests {
 
         // Bounded: if a send is a no-op the actor never reaches `total`, so fail
         // fast here rather than hanging until the harness timeout.
-        let final_count = tokio::time::timeout(std::time::Duration::from_secs(5), done_rx)
+        let final_count = tokio::time::timeout(terminate_bound(), done_rx)
             .await
             .expect("every sent Bump must be handled, not hang")
             .expect("actor finished");

@@ -32,6 +32,13 @@
 //! for a lone Relaxed counter, so loom is deliberately not applied. The async
 //! orderings that DO matter for #116 are covered deterministically below with
 //! barriers and the single-threaded runtime.
+//!
+//! #150 re-examined loom (and shuttle) for the *ref-model* and reached the
+//! same verdict for a stronger reason: the ref-count liveness lives in
+//! flume's `sender_count` (ADR-0003), and flume ships no loom/shuttle
+//! instrumentation, so neither tool can observe the interleavings that
+//! matter. MIRI — which interprets flume's real atomics — covers them
+//! instead, in the scheduled `miri.yml` lane. Evidence: ADR-0005.
 
 use core::convert::Infallible;
 use std::{
@@ -49,11 +56,13 @@ use bombay_core::{
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed, Signal},
     message::Msg,
+    test_support::terminate_bound,
 };
 
 /// The suite-wide fail-fast bound: any terminal await that exceeds this is a hung
-/// loop, and the test fails here rather than stalling the whole run.
-const TERMINATE: Duration = Duration::from_secs(5);
+/// loop, and the test fails here rather than stalling the whole run. Scaled under
+/// MIRI — see `terminate_bound`.
+const TERMINATE: Duration = terminate_bound();
 
 fn cap(n: usize) -> Capacity {
     Capacity::try_from(n).expect("valid test capacity")

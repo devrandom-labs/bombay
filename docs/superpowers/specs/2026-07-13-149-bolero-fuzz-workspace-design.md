@@ -31,6 +31,18 @@ The fuzz target drives the **sync surface only**. Rationale:
    (loom/shuttle) job. Fuzzing the sync state machine and DST-ing the async
    concurrency partition the space without overlap.
 
+> **Correction (2026-07-16, card #150):** reasons 2 and 3 above did not survive
+> #150's research. (2) MIRI **does** drive the tokio multi-thread runtime — 26
+> of tokio's own `rt_threaded.rs` 31 multi-thread tests run ungated under
+> MIRI, and bombay's full `--lib` sweep runs green under `cargo miri test`
+> (42 s real); the real MIRI constraint is file I/O under isolation, which is
+> why proptest (not tokio) is excluded from the MIRI lane. (3) loom/shuttle
+> cannot see the async concurrency at all — flume owns the ref-count atomics
+> and ships no loom/shuttle instrumentation (ADR-0005); #150 became a MIRI
+> lane instead. **Reason 1 — no runtime in the closure → fast, deterministic
+> replay — stands on its own, so the sync fuzz target remains correct and
+> #149 is not reopened.**
+
 The sync surface still exercises the load-bearing properties: `try_send`
 enqueues a `Signal::Message { msg, self_sender }` (the self-pin), `drain` bulk-
 dequeues in FIFO, capacity gives `Full` backpressure, and dropping the receiver

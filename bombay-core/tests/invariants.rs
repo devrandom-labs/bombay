@@ -71,11 +71,13 @@ use bombay_core::{
     error::{ActorStopReason, PanicError, PanicReason, TellError},
     mailbox::{Capacity, Mailboxed, Signal, TrySendError},
     message::Msg,
+    test_support::terminate_bound,
 };
 
 /// The suite-wide fail-fast bound: any terminal await exceeding this is a hung
 /// loop — a real bug — and the test fails here rather than stalling the run.
-const TERMINATE: Duration = Duration::from_secs(5);
+/// Scaled under MIRI — see `terminate_bound`.
+const TERMINATE: Duration = terminate_bound();
 
 fn cap(n: usize) -> Capacity {
     Capacity::try_from(n).expect("valid test capacity")

@@ -5,12 +5,14 @@ use core::time::Duration;
 
 use bombay_core::mailbox::{Capacity, Mailbox, Mailboxed, Signal};
 use bombay_core::message::Msg;
+use bombay_core::test_support::terminate_bound;
 use tokio::time::timeout;
 
 /// Upper bound on a by-value `send -> recv` round-trip: instant when the send
 /// truly enqueues, so this only fires if a send silently drops the message —
-/// converting an unbounded `recv` hang into a fast, legible failure.
-const DELIVERY: Duration = Duration::from_secs(5);
+/// converting an unbounded `recv` hang into a fast, legible failure. Scaled
+/// under MIRI — see `terminate_bound`.
+const DELIVERY: Duration = terminate_bound();
 
 /// A realistic closed actor command set. `#[derive(Msg)]` gives it the
 /// compile-time slot-size tripwire; it stays well under the 256 B default.

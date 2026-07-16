@@ -12,3 +12,10 @@ pub mod error;
 pub mod mailbox;
 pub mod message;
 pub mod reply;
+
+// Both arms are load-bearing: the feature arm serves integration tests and
+// benches (dev-dep feature unification turns it on for external test binaries);
+// the `test` arm keeps in-crate unit-test visibility independent of that
+// unification subtlety.
+#[cfg(any(test, feature = "test-support"))]
+pub mod test_support;
