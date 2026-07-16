@@ -1,5 +1,23 @@
 # Coverage baseline (card #85)
 
+> **Audited 2026-07-17 by #168** (scope-vs-shipped sweep over #112–#117, #145–#152).
+> Five claims in this document were corrected in place; each correction is a blockquote
+> marked `Corrected 2026-07-17 (#168)` in the relevant section. In short:
+>
+> | Claim | Reality |
+> |---|---|
+> | the derive's `///` + `compile_fail` doctests cover the tripwire | **none run in the gate** — `bombay-doctest` selects the root fork package only (**#170**) |
+> | #148 "0 survivors", and "0 survivors anywhere in the whole-package run" | one of the six named fns had **0 viable mutants**; the whole-package run was **interrupted at 141/205**, and there is **no standing mutants gate** (**#171**) |
+> | the MIRI Schedules leg explores 64 schedules | all three tests are **current_thread** — nothing to permute; the `multi_thread`+`Barrier` races are excluded from that leg (**#172**) |
+> | the bolero lane asserts the mailbox's FIFO/exactly-once | it asserts **flume's**, through ~50 lines of glue; and `__fuzz__/` holds **zero seeds**, so the "deterministic corpus-replay" is bounded-random (**#164**) |
+> | "the PR path was confirmed to restore the corpus" | it never ran — no successful `main` run existed to restore from |
+>
+> **Standing lesson from that audit:** every "0 missed" / "zero survivors" line below is a
+> **point-in-time observation recorded in a PR body**, not a standing property — nothing
+> re-runs the mutation sweep (#171). Read every green claim in this file for its *sample
+> size* and its *surface*, not its colour. A green lane over the wrong surface is
+> indistinguishable from a green lane over the right one.
+
 Reproducible via crane, with **two engines** selected by system:
 
 ```bash
@@ -52,17 +70,26 @@ Criterion (`benches/mailbox.rs`, realistic ~40 B command): `tell` ≈ **5.7 ns**
 ≈ **18.4 ns** (~40 % faster than the tokio v1 on the same bench). Channel eval:
 `benches/channels.rs` (ADR-0001) — flume wins at both `u64` and `~40 B` payloads.
 
-**DST posture — loom/shuttle deferred to #116/#120.** loom and shuttle can only
-model-check code compiled against *their* primitives; the real `tokio::sync::mpsc` this
-mailbox wraps is opaque to both ([loom](https://docs.rs/loom/latest/loom/) requires
+**DST posture — loom/shuttle deferred to #120 (see the correction below).** loom and
+shuttle can only model-check code compiled against *their* primitives; the real channel
+this mailbox wraps is opaque to both ([loom](https://docs.rs/loom/latest/loom/) requires
 "the code being tested specifically uses the loom replacement types";
 [shuttle](https://github.com/awslabs/shuttle) requires replacing std primitives with
-its equivalents). The mailbox delegates all synchronization to tokio (which loom-tests
-its own channel internally), so a loom/shuttle test here would either explore nothing or
-test a reimplementation (violates the "test the actual SUT" rule). The first
-bombay-owned concurrency is the run-loop `select` over signals (#116) and the death-watch
-push (#120) — that is where loom/shuttle land. The 8-thread linearizability test is the
-mailbox's concurrency coverage until then.
+its equivalents). The mailbox delegates all synchronization to that channel, so a
+loom/shuttle test here would either explore nothing or test a reimplementation (violates
+the "test the actual SUT" rule). The 8-thread linearizability test is the mailbox's
+concurrency coverage until then.
+
+> **Corrected 2026-07-17 (#168).** This paragraph previously read "the real
+> `tokio::sync::mpsc` this mailbox wraps" and "delegates all synchronization to tokio
+> (which loom-tests its own channel internally)". **Both were false since PR #134** — the
+> mailbox wraps **flume** (`mailbox.rs:200`), not tokio. The *conclusion* survives (flume
+> is equally loom-opaque, and ships no loom instrumentation — ADR-0005 re-derives this
+> from flume's source), but the deferral rested on a stale premise for three weeks. The
+> naming of #116 as a loom/DST target is also stale: **#116 closed without it**
+> (see "Mutation … and loom/DST are not re-measured in this card", below), so only #120
+> and #88 still carry it. ADR-0005 chose **MIRI** for the ref-model precisely because it
+> interprets flume's *real* `std::sync` atomics, which loom cannot reach.
 
 ### `error` (#113) — done
 Typed error domains, rebuilt to diverge from kameo where the type system pays off.
@@ -113,6 +140,28 @@ doctests on the derive in `macros/src/lib.rs` — three that must keep compiling
 escape) plus three `compile_fail` (budget tripwire, generic rejected, union
 rejected). No README change —
 the rebuilt spine is not behind the umbrella yet (same as #113/#133).
+
+> **⚠️ Corrected 2026-07-17 (#168) — the doctests above do NOT run in the gate.**
+> `bombay-doctest` (`flake.nix:215`) is `craneLib.cargoDocTest` with no extra args,
+> i.e. `cargo test --doc --locked` — no `-p`, no `--workspace`. The root `Cargo.toml`
+> is both `[workspace]` and `[package] name = "bombay"` with **no `default-members`**,
+> so cargo selects the root package alone. Measured, not inferred:
+> ```
+> $ cargo metadata --no-deps | jq .workspace_default_members
+> ["path+file:///Users/joel/Code/devrandom/bombay#0.21.0"]   # the vendored fork, only
+> ```
+> So **none** of the six `///` doctests — and none of the three `compile_fail` probes —
+> execute under `nix flake check`. `bombay-nextest` covers the `macros` crate because
+> nextest defaults to the whole workspace; `cargo test --doc` does not. The same applies
+> to `bombay-core/src/reply.rs:32`'s consume-once probe: **all four `compile_fail`
+> doctests in the rebuilt spine are dead in the gate**, and no `trybuild` compensates.
+>
+> Concretely: delete the `const _: () = assert!(…)` tripwire from
+> `macros/src/derive_msg.rs:64-68` and the gate stays green — every in-gate
+> `#[derive(Msg)]` type is within budget, and `examples/msg_budget.rs`'s tripwire demo
+> is commented out (`:26-33`). `size_exactly_at_budget_compiles` guards `<=` vs `<`,
+> not assert-vs-no-assert. The unit tests (`parse_budget` grammar, generic/union
+> guards) DO run and are unaffected. Tracked as **#170**.
 
 ### `reply` (#115) — done
 `bombay-core/src/reply.rs` carries the typed single-shot reply channel:
@@ -294,6 +343,29 @@ slab/registry would need to flatten. No production change; no README change.
 timeout** (21 mutants over that surface: 13 caught, 8 unviable). No production
 change.
 
+> **Corrected 2026-07-17 (#168) — read the ratio, not the colour.**
+> Of the six functions named above, **`WeakActorRef::with_sender` contributed 0 viable
+> mutants**: all 4 of its generated mutants are `Unviable`, because it is a pure
+> field-copy returning `ActorRef<A>`, which has no `Default`, so whole-body replacement
+> is cargo-mutants' only strategy and none of it compiles. "Zero survivors" over that
+> function is **vacuous** — a wrong-`id` or stale-`cancel` copy would be invisible, and
+> `with_sender` is the upgrade path used by `WeakActorRef::upgrade` and the self-ref
+> construction in `kind.rs:40`. The "13 caught, 8 unviable" above is accurate but
+> averages this away. This is #165's pattern *inside* #148's own named scope.
+>
+> **PR #157's separate claim of "0 survivors anywhere in the whole-package run" is not
+> supported by its artifact:** `mutants.out/mutants.json` enumerates **205** candidates;
+> `outcomes.json` records **141** (zero `spawn.rs` outcomes, 6 of 42 for `recipient.rs`);
+> `debug.log` ends `err=interrupted phase=Test`. The run was killed at 141/205, and could
+> not have exited 0 regardless — `timeout.txt` lists 5 mailbox timeouts and cargo-mutants
+> exits 3 on timeout (those *are* properly deferred to #133). The scoped 21-mutant result
+> above is real; the whole-package narration was not. `mutants.out/` is gitignored, so
+> this shows no evidence of a complete run exists in the repo/PR/card — not that none
+> ever happened. Tracked as **#171** (which also covers: there is **no standing mutants
+> gate** — `flake.nix:320-322` says "On-demand, NOT a gating check", and
+> `rg -i mutants .github/` is empty, so every "0 missed" in this document is a
+> point-in-time PR-body observation, not a property).
+
 The interesting finding was **not** a survivor but three mutation *timeouts*: a
 `… -> Ok(())` stub of a send/tell path makes a message silently vanish, so any
 round-trip test that then awaited delivery hung until the harness's 20 s cap —
@@ -326,6 +398,29 @@ against a `VecDeque` oracle, asserting FIFO + exactly-once + capacity
 backpressure. Sync-only so #151's MIRI job runs the same surface. Exact-memory /
 leak assertion is deferred to #151's counting allocator, which plugs into this
 same target.
+
+> **⚠️ Corrected 2026-07-17 (#168) — this lane asserts flume's guarantees, and the
+> in-gate replay replays nothing.** Two distinct problems:
+>
+> 1. **Wrong surface (tracked as #164).** `bombay-core/src/mailbox.rs:200` is
+>    `flume::bounded`, and `try_send`/`drain` are thin glue over it, so the FIFO +
+>    exactly-once assertion above discriminates **flume's** ordering through ~50 lines of
+>    bombay code against a `VecDeque` oracle. #152's 3,539,931 green executions largely
+>    re-verified a mature crate. #149 also scoped `send_message`, `recv`, and *self-pin
+>    drain-or-abandon per stop mode* — none shipped (`Signal::Stop` is an `unreachable!`
+>    arm; the self-pin cycle is built via `self_sender: tx.clone()` and never asserted on).
+> 2. **No corpus seeds (tracked as #164's added bullets).** `git ls-files
+>    fuzz/tests/__fuzz__` returns exactly `.gitkeep` — **zero seeds**. So
+>    `bombay-fuzz-replay` is **bounded-random only**, despite `flake.nix:192` calling it
+>    "Deterministic corpus-replay". Corpus continuity lives in a 90-day GitHub Actions
+>    artifact, not git. The flake's source filter (`flake.nix:98`) correctly keeps
+>    `__fuzz__` files and currently has nothing to keep — a vacuously-correct pipeline
+>    over an empty input reads exactly like a working one.
+>
+> The target also **cannot reach the closed state**: `Op::DropTx` pops only tail clones
+> while sends use `senders.first()`, and `rx` is never dropped — so `TrySendError::Closed`
+> and `is_closed() == true` are unreachable, and `Op::IsClosed` asserts only the
+> trivially-true direction (the target concedes this at `fuzz/tests/mailbox.rs:59-60`).
 
 ## Baseline — 2026-06-29 (after #77)
 
@@ -413,12 +508,45 @@ workflow `env`, never a `fuzz/rust-toolchain.toml`, or a rustup user's plain
 First run measured 2026-07-16 (PR #163, 60 s smoke depth, cold corpus): **3,539,931 runs
 in 61 s** (58,031 exec/s), coverage climbing 120 → 244 edges / 121 → 1,026 features, corpus
 1 → 206 inputs (7,224 b), no crash. Job wall-clock 142 s incl. the nightly toolchain +
-`cargo install cargo-bolero` + sancov build; `fuzz-gate` 3 s. The PR path was confirmed to
-restore the corpus and then **skip** Minimize/Upload, per the read-never-write rule above.
+`cargo install cargo-bolero` + sancov build; `fuzz-gate` 3 s. The PR path **skips**
+Minimize/Upload, per the read-never-write rule above.
+
+> **Corrected 2026-07-17 (#168).** This paragraph previously said the PR path "was
+> confirmed to restore the corpus". **It was not.** The restore step reported `success`,
+> but with zero successful `main` runs in existence, `gh run list --branch main --status
+> success` returned empty, so `run_id` was empty and the download never ran. What was
+> confirmed is that the step *does not error on a cold start* — which is what
+> `continue-on-error: true` at `fuzz.yml:79` is there for. The skip of Minimize/Upload
+> is real and correctly observed.
+>
+> **The corpus persistence loop has never executed.** `gh run list --workflow fuzz.yml`
+> shows **4 `pull_request` runs and 0 `schedule` runs** — the 03:00 UTC cron has not yet
+> come round. restore→grow→minimize→upload is *reviewed* wiring, not *exercised* wiring.
+> The 3.5M executions above are real but are **60 s PR-smoke depth on a cold corpus**;
+> no nightly-depth number exists yet. See also the wrong-surface correction under
+> "`fuzz` — bolero workspace (#149)" above: these executions fuzzed flume, not bombay.
 
 A crash is only half-caught here: it must be minimized and committed as a seed under
 `fuzz/tests/__fuzz__/<target>/corpus/`, so the in-gate #149 replay reproduces it forever
 on stable. That is what stops a nightly-only find from regressing once the lane goes quiet.
+
+> **Sharpened 2026-07-17 (#168) — "half-caught" understates it; there is no mechanism.**
+> The lane genuinely *detects* and *preserves* a crash (`fuzz.yml:130-137` `if: failure()`;
+> the artifact path is correct against `cargo-bolero-0.13.4/src/test_target.rs:76-80` +
+> `libfuzzer.rs:50-51`). But nothing minimizes it, and nothing commits it:
+> - The **Minimize step is `if: success()`** (`fuzz.yml:111`) — it does not run on the one
+>   event it would be needed for.
+> - **`cargo bolero reduce` is not crash minimization.** It is a libFuzzer
+>   `-merge_control_file` / `-merge_inner=1` *corpus merge*
+>   (`cargo-bolero-0.13.4/src/libfuzzer.rs:80-101`). The pinned tool has **no**
+>   crash-minimizing subcommand at all: `Commands = Test | Reduce | List | New |
+>   BuildClusterfuzz` (`src/main.rs:30-40`). There is no `-minimize_crash` path.
+> - And per the #149 correction above, `fuzz/tests/__fuzz__/` holds **zero seeds**, so
+>   there is no committed corpus for a minimized crash to join.
+>
+> So the artifact → permanent-stable-regression-test path is an undocumented human
+> procedure, improvised at 3am UTC on a nightly-only, non-notifying lane. Tracked on
+> **#164** (seeds) plus a crash-triage runbook card.
 
 Falsifiability, per the #149/#150 precedent, is checked at two levels: the *gate over the
 workflow* (`bombay-actionlint`, which also shellchecks the `run:` blocks) was confirmed to
@@ -442,9 +570,35 @@ both measured 2026-07-16:
 - **Sweep** — full `bombay-core --lib`, isolation on, `--skip prop_` (proptest's
   failure-persistence file I/O is what isolation forbids): 79 passed / 0 failed /
   3 filtered, **42 s real**.
-- **Schedules** — `-Zmiri-many-seeds=0..64 -Zmiri-many-seeds-keep-going` over the three
-  canonical ref-model race tests (last-ref-drop vs tell; receiver-drop vs in-flight
-  send; the enqueue-before-last-drop self-pin): 64 seeds × 3 tests, **24.6 s real**.
+- **Schedules** — `-Zmiri-many-seeds=0..64 -Zmiri-many-seeds-keep-going` over three
+  ref-model tests (last-ref-drop; receiver-drop mid-backlog; the enqueue-before-last-drop
+  self-pin): 64 seeds × 3 tests, **24.6 s real**.
+
+> **⚠️ Corrected 2026-07-17 (#168) — the Schedules leg explores a single-threaded space.**
+> `-Zmiri-many-seeds` permutes MIRI's scheduling among **ready OS threads** (plus
+> weak-memory read-buffering). All three tests in that leg are plain `#[tokio::test]` —
+> i.e. tokio's **current_thread** runtime (`spawn.rs:316`, `spawn.rs:360`,
+> `mailbox.rs:733`) — and `tokio::spawn` there stays on the same OS thread;
+> `dropping_receiver_mid_backlog_frees_the_queued_message` spawns nothing at all. So 64
+> seeds × 3 tests ≈ 192 near-identical executions, not schedule exploration. **The timings
+> above corroborate it independently**: 24.6 s for 64×3, versus 42 s for the Sweep's 79
+> tests at one seed each — the many-seeds leg does roughly one test's worth of work.
+>
+> The inversion is exact: the tests that *do* have real overlap — `spawn.rs:1101`
+> `concurrent_senders_single_writer_exact_count` (multi_thread, 4 workers, 8 senders +
+> `Barrier`), `mailbox.rs:821`, `reply.rs:181` — run in the **Sweep** at one seed each and
+> are **excluded** from Schedules. Sampling flume's real interleavings was the entire
+> rationale for choosing MIRI over loom (ADR-0005), and that rationale currently lands on
+> the leg that does not sample. Tracked as **#172**. The Sweep leg (UB/data-race/leak over
+> `--lib`) is **sound and unaffected**.
+>
+> Two of the three tests also assert something other than the race #150's card names:
+> `dropping_last_actor_ref_stops_the_actor` asserts `handled == 0` ("no messages were sent
+> before the ref dropped") rather than racing a `tell`, and the receiver-drop test is fully
+> sequential (`try_send` → `drop(tx)` → `drop(rx)` → assert) rather than racing an
+> in-flight send. Both are valuable tests — the leak canary in particular is falsifiable
+> against bombay's own `Drop` impl — but the named windows are unexercised. Tracked as
+> orphans on #117.
 
 Falsifiability verified per the #149 precedent: a message-vanishing probe in
 `send_message` makes the self-pin test FAIL (0 ≠ 1) under the lane, then reverted.
