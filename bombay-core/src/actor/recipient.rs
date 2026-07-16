@@ -256,14 +256,16 @@ mod tests {
         error::TellError,
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
         message::Msg,
+        test_support::terminate_bound,
     };
 
     /// Upper bound on how long a delivered message may take to surface on the
     /// receiver. A live round-trip is instant; this only fires if a send/tell
     /// silently fails to enqueue — turning what would be an unbounded hang into a
     /// fast, legible assertion failure (so a stubbed-out `tell`/`try_tell` is
-    /// *caught*, not merely a mutation-run timeout).
-    const DELIVERY: Duration = Duration::from_secs(5);
+    /// *caught*, not merely a mutation-run timeout). Scaled under MIRI — see
+    /// `terminate_bound`.
+    const DELIVERY: Duration = terminate_bound();
 
     /// The shared broadcast signal. `Clone` because `Recipient<M>` requires it
     /// (the typed-handback consequence, ADR-0004).
