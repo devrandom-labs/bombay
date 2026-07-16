@@ -91,7 +91,9 @@ jobs:
 
       # The single CI gate. `nix flake check` builds every check in flake.nix —
       # including bombay-nextest (the entire workspace test suite) and
-      # bombay-doctest (the doc-comment examples, which nextest does not run).
+      # bombay-doctest (the doc-comment examples workspace-wide, which nextest
+      # does not run; the `--workspace` there is load-bearing — see card #170,
+      # cargo's default selection would otherwise cover the vendored fork alone).
       # `-L` (--print-build-logs) streams FULL build logs instead of nix's
       # truncated "last 25 lines" on a failed derivation — essential for
       # diagnosing a failing test/scenario (e.g. which cucumber scenario flaked).
