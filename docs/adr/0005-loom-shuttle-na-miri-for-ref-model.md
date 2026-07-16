@@ -36,18 +36,23 @@ than that counter.
 5. MIRI is an interpreter: it executes flume's real `std::sync::Mutex`/atomics
    with no instrumentation required. The claim "MIRI does not support tokio's
    multi-thread runtime" is false: tokio CI runs
-   `cargo miri nextest run --features full --lib` and `--test '*'`;
-   `tokio/tests/rt_threaded.rs` has 31 multi-thread tests with zero
-   `cfg(not(miri))` gates; every tokio MIRI exclusion is I/O/signals/
-   subprocess/sockets/time, never the scheduler.
+   `cargo miri nextest run --features full --lib` and `--test '*'`; 26 of
+   `tokio/tests/rt_threaded.rs`'s 31 multi-thread tests run ungated under
+   MIRI, and the 5 excluded are tagged `// Too slow on miri` — never for
+   scheduler incompatibility, which if anything reinforces the point. Every
+   other tokio MIRI exclusion is I/O/signals/subprocess/sockets/time, never
+   the scheduler.
 6. Measured on bombay (2026-07-16): the ADR-0003 self-pin test passes under
    MIRI in 1.67 s (zero UB, zero unsupported ops, `-Zmiri-strict-provenance`,
-   isolation on); 81/82 of `bombay-core --lib` pass (the 1 failure was a
-   spurious #148 5 s bound vs MIRI's virtual clock —
-   `miri/src/clock.rs`: `NANOSECONDS_PER_BASIC_BLOCK = 5000`, i.e.
-   5 µs/basic-block; fixed by `terminate_bound()`); a falsifiability probe
+   isolation on); 81/82 of `bombay-core --lib` pass isolation-off (the 1
+   failure was a spurious #148 5 s bound — host clock plus MIRI's 10–100×
+   interpretation slowdown; the same test also trips the bound isolation-on,
+   for a different reason: MIRI's virtual clock advances 5 µs per basic
+   block, `miri/src/clock.rs`: `NANOSECONDS_PER_BASIC_BLOCK = 5000`; both
+   mechanisms fixed by `terminate_bound()`); a falsifiability probe
    (message-vanishing stub in `send_message`) makes the self-pin test FAIL in
-   1.81 s, then reverted.
+   1.81 s (measured in-session, recorded in commit fdcec13's message), then
+   reverted.
 
 ## Options considered
 
@@ -59,9 +64,10 @@ than that counter.
   bans it); also adds a production cfg seam for a model that still wouldn't
   cover flume.
 - **C — vendor/fork flume and instrument it upstream-style.** Honest but
-  expensive; changes ADR-0001's calculus; flume is "Casually Maintained"
-  (self-declared badge) with two historical async-shutdown race fixes in its
-  CHANGELOG — a real risk worth its own card, not this one.
+  expensive; changes ADR-0001's calculus; flume is in self-declared casual
+  maintenance mode (README badge: "Casual Maintenance Intended") with two
+  historical async-shutdown race fixes in its CHANGELOG — a real risk worth
+  its own card, not this one.
 - **D — MIRI lane** *(chosen)*. Total reach including flume, samples
   schedules via `-Zmiri-many-seeds`.
 

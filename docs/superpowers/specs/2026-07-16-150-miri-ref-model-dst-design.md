@@ -60,9 +60,11 @@ exhaustiveness is worthless.
 - **"real I/O" — TRUE.** Confirmed the hard way (see "Blocker 1").
 - **"tokio multi-thread runtime" — FALSE.** tokio's CI runs
   `cargo miri nextest run --features full --lib` *and* `--test '*'`.
-  `tokio/tests/rt_threaded.rs` holds **31 multi-thread-runtime tests with zero
-  `cfg(not(miri))` gates**. Every MIRI exclusion in tokio is I/O, signals, subprocess,
-  sockets, or *time* — **never the scheduler**.
+  **26 of `tokio/tests/rt_threaded.rs`'s 31 multi-thread-runtime tests run ungated
+  under MIRI**; the 5 excluded carry `#[cfg_attr(miri, ignore)]` tagged
+  `// Too slow on miri` — never for scheduler incompatibility, which if anything
+  reinforces the point. Every other MIRI exclusion in tokio is I/O, signals,
+  subprocess, sockets, or *time* — **never the scheduler**.
 - **"covered by loom/shuttle" — FALSE**, per the section above.
 
 **Proven empirically on this repo (2026-07-16):**
@@ -234,8 +236,9 @@ touched all of them). One canonical definition, not a per-file copy.
 
 ## Risks
 
-- **flume is "Casually Maintained"** (self-declared badge on its README). ADR-0001 chose
-  flume on measured evidence and bombay delegates all ref-count liveness to it; its
+- **flume is in casual maintenance mode** (self-declared README badge: "Casual
+  Maintenance Intended"). ADR-0001 chose flume on measured evidence and bombay
+  delegates all ref-count liveness to it; its
   CHANGELOG records two historical shutdown races ("Fixed a rare race condition in the
   async implementation"; "Shutdown-related race condition with async recv"). This lane
   interprets flume's real atomics, so it is bombay's only defence there. Out of scope
