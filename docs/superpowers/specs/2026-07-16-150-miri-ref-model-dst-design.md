@@ -175,29 +175,48 @@ corroborated:
 so this is not re-litigated a fourth time. It mirrors the existing `dst_races.rs`
 loom-N/A header written for #116.
 
-## Open decision — how the bounds become MIRI-aware
+## Resolved — the bounds scale under `cfg(miri)` (option a)
 
-Blocker 2 must be fixed for any of this to run. Three options, all established
-patterns; this is the one call the spec does not make unilaterally:
+Blocker 2 must be fixed for any of this to run. **Decision (2026-07-16): scale the
+bound.** A shared helper returns 5s natively and ~600s under `cfg(miri)`:
 
-- **(a) Scale the bound** — a shared `terminate_bound()` returning 5s natively, ~600s
-  under `cfg(miri)`. Keeps full coverage; measured working (20s real). Preserves #148's
-  native fail-fast exactly.
-- **(b) Shrink the workload** — `#[cfg(miri)]` lower iteration counts (8×50 → e.g. 2×5).
-  This is tokio's own documented pattern (`tcp_echo.rs`: *"Use a lower iteration count
-  with Miri because it's too slow otherwise"*). Faster, but a 2×5 race is a **weaker
-  race** — it may not reach the contention the test exists to create.
-- **(c) `#[cfg_attr(miri, ignore)]`** — tokio's approach for its slow tests. Cheapest,
-  but forfeits the single most valuable test in the lane. Rejected unless (a) and (b)
-  both prove unworkable.
+```rust
+/// Fail-fast bound for "this must terminate" awaits (card #148). MIRI's virtual
+/// clock advances 5 µs per BASIC BLOCK (`miri/src/clock.rs`:
+/// `NANOSECONDS_PER_BASIC_BLOCK = 5000`) — ~5000× faster than the work it times —
+/// so a natively-calibrated bound fires spuriously under the interpreter.
+pub(crate) const fn terminate_bound() -> Duration {
+    if cfg!(miri) { Duration::from_secs(600) } else { Duration::from_secs(5) }
+}
+```
 
-Recommendation: **(a)**, possibly with (b) for any test that proves pathologically slow.
-(a) keeps the race at full strength, which is the entire point of #150.
+**Why, over the alternatives:**
+
+- It keeps the race at **full strength** (8 × 50 stays intact). The rejected
+  alternative — `#[cfg(miri)]` lower iteration counts, which is tokio's own documented
+  pattern (`tcp_echo.rs`: *"Use a lower iteration count with Miri because it's too slow
+  otherwise"*) — would shrink 8×50 to ~2×5. A weaker race in a lane whose entire
+  purpose is finding interleavings is self-defeating.
+- It preserves #148's **native** fail-fast exactly: 5s on the stable gate, unchanged.
+- It is **measured**, not theorised: bound 5s → 600s makes the failing test pass in
+  20.0s real.
+
+Cost accepted: under MIRI a genuinely hung loop takes 600s to fail rather than 5s —
+confined to the nightly lane, where wall-clock is cheap and a false "no hang" verdict
+would not be.
+
+`#[cfg_attr(miri, ignore)]` (tokio's approach for its slow tests) was rejected outright:
+it forfeits the single most valuable test in the lane.
+
+**Scope:** the helper replaces the inline `Duration::from_secs(5)` at
+`spawn.rs:1170` and the `TERMINATE` const in `dst_races.rs`, plus the equivalent bounds
+in `invariants.rs`, `msg_mailbox_compose.rs`, and `recipient.rs` (the #148 hardening
+touched all of them). One canonical definition, not a per-file copy.
 
 ## Scope of "done"
 
-- [ ] Bounds made MIRI-aware (open decision above); `nix flake check` still green on stable.
-- [ ] `devShells.miri` in `flake.nix` — **done, verified** (not in `checks`).
+- [ ] `terminate_bound()` helper adopted across the five test files; `nix flake check` still green on stable.
+- [x] `devShells.miri` in `flake.nix` — **done, verified**: not in `checks`, and `nix flake check` green (nixfmt/typos/deadnix) with it present.
 - [ ] `.github/workflows/miri.yml` — scheduled + `workflow_dispatch`, two legs, pinned nightly, `miri-gate` collapsing job (cesr's `fuzz-gate` pattern).
 - [ ] Leg 1 green: full `--lib` under MIRI, isolation on, `--skip prop_`.
 - [ ] Leg 2 green: `-Zmiri-many-seeds` over the ref-model race tests; N chosen **by measurement**.
