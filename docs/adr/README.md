@@ -24,3 +24,6 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 |---|---|---|
 | [0001](0001-mailbox-channel-primitive.md) | Mailbox channel primitive | Accepted |
 | [0002](0002-reply-channel-primitive.md) | Reply channel primitive | Accepted |
+| [0003](0003-actor-ref-self-reference-and-refcount-stop.md) | `ActorRef` self-reference & ref-count-driven stop | Accepted |
+| [0004](0004-recipient-conversion-boundary-erasure.md) | Recipient conversion-boundary erasure | Accepted |
+| [0005](0005-loom-shuttle-na-miri-for-ref-model.md) | loom/shuttle N/A; MIRI for the ref-model | Accepted |
