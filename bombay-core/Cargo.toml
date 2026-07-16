@@ -8,6 +8,13 @@ repository.workspace = true
 description = "Bombay runtime core — the rebuilt local actor spine (mailbox, message, reply, actor loop). Transport- and domain-agnostic."
 publish = false
 
+# Test-only helpers shared by BOTH the src unit tests (via `cfg(test)`) and the
+# integration tests in `tests/` (which link the lib externally and so cannot see
+# `pub(crate)`). A feature, not `#[doc(hidden)]` — see CLAUDE.md API-design rules.
+# Card #150; #151 extends this seam with its counting allocator.
+[features]
+test-support = []
+
 [dependencies]
 tokio = { workspace = true, features = ["sync", "rt", "macros", "time"] }
 flume = { workspace = true }
@@ -26,6 +33,7 @@ tokio = { workspace = true, features = [
 ] }
 proptest = { workspace = true }
 criterion = { version = "0.8", features = ["async_tokio"] }
+bombay-core = { path = ".", features = ["test-support"] }
 async-channel = "2.5.0"
 thingbuf = "0.1.6"
 crossbeam-channel = "0.5.15"

@@ -12,3 +12,6 @@ pub mod error;
 pub mod mailbox;
 pub mod message;
 pub mod reply;
+
+#[cfg(any(test, feature = "test-support"))]
+pub mod test_support;
