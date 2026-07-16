@@ -17,7 +17,7 @@ use core::time::Duration;
 #[must_use]
 pub const fn terminate_bound() -> Duration {
     if cfg!(miri) {
-        Duration::from_secs(600)
+        Duration::from_mins(10)
     } else {
         Duration::from_secs(5)
     }
