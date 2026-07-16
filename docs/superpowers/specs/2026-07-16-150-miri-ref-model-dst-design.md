@@ -119,7 +119,7 @@ Re-scope #150 to a **scheduled nightly MIRI lane**, in two legs:
 | Leg | Command | Purpose | Measured cost |
 |---|---|---|---|
 | **1 — sweep** | `cargo miri test -p bombay-core --lib` (single seed, isolation on, `--skip prop_`) | UB, data races, leaks across the whole spine | **42 s real** (79 passed / 0 failed / 3 filtered, measured as specified; the earlier 659 s figure was isolation-off *with* proptests) |
-| **2 — schedules** | `-Zmiri-many-seeds=0..N` scoped to the **ref-model race tests only** | The #150 interleavings | N/cores × per-test |
+| **2 — schedules** | `-Zmiri-many-seeds=0..64 -Zmiri-many-seeds-keep-going` scoped to the **ref-model race tests only** | The #150 interleavings | **24.6 s real / 3 m 56 s CPU** for all 64 seeds × 3 tests (measured; ~2 min of seed work on a 2-core runner). N = 64 — the full MIRI default fits the budget, so nothing is sampled away |
 
 Leg 2 is deliberately **not** the full suite: MIRI runs seeds "with parallel interpreter
 instances", but 64 seeds × a 659s suite is ~2–5 h on a 2–4-core runner. Scoping the seed
