@@ -1,12 +1,15 @@
 //! Model-based differential fuzz of the synchronous mailbox state machine.
-//! Drives `try_send` / `drain` / clone / drop against a `VecDeque` oracle and
-//! asserts FIFO + exactly-once + capacity backpressure. Sync-only, so it is
-//! also the surface #151's MIRI job can run (MIRI cannot drive tokio).
+//! Drives `try_send` / `drain` / clone / drop (of BOTH senders and the
+//! receiver) against a `VecDeque` oracle and asserts FIFO + exactly-once,
+//! capacity backpressure (`Full`), and the closed path (`Closed` /
+//! `is_closed` / `WeakMailboxSender::upgrade`). Sync, so the MIRI lane can run
+//! it — unlike the actor-loop target, which is fuzz-only because bolero's
+//! corpus is filesystem-backed (MIRI drives tokio fine; ADR-0005).
 
 use std::collections::VecDeque;
 
-use bolero::{check, TypeGenerator};
-use bombay_core::mailbox::{Capacity, Mailbox, MailboxSender, Mailboxed, Signal};
+use bolero::{TypeGenerator, check};
+use bombay_core::mailbox::{Capacity, Mailbox, MailboxSender, Mailboxed, Signal, TrySendError};
 
 /// Fuzz-local actor. The mailbox is domain-agnostic, so a `u64` message is
 /// enough (`Probe` in `mailbox.rs` is `#[cfg(test)]` and unreachable here).
@@ -20,7 +23,12 @@ enum Op {
     TrySend(u64),
     Drain,
     CloneTx,
+    /// Drops the sending handle currently used for `try_send` (the loop sends
+    /// via `senders.last()`), so the sender count can actually reach the point
+    /// where the mailbox teardown paths matter.
     DropTx,
+    /// Drops the receiver, closing the mailbox from the read side.
+    DropRx,
     IsClosed,
 }
 
@@ -50,29 +58,44 @@ fn mailbox_state_machine() {
         .for_each(|(cap_seed, ops)| {
             let cap = capacity_from_seed(*cap_seed);
             let cap_n = cap.get();
-            let (tx, mut rx) = Mailbox::<Probe>::bounded(cap);
+            let (tx, rx) = Mailbox::<Probe>::bounded(cap);
             let mut senders: Vec<MailboxSender<Probe>> = vec![tx];
+            // `rx` in an `Option` so `DropRx` can close the mailbox from the
+            // read side; `None` means the receiver is gone.
+            let mut rx = Some(rx);
             let mut model: VecDeque<u64> = VecDeque::new();
 
             for op in ops {
                 match op {
-                    // rx is never dropped in this loop, so try_send can only
-                    // fail with `Full` — never `Closed`.
                     Op::TrySend(m) => {
-                        let Some(sender) = senders.first() else {
+                        let Some(sender) = senders.last() else {
                             continue;
                         };
                         match sender.try_send(message(*m, sender)) {
                             Ok(()) => {
+                                assert!(rx.is_some(), "accepted while receiver dropped");
                                 assert!(model.len() < cap_n, "accepted past capacity");
                                 model.push_back(*m);
                             }
-                            Err(_) => {
+                            Err(TrySendError::Full(_)) => {
+                                assert!(rx.is_some(), "Full only while the receiver lives");
                                 assert_eq!(model.len(), cap_n, "rejected below capacity");
+                            }
+                            Err(TrySendError::Closed(returned)) => {
+                                assert!(rx.is_none(), "Closed only after the receiver is dropped");
+                                assert!(
+                                    matches!(returned, Signal::Message { msg, .. } if msg == *m),
+                                    "Closed hands the undelivered signal back intact",
+                                );
                             }
                         }
                     }
                     Op::Drain => {
+                        // A dropped receiver cannot be drained; the model then
+                        // holds entries that died with the mailbox, so skip.
+                        let Some(rx) = rx.as_mut() else {
+                            continue;
+                        };
                         let drained: Vec<u64> = rx
                             .drain()
                             .map(|s| match s {
@@ -87,22 +110,49 @@ fn mailbox_state_machine() {
                         assert_eq!(drained, expected, "drain must be FIFO + exactly-once");
                     }
                     Op::CloneTx => {
-                        if let Some(sender) = senders.first() {
+                        if let Some(sender) = senders.last() {
                             senders.push(sender.clone());
                         }
                     }
                     Op::DropTx => {
                         senders.pop();
                     }
+                    Op::DropRx => {
+                        rx = None;
+                    }
                     Op::IsClosed => {
-                        // Only the "open while a sender lives" direction is
-                        // observable — once every sender is dropped there is no
-                        // handle left to query.
-                        if let Some(sender) = senders.first() {
-                            assert!(!sender.is_closed(), "open while a sender lives");
+                        // Closed iff the receiver is gone — both directions now
+                        // observable via `DropRx`.
+                        if let Some(sender) = senders.last() {
+                            assert_eq!(
+                                sender.is_closed(),
+                                rx.is_none(),
+                                "a sender is closed exactly when the receiver is dropped",
+                            );
                         }
                     }
                 }
             }
         });
+}
+
+/// `WeakMailboxSender::upgrade` returns a strong sender only while one exists,
+/// and `None` once the last strong sender is gone. Deterministic (not fuzzed):
+/// in the state machine a queued message holds a strong `self_sender`, so the
+/// strong count is not simply `senders.len()` — this pins the teardown edge
+/// directly. `mailbox.rs:318` `upgrade` is otherwise structurally unreachable.
+#[test]
+fn weak_sender_upgrades_only_while_a_strong_sender_lives() {
+    let cap = Capacity::try_from(1usize).expect("valid capacity");
+    let (tx, _rx) = Mailbox::<Probe>::bounded(cap);
+    let weak = tx.downgrade();
+    assert!(
+        weak.upgrade().is_some(),
+        "upgrade yields a sender while the strong handle lives",
+    );
+    drop(tx);
+    assert!(
+        weak.upgrade().is_none(),
+        "upgrade is None once the last strong sender is dropped",
+    );
 }

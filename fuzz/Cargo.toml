@@ -14,7 +14,10 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 bolero = "0.13.4"
 bolero-generator = "0.13.5"
-bombay-core = { path = "../bombay-core" }
+bombay-core = { path = "../bombay-core", features = ["test-support"] }
+# The actor-loop target (#164) drives the async `PreparedActor::run` on a
+# current_thread runtime; rt + time (for `timeout`/`terminate_bound`) is enough.
+tokio = { version = "1", features = ["rt", "time"] }
 
 # bolero requires a `fuzz` profile to exist.
 [profile.fuzz]

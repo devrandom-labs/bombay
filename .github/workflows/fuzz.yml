@@ -52,6 +52,7 @@ jobs:
       matrix:
         target:
           - mailbox_state_machine
+          - actor_loop_state_machine
     steps:
       - uses: actions/checkout@v4
 

@@ -120,6 +120,7 @@ dependencies = [
  "bolero",
  "bolero-generator",
  "bombay-core",
+ "tokio",
 ]
 
 [[package]]
