@@ -409,6 +409,8 @@ mod tests {
     use proptest::prelude::*;
     use tokio::{runtime::Builder, sync::Barrier};
 
+    use crate::test_support::terminate_bound;
+
     /// Scaffold actor for the mailbox tests. `Mailboxed` is the seam the
     /// not-yet-rebuilt `Actor` trait (#114/#116) will later subsume.
     struct Probe;
@@ -437,19 +439,53 @@ mod tests {
         Capacity::try_from(n).expect("test capacity must be valid")
     }
 
+    /// Awaits a `recv` under the fail-fast bound (card #179).
+    ///
+    /// A regression that makes a queued message vanish leaves the receiver
+    /// waiting forever, so an unbounded `rx.recv().await` HANGS instead of
+    /// failing. `spawn.rs` has held this discipline since #148; `mailbox.rs` did
+    /// not, which is why `send -> Ok(())`, `try_send -> Ok(())` and
+    /// `recv -> None` reported as **TIMEOUT** rather than caught — cargo-mutants
+    /// exits 3 on a timeout, so those alone kept the whole sweep red, and a
+    /// timeout burns the full budget while reporting as neither caught nor
+    /// missed.
+    async fn recv_bounded<A: Mailboxed>(rx: &mut MailboxReceiver<A>) -> Option<Signal<A>> {
+        tokio::time::timeout(terminate_bound(), rx.recv())
+            .await
+            .expect("recv must not hang: a queued message went missing")
+    }
+
+    /// Awaits a `send` under the same bound (card #179).
+    ///
+    /// Separate from [`recv_bounded`] because the two hang for different
+    /// reasons: `Capacity::get -> 0` turns the queue into a **rendezvous**
+    /// channel (and `-> 1` into a depth-1 one), where a send with no waiting
+    /// receiver blocks forever — the send side, not the recv side.
+    async fn send_bounded<A: Mailboxed>(
+        tx: &MailboxSender<A>,
+        signal: Signal<A>,
+    ) -> Result<(), SendError<A>> {
+        tokio::time::timeout(terminate_bound(), tx.send(signal))
+            .await
+            .expect("send must not hang: the queue never drained")
+    }
+
     #[tokio::test]
     async fn sent_message_is_received() {
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4));
 
-        tx.send(Signal::Message {
-            msg: 42,
-            self_sender: tx.clone(),
-        })
+        send_bounded(
+            &tx,
+            Signal::Message {
+                msg: 42,
+                self_sender: tx.clone(),
+            },
+        )
         .await
         .expect("send should succeed");
 
         assert!(matches!(
-            rx.recv().await,
+            recv_bounded(&mut rx).await,
             Some(Signal::Message { msg: 42, .. })
         ));
     }
@@ -466,7 +502,7 @@ mod tests {
         .expect("send into max-capacity mailbox");
 
         assert!(matches!(
-            rx.recv().await,
+            recv_bounded(&mut rx).await,
             Some(Signal::Message { msg: 7, .. })
         ));
     }
@@ -625,16 +661,18 @@ mod tests {
         let weak = tx.downgrade();
 
         let strong = weak.upgrade().expect("channel still alive");
-        strong
-            .send(Signal::Message {
+        send_bounded(
+            &strong,
+            Signal::Message {
                 msg: 5,
                 self_sender: tx.clone(),
-            })
-            .await
-            .expect("send via upgraded");
+            },
+        )
+        .await
+        .expect("send via upgraded");
 
         assert!(matches!(
-            rx.recv().await,
+            recv_bounded(&mut rx).await,
             Some(Signal::Message { msg: 5, .. })
         ));
     }
@@ -643,20 +681,23 @@ mod tests {
     async fn stop_signal_is_delivered_in_order_after_a_message() {
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4));
 
-        tx.send(Signal::Message {
-            msg: 1,
-            self_sender: tx.clone(),
-        })
+        send_bounded(
+            &tx,
+            Signal::Message {
+                msg: 1,
+                self_sender: tx.clone(),
+            },
+        )
         .await
         .expect("message");
-        tx.send(Signal::Stop).await.expect("stop");
+        send_bounded(&tx, Signal::Stop).await.expect("stop");
 
         // FIFO: the domain message precedes the control signal that followed it.
         assert!(matches!(
-            rx.recv().await,
+            recv_bounded(&mut rx).await,
             Some(Signal::Message { msg: 1, .. })
         ));
-        assert!(matches!(rx.recv().await, Some(Signal::Stop)));
+        assert!(matches!(recv_bounded(&mut rx).await, Some(Signal::Stop)));
     }
 
     #[tokio::test]
@@ -665,16 +706,19 @@ mod tests {
         // with `drain` before dropping the receiver.
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(8));
         for i in 0..3 {
-            tx.send(Signal::Message {
-                msg: i,
-                self_sender: tx.clone(),
-            })
+            send_bounded(
+                &tx,
+                Signal::Message {
+                    msg: i,
+                    self_sender: tx.clone(),
+                },
+            )
             .await
             .expect("queued");
         }
 
         assert!(matches!(
-            rx.recv().await,
+            recv_bounded(&mut rx).await,
             Some(Signal::Message { msg: 0, .. })
         ));
 
@@ -713,20 +757,23 @@ mod tests {
     #[tokio::test]
     async fn recv_returns_none_after_all_senders_dropped_and_drained() {
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4));
-        tx.send(Signal::Message {
-            msg: 1,
-            self_sender: tx.clone(),
-        })
+        send_bounded(
+            &tx,
+            Signal::Message {
+                msg: 1,
+                self_sender: tx.clone(),
+            },
+        )
         .await
         .expect("queued");
         drop(tx);
 
         // Queued message drains first, then the disconnected channel ends.
         assert!(matches!(
-            rx.recv().await,
+            recv_bounded(&mut rx).await,
             Some(Signal::Message { msg: 1, .. })
         ));
-        assert!(rx.recv().await.is_none());
+        assert!(recv_bounded(&mut rx).await.is_none());
     }
 
     #[tokio::test]
@@ -783,7 +830,7 @@ mod tests {
 
         // Draining one slot frees capacity for the next try_send.
         assert!(matches!(
-            rx.recv().await,
+            recv_bounded(&mut rx).await,
             Some(Signal::Message { msg: 1, .. })
         ));
         tx.try_send(Signal::Message {
@@ -804,7 +851,7 @@ mod tests {
             Err(TrySendError::Full(Signal::Message { msg: 2, .. }))
         ));
         assert!(matches!(
-            rx.recv().await,
+            recv_bounded(&mut rx).await,
             Some(Signal::Message { msg: 1, .. })
         ));
 
@@ -833,10 +880,13 @@ mod tests {
             handles.push(tokio::spawn(async move {
                 start.wait().await; // all senders race from the same instant
                 for seq in 0..PER_SENDER {
-                    tx.send(Signal::Message {
-                        msg: (sender_id, seq),
-                        self_sender: tx.clone(),
-                    })
+                    send_bounded(
+                        &tx,
+                        Signal::Message {
+                            msg: (sender_id, seq),
+                            self_sender: tx.clone(),
+                        },
+                    )
                     .await
                     .expect("send");
                 }
@@ -846,7 +896,7 @@ mod tests {
 
         let mut next_expected = vec![0u32; SENDERS as usize];
         let mut total = 0u32;
-        while let Some(signal) = rx.recv().await {
+        while let Some(signal) = recv_bounded(&mut rx).await {
             let Signal::Message {
                 msg: (sender_id, seq),
                 ..
@@ -904,6 +954,7 @@ mod tests {
         ) {
             let sent = messages.clone();
             let received = Builder::new_current_thread()
+                .enable_time()
                 .build()
                 .expect("current-thread runtime")
                 .block_on(async move {
@@ -911,18 +962,27 @@ mod tests {
                     let expected = messages.len();
                     let producer = tokio::spawn(async move {
                         for message in messages {
-                            tx.send(Signal::Message { msg: message, self_sender: tx.clone() }).await.expect("send");
+                            send_bounded(&tx, Signal::Message { msg: message, self_sender: tx.clone() })
+                                .await
+                                .expect("send");
                         }
                     });
 
                     let mut got = Vec::with_capacity(expected);
                     while got.len() < expected {
-                        let Some(Signal::Message { msg: message, .. }) = rx.recv().await else {
+                        let Some(Signal::Message { msg: message, .. }) = recv_bounded(&mut rx).await else {
                             break;
                         };
                         got.push(message);
                     }
-                    producer.await.expect("producer task");
+                    // The consumer has taken all it will take. Stop the producer
+                    // so a mutation that makes `recv` drop messages fails on the
+                    // `received != sent` assertion below, instead of deadlocking
+                    // the producer on a full, undrained queue (card #179). In the
+                    // unmutated run every message was delivered and consumed, so
+                    // the producer has already finished and this abort is a no-op.
+                    producer.abort();
+                    let _ = producer.await;
                     got
                 });
 
