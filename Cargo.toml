@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [".", "actors", "bombay-core", "console", "macros"]
+members = [".", "actors", "bombay-core", "console", "macros", "mutants-gate"]
 
 [workspace.package]
 edition = "2024"
@@ -31,6 +31,8 @@ downcast-rs = "2.0"
 # pseudo-terminal and re-emulate the visible screen for grid assertions.
 portable-pty = "0.9"
 vt100 = "0.16"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 # ============================================================
 # Bombay — god-level lint config (adopted from nexus — card #61).
