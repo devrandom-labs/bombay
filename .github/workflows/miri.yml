@@ -52,11 +52,18 @@ jobs:
           MIRIFLAGS: "-Zmiri-strict-provenance"
         run: cargo miri test -p bombay-core --lib -- --skip prop_
 
-  # Leg 2 — schedule exploration, scoped to the ref-model race tests.
-  # Measured 24.6 s real / 3 m 56 s CPU locally for all 64 seeds x 3 tests.
+  # Leg 2 — schedule exploration over the tests that have real OS-thread
+  # overlap (#172 re-pointed this leg; #150's trio was current_thread and had
+  # no interleavings to explore). 16 seeds on PR, 64 on the nightly schedule —
+  # see the seed-budget note on the step below.
   miri-seeds:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # Headroom over the measured worst case (#172): seeds run in parallel, so
+    # cost tracks CPU on a 2-core runner. Locally 16 seeds x 2 tests = 18m53s
+    # CPU, so the nightly's 64 seeds is ~75 min CPU ≈ 38 min there. 60 left too
+    # little slack, and a timeout reports as a FAILURE — indistinguishable from
+    # a real race, which is the misdiagnosis this lane exists to avoid.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -66,21 +73,50 @@ jobs:
           toolchain: ${{ env.MIRI_TOOLCHAIN }}
           components: miri, rust-src
 
-      - name: Explore schedules over the ref-model races
-        # Scoped to the race tests on purpose: many-seeds over the FULL suite
-        # is hours on a 2-core runner. These three are the #150 scenarios
-        # (they already exist — each invariant lives in one canonical
-        # location). -Zmiri-many-seeds-keep-going reports what FRACTION of
-        # seeds fail — the difference between "flaky race" and "always
-        # broken".
+      - name: Explore schedules over the verified multi-threaded races
+        # SCOPE (card #172). -Zmiri-many-seeds varies MIRI's scheduler choice
+        # among READY OS THREADS (plus weak-memory read buffering), so a test
+        # only contributes if its tasks genuinely occupy >1 thread. #150 pointed
+        # this leg at three `#[tokio::test]` tests — current_thread, where
+        # tokio::spawn never leaves the calling thread — so 64 seeds bought 64
+        # near-identical executions.
+        #
+        # MEASURED, not assumed (thread-id probe, run and reverted):
+        #   spawn.rs   concurrent_senders_single_writer  8 tasks/4 workers -> 4 threads
+        #   mailbox.rs n_senders_one_receiver_order      8 tasks/4 workers -> 4 threads
+        #   reply.rs   concurrent_send_and_recv          2 tasks/2 workers -> 1 thread
+        #
+        # reply.rs is EXCLUDED despite being `multi_thread` + Barrier: under
+        # MIRI both its tasks drain from the spawning worker's local queue and
+        # the second worker never steals, so it has nothing to permute. (On real
+        # hardware it does overlap — this is a MIRI artifact, not a bad test,
+        # and leg 1 still runs it at one seed.) The `multi_thread` flavor is
+        # necessary but NOT sufficient: what matters is tasks > workers, enough
+        # to overflow a local queue into stealing. Re-run the probe before
+        # adding a test here.
+        #
+        # Sampling flume's real std::sync interleavings was the whole rationale
+        # for choosing MIRI over loom/shuttle (ADR-0005: both need opt-in
+        # instrumentation flume does not ship). This is the leg that discharges
+        # it.
+        #
+        # -Zmiri-many-seeds-keep-going reports what FRACTION of seeds fail —
+        # the difference between "flaky race" and "always broken".
+        #
+        # SEED BUDGET: seeds run in parallel, so cost tracks CPU, not wall
+        # clock — and a runner has 2 cores. 64 seeds is too slow to sit on every
+        # PR, so PRs get a 16-seed smoke and the nightly schedule gets the full
+        # 64. A race needing seeds 16..64 is caught overnight rather than
+        # pre-merge — the accepted trade.
         env:
           RUSTUP_TOOLCHAIN: ${{ env.MIRI_TOOLCHAIN }}
-          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-many-seeds=0..64 -Zmiri-many-seeds-keep-going"
+          MIRI_SEEDS: ${{ github.event_name == 'pull_request' && '0..16' || '0..64' }}
+          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-many-seeds=${{ github.event_name == 'pull_request' && '0..16' || '0..64' }} -Zmiri-many-seeds-keep-going"
         run: |
+          echo "exploring seeds ${MIRI_SEEDS} (event: ${{ github.event_name }})"
           cargo miri test -p bombay-core --lib -- \
-            dropping_last_actor_ref_stops_the_actor \
-            queued_message_is_handled_even_if_last_ref_drops_first \
-            dropping_receiver_mid_backlog_frees_the_queued_message
+            concurrent_senders_single_writer_exact_count \
+            n_senders_one_receiver_preserve_per_sender_order
 
   miri-gate:
     # Single stable check name. Requiring the leg jobs directly would mean
