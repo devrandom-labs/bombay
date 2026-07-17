@@ -198,9 +198,11 @@
           # bolero `check!` targets in the isolated `fuzz/` workspace via plain
           # `cargo test` on the pinned STABLE toolchain (bolero's DefaultEngine
           # needs no nightly — sanitizers, which do, live in the #152 scheduled
-          # workflow). `src` already carries the whole tree (parent crate + fuzz
-          # sources + corpus); `fuzzCargoArtifacts` vendors the fuzz lock so the
-          # build is fully offline/hermetic.
+          # workflow). The "deterministic" half is real: committed seeds under
+          # `fuzz/tests/__fuzz__/<target>/corpus/` (#164) are replayed every run,
+          # so a pinned regression stays pinned. `src` already carries the whole
+          # tree (parent crate + fuzz sources + corpus); `fuzzCargoArtifacts`
+          # vendors the fuzz lock so the build is fully offline/hermetic.
           bombay-fuzz-replay = craneLib.mkCargoDerivation (
             commonArgs
             // {
