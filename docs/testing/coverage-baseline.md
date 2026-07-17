@@ -7,16 +7,23 @@
 > | Claim | Reality |
 > |---|---|
 > | the derive's `///` + `compile_fail` doctests cover the tripwire | **none run in the gate** — `bombay-doctest` selects the root fork package only (**#170**) |
-> | #148 "0 survivors", and "0 survivors anywhere in the whole-package run" | one of the six named fns had **0 viable mutants**; the whole-package run was **interrupted at 141/205**, and there is **no standing mutants gate** (**#171**) |
+> | #148 "0 survivors", and "0 survivors anywhere in the whole-package run" | one of the six named fns had **0 viable mutants**; the whole-package run was **interrupted at 141/205**, and there was **no standing mutants gate** — since fixed: **#171/#165 closed**, `nix build .#mutants` is now a standing, reproducible gate reporting **64 viable / 215 total** (see the #148 section below) |
 > | the MIRI Schedules leg explores 64 schedules | all three tests are **current_thread** — nothing to permute; the `multi_thread`+`Barrier` races are excluded from that leg (**#172**) |
 > | the bolero lane asserts the mailbox's FIFO/exactly-once | it asserts **flume's**, through ~50 lines of glue; and `__fuzz__/` holds **zero seeds**, so the "deterministic corpus-replay" is bounded-random (**#164**) |
 > | "the PR path was confirmed to restore the corpus" | it never ran — no successful `main` run existed to restore from |
 >
 > **Standing lesson from that audit:** every "0 missed" / "zero survivors" line below is a
-> **point-in-time observation recorded in a PR body**, not a standing property — nothing
-> re-runs the mutation sweep (#171). Read every green claim in this file for its *sample
-> size* and its *surface*, not its colour. A green lane over the wrong surface is
-> indistinguishable from a green lane over the right one.
+> **point-in-time observation recorded in a PR body**, not a standing property — as of the
+> #168 audit (2026-07-17), nothing re-ran the mutation sweep. **#171/#165 have since closed
+> this**: `nix build .#mutants` (workflow `.github/workflows/mutants.yml`) is now a standing,
+> reproducible gate that fails on a survivor, a timeout, an interrupted run (fewer recorded
+> outcomes than candidates), or a per-`file::function` viability collapse against a
+> committed baseline, and it always reports the measured ratio rather than a bare
+> pass/fail — currently **64 viable / 215 total** (see the #148 section below and
+> `docs/adr/0006-mutation-viable-ratchet.md`). Read every green claim in this file for its
+> *sample size* and its *surface*, not its colour — a green lane over the wrong surface is
+> indistinguishable from a green lane over the right one, which is exactly why the gate now
+> reports the ratio instead of a bare pass/fail.
 
 Reproducible via crane, with **two engines** selected by system:
 
@@ -49,11 +56,24 @@ under the god-level bar (no #61 quarantine). It is measured by the same
 `--workspace` coverage run and adds a **reproducible mutation gate**:
 
 ```bash
-nix build .#mutants -L   # cargo-mutants on bombay-core; fails if any mutant survives
+nix build .#mutants -L   # cargo-mutants over the workspace + macros/src/derive_msg.rs, plus
+                          # a mutants-gate verdict tool: fails on any survivor, any timeout,
+                          # an interrupted run (fewer recorded outcomes than candidates), or a
+                          # per-`file::function` viability collapse against the committed
+                          # baseline; always prints the "N viable / M total" ratio
 ```
 
 Pinned via the flake's `nixpkgs` (never `nix run nixpkgs#…`), mirroring the coverage
-package. On-demand, not a per-push gate (rebuilds+tests once per mutant).
+package. Quarantined off `nix flake check` (rebuild-per-mutant is too slow for the
+per-push gate) — the nightly run is `.github/workflows/mutants.yml`; the gate's design
+(the per-function baseline, the viability-collapse check) is recorded in
+`docs/adr/0006-mutation-viable-ratchet.md`. Measured 2026-07-17 (this branch), whole
+package + `derive_msg.rs`: **64 viable / 215 total** mutants (64 caught, 0 missed, 0
+timeout, 151 unviable) — the ratchet baseline is 47 floored functions (viable ≥ 1) plus 48
+documented 0-viable functions in `known_zero_viable` (including `WeakActorRef::with_sender`,
+which now also carries a hand-written compensating test, and all of
+`macros/src/derive_msg.rs`, whose #114 derive is empirically 0-viable and is instead covered
+by #170's compile-fail lane).
 
 ### `mailbox` (#112, redesigned #133) — done
 Zero-box `Signal<A>` queue behind a **`flume`** channel (chosen on measured evidence —
@@ -124,7 +144,10 @@ as the per-slot byte bound. Trait covered by 3 `bombay-core` unit tests — defa
 pin, hand-override, and usability as a generic bound. Mutation testing yields no
 signal for this module: `cargo-mutants` mutates function bodies only, so it
 generates no mutants for a trait-const-only file — the `SLOT_BUDGET` default is
-pinned by the `slot_budget_defaults_to_256` unit test instead.
+pinned by the `slot_budget_defaults_to_256` unit test instead. This absence is no
+longer silent: the standing gate (`nix build .#mutants`, #171/#165) reports outcomes
+**per `file::function`**, so a file contributing zero candidates shows up as such in the
+run rather than being folded into an aggregate total.
 
 The `#[derive(Msg)]` proc-macro (`macros/src/derive_msg.rs`) implements the trait and
 emits a compile-time slot-size tripwire; it sits outside the `bombay-core` mutation
@@ -225,7 +248,10 @@ cross-cutting categories:
 
 Mutation (`nix build .#mutants`) and loom/DST are not re-measured in this card;
 the first bombay-owned concurrency the run-loop introduces (the `select` over
-signals) is the loom/shuttle target noted under `mailbox` above. No README
+signals) is the loom/shuttle target noted under `mailbox` above. This surface is,
+however, swept by the standing whole-package gate landed under #171/#165 (see the
+#148 section below) — its per-function ratio now covers `actor/kind.rs` and
+`actor/spawn.rs` alongside every other bombay-core module. No README
 change — the rebuilt spine is not behind the umbrella yet (same as #113/#115).
 
 ### `actor-ref` self-reference & ref-count stop (#117) — done
@@ -365,6 +391,27 @@ change.
 > gate** — `flake.nix:320-322` says "On-demand, NOT a gating check", and
 > `rg -i mutants .github/` is empty, so every "0 missed" in this document is a
 > point-in-time PR-body observation, not a property).
+
+> **Closed 2026-07-17 (#171/#165).** Both problems in the two blockquotes above are now
+> fixed by a standing, reproducible gate: `nix build .#mutants` runs the sweep plus a
+> `mutants-gate` verdict tool that fails on any survivor, any timeout, an interrupted run
+> (fewer recorded outcomes than candidates — exactly the 141/205 failure mode above), or a
+> per-`file::function` viability collapse against a committed `mutants-baseline.json`, and
+> it always prints the "N viable / M total" ratio instead of a bare pass/fail. The nightly
+> workflow is `.github/workflows/mutants.yml`; the design rationale (why a per-function
+> viable-count ratchet rather than a raw survivor count) is `docs/adr/0006-mutation-viable-ratchet.md`.
+> Because the ratio is now reported **per function**, a 0-viable function like
+> `WeakActorRef::with_sender` is visible in the committed baseline (`known_zero_viable`)
+> rather than averaged into an aggregate "13 caught, 8 unviable" that hides it — and
+> `with_sender` now additionally carries a hand-written compensating test in
+> `bombay-core/src/actor/actor_ref.rs`, so a wrong-`id`/stale-`cancel` copy that its own 0
+> viable mutants cannot catch is caught there instead. The current whole-package +
+> `derive_msg.rs` measurement (2026-07-17, this branch, complete run — not interrupted) is
+> **64 viable / 215 total** mutants (64 caught, 0 missed, 0 timeout, 151 unviable; 215 vs.
+> the 205 candidates PR #157 attempted, because the sweep now also covers
+> `macros/src/derive_msg.rs`, which is empirically 0-viable and is documented as such rather
+> than silently absent). The baseline floors 47 functions with viable ≥ 1 and documents 48
+> functions — including all of `derive_msg.rs` — as 0-viable by design.
 
 The interesting finding was **not** a survivor but three mutation *timeouts*: a
 `… -> Ok(())` stub of a send/tell path makes a message silently vanish, so any
