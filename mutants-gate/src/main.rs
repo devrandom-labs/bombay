@@ -12,6 +12,7 @@
 )]
 
 mod model;
+mod gate;
 
 fn main() {
     eprintln!("mutants-gate: not yet implemented");

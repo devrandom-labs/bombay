@@ -57,7 +57,7 @@ pub(crate) struct Candidate {
 #[derive(Debug, Deserialize)]
 pub(crate) struct Baseline {
     /// `"file::function_name"` -> minimum viable mutant count (>= 1).
-    pub(crate) floors: BTreeMap<String, u64>,
+    pub(crate) floors: BTreeMap<String, usize>,
     /// `"file::function_name"` documented as structurally 0-viable.
     pub(crate) known_zero_viable: Vec<String>,
 }
