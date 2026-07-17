@@ -24,23 +24,24 @@ use bombay_core::message::Msg;
 use bombay_core::test_support::terminate_bound;
 
 /// One driver step. `Send` enqueues a message; `StopInBand` enqueues a FIFO
-/// `Signal::Stop`; `CancelStop` fires the out-of-band cancel token. The whole
-/// script is applied before `run`, so execution is deterministic on the
-/// single-threaded runtime — a sound fuzz oracle.
-#[derive(Debug, TypeGenerator)]
+/// `Signal::Stop`; `CancelStop` fires the out-of-band cancel token; `Kill`
+/// aborts (hard kill). The whole script is applied before `run`, so execution
+/// is deterministic on the single-threaded runtime — a sound fuzz oracle.
+#[derive(Debug, Clone, TypeGenerator)]
 enum Op {
     Send,
     StopInBand,
     CancelStop,
+    Kill,
 }
 
 /// Deterministic oracle: how many messages the loop handles for an op script,
 /// per the three stop modes (`kind.rs` "finish-current-then-stop, no drain").
 /// This is a small stop-mode predicate, NOT a re-encoding of the loop.
 fn expected_handled(ops: &[Op]) -> u32 {
-    // Cancel is checked before every `recv`, and here it fires before `run`
-    // even starts, so it abandons the entire backlog.
-    if ops.iter().any(|op| matches!(op, Op::CancelStop)) {
+    // A pre-run cancel (checked before every `recv`) or a pre-run abort both
+    // end the run before any message is drained, so no message is handled.
+    if ops.iter().any(|op| matches!(op, Op::CancelStop | Op::Kill)) {
         return 0;
     }
     // Otherwise messages are handled FIFO until the first in-band `Stop`; if
@@ -50,7 +51,7 @@ fn expected_handled(ops: &[Op]) -> u32 {
         match op {
             Op::Send => handled = handled.saturating_add(1),
             Op::StopInBand => return handled,
-            Op::CancelStop => {}
+            Op::CancelStop | Op::Kill => {}
         }
     }
     handled
@@ -195,7 +196,7 @@ where
 {
     let enqueued = ops
         .iter()
-        .filter(|op| !matches!(op, Op::CancelStop))
+        .filter(|op| matches!(op, Op::Send | Op::StopInBand))
         .count();
     let cap = Capacity::try_from(enqueued.max(1)).expect("valid capacity");
     runtime().block_on(async {
@@ -208,6 +209,7 @@ where
                     .await
                     .expect("enqueue stop"),
                 Op::CancelStop => actor_ref.stop(),
+                Op::Kill => actor_ref.kill(),
             }
         }
         drop(actor_ref);
@@ -215,28 +217,37 @@ where
     })
 }
 
-/// Core invariants across the three stop modes:
+/// Core invariants and RunResult-matches-path across all stop modes:
 /// * **drain-or-abandon per mode** — `handled` matches the oracle;
 /// * **enqueued-before-drop still handled** — the drain-then-close branch;
-/// * **no strong self-ref held** — the no-`Stop`/no-`Cancel` case ends ONLY
-///   because dropping the last external ref closes the mailbox; a leaked strong
-///   self-ref would hang here (`bounded` fires). Falsification anchor:
+/// * **no strong self-ref held** — the no-`Stop`/no-`Cancel`/no-`Kill` case ends
+///   ONLY because dropping the last external ref closes the mailbox; a leaked
+///   strong self-ref would hang here (`bounded` fires). Falsification anchor:
 ///   `drop(actor_ref)` at spawn.rs:165.
+/// * **RunResult matches the path** — a `Kill` aborts to `Killed`; every other
+///   mode is a normal `Stopped`.
 #[test]
 fn actor_loop_state_machine() {
     check!().with_type::<Vec<Op>>().for_each(|ops| {
         let handled = Arc::new(AtomicU32::new(0));
         let outcome = drive::<Counter>(ops, Arc::clone(&handled));
-        assert!(
-            matches!(
-                outcome,
-                RunResult::Stopped {
-                    reason: ActorStopReason::Normal,
-                    ..
-                }
-            ),
-            "every stop mode here is a normal stop, got {outcome:?}",
-        );
+        if ops.iter().any(|op| matches!(op, Op::Kill)) {
+            assert!(
+                matches!(outcome, RunResult::Killed),
+                "a hard kill must abort to Killed, got {outcome:?}",
+            );
+        } else {
+            assert!(
+                matches!(
+                    outcome,
+                    RunResult::Stopped {
+                        reason: ActorStopReason::Normal,
+                        ..
+                    }
+                ),
+                "every non-kill stop mode is a normal stop, got {outcome:?}",
+            );
+        }
         assert_eq!(
             handled.load(Ordering::SeqCst),
             expected_handled(ops),
@@ -250,8 +261,15 @@ fn actor_loop_state_machine() {
 #[test]
 fn on_start_panic_yields_startup_failed() {
     check!().with_type::<Vec<Op>>().for_each(|ops| {
+        // Exclude Kill: a pre-run abort would short-circuit to Killed before
+        // on_start ever runs; this test isolates the startup-failure path.
+        let ops: Vec<Op> = ops
+            .iter()
+            .filter(|op| !matches!(op, Op::Kill))
+            .cloned()
+            .collect();
         let handled = Arc::new(AtomicU32::new(0));
-        let outcome = drive::<StartPanics>(ops, Arc::clone(&handled));
+        let outcome = drive::<StartPanics>(&ops, Arc::clone(&handled));
         assert!(
             matches!(outcome, RunResult::StartupFailed(_)),
             "on_start panic must yield StartupFailed, got {outcome:?}",
@@ -266,8 +284,15 @@ fn on_start_panic_yields_startup_failed() {
 #[test]
 fn stop_reason_preserved_through_panicking_on_stop() {
     check!().with_type::<Vec<Op>>().for_each(|ops| {
+        // Exclude Kill: an abort skips on_stop entirely (RunResult::Killed);
+        // this test isolates the failing-on_stop-preserves-reason path.
+        let ops: Vec<Op> = ops
+            .iter()
+            .filter(|op| !matches!(op, Op::Kill))
+            .cloned()
+            .collect();
         let handled = Arc::new(AtomicU32::new(0));
-        let outcome = drive::<StopPanics>(ops, Arc::clone(&handled));
+        let outcome = drive::<StopPanics>(&ops, Arc::clone(&handled));
         assert!(
             matches!(
                 outcome,
@@ -280,7 +305,7 @@ fn stop_reason_preserved_through_panicking_on_stop() {
         );
         assert_eq!(
             handled.load(Ordering::SeqCst),
-            expected_handled(ops),
+            expected_handled(&ops),
             "handled count unchanged by a failing on_stop for {ops:?}",
         );
     });
