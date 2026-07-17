@@ -38,7 +38,9 @@ pub(crate) enum Scenario {
 #[derive(Debug, Deserialize)]
 pub(crate) struct MutantInfo {
     pub(crate) file: String,
-    pub(crate) function: FunctionInfo,
+    /// `null` for a mutation that is not inside a function — e.g. an associated
+    /// `const` like `Capacity::MAX` (cargo-mutants reports `"function": null`).
+    pub(crate) function: Option<FunctionInfo>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,7 +52,8 @@ pub(crate) struct FunctionInfo {
 #[derive(Debug, Deserialize)]
 pub(crate) struct Candidate {
     pub(crate) file: String,
-    pub(crate) function: FunctionInfo,
+    /// `null` for a non-function mutation (see [`MutantInfo::function`]).
+    pub(crate) function: Option<FunctionInfo>,
 }
 
 /// `mutants-baseline.json`: the committed ratchet.
@@ -80,7 +83,27 @@ mod tests {
         match outcome.scenario {
             Scenario::Mutant(m) => {
                 assert_eq!(m.file, "bombay-core/src/actor/kind.rs");
-                assert_eq!(m.function.function_name, "handle_message");
+                assert_eq!(m.function.unwrap().function_name, "handle_message");
+            }
+            Scenario::Baseline => panic!("expected a Mutant scenario"),
+        }
+    }
+
+    #[test]
+    fn parses_a_null_function_mutant() {
+        // A mutation of an associated const (not inside a fn) has function: null.
+        let json = r#"{
+            "summary": "CaughtMutant",
+            "scenario": { "Mutant": {
+                "file": "bombay-core/src/mailbox.rs",
+                "function": null
+            } }
+        }"#;
+        let outcome: Outcome = serde_json::from_str(json).unwrap();
+        match outcome.scenario {
+            Scenario::Mutant(m) => {
+                assert_eq!(m.file, "bombay-core/src/mailbox.rs");
+                assert!(m.function.is_none());
             }
             Scenario::Baseline => panic!("expected a Mutant scenario"),
         }
@@ -102,6 +125,6 @@ mod tests {
         }]"#;
         let candidates: Vec<Candidate> = serde_json::from_str(json).unwrap();
         assert_eq!(candidates.len(), 1);
-        assert_eq!(candidates[0].function.function_name, "recv");
+        assert_eq!(candidates[0].function.as_ref().unwrap().function_name, "recv");
     }
 }

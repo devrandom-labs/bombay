@@ -3,7 +3,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::model::{Baseline, Candidate, Report, Scenario, Summary};
+use crate::model::{Baseline, Candidate, FunctionInfo, Report, Scenario, Summary};
 
 /// Per-`file::function` mutation tally.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -67,8 +67,14 @@ impl Verdict {
     }
 }
 
-fn key(file: &str, function: &str) -> String {
-    format!("{file}::{function}")
+/// The ratchet key for a mutation. A function-less mutation (an associated
+/// `const` etc., where cargo-mutants reports `function: null`) groups under a
+/// synthetic `<module>` name so it is still floored and reported, never dropped.
+fn key(file: &str, function: Option<&FunctionInfo>) -> String {
+    function.map_or_else(
+        || format!("{file}::<module>"),
+        |f| format!("{file}::{}", f.function_name),
+    )
 }
 
 /// Group MUTATION outcomes into per-function tallies. Skips the `Baseline`
@@ -85,7 +91,7 @@ fn tally(report: &Report) -> BTreeMap<String, Tally> {
             continue;
         }
         grouped
-            .entry(key(&info.file, &info.function.function_name))
+            .entry(key(&info.file, info.function.as_ref()))
             .or_default()
             .push(outcome.summary);
     }
@@ -109,7 +115,7 @@ fn tally(report: &Report) -> BTreeMap<String, Tally> {
 /// Counted via `.count()` (no manual arithmetic); the candidate list is small.
 fn expected_counts(candidates: &[Candidate]) -> BTreeMap<String, usize> {
     let keys: Vec<String> =
-        candidates.iter().map(|c| key(&c.file, &c.function.function_name)).collect();
+        candidates.iter().map(|c| key(&c.file, c.function.as_ref())).collect();
     keys.iter()
         .collect::<BTreeSet<&String>>()
         .into_iter()
@@ -218,13 +224,28 @@ mod tests {
             summary,
             scenario: Scenario::Mutant(MutantInfo {
                 file: file.to_owned(),
-                function: FunctionInfo { function_name: func.to_owned() },
+                function: Some(FunctionInfo { function_name: func.to_owned() }),
             }),
         }
     }
 
+    /// A mutation with no enclosing function (an associated `const` etc.).
+    fn module_mutant(file: &str, summary: Summary) -> crate::model::Outcome {
+        crate::model::Outcome {
+            summary,
+            scenario: Scenario::Mutant(MutantInfo { file: file.to_owned(), function: None }),
+        }
+    }
+
     fn candidate(file: &str, func: &str) -> Candidate {
-        Candidate { file: file.to_owned(), function: FunctionInfo { function_name: func.to_owned() } }
+        Candidate {
+            file: file.to_owned(),
+            function: Some(FunctionInfo { function_name: func.to_owned() }),
+        }
+    }
+
+    fn module_candidate(file: &str) -> Candidate {
+        Candidate { file: file.to_owned(), function: None }
     }
 
     fn baseline(floors: &[(&str, usize)], known_zero: &[&str]) -> Baseline {
@@ -325,6 +346,18 @@ mod tests {
         let v = evaluate(&report, &candidates, &base);
         assert!(v.passed(), "failures: {:?}", v.failures);
         assert_eq!(v.total_viable(), 0);
+    }
+
+    #[test]
+    fn a_function_less_mutant_keys_under_module() {
+        // A caught associated-const mutation (function: null) must be floored
+        // and reported under `file::<module>`, never dropped.
+        let report = Report { outcomes: vec![module_mutant("mailbox.rs", Summary::CaughtMutant)] };
+        let candidates = vec![module_candidate("mailbox.rs")];
+        let base = baseline(&[("mailbox.rs::<module>", 1)], &[]);
+        let v = evaluate(&report, &candidates, &base);
+        assert!(v.passed(), "failures: {:?}", v.failures);
+        assert_eq!(v.tallies.get("mailbox.rs::<module>").map(Tally::viable), Some(1));
     }
 
     #[test]
