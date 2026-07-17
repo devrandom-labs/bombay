@@ -384,6 +384,61 @@ mod tests {
         assert_eq!(returned, 42, "the exact undelivered message is handed back");
     }
 
+    /// `with_sender` cannot be reached by cargo-mutants' whole-body
+    /// replacement (it returns `ActorRef<A>`, which has no `Default`, so no
+    /// mutant compiles — `known_zero_viable` in `mutants-baseline.json`,
+    /// card #165). This is the hand-written compensating control: it proves
+    /// `with_sender` copies the WEAK ref's `id`/`cancel`/`abort` VERBATIM
+    /// (not fresh values) by observing shared state through each field.
+    ///
+    /// - `id`: a plain `Copy` value — `assert_eq!` is a direct, exact check.
+    /// - `cancel`: `CancellationToken::clone` "will get cancelled whenever
+    ///   the current token gets cancelled, and vice versa" (tokio-util
+    ///   `cancellation_token.rs` doc on `impl Clone`) — so cancelling
+    ///   through the rebuilt ref must flip the ORIGINAL's token too, which a
+    ///   fresh `CancellationToken::new()` could never do.
+    /// - `abort`: `AbortHandle` clones share one `Arc<AbortInner>` (futures
+    ///   `abortable.rs`) — `is_aborted` reads that shared `AtomicBool`. Both
+    ///   fields are private but observable here: `tests` is a descendant
+    ///   module of the struct's defining module, so plain field access
+    ///   (`.cancel`, `.abort`) is in scope without needing a public
+    ///   liveness-identity accessor that would otherwise leak the field.
+    #[tokio::test]
+    async fn with_sender_preserves_id_cancel_and_abort() {
+        let (actor_ref, weak, _rx) = build_ref_with_rx();
+        let self_sender = actor_ref.mailbox_sender().clone();
+
+        let rebuilt = weak.with_sender(self_sender);
+
+        assert_eq!(
+            rebuilt.id(),
+            ActorId::new(7),
+            "id must be copied verbatim from the weak ref",
+        );
+
+        assert!(
+            !actor_ref.cancel.is_cancelled(),
+            "precondition: nothing cancelled yet",
+        );
+        rebuilt.stop();
+        assert!(
+            actor_ref.cancel.is_cancelled(),
+            "with_sender must copy the SAME cancellation token as the \
+             original — a fresh token would leave the original uncancelled",
+        );
+
+        assert!(
+            !actor_ref.abort.is_aborted(),
+            "precondition: nothing aborted yet",
+        );
+        rebuilt.kill();
+        assert!(
+            actor_ref.abort.is_aborted(),
+            "with_sender must copy the SAME abort handle as the original — \
+             a fresh handle would leave the original's abort unset",
+        );
+    }
+
     /// Liveness is a property of the shared channel, not of any one handle:
     /// `is_alive`/`is_closed` read identically across cloned senders. A surviving
     /// clone keeps the actor alive after the original drops; reaping the actor

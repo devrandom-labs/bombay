@@ -89,6 +89,10 @@
         # files, so without this the gate's `cargoNextest` would fail with
         # "Could not read path" even though the runners pass with the full tree
         # checked out. Keep the whole feature catalog in the sandbox.
+        #
+        # `mutants-baseline.json` (cards #165/#171) is read by the `mutants-gate`
+        # tool inside the `packages.mutants` derivation — another non-Rust file
+        # `commonCargoSources` would strip, so keep it in the sandbox too.
         src = lib.fileset.toSource {
           root = ./.;
           fileset = lib.fileset.unions [
@@ -96,6 +100,7 @@
             ./README.md
             ./tests/features
             ./fuzz/tests/__fuzz__
+            ./mutants-baseline.json
           ];
         };
 
@@ -333,12 +338,23 @@
         # feature auto-enables via the self dev-dep, so the cucumber runners build.
         packages =
           let
-            # Mutation testing for the rebuilt core (card #112+). On-demand, NOT a
-            # gating check — like coverage, cargo-mutants rebuilds+tests once per
-            # mutant, far too slow for the per-push gate. Pinned via the flake's
-            # nixpkgs input (never `nix run nixpkgs#…`) so the run is reproducible.
-            # `nix build .#mutants -L` writes the mutants.out report to ./result and
-            # FAILS the build if any mutant survives (zero-survivors is the bar).
+            # Mutation testing for the rebuilt core (cards #112+, #165, #171). A
+            # flake *package*, NOT a `nix flake check`: cargo-mutants rebuilds +
+            # tests once per mutant (minutes-to-hours), same quarantine as
+            # MIRI/fuzz (ADR-0006). Pinned via the flake's nixpkgs input (never
+            # `nix run nixpkgs#…`) so the run is reproducible.
+            #
+            # `nix build .#mutants -L` runs the scoped sweep, then `mutants-gate`
+            # OWNS the verdict — it fails on a survivor, a timeout, an
+            # interrupted run (fewer outcomes than candidates), or a per-function
+            # viability collapse against mutants-baseline.json, and always writes
+            # the "N viable / M total" ratio to $out/mutants-gate-report.txt.
+            # cargo-mutants' own exit is swallowed (`|| true`) so the gate is the
+            # single source of truth; `set -o pipefail` makes the gate's exit
+            # code (not tee's) fail the derivation. The `--file` globs are
+            # single-quoted so cargo-mutants — not the shell — does the matching,
+            # scoping the sweep to bombay-core + derive_msg.rs (the vendored
+            # kameo derives stay out).
             mutants = craneLib.mkCargoDerivation (
               commonArgs
               // {
@@ -346,7 +362,15 @@
                 pnameSuffix = "-mutants";
                 nativeBuildInputs = commonArgs.nativeBuildInputs ++ [ cargo-mutants ];
                 buildPhaseCargoCommand = ''
-                  cargo mutants --package bombay-core --no-shuffle --colors never --output "$out"
+                  set -o pipefail
+                  cargo mutants \
+                    --package bombay-core --package bombay_macros \
+                    --file 'bombay-core/**' --file 'macros/src/derive_msg.rs' \
+                    --no-shuffle --colors never --timeout 60 \
+                    --output "$out" || true
+                  cargo run --release -p mutants-gate -- \
+                    check "$out/mutants.out" "$PWD/mutants-baseline.json" \
+                    | tee "$out/mutants-gate-report.txt"
                 '';
                 doInstallCargoArtifacts = false;
                 doCheck = false;
