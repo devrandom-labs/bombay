@@ -84,7 +84,7 @@ nix flake check                         # build + clippy + fmt + audit + deny + 
 nix build .#coverage -L                 # llvm-cov HTML report -> ./result/html/index.html
 ```
 
-Behaviour is captured as Gherkin `.feature` files under [`tests/features/`](tests/features/) and wired to the real code by cucumber runners in `tests/` and each crate's `tests/`. Coverage is produced by `cargo-llvm-cov` through `nix build .#coverage` (a `cargo-tarpaulin` engine is also wired as a Linux opt-in via `.#coverage-tarpaulin`); the per-file baseline and gap triage are in [`docs/testing/coverage-baseline.md`](docs/testing/coverage-baseline.md).
+Behaviour is captured as Gherkin `.feature` files under [`tests/features/`](tests/features/) and wired to the real code by cucumber runners in `tests/` and each crate's `tests/`. Coverage is produced by `cargo-llvm-cov` through `nix build .#coverage` (a `cargo-tarpaulin` engine is also wired as a Linux opt-in via `.#coverage-tarpaulin`), and a standing mutation gate runs through `nix build .#mutants` (nightly `mutants.yml`); the per-file baseline and gap triage for both are in [`docs/testing/coverage-baseline.md`](docs/testing/coverage-baseline.md).
 
 ## License
 
