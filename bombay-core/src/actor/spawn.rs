@@ -269,6 +269,21 @@ mod tests {
         Capacity::try_from(n).expect("valid test capacity")
     }
 
+    /// Bounds an actor-lifecycle await under the MIRI-aware fail-fast bound so a
+    /// regression that stalls the loop FAILS instead of hanging (card #179).
+    ///
+    /// The assertions here are correct; the gap was that a bare `.run(..).await`
+    /// (or a pre-run `tell`/`send` into a broken mailbox) has no upper bound, so
+    /// under mutation a vanished message or a never-arriving `Stop` deadlocks the
+    /// whole test binary — reported as a 20 s **timeout** rather than a caught
+    /// mutant. Mirrors the inline `timeout(terminate_bound(), …)` already used
+    /// across this module, extracted so the fix reads uniformly.
+    async fn bounded<F: Future>(fut: F) -> F::Output {
+        tokio::time::timeout(terminate_bound(), fut)
+            .await
+            .expect("actor lifecycle op must terminate, not hang")
+    }
+
     /// Sequence: two messages then a `Stop` — both are handled (FIFO, before the
     /// stop), `on_stop` runs exactly once, and the outcome is a normal stop.
     #[tokio::test]
@@ -278,17 +293,13 @@ mod tests {
 
         let prepared = PreparedActor::<Counter>::new(cap(8));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref.tell(Tick).await.expect("send 1");
-        actor_ref.tell(Tick).await.expect("send 2");
-        actor_ref
-            .mailbox_sender()
-            .send(Signal::Stop)
+        bounded(actor_ref.tell(Tick)).await.expect("send 1");
+        bounded(actor_ref.tell(Tick)).await.expect("send 2");
+        bounded(actor_ref.mailbox_sender().send(Signal::Stop))
             .await
             .expect("stop");
 
-        let outcome = prepared
-            .run((Arc::clone(&handled), Arc::clone(&stopped)))
-            .await;
+        let outcome = bounded(prepared.run((Arc::clone(&handled), Arc::clone(&stopped)))).await;
 
         assert_eq!(
             handled.load(Ordering::SeqCst),
@@ -362,9 +373,7 @@ mod tests {
         let stopped = Arc::new(AtomicU32::new(0));
 
         let prepared = PreparedActor::<Counter>::new(cap(8));
-        prepared
-            .actor_ref()
-            .tell(Tick)
+        bounded(prepared.actor_ref().tell(Tick))
             .await
             .expect("enqueue before spawn");
 
@@ -445,8 +454,8 @@ mod tests {
         let prepared = PreparedActor::<Slow>::new(cap(8));
         let actor_ref = prepared.actor_ref().clone();
         // Two messages: the first blocks until released; the second must be abandoned.
-        actor_ref.tell(Work).await.expect("send 1");
-        actor_ref.tell(Work).await.expect("send 2");
+        bounded(actor_ref.tell(Work)).await.expect("send 1");
+        bounded(actor_ref.tell(Work)).await.expect("send 2");
 
         let run = tokio::spawn(prepared.run((entered_tx, release_rx, Arc::clone(&handled))));
 
@@ -514,8 +523,8 @@ mod tests {
         let handled = Arc::new(AtomicU32::new(0));
         let prepared = PreparedActor::<Once>::new(cap(8));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref.tell(Go).await.expect("send 1");
-        actor_ref.tell(Go).await.expect("send 2");
+        bounded(actor_ref.tell(Go)).await.expect("send 1");
+        bounded(actor_ref.tell(Go)).await.expect("send 2");
 
         // Bounded so that if the `stop` flag is ignored (the loop keeps running
         // and parks on `recv`, since this test still holds a strong sender), the
@@ -586,9 +595,9 @@ mod tests {
         let run = tokio::spawn(prepared.run((gate_rx, Arc::clone(&seen))));
 
         // Enqueue BEFORE releasing on_start — these must be buffered by the mailbox.
-        actor_ref.tell(N(0)).await.expect("send 0");
-        actor_ref.tell(N(1)).await.expect("send 1");
-        actor_ref.tell(N(2)).await.expect("send 2");
+        bounded(actor_ref.tell(N(0))).await.expect("send 0");
+        bounded(actor_ref.tell(N(1))).await.expect("send 1");
+        bounded(actor_ref.tell(N(2))).await.expect("send 2");
         gate_tx.send(()).expect("release on_start");
 
         // Bounded so that if the `stop` flag is ignored the loop parks on `recv`
@@ -752,7 +761,7 @@ mod tests {
 
         let prepared = PreparedActor::<Torn>::new(cap(4));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref.tell(Explode).await.expect("send");
+        bounded(actor_ref.tell(Explode)).await.expect("send");
 
         // Bounded: if the send is a no-op the actor never panics and the loop
         // never ends, so fail fast rather than hanging until the harness timeout.
@@ -795,7 +804,7 @@ mod tests {
 
         let prepared = PreparedActor::<Torn>::new(cap(4));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref.tell(Explode).await.expect("send");
+        bounded(actor_ref.tell(Explode)).await.expect("send");
         // Bounded: if the send is a no-op the actor never panics and the loop
         // never ends, so fail fast rather than hanging until the harness timeout.
         let _ = tokio::time::timeout(
@@ -843,7 +852,9 @@ mod tests {
         let prepared = PreparedActor::<Bomb>::new(cap(4));
         let actor_ref = prepared.actor_ref().clone();
         let handle = prepared.spawn(());
-        actor_ref.tell(Trigger).await.expect("send trigger");
+        bounded(actor_ref.tell(Trigger))
+            .await
+            .expect("send trigger");
 
         // Bounded: if the send is a no-op the actor never panics and the loop
         // never ends, so fail fast rather than hanging until the harness timeout.
@@ -859,7 +870,7 @@ mod tests {
             }
         ));
 
-        let resend = actor_ref.tell(Trigger).await;
+        let resend = bounded(actor_ref.tell(Trigger)).await;
         assert!(
             resend.is_err(),
             "the actor's mailbox is closed after the panic-stop"
@@ -898,7 +909,7 @@ mod tests {
 
         let prepared = PreparedActor::<Failer>::new(cap(4));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref.tell(Do).await.expect("send");
+        bounded(actor_ref.tell(Do)).await.expect("send");
         // Bounded: if the send is a no-op the handler never returns Err and the
         // loop never ends, so fail fast rather than hanging until the harness timeout.
         let outcome = tokio::time::timeout(terminate_bound(), prepared.run(()))
@@ -975,7 +986,7 @@ mod tests {
 
         let prepared = PreparedActor::<Blocker>::new(cap(4));
         let actor_ref = prepared.actor_ref().clone();
-        actor_ref.tell(Block).await.expect("send");
+        bounded(actor_ref.tell(Block)).await.expect("send");
         let handle = prepared.spawn((entered_tx, Arc::clone(&finished), Arc::clone(&stopped)));
 
         // Bounded: if the send is a no-op the handler never enters, so fail fast

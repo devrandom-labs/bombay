@@ -107,3 +107,53 @@ unsafe impl GlobalAlloc for CountingAlloc {
         self.live_allocs.fetch_sub(1, Ordering::Relaxed);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SIZE: usize = 4096;
+    const SIZE_SIGNED: isize = 4096;
+
+    /// `live_bytes` must move by the layout's REAL size, not by any constant.
+    ///
+    /// This is the only test that can tell the difference. `tests/alloc_exact.rs`
+    /// compares two snapshots (`after == baseline`), which a **constant**
+    /// `layout_bytes` satisfies trivially: each `alloc` adds the constant and each
+    /// `dealloc` subtracts it, so the pair always balances — and with `-> 0`,
+    /// `bytes` is always `0` and `0 == 0` passes. That left `Snapshot::bytes`
+    /// vacuous and #151's exact-reclamation claim resting on the `allocs` half
+    /// alone (card #179; the `-> 0/1/-1` mutants survived before this test).
+    ///
+    /// `CountingAlloc` is driven **directly** rather than installed as
+    /// `#[global_allocator]`: `alloc_exact.rs` must stay a single-test binary for
+    /// its exactness guarantee, so the byte-accounting probe cannot live there.
+    #[test]
+    fn live_bytes_tracks_the_layouts_real_size() {
+        let counter = CountingAlloc::new(System);
+        let layout = Layout::from_size_align(SIZE, 8).expect("4096/8 is a valid layout");
+
+        let before = counter.snapshot();
+        // SAFETY: `layout` has non-zero size; the pointer is freed below with the
+        // exact same layout, and is never read or written.
+        let ptr = unsafe { counter.alloc(layout) };
+        assert!(!ptr.is_null(), "System returned null for a 4 KiB layout");
+        let after = counter.snapshot();
+
+        assert_eq!(
+            after.bytes - before.bytes,
+            SIZE_SIGNED,
+            "live_bytes must move by the layout's real size, not a constant"
+        );
+        assert_eq!(after.allocs - before.allocs, 1, "one live allocation");
+
+        // SAFETY: `ptr` came from this allocator with this exact layout and has
+        // not been freed.
+        unsafe { counter.dealloc(ptr, layout) };
+        assert_eq!(
+            counter.snapshot(),
+            before,
+            "dealloc reverses the exact byte count it added"
+        );
+    }
+}

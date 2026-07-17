@@ -451,7 +451,10 @@ mod tests {
         let (ledger, mut rx) = build::<Ledger>(1, 4);
         let recipient: Recipient<Tick> = ledger.recipient();
 
-        recipient.tell(Tick).await.expect("delivered");
+        timeout(DELIVERY, recipient.tell(Tick))
+            .await
+            .expect("the awaited tell must send within the bound, not hang")
+            .expect("delivered");
 
         let delivered = timeout(DELIVERY, rx.recv())
             .await
