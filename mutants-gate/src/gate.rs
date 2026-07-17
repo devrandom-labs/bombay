@@ -177,6 +177,37 @@ pub(crate) fn evaluate(
     Verdict { tallies, failures }
 }
 
+/// Render the always-printed ratio + per-function table.
+pub(crate) fn render_report(v: &Verdict) -> String {
+    use std::fmt::Write as _;
+    let mut s = String::new();
+    let _ = writeln!(s, "mutation coverage: {} viable / {} total", v.total_viable(), v.total_mutants());
+    let _ = writeln!(s, "{:<60} {:>6} {:>6} {:>8}", "file::function", "viable", "total", "unviable");
+    for (k, t) in &v.tallies {
+        let _ = writeln!(s, "{:<60} {:>6} {:>6} {:>8}", k, t.viable(), t.total, t.unviable);
+    }
+    s
+}
+
+/// Build a baseline skeleton from a clean run: every viable function floored at
+/// its current viable count; every 0-viable function listed as known-zero. The
+/// operator REVIEWS the diff before committing (a genuinely-should-be-tested
+/// 0-viable function is caught here, not by the machine).
+pub(crate) fn emit_baseline(report: &Report) -> String {
+    let tallies = tally(report);
+    let mut floors = std::collections::BTreeMap::new();
+    let mut known_zero = Vec::new();
+    for (k, t) in &tallies {
+        if t.viable() > 0 {
+            floors.insert(k.clone(), t.viable());
+        } else {
+            known_zero.push(k.clone());
+        }
+    }
+    let value = serde_json::json!({ "floors": floors, "known_zero_viable": known_zero });
+    serde_json::to_string_pretty(&value).unwrap_or_else(|_| "{}".to_owned())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -333,6 +364,33 @@ mod tests {
         assert_eq!(v.failures.len(), 2);
         assert!(v.failures.contains(&Failure::Survivor { key: "a.rs::f".to_owned() }));
         assert!(v.failures.contains(&Failure::Timeout { key: "b.rs::g".to_owned() }));
+    }
+
+    #[test]
+    fn report_shows_the_ratio() {
+        let report = Report {
+            outcomes: vec![
+                mutant("a.rs", "f", Summary::CaughtMutant),
+                mutant("a.rs", "f", Summary::Unviable),
+            ],
+        };
+        let candidates = vec![candidate("a.rs", "f"), candidate("a.rs", "f")];
+        let base = baseline(&[("a.rs::f", 1)], &[]);
+        let v = evaluate(&report, &candidates, &base);
+        assert!(render_report(&v).contains("1 viable / 2 total"));
+    }
+
+    #[test]
+    fn emit_baseline_floors_viable_and_lists_zero() {
+        let report = Report {
+            outcomes: vec![
+                mutant("a.rs", "f", Summary::CaughtMutant),
+                mutant("b.rs", "z", Summary::Unviable),
+            ],
+        };
+        let out = emit_baseline(&report);
+        assert!(out.contains("\"a.rs::f\": 1"));
+        assert!(out.contains("b.rs::z"));
     }
 
     #[test]
