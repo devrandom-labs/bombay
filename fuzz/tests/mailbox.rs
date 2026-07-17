@@ -8,7 +8,7 @@
 
 use std::collections::VecDeque;
 
-use bolero::{check, TypeGenerator};
+use bolero::{TypeGenerator, check};
 use bombay_core::mailbox::{Capacity, Mailbox, MailboxSender, Mailboxed, Signal, TrySendError};
 
 /// Fuzz-local actor. The mailbox is domain-agnostic, so a `u64` message is

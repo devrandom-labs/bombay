@@ -112,12 +112,21 @@ impl Actor for StartPanics {
         panic!("on_start deliberately fails");
     }
 
-    async fn handle(&mut self, _: Tick, _: ActorRef<Self>, _: &mut bool) -> Result<(), Self::Error> {
+    async fn handle(
+        &mut self,
+        _: Tick,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
         Ok(())
     }
 
-    async fn on_stop(&mut self, _: WeakActorRef<Self>, _: ActorStopReason) -> Result<(), Self::Error> {
+    async fn on_stop(
+        &mut self,
+        _: WeakActorRef<Self>,
+        _: ActorStopReason,
+    ) -> Result<(), Self::Error> {
         Ok(())
     }
 }
@@ -139,12 +148,21 @@ impl Actor for StopPanics {
         Ok(Self { handled })
     }
 
-    async fn handle(&mut self, _: Tick, _: ActorRef<Self>, _: &mut bool) -> Result<(), Self::Error> {
+    async fn handle(
+        &mut self,
+        _: Tick,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
         Ok(())
     }
 
-    async fn on_stop(&mut self, _: WeakActorRef<Self>, _: ActorStopReason) -> Result<(), Self::Error> {
+    async fn on_stop(
+        &mut self,
+        _: WeakActorRef<Self>,
+        _: ActorStopReason,
+    ) -> Result<(), Self::Error> {
         panic!("on_stop deliberately fails");
     }
 }
@@ -175,7 +193,10 @@ fn drive<A>(ops: &[Op], args: A::Args) -> RunResult<A>
 where
     A: Actor + Mailboxed<Msg = Tick>,
 {
-    let enqueued = ops.iter().filter(|op| !matches!(op, Op::CancelStop)).count();
+    let enqueued = ops
+        .iter()
+        .filter(|op| !matches!(op, Op::CancelStop))
+        .count();
     let cap = Capacity::try_from(enqueued.max(1)).expect("valid capacity");
     runtime().block_on(async {
         let prepared = PreparedActor::<A>::new(cap);
@@ -207,7 +228,13 @@ fn actor_loop_state_machine() {
         let handled = Arc::new(AtomicU32::new(0));
         let outcome = drive::<Counter>(ops, Arc::clone(&handled));
         assert!(
-            matches!(outcome, RunResult::Stopped { reason: ActorStopReason::Normal, .. }),
+            matches!(
+                outcome,
+                RunResult::Stopped {
+                    reason: ActorStopReason::Normal,
+                    ..
+                }
+            ),
             "every stop mode here is a normal stop, got {outcome:?}",
         );
         assert_eq!(
@@ -242,7 +269,13 @@ fn stop_reason_preserved_through_panicking_on_stop() {
         let handled = Arc::new(AtomicU32::new(0));
         let outcome = drive::<StopPanics>(ops, Arc::clone(&handled));
         assert!(
-            matches!(outcome, RunResult::Stopped { reason: ActorStopReason::Normal, .. }),
+            matches!(
+                outcome,
+                RunResult::Stopped {
+                    reason: ActorStopReason::Normal,
+                    ..
+                }
+            ),
             "a failing on_stop must not corrupt the outcome, got {outcome:?}",
         );
         assert_eq!(
