@@ -12,8 +12,8 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     actor::Actor,
-    error::TellError,
     mailbox::{ActorId, MailboxSender, WeakMailboxSender},
+    request::TellRequest,
 };
 
 /// A cloneable handle to a running actor: enqueue signals, stop it gracefully,
@@ -75,19 +75,16 @@ impl<A: Actor> ActorRef<A> {
         !self.mailbox.is_closed()
     }
 
-    /// Enqueues `msg` for the actor, waiting for mailbox capacity if it is full
-    /// (fire-and-forget). The ergonomic ask/tell **builders** — timeout, `try`,
-    /// blocking variants — are card #118; this is the basic entry point.
+    /// Prepares a fire-and-forget send of `msg` (card #118). The returned
+    /// [`TellRequest`] does nothing until consumed:
     ///
-    /// # Errors
-    ///
-    /// [`TellError::ActorNotAlive`] (carrying `msg` back) if the actor has
-    /// stopped. Terminal — the target is gone, so a retry loop must not re-send.
-    pub async fn tell(&self, msg: A::Msg) -> Result<(), TellError<A::Msg>> {
-        self.mailbox
-            .send_message(msg)
-            .await
-            .map_err(TellError::ActorNotAlive)
+    /// - `.await` — waits for mailbox capacity (backpressure), resolving to
+    ///   [`TellError::ActorNotAlive`](crate::error::TellError::ActorNotAlive)
+    ///   with `msg` handed back if the actor has stopped.
+    /// - [`.try_send()`](TellRequest::try_send) — non-blocking; a full mailbox
+    ///   is [`TellError::MailboxFull`](crate::error::TellError::MailboxFull).
+    pub const fn tell(&self, msg: A::Msg) -> TellRequest<'_, A> {
+        TellRequest::new(&self.mailbox, msg)
     }
 
     /// The sender half of the actor's mailbox — used to enqueue `Signal`s. The
@@ -194,6 +191,7 @@ mod tests {
     use tokio_util::sync::CancellationToken;
 
     use crate::{
+        error::TellError,
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed},
         message::Msg,
     };

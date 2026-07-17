@@ -28,3 +28,4 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | [0004](0004-recipient-conversion-boundary-erasure.md) | Recipient conversion-boundary erasure | Accepted |
 | [0005](0005-loom-shuttle-na-miri-for-ref-model.md) | loom/shuttle N/A; MIRI for the ref-model | Accepted |
 | [0006](0006-mutation-viable-ratchet.md) | Mutation gate: viable-count ratchet, not unviable ratio | Accepted |
+| [0007](0007-request-builders-hand-rolled-not-bon.md) | ask/tell request builders: hand-rolled `IntoFuture`, not `bon` | Accepted |

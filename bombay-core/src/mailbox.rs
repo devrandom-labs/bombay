@@ -23,7 +23,16 @@
 //! to release the strong `self_sender` each queued [`Signal::Message`] carries
 //! (ADR-0003) when the receiver is dropped — see [`MailboxReceiver::drop`].
 
-use std::{fmt, marker::PhantomData, num::NonZeroUsize};
+use std::{
+    fmt,
+    future::Future,
+    marker::PhantomData,
+    num::NonZeroUsize,
+    pin::Pin,
+    task::{Context, Poll},
+};
+
+use flume::r#async::SendFut;
 
 /// A validated mailbox capacity: at least `1`, at most [`Capacity::MAX`].
 ///
@@ -248,25 +257,20 @@ impl<A: Mailboxed> MailboxSender<A> {
     /// the message's `self_sender` (ADR-0003) so the queued message pins the
     /// actor alive until handled. Waits for capacity if the mailbox is full.
     ///
+    /// Returns the *named* [`SendMessageFut`] rather than an opaque future so
+    /// the #118 request builders can embed it without boxing (`IntoFuture`
+    /// needs a nameable associated type on stable).
+    ///
     /// # Errors
     ///
-    /// Returns `msg` back if the mailbox has closed (the actor has stopped).
-    pub async fn send_message(&self, msg: A::Msg) -> Result<(), A::Msg> {
-        let signal = Signal::Message {
-            msg,
-            self_sender: self.clone(),
-        };
-        match self.tx.send_async(signal).await {
-            Ok(()) => Ok(()),
-            // flume hands back the exact value we sent, which is `Message`.
-            Err(err) => match err.into_inner() {
-                Signal::Message {
-                    msg: undelivered, ..
-                } => Err(undelivered),
-                Signal::Stop | Signal::LinkDied(_) => {
-                    unreachable!("send_message enqueues only Signal::Message")
-                }
-            },
+    /// The future resolves to `Err(msg)` — the exact undelivered message back —
+    /// if the mailbox has closed (the actor has stopped).
+    pub fn send_message(&self, msg: A::Msg) -> SendMessageFut<'_, A> {
+        SendMessageFut {
+            inner: self.tx.send_async(Signal::Message {
+                msg,
+                self_sender: self.clone(),
+            }),
         }
     }
 
@@ -361,6 +365,39 @@ impl<A: Mailboxed> Drop for MailboxReceiver<A> {
     /// senders and lets the channel free.
     fn drop(&mut self) {
         self.rx.drain().for_each(drop);
+    }
+}
+
+/// The in-flight future of a [`MailboxSender::send_message`]: waits for mailbox
+/// capacity, then enqueues the message.
+///
+/// A named wrapper over the channel primitive's send future (the seam rule: the
+/// primitive appears only inside this module's wrappers), so callers — the #118
+/// request builders above all — can hold it in a struct field without a box.
+/// Resolves to `Err(msg)` with the exact undelivered message if the mailbox
+/// closed.
+#[must_use = "futures do nothing unless you `.await` or poll them"]
+pub struct SendMessageFut<'a, A: Mailboxed> {
+    inner: SendFut<'a, Signal<A>>,
+}
+
+impl<A: Mailboxed> Future for SendMessageFut<'_, A> {
+    type Output = Result<(), A::Msg>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        // `SendFut` is explicitly `Unpin` (flume `async.rs`), so this struct is
+        // too and plain re-pinning is sound without projection.
+        Pin::new(&mut self.get_mut().inner).poll(cx).map(|result| {
+            result.map_err(|err| match err.into_inner() {
+                // flume hands back the exact value we sent, which is `Message`.
+                Signal::Message {
+                    msg: undelivered, ..
+                } => undelivered,
+                Signal::Stop | Signal::LinkDied(_) => {
+                    unreachable!("send_message enqueues only Signal::Message")
+                }
+            })
+        })
     }
 }
 

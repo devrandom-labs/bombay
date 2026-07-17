@@ -38,6 +38,7 @@ pub mod error;
 pub mod mailbox;
 pub mod message;
 pub mod reply;
+pub mod request;
 
 // Both arms are load-bearing: the feature arm serves integration tests and
 // benches (dev-dep feature unification turns it on for external test binaries);
