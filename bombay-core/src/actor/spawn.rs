@@ -489,6 +489,45 @@ mod tests {
         ));
     }
 
+    /// Lifecycle: out-of-band `stop()` fired **before the loop ever polls `recv`**
+    /// abandons the whole backlog, not just the tail behind an in-flight handler.
+    /// Distinct from `cancel_finishes_in_flight_then_stops` (which cancels mid-loop,
+    /// after the first message is already dequeued and handled): here the token is
+    /// already cancelled when `run_message_loop`'s first
+    /// `cancel.run_until_cancelled(mailbox_rx.recv())` races, so `run_until_cancelled`
+    /// must observe the pre-fired cancellation rather than the pending `recv` even
+    /// though messages are sitting in the mailbox — zero messages are handled.
+    #[tokio::test]
+    async fn cancel_token_stop_abandons_the_backlog() {
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+
+        let prepared = PreparedActor::<Counter>::new(cap(8));
+        let actor_ref = prepared.actor_ref().clone();
+        bounded(actor_ref.tell(Tick)).await.expect("enqueue 1");
+        bounded(actor_ref.tell(Tick)).await.expect("enqueue 2");
+        actor_ref.stop(); // cancel BEFORE run() ever drains anything
+
+        let outcome = bounded(prepared.run((Arc::clone(&handled), Arc::clone(&stopped)))).await;
+
+        assert_eq!(
+            handled.load(Ordering::SeqCst),
+            0,
+            "cancel-before-drain abandons the whole backlog"
+        );
+        assert_eq!(stopped.load(Ordering::SeqCst), 1, "on_stop ran once");
+        assert!(
+            matches!(
+                outcome,
+                RunResult::Stopped {
+                    reason: ActorStopReason::Normal,
+                    ..
+                }
+            ),
+            "clean normal stop, got {outcome:?}",
+        );
+    }
+
     /// Sequence: a handler that sets `*stop = true` stops the actor cleanly after it
     /// returns `Ok` — a following queued message is never handled.
     #[tokio::test]
