@@ -96,6 +96,59 @@ impl Actor for Counter {
     }
 }
 
+/// `on_start` panics — exercises the startup-failure path. Same `Tick`/`Args`
+/// shape as `Counter` so the generic `drive` harness covers it unchanged.
+struct StartPanics {
+    handled: Arc<AtomicU32>,
+}
+impl Mailboxed for StartPanics {
+    type Msg = Tick;
+}
+impl Actor for StartPanics {
+    type Args = Arc<AtomicU32>;
+    type Error = core::convert::Infallible;
+
+    async fn on_start(_: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        panic!("on_start deliberately fails");
+    }
+
+    async fn handle(&mut self, _: Tick, _: ActorRef<Self>, _: &mut bool) -> Result<(), Self::Error> {
+        self.handled.fetch_add(1, Ordering::SeqCst);
+        Ok(())
+    }
+
+    async fn on_stop(&mut self, _: WeakActorRef<Self>, _: ActorStopReason) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+/// `on_stop` panics — the loop must catch it, log, and PRESERVE the stop reason
+/// (`spawn.rs::log_on_stop_outcome`), still returning `Stopped`, not corrupting
+/// the outcome. Messages are handled exactly as for `Counter`.
+struct StopPanics {
+    handled: Arc<AtomicU32>,
+}
+impl Mailboxed for StopPanics {
+    type Msg = Tick;
+}
+impl Actor for StopPanics {
+    type Args = Arc<AtomicU32>;
+    type Error = core::convert::Infallible;
+
+    async fn on_start(handled: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Ok(Self { handled })
+    }
+
+    async fn handle(&mut self, _: Tick, _: ActorRef<Self>, _: &mut bool) -> Result<(), Self::Error> {
+        self.handled.fetch_add(1, Ordering::SeqCst);
+        Ok(())
+    }
+
+    async fn on_stop(&mut self, _: WeakActorRef<Self>, _: ActorStopReason) -> Result<(), Self::Error> {
+        panic!("on_stop deliberately fails");
+    }
+}
+
 /// Bounds every lifecycle await so a regression that stalls the loop FAILS via
 /// the MIRI-aware timeout instead of hanging (a hang reports as a cargo-mutants
 /// TIMEOUT rather than a caught mutant — #148/#179).
@@ -112,44 +165,47 @@ fn runtime() -> tokio::runtime::Runtime {
         .expect("current_thread runtime")
 }
 
-/// Drives the real loop over a generated op script and asserts bombay's
-/// invariants across all three stop modes:
-///
-/// * **drain-or-abandon per mode** — `handled` matches the oracle (FIFO before
-///   an in-band `Stop`; whole backlog on cancel; drain-then-close otherwise);
+/// Drives the real `PreparedActor::run` over an op script and returns the
+/// outcome. The caller owns the `handled` counter (passed as args) and reads it
+/// after. Generic over the actor so the startup-failure and failing-`on_stop`
+/// variants reuse the exact same driving logic — the SUT is always the real
+/// loop, never a reimplementation. Mailbox is sized to hold every enqueuing op
+/// so a pre-run `tell` never blocks on backpressure (the mailbox target's job).
+fn drive<A>(ops: &[Op], args: A::Args) -> RunResult<A>
+where
+    A: Actor + Mailboxed<Msg = Tick>,
+{
+    let enqueued = ops.iter().filter(|op| !matches!(op, Op::CancelStop)).count();
+    let cap = Capacity::try_from(enqueued.max(1)).expect("valid capacity");
+    runtime().block_on(async {
+        let prepared = PreparedActor::<A>::new(cap);
+        let actor_ref = prepared.actor_ref().clone();
+        for op in ops {
+            match op {
+                Op::Send => bounded(actor_ref.tell(Tick)).await.expect("enqueue"),
+                Op::StopInBand => bounded(actor_ref.mailbox_sender().send(Signal::Stop))
+                    .await
+                    .expect("enqueue stop"),
+                Op::CancelStop => actor_ref.stop(),
+            }
+        }
+        drop(actor_ref);
+        bounded(prepared.run(args)).await
+    })
+}
+
+/// Core invariants across the three stop modes:
+/// * **drain-or-abandon per mode** — `handled` matches the oracle;
 /// * **enqueued-before-drop still handled** — the drain-then-close branch;
-/// * **no strong self-ref held** — with no `Stop`/`CancelStop`, the loop only
-///   ends because dropping the last external ref closes the mailbox; if it held
-///   a strong self-ref it would hang here and `bounded` would fire. This is the
-///   `drop(actor_ref)` (spawn.rs:165) falsification anchor.
-///
-/// Every outcome is a normal stop: `Counter` never errors/panics, so the crash
-/// and startup-failure paths (covered separately) cannot arise here.
+/// * **no strong self-ref held** — the no-`Stop`/no-`Cancel` case ends ONLY
+///   because dropping the last external ref closes the mailbox; a leaked strong
+///   self-ref would hang here (`bounded` fires). Falsification anchor:
+///   `drop(actor_ref)` at spawn.rs:165.
 #[test]
 fn actor_loop_state_machine() {
     check!().with_type::<Vec<Op>>().for_each(|ops| {
-        // Size the mailbox to hold every enqueuing op so a pre-run `tell` never
-        // blocks on backpressure (that surface is the mailbox target's job).
-        let enqueued = ops.iter().filter(|op| !matches!(op, Op::CancelStop)).count();
-        let cap = Capacity::try_from(enqueued.max(1)).expect("valid capacity");
-
         let handled = Arc::new(AtomicU32::new(0));
-        let outcome = runtime().block_on(async {
-            let prepared = PreparedActor::<Counter>::new(cap);
-            let actor_ref = prepared.actor_ref().clone();
-            for op in ops {
-                match op {
-                    Op::Send => bounded(actor_ref.tell(Tick)).await.expect("enqueue"),
-                    Op::StopInBand => bounded(actor_ref.mailbox_sender().send(Signal::Stop))
-                        .await
-                        .expect("enqueue stop"),
-                    Op::CancelStop => actor_ref.stop(),
-                }
-            }
-            drop(actor_ref);
-            bounded(prepared.run(Arc::clone(&handled))).await
-        });
-
+        let outcome = drive::<Counter>(ops, Arc::clone(&handled));
         assert!(
             matches!(outcome, RunResult::Stopped { reason: ActorStopReason::Normal, .. }),
             "every stop mode here is a normal stop, got {outcome:?}",
@@ -158,6 +214,41 @@ fn actor_loop_state_machine() {
             handled.load(Ordering::SeqCst),
             expected_handled(ops),
             "handled count must match the drain-or-abandon oracle for {ops:?}",
+        );
+    });
+}
+
+/// RunResult matches the path: a panicking `on_start` short-circuits to
+/// `StartupFailed` before the loop runs, whatever is queued — no message handled.
+#[test]
+fn on_start_panic_yields_startup_failed() {
+    check!().with_type::<Vec<Op>>().for_each(|ops| {
+        let handled = Arc::new(AtomicU32::new(0));
+        let outcome = drive::<StartPanics>(ops, Arc::clone(&handled));
+        assert!(
+            matches!(outcome, RunResult::StartupFailed(_)),
+            "on_start panic must yield StartupFailed, got {outcome:?}",
+        );
+        assert_eq!(handled.load(Ordering::SeqCst), 0, "the loop never ran");
+    });
+}
+
+/// The stop reason survives a failing `on_stop`: the panic is caught and logged
+/// (`log_on_stop_outcome`), the reason preserved, the outcome still `Stopped`,
+/// and the handled count unchanged.
+#[test]
+fn stop_reason_preserved_through_panicking_on_stop() {
+    check!().with_type::<Vec<Op>>().for_each(|ops| {
+        let handled = Arc::new(AtomicU32::new(0));
+        let outcome = drive::<StopPanics>(ops, Arc::clone(&handled));
+        assert!(
+            matches!(outcome, RunResult::Stopped { reason: ActorStopReason::Normal, .. }),
+            "a failing on_stop must not corrupt the outcome, got {outcome:?}",
+        );
+        assert_eq!(
+            handled.load(Ordering::SeqCst),
+            expected_handled(ops),
+            "handled count unchanged by a failing on_stop for {ops:?}",
         );
     });
 }
