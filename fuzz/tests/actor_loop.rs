@@ -16,12 +16,45 @@ use std::future::Future;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use bolero::check;
+use bolero::{TypeGenerator, check};
 use bombay_core::actor::{Actor, ActorRef, PreparedActor, RunResult, WeakActorRef};
 use bombay_core::error::ActorStopReason;
-use bombay_core::mailbox::{Capacity, Mailboxed};
+use bombay_core::mailbox::{Capacity, Mailboxed, Signal};
 use bombay_core::message::Msg;
 use bombay_core::test_support::terminate_bound;
+
+/// One driver step. `Send` enqueues a message; `StopInBand` enqueues a FIFO
+/// `Signal::Stop`; `CancelStop` fires the out-of-band cancel token. The whole
+/// script is applied before `run`, so execution is deterministic on the
+/// single-threaded runtime — a sound fuzz oracle.
+#[derive(Debug, TypeGenerator)]
+enum Op {
+    Send,
+    StopInBand,
+    CancelStop,
+}
+
+/// Deterministic oracle: how many messages the loop handles for an op script,
+/// per the three stop modes (`kind.rs` "finish-current-then-stop, no drain").
+/// This is a small stop-mode predicate, NOT a re-encoding of the loop.
+fn expected_handled(ops: &[Op]) -> u32 {
+    // Cancel is checked before every `recv`, and here it fires before `run`
+    // even starts, so it abandons the entire backlog.
+    if ops.iter().any(|op| matches!(op, Op::CancelStop)) {
+        return 0;
+    }
+    // Otherwise messages are handled FIFO until the first in-band `Stop`; if
+    // there is none, the backlog drains and the mailbox closes (refs dropped).
+    let mut handled: u32 = 0;
+    for op in ops {
+        match op {
+            Op::Send => handled = handled.saturating_add(1),
+            Op::StopInBand => return handled,
+            Op::CancelStop => {}
+        }
+    }
+    handled
+}
 
 /// Fuzz-local actor: counts handled messages into a shared atomic the target
 /// inspects. The SUT is the real loop, never a reimplementation.
@@ -79,38 +112,52 @@ fn runtime() -> tokio::runtime::Runtime {
         .expect("current_thread runtime")
 }
 
-/// Task 1 spike: enqueue N messages, drop the last external ref, run. Every
-/// enqueued message is handled before the mailbox closes (each queued signal
-/// carries a strong self-sender per ADR-0003), then the loop stops Normal.
-/// If the loop held a strong self-ref, the mailbox would never close and this
-/// would hang → `bounded` fires. This is the `drop(actor_ref)` falsification
-/// anchor (spawn.rs:165).
+/// Drives the real loop over a generated op script and asserts bombay's
+/// invariants across all three stop modes:
+///
+/// * **drain-or-abandon per mode** — `handled` matches the oracle (FIFO before
+///   an in-band `Stop`; whole backlog on cancel; drain-then-close otherwise);
+/// * **enqueued-before-drop still handled** — the drain-then-close branch;
+/// * **no strong self-ref held** — with no `Stop`/`CancelStop`, the loop only
+///   ends because dropping the last external ref closes the mailbox; if it held
+///   a strong self-ref it would hang here and `bounded` would fire. This is the
+///   `drop(actor_ref)` (spawn.rs:165) falsification anchor.
+///
+/// Every outcome is a normal stop: `Counter` never errors/panics, so the crash
+/// and startup-failure paths (covered separately) cannot arise here.
 #[test]
-fn actor_loop_drains_then_closes() {
-    check!().with_type::<u8>().for_each(|&seed| {
-        let n = u32::from(seed % 5); // 0..=4 messages
+fn actor_loop_state_machine() {
+    check!().with_type::<Vec<Op>>().for_each(|ops| {
+        // Size the mailbox to hold every enqueuing op so a pre-run `tell` never
+        // blocks on backpressure (that surface is the mailbox target's job).
+        let enqueued = ops.iter().filter(|op| !matches!(op, Op::CancelStop)).count();
+        let cap = Capacity::try_from(enqueued.max(1)).expect("valid capacity");
+
         let handled = Arc::new(AtomicU32::new(0));
         let outcome = runtime().block_on(async {
-            let prepared = PreparedActor::<Counter>::new(cap());
+            let prepared = PreparedActor::<Counter>::new(cap);
             let actor_ref = prepared.actor_ref().clone();
-            for _ in 0..n {
-                bounded(actor_ref.tell(Tick)).await.expect("enqueue");
+            for op in ops {
+                match op {
+                    Op::Send => bounded(actor_ref.tell(Tick)).await.expect("enqueue"),
+                    Op::StopInBand => bounded(actor_ref.mailbox_sender().send(Signal::Stop))
+                        .await
+                        .expect("enqueue stop"),
+                    Op::CancelStop => actor_ref.stop(),
+                }
             }
             drop(actor_ref);
             bounded(prepared.run(Arc::clone(&handled))).await
         });
+
         assert!(
             matches!(outcome, RunResult::Stopped { reason: ActorStopReason::Normal, .. }),
-            "drain-then-close is a normal stop",
+            "every stop mode here is a normal stop, got {outcome:?}",
         );
         assert_eq!(
             handled.load(Ordering::SeqCst),
-            n,
-            "every message enqueued before the last ref drops is handled",
+            expected_handled(ops),
+            "handled count must match the drain-or-abandon oracle for {ops:?}",
         );
     });
-}
-
-fn cap() -> Capacity {
-    Capacity::try_from(8usize).expect("valid capacity")
 }
