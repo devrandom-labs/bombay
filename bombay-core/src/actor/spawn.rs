@@ -643,8 +643,10 @@ mod tests {
     /// Defensive: a panic in `on_start` is CAUGHT (not a process abort) and becomes
     /// `StartupFailed` with the `OnStart` reason and the recoverable message.
     ///
-    /// This is the card's `panic = "unwind"` pin: under `panic = "abort"` the
-    /// process aborts here instead, and the test cannot pass.
+    /// This asserts containment, but it canNOT pin `panic = "unwind"` — cargo
+    /// ignores the `panic` setting for tests, so this passes even when the
+    /// release profile is `abort` and real binaries die on this exact panic.
+    /// The pin is the `cfg(panic = "abort")` compile_error in `lib.rs` (#169).
     #[tokio::test]
     async fn on_start_panic_is_caught_as_startup_failed() {
         struct PanicsOnStart;
