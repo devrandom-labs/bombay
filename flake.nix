@@ -212,7 +212,23 @@
 
           # nextest does NOT run doctests, so verify the doc-comment examples
           # separately with `cargo test --doc` (crane's dedicated wrapper).
-          bombay-doctest = craneLib.cargoDocTest (commonArgs // { inherit cargoArtifacts; });
+          #
+          # `--workspace` is load-bearing (card #170). The root Cargo.toml is BOTH
+          # `[workspace]` and `[package] name = "bombay"` with no `default-members`,
+          # and cargo's default selection for that shape is the root package ALONE.
+          # nextest defaults to the whole workspace and hid the asymmetry, so this
+          # check silently covered only the M7-doomed vendored fork: every
+          # `compile_fail` probe in the rebuilt spine was dead — #114's `Msg`
+          # slot-size tripwire (macros/src/lib.rs:191), the generic/union rejects
+          # (:213/:220), and #115's reply-consume-once (bombay-core/src/reply.rs:32).
+          # A `compile_fail` doctest that is never selected passes by not existing.
+          bombay-doctest = craneLib.cargoDocTest (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              cargoExtraArgs = "--locked --workspace";
+            }
+          );
 
           # Lint the GitHub Actions workflows themselves. actionlint shells out
           # to shellcheck for `run:` steps, so it is on PATH here too. This keeps
