@@ -28,22 +28,40 @@ enum GateError {
     #[error("usage: mutants-gate <check <out-dir> <baseline.json> | emit-baseline <out-dir>>")]
     Usage,
     #[error("reading {path}: {source}")]
-    Io { path: PathBuf, #[source] source: std::io::Error },
+    Io {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
     #[error("parsing {path}: {source}")]
-    Parse { path: PathBuf, #[source] source: serde_json::Error },
+    Parse {
+        path: PathBuf,
+        #[source]
+        source: serde_json::Error,
+    },
 }
 
 fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, GateError> {
-    let raw = std::fs::read_to_string(path).map_err(|source| GateError::Io { path: path.to_owned(), source })?;
-    serde_json::from_str(&raw).map_err(|source| GateError::Parse { path: path.to_owned(), source })
+    let raw = std::fs::read_to_string(path).map_err(|source| GateError::Io {
+        path: path.to_owned(),
+        source,
+    })?;
+    serde_json::from_str(&raw).map_err(|source| GateError::Parse {
+        path: path.to_owned(),
+        source,
+    })
 }
 
 fn run() -> Result<bool, GateError> {
     let mut args = std::env::args().skip(1);
-    let Some(mode) = args.next() else { return Err(GateError::Usage) };
+    let Some(mode) = args.next() else {
+        return Err(GateError::Usage);
+    };
     match mode.as_str() {
         "emit-baseline" => {
-            let Some(dir_arg) = args.next() else { return Err(GateError::Usage) };
+            let Some(dir_arg) = args.next() else {
+                return Err(GateError::Usage);
+            };
             let out_dir = Path::new(&dir_arg);
             let report: Report = read_json(&out_dir.join("outcomes.json"))?;
             println!("{}", gate::emit_baseline(&report));

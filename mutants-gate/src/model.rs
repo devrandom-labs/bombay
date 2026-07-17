@@ -125,6 +125,9 @@ mod tests {
         }]"#;
         let candidates: Vec<Candidate> = serde_json::from_str(json).unwrap();
         assert_eq!(candidates.len(), 1);
-        assert_eq!(candidates[0].function.as_ref().unwrap().function_name, "recv");
+        assert_eq!(
+            candidates[0].function.as_ref().unwrap().function_name,
+            "recv"
+        );
     }
 }

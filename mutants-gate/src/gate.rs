@@ -30,13 +30,21 @@ pub(crate) enum Failure {
     /// A function produced fewer outcomes than it had candidates — the run was
     /// interrupted partway through it (#148's 141/205 shape), checked per
     /// function so a duplicate elsewhere cannot backfill the aggregate.
-    MissingOutcomes { key: String, expected: usize, executed: usize },
+    MissingOutcomes {
+        key: String,
+        expected: usize,
+        executed: usize,
+    },
     /// A mutant survived (a test SHOULD have caught it and did not).
     Survivor { key: String },
     /// A mutant timed out — treated as a failure, per cargo-mutants + #148.
     Timeout { key: String },
     /// A floored function's viable count dropped below its recorded floor.
-    Collapse { key: String, floor: usize, viable: usize },
+    Collapse {
+        key: String,
+        floor: usize,
+        viable: usize,
+    },
     /// A function the sweep saw is in neither `floors` nor `known_zero_viable`.
     Unaccounted { key: String, viable: usize },
     /// The baseline floors a function the sweep never saw (renamed/deleted): the
@@ -114,8 +122,10 @@ fn tally(report: &Report) -> BTreeMap<String, Tally> {
 /// Expected outcome count per `file::function`, from the candidate list.
 /// Counted via `.count()` (no manual arithmetic); the candidate list is small.
 fn expected_counts(candidates: &[Candidate]) -> BTreeMap<String, usize> {
-    let keys: Vec<String> =
-        candidates.iter().map(|c| key(&c.file, c.function.as_ref())).collect();
+    let keys: Vec<String> = candidates
+        .iter()
+        .map(|c| key(&c.file, c.function.as_ref()))
+        .collect();
     keys.iter()
         .collect::<BTreeSet<&String>>()
         .into_iter()
@@ -124,17 +134,16 @@ fn expected_counts(candidates: &[Candidate]) -> BTreeMap<String, usize> {
 }
 
 /// Evaluate a run against the baseline. Pure: no IO, deterministic.
-pub(crate) fn evaluate(
-    report: &Report,
-    candidates: &[Candidate],
-    baseline: &Baseline,
-) -> Verdict {
+pub(crate) fn evaluate(report: &Report, candidates: &[Candidate], baseline: &Baseline) -> Verdict {
     let tallies = tally(report);
     let expected = expected_counts(candidates);
     let mut failures = Vec::new();
 
-    let known_zero: BTreeSet<&str> =
-        baseline.known_zero_viable.iter().map(String::as_str).collect();
+    let known_zero: BTreeSet<&str> = baseline
+        .known_zero_viable
+        .iter()
+        .map(String::as_str)
+        .collect();
 
     // 1. Per-function completeness — every candidate must have produced an
     //    outcome. Per key, so a duplicate outcome elsewhere cannot backfill a
@@ -142,7 +151,11 @@ pub(crate) fn evaluate(
     for (k, &want) in &expected {
         let got = tallies.get(k).map_or(0, |t| t.total);
         if got < want {
-            failures.push(Failure::MissingOutcomes { key: k.clone(), expected: want, executed: got });
+            failures.push(Failure::MissingOutcomes {
+                key: k.clone(),
+                expected: want,
+                executed: got,
+            });
         }
     }
 
@@ -153,7 +166,10 @@ pub(crate) fn evaluate(
             failures.push(Failure::InvalidFloor { key: k.clone() });
         }
         if !tallies.contains_key(k) && !expected.contains_key(k) {
-            failures.push(Failure::StaleFloor { key: k.clone(), floor });
+            failures.push(Failure::StaleFloor {
+                key: k.clone(),
+                floor,
+            });
         }
     }
 
@@ -169,12 +185,19 @@ pub(crate) fn evaluate(
         match baseline.floors.get(k) {
             Some(&floor) => {
                 if viable < floor {
-                    failures.push(Failure::Collapse { key: k.clone(), floor, viable });
+                    failures.push(Failure::Collapse {
+                        key: k.clone(),
+                        floor,
+                        viable,
+                    });
                 }
             }
             None => {
                 if !known_zero.contains(k.as_str()) {
-                    failures.push(Failure::Unaccounted { key: k.clone(), viable });
+                    failures.push(Failure::Unaccounted {
+                        key: k.clone(),
+                        viable,
+                    });
                 }
             }
         }
@@ -187,10 +210,26 @@ pub(crate) fn evaluate(
 pub(crate) fn render_report(v: &Verdict) -> String {
     use std::fmt::Write as _;
     let mut s = String::new();
-    let _ = writeln!(s, "mutation coverage: {} viable / {} total", v.total_viable(), v.total_mutants());
-    let _ = writeln!(s, "{:<60} {:>6} {:>6} {:>8}", "file::function", "viable", "total", "unviable");
+    let _ = writeln!(
+        s,
+        "mutation coverage: {} viable / {} total",
+        v.total_viable(),
+        v.total_mutants()
+    );
+    let _ = writeln!(
+        s,
+        "{:<60} {:>6} {:>6} {:>8}",
+        "file::function", "viable", "total", "unviable"
+    );
     for (k, t) in &v.tallies {
-        let _ = writeln!(s, "{:<60} {:>6} {:>6} {:>8}", k, t.viable(), t.total, t.unviable);
+        let _ = writeln!(
+            s,
+            "{:<60} {:>6} {:>6} {:>8}",
+            k,
+            t.viable(),
+            t.total,
+            t.unviable
+        );
     }
     s
 }
@@ -224,7 +263,9 @@ mod tests {
             summary,
             scenario: Scenario::Mutant(MutantInfo {
                 file: file.to_owned(),
-                function: Some(FunctionInfo { function_name: func.to_owned() }),
+                function: Some(FunctionInfo {
+                    function_name: func.to_owned(),
+                }),
             }),
         }
     }
@@ -233,19 +274,27 @@ mod tests {
     fn module_mutant(file: &str, summary: Summary) -> crate::model::Outcome {
         crate::model::Outcome {
             summary,
-            scenario: Scenario::Mutant(MutantInfo { file: file.to_owned(), function: None }),
+            scenario: Scenario::Mutant(MutantInfo {
+                file: file.to_owned(),
+                function: None,
+            }),
         }
     }
 
     fn candidate(file: &str, func: &str) -> Candidate {
         Candidate {
             file: file.to_owned(),
-            function: Some(FunctionInfo { function_name: func.to_owned() }),
+            function: Some(FunctionInfo {
+                function_name: func.to_owned(),
+            }),
         }
     }
 
     fn module_candidate(file: &str) -> Candidate {
-        Candidate { file: file.to_owned(), function: None }
+        Candidate {
+            file: file.to_owned(),
+            function: None,
+        }
     }
 
     fn baseline(floors: &[(&str, usize)], known_zero: &[&str]) -> Baseline {
@@ -264,7 +313,11 @@ mod tests {
                 mutant("a.rs", "f", Summary::Unviable),
             ],
         };
-        let candidates = vec![candidate("a.rs", "f"), candidate("a.rs", "f"), candidate("a.rs", "f")];
+        let candidates = vec![
+            candidate("a.rs", "f"),
+            candidate("a.rs", "f"),
+            candidate("a.rs", "f"),
+        ];
         let base = baseline(&[("a.rs::f", 2)], &[]);
         let v = evaluate(&report, &candidates, &base);
         assert!(v.passed(), "failures: {:?}", v.failures);
@@ -274,33 +327,53 @@ mod tests {
 
     #[test]
     fn a_survivor_fails() {
-        let report = Report { outcomes: vec![mutant("a.rs", "f", Summary::MissedMutant)] };
+        let report = Report {
+            outcomes: vec![mutant("a.rs", "f", Summary::MissedMutant)],
+        };
         let candidates = vec![candidate("a.rs", "f")];
         let base = baseline(&[("a.rs::f", 1)], &[]);
         let v = evaluate(&report, &candidates, &base);
-        assert_eq!(v.failures, vec![Failure::Survivor { key: "a.rs::f".to_owned() }]);
+        assert_eq!(
+            v.failures,
+            vec![Failure::Survivor {
+                key: "a.rs::f".to_owned()
+            }]
+        );
     }
 
     #[test]
     fn a_timeout_fails() {
-        let report = Report { outcomes: vec![mutant("a.rs", "f", Summary::Timeout)] };
+        let report = Report {
+            outcomes: vec![mutant("a.rs", "f", Summary::Timeout)],
+        };
         let candidates = vec![candidate("a.rs", "f")];
         let base = baseline(&[("a.rs::f", 1)], &[]);
         let v = evaluate(&report, &candidates, &base);
-        assert_eq!(v.failures, vec![Failure::Timeout { key: "a.rs::f".to_owned() }]);
+        assert_eq!(
+            v.failures,
+            vec![Failure::Timeout {
+                key: "a.rs::f".to_owned()
+            }]
+        );
     }
 
     #[test]
     fn an_interrupted_run_reports_missing_outcomes() {
         // 2 candidates enumerated, only 1 outcome recorded (the #148 141/205
         // shape) — attributed to the specific function that vanished.
-        let report = Report { outcomes: vec![mutant("a.rs", "f", Summary::CaughtMutant)] };
+        let report = Report {
+            outcomes: vec![mutant("a.rs", "f", Summary::CaughtMutant)],
+        };
         let candidates = vec![candidate("a.rs", "f"), candidate("a.rs", "g")];
         let base = baseline(&[("a.rs::f", 1)], &[]);
         let v = evaluate(&report, &candidates, &base);
         assert_eq!(
             v.failures,
-            vec![Failure::MissingOutcomes { key: "a.rs::g".to_owned(), expected: 1, executed: 0 }]
+            vec![Failure::MissingOutcomes {
+                key: "a.rs::g".to_owned(),
+                expected: 1,
+                executed: 0
+            }]
         );
     }
 
@@ -317,19 +390,28 @@ mod tests {
         let v = evaluate(&report, &candidates, &base);
         assert_eq!(
             v.failures,
-            vec![Failure::Collapse { key: "a.rs::f".to_owned(), floor: 2, viable: 1 }]
+            vec![Failure::Collapse {
+                key: "a.rs::f".to_owned(),
+                floor: 2,
+                viable: 1
+            }]
         );
     }
 
     #[test]
     fn a_new_unaccounted_function_fails() {
-        let report = Report { outcomes: vec![mutant("new.rs", "g", Summary::CaughtMutant)] };
+        let report = Report {
+            outcomes: vec![mutant("new.rs", "g", Summary::CaughtMutant)],
+        };
         let candidates = vec![candidate("new.rs", "g")];
         let base = baseline(&[], &[]);
         let v = evaluate(&report, &candidates, &base);
         assert_eq!(
             v.failures,
-            vec![Failure::Unaccounted { key: "new.rs::g".to_owned(), viable: 1 }]
+            vec![Failure::Unaccounted {
+                key: "new.rs::g".to_owned(),
+                viable: 1
+            }]
         );
     }
 
@@ -341,7 +423,10 @@ mod tests {
                 mutant("actor_ref.rs", "with_sender", Summary::Unviable),
             ],
         };
-        let candidates = vec![candidate("actor_ref.rs", "with_sender"), candidate("actor_ref.rs", "with_sender")];
+        let candidates = vec![
+            candidate("actor_ref.rs", "with_sender"),
+            candidate("actor_ref.rs", "with_sender"),
+        ];
         let base = baseline(&[], &["actor_ref.rs::with_sender"]);
         let v = evaluate(&report, &candidates, &base);
         assert!(v.passed(), "failures: {:?}", v.failures);
@@ -352,34 +437,51 @@ mod tests {
     fn a_function_less_mutant_keys_under_module() {
         // A caught associated-const mutation (function: null) must be floored
         // and reported under `file::<module>`, never dropped.
-        let report = Report { outcomes: vec![module_mutant("mailbox.rs", Summary::CaughtMutant)] };
+        let report = Report {
+            outcomes: vec![module_mutant("mailbox.rs", Summary::CaughtMutant)],
+        };
         let candidates = vec![module_candidate("mailbox.rs")];
         let base = baseline(&[("mailbox.rs::<module>", 1)], &[]);
         let v = evaluate(&report, &candidates, &base);
         assert!(v.passed(), "failures: {:?}", v.failures);
-        assert_eq!(v.tallies.get("mailbox.rs::<module>").map(Tally::viable), Some(1));
+        assert_eq!(
+            v.tallies.get("mailbox.rs::<module>").map(Tally::viable),
+            Some(1)
+        );
     }
 
     #[test]
     fn a_stale_floor_fails() {
         // gone.rs::x is floored but appears in neither candidates nor outcomes.
-        let report = Report { outcomes: vec![mutant("a.rs", "f", Summary::CaughtMutant)] };
+        let report = Report {
+            outcomes: vec![mutant("a.rs", "f", Summary::CaughtMutant)],
+        };
         let candidates = vec![candidate("a.rs", "f")];
         let base = baseline(&[("a.rs::f", 1), ("gone.rs::x", 2)], &[]);
         let v = evaluate(&report, &candidates, &base);
         assert_eq!(
             v.failures,
-            vec![Failure::StaleFloor { key: "gone.rs::x".to_owned(), floor: 2 }]
+            vec![Failure::StaleFloor {
+                key: "gone.rs::x".to_owned(),
+                floor: 2
+            }]
         );
     }
 
     #[test]
     fn a_zero_floor_is_invalid() {
-        let report = Report { outcomes: vec![mutant("a.rs", "f", Summary::CaughtMutant)] };
+        let report = Report {
+            outcomes: vec![mutant("a.rs", "f", Summary::CaughtMutant)],
+        };
         let candidates = vec![candidate("a.rs", "f")];
         let base = baseline(&[("a.rs::f", 0)], &[]);
         let v = evaluate(&report, &candidates, &base);
-        assert_eq!(v.failures, vec![Failure::InvalidFloor { key: "a.rs::f".to_owned() }]);
+        assert_eq!(
+            v.failures,
+            vec![Failure::InvalidFloor {
+                key: "a.rs::f".to_owned()
+            }]
+        );
     }
 
     #[test]
@@ -395,8 +497,12 @@ mod tests {
         let base = baseline(&[("a.rs::f", 1), ("b.rs::g", 1)], &[]);
         let v = evaluate(&report, &candidates, &base);
         assert_eq!(v.failures.len(), 2);
-        assert!(v.failures.contains(&Failure::Survivor { key: "a.rs::f".to_owned() }));
-        assert!(v.failures.contains(&Failure::Timeout { key: "b.rs::g".to_owned() }));
+        assert!(v.failures.contains(&Failure::Survivor {
+            key: "a.rs::f".to_owned()
+        }));
+        assert!(v.failures.contains(&Failure::Timeout {
+            key: "b.rs::g".to_owned()
+        }));
     }
 
     #[test]
