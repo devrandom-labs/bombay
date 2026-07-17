@@ -105,6 +105,15 @@ Adopt **E**. Concretely:
 
 - Ref-count-driven stop goes live: the #116 "all-senders-gone" arm is now
   reachable, and dropping the last strong `ActorRef` stops the actor.
+- **`triomphe` (a leaner `Arc`) is moot here (#117).** `ActorRef` hand-rolls no
+  `Arc`-based refcount to slim down: liveness is delegated entirely to flume's
+  `sender_count` (the decisive usage pattern above), and `id` is `Copy`. The
+  only `Arc`s a ref holds are `cancel` (a `CancellationToken`) and `abort` (an
+  `AbortHandle`) — cold, non-liveness clones off the hot path, and each is a
+  third-party type whose internals `triomphe` cannot reach. There is no
+  bombay-owned refcount for a leaner `Arc` to optimize, so `triomphe` is not
+  adopted. (Recorded to close #117's "evaluate triomphe" bullet as examined, not
+  merely skipped.)
 - Stop semantics split intuitively: **explicit** `stop()` / `Signal::Stop`
   abandons the queued backlog (finish-current-then-stop, per #116); **running out
   of references** drains the queue first (queued work self-pins, so it is handled

@@ -1229,4 +1229,131 @@ mod tests {
             task.await.expect("sender task");
         }
     }
+
+    /// Linearizability: `tell` racing the last-strong-ref drop (#117). Each task
+    /// sends once then drops its ref, so the enqueues race the sender-drops that
+    /// close the mailbox. The single-writer invariant must hold under every
+    /// interleaving: an *accepted* message is always handled before the actor
+    /// stops (drain-before-close, ADR-0003), and the actor stops exactly once,
+    /// Normal. Distinct from `concurrent_senders_single_writer_exact_count`,
+    /// where no task ever drops the last ref.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn tell_racing_last_ref_drop_never_loses_an_accepted_message() {
+        use tokio::sync::Barrier;
+
+        const REFS: usize = 8;
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let prepared = PreparedActor::<Counter>::new(cap(REFS));
+        let refs: Vec<_> = (0..REFS).map(|_| prepared.actor_ref().clone()).collect();
+        let join = prepared.spawn((Arc::clone(&handled), Arc::clone(&stopped)));
+
+        let barrier = Arc::new(Barrier::new(REFS));
+        let tasks: Vec<_> = refs
+            .into_iter()
+            .map(|r| {
+                let barrier = Arc::clone(&barrier);
+                tokio::spawn(async move {
+                    barrier.wait().await;
+                    let accepted = r.tell(Tick).await.is_ok();
+                    drop(r);
+                    accepted
+                })
+            })
+            .collect();
+
+        let mut accepted = 0;
+        for task in tasks {
+            if task.await.expect("tell task") {
+                accepted += 1;
+            }
+        }
+
+        let outcome = tokio::time::timeout(terminate_bound(), join)
+            .await
+            .expect("actor stops after the last ref drops")
+            .expect("join");
+
+        assert_eq!(
+            handled.load(Ordering::SeqCst),
+            accepted,
+            "every accepted message is handled before the mailbox closes",
+        );
+        assert_eq!(
+            stopped.load(Ordering::SeqCst),
+            1,
+            "on_stop runs exactly once"
+        );
+        assert!(matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Normal,
+                ..
+            }
+        ));
+    }
+
+    /// DST: `WeakActorRef::upgrade` racing the last-strong-ref drop (#117).
+    /// `upgrade` (`fetch_update` on flume's `sender_count`) races the strong
+    /// ref's drop (`count 1→0`). Every upgrade must yield either a valid ref
+    /// with the actor's identity or `None` — never a torn/dangling handle — and
+    /// once the last strong sender is gone `upgrade` is `None`. This is the
+    /// concurrent `upgrade` probe #150's DST leg lacked.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn upgrade_racing_last_ref_drop_is_some_or_none_never_torn() {
+        use tokio::sync::Barrier;
+
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let prepared = PreparedActor::<Counter>::new(cap(8));
+        let strong = prepared.actor_ref().clone();
+        let weak = strong.downgrade();
+        let id = strong.id();
+        let join = prepared.spawn((Arc::clone(&handled), Arc::clone(&stopped)));
+
+        let barrier = Arc::new(Barrier::new(2));
+        let upgrader = {
+            let barrier = Arc::clone(&barrier);
+            let weak = weak.clone();
+            tokio::spawn(async move {
+                barrier.wait().await;
+                for _ in 0..1_000 {
+                    if let Some(strong) = weak.upgrade() {
+                        assert_eq!(
+                            strong.id(),
+                            id,
+                            "an upgraded ref keeps the actor's identity"
+                        );
+                    }
+                }
+            })
+        };
+        let dropper = {
+            let barrier = Arc::clone(&barrier);
+            tokio::spawn(async move {
+                barrier.wait().await;
+                drop(strong);
+            })
+        };
+
+        upgrader.await.expect("upgrade task");
+        dropper.await.expect("drop task");
+
+        let outcome = tokio::time::timeout(terminate_bound(), join)
+            .await
+            .expect("actor stops after the last ref drops")
+            .expect("join");
+
+        assert!(
+            weak.upgrade().is_none(),
+            "no strong sender remains, so upgrade is None",
+        );
+        assert!(matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Normal,
+                ..
+            }
+        ));
+    }
 }
