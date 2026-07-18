@@ -1,38 +1,49 @@
-//! The minimal handle to a running actor (card #116 scaffold).
+//! The handle to a running actor: inline `id` + ONE shared allocation
+//! (ADR-0010), so a clone is a single Arc RMW instead of three contended
+//! cacheline hits (the measured #119/#186 bottleneck).
 //!
-//! Each field is independently cheap to clone and shares state, so no outer
-//! `Arc` is needed here — the Arc/Weak ref-count semantics (last strong drop
-//! stops the actor), `Recipient` erasure, and the `tell`/`ask` builders are
-//! #117/#118. #116 exposes only what the hooks, spawn, and loop need.
+//! Liveness stays flume's `sender_count` (ADR-0003): every strong `ActorRef`
+//! shares the one [`MailboxSender`] inside [`RefShared`], so external handles
+//! together contribute exactly 1 — dropping the last strong ref drops the
+//! sender and the `1 → 0` transition wakes the loop's `recv` with `None`.
 
 use core::fmt;
+use std::sync::{Arc, Weak};
 
 use futures::stream::AbortHandle;
 use tokio_util::sync::CancellationToken;
 
 use crate::{
     actor::Actor,
-    mailbox::{ActorId, MailboxSender, WeakMailboxSender},
+    mailbox::{ActorId, MailboxSender},
     reply::ReplySender,
     request::{AskRequest, TellRequest},
 };
 
-/// A cloneable handle to a running actor: enqueue signals, stop it gracefully,
-/// or kill it. Does **not** (yet) drive ref-count shutdown — see the module doc.
-pub struct ActorRef<A: Actor> {
-    id: ActorId,
-    mailbox: MailboxSender<A>,
+/// The one heap allocation every strong handle to an actor shares (ADR-0010):
+/// the external mailbox sender plus the cold lifecycle handles.
+struct RefShared<A: Actor> {
+    sender: MailboxSender<A>,
     cancel: CancellationToken,
     abort: AbortHandle,
+}
+
+/// A cloneable handle to a running actor: enqueue signals, stop it gracefully,
+/// or kill it.
+///
+/// Two words — inline `id` + one shared pointer — so a clone is one Arc RMW
+/// (ADR-0010). Dropping the last strong `ActorRef` stops the actor after its
+/// queued backlog drains (ref-count-driven stop, ADR-0003).
+pub struct ActorRef<A: Actor> {
+    id: ActorId,
+    shared: Arc<RefShared<A>>,
 }
 
 impl<A: Actor> Clone for ActorRef<A> {
     fn clone(&self) -> Self {
         Self {
             id: self.id,
-            mailbox: self.mailbox.clone(),
-            cancel: self.cancel.clone(),
-            abort: self.abort.clone(),
+            shared: Arc::clone(&self.shared),
         }
     }
 }
@@ -47,17 +58,24 @@ impl<A: Actor> fmt::Debug for ActorRef<A> {
 }
 
 impl<A: Actor> ActorRef<A> {
-    pub(crate) const fn new(
+    /// Assembles a strong handle around its parts, minting a fresh shared
+    /// allocation. Called once per actor at spawn — and once per drained
+    /// message in the post-external-refs drain window, where the run-loop
+    /// rebuilds a handler's ref from the queued `self_sender` plus its own
+    /// cold copies (ADR-0010).
+    pub(crate) fn new(
         id: ActorId,
-        mailbox: MailboxSender<A>,
+        sender: MailboxSender<A>,
         cancel: CancellationToken,
         abort: AbortHandle,
     ) -> Self {
         Self {
             id,
-            mailbox,
-            cancel,
-            abort,
+            shared: Arc::new(RefShared {
+                sender,
+                cancel,
+                abort,
+            }),
         }
     }
 
@@ -73,7 +91,7 @@ impl<A: Actor> ActorRef<A> {
     /// returns.
     #[must_use]
     pub fn is_alive(&self) -> bool {
-        !self.mailbox.is_closed()
+        !self.shared.sender.is_closed()
     }
 
     /// Prepares a fire-and-forget send of `msg` (card #118). The returned
@@ -84,8 +102,8 @@ impl<A: Actor> ActorRef<A> {
     ///   with `msg` handed back if the actor has stopped.
     /// - [`.try_send()`](TellRequest::try_send) — non-blocking; a full mailbox
     ///   is [`TellError::MailboxFull`](crate::error::TellError::MailboxFull).
-    pub const fn tell(&self, msg: A::Msg) -> TellRequest<'_, A> {
-        TellRequest::new(&self.mailbox, msg)
+    pub fn tell(&self, msg: A::Msg) -> TellRequest<'_, A> {
+        TellRequest::new(&self.shared.sender, msg)
     }
 
     /// Prepares a request/reply `ask` (card #118): builds the message around a
@@ -106,31 +124,38 @@ impl<A: Actor> ActorRef<A> {
         &self,
         make_msg: impl FnOnce(ReplySender<R, E>) -> A::Msg,
     ) -> AskRequest<'_, A, R, E> {
-        AskRequest::new(&self.mailbox, make_msg)
+        AskRequest::new(&self.shared.sender, make_msg)
     }
 
     /// The sender half of the actor's mailbox — used to enqueue `Signal`s. The
     /// ergonomic `tell`/`ask` builders wrap this in #118.
     #[must_use]
-    pub const fn mailbox_sender(&self) -> &MailboxSender<A> {
-        &self.mailbox
+    pub fn mailbox_sender(&self) -> &MailboxSender<A> {
+        &self.shared.sender
     }
 
     /// The loop's graceful-cancellation token (loop-internal).
-    pub(crate) const fn cancel_token(&self) -> &CancellationToken {
-        &self.cancel
+    pub(crate) fn cancel_token(&self) -> &CancellationToken {
+        &self.shared.cancel
+    }
+
+    /// The loop's hard-kill handle (loop-internal): the run-loop copies it out
+    /// before dropping its strong self-ref, so drain-window handler refs can
+    /// be minted with the REAL abort handle (ADR-0010).
+    pub(crate) fn abort_handle(&self) -> &AbortHandle {
+        &self.shared.abort
     }
 
     /// Requests a graceful, out-of-band stop: the in-flight message finishes,
     /// then the actor stops and `on_stop` runs. Queued messages are abandoned.
     pub fn stop(&self) {
-        self.cancel.cancel();
+        self.shared.cancel.cancel();
     }
 
     /// Hard-kills the actor: the task is aborted at its next await point,
     /// `on_stop` does **not** run, and any in-flight message is dropped.
     pub fn kill(&self) {
-        self.abort.abort();
+        self.shared.abort.abort();
     }
 
     /// Downgrades to a non-pinning [`WeakActorRef`].
@@ -138,29 +163,29 @@ impl<A: Actor> ActorRef<A> {
     pub fn downgrade(&self) -> WeakActorRef<A> {
         WeakActorRef {
             id: self.id,
-            mailbox: self.mailbox.downgrade(),
-            cancel: self.cancel.clone(),
-            abort: self.abort.clone(),
+            shared: Arc::downgrade(&self.shared),
         }
     }
 }
 
-/// A non-pinning handle to an actor. [`upgrade`](WeakActorRef::upgrade) yields a
-/// strong [`ActorRef`] only while the actor's mailbox is still open.
+/// A non-pinning handle to an actor: inline `id` (a tombstone that outlives
+/// the actor) + one weak pointer.
+///
+/// [`upgrade`](WeakActorRef::upgrade) yields a strong [`ActorRef`] only while
+/// an **external strong ref** still exists — in the drain window (external
+/// refs gone, queued messages still pinning the channel) it answers `None`,
+/// because an actor no external handle can reach is dying and must not be
+/// resurrectable (ADR-0010).
 pub struct WeakActorRef<A: Actor> {
     id: ActorId,
-    mailbox: WeakMailboxSender<A>,
-    cancel: CancellationToken,
-    abort: AbortHandle,
+    shared: Weak<RefShared<A>>,
 }
 
 impl<A: Actor> Clone for WeakActorRef<A> {
     fn clone(&self) -> Self {
         Self {
             id: self.id,
-            mailbox: self.mailbox.clone(),
-            cancel: self.cancel.clone(),
-            abort: self.abort.clone(),
+            shared: Weak::clone(&self.shared),
         }
     }
 }
@@ -181,27 +206,18 @@ impl<A: Actor> WeakActorRef<A> {
         self.id
     }
 
-    /// Upgrades to a strong [`ActorRef`], or `None` if the actor's mailbox has
-    /// closed (every strong sender dropped).
+    /// Upgrades to a strong [`ActorRef`], or `None` once every external strong
+    /// ref has dropped — one CAS on the shared allocation's refcount
+    /// (`std::sync::Weak::upgrade`, ADR-0010). `None` does not always mean the
+    /// backlog is done: queued messages may still be draining (they self-pin
+    /// via their `self_sender`, ADR-0003), but no new external handle to the
+    /// dying actor can be minted from here.
     #[must_use]
     pub fn upgrade(&self) -> Option<ActorRef<A>> {
-        self.mailbox
-            .upgrade()
-            .map(|mailbox| self.with_sender(mailbox))
-    }
-
-    /// Reassembles a strong [`ActorRef`] from this handle's cold fields
-    /// (`id`/`cancel`/`abort`) plus a provided strong mailbox `sender`
-    /// (ADR-0003). The run-loop uses it to lift the self-ref out of a
-    /// `Signal::Message` — the message carries the only liveness-bearing handle
-    /// (the sender), so the loop never holds a strong self-ref of its own.
-    pub(crate) fn with_sender(&self, sender: MailboxSender<A>) -> ActorRef<A> {
-        ActorRef {
+        self.shared.upgrade().map(|shared| ActorRef {
             id: self.id,
-            mailbox: sender,
-            cancel: self.cancel.clone(),
-            abort: self.abort.clone(),
-        }
+            shared,
+        })
     }
 }
 
@@ -214,7 +230,7 @@ mod tests {
 
     use crate::{
         error::TellError,
-        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed},
+        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
         message::Msg,
     };
 
@@ -262,6 +278,58 @@ mod tests {
     fn build_ref() -> (ActorRef<Probe>, WeakActorRef<Probe>) {
         let (actor_ref, weak, _rx) = build_ref_with_rx();
         (actor_ref, weak)
+    }
+
+    /// #186 / ADR-0010: each handle is `id` + ONE shared pointer — two words.
+    /// Fails while the ref carries independently-shared fields (the ADR-0003
+    /// shape was four words), guarding the single-allocation layout the 1-RMW
+    /// clone claim rests on.
+    #[test]
+    fn handles_are_two_words() {
+        assert_eq!(
+            size_of::<ActorRef<Probe>>(),
+            2 * size_of::<usize>(),
+            "ActorRef = inline id + one Arc pointer",
+        );
+        assert_eq!(
+            size_of::<WeakActorRef<Probe>>(),
+            2 * size_of::<usize>(),
+            "WeakActorRef = inline id (the tombstone) + one Weak pointer",
+        );
+    }
+
+    /// #186 / ADR-0010, the one semantic change: in the DRAIN WINDOW (every
+    /// external strong ref dropped, a queued message still pinning the channel
+    /// via its `self_sender`) a weak upgrade answers `None` — an actor no
+    /// external handle can reach is dying and must not be resurrectable — while
+    /// the queued message itself is still delivered (ADR-0003's self-pin is
+    /// untouched). Fails under the ADR-0003 shape, where `upgrade` reads
+    /// flume's `sender_count` and the queued self_sender keeps it non-zero.
+    #[tokio::test]
+    async fn weak_upgrade_is_none_in_the_drain_window() {
+        let (actor_ref, weak, mut rx) = build_ref_with_rx();
+        actor_ref
+            .tell(ProbeMsg(9))
+            .try_send()
+            .expect("open mailbox accepts the message");
+
+        drop(actor_ref); // drain window: only the queued self_sender remains
+
+        assert!(
+            weak.upgrade().is_none(),
+            "no external strong ref exists, so upgrade must not resurrect",
+        );
+        let queued = rx.recv().await;
+        assert!(
+            matches!(
+                queued,
+                Some(Signal::Message {
+                    msg: ProbeMsg(9),
+                    ..
+                })
+            ),
+            "the queued message still self-pins and is delivered",
+        );
     }
 
     /// The `ActorRef` debug view names the struct and surfaces its id and actor
@@ -404,57 +472,54 @@ mod tests {
         assert_eq!(returned, 42, "the exact undelivered message is handed back");
     }
 
-    /// `with_sender` cannot be reached by cargo-mutants' whole-body
-    /// replacement (it returns `ActorRef<A>`, which has no `Default`, so no
-    /// mutant compiles — `known_zero_viable` in `mutants-baseline.json`,
-    /// card #165). This is the hand-written compensating control: it proves
-    /// `with_sender` copies the WEAK ref's `id`/`cancel`/`abort` VERBATIM
-    /// (not fresh values) by observing shared state through each field.
+    /// `upgrade`'s happy path could be stubbed to `None` (a viable mutant) or
+    /// to a handle around FRESH parts. This is the compensating control: an
+    /// upgraded ref shares the ORIGINAL's identity and lifecycle handles,
+    /// proven by observing shared state through each field.
     ///
     /// - `id`: a plain `Copy` value — `assert_eq!` is a direct, exact check.
     /// - `cancel`: `CancellationToken::clone` "will get cancelled whenever
     ///   the current token gets cancelled, and vice versa" (tokio-util
     ///   `cancellation_token.rs` doc on `impl Clone`) — so cancelling
-    ///   through the rebuilt ref must flip the ORIGINAL's token too, which a
+    ///   through the upgraded ref must flip the ORIGINAL's token too, which a
     ///   fresh `CancellationToken::new()` could never do.
     /// - `abort`: `AbortHandle` clones share one `Arc<AbortInner>` (futures
     ///   `abortable.rs`) — `is_aborted` reads that shared `AtomicBool`. Both
     ///   fields are private but observable here: `tests` is a descendant
     ///   module of the struct's defining module, so plain field access
-    ///   (`.cancel`, `.abort`) is in scope without needing a public
-    ///   liveness-identity accessor that would otherwise leak the field.
+    ///   (`.shared.cancel`, `.shared.abort`) is in scope without needing a
+    ///   public liveness-identity accessor that would otherwise leak them.
     #[tokio::test]
-    async fn with_sender_preserves_id_cancel_and_abort() {
+    async fn upgrade_preserves_id_cancel_and_abort() {
         let (actor_ref, weak, _rx) = build_ref_with_rx();
-        let self_sender = actor_ref.mailbox_sender().clone();
 
-        let rebuilt = weak.with_sender(self_sender);
+        let upgraded = weak.upgrade().expect("strong ref alive -> upgradable");
 
         assert_eq!(
-            rebuilt.id(),
+            upgraded.id(),
             ActorId::new(7),
             "id must be copied verbatim from the weak ref",
         );
 
         assert!(
-            !actor_ref.cancel.is_cancelled(),
+            !actor_ref.shared.cancel.is_cancelled(),
             "precondition: nothing cancelled yet",
         );
-        rebuilt.stop();
+        upgraded.stop();
         assert!(
-            actor_ref.cancel.is_cancelled(),
-            "with_sender must copy the SAME cancellation token as the \
+            actor_ref.shared.cancel.is_cancelled(),
+            "upgrade must share the SAME cancellation token as the \
              original — a fresh token would leave the original uncancelled",
         );
 
         assert!(
-            !actor_ref.abort.is_aborted(),
+            !actor_ref.shared.abort.is_aborted(),
             "precondition: nothing aborted yet",
         );
-        rebuilt.kill();
+        upgraded.kill();
         assert!(
-            actor_ref.abort.is_aborted(),
-            "with_sender must copy the SAME abort handle as the original — \
+            actor_ref.shared.abort.is_aborted(),
+            "upgrade must share the SAME abort handle as the original — \
              a fresh handle would leave the original's abort unset",
         );
     }

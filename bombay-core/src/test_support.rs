@@ -17,9 +17,10 @@ use crate::{
 };
 
 /// Assembles an [`ActorRef`] over a raw mailbox pair **without spawning a
-/// run-loop** (card #118's allocation tests drive the receiver by hand). The
-/// external-test sibling of the in-crate `ActorRef::new` scaffold: `tests/*.rs`
-/// link the lib externally and cannot reach `pub(crate)`.
+/// run-loop** (card #118's allocation tests drive the receiver by hand).
+///
+/// The external-test sibling of the in-crate `ActorRef::new` scaffold:
+/// `tests/*.rs` link the lib externally and cannot reach `pub(crate)`.
 #[must_use]
 pub fn unstarted_actor<A: Actor>(
     (tx, rx): (MailboxSender<A>, MailboxReceiver<A>),
