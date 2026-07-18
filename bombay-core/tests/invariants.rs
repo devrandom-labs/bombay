@@ -1159,3 +1159,94 @@ async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
         "clean normal stop, got {outcome:?}",
     );
 }
+
+// ---------------------------------------------------------------------------
+// #113 deferral, landed on #118: ActorNotAlive unifies every terminal state.
+// ---------------------------------------------------------------------------
+
+/// `actor_not_alive_unifies_terminal` — every way an actor can be *not
+/// running* surfaces to a sender as the SAME terminal
+/// `TellError::ActorNotAlive`, message handed back, so a caller needs no
+/// state-specific handling:
+///
+/// - **never run** — the `PreparedActor` was dropped before `run`; the actor
+///   never existed (this test);
+/// - **startup failed** — `on_start` returned `Err`, no actor was produced
+///   (this test);
+/// - **stopped** — asserted where the stop flows already live
+///   (`i12_alive_window`, `i19_send_and_weak_upgrade_after_termination`).
+///
+/// The #113 list also names **passivated**: passivation does not exist in
+/// bombay-core (no lifecycle knob yet), so that leg is unassertable today —
+/// recorded on card #118, to land with whichever card introduces passivation.
+#[tokio::test]
+async fn actor_not_alive_unifies_terminal() {
+    // Leg 1: never run. Dropping the PreparedActor drops the only receiver.
+    let prepared = PreparedActor::<Bank>::new(cap(4));
+    let never_run = prepared.actor_ref().clone();
+    drop(prepared);
+
+    let err = never_run
+        .tell(Poke)
+        .try_send()
+        .expect_err("a never-run actor cannot receive");
+    assert!(err.is_terminal(), "never-run is terminal, never retryable");
+    assert!(
+        matches!(err, TellError::ActorNotAlive(Poke)),
+        "never-run unifies to ActorNotAlive with the message back: {err:?}",
+    );
+    assert!(
+        matches!(
+            never_run.tell(Poke).await,
+            Err(TellError::ActorNotAlive(Poke))
+        ),
+        "the blocking form agrees with try_send",
+    );
+
+    // Leg 2: startup failed. `on_start` errors, so no actor was ever produced.
+    struct FailStart;
+    #[derive(Debug)]
+    struct Go;
+    impl Msg for Go {}
+    impl Mailboxed for FailStart {
+        type Msg = Go;
+    }
+    impl Actor for FailStart {
+        type Args = ();
+        type Error = Boom;
+        async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Err(Boom)
+        }
+        async fn handle(
+            &mut self,
+            _: Go,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+
+    let prepared = PreparedActor::<FailStart>::new(cap(4));
+    let failed = prepared.actor_ref().clone();
+    let outcome = timeout(TERMINATE, prepared.run(()))
+        .await
+        .expect("startup failure must terminate the run");
+    assert!(
+        matches!(outcome, RunResult::StartupFailed(_)),
+        "precondition: on_start Err → StartupFailed, got {outcome:?}",
+    );
+
+    let err = failed
+        .tell(Go)
+        .try_send()
+        .expect_err("a failed-start actor cannot receive");
+    assert!(
+        err.is_terminal(),
+        "failed-start is terminal, never retryable"
+    );
+    assert!(
+        matches!(err, TellError::ActorNotAlive(Go)),
+        "startup-failure unifies to ActorNotAlive with the message back: {err:?}",
+    );
+}
