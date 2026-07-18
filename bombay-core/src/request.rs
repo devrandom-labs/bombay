@@ -21,11 +21,13 @@ use std::{
     time::Duration,
 };
 
+use pin_project_lite::pin_project;
 use tokio::time::{Instant, Sleep, sleep_until};
 
 use crate::{
-    error::TellError,
+    error::{AskError, Infallible, TellError},
     mailbox::{MailboxSender, Mailboxed, SendMessageFut, Signal, TrySendError},
+    reply::{ReplyReceiver, ReplySender, reply_channel},
 };
 
 /// First retry delay of a timed tell's bounded backoff; doubles per retry up
@@ -35,6 +37,14 @@ const INITIAL_RETRY_DELAY: Duration = Duration::from_micros(100);
 
 /// Ceiling for the timed tell's retry backoff.
 const MAX_RETRY_DELAY: Duration = Duration::from_millis(10);
+
+/// Every ask carries this deadline unless the builder overrides it.
+///
+/// The Erlang `gen_server:call` 5000 ms precedent (OTP), chosen so an
+/// accidental blocking cycle resolves as [`AskError::Timeout`] instead of
+/// hanging (card #118 decision, #122-#4). Opt out explicitly with
+/// [`AskRequest::no_timeout`].
+pub const DEFAULT_ASK_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// A prepared `tell`: the message and its target, effect deferred until the
 /// request is consumed.
@@ -147,57 +157,71 @@ impl<'a, A: Mailboxed> IntoFuture for TellWithTimeout<'a, A> {
             deadline: now.checked_add(self.deadline),
             retry_delay: INITIAL_RETRY_DELAY,
             // Re-armed before every park; the initial target is irrelevant.
-            sleep: Box::pin(sleep_until(now)),
+            sleep: sleep_until(now),
         }
     }
 }
 
-/// The in-flight future of an awaited [`TellWithTimeout`].
-#[must_use = "futures do nothing unless you `.await` or poll them"]
-pub struct TellTimeoutFut<'a, A: Mailboxed> {
-    mailbox: &'a MailboxSender<A>,
-    msg: Option<A::Msg>,
+pin_project! {
+    /// The in-flight future of an awaited [`TellWithTimeout`].
+    #[must_use = "futures do nothing unless you `.await` or poll them"]
+    pub struct TellTimeoutFut<'a, A: Mailboxed> {
+        mailbox: &'a MailboxSender<A>,
+        msg: Option<A::Msg>,
+        deadline: Option<Instant>,
+        retry_delay: Duration,
+        // The `!Unpin` timer lives inline behind structural pinning — no
+        // per-request allocation on the timed path (allocate-last).
+        #[pin]
+        sleep: Sleep,
+    }
+}
+
+/// One non-blocking delivery attempt out of `slot`. `Some` = final outcome;
+/// `None` = mailbox full, message restored to `slot` for the next retry.
+fn attempt_send<A: Mailboxed>(
+    mailbox: &MailboxSender<A>,
+    slot: &mut Option<A::Msg>,
+) -> Option<Result<(), TellError<A::Msg>>> {
+    let Some(msg) = slot.take() else {
+        unreachable!("send future polled after completion")
+    };
+    match mailbox.try_send_message(msg) {
+        Ok(()) => Some(Ok(())),
+        Err(TrySendError::Closed(signal)) => {
+            Some(Err(TellError::ActorNotAlive(undelivered_msg(signal))))
+        }
+        Err(TrySendError::Full(signal)) => {
+            *slot = Some(undelivered_msg(signal));
+            None
+        }
+    }
+}
+
+/// Arms `sleep` for the next retry — never past `deadline` — and doubles
+/// `retry_delay` up to [`MAX_RETRY_DELAY`]. `Ready` = retry now (the target
+/// already passed); `Pending` = the timer waker is registered.
+fn park_for_retry(
+    mut sleep: Pin<&mut Sleep>,
+    retry_delay: &mut Duration,
     deadline: Option<Instant>,
-    retry_delay: Duration,
-    // The timer needs a stable pinned home; one allocation per *timed* tell —
-    // the same price tokio's own `Interval` pays (it holds a boxed `Sleep`).
-    // The un-timed `TellFut` path stays allocation-free.
-    sleep: Pin<Box<Sleep>>,
-}
-
-// Sound: no field is structurally pinned — `msg` is plain owned data the poll
-// moves in and out of, and the timer's address stability comes from its own
-// `Pin<Box<Sleep>>`, not from this struct's location. Same move flume makes
-// for `SendFut` (`impl<T> Unpin for SendFut<'_, T> {}`).
-impl<A: Mailboxed> Unpin for TellTimeoutFut<'_, A> {}
-
-impl<A: Mailboxed> TellTimeoutFut<'_, A> {
-    /// One delivery attempt. `Some` = final result; `None` = mailbox full,
-    /// message restored to `self.msg` for the next retry.
-    fn attempt(&mut self) -> Option<Result<(), TellError<A::Msg>>> {
-        let Some(msg) = self.msg.take() else {
-            unreachable!("TellTimeoutFut polled after completion")
-        };
-        match self.mailbox.try_send_message(msg) {
-            Ok(()) => Some(Ok(())),
-            Err(TrySendError::Closed(signal)) => {
-                Some(Err(TellError::ActorNotAlive(undelivered_msg(signal))))
-            }
-            Err(TrySendError::Full(signal)) => {
-                self.msg = Some(undelivered_msg(signal));
-                None
-            }
-        }
-    }
+    now: Instant,
+    cx: &mut Context<'_>,
+) -> Poll<()> {
+    let unclamped = now.checked_add(*retry_delay).unwrap_or(now);
+    let next = deadline.map_or(unclamped, |hard_stop| cmp::min(unclamped, hard_stop));
+    sleep.as_mut().reset(next);
+    *retry_delay = cmp::min(retry_delay.saturating_mul(2), MAX_RETRY_DELAY);
+    sleep.poll(cx)
 }
 
 impl<A: Mailboxed> Future for TellTimeoutFut<'_, A> {
     type Output = Result<(), TellError<A::Msg>>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let this = self.get_mut();
+        let mut this = self.project();
         loop {
-            if let Some(result) = this.attempt() {
+            if let Some(result) = attempt_send(this.mailbox, this.msg) {
                 return Poll::Ready(result);
             }
 
@@ -209,14 +233,13 @@ impl<A: Mailboxed> Future for TellTimeoutFut<'_, A> {
                 return Poll::Ready(Err(TellError::SendTimeout(msg)));
             }
 
-            // Park until the next retry, never past the deadline itself.
-            let mut next = now.checked_add(this.retry_delay).unwrap_or(now);
-            if let Some(deadline) = this.deadline {
-                next = cmp::min(next, deadline);
-            }
-            this.sleep.as_mut().reset(next);
-            this.retry_delay = cmp::min(this.retry_delay.saturating_mul(2), MAX_RETRY_DELAY);
-            match this.sleep.as_mut().poll(cx) {
+            match park_for_retry(
+                this.sleep.as_mut(),
+                this.retry_delay,
+                *this.deadline,
+                now,
+                cx,
+            ) {
                 Poll::Ready(()) => {}
                 Poll::Pending => return Poll::Pending,
             }
@@ -242,6 +265,142 @@ impl<A: Mailboxed> Future for TellFut<'_, A> {
     }
 }
 
+/// A prepared `ask`: the request message (already carrying its typed reply
+/// port) and its target, effect deferred until `.await`.
+///
+/// One deadline budgets the *whole* request — delivery and reply. Expiry
+/// during delivery is `Deliver(SendTimeout(M))` (retryable, message back,
+/// ADR-0008); expiry while awaiting the reply is [`AskError::Timeout`] (not
+/// retryable — the message is already in the actor). The default deadline is
+/// [`DEFAULT_ASK_TIMEOUT`]; opt out with [`no_timeout`](Self::no_timeout).
+///
+/// **Discipline (#122-#4):** a *handler* must never `ask(..).await` another
+/// actor — that is the bounded-mailbox cycle deadlock. Handlers `tell` (or
+/// emit an event) and take the reply as a new message; blocking asks belong
+/// outside handlers, where the deadline backstops any accidental cycle.
+#[must_use = "an ask does nothing until awaited"]
+pub struct AskRequest<'a, A: Mailboxed, R, E = Infallible> {
+    mailbox: &'a MailboxSender<A>,
+    msg: A::Msg,
+    rx: ReplyReceiver<R, E>,
+    deadline: Option<Duration>,
+}
+
+impl<'a, A: Mailboxed, R, E> AskRequest<'a, A, R, E> {
+    pub(crate) fn new(
+        mailbox: &'a MailboxSender<A>,
+        make_msg: impl FnOnce(ReplySender<R, E>) -> A::Msg,
+    ) -> Self {
+        let (reply_sender, rx) = reply_channel();
+        Self {
+            mailbox,
+            msg: make_msg(reply_sender),
+            rx,
+            deadline: Some(DEFAULT_ASK_TIMEOUT),
+        }
+    }
+
+    /// Replaces the [default](DEFAULT_ASK_TIMEOUT) deadline with `deadline`.
+    pub const fn timeout(mut self, deadline: Duration) -> Self {
+        self.deadline = Some(deadline);
+        self
+    }
+
+    /// Removes the deadline entirely — the ask waits forever. An explicit,
+    /// discouraged opt-in: an accidental blocking cycle then hangs instead of
+    /// resolving as [`AskError::Timeout`] (#122-#4).
+    pub const fn no_timeout(mut self) -> Self {
+        self.deadline = None;
+        self
+    }
+}
+
+impl<'a, A: Mailboxed, R, E> IntoFuture for AskRequest<'a, A, R, E> {
+    type Output = Result<R, AskError<A::Msg, E>>;
+    type IntoFuture = AskFut<'a, A, R, E>;
+
+    fn into_future(self) -> Self::IntoFuture {
+        let now = Instant::now();
+        AskFut {
+            mailbox: self.mailbox,
+            msg: Some(self.msg),
+            rx: self.rx,
+            // Unrepresentable deadline (clock overflow) degrades to unbounded,
+            // same as the timed tell.
+            deadline: self.deadline.and_then(|deadline| now.checked_add(deadline)),
+            retry_delay: INITIAL_RETRY_DELAY,
+            delivered: false,
+            sleep: sleep_until(now),
+        }
+    }
+}
+
+pin_project! {
+    /// The in-flight future of an awaited [`AskRequest`]: delivers the request
+    /// (bounded-retry, ADR-0008), then awaits the typed reply — one deadline
+    /// across both phases, one timer reused for both.
+    #[must_use = "futures do nothing unless you `.await` or poll them"]
+    pub struct AskFut<'a, A: Mailboxed, R, E> {
+        mailbox: &'a MailboxSender<A>,
+        msg: Option<A::Msg>,
+        rx: ReplyReceiver<R, E>,
+        deadline: Option<Instant>,
+        retry_delay: Duration,
+        delivered: bool,
+        #[pin]
+        sleep: Sleep,
+    }
+}
+
+impl<A: Mailboxed, R, E> Future for AskFut<'_, A, R, E> {
+    type Output = Result<R, AskError<A::Msg, E>>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let mut this = self.project();
+        while !*this.delivered {
+            match attempt_send(this.mailbox, this.msg) {
+                Some(Ok(())) => {
+                    *this.delivered = true;
+                    // Re-aim the retry timer at the deadline itself: whatever
+                    // budget delivery left over now bounds the reply wait.
+                    if let Some(deadline) = *this.deadline {
+                        this.sleep.as_mut().reset(deadline);
+                    }
+                }
+                Some(Err(tell_err)) => return Poll::Ready(Err(AskError::Deliver(tell_err))),
+                None => {
+                    let now = Instant::now();
+                    if this.deadline.is_some_and(|deadline| now >= deadline) {
+                        let Some(msg) = this.msg.take() else {
+                            unreachable!("the failed attempt restored the message")
+                        };
+                        return Poll::Ready(Err(AskError::Deliver(TellError::SendTimeout(msg))));
+                    }
+                    match park_for_retry(
+                        this.sleep.as_mut(),
+                        this.retry_delay,
+                        *this.deadline,
+                        now,
+                        cx,
+                    ) {
+                        Poll::Ready(()) => {}
+                        Poll::Pending => return Poll::Pending,
+                    }
+                }
+            }
+        }
+
+        // Reply phase: the port wins over a simultaneous deadline.
+        if let Poll::Ready(outcome) = this.rx.poll_recv(cx) {
+            return Poll::Ready(outcome);
+        }
+        if this.deadline.is_some() && this.sleep.poll(cx).is_ready() {
+            return Poll::Ready(Err(AskError::Timeout));
+        }
+        Poll::Pending
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
@@ -250,10 +409,11 @@ mod tests {
     use tokio_util::sync::CancellationToken;
 
     use crate::{
-        actor::{Actor, ActorRef},
-        error::TellError,
+        actor::{Actor, ActorRef, Spawn},
+        error::{AskError, TellError},
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
         message::Msg,
+        reply::ReplySender,
         test_support::terminate_bound,
     };
 
@@ -283,12 +443,69 @@ mod tests {
         }
     }
 
-    fn build_ref(cap: usize) -> (ActorRef<Probe>, MailboxReceiver<Probe>) {
+    fn build_unstarted<A: Actor>(cap: usize) -> (ActorRef<A>, MailboxReceiver<A>) {
         let cap = Capacity::try_from(cap).expect("valid capacity");
-        let (tx, rx) = Mailbox::<Probe>::bounded(cap);
+        let (tx, rx) = Mailbox::<A>::bounded(cap);
         let (abort, _reg) = AbortHandle::new_pair();
         let actor_ref = ActorRef::new(ActorId::new(1), tx, CancellationToken::new(), abort);
         (actor_ref, rx)
+    }
+
+    fn build_ref(cap: usize) -> (ActorRef<Probe>, MailboxReceiver<Probe>) {
+        build_unstarted::<Probe>(cap)
+    }
+
+    /// A stand-in domain error — the shape a nexus aggregate's `thiserror`
+    /// enum takes (optimistic-concurrency `Conflict`, …).
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct Conflict;
+
+    /// A real, spawnable actor for the end-to-end ask tests. Each variant
+    /// pins one arm of the ask outcome map.
+    struct Counter {
+        count: u64,
+        parked: Vec<ReplySender<u64, Conflict>>,
+    }
+    #[derive(Debug)]
+    enum CounterMsg {
+        Add(u64),
+        Get { reply: ReplySender<u64, Conflict> },
+        FailingGet { reply: ReplySender<u64, Conflict> },
+        Park { reply: ReplySender<u64, Conflict> },
+        PanicGet { reply: ReplySender<u64, Conflict> },
+    }
+    impl Msg for CounterMsg {}
+    impl Mailboxed for Counter {
+        type Msg = CounterMsg;
+    }
+    impl Actor for Counter {
+        type Args = ();
+        type Error = core::convert::Infallible;
+        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self {
+                count: 0,
+                parked: Vec::new(),
+            })
+        }
+        async fn handle(
+            &mut self,
+            msg: CounterMsg,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            match msg {
+                CounterMsg::Add(n) => self.count += n,
+                CounterMsg::Get { reply } => drop(reply.send(self.count)),
+                CounterMsg::FailingGet { reply } => drop(reply.send_err(Conflict)),
+                CounterMsg::Park { reply } => self.parked.push(reply),
+                CounterMsg::PanicGet {
+                    reply: _dropped_unsent,
+                } => {
+                    panic!("dies mid-handle: the reply port drops unsent")
+                }
+            }
+            Ok(())
+        }
     }
 
     /// Card #118 (defensive boundary): a non-blocking send to a *full* bounded
@@ -419,6 +636,177 @@ mod tests {
                 }
             ),
             "the exact message was enqueued",
+        );
+    }
+
+    /// Sequence: end-to-end ask over a *running* actor — the handler's typed
+    /// `Ok` reply reaches the caller intact (card #118 FINALIZED surface).
+    #[tokio::test]
+    async fn ask_reply_reaches_caller_end_to_end() {
+        let actor_ref = Counter::spawn(());
+        tokio::time::timeout(terminate_bound(), actor_ref.tell(CounterMsg::Add(2)))
+            .await
+            .expect("tell resolves within the bound")
+            .expect("delivered");
+
+        let count = tokio::time::timeout(
+            terminate_bound(),
+            actor_ref.ask(|reply| CounterMsg::Get { reply }),
+        )
+        .await
+        .expect("ask resolves within the bound")
+        .expect("the handler replies");
+
+        assert_eq!(count, 2, "the typed reply arrives intact");
+    }
+
+    /// A handler that answers with its own domain error surfaces as
+    /// `AskError::Handler(E)` — typed, un-erased, never retryable.
+    #[tokio::test]
+    async fn ask_handler_error_reaches_caller_typed() {
+        let actor_ref = Counter::spawn(());
+        let err = tokio::time::timeout(
+            terminate_bound(),
+            actor_ref.ask(|reply| CounterMsg::FailingGet { reply }),
+        )
+        .await
+        .expect("ask resolves within the bound")
+        .expect_err("the handler answers with its domain error");
+
+        assert!(
+            !err.is_retryable(),
+            "a domain error must never be re-driven"
+        );
+        assert_eq!(
+            err.err(),
+            Some(Conflict),
+            "the domain error survives un-erased"
+        );
+    }
+
+    /// `@bug` (card #118, ref #122-#3, sequence/lifecycle): the actor accepts
+    /// the ask, then dies mid-handle (panic; the reply port drops unsent). The
+    /// caller MUST see `AskError::Interrupted` — NOT `ActorNotAlive` (the
+    /// actor was alive at accept) and NOT `Timeout` (no deadline elapsed).
+    #[tokio::test]
+    async fn ask_actor_dies_mid_handle_maps_interrupted() {
+        let actor_ref = Counter::spawn(());
+        let err = tokio::time::timeout(
+            terminate_bound(),
+            actor_ref.ask(|reply| CounterMsg::PanicGet { reply }),
+        )
+        .await
+        .expect("ask resolves within the bound, not a hang")
+        .expect_err("the actor died before replying");
+
+        assert!(
+            matches!(err, AskError::Interrupted),
+            "died-after-accept is Interrupted, not ActorNotAlive/Timeout: {err:?}",
+        );
+    }
+
+    /// Card #118 (defensive/liveness, ref #122-#4 detection):
+    /// `ask_times_out_when_target_saturated` — the target's bounded mailbox
+    /// stays full for the whole deadline, so the ask resolves (never hangs)
+    /// with the *delivery* half timing out: `Deliver(SendTimeout)`, retryable,
+    /// message handed back (it never entered the actor).
+    #[tokio::test(start_paused = true)]
+    async fn ask_times_out_when_target_saturated() {
+        let (actor_ref, _rx) = build_unstarted::<Counter>(1);
+        actor_ref
+            .tell(CounterMsg::Add(1))
+            .try_send()
+            .expect("first message fills the capacity-1 mailbox");
+
+        let err = tokio::time::timeout(
+            terminate_bound(),
+            actor_ref
+                .ask(|reply| CounterMsg::Get { reply })
+                .timeout(Duration::from_millis(50)),
+        )
+        .await
+        .expect("a timed ask must resolve within its deadline, not hang")
+        .expect_err("the mailbox stays full for the whole deadline");
+
+        assert!(
+            err.is_retryable(),
+            "undelivered ask is retryable backpressure"
+        );
+        assert!(
+            matches!(
+                err,
+                AskError::Deliver(TellError::SendTimeout(CounterMsg::Get { .. }))
+            ),
+            "the exact request comes back undelivered: {err:?}",
+        );
+    }
+
+    /// The reply-side timeout: the message *was* delivered but the handler
+    /// never replies (it parks the port), so the deadline resolves to
+    /// `AskError::Timeout` — NOT retryable (the message is already in the
+    /// actor; a re-send would duplicate it) and carrying nothing back.
+    #[tokio::test(start_paused = true)]
+    async fn ask_times_out_when_handler_never_replies() {
+        let actor_ref = Counter::spawn(());
+        let err = tokio::time::timeout(
+            terminate_bound(),
+            actor_ref
+                .ask(|reply| CounterMsg::Park { reply })
+                .timeout(Duration::from_millis(50)),
+        )
+        .await
+        .expect("a timed ask must resolve within its deadline, not hang")
+        .expect_err("the parked handler never replies");
+
+        assert!(
+            matches!(err, AskError::Timeout),
+            "delivered-but-unanswered is Timeout: {err:?}"
+        );
+        assert!(
+            !err.is_retryable(),
+            "the message is already in the actor — a retry would duplicate it",
+        );
+    }
+
+    /// Every ask carries a default deadline (the Erlang `gen_server:call`
+    /// 5000 ms precedent) so an accidental blocking cycle resolves as
+    /// `Timeout` instead of hanging forever (card #118 decision, #122-#4).
+    /// Paused time pins the exact default.
+    #[tokio::test(start_paused = true)]
+    async fn ask_default_timeout_is_five_seconds() {
+        let actor_ref = Counter::spawn(());
+        let start = tokio::time::Instant::now();
+
+        let err = actor_ref
+            .ask(|reply| CounterMsg::Park { reply })
+            .await
+            .expect_err("the parked handler never replies");
+
+        assert!(matches!(err, AskError::Timeout), "got {err:?}");
+        let waited = start.elapsed();
+        assert!(
+            waited >= Duration::from_secs(5) && waited < Duration::from_secs(6),
+            "the default deadline is 5s, waited {waited:?}",
+        );
+    }
+
+    /// The infinite ask is an explicit, discouraged opt-in: with
+    /// `no_timeout()` the ask outlives any deadline — still pending after an
+    /// hour of (paused) clock rather than resolving to `Timeout`.
+    #[tokio::test(start_paused = true)]
+    async fn ask_no_timeout_outlives_the_default_deadline() {
+        let actor_ref = Counter::spawn(());
+        let still_pending = tokio::time::timeout(
+            Duration::from_secs(3600),
+            actor_ref
+                .ask(|reply| CounterMsg::Park { reply })
+                .no_timeout(),
+        )
+        .await;
+
+        assert!(
+            still_pending.is_err(),
+            "no_timeout must wait indefinitely, not resolve to Timeout",
         );
     }
 }

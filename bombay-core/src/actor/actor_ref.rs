@@ -13,7 +13,8 @@ use tokio_util::sync::CancellationToken;
 use crate::{
     actor::Actor,
     mailbox::{ActorId, MailboxSender, WeakMailboxSender},
-    request::TellRequest,
+    reply::ReplySender,
+    request::{AskRequest, TellRequest},
 };
 
 /// A cloneable handle to a running actor: enqueue signals, stop it gracefully,
@@ -85,6 +86,27 @@ impl<A: Actor> ActorRef<A> {
     ///   is [`TellError::MailboxFull`](crate::error::TellError::MailboxFull).
     pub const fn tell(&self, msg: A::Msg) -> TellRequest<'_, A> {
         TellRequest::new(&self.mailbox, msg)
+    }
+
+    /// Prepares a request/reply `ask` (card #118): builds the message around a
+    /// fresh typed reply port and returns an [`AskRequest`] that delivers it
+    /// and awaits the reply on `.await`.
+    ///
+    /// ```ignore
+    /// let count = actor_ref.ask(|reply| CounterMsg::Get { reply }).await?;
+    /// ```
+    ///
+    /// One deadline (default [`DEFAULT_ASK_TIMEOUT`](crate::request::DEFAULT_ASK_TIMEOUT),
+    /// override via [`timeout`](AskRequest::timeout), opt out via
+    /// [`no_timeout`](AskRequest::no_timeout)) budgets delivery *and* reply.
+    /// Handlers must never `ask(..).await` another actor (#122-#4) — that is
+    /// the bounded-mailbox cycle deadlock; the deadline is the backstop, not
+    /// the license.
+    pub fn ask<R, E>(
+        &self,
+        make_msg: impl FnOnce(ReplySender<R, E>) -> A::Msg,
+    ) -> AskRequest<'_, A, R, E> {
+        AskRequest::new(&self.mailbox, make_msg)
     }
 
     /// The sender half of the actor's mailbox — used to enqueue `Signal`s. The
