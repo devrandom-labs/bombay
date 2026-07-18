@@ -265,6 +265,24 @@ impl<A: Mailboxed> Future for TellFut<'_, A> {
     }
 }
 
+/// The carrier an erased ask converts through: the request payload `M` plus
+/// the typed reply port, absorbed into a target's closed menu via
+/// `A::Msg: From<Ask<M, R, E>>`.
+///
+/// This is the ask-capable half of the #145 conversion boundary (ADR-0004):
+/// `Recipient<M>` rides `From<M>`, [`ReplyRecipient`] rides `From<Ask<..>>` —
+/// the menu stays closed and by-value, and the port travels inside the
+/// constructed variant like any hand-written ask variant.
+///
+/// [`ReplyRecipient`]: crate::actor::ReplyRecipient
+#[derive(Debug)]
+pub struct Ask<M, R, E = Infallible> {
+    /// The erased request payload.
+    pub msg: M,
+    /// The typed reply port to embed in the constructed variant.
+    pub reply: ReplySender<R, E>,
+}
+
 /// A prepared `ask`: the request message (already carrying its typed reply
 /// port) and its target, effect deferred until `.await`.
 ///
@@ -408,8 +426,9 @@ mod tests {
     use futures::stream::AbortHandle;
     use tokio_util::sync::CancellationToken;
 
+    use super::Ask;
     use crate::{
-        actor::{Actor, ActorRef, Spawn},
+        actor::{Actor, ActorRef, ReplyRecipient, Spawn},
         error::{AskError, TellError},
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
         message::Msg,
@@ -469,10 +488,22 @@ mod tests {
     #[derive(Debug)]
     enum CounterMsg {
         Add(u64),
-        Get { reply: ReplySender<u64, Conflict> },
-        FailingGet { reply: ReplySender<u64, Conflict> },
-        Park { reply: ReplySender<u64, Conflict> },
-        PanicGet { reply: ReplySender<u64, Conflict> },
+        Get {
+            reply: ReplySender<u64, Conflict>,
+        },
+        GetPlus {
+            extra: u64,
+            reply: ReplySender<u64, Conflict>,
+        },
+        FailingGet {
+            reply: ReplySender<u64, Conflict>,
+        },
+        Park {
+            reply: ReplySender<u64, Conflict>,
+        },
+        PanicGet {
+            reply: ReplySender<u64, Conflict>,
+        },
     }
     impl Msg for CounterMsg {}
     impl Mailboxed for Counter {
@@ -496,6 +527,7 @@ mod tests {
             match msg {
                 CounterMsg::Add(n) => self.count += n,
                 CounterMsg::Get { reply } => drop(reply.send(self.count)),
+                CounterMsg::GetPlus { extra, reply } => drop(reply.send(self.count + extra)),
                 CounterMsg::FailingGet { reply } => drop(reply.send_err(Conflict)),
                 CounterMsg::Park { reply } => self.parked.push(reply),
                 CounterMsg::PanicGet {
@@ -505,6 +537,17 @@ mod tests {
                 }
             }
             Ok(())
+        }
+    }
+
+    // The conversion boundary a `ReplyRecipient<u64, u64, Conflict>` rides on:
+    // the closed menu absorbs an erased `Ask` carrier into its own variant.
+    impl From<Ask<u64, u64, Conflict>> for CounterMsg {
+        fn from(ask: Ask<u64, u64, Conflict>) -> Self {
+            Self::GetPlus {
+                extra: ask.msg,
+                reply: ask.reply,
+            }
         }
     }
 
@@ -807,6 +850,75 @@ mod tests {
         assert!(
             still_pending.is_err(),
             "no_timeout must wait indefinitely, not resolve to Timeout",
+        );
+    }
+
+    /// #145 deferral landed here: the ask-capable erased handle. A
+    /// `ReplyRecipient<M, R, E>` targets any actor whose menu absorbs the
+    /// `Ask<M, R, E>` carrier (`A::Msg: From<Ask<..>>`); the typed reply comes
+    /// back through the erasure intact.
+    #[tokio::test]
+    async fn reply_recipient_ask_round_trips_typed_reply() {
+        let actor_ref = Counter::spawn(());
+        tokio::time::timeout(terminate_bound(), actor_ref.tell(CounterMsg::Add(2)))
+            .await
+            .expect("tell resolves within the bound")
+            .expect("delivered");
+
+        let recipient: ReplyRecipient<u64, u64, Conflict> = actor_ref.reply_recipient();
+        let sum = tokio::time::timeout(terminate_bound(), recipient.ask(40))
+            .await
+            .expect("ask resolves within the bound")
+            .expect("the handler replies");
+
+        assert_eq!(sum, 42, "count 2 + extra 40 arrives typed through erasure");
+    }
+
+    /// Erased delivery failure keeps the typed handback: a reaped target
+    /// surfaces `Deliver(ActorNotAlive(M))` with the exact `M` back (the
+    /// ADR-0004 clone-before-convert price buys this).
+    #[tokio::test]
+    async fn reply_recipient_ask_to_reaped_actor_hands_msg_back() {
+        let (actor_ref, rx) = build_unstarted::<Counter>(1);
+        let recipient: ReplyRecipient<u64, u64, Conflict> = actor_ref.reply_recipient();
+        drop(rx); // reap: the run-loop's receiver is gone
+
+        let err = tokio::time::timeout(terminate_bound(), recipient.ask(7))
+            .await
+            .expect("ask resolves within the bound")
+            .expect_err("the target is reaped");
+
+        assert!(err.is_terminal(), "a reaped target is terminal");
+        assert!(
+            matches!(err, AskError::Deliver(TellError::ActorNotAlive(7))),
+            "the exact M comes back through the erasure: {err:?}",
+        );
+    }
+
+    /// Erased ask against a saturated target: the deadline resolves the
+    /// delivery half as `Deliver(SendTimeout(M))` — retryable, exact `M` back —
+    /// mirroring the typed ask's contract through the erasure.
+    #[tokio::test(start_paused = true)]
+    async fn reply_recipient_ask_times_out_saturated_with_msg_back() {
+        let (actor_ref, _rx) = build_unstarted::<Counter>(1);
+        actor_ref
+            .tell(CounterMsg::Add(1))
+            .try_send()
+            .expect("first message fills the capacity-1 mailbox");
+        let recipient: ReplyRecipient<u64, u64, Conflict> = actor_ref.reply_recipient();
+
+        let err = tokio::time::timeout(
+            terminate_bound(),
+            recipient.ask(9).timeout(Duration::from_millis(50)),
+        )
+        .await
+        .expect("a timed ask must resolve within its deadline, not hang")
+        .expect_err("the mailbox stays full for the whole deadline");
+
+        assert!(err.is_retryable(), "undelivered is retryable backpressure");
+        assert!(
+            matches!(err, AskError::Deliver(TellError::SendTimeout(9))),
+            "the exact M comes back undelivered: {err:?}",
         );
     }
 }

@@ -7,16 +7,19 @@
 //! the message) and enqueues it — only the handle sits behind an `Arc<dyn …>`.
 //! See ADR-0004 and `docs/superpowers/specs/2026-07-13-145-recipient-design.md`.
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use core::{any::type_name, fmt};
 
 use futures::future::BoxFuture;
+use tokio::time::{Instant, timeout};
 
 use crate::{
     actor::{Actor, ActorRef, WeakActorRef},
-    error::TellError,
+    error::{AskError, Infallible, TellError},
     mailbox::{ActorId, TrySendError},
+    reply::{ReplySender, reply_channel},
+    request::{Ask, DEFAULT_ASK_TIMEOUT},
 };
 
 /// The erased operations a [`Recipient<M>`] needs from a concrete actor whose
@@ -238,6 +241,210 @@ impl<A: Actor> ActorRef<A> {
         M: Clone + Send + 'static,
     {
         Recipient::from(self.clone())
+    }
+
+    /// Builds a type-erased ask-capable [`ReplyRecipient<M, R, E>`] for this
+    /// actor: its closed menu must absorb the carrier
+    /// (`A::Msg: From<Ask<M, R, E>>`). The #145 deferral, landed by #118.
+    #[must_use]
+    pub fn reply_recipient<M, R, E>(&self) -> ReplyRecipient<M, R, E>
+    where
+        A::Msg: From<Ask<M, R, E>>,
+        M: Clone + Send + 'static,
+        R: Send + 'static,
+        E: Send + 'static,
+    {
+        ReplyRecipient::from(self.clone())
+    }
+}
+
+/// The erased operations a [`ReplyRecipient<M, R, E>`] needs: deliver an
+/// [`Ask`] carrier within an optional budget, plus the identity surface.
+trait ErasedReplyRecipient<M, R, E>: Send + Sync {
+    /// Convert `(M, port) -> A::Msg` and deliver, waiting at most `budget`
+    /// (`None` = wait forever). Failure hands the retained `M` back.
+    fn deliver(
+        &self,
+        msg: M,
+        reply: ReplySender<R, E>,
+        budget: Option<Duration>,
+    ) -> BoxFuture<'_, Result<(), TellError<M>>>;
+    fn id(&self) -> ActorId;
+    fn is_alive(&self) -> bool;
+}
+
+impl<A, M, R, E> ErasedReplyRecipient<M, R, E> for ActorRef<A>
+where
+    A: Actor,
+    A::Msg: From<Ask<M, R, E>>,
+    M: Clone + Send + 'static,
+    R: Send + 'static,
+    E: Send + 'static,
+{
+    fn deliver(
+        &self,
+        msg: M,
+        reply: ReplySender<R, E>,
+        budget: Option<Duration>,
+    ) -> BoxFuture<'_, Result<(), TellError<M>>> {
+        Box::pin(async move {
+            // Clone `M` before converting (ADR-0004): erasure leaves no
+            // `A::Msg -> M` path, so the retained original is the only way to
+            // hand a typed `M` back on failure.
+            let converted = A::Msg::from(Ask {
+                msg: msg.clone(),
+                reply,
+            });
+            let outcome = match budget {
+                Some(bound) => self.tell(converted).timeout(bound).await,
+                None => self.tell(converted).await,
+            };
+            outcome.map_err(|err| err.map_msg(|_converted| msg))
+        })
+    }
+
+    fn id(&self) -> ActorId {
+        Self::id(self)
+    }
+
+    fn is_alive(&self) -> bool {
+        Self::is_alive(self)
+    }
+}
+
+/// A cloneable, type-erased **ask-capable** handle: delivers `M` to some actor
+/// whose menu absorbs `Ask<M, R, E>` and awaits the typed `Result<R, E>` reply.
+///
+/// The ask-side sibling of [`Recipient`] (ADR-0004): same conversion-boundary
+/// erasure, same `M: Clone` typed-handback price, same narrow surface (no
+/// `stop`/`kill`). Deadlines mirror the typed ask builder: default
+/// [`DEFAULT_ASK_TIMEOUT`], `.timeout(d)` / `.no_timeout()` on the returned
+/// request.
+pub struct ReplyRecipient<M, R, E = Infallible> {
+    inner: Arc<dyn ErasedReplyRecipient<M, R, E>>,
+}
+
+impl<M, R, E> Clone for ReplyRecipient<M, R, E> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: Arc::clone(&self.inner),
+        }
+    }
+}
+
+impl<M, R, E> fmt::Debug for ReplyRecipient<M, R, E> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ReplyRecipient")
+            .field("id", &self.inner.id())
+            .field("msg", &type_name::<M>())
+            .finish_non_exhaustive()
+    }
+}
+
+impl<M, R, E> ReplyRecipient<M, R, E> {
+    /// Prepares an erased ask of `msg` — consume with `.await`; override the
+    /// [default](DEFAULT_ASK_TIMEOUT) deadline via
+    /// [`timeout`](RecipientAskRequest::timeout) /
+    /// [`no_timeout`](RecipientAskRequest::no_timeout).
+    pub const fn ask(&self, msg: M) -> RecipientAskRequest<'_, M, R, E> {
+        RecipientAskRequest {
+            recipient: self,
+            msg,
+            deadline: Some(DEFAULT_ASK_TIMEOUT),
+        }
+    }
+
+    /// The target actor's identity, preserved through erasure.
+    #[must_use]
+    pub fn id(&self) -> ActorId {
+        self.inner.id()
+    }
+
+    /// Whether the target's mailbox is still open (send-and-observe, never a
+    /// pre-send gate).
+    #[must_use]
+    pub fn is_alive(&self) -> bool {
+        self.inner.is_alive()
+    }
+}
+
+impl<A, M, R, E> From<ActorRef<A>> for ReplyRecipient<M, R, E>
+where
+    A: Actor,
+    A::Msg: From<Ask<M, R, E>>,
+    M: Clone + Send + 'static,
+    R: Send + 'static,
+    E: Send + 'static,
+{
+    fn from(actor_ref: ActorRef<A>) -> Self {
+        Self {
+            inner: Arc::new(actor_ref),
+        }
+    }
+}
+
+/// A prepared erased ask (see [`ReplyRecipient::ask`]) — consume with `.await`.
+///
+/// One deadline budgets delivery *and* reply, exactly like the typed
+/// [`AskRequest`](crate::request::AskRequest): expiry during delivery is
+/// `Deliver(SendTimeout(M))` (retryable, `M` back); after delivery it is
+/// [`AskError::Timeout`]. The erased path boxes its future (the `dyn` async
+/// cost, ADR-0004) — never the message.
+#[must_use = "an ask does nothing until awaited"]
+pub struct RecipientAskRequest<'a, M, R, E> {
+    recipient: &'a ReplyRecipient<M, R, E>,
+    msg: M,
+    deadline: Option<Duration>,
+}
+
+impl<M, R, E> RecipientAskRequest<'_, M, R, E> {
+    /// Replaces the [default](DEFAULT_ASK_TIMEOUT) deadline with `deadline`.
+    pub const fn timeout(mut self, deadline: Duration) -> Self {
+        self.deadline = Some(deadline);
+        self
+    }
+
+    /// Removes the deadline entirely — the ask waits forever. An explicit,
+    /// discouraged opt-in (#122-#4).
+    pub const fn no_timeout(mut self) -> Self {
+        self.deadline = None;
+        self
+    }
+}
+
+impl<'a, M, R, E> IntoFuture for RecipientAskRequest<'a, M, R, E>
+where
+    M: Clone + Send + 'static,
+    R: Send + 'static,
+    E: Send + 'static,
+{
+    type Output = Result<R, AskError<M, E>>;
+    type IntoFuture = BoxFuture<'a, Self::Output>;
+
+    fn into_future(self) -> Self::IntoFuture {
+        Box::pin(async move {
+            let (reply_sender, receiver) = reply_channel::<R, E>();
+            let start = Instant::now();
+            self.recipient
+                .inner
+                .deliver(self.msg, reply_sender, self.deadline)
+                .await
+                .map_err(AskError::Deliver)?;
+
+            match self.deadline {
+                None => receiver.recv().await,
+                Some(deadline) => {
+                    // Whatever budget delivery left bounds the reply wait;
+                    // flooring at zero is the semantics (budget exhausted →
+                    // immediate reply-side deadline), not an overflow dodge.
+                    let remaining = deadline.saturating_sub(start.elapsed());
+                    match timeout(remaining, receiver.recv()).await {
+                        Ok(outcome) => outcome,
+                        Err(_elapsed) => Err(AskError::Timeout),
+                    }
+                }
+            }
+        })
     }
 }
 
