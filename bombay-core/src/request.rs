@@ -532,9 +532,10 @@ mod tests {
                 CounterMsg::FailingGet { reply } => drop(reply.send_err(Conflict)),
                 CounterMsg::Park { reply } => self.parked.push(reply),
                 CounterMsg::ReplyParked => {
-                    for reply in self.parked.drain(..) {
-                        drop(reply.send(self.count));
-                    }
+                    let count = self.count;
+                    self.parked.drain(..).for_each(|reply| {
+                        let _ = reply.send(count);
+                    });
                 }
                 CounterMsg::PanicGet {
                     reply: _dropped_unsent,

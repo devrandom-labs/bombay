@@ -8,6 +8,27 @@ use core::sync::atomic::{AtomicIsize, Ordering};
 use core::time::Duration;
 use std::alloc::{GlobalAlloc, Layout, System};
 
+use futures::stream::AbortHandle;
+use tokio_util::sync::CancellationToken;
+
+use crate::{
+    actor::{Actor, ActorRef},
+    mailbox::{ActorId, MailboxReceiver, MailboxSender},
+};
+
+/// Assembles an [`ActorRef`] over a raw mailbox pair **without spawning a
+/// run-loop** (card #118's allocation tests drive the receiver by hand). The
+/// external-test sibling of the in-crate `ActorRef::new` scaffold: `tests/*.rs`
+/// link the lib externally and cannot reach `pub(crate)`.
+#[must_use]
+pub fn unstarted_actor<A: Actor>(
+    (tx, rx): (MailboxSender<A>, MailboxReceiver<A>),
+) -> (ActorRef<A>, MailboxReceiver<A>) {
+    let (abort, _registration) = AbortHandle::new_pair();
+    let actor_ref = ActorRef::new(ActorId::new(0), tx, CancellationToken::new(), abort);
+    (actor_ref, rx)
+}
+
 /// The fail-fast bound for a "this must terminate" await (card #148): a
 /// regression that hangs the loop FAILS here instead of stalling the suite.
 ///
@@ -53,6 +74,7 @@ pub struct CountingAlloc {
     inner: System,
     live_bytes: AtomicIsize,
     live_allocs: AtomicIsize,
+    gross_allocs: AtomicIsize,
 }
 
 impl CountingAlloc {
@@ -63,6 +85,7 @@ impl CountingAlloc {
             inner,
             live_bytes: AtomicIsize::new(0),
             live_allocs: AtomicIsize::new(0),
+            gross_allocs: AtomicIsize::new(0),
         }
     }
 
@@ -73,6 +96,16 @@ impl CountingAlloc {
             bytes: self.live_bytes.load(Ordering::Relaxed),
             allocs: self.live_allocs.load(Ordering::Relaxed),
         }
+    }
+
+    /// Monotonic count of every successful allocation ever (never decremented
+    /// by frees). Delta two readings around an operation to assert its **gross**
+    /// allocation count — a transient alloc-then-free that live counters cancel
+    /// out still shows here (card #118's `tell`-zero-alloc / `ask`-one-alloc
+    /// claims are gross claims).
+    #[must_use]
+    pub fn gross_allocs(&self) -> isize {
+        self.gross_allocs.load(Ordering::Relaxed)
     }
 }
 
@@ -95,6 +128,7 @@ unsafe impl GlobalAlloc for CountingAlloc {
             self.live_bytes
                 .fetch_add(layout_bytes(layout), Ordering::Relaxed);
             self.live_allocs.fetch_add(1, Ordering::Relaxed);
+            self.gross_allocs.fetch_add(1, Ordering::Relaxed);
         }
         ptr
     }
