@@ -25,6 +25,9 @@ thiserror = { workspace = true }
 downcast-rs = { workspace = true }
 
 [dev-dependencies]
+# The vendored kameo fork — dev-only, for the head-to-head request bench
+# (`benches/request_vs_kameo.rs`). The production crate never depends on it.
+bombay = { workspace = true }
 tokio = { workspace = true, features = [
   "rt",
   "rt-multi-thread",
@@ -43,6 +46,10 @@ bombay_macros = { path = "../macros" }
 
 [[bench]]
 name = "mailbox"
+harness = false
+
+[[bench]]
+name = "request_vs_kameo"
 harness = false
 
 [[bench]]

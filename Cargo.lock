@@ -475,6 +475,7 @@ name = "bombay-core"
 version = "0.1.0"
 dependencies = [
  "async-channel",
+ "bombay",
  "bombay-core",
  "bombay_macros",
  "criterion",
