@@ -27,10 +27,15 @@ static COUNTER: CountingAlloc = CountingAlloc::new(System);
 
 struct Probe;
 
+// The `Note` payload is a `Copy` stand-in for a real command (nothing heap);
+// only its size matters to the measurement, so it is deliberately never read.
 #[derive(Debug)]
 enum ProbeMsg {
+    #[expect(dead_code, reason = "payload exists for its size, not its value")]
     Note(u64),
-    Get { reply: ReplySender<u64> },
+    Get {
+        reply: ReplySender<u64>,
+    },
 }
 impl Msg for ProbeMsg {}
 impl Mailboxed for Probe {
