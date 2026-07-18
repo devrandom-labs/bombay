@@ -498,6 +498,7 @@ mod tests {
         FailingGet {
             reply: ReplySender<u64, Conflict>,
         },
+        ReplyParked,
         Park {
             reply: ReplySender<u64, Conflict>,
         },
@@ -530,6 +531,11 @@ mod tests {
                 CounterMsg::GetPlus { extra, reply } => drop(reply.send(self.count + extra)),
                 CounterMsg::FailingGet { reply } => drop(reply.send_err(Conflict)),
                 CounterMsg::Park { reply } => self.parked.push(reply),
+                CounterMsg::ReplyParked => {
+                    for reply in self.parked.drain(..) {
+                        drop(reply.send(self.count));
+                    }
+                }
                 CounterMsg::PanicGet {
                     reply: _dropped_unsent,
                 } => {
@@ -920,5 +926,93 @@ mod tests {
             matches!(err, AskError::Deliver(TellError::SendTimeout(9))),
             "the exact M comes back undelivered: {err:?}",
         );
+    }
+
+    /// **Delegated reply is structural** (#115 deferral resolved on #118): the
+    /// port is a plain value in the message, so a handler delegates by simply
+    /// *keeping* it and replying from a later handle call — no `DelegatedReply`
+    /// marker type exists or is needed (kameo needed one to suppress its
+    /// implicit auto-reply; bombay has no auto-reply to suppress).
+    #[tokio::test]
+    async fn delegated_reply_arrives_from_a_later_handle_call() {
+        let actor_ref = Counter::spawn(());
+
+        let asker = actor_ref.clone();
+        let pending =
+            tokio::spawn(async move { asker.ask(|reply| CounterMsg::Park { reply }).await });
+        tokio::task::yield_now().await;
+
+        // Two later messages: one mutates state, one releases the parked port.
+        tokio::time::timeout(terminate_bound(), actor_ref.tell(CounterMsg::Add(5)))
+            .await
+            .expect("bound")
+            .expect("delivered");
+        tokio::time::timeout(terminate_bound(), actor_ref.tell(CounterMsg::ReplyParked))
+            .await
+            .expect("bound")
+            .expect("delivered");
+
+        let replied = tokio::time::timeout(terminate_bound(), pending)
+            .await
+            .expect("the delegated ask resolves within the bound")
+            .expect("asker task");
+        assert_eq!(
+            replied.ok(),
+            Some(5),
+            "the delegated reply reflects state changed AFTER the original ask",
+        );
+    }
+
+    /// **Forwarded reply is structural**: the port is `Send`, so a front actor
+    /// forwards an ask by moving the port into a message to a second actor,
+    /// which replies directly to the original asker — no `ForwardedReply` type.
+    #[tokio::test]
+    async fn forwarded_reply_comes_from_the_second_actor() {
+        struct Front {
+            back: ActorRef<Counter>,
+        }
+        #[derive(Debug)]
+        enum FrontMsg {
+            ForwardGet { reply: ReplySender<u64, Conflict> },
+        }
+        impl Msg for FrontMsg {}
+        impl Mailboxed for Front {
+            type Msg = FrontMsg;
+        }
+        impl Actor for Front {
+            type Args = ActorRef<Counter>;
+            type Error = core::convert::Infallible;
+            async fn on_start(back: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self { back })
+            }
+            async fn handle(
+                &mut self,
+                FrontMsg::ForwardGet { reply }: FrontMsg,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                // Forwarding = moving the port into another actor's message.
+                // Fire-and-forget (#122-#4 discipline: no ask().await here).
+                drop(self.back.tell(CounterMsg::Get { reply }).try_send());
+                Ok(())
+            }
+        }
+
+        let back = Counter::spawn(());
+        tokio::time::timeout(terminate_bound(), back.tell(CounterMsg::Add(11)))
+            .await
+            .expect("bound")
+            .expect("delivered");
+        let front = Front::spawn(back);
+
+        let count = tokio::time::timeout(
+            terminate_bound(),
+            front.ask(|reply| FrontMsg::ForwardGet { reply }),
+        )
+        .await
+        .expect("the forwarded ask resolves within the bound")
+        .expect("the BACK actor replies through the forwarded port");
+
+        assert_eq!(count, 11, "the reply came from the second actor's state");
     }
 }

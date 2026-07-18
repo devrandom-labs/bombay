@@ -10,8 +10,13 @@
 //! behind [`ReplySender`] / [`ReplyReceiver`] — the mailbox channel-seam
 //! philosophy (ADR-0001): swap the primitive for M6 / `no_std` at the second impl.
 //!
-//! Out of scope (deferred to their machinery): `DelegatedReply` / `ForwardedReply`
-//! are produced only by `Context::reply_sender`/`forward` (#116/#118).
+//! kameo's `DelegatedReply` / `ForwardedReply` marker types (and the `Context`
+//! that produced them) were **not carried over** — resolved on card #118: with
+//! the port riding *inside* the message as a plain value, delegation is just
+//! keeping the [`ReplySender`] for later and forwarding is just moving it into
+//! another actor's message. Both are pinned by tests in `crate::request`
+//! (`delegated_reply_arrives_from_a_later_handle_call`,
+//! `forwarded_reply_comes_from_the_second_actor`).
 
 use std::{
     fmt,
