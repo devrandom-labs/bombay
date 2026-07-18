@@ -10,8 +10,20 @@
 //! behind [`ReplySender`] / [`ReplyReceiver`] — the mailbox channel-seam
 //! philosophy (ADR-0001): swap the primitive for M6 / `no_std` at the second impl.
 //!
-//! Out of scope (deferred to their machinery): `DelegatedReply` / `ForwardedReply`
-//! are produced only by `Context::reply_sender`/`forward` (#116/#118).
+//! kameo's `DelegatedReply` / `ForwardedReply` marker types (and the `Context`
+//! that produced them) were **not carried over** — resolved on card #118: with
+//! the port riding *inside* the message as a plain value, delegation is just
+//! keeping the [`ReplySender`] for later and forwarding is just moving it into
+//! another actor's message. Both are pinned by tests in `crate::request`
+//! (`delegated_reply_arrives_from_a_later_handle_call`,
+//! `forwarded_reply_comes_from_the_second_actor`).
+
+use std::{
+    fmt,
+    future::{Future, poll_fn},
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 use tokio::sync::oneshot;
 
@@ -64,6 +76,19 @@ pub struct ReplyReceiver<R, E = Infallible> {
 }
 
 impl<R, E> ReplyReceiver<R, E> {
+    /// Poll-form of [`recv`](Self::recv): the seam the #118 ask future embeds
+    /// (a hand-named future needs a pollable part, not an opaque `async fn`).
+    /// The oneshot receiver is `Unpin`, so `&mut self` suffices.
+    pub(crate) fn poll_recv<M>(&mut self, cx: &mut Context<'_>) -> Poll<Result<R, AskError<M, E>>> {
+        Pin::new(&mut self.rx)
+            .poll(cx)
+            .map(|outcome| match outcome {
+                Ok(Ok(reply)) => Ok(reply),
+                Ok(Err(handler_err)) => Err(AskError::Handler(handler_err)),
+                Err(_recv_error) => Err(AskError::Interrupted),
+            })
+    }
+
     /// Awaits the one reply, mapped into the typed [`AskError`].
     ///
     /// The outcome map: `Ok(Ok r) → Ok(r)`, `Ok(Err e) → Handler(e)`, and a
@@ -76,12 +101,23 @@ impl<R, E> ReplyReceiver<R, E> {
     ///
     /// [`AskError::Handler`] if the handler replied with its domain error `E`, or
     /// [`AskError::Interrupted`] if the sender was dropped before replying.
-    pub async fn recv<M>(self) -> Result<R, AskError<M, E>> {
-        match self.rx.await {
-            Ok(Ok(reply)) => Ok(reply),
-            Ok(Err(handler_err)) => Err(AskError::Handler(handler_err)),
-            Err(_recv_error) => Err(AskError::Interrupted),
-        }
+    pub async fn recv<M>(mut self) -> Result<R, AskError<M, E>> {
+        poll_fn(|cx| self.poll_recv(cx)).await
+    }
+}
+
+// A reply port is an opaque capability — its `Debug` names it without demanding
+// `R: Debug`/`E: Debug`, so a `Msg` enum embedding a port can still derive
+// `Debug` (the #114 closed-menu enums do exactly that).
+impl<R, E> fmt::Debug for ReplySender<R, E> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("ReplySender")
+    }
+}
+
+impl<R, E> fmt::Debug for ReplyReceiver<R, E> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("ReplyReceiver")
     }
 }
 
@@ -113,6 +149,18 @@ mod tests {
     /// enum takes (optimistic-concurrency `Conflict`, …).
     #[derive(Debug, Clone, PartialEq, Eq)]
     struct Conflict;
+
+    /// The port halves name themselves in `Debug` without demanding
+    /// `R: Debug`/`E: Debug` — guards the hand-written impls against being
+    /// stubbed to an empty formatter (the #118 mutation sweep caught exactly
+    /// that surviving).
+    #[test]
+    fn reply_port_debug_names_the_halves() {
+        struct Opaque; // deliberately not Debug
+        let (tx, rx) = reply_channel::<Opaque, Opaque>();
+        assert_eq!(format!("{tx:?}"), "ReplySender");
+        assert_eq!(format!("{rx:?}"), "ReplyReceiver");
+    }
 
     /// Sequence: a handler's `Ok` reply reaches the caller, typed and intact.
     #[tokio::test]

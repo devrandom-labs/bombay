@@ -42,6 +42,7 @@
 
 use core::convert::Infallible;
 use std::{
+    future::IntoFuture,
     sync::{
         Arc,
         atomic::{AtomicU32, Ordering},
@@ -53,9 +54,10 @@ use tokio::{sync::oneshot, time::timeout};
 
 use bombay_core::{
     actor::{Actor, ActorRef, PreparedActor, RunResult, WeakActorRef},
-    error::ActorStopReason,
+    error::{ActorStopReason, AskError, TellError},
     mailbox::{Capacity, Mailboxed, Signal},
     message::Msg,
+    reply::ReplySender,
     test_support::terminate_bound,
 };
 
@@ -655,4 +657,140 @@ async fn kill_after_normal_completion_is_a_noop() {
         1,
         "on_stop ran exactly once; kill added nothing"
     );
+}
+
+// ---------------------------------------------------------------------------
+// #118 / #122-#4 — DST: a saturated cyclic topology under the handler
+// discipline (fire-and-forget + self-continuation, never ask().await) stays
+// live: every request resolves or times out; nothing hangs forever.
+// ---------------------------------------------------------------------------
+
+/// A ring node: forwards work to the next node **without ever blocking its
+/// own loop** — `try_send`, shedding on backpressure — and answers external
+/// probes through the typed port. This is the #118 decision's discipline
+/// encoded as code; the deadlock (each handler parked on the next full
+/// mailbox, all four Coffman conditions) is impossible without a blocking
+/// wait inside `handle`.
+struct Node {
+    next: Option<ActorRef<Node>>,
+    processed: u64,
+}
+#[derive(Debug)]
+enum NodeMsg {
+    SetNext(ActorRef<Node>),
+    Work { hops: u32 },
+    Probe { reply: ReplySender<u64> },
+}
+impl Msg for NodeMsg {}
+impl Mailboxed for Node {
+    type Msg = NodeMsg;
+}
+impl Actor for Node {
+    type Args = ();
+    type Error = Infallible;
+    async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Ok(Self {
+            next: None,
+            processed: 0,
+        })
+    }
+    async fn handle(
+        &mut self,
+        msg: NodeMsg,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        match msg {
+            NodeMsg::SetNext(next) => self.next = Some(next),
+            NodeMsg::Work { hops } => {
+                self.processed += 1;
+                if hops > 0 {
+                    if let Some(next) = &self.next {
+                        // Fire-and-forget: a full peer sheds the hop instead
+                        // of parking this loop (the discipline under test).
+                        let _ = next.tell(NodeMsg::Work { hops: hops - 1 }).try_send();
+                    }
+                }
+            }
+            NodeMsg::Probe { reply } => {
+                let _ = reply.send(self.processed);
+            }
+        }
+        Ok(())
+    }
+}
+
+/// `cyclic_topology_never_deadlocks` (card #118, seeded): a 3-node ring of
+/// capacity-1 mailboxes is stormed with seeded work injections while an
+/// external client asks every node under a deadline. Invariants, per seed:
+/// every concurrent ask RESOLVES within the fail-fast bound (reply, or a
+/// timeout variant — never a hang), and after the storm drains the ring is
+/// still live (a quiescent ask succeeds and every node did real work).
+#[tokio::test(start_paused = true)]
+async fn cyclic_topology_never_deadlocks() {
+    for seed in [0xDEAD_BEEF_u64, 42, 7, 0xBAD_C0FFE] {
+        let nodes: Vec<ActorRef<Node>> = (0..3)
+            .map(|_| {
+                use bombay_core::actor::Spawn as _;
+                Node::spawn_with_capacity(cap(1), ())
+            })
+            .collect();
+        for (i, node) in nodes.iter().enumerate() {
+            let next = nodes[(i + 1) % nodes.len()].clone();
+            timeout(TERMINATE, node.tell(NodeMsg::SetNext(next)))
+                .await
+                .expect("ring wiring must deliver within the bound")
+                .expect("delivered");
+        }
+
+        // Guarantee every node sees at least one unit of circulating work…
+        for node in &nodes {
+            timeout(TERMINATE, node.tell(NodeMsg::Work { hops: 6 }))
+                .await
+                .expect("work seeding must deliver within the bound")
+                .expect("delivered");
+        }
+        // …then storm the saturated ring in a seed-determined pattern (an LCG;
+        // sheds on Full are expected and part of the discipline).
+        let mut lcg = seed;
+        for _ in 0..64 {
+            lcg = lcg.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            let target = &nodes[(lcg >> 33) as usize % nodes.len()];
+            let hops = ((lcg >> 8) % 8) as u32;
+            let _ = target.tell(NodeMsg::Work { hops }).try_send();
+        }
+
+        // Concurrent external asks under a deadline, against the live storm.
+        let asks = nodes.iter().map(|node| {
+            node.ask(|reply| NodeMsg::Probe { reply })
+                .timeout(Duration::from_millis(100))
+                .into_future()
+        });
+        let outcomes = timeout(TERMINATE, futures::future::join_all(asks))
+            .await
+            .expect("every ask must RESOLVE within the fail-fast bound — a hang here is the #122-#4 deadlock");
+        for outcome in outcomes {
+            assert!(
+                matches!(
+                    outcome,
+                    Ok(_)
+                        | Err(AskError::Timeout)
+                        | Err(AskError::Deliver(TellError::SendTimeout(_)))
+                ),
+                "an ask resolves with a reply or a timeout, never another failure: {outcome:?}",
+            );
+        }
+
+        // Liveness after the storm: the ring drains and still answers.
+        for node in &nodes {
+            let processed = timeout(TERMINATE, node.ask(|reply| NodeMsg::Probe { reply }))
+                .await
+                .expect("a quiescent ask must resolve within the bound")
+                .expect("a drained ring answers");
+            assert!(
+                processed >= 1,
+                "every node did real work during the storm (seed {seed:#x})",
+            );
+        }
+    }
 }

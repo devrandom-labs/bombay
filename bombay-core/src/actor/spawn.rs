@@ -278,7 +278,7 @@ mod tests {
     /// whole test binary — reported as a 20 s **timeout** rather than a caught
     /// mutant. Mirrors the inline `timeout(terminate_bound(), …)` already used
     /// across this module, extracted so the fix reads uniformly.
-    async fn bounded<F: Future>(fut: F) -> F::Output {
+    async fn bounded<F: IntoFuture>(fut: F) -> F::Output {
         tokio::time::timeout(terminate_bound(), fut)
             .await
             .expect("actor lifecycle op must terminate, not hang")

@@ -12,7 +12,7 @@
 //! same loop is MIRI-covered by `bombay-core`'s `#[tokio::test]` cases (the
 //! miri lane drives `PreparedActor::run` green — ADR-0005).
 
-use std::future::Future;
+use std::future::IntoFuture;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
@@ -171,7 +171,7 @@ impl Actor for StopPanics {
 /// Bounds every lifecycle await so a regression that stalls the loop FAILS via
 /// the MIRI-aware timeout instead of hanging (a hang reports as a cargo-mutants
 /// TIMEOUT rather than a caught mutant — #148/#179).
-async fn bounded<F: Future>(fut: F) -> F::Output {
+async fn bounded<F: IntoFuture>(fut: F) -> F::Output {
     tokio::time::timeout(terminate_bound(), fut)
         .await
         .expect("actor lifecycle op must terminate, not hang")

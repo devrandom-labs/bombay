@@ -12,8 +12,9 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     actor::Actor,
-    error::TellError,
     mailbox::{ActorId, MailboxSender, WeakMailboxSender},
+    reply::ReplySender,
+    request::{AskRequest, TellRequest},
 };
 
 /// A cloneable handle to a running actor: enqueue signals, stop it gracefully,
@@ -75,19 +76,37 @@ impl<A: Actor> ActorRef<A> {
         !self.mailbox.is_closed()
     }
 
-    /// Enqueues `msg` for the actor, waiting for mailbox capacity if it is full
-    /// (fire-and-forget). The ergonomic ask/tell **builders** — timeout, `try`,
-    /// blocking variants — are card #118; this is the basic entry point.
+    /// Prepares a fire-and-forget send of `msg` (card #118). The returned
+    /// [`TellRequest`] does nothing until consumed:
     ///
-    /// # Errors
+    /// - `.await` — waits for mailbox capacity (backpressure), resolving to
+    ///   [`TellError::ActorNotAlive`](crate::error::TellError::ActorNotAlive)
+    ///   with `msg` handed back if the actor has stopped.
+    /// - [`.try_send()`](TellRequest::try_send) — non-blocking; a full mailbox
+    ///   is [`TellError::MailboxFull`](crate::error::TellError::MailboxFull).
+    pub const fn tell(&self, msg: A::Msg) -> TellRequest<'_, A> {
+        TellRequest::new(&self.mailbox, msg)
+    }
+
+    /// Prepares a request/reply `ask` (card #118): builds the message around a
+    /// fresh typed reply port and returns an [`AskRequest`] that delivers it
+    /// and awaits the reply on `.await`.
     ///
-    /// [`TellError::ActorNotAlive`] (carrying `msg` back) if the actor has
-    /// stopped. Terminal — the target is gone, so a retry loop must not re-send.
-    pub async fn tell(&self, msg: A::Msg) -> Result<(), TellError<A::Msg>> {
-        self.mailbox
-            .send_message(msg)
-            .await
-            .map_err(TellError::ActorNotAlive)
+    /// ```ignore
+    /// let count = actor_ref.ask(|reply| CounterMsg::Get { reply }).await?;
+    /// ```
+    ///
+    /// One deadline (default [`DEFAULT_ASK_TIMEOUT`](crate::request::DEFAULT_ASK_TIMEOUT),
+    /// override via [`timeout`](AskRequest::timeout), opt out via
+    /// [`no_timeout`](AskRequest::no_timeout)) budgets delivery *and* reply.
+    /// Handlers must never `ask(..).await` another actor (#122-#4) — that is
+    /// the bounded-mailbox cycle deadlock; the deadline is the backstop, not
+    /// the license.
+    pub fn ask<R, E>(
+        &self,
+        make_msg: impl FnOnce(ReplySender<R, E>) -> A::Msg,
+    ) -> AskRequest<'_, A, R, E> {
+        AskRequest::new(&self.mailbox, make_msg)
     }
 
     /// The sender half of the actor's mailbox — used to enqueue `Signal`s. The
@@ -194,6 +213,7 @@ mod tests {
     use tokio_util::sync::CancellationToken;
 
     use crate::{
+        error::TellError,
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed},
         message::Msg,
     };

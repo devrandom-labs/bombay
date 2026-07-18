@@ -18,18 +18,23 @@ test-support = []
 [dependencies]
 tokio = { workspace = true, features = ["sync", "rt", "macros", "time"] }
 flume = { workspace = true }
+pin-project-lite = { workspace = true }
 tokio-util = { workspace = true }
 futures = { workspace = true }
 thiserror = { workspace = true }
 downcast-rs = { workspace = true }
 
 [dev-dependencies]
+# The vendored kameo fork — dev-only, for the head-to-head request bench
+# (`benches/request_vs_kameo.rs`). The production crate never depends on it.
+bombay = { workspace = true }
 tokio = { workspace = true, features = [
   "rt",
   "rt-multi-thread",
   "macros",
   "sync",
   "time",
+  "test-util",
 ] }
 proptest = { workspace = true }
 criterion = { version = "0.8", features = ["async_tokio"] }
@@ -41,6 +46,10 @@ bombay_macros = { path = "../macros" }
 
 [[bench]]
 name = "mailbox"
+harness = false
+
+[[bench]]
+name = "request_vs_kameo"
 harness = false
 
 [[bench]]

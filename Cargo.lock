@@ -475,6 +475,7 @@ name = "bombay-core"
 version = "0.1.0"
 dependencies = [
  "async-channel",
+ "bombay",
  "bombay-core",
  "bombay_macros",
  "criterion",
@@ -482,6 +483,7 @@ dependencies = [
  "downcast-rs 2.0.2",
  "flume",
  "futures",
+ "pin-project-lite",
  "proptest",
  "thingbuf",
  "thiserror 2.0.18",

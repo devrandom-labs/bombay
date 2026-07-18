@@ -1571,13 +1571,17 @@ async fn law_intensity_window(_world: &mut SupervisionWorld) {
             for burst in 0..12usize {
                 let elapsed = elapsed_samples[burst % elapsed_samples.len()];
                 // Backdate the spec's last_restart so should_restart sees an
-                // elapsed of `elapsed + ε`, where ε > 0 is the unavoidable real
-                // time between this backdate and should_restart's own
-                // `Instant::now()` read (links.rs:250). The SUT resets when
-                // `elapsed + ε > w`; since ε is sub-millisecond and the samples
-                // sit on a ms grid, that is exactly `elapsed >= w`. The oracle
-                // mirrors the SUT's REAL-clock comparison with `>=`, not `>`.
-                spec.last_restart = Instant::now() - elapsed;
+                // elapsed of `elapsed + 1ns + ε`, where ε ≥ 0 is whatever real
+                // time passes before should_restart's own `Instant::now()` read
+                // (links.rs:279, a STRICT `>` against the window). The explicit
+                // +1ns is load-bearing: ε alone is NOT guaranteed positive (two
+                // back-to-back Instant::now() calls can be equal — observed on
+                // Apple Silicon), and with w = ZERO, elapsed = 0 and ε = 0 the
+                // strict SUT comparison `0 > 0` skips the reset the `>=` oracle
+                // performs. With the nanosecond floor, `elapsed + 1ns + ε > w`
+                // is exactly `elapsed >= w` on the ms-grid samples (margins
+                // ≥ 10ms), which is what the oracle mirrors.
+                spec.last_restart = Instant::now() - elapsed - Duration::from_nanos(1);
                 if elapsed >= w {
                     ref_count = 0;
                 }

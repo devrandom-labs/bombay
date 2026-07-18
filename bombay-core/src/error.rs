@@ -33,13 +33,22 @@ pub enum TellError<M = ()> {
     /// nothing was delivered, so re-sending the returned message is safe.
     #[error("mailbox full")]
     MailboxFull(M),
+    /// The blocking send waited its full deadline without a mailbox slot
+    /// freeing. **Retryable** — the timed send owns the message for the whole
+    /// wait (guaranteed handback, ADR-0008), so nothing was delivered and
+    /// re-sending is safe. Distinct from [`MailboxFull`](Self::MailboxFull):
+    /// the caller was *willing to wait* and the saturation outlasted it.
+    #[error("send timed out")]
+    SendTimeout(M),
 }
 
 impl<M> TellError<M> {
-    /// `true` for the single retry-safe variant, [`MailboxFull`](Self::MailboxFull).
+    /// `true` for the retry-safe variants, [`MailboxFull`](Self::MailboxFull)
+    /// and [`SendTimeout`](Self::SendTimeout) — both mean the message bounced
+    /// undelivered off a saturated mailbox.
     #[must_use]
     pub const fn is_retryable(&self) -> bool {
-        matches!(self, Self::MailboxFull(_))
+        matches!(self, Self::MailboxFull(_) | Self::SendTimeout(_))
     }
 
     /// `true` for the single terminal variant, [`ActorNotAlive`](Self::ActorNotAlive).
@@ -48,11 +57,22 @@ impl<M> TellError<M> {
         matches!(self, Self::ActorNotAlive(_))
     }
 
+    /// Recovers the undelivered message. Total — every delivery failure
+    /// carries the message back (the module doc's "nothing to lose into the
+    /// void" guarantee), so no `Option` is needed.
+    #[must_use]
+    pub fn msg(self) -> M {
+        match self {
+            Self::ActorNotAlive(m) | Self::MailboxFull(m) | Self::SendTimeout(m) => m,
+        }
+    }
+
     /// Re-types the carried message, preserving the variant.
     pub fn map_msg<N>(self, f: impl FnOnce(M) -> N) -> TellError<N> {
         match self {
             Self::ActorNotAlive(m) => TellError::ActorNotAlive(f(m)),
             Self::MailboxFull(m) => TellError::MailboxFull(f(m)),
+            Self::SendTimeout(m) => TellError::SendTimeout(f(m)),
         }
     }
 }
@@ -105,7 +125,7 @@ impl<M, E> AskError<M, E> {
     #[must_use]
     pub fn msg(self) -> Option<M> {
         match self {
-            Self::Deliver(TellError::ActorNotAlive(m) | TellError::MailboxFull(m)) => Some(m),
+            Self::Deliver(inner) => Some(inner.msg()),
             Self::Timeout | Self::Interrupted | Self::Handler(_) => None,
         }
     }
@@ -313,6 +333,40 @@ mod tests {
         let gone: TellError<u8> = TellError::ActorNotAlive(1);
         assert!(!gone.is_retryable(), "a dead actor is never retryable");
         assert!(gone.is_terminal(), "a dead actor is terminal");
+    }
+
+    /// Card #118 (deferred from #113): a blocking send that waits its whole
+    /// deadline without a slot freeing is `SendTimeout(M)`. The timed send owns
+    /// the message for the entire wait (guaranteed handback, ADR-0008), so the
+    /// message was **definitely never delivered**: retryable, not terminal, and
+    /// the exact message comes back — through `msg` and through `map_msg`.
+    #[test]
+    fn send_timeout_classifies_retryable_with_msg_back() {
+        let timed_out: TellError<u8> = TellError::SendTimeout(7);
+        assert!(
+            timed_out.is_retryable(),
+            "never delivered, so a retry is safe"
+        );
+        assert!(
+            !timed_out.is_terminal(),
+            "saturation is transient, not terminal"
+        );
+        assert_eq!(timed_out.msg(), 7, "the exact message is handed back");
+
+        let retyped = TellError::SendTimeout(7u8).map_msg(u16::from);
+        assert!(
+            matches!(retyped, TellError::SendTimeout(7u16)),
+            "map_msg preserves the variant and value, got {retyped:?}"
+        );
+    }
+
+    /// `TellError::msg` is *total* (the module doc's claim): every variant
+    /// carries the undelivered message, so recovery never needs an `Option`.
+    #[test]
+    fn tell_error_msg_recovers_from_every_variant() {
+        assert_eq!(TellError::ActorNotAlive(1u8).msg(), 1);
+        assert_eq!(TellError::MailboxFull(2u8).msg(), 2);
+        assert_eq!(TellError::SendTimeout(3u8).msg(), 3);
     }
 
     /// A stand-in domain error, e.g. the shape a nexus aggregate's own

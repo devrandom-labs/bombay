@@ -431,6 +431,54 @@ gates in `dst_races.rs`.
 The sweep also cut the surface's mutation wall-clock ~30 % (fast catches replace
 20 s hangs). No README change (same target-API posture as #145–#147).
 
+### `request` ask/tell builders (#118) — done
+The send surface: `TellRequest` (`.await` / `try_send` / `.timeout(d)`),
+`AskRequest` (typed port in the message, default-5s/override/`no_timeout`),
+`Ask<M, R, E>` carrier + `ReplyRecipient` (the #145 deferral), `SendTimeout(M)`
+(the #113 deferral, guaranteed-handback semantics — ADR-0008; builder shape —
+ADR-0007). Tests, all in-crate `request::tests` unless noted:
+
+- **Boundary/defensive** — `try_send_full_returns_mailbox_full_with_msg`,
+  `tell_timeout_on_saturated_mailbox_returns_send_timeout_with_msg`,
+  `tell_timeout_zero_still_attempts_once` (zero-deadline still attempts once),
+  `ask_times_out_when_target_saturated` (card-named; resolves as
+  `Deliver(SendTimeout(M))`, retryable, message back),
+  `ask_times_out_when_handler_never_replies` (`Timeout`, not retryable).
+- **Sequence/lifecycle** — `tell_timeout_delivers_when_capacity_frees_before_deadline`,
+  `ask_reply_reaches_caller_end_to_end`, `ask_handler_error_reaches_caller_typed`,
+  `@bug ask_actor_dies_mid_handle_maps_interrupted` (card-named, ref #122-#3),
+  `ask_default_timeout_is_five_seconds` (paused-time pin of the gen_server
+  precedent), `ask_no_timeout_outlives_the_default_deadline`,
+  `delegated_reply_arrives_from_a_later_handle_call` and
+  `forwarded_reply_comes_from_the_second_actor` (the #115 marker types resolved
+  as *structural* — no `DelegatedReply`/`ForwardedReply`/`Context` carried over),
+  `actor_not_alive_unifies_terminal` (`tests/invariants.rs`; never-run +
+  startup-failed legs landed, stopped legs pre-existing, passivated leg
+  unassertable — no passivation exists yet).
+- **Erasure** — `reply_recipient_ask_round_trips_typed_reply`,
+  `reply_recipient_ask_to_reaped_actor_hands_msg_back`,
+  `reply_recipient_ask_times_out_saturated_with_msg_back`.
+- **Allocation (measured, not templated — #122-#11)** —
+  `tests/alloc_request.rs`, a one-test binary (the `alloc_exact.rs` isolation
+  rationale) over a new **gross**-allocation counter on `CountingAlloc` (live
+  counters cancel transient alloc-then-free): `tell().await` = **0** heap
+  allocations, the full ask round trip = **exactly 1** (the oneshot; the inline
+  `pin_project` timer allocates nothing), both reclaim exactly. The harness's
+  own first draft was caught by the counter (a fresh flume channel grows its
+  queue on first push — warm-up now shares the channel).
+- **DST/linearizability** — `cyclic_topology_never_deadlocks`
+  (`tests/dst_races.rs`, card-named, seeded ×4 LCG storms, paused time): a
+  capacity-1 ring under the #122-#4 discipline (handlers `try_send`+shed, never
+  block) where every deadline-bearing ask resolves and the ring stays live.
+
+Paused-time tests use tokio `start-paused` (new `test-util` dev-dep feature).
+Timed sends are a bounded `try_send` retry loop, **not** a cancelled park on
+flume's `SendFut` — flume cancellation cannot report delivered-vs-not
+(`reset_hook` discards the hook without checking), so a cancelled park could
+hand back an already-delivered message and double-deliver on retry; ADR-0008
+records the analysis. No README change (same pre-public posture as #112–#117;
+the vendored-kameo API the README documents is unchanged).
+
 ### `fuzz` — bolero workspace (#149) — done
 Isolated non-member `fuzz/` workspace (crate `bombay-fuzz`, own `Cargo.lock`) —
 the reusable verification backbone (#150/#151/#152 build on it). `bolero::check!`
