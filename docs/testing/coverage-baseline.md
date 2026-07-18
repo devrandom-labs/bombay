@@ -479,6 +479,86 @@ hand back an already-delivered message and double-deliver on retry; ADR-0008
 records the analysis. No README change (same pre-public posture as #112–#117;
 the vendored-kameo API the README documents is unchanged).
 
+### `registry` local name→actor lookup (#119) — done
+`bombay-core/src/registry.rs`: concrete `Registry` over
+`papaya::HashMap<Cow<'static, str>, Box<dyn ErasedEntry>>` (erased **weak**
+handles — a registration never pins the actor), register-once decided
+atomically inside `papaya::HashMap::compute`, dead entries read as absent on
+every path (the one liveness rule: mailbox channel open). Trait-seam note on
+the card deliberately not implemented — ADR-0009 records the evidence
+(papaya 0.2.4 is green under `-Zmiri-strict-provenance` on the pinned
+nightly, so the *production* impl is what every lane sees). Errors:
+`NameTaken` / `WrongActorType` (bare per-op structs in `error.rs`).
+
+Tests, all in-crate `registry::tests` (17):
+
+- **Sequence** — `register_then_lookup_resolves_the_same_actor` (round-trip:
+  the looked-up ref delivers onto the ORIGINAL receiver — same channel, not
+  just same id), `unregister_frees_the_name_for_reregistration` (remove →
+  absent → double-remove no-op → re-register).
+- **Defensive boundary** — `register_on_live_name_is_rejected_and_keeps_incumbent`
+  (dedup-on-collision; the loser must not clobber),
+  `lookup_with_wrong_actor_type_errors`, `lookup_of_unknown_name_is_absent`,
+  `dead_incumbent_of_another_type_reads_absent_not_type_error` (dead entries
+  cannot claim a type), `registration_does_not_pin_the_actor` (THE weak-handle
+  invariant: last strong drop closes the channel despite the registry entry).
+- **Lifecycle** — `lookup_of_reaped_actor_is_absent`,
+  `register_reclaims_a_dead_incumbents_name`,
+  `name_reclaimable_when_only_receiver_is_gone` +
+  `lookup_sees_receiver_reaped_actor_as_absent` (liveness = channel open, not
+  "strong refs linger": these two kill the `is_some_and → is_some` mutant and
+  pin read-path/write-path to the SAME rule).
+- **Linearizability (real OS-thread overlap: `std::thread::scope` + `Barrier`)** —
+  `concurrent_register_single_winner_on_one_name` (N racers, exactly one `Ok`,
+  losers see `NameTaken`, lookup resolves the winner),
+  `concurrent_reclaim_of_dead_name_single_winner` (the stale-replace decision
+  is atomic — no interleaving double-replaces),
+  `concurrent_lookup_during_register_churn_is_consistent` (readers racing a
+  register/unregister loop only ever observe absent or THE registrant).
+- **Guards** — `registry_debug_names_struct_and_entry_count`,
+  `default_is_an_empty_working_registry`, `registry_is_send_and_sync`
+  (compile-time property).
+
+**MIRI**: all 17 run in the sweep leg (measured 8.8 s interpreted, strict
+provenance); the three scoped-thread races are added to the many-seeds leg's
+named list — std threads are OS threads under MIRI, so the tasks>workers
+probe caveat (a tokio work-stealing artifact) cannot apply; measured
+1.6 s + 1.6 s + 2.2 s per seed. The card's "DST over concurrent registration
+races" bullet is discharged by exactly that leg: `-Zmiri-many-seeds` IS the
+deterministic schedule exploration for a sync lock-free surface.
+
+**Mutation** (scoped run, `--timeout 60`, 2026-07-18): **16 mutants — 11
+caught, 5 unviable, 0 missed, 0 timeouts**; floors merged into
+`mutants-baseline.json` from the gate's own `emit-baseline`
+(`register` 3, `lookup` 3, `is_alive` 2, `unregister` 2, `fmt` 1; `as_any`
+`known_zero_viable`, compensated by the typed-downcast tests;
+`new`/`default` produced no candidates). The PR's whole-crate sweep then
+caught what the scoped run could not: the first cut of the round-trip test
+awaited `tell`-then-`recv` **unbounded**, so the *mailbox* mutant
+`Capacity::get -> 0` (a rendezvous channel) deadlocked it into a 60 s
+TIMEOUT — the exact #179 failure mode, reintroduced in a new module. All
+awaits in the registry tests are now 5 s-bounded; both `Capacity::get`
+mutants re-verified as fast catches.
+
+**Bench** (`benches/registry_vs_kameo.rs`, measured 2026-07-18, M-series),
+five groups, all recorded honestly. Same-name groups go to kameo (lookup_hit
+24.9 ns vs 17.9 ns; 4-reader one-name 419 µs vs 234 µs; 3r+1w churn 470 µs
+vs 328 µs; register/unregister 94.5 ns vs 45.9 ns): with one hot actor the
+cost is the ref-model — weak-`upgrade` CAS + two Arc RMWs per hit on three
+shared cachelines — not the map, and that shape belongs to ADR-0003
+(follow-up card filed: single-allocation `ActorRef`, 1-RMW clone). The
+**distinct-names group — the design's regime (many actors) — goes to bombay
+1.60×** (131.6 µs vs 210.5 µs; 30.4 M/s vs 19.0 M/s): bombay jumps 3.2×
+once readers stop sharing one actor while kameo barely moves, because its
+ceiling is the one global mutex whatever the name — flat by construction as
+readers/names grow. Both designs sit 2–3 orders below message-rate costs;
+the structural drivers (no guard-across-`.await` deadlock class, atomic
+`compute` claim, weak no-pinning entries) are what the same-name nanoseconds
+buy. `scc::HashIndex` recorded as runner-up if the map itself ever measures
+as the bottleneck. No README
+change (same pre-public posture as #112–#118; the vendored-kameo
+`ActorRegistry` bullet the README documents is unchanged).
+
 ### `fuzz` — bolero workspace (#149) — done
 Isolated non-member `fuzz/` workspace (crate `bombay-fuzz`, own `Cargo.lock`) —
 the reusable verification backbone (#150/#151/#152 build on it). `bolero::check!`

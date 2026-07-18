@@ -37,6 +37,7 @@ pub mod actor;
 pub mod error;
 pub mod mailbox;
 pub mod message;
+pub mod registry;
 pub mod reply;
 pub mod request;
 

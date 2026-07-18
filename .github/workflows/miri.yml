@@ -112,11 +112,20 @@ jobs:
           RUSTUP_TOOLCHAIN: ${{ env.MIRI_TOOLCHAIN }}
           MIRI_SEEDS: ${{ github.event_name == 'pull_request' && '0..16' || '0..64' }}
           MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-many-seeds=${{ github.event_name == 'pull_request' && '0..16' || '0..64' }} -Zmiri-many-seeds-keep-going"
+        # The registry:: trio (card #119) needs no thread-id probe: each test
+        # races plain `std::thread::scope` threads through papaya, and every
+        # scoped std thread IS an OS thread under MIRI — the tasks>workers
+        # caveat above is a tokio work-stealing artifact that cannot apply.
+        # Measured cost: 1.6s + 1.6s + 2.2s per seed (aarch64, one seed) —
+        # ~5 min CPU at 64 seeds, inside the budget.
         run: |
           echo "exploring seeds ${MIRI_SEEDS} (event: ${{ github.event_name }})"
           cargo miri test -p bombay-core --lib -- \
             concurrent_senders_single_writer_exact_count \
-            n_senders_one_receiver_preserve_per_sender_order
+            n_senders_one_receiver_preserve_per_sender_order \
+            registry::tests::concurrent_register_single_winner_on_one_name \
+            registry::tests::concurrent_reclaim_of_dead_name_single_winner \
+            registry::tests::concurrent_lookup_during_register_churn_is_consistent
 
   miri-gate:
     # Single stable check name. Requiring the leg jobs directly would mean

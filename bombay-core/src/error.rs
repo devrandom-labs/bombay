@@ -315,6 +315,29 @@ impl ActorStopReason {
     }
 }
 
+/// A [`Registry::register`](crate::registry::Registry::register) collision:
+/// the name is already held by a **live** actor.
+///
+/// A bare struct, not an enum variant — register has exactly one failure
+/// domain (CLAUDE rule: a single-domain fallible op returns its bare error).
+/// Dead incumbents never produce this: their name is reclaimed atomically by
+/// the same `register` call. Terminal for *this* name — retrying without an
+/// intervening unregister or incumbent death only spins.
+#[derive(thiserror::Error, Clone, Copy, Debug, PartialEq, Eq)]
+#[error("name is already registered to a live actor")]
+pub struct NameTaken;
+
+/// A [`Registry::lookup`](crate::registry::Registry::lookup) type conflict:
+/// the name resolves to a **live** actor of a different `Actor` type than the
+/// one requested.
+///
+/// Distinct from absence (`Ok(None)`) — the name is genuinely occupied, the
+/// caller asked with the wrong type. Dead incumbents never produce this: a
+/// dead entry reads as absent on every path, whatever its type.
+#[derive(thiserror::Error, Clone, Copy, Debug, PartialEq, Eq)]
+#[error("name is registered to an actor of a different type")]
+pub struct WrongActorType;
+
 #[cfg(test)]
 mod tests {
     use super::*;
