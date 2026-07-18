@@ -538,9 +538,26 @@ awaited `tell`-then-`recv` **unbounded**, so the *mailbox* mutant
 `Capacity::get -> 0` (a rendezvous channel) deadlocked it into a 60 s
 TIMEOUT — the exact #179 failure mode, reintroduced in a new module. All
 awaits in the registry tests are now 5 s-bounded; both `Capacity::get`
-mutants re-verified as fast catches. No README change (same pre-public
-posture as #112–#118; the vendored-kameo `ActorRegistry` bullet the README
-documents is unchanged).
+mutants re-verified as fast catches.
+
+**Bench** (`benches/registry_vs_kameo.rs`, measured 2026-07-18, M-series),
+five groups, all recorded honestly. Same-name groups go to kameo (lookup_hit
+24.9 ns vs 17.9 ns; 4-reader one-name 419 µs vs 234 µs; 3r+1w churn 470 µs
+vs 328 µs; register/unregister 94.5 ns vs 45.9 ns): with one hot actor the
+cost is the ref-model — weak-`upgrade` CAS + two Arc RMWs per hit on three
+shared cachelines — not the map, and that shape belongs to ADR-0003
+(follow-up card filed: single-allocation `ActorRef`, 1-RMW clone). The
+**distinct-names group — the design's regime (many actors) — goes to bombay
+1.60×** (131.6 µs vs 210.5 µs; 30.4 M/s vs 19.0 M/s): bombay jumps 3.2×
+once readers stop sharing one actor while kameo barely moves, because its
+ceiling is the one global mutex whatever the name — flat by construction as
+readers/names grow. Both designs sit 2–3 orders below message-rate costs;
+the structural drivers (no guard-across-`.await` deadlock class, atomic
+`compute` claim, weak no-pinning entries) are what the same-name nanoseconds
+buy. `scc::HashIndex` recorded as runner-up if the map itself ever measures
+as the bottleneck. No README
+change (same pre-public posture as #112–#118; the vendored-kameo
+`ActorRegistry` bullet the README documents is unchanged).
 
 ### `fuzz` — bolero workspace (#149) — done
 Isolated non-member `fuzz/` workspace (crate `bombay-fuzz`, own `Cargo.lock`) —
