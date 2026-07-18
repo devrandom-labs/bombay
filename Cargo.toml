@@ -31,6 +31,12 @@ rstest = "0.26"
 # type-erased ReplyError trait object.
 thiserror = "2.0"
 downcast-rs = "2.0"
+# Local name→actor registry map (card #119): lock-free reads, purpose-built for
+# read-heavy lookup with concurrent register/unregister churn; `compute` gives
+# an atomic per-key decision (register-once without check-then-act). Chosen over
+# dashmap (sync shard lock held across .await = deadlock class) and scc — see
+# the finalized research on card #119.
+papaya = "0.2"
 # Tier-2 (PTY) console E2E test only (card #83): drive the compiled binary through a
 # pseudo-terminal and re-emulate the visible screen for grid assertions.
 portable-pty = "0.9"
