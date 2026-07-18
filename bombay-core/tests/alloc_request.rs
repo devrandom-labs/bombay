@@ -18,9 +18,9 @@ use bombay_core::{
     mailbox::{Capacity, Mailbox, Mailboxed, Signal},
     message::Msg,
     reply::ReplySender,
-    test_support::{CountingAlloc, unstarted_actor},
+    test_support::{CountingAlloc, terminate_bound, unstarted_actor},
 };
-use tokio::runtime::Builder;
+use tokio::{runtime::Builder, time::timeout};
 
 #[global_allocator]
 static COUNTER: CountingAlloc = CountingAlloc::new(System);
@@ -71,7 +71,11 @@ fn round(
     rt.block_on(actor_ref.tell(ProbeMsg::Note(7)).into_future())
         .expect("open mailbox accepts the message");
     let tell_gross = COUNTER.gross_allocs() - tell_before;
-    drop(rt.block_on(rx.recv()).expect("the note is queued"));
+    drop(
+        rt.block_on(async { timeout(terminate_bound(), rx.recv()).await })
+            .expect("the note must be received within the bound")
+            .expect("the note is queued"),
+    );
 
     // Ask: full round trip, driving the handler side by hand off the receiver.
     let ask_before = COUNTER.gross_allocs();
@@ -79,7 +83,10 @@ fn round(
         let pending = actor_ref.ask(|reply| ProbeMsg::Get { reply });
         let ask = std::pin::pin!(pending.into_future());
         let serve = async {
-            let signal = rx.recv().await.expect("the ask is queued");
+            let signal = timeout(terminate_bound(), rx.recv())
+                .await
+                .expect("the ask must be received within the bound")
+                .expect("the ask is queued");
             let Signal::Message {
                 msg: ProbeMsg::Get { reply },
                 ..

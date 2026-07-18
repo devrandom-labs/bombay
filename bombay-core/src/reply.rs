@@ -150,6 +150,18 @@ mod tests {
     #[derive(Debug, Clone, PartialEq, Eq)]
     struct Conflict;
 
+    /// The port halves name themselves in `Debug` without demanding
+    /// `R: Debug`/`E: Debug` — guards the hand-written impls against being
+    /// stubbed to an empty formatter (the #118 mutation sweep caught exactly
+    /// that surviving).
+    #[test]
+    fn reply_port_debug_names_the_halves() {
+        struct Opaque; // deliberately not Debug
+        let (tx, rx) = reply_channel::<Opaque, Opaque>();
+        assert_eq!(format!("{tx:?}"), "ReplySender");
+        assert_eq!(format!("{rx:?}"), "ReplyReceiver");
+    }
+
     /// Sequence: a handler's `Ok` reply reaches the caller, typed and intact.
     #[tokio::test]
     async fn ask_ok_reply_reaches_caller() {

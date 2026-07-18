@@ -148,18 +148,27 @@ impl<'a, A: Mailboxed> IntoFuture for TellWithTimeout<'a, A> {
 
     fn into_future(self) -> Self::IntoFuture {
         let now = Instant::now();
+        // `None` = the caller's deadline overflows the clock: effectively
+        // unbounded, so the loop simply never times out (no panic on
+        // absurd input — rule: capacity/limit hits are `Result`s).
+        let deadline = now.checked_add(self.deadline);
         TellTimeoutFut {
             mailbox: self.mailbox,
             msg: Some(self.msg),
-            // `None` = the caller's deadline overflows the clock: effectively
-            // unbounded, so the loop simply never times out (no panic on
-            // absurd input — rule: capacity/limit hits are `Result`s).
-            deadline: now.checked_add(self.deadline),
+            deadline,
             retry_delay: INITIAL_RETRY_DELAY,
-            // Re-armed before every park; the initial target is irrelevant.
-            sleep: sleep_until(now),
+            sleep: sleep_until(initial_park_target(deadline, now)),
         }
     }
+}
+
+/// The retry timer's target before `arm_retry` first runs: the deadline (or a
+/// distant fallback when unbounded) — never an already-elapsed instant, so an
+/// un-armed timer *parks* rather than reporting Ready in a loop.
+fn initial_park_target(deadline: Option<Instant>, now: Instant) -> Instant {
+    deadline
+        .or_else(|| now.checked_add(Duration::from_hours(24)))
+        .unwrap_or(now)
 }
 
 pin_project! {
@@ -199,20 +208,21 @@ fn attempt_send<A: Mailboxed>(
 }
 
 /// Arms `sleep` for the next retry — never past `deadline` — and doubles
-/// `retry_delay` up to [`MAX_RETRY_DELAY`]. `Ready` = retry now (the target
-/// already passed); `Pending` = the timer waker is registered.
-fn park_for_retry(
+/// `retry_delay` up to [`MAX_RETRY_DELAY`]. The caller polls the armed sleep
+/// itself: keeping the poll out of this helper means a whole-body mutation
+/// cannot turn the park into an unpreemptible in-poll spin (a lesson from the
+/// #118 mutation sweep — the spin ran 60 s inside one `poll` call, beyond any
+/// test timeout's reach).
+fn arm_retry(
     mut sleep: Pin<&mut Sleep>,
     retry_delay: &mut Duration,
     deadline: Option<Instant>,
     now: Instant,
-    cx: &mut Context<'_>,
-) -> Poll<()> {
+) {
     let unclamped = now.checked_add(*retry_delay).unwrap_or(now);
     let next = deadline.map_or(unclamped, |hard_stop| cmp::min(unclamped, hard_stop));
     sleep.as_mut().reset(next);
     *retry_delay = cmp::min(retry_delay.saturating_mul(2), MAX_RETRY_DELAY);
-    sleep.poll(cx)
 }
 
 impl<A: Mailboxed> Future for TellTimeoutFut<'_, A> {
@@ -233,13 +243,8 @@ impl<A: Mailboxed> Future for TellTimeoutFut<'_, A> {
                 return Poll::Ready(Err(TellError::SendTimeout(msg)));
             }
 
-            match park_for_retry(
-                this.sleep.as_mut(),
-                this.retry_delay,
-                *this.deadline,
-                now,
-                cx,
-            ) {
+            arm_retry(this.sleep.as_mut(), this.retry_delay, *this.deadline, now);
+            match this.sleep.as_mut().poll(cx) {
                 Poll::Ready(()) => {}
                 Poll::Pending => return Poll::Pending,
             }
@@ -339,16 +344,17 @@ impl<'a, A: Mailboxed, R, E> IntoFuture for AskRequest<'a, A, R, E> {
 
     fn into_future(self) -> Self::IntoFuture {
         let now = Instant::now();
+        // Unrepresentable deadline (clock overflow) degrades to unbounded,
+        // same as the timed tell.
+        let deadline = self.deadline.and_then(|deadline| now.checked_add(deadline));
         AskFut {
             mailbox: self.mailbox,
             msg: Some(self.msg),
             rx: self.rx,
-            // Unrepresentable deadline (clock overflow) degrades to unbounded,
-            // same as the timed tell.
-            deadline: self.deadline.and_then(|deadline| now.checked_add(deadline)),
+            deadline,
             retry_delay: INITIAL_RETRY_DELAY,
             delivered: false,
-            sleep: sleep_until(now),
+            sleep: sleep_until(initial_park_target(deadline, now)),
         }
     }
 }
@@ -394,13 +400,8 @@ impl<A: Mailboxed, R, E> Future for AskFut<'_, A, R, E> {
                         };
                         return Poll::Ready(Err(AskError::Deliver(TellError::SendTimeout(msg))));
                     }
-                    match park_for_retry(
-                        this.sleep.as_mut(),
-                        this.retry_delay,
-                        *this.deadline,
-                        now,
-                        cx,
-                    ) {
+                    arm_retry(this.sleep.as_mut(), this.retry_delay, *this.deadline, now);
+                    match this.sleep.as_mut().poll(cx) {
                         Poll::Ready(()) => {}
                         Poll::Pending => return Poll::Pending,
                     }
@@ -625,6 +626,7 @@ mod tests {
             .try_send()
             .expect("first message fills the capacity-1 mailbox");
 
+        let start = tokio::time::Instant::now();
         let sender = tokio::spawn(async move {
             actor_ref
                 .tell(ProbeMsg(7))
@@ -634,7 +636,10 @@ mod tests {
         // Let the timed sender attempt once and park on the full mailbox.
         tokio::task::yield_now().await;
 
-        let first = rx.recv().await.expect("the fill message is queued");
+        let first = tokio::time::timeout(terminate_bound(), rx.recv())
+            .await
+            .expect("the fill message must be received within the bound")
+            .expect("the fill message is queued");
         assert!(
             matches!(
                 first,
@@ -646,11 +651,22 @@ mod tests {
             "the fill message drains first (FIFO)",
         );
 
-        sender
+        tokio::time::timeout(terminate_bound(), sender)
             .await
+            .expect("the sender must resolve within the bound")
             .expect("sender task")
             .expect("a freed slot before the deadline means delivery, not timeout");
-        let delivered = rx.recv().await.expect("the timed message is queued");
+        assert!(
+            start.elapsed() < Duration::from_secs(1),
+            "delivery follows the freed slot within the retry backoff — \
+             waiting out the whole deadline instead means the retry timer was \
+             never armed (elapsed {:?})",
+            start.elapsed(),
+        );
+        let delivered = tokio::time::timeout(terminate_bound(), rx.recv())
+            .await
+            .expect("the timed message must be received within the bound")
+            .expect("the timed message is queued");
         assert!(
             matches!(
                 delivered,
@@ -676,7 +692,10 @@ mod tests {
             .await
             .expect("an empty mailbox accepts the message at deadline zero");
 
-        let delivered = rx.recv().await.expect("the message is queued");
+        let delivered = tokio::time::timeout(terminate_bound(), rx.recv())
+            .await
+            .expect("the message must be received within the bound")
+            .expect("the message is queued");
         assert!(
             matches!(
                 delivered,
@@ -888,7 +907,23 @@ mod tests {
     async fn reply_recipient_ask_to_reaped_actor_hands_msg_back() {
         let (actor_ref, rx) = build_unstarted::<Counter>(1);
         let recipient: ReplyRecipient<u64, u64, Conflict> = actor_ref.reply_recipient();
+
+        // Identity + liveness survive the erasure (mutation-sweep survivors:
+        // both `is_alive` directions and the Debug impl were unasserted).
+        assert_eq!(
+            recipient.id(),
+            actor_ref.id(),
+            "id preserved through erasure"
+        );
+        assert!(recipient.is_alive(), "open mailbox reads alive");
+        let shown = format!("{recipient:?}");
+        assert!(
+            shown.contains("ReplyRecipient") && shown.contains("u64"),
+            "debug names the struct and the erased M: {shown}",
+        );
+
         drop(rx); // reap: the run-loop's receiver is gone
+        assert!(!recipient.is_alive(), "the recipient observes the reap");
 
         let err = tokio::time::timeout(terminate_bound(), recipient.ask(7))
             .await
