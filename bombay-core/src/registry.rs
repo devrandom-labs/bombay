@@ -192,8 +192,10 @@ impl fmt::Debug for Registry {
 mod tests {
     use std::sync::Barrier;
     use std::thread;
+    use std::time::Duration;
 
     use futures::stream::AbortHandle;
+    use tokio::time::timeout;
     use tokio_util::sync::CancellationToken;
 
     use super::Registry;
@@ -283,13 +285,19 @@ mod tests {
             .expect("live actor resolves");
         assert_eq!(resolved.id(), ActorId::new(1), "resolves the registrant");
 
-        resolved
-            .tell(ProbeMsg(42))
+        // Both awaits are bounded (#179 discipline): under a hostile mutant
+        // (e.g. `Capacity::get -> 0`, a rendezvous channel) an unbounded
+        // sequential tell-then-recv deadlocks instead of failing fast.
+        timeout(Duration::from_secs(5), resolved.tell(ProbeMsg(42)))
             .await
+            .expect("tell must not hang")
             .expect("looked-up ref delivers");
+        let received = timeout(Duration::from_secs(5), rx.recv())
+            .await
+            .expect("recv must not hang");
         let Some(Signal::Message {
             msg: ProbeMsg(n), ..
-        }) = rx.recv().await
+        }) = received
         else {
             panic!("expected the message on the ORIGINAL receiver");
         };
@@ -461,8 +469,11 @@ mod tests {
 
         drop(actor_ref);
 
+        let received = timeout(Duration::from_secs(5), rx.recv())
+            .await
+            .expect("recv must not hang");
         assert!(
-            rx.recv().await.is_none(),
+            received.is_none(),
             "the registry entry must not keep the mailbox channel open",
         );
         assert!(

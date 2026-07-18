@@ -532,7 +532,13 @@ caught, 5 unviable, 0 missed, 0 timeouts**; floors merged into
 `mutants-baseline.json` from the gate's own `emit-baseline`
 (`register` 3, `lookup` 3, `is_alive` 2, `unregister` 2, `fmt` 1; `as_any`
 `known_zero_viable`, compensated by the typed-downcast tests;
-`new`/`default` produced no candidates). No README change (same pre-public
+`new`/`default` produced no candidates). The PR's whole-crate sweep then
+caught what the scoped run could not: the first cut of the round-trip test
+awaited `tell`-then-`recv` **unbounded**, so the *mailbox* mutant
+`Capacity::get -> 0` (a rendezvous channel) deadlocked it into a 60 s
+TIMEOUT — the exact #179 failure mode, reintroduced in a new module. All
+awaits in the registry tests are now 5 s-bounded; both `Capacity::get`
+mutants re-verified as fast catches. No README change (same pre-public
 posture as #112–#118; the vendored-kameo `ActorRegistry` bullet the README
 documents is unchanged).
 
