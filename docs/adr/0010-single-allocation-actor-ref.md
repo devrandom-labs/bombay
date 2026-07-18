@@ -1,8 +1,19 @@
 # ADR-0010 — Single-allocation `ActorRef`: one RMW per clone
 
-**Status:** Proposed (2026-07-18) — card #186; amends ADR-0003 (the handle
-layout), leaves its liveness model intact. Acceptance is gated on the card's
-bench matrix (registry same-name parity-or-better, tell path no-regress).
+**Status:** Accepted (2026-07-18) — card #186; amends ADR-0003 (the handle
+layout), leaves its liveness model intact. The card's bench gates both passed,
+measured same-session before/after on the M-series machine:
+
+- **Registry same-name (parity-or-better required):** 478 → 192 µs (−59%),
+  flipping a 1.79× kameo loss into a 1.33× bombay win; every registry read
+  group now wins (lookup_hit 1.59×, distinct-names 5.0×, churn 1.25×). Full
+  table in `benches/registry_vs_kameo.rs`.
+- **Tell path (no-regress required):** improved instead — tell_pipeline −5.6%,
+  tell_contended −5.3%, ask −17.9% (the loop-side 5→2 RMW win outweighs the
+  one added pointer indirection). Full table in `benches/request_vs_kameo.rs`.
+- **Watcher fan-out (#147):** roundtrip −13…−17% across widths; the dispatch
+  arm (bare `MailboxSender`s, no `ActorRef` in the timed region) moved only
+  within noise, as expected.
 
 ## Context
 

@@ -31,4 +31,4 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | [0007](0007-request-builders-hand-rolled-not-bon.md) | ask/tell request builders: hand-rolled `IntoFuture`, not `bon` | Accepted |
 | [0008](0008-send-timeout-guaranteed-handback.md) | `SendTimeout(M)`: guaranteed handback via bounded retry | Accepted |
 | [0009](0009-registry-papaya-no-trait-seam.md) | Registry: papaya directly, no trait seam | Accepted |
-| [0010](0010-single-allocation-actor-ref.md) | Single-allocation `ActorRef`: one RMW per clone | Proposed |
+| [0010](0010-single-allocation-actor-ref.md) | Single-allocation `ActorRef`: one RMW per clone | Accepted |

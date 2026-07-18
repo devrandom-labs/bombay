@@ -13,19 +13,25 @@
 //! is the same element count from 4 concurrent producers. `ask_roundtrip` is
 //! one request/reply per iteration.
 //!
-//! Measured 2026-07-18 (M-series laptop, sample-size 30, PR #184):
+//! Measured 2026-07-18 (M-series laptop, criterion defaults, #186 — the
+//! single-allocation `ActorRef`, ADR-0010; the card's no-regress gate):
 //!
 //! | group                | bombay-core            | kameo                  | delta |
 //! |----------------------|------------------------|------------------------|-------|
-//! | tell_pipeline_1k     | 218.8 µs (4.57 Mmsg/s) | 352.3 µs (2.84 Mmsg/s) | 1.61× |
-//! | tell_contended_4x250 | 242.1 µs (4.13 Mmsg/s) | 445.4 µs (2.25 Mmsg/s) | 1.84× |
-//! | ask_roundtrip        | 7.75 µs                | 7.71 µs                | ≈1×   |
+//! | tell_pipeline_1k     | 187.8 µs (5.32 Mmsg/s) | 338.1 µs (2.96 Mmsg/s) | 1.80× |
+//! | tell_contended_4x250 | 192.8 µs (5.19 Mmsg/s) | 427.9 µs (2.34 Mmsg/s) | 2.22× |
+//! | ask_roundtrip        | 6.89 µs                | 7.64 µs                | 1.11× |
 //!
-//! The tell pipeline composes the component wins (~1.6–1.8×, tracking the
-//! channel's 2×/2.7× discounted by the shared actor-loop cost). The ask round
-//! trip is **parity**: one request/reply is dominated by two cross-task
-//! wakeups (~µs each), which drown the ~11 ns typed-reply win and the
-//! allocation delta — the honest number, recorded as such.
+//! vs the same-session pre-#186 baseline, bombay's own numbers moved
+//! tell_pipeline −5.6%, tell_contended −5.3%, ask −17.9% — the one pointer
+//! indirection ADR-0010 adds to `tell` is invisible next to the loop-side
+//! win (per-message self-ref lift: 5 RMWs → 2). The PR #184 shape
+//! (~1.6–1.8× tells, ask parity-to-slight-win) stands; nothing regressed.
+//!
+//! The tell pipeline composes the component wins (channel: ADR-0001, ~2×,
+//! discounted by the shared actor-loop cost). The ask round trip is near
+//! parity: one request/reply is dominated by two cross-task wakeups (~µs
+//! each), which drown the ~11 ns typed-reply win and the allocation delta.
 
 use std::{hint::black_box, num::NonZeroUsize};
 
