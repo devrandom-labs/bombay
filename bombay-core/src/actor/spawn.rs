@@ -159,12 +159,14 @@ async fn run_lifecycle<A: Actor>(
     // Ref-count-driven stop goes live (#117): the loop must not hold a strong
     // self-ref, or the mailbox never closes and the "all-senders-gone" arm stays
     // unreachable (kameo issue #171: a leaked strong self-ref pins the count and
-    // the actor never stops). Keep only a weak self-ref plus the cancel token.
+    // the actor never stops). Keep only a weak self-ref plus the loop's own
+    // copies of the cold lifecycle handles (for drain-window minting, ADR-0010).
     let cancel = actor_ref.cancel_token().clone();
+    let abort = actor_ref.abort_handle().clone();
     let weak = actor_ref.downgrade();
     drop(actor_ref);
 
-    let reason = run_message_loop(&mut state, &weak, &cancel, &mut mailbox_rx).await;
+    let reason = run_message_loop(&mut state, &weak, &cancel, &abort, &mut mailbox_rx).await;
 
     let stop_result = AssertUnwindSafe(state.on_stop(weak.clone(), reason.clone()))
         .catch_unwind()
@@ -397,6 +399,128 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    /// #186 / ADR-0010 guard: the `ActorRef` a handler receives in the DRAIN
+    /// WINDOW (no external strong ref exists; the loop lifts/mints it from the
+    /// queued message's `self_sender`) is wired to the REAL loop — `stop()`
+    /// through it cancels the actual token, so the rest of the backlog is
+    /// abandoned. Fails if the drain-window ref carries a fresh token.
+    #[tokio::test]
+    async fn drain_window_handler_ref_stops_the_actor() {
+        struct Stopper {
+            handled: Arc<AtomicU32>,
+        }
+        #[derive(Debug)]
+        struct Halt;
+        impl Msg for Halt {}
+        impl Mailboxed for Stopper {
+            type Msg = Halt;
+        }
+        impl crate::actor::Actor for Stopper {
+            type Args = Arc<AtomicU32>;
+            type Error = core::convert::Infallible;
+            async fn on_start(handled: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self { handled })
+            }
+            async fn handle(
+                &mut self,
+                _: Halt,
+                actor_ref: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                self.handled.fetch_add(1, Ordering::SeqCst);
+                actor_ref.stop(); // out-of-band cancel via the drain-window ref
+                Ok(())
+            }
+        }
+
+        let handled = Arc::new(AtomicU32::new(0));
+        let prepared = PreparedActor::<Stopper>::new(cap(8));
+        // Enqueue BEFORE spawning and hold no external ref: once the loop
+        // downgrades its own ref after on_start, only the queued self_senders
+        // keep the actor alive — the drain window.
+        bounded(prepared.actor_ref().tell(Halt))
+            .await
+            .expect("send 1");
+        bounded(prepared.actor_ref().tell(Halt))
+            .await
+            .expect("send 2");
+
+        let outcome = bounded(prepared.run(Arc::clone(&handled))).await;
+
+        assert_eq!(
+            handled.load(Ordering::SeqCst),
+            1,
+            "stop() through the drain-window ref abandons the second message"
+        );
+        assert!(matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Normal,
+                ..
+            }
+        ));
+    }
+
+    /// #186 / ADR-0010 guard, the abort sibling: `kill()` through a
+    /// drain-window handler ref aborts the REAL task at its next await point —
+    /// the parked handler never finishes and the outcome is `Killed`. Fails if
+    /// the drain-window ref carries a fresh abort handle.
+    #[tokio::test]
+    async fn drain_window_handler_ref_kills_the_actor() {
+        struct Berserker {
+            finished: Arc<AtomicU32>,
+        }
+        #[derive(Debug)]
+        struct Rampage;
+        impl Msg for Rampage {}
+        impl Mailboxed for Berserker {
+            type Msg = Rampage;
+        }
+        impl crate::actor::Actor for Berserker {
+            type Args = Arc<AtomicU32>;
+            type Error = core::convert::Infallible;
+            async fn on_start(
+                finished: Self::Args,
+                _: ActorRef<Self>,
+            ) -> Result<Self, Self::Error> {
+                Ok(Self { finished })
+            }
+            async fn handle(
+                &mut self,
+                _: Rampage,
+                actor_ref: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                actor_ref.kill();
+                std::future::pending::<()>().await; // aborted here, never below
+                self.finished.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }
+        }
+
+        let finished = Arc::new(AtomicU32::new(0));
+        let prepared = PreparedActor::<Berserker>::new(cap(4));
+        bounded(prepared.actor_ref().tell(Rampage))
+            .await
+            .expect("send");
+
+        let join = prepared.spawn(Arc::clone(&finished));
+        let outcome = tokio::time::timeout(terminate_bound(), join)
+            .await
+            .expect("kill() through the drain-window ref must abort the task")
+            .expect("join");
+
+        assert!(
+            matches!(outcome, RunResult::Killed),
+            "kill -> Killed, got {outcome:?}"
+        );
+        assert_eq!(
+            finished.load(Ordering::SeqCst),
+            0,
+            "the parked handler was aborted, never finished"
+        );
     }
 
     /// Lifecycle: `stop()` (out-of-band cancel) while a handler is mid-flight lets

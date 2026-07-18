@@ -520,6 +520,55 @@ mod tests {
         drop(actor_ref);
     }
 
+    /// #186 / ADR-0010 (read path): an actor in the DRAIN WINDOW — every
+    /// external strong ref dropped, a queued message still pinning the channel
+    /// via its `self_sender` — reads as ABSENT: no external handle can reach
+    /// it, so the registry must not hand out a resurrecting ref. Fails under
+    /// the ADR-0003 shape, where the queued self_sender keeps flume's
+    /// `sender_count` non-zero and the weak upgrade still succeeds.
+    #[test]
+    fn lookup_in_drain_window_reads_absent() {
+        let registry = Registry::new();
+        let (actor_ref, _rx) = build::<Probe>(1);
+        registry.register("drain", &actor_ref).expect("fresh name");
+
+        actor_ref
+            .tell(ProbeMsg(9))
+            .try_send()
+            .expect("open mailbox accepts the message");
+        drop(actor_ref); // drain window: only the queued self_sender remains
+
+        assert!(
+            registry
+                .lookup::<Probe>("drain")
+                .expect("dying reads absent, never a type conflict")
+                .is_none(),
+            "a draining actor must not be resolvable",
+        );
+    }
+
+    /// #186 / ADR-0010 (write path, same rule as the read path): a draining
+    /// incumbent's name is reclaimable from the moment its last external
+    /// strong ref drops — a new live actor claims it without waiting for the
+    /// backlog to drain.
+    #[test]
+    fn register_reclaims_name_in_drain_window() {
+        let registry = Registry::new();
+        let (first, _rx1) = build::<Probe>(1);
+        registry.register("seat", &first).expect("fresh name");
+
+        first
+            .tell(ProbeMsg(9))
+            .try_send()
+            .expect("open mailbox accepts the message");
+        drop(first); // drain window for the incumbent
+
+        let (second, _rx2) = build::<Probe>(2);
+        registry
+            .register("seat", &second)
+            .expect("a draining incumbent's name is reclaimable");
+    }
+
     /// `Default` is a working empty registry, equivalent to `new` (guards the
     /// `Default → new` delegation — a self-recursive mutant there only crashes
     /// if something actually calls `Registry::default()`).

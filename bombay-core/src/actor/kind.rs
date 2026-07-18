@@ -4,7 +4,7 @@
 
 use std::{ops::ControlFlow, panic::AssertUnwindSafe};
 
-use futures::FutureExt;
+use futures::{FutureExt, stream::AbortHandle};
 use tokio_util::sync::CancellationToken;
 
 use crate::{
@@ -18,12 +18,15 @@ use crate::{
 /// `state` is the live actor; `self_ref` is its **weak** self-handle — the loop
 /// deliberately holds no strong self-ref so that dropping the last external
 /// [`ActorRef`] closes the mailbox and stops the actor (ref-count-driven stop,
-/// #117). The loop finishes any in-flight handler before observing a graceful
-/// stop ("finish-current-then-stop, no drain").
+/// #117). `cancel`/`abort` are the loop's own copies of the cold lifecycle
+/// handles, kept for minting drain-window handler refs (ADR-0010). The loop
+/// finishes any in-flight handler before observing a graceful stop
+/// ("finish-current-then-stop, no drain").
 pub(super) async fn run_message_loop<A: Actor>(
     state: &mut A,
     self_ref: &WeakActorRef<A>,
     cancel: &CancellationToken,
+    abort: &AbortHandle,
     mailbox_rx: &mut MailboxReceiver<A>,
 ) -> ActorStopReason {
     loop {
@@ -34,12 +37,17 @@ pub(super) async fn run_message_loop<A: Actor>(
             None | Some(None) => return ActorStopReason::Normal,
             Some(Some(signal)) => match signal {
                 Signal::Message { msg, self_sender } => {
-                    // The message carries a strong self-sender (ADR-0003), so the
-                    // loop lifts a strong self-ref out of it without ever holding
-                    // one — that is what keeps ref-count-driven stop reachable.
-                    let actor_ref = self_ref.with_sender(self_sender);
+                    // Steady state: share the external allocation — one CAS, no
+                    // alloc. Drain window (external refs gone; the dequeued
+                    // self_sender is what kept the message deliverable,
+                    // ADR-0003): mint a fresh shared alloc from that sender
+                    // plus the loop's own cold copies (ADR-0010). Either way
+                    // the handler's ref pins the actor while it is held.
+                    let actor_ref = self_ref.upgrade().unwrap_or_else(|| {
+                        ActorRef::new(self_ref.id(), self_sender, cancel.clone(), abort.clone())
+                    });
                     if let ControlFlow::Break(reason) =
-                        handle_message(state, &actor_ref, self_ref, msg).await
+                        handle_message(state, actor_ref, self_ref, msg).await
                     {
                         return reason;
                     }
@@ -58,12 +66,12 @@ pub(super) async fn run_message_loop<A: Actor>(
 /// carries the terminal stop reason.
 async fn handle_message<A: Actor>(
     state: &mut A,
-    actor_ref: &ActorRef<A>,
+    actor_ref: ActorRef<A>,
     self_ref: &WeakActorRef<A>,
     msg: A::Msg,
 ) -> ControlFlow<ActorStopReason> {
     let mut stop = false;
-    let result = AssertUnwindSafe(state.handle(msg, actor_ref.clone(), &mut stop))
+    let result = AssertUnwindSafe(state.handle(msg, actor_ref, &mut stop))
         .catch_unwind()
         .await;
     match result {

@@ -19,37 +19,31 @@
 //! so there is nothing to check). Both sides clone an owned `ActorRef` out per
 //! hit.
 //!
-//! Measured 2026-07-18 (M-series laptop, criterion defaults, PR #185):
+//! Measured 2026-07-18 (M-series laptop, criterion defaults, #186 — the
+//! single-allocation `ActorRef`, ADR-0010, which this bench motivated under
+//! PR #185; per-group deltas are vs that same-session pre-#186 baseline):
 //!
 //! | group                          | bombay-core          | kameo                | delta         |
 //! |--------------------------------|----------------------|----------------------|---------------|
-//! | lookup_hit                     | 24.9 ns              | 17.9 ns              | kameo 1.39×   |
-//! | lookup_contended_4x1k (1 name) | 419.1 µs (9.55 M/s)  | 234.4 µs (17.1 M/s)  | kameo 1.79×   |
-//! | lookup_contended_4x1k_distinct | 131.6 µs (30.4 M/s)  | 210.5 µs (19.0 M/s)  | bombay 1.60×  |
-//! | lookup_under_churn_3r1w        | 470.1 µs (6.39 M/s)  | 328.1 µs (9.14 M/s)  | kameo 1.43×   |
-//! | register_unregister            | 94.5 ns              | 45.9 ns              | kameo 2.06×   |
+//! | lookup_hit                     | 12.1 ns (−57%)       | 19.3 ns              | bombay 1.59×  |
+//! | lookup_contended_4x1k (1 name) | 192.2 µs (20.8 M/s)  | 255.9 µs (15.6 M/s)  | bombay 1.33×  |
+//! | lookup_contended_4x1k_distinct | 42.0 µs (95.3 M/s)   | 210.6 µs (19.0 M/s)  | bombay 5.02×  |
+//! | lookup_under_churn_3r1w        | 267.0 µs (11.2 M/s)  | 334.7 µs (8.96 M/s)  | bombay 1.25×  |
+//! | register_unregister            | 67.4 ns (−39%)       | 47.0 ns              | kameo 1.43×   |
 //!
-//! Reading — all five recorded honestly. The split is **which cacheline is
-//! the bottleneck**:
+//! Reading — ADR-0010 confirmed by measurement. Under PR #185 (the ADR-0003
+//! handle shape: flume-CAS + 2 Arc RMWs per clone, three contended
+//! cachelines) the same-name groups LOST to kameo's `Mutex<HashMap>` by
+//! 1.4–1.8×; the single-allocation handle (1 Weak-upgrade CAS + inline id
+//! per hit) flips every read group to a bombay win and lifts the same-name
+//! ceiling −59% (478 → 192 µs). The distinct-names regime — the design
+//! target: many actors, message-rate lookups — jumps to 5× over the global
+//! mutex, which is flat by construction whatever the name.
 //!
-//! * **Same-name groups (kameo wins 1.4–1.8×):** every reader clones the
-//!   SAME actor's handles, so the cost is the ref-model, not the map —
-//!   bombay pays weak-`upgrade` (a CAS loop on flume's shared sender
-//!   counter) + two more Arc RMWs (`CancellationToken`, `AbortHandle`)
-//!   per hit, ping-ponging three shared cachelines across reader cores,
-//!   while the mutex's ~18 ns critical section never convoys at 4 threads.
-//!   This cost belongs to ADR-0003's `ActorRef` shape, not to the registry;
-//!   a single-allocation `ActorRef` (1 RMW per clone) is the follow-up
-//!   card's hypothesis.
-//! * **Distinct-names group (bombay wins 1.60×):** the regime the design
-//!   targets — many actors, message-rate lookups. bombay's own throughput
-//!   jumps 3.2× (9.55 → 30.4 M/s) once readers stop sharing one actor,
-//!   confirming the same-name ceiling was the handle, not the map; kameo
-//!   barely moves (17.1 → 19.0 M/s) because its ceiling IS the one global
-//!   mutex, whatever the name. More readers/names widen this gap; the
-//!   mutex is flat by construction.
-//! * **Write cycle (kameo 2.06×):** a `Box` per claim + `compute`'s atomics
-//!   vs a plain locked insert — accepted, registration is passivation-rate.
+//! * **Write cycle (kameo 1.43×):** a `Box` per claim + `compute`'s atomics
+//!   vs a plain locked insert — accepted, registration is passivation-rate
+//!   (the #186 restructure still shaved it −39% as a side effect: the weak
+//!   handle it boxes is now two words).
 //!
 //! Both designs sit 2–3 orders below message-rate costs (µs-scale sends);
 //! the structural drivers on the card (no guard-across-`.await` deadlock

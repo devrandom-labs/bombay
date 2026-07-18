@@ -1,6 +1,9 @@
 # ADR-0003 — `ActorRef` self-reference & ref-count-driven stop
 
-**Status:** Accepted (2026-07-06) — implemented under card #117
+**Status:** Accepted (2026-07-06) — implemented under card #117. Amended by
+ADR-0010 (#186): the handle *layout* ("no outer `Arc`") is superseded by the
+single-allocation shape; the liveness model (Design E, sender-in-envelope,
+drain-then-stop) stands.
 
 ## Context
 

@@ -23,6 +23,24 @@
 //!
 //! Both arms sweep the fan-out width, so the scaling curve (what a slab/registry
 //! flattens) is visible, and `Throughput::Elements` reports per-watcher time.
+//!
+//! Measured 2026-07-18 (M-series laptop, criterion defaults, #186 before →
+//! after the single-allocation `ActorRef`, ADR-0010):
+//!
+//! | group           | width | before    | after     | change |
+//! |-----------------|-------|-----------|-----------|--------|
+//! | dispatch        | 16    | 387 ns    | 390 ns    | noise  |
+//! | dispatch        | 128   | 3.49 µs   | 3.18 µs   | −5.8%  |
+//! | dispatch        | 1024  | 25.2 µs   | 26.1 µs   | +4.1%  |
+//! | roundtrip       | 16    | 2.44 µs   | 2.02 µs   | −17.2% |
+//! | roundtrip       | 128   | 19.5 µs   | 17.0 µs   | −13.1% |
+//! | roundtrip       | 1024  | 157.6 µs  | 133.2 µs  | −14.8% |
+//!
+//! Reading: the dispatch arm drives bare `MailboxSender`s — no `ActorRef` in
+//! the timed region — so its ±4–6% swings are machine noise on an untouched
+//! path. The roundtrip arm includes the loop's per-message self-ref lift
+//! (5 RMWs → 2 under ADR-0010), which is where the uniform −13…−17% comes
+//! from.
 
 use bombay_core::actor::{Actor, ActorRef, Spawn};
 use bombay_core::error::Infallible;
