@@ -19,7 +19,7 @@
 > reproducible gate that fails on a survivor, a timeout, an interrupted run (fewer recorded
 > outcomes than candidates), or a per-`file::function` viability collapse against a
 > committed baseline, and it always reports the measured ratio rather than a bare
-> pass/fail — currently **64 viable / 215 total** (see the #148 section below and
+> pass/fail — currently **92 viable / 314 total** (measured 2026-07-18 under #186; see the #148 section below and
 > `docs/adr/0006-mutation-viable-ratchet.md`). Read every green claim in this file for its
 > *sample size* and its *surface*, not its colour — a green lane over the wrong surface is
 > indistinguishable from a green lane over the right one, which is exactly why the gate now
@@ -67,13 +67,16 @@ Pinned via the flake's `nixpkgs` (never `nix run nixpkgs#…`), mirroring the co
 package. Quarantined off `nix flake check` (rebuild-per-mutant is too slow for the
 per-push gate) — the nightly run is `.github/workflows/mutants.yml`; the gate's design
 (the per-function baseline, the viability-collapse check) is recorded in
-`docs/adr/0006-mutation-viable-ratchet.md`. Measured 2026-07-17 (this branch), whole
-package + `derive_msg.rs`: **64 viable / 215 total** mutants (64 caught, 0 missed, 0
-timeout, 151 unviable) — the ratchet baseline is 47 floored functions (viable ≥ 1) plus 48
-documented 0-viable functions in `known_zero_viable` (including `WeakActorRef::with_sender`,
-which now also carries a hand-written compensating test, and all of
-`macros/src/derive_msg.rs`, whose #114 derive is empirically 0-viable and is instead covered
-by #170's compile-fail lane).
+`docs/adr/0006-mutation-viable-ratchet.md`. Measured 2026-07-18 (#186, after the
+single-allocation `ActorRef` restructure, ADR-0010), whole package + `derive_msg.rs`:
+**92 viable / 314 total** mutants (92 caught, 0 missed, 0 timeout, 222 unviable) — the
+ratchet baseline was regenerated under #186: `WeakActorRef::with_sender` is gone
+(subsumed by the loop's upgrade-or-mint; its compensating control moved to
+`upgrade_preserves_id_cancel_and_abort`), `ActorRef::abort_handle` joins
+`known_zero_viable`, `cancel_token` moves to a caught floor of 1 (it lost `const`, so
+whole-body mutants now compile), and `AskFut::poll`'s floor ratchets 1 → 3. All of
+`macros/src/derive_msg.rs` stays empirically 0-viable, covered by #170's compile-fail
+lane. (The pre-#186 point-in-time reading, 2026-07-17: 64 viable / 215 total, 0 missed.)
 
 ### `mailbox` (#112, redesigned #133) — done
 Zero-box `Signal<A>` queue behind a **`flume`** channel (chosen on measured evidence —
@@ -284,6 +287,39 @@ points: `ActorRef::tell` / `is_alive` and `MailboxSender::send_message` /
 No README change — the rebuilt spine is not behind the umbrella yet (same as
 #116); `tell`/`is_alive` are steps toward the already-documented kameo target
 API (ergonomic ask/tell builders are #118).
+
+### `actor-ref` single-allocation restructure (#186, ADR-0010) — done
+`ActorRef` becomes inline `id` + one `Arc<RefShared{sender, cancel, abort}>`;
+`WeakActorRef` becomes `id` + `std::sync::Weak`. Liveness stays flume's
+`sender_count` (ADR-0003); the loop's per-message self-ref lift becomes
+upgrade-or-mint (`kind.rs`), replacing `WeakActorRef::with_sender`. One
+semantic change, pinned below: a weak upgrade in the drain window is `None`.
+Bench evidence in the three bench headers (registry same-name −59%, flipping
+1.79× loss → 1.33× win; tell path improved; watcher roundtrip −13…−17%).
+
+**+8 tests / 1 replaced / 1 new test binary:**
+- **Layout** (`actor_ref.rs`) — `handles_are_two_words`: both handles are
+  exactly two words (the 1-RMW-clone claim's structural half).
+- **Drain-window semantics** (`actor_ref.rs`, red-first) —
+  `weak_upgrade_is_none_in_the_drain_window`: external refs gone + queued
+  message still pinning ⇒ `upgrade()` is `None` while the message is still
+  delivered (ADR-0003 self-pin intact).
+- **Registry drain-window, both paths** (`registry.rs`, red-first) —
+  `lookup_in_drain_window_reads_absent` + `register_reclaims_name_in_drain_window`:
+  a draining actor reads dead on the read path and its name is reclaimable on
+  the write path (one liveness rule, both directions).
+- **Minted-ref wiring** (`spawn.rs`) — `drain_window_handler_ref_stops_the_actor`
+  + `drain_window_handler_ref_kills_the_actor`: a handler ref minted in the
+  drain window cancels/aborts the REAL loop (fresh-token/handle stubs fail).
+- **Compensating control** (`actor_ref.rs`) — `upgrade_preserves_id_cancel_and_abort`
+  replaces `with_sender_preserves_id_cancel_and_abort` (same invariant, new
+  reassembly path: upgrade must share the original's token/handle verbatim).
+- **Alloc-exactness** (`tests/alloc_clone.rs`, single-test binary, #151 seam) —
+  `clone_downgrade_upgrade_allocate_nothing`: handle ops are pure refcount
+  traffic (0 gross allocations, exact reclamation).
+
+Mutation: baseline regenerated — **92 viable / 314 total, 0 missed, 0 timeout**
+(see the gate paragraph above). MIRI sweep + seeds legs green on PR #188.
 
 ### `recipient` type-erased fan-in (#145) — done
 `bombay-core/src/actor/recipient.rs` carries `Recipient<M>` / `WeakRecipient<M>`:
