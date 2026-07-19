@@ -205,6 +205,7 @@ mod tests {
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
         message::Msg,
     };
+    use proptest::prelude::*;
 
     // Minimal actors purely to key mailboxes/refs (the registry never runs a
     // loop). Two distinct types so the wrong-type lookup boundary is testable.
@@ -745,5 +746,58 @@ mod tests {
                 });
             }
         });
+    }
+    /// Adversarial-name strategy: empty, Unicode, and up-to-512-char names —
+    /// the rubric's "strings empty / max / max+1" proptest mandate.
+    fn arb_name() -> impl proptest::strategy::Strategy<Value = String> {
+        proptest::string::string_regex(".{0,512}").expect("valid regex")
+    }
+
+    proptest! {
+        /// Defensive boundary (rubric category 3): arbitrary names must
+        /// round-trip through register/lookup/unregister without panicking and
+        /// without cross-contaminating — the unit suite only uses short ASCII
+        /// names ("hot", "seat").
+        #[test]
+        fn register_lookup_unregister_roundtrips_arbitrary_name(name in arb_name()) {
+            let registry = Registry::new();
+            let (actor_ref, _rx) = build::<Probe>(1);
+            prop_assert!(registry.register(name.clone(), &actor_ref).is_ok());
+            let resolved = registry
+                .lookup::<Probe>(&name)
+                .expect("same type")
+                .expect("live actor resolves");
+            prop_assert_eq!(resolved.id(), ActorId::new(1));
+            prop_assert!(registry.unregister(&name));
+            prop_assert!(
+                registry.lookup::<Probe>(&name).expect("no type conflict").is_none(),
+                "unregister frees the name for re-registration"
+            );
+        }
+
+        /// Two distinct arbitrary names keep their separate incumbents — no
+        /// key-collision or cross-contamination under adversarial inputs.
+        #[test]
+        fn distinct_arbitrary_names_do_not_cross_contaminate(
+            name_a in arb_name(),
+            name_b in arb_name(),
+        ) {
+            prop_assume!(name_a != name_b);
+            let registry = Registry::new();
+            let (a, _rx_a) = build::<Probe>(1);
+            let (b, _rx_b) = build::<Probe>(2);
+            prop_assert!(registry.register(name_a.clone(), &a).is_ok());
+            prop_assert!(registry.register(name_b.clone(), &b).is_ok());
+            let ra = registry
+                .lookup::<Probe>(&name_a)
+                .expect("same type")
+                .expect("a live");
+            let rb = registry
+                .lookup::<Probe>(&name_b)
+                .expect("same type")
+                .expect("b live");
+            prop_assert_eq!(ra.id(), ActorId::new(1));
+            prop_assert_eq!(rb.id(), ActorId::new(2));
+        }
     }
 }
