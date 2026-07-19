@@ -15,9 +15,9 @@ set -euo pipefail
 cargo fmt --check -p bombay-core
 
 cargo clippy -p bombay-core --lib \
-  -- -D warnings
+	-- -D warnings
 
 cargo nextest run -p bombay-core --no-fail-fast
 
 # fuzz/ is its own workspace (bolero, stable corpus replay).
-( cd fuzz && cargo test )
+(cd fuzz && cargo test)

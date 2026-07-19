@@ -86,3 +86,25 @@ invariants**, exactly the #152 risk. That is what this loop attacks.
 - Confirmed `fuzz/` uses **bolero** (stable-Rust, corpus replay via `cargo test`
   in CI's `bombay-fuzz-replay`); deep fuzzing needs nightly `cargo-bolero`
   (not on PATH) — loop stays on the stable replay path.
+
+- **Iter 1 (keep, invariant_tests 165→166):** added `fuzz/tests/registry.rs`
+  bolero `check!` state-machine over register/lookup/unregister/drop, asserting
+  register-once atomicity + dead-reads-absent via a model oracle (per-name
+  claim `(id, incarnation)`, per-id liveness). Identity proven by a message
+  round-trip through the registered slot's receiver — NOT `ActorId` equality,
+  because `test_support::unstarted_actor` assigns a fixed `ActorId` (all fuzzed
+  actors share id 0). Directly targets the #152 fuzz-over-wrong-surface gap.
+- **Iter 2 (keep, invariant_tests 166→168):** added two `proptest!` property
+  tests to `bombay-core/src/registry.rs` covering defensive-boundary name
+  handling — register/lookup/unregister round-trip under arbitrary `String`
+  names (empty / Unicode / up-to-512-char: the rubric's "strings empty / max /
+  max+1" mandate) and non-cross-contamination of distinct arbitrary names. The
+  unit suite only uses short ASCII names; iter-1's bolero fuzz only uses `u8`
+  names — so adversarial string inputs were previously untested.
+- **Iter 3 (keep, invariant_tests 168→169):** added `fuzz/tests/reply.rs`
+  bolero `check!` state-machine over the single-shot reply channel, asserting
+  the exact outcome matrix — `send(v)→Ok(v)`, `send_err(e)→Err(Handler(e))`,
+  send-after-receiver-drop `→AskerGone`, recv-after-sender-drop `→Interrupted`
+  (recv on a current-thread tokio runtime, fuzz-only). The reply port is the
+  typed end of every `ask` (#118) and was previously only proptested, never
+  fuzzed — broadens the #152 fix to the ask/reply surface.

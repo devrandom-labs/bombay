@@ -55,7 +55,10 @@ impl Actor for Probe {
 struct ActorState {
     incarn: u64,
     live: bool,
-    handle: Option<(ActorRef<Probe>, bombay_core::mailbox::MailboxReceiver<Probe>)>,
+    handle: Option<(
+        ActorRef<Probe>,
+        bombay_core::mailbox::MailboxReceiver<Probe>,
+    )>,
 }
 
 /// Returns a live `ActorRef` for `id`, creating (or recreating) one as needed.
@@ -74,7 +77,12 @@ fn live_ref(actors: &mut HashMap<u64, ActorState>, id: u64) -> ActorRef<Probe> {
         state.live = true;
         state.handle = Some((r.clone(), rx));
     }
-    state.handle.as_ref().expect("live after (re)create").0.clone()
+    state
+        .handle
+        .as_ref()
+        .expect("live after (re)create")
+        .0
+        .clone()
 }
 
 /// Drops the live handle for `id`, if any — the actor's mailbox channel closes.
@@ -94,7 +102,10 @@ fn claim_is_live(actors: &HashMap<u64, ActorState>, id: u64, incarnation: u64) -
         .is_some_and(|s| s.live && s.incarn == incarnation)
 }
 
-fn new_actor() -> (ActorRef<Probe>, bombay_core::mailbox::MailboxReceiver<Probe>) {
+fn new_actor() -> (
+    ActorRef<Probe>,
+    bombay_core::mailbox::MailboxReceiver<Probe>,
+) {
     let cap = Capacity::try_from(4usize).expect("valid capacity");
     let (tx, rx) = Mailbox::<Probe>::bounded(cap);
     unstarted_actor::<Probe>((tx, rx))
@@ -110,104 +121,95 @@ enum Op {
 
 #[test]
 fn registry_state_machine() {
-    check!()
-        .with_type::<Vec<Op>>()
-        .for_each(|ops| {
-            let registry = Registry::new();
-            let mut actors: HashMap<u64, ActorState> = HashMap::new();
-            // name -> (id, incarnation) of the actor currently registered.
-            let mut claims: HashMap<u8, (u64, u64)> = HashMap::new();
+    check!().with_type::<Vec<Op>>().for_each(|ops| {
+        let registry = Registry::new();
+        let mut actors: HashMap<u64, ActorState> = HashMap::new();
+        // name -> (id, incarnation) of the actor currently registered.
+        let mut claims: HashMap<u8, (u64, u64)> = HashMap::new();
 
-            for op in ops {
-                match *op {
-                    Op::Register { name, id } => {
-                        let name_s = name.to_string();
-                        let ref_ = live_ref(&mut actors, id);
-                        let got = registry.register(name_s, &ref_);
+        for op in ops {
+            match *op {
+                Op::Register { name, id } => {
+                    let name_s = name.to_string();
+                    let ref_ = live_ref(&mut actors, id);
+                    let got = registry.register(name_s, &ref_);
 
-                        match claims.get(&name).copied() {
-                            Some((cid, cgen)) if claim_is_live(&actors, cid, cgen) => {
-                                assert_eq!(
-                                    got,
-                                    Err(NameTaken),
-                                    "a live incumbent blocks re-registration"
-                                );
-                                // incumbent untouched: claims unchanged.
-                            }
-                            Some(_) => {
-                                // dead incumbent: reclaimed atomically.
-                                assert!(
-                                    got.is_ok(),
-                                    "a dead incumbent's name is reclaimable"
-                                );
-                                claims.insert(name, (id, actors[&id].incarn));
-                            }
-                            None => {
-                                assert!(got.is_ok(), "a free name is registrable");
-                                claims.insert(name, (id, actors[&id].incarn));
-                            }
+                    match claims.get(&name).copied() {
+                        Some((cid, cgen)) if claim_is_live(&actors, cid, cgen) => {
+                            assert_eq!(
+                                got,
+                                Err(NameTaken),
+                                "a live incumbent blocks re-registration"
+                            );
+                            // incumbent untouched: claims unchanged.
                         }
-                    }
-                    Op::Lookup { name } => {
-                        let name_s = name.to_string();
-                        let got = registry
-                            .lookup::<Probe>(&name_s)
-                            .expect("same type — never a type conflict on lookup");
-
-                        match claims.get(&name).copied() {
-                            Some((cid, cgen)) if claim_is_live(&actors, cid, cgen) => {
-                                let resolved = got
-                                    .expect("a live incumbent resolves to a ref");
-                                assert!(
-                                    resolved.is_alive(),
-                                    "lookup of a live incumbent returns a live handle"
-                                );
-                                // Identity: a message sent via the resolved ref must
-                                // reach the registered slot's OWN receiver — never a
-                                // torn or wrong channel (the registry's core invariant).
-                                let m = ProbeMsg(0x9E37_79B9_2A17_3779);
-                                resolved
-                                    .tell(m)
-                                    .try_send()
-                                    .expect("a live incumbent's mailbox is open");
-                                let landed = actors
-                                    .get_mut(&cid)
-                                    .expect("incumbent slot exists")
-                                    .handle
-                                    .as_mut()
-                                    .expect("live slot holds a handle")
-                                    .1
-                                    .drain()
-                                    .any(|s| matches!(s, Signal::Message { msg, .. } if msg == m));
-                                assert!(
-                                    landed,
-                                    "lookup resolves THE registrant's channel, not a torn entry"
-                                );
-                            }
-                            _ => {
-                                assert!(
-                                    got.is_none(),
-                                    "a free or dead name reads as absent on every path"
-                                );
-                            }
+                        Some(_) => {
+                            // dead incumbent: reclaimed atomically.
+                            assert!(got.is_ok(), "a dead incumbent's name is reclaimable");
+                            claims.insert(name, (id, actors[&id].incarn));
                         }
-                    }
-                    Op::Unregister { name } => {
-                        let name_s = name.to_string();
-                        let removed = registry.unregister(&name_s);
-                        let had = claims.remove(&name).is_some();
-                        assert_eq!(
-                            removed, had,
-                            "unregister removes exactly the claimed entry"
-                        );
-                    }
-                    Op::DropActor { id } => {
-                        drop_actor(&mut actors, id);
-                        // claims pointing at this id now read absent (oracle
-                        // handles via claim_is_live); the claim entry stays so a
-                        // later re-register recreates a new incarnation.
+                        None => {
+                            assert!(got.is_ok(), "a free name is registrable");
+                            claims.insert(name, (id, actors[&id].incarn));
+                        }
                     }
                 }
+                Op::Lookup { name } => {
+                    let name_s = name.to_string();
+                    let got = registry
+                        .lookup::<Probe>(&name_s)
+                        .expect("same type — never a type conflict on lookup");
+
+                    match claims.get(&name).copied() {
+                        Some((cid, cgen)) if claim_is_live(&actors, cid, cgen) => {
+                            let resolved = got.expect("a live incumbent resolves to a ref");
+                            assert!(
+                                resolved.is_alive(),
+                                "lookup of a live incumbent returns a live handle"
+                            );
+                            // Identity: a message sent via the resolved ref must
+                            // reach the registered slot's OWN receiver — never a
+                            // torn or wrong channel (the registry's core invariant).
+                            let m = ProbeMsg(0x9E37_79B9_2A17_3779);
+                            resolved
+                                .tell(m)
+                                .try_send()
+                                .expect("a live incumbent's mailbox is open");
+                            let landed = actors
+                                .get_mut(&cid)
+                                .expect("incumbent slot exists")
+                                .handle
+                                .as_mut()
+                                .expect("live slot holds a handle")
+                                .1
+                                .drain()
+                                .any(|s| matches!(s, Signal::Message { msg, .. } if msg == m));
+                            assert!(
+                                landed,
+                                "lookup resolves THE registrant's channel, not a torn entry"
+                            );
+                        }
+                        _ => {
+                            assert!(
+                                got.is_none(),
+                                "a free or dead name reads as absent on every path"
+                            );
+                        }
+                    }
+                }
+                Op::Unregister { name } => {
+                    let name_s = name.to_string();
+                    let removed = registry.unregister(&name_s);
+                    let had = claims.remove(&name).is_some();
+                    assert_eq!(removed, had, "unregister removes exactly the claimed entry");
+                }
+                Op::DropActor { id } => {
+                    drop_actor(&mut actors, id);
+                    // claims pointing at this id now read absent (oracle
+                    // handles via claim_is_live); the claim entry stays so a
+                    // later re-register recreates a new incarnation.
+                }
             }
-        });
+        }
+    });
 }
