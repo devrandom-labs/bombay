@@ -1713,6 +1713,121 @@ mod tests {
         }
     }
 
+    /// A `Watch` actor giving BOTH positive signals the trap/no-propagate/dead-target
+    /// tests need (card #195):
+    ///
+    /// - `deaths` — bumped once per `on_link_died` invocation (after `last` is
+    ///   recorded), the proof a death was actually DELIVERED and the hook RAN. A
+    ///   broken loop that never fires the death leaves `deaths == 0`, so a
+    ///   bounded-wait on it times out instead of passing on a fixed-time window.
+    /// - `handled` — bumped per `Ping` message handled. Its hook always returns
+    ///   `Continue` (never propagates), so a POST-death `Ping` round-trip
+    ///   (`deaths == 1` then send `Ping`, wait `handled == 1`) is the robust proof
+    ///   the actor SURVIVED — the loop is still dequeuing messages after the death.
+    ///   A racy `is_alive()` check would instead pass under an always-`Break`
+    ///   mutation, since the mailbox closes only lazily during async teardown.
+    struct Recorder {
+        deaths: Arc<AtomicU32>,
+        handled: Arc<AtomicU32>,
+        last: Arc<std::sync::Mutex<Option<(crate::mailbox::ActorId, bool)>>>,
+    }
+    #[derive(Debug)]
+    struct Ping;
+    impl Msg for Ping {}
+    impl Mailboxed for Recorder {
+        type Msg = Ping;
+    }
+    impl crate::actor::Actor for Recorder {
+        type Args = (
+            Arc<AtomicU32>,
+            Arc<AtomicU32>,
+            Arc<std::sync::Mutex<Option<(crate::mailbox::ActorId, bool)>>>,
+        );
+        type Error = core::convert::Infallible;
+        async fn on_start(
+            (deaths, handled, last): Self::Args,
+            _: ActorRef<Self>,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                deaths,
+                handled,
+                last,
+            })
+        }
+        async fn handle(
+            &mut self,
+            _: Ping,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            self.handled.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+    impl crate::actor::Watch for Recorder {
+        async fn on_link_died(
+            &mut self,
+            id: crate::mailbox::ActorId,
+            _reason: ActorStopReason,
+            linked: bool,
+        ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
+            *self.last.lock().expect("lock") = Some((id, linked));
+            self.deaths.fetch_add(1, Ordering::SeqCst);
+            Ok(core::ops::ControlFlow::Continue(())) // trap: never propagate
+        }
+    }
+
+    /// Shared observation slots for a linked [`Recorder`]: the death-invocation and
+    /// message-handled counters, and the last-seen `(id, linked)`.
+    struct RecorderProbe {
+        handle: ActorRef<Recorder>,
+        deaths: Arc<AtomicU32>,
+        handled: Arc<AtomicU32>,
+        last: Arc<std::sync::Mutex<Option<(crate::mailbox::ActorId, bool)>>>,
+    }
+
+    /// Spawns a linked [`Recorder`] and returns it with its observation slots.
+    fn spawn_recorder() -> RecorderProbe {
+        use crate::actor::SpawnLinked;
+        let deaths = Arc::new(AtomicU32::new(0));
+        let handled = Arc::new(AtomicU32::new(0));
+        let last = Arc::new(std::sync::Mutex::new(None));
+        let handle =
+            Recorder::spawn_linked((Arc::clone(&deaths), Arc::clone(&handled), Arc::clone(&last)));
+        RecorderProbe {
+            handle,
+            deaths,
+            handled,
+            last,
+        }
+    }
+
+    /// Proves a [`Recorder`] SURVIVED (did not propagate) after processing a death:
+    /// bounded-waits `deaths == 1` (the death was delivered + hook ran), then sends a
+    /// `Ping` and bounded-waits `handled == 1` (the loop is still dequeuing messages
+    /// AFTER the death). Both waits are bounded, so an always-`Break` loop — which
+    /// stops the actor before the `Ping` is handled — makes the second wait time out
+    /// and FAILS the test, where a racy post-`deaths` `is_alive()` check would not.
+    async fn assert_survived_one_death(probe: &RecorderProbe) {
+        bounded(async {
+            while probe.deaths.load(Ordering::SeqCst) == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+        probe
+            .handle
+            .tell(Ping)
+            .try_send()
+            .expect("actor still alive to ping");
+        bounded(async {
+            while probe.handled.load(Ordering::SeqCst) == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+    }
+
     /// Lifecycle (card #195): a registered watcher is notified on the NORMAL stop
     /// path with the actor's id, a normal reason, and `linked == false` (a `watch`
     /// edge). The notification is the `Watchers` guard's `Drop` on the graceful
@@ -2019,65 +2134,67 @@ mod tests {
     }
 
     /// Sequence (card #195): a linked peer that stops NORMALLY does not propagate —
-    /// the survivor keeps running. FAILS if a normal death is treated as abnormal.
+    /// the survivor keeps running AFTER it has actually processed the death. The
+    /// [`Recorder`] hook bumps `count` when the normal-death notice is delivered, so
+    /// the bounded-wait on `count == 1` is a POSITIVE signal the loop reacted; only
+    /// then is `is_alive()` asserted. Paired with Task 6's
+    /// `default_hook_breaks_on_linked_abnormal_and_continues_otherwise` (which unit-
+    /// tests the normal→`Continue` decision), this pins that the loop HONORS
+    /// `Continue` on a delivered normal death. FAILS if the loop propagates it.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn link_does_not_propagate_on_normal() {
         use crate::actor::SpawnLinked;
 
-        let a = Panicker::spawn_linked(());
+        let probe = spawn_recorder();
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
-        let b = Counter::spawn_linked((handled, Arc::clone(&stopped)));
-        a.link(&b).expect("both linked");
+        let b = Counter::spawn_linked((handled, stopped));
+        probe.handle.link(&b).expect("both linked");
 
         b.stop(); // normal stop
-        // Wait until b has actually stopped (its death notice is delivered to a).
-        bounded(async {
-            while stopped.load(Ordering::SeqCst) == 0 {
-                tokio::task::yield_now().await;
-            }
-        })
-        .await;
-        // Give a a couple of scheduler turns to process the (Continue) notice.
-        tokio::task::yield_now().await;
-        tokio::task::yield_now().await;
-        assert!(a.is_alive(), "a normal death does not propagate to a");
+
+        // Robust positive signal: the normal-death notice was delivered AND the
+        // recorder survived it (still handles a post-death Ping).
+        assert_survived_one_death(&probe).await;
     }
 
     /// Sequence (card #195): a `Watch` actor overriding `on_link_died` to `Continue`
-    /// (the `trap_exit` override) survives a linked abnormal death. FAILS if the
-    /// loop propagates regardless of the hook's `ControlFlow`.
+    /// (the `trap_exit` override) survives a linked ABNORMAL death. The [`Recorder`]
+    /// hook bumps `count` when the abnormal-death notice is delivered; the bounded-
+    /// wait on `count == 1` proves the death was delivered and the hook ran, so
+    /// asserting `is_alive()` afterwards pins that the loop HONORED the `Continue`
+    /// rather than not-yet-having-fired. FAILS if the loop ignores the hook's
+    /// `ControlFlow` and propagates anyway.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn trap_exit_via_override_keeps_running() {
         use crate::actor::SpawnLinked;
 
-        let a = Trapper::spawn_linked(()); // hook always Continues
+        let probe = spawn_recorder(); // hook always Continues
         let b = Panicker::spawn_linked(());
-        a.link(&b).expect("both linked");
+        probe.handle.link(&b).expect("both linked");
 
         b.tell(Boom).try_send().expect("provoke b's panic");
-        // Wait for b to die, so a has certainly received the notice.
-        bounded(async {
-            while b.is_alive() {
-                tokio::task::yield_now().await;
-            }
-        })
-        .await;
-        tokio::task::yield_now().await;
-        tokio::task::yield_now().await;
-        assert!(a.is_alive(), "the trap_exit override keeps a alive");
+
+        // Robust positive signal: the abnormal-death notice was delivered AND the
+        // recorder survived it (still handles a post-death Ping) — the loop honored
+        // the hook's Continue rather than propagating.
+        assert_survived_one_death(&probe).await;
     }
 
     /// Defensive (card #195): watching an already-dead target delivers a `LinkDied`
-    /// at once (Erlang's link-to-dead rule) — the `watch` call still succeeds, and a
-    /// trapping watcher stays alive. FAILS if `watch` errors or panics when the
-    /// target's mailbox is already closed.
+    /// at once (Erlang's link-to-dead rule). The bounded-wait on the [`Recorder`]'s
+    /// `count == 1` is the POSITIVE proof the synthetic notice was actually delivered
+    /// to a's own channel and its hook ran (not merely that `watch` returned `Ok`);
+    /// the recorded `(id, linked)` then pins the notice carries the dead target's id
+    /// and `linked == false` (a `watch` edge). FAILS if `register_on` drops the
+    /// dead-target branch — the counter never reaches 1 and the wait times out.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn dead_target_watch_immediate_linkdied() {
         use crate::actor::SpawnLinked;
 
-        let a = Trapper::spawn_linked(());
+        let probe = spawn_recorder();
         let b = Panicker::spawn_linked(());
+        let b_id = b.id();
 
         b.kill();
         bounded(async {
@@ -2087,13 +2204,19 @@ mod tests {
         })
         .await;
 
-        // Watching a dead b synthesizes an immediate notice on a's channel.
-        assert!(a.watch(&b).is_ok(), "watching a dead target still succeeds");
-        tokio::task::yield_now().await;
-        tokio::task::yield_now().await;
+        // Watching a dead b must synthesize an immediate notice on a's channel.
         assert!(
-            a.is_alive(),
-            "the trapping watcher survives the dead-target notice"
+            probe.handle.watch(&b).is_ok(),
+            "watching a dead target still succeeds",
+        );
+
+        // Robust positive signal: the synthetic notice actually reached a's channel
+        // and its hook ran (deaths == 1), and a survived it (post-death Ping).
+        assert_survived_one_death(&probe).await;
+        assert_eq!(
+            *probe.last.lock().expect("lock"),
+            Some((b_id, false)),
+            "the synthetic dead-target notice carries b's id and a watch edge (linked == false)",
         );
     }
 
