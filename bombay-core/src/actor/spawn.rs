@@ -2246,6 +2246,92 @@ mod tests {
         );
     }
 
+    /// Sequence (card #195): [`ActorRef::unwatch`] actually removes the edge — after a
+    /// watch followed by an unwatch, the target's death delivers NO notice. The
+    /// recorder's biased loop drains any pending death BEFORE the post-stop `Ping`, so
+    /// waiting `handled == 1` then asserting `deaths == 0` is a robust negative proof
+    /// (not a race). FAILS if `unwatch` is a no-op — the edge survives and the notice
+    /// fires (`deaths == 1`).
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn unwatch_removes_edge_so_death_delivers_no_notice() {
+        use crate::actor::{Spawn, SpawnLinked};
+
+        let probe = spawn_recorder();
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let target = Counter::spawn((handled, Arc::clone(&stopped)));
+
+        probe.handle.watch(&target).await.expect("watcher is linked");
+        probe.handle.unwatch(&target).await;
+
+        target.stop();
+        bounded(async {
+            while stopped.load(Ordering::SeqCst) == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+
+        // The recorder's biased loop processes any pending death BEFORE this Ping,
+        // so once the Ping is handled, `deaths` reflects reality.
+        probe.handle.tell(Ping).try_send().expect("recorder alive");
+        bounded(async {
+            while probe.handled.load(Ordering::SeqCst) == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+        assert_eq!(
+            probe.deaths.load(Ordering::SeqCst),
+            0,
+            "an unwatched watcher receives no death notice",
+        );
+    }
+
+    /// Defensive (card #195): `link`'s both-channels pre-check prevents a HALF-link —
+    /// linking to a plain-spawned (unlinked) peer returns `Err` and installs NO edge in
+    /// EITHER direction. If the pre-check is weakened (`||` → `&&`), the first
+    /// `register_on` still lands on the peer before the second fails, leaving the peer
+    /// watching `self`; the recorder would then receive the peer's death. Waiting the
+    /// recorder's post-kill `Ping` (biased loop drains any death first) then asserting
+    /// `deaths == 0` proves no half-edge survived.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn link_to_plain_peer_errs_without_half_link() {
+        use crate::actor::{Spawn, SpawnLinked};
+
+        let probe = spawn_recorder(); // linked self, hook Continues + bumps `deaths`
+        let peer = Panicker::spawn(()); // a `Watch` actor, but plain-spawned => link_tx None
+
+        assert_eq!(
+            probe.handle.link(&peer).await,
+            Err(crate::error::ActorNotLinked),
+            "linking to an unlinked peer is rejected",
+        );
+
+        peer.kill();
+        bounded(async {
+            while peer.is_alive() {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+
+        // If a half-edge survived, the peer's death is now queued on the recorder's
+        // link channel; the biased loop drains it before this Ping is handled.
+        probe.handle.tell(Ping).try_send().expect("recorder alive");
+        bounded(async {
+            while probe.handled.load(Ordering::SeqCst) == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+        assert_eq!(
+            probe.deaths.load(Ordering::SeqCst),
+            0,
+            "a rejected link leaves NO half-edge (the peer never watched self)",
+        );
+    }
+
     /// Defensive (card #195, ADR-0003): watching holds NO strong `ActorRef` to the
     /// target — the watcher list stores the watcher's own channel, not the target's.
     /// So dropping the target's last external strong ref still stops it. FAILS if a
