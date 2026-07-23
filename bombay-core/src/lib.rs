@@ -40,6 +40,7 @@ pub mod message;
 pub mod registry;
 pub mod reply;
 pub mod request;
+mod watch;
 
 // Both arms are load-bearing: the feature arm serves integration tests and
 // benches (dev-dep feature unification turns it on for external test binaries);
