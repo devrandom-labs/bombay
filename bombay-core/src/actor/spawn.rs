@@ -2308,16 +2308,33 @@ mod tests {
             "linking to an unlinked peer is rejected",
         );
 
-        peer.kill();
-        bounded(async {
-            while peer.is_alive() {
-                tokio::task::yield_now().await;
-            }
-        })
-        .await;
+        // A raw "fence" watcher, registered on `peer` AFTER `link` — so in `peer`'s
+        // watcher list it drains AFTER any half-edge the mutant installed. Receiving
+        // the fence's notice therefore deterministically proves `peer`'s
+        // `Watchers::drop` already fired the (earlier) half-edge, if one exists. This
+        // replaces a racy `peer.is_alive()` poll, which flips before the drop's
+        // notifications actually run.
+        let (fence_tx, fence_rx) = flume::unbounded::<crate::watch::LinkDied>();
+        peer.mailbox_sender()
+            .send(crate::mailbox::Signal::Watch(Box::new(crate::watch::WatchReg {
+                watcher: crate::mailbox::ActorId::new(0xF),
+                link_tx: fence_tx,
+                linked: false,
+            })))
+            .await
+            .expect("fence registered on peer");
 
-        // If a half-edge survived, the peer's death is now queued on the recorder's
-        // link channel; the biased loop drains it before this Ping is handled.
+        // Graceful stop (NOT kill): the teardown drain applies every pending
+        // `Signal::Watch` (the fence, and any mutant half-edge) before notifying, so
+        // the fence is guaranteed installed and fired — a `kill` would abort with the
+        // fence still queued, dropping it unsent.
+        peer.stop();
+        bounded(fence_rx.recv_async())
+            .await
+            .expect("fence observed peer's death (teardown drained all edges)");
+
+        // If a half-edge survived, the recorder's death is now on its link channel
+        // (drained before the fence); its biased loop drains it before this Ping.
         probe.handle.tell(Ping).try_send().expect("recorder alive");
         bounded(async {
             while probe.handled.load(Ordering::SeqCst) == 0 {
