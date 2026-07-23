@@ -19,20 +19,29 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use bolero::{TypeGenerator, check};
 use bombay_core::actor::{Actor, ActorRef, PreparedActor, RunResult, WeakActorRef};
 use bombay_core::error::ActorStopReason;
-use bombay_core::mailbox::{Capacity, Mailboxed, Signal};
+use bombay_core::mailbox::{ActorId, Capacity, Mailboxed, Signal};
 use bombay_core::message::Msg;
 use bombay_core::test_support::terminate_bound;
 
 /// One driver step. `Send` enqueues a message; `StopInBand` enqueues a FIFO
 /// `Signal::Stop`; `CancelStop` fires the out-of-band cancel token; `Kill`
-/// aborts (hard kill). The whole script is applied before `run`, so execution
+/// aborts (hard kill); `Unwatch` enqueues a FIFO `Signal::Unwatch` control
+/// signal (card #195). The whole script is applied before `run`, so execution
 /// is deterministic on the single-threaded runtime — a sound fuzz oracle.
+///
+/// The complementary `Signal::Watch` is NOT exercised here: it carries a boxed
+/// `WatchReg`, which lives in bombay-core's private `watch` module and is not
+/// externally constructible, so a raw `Signal::Watch` cannot be minted from this
+/// crate (the public `ActorRef::watch`/`link` path needs a second linked-spawned
+/// actor and so is out of this single-threaded oracle's scope). `Unwatch` takes a
+/// plain public `ActorId`, so it drives the new control-signal arm of the loop.
 #[derive(Debug, Clone, TypeGenerator)]
 enum Op {
     Send,
     StopInBand,
     CancelStop,
     Kill,
+    Unwatch,
 }
 
 /// Deterministic oracle: how many messages the loop handles for an op script,
@@ -51,7 +60,9 @@ fn expected_handled(ops: &[Op]) -> u32 {
         match op {
             Op::Send => handled = handled.saturating_add(1),
             Op::StopInBand => return handled,
-            Op::CancelStop | Op::Kill => {}
+            // A queued `Unwatch` is a control signal the loop processes without
+            // handling a message or stopping — it never changes the count.
+            Op::CancelStop | Op::Kill | Op::Unwatch => {}
         }
     }
     handled
@@ -196,7 +207,7 @@ where
 {
     let enqueued = ops
         .iter()
-        .filter(|op| matches!(op, Op::Send | Op::StopInBand))
+        .filter(|op| matches!(op, Op::Send | Op::StopInBand | Op::Unwatch))
         .count();
     let cap = Capacity::try_from(enqueued.max(1)).expect("valid capacity");
     runtime().block_on(async {
@@ -210,6 +221,13 @@ where
                     .expect("enqueue stop"),
                 Op::CancelStop => actor_ref.stop(),
                 Op::Kill => actor_ref.kill(),
+                Op::Unwatch => bounded(
+                    actor_ref
+                        .mailbox_sender()
+                        .send(Signal::Unwatch(ActorId::new(0))),
+                )
+                .await
+                .expect("enqueue unwatch"),
             }
         }
         drop(actor_ref);
