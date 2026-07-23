@@ -44,7 +44,7 @@ pub struct WatchReg {
 /// actor's task. Its `Drop` fires the notifications — so death is delivered on
 /// EVERY exit path (normal return, panic unwind, `Abortable` cancellation),
 /// since `Drop` runs on all of them.
-pub(crate) struct Watchers {
+pub struct Watchers {
     me: ActorId,
     list: SmallVec<[(ActorId, LinkSender, bool); 1]>,
     reason: Option<ActorStopReason>,

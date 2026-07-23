@@ -313,7 +313,7 @@ pub enum ActorStopReason {
         /// The identity of the actor that died.
         id: crate::mailbox::ActorId,
         /// Why the linked actor stopped.
-        reason: Box<ActorStopReason>,
+        reason: Box<Self>,
     },
 }
 
@@ -340,8 +340,9 @@ impl ActorStopReason {
 pub struct NameTaken;
 
 /// A [`watch`](crate::actor::ActorRef::watch)/[`link`](crate::actor::ActorRef::link)
-/// call on a handle whose actor was **not** spawned via `spawn_linked` — it has
-/// no link channel to receive death notices on, so it cannot watch.
+/// call on a handle whose actor was **not** spawned via `spawn_linked`
+///
+/// — it has no link channel to receive death notices on, so it cannot watch.
 ///
 /// A caller mistake (spawn a `Watch` actor via plain `spawn`), surfaced as a
 /// typed `Result` rather than a panic: stable Rust has no negative bound to
