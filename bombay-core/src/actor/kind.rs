@@ -60,6 +60,7 @@ pub(super) async fn run_message_loop<A: Actor>(
                             self_sender,
                             handles.cancel.clone(),
                             handles.abort.clone(),
+                            None,
                         )
                     });
                     if let ControlFlow::Break(reason) =

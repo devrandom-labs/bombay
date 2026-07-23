@@ -264,7 +264,7 @@ mod tests {
         let cap = Capacity::try_from(4usize).expect("valid capacity");
         let (tx, rx) = Mailbox::<A>::bounded(cap);
         let (abort, _reg) = AbortHandle::new_pair();
-        let actor_ref = ActorRef::new(ActorId::new(id), tx, CancellationToken::new(), abort);
+        let actor_ref = ActorRef::new(ActorId::new(id), tx, CancellationToken::new(), abort, None);
         (actor_ref, rx)
     }
 

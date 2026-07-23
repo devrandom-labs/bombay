@@ -559,7 +559,7 @@ mod tests {
         let (tx, rx) = Mailbox::<A>::bounded(cap);
         let (abort, _reg) = AbortHandle::new_pair();
         (
-            ActorRef::new(ActorId::new(id), tx, CancellationToken::new(), abort),
+            ActorRef::new(ActorId::new(id), tx, CancellationToken::new(), abort, None),
             rx,
         )
     }

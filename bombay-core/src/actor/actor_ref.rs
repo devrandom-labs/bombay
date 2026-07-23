@@ -26,6 +26,11 @@ struct RefShared<A: Actor> {
     sender: MailboxSender<A>,
     cancel: CancellationToken,
     abort: AbortHandle,
+    /// The actor's own link-channel sender — `Some` only for actors spawned via
+    /// `spawn_linked` (they can watch); `None` for plain actors. Behind the
+    /// shared `Arc`, so it does NOT change clone cost (still one Arc RMW) nor the
+    /// two-word size of [`ActorRef`].
+    link_tx: Option<crate::watch::LinkSender>,
 }
 
 /// A cloneable handle to a running actor: enqueue signals, stop it gracefully,
@@ -68,6 +73,7 @@ impl<A: Actor> ActorRef<A> {
         sender: MailboxSender<A>,
         cancel: CancellationToken,
         abort: AbortHandle,
+        link_tx: Option<crate::watch::LinkSender>,
     ) -> Self {
         Self {
             id,
@@ -75,8 +81,15 @@ impl<A: Actor> ActorRef<A> {
                 sender,
                 cancel,
                 abort,
+                link_tx,
             }),
         }
+    }
+
+    /// This actor's own link-channel sender, if it was spawned linked (`None`
+    /// for a plain-`spawn`ed actor, which cannot watch).
+    pub(crate) fn link_tx(&self) -> Option<&crate::watch::LinkSender> {
+        self.shared.link_tx.as_ref()
     }
 
     /// The actor's scaffold identity (replaced by the AID in #121).
@@ -270,7 +283,7 @@ mod tests {
         let cap = Capacity::try_from(4usize).expect("valid capacity");
         let (tx, rx) = Mailbox::<Probe>::bounded(cap);
         let (abort, _reg) = AbortHandle::new_pair();
-        let actor_ref = ActorRef::new(ActorId::new(7), tx, CancellationToken::new(), abort);
+        let actor_ref = ActorRef::new(ActorId::new(7), tx, CancellationToken::new(), abort, None);
         let weak = actor_ref.downgrade();
         (actor_ref, weak, rx)
     }

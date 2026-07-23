@@ -26,7 +26,7 @@ pub fn unstarted_actor<A: Actor>(
     (tx, rx): (MailboxSender<A>, MailboxReceiver<A>),
 ) -> (ActorRef<A>, MailboxReceiver<A>) {
     let (abort, _registration) = AbortHandle::new_pair();
-    let actor_ref = ActorRef::new(ActorId::new(0), tx, CancellationToken::new(), abort);
+    let actor_ref = ActorRef::new(ActorId::new(0), tx, CancellationToken::new(), abort, None);
     (actor_ref, rx)
 }
 

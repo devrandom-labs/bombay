@@ -6,12 +6,12 @@
 //! here is a **minimal scaffold** — ref-count-driven stop, `Recipient` erasure,
 //! and the `tell`/`ask` builders are #117/#118.
 
-use core::{any::type_name, future::Future};
+use core::{any::type_name, future::Future, ops::ControlFlow};
 
 use crate::{
     actor::spawn::default_capacity,
     error::{ActorStopReason, PanicError, ReplyError},
-    mailbox::{Capacity, Mailboxed},
+    mailbox::{ActorId, Capacity, Mailboxed},
     message::Msg,
 };
 
@@ -93,6 +93,43 @@ pub trait Actor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
     }
 }
 
+/// Opt-in capability: an actor that **watches** others and reacts to their death.
+///
+/// Only actors spawned via `spawn_linked` (added in a later slice) receive death
+/// notices; a plain actor is still *watchable* (passive) but cannot itself watch.
+/// `Watch` is strictly less authority than a supervisor (restart) — watching is
+/// "get notified", supervising is "rebuild".
+pub trait Watch: Actor {
+    /// Reacts to the death of a watched/linked actor.
+    ///
+    /// Default = OTP semantics: a **linked** (`linked == true`) **abnormal**
+    /// death propagates (`Break`); a `watch` (notify-only) death, or any normal
+    /// death, is observed and the actor continues. Override to trap (return
+    /// `Continue` for a linked abnormal death) or to react programmatically.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if a custom override fails; the default hook is
+    /// infallible.
+    fn on_link_died(
+        &mut self,
+        id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> impl Future<Output = Result<ControlFlow<ActorStopReason>, Self::Error>> + Send {
+        async move {
+            Ok(if linked && !reason.is_normal() {
+                ControlFlow::Break(ActorStopReason::LinkDied {
+                    id,
+                    reason: Box::new(reason),
+                })
+            } else {
+                ControlFlow::Continue(())
+            })
+        }
+    }
+}
+
 /// Ergonomic spawn entry points, provided for every [`Actor`].
 ///
 /// Spawns onto the current tokio runtime and returns the [`ActorRef`]; the actor
@@ -116,3 +153,70 @@ pub trait Spawn: Actor {
 }
 
 impl<A: Actor> Spawn for A {}
+
+#[cfg(test)]
+mod watch_trait_tests {
+    use super::*;
+    use crate::mailbox::ActorId;
+    use core::ops::ControlFlow;
+
+    struct W;
+    #[derive(Debug)]
+    struct M;
+    impl crate::message::Msg for M {}
+    impl crate::mailbox::Mailboxed for W {
+        type Msg = M;
+    }
+    impl Actor for W {
+        type Args = ();
+        type Error = core::convert::Infallible;
+        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(W)
+        }
+        async fn handle(
+            &mut self,
+            _: M,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+    impl Watch for W {}
+
+    /// The default `on_link_died` hook is OTP-shaped: it `Break`s only for a
+    /// **linked** *and* **abnormal** death, and `Continue`s for a notify-only
+    /// (`linked == false`) death or any normal death. Fails if the default
+    /// collapses to one arm (always break / always continue).
+    #[tokio::test]
+    async fn default_hook_breaks_on_linked_abnormal_and_continues_otherwise() {
+        let mut w = W;
+
+        let out = w
+            .on_link_died(ActorId::new(1), ActorStopReason::Killed, true)
+            .await
+            .expect("infallible default hook");
+        assert!(
+            matches!(out, ControlFlow::Break(ActorStopReason::LinkDied { .. })),
+            "linked + abnormal must propagate, got {out:?}",
+        );
+
+        let out = w
+            .on_link_died(ActorId::new(1), ActorStopReason::Killed, false)
+            .await
+            .expect("infallible default hook");
+        assert!(
+            matches!(out, ControlFlow::Continue(())),
+            "watch (linked=false) + abnormal is notify-only, got {out:?}",
+        );
+
+        let out = w
+            .on_link_died(ActorId::new(1), ActorStopReason::Normal, true)
+            .await
+            .expect("infallible default hook");
+        assert!(
+            matches!(out, ControlFlow::Continue(())),
+            "linked + normal does not propagate, got {out:?}",
+        );
+    }
+}

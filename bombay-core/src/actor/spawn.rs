@@ -107,6 +107,7 @@ impl<A: Actor> PreparedActor<A> {
             mailbox_tx,
             CancellationToken::new(),
             abort_handle,
+            None,
         );
         Self {
             actor_ref,
