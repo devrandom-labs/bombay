@@ -233,9 +233,22 @@ struct RefShared<A: Actor> {
 - **Leaf actors pay 8 bytes** (a niche-optimized `None`) and **allocate no
   channel** — the channel allocation is now perfectly correlated with use.
 - **`watch` is one hop** — read `link_tx`, send `Signal::Watch` to the target.
+- **The verbs are `async`** (`watch`/`link`/`unwatch`) and register with
+  `mailbox_sender().send(..).await`, **not** `try_send`. This was a review-driven
+  correction: `try_send` fails identically on a *full* mailbox (target alive, just
+  busy) and a *closed* one (target dead), so a `try_send`-based `register_on`
+  synthesized a spurious `LinkDied { Killed }` under ordinary backpressure —
+  causing the caller's default linked hook to `Break` and **self-terminate on a
+  busy peer**. `send(..).await` waits for capacity (true backpressure, the design's
+  stated watch semantics) and returns `Err` *only* on closed → the synthetic
+  link-to-dead notice fires solely for a genuinely dead target. (kameo's `link`
+  is async for the same reason.)
 - `watch(&b)` bounds `A: Watch`; `link(&b)` bounds `A: Watch` **and** `B: Watch`
-  (both react). Two independent sends; a send to an already-dead peer yields an
-  immediate synthetic `LinkDied` to the live side (Erlang's link-to-dead rule).
+  (both react). `link` **pre-checks both `link_tx` are `Some` before either
+  registration** (no half-link: a plain-spawned `Watch` peer can't leave a live
+  one-directional propagating edge behind an `Err`). A `send` to an already-dead
+  peer yields an immediate synthetic `LinkDied` to the live side (Erlang's
+  link-to-dead rule).
 - A `Watch` actor mistakenly plain-`spawn`ed has `link_tx = None`; `watch`
   returns **`Err(ActorNotLinked)`**, never panics (stable Rust has no negative
   bound to forbid it at the type level; a typed `Result` is the pragmatic guard).
