@@ -193,72 +193,93 @@ impl<A: Watch> ActorRef<A> {
     /// `target` may be any [`Actor`] (being watched is universal); it need not
     /// itself be a [`Watch`] actor.
     ///
+    /// The registration rides `target`'s bounded message mailbox, so this `.await`s
+    /// for mailbox capacity — ordinary backpressure, not a failure. It resolves only
+    /// once the registration is enqueued (or `target` is found already dead).
+    ///
     /// # Errors
     ///
     /// [`ActorNotLinked`] if this actor was spawned via the plain `spawn` path and
     /// so has no link channel to receive notices on. Spawn watchers with
     /// `spawn_linked`.
-    pub fn watch<B: Actor>(&self, target: &ActorRef<B>) -> Result<(), ActorNotLinked> {
-        self.register_on(target, false)
+    pub async fn watch<B: Actor>(&self, target: &ActorRef<B>) -> Result<(), ActorNotLinked> {
+        self.register_on(target, false).await
     }
 
     /// Links with `peer`: bidirectional. Each side's
     /// [`on_link_died`](Watch::on_link_died) fires on the other's death; the
     /// default hook propagates an abnormal death (`Break`). Requires both actors to
-    /// be [`Watch`] (both must react). Two independent registrations — if `peer` is
-    /// already dead, its side yields an immediate synthetic notice on this actor's
-    /// channel (Erlang's link-to-dead rule).
+    /// be [`Watch`] (both must react). If `peer` is already dead, its side yields an
+    /// immediate synthetic notice on this actor's channel (Erlang's link-to-dead
+    /// rule).
+    ///
+    /// Both link channels are checked present **before** either registration, so a
+    /// missing channel is an atomic `Err` with no half-installed one-directional
+    /// edge. Like [`watch`](Self::watch), each registration `.await`s for the peer's
+    /// mailbox capacity (backpressure).
     ///
     /// # Errors
     ///
-    /// [`ActorNotLinked`] if either actor lacks a link channel (was not spawned via
-    /// `spawn_linked`). If this side registers but `peer` lacks a channel, the
-    /// error surfaces from the second registration.
-    pub fn link<B: Watch>(&self, peer: &ActorRef<B>) -> Result<(), ActorNotLinked> {
-        self.register_on(peer, true)?;
-        peer.register_on(self, true)
+    /// [`ActorNotLinked`] if **either** actor lacks a link channel (was not spawned
+    /// via `spawn_linked`) — checked up front, so neither side is mutated on `Err`.
+    pub async fn link<B: Watch>(&self, peer: &ActorRef<B>) -> Result<(), ActorNotLinked> {
+        // Both sides must be linked-spawned before either edge is installed, so a
+        // plain-spawned peer yields a clean `Err` and never a half-link.
+        if self.link_tx().is_none() || peer.link_tx().is_none() {
+            return Err(ActorNotLinked);
+        }
+        self.register_on(peer, true).await?;
+        peer.register_on(self, true).await
     }
 
     /// Stops watching `target`: removes this actor's edge from `target`'s watcher
-    /// set. Best-effort — if `target` has already stopped the send simply fails and
-    /// there is nothing left to remove.
-    pub fn unwatch<B: Actor>(&self, target: &ActorRef<B>) {
-        let _ = target.mailbox_sender().try_send(Signal::Unwatch(self.id()));
+    /// set. Best-effort — the send `.await`s for capacity and, if `target` has
+    /// already stopped, simply fails with nothing left to remove.
+    pub async fn unwatch<B: Actor>(&self, target: &ActorRef<B>) {
+        let _ = target
+            .mailbox_sender()
+            .send(Signal::Unwatch(self.id()))
+            .await;
     }
 
     /// Registers this actor as a watcher on `target` with the given `linked` flag:
     /// reads this actor's own `link_tx` (the receive end the notice will arrive on)
-    /// and enqueues a [`WatchReg`] onto `target`'s mailbox.
+    /// and enqueues a [`WatchReg`] onto `target`'s mailbox, `.await`ing for capacity.
     ///
-    /// If `target` is already dead its mailbox send fails, and this actor is given
-    /// an immediate synthetic [`LinkDied`] on its own channel (Erlang's
+    /// The `.await` on [`send`](MailboxSender::send) is true backpressure: a
+    /// momentarily-full but alive mailbox makes it WAIT, and it errors **only** when
+    /// the mailbox is closed (`target` dead). On that closed error this actor is
+    /// given an immediate synthetic [`LinkDied`] on its own channel (Erlang's
     /// link-to-dead rule) — the reason is [`Killed`](ActorStopReason::Killed)
-    /// because the target's true reason is unknowable once its mailbox is gone.
-    fn register_on<B: Actor>(
+    /// because the target's true reason is unknowable once its mailbox is gone. A
+    /// full-mailbox (`Full`) case must never take this branch, or ordinary
+    /// backpressure would self-terminate a linked watcher.
+    async fn register_on<B: Actor>(
         &self,
         target: &ActorRef<B>,
         linked: bool,
     ) -> Result<(), ActorNotLinked> {
-        let link_tx = self.link_tx().ok_or(ActorNotLinked)?.clone();
+        let Some(link_tx) = self.link_tx() else {
+            return Err(ActorNotLinked);
+        };
         let reg = WatchReg {
             watcher: self.id(),
-            link_tx,
+            link_tx: link_tx.clone(),
             linked,
         };
         if target
             .mailbox_sender()
-            .try_send(Signal::Watch(Box::new(reg)))
+            .send(Signal::Watch(Box::new(reg)))
+            .await
             .is_err()
         {
-            // Target already dead: deliver an immediate death notice. This actor's
-            // own link channel is guaranteed present (`link_tx()` was `Some` above).
-            if let Some(tx) = self.link_tx() {
-                let _ = tx.try_send(LinkDied {
-                    id: target.id(),
-                    reason: ActorStopReason::Killed,
-                    linked,
-                });
-            }
+            // `send().await` errors ONLY on a closed mailbox (target dead), never on
+            // a full-but-alive one — so this is the genuine link-to-dead path.
+            let _ = link_tx.try_send(LinkDied {
+                id: target.id(),
+                reason: ActorStopReason::Killed,
+                linked,
+            });
         }
         Ok(())
     }

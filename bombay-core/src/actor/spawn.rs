@@ -1726,8 +1726,15 @@ mod tests {
     ///   the actor SURVIVED — the loop is still dequeuing messages after the death.
     ///   A racy `is_alive()` check would instead pass under an always-`Break`
     ///   mutation, since the mailbox closes only lazily during async teardown.
+    /// - `killed` — bumped when a delivered death's reason is
+    ///   [`Killed`](ActorStopReason::Killed), bumped BEFORE `deaths`. This is the
+    ///   signature of the backpressure bug: a `try_send` that returns `Full` for a
+    ///   momentarily-full-but-alive target would synthesize a spurious `Killed`
+    ///   death. The correct `send().await` waits, so a watcher only ever sees the
+    ///   target's real reason — `killed` stays 0 across a backpressured registration.
     struct Recorder {
         deaths: Arc<AtomicU32>,
+        killed: Arc<AtomicU32>,
         handled: Arc<AtomicU32>,
         last: Arc<std::sync::Mutex<Option<(crate::mailbox::ActorId, bool)>>>,
     }
@@ -1738,20 +1745,14 @@ mod tests {
         type Msg = Ping;
     }
     impl crate::actor::Actor for Recorder {
-        type Args = (
-            Arc<AtomicU32>,
-            Arc<AtomicU32>,
-            Arc<std::sync::Mutex<Option<(crate::mailbox::ActorId, bool)>>>,
-        );
+        type Args = RecorderSlots;
         type Error = core::convert::Infallible;
-        async fn on_start(
-            (deaths, handled, last): Self::Args,
-            _: ActorRef<Self>,
-        ) -> Result<Self, Self::Error> {
+        async fn on_start(slots: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self {
-                deaths,
-                handled,
-                last,
+                deaths: slots.deaths,
+                killed: slots.killed,
+                handled: slots.handled,
+                last: slots.last,
             })
         }
         async fn handle(
@@ -1768,20 +1769,34 @@ mod tests {
         async fn on_link_died(
             &mut self,
             id: crate::mailbox::ActorId,
-            _reason: ActorStopReason,
+            reason: ActorStopReason,
             linked: bool,
         ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
             *self.last.lock().expect("lock") = Some((id, linked));
+            if matches!(reason, ActorStopReason::Killed) {
+                // Bump BEFORE `deaths`, so a reader observing `deaths == 1` (SeqCst)
+                // also sees this write — the spurious-Killed check is race-free.
+                self.killed.fetch_add(1, Ordering::SeqCst);
+            }
             self.deaths.fetch_add(1, Ordering::SeqCst);
             Ok(core::ops::ControlFlow::Continue(())) // trap: never propagate
         }
     }
 
-    /// Shared observation slots for a linked [`Recorder`]: the death-invocation and
-    /// message-handled counters, and the last-seen `(id, linked)`.
+    /// The shared observation slots handed to a [`Recorder`] at spawn.
+    struct RecorderSlots {
+        deaths: Arc<AtomicU32>,
+        killed: Arc<AtomicU32>,
+        handled: Arc<AtomicU32>,
+        last: Arc<std::sync::Mutex<Option<(crate::mailbox::ActorId, bool)>>>,
+    }
+
+    /// A spawned linked [`Recorder`] plus the slots a test asserts on: the death,
+    /// spurious-`Killed`, and message-handled counters, and the last-seen `(id, linked)`.
     struct RecorderProbe {
         handle: ActorRef<Recorder>,
         deaths: Arc<AtomicU32>,
+        killed: Arc<AtomicU32>,
         handled: Arc<AtomicU32>,
         last: Arc<std::sync::Mutex<Option<(crate::mailbox::ActorId, bool)>>>,
     }
@@ -1790,13 +1805,19 @@ mod tests {
     fn spawn_recorder() -> RecorderProbe {
         use crate::actor::SpawnLinked;
         let deaths = Arc::new(AtomicU32::new(0));
+        let killed = Arc::new(AtomicU32::new(0));
         let handled = Arc::new(AtomicU32::new(0));
         let last = Arc::new(std::sync::Mutex::new(None));
-        let handle =
-            Recorder::spawn_linked((Arc::clone(&deaths), Arc::clone(&handled), Arc::clone(&last)));
+        let handle = Recorder::spawn_linked(RecorderSlots {
+            deaths: Arc::clone(&deaths),
+            killed: Arc::clone(&killed),
+            handled: Arc::clone(&handled),
+            last: Arc::clone(&last),
+        });
         RecorderProbe {
             handle,
             deaths,
+            killed,
             handled,
             last,
         }
@@ -1826,6 +1847,11 @@ mod tests {
             }
         })
         .await;
+        assert_eq!(
+            probe.deaths.load(Ordering::SeqCst),
+            1,
+            "exactly one death delivered (a duplicate-delivery regression must fail)",
+        );
     }
 
     /// Lifecycle (card #195): a registered watcher is notified on the NORMAL stop
@@ -2105,7 +2131,7 @@ mod tests {
 
         let a = Panicker::spawn(()); // a `Watch` actor, but plain-spawned
         let b = Panicker::spawn(());
-        assert_eq!(a.watch(&b), Err(crate::error::ActorNotLinked));
+        assert_eq!(a.watch(&b).await, Err(crate::error::ActorNotLinked));
     }
 
     /// Sequence (card #195): `a.link(&b)`; `b` dies abnormally (handler panic); `a`'s
@@ -2118,7 +2144,7 @@ mod tests {
 
         let a = Panicker::spawn_linked(()); // default hook: Break on linked abnormal
         let b = Panicker::spawn_linked(());
-        a.link(&b).expect("both linked, both can watch");
+        a.link(&b).await.expect("both linked, both can watch");
 
         b.tell(Boom).try_send().expect("provoke b's panic");
 
@@ -2149,7 +2175,7 @@ mod tests {
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
         let b = Counter::spawn_linked((handled, stopped));
-        probe.handle.link(&b).expect("both linked");
+        probe.handle.link(&b).await.expect("both linked");
 
         b.stop(); // normal stop
 
@@ -2171,7 +2197,7 @@ mod tests {
 
         let probe = spawn_recorder(); // hook always Continues
         let b = Panicker::spawn_linked(());
-        probe.handle.link(&b).expect("both linked");
+        probe.handle.link(&b).await.expect("both linked");
 
         b.tell(Boom).try_send().expect("provoke b's panic");
 
@@ -2206,7 +2232,7 @@ mod tests {
 
         // Watching a dead b must synthesize an immediate notice on a's channel.
         assert!(
-            probe.handle.watch(&b).is_ok(),
+            probe.handle.watch(&b).await.is_ok(),
             "watching a dead target still succeeds",
         );
 
@@ -2232,7 +2258,7 @@ mod tests {
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
         let b = Counter::spawn_linked((handled, Arc::clone(&stopped)));
-        a.watch(&b).expect("a is linked, can watch");
+        a.watch(&b).await.expect("a is linked, can watch");
 
         drop(b); // the last external strong ref to b
 
@@ -2273,18 +2299,19 @@ mod tests {
             let watcher_id = crate::mailbox::ActorId::new(u64::try_from(i).expect("fits u64") + 1);
             tasks.push(tokio::spawn(async move {
                 b.wait().await; // real overlap: all registrations race
-                sender
-                    .send(Signal::Watch(Box::new(crate::watch::WatchReg {
-                        watcher: watcher_id,
-                        link_tx: tx,
-                        linked: false,
-                    })))
-                    .await
-                    .expect("registration delivered");
+                // Bounded: a broken run-loop that never drains the mailbox would
+                // otherwise leave this send parked forever (the #179 pattern).
+                bounded(sender.send(Signal::Watch(Box::new(crate::watch::WatchReg {
+                    watcher: watcher_id,
+                    link_tx: tx,
+                    linked: false,
+                }))))
+                .await
+                .expect("registration delivered");
             }));
         }
         for t in tasks {
-            t.await.expect("registration task");
+            bounded(t).await.expect("registration task");
         }
 
         target.stop();
@@ -2294,5 +2321,122 @@ mod tests {
                 .expect("each watcher is notified exactly once");
             assert_eq!(notice.id, target.id());
         }
+    }
+
+    /// A backpressure fixture: its single handler blocks on `release` until the test
+    /// lets it proceed, so its bounded (cap-1) mailbox can be deliberately saturated
+    /// while the actor stays ALIVE.
+    struct Gate {
+        entered: Option<tokio::sync::oneshot::Sender<()>>,
+        release: Option<tokio::sync::oneshot::Receiver<()>>,
+    }
+    #[derive(Debug)]
+    struct Enter;
+    impl Msg for Enter {}
+    impl Mailboxed for Gate {
+        type Msg = Enter;
+    }
+    impl crate::actor::Actor for Gate {
+        type Args = (
+            tokio::sync::oneshot::Sender<()>,
+            tokio::sync::oneshot::Receiver<()>,
+        );
+        type Error = core::convert::Infallible;
+        async fn on_start(
+            (entered, release): Self::Args,
+            _: ActorRef<Self>,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                entered: Some(entered),
+                release: Some(release),
+            })
+        }
+        async fn handle(
+            &mut self,
+            _: Enter,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            if let Some(entered) = self.entered.take() {
+                let _ = entered.send(());
+            }
+            if let Some(release) = self.release.take() {
+                let _ = release.await; // park here, holding the mailbox saturated
+            }
+            Ok(())
+        }
+    }
+
+    /// `@bug` Defensive (card #195): the regression test for the Full/Closed
+    /// conflation bug. Registration rides the target's bounded message mailbox, so a
+    /// momentarily-full-but-ALIVE target must apply BACKPRESSURE — `send().await`
+    /// waits for a slot — never be mistaken for dead. The buggy `try_send` returned
+    /// `Full` for exactly this case and its `is_err()` synthesized a spurious
+    /// `LinkDied { reason: Killed }`, which (for a `link` edge) self-terminates the
+    /// watcher from ordinary backpressure. Here `a` watches a saturated target; the
+    /// slot later frees, the edge installs, and `a` sees ONLY the target's real
+    /// (Normal) death — `killed == 0`. FAILS with `try_send` (the spurious `Killed`
+    /// bumps `killed`).
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn watch_full_but_alive_target_backpressures_no_spurious_death() {
+        use crate::actor::Spawn;
+        use tokio::sync::oneshot;
+
+        let (entered_tx, entered_rx) = oneshot::channel();
+        let (release_tx, release_rx) = oneshot::channel();
+        let target = Gate::spawn_with_capacity(cap(1), (entered_tx, release_rx));
+
+        // Saturate target while it stays alive: msg #1 enters the blocking handler
+        // (dequeued), msg #2 then fills the single mailbox slot.
+        bounded(target.tell(Enter)).await.expect("enqueue #1");
+        bounded(entered_rx).await.expect("handler entered"); // #1 dequeued + parked
+        bounded(target.tell(Enter))
+            .await
+            .expect("enqueue #2 fills the 1-slot mailbox");
+
+        // a watches the full-but-alive target. Buggy `try_send` returns at once after
+        // synthesizing a spurious Killed death; correct `send().await` PARKS under
+        // backpressure until the slot frees.
+        let a = spawn_recorder();
+        let watch_task = {
+            let watcher = a.handle.clone();
+            let target = target.clone();
+            tokio::spawn(async move { watcher.watch(&target).await })
+        };
+
+        // Free the mailbox: the handler returns, target drains msg #2, capacity opens
+        // and the parked registration completes.
+        release_tx.send(()).expect("release the gate");
+        bounded(watch_task)
+            .await
+            .expect("watch task joins")
+            .expect("watch succeeds");
+
+        // Stop the target normally; the correctly-installed edge delivers a's ONLY death.
+        target.stop();
+
+        // Positive signal: a receives a death (real Normal stop with send().await; the
+        // spurious Killed with the buggy try_send).
+        bounded(async {
+            while a.deaths.load(Ordering::SeqCst) == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+        assert_eq!(
+            a.killed.load(Ordering::SeqCst),
+            0,
+            "a full-but-alive target must backpressure, NOT synthesize a spurious Killed death",
+        );
+        assert_eq!(
+            a.deaths.load(Ordering::SeqCst),
+            1,
+            "exactly one death — the target's real stop, not a duplicate",
+        );
+        assert_eq!(
+            *a.last.lock().expect("lock"),
+            Some((target.id(), false)),
+            "the death carries the target's id and a watch edge (linked == false)",
+        );
     }
 }
