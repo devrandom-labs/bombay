@@ -21,26 +21,30 @@ use bombay_core::actor::{Actor, ActorRef, PreparedActor, RunResult, WeakActorRef
 use bombay_core::error::ActorStopReason;
 use bombay_core::mailbox::{ActorId, Capacity, Mailboxed, Signal};
 use bombay_core::message::Msg;
-use bombay_core::test_support::terminate_bound;
+use bombay_core::test_support::{terminate_bound, watch_signal};
 
 /// One driver step. `Send` enqueues a message; `StopInBand` enqueues a FIFO
 /// `Signal::Stop`; `CancelStop` fires the out-of-band cancel token; `Kill`
-/// aborts (hard kill); `Unwatch` enqueues a FIFO `Signal::Unwatch` control
-/// signal (card #195). The whole script is applied before `run`, so execution
-/// is deterministic on the single-threaded runtime — a sound fuzz oracle.
+/// aborts (hard kill); `Watch` enqueues a FIFO `Signal::Watch` registration and
+/// `Unwatch` enqueues a FIFO `Signal::Unwatch`, both control signals (card
+/// #195). The whole script is applied before `run`, so execution is
+/// deterministic on the single-threaded runtime — a sound fuzz oracle.
 ///
-/// The complementary `Signal::Watch` is NOT exercised here: it carries a boxed
-/// `WatchReg`, which lives in bombay-core's private `watch` module and is not
-/// externally constructible, so a raw `Signal::Watch` cannot be minted from this
-/// crate (the public `ActorRef::watch`/`link` path needs a second linked-spawned
-/// actor and so is out of this single-threaded oracle's scope). `Unwatch` takes a
-/// plain public `ActorId`, so it drives the new control-signal arm of the loop.
+/// `Signal::Watch` carries a boxed `WatchReg`, which lives in bombay-core's
+/// private `watch` module and is not part of the public API. The fuzz crate
+/// mints one through the `test-support`-gated `test_support::watch_signal` seam,
+/// which builds the watcher's unbounded link channel internally and returns the
+/// enqueue-able signal plus its `LinkReceiver` — so this target drives the
+/// death-watch REGISTRATION arm of the loop (`watchers.apply`) under random
+/// op interleavings, the #100-class race surface. `Unwatch` takes a plain
+/// public `ActorId` and drives the deregistration arm.
 #[derive(Debug, Clone, TypeGenerator)]
 enum Op {
     Send,
     StopInBand,
     CancelStop,
     Kill,
+    Watch { linked: bool },
     Unwatch,
 }
 
@@ -60,9 +64,9 @@ fn expected_handled(ops: &[Op]) -> u32 {
         match op {
             Op::Send => handled = handled.saturating_add(1),
             Op::StopInBand => return handled,
-            // A queued `Unwatch` is a control signal the loop processes without
-            // handling a message or stopping — it never changes the count.
-            Op::CancelStop | Op::Kill | Op::Unwatch => {}
+            // A queued `Watch`/`Unwatch` is a control signal the loop processes
+            // without handling a message or stopping — it never changes the count.
+            Op::CancelStop | Op::Kill | Op::Watch { .. } | Op::Unwatch => {}
         }
     }
     handled
@@ -207,12 +211,21 @@ where
 {
     let enqueued = ops
         .iter()
-        .filter(|op| matches!(op, Op::Send | Op::StopInBand | Op::Unwatch))
+        .filter(|op| {
+            matches!(
+                op,
+                Op::Send | Op::StopInBand | Op::Watch { .. } | Op::Unwatch
+            )
+        })
         .count();
     let cap = Capacity::try_from(enqueued.max(1)).expect("valid capacity");
     runtime().block_on(async {
         let prepared = PreparedActor::<A>::new(cap);
         let actor_ref = prepared.actor_ref().clone();
+        // Keep each `Watch` registration's `LinkReceiver` alive for the whole
+        // run: dropping it would close the link channel, making the guard's
+        // death notify a stale-edge no-op instead of a real delivery.
+        let mut link_rxs = Vec::new();
         for op in ops {
             match op {
                 Op::Send => bounded(actor_ref.tell(Tick)).await.expect("enqueue"),
@@ -221,6 +234,13 @@ where
                     .expect("enqueue stop"),
                 Op::CancelStop => actor_ref.stop(),
                 Op::Kill => actor_ref.kill(),
+                Op::Watch { linked } => {
+                    let (signal, link_rx) = watch_signal::<A>(ActorId::new(1), *linked);
+                    bounded(actor_ref.mailbox_sender().send(signal))
+                        .await
+                        .expect("enqueue watch");
+                    link_rxs.push(link_rx);
+                }
                 Op::Unwatch => bounded(
                     actor_ref
                         .mailbox_sender()
@@ -231,7 +251,23 @@ where
             }
         }
         drop(actor_ref);
-        bounded(prepared.run(args)).await
+        let outcome = bounded(prepared.run(args)).await;
+        // The `LinkReceiver`s are held here (not asserted on) deliberately: they
+        // keep each watch edge's link channel OPEN across the run so the
+        // registration path is realistic (a dropped receiver would make the
+        // guard's notify a stale-edge no-op). Exact death-DELIVERY is not
+        // asserted because it is not deterministic across this generic harness:
+        // a `Kill` aborts (guard fires `Killed`, and a registration queued after
+        // the abort point may never be applied), an `on_start` panic
+        // short-circuits before any registration is drained, and a `Watch`
+        // queued behind an in-band `Stop` is never reached — pinning exact
+        // per-watcher delivery would re-encode the loop's FIFO ordering, which
+        // this oracle refuses to do. The invariant here is the registration arm
+        // itself: enqueuing `Signal::Watch` under random interleavings must not
+        // panic and the loop must terminate (bounded above). Deterministic
+        // death-delivery stays covered by bombay-core's `#[tokio::test]` cases.
+        drop(link_rxs);
+        outcome
     })
 }
 
