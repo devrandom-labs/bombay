@@ -759,7 +759,7 @@ mod tests {
         /// without cross-contaminating — the unit suite only uses short ASCII
         /// names ("hot", "seat").
         #[test]
-        fn register_lookup_unregister_roundtrips_arbitrary_name(name in arb_name()) {
+        fn prop_register_lookup_unregister_roundtrips_arbitrary_name(name in arb_name()) {
             let registry = Registry::new();
             let (actor_ref, _rx) = build::<Probe>(1);
             prop_assert!(registry.register(name.clone(), &actor_ref).is_ok());
@@ -778,7 +778,7 @@ mod tests {
         /// Two distinct arbitrary names keep their separate incumbents — no
         /// key-collision or cross-contamination under adversarial inputs.
         #[test]
-        fn distinct_arbitrary_names_do_not_cross_contaminate(
+        fn prop_distinct_arbitrary_names_do_not_cross_contaminate(
             name_a in arb_name(),
             name_b in arb_name(),
         ) {
