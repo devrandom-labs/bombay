@@ -8,9 +8,9 @@ use futures::{FutureExt, stream::AbortHandle};
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    actor::{Actor, ActorRef, WeakActorRef},
+    actor::{Actor, ActorRef, Watch, WeakActorRef},
     error::{ActorStopReason, PanicError, PanicReason},
-    mailbox::{MailboxReceiver, Signal},
+    mailbox::{MailboxReceiver, Mailboxed, Signal},
 };
 
 /// The loop's own copies of the cold lifecycle handles (ADR-0010): grouped so the
@@ -21,6 +21,14 @@ use crate::{
 pub(super) struct LoopHandles {
     pub(super) cancel: CancellationToken,
     pub(super) abort: AbortHandle,
+}
+
+/// The two channels the linked loop selects over, grouped so the loop stays
+/// within the argument budget (the `LoopHandles` pattern, #195): the bounded
+/// message mailbox and the actor's own UNBOUNDED link channel.
+pub(super) struct LinkedChannels<'a, A: Mailboxed> {
+    pub(super) mailbox_rx: &'a mut MailboxReceiver<A>,
+    pub(super) link_rx: &'a crate::watch::LinkReceiver,
 }
 
 /// Runs the message loop until a stop condition, returning the stop reason.
@@ -41,44 +49,148 @@ pub(super) async fn run_message_loop<A: Actor>(
     watchers: &mut crate::watch::Watchers,
 ) -> ActorStopReason {
     loop {
-        match handles.cancel.run_until_cancelled(mailbox_rx.recv()).await {
-            // Either the cancel token fired (out-of-band graceful stop) or every
-            // strong sender dropped (all-senders-gone — now reachable, since the
-            // loop holds only a weak self-ref). Both are a clean, normal stop.
-            None | Some(None) => return ActorStopReason::Normal,
-            Some(Some(signal)) => match signal {
-                Signal::Message { msg, self_sender } => {
-                    // Steady state: share the external allocation — one CAS, no
-                    // alloc. Drain window (external refs gone; the dequeued
-                    // self_sender is what kept the message deliverable,
-                    // ADR-0003): mint a fresh shared alloc from that sender
-                    // plus the loop's own cold copies (ADR-0010). Either way
-                    // the handler's ref pins the actor while it is held.
-                    let actor_ref = self_ref.upgrade().unwrap_or_else(|| {
-                        ActorRef::new(
-                            self_ref.id(),
-                            self_sender,
-                            handles.cancel.clone(),
-                            handles.abort.clone(),
-                            None,
-                        )
-                    });
-                    if let ControlFlow::Break(reason) =
-                        handle_message(state, actor_ref, self_ref, msg).await
-                    {
-                        return reason;
-                    }
-                }
-                // In-band graceful stop (FIFO): everything queued ahead was
-                // already handled above.
-                Signal::Stop => return ActorStopReason::Normal,
-                // Register/deregister a watcher on the task-owned guard. The
-                // guard's `Drop` (in `run_lifecycle`) fires the death notices, so
-                // being watched is universal and passive — every actor honors it.
-                Signal::Watch(reg) => watchers.apply(*reg),
-                Signal::Unwatch(id) => watchers.remove(id),
-            },
+        let signal = handles
+            .cancel
+            .run_until_cancelled(mailbox_rx.recv())
+            .await
+            .flatten();
+        if let ControlFlow::Break(reason) =
+            handle_mailbox_step(state, self_ref, handles, watchers, signal).await
+        {
+            return reason;
         }
+    }
+}
+
+/// Applies one mailbox poll result. `Break(reason)` is a terminal stop; `Continue`
+/// keeps the loop going. Shared verbatim by the plain and linked loops so the two
+/// treat every signal identically — the linked loop only *adds* a death arm, it
+/// never diverges on the message side.
+///
+/// `signal` is the flattened result of
+/// `cancel.run_until_cancelled(mailbox_rx.recv())`: `None` collapses both stop
+/// cases — the cancel token firing (out-of-band graceful stop) and all strong
+/// senders gone (all-senders-gone stop, reachable because the loop holds only a
+/// weak self-ref) — into one clean normal stop, which is exactly how the loop
+/// treats them.
+async fn handle_mailbox_step<A: Actor>(
+    state: &mut A,
+    self_ref: &WeakActorRef<A>,
+    handles: &LoopHandles,
+    watchers: &mut crate::watch::Watchers,
+    signal: Option<Signal<A>>,
+) -> ControlFlow<ActorStopReason> {
+    let Some(next) = signal else {
+        return ControlFlow::Break(ActorStopReason::Normal);
+    };
+    match next {
+        Signal::Message { msg, self_sender } => {
+            // Steady state: share the external allocation — one CAS, no alloc.
+            // Drain window (external refs gone; the dequeued self_sender is what
+            // kept the message deliverable, ADR-0003): mint a fresh shared alloc
+            // from that sender plus the loop's own cold copies (ADR-0010), with no
+            // link channel — a rebuilt handler ref needs none. Either way the
+            // handler's ref pins the actor while it is held.
+            let actor_ref = self_ref.upgrade().unwrap_or_else(|| {
+                ActorRef::new(
+                    self_ref.id(),
+                    self_sender,
+                    handles.cancel.clone(),
+                    handles.abort.clone(),
+                    None,
+                )
+            });
+            handle_message(state, actor_ref, self_ref, msg).await
+        }
+        // In-band graceful stop (FIFO): everything queued ahead was already handled.
+        Signal::Stop => ControlFlow::Break(ActorStopReason::Normal),
+        // Register/deregister a watcher on the task-owned guard. The guard's `Drop`
+        // (in `run_lifecycle`) fires the death notices, so being watched is
+        // universal and passive — every actor honors it.
+        Signal::Watch(reg) => {
+            watchers.apply(*reg);
+            ControlFlow::Continue(())
+        }
+        Signal::Unwatch(id) => {
+            watchers.remove(id);
+            ControlFlow::Continue(())
+        }
+    }
+}
+
+/// The `Watch`-actor run-loop (#195): the plain message loop PLUS a second,
+/// `biased`-first select arm draining the actor's UNBOUNDED link channel and
+/// dispatching [`Watch::on_link_died`]. A `Break` from the hook (default: a linked
+/// abnormal death) stops the actor with the propagated reason; an `Err`/panic from
+/// the hook is a controlled crash tagged [`PanicReason::OnLinkDied`].
+///
+/// Death is handled before messages (`biased;`) so a failure is reacted to
+/// promptly. The link arm is disabled once `recv_async` reports the channel closed:
+/// with `biased` a ready `Err` would otherwise spin the select and starve the
+/// mailbox arm. The channel closes only when the actor's own `link_tx` (in
+/// `RefShared`) and every watcher-held clone are gone — which means all strong
+/// `ActorRef`s have dropped, so the mailbox is closing too and the mailbox arm then
+/// drives the imminent normal stop. Disabling loses nothing: no further death can
+/// ever arrive on a closed channel.
+pub(super) async fn run_linked_message_loop<A: Watch>(
+    state: &mut A,
+    self_ref: &WeakActorRef<A>,
+    handles: &LoopHandles,
+    watchers: &mut crate::watch::Watchers,
+    channels: LinkedChannels<'_, A>,
+) -> ActorStopReason {
+    let LinkedChannels {
+        mailbox_rx,
+        link_rx,
+    } = channels;
+    let mut link_open = true;
+    loop {
+        tokio::select! {
+            biased;
+            death = link_rx.recv_async(), if link_open => {
+                match death {
+                    Ok(notice) => {
+                        if let ControlFlow::Break(reason) = handle_link_died(state, notice).await {
+                            return reason;
+                        }
+                    }
+                    // All link senders are gone: stop polling this arm so a ready
+                    // `Err` cannot spin the biased select (see fn docs).
+                    Err(_) => link_open = false,
+                }
+            }
+            maybe = handles.cancel.run_until_cancelled(mailbox_rx.recv()) => {
+                if let ControlFlow::Break(reason) =
+                    handle_mailbox_step(state, self_ref, handles, watchers, maybe.flatten()).await
+                {
+                    return reason;
+                }
+            }
+        }
+    }
+}
+
+/// Runs [`Watch::on_link_died`] under `catch_unwind` and maps the outcome: the
+/// hook's own `ControlFlow` on success, a terminal `Panicked(OnLinkDied)` on either
+/// a returned `Err` (controlled crash) or a caught unwind.
+async fn handle_link_died<A: Watch>(
+    state: &mut A,
+    notice: crate::watch::LinkDied,
+) -> ControlFlow<ActorStopReason> {
+    let crate::watch::LinkDied { id, reason, linked } = notice;
+    let result = AssertUnwindSafe(state.on_link_died(id, reason, linked))
+        .catch_unwind()
+        .await;
+    match result {
+        Ok(Ok(flow)) => flow,
+        Ok(Err(err)) => ControlFlow::Break(ActorStopReason::Panicked(PanicError::new(
+            Box::new(err),
+            PanicReason::OnLinkDied,
+        ))),
+        Err(payload) => ControlFlow::Break(ActorStopReason::Panicked(PanicError::from_panic_any(
+            payload,
+            PanicReason::OnLinkDied,
+        ))),
     }
 }
 

@@ -18,8 +18,8 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     actor::{
-        Actor, ActorRef,
-        kind::{LoopHandles, run_message_loop},
+        Actor, ActorRef, Watch,
+        kind::{LinkedChannels, LoopHandles, run_linked_message_loop, run_message_loop},
     },
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Signal},
@@ -137,6 +137,58 @@ impl<A: Actor> PreparedActor<A> {
     }
 }
 
+impl<A: Watch> PreparedActor<A> {
+    /// Prepares a **linked** actor: like [`new`](Self::new) but also creates the
+    /// actor's UNBOUNDED link channel (so it can watch others), storing the sender
+    /// in the [`ActorRef`] (`Some(link_tx)`) and returning the receiver for the
+    /// run-loop to drain. A plain [`new`](Self::new) leaves `link_tx` `None`, so a
+    /// plain-spawned `Watch` actor cannot watch (it has no channel).
+    #[must_use = "a prepared actor and its link receiver must be run"]
+    pub fn new_linked(capacity: Capacity) -> (Self, crate::watch::LinkReceiver) {
+        let (mailbox_tx, mailbox_rx) = Mailbox::<A>::bounded(capacity);
+        let (abort_handle, abort_registration) = AbortHandle::new_pair();
+        let (link_tx, link_rx) = flume::unbounded();
+        let actor_ref = ActorRef::new(
+            next_actor_id(),
+            mailbox_tx,
+            CancellationToken::new(),
+            abort_handle,
+            Some(link_tx),
+        );
+        (
+            Self {
+                actor_ref,
+                mailbox_rx,
+                abort_registration,
+            },
+            link_rx,
+        )
+    }
+
+    /// Runs the linked actor in the current task until it stops, draining death
+    /// notices off `link_rx` alongside messages. Aborts (hard kill) short-circuit
+    /// to [`RunResult::Killed`], skipping `on_stop`.
+    pub async fn run_linked(
+        self,
+        args: A::Args,
+        link_rx: crate::watch::LinkReceiver,
+    ) -> RunResult<A> {
+        let lifecycle = run_lifecycle_linked(args, self.actor_ref, self.mailbox_rx, link_rx);
+        Abortable::new(lifecycle, self.abort_registration)
+            .await
+            .unwrap_or(RunResult::Killed)
+    }
+
+    /// Spawns the linked actor in a background tokio task.
+    pub fn spawn_linked_task(
+        self,
+        args: A::Args,
+        link_rx: crate::watch::LinkReceiver,
+    ) -> JoinHandle<RunResult<A>> {
+        tokio::spawn(self.run_linked(args, link_rx))
+    }
+}
+
 /// `on_start` (catch) → message loop → `on_stop` (catch; Err logged, reason
 /// preserved). Returns `StartupFailed` if `on_start` fails, else `Stopped`.
 async fn run_lifecycle<A: Actor>(
@@ -194,6 +246,76 @@ async fn run_lifecycle<A: Actor>(
     }
     watchers.set_reason(reason.clone());
     drop(watchers); // fires the graceful-path notifications before on_stop
+
+    let stop_result = AssertUnwindSafe(state.on_stop(weak.clone(), reason.clone()))
+        .catch_unwind()
+        .await;
+    log_on_stop_outcome::<A>(&reason, stop_result);
+
+    RunResult::Stopped {
+        actor: state,
+        reason,
+    }
+}
+
+/// The linked-actor lifecycle (#195): identical to [`run_lifecycle`] but drives
+/// the two-arm [`run_linked_message_loop`] so the actor also drains its link
+/// channel and reacts to deaths via `on_link_died`. Teardown (drain pending
+/// `Watch`/`Unwatch`, set the reason, drop the guard to fire notices, then
+/// `on_stop`) is the same — a linked actor is watchable too.
+async fn run_lifecycle_linked<A: Watch>(
+    args: A::Args,
+    actor_ref: ActorRef<A>,
+    mut mailbox_rx: MailboxReceiver<A>,
+    link_rx: crate::watch::LinkReceiver,
+) -> RunResult<A> {
+    let started = AssertUnwindSafe(A::on_start(args, actor_ref.clone()))
+        .catch_unwind()
+        .await;
+    let mut state = match started {
+        Ok(Ok(actor)) => actor,
+        Ok(Err(err)) => {
+            return RunResult::StartupFailed(PanicError::new(Box::new(err), PanicReason::OnStart));
+        }
+        Err(payload) => {
+            return RunResult::StartupFailed(PanicError::from_panic_any(
+                payload,
+                PanicReason::OnStart,
+            ));
+        }
+    };
+
+    let mut watchers = crate::watch::Watchers::new(actor_ref.id());
+    let handles = LoopHandles {
+        cancel: actor_ref.cancel_token().clone(),
+        abort: actor_ref.abort_handle().clone(),
+    };
+    let weak = actor_ref.downgrade();
+    drop(actor_ref);
+
+    let reason = run_linked_message_loop(
+        &mut state,
+        &weak,
+        &handles,
+        &mut watchers,
+        LinkedChannels {
+            mailbox_rx: &mut mailbox_rx,
+            link_rx: &link_rx,
+        },
+    )
+    .await;
+
+    // Same teardown as the plain lifecycle: apply any Watch/Unwatch that raced the
+    // stop, in FIFO order, before the guard's `Drop` fires the death notices.
+    for signal in mailbox_rx.drain() {
+        match signal {
+            Signal::Watch(reg) => watchers.apply(*reg),
+            Signal::Unwatch(id) => watchers.remove(id),
+            Signal::Message { .. } | Signal::Stop => {}
+        }
+    }
+    watchers.set_reason(reason.clone());
+    drop(watchers);
 
     let stop_result = AssertUnwindSafe(state.on_stop(weak.clone(), reason.clone()))
         .catch_unwind()
@@ -1668,6 +1790,91 @@ mod tests {
             .await
             .expect("in-flight watch notified");
         assert!(matches!(notice.reason, ActorStopReason::Killed));
+    }
+
+    /// An actor that WATCHES others and records the id of the last death it saw
+    /// into a shared slot — the SUT for `spawn_linked` + the two-arm linked loop
+    /// (card #195). Its overridden `on_link_died` returns `Continue`, so it merely
+    /// observes (never propagates), which is what lets the test read the slot.
+    struct Observer {
+        seen: Arc<std::sync::Mutex<Option<crate::mailbox::ActorId>>>,
+    }
+    #[derive(Debug)]
+    struct Never;
+    impl Msg for Never {}
+    impl Mailboxed for Observer {
+        type Msg = Never;
+    }
+    impl crate::actor::Actor for Observer {
+        type Args = Arc<std::sync::Mutex<Option<crate::mailbox::ActorId>>>;
+        type Error = core::convert::Infallible;
+        async fn on_start(seen: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self { seen })
+        }
+        async fn handle(
+            &mut self,
+            _: Never,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+    impl crate::actor::Watch for Observer {
+        async fn on_link_died(
+            &mut self,
+            id: crate::mailbox::ActorId,
+            _reason: ActorStopReason,
+            _linked: bool,
+        ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
+            *self.seen.lock().expect("lock") = Some(id);
+            Ok(core::ops::ControlFlow::Continue(()))
+        }
+    }
+
+    /// Sequence (card #195): a `spawn_linked` actor actually RECEIVES a death on its
+    /// link channel and its `on_link_died` runs. The watcher is spawned linked (so it
+    /// has a link channel), its `link_tx` is registered on a plain `Counter` target,
+    /// the target stops, and the watcher's overridden hook records the target id.
+    /// FAILS without the two-arm linked loop (the link channel is never drained).
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn linked_actor_receives_death_of_watched_target() {
+        use crate::actor::{Spawn, SpawnLinked};
+
+        let seen = Arc::new(std::sync::Mutex::new(None::<crate::mailbox::ActorId>));
+        let watcher = Observer::spawn_linked(Arc::clone(&seen));
+
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let target = Counter::spawn((handled, stopped));
+
+        // Register the watcher's link channel on the target directly (`ActorRef::watch`
+        // is Task 9). A `watch` edge => `linked == false`.
+        let link_tx = watcher
+            .link_tx()
+            .expect("a linked actor has a link channel")
+            .clone();
+        target
+            .mailbox_sender()
+            .send(Signal::Watch(Box::new(crate::watch::WatchReg {
+                watcher: watcher.id(),
+                link_tx,
+                linked: false,
+            })))
+            .await
+            .expect("registration delivered");
+
+        target.stop();
+
+        // Poll the shared slot under the fail-fast bound: if the linked loop never
+        // drains the death, this bound FAILS FAST rather than hanging.
+        bounded(async {
+            while seen.lock().expect("lock").is_none() {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+        assert_eq!(*seen.lock().expect("lock"), Some(target.id()));
     }
 
     /// Lifecycle (card #195): an `Unwatch` queued FIFO-behind its `Watch` and left

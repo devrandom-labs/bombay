@@ -154,6 +154,32 @@ pub trait Spawn: Actor {
 
 impl<A: Actor> Spawn for A {}
 
+/// Ergonomic linked-spawn entry points, provided for every [`Watch`] actor.
+///
+/// A linked actor is spawned with its own UNBOUNDED link channel, so it can
+/// `watch`/`link` others and its [`on_link_died`](Watch::on_link_died) hook fires
+/// when a watched actor stops. A `Watch` actor spawned via the plain [`Spawn`]
+/// path has no link channel and cannot watch.
+pub trait SpawnLinked: Watch {
+    /// Spawns a linked actor with the
+    /// [`DEFAULT_MAILBOX_CAPACITY`](spawn::DEFAULT_MAILBOX_CAPACITY).
+    #[must_use]
+    fn spawn_linked(args: Self::Args) -> ActorRef<Self> {
+        Self::spawn_linked_with_capacity(default_capacity(), args)
+    }
+
+    /// Spawns a linked actor with an explicit mailbox `capacity`.
+    #[must_use]
+    fn spawn_linked_with_capacity(capacity: Capacity, args: Self::Args) -> ActorRef<Self> {
+        let (prepared, link_rx) = PreparedActor::<Self>::new_linked(capacity);
+        let actor_ref = prepared.actor_ref().clone();
+        let _join = prepared.spawn_linked_task(args, link_rx);
+        actor_ref
+    }
+}
+
+impl<A: Watch> SpawnLinked for A {}
+
 #[cfg(test)]
 mod watch_trait_tests {
     use super::*;
