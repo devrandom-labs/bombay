@@ -2261,7 +2261,11 @@ mod tests {
         let stopped = Arc::new(AtomicU32::new(0));
         let target = Counter::spawn((handled, Arc::clone(&stopped)));
 
-        probe.handle.watch(&target).await.expect("watcher is linked");
+        probe
+            .handle
+            .watch(&target)
+            .await
+            .expect("watcher is linked");
         probe.handle.unwatch(&target).await;
 
         target.stop();
@@ -2316,11 +2320,13 @@ mod tests {
         // notifications actually run.
         let (fence_tx, fence_rx) = flume::unbounded::<crate::watch::LinkDied>();
         peer.mailbox_sender()
-            .send(crate::mailbox::Signal::Watch(Box::new(crate::watch::WatchReg {
-                watcher: crate::mailbox::ActorId::new(0xF),
-                link_tx: fence_tx,
-                linked: false,
-            })))
+            .send(crate::mailbox::Signal::Watch(Box::new(
+                crate::watch::WatchReg {
+                    watcher: crate::mailbox::ActorId::new(0xF),
+                    link_tx: fence_tx,
+                    linked: false,
+                },
+            )))
             .await
             .expect("fence registered on peer");
 
