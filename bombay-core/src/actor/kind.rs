@@ -91,6 +91,10 @@ async fn handle_mailbox_step<A: Actor>(
             // from that sender plus the loop's own cold copies (ADR-0010), with no
             // link channel — a rebuilt handler ref needs none. Either way the
             // handler's ref pins the actor while it is held.
+            // TODO(#195 Q5): this drain-window ref carries `link_tx: None`, so if
+            // handler-context self-watch is ever added, a self-`watch`/`link` here
+            // would wrongly get `ActorNotLinked` — thread the actor's own link_tx
+            // through `LoopHandles` if that capability lands.
             let actor_ref = self_ref.upgrade().unwrap_or_else(|| {
                 ActorRef::new(
                     self_ref.id(),

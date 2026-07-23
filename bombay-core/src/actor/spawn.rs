@@ -18,7 +18,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     actor::{
-        Actor, ActorRef, Watch,
+        Actor, ActorRef, Watch, WeakActorRef,
         kind::{LinkedChannels, LoopHandles, run_linked_message_loop, run_message_loop},
     },
     error::{ActorStopReason, PanicError, PanicReason},
@@ -189,26 +189,41 @@ impl<A: Watch> PreparedActor<A> {
     }
 }
 
-/// `on_start` (catch) → message loop → `on_stop` (catch; Err logged, reason
-/// preserved). Returns `StartupFailed` if `on_start` fails, else `Stopped`.
-async fn run_lifecycle<A: Actor>(
+/// The pieces [`start_actor`] hands the loop driver: the built `state`, the
+/// task-owned watcher guard, the loop's cold handle copies, and the weak self-ref.
+/// Grouped so the prologue can return them as one and the two lifecycles differ
+/// only in which loop they drive.
+struct StartedActor<A: Actor> {
+    state: A,
+    watchers: crate::watch::Watchers,
+    handles: LoopHandles,
+    weak: WeakActorRef<A>,
+}
+
+/// Lifecycle prologue shared by the plain and linked loops: run `on_start` under
+/// `catch_unwind`, and on success stand up the ref-count-driven-stop scaffolding,
+/// dropping the strong `actor_ref`. Returns the loop-driver inputs, or the
+/// `StartupFailed` [`RunResult`] for the caller to early-return.
+async fn start_actor<A: Actor>(
     args: A::Args,
     actor_ref: ActorRef<A>,
-    mut mailbox_rx: MailboxReceiver<A>,
-) -> RunResult<A> {
+) -> Result<StartedActor<A>, RunResult<A>> {
     let started = AssertUnwindSafe(A::on_start(args, actor_ref.clone()))
         .catch_unwind()
         .await;
-    let mut state = match started {
+    let state = match started {
         Ok(Ok(actor)) => actor,
         Ok(Err(err)) => {
-            return RunResult::StartupFailed(PanicError::new(Box::new(err), PanicReason::OnStart));
+            return Err(RunResult::StartupFailed(PanicError::new(
+                Box::new(err),
+                PanicReason::OnStart,
+            )));
         }
         Err(payload) => {
-            return RunResult::StartupFailed(PanicError::from_panic_any(
+            return Err(RunResult::StartupFailed(PanicError::from_panic_any(
                 payload,
                 PanicReason::OnStart,
-            ));
+            )));
         }
     };
 
@@ -220,7 +235,7 @@ async fn run_lifecycle<A: Actor>(
     // The task-owned watcher set: its `Drop` fires the death notices, so a
     // watched actor is notified on EVERY exit path (normal return, panic unwind,
     // `Abortable` kill — `Drop` runs on all three), card #195.
-    let mut watchers = crate::watch::Watchers::new(actor_ref.id());
+    let watchers = crate::watch::Watchers::new(actor_ref.id());
     let handles = LoopHandles {
         cancel: actor_ref.cancel_token().clone(),
         abort: actor_ref.abort_handle().clone(),
@@ -228,15 +243,28 @@ async fn run_lifecycle<A: Actor>(
     let weak = actor_ref.downgrade();
     drop(actor_ref);
 
-    let reason =
-        run_message_loop(&mut state, &weak, &handles, &mut mailbox_rx, &mut watchers).await;
+    Ok(StartedActor {
+        state,
+        watchers,
+        handles,
+        weak,
+    })
+}
 
-    // A watch registration (or its `Unwatch`) that raced the stop may still sit in
-    // the mailbox; drain the backlog and apply it in FIFO order — a late `Watch` is
-    // otherwise a silently missed death, and a late `Unwatch` would otherwise
-    // spuriously notify a former watcher. (On a hard kill this future is dropped and
-    // never reaches here — the guard's `Drop` still fires `Killed` for whatever was
-    // already registered.)
+/// Lifecycle epilogue shared by the plain and linked loops: apply any `Watch`/
+/// `Unwatch` that raced the stop (FIFO — a late `Watch` is otherwise a silently
+/// missed death, a late `Unwatch` would otherwise spuriously notify a former
+/// watcher), fire the death notices by dropping the guard, then run `on_stop` under
+/// `catch_unwind` (Err logged, `reason` preserved). On a hard kill this never runs
+/// (the lifecycle future is dropped by `Abortable`) — the guard's `Drop` still
+/// fires `Killed` for whatever was already registered.
+async fn finish_actor<A: Actor>(
+    mut state: A,
+    weak: WeakActorRef<A>,
+    mut mailbox_rx: MailboxReceiver<A>,
+    mut watchers: crate::watch::Watchers,
+    reason: ActorStopReason,
+) -> RunResult<A> {
     for signal in mailbox_rx.drain() {
         match signal {
             Signal::Watch(reg) => watchers.apply(*reg),
@@ -258,40 +286,50 @@ async fn run_lifecycle<A: Actor>(
     }
 }
 
-/// The linked-actor lifecycle (#195): identical to [`run_lifecycle`] but drives
-/// the two-arm [`run_linked_message_loop`] so the actor also drains its link
-/// channel and reacts to deaths via `on_link_died`. Teardown (drain pending
-/// `Watch`/`Unwatch`, set the reason, drop the guard to fire notices, then
-/// `on_stop`) is the same — a linked actor is watchable too.
+/// `on_start` (catch) → message loop → `on_stop` (catch; Err logged, reason
+/// preserved). Returns `StartupFailed` if `on_start` fails, else `Stopped`. The
+/// prologue/epilogue are shared with [`run_lifecycle_linked`] via [`start_actor`]/
+/// [`finish_actor`]; this differs only in driving the one-arm [`run_message_loop`].
+async fn run_lifecycle<A: Actor>(
+    args: A::Args,
+    actor_ref: ActorRef<A>,
+    mut mailbox_rx: MailboxReceiver<A>,
+) -> RunResult<A> {
+    let StartedActor {
+        mut state,
+        mut watchers,
+        handles,
+        weak,
+    } = match start_actor(args, actor_ref).await {
+        Ok(started) => started,
+        Err(failed) => return failed,
+    };
+
+    let reason =
+        run_message_loop(&mut state, &weak, &handles, &mut mailbox_rx, &mut watchers).await;
+
+    finish_actor(state, weak, mailbox_rx, watchers, reason).await
+}
+
+/// The linked-actor lifecycle (#195): identical to [`run_lifecycle`] but drives the
+/// two-arm [`run_linked_message_loop`] so the actor also drains its link channel and
+/// reacts to deaths via `on_link_died`. Prologue and teardown are the shared
+/// [`start_actor`]/[`finish_actor`] — a linked actor is watchable too.
 async fn run_lifecycle_linked<A: Watch>(
     args: A::Args,
     actor_ref: ActorRef<A>,
     mut mailbox_rx: MailboxReceiver<A>,
     link_rx: crate::watch::LinkReceiver,
 ) -> RunResult<A> {
-    let started = AssertUnwindSafe(A::on_start(args, actor_ref.clone()))
-        .catch_unwind()
-        .await;
-    let mut state = match started {
-        Ok(Ok(actor)) => actor,
-        Ok(Err(err)) => {
-            return RunResult::StartupFailed(PanicError::new(Box::new(err), PanicReason::OnStart));
-        }
-        Err(payload) => {
-            return RunResult::StartupFailed(PanicError::from_panic_any(
-                payload,
-                PanicReason::OnStart,
-            ));
-        }
+    let StartedActor {
+        mut state,
+        mut watchers,
+        handles,
+        weak,
+    } = match start_actor(args, actor_ref).await {
+        Ok(started) => started,
+        Err(failed) => return failed,
     };
-
-    let mut watchers = crate::watch::Watchers::new(actor_ref.id());
-    let handles = LoopHandles {
-        cancel: actor_ref.cancel_token().clone(),
-        abort: actor_ref.abort_handle().clone(),
-    };
-    let weak = actor_ref.downgrade();
-    drop(actor_ref);
 
     let reason = run_linked_message_loop(
         &mut state,
@@ -305,27 +343,7 @@ async fn run_lifecycle_linked<A: Watch>(
     )
     .await;
 
-    // Same teardown as the plain lifecycle: apply any Watch/Unwatch that raced the
-    // stop, in FIFO order, before the guard's `Drop` fires the death notices.
-    for signal in mailbox_rx.drain() {
-        match signal {
-            Signal::Watch(reg) => watchers.apply(*reg),
-            Signal::Unwatch(id) => watchers.remove(id),
-            Signal::Message { .. } | Signal::Stop => {}
-        }
-    }
-    watchers.set_reason(reason.clone());
-    drop(watchers);
-
-    let stop_result = AssertUnwindSafe(state.on_stop(weak.clone(), reason.clone()))
-        .catch_unwind()
-        .await;
-    log_on_stop_outcome::<A>(&reason, stop_result);
-
-    RunResult::Stopped {
-        actor: state,
-        reason,
-    }
+    finish_actor(state, weak, mailbox_rx, watchers, reason).await
 }
 
 /// Logs a failed/panicked `on_stop` without altering the preserved stop reason
