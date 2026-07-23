@@ -118,8 +118,8 @@ pub trait Mailboxed {
 }
 
 /// Scaffold actor identity. #121 replaces this with the identity-first AID /
-/// key-expr `ActorId`; it exists here only so the mailbox's [`LinkDied`] arm has
-/// a concrete shape to carry.
+/// key-expr `ActorId`; it exists here so the [`crate::watch`] death-notice types
+/// have a concrete shape to carry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ActorId(u64);
 
@@ -129,37 +129,6 @@ impl ActorId {
     pub const fn new(raw: u64) -> Self {
         Self(raw)
     }
-}
-
-/// Scaffold reason a linked actor stopped. #113/#120 own the real
-/// error/supervision model; the `String` in `Panicked` is deliberately the fat
-/// field that makes [`LinkDied`] worth boxing.
-#[derive(Debug, Clone)]
-#[expect(
-    clippy::exhaustive_enums,
-    reason = "scaffold placeholder for the #113/#120 stop-reason model"
-)]
-pub enum StopReason {
-    /// The actor returned from its run-loop normally.
-    Normal,
-    /// The actor's handler panicked, with the panic message.
-    Panicked(String),
-}
-
-/// The payload of a [`Signal::LinkDied`]: a linked actor has terminated.
-///
-/// Boxed inside [`Signal`] because it is a **cold** control path — boxing it
-/// keeps the hot [`Signal::Message`] slot small (large-variant discipline).
-#[derive(Debug, Clone)]
-#[expect(
-    clippy::exhaustive_structs,
-    reason = "scaffold placeholder for the #120 links/supervision payload"
-)]
-pub struct LinkDied {
-    /// The dead actor's identity.
-    pub id: ActorId,
-    /// Why it stopped.
-    pub reason: StopReason,
 }
 
 /// A signal in an actor's mailbox: a domain message or a system control signal.
@@ -187,9 +156,12 @@ pub enum Signal<A: Mailboxed> {
     },
     /// Asks the actor to stop after draining messages queued before it.
     Stop,
-    /// A linked actor has terminated. Boxed: this is a cold path, and inlining
-    /// its fields would inflate every message slot (large-variant discipline).
-    LinkDied(Box<LinkDied>),
+    /// A watch registration: enqueue a watcher onto this actor's watcher set so
+    /// it is notified when this actor stops. Boxed — a cold control path; inlining
+    /// `WatchReg` (which holds a `flume::Sender`) would inflate every message slot.
+    Watch(Box<crate::watch::WatchReg>),
+    /// Deregister a watcher by id (the `unwatch` path).
+    Unwatch(ActorId),
 }
 
 /// The construction namespace for an actor's mailbox.
@@ -393,7 +365,7 @@ impl<A: Mailboxed> Future for SendMessageFut<'_, A> {
                 Signal::Message {
                     msg: undelivered, ..
                 } => undelivered,
-                Signal::Stop | Signal::LinkDied(_) => {
+                Signal::Stop | Signal::Watch(_) | Signal::Unwatch(_) => {
                     unreachable!("send_message enqueues only Signal::Message")
                 }
             })
@@ -453,6 +425,19 @@ mod tests {
     struct Probe;
     impl Mailboxed for Probe {
         type Msg = u64;
+    }
+
+    #[test]
+    fn signal_watch_and_unwatch_are_carried() {
+        let (tx, _rx) = flume::unbounded::<crate::watch::LinkDied>();
+        let reg = crate::watch::WatchReg {
+            watcher: ActorId::new(9),
+            link_tx: tx,
+            linked: true,
+        };
+        // Compiles only if Signal carries Watch/Unwatch (this is the whole assertion).
+        let _watch: Signal<Probe> = Signal::Watch(Box::new(reg));
+        let _unwatch: Signal<Probe> = Signal::Unwatch(ActorId::new(9));
     }
 
     /// A message tagged with `(sender_id, seq)`; also proves `Msg` is any

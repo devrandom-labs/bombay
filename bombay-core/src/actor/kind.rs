@@ -55,8 +55,10 @@ pub(super) async fn run_message_loop<A: Actor>(
                 // In-band graceful stop (FIFO): everything queued ahead was
                 // already handled above.
                 Signal::Stop => return ActorStopReason::Normal,
-                // Nothing produces LinkDied pre-#120; ignore and keep running.
-                Signal::LinkDied(_) => {}
+                // Watch/Unwatch registration handled by the loop's control path
+                // (Task 6 wires the Watchers guard); until then, ignore to keep
+                // the match total.
+                Signal::Watch(_) | Signal::Unwatch(_) => {}
             },
         }
     }

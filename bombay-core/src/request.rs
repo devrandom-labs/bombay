@@ -103,7 +103,7 @@ impl<'a, A: Mailboxed> TellRequest<'a, A> {
 fn undelivered_msg<A: Mailboxed>(signal: Signal<A>) -> A::Msg {
     match signal {
         Signal::Message { msg, .. } => msg,
-        Signal::Stop | Signal::LinkDied(_) => {
+        Signal::Stop | Signal::Watch(_) | Signal::Unwatch(_) => {
             unreachable!("the request layer enqueues only Signal::Message")
         }
     }
