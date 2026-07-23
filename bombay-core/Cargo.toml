@@ -24,6 +24,7 @@ futures = { workspace = true }
 thiserror = { workspace = true }
 downcast-rs = { workspace = true }
 papaya = { workspace = true }
+smallvec = { workspace = true }
 
 [dev-dependencies]
 # The vendored kameo fork — dev-only, for the head-to-head request bench
