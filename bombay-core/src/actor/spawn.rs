@@ -17,9 +17,12 @@ use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    actor::{Actor, ActorRef, kind::run_message_loop},
+    actor::{
+        Actor, ActorRef,
+        kind::{LoopHandles, run_message_loop},
+    },
     error::{ActorStopReason, PanicError, PanicReason},
-    mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver},
+    mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Signal},
 };
 
 /// The default mailbox capacity for the ergonomic spawn path (4 cache-lines'
@@ -161,12 +164,36 @@ async fn run_lifecycle<A: Actor>(
     // unreachable (kameo issue #171: a leaked strong self-ref pins the count and
     // the actor never stops). Keep only a weak self-ref plus the loop's own
     // copies of the cold lifecycle handles (for drain-window minting, ADR-0010).
-    let cancel = actor_ref.cancel_token().clone();
-    let abort = actor_ref.abort_handle().clone();
+    // The task-owned watcher set: its `Drop` fires the death notices, so a
+    // watched actor is notified on EVERY exit path (normal return, panic unwind,
+    // `Abortable` kill — `Drop` runs on all three), card #195.
+    let mut watchers = crate::watch::Watchers::new(actor_ref.id());
+    let handles = LoopHandles {
+        cancel: actor_ref.cancel_token().clone(),
+        abort: actor_ref.abort_handle().clone(),
+    };
     let weak = actor_ref.downgrade();
     drop(actor_ref);
 
-    let reason = run_message_loop(&mut state, &weak, &cancel, &abort, &mut mailbox_rx).await;
+    let reason =
+        run_message_loop(&mut state, &weak, &handles, &mut mailbox_rx, &mut watchers).await;
+
+    // A `Signal::Watch` that raced the stop may still sit in the mailbox; drain
+    // the backlog and apply any late registration, or it is a silently missed
+    // death. (On a hard kill this future is dropped and never reaches here — the
+    // guard's `Drop` still fires `Killed` for whatever was already registered.)
+    for signal in mailbox_rx.drain() {
+        if let Signal::Watch(reg) = signal {
+            let crate::watch::WatchReg {
+                watcher,
+                link_tx,
+                linked,
+            } = *reg;
+            watchers.push(watcher, link_tx, linked);
+        }
+    }
+    watchers.set_reason(reason.clone());
+    drop(watchers); // fires the graceful-path notifications before on_stop
 
     let stop_result = AssertUnwindSafe(state.on_stop(weak.clone(), reason.clone()))
         .catch_unwind()
@@ -1479,5 +1506,166 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    /// A minimal actor whose `handle` unwinds — used to drive the panic exit path
+    /// for the death-watch teardown tests (card #195).
+    struct Panicker;
+    #[derive(Debug)]
+    struct Boom;
+    impl Msg for Boom {}
+    impl Mailboxed for Panicker {
+        type Msg = Boom;
+    }
+    impl crate::actor::Actor for Panicker {
+        type Args = ();
+        type Error = core::convert::Infallible;
+        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Panicker)
+        }
+        async fn handle(
+            &mut self,
+            _: Boom,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            panic!("boom")
+        }
+    }
+
+    /// Lifecycle (card #195): a registered watcher is notified on the NORMAL stop
+    /// path with the actor's id, a normal reason, and `linked == false` (a `watch`
+    /// edge). The notification is the `Watchers` guard's `Drop` on the graceful
+    /// teardown, after the loop returns `Normal`.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn watch_notified_on_normal_stop() {
+        use crate::actor::Spawn;
+
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let target = Counter::spawn((Arc::clone(&handled), Arc::clone(&stopped)));
+        let (watch_tx, watch_rx) = flume::unbounded::<crate::watch::LinkDied>();
+
+        // Register a watcher directly via the mailbox (`ActorRef::watch` is Task 9).
+        target
+            .mailbox_sender()
+            .send(Signal::Watch(Box::new(crate::watch::WatchReg {
+                watcher: crate::mailbox::ActorId::new(999),
+                link_tx: watch_tx,
+                linked: false,
+            })))
+            .await
+            .expect("registration delivered");
+
+        target.stop(); // graceful
+        let notice = bounded(watch_rx.recv_async()).await.expect("watch fired");
+        assert_eq!(notice.id, target.id());
+        assert!(notice.reason.is_normal(), "normal stop => normal reason");
+        assert!(!notice.linked, "a watch edge carries linked == false");
+    }
+
+    /// Lifecycle (card #195): a registered watcher is notified on the PANIC path —
+    /// the `Watchers` guard's `Drop` still runs as the loop unwinds/returns, so the
+    /// notice carries `Panicked`.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn watch_notified_on_panic() {
+        use crate::actor::Spawn;
+
+        let target = Panicker::spawn(());
+        let (tx, rx) = flume::unbounded::<crate::watch::LinkDied>();
+        target
+            .mailbox_sender()
+            .send(Signal::Watch(Box::new(crate::watch::WatchReg {
+                watcher: crate::mailbox::ActorId::new(1),
+                link_tx: tx,
+                linked: false,
+            })))
+            .await
+            .expect("registration delivered");
+        target.tell(Boom).try_send().expect("provoke the panic");
+        let notice = bounded(rx.recv_async())
+            .await
+            .expect("watch fired on unwind");
+        assert!(matches!(notice.reason, ActorStopReason::Panicked(_)));
+    }
+
+    /// Applies `barrier_regs` Watch registrations to `target`'s guard, deterministic
+    /// via FIFO: a follow-up `Tick` is enqueued behind them, so once `handled`
+    /// reaches 1 the loop has provably dequeued every prior signal (the regs) and
+    /// pushed them to the guard. Returns once the barrier is crossed.
+    ///
+    /// This is why the KILL tests are deterministic despite the abort: on the kill
+    /// path the teardown drain-pending step in `run_lifecycle` never runs (the
+    /// lifecycle future is dropped by `Abortable`), so a reg is only notified if it
+    /// reached the guard *before* the abort. The strict "reg still in the mailbox
+    /// channel at the abort point" case is out of scope here — it belongs to
+    /// `MailboxReceiver::drop` and is logged for #196.
+    async fn watch_and_await_applied(target: &ActorRef<Counter>, handled: &AtomicU32) {
+        bounded(target.tell(Tick)).await.expect("barrier tick sent");
+        bounded(async {
+            while handled.load(Ordering::SeqCst) == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+    }
+
+    /// Lifecycle (card #195): a registered watcher is notified on the KILL path.
+    /// `Abortable` drops the whole lifecycle future, but the `Watchers` guard's
+    /// `Drop` still runs (no graceful reason set) and reports `Killed`.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn watch_notified_on_kill() {
+        use crate::actor::Spawn;
+
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let target = Counter::spawn((Arc::clone(&handled), stopped));
+        let (tx, rx) = flume::unbounded::<crate::watch::LinkDied>();
+        target
+            .mailbox_sender()
+            .send(Signal::Watch(Box::new(crate::watch::WatchReg {
+                watcher: crate::mailbox::ActorId::new(1),
+                link_tx: tx,
+                linked: false,
+            })))
+            .await
+            .expect("registration delivered");
+        // The reg must reach the guard before the abort (see helper doc).
+        watch_and_await_applied(&target, &handled).await;
+
+        target.kill(); // Abortable drops the loop future — no on_stop
+        let notice = bounded(rx.recv_async()).await.expect("watch fired on kill");
+        assert!(matches!(notice.reason, ActorStopReason::Killed));
+    }
+
+    /// Lifecycle (card #195): a watch registered via a cloned sender (`try_send`) and
+    /// applied to the guard before a `kill` is still notified with `Killed`. Uses a
+    /// FIFO barrier so the reg reaches the guard before the abort takes effect; the
+    /// strict "reg still in-channel at the abort point" case is out of scope here
+    /// (it belongs to `MailboxReceiver::drop`; logged for #196).
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn watch_in_flight_at_kill_still_notified() {
+        use crate::actor::Spawn;
+
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let target = Counter::spawn_with_capacity(cap(8), (Arc::clone(&handled), stopped));
+        let (tx, rx) = flume::unbounded::<crate::watch::LinkDied>();
+        let sender = target.mailbox_sender().clone();
+        sender
+            .try_send(Signal::Watch(Box::new(crate::watch::WatchReg {
+                watcher: crate::mailbox::ActorId::new(1),
+                link_tx: tx,
+                linked: false,
+            })))
+            .expect("reg enqueued");
+        // The reg must reach the guard before the abort (see helper doc).
+        watch_and_await_applied(&target, &handled).await;
+
+        target.kill();
+        let notice = bounded(rx.recv_async())
+            .await
+            .expect("in-flight watch notified");
+        assert!(matches!(notice.reason, ActorStopReason::Killed));
     }
 }
