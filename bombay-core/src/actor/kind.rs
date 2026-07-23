@@ -74,14 +74,7 @@ pub(super) async fn run_message_loop<A: Actor>(
                 // Register/deregister a watcher on the task-owned guard. The
                 // guard's `Drop` (in `run_lifecycle`) fires the death notices, so
                 // being watched is universal and passive — every actor honors it.
-                Signal::Watch(reg) => {
-                    let crate::watch::WatchReg {
-                        watcher,
-                        link_tx,
-                        linked,
-                    } = *reg;
-                    watchers.push(watcher, link_tx, linked);
-                }
+                Signal::Watch(reg) => watchers.apply(*reg),
                 Signal::Unwatch(id) => watchers.remove(id),
             },
         }

@@ -178,18 +178,17 @@ async fn run_lifecycle<A: Actor>(
     let reason =
         run_message_loop(&mut state, &weak, &handles, &mut mailbox_rx, &mut watchers).await;
 
-    // A `Signal::Watch` that raced the stop may still sit in the mailbox; drain
-    // the backlog and apply any late registration, or it is a silently missed
-    // death. (On a hard kill this future is dropped and never reaches here — the
-    // guard's `Drop` still fires `Killed` for whatever was already registered.)
+    // A watch registration (or its `Unwatch`) that raced the stop may still sit in
+    // the mailbox; drain the backlog and apply it in FIFO order — a late `Watch` is
+    // otherwise a silently missed death, and a late `Unwatch` would otherwise
+    // spuriously notify a former watcher. (On a hard kill this future is dropped and
+    // never reaches here — the guard's `Drop` still fires `Killed` for whatever was
+    // already registered.)
     for signal in mailbox_rx.drain() {
-        if let Signal::Watch(reg) = signal {
-            let crate::watch::WatchReg {
-                watcher,
-                link_tx,
-                linked,
-            } = *reg;
-            watchers.push(watcher, link_tx, linked);
+        match signal {
+            Signal::Watch(reg) => watchers.apply(*reg),
+            Signal::Unwatch(id) => watchers.remove(id),
+            Signal::Message { .. } | Signal::Stop => {}
         }
     }
     watchers.set_reason(reason.clone());
@@ -1564,9 +1563,10 @@ mod tests {
         assert!(!notice.linked, "a watch edge carries linked == false");
     }
 
-    /// Lifecycle (card #195): a registered watcher is notified on the PANIC path —
-    /// the `Watchers` guard's `Drop` still runs as the loop unwinds/returns, so the
-    /// notice carries `Panicked`.
+    /// Lifecycle (card #195): a registered watcher is notified on the PANIC path.
+    /// The handler panic is caught by `handle_message`'s `catch_unwind` and the loop
+    /// returns `Panicked`, so the teardown `set_reason(Panicked) → drop(watchers)`
+    /// path fires the notice — not a true unwind through the guard.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn watch_notified_on_panic() {
         use crate::actor::Spawn;
@@ -1585,7 +1585,7 @@ mod tests {
         target.tell(Boom).try_send().expect("provoke the panic");
         let notice = bounded(rx.recv_async())
             .await
-            .expect("watch fired on unwind");
+            .expect("watch fired on the panic path");
         assert!(matches!(notice.reason, ActorStopReason::Panicked(_)));
     }
 
@@ -1667,5 +1667,51 @@ mod tests {
             .await
             .expect("in-flight watch notified");
         assert!(matches!(notice.reason, ActorStopReason::Killed));
+    }
+
+    /// Lifecycle (card #195): an `Unwatch` queued FIFO-behind its `Watch` and left
+    /// in the mailbox at stop must be honored by the teardown drain — a former
+    /// watcher receives NO death notice. Deterministic via cancel-before-drain
+    /// (mirrors `cancel_token_stop_abandons_the_backlog`): the token is cancelled
+    /// before `run` drains anything, so the loop handles neither signal and the
+    /// whole `[Watch(1), Unwatch(1)]` backlog reaches the drain. FAILS while the
+    /// drain applies `Watch` but ignores `Unwatch` (the removed watcher is spuriously
+    /// notified).
+    #[tokio::test]
+    async fn unwatch_queued_before_stop_suppresses_notice() {
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let prepared = PreparedActor::<Counter>::new(cap(8));
+        let actor_ref = prepared.actor_ref().clone();
+        let (tx, rx) = flume::unbounded::<crate::watch::LinkDied>();
+
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Watch(Box::new(crate::watch::WatchReg {
+                watcher: crate::mailbox::ActorId::new(1),
+                link_tx: tx,
+                linked: false,
+            })))
+            .await
+            .expect("watch enqueued");
+        actor_ref
+            .mailbox_sender()
+            .send(Signal::Unwatch(crate::mailbox::ActorId::new(1)))
+            .await
+            .expect("unwatch enqueued");
+        actor_ref.stop(); // cancel BEFORE run() drains anything
+
+        let outcome = bounded(prepared.run((handled, stopped))).await;
+        assert!(matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Normal,
+                ..
+            }
+        ));
+        assert!(
+            rx.try_recv().is_err(),
+            "an unwatched former watcher must NOT be notified at stop",
+        );
     }
 }

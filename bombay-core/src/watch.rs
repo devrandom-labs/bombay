@@ -42,8 +42,8 @@ pub struct WatchReg {
 
 /// The set of watchers a (watched) actor must notify when it stops, owned by the
 /// actor's task. Its `Drop` fires the notifications — so death is delivered on
-/// EVERY exit path (normal return, panic unwind, `Abortable` cancellation),
-/// since `Drop` runs on all of them.
+/// EVERY exit path (normal return, a caught handler panic delivered as
+/// `Panicked`, `Abortable` kill), since `Drop` runs on all of them.
 pub struct Watchers {
     me: ActorId,
     list: SmallVec<[(ActorId, LinkSender, bool); 1]>,
@@ -59,11 +59,13 @@ impl Watchers {
         }
     }
 
-    /// Registers a watcher. `link` twice for the same watcher installs two edges;
-    /// dedup is intentionally not done (idempotency is a caller concern, and a
-    /// duplicate simply delivers twice — bounded by watch-count, never a leak).
-    pub(crate) fn push(&mut self, watcher: ActorId, link_tx: LinkSender, linked: bool) {
-        self.list.push((watcher, link_tx, linked));
+    /// Registers a watcher from a [`WatchReg`]. `link` twice for the same watcher
+    /// installs two edges; dedup is intentionally not done (idempotency is a caller
+    /// concern, and a duplicate simply delivers twice — bounded by watch-count,
+    /// never a leak). Single apply path shared by the run-loop and the teardown
+    /// drain, so both stay FIFO-consistent.
+    pub(crate) fn apply(&mut self, reg: WatchReg) {
+        self.list.push((reg.watcher, reg.link_tx, reg.linked));
     }
 
     /// Removes every edge for `watcher` (the `unwatch` path). Linear scan — a
@@ -103,8 +105,16 @@ mod tests {
         let (tx_a, rx_a) = flume::unbounded();
         let (tx_b, rx_b) = flume::unbounded();
         let mut guard = Watchers::new(ActorId::new(42));
-        guard.push(ActorId::new(1), tx_a, false); // a watched
-        guard.push(ActorId::new(2), tx_b, true); // b linked
+        guard.apply(WatchReg {
+            watcher: ActorId::new(1),
+            link_tx: tx_a,
+            linked: false,
+        }); // a watched
+        guard.apply(WatchReg {
+            watcher: ActorId::new(2),
+            link_tx: tx_b,
+            linked: true,
+        }); // b linked
         guard.set_reason(ActorStopReason::Normal);
         drop(guard);
 
@@ -122,7 +132,11 @@ mod tests {
         // Abortable drops the guard without a graceful reason => Killed.
         let (tx, rx) = flume::unbounded();
         let mut guard = Watchers::new(ActorId::new(7));
-        guard.push(ActorId::new(1), tx, false);
+        guard.apply(WatchReg {
+            watcher: ActorId::new(1),
+            link_tx: tx,
+            linked: false,
+        });
         drop(guard); // no set_reason
 
         let n = rx.try_recv().expect("notified on kill path");
