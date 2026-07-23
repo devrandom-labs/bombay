@@ -433,6 +433,9 @@ mod tests {
             Ok(())
         }
     }
+    // `Watch` with the default OTP hook, so `Counter` can be `spawn_linked` in the
+    // link tests (it is used as a linked peer that stops normally).
+    impl crate::actor::Watch for Counter {}
 
     fn cap(n: usize) -> Capacity {
         Capacity::try_from(n).expect("valid test capacity")
@@ -1672,6 +1675,43 @@ mod tests {
             panic!("boom")
         }
     }
+    // `Watch` with the default OTP hook: a linked abnormal death `Break`s, so a
+    // `Panicker` linked to a peer that dies abnormally propagates (used by the
+    // `link_*` tests). Empty impl = the trait's default `on_link_died`.
+    impl crate::actor::Watch for Panicker {}
+
+    /// A `Watch` actor that TRAPS every death — its `on_link_died` returns
+    /// `Continue` even for a linked abnormal death, so it survives a linked peer's
+    /// crash (the `trap_exit` override, card #195).
+    struct Trapper;
+    impl Mailboxed for Trapper {
+        type Msg = Never;
+    }
+    impl crate::actor::Actor for Trapper {
+        type Args = ();
+        type Error = core::convert::Infallible;
+        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Trapper)
+        }
+        async fn handle(
+            &mut self,
+            _: Never,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+    impl crate::actor::Watch for Trapper {
+        async fn on_link_died(
+            &mut self,
+            _: crate::mailbox::ActorId,
+            _: ActorStopReason,
+            _: bool,
+        ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
+            Ok(core::ops::ControlFlow::Continue(())) // trap: never propagate
+        }
+    }
 
     /// Lifecycle (card #195): a registered watcher is notified on the NORMAL stop
     /// path with the actor's id, a normal reason, and `linked == false` (a `watch`
@@ -1939,5 +1979,197 @@ mod tests {
             rx.try_recv().is_err(),
             "an unwatched former watcher must NOT be notified at stop",
         );
+    }
+
+    /// Defensive (card #195): a `Watch` actor spawned via the plain [`Spawn`] path
+    /// has no link channel, so `watch` returns [`ActorNotLinked`] rather than
+    /// panicking — stable Rust has no negative bound to forbid it at the type level.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn plain_spawned_watch_actor_watch_errs() {
+        use crate::actor::Spawn;
+
+        let a = Panicker::spawn(()); // a `Watch` actor, but plain-spawned
+        let b = Panicker::spawn(());
+        assert_eq!(a.watch(&b), Err(crate::error::ActorNotLinked));
+    }
+
+    /// Sequence (card #195): `a.link(&b)`; `b` dies abnormally (handler panic); `a`'s
+    /// default `on_link_died` returns `Break`, so `a` stops too — the link
+    /// propagated. FAILS if the linked loop never reacts to the death or the default
+    /// hook does not propagate a linked abnormal exit.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn link_propagates_on_abnormal() {
+        use crate::actor::SpawnLinked;
+
+        let a = Panicker::spawn_linked(()); // default hook: Break on linked abnormal
+        let b = Panicker::spawn_linked(());
+        a.link(&b).expect("both linked, both can watch");
+
+        b.tell(Boom).try_send().expect("provoke b's panic");
+
+        // If the link propagates, `a` stops; poll under the fail-fast bound so a
+        // broken propagation FAILS FAST here rather than hanging.
+        bounded(async {
+            while a.is_alive() {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+        assert!(!a.is_alive(), "a linked abnormal death propagated to a");
+    }
+
+    /// Sequence (card #195): a linked peer that stops NORMALLY does not propagate —
+    /// the survivor keeps running. FAILS if a normal death is treated as abnormal.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn link_does_not_propagate_on_normal() {
+        use crate::actor::SpawnLinked;
+
+        let a = Panicker::spawn_linked(());
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let b = Counter::spawn_linked((handled, Arc::clone(&stopped)));
+        a.link(&b).expect("both linked");
+
+        b.stop(); // normal stop
+        // Wait until b has actually stopped (its death notice is delivered to a).
+        bounded(async {
+            while stopped.load(Ordering::SeqCst) == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+        // Give a a couple of scheduler turns to process the (Continue) notice.
+        tokio::task::yield_now().await;
+        tokio::task::yield_now().await;
+        assert!(a.is_alive(), "a normal death does not propagate to a");
+    }
+
+    /// Sequence (card #195): a `Watch` actor overriding `on_link_died` to `Continue`
+    /// (the `trap_exit` override) survives a linked abnormal death. FAILS if the
+    /// loop propagates regardless of the hook's `ControlFlow`.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn trap_exit_via_override_keeps_running() {
+        use crate::actor::SpawnLinked;
+
+        let a = Trapper::spawn_linked(()); // hook always Continues
+        let b = Panicker::spawn_linked(());
+        a.link(&b).expect("both linked");
+
+        b.tell(Boom).try_send().expect("provoke b's panic");
+        // Wait for b to die, so a has certainly received the notice.
+        bounded(async {
+            while b.is_alive() {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+        tokio::task::yield_now().await;
+        tokio::task::yield_now().await;
+        assert!(a.is_alive(), "the trap_exit override keeps a alive");
+    }
+
+    /// Defensive (card #195): watching an already-dead target delivers a `LinkDied`
+    /// at once (Erlang's link-to-dead rule) — the `watch` call still succeeds, and a
+    /// trapping watcher stays alive. FAILS if `watch` errors or panics when the
+    /// target's mailbox is already closed.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn dead_target_watch_immediate_linkdied() {
+        use crate::actor::SpawnLinked;
+
+        let a = Trapper::spawn_linked(());
+        let b = Panicker::spawn_linked(());
+
+        b.kill();
+        bounded(async {
+            while b.is_alive() {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+
+        // Watching a dead b synthesizes an immediate notice on a's channel.
+        assert!(a.watch(&b).is_ok(), "watching a dead target still succeeds");
+        tokio::task::yield_now().await;
+        tokio::task::yield_now().await;
+        assert!(
+            a.is_alive(),
+            "the trapping watcher survives the dead-target notice"
+        );
+    }
+
+    /// Defensive (card #195, ADR-0003): watching holds NO strong `ActorRef` to the
+    /// target — the watcher list stores the watcher's own channel, not the target's.
+    /// So dropping the target's last external strong ref still stops it. FAILS if a
+    /// watch edge pins the target alive.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn watch_does_not_pin_target() {
+        use crate::actor::SpawnLinked;
+
+        let a = Trapper::spawn_linked(());
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let b = Counter::spawn_linked((handled, Arc::clone(&stopped)));
+        a.watch(&b).expect("a is linked, can watch");
+
+        drop(b); // the last external strong ref to b
+
+        // b must stop via ref-count-driven stop despite being watched.
+        bounded(async {
+            while stopped.load(Ordering::SeqCst) == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+        assert_eq!(
+            stopped.load(Ordering::SeqCst),
+            1,
+            "the watched target still stops when its last external ref drops",
+        );
+    }
+
+    /// Linearizability (card #195): N watchers register on one target from the same
+    /// instant (real overlap via a `Barrier`); each receives exactly one `LinkDied`
+    /// when the target stops. Exercises the `SmallVec` spill past its inline slot.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn many_watchers_all_notified() {
+        use crate::actor::Spawn;
+        use tokio::sync::Barrier;
+
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let target = Counter::spawn((handled, stopped));
+        let n = 8usize;
+        let barrier = Arc::new(Barrier::new(n));
+        let mut receivers = Vec::new();
+        let mut tasks = Vec::new();
+        for i in 0..n {
+            let (tx, rx) = flume::unbounded::<crate::watch::LinkDied>();
+            receivers.push(rx);
+            let sender = target.mailbox_sender().clone();
+            let b = Arc::clone(&barrier);
+            let watcher_id = crate::mailbox::ActorId::new(u64::try_from(i).expect("fits u64") + 1);
+            tasks.push(tokio::spawn(async move {
+                b.wait().await; // real overlap: all registrations race
+                sender
+                    .send(Signal::Watch(Box::new(crate::watch::WatchReg {
+                        watcher: watcher_id,
+                        link_tx: tx,
+                        linked: false,
+                    })))
+                    .await
+                    .expect("registration delivered");
+            }));
+        }
+        for t in tasks {
+            t.await.expect("registration task");
+        }
+
+        target.stop();
+        for rx in receivers {
+            let notice = bounded(rx.recv_async())
+                .await
+                .expect("each watcher is notified exactly once");
+            assert_eq!(notice.id, target.id());
+        }
     }
 }

@@ -14,10 +14,12 @@ use futures::stream::AbortHandle;
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    actor::Actor,
-    mailbox::{ActorId, MailboxSender},
+    actor::{Actor, Watch},
+    error::{ActorNotLinked, ActorStopReason},
+    mailbox::{ActorId, MailboxSender, Signal},
     reply::ReplySender,
     request::{AskRequest, TellRequest},
+    watch::{LinkDied, WatchReg},
 };
 
 /// The one heap allocation every strong handle to an actor shares (ADR-0010):
@@ -178,6 +180,87 @@ impl<A: Actor> ActorRef<A> {
             id: self.id,
             shared: Arc::downgrade(&self.shared),
         }
+    }
+}
+
+/// The death-watch verbs (card #195). Only a [`Watch`] actor can watch, and only
+/// if it was spawned via `spawn_linked` (so it owns a link channel to receive
+/// death notices on); a plain-spawned `Watch` actor returns [`ActorNotLinked`].
+impl<A: Watch> ActorRef<A> {
+    /// Watches `target`: this actor's [`on_link_died`](Watch::on_link_died) fires
+    /// when `target` stops. One-directional and notify-only (`linked = false`), so
+    /// the default hook merely observes — a `target` death never propagates here.
+    /// `target` may be any [`Actor`] (being watched is universal); it need not
+    /// itself be a [`Watch`] actor.
+    ///
+    /// # Errors
+    ///
+    /// [`ActorNotLinked`] if this actor was spawned via the plain `spawn` path and
+    /// so has no link channel to receive notices on. Spawn watchers with
+    /// `spawn_linked`.
+    pub fn watch<B: Actor>(&self, target: &ActorRef<B>) -> Result<(), ActorNotLinked> {
+        self.register_on(target, false)
+    }
+
+    /// Links with `peer`: bidirectional. Each side's
+    /// [`on_link_died`](Watch::on_link_died) fires on the other's death; the
+    /// default hook propagates an abnormal death (`Break`). Requires both actors to
+    /// be [`Watch`] (both must react). Two independent registrations — if `peer` is
+    /// already dead, its side yields an immediate synthetic notice on this actor's
+    /// channel (Erlang's link-to-dead rule).
+    ///
+    /// # Errors
+    ///
+    /// [`ActorNotLinked`] if either actor lacks a link channel (was not spawned via
+    /// `spawn_linked`). If this side registers but `peer` lacks a channel, the
+    /// error surfaces from the second registration.
+    pub fn link<B: Watch>(&self, peer: &ActorRef<B>) -> Result<(), ActorNotLinked> {
+        self.register_on(peer, true)?;
+        peer.register_on(self, true)
+    }
+
+    /// Stops watching `target`: removes this actor's edge from `target`'s watcher
+    /// set. Best-effort — if `target` has already stopped the send simply fails and
+    /// there is nothing left to remove.
+    pub fn unwatch<B: Actor>(&self, target: &ActorRef<B>) {
+        let _ = target.mailbox_sender().try_send(Signal::Unwatch(self.id()));
+    }
+
+    /// Registers this actor as a watcher on `target` with the given `linked` flag:
+    /// reads this actor's own `link_tx` (the receive end the notice will arrive on)
+    /// and enqueues a [`WatchReg`] onto `target`'s mailbox.
+    ///
+    /// If `target` is already dead its mailbox send fails, and this actor is given
+    /// an immediate synthetic [`LinkDied`] on its own channel (Erlang's
+    /// link-to-dead rule) — the reason is [`Killed`](ActorStopReason::Killed)
+    /// because the target's true reason is unknowable once its mailbox is gone.
+    fn register_on<B: Actor>(
+        &self,
+        target: &ActorRef<B>,
+        linked: bool,
+    ) -> Result<(), ActorNotLinked> {
+        let link_tx = self.link_tx().ok_or(ActorNotLinked)?.clone();
+        let reg = WatchReg {
+            watcher: self.id(),
+            link_tx,
+            linked,
+        };
+        if target
+            .mailbox_sender()
+            .try_send(Signal::Watch(Box::new(reg)))
+            .is_err()
+        {
+            // Target already dead: deliver an immediate death notice. This actor's
+            // own link channel is guaranteed present (`link_tx()` was `Some` above).
+            if let Some(tx) = self.link_tx() {
+                let _ = tx.try_send(LinkDied {
+                    id: target.id(),
+                    reason: ActorStopReason::Killed,
+                    linked,
+                });
+            }
+        }
+        Ok(())
     }
 }
 
