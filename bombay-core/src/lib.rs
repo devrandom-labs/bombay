@@ -42,6 +42,12 @@ pub mod reply;
 pub mod request;
 mod watch;
 
+// The `watch` module stays private — `LinkSender`/`LinkReceiver`/`WatchReg`/
+// `Watchers` are internal link-channel plumbing. Only the monomorphic death
+// notice is public, surfaced by selective re-export (the same pattern
+// `actor::mod` uses for its submodule items) rather than `pub mod watch`.
+pub use watch::LinkDied;
+
 // Both arms are load-bearing: the feature arm serves integration tests and
 // benches (dev-dep feature unification turns it on for external test binaries);
 // the `test` arm keeps in-crate unit-test visibility independent of that

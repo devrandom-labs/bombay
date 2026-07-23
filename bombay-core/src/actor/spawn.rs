@@ -2323,6 +2323,50 @@ mod tests {
         }
     }
 
+    /// Defensive (card #195): a stale watcher edge self-prunes. A watcher registers,
+    /// then drops its link-channel receiver (the watcher "dies"). When the target
+    /// later stops, `Watchers::drop` `try_send`s onto the now-disconnected channel;
+    /// that send fails and is silently skipped (`let _ = try_send`). The target must
+    /// still stop cleanly — no panic, no leak. FAILS if the dead-edge send is
+    /// unwrapped rather than dropped.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn stale_watcher_edge_self_prunes() {
+        use crate::actor::Spawn;
+
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let target = Counter::spawn((handled, Arc::clone(&stopped)));
+
+        let (tx, rx) = flume::unbounded::<crate::watch::LinkDied>();
+        target
+            .mailbox_sender()
+            .send(Signal::Watch(Box::new(crate::watch::WatchReg {
+                watcher: crate::mailbox::ActorId::new(1),
+                link_tx: tx,
+                linked: false,
+            })))
+            .await
+            .expect("registration delivered");
+
+        drop(rx); // the watcher's receiver is gone => the edge is now stale
+
+        target.stop();
+
+        // The target must reach `on_stop` despite the dead edge; a bounded poll on the
+        // shared `stopped` atomic fails fast rather than hanging if it never does.
+        bounded(async {
+            while stopped.load(Ordering::SeqCst) == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await;
+        assert_eq!(
+            stopped.load(Ordering::SeqCst),
+            1,
+            "the target stops cleanly; the stale edge was skipped, not fatal",
+        );
+    }
+
     /// A backpressure fixture: its single handler blocks on `release` until the test
     /// lets it proceed, so its bounded (cap-1) mailbox can be deliberately saturated
     /// while the actor stays ALIVE.
