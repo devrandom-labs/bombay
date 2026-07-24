@@ -9,7 +9,7 @@
 use std::collections::VecDeque;
 
 use bolero::{TypeGenerator, check};
-use bombay_core::mailbox::{Capacity, Mailbox, MailboxSender, Mailboxed, Signal, TrySendError};
+use bombay_core::mailbox::{ActorId, Capacity, Mailbox, MailboxSender, Mailboxed, Signal, TrySendError};
 
 /// Fuzz-local actor. The mailbox is domain-agnostic, so a `u64` message is
 /// enough (`Probe` in `mailbox.rs` is `#[cfg(test)]` and unreachable here).
@@ -58,7 +58,7 @@ fn mailbox_state_machine() {
         .for_each(|(cap_seed, ops)| {
             let cap = capacity_from_seed(*cap_seed);
             let cap_n = cap.get();
-            let (tx, rx) = Mailbox::<Probe>::bounded(cap);
+            let (tx, rx) = Mailbox::<Probe>::bounded(cap, ActorId::new(0));
             let mut senders: Vec<MailboxSender<Probe>> = vec![tx];
             // `rx` in an `Option` so `DropRx` can close the mailbox from the
             // read side; `None` means the receiver is gone.
@@ -143,7 +143,7 @@ fn mailbox_state_machine() {
 #[test]
 fn weak_sender_upgrades_only_while_a_strong_sender_lives() {
     let cap = Capacity::try_from(1usize).expect("valid capacity");
-    let (tx, _rx) = Mailbox::<Probe>::bounded(cap);
+    let (tx, _rx) = Mailbox::<Probe>::bounded(cap, ActorId::new(0));
     let weak = tx.downgrade();
     assert!(
         weak.upgrade().is_some(),

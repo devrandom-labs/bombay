@@ -218,6 +218,12 @@ impl<A: Watch> ActorRef<A> {
     /// edge. Like [`watch`](Self::watch), each registration `.await`s for the peer's
     /// mailbox capacity (backpressure).
     ///
+    /// Repeated `link` calls install duplicate edges (a recorded divergence from
+    /// Erlang's at-most-one link per pair; the duplicate notice's first `Break`
+    /// wins). Self-linking (`a.link(&a)`) is likewise not special-cased — where
+    /// Erlang's is a no-op, it installs a self-edge whose death notice lands on
+    /// the actor's own, by-then-undrained channel: harmless.
+    ///
     /// # Errors
     ///
     /// [`ActorNotLinked`] if **either** actor lacks a link channel (was not spawned
@@ -232,9 +238,12 @@ impl<A: Watch> ActorRef<A> {
         peer.register_on(self, true).await
     }
 
-    /// Stops watching `target`: removes this actor's edge from `target`'s watcher
-    /// set. Best-effort — the send `.await`s for capacity and, if `target` has
-    /// already stopped, simply fails with nothing left to remove.
+    /// Stops watching `target`: removes **every** edge this actor holds on
+    /// `target` — watch and link edges alike, coarser than Erlang's per-monitor
+    /// `demonitor`. Best-effort — the send `.await`s for capacity and, if
+    /// `target` has already stopped, simply fails with nothing left to remove.
+    /// As with Erlang's `demonitor`, an `unwatch` racing the target's death may
+    /// still be followed by a delivered notice.
     pub async fn unwatch<B: Actor>(&self, target: &ActorRef<B>) {
         let _ = target
             .mailbox_sender()
@@ -250,10 +259,12 @@ impl<A: Watch> ActorRef<A> {
     /// momentarily-full but alive mailbox makes it WAIT, and it errors **only** when
     /// the mailbox is closed (`target` dead). On that closed error this actor is
     /// given an immediate synthetic [`LinkDied`] on its own channel (Erlang's
-    /// link-to-dead rule) — the reason is [`Killed`](ActorStopReason::Killed)
-    /// because the target's true reason is unknowable once its mailbox is gone. A
-    /// full-mailbox (`Full`) case must never take this branch, or ordinary
-    /// backpressure would self-terminate a linked watcher.
+    /// link-to-dead rule) — the reason is
+    /// [`AlreadyDead`](ActorStopReason::AlreadyDead), its own failure domain
+    /// (Erlang's `noproc`): the target's true reason is unknowable once its mailbox
+    /// is gone, and conflating that with a real [`Killed`](ActorStopReason::Killed)
+    /// would misinform a supervisor. A full-mailbox (`Full`) case must never take
+    /// this branch, or ordinary backpressure would self-terminate a linked watcher.
     async fn register_on<B: Actor>(
         &self,
         target: &ActorRef<B>,
@@ -277,7 +288,7 @@ impl<A: Watch> ActorRef<A> {
             // a full-but-alive one — so this is the genuine link-to-dead path.
             let _ = link_tx.try_send(LinkDied {
                 id: target.id(),
-                reason: ActorStopReason::Killed,
+                reason: ActorStopReason::AlreadyDead,
                 linked,
             });
         }
@@ -385,7 +396,7 @@ mod tests {
     // channel already disconnected before the test even begins.
     fn build_ref_with_rx() -> (ActorRef<Probe>, WeakActorRef<Probe>, MailboxReceiver<Probe>) {
         let cap = Capacity::try_from(4usize).expect("valid capacity");
-        let (tx, rx) = Mailbox::<Probe>::bounded(cap);
+        let (tx, rx) = Mailbox::<Probe>::bounded(cap, ActorId::new(7));
         let (abort, _reg) = AbortHandle::new_pair();
         let actor_ref = ActorRef::new(ActorId::new(7), tx, CancellationToken::new(), abort, None);
         let weak = actor_ref.downgrade();

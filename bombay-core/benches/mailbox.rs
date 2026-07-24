@@ -9,7 +9,7 @@
 
 use std::num::NonZeroUsize;
 
-use bombay_core::mailbox::{Capacity, Mailbox, Mailboxed, Signal};
+use bombay_core::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal};
 use criterion::{BatchSize, Criterion, black_box, criterion_group, criterion_main};
 
 /// A realistically-sized actor command (~40 bytes) — a handful of fields, closer
@@ -49,7 +49,7 @@ fn cap(n: usize) -> Capacity {
 fn enqueue(c: &mut Criterion) {
     c.bench_function("tell_try_send_1k_command", |b| {
         b.iter_batched_ref(
-            || Mailbox::<Bench>::bounded(cap(1024)),
+            || Mailbox::<Bench>::bounded(cap(1024), ActorId::new(0)),
             |(tx, _rx)| {
                 for i in 0..1000u64 {
                     tx.try_send(Signal::Message {
@@ -74,7 +74,7 @@ fn roundtrip(c: &mut Criterion) {
     c.bench_function("send_recv_roundtrip_1k_command", |b| {
         b.iter(|| {
             rt.block_on(async {
-                let (tx, mut rx) = Mailbox::<Bench>::bounded(cap(1024));
+                let (tx, mut rx) = Mailbox::<Bench>::bounded(cap(1024), ActorId::new(0));
                 let producer = tokio::spawn(async move {
                     for i in 0..1000u64 {
                         tx.send(Signal::Message {

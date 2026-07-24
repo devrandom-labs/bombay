@@ -11,6 +11,7 @@ use crate::{
     actor::{Actor, ActorRef, Watch, WeakActorRef},
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{MailboxReceiver, Mailboxed, Signal},
+    watch::{LinkDied, LinkReceiver, Watchers},
 };
 
 /// The loop's own copies of the cold lifecycle handles (ADR-0010): grouped so the
@@ -28,7 +29,7 @@ pub(super) struct LoopHandles {
 /// message mailbox and the actor's own UNBOUNDED link channel.
 pub(super) struct LinkedChannels<'a, A: Mailboxed> {
     pub(super) mailbox_rx: &'a mut MailboxReceiver<A>,
-    pub(super) link_rx: &'a crate::watch::LinkReceiver,
+    pub(super) link_rx: &'a LinkReceiver,
 }
 
 /// Runs the message loop until a stop condition, returning the stop reason.
@@ -46,7 +47,7 @@ pub(super) async fn run_message_loop<A: Actor>(
     self_ref: &WeakActorRef<A>,
     handles: &LoopHandles,
     mailbox_rx: &mut MailboxReceiver<A>,
-    watchers: &mut crate::watch::Watchers,
+    watchers: &mut Watchers,
 ) -> ActorStopReason {
     loop {
         let signal = handles
@@ -77,7 +78,7 @@ async fn handle_mailbox_step<A: Actor>(
     state: &mut A,
     self_ref: &WeakActorRef<A>,
     handles: &LoopHandles,
-    watchers: &mut crate::watch::Watchers,
+    watchers: &mut Watchers,
     signal: Option<Signal<A>>,
 ) -> ControlFlow<ActorStopReason> {
     let Some(next) = signal else {
@@ -140,7 +141,7 @@ pub(super) async fn run_linked_message_loop<A: Watch>(
     state: &mut A,
     self_ref: &WeakActorRef<A>,
     handles: &LoopHandles,
-    watchers: &mut crate::watch::Watchers,
+    watchers: &mut Watchers,
     channels: LinkedChannels<'_, A>,
 ) -> ActorStopReason {
     let LinkedChannels {
@@ -179,9 +180,9 @@ pub(super) async fn run_linked_message_loop<A: Watch>(
 /// a returned `Err` (controlled crash) or a caught unwind.
 async fn handle_link_died<A: Watch>(
     state: &mut A,
-    notice: crate::watch::LinkDied,
+    notice: LinkDied,
 ) -> ControlFlow<ActorStopReason> {
-    let crate::watch::LinkDied { id, reason, linked } = notice;
+    let LinkDied { id, reason, linked } = notice;
     let result = AssertUnwindSafe(state.on_link_died(id, reason, linked))
         .catch_unwind()
         .await;

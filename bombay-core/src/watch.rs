@@ -40,13 +40,21 @@ pub struct WatchReg {
     pub linked: bool,
 }
 
+/// One installed edge in a watcher set: who to notify, over which link channel,
+/// and whether the edge propagates (`link`) or merely notifies (`watch`).
+struct Edge {
+    watcher: ActorId,
+    tx: LinkSender,
+    linked: bool,
+}
+
 /// The set of watchers a (watched) actor must notify when it stops, owned by the
 /// actor's task. Its `Drop` fires the notifications — so death is delivered on
 /// EVERY exit path (normal return, a caught handler panic delivered as
 /// `Panicked`, `Abortable` kill), since `Drop` runs on all of them.
 pub struct Watchers {
     me: ActorId,
-    list: SmallVec<[(ActorId, LinkSender, bool); 1]>,
+    list: SmallVec<[Edge; 1]>,
     reason: Option<ActorStopReason>,
 }
 
@@ -59,19 +67,26 @@ impl Watchers {
         }
     }
 
-    /// Registers a watcher from a [`WatchReg`]. `link` twice for the same watcher
-    /// installs two edges; dedup is intentionally not done (idempotency is a caller
-    /// concern, and a duplicate simply delivers twice — bounded by watch-count,
-    /// never a leak). Single apply path shared by the run-loop and the teardown
-    /// drain, so both stay FIFO-consistent.
+    /// Registers a watcher from a [`WatchReg`]. Duplicates are intentionally
+    /// kept: repeated `watch` edges match Erlang (repeated `monitor/2` calls are
+    /// independent monitors), and a duplicate `link` edge — where Erlang would
+    /// keep a single link — just delivers a duplicate notice whose first `Break`
+    /// wins (recorded OTP divergence; dedup would cost a scan on every apply).
+    /// Single apply path shared by the run-loop and the teardown drain, so both
+    /// stay FIFO-consistent.
     pub(crate) fn apply(&mut self, reg: WatchReg) {
-        self.list.push((reg.watcher, reg.link_tx, reg.linked));
+        self.list.push(Edge {
+            watcher: reg.watcher,
+            tx: reg.link_tx,
+            linked: reg.linked,
+        });
     }
 
-    /// Removes every edge for `watcher` (the `unwatch` path). Linear scan — a
-    /// watcher list is small; a map would buy nothing here.
+    /// Removes **every** edge for `watcher` (the `unwatch` path) — watch and
+    /// link edges alike, coarser than Erlang's per-monitor `demonitor`. Linear
+    /// scan — a watcher list is small; a map would buy nothing here.
     pub(crate) fn remove(&mut self, watcher: ActorId) {
-        self.list.retain(|(id, _, _)| *id != watcher);
+        self.list.retain(|edge| edge.watcher != watcher);
     }
 
     /// Records the graceful stop reason. If never called (hard kill), `Drop`
@@ -84,13 +99,13 @@ impl Watchers {
 impl Drop for Watchers {
     fn drop(&mut self) {
         let reason = self.reason.take().unwrap_or(ActorStopReason::Killed);
-        for (_, tx, linked) in self.list.drain(..) {
+        for edge in self.list.drain(..) {
             // Unbounded channel: send only fails if the watcher itself is gone,
             // in which case the edge is stale and correctly dropped.
-            let _ = tx.try_send(LinkDied {
+            let _ = edge.tx.try_send(LinkDied {
                 id: self.me,
                 reason: reason.clone(),
-                linked,
+                linked: edge.linked,
             });
         }
     }

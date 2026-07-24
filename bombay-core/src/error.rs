@@ -299,6 +299,13 @@ pub enum ActorStopReason {
     /// The actor was killed — a hard stop with no cleanup.
     #[error("killed")]
     Killed,
+    /// A `watch`/`link` found the target already dead (or the registration was
+    /// discarded by the target's teardown), so the notice is synthetic and the
+    /// target's true stop reason is unknowable — the Erlang `noproc` analog.
+    /// Abnormal on purpose: a linked default hook propagates it, exactly as a
+    /// non-`normal` Erlang exit signal terminates a non-trapping linked peer.
+    #[error("already dead when watched")]
+    AlreadyDead,
     /// The actor's code panicked mid-execution.
     #[error(transparent)]
     Panicked(PanicError),
@@ -345,8 +352,10 @@ pub struct NameTaken;
 /// — it has no link channel to receive death notices on, so it cannot watch.
 ///
 /// A caller mistake (spawn a `Watch` actor via plain `spawn`), surfaced as a
-/// typed `Result` rather than a panic: stable Rust has no negative bound to
-/// forbid it at the type level.
+/// typed `Result` rather than a panic. A compile-time typestate (a
+/// `LinkedActorRef` witness returned by `spawn_linked`) exists on stable and
+/// was rejected on cost — handle bifurcation infects `Recipient`, the registry,
+/// and #121 — not possibility: ADR-0011.
 #[derive(thiserror::Error, Clone, Copy, Debug, PartialEq, Eq)]
 #[error("actor was not spawned linked; it cannot watch")]
 pub struct ActorNotLinked;
@@ -697,6 +706,24 @@ mod tests {
     fn on_link_died_is_a_lifecycle_hook() {
         // A hook panic must not be treated as a restartable handler crash (slice 2).
         assert!(PanicReason::OnLinkDied.is_lifecycle_hook());
+    }
+
+    /// The synthetic link-to-dead reason (Erlang's `noproc` analog) is its own
+    /// failure domain: a watcher/supervisor must be able to distinguish "the
+    /// target was already dead when the edge was installed (true reason
+    /// unknowable)" from a real hard [`Killed`]. It is abnormal (a linked
+    /// default hook must propagate it, as Erlang's non-normal `noproc` does).
+    #[test]
+    fn already_dead_is_abnormal_and_distinct_from_killed() {
+        assert!(!ActorStopReason::AlreadyDead.is_normal());
+        assert_eq!(
+            ActorStopReason::AlreadyDead.to_string(),
+            "already dead when watched"
+        );
+        assert!(
+            !matches!(ActorStopReason::AlreadyDead, ActorStopReason::Killed),
+            "one variant per failure domain: already-dead is not a kill",
+        );
     }
 
     #[test]

@@ -14,7 +14,7 @@ use std::alloc::System;
 use bombay_core::{
     actor::{Actor, ActorRef},
     error::Infallible,
-    mailbox::{Capacity, Mailbox, Mailboxed},
+    mailbox::{ActorId, Capacity, Mailbox, Mailboxed},
     message::Msg,
     test_support::{CountingAlloc, unstarted_actor},
 };
@@ -61,7 +61,8 @@ fn round(actor_ref: &ActorRef<Probe>) -> isize {
 #[test]
 fn clone_downgrade_upgrade_allocate_nothing() {
     let cap = Capacity::try_from(4_usize).expect("valid capacity");
-    let (actor_ref, _rx) = unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(cap));
+    let (actor_ref, _rx) =
+        unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(cap, ActorId::new(0)));
 
     // Warm-up: identical round BEFORE measuring, so one-time lazy init never
     // pollutes the measurement.

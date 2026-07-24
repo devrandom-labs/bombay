@@ -4,7 +4,7 @@
 //! **zero-serialize**. `tell` moves an `A::Msg` into a queue slot — no
 //! per-message heap box.
 //!
-//! Construction hangs off the [`Mailbox`] namespace: `Mailbox::<A>::bounded(cap)`.
+//! Construction hangs off the [`Mailbox`] namespace: `Mailbox::<A>::bounded(cap, id)`.
 //! Bounded is the only mode — a full mailbox exerts backpressure rather than
 //! growing without limit (an unbounded queue is a memory footgun).
 //!
@@ -33,6 +33,11 @@ use std::{
 };
 
 use flume::r#async::SendFut;
+
+use crate::{
+    error::ActorStopReason,
+    watch::{LinkDied, WatchReg},
+};
 
 /// A validated mailbox capacity: at least `1`, at most [`Capacity::MAX`].
 ///
@@ -159,7 +164,7 @@ pub enum Signal<A: Mailboxed> {
     /// A watch registration: enqueue a watcher onto this actor's watcher set so
     /// it is notified when this actor stops. Boxed — a cold control path; inlining
     /// `WatchReg` (which holds a `flume::Sender`) would inflate every message slot.
-    Watch(Box<crate::watch::WatchReg>),
+    Watch(Box<WatchReg>),
     /// Deregister a watcher by id (the `unwatch` path).
     Unwatch(ActorId),
 }
@@ -167,19 +172,26 @@ pub enum Signal<A: Mailboxed> {
 /// The construction namespace for an actor's mailbox.
 ///
 /// Never instantiated — it exists so construction reads as
-/// `Mailbox::<A>::bounded(cap)`, keeping the sender/receiver/weak types cohesive
+/// `Mailbox::<A>::bounded(cap, id)`, keeping the sender/receiver/weak types cohesive
 /// under one entry point instead of a free-floating function.
 pub struct Mailbox<A: Mailboxed>(PhantomData<fn() -> A>);
 
 impl<A: Mailboxed> Mailbox<A> {
-    /// Creates a bounded mailbox with room for `capacity` queued signals.
+    /// Creates a bounded mailbox with room for `capacity` queued signals, owned
+    /// by the actor identified as `id`.
+    ///
+    /// The receiver carries `id` because its `Drop` is the actor's true death
+    /// edge: a [`Signal::Watch`] still queued when the receiver goes away must
+    /// be answered with a death notice naming this actor (see
+    /// [`MailboxReceiver`]'s `Drop`), and only the receiver ever sees that
+    /// backlog on a hard kill.
     ///
     /// Infallible by construction — [`Capacity`] has already excluded the values
     /// the backing channel would reject.
     #[must_use]
-    pub fn bounded(capacity: Capacity) -> (MailboxSender<A>, MailboxReceiver<A>) {
+    pub fn bounded(capacity: Capacity, id: ActorId) -> (MailboxSender<A>, MailboxReceiver<A>) {
         let (tx, rx) = flume::bounded(capacity.get());
-        (MailboxSender { tx }, MailboxReceiver { rx })
+        (MailboxSender { tx }, MailboxReceiver { rx, me: id })
     }
 }
 
@@ -307,6 +319,9 @@ impl<A: Mailboxed> Clone for WeakMailboxSender<A> {
 /// The single consumer of an actor's mailbox. The run-loop pulls from it.
 pub struct MailboxReceiver<A: Mailboxed> {
     rx: flume::Receiver<Signal<A>>,
+    /// The owning actor's identity — stamped onto the synthetic death notice
+    /// this receiver's `Drop` sends for any still-queued [`Signal::Watch`].
+    me: ActorId,
 }
 
 impl<A: Mailboxed> MailboxReceiver<A> {
@@ -328,15 +343,40 @@ impl<A: Mailboxed> MailboxReceiver<A> {
 }
 
 impl<A: Mailboxed> Drop for MailboxReceiver<A> {
-    /// Drops the receiver **and** its backlog. Each queued [`Signal::Message`]
-    /// holds a strong `self_sender` clone of this very mailbox (ADR-0003), so a
-    /// non-empty queue forms a cycle: `Shared → queue → Signal → Sender →
-    /// Arc<Shared>`. Unlike tokio's mpsc, flume's `Receiver::drop` does **not**
-    /// purge its queue, so on a hard kill (the run-loop future is dropped mid-
-    /// backlog) that cycle would leak. Draining here releases the embedded
-    /// senders and lets the channel free.
+    /// Drops the receiver **and** its backlog — and answers every still-queued
+    /// [`Signal::Watch`] with a synthetic death notice first.
+    ///
+    /// Two duties, one drain:
+    ///
+    /// 1. **Leak fix.** Each queued [`Signal::Message`] holds a strong
+    ///    `self_sender` clone of this very mailbox (ADR-0003), so a non-empty
+    ///    queue forms a cycle: `Shared → queue → Signal → Sender → Arc<Shared>`.
+    ///    Unlike tokio's mpsc, flume's `Receiver::drop` does **not** purge its
+    ///    queue, so on a hard kill (the run-loop future is dropped mid-backlog)
+    ///    that cycle would leak. Draining releases the embedded senders.
+    /// 2. **No missed death (card #195).** A queued `Signal::Watch` was accepted
+    ///    by a successful `send` — the watcher believes it is watching. This
+    ///    drop is the last code that ever sees the registration (hard kill, or
+    ///    the graceful window between `finish_actor`'s drain snapshot and this
+    ///    drop, spanning `on_stop`), so it must deliver the notice: reason
+    ///    [`AlreadyDead`](ActorStopReason::AlreadyDead), because
+    ///    the true stop reason is unknowable here (Erlang's `noproc`). The send
+    ///    is non-blocking into the watcher's UNBOUNDED link channel and only
+    ///    fails if the watcher itself is gone — a stale edge, correctly skipped.
+    ///
+    /// A queued `Signal::Unwatch` is unenforceable here (the watcher set is gone
+    /// with the loop); as in Erlang, a `demonitor` racing the death may still be
+    /// followed by a delivered notice.
     fn drop(&mut self) {
-        self.rx.drain().for_each(drop);
+        for signal in self.rx.drain() {
+            if let Signal::Watch(reg) = signal {
+                let _ = reg.link_tx.try_send(LinkDied {
+                    id: self.me,
+                    reason: ActorStopReason::AlreadyDead,
+                    linked: reg.linked,
+                });
+            }
+        }
     }
 }
 
@@ -429,8 +469,8 @@ mod tests {
 
     #[test]
     fn signal_watch_and_unwatch_are_carried() {
-        let (tx, _rx) = flume::unbounded::<crate::watch::LinkDied>();
-        let reg = crate::watch::WatchReg {
+        let (tx, _rx) = flume::unbounded::<LinkDied>();
+        let reg = WatchReg {
             watcher: ActorId::new(9),
             link_tx: tx,
             linked: true,
@@ -494,7 +534,7 @@ mod tests {
 
     #[tokio::test]
     async fn sent_message_is_received() {
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::new(0));
 
         send_bounded(
             &tx,
@@ -515,7 +555,7 @@ mod tests {
     #[tokio::test]
     async fn capacity_at_the_upper_boundary_is_usable() {
         // A mailbox built at the capacity ceiling must not panic and must work.
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(Capacity::MAX));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(Capacity::MAX), ActorId::new(0));
 
         tx.try_send(Signal::Message {
             msg: 7,
@@ -660,7 +700,7 @@ mod tests {
 
     #[tokio::test]
     async fn weak_sender_tracks_the_last_strong_sender() {
-        let (tx, _rx) = Mailbox::<Probe>::bounded(cap(2));
+        let (tx, _rx) = Mailbox::<Probe>::bounded(cap(2), ActorId::new(0));
         let tx2 = tx.clone();
         let weak = tx.downgrade();
 
@@ -679,7 +719,7 @@ mod tests {
 
     #[tokio::test]
     async fn upgraded_weak_sender_can_send() {
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(2));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(2), ActorId::new(0));
         let weak = tx.downgrade();
 
         let strong = weak.upgrade().expect("channel still alive");
@@ -701,7 +741,7 @@ mod tests {
 
     #[tokio::test]
     async fn stop_signal_is_delivered_in_order_after_a_message() {
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::new(0));
 
         send_bounded(
             &tx,
@@ -726,7 +766,7 @@ mod tests {
     async fn drain_flushes_queued_signals_in_order() {
         // Graceful-stop primitive: after a Stop, the run-loop flushes the rest
         // with `drain` before dropping the receiver.
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(8));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(8), ActorId::new(0));
         for i in 0..3 {
             send_bounded(
                 &tx,
@@ -756,7 +796,7 @@ mod tests {
 
     #[tokio::test]
     async fn send_after_receiver_dropped_returns_the_message() {
-        let (tx, rx) = Mailbox::<Probe>::bounded(cap(4));
+        let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::new(0));
         drop(rx);
 
         assert!(matches!(
@@ -778,7 +818,7 @@ mod tests {
 
     #[tokio::test]
     async fn recv_returns_none_after_all_senders_dropped_and_drained() {
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::new(0));
         send_bounded(
             &tx,
             Signal::Message {
@@ -798,6 +838,46 @@ mod tests {
         assert!(recv_bounded(&mut rx).await.is_none());
     }
 
+    /// `@bug` (card #195 review): a `Signal::Watch` still QUEUED when the
+    /// receiver drops (hard kill mid-backlog, or the graceful window between the
+    /// teardown drain and the receiver drop) was accepted by a successful `send`
+    /// — silently discarding it is a missed death, the worst bug in the
+    /// death-watch subsystem. The receiver's drop must instead deliver a
+    /// synthetic [`LinkDied`](LinkDied) with the actor's own id,
+    /// reason [`AlreadyDead`](ActorStopReason::AlreadyDead)
+    /// (the true reason is unknowable here — Erlang's `noproc`), and the edge's
+    /// `linked` flag preserved. FAILS while the drop drain `for_each(drop)`s the
+    /// registration.
+    #[tokio::test]
+    async fn dropping_receiver_notifies_queued_watch_regs_already_dead() {
+        let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::new(77));
+
+        let (link_tx, link_rx) = flume::unbounded::<LinkDied>();
+        tx.try_send(Signal::Watch(Box::new(WatchReg {
+            watcher: ActorId::new(1),
+            link_tx,
+            linked: true,
+        })))
+        .expect("reg enqueued into the open mailbox");
+
+        drop(rx); // receiver gone with the reg still queued
+
+        let notice = link_rx
+            .try_recv()
+            .expect("a queued watch reg must be notified, never silently dropped");
+        assert_eq!(
+            notice.id,
+            ActorId::new(77),
+            "the notice names the dead actor"
+        );
+        assert!(
+            matches!(notice.reason, ActorStopReason::AlreadyDead),
+            "true reason unknowable => AlreadyDead, got {:?}",
+            notice.reason,
+        );
+        assert!(notice.linked, "the edge's linked flag rides the notice");
+    }
+
     #[tokio::test]
     async fn dropping_receiver_mid_backlog_frees_the_queued_message() {
         // Each queued `Signal::Message` embeds a strong `self_sender` (ADR-0003),
@@ -805,7 +885,7 @@ mod tests {
         // flume's `Receiver::drop` does NOT purge its queue, so without
         // `MailboxReceiver::drop` draining it, a hard kill (receiver dropped mid-
         // backlog) leaks the queued message and everything it owns.
-        let (tx, rx) = Mailbox::<Canary>::bounded(cap(4));
+        let (tx, rx) = Mailbox::<Canary>::bounded(cap(4), ActorId::new(0));
 
         let canary = Arc::new(());
         let observer = Arc::downgrade(&canary);
@@ -832,7 +912,7 @@ mod tests {
 
     #[tokio::test]
     async fn full_mailbox_rejects_try_send_and_returns_the_message() {
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1), ActorId::new(0));
 
         tx.try_send(Signal::Message {
             msg: 1,
@@ -865,7 +945,7 @@ mod tests {
     #[tokio::test]
     async fn try_send_message_delivers_then_reports_full_then_closed() {
         // Delivers into an open mailbox, embedding a self_sender (ADR-0003).
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1), ActorId::new(0));
         tx.try_send_message(1).expect("first fits");
         // Capacity 1 and full: the next try is backpressure, not delivery.
         assert!(matches!(
@@ -878,7 +958,7 @@ mod tests {
         ));
 
         // Receiver dropped: a try now reports the terminal Closed, not Full.
-        let (closed_tx, closed_rx) = Mailbox::<Probe>::bounded(cap(1));
+        let (closed_tx, closed_rx) = Mailbox::<Probe>::bounded(cap(1), ActorId::new(0));
         drop(closed_rx);
         assert!(matches!(
             closed_tx.try_send_message(9),
@@ -892,7 +972,7 @@ mod tests {
         const PER_SENDER: u32 = 64;
 
         // Small capacity so senders genuinely contend and backpressure.
-        let (tx, mut rx) = Mailbox::<Tagged>::bounded(cap(4));
+        let (tx, mut rx) = Mailbox::<Tagged>::bounded(cap(4), ActorId::new(0));
         let start = Arc::new(Barrier::new(SENDERS as usize));
 
         let mut handles = Vec::with_capacity(SENDERS as usize);
@@ -980,7 +1060,7 @@ mod tests {
                 .build()
                 .expect("current-thread runtime")
                 .block_on(async move {
-                    let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(capacity));
+                    let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(capacity), ActorId::new(0));
                     let expected = messages.len();
                     let producer = tokio::spawn(async move {
                         for message in messages {

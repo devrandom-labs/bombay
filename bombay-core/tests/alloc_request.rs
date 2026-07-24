@@ -15,7 +15,7 @@ use std::{alloc::System, future::IntoFuture};
 use bombay_core::{
     actor::{Actor, ActorRef},
     error::Infallible,
-    mailbox::{Capacity, Mailbox, Mailboxed, Signal},
+    mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal},
     message::Msg,
     reply::ReplySender,
     test_support::{CountingAlloc, terminate_bound, unstarted_actor},
@@ -67,9 +67,17 @@ fn round(
     rx: &mut bombay_core::mailbox::MailboxReceiver<Probe>,
 ) -> (isize, isize) {
     // Tell: enqueue by value, then drain (the drained signal drops here).
+    // Bounded (card #179): under a `Capacity::get -> 0` mutant the queue is a
+    // rendezvous and this hand-driven receiver never overlaps the send — the
+    // tell must FAIL fast, not hang the binary. `timeout` adds no allocation
+    // here (same precedent as the bounded recv inside the measured ask round).
     let tell_before = COUNTER.gross_allocs();
-    rt.block_on(actor_ref.tell(ProbeMsg::Note(7)).into_future())
-        .expect("open mailbox accepts the message");
+    rt.block_on(async {
+        timeout(terminate_bound(), actor_ref.tell(ProbeMsg::Note(7)))
+            .await
+            .expect("tell must not hang: the mailbox stalled")
+    })
+    .expect("open mailbox accepts the message");
     let tell_gross = COUNTER.gross_allocs() - tell_before;
     drop(
         rt.block_on(async { timeout(terminate_bound(), rx.recv()).await })
@@ -112,7 +120,8 @@ fn tell_is_zero_alloc_and_ask_is_one_alloc() {
         .build()
         .expect("current-thread runtime");
     let cap = Capacity::try_from(4_usize).expect("valid capacity");
-    let (actor_ref, mut rx) = unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(cap));
+    let (actor_ref, mut rx) =
+        unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(cap, ActorId::new(0)));
 
     // Warm-up: identical round BEFORE measuring, so one-time lazy init
     // (harness, flume queue growth, timer wheel) never pollutes the

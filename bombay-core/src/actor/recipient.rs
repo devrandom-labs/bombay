@@ -556,7 +556,7 @@ mod tests {
     /// erased send delivered — no run-loop needed (the `actor_ref.rs` idiom).
     fn build<A: Actor>(id: u64, capacity: usize) -> (ActorRef<A>, MailboxReceiver<A>) {
         let cap = Capacity::try_from(capacity).expect("valid capacity");
-        let (tx, rx) = Mailbox::<A>::bounded(cap);
+        let (tx, rx) = Mailbox::<A>::bounded(cap, ActorId::new(0));
         let (abort, _reg) = AbortHandle::new_pair();
         (
             ActorRef::new(ActorId::new(id), tx, CancellationToken::new(), abort, None),

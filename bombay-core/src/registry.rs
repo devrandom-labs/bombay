@@ -262,7 +262,7 @@ mod tests {
     /// the receiver is exactly what the run-loop does on stop).
     fn build<A: Actor>(id: u64) -> (ActorRef<A>, MailboxReceiver<A>) {
         let cap = Capacity::try_from(4usize).expect("valid capacity");
-        let (tx, rx) = Mailbox::<A>::bounded(cap);
+        let (tx, rx) = Mailbox::<A>::bounded(cap, ActorId::new(0));
         let (abort, _reg) = AbortHandle::new_pair();
         let actor_ref = ActorRef::new(ActorId::new(id), tx, CancellationToken::new(), abort, None);
         (actor_ref, rx)
