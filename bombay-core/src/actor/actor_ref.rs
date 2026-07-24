@@ -396,20 +396,21 @@ impl<S: Supervisor> ActorRef<S> {
         }
     }
 
-    /// Stops supervising `id`: drops the supervision edge. The child KEEPS
-    /// RUNNING (use [`stop_child`](Self::stop_child) to also stop it), and it is
-    /// never rebuilt again — the loop no longer holds the entry, so a later death
-    /// for `id` finds no table entry and never reaches the restart policy.
+    /// Stops supervising `id`: drops the supervision edge and **detaches** the
+    /// child. The child KEEPS RUNNING (use [`stop_child`](Self::stop_child) to also
+    /// stop it), is never rebuilt again, and its later death — normal or abnormal —
+    /// no longer affects the supervisor. The supervisor *monitors* its children
+    /// (it reacts to a child's death through its restart table, not by propagating
+    /// it), so once the table entry is dropped a subsequent death for `id` is a
+    /// non-child notice the supervisor simply ignores; even a notice already in
+    /// flight is harmless.
     ///
-    /// **The child is not fully detached, though.** A supervisor watches its
-    /// children with a *propagating* link (and cannot un-watch them — the child
-    /// handle it keeps carries no sender),
-    /// so a death notice already in flight for `id` still routes to
-    /// [`on_link_died`](Watch::on_link_died): the default hook then propagates an
-    /// **abnormal** such death, stopping the supervisor (a normal death is
-    /// observed and ignored). To drop the child without that exposure, override
-    /// `on_link_died` to trap, or use [`stop_child`](Self::stop_child) for a clean
-    /// terminal stop.
+    /// Best-effort against a **concurrently-dying** child (Erlang's `demonitor`
+    /// racing an exit): if the child is already failing and its restart is armed
+    /// when the `Remove` is applied, the rebuild may re-key the entry under the new
+    /// incarnation's id first, leaving the `Remove` to no-op on the stale key — the
+    /// child then stays supervised under a fresh id. Detachment is guaranteed only
+    /// for a child that is not mid-restart.
     ///
     /// The op rides the supervisor's own mailbox (the child table is loop-owned;
     /// all mutation goes through the loop), so this `.await`s for mailbox capacity
@@ -434,6 +435,11 @@ impl<S: Supervisor> ActorRef<S> {
     /// then hard-aborted if it has not stopped within its `stop_grace` — it never
     /// depends on the child cooperating. The op rides the supervisor's own mailbox,
     /// so this `.await`s for mailbox capacity (backpressure).
+    ///
+    /// Best-effort against a **concurrently-dying** child, exactly as
+    /// [`unsupervise`](Self::unsupervise): a child whose restart is already armed
+    /// may be re-keyed under a new incarnation before the `Stop` lands, which then
+    /// no-ops on the stale key.
     ///
     /// # Errors
     ///

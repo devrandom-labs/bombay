@@ -3347,9 +3347,9 @@ mod tests {
     /// crash's death arrives under the *rebuilt* id, so it can only route back to
     /// the restart path if `rebuild_child` re-keyed the entry. A broken re-key
     /// leaves the table keyed by the dead first id, so the second death falls
-    /// through to the peer-watch hook, the (linked, abnormal) default hook stops
-    /// the supervisor, no third incarnation is ever built, and the bounded
-    /// `recv_id` for it fails fast instead of hanging.
+    /// through to the (monitoring, non-propagating) peer-watch hook and is ignored:
+    /// no third incarnation is ever built, so the bounded `recv_id` for it fails
+    /// fast instead of hanging.
     mod supervised_rebuild {
         use std::sync::{
             Arc, Mutex,
@@ -4044,6 +4044,89 @@ mod tests {
             })
             .await
             .expect("the supervisor served the message during the backoff window");
+
+            drop(sup);
+        }
+
+        /// A bounded, `start_paused`-safe wait for the supervisor to reach a
+        /// handled-message count. `sleep`-polled (not a busy loop) so paused time
+        /// advances to the `timeout` and a supervisor that STOPPED — and so never
+        /// handles the next message — FAILS the test instead of hanging it.
+        async fn await_handled(handled: &AtomicU32, target: u32) {
+            tokio::time::timeout(terminate_bound(), async {
+                while handled.load(Ordering::SeqCst) < target {
+                    tokio::time::sleep(Duration::from_millis(1)).await;
+                }
+            })
+            .await
+            .expect("the supervisor must keep handling messages — it stopped instead");
+        }
+
+        /// @bug (Task-12 review) The correctness of `unsupervise`: a supervisor
+        /// MONITORS its children (`linked == false`), it does not link to them, so
+        /// once a child is detached its later death — even an abnormal one — must
+        /// NOT propagate into the supervisor. Here a `Permanent` child is
+        /// `unsupervise`d, a FIFO barrier proves the `Remove` was applied, and only
+        /// THEN does the detached child crash. The supervisor must survive (keep
+        /// handling messages) and must not rebuild it.
+        ///
+        /// FAILS under `linked == true` (the pre-fix supervise edge): the detached
+        /// child's abnormal death falls through to the default `on_link_died`,
+        /// `linked && !is_normal()` breaks, the supervisor stops, and the second
+        /// barrier tick is never handled.
+        #[tokio::test(start_paused = true)]
+        async fn unsupervised_child_abnormal_death_later_does_not_kill_supervisor() {
+            let handled = Arc::new(AtomicU32::new(0));
+            let sup = CountingSup::spawn_supervised(Arc::clone(&handled));
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let id1 = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(
+                    RestartPolicy::Permanent,
+                    worker_factory(id_tx, Arc::clone(&senders)),
+                ),
+            )
+            .await
+            .expect("supervise must not hang")
+            .expect("supervisor alive");
+            assert_eq!(recv_id(&id_rx).await, id1, "the factory recorded id1");
+
+            // Detach the child; a follow-up tick is a FIFO barrier proving the
+            // `Remove` (queued ahead of it) was applied before the crash below.
+            tokio::time::timeout(terminate_bound(), sup.unsupervise(id1))
+                .await
+                .expect("unsupervise must not hang")
+                .expect("supervisor alive");
+            tokio::time::timeout(terminate_bound(), sup.tell(CountTick))
+                .await
+                .expect("tell must not hang")
+                .expect("supervisor alive");
+            await_handled(&handled, 1).await;
+
+            // The now-DETACHED child dies abnormally, well after the Remove.
+            let worker_sender = senders.lock().expect("lock")[0].clone();
+            send_cmd(&senders, 0, Cmd::Crash);
+            // The child is fully dead, so its death notice has been sent to the
+            // supervisor's link channel (delivered before the next barrier tick,
+            // which the biased loop serves only after the link arm).
+            await_closed(&worker_sender).await;
+
+            // The supervisor must SURVIVE the detached child's abnormal death and
+            // keep serving messages — the whole point of monitor-not-link.
+            tokio::time::timeout(terminate_bound(), sup.tell(CountTick))
+                .await
+                .expect("tell must not hang")
+                .expect("the supervisor survived the detached child's death");
+            await_handled(&handled, 2).await;
+
+            // And the detached child was not rebuilt.
+            let rebuilt = tokio::time::timeout(Duration::from_secs(120), id_rx.recv_async()).await;
+            assert!(
+                !matches!(rebuilt, Ok(Ok(_))),
+                "a detached child must not be rebuilt, got {rebuilt:?}",
+            );
 
             drop(sup);
         }

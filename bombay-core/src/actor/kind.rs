@@ -82,13 +82,24 @@ struct SupervisorRef {
 }
 
 impl SupervisorRef {
-    /// The `link` registration to enqueue on a child: propagating (`linked =
-    /// true`), because a supervisor MUST react to a child's death.
+    /// The watch registration to enqueue on a child: **monitoring**, not linking
+    /// (`linked = false`). A supervisor reacts to a child's death through its
+    /// restart table ([`handle_child_death`], keyed purely on
+    /// `should_restart(policy, reason)` — `notice.linked` is never read on that
+    /// path), so a propagating `link` buys nothing while the child is supervised.
+    /// It would only bite AFTER [`unsupervise`](crate::actor::ActorRef::unsupervise):
+    /// the entry is gone, the death falls through to
+    /// [`on_link_died`](crate::actor::Watch::on_link_died), and a propagating edge
+    /// (`linked = true`) would make the default hook stop the supervisor on the
+    /// detached child's abnormal death — a death the supervisor can never un-watch
+    /// (its [`ChildHandle`](crate::actor::supervision::ChildHandle) is sender-less).
+    /// Monitoring is Erlang's `monitor` (notify + react-via-table); linking is
+    /// `link` (propagate-via-hook), which supervision is not.
     fn watch_reg(&self) -> WatchReg {
         WatchReg {
             watcher: self.id,
             link_tx: self.link_tx.clone(),
-            linked: true,
+            linked: false,
         }
     }
 
@@ -104,7 +115,12 @@ impl SupervisorRef {
         let _ = self.link_tx.try_send(LinkDied {
             id: child,
             reason: ActorStopReason::AlreadyDead,
-            linked: true,
+            // Monitoring, not linking (matches `watch_reg`): inert today because
+            // this notice always targets a table-present child that
+            // `handle_child_death` decides without reading `linked`, but keeping it
+            // `false` closes the latent hole where it could ever race a removal and
+            // fall through to the propagating peer-hook path.
+            linked: false,
             cleanup_failed: false,
         });
     }
@@ -763,7 +779,10 @@ mod supervised_tests {
         LinkDied {
             id,
             reason,
-            linked: true,
+            // A supervisor MONITORS its children (`watch_reg` uses `linked: false`):
+            // it reacts via the restart table, never by propagating the child's
+            // death through its own hook.
+            linked: false,
             cleanup_failed: false,
         }
     }
@@ -1082,9 +1101,9 @@ mod supervised_tests {
     }
 
     /// The registration-hazard fix, happy path: installing the watch on an OPEN
-    /// child enqueues the supervisor's propagating `link` edge onto the child's
-    /// mailbox and synthesizes no death. The watcher on the enqueued reg is the
-    /// supervisor — this is the edge that later carries the child's death back.
+    /// child enqueues the supervisor's MONITORING edge onto the child's mailbox and
+    /// synthesizes no death. The watcher on the enqueued reg is the supervisor —
+    /// this is the edge that later carries the child's death back.
     #[tokio::test]
     async fn install_child_watch_enqueues_the_edge_on_an_open_child() {
         let (sup, link_rx) = supervisor(ActorId::new(100));
@@ -1105,7 +1124,12 @@ mod supervised_tests {
             ActorId::new(100),
             "the supervisor is the watcher"
         );
-        assert!(reg.linked, "a supervisor watches with a propagating link");
+        assert!(
+            !reg.linked,
+            "a supervisor MONITORS its children (linked == false): it reacts via \
+             the restart table, never by propagating a detached child's death into \
+             itself through the on_link_died hook",
+        );
     }
 
     /// @bug (card #196 Task-10 review) The self-healing heart of the hazard fix: a
@@ -1135,7 +1159,10 @@ mod supervised_tests {
             "self-healed as AlreadyDead (Erlang noproc), got {:?}",
             notice.reason,
         );
-        assert!(notice.linked, "a supervisor edge is a propagating link");
+        assert!(
+            !notice.linked,
+            "a supervisor edge is a MONITOR (linked == false), not a propagating link",
+        );
     }
 
     /// A child flooded before the loop could watch it (`try_send` reports `Full`)
