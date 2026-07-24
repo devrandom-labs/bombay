@@ -128,6 +128,14 @@ kameo's `SpawnFactory`). Stop/kill need no `dyn` either (the non-generic
   the empty inline `SmallVec` is what makes *universal watchability* free.
 - New workspace dep `smallvec`; requires a `fuzz/Cargo.lock` bump (the #119
   gotcha) or `nix flake check` breaks.
+- **Recorded OTP divergence:** repeated `watch` edges match Erlang (repeated
+  `monitor/2` calls create independent monitors), but repeated `link` edges
+  diverge — Erlang keeps *at most one* link per process pair ("there can only
+  be one link between two processes", Reference Manual, Processes). bombay keeps
+  duplicates for both verbs: a duplicate link delivers a duplicate notice, whose
+  first `Break` wins — harmless, and dedup would cost a scan on the hot apply
+  path. `unwatch` is likewise coarser than `demonitor`: it removes **every**
+  edge for that watcher id, watch and link alike.
 
 ### Delivery: drop-guard + unbounded channel = no missed death
 
@@ -159,12 +167,35 @@ impl Drop for Watchers {
 }
 ```
 
-**In-flight race (must be handled):** `Signal::Watch` rides the bounded message
-mailbox, so it can be queued but not yet applied when the target is killed. The
-target's teardown must therefore also **drain pending `Watch` signals**
-(`mailbox.rs:353` `drain()` exists) and notify them, not only the installed list
-— otherwise a watch that raced the death is a silently missed death. Named test:
-`watch_in_flight_at_kill_still_notified`.
+**In-flight race (handled in TWO places — review-driven correction):**
+`Signal::Watch` rides the bounded message mailbox, so it can be queued but not
+yet applied when the target dies. Two windows exist, and the graceful teardown
+drain closes only the first:
+
+1. **Queued at loop exit (graceful):** `finish_actor` drains the mailbox and
+   applies pending `Watch`/`Unwatch` before firing the guard — those watchers
+   get the real reason.
+2. **Accepted after the drain snapshot** — during `on_stop` (the mailbox stays
+   open until the receiver drops), or still queued at an `Abortable` kill (the
+   drain never runs). A successful `send` here previously vanished in
+   `MailboxReceiver::drop`'s leak-fix drain: a silently missed death, the exact
+   #100-class hang. Fix: the receiver carries its actor's id
+   (`Mailbox::bounded(cap, id)`), and its `Drop` answers every drained
+   `Signal::Watch` with a synthetic
+   `LinkDied { id, reason: AlreadyDead, linked }` — the receiver's drop is the
+   last code that ever sees those registrations, on both windows.
+
+Named tests: `watch_in_flight_at_kill_still_notified` (queued-at-kill, notified
+by the receiver drop) and `watch_accepted_during_on_stop_still_notified`
+(graceful window).
+
+**Synthetic reason = `AlreadyDead`, not `Killed` (review-driven correction):**
+Erlang deliberately delivers a distinct `noproc` for link/monitor-to-dead — the
+target's true reason is unknowable and must not be conflated with a real hard
+kill (one variant per failure domain; slice 2's supervisor branches on reason).
+`ActorStopReason::AlreadyDead` is abnormal (`is_normal() == false`), so a linked
+default hook propagates it exactly as Erlang's non-`normal` `noproc` exit signal
+terminates a non-trapping linked peer.
 
 ### Role split: watchable is universal, watching is opt-in
 
@@ -250,8 +281,10 @@ struct RefShared<A: Actor> {
   peer yields an immediate synthetic `LinkDied` to the live side (Erlang's
   link-to-dead rule).
 - A `Watch` actor mistakenly plain-`spawn`ed has `link_tx = None`; `watch`
-  returns **`Err(ActorNotLinked)`**, never panics (stable Rust has no negative
-  bound to forbid it at the type level; a typed `Result` is the pragmatic guard).
+  returns **`Err(ActorNotLinked)`**, never panics. A compile-time typestate
+  (a `LinkedActorRef` witness returned by `spawn_linked` — no negative bounds
+  needed) was evaluated and **rejected on cost**, not possibility: handle
+  bifurcation infects `Recipient`/registry/#121 — see ADR-0011.
 
 ### Loop shape
 
@@ -274,6 +307,8 @@ here) → terminal `Panicked`.
 - `ActorStopReason::LinkDied { id: ActorId, reason: Box<ActorStopReason> }` —
   un-defer the variant reserved at `error.rs:290`. `Box` the nested reason
   (large-variant discipline, as kameo does).
+- `ActorStopReason::AlreadyDead` — the synthetic link-to-dead reason (Erlang
+  `noproc`): distinct failure domain from `Killed`, abnormal so it propagates.
 - `PanicReason::OnLinkDied` — un-defer (`error.rs:209`); `is_lifecycle_hook()`
   returns `true` for it (a hook panic must not restart-storm in slice 2).
 - New `WatchError::ActorNotLinked` (thiserror; single failure domain).
