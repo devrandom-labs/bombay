@@ -188,11 +188,25 @@ sup_ref.supervise(|| {                                  // different actor type
 });
 ```
 
-The wrapper closes over the supervisor's `ActorRef<S>`, awaits
-`sup_ref.watch(&child)` to install the death edge, copies out
-`child.cancel_token()` / `child.abort_handle()` / `child.id()` (all already
-`pub(crate)` on `ActorRef`), and **drops the strong `ActorRef<A>`** before
-returning the handle — so the supervisor never pins the child.
+The wrapper closes over **the supervisor's `ActorId` and a clone of its
+`link_tx` only** — everything a `WatchReg` needs. It must **never** capture the
+supervisor's own `ActorRef<S>`: the closure lives in the loop-owned `Children`
+table, so a strong self-ref there would make the supervisor's ref-count-driven
+stop (ADR-0003) permanently unreachable — the kameo-#171 class of bug, turned
+self-inflicted.
+
+Per rebuild the wrapper: runs the user closure, **installs the watch edge via
+`try_send` immediately after the closure returns** (the mailbox is freshly
+created with capacity ≥ 1 and the reg is FIFO-first, so this succeeds unless the
+user's own closure leaked the ref into a flood — in that degenerate case the
+wrapper falls back to a `stop_grace`-bounded async send, and on timeout kills
+the incarnation and counts a failed rebuild). It must **not** use plain
+`watch().await`: that awaits capacity on the child's *bounded* mailbox, and an
+unbounded await inside the supervisor's loop lets adversarial senders stall
+supervision. Finally it copies out `child.cancel_token()` /
+`child.abort_handle()` / `child.id()` (all already `pub(crate)` on `ActorRef`)
+and **drops the strong `ActorRef<A>`** — the supervisor never pins the child
+either.
 
 **Consequence — this revises #122-#10 a second time.** Slice 1 showed the
 predicted `Box<dyn SignalMailbox>` edges were an artifact of routing death
@@ -266,7 +280,22 @@ rather than dismissed.
 unwound. Restarting an actor that panicked *during startup* just re-panics it —
 a guaranteed crash loop, and the one failure class where "try the cheap recovery
 first" is knowably wrong. Such a death **escalates immediately**, bypassing both
-backoff and the counter.
+backoff and the counters.
+
+**Prerequisite fix — startup failure must carry its true reason.** Today the
+rule above is unenforceable from the death edge: on `on_start` failure the loop
+never runs, the queued `Signal::Watch` is answered by `MailboxReceiver::drop`
+with a **synthetic `AlreadyDead`** (#195's missed-death fix), and
+`Spawn::spawn` discards the `JoinHandle<RunResult>` — so `Panicked(OnStart)`
+evaporates and the supervisor would cheerfully crash-loop through its whole
+budget on a child that can never start. Fix (in this card): the
+startup-failure teardown **stamps the real reason** —
+`Panicked(PanicError { reason: OnStart })`, produced for both an `Err` return
+and a panic (`spawn.rs` already builds exactly this for `RunResult`) — onto the
+receiver before it drops, so queued watch regs are answered with the true
+reason. `AlreadyDead` then means only what it claims: the edge arrived after
+death and the reason is *genuinely* unknowable (closed-mailbox path). Benefits
+every watcher, not just supervisors.
 
 ### Spacing and give-up
 
@@ -278,8 +307,10 @@ struct RestartConfig {
     max_total: u32,          // lifetime rebuilds tolerated    (slow trip)
     min_backoff: Duration,
     max_backoff: Duration,
-    jitter: f64,             // 0.0 ..= 1.0, fraction of the computed delay
+    jitter: Jitter,          // newtype over u8 percent (0..=100) — keeps the
+                             // config Eq/Hash and clear of float_cmp pedantry
     reset_after: Duration,   // healthy uptime that zeroes `consecutive`
+    stop_grace: Duration,    // cancel → this bound → abort (OTP `shutdown` analog)
 }
 ```
 
@@ -303,16 +334,26 @@ path (arithmetic-safety rule).
   answers `Err(NotUntil)` (backpressure); we need an exponential schedule and a
   terminal give-up. Neither half is a rate limiter. The counter is a `u32`. →
   **ADR-0012**.
-- Delay is served by a **timer arm in the supervisor's own select**
-  (`sleep_until(min(retry_at))`), never an inline `sleep` — a supervisor must
-  keep handling messages while a child waits out 30 s of backoff, and never
-  spawns a helper task that would hold a strong ref.
+- Delay is served by a **`tokio_util::time::DelayQueue<ActorId>` arm in the
+  supervisor's own select**, never an inline `sleep` — a supervisor must keep
+  handling messages while a child waits out 30 s of backoff, and never spawns a
+  helper task that would hold a strong ref. `DelayQueue` is purpose-built for
+  "N items, each with a deadline, yield the next expired": it replaces a
+  hand-rolled min-scan over `retry_at` that we would otherwise have to
+  mutation-test ourselves. `tokio-util` is already a workspace dependency
+  (#116's `CancellationToken`); this enables its `time` feature. Tokio-timer
+  backed, so it is deterministic under `start_paused`.
+- Jitter randomness comes from **`fastrand`** (new dev-surface dependency:
+  zero-dep, seedable). Seedable matters more than quality here: DST tests seed
+  the generator and assert exact delays, instead of disabling jitter and leaving
+  the jitter path untested.
 
 ### Escalation
 
-When `consecutive > max_restarts`, or on a lifecycle-hook panic:
+When `consecutive > max_restarts || total > max_total`, or on a lifecycle-hook
+panic:
 
-1. Stop every remaining child **crash-only**: `cancel` → bounded grace →
+1. Stop every remaining child **crash-only**: `cancel` → `stop_grace` →
    `abort`. This must terminate in bounded time *without the child's
    cooperation* — the crash-only power-off argument: *"entirely external to the
    component, thus not invoking any of the component's code and not relying on
@@ -345,10 +386,21 @@ entry removed by `unsupervise` makes the late notice fall through to the
 Minimum honest surface: `LinkDied` gains `cleanup_failed: bool`, set when the
 dying actor's `on_stop` returned `Err`. One bit, still monomorphic, no new
 channel; the original stop `reason` is preserved unchanged (a failed cleanup is
-not a different death). A supervisor can then act on "it died *and* did not
-clean up" — e.g. escalate rather than restart when a lock or file handle may be
-stranded. Alternative considered and rejected: a distinct `ActorStopReason`
-variant, which would overwrite the real reason.
+not a different death). Alternative considered and rejected: a distinct
+`ActorStopReason` variant, which would overwrite the real reason.
+
+**This requires reordering #195's teardown.** `spawn.rs` today deliberately
+fires the death notices *before* `on_stop`
+(`drop(watchers); // fires the graceful-path notifications before on_stop`), so
+the cleanup outcome does not exist when the notice is built. New order on the
+graceful path: run `on_stop` **bounded by `stop_grace`**, then notify with the
+real bit. Death notices are delayed by at most `stop_grace` — never unboundedly
+behind a hanging user hook, which was the property the old order protected.
+Precedent: OTP runs `terminate/2` before exit signals propagate, bounded by the
+child-spec `shutdown` timeout — same shape. The kill path is unchanged
+(no `on_stop` runs; `cleanup_failed = false`). #195's ordering tests are
+updated, not deleted — the invariant they guard becomes "notices are delivered
+within `stop_grace` of death", not "before `on_stop`".
 
 ## Public API
 
@@ -384,12 +436,37 @@ impl<S: Supervisor> ActorRef<S> {
     where A::Args: Clone;
 
     /// Drops the supervision edge; a later death for `id` is then ignored.
+    /// The child keeps running, unwatched.
     pub async fn unsupervise(&self, id: ActorId) -> Result<(), TellError<()>>;
+
+    /// Drops the supervision edge AND stops the child (cancel → `stop_grace` →
+    /// abort), as one verb. OTP's `terminate_child/2`. Without this, stopping a
+    /// supervised child is a trap: `kill()` alone fights the policy (`Killed`
+    /// is abnormal ⇒ `Transient`/`Permanent` rebuild it), and
+    /// `unsupervise` + `kill` is a two-step the user must know to order.
+    pub async fn stop_child(&self, id: ActorId) -> Result<(), TellError<()>>;
 }
 ```
 
-`Signal` gains one variant, `Supervise(Box<SuperviseReg>)` — boxed so the hot
-`Message` variant keeps the #114 slot budget.
+**The first spawn runs in the caller's task.** `supervise` invokes the factory
+once inline, which is what lets it hand back the child's `ActorId` under plain
+`TellError` semantics — the erased `Child` entry then ships to the loop via
+`Signal::Supervise(Box<SuperviseReg>)` (boxed so the hot `Message` variant keeps
+the #114 slot budget), and the *loop* runs the factory only for rebuilds. Were
+the first spawn deferred to the loop, `supervise` would be an ask with a reply
+round-trip for no benefit.
+
+Two idiom notes, recorded so the implementation doesn't rediscover them:
+`SuperviseReg` carries `dyn FnMut` — `Signal<A>` therefore needs a manual
+`Debug` impl (the closure renders as `"<factory>"`). And `Supervisor` stays a
+separate marker rather than collapsing into `SpawnSupervised: Watch` because
+slice 2b lands `supervision_strategy()` on it — the marker is the named seat for
+that method, not ceremony.
+
+**`Killed` is restart-worthy — *choice* (OTP-aligned).** `exit(Pid, kill)` on a
+`permanent` child is restarted by OTP too; kill is an abnormal exit, not an
+opt-out of supervision. The correct way to permanently stop a supervised child
+is `stop_child`, and the docs on `kill` will say so.
 
 ### Policy has no default; tuning does
 
@@ -412,9 +489,10 @@ default.** Every `supervise` call names the policy. Rationale:
 
 Numeric **tuning** keeps defaults, because magnitudes are not semantics:
 `max_restarts = 5`, `max_total = 100`, `min_backoff = 100ms`,
-`max_backoff = 30s`, `jitter = 0.2`, `reset_after = 60s`. These are unsourced
-starting points, expected to move once slice 2b's DST work shows real restart
-distributions.
+`max_backoff = 30s`, `jitter = Jitter(20)`, `reset_after = 60s`,
+`stop_grace = 5s` (OTP's child-spec `shutdown` default is 5000 ms — the one
+tuning number with a source). The rest are unsourced starting points, expected
+to move once slice 2b's DST work shows real restart distributions.
 
 ```rust
 sup.supervise(RestartPolicy::Transient, || Worker::spawn(args)).await?;
@@ -449,29 +527,38 @@ One per bullet, per CLAUDE rule 3.
    `Transient` and increments `consecutive`.
 7. `lifecycle_hook_panic_escalates_without_restart` — an `on_start` panic
    escalates immediately; zero rebuild attempts.
-8. `backoff_delays_grow_exponentially_and_cap` — under `start_paused`, attempt
+8. `startup_failure_carries_true_reason` (@bug) — a child whose `on_start`
+   fails delivers `Panicked(OnStart)` to its watcher, **not** synthetic
+   `AlreadyDead`. Fails against today's `MailboxReceiver::drop` behavior; this
+   is the prerequisite for invariant 7 being observable at all.
+9. `backoff_delays_grow_exponentially_and_cap` — under `start_paused`, attempt
    deadlines are `min_backoff·2^(n-1)` up to `max_backoff` (jitter disabled).
-9. `healthy_uptime_resets_consecutive_counter` — a child surviving `reset_after`
+10. `healthy_uptime_resets_consecutive_counter` — a child surviving `reset_after`
    returns the counter to 0, so the next failure backs off from `min_backoff`.
-10. `restart_limit_escalates_and_stops_supervisor` — `max_restarts + 1`
+11. `restart_limit_escalates_and_stops_supervisor` — `max_restarts + 1`
     consecutive failures stop the supervisor with
     `RestartLimitExceeded { child, rebuilds }`.
-11. `slow_drip_failures_exhaust_lifetime_budget` — a child that fails once per
+12. `slow_drip_failures_exhaust_lifetime_budget` — a child that fails once per
     `reset_after + ε` (so `consecutive` resets every time) still escalates after
     `max_total + 1` rebuilds. Fails if only the consecutive counter exists.
-12. `escalation_delivers_link_died_to_supervisors_watcher` — the escalating
+13. `escalation_delivers_link_died_to_supervisors_watcher` — the escalating
     supervisor's own death reaches *its* watcher (the ladder's next rung).
-13. `escalation_stops_children_without_their_cooperation` — a child whose
+14. `escalation_stops_children_without_their_cooperation` — a child whose
     `on_stop` hangs is still terminated within the grace bound (crash-only).
-14. `no_cascading_restart` — under `OneForOne` a child failure rebuilds that
+15. `no_cascading_restart` — under `OneForOne` a child failure rebuilds that
     child only; siblings keep the same `ActorId` and stay alive.
-15. `supervisor_keeps_serving_messages_during_backoff` — a `tell` sent while a
+16. `supervisor_keeps_serving_messages_during_backoff` — a `tell` sent while a
     child waits out backoff is handled before the retry deadline.
-16. `unsupervised_child_death_does_not_restart` — `unsupervise` then kill ⇒ no
+17. `unsupervised_child_death_does_not_restart` — `unsupervise` then kill ⇒ no
     rebuild (the #195 `Unwatch`-race carry-forward).
-17. `on_stop_error_marks_cleanup_failed` — a child whose `on_stop` returns `Err`
+18. `on_stop_error_marks_cleanup_failed` — a child whose `on_stop` returns `Err`
     delivers `LinkDied { cleanup_failed: true }` with the original `reason`.
-18. `supervisor_holds_no_strong_child_ref` — dropping the last user `ActorRef` to
+19. `death_notice_within_stop_grace_of_hanging_on_stop` — a child whose
+    `on_stop` never returns still delivers its death notice within `stop_grace`
+    (the reordered #195 teardown's replacement invariant).
+20. `stop_child_stops_without_rebuild` — `stop_child` terminates the child and
+    no rebuild occurs under any policy, including `Permanent`.
+21. `supervisor_holds_no_strong_child_ref` — dropping the last user `ActorRef` to
     a supervised child still triggers ref-count-driven stop (ADR-0003; kameo
     #171). Verified with the counting allocator / weak-count assertion.
 
