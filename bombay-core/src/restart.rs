@@ -419,7 +419,7 @@ mod tests {
     /// back-stop them (`should_restart`'s arms produce no body mutants), so the
     /// `match` below is a **compile-time tripwire**: adding a variant to the
     /// enum stops this file compiling until the array is extended.
-    fn all_reasons() -> [ActorStopReason; 7] {
+    fn all_reasons() -> [ActorStopReason; 8] {
         let reasons = [
             ActorStopReason::Normal,
             ActorStopReason::SupervisorRestart,
@@ -428,6 +428,9 @@ mod tests {
             panicked(PanicReason::HandlerPanic),
             link_died(ActorStopReason::Killed),
             escalated(),
+            ActorStopReason::ChildLifecycleFailed {
+                child: ActorId::new(5),
+            },
         ];
         for reason in &reasons {
             match reason {
@@ -437,7 +440,8 @@ mod tests {
                 | ActorStopReason::AlreadyDead
                 | ActorStopReason::Panicked(_)
                 | ActorStopReason::LinkDied { .. }
-                | ActorStopReason::RestartLimitExceeded { .. } => {}
+                | ActorStopReason::RestartLimitExceeded { .. }
+                | ActorStopReason::ChildLifecycleFailed { .. } => {}
             }
         }
         reasons
@@ -478,7 +482,12 @@ mod tests {
             // other: THIS supervisor rebuilds that whole subtree. The carve-out
             // is `Panicked(lifecycle)` alone — a rebuilt sub-supervisor starts
             // with fresh counters, so the rebuild is not a knowable crash loop.
+            // Both escalation reasons (budget trip and lifecycle refusal) are the
+            // sub-supervisor's OWN death; this supervisor rebuilds it either way.
             escalated(),
+            ActorStopReason::ChildLifecycleFailed {
+                child: ActorId::new(5),
+            },
         ];
 
         for reason in &leave_dead {

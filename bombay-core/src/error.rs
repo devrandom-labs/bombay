@@ -322,6 +322,24 @@ pub enum ActorStopReason {
         /// Lifetime failures observed for that child.
         rebuilds: u32,
     },
+    /// A supervisor refused to restart a child because the child died in a
+    /// **lifecycle hook** (`on_start` above all): re-running that hook is a
+    /// knowable crash loop, so the supervisor escalates *immediately*, without
+    /// consuming any restart budget (#196).
+    ///
+    /// A distinct failure domain from [`RestartLimitExceeded`](Self::RestartLimitExceeded),
+    /// not a `rebuilds: 0` special case of it: that variant is a budget trip
+    /// *after* repeated rebuilds and its remediation is "investigate the
+    /// flakiness or tune the limits"; this is a refusal to rebuild even once and
+    /// its remediation is "fix the hook". One variant per failure domain (CLAUDE
+    /// rule #3) — folding them would make either the `rebuilds` count or the
+    /// "budget tripped" story a lie. Abnormal, like every escalation, so the
+    /// supervisor's own watcher propagates it up the microreboot ladder.
+    #[error("child {child:?} died in a lifecycle hook; restart refused")]
+    ChildLifecycleFailed {
+        /// The child whose lifecycle hook failed.
+        child: crate::mailbox::ActorId,
+    },
     /// A watched/linked actor died and this actor is propagating that death
     /// (a linked abnormal exit, or an explicit `Break` from `on_link_died`).
     /// `reason` is boxed (large-variant discipline — it nests a stop reason).
@@ -754,6 +772,29 @@ mod tests {
         assert_eq!(
             reason.to_string(),
             "restart limit exceeded for child ActorId(7) after 6 rebuilds",
+        );
+    }
+
+    /// A lifecycle-hook escalation is a DISTINCT failure domain from a budget
+    /// trip (#196): it refuses to rebuild even once, carries no rebuild count,
+    /// and is abnormal so the supervisor's own watcher propagates it. Fails if
+    /// it is ever conflated with [`ActorStopReason::RestartLimitExceeded`].
+    #[test]
+    fn child_lifecycle_failed_is_abnormal_and_distinct_from_a_budget_trip() {
+        let reason = ActorStopReason::ChildLifecycleFailed {
+            child: crate::mailbox::ActorId::new(3),
+        };
+        assert!(
+            !reason.is_normal(),
+            "a hook escalation is an abnormal stop — its watcher must propagate"
+        );
+        assert_eq!(
+            reason.to_string(),
+            "child ActorId(3) died in a lifecycle hook; restart refused",
+        );
+        assert!(
+            !matches!(reason, ActorStopReason::RestartLimitExceeded { .. }),
+            "one variant per failure domain: a hook refusal is not a budget trip",
         );
     }
 

@@ -203,6 +203,45 @@ pub trait SpawnLinked: Watch {
 
 impl<A: Watch> SpawnLinked for A {}
 
+/// Authority marker: an [`Actor`] cannot watch, a [`Watch`] actor observes a
+/// peer's death, a `Supervisor` **rebuilds** dead children under a restart
+/// policy.
+///
+/// No methods in this slice — a restart policy is per-CHILD, supplied at
+/// `supervise` time and never a supervisor-wide default (see
+/// [`RestartPolicy`](crate::restart::RestartPolicy)). A later card lands
+/// `supervision_strategy()` here (the coarser `OneForAll`/`RestForOne` rungs of
+/// the escalation ladder); this marker is that method's named seat, which is why
+/// it stays a distinct trait rather than collapsing into [`SpawnSupervised`].
+pub trait Supervisor: Watch {}
+
+/// Ergonomic supervised-spawn entry points, provided for every [`Supervisor`].
+///
+/// A supervisor is spawned **linked** (it owns a link channel, so its children's
+/// deaths reach it) and runs the three-arm supervised loop: the message mailbox,
+/// the link channel, and the restart-backoff queue. Children are registered
+/// after spawn via `ActorRef::supervise` (a later card); a supervisor with no
+/// children behaves exactly as a `spawn_linked` [`Watch`] actor.
+pub trait SpawnSupervised: Supervisor {
+    /// Spawns a supervisor with the
+    /// [`DEFAULT_MAILBOX_CAPACITY`](spawn::DEFAULT_MAILBOX_CAPACITY).
+    #[must_use]
+    fn spawn_supervised(args: Self::Args) -> ActorRef<Self> {
+        Self::spawn_supervised_with_capacity(default_capacity(), args)
+    }
+
+    /// Spawns a supervisor with an explicit mailbox `capacity`.
+    #[must_use]
+    fn spawn_supervised_with_capacity(capacity: Capacity, args: Self::Args) -> ActorRef<Self> {
+        let (prepared, link_rx) = PreparedActor::<Self>::new_linked(capacity);
+        let actor_ref = prepared.actor_ref().clone();
+        let _join = prepared.spawn_supervised_task(args, link_rx);
+        actor_ref
+    }
+}
+
+impl<A: Supervisor> SpawnSupervised for A {}
+
 #[cfg(test)]
 mod watch_trait_tests {
     use super::*;

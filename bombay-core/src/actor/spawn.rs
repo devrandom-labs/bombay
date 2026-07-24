@@ -22,12 +22,16 @@ use futures::{
     stream::{AbortHandle, AbortRegistration, Abortable},
 };
 use tokio::task::JoinHandle;
-use tokio_util::sync::CancellationToken;
+use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
 use crate::{
     actor::{
-        Actor, ActorRef, Watch, WeakActorRef,
-        kind::{LinkedChannels, LoopHandles, run_linked_message_loop, run_message_loop},
+        Actor, ActorRef, Supervisor, Watch, WeakActorRef,
+        kind::{
+            LinkedChannels, LoopHandles, SupervisedState, run_linked_message_loop,
+            run_message_loop, run_supervised_message_loop,
+        },
+        supervision::Children,
     },
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Signal},
@@ -228,6 +232,28 @@ impl<A: Watch> PreparedActor<A> {
         link_rx: LinkReceiver,
     ) -> JoinHandle<RunResult<A>> {
         tokio::spawn(self.run_linked(args, link_rx))
+    }
+}
+
+impl<A: Supervisor> PreparedActor<A> {
+    /// Runs the actor as a **supervisor** in the current task until it stops:
+    /// the three-arm loop that drains its mailbox and link channel *and* rebuilds
+    /// dead children under their restart policies (#196). Aborts (hard kill)
+    /// short-circuit to [`RunResult::Killed`], skipping `on_stop`.
+    pub async fn run_supervised(self, args: A::Args, link_rx: LinkReceiver) -> RunResult<A> {
+        let lifecycle = run_lifecycle_supervised(args, self.actor_ref, self.mailbox_rx, link_rx);
+        Abortable::new(lifecycle, self.abort_registration)
+            .await
+            .unwrap_or(RunResult::Killed)
+    }
+
+    /// Spawns the supervisor in a background tokio task.
+    pub fn spawn_supervised_task(
+        self,
+        args: A::Args,
+        link_rx: LinkReceiver,
+    ) -> JoinHandle<RunResult<A>> {
+        tokio::spawn(self.run_supervised(args, link_rx))
     }
 }
 
@@ -491,6 +517,59 @@ async fn run_lifecycle_linked<A: Watch>(
     finish_actor(state, weak, mailbox_rx, watchers, reason).await
 }
 
+/// The supervisor lifecycle (#196): the shared [`start_actor`]/[`finish_actor`]
+/// prologue and epilogue around the three-arm [`run_supervised_message_loop`],
+/// which owns the child table, the restart-backoff [`DelayQueue`], and the
+/// jitter RNG. A supervisor is a linked, watchable actor too, so the teardown is
+/// identical to the plain and linked lifecycles.
+async fn run_lifecycle_supervised<A: Supervisor>(
+    args: A::Args,
+    actor_ref: ActorRef<A>,
+    mut mailbox_rx: MailboxReceiver<A>,
+    link_rx: LinkReceiver,
+) -> RunResult<A> {
+    let StartedActor {
+        mut state,
+        mut watchers,
+        handles,
+        weak,
+    } = match start_actor(args, actor_ref).await {
+        Ok(started) => started,
+        Err(err) => return startup_failed(err, &mailbox_rx),
+    };
+
+    let mut children = Children::new();
+    let mut retries = DelayQueue::new();
+    // Jitter RNG for restart backoff: entropy-seeded in production; a `#[cfg(test)]`
+    // seed replays the exact delay sequence (the DST contract on
+    // `jittered_backoff`). Inlined rather than a helper so the seeded-vs-entropy
+    // choice is not a body-replaceable mutant with no observer — a seeded
+    // backoff-timing test (a later slice) is what will exercise the seeded path.
+    #[cfg(not(test))]
+    let mut rng = fastrand::Rng::new();
+    #[cfg(test)]
+    let mut rng =
+        tests::supervisor_rng_seed().map_or_else(fastrand::Rng::new, fastrand::Rng::with_seed);
+    let reason = run_supervised_message_loop(
+        &mut state,
+        &weak,
+        &handles,
+        &mut watchers,
+        SupervisedState {
+            channels: LinkedChannels {
+                mailbox_rx: &mut mailbox_rx,
+                link_rx: &link_rx,
+            },
+            children: &mut children,
+            retries: &mut retries,
+            rng: &mut rng,
+        },
+    )
+    .await;
+
+    finish_actor(state, weak, mailbox_rx, watchers, reason).await
+}
+
 /// Logs a failed/panicked `on_stop` without altering the preserved stop reason
 /// and without unwrapping (a double-panic on the shutdown path can abort the
 /// process — std `Drop` docs).
@@ -555,6 +634,19 @@ mod tests {
         test_support::terminate_bound,
         watch::{LinkDied, LinkReceiver, WatchReg},
     };
+
+    thread_local! {
+        /// The seed [`super::supervisor_rng`] reads under `#[cfg(test)]`; `None`
+        /// leaves the RNG non-deterministic. A thread-local rather than a threaded
+        /// parameter keeps the seed out of the production loop signatures.
+        static SUPERVISOR_RNG_SEED: core::cell::Cell<Option<u64>> = const { core::cell::Cell::new(None) };
+    }
+
+    /// The test seed for the supervisor's jitter RNG, read by
+    /// [`super::supervisor_rng`].
+    pub(super) fn supervisor_rng_seed() -> Option<u64> {
+        SUPERVISOR_RNG_SEED.with(core::cell::Cell::get)
+    }
 
     /// Counts handled messages and records whether `on_stop` ran, via shared
     /// atomics the test inspects — the SUT is the real loop, not a reimpl.
@@ -3221,5 +3313,233 @@ mod tests {
             Some((target.id(), false)),
             "the death carries the target's id and a watch edge (linked == false)",
         );
+    }
+
+    /// Card #196 end-to-end: a supervised child that panics is REBUILT as a fresh
+    /// actor — never the resumed corpse — and each new incarnation carries a new
+    /// [`ActorId`] (invariant 1, `restart_rebuilds_never_resumes`).
+    ///
+    /// Two crashes, so the test also exercises the table **re-key**: the second
+    /// crash's death arrives under the *rebuilt* id, so it can only route back to
+    /// the restart path if `rebuild_child` re-keyed the entry. A broken re-key
+    /// leaves the table keyed by the dead first id, so the second death falls
+    /// through to the peer-watch hook, the (linked, abnormal) default hook stops
+    /// the supervisor, no third incarnation is ever built, and the bounded
+    /// `recv_id` for it fails fast instead of hanging.
+    mod supervised_rebuild {
+        use std::sync::{Arc, Mutex};
+
+        use futures::FutureExt;
+        use tokio::time::Instant;
+
+        use crate::{
+            actor::{
+                Actor, ActorRef, Spawn, SpawnSupervised, Supervisor, Watch,
+                supervision::{Child, ChildHandle, RebuildFactory, SuperviseReg, SupervisionOp},
+            },
+            error::Infallible,
+            mailbox::{ActorId, MailboxSender, Mailboxed, Signal},
+            message::Msg,
+            restart::{RestartConfig, RestartPolicy, RestartTracker},
+            test_support::terminate_bound,
+            watch::{LinkSender, WatchReg},
+        };
+
+        /// The supervisor: acks each [`Ping`] so a test can barrier on "the loop
+        /// has drained its mailbox up to this point" (mailbox FIFO).
+        struct Sup {
+            ack: flume::Sender<()>,
+        }
+        #[derive(Debug)]
+        struct Ping;
+        impl Msg for Ping {}
+        impl Mailboxed for Sup {
+            type Msg = Ping;
+        }
+        impl Actor for Sup {
+            type Args = flume::Sender<()>;
+            type Error = Infallible;
+            async fn on_start(ack: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self { ack })
+            }
+            async fn handle(
+                &mut self,
+                _: Ping,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                let _ = self.ack.send(());
+                Ok(())
+            }
+        }
+        impl Watch for Sup {}
+        impl Supervisor for Sup {}
+
+        /// The child: panics when told to [`Crash`].
+        struct Crasher;
+        #[derive(Debug)]
+        struct Crash;
+        impl Msg for Crash {}
+        impl Mailboxed for Crasher {
+            type Msg = Crash;
+        }
+        impl Actor for Crasher {
+            type Args = ();
+            type Error = Infallible;
+            async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self)
+            }
+            async fn handle(
+                &mut self,
+                _: Crash,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                panic!("crash on command")
+            }
+        }
+
+        /// The erased rebuild edge (the feature's single `dyn`): each call spawns a
+        /// fresh `Crasher`, installs the supervisor's `link` watch edge on it,
+        /// records its id and a strong sender, then drops the strong `ActorRef` —
+        /// the supervisor never pins a child (ADR-0003).
+        ///
+        /// The strong sender is kept in `senders` so the incarnation does not
+        /// ref-count-stop before the test crashes it; in production an external ref
+        /// (or the user's own closure) plays that role.
+        fn make_factory(
+            sup_id: ActorId,
+            sup_link: LinkSender,
+            id_tx: flume::Sender<ActorId>,
+            senders: Arc<Mutex<Vec<MailboxSender<Crasher>>>>,
+        ) -> RebuildFactory {
+            Box::new(move || {
+                let sup_link = sup_link.clone();
+                let id_tx = id_tx.clone();
+                let senders = Arc::clone(&senders);
+                async move {
+                    let child = Crasher::spawn(());
+                    let id = child.id();
+                    let reg = WatchReg {
+                        watcher: sup_id,
+                        link_tx: sup_link.clone(),
+                        linked: true,
+                    };
+                    child
+                        .mailbox_sender()
+                        .try_send(Signal::Watch(Box::new(reg)))
+                        .expect("a fresh child mailbox has room for the watch reg");
+                    senders
+                        .lock()
+                        .expect("lock")
+                        .push(child.mailbox_sender().clone());
+                    let _ = id_tx.send(id);
+                    let handle = ChildHandle {
+                        id,
+                        cancel: child.cancel_token().clone(),
+                        abort: child.abort_handle().clone(),
+                    };
+                    drop(child);
+                    handle
+                }
+                .boxed()
+            })
+        }
+
+        /// Round-trips a `Ping` through the supervisor: on return, the supervisor
+        /// has drained its mailbox at least up to this point, and — because the
+        /// loop cannot service the mailbox while it is inside `rebuild_child` — any
+        /// rebuild the previous step triggered has fully completed (re-key
+        /// included). Bounded, so a stuck supervisor fails fast.
+        async fn barrier(sup: &ActorRef<Sup>, ack_rx: &flume::Receiver<()>) {
+            tokio::time::timeout(terminate_bound(), sup.tell(Ping))
+                .await
+                .expect("Ping must not hang")
+                .expect("supervisor is alive");
+            tokio::time::timeout(terminate_bound(), ack_rx.recv_async())
+                .await
+                .expect("ack must arrive")
+                .expect("supervisor acked");
+        }
+
+        /// The id of the next incarnation the factory spawns, bounded so a rebuild
+        /// that never fires fails fast instead of hanging the sweep.
+        async fn recv_id(id_rx: &flume::Receiver<ActorId>) -> ActorId {
+            tokio::time::timeout(terminate_bound(), id_rx.recv_async())
+                .await
+                .expect("an incarnation id must arrive — the rebuild did not happen")
+                .expect("the id channel is open")
+        }
+
+        fn crash(senders: &Arc<Mutex<Vec<MailboxSender<Crasher>>>>, index: usize) {
+            senders.lock().expect("lock")[index]
+                .try_send_message(Crash)
+                .expect("the crash message reaches the live incarnation");
+        }
+
+        #[tokio::test(start_paused = true)]
+        async fn panicking_child_is_rebuilt_as_a_fresh_actor() {
+            let (ack_tx, ack_rx) = flume::unbounded::<()>();
+            let sup = Sup::spawn_supervised(ack_tx);
+            let sup_id = sup.id();
+            let sup_link = sup
+                .link_tx()
+                .expect("a supervisor is spawned linked")
+                .clone();
+
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Arc<Mutex<Vec<MailboxSender<Crasher>>>> = Arc::new(Mutex::new(Vec::new()));
+
+            let mut factory = make_factory(sup_id, sup_link, id_tx, Arc::clone(&senders));
+
+            // The first incarnation is spawned inline in the test's task — exactly
+            // as `supervise` will run the factory once before shipping the entry.
+            let first = factory().await;
+            let id1 = first.id();
+            assert_eq!(recv_id(&id_rx).await, id1, "the factory recorded id1");
+
+            let entry = Child {
+                factory,
+                handle: Some(first),
+                config: RestartConfig::new(RestartPolicy::Permanent),
+                tracker: RestartTracker::new(Instant::now()),
+            };
+
+            // Register the child, then barrier: FIFO guarantees the table holds id1
+            // before the first incarnation dies, so its death routes to the restart
+            // path rather than the peer-watch hook.
+            tokio::time::timeout(
+                terminate_bound(),
+                sup.mailbox_sender()
+                    .send(Signal::Supervision(Box::new(SupervisionOp::Add(
+                        SuperviseReg {
+                            child: entry,
+                            id: id1,
+                        },
+                    )))),
+            )
+            .await
+            .expect("the supervision op must not hang")
+            .expect("supervisor mailbox is open");
+            barrier(&sup, &ack_rx).await;
+
+            // Crash #1 → rebuild #1: a fresh incarnation with a new id.
+            crash(&senders, 0);
+            let id2 = recv_id(&id_rx).await;
+            assert_ne!(
+                id2, id1,
+                "the rebuild is a NEW actor, not the resumed corpse"
+            );
+
+            // Barrier so re-key(id1 -> id2) is done, then crash #2 → rebuild #2.
+            // This can only rebuild if the table was re-keyed to id2.
+            barrier(&sup, &ack_rx).await;
+            crash(&senders, 1);
+            let id3 = recv_id(&id_rx).await;
+            assert_ne!(id3, id2, "the second rebuild is a NEW actor too");
+            assert_ne!(id3, id1, "each incarnation has a distinct identity");
+
+            drop(sup);
+        }
     }
 }
