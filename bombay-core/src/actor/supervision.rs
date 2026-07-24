@@ -269,7 +269,10 @@ impl Children {
             })
     }
 
-    /// The current keys, in birth order.
+    /// The current keys, in birth order. Test-only until #199's `RestForOne`
+    /// consumes birth order in production; `#[cfg(test)]` rather than a
+    /// `dead_code` allow so the unused-in-prod state is honest.
+    #[cfg(test)]
     pub(crate) fn ids(&self) -> impl Iterator<Item = ActorId> + '_ {
         self.entries.iter().map(|(id, _)| *id)
     }

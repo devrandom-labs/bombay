@@ -33,3 +33,5 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | [0009](0009-registry-papaya-no-trait-seam.md) | Registry: papaya directly, no trait seam | Accepted |
 | [0010](0010-single-allocation-actor-ref.md) | Single-allocation `ActorRef`: one RMW per clone | Accepted |
 | [0011](0011-watch-capability-runtime-result-not-typestate.md) | Watch capability: runtime `Result`, not a typestate handle | Accepted |
+| [0012](0012-restart-accounting-counters-not-window.md) | Restart accounting: two counters, not a sliding time window | Accepted |
+| [0013](0013-virtual-actors-not-in-core.md) | Virtual-actor lazy reactivation stays out of the core | Accepted |
