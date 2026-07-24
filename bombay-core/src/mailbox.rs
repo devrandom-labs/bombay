@@ -366,6 +366,9 @@ impl<A: Mailboxed> MailboxReceiver<A> {
                     id: self.me,
                     reason: reason.clone(),
                     linked: reg.linked,
+                    // This path is reached only when `on_stop` never ran (hard
+                    // kill, startup failure), so there was no cleanup to fail.
+                    cleanup_failed: false,
                 });
             }
         }

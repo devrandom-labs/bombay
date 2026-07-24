@@ -290,6 +290,9 @@ impl<A: Watch> ActorRef<A> {
                 id: target.id(),
                 reason: ActorStopReason::AlreadyDead,
                 linked,
+                // Synthetic notice: the target's teardown is unobservable from
+                // here, so claiming a cleanup failure would be a fabrication.
+                cleanup_failed: false,
             });
         }
         Ok(())

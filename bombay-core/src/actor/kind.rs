@@ -182,7 +182,15 @@ async fn handle_link_died<A: Watch>(
     state: &mut A,
     notice: LinkDied,
 ) -> ControlFlow<ActorStopReason> {
-    let LinkDied { id, reason, linked } = notice;
+    // Exhaustive rather than `..`: `on_link_died`'s signature does not take
+    // `cleanup_failed`, and binding every field means a future notice field
+    // cannot be dropped here without a compile error.
+    let LinkDied {
+        id,
+        reason,
+        linked,
+        cleanup_failed: _,
+    } = notice;
     let result = AssertUnwindSafe(state.on_link_died(id, reason, linked))
         .catch_unwind()
         .await;

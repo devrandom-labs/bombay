@@ -19,6 +19,16 @@ pub struct LinkDied {
     pub reason: ActorStopReason,
     /// Whether the edge was a `link` (propagate) vs a `watch` (notify only).
     pub linked: bool,
+    /// `true` iff the dying actor's `on_stop` failed — returned `Err`, panicked,
+    /// or exceeded the notice grace (#196). `false` whenever `on_stop` never ran
+    /// at all (kill path, startup failure): nothing was cleaned up, so nothing
+    /// failed to clean up.
+    ///
+    /// A flag rather than a distinct [`reason`](Self::reason): "it died AND left
+    /// a lock or file handle stranded" is extra information about the same death,
+    /// and a supervisor may escalate on it instead of restarting — folding it
+    /// into the reason would erase why the actor actually stopped.
+    pub cleanup_failed: bool,
 }
 
 /// The sender half of a watcher's UNBOUNDED link channel. One concrete type for
@@ -56,6 +66,7 @@ pub struct Watchers {
     me: ActorId,
     list: SmallVec<[Edge; 1]>,
     reason: Option<ActorStopReason>,
+    cleanup_failed: bool,
 }
 
 impl Watchers {
@@ -64,6 +75,7 @@ impl Watchers {
             me,
             list: SmallVec::new(),
             reason: None,
+            cleanup_failed: false,
         }
     }
 
@@ -94,6 +106,12 @@ impl Watchers {
     pub(crate) fn set_reason(&mut self, reason: ActorStopReason) {
         self.reason = Some(reason);
     }
+
+    /// Records that `on_stop` failed; stamped onto every outgoing notice without
+    /// touching the recorded stop reason.
+    pub(crate) const fn set_cleanup_failed(&mut self) {
+        self.cleanup_failed = true;
+    }
 }
 
 impl Drop for Watchers {
@@ -106,6 +124,7 @@ impl Drop for Watchers {
                 id: self.me,
                 reason: reason.clone(),
                 linked: edge.linked,
+                cleanup_failed: self.cleanup_failed,
             });
         }
     }
@@ -156,5 +175,30 @@ mod tests {
 
         let n = rx.try_recv().expect("notified on kill path");
         assert!(matches!(n.reason, ActorStopReason::Killed));
+        assert!(
+            !n.cleanup_failed,
+            "the kill path never runs on_stop, so no cleanup can have failed"
+        );
+    }
+
+    #[test]
+    fn set_cleanup_failed_rides_every_notice() {
+        let (tx, rx) = flume::unbounded();
+        let mut guard = Watchers::new(ActorId::new(9));
+        guard.apply(WatchReg {
+            watcher: ActorId::new(1),
+            link_tx: tx,
+            linked: true,
+        });
+        guard.set_reason(ActorStopReason::Normal);
+        guard.set_cleanup_failed();
+        drop(guard);
+
+        let n = rx.try_recv().expect("notified");
+        assert!(n.cleanup_failed, "cleanup_failed must ride the notice");
+        assert!(
+            n.reason.is_normal(),
+            "original reason preserved — a failed cleanup is not a different death"
+        );
     }
 }
