@@ -103,7 +103,7 @@ impl<'a, A: Mailboxed> TellRequest<'a, A> {
 fn undelivered_msg<A: Mailboxed>(signal: Signal<A>) -> A::Msg {
     match signal {
         Signal::Message { msg, .. } => msg,
-        Signal::Stop | Signal::LinkDied(_) => {
+        Signal::Stop | Signal::Watch(_) | Signal::Unwatch(_) => {
             unreachable!("the request layer enqueues only Signal::Message")
         }
     }
@@ -465,9 +465,9 @@ mod tests {
 
     fn build_unstarted<A: Actor>(cap: usize) -> (ActorRef<A>, MailboxReceiver<A>) {
         let cap = Capacity::try_from(cap).expect("valid capacity");
-        let (tx, rx) = Mailbox::<A>::bounded(cap);
+        let (tx, rx) = Mailbox::<A>::bounded(cap, ActorId::new(0));
         let (abort, _reg) = AbortHandle::new_pair();
-        let actor_ref = ActorRef::new(ActorId::new(1), tx, CancellationToken::new(), abort);
+        let actor_ref = ActorRef::new(ActorId::new(1), tx, CancellationToken::new(), abort, None);
         (actor_ref, rx)
     }
 

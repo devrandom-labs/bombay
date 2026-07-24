@@ -16,6 +16,10 @@ tokio = "1.47"
 # Mailbox channel primitive — chosen on measured evidence (ADR-0001, card #133):
 # fastest async candidate, executor-agnostic, move-based, has weak senders.
 flume = "0.12"
+# Inline-small watcher lists (card #195): a watched actor's watcher list is 0-or-1
+# in the common case; `[_; 1]` inline keeps that heap-free while spilling for
+# popular actors. Uncapped by design (OTP has no monitor limit) — never ArrayVec.
+smallvec = "1"
 # Cooperative cancellation for the actor run-loop (card #116, absorbs #55).
 # CancellationToken::run_until_cancelled drives graceful stop without a select!.
 tokio-util = "0.7"

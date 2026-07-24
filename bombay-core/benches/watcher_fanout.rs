@@ -44,7 +44,7 @@
 
 use bombay_core::actor::{Actor, ActorRef, Spawn};
 use bombay_core::error::Infallible;
-use bombay_core::mailbox::{Capacity, Mailbox, MailboxReceiver, MailboxSender, Mailboxed};
+use bombay_core::mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, MailboxSender, Mailboxed};
 use bombay_core::message::Msg;
 use std::hint::black_box;
 
@@ -86,7 +86,9 @@ impl Mailboxed for Sink {
 /// `try_send_message` sees an open, non-full channel (a dropped receiver would make
 /// every send fail `Closed`).
 fn build_mailboxes(n: usize) -> Vec<(MailboxSender<Sink>, MailboxReceiver<Sink>)> {
-    (0..n).map(|_| Mailbox::<Sink>::bounded(cap(4))).collect()
+    (0..n)
+        .map(|_| Mailbox::<Sink>::bounded(cap(4), ActorId::new(0)))
+        .collect()
 }
 
 /// Pure fan-out enqueue: one notification cloned into each of N watcher mailboxes.

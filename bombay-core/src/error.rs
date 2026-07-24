@@ -206,7 +206,9 @@ pub enum PanicReason {
     /// The `on_panic` lifecycle hook itself failed.
     #[error("on_panic hook")]
     OnPanic,
-    // DEFERRED — OnLinkDied lands with the link graph / supervision (#120).
+    /// The `on_link_died` lifecycle hook itself failed.
+    #[error("on_link_died hook")]
+    OnLinkDied,
 }
 
 impl PanicReason {
@@ -297,12 +299,29 @@ pub enum ActorStopReason {
     /// The actor was killed — a hard stop with no cleanup.
     #[error("killed")]
     Killed,
+    /// A `watch`/`link` found the target already dead (or the registration was
+    /// discarded by the target's teardown), so the notice is synthetic and the
+    /// target's true stop reason is unknowable — the Erlang `noproc` analog.
+    /// Abnormal on purpose: a linked default hook propagates it, exactly as a
+    /// non-`normal` Erlang exit signal terminates a non-trapping linked peer.
+    #[error("already dead when watched")]
+    AlreadyDead,
     /// The actor's code panicked mid-execution.
     #[error(transparent)]
     Panicked(PanicError),
     /// A supervisor is deliberately cycling the actor.
     #[error("supervisor restart")]
     SupervisorRestart,
+    /// A watched/linked actor died and this actor is propagating that death
+    /// (a linked abnormal exit, or an explicit `Break` from `on_link_died`).
+    /// `reason` is boxed (large-variant discipline — it nests a stop reason).
+    #[error("linked actor {id:?} died: {reason}")]
+    LinkDied {
+        /// The identity of the actor that died.
+        id: crate::mailbox::ActorId,
+        /// Why the linked actor stopped.
+        reason: Box<Self>,
+    },
 }
 
 impl ActorStopReason {
@@ -326,6 +345,20 @@ impl ActorStopReason {
 #[derive(thiserror::Error, Clone, Copy, Debug, PartialEq, Eq)]
 #[error("name is already registered to a live actor")]
 pub struct NameTaken;
+
+/// A [`watch`](crate::actor::ActorRef::watch)/[`link`](crate::actor::ActorRef::link)
+/// call on a handle whose actor was **not** spawned via `spawn_linked`
+///
+/// — it has no link channel to receive death notices on, so it cannot watch.
+///
+/// A caller mistake (spawn a `Watch` actor via plain `spawn`), surfaced as a
+/// typed `Result` rather than a panic. A compile-time typestate (a
+/// `LinkedActorRef` witness returned by `spawn_linked`) exists on stable and
+/// was rejected on cost — handle bifurcation infects `Recipient`, the registry,
+/// and #121 — not possibility: ADR-0011.
+#[derive(thiserror::Error, Clone, Copy, Debug, PartialEq, Eq)]
+#[error("actor was not spawned linked; it cannot watch")]
+pub struct ActorNotLinked;
 
 /// A [`Registry::lookup`](crate::registry::Registry::lookup) type conflict:
 /// the name resolves to a **live** actor of a different `Actor` type than the
@@ -667,5 +700,39 @@ mod tests {
             "supervisor restart"
         );
         assert_eq!(PanicReason::OnStart.to_string(), "on_start hook");
+    }
+
+    #[test]
+    fn on_link_died_is_a_lifecycle_hook() {
+        // A hook panic must not be treated as a restartable handler crash (slice 2).
+        assert!(PanicReason::OnLinkDied.is_lifecycle_hook());
+    }
+
+    /// The synthetic link-to-dead reason (Erlang's `noproc` analog) is its own
+    /// failure domain: a watcher/supervisor must be able to distinguish "the
+    /// target was already dead when the edge was installed (true reason
+    /// unknowable)" from a real hard [`Killed`]. It is abnormal (a linked
+    /// default hook must propagate it, as Erlang's non-normal `noproc` does).
+    #[test]
+    fn already_dead_is_abnormal_and_distinct_from_killed() {
+        assert!(!ActorStopReason::AlreadyDead.is_normal());
+        assert_eq!(
+            ActorStopReason::AlreadyDead.to_string(),
+            "already dead when watched"
+        );
+        assert!(
+            !matches!(ActorStopReason::AlreadyDead, ActorStopReason::Killed),
+            "one variant per failure domain: already-dead is not a kill",
+        );
+    }
+
+    #[test]
+    fn link_died_is_abnormal() {
+        // LinkDied must be able to propagate: it is NOT a normal stop.
+        let reason = ActorStopReason::LinkDied {
+            id: crate::mailbox::ActorId::new(1),
+            reason: Box::new(ActorStopReason::Killed),
+        };
+        assert!(!reason.is_normal());
     }
 }

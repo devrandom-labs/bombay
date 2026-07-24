@@ -486,6 +486,7 @@ dependencies = [
  "papaya",
  "pin-project-lite",
  "proptest",
+ "smallvec",
  "thingbuf",
  "thiserror 2.0.18",
  "tokio",

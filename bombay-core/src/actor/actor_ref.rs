@@ -14,10 +14,12 @@ use futures::stream::AbortHandle;
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    actor::Actor,
-    mailbox::{ActorId, MailboxSender},
+    actor::{Actor, Watch},
+    error::{ActorNotLinked, ActorStopReason},
+    mailbox::{ActorId, MailboxSender, Signal},
     reply::ReplySender,
     request::{AskRequest, TellRequest},
+    watch::{LinkDied, WatchReg},
 };
 
 /// The one heap allocation every strong handle to an actor shares (ADR-0010):
@@ -26,6 +28,11 @@ struct RefShared<A: Actor> {
     sender: MailboxSender<A>,
     cancel: CancellationToken,
     abort: AbortHandle,
+    /// The actor's own link-channel sender — `Some` only for actors spawned via
+    /// `spawn_linked` (they can watch); `None` for plain actors. Behind the
+    /// shared `Arc`, so it does NOT change clone cost (still one Arc RMW) nor the
+    /// two-word size of [`ActorRef`].
+    link_tx: Option<crate::watch::LinkSender>,
 }
 
 /// A cloneable handle to a running actor: enqueue signals, stop it gracefully,
@@ -68,6 +75,7 @@ impl<A: Actor> ActorRef<A> {
         sender: MailboxSender<A>,
         cancel: CancellationToken,
         abort: AbortHandle,
+        link_tx: Option<crate::watch::LinkSender>,
     ) -> Self {
         Self {
             id,
@@ -75,8 +83,15 @@ impl<A: Actor> ActorRef<A> {
                 sender,
                 cancel,
                 abort,
+                link_tx,
             }),
         }
+    }
+
+    /// This actor's own link-channel sender, if it was spawned linked (`None`
+    /// for a plain-`spawn`ed actor, which cannot watch).
+    pub(crate) fn link_tx(&self) -> Option<&crate::watch::LinkSender> {
+        self.shared.link_tx.as_ref()
     }
 
     /// The actor's scaffold identity (replaced by the AID in #121).
@@ -165,6 +180,119 @@ impl<A: Actor> ActorRef<A> {
             id: self.id,
             shared: Arc::downgrade(&self.shared),
         }
+    }
+}
+
+/// The death-watch verbs (card #195). Only a [`Watch`] actor can watch, and only
+/// if it was spawned via `spawn_linked` (so it owns a link channel to receive
+/// death notices on); a plain-spawned `Watch` actor returns [`ActorNotLinked`].
+impl<A: Watch> ActorRef<A> {
+    /// Watches `target`: this actor's [`on_link_died`](Watch::on_link_died) fires
+    /// when `target` stops. One-directional and notify-only (`linked = false`), so
+    /// the default hook merely observes — a `target` death never propagates here.
+    /// `target` may be any [`Actor`] (being watched is universal); it need not
+    /// itself be a [`Watch`] actor.
+    ///
+    /// The registration rides `target`'s bounded message mailbox, so this `.await`s
+    /// for mailbox capacity — ordinary backpressure, not a failure. It resolves only
+    /// once the registration is enqueued (or `target` is found already dead).
+    ///
+    /// # Errors
+    ///
+    /// [`ActorNotLinked`] if this actor was spawned via the plain `spawn` path and
+    /// so has no link channel to receive notices on. Spawn watchers with
+    /// `spawn_linked`.
+    pub async fn watch<B: Actor>(&self, target: &ActorRef<B>) -> Result<(), ActorNotLinked> {
+        self.register_on(target, false).await
+    }
+
+    /// Links with `peer`: bidirectional. Each side's
+    /// [`on_link_died`](Watch::on_link_died) fires on the other's death; the
+    /// default hook propagates an abnormal death (`Break`). Requires both actors to
+    /// be [`Watch`] (both must react). If `peer` is already dead, its side yields an
+    /// immediate synthetic notice on this actor's channel (Erlang's link-to-dead
+    /// rule).
+    ///
+    /// Both link channels are checked present **before** either registration, so a
+    /// missing channel is an atomic `Err` with no half-installed one-directional
+    /// edge. Like [`watch`](Self::watch), each registration `.await`s for the peer's
+    /// mailbox capacity (backpressure).
+    ///
+    /// Repeated `link` calls install duplicate edges (a recorded divergence from
+    /// Erlang's at-most-one link per pair; the duplicate notice's first `Break`
+    /// wins). Self-linking (`a.link(&a)`) is likewise not special-cased — where
+    /// Erlang's is a no-op, it installs a self-edge whose death notice lands on
+    /// the actor's own, by-then-undrained channel: harmless.
+    ///
+    /// # Errors
+    ///
+    /// [`ActorNotLinked`] if **either** actor lacks a link channel (was not spawned
+    /// via `spawn_linked`) — checked up front, so neither side is mutated on `Err`.
+    pub async fn link<B: Watch>(&self, peer: &ActorRef<B>) -> Result<(), ActorNotLinked> {
+        // Both sides must be linked-spawned before either edge is installed, so a
+        // plain-spawned peer yields a clean `Err` and never a half-link.
+        if self.link_tx().is_none() || peer.link_tx().is_none() {
+            return Err(ActorNotLinked);
+        }
+        self.register_on(peer, true).await?;
+        peer.register_on(self, true).await
+    }
+
+    /// Stops watching `target`: removes **every** edge this actor holds on
+    /// `target` — watch and link edges alike, coarser than Erlang's per-monitor
+    /// `demonitor`. Best-effort — the send `.await`s for capacity and, if
+    /// `target` has already stopped, simply fails with nothing left to remove.
+    /// As with Erlang's `demonitor`, an `unwatch` racing the target's death may
+    /// still be followed by a delivered notice.
+    pub async fn unwatch<B: Actor>(&self, target: &ActorRef<B>) {
+        let _ = target
+            .mailbox_sender()
+            .send(Signal::Unwatch(self.id()))
+            .await;
+    }
+
+    /// Registers this actor as a watcher on `target` with the given `linked` flag:
+    /// reads this actor's own `link_tx` (the receive end the notice will arrive on)
+    /// and enqueues a [`WatchReg`] onto `target`'s mailbox, `.await`ing for capacity.
+    ///
+    /// The `.await` on [`send`](MailboxSender::send) is true backpressure: a
+    /// momentarily-full but alive mailbox makes it WAIT, and it errors **only** when
+    /// the mailbox is closed (`target` dead). On that closed error this actor is
+    /// given an immediate synthetic [`LinkDied`] on its own channel (Erlang's
+    /// link-to-dead rule) — the reason is
+    /// [`AlreadyDead`](ActorStopReason::AlreadyDead), its own failure domain
+    /// (Erlang's `noproc`): the target's true reason is unknowable once its mailbox
+    /// is gone, and conflating that with a real [`Killed`](ActorStopReason::Killed)
+    /// would misinform a supervisor. A full-mailbox (`Full`) case must never take
+    /// this branch, or ordinary backpressure would self-terminate a linked watcher.
+    async fn register_on<B: Actor>(
+        &self,
+        target: &ActorRef<B>,
+        linked: bool,
+    ) -> Result<(), ActorNotLinked> {
+        let Some(link_tx) = self.link_tx() else {
+            return Err(ActorNotLinked);
+        };
+        let reg = WatchReg {
+            watcher: self.id(),
+            link_tx: link_tx.clone(),
+            linked,
+        };
+        if target
+            .mailbox_sender()
+            .send(Signal::Watch(Box::new(reg)))
+            .await
+            .is_err()
+        {
+            // `send().await` errors ONLY on a closed mailbox (target dead), never on
+            // a full-but-alive one — so this is the genuine link-to-dead path.
+            let _ = link_tx.try_send(LinkDied {
+                id: target.id(),
+                reason: ActorStopReason::AlreadyDead,
+                linked,
+            });
+        }
+        Ok(())
     }
 }
 
@@ -268,9 +396,9 @@ mod tests {
     // channel already disconnected before the test even begins.
     fn build_ref_with_rx() -> (ActorRef<Probe>, WeakActorRef<Probe>, MailboxReceiver<Probe>) {
         let cap = Capacity::try_from(4usize).expect("valid capacity");
-        let (tx, rx) = Mailbox::<Probe>::bounded(cap);
+        let (tx, rx) = Mailbox::<Probe>::bounded(cap, ActorId::new(7));
         let (abort, _reg) = AbortHandle::new_pair();
-        let actor_ref = ActorRef::new(ActorId::new(7), tx, CancellationToken::new(), abort);
+        let actor_ref = ActorRef::new(ActorId::new(7), tx, CancellationToken::new(), abort, None);
         let weak = actor_ref.downgrade();
         (actor_ref, weak, rx)
     }

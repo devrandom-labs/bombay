@@ -21,7 +21,7 @@ use std::collections::HashMap;
 use bolero::{TypeGenerator, check};
 use bombay_core::actor::{Actor, ActorRef};
 use bombay_core::error::NameTaken;
-use bombay_core::mailbox::{Capacity, Mailbox, Mailboxed, Signal};
+use bombay_core::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal};
 use bombay_core::message::Msg;
 use bombay_core::registry::Registry;
 use bombay_core::test_support::unstarted_actor;
@@ -107,7 +107,7 @@ fn new_actor() -> (
     bombay_core::mailbox::MailboxReceiver<Probe>,
 ) {
     let cap = Capacity::try_from(4usize).expect("valid capacity");
-    let (tx, rx) = Mailbox::<Probe>::bounded(cap);
+    let (tx, rx) = Mailbox::<Probe>::bounded(cap, ActorId::new(0));
     unstarted_actor::<Probe>((tx, rx))
 }
 

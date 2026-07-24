@@ -83,6 +83,16 @@ fn cap(n: usize) -> Capacity {
     Capacity::try_from(n).expect("valid test capacity")
 }
 
+/// Bounds a pre-run/test-side send under the fail-fast bound (card #179): a
+/// mutant that stalls the mailbox (e.g. `Capacity::get -> 0` turning the queue
+/// into a rendezvous with no receiver yet) must FAIL here, not hang the whole
+/// test binary past the mutants sweep timeout.
+async fn bounded<F: std::future::IntoFuture>(fut: F) -> F::Output {
+    timeout(TERMINATE, fut)
+        .await
+        .expect("send must not hang: the mailbox stalled")
+}
+
 /// A stand-in domain error (any `Debug + Send + Sync + 'static` is a `ReplyError`).
 #[derive(Debug)]
 struct Boom;
@@ -199,7 +209,10 @@ async fn i1_single_writer_mutual_exclusion() {
         tasks.push(tokio::spawn(async move {
             start.wait().await;
             for _ in 0..PER_SENDER {
-                sender.send_message(Bump).await.expect("send");
+                timeout(TERMINATE, sender.send_message(Bump))
+                    .await
+                    .expect("send must not hang: the mailbox stalled")
+                    .expect("send");
             }
         }));
     }
@@ -275,11 +288,9 @@ async fn i3_macro_step_atomicity() {
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn(());
     for n in 1..=10u64 {
-        actor_ref.tell(Add(n)).await.expect("send add");
+        bounded(actor_ref.tell(Add(n))).await.expect("send add");
     }
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Stop)
+    bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
         .expect("send stop");
 
@@ -339,11 +350,9 @@ async fn i5_fifo_exactly_once() {
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn(Arc::clone(&seen));
     for v in 0..N {
-        actor_ref.tell(V(v)).await.expect("send");
+        bounded(actor_ref.tell(V(v))).await.expect("send");
     }
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Stop)
+    bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
         .expect("stop");
 
@@ -434,7 +443,7 @@ async fn i7_no_reentrancy_self_send_is_enqueued() {
     let prepared = PreparedActor::<Reentry>::new(cap(8));
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((Arc::clone(&in_handle), Arc::clone(&handled)));
-    actor_ref.tell(M::First).await.expect("send First");
+    bounded(actor_ref.tell(M::First)).await.expect("send First");
 
     let outcome = timeout(TERMINATE, run)
         .await
@@ -524,11 +533,9 @@ async fn i8_i10_i11_lifecycle_order_normal() {
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((None, Arc::clone(&log)));
     for _ in 0..3 {
-        actor_ref.tell(Tick).await.expect("send");
+        bounded(actor_ref.tell(Tick)).await.expect("send");
     }
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Stop)
+    bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
         .expect("stop");
 
@@ -559,8 +566,10 @@ async fn i8_i10_i11_lifecycle_order_panic() {
     let prepared = PreparedActor::<Life>::new(cap(8));
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((Some(2), Arc::clone(&log)));
-    actor_ref.tell(Tick).await.expect("send 1");
-    actor_ref.tell(Tick).await.expect("send 2 (panics)");
+    bounded(actor_ref.tell(Tick)).await.expect("send 1");
+    bounded(actor_ref.tell(Tick))
+        .await
+        .expect("send 2 (panics)");
 
     let outcome = timeout(TERMINATE, run)
         .await
@@ -646,9 +655,7 @@ async fn i9c_on_stop_not_run_on_startup_failure() {
     let spy2 = Arc::new(AtomicU32::new(0));
     let prepared = PreparedActor::<MaybeStart>::new(cap(4));
     let actor_ref = prepared.actor_ref().clone();
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Stop)
+    bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
         .expect("stop");
     let outcome2 = timeout(TERMINATE, prepared.run((false, Arc::clone(&spy2))))
@@ -683,10 +690,8 @@ async fn i12_alive_window() {
     let actor_ref = prepared.actor_ref().clone();
 
     // (a) enqueue before the loop starts, plus a Stop to end it.
-    actor_ref.tell(Poke).await.expect("pre-run send");
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Stop)
+    bounded(actor_ref.tell(Poke)).await.expect("pre-run send");
+    bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
         .expect("stop");
 
@@ -772,9 +777,7 @@ impl Actor for Cleanup {
 async fn i14a_normal_stop_on_stop_panic_preserves_normal() {
     let prepared = PreparedActor::<Cleanup>::new(cap(4));
     let actor_ref = prepared.actor_ref().clone();
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Stop)
+    bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
         .expect("stop");
     let outcome = timeout(TERMINATE, prepared.run((false, StopMode::Panic)))
@@ -798,9 +801,7 @@ async fn i14a_normal_stop_on_stop_panic_preserves_normal() {
 async fn i14b_normal_stop_on_stop_err_preserves_normal() {
     let prepared = PreparedActor::<Cleanup>::new(cap(4));
     let actor_ref = prepared.actor_ref().clone();
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Stop)
+    bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
         .expect("stop");
     let outcome = timeout(TERMINATE, prepared.run((false, StopMode::Err)))
@@ -826,7 +827,7 @@ async fn i14b_normal_stop_on_stop_err_preserves_normal() {
 async fn i14c_handler_panic_then_on_stop_panic_preserves_original_cause() {
     let prepared = PreparedActor::<Cleanup>::new(cap(4));
     let actor_ref = prepared.actor_ref().clone();
-    actor_ref.tell(Do).await.expect("send");
+    bounded(actor_ref.tell(Do)).await.expect("send");
     let outcome = timeout(TERMINATE, prepared.run((true, StopMode::Panic)))
         .await
         .expect("must terminate");
@@ -912,12 +913,10 @@ async fn i15_fault_isolation() {
     let b_run = b_prepared.spawn(Arc::clone(&b_spy));
 
     // A crashes.
-    a_ref.tell(Crash).await.expect("send crash to A");
+    bounded(a_ref.tell(Crash)).await.expect("send crash to A");
     // B keeps working after A's crash.
-    b_ref.tell(Work).await.expect("send work to B");
-    b_ref
-        .mailbox_sender()
-        .send(Signal::Stop)
+    bounded(b_ref.tell(Work)).await.expect("send work to B");
+    bounded(b_ref.mailbox_sender().send(Signal::Stop))
         .await
         .expect("stop B");
 
@@ -993,9 +992,7 @@ async fn i19_send_and_weak_upgrade_after_termination() {
     let prepared = PreparedActor::<Bank>::new(cap(4));
     let actor_ref = prepared.actor_ref().clone();
     let weak = actor_ref.downgrade();
-    actor_ref
-        .mailbox_sender()
-        .send(Signal::Stop)
+    bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
         .expect("stop");
 
@@ -1105,7 +1102,9 @@ async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
     let run = prepared.spawn((entered_tx, release_rx, drained_tx));
 
     // (1) The Block message enters the handler and parks; its slot is now free.
-    actor_ref.tell(Cmd::Block).await.expect("send Block");
+    bounded(actor_ref.tell(Cmd::Block))
+        .await
+        .expect("send Block");
     timeout(TERMINATE, entered_rx)
         .await
         .expect("Block must reach the handler, not hang")

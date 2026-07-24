@@ -32,3 +32,4 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | [0008](0008-send-timeout-guaranteed-handback.md) | `SendTimeout(M)`: guaranteed handback via bounded retry | Accepted |
 | [0009](0009-registry-papaya-no-trait-seam.md) | Registry: papaya directly, no trait seam | Accepted |
 | [0010](0010-single-allocation-actor-ref.md) | Single-allocation `ActorRef`: one RMW per clone | Accepted |
+| [0011](0011-watch-capability-runtime-result-not-typestate.md) | Watch capability: runtime `Result`, not a typestate handle | Accepted |

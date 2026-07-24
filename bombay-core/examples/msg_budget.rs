@@ -3,7 +3,7 @@
 //!
 //! Run with `cargo run -p bombay-core --example msg_budget`.
 
-use bombay_core::mailbox::{Capacity, Mailbox, Mailboxed, Signal};
+use bombay_core::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal};
 use bombay_core::message::Msg;
 use std::error::Error;
 use std::mem::size_of;
@@ -68,7 +68,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let cap = Capacity::try_from(8)?;
-    let (tx, mut rx) = Mailbox::<BankAccount>::bounded(cap);
+    let (tx, mut rx) = Mailbox::<BankAccount>::bounded(cap, ActorId::new(0));
 
     tx.send_message(BankCmd::Deposit { cents: 500 })
         .await
@@ -106,7 +106,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 println!("  Signal::Stop — done");
                 break;
             }
-            Signal::LinkDied(_) => println!("  Signal::LinkDied(..)"),
+            Signal::Watch(_) | Signal::Unwatch(_) => println!("  Signal::Watch/Unwatch(..)"),
         }
     }
 

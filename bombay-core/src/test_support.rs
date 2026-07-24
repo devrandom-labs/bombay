@@ -13,7 +13,8 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     actor::{Actor, ActorRef},
-    mailbox::{ActorId, MailboxReceiver, MailboxSender},
+    mailbox::{ActorId, MailboxReceiver, MailboxSender, Mailboxed, Signal},
+    watch::{LinkReceiver, WatchReg},
 };
 
 /// Assembles an [`ActorRef`] over a raw mailbox pair **without spawning a
@@ -26,8 +27,30 @@ pub fn unstarted_actor<A: Actor>(
     (tx, rx): (MailboxSender<A>, MailboxReceiver<A>),
 ) -> (ActorRef<A>, MailboxReceiver<A>) {
     let (abort, _registration) = AbortHandle::new_pair();
-    let actor_ref = ActorRef::new(ActorId::new(0), tx, CancellationToken::new(), abort);
+    let actor_ref = ActorRef::new(ActorId::new(0), tx, CancellationToken::new(), abort, None);
     (actor_ref, rx)
+}
+
+/// Mints a `Signal::Watch` for an external test/fuzz crate (card #195).
+///
+/// `WatchReg` and its `LinkSender` live in bombay-core's private `watch` module
+/// and are not part of the public API, so a raw `Signal::Watch` cannot be built
+/// from an external crate. This builds the watcher's UNBOUNDED link channel
+/// internally and hands back the enqueue-able signal plus the [`LinkReceiver`]
+/// half, so the caller can optionally observe the `LinkDied` notice delivered
+/// when the watched actor stops.
+///
+/// `watcher` is the watcher's identity (also the unwatch key); `linked` picks a
+/// `link` edge (propagating, `true`) over a `watch` edge (notify-only, `false`).
+#[must_use]
+pub fn watch_signal<A: Mailboxed>(watcher: ActorId, linked: bool) -> (Signal<A>, LinkReceiver) {
+    let (link_tx, link_rx) = flume::unbounded();
+    let reg = WatchReg {
+        watcher,
+        link_tx,
+        linked,
+    };
+    (Signal::Watch(Box::new(reg)), link_rx)
 }
 
 /// The fail-fast bound for a "this must terminate" await (card #148): a

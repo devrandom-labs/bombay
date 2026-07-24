@@ -595,6 +595,73 @@ as the bottleneck. No README
 change (same pre-public posture as #112–#118; the vendored-kameo
 `ActorRegistry` bullet the README documents is unchanged).
 
+### `watch` — links + death-watch (#195, slice 1 of #120) — done
+The death-watch half of #120: an actor learns, on **every** exit path (normal /
+panic / kill), when a watched peer stops. Two verbs on one mechanism — `watch`
+(monitor, notify-only) and `link` (bidirectional, propagating) — grounded in the
+Erlang/OTP + Akka convergent design (separate unbounded death channel; see the
+design doc `docs/superpowers/specs/2026-07-23-120-links-death-watch-design.md`).
+
+Shipped surface: `watch::{LinkDied, Watchers}` (+ crate-internal `WatchReg`,
+`LinkSender`/`LinkReceiver`); `Signal::{Watch, Unwatch}` replacing the retired
+`Signal::LinkDied`; `Watch: Actor` supertrait with the default OTP `on_link_died`;
+`SpawnLinked::spawn_linked`; **async** `ActorRef::{watch, link, unwatch}`;
+`ActorStopReason::LinkDied` + `PanicReason::OnLinkDied` un-deferred;
+`error::ActorNotLinked`; `link_tx: Option<LinkSender>` in `RefShared` (clone stays
+1 Arc RMW, #186/ADR-0010 intact). Erasure is **absent** — `LinkDied` is
+monomorphic, so watcher lists are a homogeneous `SmallVec<[_; 1]>` (this revises
+the #122-#10 "erasure lives here" note; the erasure relocates to slice-2 restart).
+
+Tests (bombay-core lib, all TDD — written failing first):
+- **unit** — `drop_of_watchers_notifies_every_edge_with_its_linked_flag`,
+  `drop_without_set_reason_reports_killed` (`watch.rs`); `signal_watch_and_unwatch_are_carried`
+  (`mailbox.rs`); `on_link_died_is_a_lifecycle_hook`, `link_died_is_abnormal`
+  (`error.rs`); `default_hook_breaks_on_linked_abnormal_and_continues_otherwise`
+  (`actor/mod.rs`).
+- **delivery on every exit path** — `watch_notified_on_normal_stop`,
+  `watch_notified_on_panic`, `watch_notified_on_kill`,
+  `watch_in_flight_at_kill_still_notified`.
+- **registration semantics** — `unwatch_queued_before_stop_suppresses_notice`
+  (FIFO Unwatch honored at teardown), `stale_watcher_edge_self_prunes`,
+  `many_watchers_all_notified` (8-way `Barrier` linearizability),
+  `watch_does_not_pin_target` (ADR-0003: watching holds no strong ref),
+  `plain_spawned_watch_actor_watch_errs`,
+  `watch_full_but_alive_target_backpressures_no_spurious_death` (the
+  async/backpressure regression guard — a busy-but-alive target must not be
+  mistaken for dead).
+- **reaction / propagation** — `linked_actor_receives_death_of_watched_target`,
+  `link_propagates_on_abnormal`, `link_does_not_propagate_on_normal`,
+  `trap_exit_via_override_keeps_running`, `dead_target_watch_immediate_linkdied`.
+  The three survival/propagation tests use a `Recorder` actor with an invocation
+  counter **plus a post-death `Ping` round-trip** as the liveness proof (a bare
+  `is_alive()` races the lazy mailbox close); each was mutation-verified during
+  review (mutate the loop to always-`Break` / drop the dead-target branch → the
+  named test fails).
+
+Fuzz (in-gate `bombay-fuzz-replay`): the single #164 `actor_loop` target gained
+`Op::Watch { linked }` / `Op::Unwatch`, exercising the registration signals under
+random loop-op interleavings via the `#[cfg(feature = "test-support")]`
+`test_support::watch_signal` seam (constructs `Signal::Watch` without exposing
+`WatchReg`). Death-delivery is not asserted in the generic harness (non-deterministic
+across kill/startup-panic/stop-ahead-of-Watch orderings) — deterministic delivery
+stays covered by the `#[tokio::test]` cases above.
+
+Mutation (`nix build .#mutants`, viable-ratchet vs `mutants-baseline.json`,
+ADR-0006): a scoped sweep over the six #195-touched files ran **167 mutants → 34
+caught / 0 missed / 133 unviable** (2026-07-23). Zero survivors; both initially-missed
+mutants (`replace unwatch with ()`, `replace || with && in link`) were killed by
+dedicated mutation-verified tests (`unwatch_removes_edge_so_death_delivers_no_notice`,
+`link_to_plain_peer_errs_without_half_link` — the latter uses a raw-fence + graceful-stop
+barrier so the kill is deterministic under the full parallel suite, not just in
+isolation). Every new function carries a baseline entry (10 `floors` + 12
+`known_zero_viable`); a missing entry reads as `Unaccounted` and fails the gate. MIRI: the new synchronous paths (`Watchers` guard,
+`register_on`, the `Signal::Watch`/`Unwatch` arms) run under the scheduled nightly
+`.#miri` lane (stable stays the per-push gate, #60/#150).
+
+No README change (same pre-public posture as #112–#119: the README documents the
+vendored-kameo API until the M1 rebuild swap; bombay-core's `Watch`/`spawn_linked`/
+`watch`/`link` are not surfaced there yet).
+
 ### `fuzz` — bolero workspace (#149) — done
 Isolated non-member `fuzz/` workspace (crate `bombay-fuzz`, own `Cargo.lock`) —
 the reusable verification backbone (#150/#151/#152 build on it). `bolero::check!`

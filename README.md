@@ -2,7 +2,7 @@
 
 Fault-tolerant async actors on Tokio — a Zenoh-native fork of the [kameo](https://github.com/tqwewe/kameo) actor framework. Bombay keeps kameo's local actor core (single-writer message handling, supervision, links, a name registry) and is replacing its libp2p remote layer with a thin [Zenoh](https://zenoh.io) `Session` layer, pairing with [nexus](https://github.com/devrandom-labs/nexus) for event-sourced, single-writer aggregates.
 
-> **Status:** the local actor core (forked from kameo 0.21) is in-tree and works today; the Zenoh remote layer and the nexus adapter are under active development. Until those land, the public API below *is* the kameo actor API. Process, roadmap, and engineering rules live in [`CLAUDE.md`](CLAUDE.md).
+> **Status:** the local actor core (forked from kameo 0.21) is in-tree and works today; the Zenoh remote layer and the nexus adapter are under active development. Until those land, the public API below *is* the kameo actor API. A second, from-scratch core (`bombay-core`) is being rebuilt beside it — see [the rebuilt core](#the-rebuilt-core-bombay-core). Process, roadmap, and engineering rules live in [`CLAUDE.md`](CLAUDE.md).
 
 ## Using bombay
 
@@ -51,6 +51,16 @@ Everything below is re-exported from `bombay::prelude`:
 - **Registry** — a process-local `ActorRegistry`: register an actor under a name, look it up, remove it.
 - **Mailbox** — bounded (`mailbox::bounded(n)`) or unbounded (`mailbox::unbounded()`); backpressure via `send` vs fail-fast `try_send`.
 - **Errors** — `SendError` (`ActorNotRunning` / `ActorStopped` / `MailboxFull` / `HandlerError` / `Timeout`), `PanicError`, `ActorStopReason`.
+
+### The rebuilt core (`bombay-core`)
+
+The Zenoh-era core is being rebuilt from scratch beside the vendored fork, with kameo as a reference oracle. It is a separate crate and is **not** re-exported from `bombay::prelude`; the surface settles once the whole spine lands. What it carries today:
+
+- **Actor** — `Actor` (a `Mailboxed` subtrait, so the mailbox is keyed on the actor) with `on_start` / `handle` / `on_panic` / `on_stop`. Spawn via `Actor::spawn` or `spawn_with_capacity`, or build a `PreparedActor` to hand out its `ActorRef` and pre-send before the loop starts.
+- **`ActorRef`** — two words, one shared allocation, so a clone is a single refcount bump. `tell` (fire-and-forget) and `ask` (request/reply) are builders: `.await` either one, give it a `.timeout(..)`, or resolve a `tell` without waiting via `.try_send()`. Plus `stop()` (graceful — the in-flight handler finishes), `kill()` (hard — no `on_stop`), `downgrade()` → `WeakActorRef`, and type-erased `Recipient` / `ReplyRecipient`. Dropping the last strong `ActorRef` stops the actor once its backlog drains.
+- **Death-watch** — being watched is universal and passive; watching is the opt-in `Watch: Actor` supertrait with the `on_link_died` hook. Its default is OTP's rule: a **linked** *abnormal* death propagates, anything else is observed and the actor continues (override it to trap). Spawn a watcher with `spawn_linked`, then `watch` (one-directional, notify-only), `link` (bidirectional, propagating), or `unwatch`; each returns `Err(ActorNotLinked)` if the actor was not spawned linked. Death travels on its own unbounded channel and is fired from a task-owned guard's `Drop`, so no notice is lost to a full mailbox, a panic, or a hard kill.
+- **Mailbox** — bounded only: `Mailbox::<A>::bounded(capacity, id)`. Backpressure via `send`, fail-fast via `try_send`; a queued message keeps the actor alive until it is handled.
+- **Errors** — `TellError` and `AskError`, which classify retry-safety by method (`is_retryable` / `is_terminal`) and hand the undelivered message back; `PanicError` + `PanicReason`; and `ActorStopReason` (`Normal`, `Killed`, `Panicked`, `SupervisorRestart`, `LinkDied`, `AlreadyDead`).
 
 Runnable examples live in [`examples/`](examples/) — `basic`, `supervision`, `registry`, `stream`, `forward`, `pool`, `pubsub`, `broker`, `message_bus`, `message_queue`, and more. Run one with:
 
