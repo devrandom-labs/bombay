@@ -54,8 +54,12 @@ const ON_STOP_NOTICE_GRACE: Duration = if cfg!(miri) {
     // MIRI's virtual clock advances 5 µs per basic block (`miri/src/clock.rs`:
     // `NANOSECONDS_PER_BASIC_BLOCK = 5000`) — roughly 5000× faster than the work
     // it times — so a natively-calibrated bound abandons an `on_stop` that is in
-    // fact making fine progress, turning the whole MIRI lane into a false
-    // `cleanup_failed`. Same scaling, same reason, as `test_support::terminate_bound`.
+    // fact making fine progress, turning the whole MIRI lane (`miri.yml` runs
+    // every lib test, including the parked-hook one) into a false `cleanup_failed`.
+    // `test_support::terminate_bound` scales for the same reason, but is precedent
+    // in SHAPE only: it is test-only code behind the `test-support` feature, while
+    // this is production. A STOPGAP — the right fix is an injectable grace on the
+    // config surface #196 is growing, at which point this fork goes away.
     Duration::from_mins(10)
 } else {
     Duration::from_secs(5)
@@ -285,7 +289,9 @@ async fn start_actor<A: Actor>(
 /// [`AlreadyDead`](ActorStopReason::AlreadyDead) — which a supervisor reads as
 /// restart-worthy, crash-looping a child that can never start.
 fn startup_failed<A: Actor>(err: PanicError, mailbox_rx: &MailboxReceiver<A>) -> RunResult<A> {
-    mailbox_rx.reject_queued_watchers(&ActorStopReason::Panicked(err.clone()));
+    // `cleanup_failed: false` is correct here forever: `on_start` failed, so no
+    // state was ever built and `on_stop` is never reached.
+    mailbox_rx.reject_queued_watchers(&ActorStopReason::Panicked(err.clone()), false);
     RunResult::StartupFailed(err)
 }
 
@@ -326,19 +332,21 @@ fn apply_raced_registrations<A: Actor>(
 /// `terminate/2` runs before its exit signals propagate, bounded by the child
 /// spec's `shutdown`.
 ///
-/// The backlog is drained on BOTH sides of the hook. The second pass is what
-/// makes the outcome bit honest: `on_stop` holds the mailbox open, so a
-/// registration accepted while it ran is answered here — by a guard that knows
-/// the true reason *and* the cleanup outcome — instead of falling through to
-/// `MailboxReceiver`'s `Drop`, which can only synthesize
-/// [`AlreadyDead`](ActorStopReason::AlreadyDead) with no outcome to report. The
-/// first pass is kept because it releases the queued messages' `self_sender`
-/// cycle before the hook (which may run for the whole grace) rather than after,
-/// and `drain` empties the channel, so nothing can be applied twice.
+/// The backlog is swept THREE times, each closing the window the previous one
+/// left, so that `MailboxReceiver`'s `Drop` — which can only synthesize
+/// [`AlreadyDead`](ActorStopReason::AlreadyDead) and knows no outcome — answers
+/// as little as possible. Before the hook: releases the queued messages'
+/// `self_sender` cycle (ADR-0003) without waiting out a hook that may run for the
+/// whole grace. After the hook: `on_stop` holds the mailbox open, so a
+/// registration accepted while it ran is answered by the guard, which knows the
+/// true reason *and* the outcome. After the guard has fired: the same reason and
+/// outcome, now read off the guard, for anything that landed while it was
+/// notifying. `drain` empties the channel, so nothing is applied twice.
 ///
 /// On a hard kill this never runs (the lifecycle future is dropped by
-/// `Abortable`) — the guard's `Drop` still fires `Killed`, with
-/// `cleanup_failed = false`, for whatever was already registered.
+/// `Abortable`) — the guard's `Drop` still fires for whatever was registered,
+/// reporting `Killed` if the kill preceded the hook, and the graceful reason with
+/// `cleanup_failed = true` if it interrupted the hook mid-flight.
 async fn finish_actor<A: Actor>(
     mut state: A,
     weak: WeakActorRef<A>,
@@ -349,26 +357,37 @@ async fn finish_actor<A: Actor>(
     apply_raced_registrations(&mut mailbox_rx, &mut watchers);
     watchers.set_reason(reason.clone());
 
+    // Armed BEFORE the await, disarmed only by an observed `Ok(())`: a kill drops
+    // this whole future mid-hook and `timeout` itself panics on a runtime with no
+    // timer, and neither path returns here to set a flag afterwards.
+    watchers.assume_cleanup_failed();
     let stop_fut = AssertUnwindSafe(state.on_stop(weak.clone(), reason.clone())).catch_unwind();
     match tokio::time::timeout(ON_STOP_NOTICE_GRACE, stop_fut).await {
         Ok(stop_result) => {
-            if !matches!(&stop_result, Ok(Ok(()))) {
-                watchers.set_cleanup_failed();
+            if matches!(&stop_result, Ok(Ok(()))) {
+                watchers.cleanup_succeeded();
             }
             log_on_stop_outcome::<A>(&reason, stop_result);
         }
         Err(_elapsed) => {
             // Crash-only: the hook blew its bound and `timeout` has already
             // dropped its future (which is what releases the borrow of `state`).
-            // Death is announced regardless — as a failed cleanup, since whatever
-            // the hook was releasing was left unreleased.
-            watchers.set_cleanup_failed();
+            // Death is announced regardless, and the armed flag already says the
+            // cleanup never finished.
             log_on_stop_abandoned::<A>(&reason);
         }
     }
 
     apply_raced_registrations(&mut mailbox_rx, &mut watchers);
+    let cleanup_failed = watchers.cleanup_failed();
     drop(watchers); // fires the notifications — now carrying the cleanup outcome
+
+    // One last sweep, for a registration accepted while the guard was firing: it
+    // gets the same true reason and outcome the guard just sent, instead of
+    // `MailboxReceiver::drop`'s synthetic `AlreadyDead`. What remains after this
+    // is a reg landing in the final instants before the mailbox goes away, which
+    // that `Drop` answers as genuinely unknown.
+    mailbox_rx.reject_queued_watchers(&reason, cleanup_failed);
 
     RunResult::Stopped {
         actor: state,
@@ -2347,18 +2366,23 @@ mod tests {
         }
     }
 
-    /// An actor whose `on_stop` NEVER returns — the probe for the notice grace
-    /// (card #196). `pending()` is the honest shape of a hung user hook (a lock
-    /// that is never released, a socket that never drains).
-    struct HangingStop;
+    /// An actor whose `on_stop` NEVER returns — the probe for the notice grace and
+    /// for a kill landing mid-hook (card #196). `pending()` is the honest shape of
+    /// a hung user hook (a lock that is never released, a socket that never
+    /// drains); the `entered` signal is what lets a test act while it is parked.
+    struct HangingStop {
+        entered: Option<tokio::sync::oneshot::Sender<()>>,
+    }
     impl Mailboxed for HangingStop {
         type Msg = Nothing;
     }
     impl crate::actor::Actor for HangingStop {
-        type Args = ();
+        type Args = tokio::sync::oneshot::Sender<()>;
         type Error = core::convert::Infallible;
-        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
-            Ok(Self)
+        async fn on_start(entered: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self {
+                entered: Some(entered),
+            })
         }
         async fn handle(
             &mut self,
@@ -2373,6 +2397,9 @@ mod tests {
             _: WeakActorRef<Self>,
             _: ActorStopReason,
         ) -> Result<(), Self::Error> {
+            if let Some(entered) = self.entered.take() {
+                let _ = entered.send(());
+            }
             core::future::pending().await
         }
     }
@@ -2418,10 +2445,11 @@ mod tests {
         let prepared = PreparedActor::<HangingStop>::new(cap(4));
         let link_rx = watch_before_start(&prepared);
         let actor_ref = prepared.actor_ref().clone();
+        let (entered_tx, _entered_rx) = tokio::sync::oneshot::channel();
 
         // Held, not detached: dropping the handle would abort nothing, but keeping
         // it pins the task for the whole test.
-        let _join = prepared.spawn(());
+        let _join = prepared.spawn(entered_tx);
         actor_ref.stop();
         drop(actor_ref);
 
@@ -2441,6 +2469,49 @@ mod tests {
         assert!(
             notice.reason.is_normal(),
             "the recorded stop reason survives the abandoned hook, got {:?}",
+            notice.reason,
+        );
+    }
+
+    /// `@bug` Lifecycle (card #196): a hard kill landing WHILE `on_stop` runs
+    /// reports `cleanup_failed` — the hook was interrupted mid-flight, so whatever
+    /// it was releasing stayed unreleased. The `Abortable` drops the entire
+    /// lifecycle future, so no teardown code runs after the kill: the only way the
+    /// notice can carry this is for the flag to be armed BEFORE the hook is
+    /// awaited and cleared only on success. FAILS while the flag is set
+    /// optimistically after the fact — the watcher is then told the cleanup
+    /// completed, on a run where it demonstrably did not.
+    ///
+    /// The complementary kill-BEFORE-`on_stop` case (flag never armed, so
+    /// `false`) is `watch::tests::drop_without_set_reason_reports_killed`;
+    /// `dst_races.rs` covers the `RunResult` side but sees no notices.
+    #[tokio::test(start_paused = true)]
+    async fn kill_during_on_stop_marks_cleanup_failed() {
+        let prepared = PreparedActor::<HangingStop>::new(cap(4));
+        let link_rx = watch_before_start(&prepared);
+        let actor_ref = prepared.actor_ref().clone();
+        let (entered_tx, entered_rx) = tokio::sync::oneshot::channel();
+
+        let join = prepared.spawn(entered_tx);
+        actor_ref.stop();
+        bounded(entered_rx).await.expect("on_stop entered");
+        actor_ref.kill(); // drops the lifecycle future with the hook still parked
+        drop(actor_ref);
+
+        let outcome = bounded(join).await.expect("the run task joins");
+        assert!(
+            matches!(outcome, RunResult::Killed),
+            "the abort short-circuits the lifecycle, got {outcome:?}",
+        );
+
+        let notice = link_rx.try_recv().expect("the watcher must be notified");
+        assert!(
+            notice.cleanup_failed,
+            "an on_stop interrupted mid-flight never finished its cleanup",
+        );
+        assert!(
+            notice.reason.is_normal(),
+            "the graceful reason was recorded before the hook and survives the kill, got {:?}",
             notice.reason,
         );
     }

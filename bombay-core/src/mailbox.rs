@@ -353,30 +353,27 @@ impl<A: Mailboxed> MailboxReceiver<A> {
     /// this first: the startup-failure path (card #196) answers with
     /// `Panicked(OnStart)`, because a supervisor treats `AlreadyDead` as
     /// restart-worthy and would crash-loop a child that can never start.
+    ///
+    /// `cleanup_failed` rides along for the same reason and must be as true as
+    /// `reason` is: the graceful teardown passes the outcome its `Watchers` guard
+    /// just reported, so a backlog answered here says exactly what the guard's own
+    /// notices said. The two callers that cannot know it pass `false`, paired with
+    /// a reason (`AlreadyDead`, `Panicked(OnStart)`) that already means no cleanup
+    /// ran.
     // `&self` despite emptying the queue: flume's `Receiver::drain` is itself
     // `&self` (its state lives behind the shared `Chan` lock), and taking `&mut`
     // here would be a lie the borrow checker cannot cash — `Drop::drop` reborrows
     // it anyway, and exclusivity is already guaranteed structurally (the receiver
     // is the mailbox's single consumer, and `drain(&mut self)` next door hands out
     // a borrowing iterator that cannot overlap with this call).
-    pub(crate) fn reject_queued_watchers(&self, reason: &ActorStopReason) {
+    pub(crate) fn reject_queued_watchers(&self, reason: &ActorStopReason, cleanup_failed: bool) {
         for signal in self.rx.drain() {
             if let Signal::Watch(reg) = signal {
                 let _ = reg.link_tx.try_send(LinkDied {
                     id: self.me,
                     reason: reason.clone(),
                     linked: reg.linked,
-                    // Scoped to the `reason` alongside it: this path answers only
-                    // what the graceful teardown could not — a hard kill or a
-                    // startup failure (where `on_stop` never ran, so there was no
-                    // cleanup to fail), or a registration arriving after the
-                    // teardown finished, where nothing about a cleanup is
-                    // observable from here. `false` reads as "no cleanup failure
-                    // known", exactly as `AlreadyDead` reads as "reason unknown".
-                    // The `on_stop` window itself is NOT answered here (#196):
-                    // `finish_actor` drains it into the still-live `Watchers`
-                    // guard, which does know the outcome.
-                    cleanup_failed: false,
+                    cleanup_failed,
                 });
             }
         }
@@ -401,19 +398,23 @@ impl<A: Mailboxed> Drop for MailboxReceiver<A> {
     ///    drop is the last code that ever sees the registration, so it must
     ///    deliver the notice: reason
     ///    [`AlreadyDead`](ActorStopReason::AlreadyDead), because the true stop
-    ///    reason is unknowable *here* (Erlang's `noproc`). Every path that DOES
-    ///    know it pre-empts this one (card #196): startup failure drains with
-    ///    `Panicked(OnStart)`, and the graceful teardown drains twice — once
-    ///    before `on_stop` and once after — so what reaches this drop is a hard
-    ///    kill or a registration that landed after teardown had finished. The
-    ///    send is non-blocking into the watcher's UNBOUNDED link channel and only
-    ///    fails if the watcher itself is gone — a stale edge, correctly skipped.
+    ///    reason is unknowable *here* (Erlang's `noproc`), paired with
+    ///    `cleanup_failed: false` — no cleanup outcome is observable from here
+    ///    either, and "unknown" is what both fields then mean together. Every
+    ///    path that DOES know pre-empts this one (card #196): startup failure
+    ///    drains with `Panicked(OnStart)`, and the graceful teardown drains three
+    ///    times — before `on_stop`, after it, and once more after the guard has
+    ///    fired, that last one carrying the guard's true reason and outcome. What
+    ///    reaches this drop is therefore a hard kill, or a registration accepted
+    ///    in the final instants before the mailbox itself went away. The send is
+    ///    non-blocking into the watcher's UNBOUNDED link channel and only fails
+    ///    if the watcher itself is gone — a stale edge, correctly skipped.
     ///
     /// A queued `Signal::Unwatch` is unenforceable here (the watcher set is gone
     /// with the loop); as in Erlang, a `demonitor` racing the death may still be
     /// followed by a delivered notice.
     fn drop(&mut self) {
-        self.reject_queued_watchers(&ActorStopReason::AlreadyDead);
+        self.reject_queued_watchers(&ActorStopReason::AlreadyDead, false);
     }
 }
 
