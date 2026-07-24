@@ -13,12 +13,21 @@ use std::sync::{Arc, Weak};
 use futures::stream::AbortHandle;
 use tokio_util::sync::CancellationToken;
 
+use tokio::time::Instant;
+
 use crate::{
-    actor::{Actor, Watch},
-    error::{ActorNotLinked, ActorStopReason},
+    actor::{
+        Actor, Spawn, Supervisor, Watch,
+        supervision::{
+            Child, ChildHandle, RebuildFactory, Spawned, SuperviseReg, SupervisionOp,
+            watch_installer,
+        },
+    },
+    error::{ActorNotLinked, ActorStopReason, TellError},
     mailbox::{ActorId, MailboxSender, Signal},
     reply::ReplySender,
     request::{AskRequest, TellRequest},
+    restart::{RestartConfig, RestartTracker},
     watch::{LinkDied, WatchReg},
 };
 
@@ -296,6 +305,118 @@ impl<A: Watch> ActorRef<A> {
             });
         }
         Ok(())
+    }
+}
+
+/// The restart-supervision verb (card #196). Only a [`Supervisor`] can supervise,
+/// and — like [`watch`](Self::watch)/[`link`](Self::link) — only because it was
+/// spawned via `spawn_supervised` and so owns the link channel a child's death
+/// arrives on.
+impl<S: Supervisor> ActorRef<S> {
+    /// Registers a supervised child under an explicit restart policy. The first
+    /// incarnation is spawned HERE, in the caller's task — which is what lets this
+    /// be a `tell` returning the child's [`ActorId`]. The closure re-runs per
+    /// rebuild inside the supervisor's loop; it **spawns only** (the loop installs
+    /// the watch edge, so a child is never observably dead before it is in the
+    /// table).
+    ///
+    /// The wrapper drops the strong [`ActorRef<A>`] the closure returns — the
+    /// supervisor never pins a child (ADR-0003), so keeping a supervised child
+    /// *reachable* is the caller's job (a name in the registry, a captured handle,
+    /// or work the child itself drives). The closure must capture only the child's
+    /// spawn inputs — **never** a strong `ActorRef<S>` of the supervisor (kameo
+    /// #171: a strong self-ref in the loop-owned table makes ref-count-driven stop
+    /// unreachable).
+    ///
+    /// This `.await`s for the supervisor's own mailbox capacity — ordinary
+    /// backpressure, not failure.
+    ///
+    /// # Errors
+    ///
+    /// [`TellError::ActorNotAlive`] if the supervisor's mailbox is closed (it has
+    /// stopped). The first incarnation was already spawned; it simply continues
+    /// unsupervised, so the caller can retire it via the returned-nothing path.
+    pub async fn supervise<A, F>(
+        &self,
+        config: impl Into<RestartConfig>,
+        mut factory: F,
+    ) -> Result<ActorId, TellError<()>>
+    where
+        A: Actor,
+        F: FnMut() -> ActorRef<A> + Send + 'static,
+    {
+        // The erased, spawn-only rebuild edge: each call runs the user's spawn,
+        // lifts the sender-less handle + a one-shot watch installer out of the
+        // fresh child, and drops the strong ref (never pin the child).
+        let mut rebuild: RebuildFactory = Box::new(move || spawn_child(&mut factory));
+        // Spawn the first incarnation inline, in the caller's task, so its id can
+        // be returned; the loop installs its watch edge after the table insert.
+        let Spawned {
+            handle,
+            install_watch,
+        } = rebuild();
+        let id = handle.id();
+        let reg = SuperviseReg {
+            child: Child {
+                factory: rebuild,
+                handle: Some(handle),
+                config: config.into(),
+                tracker: RestartTracker::new(Instant::now()),
+            },
+            id,
+            install_watch,
+        };
+        match self
+            .mailbox_sender()
+            .send(Signal::Supervision(Box::new(SupervisionOp::Add(reg))))
+            .await
+        {
+            Ok(()) => Ok(id),
+            // The supervisor's mailbox is closed (it stopped). `send().await` errors
+            // only on a closed mailbox, so this is the genuine dead-supervisor path.
+            Err(_) => Err(TellError::ActorNotAlive(())),
+        }
+    }
+
+    /// [`supervise`](Self::supervise) shorthand for a child whose `Args` are
+    /// `Clone`: the rebuild closure re-spawns `A` from a fresh clone of `args`
+    /// each incarnation.
+    ///
+    /// # Errors
+    ///
+    /// [`TellError::ActorNotAlive`] if the supervisor's mailbox is closed, exactly
+    /// as [`supervise`](Self::supervise).
+    pub async fn supervise_cloned<A: Actor>(
+        &self,
+        config: impl Into<RestartConfig>,
+        args: A::Args,
+    ) -> Result<ActorId, TellError<()>>
+    where
+        A::Args: Clone,
+    {
+        self.supervise(config, move || A::spawn(args.clone())).await
+    }
+}
+
+/// Runs one spawn from the user's factory and lifts the fresh child into a
+/// [`Spawned`]: its sender-less [`ChildHandle`] plus the one-shot that installs
+/// the supervisor's watch edge (over a transient clone of the child's sender).
+///
+/// The strong [`ActorRef`] is dropped as this returns — the child table never
+/// holds one (ADR-0003) — and the installer's captured sender is itself dropped
+/// the instant the loop calls it, so nothing here pins the child past
+/// registration.
+fn spawn_child<A: Actor>(factory: &mut impl FnMut() -> ActorRef<A>) -> Spawned {
+    let child = factory();
+    let handle = ChildHandle {
+        id: child.id(),
+        cancel: child.cancel_token().clone(),
+        abort: child.abort_handle().clone(),
+    };
+    let install_watch = watch_installer(child.mailbox_sender().clone());
+    Spawned {
+        handle,
+        install_watch,
     }
 }
 

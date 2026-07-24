@@ -12,12 +12,15 @@ use tokio_util::{sync::CancellationToken, time::DelayQueue};
 use crate::{
     actor::{
         Actor, ActorRef, Supervisor, Watch, WeakActorRef,
-        supervision::{Child, Children, SupervisionOp},
+        supervision::{
+            Child, ChildHandle, Children, Spawned, SuperviseReg, SupervisionOp, WatchInstaller,
+            WatchOutcome,
+        },
     },
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{ActorId, MailboxReceiver, Mailboxed, Signal},
     restart::{GiveUp, RestartVerdict, jittered_backoff, should_restart},
-    watch::{LinkDied, LinkReceiver, Watchers},
+    watch::{LinkDied, LinkReceiver, LinkSender, WatchReg, Watchers},
 };
 
 /// The loop's own copies of the cold lifecycle handles (ADR-0010): grouped so the
@@ -50,6 +53,53 @@ pub(super) struct SupervisedState<'a, A: Mailboxed> {
     pub(super) children: &'a mut Children,
     pub(super) retries: &'a mut DelayQueue<ActorId>,
     pub(super) rng: &'a mut Rng,
+    /// The supervisor's own [`ActorId`] — names it as the watcher on every child
+    /// edge the loop installs.
+    pub(super) sup_id: ActorId,
+    /// A clone of the supervisor's own link sender: both the watch registrations
+    /// the loop enqueues on children and any synthetic self-notice ride it. It
+    /// gates only the separate unbounded link channel, never the mailbox, so
+    /// holding it in the loop does not defeat ref-count-driven stop (ADR-0003).
+    pub(super) sup_link_tx: LinkSender,
+}
+
+/// The supervisor's identity as the loop uses it to watch a child: the id that
+/// names it as the watcher, and the link sender the registration — and any
+/// synthetic link-to-dead notice — travels on. Assembled once at the loop head
+/// from [`SupervisedState`] so the watch-install helpers take one argument, not
+/// two.
+struct SupervisorRef {
+    id: ActorId,
+    link_tx: LinkSender,
+}
+
+impl SupervisorRef {
+    /// The `link` registration to enqueue on a child: propagating (`linked =
+    /// true`), because a supervisor MUST react to a child's death.
+    fn watch_reg(&self) -> WatchReg {
+        WatchReg {
+            watcher: self.id,
+            link_tx: self.link_tx.clone(),
+            linked: true,
+        }
+    }
+
+    /// Delivers the synthetic [`AlreadyDead`](ActorStopReason::AlreadyDead)
+    /// notice `register_on` uses onto the supervisor's OWN link channel, so the
+    /// next poll runs [`handle_child_death`] for a table-present `child` and
+    /// rebuilds it. The same failure domain (Erlang's `noproc`): the child's true
+    /// reason is unknowable once its mailbox is gone.
+    fn synthesize_child_death(&self, child: ActorId) {
+        // Unbounded link channel: the send fails only if the supervisor's own
+        // receiver is gone — i.e. the supervisor is already stopping — in which
+        // case the lost notice is moot.
+        let _ = self.link_tx.try_send(LinkDied {
+            id: child,
+            reason: ActorStopReason::AlreadyDead,
+            linked: true,
+            cleanup_failed: false,
+        });
+    }
 }
 
 /// Runs the message loop until a stop condition, returning the stop reason.
@@ -237,9 +287,11 @@ async fn handle_link_died<A: Watch>(
 ///
 /// 1. **the link channel** — a death notice. A supervised child's drives the
 ///    restart policy ([`handle_child_death`]); any other peer's drives the
-///    user's [`Watch::on_link_died`] hook (the #195 path, unchanged). The
-///    `link_open` flag disables this arm once the channel closes, so a ready
-///    `Err` cannot spin the biased select.
+///    user's [`Watch::on_link_died`] hook (the #195 path, unchanged). Unlike the
+///    linked loop, this arm needs no `link_open` disable flag: the loop holds a
+///    clone of the supervisor's own link sender (to install child watch edges),
+///    so the channel never reaches all-senders-gone and `recv_async` never spins
+///    on a ready `Err`.
 /// 2. **the restart-backoff queue** — a child's backoff deadline fired, so the
 ///    incarnation is rebuilt ([`rebuild_child`]). Disabled while
 ///    `retries.is_empty()`: `DelayQueue`'s stream yields `Ready(None)` on an
@@ -267,35 +319,42 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
         children,
         retries,
         rng,
+        sup_id,
+        sup_link_tx,
     } = sup;
-    let mut link_open = true;
+    let supervisor = SupervisorRef {
+        id: sup_id,
+        link_tx: sup_link_tx,
+    };
     loop {
         tokio::select! {
             biased;
-            death = link_rx.recv_async(), if link_open => {
-                match death {
-                    Ok(notice) => {
-                        // A supervised child's death drives restart policy silently;
-                        // any other id is a peer this supervisor merely watches, whose
-                        // death still reaches the user hook (the #195 path). The
-                        // restart handler's own table lookup is the membership test —
-                        // `None` means "not a child, route to the peer hook".
-                        let flow = match handle_child_death(children, retries, rng, &notice) {
-                            Some(flow) => flow,
-                            None => handle_link_died(state, notice).await,
-                        };
-                        if let ControlFlow::Break(reason) = flow {
-                            return reason;
-                        }
+            death = link_rx.recv_async() => {
+                // `SupervisorRef` holds a clone of the supervisor's OWN link
+                // sender for the loop's whole life, so this channel always has a
+                // sender: `recv_async` only ever yields a notice or stays pending,
+                // and the all-senders-gone `Err` the linked loop must disable its
+                // arm against is unreachable here — no `link_open` flag needed. On
+                // the impossible `Err` the arm does nothing and the select waits
+                // again (it cannot spin: `Err` requires zero senders).
+                if let Ok(notice) = death {
+                    // A supervised child's death drives restart policy silently;
+                    // any other id is a peer this supervisor merely watches, whose
+                    // death still reaches the user hook (the #195 path). The
+                    // restart handler's own table lookup is the membership test —
+                    // `None` means "not a child, route to the peer hook".
+                    let flow = match handle_child_death(children, retries, rng, &notice) {
+                        Some(flow) => flow,
+                        None => handle_link_died(state, notice).await,
+                    };
+                    if let ControlFlow::Break(reason) = flow {
+                        return reason;
                     }
-                    // All link senders are gone: stop polling so a ready `Err`
-                    // cannot spin the biased select (as in the linked loop).
-                    Err(_) => link_open = false,
                 }
             }
             next_retry = retries.next(), if !retries.is_empty() => {
                 if let Some(expired) = next_retry {
-                    rebuild_child(children, expired.into_inner()).await;
+                    rebuild_child(children, &supervisor, expired.into_inner());
                 }
             }
             maybe = handles.cancel.run_until_cancelled(mailbox_rx.recv()) => {
@@ -303,7 +362,7 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
                     // The supervised loop gives `Supervision` an effect (the plain
                     // and linked loops ignore it): apply the table mutation here,
                     // so it never reaches `handle_mailbox_step`'s reserved arm.
-                    Some(Signal::Supervision(op)) => apply_supervision_op(children, *op),
+                    Some(Signal::Supervision(op)) => apply_supervision_op(children, &supervisor, *op),
                     other => {
                         if let ControlFlow::Break(reason) =
                             handle_mailbox_step(state, self_ref, handles, watchers, other).await
@@ -378,41 +437,97 @@ fn restart_or_give_up(
     }
 }
 
-/// Rebuilds one child after its backoff deadline fires: runs the erased factory
-/// to spawn a **fresh** incarnation (a new [`ActorId`]), re-keys the table entry
-/// to it, and re-arms the healthy-uptime clock. A rebuilt child is a new actor,
-/// never the resumed corpse (crash-only recovery); its death arrives under the
-/// new id, which is why the table is re-keyed.
+/// Rebuilds one child after its backoff deadline fires: runs the erased,
+/// spawn-only factory for a **fresh** incarnation (a new [`ActorId`]), re-keys the
+/// table entry to it, installs the supervisor's watch edge on the new
+/// incarnation, and re-arms the healthy-uptime clock. A rebuilt child is a new
+/// actor, never the resumed corpse (crash-only recovery); its death arrives under
+/// the new id, which is why the table is re-keyed.
+///
+/// **Watch-after-rekey** (the #196 registration-hazard fix, applied to the
+/// rebuild path too): the edge is installed only once `new_id` is in the table,
+/// so a death cannot be observed for it before the table holds it. Synchronous —
+/// the factory no longer awaits (watch-install left it) — so no borrow of
+/// `children` is held across an await.
 ///
 /// A miss — `old_id` no longer in the table — is a reported no-op: an
 /// `unsupervise`/`stop_child` can remove the entry while the deadline is pending,
 /// and that race must not resurrect it (the #195 `Unwatch`-race carry-forward).
-async fn rebuild_child(children: &mut Children, old_id: ActorId) {
-    // Call the factory under a borrow that ends BEFORE the await: the factory
-    // returns a `'static` future, so no borrow of `children` is held across
-    // `.await` — which is what frees the re-key below to reborrow the table.
-    let Some(rebuilt) = children.get_mut(old_id).map(|child| (child.factory)()) else {
+fn rebuild_child(children: &mut Children, sup: &SupervisorRef, old_id: ActorId) {
+    // Call the factory under a borrow that ends where the `map` returns: it hands
+    // back an owned `Spawned`, so no borrow of `children` outlives this line and
+    // the re-key below is free to reborrow the table.
+    let Some(Spawned {
+        handle,
+        install_watch,
+    }) = children.get_mut(old_id).map(|child| (child.factory)())
+    else {
         return;
     };
-    let handle = rebuilt.await;
     let new_id = handle.id();
-    // Re-key BEFORE storing the handle. A raced removal (`unsupervise`/`stop_child`
-    // between the deadline and here) makes `rekey` a no-op, and the fresh
-    // incarnation is left unsupervised rather than re-inserted under a stale key.
-    if children.rekey(old_id, new_id)
-        && let Some(child) = children.get_mut(new_id)
-    {
-        child.handle = Some(handle);
-        child.tracker.record_started(Instant::now());
+    // Re-key BEFORE watching or storing the handle. A raced removal
+    // (`unsupervise`/`stop_child` between the deadline and here) makes `rekey` a
+    // no-op, and the fresh incarnation is left unsupervised rather than
+    // re-inserted under a stale key.
+    if children.rekey(old_id, new_id) {
+        install_child_watch(sup, &handle, install_watch);
+        if let Some(child) = children.get_mut(new_id) {
+            child.handle = Some(handle);
+            child.tracker.record_started(Instant::now());
+        }
+    }
+}
+
+/// Installs the supervisor's watch edge on a freshly-spawned child — the caller
+/// guarantees the child is ALREADY in the table, which is the whole of the #196
+/// registration-hazard fix: a death cannot be observed for an id the table holds,
+/// then routed to the peer-watch hook that would kill the supervisor.
+///
+/// The install is a single non-blocking `try_send` (inside `install_watch`),
+/// never an await, so a slow child can never stall the loop. Its three outcomes:
+///
+/// - [`Installed`](WatchOutcome::Installed): the edge is live; done.
+/// - [`Closed`](WatchOutcome::Closed): the child died in its unwatched window, so
+///   its own notice never reached us — synthesize the `AlreadyDead` one, which the
+///   next poll turns into a restart (the child is table-present).
+/// - [`Full`](WatchOutcome::Full): the child was flooded before we could watch it.
+///   A bounded wait here would stall ALL supervision, so the child is killed and
+///   synthesized as an immediate failed incarnation; the restart policy then
+///   rebuilds it (or, under `Never`, leaves it dead — the caller's intent).
+fn install_child_watch(sup: &SupervisorRef, handle: &ChildHandle, install_watch: WatchInstaller) {
+    match install_watch(sup.watch_reg()) {
+        WatchOutcome::Installed => {}
+        WatchOutcome::Full => {
+            handle.cancel.cancel();
+            handle.abort.abort();
+            sup.synthesize_child_death(handle.id);
+        }
+        WatchOutcome::Closed => sup.synthesize_child_death(handle.id),
     }
 }
 
 /// Applies a child-table [`SupervisionOp`] that arrived on the supervisor's own
 /// mailbox. The table is task-owned, so this is its ONLY writer — no lock, and
 /// no ordering rule beyond the mailbox's FIFO.
-fn apply_supervision_op(children: &mut Children, op: SupervisionOp) {
+fn apply_supervision_op(children: &mut Children, sup: &SupervisorRef, op: SupervisionOp) {
     match op {
-        SupervisionOp::Add(reg) => children.insert(reg.id, reg.child),
+        // Insert FIRST, then install the watch edge on the first incarnation:
+        // once the table holds `id`, a death for it routes to the restart policy,
+        // never to the peer-watch hook (the #196 registration-hazard fix). The
+        // handle is cloned out before the move so the watch-install can name the
+        // child after `child` is consumed by `insert`.
+        SupervisionOp::Add(reg) => {
+            let SuperviseReg {
+                child,
+                id,
+                install_watch,
+            } = reg;
+            let first_handle = child.handle.clone();
+            children.insert(id, child);
+            if let Some(handle) = first_handle {
+                install_child_watch(sup, &handle, install_watch);
+            }
+        }
         // Drop the supervision edge; the child keeps running, now unwatched.
         SupervisionOp::Remove(id) => {
             children.remove(id);
@@ -481,19 +596,39 @@ async fn run_on_panic<A: Actor>(
 mod supervised_tests {
     use core::time::Duration;
 
-    use futures::{FutureExt, stream::AbortHandle};
+    use futures::stream::AbortHandle;
     use tokio::time::Instant;
     use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
-    use super::{apply_supervision_op, handle_child_death};
+    use super::{
+        SupervisorRef, apply_supervision_op, handle_child_death, install_child_watch, rebuild_child,
+    };
     use crate::{
-        actor::supervision::{Child, ChildHandle, Children, SuperviseReg, SupervisionOp},
+        actor::supervision::{
+            Child, ChildHandle, Children, RebuildFactory, Spawned, SuperviseReg, SupervisionOp,
+            WatchInstaller, WatchOutcome, watch_installer,
+        },
         error::{ActorStopReason, PanicError, PanicReason},
-        mailbox::ActorId,
+        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
+        message::Msg,
         restart::{RestartConfig, RestartPolicy, RestartTracker},
-        watch::LinkDied,
+        watch::{LinkDied, LinkReceiver},
     };
     use core::ops::ControlFlow;
+
+    /// A minimal actor purely to key a real mailbox in the watch-install tests —
+    /// its `Msg` is never handled here, only enqueued and drained.
+    struct Probe;
+    #[derive(Debug)]
+    struct ProbeMsg;
+    impl Msg for ProbeMsg {}
+    impl Mailboxed for Probe {
+        type Msg = ProbeMsg;
+    }
+
+    fn cap(n: usize) -> Capacity {
+        Capacity::try_from(n).expect("valid test capacity")
+    }
 
     /// A throwaway [`ChildHandle`] — the decision tests never actually stop
     /// anything, so the stop edges are inert.
@@ -506,11 +641,27 @@ mod supervised_tests {
         }
     }
 
+    /// A no-op watch installer that claims success without touching a mailbox —
+    /// the table/decision tests never install a real edge.
+    fn noop_installer() -> WatchInstaller {
+        Box::new(|_reg| WatchOutcome::Installed)
+    }
+
+    /// A [`SupervisorRef`] plus the receiver a synthesized notice lands on, so a
+    /// test can both drive `install_child_watch` and observe what it delivered.
+    fn supervisor(id: ActorId) -> (SupervisorRef, LinkReceiver) {
+        let (link_tx, link_rx) = flume::unbounded();
+        (SupervisorRef { id, link_tx }, link_rx)
+    }
+
     /// A live child entry under `config`, its current incarnation freshly
     /// started at `started`.
     fn child(config: RestartConfig, started: Instant) -> Child {
         Child {
-            factory: Box::new(move || async move { handle(ActorId::new(999)) }.boxed()),
+            factory: Box::new(move || Spawned {
+                handle: handle(ActorId::new(999)),
+                install_watch: noop_installer(),
+            }),
             handle: Some(handle(ActorId::new(1))),
             config,
             tracker: RestartTracker::new(started),
@@ -678,13 +829,16 @@ mod supervised_tests {
     /// the edge and cancels + aborts the child's stop edges.
     #[tokio::test]
     async fn supervision_ops_mutate_the_table() {
+        let (sup, _link_rx) = supervisor(ActorId::new(100));
         let mut children = Children::new();
         let id = ActorId::new(1);
         apply_supervision_op(
             &mut children,
+            &sup,
             SupervisionOp::Add(SuperviseReg {
                 child: child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
                 id,
+                install_watch: noop_installer(),
             }),
         );
         assert!(children.get_mut(id).is_some(), "Add installs the child");
@@ -694,7 +848,7 @@ mod supervised_tests {
             let entry = children.get_mut(id).expect("present");
             entry.handle.clone().expect("live incarnation")
         };
-        apply_supervision_op(&mut children, SupervisionOp::Stop(id));
+        apply_supervision_op(&mut children, &sup, SupervisionOp::Stop(id));
         assert!(children.get_mut(id).is_none(), "Stop drops the edge");
         assert!(
             stop_edges.cancel.is_cancelled(),
@@ -709,20 +863,167 @@ mod supervised_tests {
         let other = ActorId::new(2);
         apply_supervision_op(
             &mut children,
+            &sup,
             SupervisionOp::Add(SuperviseReg {
                 child: child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
                 id: other,
+                install_watch: noop_installer(),
             }),
         );
         let survivor = {
             let entry = children.get_mut(other).expect("present");
             entry.handle.clone().expect("live incarnation")
         };
-        apply_supervision_op(&mut children, SupervisionOp::Remove(other));
+        apply_supervision_op(&mut children, &sup, SupervisionOp::Remove(other));
         assert!(children.get_mut(other).is_none(), "Remove drops the edge");
         assert!(
             !survivor.cancel.is_cancelled() && !survivor.abort.is_aborted(),
             "Remove leaves the child running — no stop edge is driven",
+        );
+    }
+
+    /// The registration-hazard fix, happy path: installing the watch on an OPEN
+    /// child enqueues the supervisor's propagating `link` edge onto the child's
+    /// mailbox and synthesizes no death. The watcher on the enqueued reg is the
+    /// supervisor — this is the edge that later carries the child's death back.
+    #[tokio::test]
+    async fn install_child_watch_enqueues_the_edge_on_an_open_child() {
+        let (sup, link_rx) = supervisor(ActorId::new(100));
+        let child_id = ActorId::new(9);
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), child_id);
+        install_child_watch(&sup, &handle(child_id), watch_installer(tx));
+
+        assert!(
+            link_rx.try_recv().is_err(),
+            "an installed edge self-heals nothing",
+        );
+        let signal = rx.drain().next().expect("the watch reg reached the child");
+        let Signal::Watch(reg) = signal else {
+            panic!("expected a queued Watch reg");
+        };
+        assert_eq!(
+            reg.watcher,
+            ActorId::new(100),
+            "the supervisor is the watcher"
+        );
+        assert!(reg.linked, "a supervisor watches with a propagating link");
+    }
+
+    /// @bug (card #196 Task-10 review) The self-healing heart of the hazard fix: a
+    /// child that died in its UNWATCHED window (spawn → loop insert) closed its
+    /// mailbox, so `try_send` fails and the supervisor never received a real
+    /// notice. `install_child_watch` must synthesize the `AlreadyDead` notice on
+    /// the supervisor's own channel — a restart-worthy death — rather than drop
+    /// it. FAILS if the closed-mailbox branch is a silent no-op: the child would
+    /// then never restart, a permanently missed death.
+    #[tokio::test]
+    async fn install_child_watch_synthesizes_alreadydead_when_child_died_unwatched() {
+        let (sup, link_rx) = supervisor(ActorId::new(100));
+        let child_id = ActorId::new(7);
+        let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), child_id);
+        drop(rx); // the child died before the loop could watch it -> mailbox closed
+        install_child_watch(&sup, &handle(child_id), watch_installer(tx));
+
+        let notice = link_rx
+            .try_recv()
+            .expect("a lost unwatched death must be synthesized, never dropped");
+        assert_eq!(
+            notice.id, child_id,
+            "the synthetic notice names the dead child"
+        );
+        assert!(
+            matches!(notice.reason, ActorStopReason::AlreadyDead),
+            "self-healed as AlreadyDead (Erlang noproc), got {:?}",
+            notice.reason,
+        );
+        assert!(notice.linked, "a supervisor edge is a propagating link");
+    }
+
+    /// A child flooded before the loop could watch it (`try_send` reports `Full`)
+    /// is not waited on — a bounded wait would stall ALL supervision. It is killed
+    /// (cancel + abort) and synthesized as an immediate `AlreadyDead` failure, so
+    /// the restart policy rebuilds it. Proves the loop never blocks on a full
+    /// child mailbox.
+    #[tokio::test]
+    async fn install_child_watch_kills_and_synthesizes_when_child_mailbox_full() {
+        let (sup, link_rx) = supervisor(ActorId::new(100));
+        let child_id = ActorId::new(8);
+        let (tx, _rx) = Mailbox::<Probe>::bounded(cap(1), child_id);
+        tx.try_send(Signal::Stop).expect("the one slot fills");
+        let h = handle(child_id);
+        install_child_watch(&sup, &h, watch_installer(tx));
+
+        assert!(h.cancel.is_cancelled(), "a flooded child is cancelled...");
+        assert!(h.abort.is_aborted(), "...and hard-aborted, never waited on");
+        let notice = link_rx
+            .try_recv()
+            .expect("the killed incarnation is synthesized as a death");
+        assert_eq!(notice.id, child_id);
+        assert!(matches!(notice.reason, ActorStopReason::AlreadyDead));
+    }
+
+    /// @bug (card #196 Task-10 review) The rebuild-path half of the hazard fix:
+    /// `rebuild_child` re-keys the table to the fresh incarnation and THEN installs
+    /// the watch edge on it — so a death can never precede the table entry. Proven
+    /// by draining the rebuilt child's mailbox and finding the supervisor's watch
+    /// reg. FAILS if the rebuild ever installs the edge before (or instead of) the
+    /// re-key, or skips it.
+    #[tokio::test]
+    async fn rebuild_installs_the_watch_edge_on_the_rebuilt_incarnation() {
+        use std::sync::{Arc, Mutex};
+
+        let (sup, sup_link_rx) = supervisor(ActorId::new(100));
+        let new_id = ActorId::new(50);
+        // The factory stashes the fresh child's receiver so the test can prove the
+        // rebuilt incarnation actually received the supervisor's watch reg.
+        let stashed: Arc<Mutex<Option<MailboxReceiver<Probe>>>> = Arc::new(Mutex::new(None));
+        let slot = Arc::clone(&stashed);
+        let factory: RebuildFactory = Box::new(move || {
+            let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), new_id);
+            *slot.lock().expect("lock") = Some(rx);
+            Spawned {
+                handle: handle(new_id),
+                install_watch: watch_installer(tx),
+            }
+        });
+        let old_id = ActorId::new(1);
+        let mut children = Children::new();
+        children.insert(
+            old_id,
+            Child {
+                factory,
+                handle: None, // in the backoff window: no live incarnation
+                config: RestartConfig::new(RestartPolicy::Permanent),
+                tracker: RestartTracker::new(Instant::now()),
+            },
+        );
+
+        rebuild_child(&mut children, &sup, old_id);
+
+        assert!(
+            children.get_mut(new_id).is_some(),
+            "the table is re-keyed to the rebuilt id",
+        );
+        assert!(children.get_mut(old_id).is_none(), "the old key is gone");
+        let mut guard = stashed.lock().expect("lock");
+        let mut rx = guard
+            .take()
+            .expect("the factory spawned a fresh incarnation");
+        let signal = rx
+            .drain()
+            .next()
+            .expect("the watch reg reached the rebuilt child");
+        let Signal::Watch(reg) = signal else {
+            panic!("expected a queued Watch reg on the rebuilt child");
+        };
+        assert_eq!(
+            reg.watcher,
+            ActorId::new(100),
+            "the supervisor watches the rebuilt incarnation",
+        );
+        assert!(
+            sup_link_rx.try_recv().is_err(),
+            "an open rebuild synthesizes no death",
         );
     }
 

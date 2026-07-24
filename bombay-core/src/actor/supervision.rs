@@ -2,10 +2,12 @@
 //! erased rebuild edge.
 //!
 //! The factory closure is the feature's ONLY `dyn`. It is the one place the
-//! child's concrete type is in scope — spawn, watch-install, and any registry
-//! rebinding all live inside it — so erasing there is what lets a supervisor
+//! child's concrete type is in scope — spawn and the erased watch-installer it
+//! hands back both live inside it — so erasing there is what lets a supervisor
 //! hold children of several types in one homogeneous table without the
-//! supervisor's own type growing a parameter per child.
+//! supervisor's own type growing a parameter per child. The factory itself is
+//! **spawn-only**: it never installs the watch edge (the loop does, after the
+//! table insert), which is what closes the #196 registration hazard.
 //!
 //! A factory must never capture a strong [`ActorRef`](crate::actor::ActorRef) of
 //! the supervisor OR of a child: a strong ref pins liveness, which makes
@@ -21,13 +23,14 @@
 //!
 //! [`Watchers`]: crate::watch::Watchers
 
-use futures::{future::BoxFuture, stream::AbortHandle};
+use futures::stream::AbortHandle;
 use smallvec::SmallVec;
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    mailbox::ActorId,
+    mailbox::{ActorId, MailboxSender, Mailboxed, Signal, TrySendError},
     restart::{RestartConfig, RestartTracker},
+    watch::WatchReg,
 };
 
 /// A non-generic handle to one child incarnation: its identity and its two stop
@@ -56,21 +59,88 @@ impl ChildHandle {
     }
 }
 
-/// The erased rebuild edge: spawn a fresh incarnation, install the supervisor's
-/// watch edge on it, and hand back the new [`ChildHandle`].
+/// What installing the supervisor's watch edge on a freshly-spawned child did.
 ///
-/// `FnMut`, not `FnOnce` — a child is rebuilt as many times as its budget
-/// allows. The future is boxed because edge installation awaits (the
-/// registration rides the child's bounded mailbox); that is **one box per
-/// rebuild**, never per message.
+/// The install is a single non-blocking [`try_send`](crate::mailbox::MailboxSender::try_send)
+/// of a [`Signal::Watch`](crate::mailbox::Signal::Watch) onto the child's bounded
+/// mailbox — never an `await`, so a slow or flooded child can never stall the
+/// supervisor's loop. The three outcomes are exactly `try_send`'s three results.
+pub enum WatchOutcome {
+    /// The registration was accepted: the watch edge is live and the child is
+    /// supervised. The normal case — a freshly-spawned child's mailbox is empty.
+    Installed,
+    /// The child's mailbox was **full** — it was flooded in the window between
+    /// its spawn and the loop's watch-install. The child is alive but
+    /// unwatchable without waiting; the loop treats this as an immediate failed
+    /// incarnation rather than blocking on a bounded send.
+    Full,
+    /// The child's mailbox was **closed** — it died in the unwatched window
+    /// between its spawn (in the caller's task) and the loop's table insert. Its
+    /// own death notice never reached the supervisor (it was not yet a watcher),
+    /// so the loop synthesizes the [`AlreadyDead`](crate::error::ActorStopReason::AlreadyDead)
+    /// notice `register_on` uses, self-healing the lost death into a restart.
+    Closed,
+}
+
+/// The one-shot that installs the supervisor's watch edge on a freshly-spawned
+/// child, produced alongside the child's [`ChildHandle`] by the factory.
 ///
-/// Infallible on purpose: the only failure the install can report is
-/// [`ActorNotLinked`](crate::error::ActorNotLinked), which depends on how the
-/// *supervisor* was spawned and so cannot vary between rebuilds — it is checked
-/// once, where the factory is built. A child that spawns but then fails
-/// `on_start` is not a factory failure: it is a live actor that dies, and it
-/// reports itself through the ordinary death notice.
-pub type RebuildFactory = Box<dyn FnMut() -> BoxFuture<'static, ChildHandle> + Send>;
+/// It is the ONE place a child's concrete type outlives `spawn`: it captures the
+/// child's typed [`MailboxSender`](crate::mailbox::MailboxSender) — the sender
+/// [`ChildHandle`] deliberately withholds — to enqueue the watch registration.
+/// The loop calls it exactly once, immediately after the table insert, and drops
+/// it; the captured strong sender therefore **never outlives registration**, so
+/// the sender-less [`ChildHandle`] the table keeps cannot pin the child (ADR-0003).
+///
+/// `FnOnce`: one incarnation is watched once. A *rebuild* mints a fresh installer
+/// from the next factory call.
+pub type WatchInstaller = Box<dyn FnOnce(WatchReg) -> WatchOutcome + Send>;
+
+/// Builds the one-shot [`WatchInstaller`] over a child incarnation's typed
+/// mailbox `sender`. On call it enqueues the supervisor's watch registration
+/// with a single non-blocking [`try_send`](MailboxSender::try_send) and reports
+/// the outcome; then the closure — and the strong `sender` it captured — is
+/// dropped, so the sender never outlives registration and the table's
+/// sender-less [`ChildHandle`] cannot pin the child (ADR-0003).
+pub fn watch_installer<A: Mailboxed + 'static>(sender: MailboxSender<A>) -> WatchInstaller {
+    Box::new(
+        move |reg| match sender.try_send(Signal::Watch(Box::new(reg))) {
+            Ok(()) => WatchOutcome::Installed,
+            Err(TrySendError::Full(_)) => WatchOutcome::Full,
+            Err(TrySendError::Closed(_)) => WatchOutcome::Closed,
+        },
+    )
+}
+
+/// A freshly-spawned child incarnation as the factory hands it back: its
+/// sender-less [`ChildHandle`] plus the one-shot that installs the supervisor's
+/// watch edge on it.
+///
+/// The two are split so the watch edge can be installed **by the loop, after the
+/// table insert** — the ordering that closes the registration hazard (#196): a
+/// death can never be observed for an id the table does not yet hold, so it can
+/// never route to the peer-watch hook and kill the supervisor.
+pub struct Spawned {
+    /// The child's identity and stop edges.
+    pub(crate) handle: ChildHandle,
+    /// Installs the supervisor's watch edge; consumed once by the loop.
+    pub(crate) install_watch: WatchInstaller,
+}
+
+/// The erased rebuild edge: spawn a fresh incarnation and hand back its
+/// [`Spawned`] (handle + watch installer). **Spawn-only** — it never installs the
+/// watch edge itself; the loop does, after the table insert.
+///
+/// `FnMut`, not `FnOnce` — a child is rebuilt as many times as its budget allows.
+/// **Synchronous**: spawning is non-blocking (`spawn` returns immediately) and
+/// the watch-install left the factory, so there is nothing left to `await` — one
+/// fewer boxed future per rebuild than the awaiting-install design would cost.
+///
+/// A child that spawns but then fails `on_start` is not a factory failure: it is
+/// a live actor that dies, and it reports itself through the ordinary death
+/// notice (or, if it died before the loop watched it, through the synthetic
+/// [`WatchOutcome::Closed`] path).
+pub type RebuildFactory = Box<dyn FnMut() -> Spawned + Send>;
 
 /// One supervised child in the loop-owned table: how to rebuild it, its current
 /// incarnation, and its restart tuning plus accounting.
@@ -98,6 +168,11 @@ pub struct SuperviseReg {
     pub(crate) child: Child,
     /// The key to install it under: the first incarnation's id.
     pub(crate) id: ActorId,
+    /// Installs the supervisor's watch edge on the first incarnation, run by the
+    /// loop **after** [`child`](Self::child) is in the table — never before, or a
+    /// death racing the insert would route to the peer-watch hook (the #196
+    /// registration hazard).
+    pub(crate) install_watch: WatchInstaller,
 }
 
 /// A child-table operation shipped over the supervisor's own mailbox.
@@ -201,11 +276,11 @@ impl Children {
 mod tests {
     use core::time::Duration;
 
-    use futures::{FutureExt, stream::AbortHandle};
+    use futures::stream::AbortHandle;
     use tokio::time::Instant;
     use tokio_util::sync::CancellationToken;
 
-    use super::{Child, ChildHandle, Children};
+    use super::{Child, ChildHandle, Children, Spawned, WatchInstaller, WatchOutcome};
     use crate::{
         mailbox::ActorId,
         restart::{RestartConfig, RestartPolicy, RestartTracker},
@@ -222,11 +297,20 @@ mod tests {
         }
     }
 
+    /// A no-op watch installer — the table tests never install a watch, so a
+    /// closure that claims success without touching a mailbox is enough.
+    fn noop_installer() -> WatchInstaller {
+        Box::new(|_reg| WatchOutcome::Installed)
+    }
+
     /// A `Child` whose factory rebuilds the same id forever. The table never
     /// calls the factory, so a fixed handle is the whole of what it needs.
     fn child_entry(id: ActorId) -> Child {
         Child {
-            factory: Box::new(move || async move { handle(id) }.boxed()),
+            factory: Box::new(move || Spawned {
+                handle: handle(id),
+                install_watch: noop_installer(),
+            }),
             handle: Some(handle(id)),
             config: RestartConfig::new(RestartPolicy::Permanent),
             tracker: RestartTracker::new(Instant::now()),
@@ -335,15 +419,15 @@ mod tests {
     /// The factory is an erased rebuild edge, so it must actually be callable and
     /// re-callable — `FnMut`, not `FnOnce`. A table whose factory could only run
     /// once would supervise exactly one restart.
-    #[tokio::test]
-    async fn the_factory_can_be_invoked_repeatedly() {
+    #[test]
+    fn the_factory_can_be_invoked_repeatedly() {
         let mut children = Children::new();
         children.insert(ActorId::new(1), child_entry(ActorId::new(5)));
         let entry = children.get_mut(ActorId::new(1)).expect("present");
 
-        assert_eq!((entry.factory)().await.id(), ActorId::new(5));
+        assert_eq!((entry.factory)().handle.id(), ActorId::new(5));
         assert_eq!(
-            (entry.factory)().await.id(),
+            (entry.factory)().handle.id(),
             ActorId::new(5),
             "the rebuild edge survives its first use",
         );
