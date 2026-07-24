@@ -19,11 +19,13 @@ mod actor_ref;
 mod kind;
 mod recipient;
 mod spawn;
+mod supervision;
 
 pub use self::{
     actor_ref::{ActorRef, WeakActorRef},
     recipient::{Recipient, RecipientAskRequest, ReplyRecipient, WeakRecipient},
     spawn::{DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult},
+    supervision::{ChildHandle, SuperviseReg, SupervisionOp},
 };
 
 /// A single-writer, identity-agnostic unit of concurrency: owned state behind a

@@ -120,6 +120,11 @@ async fn handle_mailbox_step<A: Actor>(
             watchers.remove(id);
             ControlFlow::Continue(())
         }
+        // An unsupervised loop owns no child table, so there is nothing to apply
+        // the op to. Reserved-arm shape, exactly as `LinkDied` was before #195
+        // made it real: the supervised loop (the next slice of #196) is what
+        // gives this signal an effect.
+        Signal::Supervision(_) => ControlFlow::Continue(()),
     }
 }
 

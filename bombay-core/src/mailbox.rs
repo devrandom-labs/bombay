@@ -35,6 +35,7 @@ use std::{
 use flume::r#async::SendFut;
 
 use crate::{
+    actor::SupervisionOp,
     error::ActorStopReason,
     watch::{LinkDied, WatchReg},
 };
@@ -167,6 +168,11 @@ pub enum Signal<A: Mailboxed> {
     Watch(Box<WatchReg>),
     /// Deregister a watcher by id (the `unwatch` path).
     Unwatch(ActorId),
+    /// A supervision-table operation for the supervisor's loop (card #196).
+    /// Boxed for the same reason [`Watch`](Self::Watch) is: the op embeds a
+    /// restart config plus an erased rebuild factory, and every queue slot costs
+    /// the largest variant — inlining it would tax the hot `Message` path.
+    Supervision(Box<SupervisionOp>),
 }
 
 /// The construction namespace for an actor's mailbox.
@@ -443,7 +449,7 @@ impl<A: Mailboxed> Future for SendMessageFut<'_, A> {
                 Signal::Message {
                     msg: undelivered, ..
                 } => undelivered,
-                Signal::Stop | Signal::Watch(_) | Signal::Unwatch(_) => {
+                Signal::Stop | Signal::Watch(_) | Signal::Unwatch(_) | Signal::Supervision(_) => {
                     unreachable!("send_message enqueues only Signal::Message")
                 }
             })
@@ -639,18 +645,20 @@ mod tests {
     }
 
     #[test]
-    fn link_died_variant_is_boxed_so_message_slots_stay_small() {
+    fn cold_variants_are_boxed_so_message_slots_stay_small() {
         use std::mem::size_of;
 
-        // The cold LinkDied variant is boxed, so a small-message actor's queue
+        // Every cold control variant is boxed — `Watch(Box<WatchReg>)` and
+        // `Supervision(Box<SupervisionOp>)` — so a small-message actor's queue
         // slot is bounded by the hot Message path: `msg` + the embedded
-        // `self_sender` (one Arc pointer, ADR-0003) + a discriminant word. If
-        // LinkDied were inlined, its fat StopReason (a `String`) would blow this
-        // bound. Guards the "every slot = largest variant" trap.
+        // `self_sender` (one Arc pointer, ADR-0003) + a discriminant word.
+        // Inlined, `WatchReg` (a `flume::Sender` + id + flag) or `SupervisionOp`
+        // (a `RestartConfig` + an erased factory + a tracker) would blow this
+        // bound for EVERY message. Guards the "every slot = largest variant" trap.
         let hot_bound = size_of::<u64>() + size_of::<MailboxSender<Probe>>() + size_of::<usize>();
         assert!(
             size_of::<Signal<Probe>>() <= hot_bound,
-            "Signal<Probe> slot is {} bytes (hot bound {hot_bound}); LinkDied is not boxed",
+            "Signal<Probe> slot is {} bytes (hot bound {hot_bound}); a cold variant is not boxed",
             size_of::<Signal<Probe>>()
         );
     }

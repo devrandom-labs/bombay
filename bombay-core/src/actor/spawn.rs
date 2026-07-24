@@ -326,7 +326,12 @@ fn apply_raced_registrations<A: Actor>(
         match signal {
             Signal::Watch(reg) => watchers.apply(*reg),
             Signal::Unwatch(id) => watchers.remove(id),
-            Signal::Message { .. } | Signal::Stop => {}
+            // A `Supervision` op that raced the stop is discarded with the rest
+            // of the backlog: this actor is going away, so there is no table
+            // left for it to reach. Its already-spawned first incarnation
+            // outlives the registration unsupervised — the supervised teardown
+            // (the next slice of #196) is where that child gets stopped.
+            Signal::Message { .. } | Signal::Stop | Signal::Supervision(_) => {}
         }
     }
 }

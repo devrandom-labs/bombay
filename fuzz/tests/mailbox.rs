@@ -100,7 +100,10 @@ fn mailbox_state_machine() {
                             .drain()
                             .map(|s| match s {
                                 Signal::Message { msg, .. } => msg,
-                                Signal::Stop | Signal::Watch(_) | Signal::Unwatch(_) => {
+                                Signal::Stop
+                                | Signal::Watch(_)
+                                | Signal::Unwatch(_)
+                                | Signal::Supervision(_) => {
                                     unreachable!("only Message enqueued, got a control signal")
                                 }
                             })
