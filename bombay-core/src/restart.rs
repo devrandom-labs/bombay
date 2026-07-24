@@ -79,8 +79,12 @@ impl Jitter {
     /// Builds a jitter magnitude, clamping `percent` into `0..=100`.
     #[must_use]
     pub const fn percent(percent: u8) -> Self {
-        // `u8::min` is not `const`; the branch is the const-compatible clamp.
-        Self(if percent > 100 { 100 } else { percent })
+        // A range pattern, not `u8::min` (not `const`) and not a comparison:
+        // the in-range values pass through, everything else is the ceiling.
+        Self(match percent {
+            0..=100 => percent,
+            _ => 100,
+        })
     }
 
     /// The clamped percent, `0..=100`.
@@ -205,10 +209,10 @@ impl From<RestartPolicy> for RestartConfig {
 /// `min_backoff · 2^(consecutive - 1)`, capped at
 /// [`max_backoff`](RestartConfig::max_backoff).
 ///
-/// The cap is reached by **explicit branch** on every route — a large exponent,
-/// an exponent too large to shift, or a product too large to represent — never
-/// by `saturating_*`, which would leave "hit the ceiling on purpose" and
-/// "overflowed by accident" indistinguishable in the same value.
+/// Every route to the cap is taken **deliberately** — an exponent past the
+/// ceiling, an exponent too large to shift, a product too large to represent —
+/// and never through `saturating_*`, which would leave "hit the ceiling on
+/// purpose" and "overflowed by accident" as the same indistinguishable value.
 ///
 /// `consecutive` is 1-based — the give-up accounting hands out `attempt: 1` for
 /// the first retry. A `0` is outside that contract and is treated as the first
@@ -225,10 +229,9 @@ pub fn base_backoff(cfg: &RestartConfig, consecutive: u32) -> Duration {
     else {
         return cfg.max_backoff;
     };
-    match cfg.min_backoff.checked_mul(factor) {
-        Some(delay) if delay < cfg.max_backoff => delay,
-        _ => cfg.max_backoff,
-    }
+    cfg.min_backoff
+        .checked_mul(factor)
+        .map_or(cfg.max_backoff, |delay| delay.min(cfg.max_backoff))
 }
 
 /// [`base_backoff`] lengthened by a random `0..=jitter%`, so children that fail
@@ -287,7 +290,8 @@ pub enum GiveUp {
     },
     /// A budget tripped: stop rebuilding and escalate.
     Yes {
-        /// Lifetime failures observed for this child, including this one.
+        /// Lifetime failures observed for this child, including this one —
+        /// pinned at [`u32::MAX`] once the counter has no room left.
         rebuilds: u32,
     },
 }
@@ -361,6 +365,8 @@ impl RestartTracker {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
     use proptest::{prop_assert, proptest};
 
     use super::*;
@@ -720,7 +726,7 @@ mod tests {
             delays.iter().any(|&d| d > base),
             "20% jitter must lengthen at least one of 64 draws",
         );
-        let distinct: std::collections::BTreeSet<Duration> = delays.iter().copied().collect();
+        let distinct: BTreeSet<Duration> = delays.iter().copied().collect();
         assert!(distinct.len() > 1, "delays must vary, got {distinct:?}");
         assert!(
             delays.iter().all(|&d| d >= base && d <= base + base / 5),
@@ -907,21 +913,23 @@ mod tests {
         );
     }
 
-    /// Recording a start arms the reset clock and touches neither counter.
+    /// Recording a start re-arms the reset clock and touches neither counter: a
+    /// fresh incarnation has *no* uptime yet, so the long-lived previous one
+    /// stops earning resets. A `record_started` that did nothing would leave the
+    /// stale start in place and hand out a reset on every subsequent failure.
     #[test]
-    fn record_started_leaves_the_counters_alone() {
+    fn record_started_rearms_the_reset_clock() {
         let cfg = RestartConfig::new(RestartPolicy::Transient);
-        let start = t0();
-        let mut tracker = RestartTracker::new(start);
+        let long_ago = t0();
+        let now = long_ago + cfg.reset_after * 2;
+        let mut tracker = RestartTracker::new(long_ago);
+        assert_eq!(tracker.record_failure(&cfg, now), GiveUp::No { attempt: 1 });
+
+        tracker.record_started(now);
         assert_eq!(
-            tracker.record_failure(&cfg, start),
-            GiveUp::No { attempt: 1 }
-        );
-        tracker.record_started(start);
-        assert_eq!(
-            tracker.record_failure(&cfg, start),
+            tracker.record_failure(&cfg, now),
             GiveUp::No { attempt: 2 },
-            "an immediate restart is not healthy uptime",
+            "the new incarnation has no healthy uptime, so no reset",
         );
     }
 
