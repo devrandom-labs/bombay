@@ -8,9 +8,10 @@
 use core::time::Duration;
 
 use fastrand::Rng;
-// `tokio`'s `Instant`, not `std`'s: it reads the runtime's clock, so the
-// supervision tests can drive restart timing under `start_paused` instead of
-// sleeping in real time.
+// `tokio`'s `Instant`, not `std`'s. Nothing here reads a clock — instants are
+// handed in — but the callers' instants come from `Instant::now()`, which under
+// `start_paused` reads the runtime's virtual clock. Taking `std`'s type would
+// force those callers to convert or to sleep in real time.
 use tokio::time::Instant;
 
 use crate::error::ActorStopReason;
@@ -121,8 +122,12 @@ pub struct RestartConfig {
     /// Randomness added on top of the computed delay, de-synchronizing children
     /// that fail together.
     pub jitter: Jitter,
-    /// Uptime after which an incarnation counts as healthy, zeroing the
-    /// consecutive counter.
+    /// Uptime an incarnation must reach (inclusive) to count as healthy,
+    /// zeroing the consecutive counter.
+    ///
+    /// [`Duration::ZERO`] therefore **disables the consecutive trip**: every
+    /// incarnation is healthy the instant it starts, so only
+    /// [`max_total`](Self::max_total) can ever trip.
     pub reset_after: Duration,
     /// How long a child gets to shut down cleanly before it is killed.
     pub stop_grace: Duration,
@@ -237,9 +242,9 @@ pub fn base_backoff(cfg: &RestartConfig, consecutive: u32) -> Duration {
 /// [`base_backoff`] lengthened by a random `0..=jitter%`, so children that fail
 /// together do not retry together.
 ///
-/// The generator is passed in and **seedable**: a deterministic simulation
-/// fixes the seed and asserts exact delays, instead of setting jitter to zero
-/// and leaving this path untested.
+/// The generator is passed in and **seedable**: a fixed seed yields the same
+/// delay sequence, so a deterministic simulation can replay restart timing
+/// exactly instead of setting jitter to zero and leaving this path untested.
 ///
 /// Divide-then-multiply (`base / 100 * percent`) is deliberate: `base *
 /// percent` is un-representable for a near-[`Duration::MAX`] ceiling, while
@@ -272,7 +277,11 @@ pub fn jittered_backoff(cfg: &RestartConfig, consecutive: u32, rng: &mut Rng) ->
 ///
 /// Pure: the clock is passed in at every call, never read here, so restart
 /// timing is exactly reproducible in tests and simulations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+///
+/// The counters advance together and only `consecutive` is ever reset, so
+/// `consecutive <= total` holds at every point — which is why an overflow of
+/// either one means `total` is already [`u32::MAX`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RestartTracker {
     consecutive: u32,
     total: u32,
@@ -291,7 +300,8 @@ pub enum GiveUp {
     /// A budget tripped: stop rebuilding and escalate.
     Yes {
         /// Lifetime failures observed for this child, including this one —
-        /// pinned at [`u32::MAX`] once the counter has no room left.
+        /// except at [`u32::MAX`], where the counter has no room left and this
+        /// failure is absorbed into the value already there.
         rebuilds: u32,
     },
 }
@@ -319,9 +329,14 @@ impl RestartTracker {
         }
     }
 
-    /// Records that a new incarnation started at `now`, arming the
+    /// Records that a new incarnation started at `now`, re-arming the
     /// healthy-uptime reset. Counters are untouched — an incarnation earns the
     /// reset by *surviving*, not by starting.
+    ///
+    /// **A supervisor that rebuilds a child without calling this disables the
+    /// consecutive trip.** The stale start keeps ageing, so every later failure
+    /// looks like healthy uptime, `consecutive` resets to 1 forever, and only
+    /// the lifetime budget can ever stop the rebuilding.
     pub const fn record_started(&mut self, now: Instant) {
         self.started = now;
     }
@@ -329,10 +344,13 @@ impl RestartTracker {
     /// Records a death at `now` and answers whether to rebuild.
     ///
     /// An incarnation that survived at least
-    /// [`reset_after`](RestartConfig::reset_after) counts as healthy and zeroes
-    /// the consecutive counter first. A `now` that predates the recorded start
-    /// (a clock that ran backwards) is *not* healthy uptime — it grants no
-    /// reset.
+    /// [`reset_after`](RestartConfig::reset_after) — inclusive — counts as
+    /// healthy and zeroes the consecutive counter first. Uptime is measured
+    /// with `checked_duration_since` rather than a saturating subtraction: a
+    /// `now` that predates the recorded start is not evidence of uptime, so it
+    /// grants no reset. (The two forms differ only when `reset_after` is
+    /// [`Duration::ZERO`], where a saturated zero would still clear the
+    /// counter.)
     ///
     /// Both counters advance through `checked_add`: a counter with no room left
     /// has, by definition, exhausted its budget, so overflow trips the limit
@@ -365,7 +383,8 @@ impl RestartTracker {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeSet;
+    use core::mem::{Discriminant, discriminant};
+    use std::collections::{BTreeSet, HashSet};
 
     use proptest::{prop_assert, proptest};
 
@@ -379,17 +398,49 @@ mod tests {
         ActorStopReason::Panicked(PanicError::new(Box::new("boom"), reason))
     }
 
-    /// `Permanent` means "this actor exiting is a bug" — every reason, normal
-    /// or abnormal, is a rebuild.
-    #[test]
-    fn permanent_restarts_on_every_reason() {
-        for reason in [
+    fn link_died(inner: ActorStopReason) -> ActorStopReason {
+        ActorStopReason::LinkDied {
+            id: ActorId::new(3),
+            reason: Box::new(inner),
+        }
+    }
+
+    /// Every [`ActorStopReason`] variant, once. The decision-table tests are
+    /// exhaustive only as far as this array is, and mutation testing cannot
+    /// back-stop them (`should_restart`'s arms produce no body mutants), so the
+    /// `match` below is a **compile-time tripwire**: adding a variant to the
+    /// enum stops this file compiling until the array is extended.
+    fn all_reasons() -> [ActorStopReason; 6] {
+        let reasons = [
             ActorStopReason::Normal,
             ActorStopReason::SupervisorRestart,
             ActorStopReason::Killed,
             ActorStopReason::AlreadyDead,
             panicked(PanicReason::HandlerPanic),
-        ] {
+            link_died(ActorStopReason::Killed),
+        ];
+        for reason in &reasons {
+            match reason {
+                ActorStopReason::Normal
+                | ActorStopReason::SupervisorRestart
+                | ActorStopReason::Killed
+                | ActorStopReason::AlreadyDead
+                | ActorStopReason::Panicked(_)
+                | ActorStopReason::LinkDied { .. } => {}
+            }
+        }
+        reasons
+    }
+
+    fn variants(reasons: &[ActorStopReason]) -> HashSet<Discriminant<ActorStopReason>> {
+        reasons.iter().map(discriminant).collect()
+    }
+
+    /// `Permanent` means "this actor exiting is a bug" — every reason, normal
+    /// or abnormal, is a rebuild.
+    #[test]
+    fn permanent_restarts_on_every_reason() {
+        for reason in all_reasons() {
             assert_eq!(
                 should_restart(RestartPolicy::Permanent, &reason),
                 RestartVerdict::Restart,
@@ -398,45 +449,49 @@ mod tests {
         }
     }
 
-    /// A `Transient` child that stopped on purpose stays stopped — including the
-    /// supervisor's own deliberate cycle, which is not a failure.
+    /// `Transient` splits the reasons in two, and the split covers *every*
+    /// variant — a reason that fell out of both lists would otherwise be
+    /// untested under the policy that actually discriminates.
     #[test]
-    fn transient_leaves_normal_and_supervisor_restart_dead() {
-        assert_eq!(
-            should_restart(RestartPolicy::Transient, &ActorStopReason::Normal),
-            RestartVerdict::LeaveDead,
-        );
-        assert_eq!(
-            should_restart(
-                RestartPolicy::Transient,
-                &ActorStopReason::SupervisorRestart
-            ),
-            RestartVerdict::LeaveDead,
-        );
-    }
-
-    #[test]
-    fn transient_restarts_on_abnormal() {
-        for reason in [
+    fn transient_splits_every_reason_between_dead_and_restart() {
+        let leave_dead = [
+            ActorStopReason::Normal,
+            ActorStopReason::SupervisorRestart, // the supervisor's own cycle
+        ];
+        let restart = [
             ActorStopReason::Killed,
             ActorStopReason::AlreadyDead,
             panicked(PanicReason::HandlerPanic),
-        ] {
+            link_died(ActorStopReason::Killed),
+        ];
+
+        for reason in &leave_dead {
             assert_eq!(
-                should_restart(RestartPolicy::Transient, &reason),
+                should_restart(RestartPolicy::Transient, reason),
+                RestartVerdict::LeaveDead,
+                "{reason:?}",
+            );
+        }
+        for reason in &restart {
+            assert_eq!(
+                should_restart(RestartPolicy::Transient, reason),
                 RestartVerdict::Restart,
                 "{reason:?}",
             );
         }
+
+        let mut covered = variants(&leave_dead);
+        covered.extend(variants(&restart));
+        assert_eq!(
+            covered,
+            variants(&all_reasons()),
+            "the Transient table must classify every stop reason",
+        );
     }
 
     #[test]
     fn never_always_leaves_dead() {
-        for reason in [
-            ActorStopReason::Normal,
-            ActorStopReason::Killed,
-            panicked(PanicReason::HandlerPanic),
-        ] {
+        for reason in all_reasons() {
             assert_eq!(
                 should_restart(RestartPolicy::Never, &reason),
                 RestartVerdict::LeaveDead,
@@ -594,22 +649,41 @@ mod tests {
     }
 
     /// A `LinkDied` death is classified by the OUTER variant (a propagated
-    /// death is abnormal) — the nested reason is diagnostic, not a policy input.
-    /// Were the inner reason consulted, a link death nesting `Normal` would read
-    /// as a normal stop and leave a `Transient` child dead.
+    /// death is abnormal) — the nested reason belongs to a *different* actor and
+    /// is diagnostic, not a policy input. Were the inner reason consulted, a
+    /// link death nesting `Normal` would read as a normal stop and leave a
+    /// `Transient` child dead.
     #[test]
     fn nested_link_died_classified_by_outer_variant() {
         for inner in [ActorStopReason::Killed, ActorStopReason::Normal] {
-            let reason = ActorStopReason::LinkDied {
-                id: ActorId::new(3),
-                reason: Box::new(inner),
-            };
+            let reason = link_died(inner);
             assert_eq!(
                 should_restart(RestartPolicy::Transient, &reason),
                 RestartVerdict::Restart,
                 "{reason:?}",
             );
         }
+    }
+
+    /// The load-bearing case of "the nested reason is diagnostic only": *this*
+    /// actor did not fail in a lifecycle hook — the actor it was linked to did.
+    /// Restarting it is a normal rebuild, not a crash loop. Fails the moment the
+    /// lifecycle-hook carve-out starts recursing into the boxed reason.
+    #[test]
+    fn link_died_nesting_a_hook_panic_restarts_rather_than_escalating() {
+        let reason = link_died(panicked(PanicReason::OnStart));
+        for policy in [RestartPolicy::Permanent, RestartPolicy::Transient] {
+            assert_eq!(
+                should_restart(policy, &reason),
+                RestartVerdict::Restart,
+                "{policy:?}: the hook panic was the LINKED actor's, not this one's",
+            );
+        }
+        assert_eq!(
+            should_restart(RestartPolicy::Never, &reason),
+            RestartVerdict::LeaveDead,
+            "Never still never rebuilds",
+        );
     }
 
     /// Attempt `n` waits `min_backoff · 2^(n-1)`.
@@ -758,7 +832,7 @@ mod tests {
         #[test]
         fn prop_backoff_monotone_until_cap(n in 0_u32..64) {
             let cfg = RestartConfig::new(RestartPolicy::Transient);
-            prop_assert!(base_backoff(&cfg, n) <= base_backoff(&cfg, n.saturating_add(1)));
+            prop_assert!(base_backoff(&cfg, n) <= base_backoff(&cfg, n + 1));
             prop_assert!(base_backoff(&cfg, n) <= cfg.max_backoff);
         }
 
@@ -780,8 +854,10 @@ mod tests {
         }
     }
 
-    /// A fixed origin for the tracker's clock. Every assertion below is about a
-    /// relative offset from it, never about wall-clock time.
+    /// The origin every tracker test measures from. Each test binds it **once**
+    /// and derives every later instant as an offset, so the tracker's start and
+    /// the assertions share one origin rather than two `Instant::now()` reads
+    /// that differ by however long the test took to get there.
     fn t0() -> Instant {
         Instant::now()
     }
@@ -792,12 +868,18 @@ mod tests {
     #[test]
     fn consecutive_limit_escalates() {
         let cfg = RestartConfig::new(RestartPolicy::Transient).with_max_restarts(2);
-        let mut tracker = RestartTracker::new(t0());
-        let now = t0();
-        assert_eq!(tracker.record_failure(&cfg, now), GiveUp::No { attempt: 1 });
-        assert_eq!(tracker.record_failure(&cfg, now), GiveUp::No { attempt: 2 });
+        let origin = t0();
+        let mut tracker = RestartTracker::new(origin);
         assert_eq!(
-            tracker.record_failure(&cfg, now),
+            tracker.record_failure(&cfg, origin),
+            GiveUp::No { attempt: 1 }
+        );
+        assert_eq!(
+            tracker.record_failure(&cfg, origin),
+            GiveUp::No { attempt: 2 }
+        );
+        assert_eq!(
+            tracker.record_failure(&cfg, origin),
             GiveUp::Yes { rebuilds: 3 }
         );
     }
@@ -807,32 +889,84 @@ mod tests {
     #[test]
     fn zero_max_restarts_gives_up_on_the_first_failure() {
         let cfg = RestartConfig::new(RestartPolicy::Permanent).with_max_restarts(0);
-        let mut tracker = RestartTracker::new(t0());
+        let origin = t0();
+        let mut tracker = RestartTracker::new(origin);
         assert_eq!(
-            tracker.record_failure(&cfg, t0()),
+            tracker.record_failure(&cfg, origin),
             GiveUp::Yes { rebuilds: 1 }
         );
     }
 
+    /// `max_total = 0` is the same boundary on the slow trip: no rebuild is
+    /// affordable, whatever the consecutive allowance says.
+    #[test]
+    fn zero_max_total_gives_up_on_the_first_failure() {
+        let cfg = RestartConfig::new(RestartPolicy::Permanent)
+            .with_max_restarts(u32::MAX)
+            .with_max_total(0);
+        let origin = t0();
+        let mut tracker = RestartTracker::new(origin);
+        assert_eq!(
+            tracker.record_failure(&cfg, origin),
+            GiveUp::Yes { rebuilds: 1 }
+        );
+    }
+
+    /// `reset_after = ZERO` makes every incarnation healthy the instant it
+    /// starts, which **disables the consecutive trip entirely** — surprising
+    /// enough that it is pinned here and documented on the field. Only the
+    /// lifetime budget can still stop the rebuilding.
+    #[test]
+    fn zero_reset_after_disables_the_consecutive_trip() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient)
+            .with_reset_after(Duration::ZERO)
+            .with_max_restarts(2)
+            .with_max_total(4);
+        let origin = t0();
+        let mut tracker = RestartTracker::new(origin);
+        for failure in 1..=4_u32 {
+            assert_eq!(
+                tracker.record_failure(&cfg, origin),
+                GiveUp::No { attempt: 1 },
+                "failure #{failure} is always attempt 1",
+            );
+        }
+        assert_eq!(
+            tracker.record_failure(&cfg, origin),
+            GiveUp::Yes { rebuilds: 5 },
+            "only the lifetime budget can trip",
+        );
+    }
+
     /// Healthy uptime zeroes the consecutive counter — the next failure is
-    /// "attempt 1" again and backs off from `min_backoff`.
+    /// "attempt 1" again and backs off from `min_backoff` — and zeroes *only*
+    /// that one: the lifetime counter keeps climbing across the resets and trips
+    /// on schedule.
     #[test]
     fn healthy_uptime_resets_consecutive_only() {
         let cfg = RestartConfig::new(RestartPolicy::Transient)
             .with_max_restarts(2)
-            .with_max_total(4);
-        let mut tracker = RestartTracker::new(t0());
-        let start = t0();
+            .with_max_total(2);
+        let origin = t0();
+        let mut tracker = RestartTracker::new(origin);
+        let healthy = cfg.reset_after + Duration::from_secs(1);
+
         assert_eq!(
-            tracker.record_failure(&cfg, start),
+            tracker.record_failure(&cfg, origin),
             GiveUp::No { attempt: 1 }
         );
-        tracker.record_started(start);
-        let healthy = start + cfg.reset_after + Duration::from_secs(1);
+        tracker.record_started(origin);
         assert_eq!(
-            tracker.record_failure(&cfg, healthy),
+            tracker.record_failure(&cfg, origin + healthy),
             GiveUp::No { attempt: 1 },
             "consecutive reset by healthy uptime",
+        );
+
+        tracker.record_started(origin + healthy);
+        assert_eq!(
+            tracker.record_failure(&cfg, origin + healthy + healthy),
+            GiveUp::Yes { rebuilds: 3 },
+            "the lifetime counter survived both resets",
         );
     }
 
@@ -875,8 +1009,9 @@ mod tests {
         let cfg = RestartConfig::new(RestartPolicy::Transient)
             .with_max_restarts(5)
             .with_max_total(3);
-        let mut tracker = RestartTracker::new(t0());
-        let mut now = t0();
+        let origin = t0();
+        let mut tracker = RestartTracker::new(origin);
+        let mut now = origin;
         for drip in 1..=3_u32 {
             assert_eq!(
                 tracker.record_failure(&cfg, now),
@@ -894,23 +1029,35 @@ mod tests {
     }
 
     /// Defensive boundary: a `now` *earlier* than the recorded start (a clock
-    /// that ran backwards, or an out-of-order notice) must not be read as
-    /// enormous uptime and hand out a free counter reset.
+    /// that ran backwards, or an out-of-order notice) is not evidence of uptime
+    /// and grants no reset.
+    ///
+    /// The `reset_after = ZERO` leg is the one that discriminates: a saturating
+    /// subtraction would report zero uptime, `ZERO >= ZERO` would hold, and a
+    /// timestamp predating the incarnation entirely would clear the counter.
     #[test]
     fn backwards_clock_does_not_reset_the_counter() {
-        let cfg = RestartConfig::new(RestartPolicy::Transient);
-        let start = t0() + Duration::from_secs(3600);
-        let mut tracker = RestartTracker::new(start);
-        let before_start = t0();
-        assert_eq!(
-            tracker.record_failure(&cfg, before_start),
-            GiveUp::No { attempt: 1 }
-        );
-        assert_eq!(
-            tracker.record_failure(&cfg, before_start),
-            GiveUp::No { attempt: 2 },
-            "no reset from a timestamp before the start",
-        );
+        let origin = t0();
+        let started = origin + Duration::from_secs(3600);
+
+        for cfg in [
+            RestartConfig::new(RestartPolicy::Transient),
+            RestartConfig::new(RestartPolicy::Transient).with_reset_after(Duration::ZERO),
+        ] {
+            let mut tracker = RestartTracker::new(started);
+            assert_eq!(
+                tracker.record_failure(&cfg, origin),
+                GiveUp::No { attempt: 1 },
+                "reset_after {:?}",
+                cfg.reset_after,
+            );
+            assert_eq!(
+                tracker.record_failure(&cfg, origin),
+                GiveUp::No { attempt: 2 },
+                "reset_after {:?}: no reset from a timestamp before the start",
+                cfg.reset_after,
+            );
+        }
     }
 
     /// Recording a start re-arms the reset clock and touches neither counter: a
