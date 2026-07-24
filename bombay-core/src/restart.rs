@@ -8,6 +8,10 @@
 use core::time::Duration;
 
 use fastrand::Rng;
+// `tokio`'s `Instant`, not `std`'s: it reads the runtime's clock, so the
+// supervision tests can drive restart timing under `start_paused` instead of
+// sleeping in real time.
+use tokio::time::Instant;
 
 use crate::error::ActorStopReason;
 
@@ -251,6 +255,108 @@ pub fn jittered_backoff(cfg: &RestartConfig, consecutive: u32, rng: &mut Rng) ->
         .and_then(|step| step.checked_mul(percent))
         .and_then(|extra| base.checked_add(extra))
         .unwrap_or(base)
+}
+
+/// One child's give-up accounting: two counters that answer two different
+/// questions.
+///
+/// `consecutive` asks *"did this incarnation work?"* — it is zeroed by
+/// [`reset_after`](RestartConfig::reset_after) of healthy uptime. `total` asks
+/// *"is this child worth having at all?"* and is **never** reset, which is what
+/// catches the slow drip: a child failing just slower than the reset window
+/// zeroes `consecutive` every cycle and would otherwise restart forever.
+/// Whichever budget trips first ends the rebuilding.
+///
+/// Pure: the clock is passed in at every call, never read here, so restart
+/// timing is exactly reproducible in tests and simulations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct RestartTracker {
+    consecutive: u32,
+    total: u32,
+    started: Instant,
+}
+
+/// The outcome of recording one death.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum GiveUp {
+    /// Rebuild the child. `attempt` is the 1-based consecutive failure count,
+    /// ready to feed [`base_backoff`] / [`jittered_backoff`].
+    No {
+        /// Consecutive failure number, `>= 1`.
+        attempt: u32,
+    },
+    /// A budget tripped: stop rebuilding and escalate.
+    Yes {
+        /// Lifetime failures observed for this child, including this one.
+        rebuilds: u32,
+    },
+}
+
+impl RestartTracker {
+    /// Starts accounting for a child whose current incarnation began at
+    /// `started`.
+    #[must_use]
+    pub const fn new(started: Instant) -> Self {
+        Self {
+            consecutive: 0,
+            total: 0,
+            started,
+        }
+    }
+
+    /// Seeds the counters directly, for the overflow boundary that a test
+    /// cannot reach by counting to [`u32::MAX`].
+    #[cfg(test)]
+    const fn seeded(started: Instant, consecutive: u32, total: u32) -> Self {
+        Self {
+            consecutive,
+            total,
+            started,
+        }
+    }
+
+    /// Records that a new incarnation started at `now`, arming the
+    /// healthy-uptime reset. Counters are untouched — an incarnation earns the
+    /// reset by *surviving*, not by starting.
+    pub const fn record_started(&mut self, now: Instant) {
+        self.started = now;
+    }
+
+    /// Records a death at `now` and answers whether to rebuild.
+    ///
+    /// An incarnation that survived at least
+    /// [`reset_after`](RestartConfig::reset_after) counts as healthy and zeroes
+    /// the consecutive counter first. A `now` that predates the recorded start
+    /// (a clock that ran backwards) is *not* healthy uptime — it grants no
+    /// reset.
+    ///
+    /// Both counters advance through `checked_add`: a counter with no room left
+    /// has, by definition, exhausted its budget, so overflow trips the limit
+    /// instead of wrapping into a fresh allowance.
+    pub fn record_failure(&mut self, cfg: &RestartConfig, now: Instant) -> GiveUp {
+        if now
+            .checked_duration_since(self.started)
+            .is_some_and(|uptime| uptime >= cfg.reset_after)
+        {
+            self.consecutive = 0;
+        }
+        let (Some(consecutive), Some(total)) =
+            (self.consecutive.checked_add(1), self.total.checked_add(1))
+        else {
+            return GiveUp::Yes {
+                rebuilds: self.total,
+            };
+        };
+        self.consecutive = consecutive;
+        self.total = total;
+        if consecutive > cfg.max_restarts || total > cfg.max_total {
+            GiveUp::Yes { rebuilds: total }
+        } else {
+            GiveUp::No {
+                attempt: consecutive,
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -666,5 +772,181 @@ mod tests {
             let ceiling = base + base / 100 * u32::from(jitter.as_percent());
             prop_assert!(delay <= ceiling, "{delay:?} exceeds {ceiling:?}");
         }
+    }
+
+    /// A fixed origin for the tracker's clock. Every assertion below is about a
+    /// relative offset from it, never about wall-clock time.
+    fn t0() -> Instant {
+        Instant::now()
+    }
+
+    /// The fast trip: `max_restarts` consecutive failures are tolerated, the
+    /// next one gives up. The attempt number handed back is 1-based, so it feeds
+    /// [`base_backoff`] directly.
+    #[test]
+    fn consecutive_limit_escalates() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient).with_max_restarts(2);
+        let mut tracker = RestartTracker::new(t0());
+        let now = t0();
+        assert_eq!(tracker.record_failure(&cfg, now), GiveUp::No { attempt: 1 });
+        assert_eq!(tracker.record_failure(&cfg, now), GiveUp::No { attempt: 2 });
+        assert_eq!(
+            tracker.record_failure(&cfg, now),
+            GiveUp::Yes { rebuilds: 3 }
+        );
+    }
+
+    /// `max_restarts = 0` means "one failure is one too many" — the boundary a
+    /// `>=`/`>` slip would silently turn into a free retry.
+    #[test]
+    fn zero_max_restarts_gives_up_on_the_first_failure() {
+        let cfg = RestartConfig::new(RestartPolicy::Permanent).with_max_restarts(0);
+        let mut tracker = RestartTracker::new(t0());
+        assert_eq!(
+            tracker.record_failure(&cfg, t0()),
+            GiveUp::Yes { rebuilds: 1 }
+        );
+    }
+
+    /// Healthy uptime zeroes the consecutive counter — the next failure is
+    /// "attempt 1" again and backs off from `min_backoff`.
+    #[test]
+    fn healthy_uptime_resets_consecutive_only() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient)
+            .with_max_restarts(2)
+            .with_max_total(4);
+        let mut tracker = RestartTracker::new(t0());
+        let start = t0();
+        assert_eq!(
+            tracker.record_failure(&cfg, start),
+            GiveUp::No { attempt: 1 }
+        );
+        tracker.record_started(start);
+        let healthy = start + cfg.reset_after + Duration::from_secs(1);
+        assert_eq!(
+            tracker.record_failure(&cfg, healthy),
+            GiveUp::No { attempt: 1 },
+            "consecutive reset by healthy uptime",
+        );
+    }
+
+    /// The reset threshold is inclusive: exactly `reset_after` of uptime counts
+    /// as healthy, a nanosecond less does not.
+    #[test]
+    fn healthy_uptime_threshold_is_inclusive() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient);
+        let start = t0();
+
+        let mut exactly = RestartTracker::new(start);
+        assert_eq!(
+            exactly.record_failure(&cfg, start),
+            GiveUp::No { attempt: 1 }
+        );
+        exactly.record_started(start);
+        assert_eq!(
+            exactly.record_failure(&cfg, start + cfg.reset_after),
+            GiveUp::No { attempt: 1 },
+            "exactly reset_after of uptime is healthy",
+        );
+
+        let mut just_short = RestartTracker::new(start);
+        assert_eq!(
+            just_short.record_failure(&cfg, start),
+            GiveUp::No { attempt: 1 }
+        );
+        just_short.record_started(start);
+        assert_eq!(
+            just_short.record_failure(&cfg, start + cfg.reset_after - Duration::from_nanos(1)),
+            GiveUp::No { attempt: 2 },
+            "one nanosecond short is not healthy",
+        );
+    }
+
+    /// Slow drip — `consecutive` resets every cycle, but the never-reset
+    /// lifetime budget still trips. FAILS if only one counter exists.
+    #[test]
+    fn slow_drip_exhausts_lifetime_budget() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient)
+            .with_max_restarts(5)
+            .with_max_total(3);
+        let mut tracker = RestartTracker::new(t0());
+        let mut now = t0();
+        for drip in 1..=3_u32 {
+            assert_eq!(
+                tracker.record_failure(&cfg, now),
+                GiveUp::No { attempt: 1 },
+                "drip #{drip}",
+            );
+            tracker.record_started(now);
+            now += cfg.reset_after + Duration::from_secs(1); // always "healthy"
+        }
+        assert_eq!(
+            tracker.record_failure(&cfg, now),
+            GiveUp::Yes { rebuilds: 4 },
+            "lifetime budget trips",
+        );
+    }
+
+    /// Defensive boundary: a `now` *earlier* than the recorded start (a clock
+    /// that ran backwards, or an out-of-order notice) must not be read as
+    /// enormous uptime and hand out a free counter reset.
+    #[test]
+    fn backwards_clock_does_not_reset_the_counter() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient);
+        let start = t0() + Duration::from_secs(3600);
+        let mut tracker = RestartTracker::new(start);
+        let before_start = t0();
+        assert_eq!(
+            tracker.record_failure(&cfg, before_start),
+            GiveUp::No { attempt: 1 }
+        );
+        assert_eq!(
+            tracker.record_failure(&cfg, before_start),
+            GiveUp::No { attempt: 2 },
+            "no reset from a timestamp before the start",
+        );
+    }
+
+    /// Recording a start arms the reset clock and touches neither counter.
+    #[test]
+    fn record_started_leaves_the_counters_alone() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient);
+        let start = t0();
+        let mut tracker = RestartTracker::new(start);
+        assert_eq!(
+            tracker.record_failure(&cfg, start),
+            GiveUp::No { attempt: 1 }
+        );
+        tracker.record_started(start);
+        assert_eq!(
+            tracker.record_failure(&cfg, start),
+            GiveUp::No { attempt: 2 },
+            "an immediate restart is not healthy uptime",
+        );
+    }
+
+    /// A counter that cannot be incremented has, by definition, exhausted its
+    /// budget: overflow trips the limit rather than wrapping back to a fresh
+    /// allowance (which would make the child immortal).
+    #[test]
+    fn counter_overflow_trips_the_budget() {
+        let cfg = RestartConfig::new(RestartPolicy::Permanent)
+            .with_max_restarts(u32::MAX)
+            .with_max_total(u32::MAX);
+        let start = t0();
+
+        let mut at_max = RestartTracker::seeded(start, u32::MAX, u32::MAX);
+        assert_eq!(
+            at_max.record_failure(&cfg, start),
+            GiveUp::Yes { rebuilds: u32::MAX },
+            "no room left in either counter",
+        );
+
+        let mut one_short = RestartTracker::seeded(start, u32::MAX - 1, u32::MAX - 1);
+        assert_eq!(
+            one_short.record_failure(&cfg, start),
+            GiveUp::No { attempt: u32::MAX },
+            "the last representable attempt is still allowed",
+        );
     }
 }
