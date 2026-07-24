@@ -319,8 +319,10 @@ impl<A: Mailboxed> Clone for WeakMailboxSender<A> {
 /// The single consumer of an actor's mailbox. The run-loop pulls from it.
 pub struct MailboxReceiver<A: Mailboxed> {
     rx: flume::Receiver<Signal<A>>,
-    /// The owning actor's identity — stamped onto the synthetic death notice
-    /// this receiver's `Drop` sends for any still-queued [`Signal::Watch`].
+    /// The owning actor's identity — stamped onto the death notice sent for any
+    /// still-queued [`Signal::Watch`] when the backlog is rejected
+    /// ([`reject_queued_watchers`](MailboxReceiver::reject_queued_watchers),
+    /// which this receiver's `Drop` also routes through).
     me: ActorId,
 }
 
@@ -340,13 +342,36 @@ impl<A: Mailboxed> MailboxReceiver<A> {
     pub fn drain(&mut self) -> impl Iterator<Item = Signal<A>> + '_ {
         self.rx.drain()
     }
+
+    /// Drains the backlog, answering every still-queued [`Signal::Watch`] with a
+    /// death notice carrying `reason`, and releasing the queued messages'
+    /// `self_sender` cycle — the two duties documented on [`Drop`](Self::drop),
+    /// which routes through here with the synthetic
+    /// [`AlreadyDead`](ActorStopReason::AlreadyDead).
+    ///
+    /// Callers that *know* the true stop reason pre-empt that fallback by calling
+    /// this first: the startup-failure path (card #196) answers with
+    /// `Panicked(OnStart)`, because a supervisor treats `AlreadyDead` as
+    /// restart-worthy and would crash-loop a child that can never start.
+    pub(crate) fn reject_queued_watchers(&self, reason: &ActorStopReason) {
+        for signal in self.rx.drain() {
+            if let Signal::Watch(reg) = signal {
+                let _ = reg.link_tx.try_send(LinkDied {
+                    id: self.me,
+                    reason: reason.clone(),
+                    linked: reg.linked,
+                });
+            }
+        }
+    }
 }
 
 impl<A: Mailboxed> Drop for MailboxReceiver<A> {
     /// Drops the receiver **and** its backlog — and answers every still-queued
     /// [`Signal::Watch`] with a synthetic death notice first.
     ///
-    /// Two duties, one drain:
+    /// Two duties, one drain (both discharged by
+    /// [`reject_queued_watchers`](Self::reject_queued_watchers)):
     ///
     /// 1. **Leak fix.** Each queued [`Signal::Message`] holds a strong
     ///    `self_sender` clone of this very mailbox (ADR-0003), so a non-empty
@@ -360,23 +385,17 @@ impl<A: Mailboxed> Drop for MailboxReceiver<A> {
     ///    the graceful window between `finish_actor`'s drain snapshot and this
     ///    drop, spanning `on_stop`), so it must deliver the notice: reason
     ///    [`AlreadyDead`](ActorStopReason::AlreadyDead), because
-    ///    the true stop reason is unknowable here (Erlang's `noproc`). The send
-    ///    is non-blocking into the watcher's UNBOUNDED link channel and only
-    ///    fails if the watcher itself is gone — a stale edge, correctly skipped.
+    ///    the true stop reason is unknowable *here* (Erlang's `noproc`) — a path
+    ///    that does know it (startup failure, card #196) drains with that reason
+    ///    before this drop runs, leaving nothing to answer. The send is
+    ///    non-blocking into the watcher's UNBOUNDED link channel and only fails
+    ///    if the watcher itself is gone — a stale edge, correctly skipped.
     ///
     /// A queued `Signal::Unwatch` is unenforceable here (the watcher set is gone
     /// with the loop); as in Erlang, a `demonitor` racing the death may still be
     /// followed by a delivered notice.
     fn drop(&mut self) {
-        for signal in self.rx.drain() {
-            if let Signal::Watch(reg) = signal {
-                let _ = reg.link_tx.try_send(LinkDied {
-                    id: self.me,
-                    reason: ActorStopReason::AlreadyDead,
-                    linked: reg.linked,
-                });
-            }
-        }
+        self.reject_queued_watchers(&ActorStopReason::AlreadyDead);
     }
 }
 

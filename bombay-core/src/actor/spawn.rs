@@ -244,6 +244,25 @@ async fn start_actor<A: Actor>(
     })
 }
 
+/// Startup-failure teardown shared by both lifecycles (card #196): answer the
+/// watch registrations that were already queued when `on_start` failed with the
+/// TRUE reason, `Panicked(OnStart)`.
+///
+/// No [`Watchers`] guard exists yet on this path (it is minted only after a
+/// successful start), so the backlog is the only record of those watchers, and
+/// `MailboxReceiver`'s `Drop` would otherwise answer them with the synthetic
+/// [`AlreadyDead`](ActorStopReason::AlreadyDead) — which a supervisor reads as
+/// restart-worthy, crash-looping a child that can never start.
+fn reject_watchers_on_startup_failure<A: Actor>(
+    failed: RunResult<A>,
+    mailbox_rx: &MailboxReceiver<A>,
+) -> RunResult<A> {
+    if let RunResult::StartupFailed(err) = &failed {
+        mailbox_rx.reject_queued_watchers(&ActorStopReason::Panicked(err.clone()));
+    }
+    failed
+}
+
 /// Lifecycle epilogue shared by the plain and linked loops: apply any `Watch`/
 /// `Unwatch` that raced the stop (FIFO — a late `Watch` is otherwise a silently
 /// missed death, a late `Unwatch` would otherwise spuriously notify a former
@@ -295,7 +314,7 @@ async fn run_lifecycle<A: Actor>(
         weak,
     } = match start_actor(args, actor_ref).await {
         Ok(started) => started,
-        Err(failed) => return failed,
+        Err(failed) => return reject_watchers_on_startup_failure(failed, &mailbox_rx),
     };
 
     let reason =
@@ -321,7 +340,7 @@ async fn run_lifecycle_linked<A: Watch>(
         weak,
     } = match start_actor(args, actor_ref).await {
         Ok(started) => started,
-        Err(failed) => return failed,
+        Err(failed) => return reject_watchers_on_startup_failure(failed, &mailbox_rx),
     };
 
     let reason = run_linked_message_loop(
@@ -378,7 +397,7 @@ mod tests {
     use super::DEFAULT_MAILBOX_CAPACITY;
     use crate::{
         actor::{ActorRef, PreparedActor, RunResult, WeakActorRef},
-        error::{ActorNotLinked, ActorStopReason},
+        error::{ActorNotLinked, ActorStopReason, PanicReason},
         mailbox::{ActorId, Capacity, Mailboxed, Signal},
         message::Msg,
         test_support::terminate_bound,
@@ -1016,6 +1035,67 @@ mod tests {
             err.with_str(str::to_owned),
             Some(String::from("startup boom"))
         );
+    }
+
+    /// @bug (card #196) A child whose `on_start` fails must deliver its TRUE
+    /// reason — `Panicked(OnStart)` — to watchers whose registration was still
+    /// queued when the mailbox died. FAILS while only `MailboxReceiver::drop`
+    /// answers them, because its synthetic `AlreadyDead` is restart-worthy: a
+    /// supervisor would burn its whole restart budget crash-looping a child that
+    /// can never start, instead of escalating on the first failure.
+    #[tokio::test]
+    async fn startup_failure_answers_queued_watchers_with_on_start_reason() {
+        #[derive(Debug)]
+        struct Refuses;
+        struct FailingStart;
+        struct Never;
+        impl Msg for Never {}
+        impl Mailboxed for FailingStart {
+            type Msg = Never;
+        }
+        impl crate::actor::Actor for FailingStart {
+            type Args = ();
+            type Error = Refuses;
+            async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Err(Refuses)
+            }
+            async fn handle(
+                &mut self,
+                _: Never,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Ok(())
+            }
+        }
+
+        let prepared = PreparedActor::<FailingStart>::new(cap(4));
+        let (link_tx, link_rx) = flume::unbounded::<LinkDied>();
+        prepared
+            .actor_ref()
+            .mailbox_sender()
+            .try_send(Signal::Watch(Box::new(WatchReg {
+                watcher: ActorId::new(1),
+                link_tx,
+                linked: false,
+            })))
+            .expect("fresh mailbox has capacity");
+
+        let outcome = bounded(prepared.run(())).await;
+        assert!(
+            matches!(outcome, RunResult::StartupFailed(_)),
+            "expected StartupFailed, got {outcome:?}",
+        );
+
+        let notice = link_rx
+            .try_recv()
+            .expect("a queued watch reg must be notified, never silently dropped");
+        match notice.reason {
+            ActorStopReason::Panicked(err) => {
+                assert_eq!(err.reason(), PanicReason::OnStart);
+            }
+            other => panic!("expected Panicked(OnStart), got {other:?}"),
+        }
     }
 
     /// A handler that panics mid-mutation, with an `on_stop` spy that records the
