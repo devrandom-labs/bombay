@@ -83,6 +83,24 @@ pub trait Actor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
     /// Terminal cleanup. A returned `Err` is logged/surfaced, **never**
     /// unwrapped, and the original `reason` is preserved. On the poisoned
     /// (post-panic) path, do resource release only — never read domain fields.
+    ///
+    /// # Time-bounded
+    ///
+    /// This hook is **bounded**: watchers must learn of the death promptly, so
+    /// the runtime waits a fixed grace (5 s) and then **drops this future where
+    /// it is parked**. Cleanup past that point does not happen — code after an
+    /// `.await` that outlives the grace never runs. The death notice then
+    /// reports `cleanup_failed`, exactly as for a returned `Err` or a panic. Do
+    /// blocking-free, bounded work here; hand anything open-ended to a task that
+    /// outlives the actor.
+    ///
+    /// # Runtime
+    ///
+    /// That bound is a `tokio::time::timeout`, so **every** actor now needs a
+    /// runtime with the TIME driver enabled (`Builder::enable_time`, or
+    /// `enable_all` / `#[tokio::main]`) — not just the actors that use the
+    /// opt-in send timeouts. On a timer-less runtime the teardown itself panics:
+    /// the join handle yields `Err` and the [`RunResult`] is lost.
     fn on_stop(
         &mut self,
         actor_ref: WeakActorRef<Self>,
@@ -135,6 +153,9 @@ pub trait Watch: Actor {
 /// Spawns onto the current tokio runtime and returns the [`ActorRef`]; the actor
 /// stops via `Signal::Stop`, [`ActorRef::stop`], [`ActorRef::kill`], a handler
 /// crash, or startup failure (ref-count-driven stop is #117).
+///
+/// The runtime must have the TIME driver enabled — teardown bounds
+/// [`on_stop`](Actor::on_stop) with a timer, and panics without one.
 pub trait Spawn: Actor {
     /// Spawns with the [`DEFAULT_MAILBOX_CAPACITY`](spawn::DEFAULT_MAILBOX_CAPACITY).
     #[must_use]

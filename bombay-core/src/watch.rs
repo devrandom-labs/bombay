@@ -60,11 +60,19 @@ struct Edge {
 
 /// What the dying actor's `on_stop` did, as the watcher set knows it (#196).
 ///
-/// Three states, not a bool, because `false` would collapse two different facts
-/// — "no cleanup was ever attempted" and "cleanup ran and succeeded" — into one
-/// sentinel, and the kill-path invariant depends on telling them apart. Only
-/// [`Failed`](Self::Failed) reaches the wire, as
-/// [`LinkDied::cleanup_failed`](LinkDied::cleanup_failed).
+/// **This is a naming device, not a behavioural distinction.** Only
+/// [`Failed`](Self::Failed) reaches the wire (as
+/// [`LinkDied::cleanup_failed`](LinkDied::cleanup_failed)); `NotAttempted` and
+/// `Succeeded` collapse to the same `false`, and a bool defaulting to `false`
+/// would behave identically on every path today — including the kill path,
+/// which holds because nothing armed the flag, not because two states are told
+/// apart. What the enum buys is that the teardown's arm-then-disarm protocol
+/// (`assume_cleanup_failed` before the hook,
+/// [`record_cleanup_succeeded`](Watchers::record_cleanup_succeeded) only on an
+/// observed `Ok`) reads as three named states rather than two writes to a bool
+/// whose initial `false` means something different from its later `false`. If a
+/// consumer ever needs the distinction — or needs to say *how* cleanup failed —
+/// the shape is already here; nothing needs it now.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Cleanup {
     /// `on_stop` never started: a hard kill before teardown, or a startup
@@ -130,7 +138,7 @@ impl Watchers {
     }
 
     /// Arms the cleanup-failure flag BEFORE `on_stop` is awaited; only
-    /// [`cleanup_succeeded`](Self::cleanup_succeeded) disarms it.
+    /// [`record_cleanup_succeeded`](Self::record_cleanup_succeeded) disarms it.
     ///
     /// Pessimistic by design: a hook can leave without ever returning to the
     /// teardown code — a kill drops the whole lifecycle future mid-hook, and the
@@ -146,7 +154,7 @@ impl Watchers {
 
     /// Records the observed `Ok(())` from `on_stop`, disarming
     /// [`assume_cleanup_failed`](Self::assume_cleanup_failed).
-    pub(crate) const fn cleanup_succeeded(&mut self) {
+    pub(crate) const fn record_cleanup_succeeded(&mut self) {
         self.cleanup = Cleanup::Succeeded;
     }
 
@@ -232,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn cleanup_succeeded_disarms_the_assumption() {
+    fn record_cleanup_succeeded_disarms_the_assumption() {
         // The other half of the pessimistic protocol (#196): the flag is armed
         // before `on_stop` is awaited, so a successful hook MUST clear it or every
         // clean shutdown would libel itself. `NotAttempted` and `Succeeded` both
@@ -248,7 +256,7 @@ mod tests {
         guard.set_reason(ActorStopReason::Normal);
         guard.assume_cleanup_failed();
         assert!(guard.cleanup_failed(), "armed before the hook");
-        guard.cleanup_succeeded();
+        guard.record_cleanup_succeeded();
         assert!(!guard.cleanup_failed(), "an observed Ok disarms it");
         drop(guard);
 

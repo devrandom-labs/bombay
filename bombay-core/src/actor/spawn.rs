@@ -51,11 +51,12 @@ pub const DEFAULT_MAILBOX_CAPACITY: usize = 64;
 /// Distinct from a supervisor's `stop_grace`, which bounds cancel→abort from the
 /// *outside*; this bounds notice delay from the *inside*.
 const ON_STOP_NOTICE_GRACE: Duration = if cfg!(miri) {
-    // MIRI's virtual clock advances 5 µs per basic block (`miri/src/clock.rs`:
-    // `NANOSECONDS_PER_BASIC_BLOCK = 5000`) — roughly 5000× faster than the work
-    // it times — so a natively-calibrated bound abandons an `on_stop` that is in
-    // fact making fine progress, turning the whole MIRI lane (`miri.yml` runs
-    // every lib test, including the parked-hook one) into a false `cleanup_failed`.
+    // Under MIRI the clock is virtual: it advances 5 µs per basic block executed
+    // (`miri/src/clock.rs`: `NANOSECONDS_PER_BASIC_BLOCK = 5000`), independent of
+    // real elapsed time. A wall-clock-calibrated bound therefore measures nothing
+    // there — it counts interpreted basic blocks — and abandons an `on_stop` that
+    // is making fine progress, turning the MIRI lane (`miri.yml` runs every lib
+    // test, including the parked-hook one) into a false `cleanup_failed`.
     // `test_support::terminate_bound` scales for the same reason, but is precedent
     // in SHAPE only: it is test-only code behind the `test-support` feature, while
     // this is production. A STOPGAP — the right fix is an injectable grace on the
@@ -91,6 +92,11 @@ fn next_actor_id() -> ActorId {
 pub enum RunResult<A: Actor> {
     /// Ran and stopped. If `reason` is [`ActorStopReason::Panicked`], `actor` is
     /// **poisoned** (torn state): resource-release only, never read domain fields.
+    ///
+    /// A `Normal` reason is no longer proof of a completed cleanup (card #196):
+    /// an [`on_stop`](Actor::on_stop) that outran its grace is abandoned where it
+    /// was parked, leaving the state torn mid-cleanup under an otherwise clean
+    /// reason. The death notice's `cleanup_failed` is what distinguishes the two.
     Stopped {
         /// The final actor state.
         actor: A,
@@ -155,6 +161,11 @@ impl<A: Actor> PreparedActor<A> {
 
     /// Runs the actor in the current task until it stops. Aborts (hard kill)
     /// short-circuit to [`RunResult::Killed`], skipping `on_stop`.
+    ///
+    /// # Panics
+    ///
+    /// If the current runtime has no TIME driver: teardown bounds
+    /// [`on_stop`](Actor::on_stop) with a timer (see that hook's docs).
     pub async fn run(self, args: A::Args) -> RunResult<A> {
         let lifecycle = run_lifecycle(args, self.actor_ref, self.mailbox_rx);
         Abortable::new(lifecycle, self.abort_registration)
@@ -162,7 +173,10 @@ impl<A: Actor> PreparedActor<A> {
             .unwrap_or(RunResult::Killed)
     }
 
-    /// Spawns the actor in a background tokio task.
+    /// Spawns the actor in a background tokio task. The runtime must have the
+    /// TIME driver enabled — teardown bounds [`on_stop`](Actor::on_stop) with a
+    /// timer, and without one the task panics and this handle yields `Err`,
+    /// losing the [`RunResult`].
     pub fn spawn(self, args: A::Args) -> JoinHandle<RunResult<A>> {
         tokio::spawn(self.run(args))
     }
@@ -335,18 +349,35 @@ fn apply_raced_registrations<A: Actor>(
 /// The backlog is swept THREE times, each closing the window the previous one
 /// left, so that `MailboxReceiver`'s `Drop` — which can only synthesize
 /// [`AlreadyDead`](ActorStopReason::AlreadyDead) and knows no outcome — answers
-/// as little as possible. Before the hook: releases the queued messages'
-/// `self_sender` cycle (ADR-0003) without waiting out a hook that may run for the
-/// whole grace. After the hook: `on_stop` holds the mailbox open, so a
+/// as little as possible. After the hook: `on_stop` holds the mailbox open, so a
 /// registration accepted while it ran is answered by the guard, which knows the
 /// true reason *and* the outcome. After the guard has fired: the same reason and
 /// outcome, now read off the guard, for anything that landed while it was
 /// notifying. `drain` empties the channel, so nothing is applied twice.
 ///
+/// The sweep BEFORE the hook is a promptness optimisation with no correctness
+/// consequence — the later sweeps would pick up everything it does. It exists so
+/// the queued messages' `self_sender` cycle (ADR-0003) is released immediately
+/// rather than after a hook that may park for the whole grace. The invariant is
+/// "released promptly", not "released at all", so nothing tests it; delete it and
+/// the suite stays green while every teardown holds its backlog for up to the
+/// grace.
+///
 /// On a hard kill this never runs (the lifecycle future is dropped by
 /// `Abortable`) — the guard's `Drop` still fires for whatever was registered,
 /// reporting `Killed` if the kill preceded the hook, and the graceful reason with
 /// `cleanup_failed = true` if it interrupted the hook mid-flight.
+///
+/// Mutation coverage: this function is `known_zero_viable` in
+/// `mutants-baseline.json` — `RunResult<A>` has no `Default`/`new`/`From`/
+/// `FromIterator`, so every body-replacement mutant fails to compile (measured:
+/// 4 candidates, 4 unviable). ADR-0006 §2 requires hand-written compensating
+/// tests instead of a floor; these are `on_stop_error_marks_cleanup_failed_on_notice`,
+/// `death_notice_within_grace_of_hanging_on_stop`,
+/// `kill_during_on_stop_marks_cleanup_failed`, and
+/// `timerless_runtime_panics_teardown_and_reports_failed_cleanup`, plus the
+/// ordering tests `watch_accepted_during_on_stop_still_notified` and
+/// `unwatch_queued_before_stop_suppresses_notice`.
 async fn finish_actor<A: Actor>(
     mut state: A,
     weak: WeakActorRef<A>,
@@ -361,11 +392,11 @@ async fn finish_actor<A: Actor>(
     // this whole future mid-hook and `timeout` itself panics on a runtime with no
     // timer, and neither path returns here to set a flag afterwards.
     watchers.assume_cleanup_failed();
-    let stop_fut = AssertUnwindSafe(state.on_stop(weak.clone(), reason.clone())).catch_unwind();
+    let stop_fut = AssertUnwindSafe(state.on_stop(weak, reason.clone())).catch_unwind();
     match tokio::time::timeout(ON_STOP_NOTICE_GRACE, stop_fut).await {
         Ok(stop_result) => {
             if matches!(&stop_result, Ok(Ok(()))) {
-                watchers.cleanup_succeeded();
+                watchers.record_cleanup_succeeded();
             }
             log_on_stop_outcome::<A>(&reason, stop_result);
         }
@@ -2469,6 +2500,59 @@ mod tests {
         assert!(
             notice.reason.is_normal(),
             "the recorded stop reason survives the abandoned hook, got {:?}",
+            notice.reason,
+        );
+    }
+
+    /// `@bug` Defensive (card #196): on a runtime with NO time driver the
+    /// teardown's `tokio::time::timeout` panics — and the watcher must still be
+    /// told the truth: the actor died for its recorded reason, and its cleanup did
+    /// not complete (the hook never ran at all).
+    ///
+    /// This is the one path where the panic lands between arming the flag and the
+    /// hook's first poll, so it is only correct because the flag is armed BEFORE
+    /// the `timeout` call rather than after the hook returns. FAILS while the flag
+    /// is set optimistically: the watcher is told the cleanup succeeded on a run
+    /// where `on_stop` was never entered.
+    ///
+    /// Deliberately a plain `#[test]`: `#[tokio::test]` always enables the timer,
+    /// so the runtime has to be built by hand to reproduce the defect. Must live
+    /// in-crate — `watch` is private, so an integration test cannot build a
+    /// `WatchReg`.
+    #[test]
+    fn timerless_runtime_panics_teardown_and_reports_failed_cleanup() {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("a runtime with no time driver");
+
+        let (join, link_rx) = rt.block_on(async {
+            let prepared = PreparedActor::<Counter>::new(cap(4));
+            let link_rx = watch_before_start(&prepared);
+            let actor_ref = prepared.actor_ref().clone();
+            let join = prepared.spawn((Arc::new(AtomicU32::new(0)), Arc::new(AtomicU32::new(0))));
+            actor_ref.stop();
+            drop(actor_ref);
+            (join, link_rx)
+        });
+
+        let err = rt
+            .block_on(join)
+            .expect_err("teardown must panic without a timer, not return a RunResult");
+        assert!(
+            err.is_panic(),
+            "the join failure is the teardown's own panic, not a cancellation",
+        );
+
+        let notice = link_rx
+            .try_recv()
+            .expect("the watcher is notified even though teardown panicked");
+        assert!(
+            notice.cleanup_failed,
+            "on_stop never ran, so its cleanup certainly did not complete",
+        );
+        assert!(
+            notice.reason.is_normal(),
+            "the reason recorded before the panic survives it, got {:?}",
             notice.reason,
         );
     }
