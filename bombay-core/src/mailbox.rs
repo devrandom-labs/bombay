@@ -353,6 +353,12 @@ impl<A: Mailboxed> MailboxReceiver<A> {
     /// this first: the startup-failure path (card #196) answers with
     /// `Panicked(OnStart)`, because a supervisor treats `AlreadyDead` as
     /// restart-worthy and would crash-loop a child that can never start.
+    // `&self` despite emptying the queue: flume's `Receiver::drain` is itself
+    // `&self` (its state lives behind the shared `Chan` lock), and taking `&mut`
+    // here would be a lie the borrow checker cannot cash — `Drop::drop` reborrows
+    // it anyway, and exclusivity is already guaranteed structurally (the receiver
+    // is the mailbox's single consumer, and `drain(&mut self)` next door hands out
+    // a borrowing iterator that cannot overlap with this call).
     pub(crate) fn reject_queued_watchers(&self, reason: &ActorStopReason) {
         for signal in self.rx.drain() {
             if let Signal::Watch(reg) = signal {

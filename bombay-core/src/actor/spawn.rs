@@ -196,27 +196,27 @@ struct StartedActor<A: Actor> {
 /// Lifecycle prologue shared by the plain and linked loops: run `on_start` under
 /// `catch_unwind`, and on success stand up the ref-count-driven-stop scaffolding,
 /// dropping the strong `actor_ref`. Returns the loop-driver inputs, or the
-/// `StartupFailed` [`RunResult`] for the caller to early-return.
+/// startup [`PanicError`] for the caller to hand to [`startup_failed`].
+///
+/// The error type is the bare `PanicError`, not a [`RunResult`]: startup failure
+/// is this prologue's ONLY failure mode, and typing it that way is what makes the
+/// caller's teardown unconditional (a broad `RunResult` would let a future second
+/// error variant silently skip the death notices — the missed-death class #195
+/// exists to prevent).
 async fn start_actor<A: Actor>(
     args: A::Args,
     actor_ref: ActorRef<A>,
-) -> Result<StartedActor<A>, RunResult<A>> {
+) -> Result<StartedActor<A>, PanicError> {
     let started = AssertUnwindSafe(A::on_start(args, actor_ref.clone()))
         .catch_unwind()
         .await;
     let state = match started {
         Ok(Ok(actor)) => actor,
         Ok(Err(err)) => {
-            return Err(RunResult::StartupFailed(PanicError::new(
-                Box::new(err),
-                PanicReason::OnStart,
-            )));
+            return Err(PanicError::new(Box::new(err), PanicReason::OnStart));
         }
         Err(payload) => {
-            return Err(RunResult::StartupFailed(PanicError::from_panic_any(
-                payload,
-                PanicReason::OnStart,
-            )));
+            return Err(PanicError::from_panic_any(payload, PanicReason::OnStart));
         }
     };
 
@@ -246,21 +246,16 @@ async fn start_actor<A: Actor>(
 
 /// Startup-failure teardown shared by both lifecycles (card #196): answer the
 /// watch registrations that were already queued when `on_start` failed with the
-/// TRUE reason, `Panicked(OnStart)`.
+/// TRUE reason, `Panicked(OnStart)`, then build the [`RunResult`].
 ///
 /// No [`Watchers`] guard exists yet on this path (it is minted only after a
 /// successful start), so the backlog is the only record of those watchers, and
 /// `MailboxReceiver`'s `Drop` would otherwise answer them with the synthetic
 /// [`AlreadyDead`](ActorStopReason::AlreadyDead) — which a supervisor reads as
 /// restart-worthy, crash-looping a child that can never start.
-fn reject_watchers_on_startup_failure<A: Actor>(
-    failed: RunResult<A>,
-    mailbox_rx: &MailboxReceiver<A>,
-) -> RunResult<A> {
-    if let RunResult::StartupFailed(err) = &failed {
-        mailbox_rx.reject_queued_watchers(&ActorStopReason::Panicked(err.clone()));
-    }
-    failed
+fn startup_failed<A: Actor>(err: PanicError, mailbox_rx: &MailboxReceiver<A>) -> RunResult<A> {
+    mailbox_rx.reject_queued_watchers(&ActorStopReason::Panicked(err.clone()));
+    RunResult::StartupFailed(err)
 }
 
 /// Lifecycle epilogue shared by the plain and linked loops: apply any `Watch`/
@@ -314,7 +309,7 @@ async fn run_lifecycle<A: Actor>(
         weak,
     } = match start_actor(args, actor_ref).await {
         Ok(started) => started,
-        Err(failed) => return reject_watchers_on_startup_failure(failed, &mailbox_rx),
+        Err(err) => return startup_failed(err, &mailbox_rx),
     };
 
     let reason =
@@ -340,7 +335,7 @@ async fn run_lifecycle_linked<A: Watch>(
         weak,
     } = match start_actor(args, actor_ref).await {
         Ok(started) => started,
-        Err(failed) => return reject_watchers_on_startup_failure(failed, &mailbox_rx),
+        Err(err) => return startup_failed(err, &mailbox_rx),
     };
 
     let reason = run_linked_message_loop(
@@ -401,7 +396,7 @@ mod tests {
         mailbox::{ActorId, Capacity, Mailboxed, Signal},
         message::Msg,
         test_support::terminate_bound,
-        watch::{LinkDied, WatchReg},
+        watch::{LinkDied, LinkReceiver, WatchReg},
     };
 
     /// Counts handled messages and records whether `on_stop` ran, via shared
@@ -1037,39 +1032,39 @@ mod tests {
         );
     }
 
-    /// @bug (card #196) A child whose `on_start` fails must deliver its TRUE
-    /// reason — `Panicked(OnStart)` — to watchers whose registration was still
-    /// queued when the mailbox died. FAILS while only `MailboxReceiver::drop`
-    /// answers them, because its synthetic `AlreadyDead` is restart-worthy: a
-    /// supervisor would burn its whole restart budget crash-looping a child that
-    /// can never start, instead of escalating on the first failure.
-    #[tokio::test]
-    async fn startup_failure_answers_queued_watchers_with_on_start_reason() {
-        #[derive(Debug)]
-        struct Refuses;
-        struct FailingStart;
-        struct Never;
-        impl Msg for Never {}
-        impl Mailboxed for FailingStart {
-            type Msg = Never;
+    /// A `Watch`-capable actor that always refuses to start — the probe for the
+    /// startup-failure pair below, shared so the plain and the linked lifecycle
+    /// are exercised against the identical failure.
+    struct FailingStart;
+    #[derive(Debug)]
+    struct Refuses;
+    #[derive(Debug)]
+    struct Nothing;
+    impl Msg for Nothing {}
+    impl Mailboxed for FailingStart {
+        type Msg = Nothing;
+    }
+    impl crate::actor::Actor for FailingStart {
+        type Args = ();
+        type Error = Refuses;
+        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Err(Refuses)
         }
-        impl crate::actor::Actor for FailingStart {
-            type Args = ();
-            type Error = Refuses;
-            async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
-                Err(Refuses)
-            }
-            async fn handle(
-                &mut self,
-                _: Never,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
-            }
+        async fn handle(
+            &mut self,
+            _: Nothing,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
         }
+    }
+    impl crate::actor::Watch for FailingStart {}
 
-        let prepared = PreparedActor::<FailingStart>::new(cap(4));
+    /// Enqueues a `watch` registration into `prepared`'s still-open mailbox and
+    /// hands back the watcher's link receiver — the "registered before the actor
+    /// ever started" race both tests below assert on.
+    fn watch_before_start<A: crate::actor::Actor>(prepared: &PreparedActor<A>) -> LinkReceiver {
         let (link_tx, link_rx) = flume::unbounded::<LinkDied>();
         prepared
             .actor_ref()
@@ -1080,13 +1075,12 @@ mod tests {
                 linked: false,
             })))
             .expect("fresh mailbox has capacity");
+        link_rx
+    }
 
-        let outcome = bounded(prepared.run(())).await;
-        assert!(
-            matches!(outcome, RunResult::StartupFailed(_)),
-            "expected StartupFailed, got {outcome:?}",
-        );
-
+    /// Asserts the watcher was notified, with a death notice naming the `OnStart`
+    /// phase — the true startup reason, never the synthetic `AlreadyDead`.
+    fn assert_on_start_notice(link_rx: &LinkReceiver) {
         let notice = link_rx
             .try_recv()
             .expect("a queued watch reg must be notified, never silently dropped");
@@ -1096,6 +1090,44 @@ mod tests {
             }
             other => panic!("expected Panicked(OnStart), got {other:?}"),
         }
+    }
+
+    /// @bug (card #196) A child whose `on_start` fails must deliver its TRUE
+    /// reason — `Panicked(OnStart)` — to watchers whose registration was still
+    /// queued when the mailbox died. FAILS while only `MailboxReceiver::drop`
+    /// answers them, because its synthetic `AlreadyDead` is restart-worthy: a
+    /// supervisor would burn its whole restart budget crash-looping a child that
+    /// can never start, instead of escalating on the first failure.
+    #[tokio::test]
+    async fn startup_failure_answers_queued_watchers_with_on_start_reason() {
+        let prepared = PreparedActor::<FailingStart>::new(cap(4));
+        let link_rx = watch_before_start(&prepared);
+
+        let outcome = bounded(prepared.run(())).await;
+        assert!(
+            matches!(outcome, RunResult::StartupFailed(_)),
+            "expected StartupFailed, got {outcome:?}",
+        );
+
+        assert_on_start_notice(&link_rx);
+    }
+
+    /// The linked sibling of the test above: `run_linked` is a second, symmetric
+    /// startup-failure path, and this bug existed precisely because a notification
+    /// duty was discharged on one path and missed on another — so the guarantee is
+    /// pinned on BOTH entry points rather than inferred from shared code.
+    #[tokio::test]
+    async fn linked_startup_failure_answers_queued_watchers_with_on_start_reason() {
+        let (prepared, own_link_rx) = PreparedActor::<FailingStart>::new_linked(cap(4));
+        let watcher_link_rx = watch_before_start(&prepared);
+
+        let outcome = bounded(prepared.run_linked((), own_link_rx)).await;
+        assert!(
+            matches!(outcome, RunResult::StartupFailed(_)),
+            "expected StartupFailed, got {outcome:?}",
+        );
+
+        assert_on_start_notice(&watcher_link_rx);
     }
 
     /// A handler that panics mid-mutation, with an `on_stop` spy that records the
