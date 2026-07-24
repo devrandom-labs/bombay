@@ -312,6 +312,16 @@ pub enum ActorStopReason {
     /// A supervisor is deliberately cycling the actor.
     #[error("supervisor restart")]
     SupervisorRestart,
+    /// A supervisor gave up on a child (a restart budget tripped) and is
+    /// escalating by stopping itself — the microreboot ladder's next rung is
+    /// whoever watches this supervisor (#196).
+    #[error("restart limit exceeded for child {child:?} after {rebuilds} rebuilds")]
+    RestartLimitExceeded {
+        /// The child whose budget tripped.
+        child: crate::mailbox::ActorId,
+        /// Lifetime failures observed for that child.
+        rebuilds: u32,
+    },
     /// A watched/linked actor died and this actor is propagating that death
     /// (a linked abnormal exit, or an explicit `Break` from `on_link_died`).
     /// `reason` is boxed (large-variant discipline — it nests a stop reason).
@@ -723,6 +733,27 @@ mod tests {
         assert!(
             !matches!(ActorStopReason::AlreadyDead, ActorStopReason::Killed),
             "one variant per failure domain: already-dead is not a kill",
+        );
+    }
+
+    /// A supervisor that gave up on a child stops ITSELF, and that stop must be
+    /// abnormal: the microreboot ladder's next rung is whoever watches the
+    /// supervisor, and a linked default hook only propagates a non-normal death.
+    /// Were this classified normal, an exhausted restart budget would stop the
+    /// supervisor silently and the failure would end there.
+    #[test]
+    fn restart_limit_exceeded_is_abnormal() {
+        let reason = ActorStopReason::RestartLimitExceeded {
+            child: crate::mailbox::ActorId::new(7),
+            rebuilds: 6,
+        };
+        assert!(
+            !reason.is_normal(),
+            "an escalating supervisor is an abnormal stop — its own watcher must propagate"
+        );
+        assert_eq!(
+            reason.to_string(),
+            "restart limit exceeded for child ActorId(7) after 6 rebuilds",
         );
     }
 

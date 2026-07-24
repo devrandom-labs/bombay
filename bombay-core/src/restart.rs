@@ -405,12 +405,21 @@ mod tests {
         }
     }
 
+    /// A sub-supervisor that exhausted a child's restart budget and escalated by
+    /// stopping itself (#196).
+    fn escalated() -> ActorStopReason {
+        ActorStopReason::RestartLimitExceeded {
+            child: ActorId::new(4),
+            rebuilds: 6,
+        }
+    }
+
     /// Every [`ActorStopReason`] variant, once. The decision-table tests are
     /// exhaustive only as far as this array is, and mutation testing cannot
     /// back-stop them (`should_restart`'s arms produce no body mutants), so the
     /// `match` below is a **compile-time tripwire**: adding a variant to the
     /// enum stops this file compiling until the array is extended.
-    fn all_reasons() -> [ActorStopReason; 6] {
+    fn all_reasons() -> [ActorStopReason; 7] {
         let reasons = [
             ActorStopReason::Normal,
             ActorStopReason::SupervisorRestart,
@@ -418,6 +427,7 @@ mod tests {
             ActorStopReason::AlreadyDead,
             panicked(PanicReason::HandlerPanic),
             link_died(ActorStopReason::Killed),
+            escalated(),
         ];
         for reason in &reasons {
             match reason {
@@ -426,7 +436,8 @@ mod tests {
                 | ActorStopReason::Killed
                 | ActorStopReason::AlreadyDead
                 | ActorStopReason::Panicked(_)
-                | ActorStopReason::LinkDied { .. } => {}
+                | ActorStopReason::LinkDied { .. }
+                | ActorStopReason::RestartLimitExceeded { .. } => {}
             }
         }
         reasons
@@ -463,6 +474,11 @@ mod tests {
             ActorStopReason::AlreadyDead,
             panicked(PanicReason::HandlerPanic),
             link_died(ActorStopReason::Killed),
+            // A sub-supervisor that escalated is an abnormal death like any
+            // other: THIS supervisor rebuilds that whole subtree. The carve-out
+            // is `Panicked(lifecycle)` alone — a rebuilt sub-supervisor starts
+            // with fresh counters, so the rebuild is not a knowable crash loop.
+            escalated(),
         ];
 
         for reason in &leave_dead {
