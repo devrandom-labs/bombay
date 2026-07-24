@@ -29,6 +29,7 @@
     "bombay-core/src/actor/recipient.rs::WeakRecipient<M>::upgrade": 1,
     "bombay-core/src/actor/spawn.rs::<impl fmt::Debug for PreparedActor<A>>::fmt": 1,
     "bombay-core/src/actor/spawn.rs::<impl fmt::Debug for RunResult<A>>::fmt": 1,
+    "bombay-core/src/actor/spawn.rs::apply_raced_registrations": 1,
     "bombay-core/src/error.rs::ActorStopReason::is_normal": 2,
     "bombay-core/src/error.rs::AskError<M, E>::err": 1,
     "bombay-core/src/error.rs::AskError<M, E>::is_retryable": 2,

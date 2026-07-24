@@ -366,8 +366,16 @@ impl<A: Mailboxed> MailboxReceiver<A> {
                     id: self.me,
                     reason: reason.clone(),
                     linked: reg.linked,
-                    // This path is reached only when `on_stop` never ran (hard
-                    // kill, startup failure), so there was no cleanup to fail.
+                    // Scoped to the `reason` alongside it: this path answers only
+                    // what the graceful teardown could not — a hard kill or a
+                    // startup failure (where `on_stop` never ran, so there was no
+                    // cleanup to fail), or a registration arriving after the
+                    // teardown finished, where nothing about a cleanup is
+                    // observable from here. `false` reads as "no cleanup failure
+                    // known", exactly as `AlreadyDead` reads as "reason unknown".
+                    // The `on_stop` window itself is NOT answered here (#196):
+                    // `finish_actor` drains it into the still-live `Watchers`
+                    // guard, which does know the outcome.
                     cleanup_failed: false,
                 });
             }
@@ -390,15 +398,16 @@ impl<A: Mailboxed> Drop for MailboxReceiver<A> {
     ///    that cycle would leak. Draining releases the embedded senders.
     /// 2. **No missed death (card #195).** A queued `Signal::Watch` was accepted
     ///    by a successful `send` — the watcher believes it is watching. This
-    ///    drop is the last code that ever sees the registration (hard kill, or
-    ///    the graceful window between `finish_actor`'s drain snapshot and this
-    ///    drop, spanning `on_stop`), so it must deliver the notice: reason
-    ///    [`AlreadyDead`](ActorStopReason::AlreadyDead), because
-    ///    the true stop reason is unknowable *here* (Erlang's `noproc`) — a path
-    ///    that does know it (startup failure, card #196) drains with that reason
-    ///    before this drop runs, leaving nothing to answer. The send is
-    ///    non-blocking into the watcher's UNBOUNDED link channel and only fails
-    ///    if the watcher itself is gone — a stale edge, correctly skipped.
+    ///    drop is the last code that ever sees the registration, so it must
+    ///    deliver the notice: reason
+    ///    [`AlreadyDead`](ActorStopReason::AlreadyDead), because the true stop
+    ///    reason is unknowable *here* (Erlang's `noproc`). Every path that DOES
+    ///    know it pre-empts this one (card #196): startup failure drains with
+    ///    `Panicked(OnStart)`, and the graceful teardown drains twice — once
+    ///    before `on_stop` and once after — so what reaches this drop is a hard
+    ///    kill or a registration that landed after teardown had finished. The
+    ///    send is non-blocking into the watcher's UNBOUNDED link channel and only
+    ///    fails if the watcher itself is gone — a stale edge, correctly skipped.
     ///
     /// A queued `Signal::Unwatch` is unenforceable here (the watcher set is gone
     /// with the loop); as in Erlang, a `demonitor` racing the death may still be
