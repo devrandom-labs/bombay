@@ -21,8 +21,10 @@ failure is not expressible.
 Everything on this card is therefore **invented policy** — links, monitors, exit
 signals and supervision trees alike. Each rule below is justified from the
 property it buys, with independent lineages cited. Where Erlang/OTP is the only
-source for a convention it is marked a **choice**; where bombay picks a default
-that the surveyed systems disagree on, it is marked a **preference**.
+source for a convention it is marked a **choice**; where bombay picks something
+the surveyed systems disagree on, it is marked a **preference**. Where they
+disagree across the whole range, that is treated as evidence the thing is **not
+defaultable** and the caller must state it (see *Policy has no default*).
 
 ## Scope — slice 2a. Slice 2b is a separate card.
 
@@ -91,6 +93,7 @@ Five lineages, four mechanisms, one shared contract.
 | Resume-in-place | absent | `SupervisorStrategy.resume` | n/a | n/a | **refused** — see below |
 | Give-up accounting | sliding window MaxR/MaxT | `maxNrOfRetries` + `withinTimeRange` | n/a | count, reset on success | **consecutive count (reset on healthy uptime) + never-reset lifetime budget** |
 | Spacing | none | backoff supervisor | n/a | exponential, capped | **exponential + jitter** |
+| Restart-policy default | `permanent` | *stop* (unsupervised) | n/a | `Always` | **none — the caller must state it** |
 | Lifecycle ownership | programmer | programmer | runtime (virtual actors) | controller | **programmer** (see *Not taken* below) |
 
 ### Refused: `Resume`
@@ -268,8 +271,9 @@ backoff and the counter.
 ### Spacing and give-up
 
 ```rust
+// No `Default` impl — see "Policy has no default; tuning does".
 struct RestartConfig {
-    policy: RestartPolicy,
+    policy: RestartPolicy,   // mandatory, never inferred
     max_restarts: u32,       // consecutive failures tolerated (fast trip)
     max_total: u32,          // lifetime rebuilds tolerated    (slow trip)
     min_backoff: Duration,
@@ -349,9 +353,10 @@ variant, which would overwrite the real reason.
 ## Public API
 
 ```rust
-pub trait Supervisor: Watch {
-    fn restart_config() -> RestartConfig { RestartConfig::default() }
-}
+/// Authority marker, no methods: `Actor` cannot watch, `Watch` can watch but
+/// not rebuild, `Supervisor` can rebuild. Restart policy is NOT a trait method —
+/// it is per-child, supplied at `supervise` time.
+pub trait Supervisor: Watch {}
 
 pub trait SpawnSupervised: Supervisor {
     fn spawn_supervised(args: Self::Args) -> ActorRef<Self>;
@@ -361,13 +366,21 @@ pub trait SpawnSupervised: Supervisor {
 impl<A: Supervisor> SpawnSupervised for A {}
 
 impl<S: Supervisor> ActorRef<S> {
-    /// Registers a supervised child. The closure spawns (and may name-register)
-    /// each incarnation; the core installs the watch edge and keeps only weak
-    /// handles.
-    pub async fn supervise<A, F>(&self, factory: F) -> Result<ActorId, TellError<()>>
+    /// Registers a supervised child under an explicit restart policy. The
+    /// closure spawns (and may name-register) each incarnation; the core
+    /// installs the watch edge and keeps only weak handles.
+    pub async fn supervise<A, F>(
+        &self,
+        config: impl Into<RestartConfig>,
+        factory: F,
+    ) -> Result<ActorId, TellError<()>>
     where A: Actor, F: FnMut() -> ActorRef<A> + Send + 'static;
 
-    pub async fn supervise_cloned<A: Actor>(&self, args: A::Args) -> Result<ActorId, TellError<()>>
+    pub async fn supervise_cloned<A: Actor>(
+        &self,
+        config: impl Into<RestartConfig>,
+        args: A::Args,
+    ) -> Result<ActorId, TellError<()>>
     where A::Args: Clone;
 
     /// Drops the supervision edge; a later death for `id` is then ignored.
@@ -378,18 +391,48 @@ impl<S: Supervisor> ActorRef<S> {
 `Signal` gains one variant, `Supervise(Box<SuperviseReg>)` — boxed so the hot
 `Message` variant keeps the #114 slot budget.
 
-Defaults, stated because defaults are policy: `Transient`, `max_restarts = 5`,
-`max_total = 100`, `min_backoff = 100ms`, `max_backoff = 30s`, `jitter = 0.2`,
-`reset_after = 60s`.
+### Policy has no default; tuning does
 
-The policy default is a **preference**, and the surveyed systems do not agree:
-OTP defaults `permanent`, Kubernetes defaults `restartPolicy: Always`
-(= permanent), Akka Typed defaults to *stop* (no supervision unless wrapped).
-bombay picks `Transient` because restarting a child that exited *normally*
-overrides the actor's own decision to stop, and because it is the only default
-of the three that is neither the most nor the least aggressive. Numeric defaults
-are unsourced starting points, expected to move once the DST work (slice 2b)
-shows real restart distributions.
+**`RestartConfig` does not implement `Default`, and `RestartPolicy` has no
+default.** Every `supervise` call names the policy. Rationale:
+
+- The surveyed systems pick three *different* defaults spanning the whole range
+  — OTP `permanent`, Kubernetes `restartPolicy: Always` (= permanent), Akka
+  Typed *stop* (no supervision unless wrapped). Three mature systems
+  disagreeing across the full range is evidence the choice is **not
+  defaultable**, not an invitation to pick a fourth.
+- Whether a dead child comes back is **semantics the caller owns**. A default
+  policy is a silent `unwrap_or` on someone else's failure semantics — the
+  supervisor would be acting on the user's behalf in a way they never wrote
+  down.
+- It matches the authority gradient the crate already uses: `Actor` cannot
+  watch, `Watch` can watch but not rebuild, `Supervisor` can rebuild. Each
+  step up is opt-in and explicit; the policy is the last step and gets the same
+  treatment.
+
+Numeric **tuning** keeps defaults, because magnitudes are not semantics:
+`max_restarts = 5`, `max_total = 100`, `min_backoff = 100ms`,
+`max_backoff = 30s`, `jitter = 0.2`, `reset_after = 60s`. These are unsourced
+starting points, expected to move once slice 2b's DST work shows real restart
+distributions.
+
+```rust
+sup.supervise(RestartPolicy::Transient, || Worker::spawn(args)).await?;
+sup.supervise(                                    // tuning overridden, policy still explicit
+    RestartConfig::new(RestartPolicy::Permanent).with_max_backoff(Duration::from_secs(5)),
+    || Server::spawn(cfg.clone()),
+).await?;
+```
+
+`impl Into<RestartConfig>` gives the bare-policy shorthand
+(`From<RestartPolicy> for RestartConfig`) without ever letting the policy itself
+be omitted.
+
+*Enforcement note:* absence of a `Default` impl cannot be asserted by a runtime
+test, and a `compile_fail` doctest would not run in the gate (#170). It is held
+by review plus the clippy `derivable_impls` / manual-default lint surface, and
+stated here so a future "add `Default` for ergonomics" PR reads as a spec
+violation rather than a convenience.
 
 ## Invariants — TDD, each written failing first
 
