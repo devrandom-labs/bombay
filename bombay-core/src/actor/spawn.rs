@@ -3365,7 +3365,7 @@ mod tests {
             error::{ActorStopReason, Infallible},
             mailbox::{ActorId, Capacity, MailboxSender, Mailboxed, Signal},
             message::Msg,
-            restart::{RestartConfig, RestartPolicy},
+            restart::{Jitter, RestartConfig, RestartPolicy},
             test_support::terminate_bound,
             watch::{LinkDied, WatchReg},
         };
@@ -3524,6 +3524,56 @@ mod tests {
                 .await
                 .expect("an incarnation id must arrive — the rebuild did not happen")
                 .expect("the id channel is open")
+        }
+
+        /// A child with OBSERVABLE state: it bumps an internal counter and reports
+        /// each new value, or crashes on command — the SUT for the "rebuild starts
+        /// from fresh state" invariant, which the stateless `Worker` cannot show.
+        struct Stateful {
+            hits: u32,
+            report: flume::Sender<u32>,
+        }
+        #[derive(Debug)]
+        enum StCmd {
+            /// Increment and report the new counter value.
+            Bump,
+            /// Panic — an abnormal death every policy but `Never` rebuilds.
+            Crash,
+        }
+        impl Msg for StCmd {}
+        impl Mailboxed for Stateful {
+            type Msg = StCmd;
+        }
+        impl crate::actor::Actor for Stateful {
+            type Args = flume::Sender<u32>;
+            type Error = Infallible;
+            async fn on_start(report: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self { hits: 0, report })
+            }
+            async fn handle(
+                &mut self,
+                cmd: StCmd,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                match cmd {
+                    StCmd::Bump => {
+                        self.hits += 1;
+                        let _ = self.report.send(self.hits);
+                    }
+                    StCmd::Crash => panic!("crash on command"),
+                }
+                Ok(())
+            }
+        }
+
+        /// The next counter value a [`Stateful`] incarnation reports, bounded so a
+        /// bump that is never handled fails fast instead of hanging the test.
+        async fn recv_report(rx: &flume::Receiver<u32>) -> u32 {
+            tokio::time::timeout(terminate_bound(), rx.recv_async())
+                .await
+                .expect("a bump must be reported")
+                .expect("the report channel is open")
         }
 
         fn send_cmd(senders: &Senders, index: usize, cmd: Cmd) {
@@ -4126,6 +4176,242 @@ mod tests {
             assert!(
                 !matches!(rebuilt, Ok(Ok(_))),
                 "a detached child must not be rebuilt, got {rebuilt:?}",
+            );
+
+            drop(sup);
+        }
+
+        /// #196 invariant 1 (`restart_rebuilds_never_resumes`, @bug lifecycle) — the
+        /// STATE half the sibling tests leave open. They prove a rebuilt child gets a
+        /// new [`ActorId`]; this proves its STATE is a fresh `on_start`, never the
+        /// mutated corpse (crash-only recovery). A child bumps an internal counter to
+        /// 2, then crashes; the rebuilt incarnation reports 1 on its first bump — a
+        /// resumed actor carrying the torn state would report 3.
+        #[tokio::test(start_paused = true)]
+        async fn rebuilt_child_starts_from_fresh_state_not_the_corpse() {
+            let sup = Sup::spawn_supervised(());
+            let (report_tx, report_rx) = flume::unbounded::<u32>();
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Arc<Mutex<Vec<MailboxSender<Stateful>>>> =
+                Arc::new(Mutex::new(Vec::new()));
+
+            let factory = {
+                let reports = report_tx;
+                let stashed = Arc::clone(&senders);
+                move || {
+                    let child = Stateful::spawn(reports.clone());
+                    let _ = id_tx.send(child.id());
+                    stashed
+                        .lock()
+                        .expect("lock")
+                        .push(child.mailbox_sender().clone());
+                    child
+                }
+            };
+            let id1 = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(RestartPolicy::Permanent, factory),
+            )
+            .await
+            .expect("supervise must not hang")
+            .expect("supervisor alive");
+            assert_eq!(recv_id(&id_rx).await, id1, "the factory recorded id1");
+
+            // Mutate the first incarnation's state to 2.
+            let bump = |i: usize| {
+                senders.lock().expect("lock")[i]
+                    .try_send_message(StCmd::Bump)
+                    .expect("the bump reaches the live incarnation");
+            };
+            bump(0);
+            assert_eq!(
+                recv_report(&report_rx).await,
+                1,
+                "first bump of incarnation 1"
+            );
+            bump(0);
+            assert_eq!(
+                recv_report(&report_rx).await,
+                2,
+                "second bump — state is now 2"
+            );
+
+            // Crash it, then bump the rebuilt incarnation once.
+            senders.lock().expect("lock")[0]
+                .try_send_message(StCmd::Crash)
+                .expect("the crash reaches the live incarnation");
+            let id2 = recv_id(&id_rx).await;
+            assert_ne!(id2, id1, "the rebuilt child is a fresh actor");
+
+            bump(1);
+            assert_eq!(
+                recv_report(&report_rx).await,
+                1,
+                "the rebuilt incarnation starts from a fresh on_start (1), not the corpse's 2 -> 3",
+            );
+
+            drop(sup);
+        }
+
+        /// #196 invariant 9 (`backoff_delays_grow_exponentially_and_cap`), end-to-end.
+        /// A child crashed five times in a row is rebuilt after delays that DOUBLE
+        /// from `min_backoff` and then CAP at `max_backoff` — measured as the
+        /// virtual-time gaps between successive rebuild instants under `start_paused`,
+        /// with jitter disabled for exactness. The single-step arm-a-deadline case is
+        /// covered by `kind`'s `armed_backoff_deadline_is_within_the_configured_bounds`;
+        /// this pins the multi-step SEQUENCE through the real loop. The gap
+        /// `crash_k -> rebuild_k` is exactly `backoff(k)` because the crash, its death
+        /// notice, and the armed retry all happen at one virtual instant (no sleeps
+        /// between), then paused time auto-advances to the deadline.
+        #[tokio::test(start_paused = true)]
+        async fn backoff_between_rebuilds_doubles_then_caps() {
+            let sup = Sup::spawn_supervised(());
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let cfg = RestartConfig::new(RestartPolicy::Permanent)
+                .with_min_backoff(Duration::from_millis(100))
+                .with_max_backoff(Duration::from_millis(400))
+                .with_jitter(Jitter::percent(0))
+                .with_max_restarts(20)
+                .with_max_total(20);
+            let id1 = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(cfg, worker_factory(id_tx, Arc::clone(&senders))),
+            )
+            .await
+            .expect("supervise must not hang")
+            .expect("supervisor alive");
+            assert_eq!(recv_id(&id_rx).await, id1, "the factory recorded id1");
+
+            let mut gaps = Vec::new();
+            let mut prev = tokio::time::Instant::now();
+            for attempt in 0..5usize {
+                send_cmd(&senders, attempt, Cmd::Crash);
+                recv_id(&id_rx).await;
+                let now = tokio::time::Instant::now();
+                gaps.push(now.duration_since(prev));
+                prev = now;
+            }
+
+            assert_eq!(
+                gaps,
+                [
+                    Duration::from_millis(100),
+                    Duration::from_millis(200),
+                    Duration::from_millis(400),
+                    Duration::from_millis(400),
+                    Duration::from_millis(400),
+                ],
+                "backoff doubles 100->200->400 then caps at max_backoff",
+            );
+
+            drop(sup);
+        }
+
+        /// #196 invariant 10 (`healthy_uptime_resets_consecutive_counter`), through
+        /// the loop. A child that survives `reset_after` before failing again backs
+        /// off from `min_backoff` — attempt 1 — not the escalated attempt-2 delay:
+        /// the loop's `record_started`-on-rebuild plus the healthy-uptime reset are
+        /// observed end-to-end. FAILS if the reset never happens — the second failure
+        /// would then be attempt 2 and back off for twice `min_backoff`.
+        #[tokio::test(start_paused = true)]
+        async fn healthy_uptime_resets_backoff_through_the_loop() {
+            let sup = Sup::spawn_supervised(());
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let reset_after = Duration::from_secs(10);
+            let cfg = RestartConfig::new(RestartPolicy::Permanent)
+                .with_min_backoff(Duration::from_millis(100))
+                .with_max_backoff(Duration::from_secs(60))
+                .with_jitter(Jitter::percent(0))
+                .with_reset_after(reset_after);
+            let id1 = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(cfg, worker_factory(id_tx, Arc::clone(&senders))),
+            )
+            .await
+            .expect("supervise must not hang")
+            .expect("supervisor alive");
+            assert_eq!(recv_id(&id_rx).await, id1, "the factory recorded id1");
+
+            // First crash: attempt 1, backs off min_backoff.
+            let t_crash1 = tokio::time::Instant::now();
+            send_cmd(&senders, 0, Cmd::Crash);
+            recv_id(&id_rx).await;
+            let first_gap = tokio::time::Instant::now().duration_since(t_crash1);
+            assert_eq!(
+                first_gap,
+                Duration::from_millis(100),
+                "the first failure is attempt 1 (min_backoff)",
+            );
+
+            // The rebuilt incarnation survives past reset_after (healthy), zeroing the
+            // consecutive counter, THEN crashes.
+            tokio::time::advance(reset_after + Duration::from_secs(1)).await;
+            let t_crash2 = tokio::time::Instant::now();
+            send_cmd(&senders, 1, Cmd::Crash);
+            recv_id(&id_rx).await;
+            let second_gap = tokio::time::Instant::now().duration_since(t_crash2);
+            assert_eq!(
+                second_gap,
+                Duration::from_millis(100),
+                "healthy uptime reset the counter, so this is attempt 1 again — not 200ms",
+            );
+
+            drop(sup);
+        }
+
+        /// #196 invariant 15 (`no_cascading_restart`): under `OneForOne` a failing
+        /// child rebuilds ONLY itself. Two children — A (`Permanent`) and B
+        /// (`Transient`) —
+        /// share one supervisor; A crashes and is rebuilt with a fresh id, while B is
+        /// untouched: a single incarnation still, still alive, still answering
+        /// messages. Distinct from `escalation_stops_surviving_children` (the
+        /// ESCALATION case, where the survivor IS swept): here A stays under budget,
+        /// so the isolation is the normal-restart guarantee, not the teardown sweep.
+        #[tokio::test(start_paused = true)]
+        async fn one_child_failure_does_not_disturb_its_sibling() {
+            let sup = Sup::spawn_supervised(());
+            let (id_tx_a, id_rx_a) = flume::unbounded::<ActorId>();
+            let senders_a: Senders = Arc::new(Mutex::new(Vec::new()));
+            let (id_tx_b, id_rx_b) = flume::unbounded::<ActorId>();
+            let senders_b: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let a1 = supervise_worker(&sup, RestartPolicy::Permanent, id_tx_a, &senders_a).await;
+            assert_eq!(recv_id(&id_rx_a).await, a1, "A recorded");
+            let b1 = supervise_worker(&sup, RestartPolicy::Transient, id_tx_b, &senders_b).await;
+            assert_eq!(recv_id(&id_rx_b).await, b1, "B recorded");
+
+            // Crash A only.
+            send_cmd(&senders_a, 0, Cmd::Crash);
+            let a2 = recv_id(&id_rx_a).await;
+            assert_ne!(a2, a1, "A is rebuilt as a fresh actor");
+
+            // B is untouched: exactly one incarnation still, its mailbox still open.
+            let b_sender = senders_b.lock().expect("lock")[0].clone();
+            assert_eq!(
+                senders_b.lock().expect("lock").len(),
+                1,
+                "B was never rebuilt — its ActorId is unchanged",
+            );
+            assert!(
+                !b_sender.is_closed(),
+                "B stays alive through its sibling's crash and rebuild",
+            );
+
+            // B still ANSWERS a message: a normal stop reaches it and (Transient)
+            // leaves it dead — proving its handler loop was never cancelled/aborted.
+            send_cmd(&senders_b, 0, Cmd::StopNormally);
+            await_closed(&b_sender).await;
+
+            // And B, being Transient after a normal stop, was NOT rebuilt.
+            let rebuilt_b =
+                tokio::time::timeout(Duration::from_secs(120), id_rx_b.recv_async()).await;
+            assert!(
+                !matches!(rebuilt_b, Ok(Ok(_))),
+                "B must not be rebuilt, got {rebuilt_b:?}",
             );
 
             drop(sup);

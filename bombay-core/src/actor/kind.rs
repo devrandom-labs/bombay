@@ -930,6 +930,53 @@ mod supervised_tests {
         assert!(retries.is_empty(), "an escalation arms no retry");
     }
 
+    /// #196 invariant 6 (`already_dead_counts_as_restartable`): an `AlreadyDead`
+    /// notice is abnormal under `Transient`, so the child is REBUILT — and each one
+    /// COUNTS toward the give-up budget like any other failure. `max_restarts = 1`:
+    /// the first `AlreadyDead` arms a rebuild (attempt 1); the second trips
+    /// (attempt 2 > 1), which can only happen if the counter advanced rather than
+    /// resetting to "attempt 1" on every `AlreadyDead`. FAILS if `AlreadyDead` were
+    /// classified `LeaveDead` (no retry armed on the first) or did not count (the
+    /// second never trips).
+    #[tokio::test]
+    async fn already_dead_is_restartable_under_transient_and_counts() {
+        let (mut children, id) =
+            one_child(RestartConfig::new(RestartPolicy::Transient).with_max_restarts(1));
+        let mut retries = DelayQueue::new();
+        let mut rng = fastrand::Rng::with_seed(0);
+
+        let first = handle_child_death(
+            &mut children,
+            &mut retries,
+            &mut rng,
+            &notice(id, ActorStopReason::AlreadyDead),
+        );
+        assert!(
+            matches!(first, Some(ControlFlow::Continue(()))),
+            "AlreadyDead is abnormal under Transient — the first one rebuilds, got {first:?}",
+        );
+        assert_eq!(
+            retries.len(),
+            1,
+            "a rebuild was armed for the AlreadyDead child"
+        );
+
+        let second = handle_child_death(
+            &mut children,
+            &mut retries,
+            &mut rng,
+            &notice(id, ActorStopReason::AlreadyDead),
+        );
+        assert!(
+            matches!(
+                second,
+                Some(ControlFlow::Break(ActorStopReason::RestartLimitExceeded { child, rebuilds }))
+                    if child == id && rebuilds == 2
+            ),
+            "the second AlreadyDead advanced the counter and tripped the budget, got {second:?}",
+        );
+    }
+
     /// `Add` installs a child under its id; `Remove` drops the edge but leaves
     /// the child running (the entry is gone, no stop signal fired); `Stop` drops
     /// the edge, cancels the child at once, and SCHEDULES (does not yet fire) the
