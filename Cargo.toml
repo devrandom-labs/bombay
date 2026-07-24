@@ -187,7 +187,6 @@ bombay = { path = ".", features = ["testing"] }
 cucumber = { workspace = true }
 proptest = { workspace = true }
 serde_bytes = "0.11"
-criterion = { version = "0.8", features = ["async_tokio"] }
 bombay_actors = { path = "actors" }
 libp2p = { version = "0.56.0", features = ["serde"] }
 metrics-exporter-prometheus = "0.18"
@@ -202,6 +201,7 @@ tokio = { version = "1", features = [
 tokio-stream = { version = "0.1.15", features = ["time"] }
 tokio-test = "0.4.4"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+criterion = { version = "5", package = "codspeed-criterion-compat", features = ["async_tokio"] }
 
 [[example]]
 name = "console"
