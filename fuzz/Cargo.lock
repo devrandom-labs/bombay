@@ -106,6 +106,7 @@ name = "bombay-core"
 version = "0.1.0"
 dependencies = [
  "downcast-rs",
+ "fastrand",
  "flume",
  "futures",
  "papaya",
@@ -574,6 +575,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "pin-project-lite",
+ "slab",
  "tokio",
 ]
 
