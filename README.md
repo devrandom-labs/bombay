@@ -1,5 +1,7 @@
 # bombay
 
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/devrandom-labs/bombay?utm_source=badge)
+
 Fault-tolerant async actors on Tokio — a Zenoh-native fork of the [kameo](https://github.com/tqwewe/kameo) actor framework. Bombay keeps kameo's local actor core (single-writer message handling, supervision, links, a name registry) and is replacing its libp2p remote layer with a thin [Zenoh](https://zenoh.io) `Session` layer, pairing with [nexus](https://github.com/devrandom-labs/nexus) for event-sourced, single-writer aggregates.
 
 > **Status:** the local actor core (forked from kameo 0.21) is in-tree and works today; the Zenoh remote layer and the nexus adapter are under active development. Until those land, the public API below *is* the kameo actor API. A second, from-scratch core (`bombay-core`) is being rebuilt beside it — see [the rebuilt core](#the-rebuilt-core-bombay-core). Process, roadmap, and engineering rules live in [`CLAUDE.md`](CLAUDE.md).
