@@ -109,6 +109,9 @@ impl Watchers {
 
     /// Records that `on_stop` failed; stamped onto every outgoing notice without
     /// touching the recorded stop reason.
+    // `const` here but not on `set_reason` next door: overwriting an
+    // `Option<ActorStopReason>` drops the old value, and that destructor is not
+    // const-evaluable (E0493). A `bool` write has no destructor to run.
     pub(crate) const fn set_cleanup_failed(&mut self) {
         self.cleanup_failed = true;
     }
@@ -163,7 +166,9 @@ mod tests {
 
     #[test]
     fn drop_without_set_reason_reports_killed() {
-        // Abortable drops the guard without a graceful reason => Killed.
+        // Abortable drops the guard without a graceful reason => Killed. This is
+        // also the canonical pin for the kill path's `cleanup_failed` bit: one
+        // drop event carries both invariants, so they are asserted together.
         let (tx, rx) = flume::unbounded();
         let mut guard = Watchers::new(ActorId::new(7));
         guard.apply(WatchReg {
@@ -183,21 +188,35 @@ mod tests {
 
     #[test]
     fn set_cleanup_failed_rides_every_notice() {
-        let (tx, rx) = flume::unbounded();
+        // Two edges, not one: a `Drop` that stamped only the first notice would
+        // pass a single-edge test while leaving later watchers misinformed.
+        let (tx_a, rx_a) = flume::unbounded();
+        let (tx_b, rx_b) = flume::unbounded();
         let mut guard = Watchers::new(ActorId::new(9));
         guard.apply(WatchReg {
             watcher: ActorId::new(1),
-            link_tx: tx,
+            link_tx: tx_a,
             linked: true,
+        });
+        guard.apply(WatchReg {
+            watcher: ActorId::new(2),
+            link_tx: tx_b,
+            linked: false,
         });
         guard.set_reason(ActorStopReason::Normal);
         guard.set_cleanup_failed();
         drop(guard);
 
-        let n = rx.try_recv().expect("notified");
-        assert!(n.cleanup_failed, "cleanup_failed must ride the notice");
+        let a = rx_a.try_recv().expect("a notified");
         assert!(
-            n.reason.is_normal(),
+            a.cleanup_failed,
+            "cleanup_failed must ride the first notice"
+        );
+        assert!(a.reason.is_normal());
+        let b = rx_b.try_recv().expect("b notified");
+        assert!(b.cleanup_failed, "cleanup_failed must ride EVERY notice");
+        assert!(
+            b.reason.is_normal(),
             "original reason preserved — a failed cleanup is not a different death"
         );
     }
