@@ -557,6 +557,10 @@ async fn run_lifecycle_supervised<A: Supervisor>(
 
     let mut children = Children::new();
     let mut retries = DelayQueue::new();
+    // Deferred hard-kills for `stop_child`ed children: cancelled now, aborted when
+    // their `stop_grace` deadline fires on this second queue's select arm — the
+    // loop stays responsive through the grace instead of blocking on it.
+    let mut pending_aborts = DelayQueue::new();
     // Jitter RNG for restart backoff: entropy-seeded in production; a `#[cfg(test)]`
     // seed replays the exact delay sequence (the DST contract on
     // `jittered_backoff`). Inlined rather than a helper so the seeded-vs-entropy
@@ -579,6 +583,7 @@ async fn run_lifecycle_supervised<A: Supervisor>(
             },
             children: &mut children,
             retries: &mut retries,
+            pending_aborts: &mut pending_aborts,
             rng: &mut rng,
             sup_id,
             sup_link_tx,
@@ -3346,17 +3351,23 @@ mod tests {
     /// the supervisor, no third incarnation is ever built, and the bounded
     /// `recv_id` for it fails fast instead of hanging.
     mod supervised_rebuild {
-        use std::sync::{Arc, Mutex};
+        use std::sync::{
+            Arc, Mutex,
+            atomic::{AtomicU32, Ordering},
+        };
 
         use core::time::Duration;
 
         use crate::{
-            actor::{ActorRef, Spawn, SpawnSupervised, Supervisor, Watch},
-            error::Infallible,
-            mailbox::{ActorId, MailboxSender, Mailboxed},
+            actor::{
+                ActorRef, PreparedActor, RunResult, Spawn, SpawnSupervised, Supervisor, Watch,
+            },
+            error::{ActorStopReason, Infallible},
+            mailbox::{ActorId, Capacity, MailboxSender, Mailboxed, Signal},
             message::Msg,
-            restart::RestartPolicy,
+            restart::{RestartConfig, RestartPolicy},
             test_support::terminate_bound,
+            watch::{LinkDied, WatchReg},
         };
 
         /// The supervisor under test: no behaviour of its own — a supervisor with
@@ -3419,6 +3430,70 @@ mod tests {
                 Ok(())
             }
         }
+
+        /// A child whose handler PARKS forever and never re-checks the cancel
+        /// token — the crash-only stress case. A graceful `cancel` (which only
+        /// unblocks the mailbox `recv`, never a running handler) cannot stop it;
+        /// only the hard `abort` can. It signals `entered` as it parks so a test
+        /// can wait until it is provably inside the non-cancellable handler.
+        struct Parker {
+            entered: Arc<tokio::sync::Notify>,
+        }
+        #[derive(Debug)]
+        struct ParkCmd;
+        impl Msg for ParkCmd {}
+        impl Mailboxed for Parker {
+            type Msg = ParkCmd;
+        }
+        impl crate::actor::Actor for Parker {
+            type Args = Arc<tokio::sync::Notify>;
+            type Error = Infallible;
+            async fn on_start(entered: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self { entered })
+            }
+            async fn handle(
+                &mut self,
+                _: ParkCmd,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                self.entered.notify_one();
+                // Park with no cancel-awareness: only an abort can end this task.
+                core::future::pending::<()>().await;
+                Ok(())
+            }
+        }
+
+        /// A supervisor that COUNTS the messages it handles, so a test can prove
+        /// the mailbox arm is still served while a restart-backoff (or a pending
+        /// abort) timer is armed.
+        struct CountingSup {
+            handled: Arc<AtomicU32>,
+        }
+        #[derive(Debug)]
+        struct CountTick;
+        impl Msg for CountTick {}
+        impl Mailboxed for CountingSup {
+            type Msg = CountTick;
+        }
+        impl crate::actor::Actor for CountingSup {
+            type Args = Arc<AtomicU32>;
+            type Error = Infallible;
+            async fn on_start(handled: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self { handled })
+            }
+            async fn handle(
+                &mut self,
+                _: CountTick,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                self.handled.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }
+        }
+        impl Watch for CountingSup {}
+        impl Supervisor for CountingSup {}
 
         type Senders = Arc<Mutex<Vec<MailboxSender<Worker>>>>;
 
@@ -3663,6 +3738,314 @@ mod tests {
                 err.is_terminal(),
                 "a reaped supervisor is terminal, not retryable"
             );
+        }
+
+        /// A short bounded wait for a child's mailbox to close — the observable
+        /// signal that its run task ended (stopped or aborted), since the loop
+        /// drops the receiver on exit.
+        ///
+        /// Polls with a small `sleep` rather than a busy `yield_now`: under
+        /// `start_paused` a busy loop pins virtual time (the runtime never idles),
+        /// so the bounding `timeout` could never fire and a child that never closes
+        /// would hang the test instead of FAILING it. The `sleep` lets paused time
+        /// auto-advance to the `timeout` deadline while still yielding so a
+        /// cooperative stop can make progress.
+        async fn await_closed<A: Mailboxed>(sender: &MailboxSender<A>) {
+            tokio::time::timeout(terminate_bound(), async {
+                while !sender.is_closed() {
+                    tokio::time::sleep(Duration::from_millis(1)).await;
+                }
+            })
+            .await
+            .expect("the child's task must end, closing its mailbox");
+        }
+
+        /// #196 verb: `unsupervise` drops the edge, so a later child death is NOT
+        /// rebuilt — the entry is gone, so the death routes off the restart path.
+        /// Meaningful because WITHOUT the drop this `Permanent` child would rebuild
+        /// on its crash: a second incarnation id would arrive and fail the test.
+        #[tokio::test(start_paused = true)]
+        async fn unsupervised_child_death_does_not_rebuild() {
+            let sup = Sup::spawn_supervised(());
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let id1 = supervise_worker(&sup, RestartPolicy::Permanent, id_tx, &senders).await;
+            assert_eq!(recv_id(&id_rx).await, id1, "the factory recorded id1");
+
+            tokio::time::timeout(terminate_bound(), sup.unsupervise(id1))
+                .await
+                .expect("unsupervise must not hang")
+                .expect("the supervisor is alive");
+
+            send_cmd(&senders, 0, Cmd::Crash);
+
+            // No fresh incarnation id may arrive: `Ok(Ok(id))` is a rebuild (the
+            // bug); a timeout or a `Disconnected` (the dropped edge took the
+            // factory, and with it the id sender) both mean "not rebuilt".
+            let rebuilt = tokio::time::timeout(Duration::from_secs(120), id_rx.recv_async()).await;
+            assert!(
+                !matches!(rebuilt, Ok(Ok(_))),
+                "an unsupervised child must not be rebuilt, got {rebuilt:?}",
+            );
+
+            drop(sup);
+        }
+
+        /// #196 verb: `stop_child` is terminal even for a `Permanent` child that
+        /// would rebuild on any other death — it drops the edge AND stops the
+        /// child, so the death can never route to a rebuild. Proven from both ends:
+        /// the child's mailbox disconnects (it stopped) and no fresh id arrives.
+        #[tokio::test(start_paused = true)]
+        async fn stop_child_is_terminal_even_for_permanent() {
+            let sup = Sup::spawn_supervised(());
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let id1 = supervise_worker(&sup, RestartPolicy::Permanent, id_tx, &senders).await;
+            assert_eq!(recv_id(&id_rx).await, id1, "the factory recorded id1");
+
+            tokio::time::timeout(terminate_bound(), sup.stop_child(id1))
+                .await
+                .expect("stop_child must not hang")
+                .expect("the supervisor is alive");
+
+            // The child respects the graceful cancel, so it stops within the grace
+            // and its mailbox closes.
+            await_closed(&senders.lock().expect("lock")[0].clone()).await;
+
+            // No fresh id may arrive: a rebuild is `Ok(Ok(id))`; a timeout or a
+            // `Disconnected` (the dropped edge took the factory) both mean "not
+            // rebuilt".
+            let rebuilt = tokio::time::timeout(Duration::from_secs(120), id_rx.recv_async()).await;
+            assert!(
+                !matches!(rebuilt, Ok(Ok(_))),
+                "a stop_child'd Permanent child must not be rebuilt, got {rebuilt:?}",
+            );
+
+            drop(sup);
+        }
+
+        /// #196 crash-only stop: a child whose handler ignores the graceful cancel
+        /// (parked, never re-checking the token) is still gone once its
+        /// `stop_grace` deadline fires the hard-abort backstop. Time is advanced
+        /// explicitly past the grace (a busy wait would freeze paused time), then
+        /// the parked child's mailbox closes. FAILS if `stop_child` relied on the
+        /// child cooperating — the parked child would never stop.
+        #[tokio::test(start_paused = true)]
+        async fn stop_child_aborts_a_child_that_ignores_cancellation() {
+            let sup = Sup::spawn_supervised(());
+            let entered = Arc::new(tokio::sync::Notify::new());
+            let parker_senders: Arc<Mutex<Vec<MailboxSender<Parker>>>> =
+                Arc::new(Mutex::new(Vec::new()));
+
+            let grace = Duration::from_secs(1);
+            let factory = {
+                let entered = Arc::clone(&entered);
+                let parker_senders = Arc::clone(&parker_senders);
+                move || {
+                    let child = Parker::spawn(Arc::clone(&entered));
+                    parker_senders
+                        .lock()
+                        .expect("lock")
+                        .push(child.mailbox_sender().clone());
+                    child
+                }
+            };
+            let parker_id = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(
+                    RestartConfig::new(RestartPolicy::Permanent).with_stop_grace(grace),
+                    factory,
+                ),
+            )
+            .await
+            .expect("supervise must not hang")
+            .expect("supervisor alive");
+
+            // Drive the parker into its non-cancellable parked handler.
+            let parker_sender = parker_senders.lock().expect("lock")[0].clone();
+            parker_sender
+                .try_send_message(ParkCmd)
+                .expect("the park command reaches the parker");
+            tokio::time::timeout(terminate_bound(), entered.notified())
+                .await
+                .expect("the parker enters its parked handler");
+
+            tokio::time::timeout(terminate_bound(), sup.stop_child(parker_id))
+                .await
+                .expect("stop_child must not hang")
+                .expect("supervisor alive");
+
+            // The parker ignores the graceful cancel, so it survives the grace and
+            // is only stopped by the deferred abort at the deadline. Advancing past
+            // the grace lets the supervisor's pending-abort arm fire it. `sleep`
+            // (not a busy loop) so paused time can auto-advance to the deadline.
+            tokio::time::timeout(terminate_bound(), async {
+                tokio::time::sleep(grace + Duration::from_secs(1)).await;
+                while !parker_sender.is_closed() {
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
+            })
+            .await
+            .expect("the abort backstop must stop a child that ignores cancellation");
+
+            drop(sup);
+        }
+
+        /// #196 escalation sweep: when one child trips its budget and the supervisor
+        /// escalates, every OTHER surviving child is stopped too (its stop edges
+        /// fire), and the supervisor stops with the escalation reason. Proves a
+        /// supervisor never leaks its children when it dies.
+        #[tokio::test(start_paused = true)]
+        async fn escalation_stops_surviving_children() {
+            let cap = Capacity::try_from(8usize).expect("valid capacity");
+            let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let sup = prepared.actor_ref().clone();
+            let join = prepared.spawn_supervised_task((), link_rx);
+
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            // Child A: a zero budget, so its first crash escalates.
+            let a = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(
+                    RestartConfig::new(RestartPolicy::Permanent).with_max_restarts(0),
+                    worker_factory(id_tx.clone(), Arc::clone(&senders)),
+                ),
+            )
+            .await
+            .expect("supervise A must not hang")
+            .expect("supervisor alive");
+            assert_eq!(recv_id(&id_rx).await, a, "A recorded");
+
+            // Child B: a healthy survivor with a zero grace (so the sweep is quick).
+            let (id_tx_b, id_rx_b) = flume::unbounded::<ActorId>();
+            let senders_b: Senders = Arc::new(Mutex::new(Vec::new()));
+            tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(
+                    RestartConfig::new(RestartPolicy::Permanent).with_stop_grace(Duration::ZERO),
+                    worker_factory(id_tx_b, Arc::clone(&senders_b)),
+                ),
+            )
+            .await
+            .expect("supervise B must not hang")
+            .expect("supervisor alive");
+            recv_id(&id_rx_b).await;
+
+            let b_sender = senders_b.lock().expect("lock")[0].clone();
+            send_cmd(&senders, 0, Cmd::Crash); // trip A's zero budget -> escalate
+
+            // The supervisor stops with the escalation reason...
+            let outcome = tokio::time::timeout(terminate_bound(), join)
+                .await
+                .expect("the escalating supervisor stops promptly")
+                .expect("join");
+            let RunResult::Stopped { reason, .. } = outcome else {
+                panic!("expected a Stopped supervisor, got {outcome:?}");
+            };
+            assert!(
+                matches!(reason, ActorStopReason::RestartLimitExceeded { child, rebuilds }
+                    if child == a && rebuilds == 1),
+                "the supervisor escalated with RestartLimitExceeded, got {reason:?}",
+            );
+            // ...and B, the survivor, was stopped by the sweep (its mailbox is gone).
+            await_closed(&b_sender).await;
+        }
+
+        /// #196 escalation ladder: the supervisor's own watcher is notified of its
+        /// escalation death, carrying the escalation reason — the next rung. The
+        /// watcher is registered raw on the supervisor's mailbox so the delivered
+        /// [`LinkDied`] reason can be inspected exactly.
+        #[tokio::test(start_paused = true)]
+        async fn escalation_notifies_the_supervisors_watcher() {
+            let sup = Sup::spawn_supervised(());
+            let (watch_tx, watch_rx) = flume::unbounded::<LinkDied>();
+            tokio::time::timeout(
+                terminate_bound(),
+                sup.mailbox_sender().send(Signal::Watch(Box::new(WatchReg {
+                    watcher: ActorId::new(999_999),
+                    link_tx: watch_tx,
+                    linked: false,
+                }))),
+            )
+            .await
+            .expect("registration must not hang")
+            .expect("registration delivered");
+
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+            let child = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(
+                    RestartConfig::new(RestartPolicy::Permanent).with_max_restarts(0),
+                    worker_factory(id_tx, Arc::clone(&senders)),
+                ),
+            )
+            .await
+            .expect("supervise must not hang")
+            .expect("supervisor alive");
+            assert_eq!(recv_id(&id_rx).await, child, "the child recorded");
+
+            send_cmd(&senders, 0, Cmd::Crash); // trip the zero budget -> escalate
+
+            let notice = tokio::time::timeout(terminate_bound(), watch_rx.recv_async())
+                .await
+                .expect("the supervisor's watcher is notified")
+                .expect("the notice arrives");
+            assert_eq!(notice.id, sup.id(), "the notice names the supervisor");
+            assert!(
+                matches!(notice.reason, ActorStopReason::RestartLimitExceeded { child: c, rebuilds }
+                    if c == child && rebuilds == 1),
+                "the escalation reason rides up the ladder, got {:?}",
+                notice.reason,
+            );
+        }
+
+        /// #196 invariant 6: a child's high backoff does NOT stall the supervisor's
+        /// mailbox — a normal message is served long before the rebuild deadline.
+        /// The `DelayQueue` retries arm is a *select* arm, not an inline sleep, so a
+        /// 30 s backoff leaves the mailbox arm free. Under `start_paused` the tell
+        /// is handled at virtual t=0, well before the 30 s rebuild timer.
+        #[tokio::test(start_paused = true)]
+        async fn supervisor_serves_messages_during_backoff() {
+            let handled = Arc::new(AtomicU32::new(0));
+            let sup = CountingSup::spawn_supervised(Arc::clone(&handled));
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            // A crash arms a 30 s backoff.
+            let id1 = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(
+                    RestartConfig::new(RestartPolicy::Permanent)
+                        .with_min_backoff(Duration::from_secs(30))
+                        .with_max_backoff(Duration::from_secs(30)),
+                    worker_factory(id_tx, Arc::clone(&senders)),
+                ),
+            )
+            .await
+            .expect("supervise must not hang")
+            .expect("supervisor alive");
+            assert_eq!(recv_id(&id_rx).await, id1, "the child recorded");
+            send_cmd(&senders, 0, Cmd::Crash);
+
+            // The supervisor must handle a normal message despite the armed backoff.
+            tokio::time::timeout(terminate_bound(), sup.tell(CountTick))
+                .await
+                .expect("tell must not hang")
+                .expect("the supervisor is alive");
+            tokio::time::timeout(terminate_bound(), async {
+                while handled.load(Ordering::SeqCst) == 0 {
+                    tokio::task::yield_now().await;
+                }
+            })
+            .await
+            .expect("the supervisor served the message during the backoff window");
+
+            drop(sup);
         }
     }
 }

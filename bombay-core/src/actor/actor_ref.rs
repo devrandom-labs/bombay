@@ -396,6 +396,68 @@ impl<S: Supervisor> ActorRef<S> {
         }
     }
 
+    /// Stops supervising `id`: drops the supervision edge. The child KEEPS
+    /// RUNNING (use [`stop_child`](Self::stop_child) to also stop it), and it is
+    /// never rebuilt again — the loop no longer holds the entry, so a later death
+    /// for `id` finds no table entry and never reaches the restart policy.
+    ///
+    /// **The child is not fully detached, though.** A supervisor watches its
+    /// children with a *propagating* link (and cannot un-watch them — the child
+    /// handle it keeps carries no sender),
+    /// so a death notice already in flight for `id` still routes to
+    /// [`on_link_died`](Watch::on_link_died): the default hook then propagates an
+    /// **abnormal** such death, stopping the supervisor (a normal death is
+    /// observed and ignored). To drop the child without that exposure, override
+    /// `on_link_died` to trap, or use [`stop_child`](Self::stop_child) for a clean
+    /// terminal stop.
+    ///
+    /// The op rides the supervisor's own mailbox (the child table is loop-owned;
+    /// all mutation goes through the loop), so this `.await`s for mailbox capacity
+    /// — ordinary backpressure, not failure.
+    ///
+    /// # Errors
+    ///
+    /// [`TellError::ActorNotAlive`] if the supervisor's mailbox is closed (it has
+    /// stopped); the edge it would have dropped is already gone with it.
+    pub async fn unsupervise(&self, id: ActorId) -> Result<(), TellError<()>> {
+        self.send_supervision(SupervisionOp::Remove(id)).await
+    }
+
+    /// Stops supervising `id` AND stops the child: `cancel` → `stop_grace` →
+    /// `abort` (OTP's `terminate_child/2`). Use this, never [`kill`](Self::kill),
+    /// to permanently stop a supervised child — `kill` is an abnormal exit a
+    /// [`Permanent`](crate::restart::RestartPolicy::Permanent)/[`Transient`](crate::restart::RestartPolicy::Transient)
+    /// policy would rebuild, whereas `stop_child` drops the edge first so the death
+    /// can never route to a rebuild.
+    ///
+    /// The stop is crash-only and bounded: the child is asked to stop gracefully,
+    /// then hard-aborted if it has not stopped within its `stop_grace` — it never
+    /// depends on the child cooperating. The op rides the supervisor's own mailbox,
+    /// so this `.await`s for mailbox capacity (backpressure).
+    ///
+    /// # Errors
+    ///
+    /// [`TellError::ActorNotAlive`] if the supervisor's mailbox is closed (it has
+    /// stopped); a stopped supervisor has already dropped every child handle.
+    pub async fn stop_child(&self, id: ActorId) -> Result<(), TellError<()>> {
+        self.send_supervision(SupervisionOp::Stop(id)).await
+    }
+
+    /// Ships a child-table [`SupervisionOp`] to the supervisor's own mailbox, the
+    /// table's single writer. Errors only on a closed mailbox (`send().await`
+    /// never errors on a full-but-alive one), which is the genuine dead-supervisor
+    /// path — mapped to the terminal [`TellError::ActorNotAlive`].
+    async fn send_supervision(&self, op: SupervisionOp) -> Result<(), TellError<()>> {
+        match self
+            .mailbox_sender()
+            .send(Signal::Supervision(Box::new(op)))
+            .await
+        {
+            Ok(()) => Ok(()),
+            Err(_) => Err(TellError::ActorNotAlive(())),
+        }
+    }
+
     /// [`supervise`](Self::supervise) shorthand for a child whose `Args` are
     /// `Clone`: the rebuild closure re-spawns `A` from a fresh clone of `args`
     /// each incarnation.

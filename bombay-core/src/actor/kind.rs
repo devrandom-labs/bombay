@@ -5,8 +5,8 @@
 use std::{ops::ControlFlow, panic::AssertUnwindSafe};
 
 use fastrand::Rng;
-use futures::{FutureExt, StreamExt, stream::AbortHandle};
-use tokio::time::Instant;
+use futures::{FutureExt, StreamExt, future::join_all, stream::AbortHandle};
+use tokio::time::{Instant, sleep};
 use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
 use crate::{
@@ -52,6 +52,14 @@ pub(super) struct SupervisedState<'a, A: Mailboxed> {
     pub(super) channels: LinkedChannels<'a, A>,
     pub(super) children: &'a mut Children,
     pub(super) retries: &'a mut DelayQueue<ActorId>,
+    /// Deferred hard-kills for children stopped via `stop_child` (#196): each
+    /// entry is a cancelled child's sender-less [`ChildHandle`], keyed on its
+    /// `stop_grace` deadline. When the deadline fires the loop aborts the child —
+    /// the crash-only backstop for a child that ignored the graceful `cancel`.
+    /// Deferring the abort through this queue (rather than an inline
+    /// `sleep(grace).await`) is what keeps the single-threaded loop serving every
+    /// other child throughout one child's grace window.
+    pub(super) pending_aborts: &'a mut DelayQueue<ChildHandle>,
     pub(super) rng: &'a mut Rng,
     /// The supervisor's own [`ActorId`] — names it as the watcher on every child
     /// edge the loop installs.
@@ -318,6 +326,7 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
         },
         children,
         retries,
+        pending_aborts,
         rng,
         sup_id,
         sup_link_tx,
@@ -337,19 +346,11 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
                 // arm against is unreachable here — no `link_open` flag needed. On
                 // the impossible `Err` the arm does nothing and the select waits
                 // again (it cannot spin: `Err` requires zero senders).
-                if let Ok(notice) = death {
-                    // A supervised child's death drives restart policy silently;
-                    // any other id is a peer this supervisor merely watches, whose
-                    // death still reaches the user hook (the #195 path). The
-                    // restart handler's own table lookup is the membership test —
-                    // `None` means "not a child, route to the peer hook".
-                    let flow = match handle_child_death(children, retries, rng, &notice) {
-                        Some(flow) => flow,
-                        None => handle_link_died(state, notice).await,
-                    };
-                    if let ControlFlow::Break(reason) = flow {
-                        return reason;
-                    }
+                if let Ok(notice) = death
+                    && let ControlFlow::Break(reason) =
+                        dispatch_death(state, children, retries, rng, notice).await
+                {
+                    return reason;
                 }
             }
             next_retry = retries.next(), if !retries.is_empty() => {
@@ -357,12 +358,23 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
                     rebuild_child(children, &supervisor, expired.into_inner());
                 }
             }
+            // The deferred-abort backstop for `stop_child`: a child's grace
+            // deadline fired, so the cancelled-but-still-running incarnation is now
+            // hard-aborted. Disabled while empty for the same `Ready(None)`-spin
+            // reason as the retries arm. Lowest housekeeping priority, so a ready
+            // message or death is still served first.
+            expired_abort = pending_aborts.next(), if !pending_aborts.is_empty() => {
+                if let Some(expired) = expired_abort {
+                    expired.into_inner().abort.abort();
+                }
+            }
             maybe = handles.cancel.run_until_cancelled(mailbox_rx.recv()) => {
                 match maybe.flatten() {
                     // The supervised loop gives `Supervision` an effect (the plain
                     // and linked loops ignore it): apply the table mutation here,
                     // so it never reaches `handle_mailbox_step`'s reserved arm.
-                    Some(Signal::Supervision(op)) => apply_supervision_op(children, &supervisor, *op),
+                    Some(Signal::Supervision(op)) =>
+                        apply_supervision_op(children, &supervisor, pending_aborts, *op),
                     other => {
                         if let ControlFlow::Break(reason) =
                             handle_mailbox_step(state, self_ref, handles, watchers, other).await
@@ -374,6 +386,68 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
             }
         }
     }
+}
+
+/// Routes one death notice off the supervisor's link channel and, on the
+/// escalation Break paths, runs the child-stopping sweep the loop must never
+/// skip.
+///
+/// A supervised child's death drives restart policy silently; any other id is a
+/// peer this supervisor merely watches, whose death still reaches the user hook
+/// (the #195 path). [`handle_child_death`]'s own table lookup is the membership
+/// test — `None` means "not a child, route to the peer hook".
+///
+/// The two [`ControlFlow::Break`] sources are kept structurally distinct so the
+/// sweep fires on the right one:
+///
+/// - **[`Some(Break)`]** — an escalation from [`handle_child_death`] (a tripped
+///   restart budget or a lifecycle-hook refusal). Every surviving child is
+///   stopped crash-only ([`stop_surviving_children`]) BEFORE this supervisor's
+///   own death propagates up the microreboot ladder. This is the single,
+///   non-skippable sweep site.
+/// - **`None` → [`Break`]** — the peer-watch hook propagated a non-child's death
+///   (the #195 path). The supervisor stops, but its children are NOT its own
+///   failure and are left untouched here.
+async fn dispatch_death<A: Supervisor>(
+    state: &mut A,
+    children: &mut Children,
+    retries: &mut DelayQueue<ActorId>,
+    rng: &mut Rng,
+    notice: LinkDied,
+) -> ControlFlow<ActorStopReason> {
+    match handle_child_death(children, retries, rng, &notice) {
+        Some(ControlFlow::Break(reason)) => {
+            stop_surviving_children(children).await;
+            ControlFlow::Break(reason)
+        }
+        Some(ControlFlow::Continue(())) => ControlFlow::Continue(()),
+        None => handle_link_died(state, notice).await,
+    }
+}
+
+/// Stops every surviving child crash-only as the supervisor escalates: each live
+/// incarnation is `cancel`led, given its own `stop_grace`, then `abort`ed — the
+/// same bounded sequence as [`stop_child`](crate::actor::ActorRef::stop_child),
+/// run here directly because the loop is EXITING and has nothing left to serve.
+///
+/// The graces run concurrently ([`join_all`]), so the sweep is bounded by the
+/// single largest child grace, not their sum. Crash-only: `cancel`/`abort` are
+/// external signals and the only await is the grace timer — the child's own code
+/// is never awaited, so a child that ignores cancellation is still gone within
+/// its grace. A child in a backoff window has no live handle and is skipped by
+/// [`drain_live_handles`](Children::drain_live_handles).
+async fn stop_surviving_children(children: &mut Children) {
+    join_all(
+        children
+            .drain_live_handles()
+            .into_iter()
+            .map(|(handle, grace)| async move {
+                handle.cancel.cancel();
+                sleep(grace).await;
+                handle.abort.abort();
+            }),
+    )
+    .await;
 }
 
 /// Applies one link death to the restart policy **iff** it names a supervised
@@ -509,7 +583,12 @@ fn install_child_watch(sup: &SupervisorRef, handle: &ChildHandle, install_watch:
 /// Applies a child-table [`SupervisionOp`] that arrived on the supervisor's own
 /// mailbox. The table is task-owned, so this is its ONLY writer — no lock, and
 /// no ordering rule beyond the mailbox's FIFO.
-fn apply_supervision_op(children: &mut Children, sup: &SupervisorRef, op: SupervisionOp) {
+fn apply_supervision_op(
+    children: &mut Children,
+    sup: &SupervisorRef,
+    pending_aborts: &mut DelayQueue<ChildHandle>,
+    op: SupervisionOp,
+) {
     match op {
         // Insert FIRST, then install the watch edge on the first incarnation:
         // once the table holds `id`, a death for it routes to the restart policy,
@@ -532,15 +611,22 @@ fn apply_supervision_op(children: &mut Children, sup: &SupervisorRef, op: Superv
         SupervisionOp::Remove(id) => {
             children.remove(id);
         }
-        // Drop the edge AND stop the child. Provisional crash-only stop here
-        // (`cancel` then `abort`); the graceful `stop_grace` window *between* them
-        // — and the escalation sweep that reuses it — is the next slice of #196.
+        // Drop the edge AND stop the child crash-only, OTP `terminate_child/2`:
+        // `cancel` asks it to stop gracefully NOW, and the hard `abort` is deferred
+        // by `stop_grace` onto `pending_aborts` (a select arm), so a cooperating
+        // child stops within the grace and a non-cooperating one is aborted when
+        // the deadline fires — WITHOUT the loop blocking on the grace. `abort` on a
+        // task that already stopped gracefully is a harmless no-op
+        // (`futures::stream::AbortHandle`), so no liveness is tracked between the
+        // two edges. The edge is removed first: a death already in flight for `id`
+        // then routes to the ignored peer path, never a rebuild (the #195
+        // unwatch-races-death rule).
         SupervisionOp::Stop(id) => {
             if let Some(child) = children.remove(id)
                 && let Some(handle) = child.handle
             {
                 handle.cancel.cancel();
-                handle.abort.abort();
+                pending_aborts.insert(handle, child.config.stop_grace);
             }
         }
     }
@@ -601,7 +687,8 @@ mod supervised_tests {
     use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
     use super::{
-        SupervisorRef, apply_supervision_op, handle_child_death, install_child_watch, rebuild_child,
+        SupervisorRef, apply_supervision_op, handle_child_death, install_child_watch,
+        rebuild_child, stop_surviving_children,
     };
     use crate::{
         actor::supervision::{
@@ -826,15 +913,18 @@ mod supervised_tests {
 
     /// `Add` installs a child under its id; `Remove` drops the edge but leaves
     /// the child running (the entry is gone, no stop signal fired); `Stop` drops
-    /// the edge and cancels + aborts the child's stop edges.
-    #[tokio::test]
+    /// the edge, cancels the child at once, and SCHEDULES (does not yet fire) the
+    /// hard abort on the pending-abort queue.
+    #[tokio::test(start_paused = true)]
     async fn supervision_ops_mutate_the_table() {
         let (sup, _link_rx) = supervisor(ActorId::new(100));
         let mut children = Children::new();
+        let mut pending_aborts = DelayQueue::new();
         let id = ActorId::new(1);
         apply_supervision_op(
             &mut children,
             &sup,
+            &mut pending_aborts,
             SupervisionOp::Add(SuperviseReg {
                 child: child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
                 id,
@@ -843,27 +933,40 @@ mod supervised_tests {
         );
         assert!(children.get_mut(id).is_some(), "Add installs the child");
 
-        // Stop: capture the child's stop edges before applying, then assert they fired.
+        // Stop: capture the child's stop edges before applying, then assert the
+        // cancel fired immediately and the abort was only SCHEDULED, not yet fired.
         let stop_edges = {
             let entry = children.get_mut(id).expect("present");
             entry.handle.clone().expect("live incarnation")
         };
-        apply_supervision_op(&mut children, &sup, SupervisionOp::Stop(id));
+        apply_supervision_op(
+            &mut children,
+            &sup,
+            &mut pending_aborts,
+            SupervisionOp::Stop(id),
+        );
         assert!(children.get_mut(id).is_none(), "Stop drops the edge");
         assert!(
             stop_edges.cancel.is_cancelled(),
-            "Stop cancels the child's graceful token",
+            "Stop cancels the child's graceful token at once",
         );
         assert!(
-            stop_edges.abort.is_aborted(),
-            "Stop aborts the child's task",
+            !stop_edges.abort.is_aborted(),
+            "Stop defers the abort — it must NOT fire before the grace elapses",
+        );
+        assert_eq!(
+            pending_aborts.len(),
+            1,
+            "Stop scheduled exactly one deferred abort",
         );
 
-        // Remove: the edge is dropped, but no stop edge is driven.
+        // Remove: the edge is dropped, but no stop edge is driven and nothing is
+        // scheduled.
         let other = ActorId::new(2);
         apply_supervision_op(
             &mut children,
             &sup,
+            &mut pending_aborts,
             SupervisionOp::Add(SuperviseReg {
                 child: child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
                 id: other,
@@ -874,11 +977,107 @@ mod supervised_tests {
             let entry = children.get_mut(other).expect("present");
             entry.handle.clone().expect("live incarnation")
         };
-        apply_supervision_op(&mut children, &sup, SupervisionOp::Remove(other));
+        apply_supervision_op(
+            &mut children,
+            &sup,
+            &mut pending_aborts,
+            SupervisionOp::Remove(other),
+        );
         assert!(children.get_mut(other).is_none(), "Remove drops the edge");
         assert!(
             !survivor.cancel.is_cancelled() && !survivor.abort.is_aborted(),
             "Remove leaves the child running — no stop edge is driven",
+        );
+        assert_eq!(
+            pending_aborts.len(),
+            1,
+            "Remove schedules no abort — the queue is unchanged",
+        );
+    }
+
+    /// The deferred-abort backstop: a `Stop`ped child that never observes the
+    /// graceful `cancel` is hard-aborted once its `stop_grace` deadline fires off
+    /// the pending-abort queue. Under `start_paused` the abort must NOT fire a
+    /// nanosecond before the grace and MUST fire at it — the crash-only bound
+    /// `stop_child` promises even for a non-cooperating child.
+    #[tokio::test(start_paused = true)]
+    async fn stop_defers_the_abort_until_the_grace_deadline() {
+        let (sup, _link_rx) = supervisor(ActorId::new(100));
+        let mut children = Children::new();
+        let mut pending_aborts = DelayQueue::new();
+        let id = ActorId::new(1);
+        let grace = Duration::from_secs(5);
+        let mut entry = child(RestartConfig::new(RestartPolicy::Permanent), Instant::now());
+        entry.config = entry.config.with_stop_grace(grace);
+        let edges = entry.handle.clone().expect("live incarnation");
+        children.insert(id, entry);
+
+        apply_supervision_op(
+            &mut children,
+            &sup,
+            &mut pending_aborts,
+            SupervisionOp::Stop(id),
+        );
+
+        // One nanosecond short of the grace: the entry is not yet expired, so a
+        // non-blocking poll of the queue reports nothing ready.
+        tokio::time::advance(grace - Duration::from_nanos(1)).await;
+        let short =
+            core::future::poll_fn(|cx| core::task::Poll::Ready(pending_aborts.poll_expired(cx)))
+                .await;
+        assert!(
+            short.is_pending(),
+            "the abort entry must not be ready before the grace elapses",
+        );
+        assert!(!edges.abort.is_aborted(), "still within grace: not aborted");
+
+        // Cross the deadline: the entry expires and the loop would abort it.
+        tokio::time::advance(Duration::from_nanos(1)).await;
+        let expired = futures::StreamExt::next(&mut pending_aborts)
+            .await
+            .expect("the deferred abort fires at the deadline");
+        expired.into_inner().abort.abort();
+        assert!(
+            edges.abort.is_aborted(),
+            "at the grace deadline the child is hard-aborted",
+        );
+    }
+
+    /// The escalation sweep stops every SURVIVING child crash-only: a live child
+    /// is cancelled then, after its grace, aborted; a backoff-window child (no
+    /// live handle) is skipped; the table is emptied. Proves the loop-exit sweep
+    /// that closes the orphaned-children gap.
+    #[tokio::test(start_paused = true)]
+    async fn stop_surviving_children_cancels_and_aborts_live_ones() {
+        let mut children = Children::new();
+        // A live survivor with a short grace.
+        let alive = ActorId::new(1);
+        let alive_entry = child(
+            RestartConfig::new(RestartPolicy::Permanent).with_stop_grace(Duration::ZERO),
+            Instant::now(),
+        );
+        let alive_edges = alive_entry.handle.clone().expect("live");
+        children.insert(alive, alive_entry);
+        // A backoff-window child: no live incarnation to stop.
+        let dead = ActorId::new(2);
+        let mut dead_entry = child(RestartConfig::new(RestartPolicy::Permanent), Instant::now());
+        dead_entry.handle = None;
+        children.insert(dead, dead_entry);
+
+        stop_surviving_children(&mut children).await;
+
+        assert!(
+            alive_edges.cancel.is_cancelled(),
+            "the live survivor is cancelled",
+        );
+        assert!(
+            alive_edges.abort.is_aborted(),
+            "and, past its (zero) grace, hard-aborted",
+        );
+        assert_eq!(
+            children.ids().count(),
+            0,
+            "the sweep empties the child table",
         );
     }
 

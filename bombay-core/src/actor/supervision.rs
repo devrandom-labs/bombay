@@ -23,6 +23,8 @@
 //!
 //! [`Watchers`]: crate::watch::Watchers
 
+use core::time::Duration;
+
 use futures::stream::AbortHandle;
 use smallvec::SmallVec;
 use tokio_util::sync::CancellationToken;
@@ -271,6 +273,20 @@ impl Children {
     pub(crate) fn ids(&self) -> impl Iterator<Item = ActorId> + '_ {
         self.entries.iter().map(|(id, _)| *id)
     }
+
+    /// Empties the table, handing back every **live** incarnation's stop edges
+    /// paired with its configured [`stop_grace`](RestartConfig::stop_grace) — the
+    /// escalation sweep's input: the loop is exiting, so it stops every survivor
+    /// crash-only (cancel → grace → abort) before its own death propagates.
+    ///
+    /// A child in a backoff window (no live handle) has no incarnation to stop and
+    /// is dropped from the result; its pending rebuild dies with the retries queue.
+    pub(crate) fn drain_live_handles(&mut self) -> SmallVec<[(ChildHandle, Duration); 4]> {
+        self.entries
+            .drain(..)
+            .filter_map(|(_, child)| child.handle.map(|handle| (handle, child.config.stop_grace)))
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -463,6 +479,31 @@ mod tests {
             original.abort.is_aborted(),
             "a cloned handle must abort the SAME task",
         );
+    }
+
+    /// The escalation sweep's input: `drain_live_handles` hands back every LIVE
+    /// incarnation's stop edges paired with its `stop_grace`, empties the table,
+    /// and drops any backoff-window child (no live handle) from the result.
+    #[test]
+    fn drain_live_handles_returns_live_edges_with_grace_and_empties() {
+        let mut children = Children::new();
+        let mut alive = child_entry(ActorId::new(1));
+        alive.config = alive.config.with_stop_grace(Duration::from_secs(7));
+        children.insert(ActorId::new(1), alive);
+        let mut backoff = child_entry(ActorId::new(2));
+        backoff.handle = None; // in a backoff window: no live incarnation
+        children.insert(ActorId::new(2), backoff);
+
+        let drained = children.drain_live_handles();
+
+        assert_eq!(drained.len(), 1, "only the live child yields a handle");
+        assert_eq!(drained[0].0.id(), ActorId::new(1), "the live child's id");
+        assert_eq!(
+            drained[0].1,
+            Duration::from_secs(7),
+            "the handle carries the child's own grace",
+        );
+        assert_eq!(children.ids().count(), 0, "the table is emptied");
     }
 
     /// A `Child` carries its own tuning, so two children of one supervisor can
