@@ -9,11 +9,20 @@ slice delivers *"a supervisor **rebuilds** a dead child under a policy, and know
 when to stop trying"*.
 
 **This is not an OTP port.** The actor model proper — Hewitt 1973, Agha 1986:
-`create` / `send` / `become` — contains no failure semantics at all. Links,
-monitors, exit signals and supervision trees are all *layered policy*, so every
-rule below is justified from the property it buys, with at least two independent
-lineages cited. Where Erlang/OTP is the only source for a convention, it is
-marked as a **choice**, and the alternative is recorded.
+`create` / `send` / `become` — contains no failure semantics at all. Verified
+against Agha's text (MIT AITR-844): fault tolerance is never treated, and the
+model's own invariant runs the other way — *"all actors must specify a
+replacement behavior"*, with the syntactic default that an actor lacking a
+`become` *"is replaced by an identically behaving actor"*, so that *"one can now
+safely assert that all actors definable in an actor language like SAL specify a
+replacement behavior."* In the model an actor **always** has a successor;
+failure is not expressible.
+
+Everything on this card is therefore **invented policy** — links, monitors, exit
+signals and supervision trees alike. Each rule below is justified from the
+property it buys, with independent lineages cited. Where Erlang/OTP is the only
+source for a convention it is marked a **choice**; where bombay picks a default
+that the surveyed systems disagree on, it is marked a **preference**.
 
 ## Scope — slice 2a. Slice 2b is a separate card.
 
@@ -23,7 +32,8 @@ marked as a **choice**, and the alternative is recorded.
 - The erased restart factory — the only `dyn` in the feature.
 - `RestartPolicy` (`Permanent` / `Transient` / `Never`).
 - Restart **spacing** (exponential backoff + jitter) and the **give-up counter**
-  (consecutive failures + reset-on-healthy-uptime), with escalation.
+  (consecutive failures with healthy-uptime reset, plus a lifetime rebuild
+  budget), with escalation.
 - `OneForOne` restart-set semantics (restart the failed child only).
 - The two items deferred onto this card by #195: the `Unwatch`-racing-teardown
   invariant, and the `on_stop`-failure programmatic surface.
@@ -45,9 +55,8 @@ Five lineages, four mechanisms, one shared contract.
 > **Discard the corpse, rebuild from a declared source, at the smallest
 > granularity that works, and tell someone when it stops working.**
 
-- **Rebuild, never resume.** Agha: a failed atomic step yields no valid successor
-  behavior. Akka Typed: on restart *"the original Behavior that was given to
-  `Behaviors.supervise` is re-installed"*. Crash-only (Candea & Fox, HotOS'03):
+- **Rebuild, never resume.** Akka Typed: on restart *"the original Behavior that
+  was given to `Behaviors.supervise` is re-installed"*. Crash-only (Candea & Fox, HotOS'03):
   *"There is only one way to stop such software—by crashing it—and only one way
   to bring it up—by initiating recovery."*
 - **Cheapest recovery first, escalate by granularity.** Microreboot (Candea et
@@ -79,10 +88,28 @@ Five lineages, four mechanisms, one shared contract.
 | Question | OTP | Akka Typed | Orleans | Kubernetes | **bombay** |
 |---|---|---|---|---|---|
 | Where supervision lives | parent tree | child-side `Behaviors.supervise` decorator | runtime, no tree | controller | **parent trait** (`Supervisor: Watch`) — because the failure signal already flows parent-ward on #195's link channel |
-| Resume-in-place | absent | `SupervisorStrategy.resume` | n/a | n/a | **structurally impossible** — #116 poisons `&mut self` after a caught panic |
-| Give-up accounting | sliding window MaxR/MaxT | `maxNrOfRetries` + `withinTimeRange` | n/a | count, reset on success | **consecutive count + reset on healthy uptime** |
+| Resume-in-place | absent | `SupervisorStrategy.resume` | n/a | n/a | **refused** — see below |
+| Give-up accounting | sliding window MaxR/MaxT | `maxNrOfRetries` + `withinTimeRange` | n/a | count, reset on success | **consecutive count (reset on healthy uptime) + never-reset lifetime budget** |
 | Spacing | none | backoff supervisor | n/a | exponential, capped | **exponential + jitter** |
 | Lifecycle ownership | programmer | programmer | runtime (virtual actors) | controller | **programmer** (see *Not taken* below) |
+
+### Refused: `Resume`
+
+Akka offers `SupervisorStrategy.resume` — *"ignore the failure and process the
+next message"*, keeping the instance and its (partially mutated) state. bombay
+does not, and the reason is **not** that Rust makes it impossible: `catch_unwind`
++ `AssertUnwindSafe` leaves `&mut self` logically inconsistent but perfectly
+memory-safe, so Resume is implementable. It is refused on two grounds:
+
+1. **A decision already made.** #116 fixed the loop so a caught panic stops the
+   actor and treats the state as poisoned. Offering Resume means re-opening that
+   decision, not adding a policy on top of it.
+2. **The consequence is worse here than on the JVM.** Akka's resumed actor
+   serves subsequent messages from torn state; a resumed bombay actor backed by
+   nexus additionally **emits events derived from that torn state into the
+   append-only log**. A crash loses an in-flight message; a resume writes
+   corruption that outlives the process. Same exposure, strictly worse blast
+   radius.
 
 ### Not taken: virtual actors
 
@@ -119,8 +146,12 @@ struct Child {
     /// Current incarnation; `None` while a rebuild is pending its backoff.
     handle: Option<ChildHandle>,
     policy: RestartPolicy,
-    /// Give-up counter. Reset to 0 once an incarnation survives `reset_after`.
+    /// Fast trip: burst failures. Reset to 0 once an incarnation survives
+    /// `reset_after`.
     consecutive: u32,
+    /// Slow trip: lifetime rebuild budget, NEVER reset. Catches the drip
+    /// failure that resets `consecutive` every time (see below).
+    total: u32,
     /// When the current incarnation started — drives the reset rule.
     started: Instant,
     /// Set while waiting out a backoff delay; drives the loop's timer arm.
@@ -217,12 +248,15 @@ Children are handled by the framework and do **not** invoke the user's
 | `AlreadyDead` | restart | restart | leave dead |
 | `LinkDied { .. }` | restart | restart | leave dead |
 
-**`AlreadyDead` is restart-worthy but not crash-evidence.** #195 introduced it
-for *"the target was already gone when the edge was installed, so its true
-reason is unknowable"*. Treating unknowable as abnormal follows the
-act-before-diagnosis finding — restarting is the cheap probe — and the give-up
-counter bounds the cost if the child is genuinely unspawnable. It **counts**
-toward `consecutive`.
+**`AlreadyDead` is restart-worthy but not crash-evidence** — *preference, not a
+sourced finding.* #195 introduced it for *"the target was already gone when the
+edge was installed, so its true reason is unknowable"*. Treating unknowable as
+abnormal follows the act-before-diagnosis finding — restarting is the cheap probe
+— and the give-up counters bound the cost if the child is genuinely unspawnable.
+It **counts** toward both counters. No surveyed system has this case (it is an
+artifact of bombay's message-installed watch edges), so the alternative —
+ignore it, on the grounds that it is not evidence of a crash — is recorded here
+rather than dismissed.
 
 **Lifecycle-hook panics never restart.** `PanicReason::is_lifecycle_hook()`
 (already in `error.rs`) means `on_start`/`on_stop`/`on_panic`/`on_link_died`
@@ -236,13 +270,23 @@ backoff and the counter.
 ```rust
 struct RestartConfig {
     policy: RestartPolicy,
-    max_restarts: u32,       // consecutive failures tolerated
+    max_restarts: u32,       // consecutive failures tolerated (fast trip)
+    max_total: u32,          // lifetime rebuilds tolerated    (slow trip)
     min_backoff: Duration,
     max_backoff: Duration,
     jitter: f64,             // 0.0 ..= 1.0, fraction of the computed delay
     reset_after: Duration,   // healthy uptime that zeroes `consecutive`
 }
 ```
+
+**Two trip conditions, because they answer different questions.** `consecutive`
+asks *"did this incarnation work?"*; `total` asks *"is this child worth having at
+all?"* A child that fails every `reset_after + 1s` passes the first forever while
+failing the second — dropping OTP's time window removes the burst-vs-drip
+distinction the window was carrying, and `total` restores it without a clock.
+Escalation fires on `consecutive > max_restarts || total > max_total`. Both
+counters increment with `checked_add`; saturation is not an option in a limit
+path (arithmetic-safety rule).
 
 - `delay(n) = min(min_backoff * 2^(n-1), max_backoff)`, then jittered. Exponent
   computed with `checked_shl` / `checked_mul` — overflow saturates to
@@ -335,9 +379,17 @@ impl<S: Supervisor> ActorRef<S> {
 `Message` variant keeps the #114 slot budget.
 
 Defaults, stated because defaults are policy: `Transient`, `max_restarts = 5`,
-`min_backoff = 100ms`, `max_backoff = 30s`, `jitter = 0.2`,
-`reset_after = 60s`. `Transient` (not `Permanent`) because restarting a child
-that exited *normally* contradicts the actor having decided to stop.
+`max_total = 100`, `min_backoff = 100ms`, `max_backoff = 30s`, `jitter = 0.2`,
+`reset_after = 60s`.
+
+The policy default is a **preference**, and the surveyed systems do not agree:
+OTP defaults `permanent`, Kubernetes defaults `restartPolicy: Always`
+(= permanent), Akka Typed defaults to *stop* (no supervision unless wrapped).
+bombay picks `Transient` because restarting a child that exited *normally*
+overrides the actor's own decision to stop, and because it is the only default
+of the three that is neither the most nor the least aggressive. Numeric defaults
+are unsourced starting points, expected to move once the DST work (slice 2b)
+shows real restart distributions.
 
 ## Invariants — TDD, each written failing first
 
@@ -358,21 +410,25 @@ One per bullet, per CLAUDE rule 3.
    deadlines are `min_backoff·2^(n-1)` up to `max_backoff` (jitter disabled).
 9. `healthy_uptime_resets_consecutive_counter` — a child surviving `reset_after`
    returns the counter to 0, so the next failure backs off from `min_backoff`.
-10. `restart_limit_escalates_and_stops_supervisor` — `max_restarts + 1` failures
-    stop the supervisor with `RestartLimitExceeded { child, rebuilds }`.
-11. `escalation_delivers_link_died_to_supervisors_watcher` — the escalating
+10. `restart_limit_escalates_and_stops_supervisor` — `max_restarts + 1`
+    consecutive failures stop the supervisor with
+    `RestartLimitExceeded { child, rebuilds }`.
+11. `slow_drip_failures_exhaust_lifetime_budget` — a child that fails once per
+    `reset_after + ε` (so `consecutive` resets every time) still escalates after
+    `max_total + 1` rebuilds. Fails if only the consecutive counter exists.
+12. `escalation_delivers_link_died_to_supervisors_watcher` — the escalating
     supervisor's own death reaches *its* watcher (the ladder's next rung).
-12. `escalation_stops_children_without_their_cooperation` — a child whose
+13. `escalation_stops_children_without_their_cooperation` — a child whose
     `on_stop` hangs is still terminated within the grace bound (crash-only).
-13. `no_cascading_restart` — under `OneForOne` a child failure rebuilds that
+14. `no_cascading_restart` — under `OneForOne` a child failure rebuilds that
     child only; siblings keep the same `ActorId` and stay alive.
-14. `supervisor_keeps_serving_messages_during_backoff` — a `tell` sent while a
+15. `supervisor_keeps_serving_messages_during_backoff` — a `tell` sent while a
     child waits out backoff is handled before the retry deadline.
-15. `unsupervised_child_death_does_not_restart` — `unsupervise` then kill ⇒ no
+16. `unsupervised_child_death_does_not_restart` — `unsupervise` then kill ⇒ no
     rebuild (the #195 `Unwatch`-race carry-forward).
-16. `on_stop_error_marks_cleanup_failed` — a child whose `on_stop` returns `Err`
+17. `on_stop_error_marks_cleanup_failed` — a child whose `on_stop` returns `Err`
     delivers `LinkDied { cleanup_failed: true }` with the original `reason`.
-17. `supervisor_holds_no_strong_child_ref` — dropping the last user `ActorRef` to
+18. `supervisor_holds_no_strong_child_ref` — dropping the last user `ActorRef` to
     a supervised child still triggers ref-count-driven stop (ADR-0003; kameo
     #171). Verified with the counting allocator / weak-count assertion.
 
@@ -390,7 +446,7 @@ One per bullet, per CLAUDE rule 3.
 
 ## ADRs produced
 
-- **ADR-0012** — restart accounting: consecutive counter + reset-on-healthy-uptime;
+- **ADR-0012** — restart accounting: consecutive counter (reset on healthy uptime) + never-reset lifetime budget;
   `governor`/GCRA and the OTP timestamp window both rejected, with the
   rate-vs-give-up argument.
 - **ADR-0013** — virtual-actor (Orleans) lazy reactivation deliberately not taken
