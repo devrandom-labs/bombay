@@ -180,11 +180,12 @@ pub struct SuperviseReg {
 /// The table is task-owned, so *all* mutation goes through the loop and arrives
 /// in mailbox FIFO order — there is no lock to take and no ordering rule for a
 /// caller to get wrong.
-#[expect(
-    clippy::exhaustive_enums,
-    reason = "the supervision verb set is deliberately closed so the supervised \
-              run-loop is a total match; new arms are added under their driving cards"
-)]
+///
+/// Exhaustive on purpose: the supervision verb set is deliberately closed so the
+/// supervised run-loop is a total match; new arms are added under their driving
+/// cards. (No `clippy::exhaustive_enums` `#[expect]` — that lint fires only on
+/// *exported* enums, and this one is crate-private, riding
+/// `Signal::Supervision(Box<SupervisionOp>)` without being re-exported.)
 pub enum SupervisionOp {
     /// Start supervising a child that is already running.
     Add(SuperviseReg),

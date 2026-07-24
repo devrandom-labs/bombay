@@ -25,8 +25,16 @@ pub use self::{
     actor_ref::{ActorRef, WeakActorRef},
     recipient::{Recipient, RecipientAskRequest, ReplyRecipient, WeakRecipient},
     spawn::{DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult},
-    supervision::{ChildHandle, SuperviseReg, SupervisionOp},
 };
+
+// The supervision types stay OFF the public API — the `supervise` verb returns a
+// bare `ActorId`, and `SuperviseReg`/`SupervisionOp` only ride inside the
+// `Signal::Supervision(Box<SupervisionOp>)` variant, exactly as `WatchReg` rides
+// `Signal::Watch(Box<WatchReg>)` without being re-exported. `SupervisionOp` needs
+// a `pub(crate)` re-export only because `mailbox` (outside this module) names it
+// in that variant; `ChildHandle`/`SuperviseReg` are used solely within `actor`
+// and reach their definitions directly.
+pub(crate) use self::supervision::SupervisionOp;
 
 /// A single-writer, identity-agnostic unit of concurrency: owned state behind a
 /// mailbox, driven by one task that handles messages sequentially.

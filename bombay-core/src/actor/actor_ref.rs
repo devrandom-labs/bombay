@@ -328,14 +328,32 @@ impl<S: Supervisor> ActorRef<S> {
     /// #171: a strong self-ref in the loop-owned table makes ref-count-driven stop
     /// unreachable).
     ///
+    /// **An unanchored child is actively fatal, not merely idle.** The instant the
+    /// loop installs the watch edge and drops the installer's transient sender, a
+    /// child no one else holds a strong ref to has zero senders and ref-count-stops
+    /// (ADR-0003). For a [`Permanent`](crate::restart::RestartPolicy::Permanent)
+    /// child — or a [`Transient`](crate::restart::RestartPolicy::Transient) one
+    /// that dies abnormally — the supervisor rebuilds it, the rebuild also stops
+    /// at once, and every incarnation dies with an uptime of ≈0. That never earns
+    /// the healthy-uptime reset (default `reset_after` = 1 min), so `consecutive`
+    /// only climbs: within a few backoffs the supervisor trips `max_restarts`
+    /// (default 5) and **escalates to its OWN death via
+    /// [`RestartLimitExceeded`](crate::error::ActorStopReason::RestartLimitExceeded).**
+    /// Where an ordinary unreferenced actor just stops quietly, supervision
+    /// converts "the child quietly stopped" into rebuild churn that kills the
+    /// supervisor — so a supervised child MUST have a liveness anchor.
+    ///
     /// This `.await`s for the supervisor's own mailbox capacity — ordinary
     /// backpressure, not failure.
     ///
     /// # Errors
     ///
     /// [`TellError::ActorNotAlive`] if the supervisor's mailbox is closed (it has
-    /// stopped). The first incarnation was already spawned; it simply continues
-    /// unsupervised, so the caller can retire it via the returned-nothing path.
+    /// stopped). The first incarnation was already spawned; the dropped
+    /// [`SendError`](crate::mailbox::SendError) takes the registration — and with
+    /// it the installer's transient sender — so an *unanchored* first incarnation
+    /// then ref-count-stops rather than continuing, while an anchored one keeps
+    /// running, now unsupervised.
     pub async fn supervise<A, F>(
         &self,
         config: impl Into<RestartConfig>,
