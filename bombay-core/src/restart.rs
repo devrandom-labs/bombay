@@ -7,6 +7,8 @@
 
 use core::time::Duration;
 
+use fastrand::Rng;
+
 use crate::error::ActorStopReason;
 
 /// Per-child restart policy — stated explicitly at every `supervise` call and
@@ -195,8 +197,66 @@ impl From<RestartPolicy> for RestartConfig {
     }
 }
 
+/// The un-jittered delay before consecutive attempt `consecutive`:
+/// `min_backoff · 2^(consecutive - 1)`, capped at
+/// [`max_backoff`](RestartConfig::max_backoff).
+///
+/// The cap is reached by **explicit branch** on every route — a large exponent,
+/// an exponent too large to shift, or a product too large to represent — never
+/// by `saturating_*`, which would leave "hit the ceiling on purpose" and
+/// "overflowed by accident" indistinguishable in the same value.
+///
+/// `consecutive` is 1-based — the give-up accounting hands out `attempt: 1` for
+/// the first retry. A `0` is outside that contract and is treated as the first
+/// attempt rather than underflowing.
+#[must_use]
+pub fn base_backoff(cfg: &RestartConfig, consecutive: u32) -> Duration {
+    // Two ways the doubling factor fails to exist, both routed to the ceiling
+    // below: a degenerate `consecutive == 0` (out of contract — read as the
+    // first attempt, factor 1, NOT a saturating subtraction that would hide it)
+    // and an exponent past 31, where `2^n` is not representable at all.
+    let Some(factor) = consecutive
+        .checked_sub(1)
+        .map_or(Some(1), |exponent| 1_u32.checked_shl(exponent))
+    else {
+        return cfg.max_backoff;
+    };
+    match cfg.min_backoff.checked_mul(factor) {
+        Some(delay) if delay < cfg.max_backoff => delay,
+        _ => cfg.max_backoff,
+    }
+}
+
+/// [`base_backoff`] lengthened by a random `0..=jitter%`, so children that fail
+/// together do not retry together.
+///
+/// The generator is passed in and **seedable**: a deterministic simulation
+/// fixes the seed and asserts exact delays, instead of setting jitter to zero
+/// and leaving this path untested.
+///
+/// Divide-then-multiply (`base / 100 * percent`) is deliberate: `base *
+/// percent` is un-representable for a near-[`Duration::MAX`] ceiling, while
+/// `base / 100` never is. The cost is a truncation below 100 ns on a delay
+/// measured in milliseconds.
+///
+/// Every step is checked. If the lengthened delay is un-representable, the base
+/// delay is the answer: jitter only ever *adds*, so a delay already at the
+/// ceiling has nothing left to receive — there is no failure to report, and
+/// `base` is a real delay rather than a sentinel.
+#[must_use]
+pub fn jittered_backoff(cfg: &RestartConfig, consecutive: u32, rng: &mut Rng) -> Duration {
+    let base = base_backoff(cfg, consecutive);
+    let percent = u32::from(rng.u8(0..=cfg.jitter.as_percent()));
+    base.checked_div(100)
+        .and_then(|step| step.checked_mul(percent))
+        .and_then(|extra| base.checked_add(extra))
+        .unwrap_or(base)
+}
+
 #[cfg(test)]
 mod tests {
+    use proptest::{prop_assert, proptest};
+
     use super::*;
     use crate::{
         error::{ActorStopReason, PanicError, PanicReason},
@@ -437,6 +497,174 @@ mod tests {
                 RestartVerdict::Restart,
                 "{reason:?}",
             );
+        }
+    }
+
+    /// Attempt `n` waits `min_backoff · 2^(n-1)`.
+    #[test]
+    fn backoff_grows_exponentially_from_min() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient);
+        assert_eq!(base_backoff(&cfg, 1), Duration::from_millis(100));
+        assert_eq!(base_backoff(&cfg, 2), Duration::from_millis(200));
+        assert_eq!(base_backoff(&cfg, 3), Duration::from_millis(400));
+        assert_eq!(
+            base_backoff(&cfg, 9),
+            Duration::from_millis(25_600),
+            "last uncapped step"
+        );
+    }
+
+    /// The cap is a semantic ceiling, so *every* way of exceeding it — a normal
+    /// large exponent, an un-shiftable one, an un-representable product —
+    /// lands on `max_backoff` rather than wrapping or panicking.
+    #[test]
+    fn backoff_caps_at_max_and_survives_huge_n() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient);
+        assert_eq!(
+            base_backoff(&cfg, 10),
+            Duration::from_secs(30),
+            "past the cap"
+        );
+        assert_eq!(
+            base_backoff(&cfg, 32),
+            Duration::from_secs(30),
+            "largest shiftable exponent"
+        );
+        assert_eq!(
+            base_backoff(&cfg, 33),
+            Duration::from_secs(30),
+            "first unshiftable exponent"
+        );
+        assert_eq!(base_backoff(&cfg, u32::MAX - 1), Duration::from_secs(30));
+        assert_eq!(
+            base_backoff(&cfg, u32::MAX),
+            Duration::from_secs(30),
+            "overflow = explicit cap branch"
+        );
+        assert_eq!(
+            base_backoff(&cfg, 0),
+            cfg.min_backoff,
+            "n=0 degenerate = first attempt"
+        );
+    }
+
+    /// Defensive boundary: a config whose `min_backoff` is already the largest
+    /// representable duration makes the doubling un-representable. A bare `*`
+    /// would panic in debug and wrap in release; the checked branch must yield
+    /// the ceiling instead.
+    #[test]
+    fn backoff_with_unrepresentable_product_yields_the_cap() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient)
+            .with_min_backoff(Duration::MAX)
+            .with_max_backoff(Duration::MAX);
+        assert_eq!(base_backoff(&cfg, 2), Duration::MAX);
+    }
+
+    /// Zero jitter must be *exactly* the base — a supervisor that wants
+    /// deterministic spacing gets it, and the jitter path cannot leak a stray
+    /// nanosecond.
+    #[test]
+    fn zero_jitter_is_exactly_the_base() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient).with_jitter(Jitter::percent(0));
+        let mut rng = Rng::with_seed(42);
+        for attempt in 0..12_u32 {
+            assert_eq!(
+                jittered_backoff(&cfg, attempt, &mut rng),
+                base_backoff(&cfg, attempt),
+                "attempt {attempt}",
+            );
+        }
+    }
+
+    /// Jitter lengthens the delay by at most `jitter%`, and the *same seed
+    /// produces the same delay* — the DST contract that lets a simulation assert
+    /// exact deadlines instead of disabling jitter and leaving it untested.
+    #[test]
+    fn jittered_backoff_is_seeded_and_bounded() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient); // 20% jitter
+        let base = base_backoff(&cfg, 3); // 400ms
+        let mut rng = Rng::with_seed(42);
+        let delay = jittered_backoff(&cfg, 3, &mut rng);
+        assert!(
+            delay >= base && delay <= base + base / 5,
+            "within +20% of {base:?}: {delay:?}",
+        );
+
+        let mut same_seed = Rng::with_seed(42);
+        assert_eq!(
+            delay,
+            jittered_backoff(&cfg, 3, &mut same_seed),
+            "same seed ⇒ same delay (DST contract)",
+        );
+    }
+
+    /// Jitter is actually *applied*: over a run of draws the delays vary and at
+    /// least one exceeds the base. Without this, an implementation that ignored
+    /// the rng entirely would satisfy the bounds and determinism assertions.
+    #[test]
+    fn jitter_varies_the_delay_across_draws() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient);
+        let base = base_backoff(&cfg, 3);
+        let mut rng = Rng::with_seed(7);
+        let delays: Vec<Duration> = (0..64)
+            .map(|_| jittered_backoff(&cfg, 3, &mut rng))
+            .collect();
+
+        assert!(
+            delays.iter().any(|&d| d > base),
+            "20% jitter must lengthen at least one of 64 draws",
+        );
+        let distinct: std::collections::BTreeSet<Duration> = delays.iter().copied().collect();
+        assert!(distinct.len() > 1, "delays must vary, got {distinct:?}");
+        assert!(
+            delays.iter().all(|&d| d >= base && d <= base + base / 5),
+            "every draw stays within +20%: {delays:?}",
+        );
+    }
+
+    /// Defensive boundary: at the largest representable delay there is no room
+    /// left to add jitter. The sum must not wrap or panic — the un-jittered base
+    /// is the answer, since jitter only ever lengthens a delay.
+    #[test]
+    fn jitter_on_an_unextendable_delay_returns_the_base() {
+        let cfg = RestartConfig::new(RestartPolicy::Transient)
+            .with_min_backoff(Duration::MAX)
+            .with_max_backoff(Duration::MAX)
+            .with_jitter(Jitter::percent(100));
+        let mut rng = Rng::with_seed(1);
+        for attempt in 1..8_u32 {
+            assert_eq!(
+                jittered_backoff(&cfg, attempt, &mut rng),
+                Duration::MAX,
+                "attempt {attempt}",
+            );
+        }
+    }
+
+    proptest! {
+        /// MIRI-skipped by prefix (the repo's `prop_` naming contract).
+        #[test]
+        fn prop_backoff_monotone_until_cap(n in 0_u32..64) {
+            let cfg = RestartConfig::new(RestartPolicy::Transient);
+            prop_assert!(base_backoff(&cfg, n) <= base_backoff(&cfg, n.saturating_add(1)));
+            prop_assert!(base_backoff(&cfg, n) <= cfg.max_backoff);
+        }
+
+        /// Jitter never shortens a delay and never exceeds the configured
+        /// percentage — over arbitrary attempts, seeds and jitter magnitudes.
+        #[test]
+        fn prop_jitter_stays_within_its_percentage(
+            n in 0_u32..40,
+            seed: u64,
+            percent in 0_u8..=u8::MAX,
+        ) {
+            let jitter = Jitter::percent(percent);
+            let cfg = RestartConfig::new(RestartPolicy::Transient).with_jitter(jitter);
+            let base = base_backoff(&cfg, n);
+            let delay = jittered_backoff(&cfg, n, &mut Rng::with_seed(seed));
+            prop_assert!(delay >= base, "jitter must not shorten {base:?}: {delay:?}");
+            let ceiling = base + base / 100 * u32::from(jitter.as_percent());
+            prop_assert!(delay <= ceiling, "{delay:?} exceeds {ceiling:?}");
         }
     }
 }
