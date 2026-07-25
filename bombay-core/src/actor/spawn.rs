@@ -4871,5 +4871,204 @@ mod tests {
 
             drop(sup);
         }
+
+        // ---- Task 7: RestForOne + Never behavioral invariants (card #199) --
+
+        /// Card #199 box 3: under `RestForOne` a failed child's crash
+        /// rebuilds itself and every YOUNGER sibling — the elder is
+        /// untouched. Birth order `a` (elder), `b` (the crasher), `c`
+        /// (younger); crashing `b` rebuilds `b` and `c` but never `a`.
+        #[tokio::test(start_paused = true)]
+        async fn rest_for_one_restarts_failed_plus_younger() {
+            let sup = RestSup::spawn_supervised(());
+            let tape: Tape = Arc::new(Mutex::new(Vec::new()));
+            let (tag_tx, tag_rx) = flume::unbounded::<(&'static str, ActorId)>();
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders_a: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+            let senders_b: Senders = Arc::new(Mutex::new(Vec::new()));
+            let senders_c: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+
+            let a0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                tape_factory(
+                    "a",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_a),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("a", a0));
+            let b0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                worker_factory(id_tx.clone(), Arc::clone(&senders_b)),
+            )
+            .await;
+            assert_eq!(recv_id(&id_rx).await, b0);
+            let c0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                tape_factory(
+                    "c",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_c),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("c", c0));
+
+            send_cmd(&senders_b, 0, Cmd::Crash);
+
+            let b1 = recv_id(&id_rx).await;
+            assert_ne!(b1, b0, "b rebuilt fresh");
+            let (tag, c1) = recv_tag(&tag_rx).await;
+            assert_eq!(tag, "c");
+            assert_ne!(c1, c0, "c (younger) rebuilt fresh");
+
+            // No fresh `a` (the elder) may arrive: a rebuild, were one
+            // (wrongly) scheduled, would fire within the default backoff;
+            // with none armed this wait elapses instead (the
+            // `transient_child_that_exits_normally_is_not_rebuilt` idiom).
+            let elder = tokio::time::timeout(Duration::from_secs(120), tag_rx.recv_async()).await;
+            assert!(
+                elder.is_err(),
+                "RestForOne must not rebuild the elder sibling, got {elder:?}",
+            );
+            assert!(
+                !tape.lock().expect("tape").contains(&"a"),
+                "a was never stopped",
+            );
+
+            // a's ORIGINAL incarnation is still alive and answering.
+            send_tape_msg(&senders_a, 0, TapeMsg::Idle);
+
+            drop(sup);
+        }
+
+        /// Card #199 box 4: `RestForOne` of the LAST (youngest) child
+        /// degenerates to `OneForOne` — no sibling shares its suffix. Birth
+        /// order `a`, `b` (elders, untouched), `c` (the crasher, youngest).
+        #[tokio::test(start_paused = true)]
+        async fn rest_for_one_of_last_child_equals_one_for_one() {
+            let sup = RestSup::spawn_supervised(());
+            let tape: Tape = Arc::new(Mutex::new(Vec::new()));
+            let (tag_tx, tag_rx) = flume::unbounded::<(&'static str, ActorId)>();
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders_a: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+            let senders_b: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+            let senders_c: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let a0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                tape_factory(
+                    "a",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_a),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("a", a0));
+            let b0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                tape_factory(
+                    "b",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_b),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("b", b0));
+            let c0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                worker_factory(id_tx.clone(), Arc::clone(&senders_c)),
+            )
+            .await;
+            assert_eq!(recv_id(&id_rx).await, c0);
+
+            send_cmd(&senders_c, 0, Cmd::Crash);
+
+            let c1 = recv_id(&id_rx).await;
+            assert_ne!(c1, c0, "c rebuilt fresh");
+
+            let elder = tokio::time::timeout(Duration::from_secs(120), tag_rx.recv_async()).await;
+            assert!(
+                elder.is_err(),
+                "RestForOne of the LAST child touches no one else, got {elder:?}",
+            );
+            assert!(
+                tape.lock().expect("tape").is_empty(),
+                "no sibling was ever stopped",
+            );
+
+            drop(sup);
+        }
+
+        /// Card #199 box 5: a `Never` child is still a MEMBER of the set —
+        /// it is stopped when the set cycles — but is excluded from the
+        /// rebuild sweep. `a` (`Permanent`, the crasher) and `n` (`Never`)
+        /// under `AllSup`.
+        #[tokio::test(start_paused = true)]
+        async fn never_children_excluded_from_set_restarts() {
+            let sup = AllSup::spawn_supervised(());
+            let tape: Tape = Arc::new(Mutex::new(Vec::new()));
+            let (tag_tx, tag_rx) = flume::unbounded::<(&'static str, ActorId)>();
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders_a: Senders = Arc::new(Mutex::new(Vec::new()));
+            let senders_n: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+
+            let a0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                worker_factory(id_tx.clone(), Arc::clone(&senders_a)),
+            )
+            .await;
+            assert_eq!(recv_id(&id_rx).await, a0);
+            let n0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Never,
+                tape_factory(
+                    "n",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_n),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("n", n0));
+
+            send_cmd(&senders_a, 0, Cmd::Crash);
+
+            // `a`'s rebuild only fires once the cycle's teardown (n's
+            // absorbed death included) has fully completed, so by the time it
+            // arrives n's tape entry is already recorded.
+            let a1 = recv_id(&id_rx).await;
+            assert_ne!(a1, a0, "a rebuilt fresh");
+            assert_eq!(
+                tape.lock().expect("tape").as_slice(),
+                ["n"],
+                "n was stopped with the set",
+            );
+
+            let never = tokio::time::timeout(Duration::from_secs(120), tag_rx.recv_async()).await;
+            assert!(
+                never.is_err(),
+                "a Never child must not rebuild even inside a set cycle, got {never:?}",
+            );
+
+            drop(sup);
+        }
     }
 }
