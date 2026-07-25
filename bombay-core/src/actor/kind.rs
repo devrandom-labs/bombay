@@ -1934,4 +1934,58 @@ mod supervised_tests {
             "entry gone, never rebuilt"
         );
     }
+
+    /// Stopping a member that is NOT an awaited cycle member must NOT count the
+    /// teardown down: `was_awaited` needs BOTH `cycling` AND a live handle.
+    /// Under `RestForOne` an elder stays non-cycling during a junior's cycle;
+    /// `stop_child`ing it mid-cycle leaves `awaiting` untouched. Kills the
+    /// `&& → ||` mutant in the `Stop` arm — under `||` a non-cycling *live*
+    /// child would wrongly decrement the teardown count and prematurely arm the
+    /// rebuild.
+    #[tokio::test(start_paused = true)]
+    async fn stopping_a_non_cycling_member_mid_cycle_does_not_count_down() {
+        let mut children = table_of(3);
+        children.get_mut(ActorId::new(2)).unwrap().handle = None; // the trigger died
+        let (sup, _link_rx) = supervisor(ActorId::new(9));
+        let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
+        let mut rng = Rng::with_seed(7);
+        // RestForOne on child 2 → cycle {2,3}; child 3 live+awaited (awaiting 1);
+        // child 1 (the elder) stays non-cycling and live.
+        handle_child_death(
+            &mut children,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::RestForOne,
+            &mut rng,
+            &notice(ActorId::new(2), ActorStopReason::Killed),
+        );
+        assert!(matches!(cycle, CycleState::Tearing { awaiting: 1, .. }));
+
+        // Stop the non-cycling elder: it has a live handle but is NOT cycling,
+        // so it was never awaited — the teardown count must be unchanged.
+        apply_supervision_op(
+            &mut children,
+            &sup,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionOp::Stop(ActorId::new(1)),
+        );
+
+        assert!(
+            matches!(cycle, CycleState::Tearing { awaiting: 1, .. }),
+            "stopping a non-cycling member must NOT count the teardown down",
+        );
+        assert!(
+            children.get_mut(ActorId::new(1)).is_none(),
+            "the elder was stopped and its entry removed",
+        );
+    }
 }
