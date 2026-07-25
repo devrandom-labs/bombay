@@ -34,7 +34,6 @@
     "bombay-core/src/actor/spawn.rs::<impl fmt::Debug for RunResult<A>>::fmt": 1,
     "bombay-core/src/actor/spawn.rs::apply_raced_registrations": 1,
     "bombay-core/src/actor/supervision.rs::Children::get_mut": 2,
-    "bombay-core/src/actor/supervision.rs::Children::ids": 1,
     "bombay-core/src/actor/supervision.rs::Children::insert": 1,
     "bombay-core/src/actor/supervision.rs::Children::rekey": 3,
     "bombay-core/src/actor/supervision.rs::Children::remove": 2,
