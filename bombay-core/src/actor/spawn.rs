@@ -5334,10 +5334,10 @@ mod tests {
                     .expect("the boom reaches p's live incarnation");
                 // p is the trigger of a fresh OneForAll cycle: both rebuild.
                 let _x = recv_id(&id_rx).await;
-                let (tag, pn) = recv_tag(&p_rx).await;
+                let (tag, p_now) = recv_tag(&p_rx).await;
                 assert_eq!(tag, "p");
-                assert_ne!(pn, last_p, "p rebuilt fresh on its own crash");
-                last_p = pn;
+                assert_ne!(p_now, last_p, "p rebuilt fresh on its own crash");
+                last_p = p_now;
                 assert!(
                     sup.is_alive(),
                     "p's own budget still holds — the teardown charged it nothing",
