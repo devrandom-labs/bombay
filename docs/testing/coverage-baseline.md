@@ -896,3 +896,33 @@ whitelist. Falsifiability verified: `mem::forget(rx)` fails it (+992 bytes / +11
 observed), then reverted. #151's other half — the nightly MIRI leak/UB job — was
 delivered by #150's `miri.yml` (the leak checker is active in the sweep; the
 mid-backlog Drop test runs in both legs).
+
+## Restart-set strategies (#199) — the set-cycle coordinator
+`OneForAll` / `RestForOne` (ADR-0014) add three test surfaces:
+
+- **Decision layer (`kind.rs` unit tests)** — the pure, synchronous state machine:
+  `set_trigger_flags_set_and_counts_trigger_once`, `absorbed_deaths_count_down_and_arm_rebuild`
+  (an `on_stop`-panic mid-teardown is absorbed, not escalated), `elder_death_mid_tearing_widens_the_cycle`,
+  `widen_during_waiting_replaces_the_armed_deadline` (the stale-deadline / half-alive hazard —
+  `retries.len() == 1`), `rebuild_child_is_superseded_for_cycling_entries`,
+  `removing_an_awaited_member_counts_the_teardown_down` (the wedge counterexample). Plus the
+  `Children` cycle-op units in `supervision.rs` (`flag_cycle` reverse-order + widen-idempotence,
+  `absorb_cycling_death`, `cycling_rebuild_ids` birth-order + `Never`-exclusion).
+- **Behavioral (`spawn.rs` `supervised_rebuild`)** — end-to-end against the wired loop:
+  OneForAll (all-rebuilt / reverse-stop-birth-rebuild / count-once-against-budget), RestForOne
+  (suffix-only / last-child-degenerates-to-OneForOne), `Never`-excluded-from-set, the four
+  mid-cycle races (sibling-death-absorbed, unsupervise-mid-cycle-no-wedge, widen-supersedes-deadline,
+  serves-messages-during-teardown), and the heterogeneous-children sequence (two actor types through
+  the erased factory edges). Each headline set-restart test is **bite-checked** by flipping the
+  supervisor to the default `OneForOne` and confirming it fails (the #149 vacuous-green guard).
+- **DST (`tests/dst_races.rs`)** — `dst_restart_storm_deterministic` (same seed + schedule ⇒
+  identical `(virtual_ms, tag)` rebuild trace; keyed on logical tags, never process-global
+  `ActorId`s), `dst_concurrent_link_unlink_die` (8 seeds; no rebuild after `unsupervise`, no wedge),
+  `dst_backoff_distribution_measured` (delays ∈ `[base(n), base(n)·1.2]`; the #196 tuning defaults
+  confirmed against the measured distribution and posted to #199). Seeded via the new
+  `test_support::set_supervisor_rng_seed` seam (integration tests link the lib `not(test)`, so the
+  `#[cfg(test)]` seed thread-local is unreachable; `spawn.rs::supervisor_rng` reads either seam).
+
+The design was validated by an executable discrete-event model
+(`docs/superpowers/specs/2026-07-25-199-cycle-model.rs`) before the spec — the SUT's DST expectations
+cross-check against it; every coordinator element is load-bearing by a reproduced counterexample.
