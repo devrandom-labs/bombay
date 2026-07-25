@@ -31,7 +31,7 @@ use crate::{
             LinkedChannels, LoopHandles, SupervisedState, run_linked_message_loop,
             run_message_loop, run_supervised_message_loop,
         },
-        supervision::Children,
+        supervision::{Children, CycleState},
     },
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Signal},
@@ -561,6 +561,9 @@ async fn run_lifecycle_supervised<A: Supervisor>(
     // their `stop_grace` deadline fires on this second queue's select arm — the
     // loop stays responsive through the grace instead of blocking on it.
     let mut pending_aborts = DelayQueue::new();
+    // The set-cycle coordinator (card #199): `Idle` until a set-strategy trigger
+    // starts a cycle; loop-owned beside the child table it coordinates.
+    let mut cycle = CycleState::Idle;
     // Jitter RNG for restart backoff: entropy-seeded in production; a `#[cfg(test)]`
     // seed replays the exact delay sequence (the DST contract on
     // `jittered_backoff`). Inlined rather than a helper so the seeded-vs-entropy
@@ -584,6 +587,7 @@ async fn run_lifecycle_supervised<A: Supervisor>(
             children: &mut children,
             retries: &mut retries,
             pending_aborts: &mut pending_aborts,
+            cycle: &mut cycle,
             rng: &mut rng,
             sup_id,
             sup_link_tx,
@@ -3365,7 +3369,7 @@ mod tests {
             error::{ActorStopReason, Infallible},
             mailbox::{ActorId, Capacity, MailboxSender, Mailboxed, Signal},
             message::Msg,
-            restart::{Jitter, RestartConfig, RestartPolicy},
+            restart::{Jitter, RestartConfig, RestartPolicy, SupervisionStrategy},
             test_support::terminate_bound,
             watch::{LinkDied, WatchReg},
         };
@@ -3397,6 +3401,78 @@ mod tests {
         }
         impl Watch for Sup {}
         impl Supervisor for Sup {}
+
+        /// The same do-nothing supervisor as [`Sup`], but overriding
+        /// [`Supervisor::supervision_strategy`] to `OneForAll` — the SUT for the
+        /// wired set-cycle smoke (card #199).
+        struct AllSup;
+        impl Mailboxed for AllSup {
+            type Msg = Noop;
+        }
+        impl crate::actor::Actor for AllSup {
+            type Args = ();
+            type Error = Infallible;
+            async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self)
+            }
+            async fn handle(
+                &mut self,
+                _: Noop,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Ok(())
+            }
+        }
+        impl Watch for AllSup {}
+        impl Supervisor for AllSup {
+            fn supervision_strategy() -> SupervisionStrategy {
+                SupervisionStrategy::OneForAll
+            }
+        }
+
+        /// End-to-end smoke for the wired cycle: under OneForAll a sibling's crash
+        /// rebuilds BOTH children with fresh ids.
+        #[tokio::test(start_paused = true)]
+        async fn one_for_all_smoke_rebuilds_the_sibling_too() {
+            let sup = AllSup::spawn_supervised(());
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let a = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(
+                    RestartPolicy::Permanent,
+                    worker_factory(id_tx.clone(), Arc::clone(&senders)),
+                ),
+            )
+            .await
+            .expect("no hang")
+            .expect("alive");
+            assert_eq!(recv_id(&id_rx).await, a);
+            let b = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(
+                    RestartPolicy::Permanent,
+                    worker_factory(id_tx, Arc::clone(&senders)),
+                ),
+            )
+            .await
+            .expect("no hang")
+            .expect("alive");
+            assert_eq!(recv_id(&id_rx).await, b);
+
+            send_cmd(&senders, 1, Cmd::Crash); // b crashes
+
+            let r1 = recv_id(&id_rx).await;
+            let r2 = recv_id(&id_rx).await;
+            assert_eq!(
+                [r1, r2].iter().filter(|id| **id == a || **id == b).count(),
+                0,
+                "both rebuilt with FRESH ids: {r1:?}, {r2:?} vs {a:?}, {b:?}",
+            );
+            drop(sup);
+        }
 
         /// The child: crashes or stops-normally on command.
         struct Worker;

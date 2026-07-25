@@ -2,6 +2,7 @@
 //! with a `catch_unwind` around each hook so a panic becomes an inspectable
 //! `PanicError` instead of tearing down the task.
 
+use core::time::Duration;
 use std::{ops::ControlFlow, panic::AssertUnwindSafe};
 
 use fastrand::Rng;
@@ -13,13 +14,13 @@ use crate::{
     actor::{
         Actor, ActorRef, Supervisor, Watch, WeakActorRef,
         supervision::{
-            Child, ChildHandle, Children, Spawned, SuperviseReg, SupervisionOp, WatchInstaller,
-            WatchOutcome,
+            ChildHandle, Children, CycleState, Spawned, SuperviseReg, SupervisionOp,
+            WatchInstaller, WatchOutcome,
         },
     },
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{ActorId, MailboxReceiver, Mailboxed, Signal},
-    restart::{GiveUp, RestartVerdict, jittered_backoff, should_restart},
+    restart::{GiveUp, RestartVerdict, SupervisionStrategy, jittered_backoff, should_restart},
     watch::{LinkDied, LinkReceiver, LinkSender, WatchReg, Watchers},
 };
 
@@ -60,6 +61,10 @@ pub(super) struct SupervisedState<'a, A: Mailboxed> {
     /// `sleep(grace).await`) is what keeps the single-threaded loop serving every
     /// other child throughout one child's grace window.
     pub(super) pending_aborts: &'a mut DelayQueue<ChildHandle>,
+    /// The set-cycle coordinator (card #199, ADR-0014) — loop-owned like the
+    /// child table it coordinates, so a handler panic cannot tear a cycle
+    /// mid-teardown (crash-only recovery, the `Children`/`Watchers` argument).
+    pub(super) cycle: &'a mut CycleState,
     pub(super) rng: &'a mut Rng,
     /// The supervisor's own [`ActorId`] — names it as the watcher on every child
     /// edge the loop installs.
@@ -343,6 +348,7 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
         children,
         retries,
         pending_aborts,
+        cycle,
         rng,
         sup_id,
         sup_link_tx,
@@ -351,6 +357,7 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
         id: sup_id,
         link_tx: sup_link_tx,
     };
+    let strategy = A::supervision_strategy();
     loop {
         tokio::select! {
             biased;
@@ -363,15 +370,34 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
                 // the impossible `Err` the arm does nothing and the select waits
                 // again (it cannot spin: `Err` requires zero senders).
                 if let Ok(notice) = death
-                    && let ControlFlow::Break(reason) =
-                        dispatch_death(state, children, retries, rng, notice).await
+                    && let ControlFlow::Break(reason) = dispatch_death(
+                        state,
+                        children,
+                        &mut SetCycleCtx::new(retries, pending_aborts, cycle),
+                        strategy,
+                        rng,
+                        notice,
+                    )
+                    .await
                 {
                     return reason;
                 }
             }
             next_retry = retries.next(), if !retries.is_empty() => {
                 if let Some(expired) = next_retry {
-                    rebuild_child(children, &supervisor, expired.into_inner());
+                    // A cycle's rebuild deadline is matched by KEY (its carried id
+                    // is incidental); everything else is a solo `OneForOne` backoff
+                    // for the id it carries. `cycling_rebuild_ids` clears the flags
+                    // first, so the cycle's own rebuilds pass `rebuild_child`'s
+                    // cycling guard while stale solo strays do not.
+                    if matches!(cycle, CycleState::Waiting { key } if *key == expired.key()) {
+                        *cycle = CycleState::Idle;
+                        for id in children.cycling_rebuild_ids() {
+                            rebuild_child(children, &supervisor, id);
+                        }
+                    } else {
+                        rebuild_child(children, &supervisor, expired.into_inner());
+                    }
                 }
             }
             // The deferred-abort backstop for `stop_child`: a child's grace
@@ -389,8 +415,12 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
                     // The supervised loop gives `Supervision` an effect (the plain
                     // and linked loops ignore it): apply the table mutation here,
                     // so it never reaches `handle_mailbox_step`'s reserved arm.
-                    Some(Signal::Supervision(op)) =>
-                        apply_supervision_op(children, &supervisor, pending_aborts, *op),
+                    Some(Signal::Supervision(op)) => apply_supervision_op(
+                        children,
+                        &supervisor,
+                        &mut SetCycleCtx::new(retries, pending_aborts, cycle),
+                        *op,
+                    ),
                     other => {
                         if let ControlFlow::Break(reason) =
                             handle_mailbox_step(state, self_ref, handles, watchers, other).await
@@ -424,14 +454,22 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
 /// - **`None` → [`Break`]** — the peer-watch hook propagated a non-child's death
 ///   (the #195 path). The supervisor stops, but its children are NOT its own
 ///   failure and are left untouched here.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "`state` and `children` are actor-side handles, not set-cycle \
+              coordinator state, so they stay separate from the SetCycleCtx bundle \
+              (which folds retries/pending_aborts/cycle into one borrow); even so \
+              the death path is 6 args"
+)]
 async fn dispatch_death<A: Supervisor>(
     state: &mut A,
     children: &mut Children,
-    retries: &mut DelayQueue<ActorId>,
+    ctx: &mut SetCycleCtx<'_>,
+    strategy: SupervisionStrategy,
     rng: &mut Rng,
     notice: LinkDied,
 ) -> ControlFlow<ActorStopReason> {
-    match handle_child_death(children, retries, rng, &notice) {
+    match handle_child_death(children, ctx, strategy, rng, &notice) {
         Some(ControlFlow::Break(reason)) => {
             stop_surviving_children(children).await;
             ControlFlow::Break(reason)
@@ -466,6 +504,42 @@ async fn stop_surviving_children(children: &mut Children) {
     .await;
 }
 
+/// The set-cycle coordinator's mutable working set (card #199, ADR-0014),
+/// threaded as one borrow to the decision helpers so they stay under the argument
+/// budget without hiding the loop's disjoint field borrows. It keeps three
+/// separate fields rather than collapsing to one queue because the supervised
+/// loop's `select!` arms still poll `retries` and `pending_aborts` independently
+/// and mutate `cycle` directly — the ctx is constructed transiently only inside
+/// the death and supervision arms, never held across a poll.
+struct SetCycleCtx<'a> {
+    /// The restart-backoff queue: solo `OneForOne` deadlines and the single
+    /// cycle-rebuild deadline both ride it, discriminated by [`CycleState`].
+    retries: &'a mut DelayQueue<ActorId>,
+    /// Deferred hard-kills for cancelled cycle members (and `stop_child`ed
+    /// children) — the same queue the loop's abort arm drains.
+    pending_aborts: &'a mut DelayQueue<ChildHandle>,
+    /// The at-most-one active set-cycle.
+    cycle: &'a mut CycleState,
+}
+
+impl<'a> SetCycleCtx<'a> {
+    /// Bundles the loop's three cycle-coordinator borrows for one decision-helper
+    /// call. Constructed transiently inside a `select!` arm — the loop's other
+    /// arms keep polling the same queues through their own disjoint field borrows,
+    /// because passing the loop's `&mut` locals here reborrows rather than moves.
+    const fn new(
+        retries: &'a mut DelayQueue<ActorId>,
+        pending_aborts: &'a mut DelayQueue<ChildHandle>,
+        cycle: &'a mut CycleState,
+    ) -> Self {
+        Self {
+            retries,
+            pending_aborts,
+            cycle,
+        }
+    }
+}
+
 /// Applies one link death to the restart policy **iff** it names a supervised
 /// child — the single table lookup doubles as the membership test.
 ///
@@ -483,12 +557,28 @@ async fn stop_surviving_children(children: &mut Children) {
 /// no restart decision hides inside a future poll where mutation testing cannot
 /// reach it (the discipline from earlier cards). The lookup ends before the
 /// function returns, so no borrow is held across the caller's peer-path await.
+///
+/// **Absorb-first** (card #199, ADR-0014): a death that names a *cycling* member
+/// is expected — the set-cycle is tearing it down — so it is counted against the
+/// teardown and absorbed BEFORE any membership lookup or restart verdict, whatever
+/// its reason.
 fn handle_child_death(
     children: &mut Children,
-    retries: &mut DelayQueue<ActorId>,
+    ctx: &mut SetCycleCtx<'_>,
+    strategy: SupervisionStrategy,
     rng: &mut Rng,
     notice: &LinkDied,
 ) -> Option<ControlFlow<ActorStopReason>> {
+    // Echo absorption FIRST (ADR-0014): a cycling member's death is expected —
+    // count the teardown down, whatever the reason says. A crash (even an
+    // on_stop-hook panic) DURING deliberate teardown is not crash-loop evidence;
+    // the fresh incarnation runs a fresh on_start.
+    if let Some(was_awaited) = children.absorb_cycling_death(notice.id) {
+        if was_awaited {
+            cycle_count_down(ctx, notice.id);
+        }
+        return Some(ControlFlow::Continue(()));
+    }
     let child = children.get_mut(notice.id)?;
     // The live incarnation is gone; the entry survives (factory + accounting
     // persist across incarnations) but now holds no handle.
@@ -500,31 +590,142 @@ fn handle_child_death(
         RestartVerdict::Escalate => {
             ControlFlow::Break(ActorStopReason::ChildLifecycleFailed { child: notice.id })
         }
-        RestartVerdict::Restart => restart_or_give_up(child, retries, rng, notice.id),
+        RestartVerdict::Restart => restart_or_give_up(children, ctx, strategy, rng, notice.id),
     })
+}
+
+/// Counts one awaited teardown death (or removal) down; on the LAST one, arms the
+/// single cycle-rebuild deadline and moves to `Waiting`. A no-op outside
+/// `Tearing`. The `DelayQueue` value is `id` only because the queue carries
+/// [`ActorId`]s — the cycle-rebuild path matches on the KEY, never the value.
+fn cycle_count_down(ctx: &mut SetCycleCtx<'_>, id: ActorId) {
+    // A no-op outside `Tearing` is legitimate (a late death after the cycle armed
+    // its rebuild, or on an idle coordinator).
+    let CycleState::Tearing { awaiting, backoff } = &mut *ctx.cycle else {
+        return;
+    };
+    // `Tearing` always holds `awaiting >= 1` by construction — the zero transition
+    // moves it to `Waiting` — so this never underflows; a future regression that
+    // broke the invariant must panic loudly here, not silently wedge the cycle.
+    #[expect(
+        clippy::expect_used,
+        reason = "Tearing's awaiting >= 1 invariant is a programmer guarantee; an \
+                  underflow would be an unreachable coordinator bug, surfaced as a \
+                  panic rather than a silent wedge"
+    )]
+    let left = awaiting
+        .checked_sub(1)
+        .expect("Tearing always holds awaiting >= 1 (the 0 transition moves to Waiting)");
+    if left == 0 {
+        let key = ctx.retries.insert(id, *backoff);
+        *ctx.cycle = CycleState::Waiting { key };
+    } else {
+        *awaiting = left;
+    }
+}
+
+/// Starts a set-cycle over the suffix `[from..]`, or WIDENS the active one — the
+/// same operation, because [`flag_cycle`](Children::flag_cycle) is idempotent and
+/// every restart subset is a suffix (nested; ADR-0014). Cancels newly flagged live
+/// members in reverse birth order with deferred hard-kills, then re-derives the
+/// cycle state. Any armed rebuild deadline is REMOVED first: left in place it would
+/// fire mid-teardown of the widened set and rebuild a half-alive set.
+fn start_or_widen_cycle(
+    children: &mut Children,
+    ctx: &mut SetCycleCtx<'_>,
+    from: usize,
+    delay: Duration,
+    trigger: ActorId,
+) {
+    if let CycleState::Waiting { key } = &mut *ctx.cycle {
+        ctx.retries.remove(key);
+    }
+    let (stops, added) = children.flag_cycle(from);
+    for (handle, grace) in stops {
+        handle.cancel.cancel();
+        ctx.pending_aborts.insert(handle, grace);
+    }
+    let pending = match &*ctx.cycle {
+        CycleState::Tearing { awaiting, .. } => *awaiting,
+        CycleState::Idle | CycleState::Waiting { .. } => 0,
+    };
+    // `awaiting` is bounded by live child fan-out (≤ the table length), so the sum
+    // cannot overflow u32: a silent `saturating`/`unwrap_or(MAX)` here would wedge
+    // the cycle forever (waiting on MAX deaths that never land), so an overflow is
+    // surfaced as a panic rather than absorbed.
+    #[expect(
+        clippy::expect_used,
+        reason = "the widened awaiting count is bounded by the child table length \
+                  and cannot overflow u32; an overflow would be an unreachable bug, \
+                  surfaced as a panic rather than a silent cycle wedge"
+    )]
+    let awaiting = pending
+        .checked_add(added)
+        .expect("awaiting is bounded by live child fan-out (≤ table length); cannot overflow u32");
+    if awaiting == 0 {
+        let key = ctx.retries.insert(trigger, delay);
+        *ctx.cycle = CycleState::Waiting { key };
+    } else {
+        *ctx.cycle = CycleState::Tearing {
+            awaiting,
+            backoff: delay,
+        };
+    }
 }
 
 /// The restart-or-escalate half of [`handle_child_death`], split out so each
 /// function stays under the cognitive-complexity bar: records the failure and
-/// either arms a jittered backoff (`Continue`) or escalates on a tripped budget
-/// (`Break(RestartLimitExceeded)`).
+/// either arms a solo backoff (`OneForOne`) or a set-cycle
+/// (`RestForOne`/`OneForAll`) — or escalates on a tripped budget. One
+/// `record_failure`, on the TRIGGER only; a set cycle is one recovery action, so
+/// siblings' counters are untouched (OTP parity, ADR-0014).
 fn restart_or_give_up(
-    child: &mut Child,
-    retries: &mut DelayQueue<ActorId>,
+    children: &mut Children,
+    ctx: &mut SetCycleCtx<'_>,
+    strategy: SupervisionStrategy,
     rng: &mut Rng,
     id: ActorId,
 ) -> ControlFlow<ActorStopReason> {
-    match child.tracker.record_failure(&child.config, Instant::now()) {
-        GiveUp::Yes { rebuilds } => ControlFlow::Break(ActorStopReason::RestartLimitExceeded {
-            child: id,
-            rebuilds,
-        }),
-        GiveUp::No { attempt } => {
-            let delay = jittered_backoff(&child.config, attempt, rng);
-            retries.insert(id, delay);
-            ControlFlow::Continue(())
+    #[expect(
+        clippy::expect_used,
+        reason = "the caller (handle_child_death) verified `id` is in the table in \
+                  the same synchronous scope before dispatching here; a miss is an \
+                  unreachable programmer bug, surfaced as a panic"
+    )]
+    let child = children
+        .get_mut(id)
+        .expect("caller verified membership in the same synchronous scope");
+    let delay = match child.tracker.record_failure(&child.config, Instant::now()) {
+        GiveUp::Yes { rebuilds } => {
+            return ControlFlow::Break(ActorStopReason::RestartLimitExceeded {
+                child: id,
+                rebuilds,
+            });
+        }
+        GiveUp::No { attempt } => jittered_backoff(&child.config, attempt, rng),
+    };
+    // `child` borrow ends above; the set path reborrows `children`.
+    match strategy {
+        SupervisionStrategy::OneForOne => {
+            ctx.retries.insert(id, delay);
+        }
+        SupervisionStrategy::RestForOne => {
+            #[expect(
+                clippy::expect_used,
+                reason = "`position` cannot fail once `get_mut` succeeded on the same \
+                          key in this synchronous scope; a miss is an unreachable bug"
+            )]
+            let from = children
+                .position(id)
+                .expect("membership verified above in the same scope");
+            start_or_widen_cycle(children, ctx, from, delay, id);
+        }
+        // The whole set is the suffix from birth index 0.
+        SupervisionStrategy::OneForAll => {
+            start_or_widen_cycle(children, ctx, 0, delay, id);
         }
     }
+    ControlFlow::Continue(())
 }
 
 /// Rebuilds one child after its backoff deadline fires: runs the erased,
@@ -550,7 +751,14 @@ fn rebuild_child(children: &mut Children, sup: &SupervisorRef, old_id: ActorId) 
     let Some(Spawned {
         handle,
         install_watch,
-    }) = children.get_mut(old_id).map(|child| (child.factory)())
+    }) = children
+        .get_mut(old_id)
+        // Drop-at-fire supersession: if the entry is cycling, a set-cycle owns it
+        // now; a stale SOLO backoff deadline (whose Key 2a discards) must not
+        // rebuild one member mid-teardown. The cycle's own rebuild sweep clears
+        // the flag first, so cycle rebuilds pass this guard.
+        .filter(|child| !child.cycling)
+        .map(|child| (child.factory)())
     else {
         return;
     };
@@ -602,7 +810,7 @@ fn install_child_watch(sup: &SupervisorRef, handle: &ChildHandle, install_watch:
 fn apply_supervision_op(
     children: &mut Children,
     sup: &SupervisorRef,
-    pending_aborts: &mut DelayQueue<ChildHandle>,
+    ctx: &mut SetCycleCtx<'_>,
     op: SupervisionOp,
 ) {
     match op {
@@ -623,9 +831,16 @@ fn apply_supervision_op(
                 install_child_watch(sup, &handle, install_watch);
             }
         }
-        // Drop the supervision edge; the child keeps running, now unwatched.
+        // Drop the supervision edge; the child keeps running, now unwatched. If it
+        // was an AWAITED cycle member, count the teardown down — else the cycle
+        // waits forever for a death that will land as a table-miss.
         SupervisionOp::Remove(id) => {
-            children.remove(id);
+            if let Some(child) = children.remove(id)
+                && child.cycling
+                && child.handle.is_some()
+            {
+                cycle_count_down(ctx, id);
+            }
         }
         // Drop the edge AND stop the child crash-only, OTP `terminate_child/2`:
         // `cancel` asks it to stop gracefully NOW, and the hard `abort` is deferred
@@ -638,11 +853,16 @@ fn apply_supervision_op(
         // then routes to the ignored peer path, never a rebuild (the #195
         // unwatch-races-death rule).
         SupervisionOp::Stop(id) => {
-            if let Some(child) = children.remove(id)
-                && let Some(handle) = child.handle
-            {
-                handle.cancel.cancel();
-                pending_aborts.insert(handle, child.config.stop_grace);
+            if let Some(child) = children.remove(id) {
+                // Compute BEFORE the handle is moved out below.
+                let was_awaited = child.cycling && child.handle.is_some();
+                if let Some(handle) = child.handle {
+                    handle.cancel.cancel();
+                    ctx.pending_aborts.insert(handle, child.config.stop_grace);
+                }
+                if was_awaited {
+                    cycle_count_down(ctx, id);
+                }
             }
         }
     }
@@ -702,19 +922,21 @@ mod supervised_tests {
     use tokio::time::Instant;
     use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
+    use fastrand::Rng;
+
     use super::{
-        SupervisorRef, apply_supervision_op, handle_child_death, install_child_watch,
+        SetCycleCtx, SupervisorRef, apply_supervision_op, handle_child_death, install_child_watch,
         rebuild_child, stop_surviving_children,
     };
     use crate::{
         actor::supervision::{
-            Child, ChildHandle, Children, RebuildFactory, Spawned, SuperviseReg, SupervisionOp,
-            WatchInstaller, WatchOutcome, watch_installer,
+            Child, ChildHandle, Children, CycleState, RebuildFactory, Spawned, SuperviseReg,
+            SupervisionOp, WatchInstaller, WatchOutcome, watch_installer,
         },
         error::{ActorStopReason, PanicError, PanicReason},
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
         message::Msg,
-        restart::{RestartConfig, RestartPolicy, RestartTracker},
+        restart::{RestartConfig, RestartPolicy, RestartTracker, SupervisionStrategy},
         watch::{LinkDied, LinkReceiver},
     };
     use core::ops::ControlFlow;
@@ -801,11 +1023,18 @@ mod supervised_tests {
     async fn leave_dead_retains_entry_and_schedules_nothing() {
         let (mut children, id) = one_child(RestartConfig::new(RestartPolicy::Never));
         let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
         let mut rng = fastrand::Rng::with_seed(0);
 
         let flow = handle_child_death(
             &mut children,
-            &mut retries,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForOne,
             &mut rng,
             &notice(id, ActorStopReason::Killed),
         );
@@ -832,11 +1061,18 @@ mod supervised_tests {
     async fn a_non_child_death_is_none_and_arms_nothing() {
         let (mut children, _id) = one_child(RestartConfig::new(RestartPolicy::Permanent));
         let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
         let mut rng = fastrand::Rng::with_seed(0);
 
         let flow = handle_child_death(
             &mut children,
-            &mut retries,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForOne,
             &mut rng,
             &notice(ActorId::new(999), ActorStopReason::Killed),
         );
@@ -858,11 +1094,18 @@ mod supervised_tests {
     async fn lifecycle_hook_death_escalates_without_scheduling_a_retry() {
         let (mut children, id) = one_child(RestartConfig::new(RestartPolicy::Permanent));
         let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
         let mut rng = fastrand::Rng::with_seed(0);
 
         let flow = handle_child_death(
             &mut children,
-            &mut retries,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForOne,
             &mut rng,
             &notice(id, panicked(PanicReason::OnStart)),
         );
@@ -886,11 +1129,18 @@ mod supervised_tests {
     async fn restartable_death_arms_a_backoff_retry() {
         let (mut children, id) = one_child(RestartConfig::new(RestartPolicy::Permanent));
         let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
         let mut rng = fastrand::Rng::with_seed(0);
 
         let flow = handle_child_death(
             &mut children,
-            &mut retries,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForOne,
             &mut rng,
             &notice(id, panicked(PanicReason::HandlerPanic)),
         );
@@ -911,11 +1161,18 @@ mod supervised_tests {
         let config = RestartConfig::new(RestartPolicy::Permanent).with_max_restarts(0);
         let (mut children, id) = one_child(config);
         let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
         let mut rng = fastrand::Rng::with_seed(0);
 
         let flow = handle_child_death(
             &mut children,
-            &mut retries,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForOne,
             &mut rng,
             &notice(id, ActorStopReason::Killed),
         );
@@ -944,11 +1201,18 @@ mod supervised_tests {
         let (mut children, id) =
             one_child(RestartConfig::new(RestartPolicy::Transient).with_max_restarts(1));
         let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
         let mut rng = fastrand::Rng::with_seed(0);
 
         let first = handle_child_death(
             &mut children,
-            &mut retries,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForOne,
             &mut rng,
             &notice(id, ActorStopReason::AlreadyDead),
         );
@@ -964,7 +1228,12 @@ mod supervised_tests {
 
         let second = handle_child_death(
             &mut children,
-            &mut retries,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForOne,
             &mut rng,
             &notice(id, ActorStopReason::AlreadyDead),
         );
@@ -987,11 +1256,17 @@ mod supervised_tests {
         let (sup, _link_rx) = supervisor(ActorId::new(100));
         let mut children = Children::new();
         let mut pending_aborts = DelayQueue::new();
+        let mut retries = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
         let id = ActorId::new(1);
         apply_supervision_op(
             &mut children,
             &sup,
-            &mut pending_aborts,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
             SupervisionOp::Add(SuperviseReg {
                 child: child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
                 id,
@@ -1009,7 +1284,11 @@ mod supervised_tests {
         apply_supervision_op(
             &mut children,
             &sup,
-            &mut pending_aborts,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
             SupervisionOp::Stop(id),
         );
         assert!(children.get_mut(id).is_none(), "Stop drops the edge");
@@ -1033,7 +1312,11 @@ mod supervised_tests {
         apply_supervision_op(
             &mut children,
             &sup,
-            &mut pending_aborts,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
             SupervisionOp::Add(SuperviseReg {
                 child: child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
                 id: other,
@@ -1047,7 +1330,11 @@ mod supervised_tests {
         apply_supervision_op(
             &mut children,
             &sup,
-            &mut pending_aborts,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
             SupervisionOp::Remove(other),
         );
         assert!(children.get_mut(other).is_none(), "Remove drops the edge");
@@ -1072,6 +1359,8 @@ mod supervised_tests {
         let (sup, _link_rx) = supervisor(ActorId::new(100));
         let mut children = Children::new();
         let mut pending_aborts = DelayQueue::new();
+        let mut retries = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
         let id = ActorId::new(1);
         let grace = Duration::from_secs(5);
         let mut entry = child(RestartConfig::new(RestartPolicy::Permanent), Instant::now());
@@ -1082,7 +1371,11 @@ mod supervised_tests {
         apply_supervision_op(
             &mut children,
             &sup,
-            &mut pending_aborts,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
             SupervisionOp::Stop(id),
         );
 
@@ -1313,12 +1606,19 @@ mod supervised_tests {
             .with_max_backoff(Duration::from_secs(30));
         let (mut children, id) = one_child(config);
         let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
         let mut rng = fastrand::Rng::with_seed(7);
 
         let before = Instant::now();
         let flow = handle_child_death(
             &mut children,
-            &mut retries,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForOne,
             &mut rng,
             &notice(id, ActorStopReason::Killed),
         );
@@ -1336,6 +1636,302 @@ mod supervised_tests {
         assert!(
             waited <= Duration::from_millis(120),
             "first-attempt backoff stays within min_backoff + 20% jitter, waited {waited:?}",
+        );
+    }
+
+    /// A birth-ordered table of `n` live `Permanent` children keyed `1..=n`, the
+    /// set-strategy tests' fixture.
+    fn table_of(n: u32) -> Children {
+        let mut children = Children::new();
+        for i in 1..=n {
+            children.insert(
+                ActorId::new(u64::from(i)),
+                child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
+            );
+        }
+        children
+    }
+
+    /// OneForAll trigger: the whole table is flagged, live siblings' cancels fire,
+    /// the trigger's counters advance ONCE, siblings' never.
+    #[tokio::test(start_paused = true)]
+    async fn set_trigger_flags_set_and_counts_trigger_once() {
+        let mut children = table_of(3);
+        children.get_mut(ActorId::new(2)).unwrap().handle = None; // the trigger died
+        let (sup, _link_rx) = supervisor(ActorId::new(9));
+        let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
+        let mut rng = Rng::with_seed(7);
+
+        let flow = handle_child_death(
+            &mut children,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForAll,
+            &mut rng,
+            &notice(ActorId::new(2), ActorStopReason::Killed),
+        );
+
+        assert!(matches!(flow, Some(ControlFlow::Continue(()))));
+        assert!(
+            matches!(cycle, CycleState::Tearing { awaiting: 2, .. }),
+            "{cycle:?}"
+        );
+        for i in [1_u64, 3] {
+            let sibling = children.get_mut(ActorId::new(i)).unwrap();
+            assert!(sibling.cycling);
+            assert!(
+                sibling.handle.as_ref().unwrap().cancel.is_cancelled(),
+                "sibling {i} cancelled",
+            );
+        }
+        assert_eq!(pending_aborts.len(), 2, "deferred hard-kills armed");
+        assert_eq!(retries.len(), 0, "no rebuild while teardown pending");
+        let _ = sup;
+    }
+
+    /// Absorb: a cycling member's death decrements awaiting; the LAST one arms the
+    /// single cycle-rebuild deadline (Waiting) instead of a policy verdict — even
+    /// when the death reason is a lifecycle-hook panic (an `on_stop` panic during
+    /// deliberate teardown is not crash-loop evidence; the reason is diagnostic
+    /// only on this path).
+    #[tokio::test(start_paused = true)]
+    async fn absorbed_deaths_count_down_and_arm_rebuild() {
+        let mut children = table_of(3);
+        children.get_mut(ActorId::new(2)).unwrap().handle = None;
+        let (_sup, _link_rx) = supervisor(ActorId::new(9));
+        let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
+        let mut rng = Rng::with_seed(7);
+        handle_child_death(
+            &mut children,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForAll,
+            &mut rng,
+            &notice(ActorId::new(2), ActorStopReason::Killed),
+        );
+
+        let hook_panic = ActorStopReason::Panicked(PanicError::new(
+            Box::new("on_stop blew up during teardown"),
+            PanicReason::OnStop,
+        ));
+        let first = handle_child_death(
+            &mut children,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForAll,
+            &mut rng,
+            &notice(ActorId::new(3), hook_panic),
+        );
+        assert!(
+            matches!(first, Some(ControlFlow::Continue(()))),
+            "absorbed, not escalated"
+        );
+        assert!(matches!(cycle, CycleState::Tearing { awaiting: 1, .. }));
+
+        let last = handle_child_death(
+            &mut children,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForAll,
+            &mut rng,
+            &notice(ActorId::new(1), ActorStopReason::Killed),
+        );
+        assert!(matches!(last, Some(ControlFlow::Continue(()))));
+        assert!(
+            matches!(cycle, CycleState::Waiting { .. }),
+            "teardown complete: rebuild armed"
+        );
+        assert_eq!(retries.len(), 1, "exactly one cycle deadline");
+        let trigger = children.get_mut(ActorId::new(2)).unwrap();
+        assert_eq!(
+            trigger.tracker,
+            {
+                let mut t = RestartTracker::new(Instant::now());
+                t.record_failure(&trigger.config, Instant::now());
+                t
+            },
+            "trigger charged once; absorbs charged nothing"
+        );
+    }
+
+    /// Widen: an elder Supervised death mid-Tearing folds into the active cycle
+    /// (RestForOne: its suffix is a superset), recomputing awaiting and NOT
+    /// double-cancelling already-cycling members.
+    #[tokio::test(start_paused = true)]
+    async fn elder_death_mid_tearing_widens_the_cycle() {
+        let mut children = table_of(3);
+        children.get_mut(ActorId::new(2)).unwrap().handle = None;
+        let (_sup, _link_rx) = supervisor(ActorId::new(9));
+        let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
+        let mut rng = Rng::with_seed(7);
+        // Trigger: child 2 → cycle {2,3} (RestForOne suffix), awaiting {3}.
+        handle_child_death(
+            &mut children,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::RestForOne,
+            &mut rng,
+            &notice(ActorId::new(2), ActorStopReason::Killed),
+        );
+        assert!(matches!(cycle, CycleState::Tearing { awaiting: 1, .. }));
+
+        // Elder child 1 dies spontaneously mid-cycle → widen to {1,2,3}.
+        let flow = handle_child_death(
+            &mut children,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::RestForOne,
+            &mut rng,
+            &notice(ActorId::new(1), ActorStopReason::Killed),
+        );
+        assert!(matches!(flow, Some(ControlFlow::Continue(()))));
+        // 1 was live? No — it just DIED (its death is the trigger); nothing new to
+        // await: still awaiting only {3}.
+        assert!(
+            matches!(cycle, CycleState::Tearing { awaiting: 1, .. }),
+            "{cycle:?}"
+        );
+        assert!(
+            children.get_mut(ActorId::new(1)).unwrap().cycling,
+            "elder folded in"
+        );
+        assert_eq!(pending_aborts.len(), 1, "no double-cancel of member 3");
+    }
+
+    /// Widen during Waiting: the armed rebuild deadline is REMOVED and re-armed
+    /// (the stale-deadline/half-alive hazard, ADR-0014's counterexample table).
+    #[tokio::test(start_paused = true)]
+    async fn widen_during_waiting_replaces_the_armed_deadline() {
+        let mut children = table_of(2);
+        children.get_mut(ActorId::new(2)).unwrap().handle = None;
+        let (_sup, _link_rx) = supervisor(ActorId::new(9));
+        let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
+        let mut rng = Rng::with_seed(7);
+        // Child 2 is the LAST child: RestForOne suffix = {2} alone, all dead →
+        // straight to Waiting.
+        handle_child_death(
+            &mut children,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::RestForOne,
+            &mut rng,
+            &notice(ActorId::new(2), ActorStopReason::Killed),
+        );
+        assert!(matches!(cycle, CycleState::Waiting { .. }));
+        assert_eq!(retries.len(), 1);
+
+        // Elder child 1 dies in the Waiting window → widen to {1,2}: the stale
+        // deadline is removed, one fresh deadline armed.
+        children.get_mut(ActorId::new(1)).unwrap().handle = None; // it died
+        handle_child_death(
+            &mut children,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::RestForOne,
+            &mut rng,
+            &notice(ActorId::new(1), ActorStopReason::Killed),
+        );
+        assert!(matches!(cycle, CycleState::Waiting { .. }));
+        assert_eq!(
+            retries.len(),
+            1,
+            "stale deadline removed, exactly one armed"
+        );
+        assert!(children.get_mut(ActorId::new(1)).unwrap().cycling);
+    }
+
+    /// `rebuild_child` on a cycling entry is a no-op: a pre-cycle solo backoff
+    /// deadline firing mid-cycle must not rebuild one member of a set mid-teardown
+    /// (drop-at-fire supersession — 2a discards solo `Key`s).
+    #[tokio::test(start_paused = true)]
+    async fn rebuild_child_is_superseded_for_cycling_entries() {
+        let mut children = table_of(1);
+        children.get_mut(ActorId::new(1)).unwrap().handle = None;
+        children.get_mut(ActorId::new(1)).unwrap().cycling = true;
+        let (sup, _link_rx) = supervisor(ActorId::new(9));
+
+        rebuild_child(&mut children, &sup, ActorId::new(1));
+
+        let entry = children.get_mut(ActorId::new(1)).expect("entry retained");
+        assert!(entry.handle.is_none(), "no rebuild while cycling");
+        assert!(entry.cycling, "flag untouched — the cycle still owns it");
+    }
+
+    /// Removal mid-cycle (`unsupervise`/`stop_child` of an awaited member) must
+    /// count the teardown down — else the cycle waits forever for a death that
+    /// will land as a table-miss (the wedge counterexample).
+    #[tokio::test(start_paused = true)]
+    async fn removing_an_awaited_member_counts_the_teardown_down() {
+        let mut children = table_of(2);
+        children.get_mut(ActorId::new(1)).unwrap().handle = None;
+        let (sup, _link_rx) = supervisor(ActorId::new(9));
+        let mut retries = DelayQueue::new();
+        let mut pending_aborts = DelayQueue::new();
+        let mut cycle = CycleState::Idle;
+        let mut rng = Rng::with_seed(7);
+        handle_child_death(
+            &mut children,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionStrategy::OneForAll,
+            &mut rng,
+            &notice(ActorId::new(1), ActorStopReason::Killed),
+        );
+        assert!(matches!(cycle, CycleState::Tearing { awaiting: 1, .. }));
+
+        apply_supervision_op(
+            &mut children,
+            &sup,
+            &mut SetCycleCtx {
+                retries: &mut retries,
+                pending_aborts: &mut pending_aborts,
+                cycle: &mut cycle,
+            },
+            SupervisionOp::Remove(ActorId::new(2)),
+        );
+
+        assert!(
+            matches!(cycle, CycleState::Waiting { .. }),
+            "last awaited member removed ⇒ rebuild armed"
+        );
+        assert!(
+            children.get_mut(ActorId::new(2)).is_none(),
+            "entry gone, never rebuilt"
         );
     }
 }
