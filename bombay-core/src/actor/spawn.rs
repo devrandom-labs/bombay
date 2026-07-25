@@ -5070,5 +5070,67 @@ mod tests {
 
             drop(sup);
         }
+
+        // ---- Task 9: heterogeneous children (card #199) -----------------
+
+        /// Card #199 box 7: the erased rebuild edge (`RebuildFactory`) works
+        /// across DISTINCT actor types sharing one supervisor. `AllSup`
+        /// supervises a `Worker` and a `TapeWorker`; crashing either must
+        /// rebuild BOTH, across two independent cycles (proving the erased
+        /// edges survive reuse, not just a single fire).
+        #[tokio::test(start_paused = true)]
+        async fn supervisor_signals_heterogeneous_children() {
+            let sup = AllSup::spawn_supervised(());
+            let tape: Tape = Arc::new(Mutex::new(Vec::new()));
+            let (tag_tx, tag_rx) = flume::unbounded::<(&'static str, ActorId)>();
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders_w: Senders = Arc::new(Mutex::new(Vec::new()));
+            let senders_t: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+
+            let w0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                worker_factory(id_tx.clone(), Arc::clone(&senders_w)),
+            )
+            .await;
+            assert_eq!(recv_id(&id_rx).await, w0);
+            let t0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                tape_factory(
+                    "t",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_t),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("t", t0));
+
+            // Crash the Worker: both erased rebuild edges must fire.
+            send_cmd(&senders_w, 0, Cmd::Crash);
+            let w1 = recv_id(&id_rx).await;
+            let (tag, t1) = recv_tag(&tag_rx).await;
+            assert_eq!(tag, "t");
+            assert_ne!(w1, w0, "Worker rebuilt fresh");
+            assert_ne!(t1, t0, "TapeWorker sibling rebuilt fresh too");
+            assert!(
+                sup.is_alive(),
+                "supervisor survives the heterogeneous cycle"
+            );
+
+            // Crash the TapeWorker's fresh incarnation: the SECOND cycle must
+            // also rebuild both erased edges.
+            send_tape_msg(&senders_t, 1, TapeMsg::Boom);
+            let w2 = recv_id(&id_rx).await;
+            let (tag, t2) = recv_tag(&tag_rx).await;
+            assert_eq!(tag, "t");
+            assert_ne!(w2, w1, "Worker rebuilt again on the second cycle");
+            assert_ne!(t2, t1, "TapeWorker rebuilt again on the second cycle");
+            assert!(sup.is_alive());
+
+            drop(sup);
+        }
     }
 }
