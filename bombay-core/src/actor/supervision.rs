@@ -27,11 +27,11 @@ use core::time::Duration;
 
 use futures::stream::AbortHandle;
 use smallvec::SmallVec;
-use tokio_util::sync::CancellationToken;
+use tokio_util::{sync::CancellationToken, time::delay_queue};
 
 use crate::{
     mailbox::{ActorId, MailboxSender, Mailboxed, Signal, TrySendError},
-    restart::{RestartConfig, RestartTracker},
+    restart::{RestartConfig, RestartPolicy, RestartTracker},
     watch::WatchReg,
 };
 
@@ -158,6 +158,10 @@ pub struct Child {
     /// This child's give-up accounting, carried ACROSS incarnations — a fresh
     /// tracker per rebuild would make every budget unreachable.
     pub(crate) tracker: RestartTracker,
+    /// Member of the ACTIVE set-cycle (card #199): its death is expected —
+    /// absorbed by the cycle, never fed to the restart policy (ADR-0014's echo
+    /// suppression). Set by `flag_cycle`, cleared by `cycling_rebuild_ids`.
+    pub(crate) cycling: bool,
 }
 
 /// A supervise registration in transit on the supervisor's own mailbox.
@@ -199,6 +203,23 @@ pub enum SupervisionOp {
     /// policy, which would see the death and dutifully rebuild what the caller
     /// just asked to be gone.
     Stop(ActorId),
+}
+
+/// The supervisor's set-cycle coordinator (card #199, ADR-0014). Loop-owned,
+/// beside `Children` — at most ONE cycle is ever active, because a mid-cycle
+/// trigger *widens* the active cycle instead of starting a second (every
+/// restart subset is a suffix of the birth order, so any two are nested).
+#[derive(Debug)]
+pub enum CycleState {
+    /// No set-cycle in flight (also the only state `OneForOne` ever sees).
+    Idle,
+    /// Teardown in flight: `awaiting` live members' deaths are pending;
+    /// `backoff` is the trigger's jittered delay, applied once teardown ends.
+    Tearing { awaiting: u32, backoff: Duration },
+    /// Torn down; the rebuild deadline is armed in the loop's `retries` queue
+    /// under `key` — kept so a widen can REMOVE it (the stale-deadline hazard:
+    /// left armed, it would rebuild a half-torn set).
+    Waiting { key: delay_queue::Key },
 }
 
 /// The supervisor's children, keyed by the **current** incarnation's
@@ -277,6 +298,67 @@ impl Children {
         self.entries.iter().map(|(id, _)| *id)
     }
 
+    /// Birth index of the entry currently keyed by `id` — the anchor
+    /// `RestForOne` computes its suffix from.
+    #[must_use]
+    pub(crate) fn position(&self, id: ActorId) -> Option<usize> {
+        self.entries.iter().position(|(key, _)| *key == id)
+    }
+
+    /// Flags `[from..]` as cycling and returns the stop edges of members that
+    /// were NOT already cycling and are live — in REVERSE birth order (the
+    /// teardown order) with each member's own grace — plus their count (the
+    /// `awaiting` delta). Idempotent under widening: re-flagging is a no-op and
+    /// already-cycling members are never returned twice (their cancel is
+    /// already in flight).
+    #[must_use]
+    pub(crate) fn flag_cycle(
+        &mut self,
+        from: usize,
+    ) -> (SmallVec<[(ChildHandle, Duration); 4]>, u32) {
+        let mut stops: SmallVec<[(ChildHandle, Duration); 4]> = SmallVec::new();
+        for (_, child) in self.entries[from..].iter_mut().rev() {
+            if child.cycling {
+                continue;
+            }
+            child.cycling = true;
+            if let Some(handle) = &child.handle {
+                stops.push((handle.clone(), child.config.stop_grace));
+            }
+        }
+        let awaiting = u32::try_from(stops.len()).unwrap_or(u32::MAX);
+        (stops, awaiting)
+    }
+
+    /// Absorbs one death IF `id` names a cycling member: records the
+    /// incarnation gone and reports whether it was still live — i.e. whether
+    /// this death was one the teardown is awaiting. `None`: not a cycling
+    /// member (route to the ordinary paths). The entry always survives.
+    #[must_use]
+    pub(crate) fn absorb_cycling_death(&mut self, id: ActorId) -> Option<bool> {
+        self.entries
+            .iter_mut()
+            .find(|(key, _)| *key == id)
+            .filter(|(_, child)| child.cycling)
+            .map(|(_, child)| child.handle.take().is_some())
+    }
+
+    /// Ends the cycle's teardown phase: clears EVERY cycling flag and returns
+    /// the non-`Never` members' ids in BIRTH order — the rebuild worklist.
+    /// `Never` members are left dead with entries retained (stopped with the
+    /// set, never rebuilt — OTP's temporary-children rule).
+    #[must_use]
+    pub(crate) fn cycling_rebuild_ids(&mut self) -> SmallVec<[ActorId; 4]> {
+        self.entries
+            .iter_mut()
+            .filter(|(_, child)| child.cycling)
+            .filter_map(|(id, child)| {
+                child.cycling = false;
+                (child.config.policy != RestartPolicy::Never).then_some(*id)
+            })
+            .collect()
+    }
+
     /// Empties the table, handing back every **live** incarnation's stop edges
     /// paired with its configured [`stop_grace`](RestartConfig::stop_grace) — the
     /// escalation sweep's input: the loop is exiting, so it stops every survivor
@@ -334,6 +416,7 @@ mod tests {
             handle: Some(handle(id)),
             config: RestartConfig::new(RestartPolicy::Permanent),
             tracker: RestartTracker::new(Instant::now()),
+            cycling: false,
         }
     }
 
@@ -524,5 +607,118 @@ mod tests {
         assert_eq!(first.config.stop_grace, Duration::ZERO);
         let second = children.get_mut(ActorId::new(2)).expect("present");
         assert_eq!(second.config.policy, RestartPolicy::Permanent);
+    }
+
+    /// `flag_cycle(from)` flags the suffix, returns live members' stop edges in
+    /// REVERSE birth order (the teardown order) with their graces, and counts
+    /// them. Dead members (backoff window / the trigger) are flagged but not
+    /// counted — they will send no death.
+    #[test]
+    fn flag_cycle_flags_suffix_and_returns_live_reverse_order() {
+        let mut children = Children::new();
+        children.insert(ActorId::new(1), child_entry(ActorId::new(1)));
+        let mut dead = child_entry(ActorId::new(2));
+        dead.handle = None; // the trigger, or a backoff-window member
+        children.insert(ActorId::new(2), dead);
+        children.insert(ActorId::new(3), child_entry(ActorId::new(3)));
+
+        let (stops, awaiting) = children.flag_cycle(1); // suffix {2, 3}
+
+        assert_eq!(awaiting, 1, "only the live member is awaited");
+        assert_eq!(stops.len(), 1);
+        assert_eq!(stops[0].0.id(), ActorId::new(3));
+        assert!(
+            !children.get_mut(ActorId::new(1)).unwrap().cycling,
+            "elder untouched"
+        );
+        assert!(children.get_mut(ActorId::new(2)).unwrap().cycling);
+        assert!(children.get_mut(ActorId::new(3)).unwrap().cycling);
+    }
+
+    /// Widening re-flags idempotently: already-cycling members are NOT returned
+    /// again (their cancel is already in flight), only newly flagged live
+    /// members are.
+    #[test]
+    fn flag_cycle_widen_returns_only_newly_flagged() {
+        let mut children = Children::new();
+        for i in 1..=3 {
+            children.insert(ActorId::new(i), child_entry(ActorId::new(i)));
+        }
+        let (first, awaiting1) = children.flag_cycle(2); // {3}
+        assert_eq!((first.len(), awaiting1), (1, 1));
+
+        let (widened, awaiting2) = children.flag_cycle(0); // widen to {1,2,3}
+        let ids: Vec<ActorId> = widened.iter().map(|(h, _)| h.id()).collect();
+        assert_eq!(
+            ids,
+            [ActorId::new(2), ActorId::new(1)],
+            "new members only, reverse birth"
+        );
+        assert_eq!(awaiting2, 2, "counts only the additions");
+    }
+
+    /// The absorb primitive: a cycling member's death reports whether it was
+    /// still live (= it was being awaited); a non-cycling id reports `None`.
+    /// Either way a dead member keeps its entry (factory + accounting persist).
+    #[test]
+    fn absorb_cycling_death_distinguishes_awaited_from_not() {
+        let mut children = Children::new();
+        children.insert(ActorId::new(1), child_entry(ActorId::new(1)));
+        children.insert(ActorId::new(2), child_entry(ActorId::new(2)));
+        let (_, _) = children.flag_cycle(1); // {2} cycling, live
+
+        assert_eq!(
+            children.absorb_cycling_death(ActorId::new(1)),
+            None,
+            "not cycling"
+        );
+        assert_eq!(
+            children.absorb_cycling_death(ActorId::new(2)),
+            Some(true),
+            "cycling and live: this death was awaited",
+        );
+        assert!(children.get_mut(ActorId::new(2)).unwrap().handle.is_none());
+        assert_eq!(
+            children.absorb_cycling_death(ActorId::new(2)),
+            Some(false),
+            "already dead: absorbed but not awaited",
+        );
+    }
+
+    /// The rebuild sweep: returns non-`Never` cycling ids in BIRTH order and
+    /// clears every cycling flag (Never members are left dead, entry retained).
+    #[test]
+    fn cycling_rebuild_ids_returns_non_never_in_birth_order_and_clears_flags() {
+        let mut children = Children::new();
+        children.insert(ActorId::new(1), child_entry(ActorId::new(1)));
+        let mut never = child_entry(ActorId::new(2));
+        never.config = RestartConfig::new(RestartPolicy::Never);
+        children.insert(ActorId::new(2), never);
+        children.insert(ActorId::new(3), child_entry(ActorId::new(3)));
+        let (_, _) = children.flag_cycle(0);
+
+        let ids: Vec<ActorId> = children.cycling_rebuild_ids().into_iter().collect();
+
+        assert_eq!(
+            ids,
+            [ActorId::new(1), ActorId::new(3)],
+            "birth order, Never excluded"
+        );
+        for i in 1..=3 {
+            assert!(
+                !children.get_mut(ActorId::new(i)).unwrap().cycling,
+                "flag {i} cleared"
+            );
+        }
+    }
+
+    /// `position` is the strategy's subset anchor: birth index by CURRENT key.
+    #[test]
+    fn position_finds_current_key() {
+        let mut children = Children::new();
+        children.insert(ActorId::new(5), child_entry(ActorId::new(5)));
+        children.insert(ActorId::new(7), child_entry(ActorId::new(7)));
+        assert_eq!(children.position(ActorId::new(7)), Some(1));
+        assert_eq!(children.position(ActorId::new(9)), None);
     }
 }

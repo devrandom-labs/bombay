@@ -768,6 +768,7 @@ mod supervised_tests {
             handle: Some(handle(ActorId::new(1))),
             config,
             tracker: RestartTracker::new(started),
+            cycling: false,
         }
     }
 
@@ -1268,6 +1269,7 @@ mod supervised_tests {
                 handle: None, // in the backoff window: no live incarnation
                 config: RestartConfig::new(RestartPolicy::Permanent),
                 tracker: RestartTracker::new(Instant::now()),
+                cycling: false,
             },
         );
 
