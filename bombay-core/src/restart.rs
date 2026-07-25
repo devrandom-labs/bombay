@@ -34,6 +34,29 @@ pub enum RestartPolicy {
     Never,
 }
 
+/// Which SIBLINGS share a failed child's fate — a property of the SUPERVISOR
+/// (`Supervisor::supervision_strategy`), never of a child.
+///
+/// Mixing per-child strategies would let two children disagree about the set
+/// they are in. The variants are the middle rungs of the escalation ladder,
+/// ordered by containment (microreboot's "progressively larger subsets"):
+/// each names the suffix of the supervisor's birth-ordered child table it
+/// cycles — `OneForOne` the failed child alone, `RestForOne` the failed child
+/// and every younger sibling, `OneForAll` the whole set. Because every subset
+/// is a suffix, any two are nested — the property the widen rule rests on
+/// (ADR-0014).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SupervisionStrategy {
+    /// Rebuild the failed child only (the 2a behavior, and the default).
+    OneForOne,
+    /// Cycle the failed child and every YOUNGER sibling (later birth); older
+    /// siblings are untouched. For pipelines: juniors depend on elders.
+    RestForOne,
+    /// Cycle the whole child set. For siblings sharing fragile state that a
+    /// half-fresh set would corrupt (microreboot's recovery group).
+    OneForAll,
+}
+
 /// What the supervisor does with one death notice.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RestartVerdict {
@@ -1127,6 +1150,28 @@ mod tests {
             one_short.record_failure(&cfg, start),
             GiveUp::No { attempt: u32::MAX },
             "the last representable attempt is still allowed",
+        );
+    }
+
+    /// The strategy is an escalation LADDER, not a menu: each variant names the
+    /// suffix of the birth order it cycles. Exhaustive match = compile tripwire
+    /// for new variants.
+    #[test]
+    fn strategy_variants_are_the_three_ladder_rungs() {
+        for s in [
+            SupervisionStrategy::OneForOne,
+            SupervisionStrategy::RestForOne,
+            SupervisionStrategy::OneForAll,
+        ] {
+            match s {
+                SupervisionStrategy::OneForOne
+                | SupervisionStrategy::RestForOne
+                | SupervisionStrategy::OneForAll => {}
+            }
+        }
+        assert_ne!(
+            SupervisionStrategy::OneForOne,
+            SupervisionStrategy::OneForAll
         );
     }
 }
