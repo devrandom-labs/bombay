@@ -4087,13 +4087,11 @@ mod tests {
                 .await
                 .expect("tell must not hang")
                 .expect("the supervisor is alive");
-            tokio::time::timeout(terminate_bound(), async {
-                while handled.load(Ordering::SeqCst) == 0 {
-                    tokio::task::yield_now().await;
-                }
-            })
-            .await
-            .expect("the supervisor served the message during the backoff window");
+            // `await_handled`, not a `yield_now` spin: under `start_paused` a busy
+            // loop pins virtual time, so the bounding `timeout` could never fire
+            // and a supervisor that stopped would hang the test instead of
+            // FAILING it (same trap `await_closed` documents).
+            await_handled(&handled, 1).await;
 
             drop(sup);
         }
