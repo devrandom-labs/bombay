@@ -22,7 +22,14 @@ flume = "0.12"
 smallvec = "1"
 # Cooperative cancellation for the actor run-loop (card #116, absorbs #55).
 # CancellationToken::run_until_cancelled drives graceful stop without a select!.
-tokio-util = "0.7"
+# `time` (card #196): DelayQueue serves the supervisor's per-child restart
+# deadlines — N items, each with a deadline, yield the next expired — replacing
+# a hand-rolled min-scan we would otherwise have to mutation-test ourselves.
+tokio-util = { version = "0.7", features = ["time"] }
+# Restart-backoff jitter (card #196): zero-dep and SEEDABLE — DST tests seed the
+# generator and assert exact jittered delays instead of disabling jitter and
+# leaving the jitter path untested.
+fastrand = "2"
 # Structural pinning for the hand-named request futures (card #118, ADR-0007):
 # lets a !Unpin `Sleep` live inline (no per-request box on the timed paths).
 # Declarative macro only — no proc-macro, no transitive deps.

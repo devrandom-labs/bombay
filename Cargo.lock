@@ -481,6 +481,7 @@ dependencies = [
  "criterion",
  "crossbeam-channel",
  "downcast-rs 2.0.2",
+ "fastrand",
  "flume",
  "futures",
  "papaya",
@@ -5396,6 +5397,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "pin-project-lite",
+ "slab",
  "tokio",
 ]
 

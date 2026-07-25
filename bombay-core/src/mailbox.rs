@@ -35,6 +35,7 @@ use std::{
 use flume::r#async::SendFut;
 
 use crate::{
+    actor::SupervisionOp,
     error::ActorStopReason,
     watch::{LinkDied, WatchReg},
 };
@@ -167,6 +168,11 @@ pub enum Signal<A: Mailboxed> {
     Watch(Box<WatchReg>),
     /// Deregister a watcher by id (the `unwatch` path).
     Unwatch(ActorId),
+    /// A supervision-table operation for the supervisor's loop (card #196).
+    /// Boxed for the same reason [`Watch`](Self::Watch) is: the op embeds a
+    /// restart config plus an erased rebuild factory, and every queue slot costs
+    /// the largest variant — inlining it would tax the hot `Message` path.
+    Supervision(Box<SupervisionOp>),
 }
 
 /// The construction namespace for an actor's mailbox.
@@ -319,8 +325,10 @@ impl<A: Mailboxed> Clone for WeakMailboxSender<A> {
 /// The single consumer of an actor's mailbox. The run-loop pulls from it.
 pub struct MailboxReceiver<A: Mailboxed> {
     rx: flume::Receiver<Signal<A>>,
-    /// The owning actor's identity — stamped onto the synthetic death notice
-    /// this receiver's `Drop` sends for any still-queued [`Signal::Watch`].
+    /// The owning actor's identity — stamped onto the death notice sent for any
+    /// still-queued [`Signal::Watch`] when the backlog is rejected
+    /// ([`reject_queued_watchers`](MailboxReceiver::reject_queued_watchers),
+    /// which this receiver's `Drop` also routes through).
     me: ActorId,
 }
 
@@ -340,13 +348,50 @@ impl<A: Mailboxed> MailboxReceiver<A> {
     pub fn drain(&mut self) -> impl Iterator<Item = Signal<A>> + '_ {
         self.rx.drain()
     }
+
+    /// Drains the backlog, answering every still-queued [`Signal::Watch`] with a
+    /// death notice carrying `reason`, and releasing the queued messages'
+    /// `self_sender` cycle — the two duties documented on [`Drop`](Self::drop),
+    /// which routes through here with the synthetic
+    /// [`AlreadyDead`](ActorStopReason::AlreadyDead).
+    ///
+    /// Callers that *know* the true stop reason pre-empt that fallback by calling
+    /// this first: the startup-failure path (card #196) answers with
+    /// `Panicked(OnStart)`, because a supervisor treats `AlreadyDead` as
+    /// restart-worthy and would crash-loop a child that can never start.
+    ///
+    /// `cleanup_failed` rides along for the same reason and must be as true as
+    /// `reason` is: the graceful teardown passes the outcome its `Watchers` guard
+    /// just reported, so a backlog answered here says exactly what the guard's own
+    /// notices said. The two callers that cannot know it pass `false`, paired with
+    /// a reason (`AlreadyDead`, `Panicked(OnStart)`) that already means no cleanup
+    /// ran.
+    // `&self` despite emptying the queue: flume's `Receiver::drain` is itself
+    // `&self` (its state lives behind the shared `Chan` lock), and taking `&mut`
+    // here would be a lie the borrow checker cannot cash — `Drop::drop` reborrows
+    // it anyway, and exclusivity is already guaranteed structurally (the receiver
+    // is the mailbox's single consumer, and `drain(&mut self)` next door hands out
+    // a borrowing iterator that cannot overlap with this call).
+    pub(crate) fn reject_queued_watchers(&self, reason: &ActorStopReason, cleanup_failed: bool) {
+        for signal in self.rx.drain() {
+            if let Signal::Watch(reg) = signal {
+                let _ = reg.link_tx.try_send(LinkDied {
+                    id: self.me,
+                    reason: reason.clone(),
+                    linked: reg.linked,
+                    cleanup_failed,
+                });
+            }
+        }
+    }
 }
 
 impl<A: Mailboxed> Drop for MailboxReceiver<A> {
     /// Drops the receiver **and** its backlog — and answers every still-queued
     /// [`Signal::Watch`] with a synthetic death notice first.
     ///
-    /// Two duties, one drain:
+    /// Two duties, one drain (both discharged by
+    /// [`reject_queued_watchers`](Self::reject_queued_watchers)):
     ///
     /// 1. **Leak fix.** Each queued [`Signal::Message`] holds a strong
     ///    `self_sender` clone of this very mailbox (ADR-0003), so a non-empty
@@ -356,27 +401,26 @@ impl<A: Mailboxed> Drop for MailboxReceiver<A> {
     ///    that cycle would leak. Draining releases the embedded senders.
     /// 2. **No missed death (card #195).** A queued `Signal::Watch` was accepted
     ///    by a successful `send` — the watcher believes it is watching. This
-    ///    drop is the last code that ever sees the registration (hard kill, or
-    ///    the graceful window between `finish_actor`'s drain snapshot and this
-    ///    drop, spanning `on_stop`), so it must deliver the notice: reason
-    ///    [`AlreadyDead`](ActorStopReason::AlreadyDead), because
-    ///    the true stop reason is unknowable here (Erlang's `noproc`). The send
-    ///    is non-blocking into the watcher's UNBOUNDED link channel and only
-    ///    fails if the watcher itself is gone — a stale edge, correctly skipped.
+    ///    drop is the last code that ever sees the registration, so it must
+    ///    deliver the notice: reason
+    ///    [`AlreadyDead`](ActorStopReason::AlreadyDead), because the true stop
+    ///    reason is unknowable *here* (Erlang's `noproc`), paired with
+    ///    `cleanup_failed: false` — no cleanup outcome is observable from here
+    ///    either, and "unknown" is what both fields then mean together. Every
+    ///    path that DOES know pre-empts this one (card #196): startup failure
+    ///    drains with `Panicked(OnStart)`, and the graceful teardown drains three
+    ///    times — before `on_stop`, after it, and once more after the guard has
+    ///    fired, that last one carrying the guard's true reason and outcome. What
+    ///    reaches this drop is therefore a hard kill, or a registration accepted
+    ///    in the final instants before the mailbox itself went away. The send is
+    ///    non-blocking into the watcher's UNBOUNDED link channel and only fails
+    ///    if the watcher itself is gone — a stale edge, correctly skipped.
     ///
     /// A queued `Signal::Unwatch` is unenforceable here (the watcher set is gone
     /// with the loop); as in Erlang, a `demonitor` racing the death may still be
     /// followed by a delivered notice.
     fn drop(&mut self) {
-        for signal in self.rx.drain() {
-            if let Signal::Watch(reg) = signal {
-                let _ = reg.link_tx.try_send(LinkDied {
-                    id: self.me,
-                    reason: ActorStopReason::AlreadyDead,
-                    linked: reg.linked,
-                });
-            }
-        }
+        self.reject_queued_watchers(&ActorStopReason::AlreadyDead, false);
     }
 }
 
@@ -405,7 +449,7 @@ impl<A: Mailboxed> Future for SendMessageFut<'_, A> {
                 Signal::Message {
                     msg: undelivered, ..
                 } => undelivered,
-                Signal::Stop | Signal::Watch(_) | Signal::Unwatch(_) => {
+                Signal::Stop | Signal::Watch(_) | Signal::Unwatch(_) | Signal::Supervision(_) => {
                     unreachable!("send_message enqueues only Signal::Message")
                 }
             })
@@ -601,18 +645,20 @@ mod tests {
     }
 
     #[test]
-    fn link_died_variant_is_boxed_so_message_slots_stay_small() {
+    fn cold_variants_are_boxed_so_message_slots_stay_small() {
         use std::mem::size_of;
 
-        // The cold LinkDied variant is boxed, so a small-message actor's queue
+        // Every cold control variant is boxed — `Watch(Box<WatchReg>)` and
+        // `Supervision(Box<SupervisionOp>)` — so a small-message actor's queue
         // slot is bounded by the hot Message path: `msg` + the embedded
-        // `self_sender` (one Arc pointer, ADR-0003) + a discriminant word. If
-        // LinkDied were inlined, its fat StopReason (a `String`) would blow this
-        // bound. Guards the "every slot = largest variant" trap.
+        // `self_sender` (one Arc pointer, ADR-0003) + a discriminant word.
+        // Inlined, `WatchReg` (a `flume::Sender` + id + flag) or `SupervisionOp`
+        // (a `RestartConfig` + an erased factory + a tracker) would blow this
+        // bound for EVERY message. Guards the "every slot = largest variant" trap.
         let hot_bound = size_of::<u64>() + size_of::<MailboxSender<Probe>>() + size_of::<usize>();
         assert!(
             size_of::<Signal<Probe>>() <= hot_bound,
-            "Signal<Probe> slot is {} bytes (hot bound {hot_bound}); LinkDied is not boxed",
+            "Signal<Probe> slot is {} bytes (hot bound {hot_bound}); a cold variant is not boxed",
             size_of::<Signal<Probe>>()
         );
     }

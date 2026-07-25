@@ -144,7 +144,15 @@ impl Actor for Watcher {
 /// Full send + handle: fan one notification out to N spawned watchers, then wait
 /// for all N to acknowledge — the real scheduler + handler cost of a fan-out.
 fn watcher_fanout_roundtrip(c: &mut Criterion) {
+    // `enable_time` is REQUIRED, not optional: every actor's teardown bounds
+    // `on_stop` with `tokio::time::timeout` (card #196), which panics without a
+    // timer. The panic lands inside the actor's own spawned task, so criterion
+    // still reports "Success" and exits 0 — and no `nix flake check` lane runs
+    // benches — which is exactly how this stayed silently broken (measured: 90
+    // "timers are disabled" panics without this line, 0 with it). The sibling
+    // benches that spawn no actors (reply, mailbox, channels) need no timer.
     let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
         .build()
         .expect("current-thread runtime");
 

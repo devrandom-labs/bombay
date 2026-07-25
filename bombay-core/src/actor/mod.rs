@@ -19,12 +19,22 @@ mod actor_ref;
 mod kind;
 mod recipient;
 mod spawn;
+mod supervision;
 
 pub use self::{
     actor_ref::{ActorRef, WeakActorRef},
     recipient::{Recipient, RecipientAskRequest, ReplyRecipient, WeakRecipient},
     spawn::{DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult},
 };
+
+// The supervision types stay OFF the public API — the `supervise` verb returns a
+// bare `ActorId`, and `SuperviseReg`/`SupervisionOp` only ride inside the
+// `Signal::Supervision(Box<SupervisionOp>)` variant, exactly as `WatchReg` rides
+// `Signal::Watch(Box<WatchReg>)` without being re-exported. `SupervisionOp` needs
+// a `pub(crate)` re-export only because `mailbox` (outside this module) names it
+// in that variant; `ChildHandle`/`SuperviseReg` are used solely within `actor`
+// and reach their definitions directly.
+pub(crate) use self::supervision::SupervisionOp;
 
 /// A single-writer, identity-agnostic unit of concurrency: owned state behind a
 /// mailbox, driven by one task that handles messages sequentially.
@@ -83,6 +93,24 @@ pub trait Actor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
     /// Terminal cleanup. A returned `Err` is logged/surfaced, **never**
     /// unwrapped, and the original `reason` is preserved. On the poisoned
     /// (post-panic) path, do resource release only — never read domain fields.
+    ///
+    /// # Time-bounded
+    ///
+    /// This hook is **bounded**: watchers must learn of the death promptly, so
+    /// the runtime waits a fixed grace (5 s) and then **drops this future where
+    /// it is parked**. Cleanup past that point does not happen — code after an
+    /// `.await` that outlives the grace never runs. The death notice then
+    /// reports `cleanup_failed`, exactly as for a returned `Err` or a panic. Do
+    /// blocking-free, bounded work here; hand anything open-ended to a task that
+    /// outlives the actor.
+    ///
+    /// # Runtime
+    ///
+    /// That bound is a `tokio::time::timeout`, so **every** actor now needs a
+    /// runtime with the TIME driver enabled (`Builder::enable_time`, or
+    /// `enable_all` / `#[tokio::main]`) — not just the actors that use the
+    /// opt-in send timeouts. On a timer-less runtime the teardown itself panics:
+    /// the join handle yields `Err` and the [`RunResult`] is lost.
     fn on_stop(
         &mut self,
         actor_ref: WeakActorRef<Self>,
@@ -135,6 +163,9 @@ pub trait Watch: Actor {
 /// Spawns onto the current tokio runtime and returns the [`ActorRef`]; the actor
 /// stops via `Signal::Stop`, [`ActorRef::stop`], [`ActorRef::kill`], a handler
 /// crash, or startup failure (ref-count-driven stop is #117).
+///
+/// The runtime must have the TIME driver enabled — teardown bounds
+/// [`on_stop`](Actor::on_stop) with a timer, and panics without one.
 pub trait Spawn: Actor {
     /// Spawns with the [`DEFAULT_MAILBOX_CAPACITY`](spawn::DEFAULT_MAILBOX_CAPACITY).
     #[must_use]
@@ -179,6 +210,45 @@ pub trait SpawnLinked: Watch {
 }
 
 impl<A: Watch> SpawnLinked for A {}
+
+/// Authority marker: an [`Actor`] cannot watch, a [`Watch`] actor observes a
+/// peer's death, a `Supervisor` **rebuilds** dead children under a restart
+/// policy.
+///
+/// No methods in this slice — a restart policy is per-CHILD, supplied at
+/// `supervise` time and never a supervisor-wide default (see
+/// [`RestartPolicy`](crate::restart::RestartPolicy)). A later card lands
+/// `supervision_strategy()` here (the coarser `OneForAll`/`RestForOne` rungs of
+/// the escalation ladder); this marker is that method's named seat, which is why
+/// it stays a distinct trait rather than collapsing into [`SpawnSupervised`].
+pub trait Supervisor: Watch {}
+
+/// Ergonomic supervised-spawn entry points, provided for every [`Supervisor`].
+///
+/// A supervisor is spawned **linked** (it owns a link channel, so its children's
+/// deaths reach it) and runs the three-arm supervised loop: the message mailbox,
+/// the link channel, and the restart-backoff queue. Children are registered
+/// after spawn via `ActorRef::supervise` (a later card); a supervisor with no
+/// children behaves exactly as a `spawn_linked` [`Watch`] actor.
+pub trait SpawnSupervised: Supervisor {
+    /// Spawns a supervisor with the
+    /// [`DEFAULT_MAILBOX_CAPACITY`](spawn::DEFAULT_MAILBOX_CAPACITY).
+    #[must_use]
+    fn spawn_supervised(args: Self::Args) -> ActorRef<Self> {
+        Self::spawn_supervised_with_capacity(default_capacity(), args)
+    }
+
+    /// Spawns a supervisor with an explicit mailbox `capacity`.
+    #[must_use]
+    fn spawn_supervised_with_capacity(capacity: Capacity, args: Self::Args) -> ActorRef<Self> {
+        let (prepared, link_rx) = PreparedActor::<Self>::new_linked(capacity);
+        let actor_ref = prepared.actor_ref().clone();
+        let _join = prepared.spawn_supervised_task(args, link_rx);
+        actor_ref
+    }
+}
+
+impl<A: Supervisor> SpawnSupervised for A {}
 
 #[cfg(test)]
 mod watch_trait_tests {

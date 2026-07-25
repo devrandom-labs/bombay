@@ -365,10 +365,20 @@
                 nativeBuildInputs = commonArgs.nativeBuildInputs ++ [ cargo-mutants ];
                 buildPhaseCargoCommand = ''
                   set -o pipefail
+                  # --timeout is cargo-mutants' PER-MUTANT test-phase bound (the
+                  # unmutated baseline runs in ~1s — it is not the pressure).
+                  # Raised 60→180 (#196): a mutant that suppresses graceful stop
+                  # or a death-watch notice does not hang forever — it makes ~16
+                  # real-time lifecycle tests each wait terminate_bound() (15s)
+                  # for a stop/notice that never comes. On a 4-core runner those
+                  # serialize to ~60s, grazing the old cap and mis-reporting a
+                  # legitimately-CAUGHT mutant as a Timeout. 180 restores headroom
+                  # as the suite grows; a genuinely-looping mutant's detection
+                  # latency rises to 180s, negligible over the multi-minute sweep.
                   cargo mutants \
                     --package bombay-core --package bombay_macros \
                     --file 'bombay-core/**' --file 'macros/src/derive_msg.rs' \
-                    --no-shuffle --colors never --timeout 60 \
+                    --no-shuffle --colors never --timeout 180 \
                     --output "$out" || true
                   cargo run --release -p mutants-gate -- \
                     check "$out/mutants.out" "$PWD/mutants-baseline.json" \

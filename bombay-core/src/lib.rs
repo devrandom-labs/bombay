@@ -40,6 +40,7 @@ pub mod message;
 pub mod registry;
 pub mod reply;
 pub mod request;
+pub mod restart;
 mod watch;
 
 // The `watch` module stays private — `LinkSender`/`LinkReceiver`/`WatchReg`/
