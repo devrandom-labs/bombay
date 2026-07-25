@@ -4,6 +4,7 @@
 //! Behind the `test-support` feature: `tests/*.rs` link the lib externally and
 //! cannot reach `pub(crate)`, and `#[doc(hidden)]` is not access control.
 
+use core::cell::Cell;
 use core::sync::atomic::{AtomicIsize, Ordering};
 use core::time::Duration;
 use std::alloc::{GlobalAlloc, Layout, System};
@@ -16,6 +17,27 @@ use crate::{
     mailbox::{ActorId, MailboxReceiver, MailboxSender, Mailboxed, Signal},
     watch::{LinkReceiver, WatchReg},
 };
+
+thread_local! {
+    /// Seed for the supervisor's restart-jitter RNG, read once when a supervised
+    /// loop starts (integration-test seam — the `#[cfg(test)]` thread-local in
+    /// `spawn.rs` is unreachable from `tests/*.rs`). `None` ⇒ entropy.
+    static SUPERVISOR_RNG_SEED: Cell<Option<u64>> = const { Cell::new(None) };
+}
+
+/// Seeds the supervisor's restart-jitter RNG for the CURRENT thread.
+///
+/// Makes restart backoff deterministic and replayable from an integration test.
+/// Set it BEFORE spawning the supervisor (the loop reads the seed once at
+/// startup), and use a current-thread runtime so the supervisor runs on this same
+/// thread.
+pub fn set_supervisor_rng_seed(seed: Option<u64>) {
+    SUPERVISOR_RNG_SEED.with(|c| c.set(seed));
+}
+
+pub(crate) fn supervisor_rng_seed() -> Option<u64> {
+    SUPERVISOR_RNG_SEED.with(Cell::get)
+}
 
 /// Assembles an [`ActorRef`] over a raw mailbox pair **without spawning a
 /// run-loop** (card #118's allocation tests drive the receiver by hand).

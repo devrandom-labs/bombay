@@ -522,6 +522,27 @@ async fn run_lifecycle_linked<A: Watch>(
 /// which owns the child table, the restart-backoff [`DelayQueue`], and the
 /// jitter RNG. A supervisor is a linked, watchable actor too, so the teardown is
 /// identical to the plain and linked lifecycles.
+/// Builds the supervisor's restart-jitter RNG: entropy in production, or a fixed
+/// seed under a test seam (the `#[cfg(test)]` thread-local for unit tests, or the
+/// `test-support` one for integration tests) so restart timing is replayable.
+fn supervisor_rng() -> fastrand::Rng {
+    let seed: Option<u64> = {
+        #[cfg(test)]
+        {
+            tests::supervisor_rng_seed()
+        }
+        #[cfg(all(not(test), feature = "test-support"))]
+        {
+            crate::test_support::supervisor_rng_seed()
+        }
+        #[cfg(all(not(test), not(feature = "test-support")))]
+        {
+            None
+        }
+    };
+    seed.map_or_else(fastrand::Rng::new, fastrand::Rng::with_seed)
+}
+
 async fn run_lifecycle_supervised<A: Supervisor>(
     args: A::Args,
     actor_ref: ActorRef<A>,
@@ -564,16 +585,10 @@ async fn run_lifecycle_supervised<A: Supervisor>(
     // The set-cycle coordinator (card #199): `Idle` until a set-strategy trigger
     // starts a cycle; loop-owned beside the child table it coordinates.
     let mut cycle = CycleState::Idle;
-    // Jitter RNG for restart backoff: entropy-seeded in production; a `#[cfg(test)]`
-    // seed replays the exact delay sequence (the DST contract on
-    // `jittered_backoff`). Inlined rather than a helper so the seeded-vs-entropy
-    // choice is not a body-replaceable mutant with no observer — a seeded
-    // backoff-timing test (a later slice) is what will exercise the seeded path.
-    #[cfg(not(test))]
-    let mut rng = fastrand::Rng::new();
-    #[cfg(test)]
-    let mut rng =
-        tests::supervisor_rng_seed().map_or_else(fastrand::Rng::new, fastrand::Rng::with_seed);
+    // Jitter RNG for restart backoff: entropy-seeded in production, or a fixed
+    // seed under a test seam so restart timing is replayable (the DST contract on
+    // `jittered_backoff`).
+    let mut rng = supervisor_rng();
     let reason = run_supervised_message_loop(
         &mut state,
         &weak,
