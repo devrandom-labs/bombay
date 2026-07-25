@@ -4490,5 +4490,386 @@ mod tests {
 
             drop(sup);
         }
+
+        /// The same do-nothing supervisor as [`AllSup`], but overriding
+        /// [`Supervisor::supervision_strategy`] to `RestForOne` — the SUT for
+        /// the RestForOne behavioral tests (card #199 Task 7).
+        struct RestSup;
+        impl Mailboxed for RestSup {
+            type Msg = Noop;
+        }
+        impl crate::actor::Actor for RestSup {
+            type Args = ();
+            type Error = Infallible;
+            async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self)
+            }
+            async fn handle(
+                &mut self,
+                _: Noop,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Ok(())
+            }
+        }
+        impl Watch for RestSup {}
+        impl Supervisor for RestSup {
+            fn supervision_strategy() -> SupervisionStrategy {
+                SupervisionStrategy::RestForOne
+            }
+        }
+
+        type Tape = Arc<Mutex<Vec<&'static str>>>;
+        type TapeSenders = Arc<Mutex<Vec<MailboxSender<TapeWorker>>>>;
+
+        /// `Idle` is a harmless liveness probe; `Boom` panics the handler —
+        /// how a [`TapeWorker`] is crashed to trigger a cycle.
+        #[derive(Debug)]
+        enum TapeMsg {
+            Idle,
+            Boom,
+        }
+        impl Msg for TapeMsg {}
+
+        /// A child that records its own tag onto a shared [`Tape`] when it
+        /// stops, and reports `(tag, id)` for every incarnation the factory
+        /// spawns — the SUT for stop-ORDER and stop-happened assertions
+        /// across a set cycled by `OneForAll`/`RestForOne` (card #199 Tasks
+        /// 6/7/9).
+        struct TapeWorker {
+            tag: &'static str,
+            tape: Tape,
+        }
+        impl Mailboxed for TapeWorker {
+            type Msg = TapeMsg;
+        }
+        impl crate::actor::Actor for TapeWorker {
+            type Args = (&'static str, Tape, flume::Sender<(&'static str, ActorId)>);
+            type Error = Infallible;
+            async fn on_start(
+                (tag, tape, id_tx): Self::Args,
+                this: ActorRef<Self>,
+            ) -> Result<Self, Self::Error> {
+                let _ = id_tx.send((tag, this.id()));
+                Ok(Self { tag, tape })
+            }
+            async fn handle(
+                &mut self,
+                msg: TapeMsg,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                match msg {
+                    TapeMsg::Idle => {}
+                    TapeMsg::Boom => panic!("tape worker boom"),
+                }
+                Ok(())
+            }
+            async fn on_stop(
+                &mut self,
+                _: crate::actor::WeakActorRef<Self>,
+                _: ActorStopReason,
+            ) -> Result<(), Self::Error> {
+                self.tape.lock().expect("tape").push(self.tag);
+                Ok(())
+            }
+        }
+        impl Watch for TapeWorker {}
+
+        /// The tape-worker factory `supervise` wraps: each call spawns a
+        /// fresh `TapeWorker` tagged `tag`, reports `(tag, id)` on `tag_tx`,
+        /// and stashes a strong sender so the incarnation does not
+        /// ref-count-stop before the test drives it (mirrors
+        /// `worker_factory`'s liveness anchor).
+        fn tape_factory(
+            tag: &'static str,
+            tape: Tape,
+            tag_tx: flume::Sender<(&'static str, ActorId)>,
+            senders: TapeSenders,
+        ) -> impl FnMut() -> ActorRef<TapeWorker> + Send + 'static {
+            move || {
+                let child = TapeWorker::spawn((tag, Arc::clone(&tape), tag_tx.clone()));
+                senders
+                    .lock()
+                    .expect("lock")
+                    .push(child.mailbox_sender().clone());
+                child
+            }
+        }
+
+        /// The `(tag, id)` of the next tagged incarnation, bounded so a
+        /// rebuild that never fires fails fast instead of hanging the test
+        /// (mirrors `recv_id`).
+        async fn recv_tag(
+            rx: &flume::Receiver<(&'static str, ActorId)>,
+        ) -> (&'static str, ActorId) {
+            tokio::time::timeout(terminate_bound(), rx.recv_async())
+                .await
+                .expect("a tagged incarnation must be reported")
+                .expect("the tag channel is open")
+        }
+
+        fn send_tape_msg(senders: &TapeSenders, index: usize, msg: TapeMsg) {
+            senders.lock().expect("lock")[index]
+                .try_send_message(msg)
+                .expect("the message reaches the live incarnation");
+        }
+
+        /// Bounded `supervise`, generic over any `Supervisor` type: the
+        /// `AllSup`/`RestSup` behavioral tests supervise through supervisors
+        /// other than `Sup`, which the concrete `supervise_worker` cannot do.
+        async fn supervise_bounded<S, A, F>(
+            sup: &ActorRef<S>,
+            config: impl Into<RestartConfig>,
+            factory: F,
+        ) -> ActorId
+        where
+            S: Supervisor,
+            A: crate::actor::Actor,
+            F: FnMut() -> ActorRef<A> + Send + 'static,
+        {
+            tokio::time::timeout(terminate_bound(), sup.supervise(config, factory))
+                .await
+                .expect("supervise must not hang")
+                .expect("the supervisor is alive")
+        }
+
+        // ---- Task 6: OneForAll behavioral invariants (card #199) --------
+
+        /// Card #199 box 1: under `OneForAll` a sibling's crash rebuilds
+        /// EVERY child in the set — not just the one that failed. Three
+        /// children `a`, `b` (the crasher), `c`; crashing `b` must bring back
+        /// fresh incarnations of all three.
+        #[tokio::test(start_paused = true)]
+        async fn one_for_all_restarts_all_children() {
+            let sup = AllSup::spawn_supervised(());
+            let tape: Tape = Arc::new(Mutex::new(Vec::new()));
+            let (tag_tx, tag_rx) = flume::unbounded::<(&'static str, ActorId)>();
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+            let senders_a: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+            let senders_c: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+
+            let a0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                tape_factory(
+                    "a",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_a),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("a", a0), "a recorded");
+            let b0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                worker_factory(id_tx.clone(), Arc::clone(&senders)),
+            )
+            .await;
+            assert_eq!(recv_id(&id_rx).await, b0, "b recorded");
+            let c0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                tape_factory(
+                    "c",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_c),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("c", c0), "c recorded");
+
+            send_cmd(&senders, 0, Cmd::Crash); // b crashes
+
+            let b1 = recv_id(&id_rx).await;
+            let (tag1, r1) = recv_tag(&tag_rx).await;
+            let (tag2, r2) = recv_tag(&tag_rx).await;
+            assert_ne!(b1, b0, "b rebuilt fresh");
+            assert!(
+                ![a0, b0, c0].contains(&r1) && ![a0, b0, c0].contains(&r2),
+                "a and c rebuilt with FRESH ids: {r1:?}, {r2:?} vs a0={a0:?} c0={c0:?}",
+            );
+            let mut tags = [tag1, tag2];
+            tags.sort_unstable();
+            assert_eq!(
+                tags,
+                ["a", "c"],
+                "BOTH siblings rebuilt, not just the crasher"
+            );
+
+            drop(sup);
+        }
+
+        /// Card #199 box 2: under `OneForAll` the cycled siblings stop in
+        /// REVERSE birth order (the teardown order the design commits to).
+        /// All three children are `TapeWorker`s (`a`, `b`, `c`, birth order);
+        /// `b` is crashed via `Boom`. `b`'s own `on_stop` runs synchronously
+        /// on the panic path (before the cycle even starts), so the tape
+        /// entries AFTER `b`'s must read `["c", "a"]` — younger (`c`) before
+        /// elder (`a`).
+        #[tokio::test(start_paused = true)]
+        async fn one_for_all_stop_order_reverse_start_order() {
+            let sup = AllSup::spawn_supervised(());
+            let tape: Tape = Arc::new(Mutex::new(Vec::new()));
+            let (tag_tx, tag_rx) = flume::unbounded::<(&'static str, ActorId)>();
+            let senders_a: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+            let senders_b: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+            let senders_c: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+
+            let a0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                tape_factory(
+                    "a",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_a),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("a", a0));
+            let b0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                tape_factory(
+                    "b",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_b),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("b", b0));
+            let c0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                tape_factory(
+                    "c",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_c),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("c", c0));
+
+            send_tape_msg(&senders_b, 0, TapeMsg::Boom);
+
+            // The full rebuild wave: three fresh tagged incarnations, order
+            // between siblings not otherwise constrained.
+            let (mut a1, mut b1, mut c1) = (None, None, None);
+            for _ in 0..3 {
+                let (tag, id) = recv_tag(&tag_rx).await;
+                match tag {
+                    "a" => a1 = Some(id),
+                    "b" => b1 = Some(id),
+                    "c" => c1 = Some(id),
+                    other => panic!("unexpected tag {other}"),
+                }
+            }
+            assert_ne!(a1.expect("a rebuilt"), a0);
+            assert_ne!(b1.expect("b rebuilt"), b0);
+            assert_ne!(c1.expect("c rebuilt"), c0);
+
+            let recorded = tape.lock().expect("tape").clone();
+            let b_pos = recorded
+                .iter()
+                .position(|&t| t == "b")
+                .expect("b's own on_stop ran on the crash path");
+            assert_eq!(
+                &recorded[b_pos + 1..],
+                ["c", "a"],
+                "siblings stop in REVERSE birth order (younger before elder); full tape: {recorded:?}",
+            );
+
+            drop(sup);
+        }
+
+        /// Card #199 box 6: a set cycle charges ONLY the trigger's restart
+        /// budget — siblings absorbed into the cycle are never charged. `a`
+        /// is given a tight budget (`max_restarts(1)`, tolerates exactly one
+        /// consecutive failure); `b` is crashed TWICE (two full `OneForAll`
+        /// cycles). If either cycle wrongly charged `a`, the second
+        /// absorption would trip the budget and escalate. Then `a`'s OWN
+        /// current incarnation is crashed once directly: its tracker should
+        /// read exactly its own first failure, still inside the budget.
+        #[tokio::test(start_paused = true)]
+        async fn set_restart_counts_once_against_budget() {
+            let sup = AllSup::spawn_supervised(());
+            let tape: Tape = Arc::new(Mutex::new(Vec::new()));
+            let (tag_tx, tag_rx) = flume::unbounded::<(&'static str, ActorId)>();
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders_a: TapeSenders = Arc::new(Mutex::new(Vec::new()));
+            let senders_b: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let a0 = supervise_bounded(
+                &sup,
+                RestartConfig::new(RestartPolicy::Permanent).with_max_restarts(1),
+                tape_factory(
+                    "a",
+                    Arc::clone(&tape),
+                    tag_tx.clone(),
+                    Arc::clone(&senders_a),
+                ),
+            )
+            .await;
+            let (tag, id) = recv_tag(&tag_rx).await;
+            assert_eq!((tag, id), ("a", a0));
+            let b0 = supervise_bounded(
+                &sup,
+                RestartPolicy::Permanent,
+                worker_factory(id_tx.clone(), Arc::clone(&senders_b)),
+            )
+            .await;
+            assert_eq!(recv_id(&id_rx).await, b0);
+
+            // First cycle.
+            send_cmd(&senders_b, 0, Cmd::Crash);
+            let b1 = recv_id(&id_rx).await;
+            let (tag, a1) = recv_tag(&tag_rx).await;
+            assert_eq!(tag, "a");
+            assert_ne!(b1, b0);
+            assert_ne!(a1, a0);
+            assert!(sup.is_alive(), "supervisor survives the first cycle");
+
+            // Second cycle: if the first (wrongly) charged `a`, this absorb
+            // would be `a`'s second consecutive charge and trip its budget.
+            send_cmd(&senders_b, 1, Cmd::Crash);
+            let b2 = recv_id(&id_rx).await;
+            let (tag, a2) = recv_tag(&tag_rx).await;
+            assert_eq!(tag, "a");
+            assert_ne!(b2, b1);
+            assert_ne!(a2, a1);
+            assert!(
+                sup.is_alive(),
+                "two sibling cycles must not charge a's own budget",
+            );
+
+            // `a`'s CURRENT incarnation crashes directly: its own first
+            // failure, still inside max_restarts(1) if (and only if) the
+            // cycles above charged it nothing.
+            send_tape_msg(&senders_a, 2, TapeMsg::Boom);
+            let (tag, a3) = recv_tag(&tag_rx).await;
+            assert_eq!(tag, "a");
+            assert_ne!(a3, a2);
+            // OneForAll: a's own failure also cycles b.
+            let b3 = recv_id(&id_rx).await;
+            assert_ne!(b3, b2);
+            assert!(
+                sup.is_alive(),
+                "a's own tracker held only its own first failure",
+            );
+
+            drop(sup);
+        }
     }
 }
