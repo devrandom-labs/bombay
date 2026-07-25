@@ -23,3 +23,9 @@ devenv.local.yaml
 
 # local Claude Code settings (personal)
 .claude/settings.local.json
+
+# session scratch (agent tooling, visual-companion, local backups)
+.superpowers/
+.auto/*.local-preserved
+.auto/refs/
+.auto/review.md

@@ -106,7 +106,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 println!("  Signal::Stop — done");
                 break;
             }
-            Signal::Watch(_) | Signal::Unwatch(_) => println!("  Signal::Watch/Unwatch(..)"),
+            Signal::Watch(_) | Signal::Unwatch(_) | Signal::Supervision(_) => {
+                println!("  Signal::Watch/Unwatch/Supervision(..)");
+            }
         }
     }
 
