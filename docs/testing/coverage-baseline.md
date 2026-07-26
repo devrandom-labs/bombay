@@ -114,6 +114,23 @@ concurrency coverage until then.
 > and #88 still carry it. ADR-0005 chose **MIRI** for the ref-model precisely because it
 > interprets flume's *real* `std::sync` atomics, which loom cannot reach.
 
+### `id` (#206) — done
+`ActorId` extracted from `mailbox` into its own `id` module as a process-local,
+unforgeable **pure-name** handle: `pub(crate) from_raw` mint (spawn path) +
+`test-support`-gated `from_raw_for_test`; no public constructor, no readable
+`u64`, not serializable (ADR-0015). The two leak vectors (forgery, wire-leak)
+are closed **structurally by the compiler**, so evidence is compilation, not
+runtime assertions: unforgeability = `pub(crate)` visibility + the public-API
+review; non-serializability = `assert_not_impl_any!(ActorId: Serialize,
+DeserializeOwned)` compiled in the test build (probe-verified — a temporary
+`#[derive(Serialize)]` breaks the build). Runtime tests
+(`tests/invariants.rs`): `i24_actor_id_root_export_and_test_ctor` (root re-export
++ `Eq`/`Copy` pure-name semantics) and `i17b_concurrent_mint_distinct_ids`
+(32 barrier-released tasks, pairwise-distinct mint — real overlap). The
+counter's overflow/wrap policy + loom mint model + mutation boundary sweep are
+the **counter-hygiene follow-up card**, deliberately split out (the mint's
+`fetch_add` logic is untouched here).
+
 ### `error` (#113) — done
 Typed error domains, rebuilt to diverge from kameo where the type system pays off.
 The single kameo `SendError` is **split into two honest types**: `TellError<M>`
