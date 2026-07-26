@@ -28,9 +28,10 @@ smallvec = { workspace = true }
 fastrand = { workspace = true }
 
 [dev-dependencies]
-# The vendored kameo fork — dev-only, for the head-to-head request bench
-# (`benches/request_vs_kameo.rs`). The production crate never depends on it.
-bombay = { workspace = true }
+# Upstream kameo from crates.io — dev-only, for the head-to-head
+# `*_vs_kameo` benches (card #213 re-pointed these off the deleted vendored
+# fork). The production crate never depends on it.
+kameo = "0.22.2"
 tokio = { workspace = true, features = [
   "rt",
   "rt-multi-thread",

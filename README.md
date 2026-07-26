@@ -1,74 +1,84 @@
 # bombay
 
-Fault-tolerant async actors on Tokio — a Zenoh-native fork of the [kameo](https://github.com/tqwewe/kameo) actor framework. Bombay keeps kameo's local actor core (single-writer message handling, supervision, links, a name registry) and is replacing its libp2p remote layer with a thin [Zenoh](https://zenoh.io) `Session` layer, pairing with [nexus](https://github.com/devrandom-labs/nexus) for event-sourced, single-writer aggregates.
+Fault-tolerant async actors on Tokio — a Zenoh-native rebuild of the [kameo](https://github.com/tqwewe/kameo) actor framework, pairing with [nexus](https://github.com/devrandom-labs/nexus) for event-sourced, single-writer aggregates. The core is transport- and domain-agnostic: an actor is a single-writer consistency boundary, whether ephemeral, stateful, or nexus-backed.
 
-> **Status:** the local actor core (forked from kameo 0.21) is in-tree and works today; the Zenoh remote layer and the nexus adapter are under active development. Until those land, the public API below *is* the kameo actor API. A second, from-scratch core (`bombay-core`) is being rebuilt beside it — see [the rebuilt core](#the-rebuilt-core-bombay-core). Process, roadmap, and engineering rules live in [`CLAUDE.md`](CLAUDE.md).
+> **Status:** the local actor spine (`bombay-core`) is rebuilt from scratch and works today; the Zenoh remote layer is under active development. The vendored kameo fork that used to live beside it is gone — upstream [kameo](https://github.com/tqwewe/kameo) (tag `v0.22.2`) serves as the read-only reference oracle. Process, roadmap, and engineering rules live in [`CLAUDE.md`](CLAUDE.md).
 
-## Using bombay
+## Using bombay-core
 
-Derive `Actor`, implement `Message<M>` for each message a type handles, spawn it, then `ask` (request/reply) or `tell` (fire-and-forget):
+An actor owns its state, declares one closed message enum, and handles messages one at a time. Replies travel on typed one-shot ports carried inside the message:
 
 ```rust
-use bombay::prelude::*;
+use bombay_core::{
+    actor::{Actor, ActorRef, Spawn as _},
+    mailbox::Mailboxed,
+    message::Msg,
+    reply::ReplySender,
+};
 
-#[derive(Actor, Default)]
 struct Counter {
     count: i64,
 }
 
-struct Inc(u32);
+#[derive(Debug)]
+enum CounterMsg {
+    Inc(u32),
+    Get { reply: ReplySender<i64> },
+}
+impl Msg for CounterMsg {}
 
-impl Message<Inc> for Counter {
-    type Reply = i64;
+impl Mailboxed for Counter {
+    type Msg = CounterMsg;
+}
 
-    async fn handle(&mut self, Inc(n): Inc, _ctx: &mut Context<Self, Self::Reply>) -> i64 {
-        self.count += n as i64;
-        self.count
+impl Actor for Counter {
+    type Args = ();
+    type Error = std::convert::Infallible;
+
+    async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Ok(Self { count: 0 })
+    }
+
+    async fn handle(
+        &mut self,
+        msg: CounterMsg,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        match msg {
+            CounterMsg::Inc(n) => self.count += i64::from(n),
+            CounterMsg::Get { reply } => {
+                let _ = reply.send(self.count);
+            }
+        }
+        Ok(())
     }
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let counter = Counter::spawn(Counter::default());
-
-    let count = counter.ask(Inc(3)).await?; // request/reply -> 3
-    counter.tell(Inc(50)).await?;           // fire-and-forget
-    println!("count = {count}");
-
-    Ok(())
+async fn main() {
+    let counter = Counter::spawn(());
+    counter.tell(CounterMsg::Inc(3)).await.expect("delivered");
+    let count = counter
+        .ask(|reply| CounterMsg::Get { reply })
+        .await
+        .expect("reply");
+    assert_eq!(count, 3);
 }
 ```
 
-### The public API at a glance
+`#[derive(bombay_macros::Msg)]` derives the marker trait with a compile-time slot-size tripwire: a message enum whose `size_of` exceeds its budget (default 256 B) fails the build — box the fat variant or raise it with `#[msg(budget = N)]`.
 
-Everything below is re-exported from `bombay::prelude`:
-
-- **Actor** — `#[derive(Actor)]` or `impl Actor` by hand. Lifecycle hooks: `on_start`, `on_panic`, `on_link_died`, `on_stop`. Spawn with `Actor::spawn`, `spawn_with_mailbox`, `spawn_in_thread`, or build one with `prepare` and run it later.
-- **Messages** — `impl Message<M> for A { type Reply; async fn handle(&mut self, msg, ctx) -> Reply }`. The `Context` exposes the actor's own `ActorRef`, the reply channel (`reply_sender`), `forward`/`try_forward` to another actor, and `attach_stream` for `StreamMessage`.
-- **`ActorRef`** — `ask` (request/reply) and `tell` (fire-and-forget), each a builder: `.mailbox_timeout(..)`, `.reply_timeout(..)`, `.send()` / `.try_send()` / `.blocking_send()`, `tell`'s `.send_after(..)`, `.forward(..)`, or `await` it directly (`IntoFuture`). Plus `downgrade()` → `WeakActorRef`, strong/weak reference counts, `link`/`unlink`, and type-erased `Recipient` / `ReplyRecipient`.
-- **Reply** — any `Reply` type, including `Result<T, E>` and infallible scalars/collections. `ForwardedReply`, `DelegatedReply`, and a single-use `ReplySender` for replying out-of-band.
-- **Supervision** — `RestartPolicy` (`Permanent` / `Transient` / `Never`), `SupervisionStrategy` (`OneForOne` / `OneForAll` / `RestForOne`), restart-intensity limits (max restarts within a sliding window), and death-watch via links + `on_link_died`.
-- **Registry** — a process-local `ActorRegistry`: register an actor under a name, look it up, remove it.
-- **Mailbox** — bounded (`mailbox::bounded(n)`) or unbounded (`mailbox::unbounded()`); backpressure via `send` vs fail-fast `try_send`.
-- **Errors** — `SendError` (`ActorNotRunning` / `ActorStopped` / `MailboxFull` / `HandlerError` / `Timeout`), `PanicError`, `ActorStopReason`.
-
-### The rebuilt core (`bombay-core`)
-
-The Zenoh-era core is being rebuilt from scratch beside the vendored fork, with kameo as a reference oracle. It is a separate crate and is **not** re-exported from `bombay::prelude`; the surface settles once the whole spine lands. What it carries today:
+## The public API at a glance
 
 - **Actor** — `Actor` (a `Mailboxed` subtrait, so the mailbox is keyed on the actor) with `on_start` / `handle` / `on_panic` / `on_stop`. Spawn via `Actor::spawn` or `spawn_with_capacity`, or build a `PreparedActor` to hand out its `ActorRef` and pre-send before the loop starts.
 - **`ActorRef`** — two words, one shared allocation, so a clone is a single refcount bump. `tell` (fire-and-forget) and `ask` (request/reply) are builders: `.await` either one, give it a `.timeout(..)`, or resolve a `tell` without waiting via `.try_send()`. Plus `stop()` (graceful — the in-flight handler finishes), `kill()` (hard — no `on_stop`), `downgrade()` → `WeakActorRef`, and type-erased `Recipient` / `ReplyRecipient`. Dropping the last strong `ActorRef` stops the actor once its backlog drains.
 - **Death-watch** — being watched is universal and passive; watching is the opt-in `Watch: Actor` supertrait with the `on_link_died` hook. Its default is OTP's rule: a **linked** *abnormal* death propagates, anything else is observed and the actor continues (override it to trap). Spawn a watcher with `spawn_linked`, then `watch` (one-directional, notify-only), `link` (bidirectional, propagating), or `unwatch`; each returns `Err(ActorNotLinked)` if the actor was not spawned linked. Death travels on its own unbounded channel and is fired from a task-owned guard's `Drop`, so no notice is lost to a full mailbox, a panic, or a hard kill.
 - **Supervision** — an opt-in `Supervisor: Watch` supertrait spawned via `spawn_supervised`. Register a child with `supervise(config, factory)` under an **explicit** `RestartPolicy` (`Permanent` / `Transient` / `Never`) — there is no default policy: the surveyed systems (OTP, Kubernetes, Akka) disagree across the whole range, so the caller must state it (ADR-0012). A dead child is **rebuilt** from its factory, never resumed (a fresh actor with a new `ActorId`); restarts are spaced by exponential backoff + jitter and bounded by two counters — a consecutive-failure trip that resets on healthy uptime, and a never-reset lifetime budget. When a child fails past its budget, the supervisor stops with `RestartLimitExceeded` / `ChildLifecycleFailed`, which is itself a death notice to *its* watcher (the escalation ladder). Which siblings share a failed child's fate is the supervisor's `supervision_strategy()` (default `OneForOne` — the failed child alone): `RestForOne` also cycles the failed child's *younger* siblings, `OneForAll` the whole set — the ladder's coarser rungs, stopped crash-only and rebuilt in birth order without blocking the supervisor (ADR-0014). `stop_child` terminates a child gracefully (cancel → `stop_grace` → abort); `unsupervise` detaches one without stopping it. See ADR-0012 (accounting), ADR-0013 (lazy reactivation stays out of the core), ADR-0014 (set-cycle coordination).
+- **Registry** — a process-local, lock-free-read name registry: register an actor under a name, look it up (weak handles — a registered actor can still die), remove it.
 - **`ActorId`** — a process-local, unforgeable **pure-name** routing key (`bombay_core::ActorId`): minted at spawn and obtainable only from a spawned actor — no public constructor, no readable `u64` (no getter / `From` / `Display`), and deliberately **not** serializable. It names an actor for the mailbox, death-watch, and supervision *inside this process*; the dataspace identity of an actor is its future KERI AID (#121), a separate coordinate — never this handle. Holding an `ActorId` grants nothing; send-authority lives only in `ActorRef` (ADR-0015).
 - **Mailbox** — bounded only: `Mailbox::<A>::bounded(capacity, id)`. Backpressure via `send`, fail-fast via `try_send`; a queued message keeps the actor alive until it is handled.
 - **Errors** — `TellError` and `AskError`, which classify retry-safety by method (`is_retryable` / `is_terminal`) and hand the undelivered message back; `PanicError` + `PanicReason`; and `ActorStopReason` (`Normal`, `Killed`, `Panicked`, `SupervisorRestart`, `LinkDied`, `AlreadyDead`, `RestartLimitExceeded`, `ChildLifecycleFailed`).
-
-Runnable examples live in [`examples/`](examples/) — `basic`, `supervision`, `registry`, `stream`, `forward`, `pool`, `pubsub`, `broker`, `message_bus`, `message_queue`, and more. Run one with:
-
-```bash
-cargo run --example basic
-```
 
 ## Building
 
@@ -77,7 +87,6 @@ Bombay builds on stable Rust (edition 2024, ≥ 1.85). The pinned toolchain live
 ```bash
 nix develop                 # dev shell with the pinned toolchain (or use your own rustup stable)
 cargo build
-cargo run --example basic
 ```
 
 ## Running the tests
@@ -85,18 +94,17 @@ cargo run --example basic
 ```bash
 cargo nextest run                       # the whole workspace
 cargo test --doc                        # doc-tests (nextest does not run these)
-cargo test -p bombay_console            # one crate
-cargo test --test core_actor_id_bdd     # one cucumber suite
+cargo test -p bombay-core               # one crate
 ```
 
 Or run everything the CI gate runs in one shot:
 
 ```bash
-nix flake check                         # build + clippy + fmt + audit + deny + nextest + doctest + actionlint
+nix flake check                         # build + clippy + fmt + audit + deny + nextest + doctest + fuzz replay + lints
 nix build .#coverage -L                 # llvm-cov HTML report -> ./result/html/index.html
 ```
 
-Behaviour is captured as Gherkin `.feature` files under [`tests/features/`](tests/features/) and wired to the real code by cucumber runners in `tests/` and each crate's `tests/`. Coverage is produced by `cargo-llvm-cov` through `nix build .#coverage` (a `cargo-tarpaulin` engine is also wired as a Linux opt-in via `.#coverage-tarpaulin`), and a standing mutation gate runs through `nix build .#mutants` (nightly `mutants.yml`); the per-file baseline and gap triage for both are in [`docs/testing/coverage-baseline.md`](docs/testing/coverage-baseline.md).
+Coverage is produced by `cargo-llvm-cov` through `nix build .#coverage` (a `cargo-tarpaulin` engine is also wired as a Linux opt-in via `.#coverage-tarpaulin`), and a standing mutation gate runs through `nix build .#mutants` (nightly `mutants.yml`); the per-file baseline and gap triage for both are in [`docs/testing/coverage-baseline.md`](docs/testing/coverage-baseline.md).
 
 ## License
 

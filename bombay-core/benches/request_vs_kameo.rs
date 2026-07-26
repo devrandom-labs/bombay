@@ -1,4 +1,5 @@
-//! Head-to-head: the #118 request surface vs the vendored kameo fork.
+//! Head-to-head: the #118 request surface vs upstream kameo (crates.io,
+//! re-pointed off the deleted vendored fork by card #213).
 //!
 //! The component wins are measured elsewhere (channel: ADR-0001, ~2×; reply
 //! port: ADR-0002, ~1.5×; allocations: `tests/alloc_request.rs`, 0/1 vs
@@ -14,7 +15,9 @@
 //! one request/reply per iteration.
 //!
 //! Measured 2026-07-18 (M-series laptop, criterion defaults, #186 — the
-//! single-allocation `ActorRef`, ADR-0010; the card's no-regress gate):
+//! single-allocation `ActorRef`, ADR-0010; the card's no-regress gate).
+//! NOTE: the kameo column below was measured against the vendored 0.21 fork;
+//! #213 re-pointed the arm at crates.io kameo 0.22 — re-measure before citing:
 //!
 //! | group                | bombay-core            | kameo                  | delta |
 //! |----------------------|------------------------|------------------------|-------|
@@ -119,7 +122,7 @@ mod core_side {
 }
 
 mod kameo_side {
-    use bombay::prelude::*;
+    use kameo::prelude::*;
 
     use super::{CAP, Command};
 
@@ -145,7 +148,7 @@ mod kameo_side {
     }
 
     pub fn spawn() -> ActorRef<Counter> {
-        Counter::spawn_with_mailbox(Counter::default(), bombay::mailbox::bounded(CAP))
+        Counter::spawn_with_mailbox(Counter::default(), kameo::mailbox::bounded(CAP))
     }
 }
 

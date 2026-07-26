@@ -1,5 +1,5 @@
 //! Head-to-head: the #119 `Registry` (papaya, erased weak handles) vs the
-//! vendored kameo fork's `ActorRegistry` (`Mutex<HashMap>` — benched through a
+//! upstream kameo's `ActorRegistry` (`Mutex<HashMap>` — benched through a
 //! local `Mutex` instance, the same shape as kameo's global `ACTOR_REGISTRY`).
 //!
 //! Method: one live actor per side (spawned once in setup, kept alive for the
@@ -21,7 +21,9 @@
 //!
 //! Measured 2026-07-18 (M-series laptop, criterion defaults, #186 — the
 //! single-allocation `ActorRef`, ADR-0010, which this bench motivated under
-//! PR #185; per-group deltas are vs that same-session pre-#186 baseline):
+//! PR #185; per-group deltas are vs that same-session pre-#186 baseline).
+//! NOTE: the kameo column below was measured against the vendored 0.21 fork;
+//! #213 re-pointed the arm at crates.io kameo 0.22 — re-measure before citing:
 //!
 //! | group                          | bombay-core          | kameo                | delta         |
 //! |--------------------------------|----------------------|----------------------|---------------|
@@ -98,7 +100,7 @@ mod core_side {
 }
 
 mod kameo_side {
-    use bombay::prelude::*;
+    use kameo::prelude::*;
 
     #[derive(Actor, Default)]
     pub struct Svc;
@@ -110,7 +112,7 @@ mod kameo_side {
     }
 
     pub fn spawn() -> ActorRef<Svc> {
-        Svc::spawn_with_mailbox(Svc, bombay::mailbox::bounded(64))
+        Svc::spawn_with_mailbox(Svc, kameo::mailbox::bounded(64))
     }
 }
 
@@ -129,15 +131,15 @@ fn setup() -> (
     Runtime,
     Registry,
     bombay_core::actor::ActorRef<core_side::Svc>,
-    Mutex<bombay::registry::ActorRegistry>,
-    bombay::actor::ActorRef<kameo_side::Svc>,
+    Mutex<kameo::registry::ActorRegistry>,
+    kameo::actor::ActorRef<kameo_side::Svc>,
 ) {
     let rt = runtime();
     let registry = Registry::new();
     let core_ref = rt.block_on(async { core_side::spawn() });
     registry.register("svc", &core_ref).expect("fresh name");
 
-    let kameo_registry = Mutex::new(bombay::registry::ActorRegistry::new());
+    let kameo_registry = Mutex::new(kameo::registry::ActorRegistry::new());
     let kameo_ref = rt.block_on(async { kameo_side::spawn() });
     assert!(
         kameo_registry
@@ -272,7 +274,7 @@ fn lookup_contended_distinct(c: &mut Criterion) {
         });
     });
 
-    let kameo_registry = Mutex::new(bombay::registry::ActorRegistry::new());
+    let kameo_registry = Mutex::new(kameo::registry::ActorRegistry::new());
     let kameo_refs: Vec<_> = (0..READERS)
         .map(|_| rt.block_on(async { kameo_side::spawn() }))
         .collect();
