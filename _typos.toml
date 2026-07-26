@@ -10,12 +10,6 @@
 extend-exclude = [
   # Dependency checksums — pure noise.
   "Cargo.lock",
-  # The libp2p remote layer (src/remote*) is vendored kameo code that M1 DELETES
-  # and rewrites over Zenoh (cards #2–#6). It carries a typo'd *public* type,
-  # `DowncastRegsiteredActorRefError`; renaming a public type in code about to be
-  # deleted is churn. Re-tighten (drop these) once the Zenoh remote lands.
-  "**/src/remote.rs",
-  "**/src/remote/**",
 ]
 
 [default.extend-words]
