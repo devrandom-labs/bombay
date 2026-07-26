@@ -1,5 +1,12 @@
 # Coverage baseline (card #85)
 
+> **Scope change 2026-07-27 (#213):** the vendored kameo fork left the tree — workspace
+> member `.` (`src/`), its root `tests/` BDD suites (`core_*_bdd`, `console_wire_*`),
+> `examples/`, `benches/overhead.rs`, and the `actors/` utility crate are **deleted**;
+> `console/` is excluded from the workspace pending the apps/console card. Coverage and
+> mutation scope is now **bombay-core + bombay_macros (derive_msg) + mutants-gate** only.
+> Sections below that describe the vendored crate's suites are historical record.
+
 > **Audited 2026-07-17 by #168** (scope-vs-shipped sweep over #112–#117, #145–#152).
 > Five claims in this document were corrected in place; each correction is a blockquote
 > marked `Corrected 2026-07-17 (#168)` in the relevant section. In short:

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Actors here are a *general* single-writer abstraction — ephemeral, stateful, or nexus-backed. Event-sourcing is one backing, not the definition; the adapter that maps **nexus** aggregates onto actors lives in a sibling repo, not in this crate.
 
-> **Current state: M1, core rebuild in flight.** M0 is closed (#62/#64 de-risking done; see the reference docs). The fork (#1) and the fork-strategy decision (#63) are closed. Production Rust lives in `bombay-core/src/` — `mailbox` (flume-backed), `actor` (loop/`ActorRef`/`Recipient`/spawn), `reply`, `error`.
+> **Current state: M1, core rebuild in flight.** M0 is closed (#62/#64 de-risking done; see the reference docs). The fork (#1), the fork-strategy decision (#63), and the vendored-tree removal (#213) are closed. Production Rust lives in `bombay-core/src/` — `mailbox` (flume-backed), `actor` (loop/`ActorRef`/`Recipient`/spawn), `reply`, `error`, `registry`, `restart`, `id`.
 >
 > The core is being **rebuilt from scratch part-by-part with kameo as a reference oracle** — epic #122, cards #112–#121 — not carried over wholesale. When this file and the cards disagree, the cards win: verify against `gh` before relying on anything here.
 
@@ -101,4 +101,4 @@ kameo is MIT/Apache-2.0 — upstream LICENSE + attribution are carried in `LICEN
 
 **Decided and executed** (#63, #1 — both closed): **hard-fork from `v0.21.0`**, diverging freely (the Zenoh rewrite + M7 de-handroll make rebaseability not worth preserving). The decision record is [`docs/superpowers/specs/2026-06-23-fork-strategy-design.md`](docs/superpowers/specs/2026-06-23-fork-strategy-design.md) — read it rather than re-deriving the choice.
 
-Two trees coexist deliberately: **`src/`** is the vendored kameo fork (the reference oracle, M7-doomed), **`bombay-core/`** is the from-scratch rebuild (epic #122). New core work goes in `bombay-core/`; `src/` is consulted, not extended.
+The vendored fork (`src/`) is **gone** (card #213). The reference oracle is upstream **`github.com/tqwewe/kameo` at tag `v0.22.2`** — consult it read-only (a sibling checkout at `~/Code/devrandom/kameo` is a human convenience, **never a build input**; keep it fresh with `git fetch --tags`). All core work goes in `bombay-core/` (epic #122).
