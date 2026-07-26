@@ -63,3 +63,20 @@ pub(crate) fn next_actor_id() -> ActorId {
     // concurrency rule).
     ActorId::from_raw(NEXT_ACTOR_ID.fetch_add(1, Ordering::Relaxed))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::ActorId;
+
+    // Compile-time proof by contradiction: `assert_not_impl_any!` generates an
+    // impl that conflicts *iff* the forbidden impl exists. Two structural
+    // layers already block the common cases — the orphan rule stops any
+    // downstream crate implementing serde for `ActorId`, and serde being a
+    // dev-only dependency means `#[derive(Serialize)]` cannot even resolve in
+    // the production lib. This pin is the third layer: it catches the residual
+    // regressions those miss — serde promoted to a normal dependency, or a
+    // hand-written impl behind a test cfg. Field poisoning then protects every
+    // container transitively — a struct embedding `ActorId` cannot derive
+    // `Serialize` anywhere (the Erlang/Lasp pid-leak lesson).
+    static_assertions::assert_not_impl_any!(ActorId: serde::Serialize, serde::de::DeserializeOwned);
+}

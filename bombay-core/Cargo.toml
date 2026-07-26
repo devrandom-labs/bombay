@@ -42,6 +42,9 @@ tokio = { workspace = true, features = [
 proptest = { workspace = true }
 criterion = { version = "0.8", features = ["async_tokio"] }
 bombay-core = { path = ".", features = ["test-support"] }
+# Card #206: compile-time proof that `ActorId` is not (de)serializable.
+serde = { workspace = true }
+static_assertions = { workspace = true }
 async-channel = "2.5.0"
 thingbuf = "0.1.6"
 crossbeam-channel = "0.5.15"

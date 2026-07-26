@@ -54,6 +54,9 @@ portable-pty = "0.9"
 vt100 = "0.16"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+# Compile-time trait-impl assertions — card #206 pins `ActorId` non-serializable
+# (`assert_not_impl_any!`), a dev-only build-time proof.
+static_assertions = "1.1"
 
 # ============================================================
 # Bombay — god-level lint config (adopted from nexus — card #61).
