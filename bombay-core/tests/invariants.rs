@@ -33,6 +33,7 @@
 //!            i14c_handler_panic_then_on_stop_panic_preserves_original_cause
 //!   I15 fault isolation across actors         -> i15_fault_isolation
 //!   I17 distinct actor ids                    -> i17_distinct_ids
+//!         (+ concurrent mint under a barrier   -> i17b_concurrent_mint_distinct_ids)
 //!   I19 ref-send liveness / send-to-dead fails -> i19_send_and_weak_upgrade_after_termination
 //!   I20 backpressure: a full mailbox rejects (message handed back)
 //!         -> i20_i21_backpressure_and_capacity_freed_by_draining
@@ -976,6 +977,44 @@ fn i17_distinct_ids() {
     for i in 0..ids.len() {
         for j in (i + 1)..ids.len() {
             assert_ne!(ids[i], ids[j], "actor ids at {i} and {j} must be distinct");
+        }
+    }
+}
+
+/// I17b — concurrent mint: 32 tasks release together on a barrier, each
+/// building a `PreparedActor`. ASSERT all minted ids are pairwise distinct
+/// (`ActorId` is `Eq` but not `Hash`, so distinctness is asserted pairwise) —
+/// the mint counter hands each racing spawn a unique value.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn i17b_concurrent_mint_distinct_ids() {
+    use tokio::sync::Barrier;
+
+    const TASKS: usize = 32;
+    let barrier = Arc::new(Barrier::new(TASKS));
+    let handles: Vec<_> = (0..TASKS)
+        .map(|_| {
+            let barrier = Arc::clone(&barrier);
+            tokio::spawn(async move {
+                barrier.wait().await;
+                PreparedActor::<Bank>::new(cap(1)).actor_ref().id()
+            })
+        })
+        .collect();
+    let mut ids = Vec::with_capacity(TASKS);
+    for handle in handles {
+        ids.push(
+            timeout(TERMINATE, handle)
+                .await
+                .expect("mint task must finish")
+                .expect("mint task must not panic"),
+        );
+    }
+    for i in 0..ids.len() {
+        for j in (i + 1)..ids.len() {
+            assert_ne!(
+                ids[i], ids[j],
+                "concurrent ids at {i} and {j} must be distinct"
+            );
         }
     }
 }
