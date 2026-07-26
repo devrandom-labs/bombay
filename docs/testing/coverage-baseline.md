@@ -897,6 +897,32 @@ observed), then reverted. #151's other half — the nightly MIRI leak/UB job —
 delivered by #150's `miri.yml` (the leak checker is active in the sweep; the
 mid-backlog Drop test runs in both legs).
 
+## Recipient zero-box transit (#207) — the counting allocator on the erased path
+Two more **dedicated one-test binaries** (same `alloc_exact.rs` isolation
+rationale) close the #168 WEAK finding the #145 finalization matrix left open:
+`Recipient`/`ReplyRecipient` exist **for** zero-box message transit, but no
+executable guard held it — a refactor that boxed the message would have gone red
+nowhere. The `CountingAlloc` `gross_allocs` counter (the #118 seam) now guards it:
+
+- `tests/alloc_recipient.rs` — `recipient_try_tell_is_zero_box_like_a_direct_send`:
+  a `Recipient<M>` `try_tell` performs the **exact** gross-allocation count of a
+  direct typed send (**0** — the message rides inline in the queue slot, only the
+  handle is `Arc<dyn>`), and the `A::Msg: From<M>` conversion boundary itself is
+  **0**-alloc for the representative message. Non-ZST `u64` payload so a boxed
+  message is a countable heap allocation (a boxed ZST is a no-op). Falsifiability
+  verified: a `Box::new(msg)` in `try_tell` fails it (0 → 1), then reverted.
+- `tests/alloc_reply_recipient.rs` —
+  `reply_recipient_ask_boxes_only_futures_never_the_message`: an erased ask
+  allocates exactly the reply port a direct ask does (**1**) plus the two
+  `dyn`-dispatch future boxes (`into_future` + `deliver`) — **3** total, message
+  inline in the `Ask` carrier, never boxed. Falsifiability verified: a
+  `Box::new(msg)` in `deliver` fails it (3 → 4), then reverted.
+
+Test-only; no production change. Ties ADR-0004 (conversion-boundary erasure, the
+256× queue-memory swing) to an executable check. The `WeakRecipient` /
+`WeakReplyRecipient`-after-upgrade leg is deferred until a `WeakReplyRecipient`
+lands (bullet 3 of #207).
+
 ## Restart-set strategies (#199) — the set-cycle coordinator
 `OneForAll` / `RestForOne` (ADR-0014) add three test surfaces:
 
