@@ -77,28 +77,16 @@
         # form.)
         craneLib = (crane.mkLib pkgs).overrideToolchain (_: toolchain);
 
-        # kameo's root crate does `#![doc = include_str!("../README.md")]`, so
-        # the repo-root README.md must be in the sandboxed build source —
-        # `cleanCargoSource` would strip it (non-Rust file), breaking both the
-        # doc build and ordinary compilation (include_str! is evaluated at
-        # compile time, not just by rustdoc). Use a fileset that keeps the cargo
-        # sources plus README.md.
-        #
-        # The cucumber BDD runners (card #74/#76) read `.feature` files at RUNTIME
-        # via `filter_run_and_exit(<path>)`; `commonCargoSources` strips non-Rust
-        # files, so without this the gate's `cargoNextest` would fail with
-        # "Could not read path" even though the runners pass with the full tree
-        # checked out. Keep the whole feature catalog in the sandbox.
-        #
-        # `mutants-baseline.json` (cards #165/#171) is read by the `mutants-gate`
-        # tool inside the `packages.mutants` derivation — another non-Rust file
-        # `commonCargoSources` would strip, so keep it in the sandbox too.
+        # `commonCargoSources` strips non-Rust files, so the fileset re-adds the
+        # ones a build actually reads: README.md (docs), the committed fuzz
+        # corpus (#164 — replayed by the fuzz-replay check), and
+        # `mutants-baseline.json` (cards #165/#171 — read by the `mutants-gate`
+        # tool inside the `packages.mutants` derivation).
         src = lib.fileset.toSource {
           root = ./.;
           fileset = lib.fileset.unions [
             (craneLib.fileset.commonCargoSources ./.)
             ./README.md
-            ./tests/features
             ./fuzz/tests/__fuzz__
             ./mutants-baseline.json
           ];
@@ -107,17 +95,10 @@
         commonArgs = {
           inherit src;
           strictDeps = true;
-          # Modern nixpkgs darwin stdenv bundles the Apple SDK, so no explicit
-          # `darwin.apple_sdk.frameworks.*` are needed (those legacy stubs were
-          # removed from nixpkgs). openssl + the usual native tools cover the
-          # transitive C deps pulled in by kameo's dev-dependencies (libp2p,
-          # criterion, the prometheus exporter).
-          buildInputs = with pkgs; [ openssl ];
-          nativeBuildInputs = with pkgs; [
-            cmake
-            pkg-config
-            perl
-          ];
+          # No C build deps: the vendored fork's libp2p tree left with card #213;
+          # the remaining dependency graph (tokio/flume/papaya/criterion, and the
+          # crates.io `kameo` bench dev-dep with default features = macros +
+          # tracing) is pure Rust.
         };
 
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
@@ -140,25 +121,20 @@
       with pkgs;
       {
         checks = {
-          # The clippy gate, RESTORED as a ratchet (card #61). The god-level bar
-          # (root Cargo.toml `[workspace.lints]` + clippy.toml) is DENY, so all NEW
-          # PRODUCTION code is held to it. Vendored kameo lib/bin files that predate
-          # the bar carry a documented per-file quarantine header
-          # (`#![allow(..., reason = "…#61")]`), removed file-by-file as the code is
-          # cleaned or deleted under M1/M7.
+          # The clippy gate (card #61). The god-level bar (root Cargo.toml
+          # `[workspace.lints]` + clippy.toml) is DENY; the vendored-kameo
+          # quarantine headers left with the vendored tree (card #213), so all
+          # remaining production code is held to the bar directly.
           #
           # Scope = default targets (lib + bins), NOT `--all-targets`: test /
-          # example / bench code is deliberately held to a lighter bar (consistent
-          # with clippy.toml's `allow-unwrap-in-tests` / `allow-expect-in-tests`) —
-          # the ~60 BDD-wiring files trip 2k+ pedantic/nursery style findings whose
-          # cleanup buys nothing on code whose job is test clarity. Gating the test
-          # surface is a separate #61-tail decision. `--all-features` still lints the
-          # `remote`/`console` production modules.
+          # bench code is deliberately held to a lighter bar (consistent with
+          # clippy.toml's `allow-unwrap-in-tests` / `allow-expect-in-tests`).
+          # Gating the test surface is a separate #61-tail decision (#136).
           #
           # No `-- --deny warnings`: the `deny`-level `[workspace.lints.clippy]` bar
-          # already fails the build on any god-level violation, while rust-level
-          # warnings (unused/dead-code in vendored kameo) stay non-blocking until the
-          # rust-lints tightening tracked in the #61 tail.
+          # already fails the build on any god-level violation; rust-level
+          # warnings stay non-blocking until the rust-lints tightening tracked
+          # in the #61 tail.
           bombay-clippy = craneLib.cargoClippy (
             commonArgs
             // {
@@ -175,14 +151,9 @@
             src = pkgs.lib.sources.sourceFilesBySuffices src [ ".toml" ];
           };
 
-          bombay-audit = craneLib.cargoAudit {
-            inherit src advisory-db;
-            # Both advisories are in `hickory-proto`, pulled in transitively by
-            # `libp2p` (mDNS/DNS) — the exact layer M1 deletes when it replaces
-            # `src/remote/` with Zenoh, so the vulnerable code leaves the tree
-            # then. RUSTSEC-2026-0118 has no fixed upgrade available regardless.
-            cargoAuditExtraArgs = "--ignore RUSTSEC-2026-0118 --ignore RUSTSEC-2026-0119";
-          };
+          # No `--ignore` flags: the two hickory-proto advisories rode in via
+          # the vendored fork's libp2p, which left the tree with card #213.
+          bombay-audit = craneLib.cargoAudit { inherit src advisory-db; };
           bombay-deny = craneLib.cargoDeny { inherit src; };
 
           bombay-nextest = craneLib.cargoNextest (
@@ -220,15 +191,13 @@
           # nextest does NOT run doctests, so verify the doc-comment examples
           # separately with `cargo test --doc` (crane's dedicated wrapper).
           #
-          # `--workspace` is load-bearing (card #170). The root Cargo.toml is BOTH
-          # `[workspace]` and `[package] name = "bombay"` with no `default-members`,
-          # and cargo's default selection for that shape is the root package ALONE.
-          # nextest defaults to the whole workspace and hid the asymmetry, so this
-          # check silently covered only the M7-doomed vendored fork: every
-          # `compile_fail` probe in the rebuilt spine was dead — #114's `Msg`
-          # slot-size tripwire (macros/src/lib.rs:191), the generic/union rejects
-          # (:213/:220), and #115's reply-consume-once (bombay-core/src/reply.rs:32).
-          # A `compile_fail` doctest that is never selected passes by not existing.
+          # `--workspace` is load-bearing (card #170): a `compile_fail` doctest
+          # that is never selected passes by not existing — #114's `Msg`
+          # slot-size tripwire, the generic/union rejects, and #115's
+          # reply-consume-once live or die by target selection. The root is a
+          # virtual manifest since card #213, whose default selection is already
+          # the whole workspace; `--workspace` stays as an explicit statement of
+          # intent against the shape regressing.
           bombay-doctest = craneLib.cargoDocTest (
             commonArgs
             // {
@@ -335,9 +304,7 @@
         # `packages.coverage` is **llvm-cov on every system** — reliable and the
         # one that actually completes here; `coverage-tarpaulin` stays exposed on
         # Linux for anyone who wants the ptrace engine. `--workspace` covers
-        # kameo + actors + console + macros; `remote` (libp2p, deleted in M1) is
-        # off by default, so it is neither built nor counted. The `testing`
-        # feature auto-enables via the self dev-dep, so the cucumber runners build.
+        # bombay-core + macros + mutants-gate.
         packages =
           let
             # Mutation testing for the rebuilt core (cards #112+, #165, #171). A
@@ -355,14 +322,14 @@
             # single source of truth; `set -o pipefail` makes the gate's exit
             # code (not tee's) fail the derivation. The `--file` globs are
             # single-quoted so cargo-mutants — not the shell — does the matching,
-            # scoping the sweep to bombay-core + derive_msg.rs (the vendored
-            # kameo derives stay out).
+            # scoping the sweep to bombay-core + derive_msg.rs (bench-only
+            # kameo-arm code stays out).
             mutants = craneLib.mkCargoDerivation (
               commonArgs
               // {
                 inherit cargoArtifacts;
                 pnameSuffix = "-mutants";
-                nativeBuildInputs = commonArgs.nativeBuildInputs ++ [ cargo-mutants ];
+                nativeBuildInputs = [ cargo-mutants ];
                 buildPhaseCargoCommand = ''
                   set -o pipefail
                   # --timeout is cargo-mutants' PER-MUTANT test-phase bound (the
