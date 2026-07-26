@@ -380,6 +380,7 @@ impl<S: Supervisor> ActorRef<S> {
                 handle: Some(handle),
                 config: config.into(),
                 tracker: RestartTracker::new(Instant::now()),
+                cycling: false,
             },
             id,
             install_watch,

@@ -42,23 +42,31 @@
 
 use core::convert::Infallible;
 use std::{
+    collections::HashMap,
     future::IntoFuture,
     sync::{
-        Arc,
+        Arc, Mutex,
         atomic::{AtomicU32, Ordering},
     },
     time::Duration,
 };
 
-use tokio::{sync::oneshot, time::timeout};
+use tokio::{
+    sync::{mpsc, oneshot},
+    time::{Instant, timeout},
+};
 
 use bombay_core::{
-    actor::{Actor, ActorRef, PreparedActor, RunResult, WeakActorRef},
+    actor::{
+        Actor, ActorRef, PreparedActor, RunResult, Spawn, SpawnSupervised, Supervisor, Watch,
+        WeakActorRef,
+    },
     error::{ActorStopReason, AskError, TellError},
     mailbox::{Capacity, Mailboxed, Signal},
     message::Msg,
     reply::ReplySender,
-    test_support::terminate_bound,
+    restart::{RestartConfig, RestartPolicy, SupervisionStrategy},
+    test_support::{set_supervisor_rng_seed, terminate_bound},
 };
 
 /// The suite-wide fail-fast bound: any terminal await that exceeds this is a hung
@@ -797,4 +805,405 @@ async fn cyclic_topology_never_deadlocks() {
             );
         }
     }
+}
+
+// ===========================================================================
+// Card #199 — restart-set-strategy storm invariants (deterministic simulation).
+//
+// The three `dst_*` tests below storm the OneForAll/RestForOne set-cycle engine
+// (ADR-0014) under a SEEDED jitter RNG (`set_supervisor_rng_seed`, the
+// integration seam) and tokio's paused virtual clock, so every restart wave is
+// replayable to the nanosecond. Each independent run owns its OWN current-thread
+// paused runtime, and every trace is keyed on a child's STABLE LOGICAL TAG plus
+// a virtual timestamp — never a raw `ActorId`, which is process-global and mints
+// higher values on the second run in the same test binary.
+// ===========================================================================
+
+/// A crash-on-command worker for the storms. Stateless — each rebuild is a fresh
+/// incarnation with a new id, exactly what the trace records by tag.
+struct Worker;
+#[derive(Debug)]
+struct Crash;
+impl Msg for Crash {}
+impl Mailboxed for Worker {
+    type Msg = Crash;
+}
+impl Actor for Worker {
+    type Args = ();
+    type Error = Infallible;
+    async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Ok(Self)
+    }
+    async fn handle(
+        &mut self,
+        _: Crash,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        panic!("crash on command")
+    }
+}
+
+/// The supervisors under test. Idle mailbox — the storm is driven entirely
+/// through child crashes and `supervise`/`unsupervise`, never supervisor
+/// messages.
+#[derive(Debug)]
+struct SupIdle;
+impl Msg for SupIdle {}
+
+macro_rules! storm_supervisor {
+    ($t:ident, $strategy:expr) => {
+        struct $t;
+        impl Mailboxed for $t {
+            type Msg = SupIdle;
+        }
+        impl Actor for $t {
+            type Args = ();
+            type Error = Infallible;
+            async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self)
+            }
+            async fn handle(
+                &mut self,
+                _: SupIdle,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Ok(())
+            }
+        }
+        impl Watch for $t {}
+        impl Supervisor for $t {
+            fn supervision_strategy() -> SupervisionStrategy {
+                $strategy
+            }
+        }
+    };
+}
+storm_supervisor!(AllSup, SupervisionStrategy::OneForAll);
+storm_supervisor!(RestSup, SupervisionStrategy::RestForOne);
+
+/// `tag -> current incarnation's strong ref`: kept so a child is not
+/// ref-count-stopped before the storm drives it (in production an external ref
+/// plays this role — the supervisor never pins a child). Overwritten on every
+/// rebuild, so it always holds the live incarnation for that tag.
+type LiveChildren = Arc<Mutex<HashMap<&'static str, ActorRef<Worker>>>>;
+/// A birth/rebuild report: virtual ms since the run's origin, and the stable tag.
+type ReportRx = mpsc::UnboundedReceiver<(u128, &'static str)>;
+type ReportTx = mpsc::UnboundedSender<(u128, &'static str)>;
+
+/// The user factory `supervise` wraps: spawns a fresh tagged `Worker`, timestamps
+/// and reports the birth on the tape, and stashes a strong ref under its tag.
+fn tagged_factory(
+    tag: &'static str,
+    origin: Instant,
+    report: ReportTx,
+    live: LiveChildren,
+) -> impl FnMut() -> ActorRef<Worker> + Send + 'static {
+    move || {
+        let child = Worker::spawn(());
+        let _ = report.send((origin.elapsed().as_millis(), tag));
+        live.lock()
+            .expect("live-map lock")
+            .insert(tag, child.clone());
+        child
+    }
+}
+
+/// A rebuild await bound that tolerates a FULL capped backoff (the 30 s
+/// `max_backoff`) plus its 20% jitter. The suite-wide `TERMINATE` (15 s) is
+/// SHORTER than a late-attempt virtual backoff, so a paused-clock rebuild that
+/// legitimately waits ~30 s would trip it. Still a virtual bound — a genuine hang
+/// (no rebuild ever) fires it instantly in real time.
+fn rebuild_bound() -> Duration {
+    if cfg!(miri) {
+        Duration::from_secs(3600)
+    } else {
+        Duration::from_secs(120)
+    }
+}
+
+/// A fresh single-threaded runtime with a PAUSED virtual clock — the isolation
+/// unit for one deterministic run (two runs must not share a clock).
+fn paused_runtime() -> tokio::runtime::Runtime {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .start_paused(true)
+        .build()
+        .expect("current-thread paused runtime")
+}
+
+/// Crashes the CURRENT incarnation of `tag` (a no-op if it is already dead —
+/// mid-teardown or mid-backoff — which is itself deterministic).
+fn crash_tag(live: &LiveChildren, tag: &'static str) {
+    if let Some(child) = live.lock().expect("live-map lock").get(tag) {
+        let _ = child.tell(Crash).try_send();
+    }
+}
+
+/// Collects every rebuild report until the storm goes quiet. A gap longer than
+/// the 30 s `max_backoff` cap with no report means no rebuild is armed: under the
+/// paused clock any pending backoff timer fires (virtually) before this elapses,
+/// so a timeout here is true quiescence, not impatience.
+async fn drain_rebuilds(rx: &mut ReportRx) -> Vec<(u128, &'static str)> {
+    let quiet = Duration::from_secs(120);
+    let mut trace = Vec::new();
+    while let Ok(Some(report)) = timeout(quiet, rx.recv()).await {
+        trace.push(report);
+    }
+    trace
+}
+
+/// Spawns an `OneForAll` supervisor over four `Permanent` tagged children, drives
+/// the scripted crash `schedule` at seeded virtual times, and returns the
+/// `(virtual_ms, tag)` trace of every rebuild until quiescent. Its own runtime,
+/// its own clock, its own seed — fully replayable.
+fn storm_trace(seed: u64, schedule: &[(u64, &'static str)]) -> Vec<(u128, &'static str)> {
+    const TAGS: [&str; 4] = ["a", "b", "c", "d"];
+    paused_runtime().block_on(async move {
+        set_supervisor_rng_seed(Some(seed));
+        let origin = Instant::now();
+        let (tx, mut rx) = mpsc::unbounded_channel::<(u128, &'static str)>();
+        let live: LiveChildren = Arc::new(Mutex::new(HashMap::new()));
+        let sup = AllSup::spawn_supervised(());
+
+        for tag in TAGS {
+            timeout(
+                TERMINATE,
+                sup.supervise(
+                    RestartPolicy::Permanent,
+                    tagged_factory(tag, origin, tx.clone(), Arc::clone(&live)),
+                ),
+            )
+            .await
+            .expect("supervise must not hang")
+            .expect("the supervisor is alive");
+            // The first incarnation spawns inline in `supervise`, so its birth is
+            // already on the tape; discard it — the trace is the STORM's rebuilds.
+            let (_, born) = timeout(TERMINATE, rx.recv())
+                .await
+                .expect("a birth arrives within the bound")
+                .expect("the tape is open");
+            assert_eq!(born, tag, "births arrive in supervise order");
+        }
+
+        for &(at_ms, tag) in schedule {
+            timeout(
+                TERMINATE,
+                tokio::time::sleep_until(origin + Duration::from_millis(at_ms)),
+            )
+            .await
+            .expect("virtual sleep resolves");
+            crash_tag(&live, tag);
+        }
+
+        let trace = drain_rebuilds(&mut rx).await;
+        drop(sup);
+        trace
+    })
+}
+
+/// Invariant: a set-restart storm is a pure function of (jitter seed, crash
+/// schedule). Same seed ⇒ byte-identical rebuild interleaving (wave times AND
+/// order); a different seed moves the jittered backoff deadlines and so the whole
+/// schedule. The #100-class storm, made replayable.
+#[test]
+fn dst_restart_storm_deterministic() {
+    let sched: &[(u64, &'static str)] = &[(0, "b"), (50, "c"), (120, "b")];
+    let a = storm_trace(42, sched);
+    let b = storm_trace(42, sched);
+    assert_eq!(
+        a, b,
+        "same seed + schedule ⇒ identical rebuild interleaving"
+    );
+    let c = storm_trace(43, sched);
+    assert_ne!(a, c, "a different jitter seed varies the schedule");
+    assert!(!a.is_empty(), "the storm actually stormed");
+}
+
+/// Drives a seeded storm of interleaved `crash` / `unsupervise` ops against a set
+/// supervisor, then asserts the two race invariants. Generic over the strategy so
+/// both `OneForAll` and `RestForOne` run the same body. Give-up budgets are raised
+/// out of the way: this test probes the unwatch/removal race, not the trip
+/// counters, so a surviving supervisor means "no wedge", never "not yet escalated".
+async fn link_unlink_storm<S>(seed: u64)
+where
+    S: SpawnSupervised + Actor<Args = ()>,
+{
+    const TAGS: [&str; 3] = ["a", "b", "c"];
+    set_supervisor_rng_seed(Some(seed));
+    let origin = Instant::now();
+    let (tx, mut rx) = mpsc::unbounded_channel::<(u128, &'static str)>();
+    let live: LiveChildren = Arc::new(Mutex::new(HashMap::new()));
+    let sup = S::spawn_supervised(());
+    let cfg = RestartConfig::new(RestartPolicy::Permanent)
+        .with_max_restarts(u32::MAX)
+        .with_max_total(u32::MAX);
+
+    for tag in TAGS {
+        timeout(
+            TERMINATE,
+            sup.supervise(
+                cfg,
+                tagged_factory(tag, origin, tx.clone(), Arc::clone(&live)),
+            ),
+        )
+        .await
+        .expect("supervise must not hang")
+        .expect("the supervisor is alive");
+        let _ = timeout(TERMINATE, rx.recv())
+            .await
+            .expect("a birth within the bound")
+            .expect("the tape is open");
+    }
+
+    // `tag -> virtual ms at which it was first unsupervised`; once detached a tag
+    // is never re-supervised, so no later rebuild for it may ever appear.
+    let mut removed: HashMap<&'static str, u128> = HashMap::new();
+    let mut lcg = seed ^ 0x9E37_79B9_7F4A_7C15;
+    for _ in 0..12_u32 {
+        lcg = lcg
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        let gap = Duration::from_millis((lcg >> 40) % 90);
+        let tag = TAGS[((lcg >> 8) % TAGS.len() as u64) as usize];
+        timeout(TERMINATE, tokio::time::sleep(gap))
+            .await
+            .expect("virtual sleep resolves");
+        if (lcg >> 20) & 1 == 0 {
+            crash_tag(&live, tag);
+        } else if let Some(id) = live
+            .lock()
+            .expect("live-map lock")
+            .get(tag)
+            .map(ActorRef::id)
+        {
+            timeout(TERMINATE, sup.unsupervise(id))
+                .await
+                .expect("unsupervise must not hang")
+                .expect("the supervisor is alive");
+            removed
+                .entry(tag)
+                .or_insert_with(|| origin.elapsed().as_millis());
+        }
+    }
+
+    let trace = drain_rebuilds(&mut rx).await;
+    for (ms, tag) in trace {
+        if let Some(&removed_at) = removed.get(tag) {
+            assert!(
+                ms <= removed_at,
+                "seed {seed}: tag {tag} rebuilt at {ms}ms, AFTER it was unsupervised at \
+                 {removed_at}ms — a detached entry was resurrected (the #195 unwatch race)",
+            );
+        }
+    }
+    assert!(
+        sup.is_alive(),
+        "seed {seed}: the supervisor wedged or died under the link/unlink storm",
+    );
+    drop(sup);
+}
+
+/// Invariant: seeded interleavings of `crash` / `unsupervise` under set strategies
+/// never resurrect a detached child and never wedge the supervisor. The #195
+/// unwatch race, replayed across strategies and seeds with the widened window a
+/// set cycle opens.
+#[test]
+fn dst_concurrent_link_unlink_die() {
+    for seed in 0_u64..8 {
+        paused_runtime().block_on(async move {
+            if seed % 2 == 0 {
+                link_unlink_storm::<AllSup>(seed).await;
+            } else {
+                link_unlink_storm::<RestSup>(seed).await;
+            }
+        });
+    }
+}
+
+/// Crashes a single `Permanent` child `crashes` times in a row under a seeded
+/// jitter RNG and returns the `(attempt, measured_delay_ms)` for each rebuild.
+/// The child is crashed the instant it is reborn, so its consecutive-failure
+/// counter climbs monotonically (no healthy-uptime reset), and the virtual clock
+/// makes each death→rebuild delay exact. Give-up budgets are raised so the full
+/// backoff curve is observable; `min_backoff`/`max_backoff`/`jitter` stay at the
+/// #196 defaults — they are the curve under measurement.
+fn backoff_delays(seed: u64, crashes: u32) -> Vec<(u32, u128)> {
+    paused_runtime().block_on(async move {
+        set_supervisor_rng_seed(Some(seed));
+        let origin = Instant::now();
+        let (tx, mut rx) = mpsc::unbounded_channel::<(u128, &'static str)>();
+        let live: LiveChildren = Arc::new(Mutex::new(HashMap::new()));
+        let sup = AllSup::spawn_supervised(());
+        let cfg = RestartConfig::new(RestartPolicy::Permanent)
+            .with_max_restarts(u32::MAX)
+            .with_max_total(u32::MAX);
+        timeout(
+            TERMINATE,
+            sup.supervise(
+                cfg,
+                tagged_factory("x", origin, tx.clone(), Arc::clone(&live)),
+            ),
+        )
+        .await
+        .expect("supervise must not hang")
+        .expect("the supervisor is alive");
+        let _ = timeout(TERMINATE, rx.recv())
+            .await
+            .expect("the birth within the bound")
+            .expect("the tape is open");
+
+        let mut delays = Vec::with_capacity(crashes as usize);
+        for attempt in 1..=crashes {
+            let before = Instant::now();
+            crash_tag(&live, "x");
+            let _ = timeout(rebuild_bound(), rx.recv())
+                .await
+                .expect("a rebuild must arrive — the child did not come back")
+                .expect("the tape is open");
+            delays.push((attempt, before.elapsed().as_millis()));
+        }
+        drop(sup);
+        delays
+    })
+}
+
+/// Invariant: the measured restart backoff obeys `delay ∈ [base(n), base(n)·1.2]`
+/// for its consecutive-attempt number `n` — exponential doubling off `min_backoff`,
+/// capped at `max_backoff`, plus at most the 20% jitter — and the jitter is LIVE
+/// (the collected delays differ across seeds). These are the numbers that resolve
+/// #196's "expected to move" tuning note; the distribution is printed for the card.
+#[test]
+fn dst_backoff_distribution_measured() {
+    const K: u32 = 12;
+    let cfg = RestartConfig::new(RestartPolicy::Permanent);
+    let runs: Vec<(u64, Vec<(u32, u128)>)> = [1_u64, 2, 3]
+        .map(|seed| (seed, backoff_delays(seed, K)))
+        .into();
+
+    for (seed, delays) in &runs {
+        eprintln!("dst_backoff seed {seed}:");
+        for (attempt, delay_ms) in delays {
+            let base_ms = bombay_core::restart::base_backoff(&cfg, *attempt).as_millis();
+            let ceiling = base_ms + base_ms / 5;
+            eprintln!(
+                "  attempt {attempt:>2}: base {base_ms:>6}ms  delay {delay_ms:>6}ms  \
+                 (envelope {base_ms}..={ceiling})",
+            );
+            assert!(
+                *delay_ms >= base_ms && *delay_ms <= ceiling,
+                "seed {seed} attempt {attempt}: delay {delay_ms}ms outside \
+                 [{base_ms}, {ceiling}]",
+            );
+        }
+    }
+
+    let d1 = &runs[0].1;
+    let d2 = &runs[1].1;
+    let d3 = &runs[2].1;
+    assert!(
+        !(d1 == d2 && d2 == d3),
+        "jitter must vary the measured delays across seeds, got identical runs: {d1:?}",
+    );
 }

@@ -13,6 +13,7 @@ use crate::{
     error::{ActorStopReason, PanicError, ReplyError},
     mailbox::{ActorId, Capacity, Mailboxed},
     message::Msg,
+    restart::SupervisionStrategy,
 };
 
 mod actor_ref;
@@ -215,13 +216,22 @@ impl<A: Watch> SpawnLinked for A {}
 /// peer's death, a `Supervisor` **rebuilds** dead children under a restart
 /// policy.
 ///
-/// No methods in this slice — a restart policy is per-CHILD, supplied at
-/// `supervise` time and never a supervisor-wide default (see
-/// [`RestartPolicy`](crate::restart::RestartPolicy)). A later card lands
-/// `supervision_strategy()` here (the coarser `OneForAll`/`RestForOne` rungs of
-/// the escalation ladder); this marker is that method's named seat, which is why
-/// it stays a distinct trait rather than collapsing into [`SpawnSupervised`].
-pub trait Supervisor: Watch {}
+/// Restart *policy* (whether a given child comes back) stays per-child,
+/// supplied at `supervise` time. The *strategy* (which siblings share the
+/// failed child's fate) is a property of the supervisor — the seat #196
+/// reserved (card #199, ADR-0014).
+pub trait Supervisor: Watch {
+    /// The restart-set strategy for this supervisor's children.
+    ///
+    /// Defaults to [`OneForOne`](SupervisionStrategy::OneForOne) — the 2a
+    /// behavior: a failed child is rebuilt alone and siblings never observe
+    /// it. Override to cycle sets ([`RestForOne`](SupervisionStrategy::RestForOne)
+    /// / [`OneForAll`](SupervisionStrategy::OneForAll)).
+    #[must_use]
+    fn supervision_strategy() -> SupervisionStrategy {
+        SupervisionStrategy::OneForOne
+    }
+}
 
 /// Ergonomic supervised-spawn entry points, provided for every [`Supervisor`].
 ///
@@ -313,6 +323,67 @@ mod watch_trait_tests {
         assert!(
             matches!(out, ControlFlow::Continue(())),
             "linked + normal does not propagate, got {out:?}",
+        );
+    }
+}
+
+#[cfg(test)]
+mod supervisor_trait_tests {
+    use super::*;
+    use crate::restart::SupervisionStrategy;
+
+    struct DefaultSup;
+    struct AllSup;
+    #[derive(Debug)]
+    struct M2;
+    impl crate::message::Msg for M2 {}
+    macro_rules! actor_boilerplate {
+        ($t:ty) => {
+            impl crate::mailbox::Mailboxed for $t {
+                type Msg = M2;
+            }
+            impl Actor for $t {
+                type Args = ();
+                type Error = core::convert::Infallible;
+                async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                    unreachable!("trait-surface test: never spawned")
+                }
+                async fn handle(
+                    &mut self,
+                    _: M2,
+                    _: ActorRef<Self>,
+                    _: &mut bool,
+                ) -> Result<(), Self::Error> {
+                    Ok(())
+                }
+            }
+            impl Watch for $t {}
+        };
+    }
+    actor_boilerplate!(DefaultSup);
+    actor_boilerplate!(AllSup);
+    impl Supervisor for DefaultSup {}
+    impl Supervisor for AllSup {
+        fn supervision_strategy() -> SupervisionStrategy {
+            SupervisionStrategy::OneForAll
+        }
+    }
+
+    /// The strategy seat #196 reserved: a supervisor property with the 2a
+    /// default, overridable per supervisor TYPE. `RestartConfig` (per-child)
+    /// carries no strategy field — the card's compile-visible invariant
+    /// `strategy_is_supervisor_property_not_child` is held structurally by
+    /// this being the only strategy surface in the crate.
+    #[test]
+    fn strategy_is_supervisor_property_with_one_for_one_default() {
+        assert_eq!(
+            DefaultSup::supervision_strategy(),
+            SupervisionStrategy::OneForOne,
+            "default preserves 2a behavior",
+        );
+        assert_eq!(
+            AllSup::supervision_strategy(),
+            SupervisionStrategy::OneForAll
         );
     }
 }
