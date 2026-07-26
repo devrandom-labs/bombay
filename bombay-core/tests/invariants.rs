@@ -8,7 +8,7 @@
 //! spies (never `#[should_panic]`). Every assertion is a *specific* value (exact
 //! counts, exact `RunResult` variant + `PanicReason`, exact ordered vectors).
 //!
-//! # Invariant map (I1–I23)
+//! # Invariant map (I1–I24)
 //!
 //! Proven directly in THIS file:
 //!   I1  single-writer mutual exclusion (max concurrent handlers == 1)
@@ -51,6 +51,8 @@
 //!         -> actor_ref.rs::weak_upgrades_while_open_then_none_after_drop
 //!   I23 no starvation (implied by FIFO + exactly-once, I4 + I5)
 //!         -> i5_fifo_exactly_once
+//!   I24 identity surface (#206): root export + test-only fabrication
+//!         -> i24_actor_id_root_export_and_test_ctor
 //!
 //! I2 and I22 are not individually enumerated by card #116's invariant set; the
 //! one-message-at-a-time property they would name is exactly what I1 asserts here.
@@ -976,6 +978,24 @@ fn i17_distinct_ids() {
             assert_ne!(ids[i], ids[j], "actor ids at {i} and {j} must be distinct");
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// I24 — identity surface (#206): root export + test-only fabrication.
+// ---------------------------------------------------------------------------
+
+/// I24 — the identity surface (#206): `ActorId` is re-exported at the crate
+/// root, and the only fabrication path is the test-support constructor.
+/// Asserts exact `Eq`/`Copy` pure-name semantics on fabricated ids.
+#[test]
+fn i24_actor_id_root_export_and_test_ctor() {
+    let a = bombay_core::ActorId::from_raw_for_test(41);
+    let b = bombay_core::ActorId::from_raw_for_test(41);
+    let c = bombay_core::ActorId::from_raw_for_test(42);
+    assert_eq!(a, b, "same raw value compares equal");
+    assert_ne!(a, c, "different raw values compare unequal");
+    let copied = a; // Copy: `a` stays usable
+    assert_eq!(a, copied, "ActorId is Copy");
 }
 
 // ---------------------------------------------------------------------------

@@ -136,8 +136,10 @@ fn recipient_try_tell_is_zero_box_like_a_direct_send() {
         .build()
         .expect("current-thread runtime");
     let cap = Capacity::try_from(4_usize).expect("valid capacity");
-    let (actor_ref, mut rx) =
-        unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(cap, ActorId::new(0)));
+    let (actor_ref, mut rx) = unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(
+        cap,
+        ActorId::from_raw_for_test(0),
+    ));
     // The `Arc<dyn ErasedRecipient>` is built HERE, once — never per message.
     let recipient: Recipient<Ping> = actor_ref.recipient();
 

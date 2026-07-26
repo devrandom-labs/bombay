@@ -160,8 +160,10 @@ fn reply_recipient_ask_boxes_only_futures_never_the_message() {
         .build()
         .expect("current-thread runtime");
     let cap = Capacity::try_from(4_usize).expect("valid capacity");
-    let (actor_ref, mut rx) =
-        unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(cap, ActorId::new(0)));
+    let (actor_ref, mut rx) = unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(
+        cap,
+        ActorId::from_raw_for_test(0),
+    ));
     // The `Arc<dyn ErasedReplyRecipient>` is built HERE, once — never per ask.
     let reply_recipient: ReplyRecipient<Query, u64, Infallible> = actor_ref.reply_recipient();
 

@@ -61,8 +61,10 @@ fn round(actor_ref: &ActorRef<Probe>) -> isize {
 #[test]
 fn clone_downgrade_upgrade_allocate_nothing() {
     let cap = Capacity::try_from(4_usize).expect("valid capacity");
-    let (actor_ref, _rx) =
-        unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(cap, ActorId::new(0)));
+    let (actor_ref, _rx) = unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(
+        cap,
+        ActorId::from_raw_for_test(0),
+    ));
 
     // Warm-up: identical round BEFORE measuring, so one-time lazy init never
     // pollutes the measurement.

@@ -427,18 +427,30 @@ mod tests {
     #[test]
     fn children_insert_lookup_remove_preserve_birth_order() {
         let mut children = Children::new();
-        children.insert(ActorId::new(1), child_entry(ActorId::new(1)));
-        children.insert(ActorId::new(2), child_entry(ActorId::new(2)));
-        children.insert(ActorId::new(3), child_entry(ActorId::new(3)));
+        children.insert(
+            ActorId::from_raw_for_test(1),
+            child_entry(ActorId::from_raw_for_test(1)),
+        );
+        children.insert(
+            ActorId::from_raw_for_test(2),
+            child_entry(ActorId::from_raw_for_test(2)),
+        );
+        children.insert(
+            ActorId::from_raw_for_test(3),
+            child_entry(ActorId::from_raw_for_test(3)),
+        );
 
-        assert!(children.get_mut(ActorId::new(2)).is_some());
-        assert!(children.remove(ActorId::new(2)).is_some(), "entry returned");
-        assert!(children.get_mut(ActorId::new(2)).is_none());
+        assert!(children.get_mut(ActorId::from_raw_for_test(2)).is_some());
+        assert!(
+            children.remove(ActorId::from_raw_for_test(2)).is_some(),
+            "entry returned"
+        );
+        assert!(children.get_mut(ActorId::from_raw_for_test(2)).is_none());
 
         let ids: Vec<_> = children.ids().collect();
         assert_eq!(
             ids,
-            [ActorId::new(1), ActorId::new(3)],
+            [ActorId::from_raw_for_test(1), ActorId::from_raw_for_test(3)],
             "birth order survives removal"
         );
     }
@@ -449,8 +461,8 @@ mod tests {
     #[test]
     fn lookup_and_remove_of_an_absent_id_are_none() {
         let mut children = Children::new();
-        assert!(children.get_mut(ActorId::new(9)).is_none());
-        assert!(children.remove(ActorId::new(9)).is_none());
+        assert!(children.get_mut(ActorId::from_raw_for_test(9)).is_none());
+        assert!(children.remove(ActorId::from_raw_for_test(9)).is_none());
         assert_eq!(children.ids().count(), 0);
     }
 
@@ -459,13 +471,20 @@ mod tests {
     #[test]
     fn get_mut_mutations_are_visible_on_the_next_lookup() {
         let mut children = Children::new();
-        children.insert(ActorId::new(1), child_entry(ActorId::new(1)));
+        children.insert(
+            ActorId::from_raw_for_test(1),
+            child_entry(ActorId::from_raw_for_test(1)),
+        );
 
-        let entry = children.get_mut(ActorId::new(1)).expect("just inserted");
+        let entry = children
+            .get_mut(ActorId::from_raw_for_test(1))
+            .expect("just inserted");
         entry.handle = None;
         entry.config.max_restarts = 42;
 
-        let again = children.get_mut(ActorId::new(1)).expect("still there");
+        let again = children
+            .get_mut(ActorId::from_raw_for_test(1))
+            .expect("still there");
         assert!(again.handle.is_none(), "the backoff window is recorded");
         assert_eq!(again.config.max_restarts, 42);
     }
@@ -477,21 +496,36 @@ mod tests {
     #[test]
     fn rekey_replaces_the_key_in_place() {
         let mut children = Children::new();
-        children.insert(ActorId::new(1), child_entry(ActorId::new(1)));
-        children.insert(ActorId::new(2), child_entry(ActorId::new(2)));
-        children.insert(ActorId::new(3), child_entry(ActorId::new(3)));
+        children.insert(
+            ActorId::from_raw_for_test(1),
+            child_entry(ActorId::from_raw_for_test(1)),
+        );
+        children.insert(
+            ActorId::from_raw_for_test(2),
+            child_entry(ActorId::from_raw_for_test(2)),
+        );
+        children.insert(
+            ActorId::from_raw_for_test(3),
+            child_entry(ActorId::from_raw_for_test(3)),
+        );
         children
-            .get_mut(ActorId::new(2))
+            .get_mut(ActorId::from_raw_for_test(2))
             .expect("present")
             .config
             .max_restarts = 7;
 
-        assert!(children.rekey(ActorId::new(2), ActorId::new(20)));
+        assert!(children.rekey(
+            ActorId::from_raw_for_test(2),
+            ActorId::from_raw_for_test(20)
+        ));
 
-        assert!(children.get_mut(ActorId::new(2)).is_none(), "old key gone");
+        assert!(
+            children.get_mut(ActorId::from_raw_for_test(2)).is_none(),
+            "old key gone"
+        );
         assert_eq!(
             children
-                .get_mut(ActorId::new(20))
+                .get_mut(ActorId::from_raw_for_test(20))
                 .expect("reachable under the new key")
                 .config
                 .max_restarts,
@@ -500,7 +534,11 @@ mod tests {
         );
         assert_eq!(
             children.ids().collect::<Vec<_>>(),
-            [ActorId::new(1), ActorId::new(20), ActorId::new(3)],
+            [
+                ActorId::from_raw_for_test(1),
+                ActorId::from_raw_for_test(20),
+                ActorId::from_raw_for_test(3)
+            ],
             "the rebuilt child keeps its birth position",
         );
     }
@@ -511,12 +549,21 @@ mod tests {
     #[test]
     fn rekey_of_an_absent_id_is_a_reported_no_op() {
         let mut children = Children::new();
-        children.insert(ActorId::new(1), child_entry(ActorId::new(1)));
+        children.insert(
+            ActorId::from_raw_for_test(1),
+            child_entry(ActorId::from_raw_for_test(1)),
+        );
 
-        assert!(!children.rekey(ActorId::new(9), ActorId::new(90)));
+        assert!(!children.rekey(
+            ActorId::from_raw_for_test(9),
+            ActorId::from_raw_for_test(90)
+        ));
 
-        assert_eq!(children.ids().collect::<Vec<_>>(), [ActorId::new(1)]);
-        assert!(children.get_mut(ActorId::new(90)).is_none());
+        assert_eq!(
+            children.ids().collect::<Vec<_>>(),
+            [ActorId::from_raw_for_test(1)]
+        );
+        assert!(children.get_mut(ActorId::from_raw_for_test(90)).is_none());
     }
 
     /// The factory is an erased rebuild edge, so it must actually be callable and
@@ -525,13 +572,18 @@ mod tests {
     #[test]
     fn the_factory_can_be_invoked_repeatedly() {
         let mut children = Children::new();
-        children.insert(ActorId::new(1), child_entry(ActorId::new(5)));
-        let entry = children.get_mut(ActorId::new(1)).expect("present");
+        children.insert(
+            ActorId::from_raw_for_test(1),
+            child_entry(ActorId::from_raw_for_test(5)),
+        );
+        let entry = children
+            .get_mut(ActorId::from_raw_for_test(1))
+            .expect("present");
 
-        assert_eq!((entry.factory)().handle.id(), ActorId::new(5));
+        assert_eq!((entry.factory)().handle.id(), ActorId::from_raw_for_test(5));
         assert_eq!(
             (entry.factory)().handle.id(),
-            ActorId::new(5),
+            ActorId::from_raw_for_test(5),
             "the rebuild edge survives its first use",
         );
     }
@@ -541,7 +593,10 @@ mod tests {
     /// open and defeat ref-count-driven stop.
     #[test]
     fn child_handle_reports_its_id() {
-        assert_eq!(handle(ActorId::new(3)).id(), ActorId::new(3));
+        assert_eq!(
+            handle(ActorId::from_raw_for_test(3)).id(),
+            ActorId::from_raw_for_test(3)
+        );
     }
 
     /// The stop edges are shared with the running child, not private copies: the
@@ -549,7 +604,7 @@ mod tests {
     /// drive the same token and the same abort registration.
     #[tokio::test]
     async fn child_handle_clone_shares_the_stop_edges() {
-        let original = handle(ActorId::new(1));
+        let original = handle(ActorId::from_raw_for_test(1));
         let cloned = original.clone();
 
         assert!(!original.cancel.is_cancelled());
@@ -573,17 +628,21 @@ mod tests {
     #[test]
     fn drain_live_handles_returns_live_edges_with_grace_and_empties() {
         let mut children = Children::new();
-        let mut alive = child_entry(ActorId::new(1));
+        let mut alive = child_entry(ActorId::from_raw_for_test(1));
         alive.config = alive.config.with_stop_grace(Duration::from_secs(7));
-        children.insert(ActorId::new(1), alive);
-        let mut backoff = child_entry(ActorId::new(2));
+        children.insert(ActorId::from_raw_for_test(1), alive);
+        let mut backoff = child_entry(ActorId::from_raw_for_test(2));
         backoff.handle = None; // in a backoff window: no live incarnation
-        children.insert(ActorId::new(2), backoff);
+        children.insert(ActorId::from_raw_for_test(2), backoff);
 
         let drained = children.drain_live_handles();
 
         assert_eq!(drained.len(), 1, "only the live child yields a handle");
-        assert_eq!(drained[0].0.id(), ActorId::new(1), "the live child's id");
+        assert_eq!(
+            drained[0].0.id(),
+            ActorId::from_raw_for_test(1),
+            "the live child's id"
+        );
         assert_eq!(
             drained[0].1,
             Duration::from_secs(7),
@@ -597,15 +656,22 @@ mod tests {
     #[test]
     fn children_keep_independent_configs() {
         let mut children = Children::new();
-        let mut strict = child_entry(ActorId::new(1));
+        let mut strict = child_entry(ActorId::from_raw_for_test(1));
         strict.config = RestartConfig::new(RestartPolicy::Never).with_stop_grace(Duration::ZERO);
-        children.insert(ActorId::new(1), strict);
-        children.insert(ActorId::new(2), child_entry(ActorId::new(2)));
+        children.insert(ActorId::from_raw_for_test(1), strict);
+        children.insert(
+            ActorId::from_raw_for_test(2),
+            child_entry(ActorId::from_raw_for_test(2)),
+        );
 
-        let first = children.get_mut(ActorId::new(1)).expect("present");
+        let first = children
+            .get_mut(ActorId::from_raw_for_test(1))
+            .expect("present");
         assert_eq!(first.config.policy, RestartPolicy::Never);
         assert_eq!(first.config.stop_grace, Duration::ZERO);
-        let second = children.get_mut(ActorId::new(2)).expect("present");
+        let second = children
+            .get_mut(ActorId::from_raw_for_test(2))
+            .expect("present");
         assert_eq!(second.config.policy, RestartPolicy::Permanent);
     }
 
@@ -616,23 +682,42 @@ mod tests {
     #[test]
     fn flag_cycle_flags_suffix_and_returns_live_reverse_order() {
         let mut children = Children::new();
-        children.insert(ActorId::new(1), child_entry(ActorId::new(1)));
-        let mut dead = child_entry(ActorId::new(2));
+        children.insert(
+            ActorId::from_raw_for_test(1),
+            child_entry(ActorId::from_raw_for_test(1)),
+        );
+        let mut dead = child_entry(ActorId::from_raw_for_test(2));
         dead.handle = None; // the trigger, or a backoff-window member
-        children.insert(ActorId::new(2), dead);
-        children.insert(ActorId::new(3), child_entry(ActorId::new(3)));
+        children.insert(ActorId::from_raw_for_test(2), dead);
+        children.insert(
+            ActorId::from_raw_for_test(3),
+            child_entry(ActorId::from_raw_for_test(3)),
+        );
 
         let (stops, awaiting) = children.flag_cycle(1); // suffix {2, 3}
 
         assert_eq!(awaiting, 1, "only the live member is awaited");
         assert_eq!(stops.len(), 1);
-        assert_eq!(stops[0].0.id(), ActorId::new(3));
+        assert_eq!(stops[0].0.id(), ActorId::from_raw_for_test(3));
         assert!(
-            !children.get_mut(ActorId::new(1)).unwrap().cycling,
+            !children
+                .get_mut(ActorId::from_raw_for_test(1))
+                .unwrap()
+                .cycling,
             "elder untouched"
         );
-        assert!(children.get_mut(ActorId::new(2)).unwrap().cycling);
-        assert!(children.get_mut(ActorId::new(3)).unwrap().cycling);
+        assert!(
+            children
+                .get_mut(ActorId::from_raw_for_test(2))
+                .unwrap()
+                .cycling
+        );
+        assert!(
+            children
+                .get_mut(ActorId::from_raw_for_test(3))
+                .unwrap()
+                .cycling
+        );
     }
 
     /// Widening re-flags idempotently: already-cycling members are NOT returned
@@ -642,7 +727,10 @@ mod tests {
     fn flag_cycle_widen_returns_only_newly_flagged() {
         let mut children = Children::new();
         for i in 1..=3 {
-            children.insert(ActorId::new(i), child_entry(ActorId::new(i)));
+            children.insert(
+                ActorId::from_raw_for_test(i),
+                child_entry(ActorId::from_raw_for_test(i)),
+            );
         }
         let (first, awaiting1) = children.flag_cycle(2); // {3}
         assert_eq!((first.len(), awaiting1), (1, 1));
@@ -651,7 +739,7 @@ mod tests {
         let ids: Vec<ActorId> = widened.iter().map(|(h, _)| h.id()).collect();
         assert_eq!(
             ids,
-            [ActorId::new(2), ActorId::new(1)],
+            [ActorId::from_raw_for_test(2), ActorId::from_raw_for_test(1)],
             "new members only, reverse birth"
         );
         assert_eq!(awaiting2, 2, "counts only the additions");
@@ -663,23 +751,35 @@ mod tests {
     #[test]
     fn absorb_cycling_death_distinguishes_awaited_from_not() {
         let mut children = Children::new();
-        children.insert(ActorId::new(1), child_entry(ActorId::new(1)));
-        children.insert(ActorId::new(2), child_entry(ActorId::new(2)));
+        children.insert(
+            ActorId::from_raw_for_test(1),
+            child_entry(ActorId::from_raw_for_test(1)),
+        );
+        children.insert(
+            ActorId::from_raw_for_test(2),
+            child_entry(ActorId::from_raw_for_test(2)),
+        );
         let (_, _) = children.flag_cycle(1); // {2} cycling, live
 
         assert_eq!(
-            children.absorb_cycling_death(ActorId::new(1)),
+            children.absorb_cycling_death(ActorId::from_raw_for_test(1)),
             None,
             "not cycling"
         );
         assert_eq!(
-            children.absorb_cycling_death(ActorId::new(2)),
+            children.absorb_cycling_death(ActorId::from_raw_for_test(2)),
             Some(true),
             "cycling and live: this death was awaited",
         );
-        assert!(children.get_mut(ActorId::new(2)).unwrap().handle.is_none());
+        assert!(
+            children
+                .get_mut(ActorId::from_raw_for_test(2))
+                .unwrap()
+                .handle
+                .is_none()
+        );
         assert_eq!(
-            children.absorb_cycling_death(ActorId::new(2)),
+            children.absorb_cycling_death(ActorId::from_raw_for_test(2)),
             Some(false),
             "already dead: absorbed but not awaited",
         );
@@ -690,23 +790,32 @@ mod tests {
     #[test]
     fn cycling_rebuild_ids_returns_non_never_in_birth_order_and_clears_flags() {
         let mut children = Children::new();
-        children.insert(ActorId::new(1), child_entry(ActorId::new(1)));
-        let mut never = child_entry(ActorId::new(2));
+        children.insert(
+            ActorId::from_raw_for_test(1),
+            child_entry(ActorId::from_raw_for_test(1)),
+        );
+        let mut never = child_entry(ActorId::from_raw_for_test(2));
         never.config = RestartConfig::new(RestartPolicy::Never);
-        children.insert(ActorId::new(2), never);
-        children.insert(ActorId::new(3), child_entry(ActorId::new(3)));
+        children.insert(ActorId::from_raw_for_test(2), never);
+        children.insert(
+            ActorId::from_raw_for_test(3),
+            child_entry(ActorId::from_raw_for_test(3)),
+        );
         let (_, _) = children.flag_cycle(0);
 
         let ids: Vec<ActorId> = children.cycling_rebuild_ids().into_iter().collect();
 
         assert_eq!(
             ids,
-            [ActorId::new(1), ActorId::new(3)],
+            [ActorId::from_raw_for_test(1), ActorId::from_raw_for_test(3)],
             "birth order, Never excluded"
         );
         for i in 1..=3 {
             assert!(
-                !children.get_mut(ActorId::new(i)).unwrap().cycling,
+                !children
+                    .get_mut(ActorId::from_raw_for_test(i))
+                    .unwrap()
+                    .cycling,
                 "flag {i} cleared"
             );
         }
@@ -716,9 +825,15 @@ mod tests {
     #[test]
     fn position_finds_current_key() {
         let mut children = Children::new();
-        children.insert(ActorId::new(5), child_entry(ActorId::new(5)));
-        children.insert(ActorId::new(7), child_entry(ActorId::new(7)));
-        assert_eq!(children.position(ActorId::new(7)), Some(1));
-        assert_eq!(children.position(ActorId::new(9)), None);
+        children.insert(
+            ActorId::from_raw_for_test(5),
+            child_entry(ActorId::from_raw_for_test(5)),
+        );
+        children.insert(
+            ActorId::from_raw_for_test(7),
+            child_entry(ActorId::from_raw_for_test(7)),
+        );
+        assert_eq!(children.position(ActorId::from_raw_for_test(7)), Some(1));
+        assert_eq!(children.position(ActorId::from_raw_for_test(9)), None);
     }
 }

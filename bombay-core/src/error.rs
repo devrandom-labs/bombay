@@ -762,7 +762,7 @@ mod tests {
     #[test]
     fn restart_limit_exceeded_is_abnormal() {
         let reason = ActorStopReason::RestartLimitExceeded {
-            child: crate::mailbox::ActorId::new(7),
+            child: crate::mailbox::ActorId::from_raw_for_test(7),
             rebuilds: 6,
         };
         assert!(
@@ -782,7 +782,7 @@ mod tests {
     #[test]
     fn child_lifecycle_failed_is_abnormal_and_distinct_from_a_budget_trip() {
         let reason = ActorStopReason::ChildLifecycleFailed {
-            child: crate::mailbox::ActorId::new(3),
+            child: crate::mailbox::ActorId::from_raw_for_test(3),
         };
         assert!(
             !reason.is_normal(),
@@ -802,7 +802,7 @@ mod tests {
     fn link_died_is_abnormal() {
         // LinkDied must be able to propagate: it is NOT a normal stop.
         let reason = ActorStopReason::LinkDied {
-            id: crate::mailbox::ActorId::new(1),
+            id: crate::mailbox::ActorId::from_raw_for_test(1),
             reason: Box::new(ActorStopReason::Killed),
         };
         assert!(!reason.is_normal());

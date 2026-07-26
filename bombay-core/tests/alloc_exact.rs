@@ -27,7 +27,7 @@ impl Mailboxed for Probe {
 /// receiver drops MID-BACKLOG (messages still queued), then the sender drops.
 fn cycle_round(messages: usize, payload_len: usize) {
     let capacity = Capacity::try_from(messages).expect("valid test capacity");
-    let (tx, rx) = Mailbox::<Probe>::bounded(capacity, ActorId::new(0));
+    let (tx, rx) = Mailbox::<Probe>::bounded(capacity, ActorId::from_raw_for_test(0));
     for _ in 0..messages {
         tx.try_send_message(vec![0_u8; payload_len])
             .expect("capacity holds all test messages");

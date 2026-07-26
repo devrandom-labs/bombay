@@ -423,7 +423,7 @@ mod tests {
 
     fn link_died(inner: ActorStopReason) -> ActorStopReason {
         ActorStopReason::LinkDied {
-            id: ActorId::new(3),
+            id: ActorId::from_raw_for_test(3),
             reason: Box::new(inner),
         }
     }
@@ -432,7 +432,7 @@ mod tests {
     /// stopping itself (#196).
     fn escalated() -> ActorStopReason {
         ActorStopReason::RestartLimitExceeded {
-            child: ActorId::new(4),
+            child: ActorId::from_raw_for_test(4),
             rebuilds: 6,
         }
     }
@@ -452,7 +452,7 @@ mod tests {
             link_died(ActorStopReason::Killed),
             escalated(),
             ActorStopReason::ChildLifecycleFailed {
-                child: ActorId::new(5),
+                child: ActorId::from_raw_for_test(5),
             },
         ];
         for reason in &reasons {
@@ -509,7 +509,7 @@ mod tests {
             // sub-supervisor's OWN death; this supervisor rebuilds it either way.
             escalated(),
             ActorStopReason::ChildLifecycleFailed {
-                child: ActorId::new(5),
+                child: ActorId::from_raw_for_test(5),
             },
         ];
 

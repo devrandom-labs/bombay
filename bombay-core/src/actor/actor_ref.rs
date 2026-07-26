@@ -607,9 +607,15 @@ mod tests {
     // channel already disconnected before the test even begins.
     fn build_ref_with_rx() -> (ActorRef<Probe>, WeakActorRef<Probe>, MailboxReceiver<Probe>) {
         let cap = Capacity::try_from(4usize).expect("valid capacity");
-        let (tx, rx) = Mailbox::<Probe>::bounded(cap, ActorId::new(7));
+        let (tx, rx) = Mailbox::<Probe>::bounded(cap, ActorId::from_raw_for_test(7));
         let (abort, _reg) = AbortHandle::new_pair();
-        let actor_ref = ActorRef::new(ActorId::new(7), tx, CancellationToken::new(), abort, None);
+        let actor_ref = ActorRef::new(
+            ActorId::from_raw_for_test(7),
+            tx,
+            CancellationToken::new(),
+            abort,
+            None,
+        );
         let weak = actor_ref.downgrade();
         (actor_ref, weak, rx)
     }
@@ -721,7 +727,7 @@ mod tests {
     #[tokio::test]
     async fn weak_upgrades_while_open_then_none_after_drop() {
         let (actor_ref, weak) = build_ref();
-        assert_eq!(weak.id(), ActorId::new(7));
+        assert_eq!(weak.id(), ActorId::from_raw_for_test(7));
         assert!(weak.upgrade().is_some(), "mailbox open -> upgradable");
 
         drop(actor_ref);
@@ -781,7 +787,7 @@ mod tests {
         );
         assert_eq!(
             stale.id(),
-            ActorId::new(7),
+            ActorId::from_raw_for_test(7),
             "the id survives as a tombstone, but that is not liveness",
         );
     }
@@ -836,7 +842,7 @@ mod tests {
 
         assert_eq!(
             upgraded.id(),
-            ActorId::new(7),
+            ActorId::from_raw_for_test(7),
             "id must be copied verbatim from the weak ref",
         );
 

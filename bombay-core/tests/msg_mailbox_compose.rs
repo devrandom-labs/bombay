@@ -36,7 +36,7 @@ async fn derived_msg_command_round_trips_through_the_real_mailbox() {
     assert_eq!(<BankCmd as Msg>::SLOT_BUDGET, 256);
 
     let cap = Capacity::try_from(8).expect("valid capacity");
-    let (tx, mut rx) = Mailbox::<BankAccount>::bounded(cap, ActorId::new(0));
+    let (tx, mut rx) = Mailbox::<BankAccount>::bounded(cap, ActorId::from_raw_for_test(0));
 
     // Bounded sends (card #179): under a `Capacity::get -> 0` mutant the queue
     // is a rendezvous with no receiver polling yet — the send must FAIL fast,
@@ -78,7 +78,7 @@ async fn derived_msg_command_round_trips_through_the_real_mailbox() {
 #[tokio::test]
 async fn stop_signal_preserves_fifo_order_with_derived_messages() {
     let cap = Capacity::try_from(8).expect("valid capacity");
-    let (tx, mut rx) = Mailbox::<BankAccount>::bounded(cap, ActorId::new(0));
+    let (tx, mut rx) = Mailbox::<BankAccount>::bounded(cap, ActorId::from_raw_for_test(0));
 
     // Bounded sends (card #179) — see the round-trip test above.
     timeout(DELIVERY, tx.send_message(BankCmd::Withdraw { cents: 100 }))

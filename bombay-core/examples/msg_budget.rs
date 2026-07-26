@@ -68,7 +68,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let cap = Capacity::try_from(8)?;
-    let (tx, mut rx) = Mailbox::<BankAccount>::bounded(cap, ActorId::new(0));
+    let (tx, mut rx) = Mailbox::<BankAccount>::bounded(cap, ActorId::from_raw_for_test(0));
 
     tx.send_message(BankCmd::Deposit { cents: 500 })
         .await

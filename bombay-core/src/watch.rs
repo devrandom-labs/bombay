@@ -194,14 +194,14 @@ mod tests {
     fn drop_of_watchers_notifies_every_edge_with_its_linked_flag() {
         let (tx_a, rx_a) = flume::unbounded();
         let (tx_b, rx_b) = flume::unbounded();
-        let mut guard = Watchers::new(ActorId::new(42));
+        let mut guard = Watchers::new(ActorId::from_raw_for_test(42));
         guard.apply(WatchReg {
-            watcher: ActorId::new(1),
+            watcher: ActorId::from_raw_for_test(1),
             link_tx: tx_a,
             linked: false,
         }); // a watched
         guard.apply(WatchReg {
-            watcher: ActorId::new(2),
+            watcher: ActorId::from_raw_for_test(2),
             link_tx: tx_b,
             linked: true,
         }); // b linked
@@ -209,7 +209,7 @@ mod tests {
         drop(guard);
 
         let a = rx_a.try_recv().expect("a notified");
-        assert_eq!(a.id, ActorId::new(42));
+        assert_eq!(a.id, ActorId::from_raw_for_test(42));
         assert!(!a.linked, "watch edge carries linked=false");
         assert!(a.reason.is_normal());
 
@@ -223,9 +223,9 @@ mod tests {
         // also the canonical pin for the kill path's `cleanup_failed` bit: one
         // drop event carries both invariants, so they are asserted together.
         let (tx, rx) = flume::unbounded();
-        let mut guard = Watchers::new(ActorId::new(7));
+        let mut guard = Watchers::new(ActorId::from_raw_for_test(7));
         guard.apply(WatchReg {
-            watcher: ActorId::new(1),
+            watcher: ActorId::from_raw_for_test(1),
             link_tx: tx,
             linked: false,
         });
@@ -247,9 +247,9 @@ mod tests {
         // collapse to `false` on the wire, but only this transition proves the
         // clear path exists.
         let (tx, rx) = flume::unbounded();
-        let mut guard = Watchers::new(ActorId::new(11));
+        let mut guard = Watchers::new(ActorId::from_raw_for_test(11));
         guard.apply(WatchReg {
-            watcher: ActorId::new(1),
+            watcher: ActorId::from_raw_for_test(1),
             link_tx: tx,
             linked: false,
         });
@@ -273,14 +273,14 @@ mod tests {
         // pass a single-edge test while leaving later watchers misinformed.
         let (tx_a, rx_a) = flume::unbounded();
         let (tx_b, rx_b) = flume::unbounded();
-        let mut guard = Watchers::new(ActorId::new(9));
+        let mut guard = Watchers::new(ActorId::from_raw_for_test(9));
         guard.apply(WatchReg {
-            watcher: ActorId::new(1),
+            watcher: ActorId::from_raw_for_test(1),
             link_tx: tx_a,
             linked: true,
         });
         guard.apply(WatchReg {
-            watcher: ActorId::new(2),
+            watcher: ActorId::from_raw_for_test(2),
             link_tx: tx_b,
             linked: false,
         });
