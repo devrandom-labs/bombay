@@ -920,8 +920,9 @@ nowhere. The `CountingAlloc` `gross_allocs` counter (the #118 seam) now guards i
 
 Test-only; no production change. Ties ADR-0004 (conversion-boundary erasure, the
 256× queue-memory swing) to an executable check. The `WeakRecipient` /
-`WeakReplyRecipient`-after-upgrade leg is deferred until a `WeakReplyRecipient`
-lands (bullet 3 of #207).
+`WeakReplyRecipient`-after-upgrade leg is deferred to **#208** (which introduces
+`WeakReplyRecipient`); #207 bullet 3 lands there — the guard extends this harness
+when that type ships.
 
 ## Restart-set strategies (#199) — the set-cycle coordinator
 `OneForAll` / `RestForOne` (ADR-0014) add three test surfaces:
