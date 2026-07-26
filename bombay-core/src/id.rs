@@ -56,7 +56,10 @@ impl ActorId {
 static NEXT_ACTOR_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Mints the next process-local id (spawn path).
-pub(crate) fn next_actor_id() -> ActorId {
+///
+/// `pub` here is still crate-internal: the `id` module itself is private, so
+/// module privacy bounds the reach (clippy `redundant_pub_crate`).
+pub fn next_actor_id() -> ActorId {
     // Relaxed is sufficient: correctness needs only that each `fetch_add`
     // returns a distinct value. Uniqueness is a property of atomic increment
     // alone and requires no happens-before with any other memory (CLAUDE
