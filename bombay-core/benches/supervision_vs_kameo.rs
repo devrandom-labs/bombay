@@ -1,14 +1,15 @@
 //! Head-to-head: the supervision surface (#120 design; #195 death-watch + links;
-//! #196 restart; #199 `OneForAll`/`RestForOne` set-strategies) vs the vendored
-//! kameo fork's links + `SupervisedActorBuilder`.
+//! #196 restart; #199 `OneForAll`/`RestForOne` set-strategies) vs upstream
+//! kameo's links + `SupervisedActorBuilder` (crates.io, re-pointed off the
+//! deleted vendored fork by card #213).
 //!
 //! This is the honest replacement for `watcher_fanout.rs`, which measured a
 //! *synthetic* fan-out (one event cloned into N bare mailboxes) as a proxy for a
 //! graph that did not exist when it was written. The graph exists now, so these
 //! arms drive the **real** watch/link/restart path on both sides, exactly as
 //! `request_vs_kameo.rs` and `registry_vs_kameo.rs` do for their surfaces: same
-//! mailbox / 2-worker runtime, criterion, `harness = false`, the vendored
-//! `bombay` dev-dep on the kameo side, production send/handle path only — never a
+//! mailbox / 2-worker runtime, criterion, `harness = false`, the crates.io
+//! `kameo` dev-dep on the kameo side, production send/handle path only — never a
 //! reimplementation (CLAUDE rule 0: measure, don't assume).
 //!
 //! # The semantics are NOT symmetric, and that is priced, not faked
@@ -66,7 +67,9 @@
 //!   child under `OneForAll` / `RestForOne`; the whole set rebuilds. Timed until
 //!   all N fresh incarnations have started.
 //!
-//! Measured 2026-07-26 (M-series laptop, criterion defaults; medians):
+//! Measured 2026-07-26 (M-series laptop, criterion defaults; medians).
+//! NOTE: the kameo column below was measured against the vendored 0.21 fork;
+//! #213 re-pointed the arm at crates.io kameo 0.22 — re-measure before citing:
 //!
 //! | group                       | param | bombay-core | kameo    | delta        |
 //! |-----------------------------|-------|-------------|----------|--------------|
@@ -390,11 +393,11 @@ mod core_side {
 }
 
 mod kameo_side {
-    use bombay::actor::{ActorId, ActorRef, WeakActorRef};
-    use bombay::error::{ActorStopReason, Infallible};
-    use bombay::prelude::*;
-    use bombay::supervision::SupervisionStrategy;
     use core::ops::ControlFlow;
+    use kameo::actor::{ActorId, ActorRef, WeakActorRef};
+    use kameo::error::{ActorStopReason, Infallible};
+    use kameo::prelude::*;
+    use kameo::supervision::SupervisionStrategy;
     use tokio::sync::mpsc::UnboundedSender;
 
     /// Observer: kameo has only bidirectional `link`, so this is `link`ed to the
@@ -495,8 +498,8 @@ mod kameo_side {
 
 /// One target's death delivered to N observers, over the real notify path.
 fn watch_fanout(c: &mut Criterion) {
-    use bombay::actor::Spawn as _;
     use bombay_core::actor::{Spawn as _, SpawnLinked as _};
+    use kameo::actor::Spawn as _;
 
     let rt = runtime();
     let mut group = c.benchmark_group("supervise_watch_fanout");
@@ -565,8 +568,8 @@ fn watch_fanout(c: &mut Criterion) {
 /// A linked peer's abnormal death propagating across the link and stopping the
 /// survivor.
 fn link_teardown(c: &mut Criterion) {
-    use bombay::actor::Spawn as _;
     use bombay_core::actor::SpawnLinked as _;
+    use kameo::actor::Spawn as _;
 
     let rt = runtime();
     let mut group = c.benchmark_group("supervise_link_teardown");
@@ -621,8 +624,8 @@ fn link_teardown(c: &mut Criterion) {
 
 /// One child-death → policy → (zero) backoff → respawn round trip.
 fn restart_cycle(c: &mut Criterion) {
-    use bombay::actor::Spawn as _;
     use bombay_core::actor::SpawnSupervised as _;
+    use kameo::actor::Spawn as _;
 
     silence_bench_crashes();
     let rt = runtime();
@@ -672,7 +675,7 @@ fn restart_cycle(c: &mut Criterion) {
                     tick: tick_tx.clone(),
                 },
             )
-            .restart_policy(bombay::supervision::RestartPolicy::Permanent)
+            .restart_policy(kameo::supervision::RestartPolicy::Permanent)
             .restart_limit(u32::MAX, Duration::from_secs(86_400))
             .spawn()
             .await;
@@ -698,8 +701,8 @@ fn restart_cycle(c: &mut Criterion) {
 
 /// Crash the eldest child under a set strategy; the whole set rebuilds.
 fn set_strategy_coalesce(c: &mut Criterion) {
-    use bombay::actor::Spawn as _;
     use bombay_core::actor::SpawnSupervised as _;
+    use kameo::actor::Spawn as _;
 
     silence_bench_crashes();
     let rt = runtime();
@@ -767,7 +770,7 @@ fn set_strategy_coalesce(c: &mut Criterion) {
                                         tick: tick_tx.clone(),
                                     },
                                 )
-                                .restart_policy(bombay::supervision::RestartPolicy::Permanent)
+                                .restart_policy(kameo::supervision::RestartPolicy::Permanent)
                                 .restart_limit(u32::MAX, Duration::from_secs(86_400))
                                 .spawn()
                                 .await,
