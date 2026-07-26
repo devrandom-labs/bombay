@@ -984,10 +984,10 @@ mod supervised_tests {
     fn child(config: RestartConfig, started: Instant) -> Child {
         Child {
             factory: Box::new(move || Spawned {
-                handle: handle(ActorId::new(999)),
+                handle: handle(ActorId::from_raw_for_test(999)),
                 install_watch: noop_installer(),
             }),
-            handle: Some(handle(ActorId::new(1))),
+            handle: Some(handle(ActorId::from_raw_for_test(1))),
             config,
             tracker: RestartTracker::new(started),
             cycling: false,
@@ -1011,7 +1011,7 @@ mod supervised_tests {
     }
 
     fn one_child(config: RestartConfig) -> (Children, ActorId) {
-        let id = ActorId::new(1);
+        let id = ActorId::from_raw_for_test(1);
         let mut children = Children::new();
         children.insert(id, child(config, Instant::now()));
         (children, id)
@@ -1074,7 +1074,7 @@ mod supervised_tests {
             },
             SupervisionStrategy::OneForOne,
             &mut rng,
-            &notice(ActorId::new(999), ActorStopReason::Killed),
+            &notice(ActorId::from_raw_for_test(999), ActorStopReason::Killed),
         );
 
         assert!(
@@ -1253,12 +1253,12 @@ mod supervised_tests {
     /// hard abort on the pending-abort queue.
     #[tokio::test(start_paused = true)]
     async fn supervision_ops_mutate_the_table() {
-        let (sup, _link_rx) = supervisor(ActorId::new(100));
+        let (sup, _link_rx) = supervisor(ActorId::from_raw_for_test(100));
         let mut children = Children::new();
         let mut pending_aborts = DelayQueue::new();
         let mut retries = DelayQueue::new();
         let mut cycle = CycleState::Idle;
-        let id = ActorId::new(1);
+        let id = ActorId::from_raw_for_test(1);
         apply_supervision_op(
             &mut children,
             &sup,
@@ -1308,7 +1308,7 @@ mod supervised_tests {
 
         // Remove: the edge is dropped, but no stop edge is driven and nothing is
         // scheduled.
-        let other = ActorId::new(2);
+        let other = ActorId::from_raw_for_test(2);
         apply_supervision_op(
             &mut children,
             &sup,
@@ -1356,12 +1356,12 @@ mod supervised_tests {
     /// `stop_child` promises even for a non-cooperating child.
     #[tokio::test(start_paused = true)]
     async fn stop_defers_the_abort_until_the_grace_deadline() {
-        let (sup, _link_rx) = supervisor(ActorId::new(100));
+        let (sup, _link_rx) = supervisor(ActorId::from_raw_for_test(100));
         let mut children = Children::new();
         let mut pending_aborts = DelayQueue::new();
         let mut retries = DelayQueue::new();
         let mut cycle = CycleState::Idle;
-        let id = ActorId::new(1);
+        let id = ActorId::from_raw_for_test(1);
         let grace = Duration::from_secs(5);
         let mut entry = child(RestartConfig::new(RestartPolicy::Permanent), Instant::now());
         entry.config = entry.config.with_stop_grace(grace);
@@ -1411,7 +1411,7 @@ mod supervised_tests {
     async fn stop_surviving_children_cancels_and_aborts_live_ones() {
         let mut children = Children::new();
         // A live survivor with a short grace.
-        let alive = ActorId::new(1);
+        let alive = ActorId::from_raw_for_test(1);
         let alive_entry = child(
             RestartConfig::new(RestartPolicy::Permanent).with_stop_grace(Duration::ZERO),
             Instant::now(),
@@ -1419,7 +1419,7 @@ mod supervised_tests {
         let alive_edges = alive_entry.handle.clone().expect("live");
         children.insert(alive, alive_entry);
         // A backoff-window child: no live incarnation to stop.
-        let dead = ActorId::new(2);
+        let dead = ActorId::from_raw_for_test(2);
         let mut dead_entry = child(RestartConfig::new(RestartPolicy::Permanent), Instant::now());
         dead_entry.handle = None;
         children.insert(dead, dead_entry);
@@ -1447,8 +1447,8 @@ mod supervised_tests {
     /// this is the edge that later carries the child's death back.
     #[tokio::test]
     async fn install_child_watch_enqueues_the_edge_on_an_open_child() {
-        let (sup, link_rx) = supervisor(ActorId::new(100));
-        let child_id = ActorId::new(9);
+        let (sup, link_rx) = supervisor(ActorId::from_raw_for_test(100));
+        let child_id = ActorId::from_raw_for_test(9);
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), child_id);
         install_child_watch(&sup, &handle(child_id), watch_installer(tx));
 
@@ -1462,7 +1462,7 @@ mod supervised_tests {
         };
         assert_eq!(
             reg.watcher,
-            ActorId::new(100),
+            ActorId::from_raw_for_test(100),
             "the supervisor is the watcher"
         );
         assert!(
@@ -1482,8 +1482,8 @@ mod supervised_tests {
     /// then never restart, a permanently missed death.
     #[tokio::test]
     async fn install_child_watch_synthesizes_alreadydead_when_child_died_unwatched() {
-        let (sup, link_rx) = supervisor(ActorId::new(100));
-        let child_id = ActorId::new(7);
+        let (sup, link_rx) = supervisor(ActorId::from_raw_for_test(100));
+        let child_id = ActorId::from_raw_for_test(7);
         let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), child_id);
         drop(rx); // the child died before the loop could watch it -> mailbox closed
         install_child_watch(&sup, &handle(child_id), watch_installer(tx));
@@ -1513,8 +1513,8 @@ mod supervised_tests {
     /// child mailbox.
     #[tokio::test]
     async fn install_child_watch_kills_and_synthesizes_when_child_mailbox_full() {
-        let (sup, link_rx) = supervisor(ActorId::new(100));
-        let child_id = ActorId::new(8);
+        let (sup, link_rx) = supervisor(ActorId::from_raw_for_test(100));
+        let child_id = ActorId::from_raw_for_test(8);
         let (tx, _rx) = Mailbox::<Probe>::bounded(cap(1), child_id);
         tx.try_send(Signal::Stop).expect("the one slot fills");
         let h = handle(child_id);
@@ -1539,8 +1539,8 @@ mod supervised_tests {
     async fn rebuild_installs_the_watch_edge_on_the_rebuilt_incarnation() {
         use std::sync::{Arc, Mutex};
 
-        let (sup, sup_link_rx) = supervisor(ActorId::new(100));
-        let new_id = ActorId::new(50);
+        let (sup, sup_link_rx) = supervisor(ActorId::from_raw_for_test(100));
+        let new_id = ActorId::from_raw_for_test(50);
         // The factory stashes the fresh child's receiver so the test can prove the
         // rebuilt incarnation actually received the supervisor's watch reg.
         let stashed: Arc<Mutex<Option<MailboxReceiver<Probe>>>> = Arc::new(Mutex::new(None));
@@ -1553,7 +1553,7 @@ mod supervised_tests {
                 install_watch: watch_installer(tx),
             }
         });
-        let old_id = ActorId::new(1);
+        let old_id = ActorId::from_raw_for_test(1);
         let mut children = Children::new();
         children.insert(
             old_id,
@@ -1586,7 +1586,7 @@ mod supervised_tests {
         };
         assert_eq!(
             reg.watcher,
-            ActorId::new(100),
+            ActorId::from_raw_for_test(100),
             "the supervisor watches the rebuilt incarnation",
         );
         assert!(
@@ -1645,7 +1645,7 @@ mod supervised_tests {
         let mut children = Children::new();
         for i in 1..=n {
             children.insert(
-                ActorId::new(u64::from(i)),
+                ActorId::from_raw_for_test(u64::from(i)),
                 child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
             );
         }
@@ -1657,8 +1657,11 @@ mod supervised_tests {
     #[tokio::test(start_paused = true)]
     async fn set_trigger_flags_set_and_counts_trigger_once() {
         let mut children = table_of(3);
-        children.get_mut(ActorId::new(2)).unwrap().handle = None; // the trigger died
-        let (sup, _link_rx) = supervisor(ActorId::new(9));
+        children
+            .get_mut(ActorId::from_raw_for_test(2))
+            .unwrap()
+            .handle = None; // the trigger died
+        let (sup, _link_rx) = supervisor(ActorId::from_raw_for_test(9));
         let mut retries = DelayQueue::new();
         let mut pending_aborts = DelayQueue::new();
         let mut cycle = CycleState::Idle;
@@ -1673,7 +1676,7 @@ mod supervised_tests {
             },
             SupervisionStrategy::OneForAll,
             &mut rng,
-            &notice(ActorId::new(2), ActorStopReason::Killed),
+            &notice(ActorId::from_raw_for_test(2), ActorStopReason::Killed),
         );
 
         assert!(matches!(flow, Some(ControlFlow::Continue(()))));
@@ -1682,7 +1685,7 @@ mod supervised_tests {
             "{cycle:?}"
         );
         for i in [1_u64, 3] {
-            let sibling = children.get_mut(ActorId::new(i)).unwrap();
+            let sibling = children.get_mut(ActorId::from_raw_for_test(i)).unwrap();
             assert!(sibling.cycling);
             assert!(
                 sibling.handle.as_ref().unwrap().cancel.is_cancelled(),
@@ -1702,8 +1705,11 @@ mod supervised_tests {
     #[tokio::test(start_paused = true)]
     async fn absorbed_deaths_count_down_and_arm_rebuild() {
         let mut children = table_of(3);
-        children.get_mut(ActorId::new(2)).unwrap().handle = None;
-        let (_sup, _link_rx) = supervisor(ActorId::new(9));
+        children
+            .get_mut(ActorId::from_raw_for_test(2))
+            .unwrap()
+            .handle = None;
+        let (_sup, _link_rx) = supervisor(ActorId::from_raw_for_test(9));
         let mut retries = DelayQueue::new();
         let mut pending_aborts = DelayQueue::new();
         let mut cycle = CycleState::Idle;
@@ -1717,7 +1723,7 @@ mod supervised_tests {
             },
             SupervisionStrategy::OneForAll,
             &mut rng,
-            &notice(ActorId::new(2), ActorStopReason::Killed),
+            &notice(ActorId::from_raw_for_test(2), ActorStopReason::Killed),
         );
 
         let hook_panic = ActorStopReason::Panicked(PanicError::new(
@@ -1733,7 +1739,7 @@ mod supervised_tests {
             },
             SupervisionStrategy::OneForAll,
             &mut rng,
-            &notice(ActorId::new(3), hook_panic),
+            &notice(ActorId::from_raw_for_test(3), hook_panic),
         );
         assert!(
             matches!(first, Some(ControlFlow::Continue(()))),
@@ -1750,7 +1756,7 @@ mod supervised_tests {
             },
             SupervisionStrategy::OneForAll,
             &mut rng,
-            &notice(ActorId::new(1), ActorStopReason::Killed),
+            &notice(ActorId::from_raw_for_test(1), ActorStopReason::Killed),
         );
         assert!(matches!(last, Some(ControlFlow::Continue(()))));
         assert!(
@@ -1758,7 +1764,7 @@ mod supervised_tests {
             "teardown complete: rebuild armed"
         );
         assert_eq!(retries.len(), 1, "exactly one cycle deadline");
-        let trigger = children.get_mut(ActorId::new(2)).unwrap();
+        let trigger = children.get_mut(ActorId::from_raw_for_test(2)).unwrap();
         assert_eq!(
             trigger.tracker,
             {
@@ -1776,8 +1782,11 @@ mod supervised_tests {
     #[tokio::test(start_paused = true)]
     async fn elder_death_mid_tearing_widens_the_cycle() {
         let mut children = table_of(3);
-        children.get_mut(ActorId::new(2)).unwrap().handle = None;
-        let (_sup, _link_rx) = supervisor(ActorId::new(9));
+        children
+            .get_mut(ActorId::from_raw_for_test(2))
+            .unwrap()
+            .handle = None;
+        let (_sup, _link_rx) = supervisor(ActorId::from_raw_for_test(9));
         let mut retries = DelayQueue::new();
         let mut pending_aborts = DelayQueue::new();
         let mut cycle = CycleState::Idle;
@@ -1792,7 +1801,7 @@ mod supervised_tests {
             },
             SupervisionStrategy::RestForOne,
             &mut rng,
-            &notice(ActorId::new(2), ActorStopReason::Killed),
+            &notice(ActorId::from_raw_for_test(2), ActorStopReason::Killed),
         );
         assert!(matches!(cycle, CycleState::Tearing { awaiting: 1, .. }));
 
@@ -1806,7 +1815,7 @@ mod supervised_tests {
             },
             SupervisionStrategy::RestForOne,
             &mut rng,
-            &notice(ActorId::new(1), ActorStopReason::Killed),
+            &notice(ActorId::from_raw_for_test(1), ActorStopReason::Killed),
         );
         assert!(matches!(flow, Some(ControlFlow::Continue(()))));
         // 1 was live? No — it just DIED (its death is the trigger); nothing new to
@@ -1816,7 +1825,10 @@ mod supervised_tests {
             "{cycle:?}"
         );
         assert!(
-            children.get_mut(ActorId::new(1)).unwrap().cycling,
+            children
+                .get_mut(ActorId::from_raw_for_test(1))
+                .unwrap()
+                .cycling,
             "elder folded in"
         );
         assert_eq!(pending_aborts.len(), 1, "no double-cancel of member 3");
@@ -1827,8 +1839,11 @@ mod supervised_tests {
     #[tokio::test(start_paused = true)]
     async fn widen_during_waiting_replaces_the_armed_deadline() {
         let mut children = table_of(2);
-        children.get_mut(ActorId::new(2)).unwrap().handle = None;
-        let (_sup, _link_rx) = supervisor(ActorId::new(9));
+        children
+            .get_mut(ActorId::from_raw_for_test(2))
+            .unwrap()
+            .handle = None;
+        let (_sup, _link_rx) = supervisor(ActorId::from_raw_for_test(9));
         let mut retries = DelayQueue::new();
         let mut pending_aborts = DelayQueue::new();
         let mut cycle = CycleState::Idle;
@@ -1844,14 +1859,17 @@ mod supervised_tests {
             },
             SupervisionStrategy::RestForOne,
             &mut rng,
-            &notice(ActorId::new(2), ActorStopReason::Killed),
+            &notice(ActorId::from_raw_for_test(2), ActorStopReason::Killed),
         );
         assert!(matches!(cycle, CycleState::Waiting { .. }));
         assert_eq!(retries.len(), 1);
 
         // Elder child 1 dies in the Waiting window → widen to {1,2}: the stale
         // deadline is removed, one fresh deadline armed.
-        children.get_mut(ActorId::new(1)).unwrap().handle = None; // it died
+        children
+            .get_mut(ActorId::from_raw_for_test(1))
+            .unwrap()
+            .handle = None; // it died
         handle_child_death(
             &mut children,
             &mut SetCycleCtx {
@@ -1861,7 +1879,7 @@ mod supervised_tests {
             },
             SupervisionStrategy::RestForOne,
             &mut rng,
-            &notice(ActorId::new(1), ActorStopReason::Killed),
+            &notice(ActorId::from_raw_for_test(1), ActorStopReason::Killed),
         );
         assert!(matches!(cycle, CycleState::Waiting { .. }));
         assert_eq!(
@@ -1869,7 +1887,12 @@ mod supervised_tests {
             1,
             "stale deadline removed, exactly one armed"
         );
-        assert!(children.get_mut(ActorId::new(1)).unwrap().cycling);
+        assert!(
+            children
+                .get_mut(ActorId::from_raw_for_test(1))
+                .unwrap()
+                .cycling
+        );
     }
 
     /// `rebuild_child` on a cycling entry is a no-op: a pre-cycle solo backoff
@@ -1878,13 +1901,21 @@ mod supervised_tests {
     #[tokio::test(start_paused = true)]
     async fn rebuild_child_is_superseded_for_cycling_entries() {
         let mut children = table_of(1);
-        children.get_mut(ActorId::new(1)).unwrap().handle = None;
-        children.get_mut(ActorId::new(1)).unwrap().cycling = true;
-        let (sup, _link_rx) = supervisor(ActorId::new(9));
+        children
+            .get_mut(ActorId::from_raw_for_test(1))
+            .unwrap()
+            .handle = None;
+        children
+            .get_mut(ActorId::from_raw_for_test(1))
+            .unwrap()
+            .cycling = true;
+        let (sup, _link_rx) = supervisor(ActorId::from_raw_for_test(9));
 
-        rebuild_child(&mut children, &sup, ActorId::new(1));
+        rebuild_child(&mut children, &sup, ActorId::from_raw_for_test(1));
 
-        let entry = children.get_mut(ActorId::new(1)).expect("entry retained");
+        let entry = children
+            .get_mut(ActorId::from_raw_for_test(1))
+            .expect("entry retained");
         assert!(entry.handle.is_none(), "no rebuild while cycling");
         assert!(entry.cycling, "flag untouched — the cycle still owns it");
     }
@@ -1895,8 +1926,11 @@ mod supervised_tests {
     #[tokio::test(start_paused = true)]
     async fn removing_an_awaited_member_counts_the_teardown_down() {
         let mut children = table_of(2);
-        children.get_mut(ActorId::new(1)).unwrap().handle = None;
-        let (sup, _link_rx) = supervisor(ActorId::new(9));
+        children
+            .get_mut(ActorId::from_raw_for_test(1))
+            .unwrap()
+            .handle = None;
+        let (sup, _link_rx) = supervisor(ActorId::from_raw_for_test(9));
         let mut retries = DelayQueue::new();
         let mut pending_aborts = DelayQueue::new();
         let mut cycle = CycleState::Idle;
@@ -1910,7 +1944,7 @@ mod supervised_tests {
             },
             SupervisionStrategy::OneForAll,
             &mut rng,
-            &notice(ActorId::new(1), ActorStopReason::Killed),
+            &notice(ActorId::from_raw_for_test(1), ActorStopReason::Killed),
         );
         assert!(matches!(cycle, CycleState::Tearing { awaiting: 1, .. }));
 
@@ -1922,7 +1956,7 @@ mod supervised_tests {
                 pending_aborts: &mut pending_aborts,
                 cycle: &mut cycle,
             },
-            SupervisionOp::Remove(ActorId::new(2)),
+            SupervisionOp::Remove(ActorId::from_raw_for_test(2)),
         );
 
         assert!(
@@ -1930,7 +1964,7 @@ mod supervised_tests {
             "last awaited member removed ⇒ rebuild armed"
         );
         assert!(
-            children.get_mut(ActorId::new(2)).is_none(),
+            children.get_mut(ActorId::from_raw_for_test(2)).is_none(),
             "entry gone, never rebuilt"
         );
     }
@@ -1945,8 +1979,11 @@ mod supervised_tests {
     #[tokio::test(start_paused = true)]
     async fn stopping_a_non_cycling_member_mid_cycle_does_not_count_down() {
         let mut children = table_of(3);
-        children.get_mut(ActorId::new(2)).unwrap().handle = None; // the trigger died
-        let (sup, _link_rx) = supervisor(ActorId::new(9));
+        children
+            .get_mut(ActorId::from_raw_for_test(2))
+            .unwrap()
+            .handle = None; // the trigger died
+        let (sup, _link_rx) = supervisor(ActorId::from_raw_for_test(9));
         let mut retries = DelayQueue::new();
         let mut pending_aborts = DelayQueue::new();
         let mut cycle = CycleState::Idle;
@@ -1962,7 +1999,7 @@ mod supervised_tests {
             },
             SupervisionStrategy::RestForOne,
             &mut rng,
-            &notice(ActorId::new(2), ActorStopReason::Killed),
+            &notice(ActorId::from_raw_for_test(2), ActorStopReason::Killed),
         );
         assert!(matches!(cycle, CycleState::Tearing { awaiting: 1, .. }));
 
@@ -1976,7 +2013,7 @@ mod supervised_tests {
                 pending_aborts: &mut pending_aborts,
                 cycle: &mut cycle,
             },
-            SupervisionOp::Stop(ActorId::new(1)),
+            SupervisionOp::Stop(ActorId::from_raw_for_test(1)),
         );
 
         assert!(
@@ -1984,7 +2021,7 @@ mod supervised_tests {
             "stopping a non-cycling member must NOT count the teardown down",
         );
         assert!(
-            children.get_mut(ActorId::new(1)).is_none(),
+            children.get_mut(ActorId::from_raw_for_test(1)).is_none(),
             "the elder was stopped and its entry removed",
         );
     }

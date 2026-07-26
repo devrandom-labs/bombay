@@ -235,7 +235,8 @@ where
                 Op::CancelStop => actor_ref.stop(),
                 Op::Kill => actor_ref.kill(),
                 Op::Watch { linked } => {
-                    let (signal, link_rx) = watch_signal::<A>(ActorId::new(1), *linked);
+                    let (signal, link_rx) =
+                        watch_signal::<A>(ActorId::from_raw_for_test(1), *linked);
                     bounded(actor_ref.mailbox_sender().send(signal))
                         .await
                         .expect("enqueue watch");
@@ -244,7 +245,7 @@ where
                 Op::Unwatch => bounded(
                     actor_ref
                         .mailbox_sender()
-                        .send(Signal::Unwatch(ActorId::new(0))),
+                        .send(Signal::Unwatch(ActorId::from_raw_for_test(0))),
                 )
                 .await
                 .expect("enqueue unwatch"),

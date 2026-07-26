@@ -94,7 +94,7 @@ impl Mailboxed for Sink {
 /// every send fail `Closed`).
 fn build_mailboxes(n: usize) -> Vec<(MailboxSender<Sink>, MailboxReceiver<Sink>)> {
     (0..n)
-        .map(|_| Mailbox::<Sink>::bounded(cap(4), ActorId::new(0)))
+        .map(|_| Mailbox::<Sink>::bounded(cap(4), ActorId::from_raw_for_test(0)))
         .collect()
 }
 

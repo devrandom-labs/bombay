@@ -123,19 +123,9 @@ pub trait Mailboxed {
     type Msg: Send + 'static;
 }
 
-/// Scaffold actor identity. #121 replaces this with the identity-first AID /
-/// key-expr `ActorId`; it exists here so the [`crate::watch`] death-notice types
-/// have a concrete shape to carry.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ActorId(u64);
-
-impl ActorId {
-    /// Wraps a raw identifier.
-    #[must_use]
-    pub const fn new(raw: u64) -> Self {
-        Self(raw)
-    }
-}
+/// Re-export: `ActorId` lives in [`crate::id`] (#206); this path stays for the
+/// mailbox-composition surface ([`Mailbox::bounded`] takes it).
+pub use crate::id::ActorId;
 
 /// A signal in an actor's mailbox: a domain message or a system control signal.
 ///
@@ -515,13 +505,13 @@ mod tests {
     fn signal_watch_and_unwatch_are_carried() {
         let (tx, _rx) = flume::unbounded::<LinkDied>();
         let reg = WatchReg {
-            watcher: ActorId::new(9),
+            watcher: ActorId::from_raw_for_test(9),
             link_tx: tx,
             linked: true,
         };
         // Compiles only if Signal carries Watch/Unwatch (this is the whole assertion).
         let _watch: Signal<Probe> = Signal::Watch(Box::new(reg));
-        let _unwatch: Signal<Probe> = Signal::Unwatch(ActorId::new(9));
+        let _unwatch: Signal<Probe> = Signal::Unwatch(ActorId::from_raw_for_test(9));
     }
 
     /// A message tagged with `(sender_id, seq)`; also proves `Msg` is any
@@ -578,7 +568,7 @@ mod tests {
 
     #[tokio::test]
     async fn sent_message_is_received() {
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::new(0));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
 
         send_bounded(
             &tx,
@@ -599,7 +589,8 @@ mod tests {
     #[tokio::test]
     async fn capacity_at_the_upper_boundary_is_usable() {
         // A mailbox built at the capacity ceiling must not panic and must work.
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(Capacity::MAX), ActorId::new(0));
+        let (tx, mut rx) =
+            Mailbox::<Probe>::bounded(cap(Capacity::MAX), ActorId::from_raw_for_test(0));
 
         tx.try_send(Signal::Message {
             msg: 7,
@@ -746,7 +737,7 @@ mod tests {
 
     #[tokio::test]
     async fn weak_sender_tracks_the_last_strong_sender() {
-        let (tx, _rx) = Mailbox::<Probe>::bounded(cap(2), ActorId::new(0));
+        let (tx, _rx) = Mailbox::<Probe>::bounded(cap(2), ActorId::from_raw_for_test(0));
         let tx2 = tx.clone();
         let weak = tx.downgrade();
 
@@ -765,7 +756,7 @@ mod tests {
 
     #[tokio::test]
     async fn upgraded_weak_sender_can_send() {
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(2), ActorId::new(0));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(2), ActorId::from_raw_for_test(0));
         let weak = tx.downgrade();
 
         let strong = weak.upgrade().expect("channel still alive");
@@ -787,7 +778,7 @@ mod tests {
 
     #[tokio::test]
     async fn stop_signal_is_delivered_in_order_after_a_message() {
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::new(0));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
 
         send_bounded(
             &tx,
@@ -812,7 +803,7 @@ mod tests {
     async fn drain_flushes_queued_signals_in_order() {
         // Graceful-stop primitive: after a Stop, the run-loop flushes the rest
         // with `drain` before dropping the receiver.
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(8), ActorId::new(0));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(8), ActorId::from_raw_for_test(0));
         for i in 0..3 {
             send_bounded(
                 &tx,
@@ -842,7 +833,7 @@ mod tests {
 
     #[tokio::test]
     async fn send_after_receiver_dropped_returns_the_message() {
-        let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::new(0));
+        let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
         drop(rx);
 
         assert!(matches!(
@@ -864,7 +855,7 @@ mod tests {
 
     #[tokio::test]
     async fn recv_returns_none_after_all_senders_dropped_and_drained() {
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::new(0));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
         send_bounded(
             &tx,
             Signal::Message {
@@ -896,11 +887,11 @@ mod tests {
     /// registration.
     #[tokio::test]
     async fn dropping_receiver_notifies_queued_watch_regs_already_dead() {
-        let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::new(77));
+        let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(77));
 
         let (link_tx, link_rx) = flume::unbounded::<LinkDied>();
         tx.try_send(Signal::Watch(Box::new(WatchReg {
-            watcher: ActorId::new(1),
+            watcher: ActorId::from_raw_for_test(1),
             link_tx,
             linked: true,
         })))
@@ -913,7 +904,7 @@ mod tests {
             .expect("a queued watch reg must be notified, never silently dropped");
         assert_eq!(
             notice.id,
-            ActorId::new(77),
+            ActorId::from_raw_for_test(77),
             "the notice names the dead actor"
         );
         assert!(
@@ -931,7 +922,7 @@ mod tests {
         // flume's `Receiver::drop` does NOT purge its queue, so without
         // `MailboxReceiver::drop` draining it, a hard kill (receiver dropped mid-
         // backlog) leaks the queued message and everything it owns.
-        let (tx, rx) = Mailbox::<Canary>::bounded(cap(4), ActorId::new(0));
+        let (tx, rx) = Mailbox::<Canary>::bounded(cap(4), ActorId::from_raw_for_test(0));
 
         let canary = Arc::new(());
         let observer = Arc::downgrade(&canary);
@@ -958,7 +949,7 @@ mod tests {
 
     #[tokio::test]
     async fn full_mailbox_rejects_try_send_and_returns_the_message() {
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1), ActorId::new(0));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1), ActorId::from_raw_for_test(0));
 
         tx.try_send(Signal::Message {
             msg: 1,
@@ -991,7 +982,7 @@ mod tests {
     #[tokio::test]
     async fn try_send_message_delivers_then_reports_full_then_closed() {
         // Delivers into an open mailbox, embedding a self_sender (ADR-0003).
-        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1), ActorId::new(0));
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1), ActorId::from_raw_for_test(0));
         tx.try_send_message(1).expect("first fits");
         // Capacity 1 and full: the next try is backpressure, not delivery.
         assert!(matches!(
@@ -1004,7 +995,8 @@ mod tests {
         ));
 
         // Receiver dropped: a try now reports the terminal Closed, not Full.
-        let (closed_tx, closed_rx) = Mailbox::<Probe>::bounded(cap(1), ActorId::new(0));
+        let (closed_tx, closed_rx) =
+            Mailbox::<Probe>::bounded(cap(1), ActorId::from_raw_for_test(0));
         drop(closed_rx);
         assert!(matches!(
             closed_tx.try_send_message(9),
@@ -1018,7 +1010,7 @@ mod tests {
         const PER_SENDER: u32 = 64;
 
         // Small capacity so senders genuinely contend and backpressure.
-        let (tx, mut rx) = Mailbox::<Tagged>::bounded(cap(4), ActorId::new(0));
+        let (tx, mut rx) = Mailbox::<Tagged>::bounded(cap(4), ActorId::from_raw_for_test(0));
         let start = Arc::new(Barrier::new(SENDERS as usize));
 
         let mut handles = Vec::with_capacity(SENDERS as usize);
@@ -1106,7 +1098,8 @@ mod tests {
                 .build()
                 .expect("current-thread runtime")
                 .block_on(async move {
-                    let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(capacity), ActorId::new(0));
+                    let (tx, mut rx) =
+                        Mailbox::<Probe>::bounded(cap(capacity), ActorId::from_raw_for_test(0));
                     let expected = messages.len();
                     let producer = tokio::spawn(async move {
                         for message in messages {

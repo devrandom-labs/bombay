@@ -107,7 +107,7 @@ fn new_actor() -> (
     bombay_core::mailbox::MailboxReceiver<Probe>,
 ) {
     let cap = Capacity::try_from(4usize).expect("valid capacity");
-    let (tx, rx) = Mailbox::<Probe>::bounded(cap, ActorId::new(0));
+    let (tx, rx) = Mailbox::<Probe>::bounded(cap, ActorId::from_raw_for_test(0));
     unstarted_actor::<Probe>((tx, rx))
 }
 

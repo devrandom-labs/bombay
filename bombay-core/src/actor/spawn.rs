@@ -11,11 +11,7 @@
 //! unbounded `on_stop` — strands watchers behind a hung user hook.
 
 use core::time::Duration;
-use std::{
-    fmt,
-    panic::AssertUnwindSafe,
-    sync::atomic::{AtomicU64, Ordering},
-};
+use std::{fmt, panic::AssertUnwindSafe};
 
 use futures::{
     FutureExt,
@@ -34,7 +30,8 @@ use crate::{
         supervision::{Children, CycleState},
     },
     error::{ActorStopReason, PanicError, PanicReason},
-    mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Signal},
+    id::next_actor_id,
+    mailbox::{Capacity, Mailbox, MailboxReceiver, Signal},
     watch::{LinkReceiver, Watchers},
 };
 
@@ -80,16 +77,6 @@ pub(super) fn default_capacity() -> Capacity {
                   the conversion is infallible and pinned by a unit test"
     )]
     Capacity::try_from(DEFAULT_MAILBOX_CAPACITY).expect("64 is a valid capacity")
-}
-
-/// Monotonic scaffold id source (#121 replaces this with the AID).
-static NEXT_ACTOR_ID: AtomicU64 = AtomicU64::new(1);
-
-fn next_actor_id() -> ActorId {
-    // Relaxed is sufficient: correctness needs only that each `fetch_add` returns
-    // a distinct value. Uniqueness is a property of atomic increment alone and
-    // requires no happens-before with any other memory (CLAUDE rule #5).
-    ActorId::new(NEXT_ACTOR_ID.fetch_add(1, Ordering::Relaxed))
 }
 
 /// The total outcome of running an actor to completion in the current task.
@@ -1362,7 +1349,7 @@ mod tests {
             .actor_ref()
             .mailbox_sender()
             .try_send(Signal::Watch(Box::new(WatchReg {
-                watcher: ActorId::new(1),
+                watcher: ActorId::from_raw_for_test(1),
                 link_tx,
                 linked: false,
             })))
@@ -2271,7 +2258,7 @@ mod tests {
         target
             .mailbox_sender()
             .send(Signal::Watch(Box::new(WatchReg {
-                watcher: ActorId::new(999),
+                watcher: ActorId::from_raw_for_test(999),
                 link_tx: watch_tx,
                 linked: false,
             })))
@@ -2298,7 +2285,7 @@ mod tests {
         target
             .mailbox_sender()
             .send(Signal::Watch(Box::new(WatchReg {
-                watcher: ActorId::new(1),
+                watcher: ActorId::from_raw_for_test(1),
                 link_tx: tx,
                 linked: false,
             })))
@@ -2344,7 +2331,7 @@ mod tests {
         target
             .mailbox_sender()
             .send(Signal::Watch(Box::new(WatchReg {
-                watcher: ActorId::new(1),
+                watcher: ActorId::from_raw_for_test(1),
                 link_tx: tx,
                 linked: false,
             })))
@@ -2384,7 +2371,7 @@ mod tests {
         target
             .mailbox_sender()
             .try_send(Signal::Watch(Box::new(WatchReg {
-                watcher: ActorId::new(1),
+                watcher: ActorId::from_raw_for_test(1),
                 link_tx: tx,
                 linked: false,
             })))
@@ -2481,7 +2468,7 @@ mod tests {
             target
                 .mailbox_sender()
                 .send(Signal::Watch(Box::new(WatchReg {
-                    watcher: ActorId::new(1),
+                    watcher: ActorId::from_raw_for_test(1),
                     link_tx: tx,
                     linked: false,
                 }))),
@@ -2845,7 +2832,7 @@ mod tests {
             actor_ref
                 .mailbox_sender()
                 .send(Signal::Watch(Box::new(WatchReg {
-                    watcher: ActorId::new(1),
+                    watcher: ActorId::from_raw_for_test(1),
                     link_tx: tx,
                     linked: false,
                 }))),
@@ -2855,7 +2842,7 @@ mod tests {
         bounded(
             actor_ref
                 .mailbox_sender()
-                .send(Signal::Unwatch(ActorId::new(1))),
+                .send(Signal::Unwatch(ActorId::from_raw_for_test(1))),
         )
         .await
         .expect("unwatch enqueued");
@@ -3080,7 +3067,7 @@ mod tests {
         let (fence_tx, fence_rx) = flume::unbounded::<LinkDied>();
         peer.mailbox_sender()
             .send(Signal::Watch(Box::new(WatchReg {
-                watcher: ActorId::new(0xF),
+                watcher: ActorId::from_raw_for_test(0xF),
                 link_tx: fence_tx,
                 linked: false,
             })))
@@ -3162,7 +3149,7 @@ mod tests {
             receivers.push(rx);
             let sender = target.mailbox_sender().clone();
             let b = Arc::clone(&barrier);
-            let watcher_id = ActorId::new(u64::try_from(i).expect("fits u64") + 1);
+            let watcher_id = ActorId::from_raw_for_test(u64::try_from(i).expect("fits u64") + 1);
             tasks.push(tokio::spawn(async move {
                 b.wait().await; // real overlap: all registrations race
                 // Bounded: a broken run-loop that never drains the mailbox would
@@ -3215,7 +3202,7 @@ mod tests {
         target
             .mailbox_sender()
             .send(Signal::Watch(Box::new(WatchReg {
-                watcher: ActorId::new(1),
+                watcher: ActorId::from_raw_for_test(1),
                 link_tx: tx,
                 linked: false,
             })))
@@ -4107,7 +4094,7 @@ mod tests {
             tokio::time::timeout(
                 terminate_bound(),
                 sup.mailbox_sender().send(Signal::Watch(Box::new(WatchReg {
-                    watcher: ActorId::new(999_999),
+                    watcher: ActorId::from_raw_for_test(999_999),
                     link_tx: watch_tx,
                     linked: false,
                 }))),

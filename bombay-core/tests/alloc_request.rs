@@ -120,8 +120,10 @@ fn tell_is_zero_alloc_and_ask_is_one_alloc() {
         .build()
         .expect("current-thread runtime");
     let cap = Capacity::try_from(4_usize).expect("valid capacity");
-    let (actor_ref, mut rx) =
-        unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(cap, ActorId::new(0)));
+    let (actor_ref, mut rx) = unstarted_actor::<Probe>(Mailbox::<Probe>::bounded(
+        cap,
+        ActorId::from_raw_for_test(0),
+    ));
 
     // Warm-up: identical round BEFORE measuring, so one-time lazy init
     // (harness, flume queue growth, timer wheel) never pollutes the

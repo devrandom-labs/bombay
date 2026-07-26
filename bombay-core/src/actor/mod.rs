@@ -299,7 +299,7 @@ mod watch_trait_tests {
         let mut w = W;
 
         let out = w
-            .on_link_died(ActorId::new(1), ActorStopReason::Killed, true)
+            .on_link_died(ActorId::from_raw_for_test(1), ActorStopReason::Killed, true)
             .await
             .expect("infallible default hook");
         assert!(
@@ -308,7 +308,11 @@ mod watch_trait_tests {
         );
 
         let out = w
-            .on_link_died(ActorId::new(1), ActorStopReason::Killed, false)
+            .on_link_died(
+                ActorId::from_raw_for_test(1),
+                ActorStopReason::Killed,
+                false,
+            )
             .await
             .expect("infallible default hook");
         assert!(
@@ -317,7 +321,7 @@ mod watch_trait_tests {
         );
 
         let out = w
-            .on_link_died(ActorId::new(1), ActorStopReason::Normal, true)
+            .on_link_died(ActorId::from_raw_for_test(1), ActorStopReason::Normal, true)
             .await
             .expect("infallible default hook");
         assert!(

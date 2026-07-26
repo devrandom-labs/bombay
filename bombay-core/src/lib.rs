@@ -35,6 +35,7 @@ compile_error!(
 
 pub mod actor;
 pub mod error;
+mod id;
 pub mod mailbox;
 pub mod message;
 pub mod registry;
@@ -48,6 +49,11 @@ mod watch;
 // notice is public, surfaced by selective re-export (the same pattern
 // `actor::mod` uses for its submodule items) rather than `pub mod watch`.
 pub use watch::LinkDied;
+
+// `ActorId` (card #206) lives in its own `id` module — identity is core, not a
+// mailbox detail — and is surfaced at the crate root. The `mailbox::ActorId`
+// path is kept as a re-export for the mailbox-composition surface.
+pub use id::ActorId;
 
 // Both arms are load-bearing: the feature arm serves integration tests and
 // benches (dev-dep feature unification turns it on for external test binaries);

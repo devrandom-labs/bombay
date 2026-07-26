@@ -262,9 +262,15 @@ mod tests {
     /// the receiver is exactly what the run-loop does on stop).
     fn build<A: Actor>(id: u64) -> (ActorRef<A>, MailboxReceiver<A>) {
         let cap = Capacity::try_from(4usize).expect("valid capacity");
-        let (tx, rx) = Mailbox::<A>::bounded(cap, ActorId::new(0));
+        let (tx, rx) = Mailbox::<A>::bounded(cap, ActorId::from_raw_for_test(0));
         let (abort, _reg) = AbortHandle::new_pair();
-        let actor_ref = ActorRef::new(ActorId::new(id), tx, CancellationToken::new(), abort, None);
+        let actor_ref = ActorRef::new(
+            ActorId::from_raw_for_test(id),
+            tx,
+            CancellationToken::new(),
+            abort,
+            None,
+        );
         (actor_ref, rx)
     }
 
@@ -284,7 +290,11 @@ mod tests {
             .lookup::<Probe>("counter")
             .expect("same type")
             .expect("live actor resolves");
-        assert_eq!(resolved.id(), ActorId::new(1), "resolves the registrant");
+        assert_eq!(
+            resolved.id(),
+            ActorId::from_raw_for_test(1),
+            "resolves the registrant"
+        );
 
         // Both awaits are bounded (#179 discipline): under a hostile mutant
         // (e.g. `Capacity::get -> 0`, a rendezvous channel) an unbounded
@@ -338,7 +348,7 @@ mod tests {
             .expect("incumbent still live");
         assert_eq!(
             resolved.id(),
-            ActorId::new(1),
+            ActorId::from_raw_for_test(1),
             "the losing register must not have replaced the incumbent",
         );
     }
@@ -389,7 +399,7 @@ mod tests {
             .lookup::<Probe>("cycle")
             .expect("same type")
             .expect("new registrant live");
-        assert_eq!(resolved.id(), ActorId::new(2));
+        assert_eq!(resolved.id(), ActorId::from_raw_for_test(2));
     }
 
     /// Lifecycle: a registered actor that is fully reaped (all strong refs AND
@@ -433,7 +443,7 @@ mod tests {
             .expect("replacement live");
         assert_eq!(
             resolved.id(),
-            ActorId::new(2),
+            ActorId::from_raw_for_test(2),
             "lookup resolves the claimant"
         );
     }
@@ -767,7 +777,7 @@ mod tests {
                 .lookup::<Probe>(&name)
                 .expect("same type")
                 .expect("live actor resolves");
-            prop_assert_eq!(resolved.id(), ActorId::new(1));
+            prop_assert_eq!(resolved.id(), ActorId::from_raw_for_test(1));
             prop_assert!(registry.unregister(&name));
             prop_assert!(
                 registry.lookup::<Probe>(&name).expect("no type conflict").is_none(),
@@ -796,8 +806,8 @@ mod tests {
                 .lookup::<Probe>(&name_b)
                 .expect("same type")
                 .expect("b live");
-            prop_assert_eq!(ra.id(), ActorId::new(1));
-            prop_assert_eq!(rb.id(), ActorId::new(2));
+            prop_assert_eq!(ra.id(), ActorId::from_raw_for_test(1));
+            prop_assert_eq!(rb.id(), ActorId::from_raw_for_test(2));
         }
     }
 }
