@@ -103,7 +103,9 @@ impl<A: Actor> ActorRef<A> {
         self.shared.link_tx.as_ref()
     }
 
-    /// The actor's scaffold identity (replaced by the AID in #121).
+    /// The actor's process-local [`ActorId`] — its in-process routing key. The
+    /// dataspace identity (KERI AID, #121) is a separate coordinate that pairs
+    /// with this handle, never replaces it (ADR-0015).
     #[must_use]
     pub const fn id(&self) -> ActorId {
         self.id
@@ -539,7 +541,7 @@ impl<A: Actor> fmt::Debug for WeakActorRef<A> {
 }
 
 impl<A: Actor> WeakActorRef<A> {
-    /// The actor's scaffold identity.
+    /// The actor's process-local [`ActorId`] (see [`ActorRef::id`]; ADR-0015).
     #[must_use]
     pub const fn id(&self) -> ActorId {
         self.id
