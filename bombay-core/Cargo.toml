@@ -71,5 +71,9 @@ harness = false
 name = "watcher_fanout"
 harness = false
 
+[[bench]]
+name = "supervision_vs_kameo"
+harness = false
+
 [lints]
 workspace = true

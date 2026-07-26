@@ -5,10 +5,17 @@
 //! collection becomes a slab/registry, this bench is the number to beat — so it
 //! must measure the *production* send/handle path (real `MailboxSender` /
 //! `Actor::handle`), never a reimplementation (CLAUDE rule 0: measure, don't
-//! assume). The link/death-watch graph (#120) is not built yet, so the honest
-//! fan-out this can measure is a notification delivered to N watcher mailboxes —
-//! one event cloned out to every watcher, exactly as `error.rs` records the
-//! semantics ("a death reason fans out to every watcher").
+//! assume).
+//!
+//! **This is a synthetic PRE-GRAPH proxy, kept for its dispatch-loop number.**
+//! When this was written the link/death-watch graph (#120) did not exist, so the
+//! only fan-out it could measure was a notification cloned into N *bare* watcher
+//! mailboxes — one event to every watcher, exactly as `error.rs` records the
+//! semantics ("a death reason fans out to every watcher"). That graph exists now
+//! (#195 death-watch/links, #196 restart, #199 set-strategies), and the **real**
+//! death-fan-out over the `watch`/notify path — plus the link/restart/set-cycle
+//! surface — is measured head-to-head against kameo in `supervision_vs_kameo.rs`
+//! (#204). This file remains the isolated dispatch-loop micro-baseline only.
 //!
 //! Two arms isolate the two costs a slab/registry would move:
 //!
