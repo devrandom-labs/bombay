@@ -3,10 +3,6 @@ resolver = "3"
 # Siblings (cesr/nexus) enumerate members explicitly — no `crates/*` glob
 # (also keeps the isolated `fuzz/` sub-workspace out of any glob's reach).
 members = ["crates/core", "crates/macros", "mutants-gate"]
-# `apps/purr` is the vendored TUI, awaiting re-point onto the rebuilt core by
-# the console card. Excluded so the workspace builds without the deleted
-# vendored crate it still depends on.
-exclude = ["apps/purr"]
 
 [workspace.package]
 edition = "2024"

@@ -3,7 +3,8 @@
 > **Scope change 2026-07-27 (#213):** the vendored kameo fork left the tree — workspace
 > member `.` (`src/`), its root `tests/` BDD suites (`core_*_bdd`, `console_wire_*`),
 > `examples/`, `benches/overhead.rs`, and the `actors/` utility crate are **deleted**;
-> `apps/purr/` is excluded from the workspace pending its re-point onto bombay (console card). Coverage and
+> `apps/purr/` (the vendored TUI) is **deleted** too (#215: console deferred to a post-M1
+> greenfield rebuild; git history keeps the reference). Coverage and
 > mutation scope is now **bombay + bombay_macros (derive_msg) + mutants-gate** only.
 > Sections below that describe the vendored crate's suites are historical record.
 
