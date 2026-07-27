@@ -24,40 +24,48 @@ mod imp {
     /// The sender's current span rides the mailbox envelope so the handler's
     /// span parents to it and cross-actor traces stitch into one tree. A ZST
     /// when `tracing` is off.
+    ///
+    /// **Boxed, niched on the empty case**: the span is `Option<Box<Span>>` so
+    /// the mailbox slot pays ONE word for trace context (the slot-size
+    /// tripwires in `mailbox.rs` pin this). `None` whenever the sender is not
+    /// inside an enabled span — i.e. always when no subscriber is installed —
+    /// so the unobserved send path stays ZERO-alloc (the #207 zero-box
+    /// guarantee); the one small allocation per send happens only when actually
+    /// tracing under a subscriber, the price of context propagation.
     pub struct SendContext {
-        caller: tracing::Span,
+        caller: Option<Box<tracing::Span>>,
     }
 
     impl SendContext {
         /// Captures the sender's current span (zero-cost with no subscriber).
         #[must_use]
         pub fn capture() -> Self {
+            let current = tracing::Span::current();
             Self {
-                caller: tracing::Span::current(),
+                caller: (!current.is_disabled()).then(|| Box::new(current)),
             }
         }
 
         /// The per-message `actor.handle` span: parented to the captured caller
-        /// span when enabled, else contextually to the lifecycle span.
-        #[expect(
-            dead_code,
-            reason = "wired by the caller-span propagation slice of #209"
-        )]
+        /// span when present, else contextually to the lifecycle span.
         pub(crate) fn handle_span<A: Actor>(&self) -> Span {
-            if self.caller.is_disabled() {
-                tracing::debug_span!(
-                    "actor.handle",
-                    actor.name = A::name(),
-                    msg.kind = core::any::type_name::<A::Msg>(),
-                )
-            } else {
-                tracing::debug_span!(
-                    parent: &self.caller,
-                    "actor.handle",
-                    actor.name = A::name(),
-                    msg.kind = core::any::type_name::<A::Msg>(),
-                )
-            }
+            self.caller.as_deref().map_or_else(
+                || {
+                    tracing::debug_span!(
+                        "actor.handle",
+                        actor.name = A::name(),
+                        msg.kind = core::any::type_name::<A::Msg>(),
+                    )
+                },
+                |caller| {
+                    tracing::debug_span!(
+                        parent: caller,
+                        "actor.handle",
+                        actor.name = A::name(),
+                        msg.kind = core::any::type_name::<A::Msg>(),
+                    )
+                },
+            )
         }
     }
 
@@ -105,6 +113,10 @@ mod imp {
         tracing::error!(?err, "on_start failed");
     }
 
+    pub fn handler_crashed(err: &PanicError) {
+        tracing::error!(?err, "handler crashed");
+    }
+
     pub fn on_stop_ok(reason: &ActorStopReason) {
         tracing::trace!(%reason, "actor stopped");
     }
@@ -146,10 +158,6 @@ mod imp {
             reason = "mirrors the tracing-on API so call sites stay cfg-free"
         )]
         #[expect(
-            dead_code,
-            reason = "wired by the caller-span propagation slice of #209"
-        )]
-        #[expect(
             clippy::extra_unused_type_parameters,
             reason = "mirrors the tracing-on signature so call sites stay cfg-free"
         )]
@@ -174,6 +182,7 @@ mod imp {
     pub const fn spawned() {}
     pub const fn on_start_ok() {}
     pub const fn on_start_failed(_err: &PanicError) {}
+    pub const fn handler_crashed(_err: &PanicError) {}
     pub const fn on_stop_ok(_reason: &ActorStopReason) {}
     pub const fn on_stop_failed<E: core::fmt::Debug>(_reason: &ActorStopReason, _err: &E) {}
     pub const fn on_stop_panicked(_reason: &ActorStopReason) {}
@@ -182,6 +191,6 @@ mod imp {
 
 pub use imp::SendContext;
 pub use imp::{
-    instrument, lifecycle_span, on_start_failed, on_start_ok, on_stop_abandoned, on_stop_failed,
-    on_stop_ok, on_stop_panicked, record_stop_reason, spawned,
+    Span, handler_crashed, instrument, lifecycle_span, on_start_failed, on_start_ok,
+    on_stop_abandoned, on_stop_failed, on_stop_ok, on_stop_panicked, record_stop_reason, spawned,
 };

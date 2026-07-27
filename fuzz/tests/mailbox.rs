@@ -9,6 +9,7 @@
 use std::collections::VecDeque;
 
 use bolero::{TypeGenerator, check};
+use bombay::SendContext;
 use bombay::mailbox::{
     ActorId, Capacity, Mailbox, MailboxSender, Mailboxed, Signal, TrySendError,
 };
@@ -50,6 +51,7 @@ fn message(msg: u64, tx: &MailboxSender<Probe>) -> Signal<Probe> {
     Signal::Message {
         msg,
         self_sender: tx.clone(),
+        ctx: SendContext::capture(),
     }
 }
 

@@ -57,6 +57,7 @@ use tokio::{
 };
 
 use bombay::{
+    SendContext,
     actor::{
         Actor, ActorRef, PreparedActor, RunResult, Spawn, SpawnSupervised, Supervisor, Watch,
         WeakActorRef,
@@ -564,6 +565,7 @@ async fn send_after_graceful_stop_fails() {
     let resend = bounded(actor_ref.mailbox_sender().send(Signal::Message {
         msg: Ping,
         self_sender: actor_ref.mailbox_sender().clone(),
+        ctx: SendContext::capture(),
     }))
     .await;
     assert!(

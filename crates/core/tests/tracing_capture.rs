@@ -396,6 +396,128 @@ impl Actor for HangingStop {
     }
 }
 
+/// Spec D6: the handler's `actor.handle` span parents to the SENDER's span
+/// captured at enqueue — cross-actor traces stitch into one tree.
+#[tokio::test]
+async fn handle_span_parents_to_the_callers_span() {
+    let (store, _guard) = capture::install();
+    let prepared = PreparedActor::<Probe>::new(default_cap());
+    let actor_ref = prepared.actor_ref().clone();
+
+    let send_site = tracing::info_span!("send_site");
+    let send_site_id = send_site.id().expect("enabled").into_u64();
+    send_site.in_scope(|| {
+        actor_ref
+            .tell(Ping)
+            .try_send()
+            .expect("mailbox has capacity");
+    });
+    drop(actor_ref);
+
+    let _ = timeout(terminate_bound(), prepared.run(()))
+        .await
+        .expect("actor must stop inside the bound");
+
+    let store = store.lock().unwrap();
+    let handle = store.span("actor.handle").expect("handle span emitted");
+    assert_eq!(
+        handle.parent,
+        Some(send_site_id),
+        "handle span parents to the caller's span, not the lifecycle span",
+    );
+    assert_eq!(
+        field(&handle.fields, "msg.kind").as_deref(),
+        Some(core::any::type_name::<Ping>()),
+    );
+    assert_eq!(
+        field(&handle.fields, "actor.name").as_deref(),
+        Some(core::any::type_name::<Probe>()),
+    );
+}
+
+/// No caller span at enqueue → the handle span falls back to the contextual
+/// parent, the actor's own lifecycle span.
+#[tokio::test]
+async fn handle_span_without_caller_parents_to_lifecycle() {
+    let (store, _guard) = capture::install();
+    let prepared = PreparedActor::<Probe>::new(default_cap());
+    let actor_ref = prepared.actor_ref().clone();
+    actor_ref
+        .tell(Ping)
+        .try_send()
+        .expect("mailbox has capacity");
+    drop(actor_ref);
+    let _ = timeout(terminate_bound(), prepared.run(()))
+        .await
+        .expect("actor must stop inside the bound");
+
+    let store = store.lock().unwrap();
+    let lifecycle_id = store.span("actor.lifecycle").expect("lifecycle span").id;
+    let handle = store.span("actor.handle").expect("handle span emitted");
+    assert_eq!(handle.parent, Some(lifecycle_id));
+}
+
+struct CrashingHandle;
+impl Mailboxed for CrashingHandle {
+    type Msg = Ping;
+}
+impl Actor for CrashingHandle {
+    type Args = ();
+    type Error = StopErr;
+    async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Ok(CrashingHandle)
+    }
+    async fn handle(
+        &mut self,
+        _: Ping,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        Err(StopErr)
+    }
+}
+
+/// A handler's returned `Err` (controlled crash) is an `error!` event that
+/// fires INSIDE the message's `actor.handle` span.
+#[tokio::test]
+async fn handler_crash_emits_one_error_event_inside_the_handle_span() {
+    let (store, _guard) = capture::install();
+    let prepared = PreparedActor::<CrashingHandle>::new(default_cap());
+    let actor_ref = prepared.actor_ref().clone();
+    actor_ref
+        .tell(Ping)
+        .try_send()
+        .expect("mailbox has capacity");
+    drop(actor_ref);
+    let result = timeout(terminate_bound(), prepared.run(()))
+        .await
+        .expect("actor must stop inside the bound");
+    assert!(
+        matches!(
+            result,
+            RunResult::Stopped {
+                reason: ActorStopReason::Panicked(_),
+                ..
+            }
+        ),
+        "a handler Err is a controlled crash, got {result:?}",
+    );
+
+    let store = store.lock().unwrap();
+    let errors = store.events_at("ERROR");
+    assert_eq!(errors.len(), 1, "exactly one error event, got {errors:?}");
+    assert_eq!(
+        field(&errors[0].fields, "message").as_deref(),
+        Some("handler crashed"),
+    );
+    let handle_id = store.span("actor.handle").expect("handle span").id;
+    assert_eq!(
+        errors[0].span,
+        Some(handle_id),
+        "the crash event fires inside the handle span",
+    );
+}
+
 /// Spec D8: an `on_stop` that outlives the 5 s notice grace is abandoned, and
 /// the abandonment is an `error!` event carrying `reason` + `grace` fields.
 /// Paused clock: tokio auto-advances past the grace instantly.
