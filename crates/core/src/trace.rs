@@ -82,6 +82,13 @@ mod imp {
     }
 
     /// Records the terminal stop reason onto the current (lifecycle) span.
+    ///
+    /// MUST run directly inside the instrumented lifecycle future with no
+    /// nested span entered: `record` on a span that never declared the field
+    /// is a SILENT no-op in tracing, so recording from under a child span
+    /// drops the field without any error. Kill and startup-failure paths never
+    /// reach this, so their lifecycle spans close with `stop.reason` empty —
+    /// deliberate (the span itself still marks the lifetime).
     pub fn record_stop_reason(reason: &ActorStopReason) {
         tracing::Span::current().record("stop.reason", tracing::field::display(reason));
     }
