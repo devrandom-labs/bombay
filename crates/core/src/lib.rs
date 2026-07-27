@@ -42,6 +42,7 @@ pub mod registry;
 pub mod reply;
 pub mod request;
 pub mod restart;
+mod trace;
 mod watch;
 
 // The `watch` module stays private — `LinkSender`/`LinkReceiver`/`WatchReg`/
@@ -54,6 +55,11 @@ pub use watch::LinkDied;
 // mailbox detail — and is surfaced at the crate root. The `mailbox::ActorId`
 // path is kept as a re-export for the mailbox-composition surface.
 pub use id::ActorId;
+
+// The `trace` module stays private — it is the `tracing` feature's single cfg
+// surface (card #209), and its span/event helpers are internal instrumentation.
+// Only the caller-side `SendContext` is public, surfaced by selective re-export.
+pub use trace::SendContext;
 
 // Both arms are load-bearing: the feature arm serves integration tests and
 // benches (dev-dep feature unification turns it on for external test binaries);
