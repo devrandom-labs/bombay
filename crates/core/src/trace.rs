@@ -163,51 +163,64 @@ mod imp {
     /// Inert stand-in: a ZST with the same API as the tracing-on version.
     pub struct SendContext;
 
-    impl SendContext {
-        #[must_use]
-        pub const fn capture() -> Self {
-            Self
-        }
+    // The whole no-op surface is emitted through one macro invocation: the
+    // mutation sweep builds feature-ON, where this half never compiles into
+    // the test binary, so a mutant here is unkillable by construction —
+    // cargo-mutants does not mutate macro-generated items, which keeps the
+    // sweep honest instead of parking unkillable survivors in an exclude list.
+    macro_rules! inert_trace_surface {
+        () => {
+            impl SendContext {
+                #[must_use]
+                pub const fn capture() -> Self {
+                    Self
+                }
 
-        #[expect(
-            clippy::unused_self,
-            reason = "mirrors the tracing-on API so call sites stay cfg-free"
-        )]
-        #[expect(
-            clippy::extra_unused_type_parameters,
-            reason = "mirrors the tracing-on signature so call sites stay cfg-free"
-        )]
-        pub(crate) const fn handle_span<A: Actor>(&self) -> Span {
-            Span
-        }
-    }
+                // No `clippy::unused_self` expect here: that lint does not fire
+                // on macro-expanded items, and an unfulfilled expectation is
+                // itself a warning.
+                #[expect(
+                    clippy::extra_unused_type_parameters,
+                    reason = "mirrors the tracing-on signature so call sites stay cfg-free"
+                )]
+                pub(crate) const fn handle_span<A: Actor>(&self) -> Span {
+                    Span
+                }
+            }
 
-    #[expect(
-        clippy::extra_unused_type_parameters,
-        reason = "mirrors the tracing-on signature so call sites stay cfg-free"
-    )]
-    pub const fn lifecycle_span<A: Actor>(_id: ActorId) -> Span {
-        Span
-    }
+            #[expect(
+                clippy::extra_unused_type_parameters,
+                reason = "mirrors the tracing-on signature so call sites stay cfg-free"
+            )]
+            pub const fn lifecycle_span<A: Actor>(_id: ActorId) -> Span {
+                Span
+            }
 
-    pub const fn instrument<F: Future>(fut: F, _span: Span) -> F {
-        fut
-    }
+            pub const fn instrument<F: Future>(fut: F, _span: Span) -> F {
+                fut
+            }
 
-    pub const fn record_stop_reason(_reason: &ActorStopReason) {}
-    pub const fn spawned() {}
-    pub const fn on_start_ok() {}
-    pub const fn on_start_failed(_err: &PanicError) {}
-    pub const fn handler_crashed(_err: &PanicError) {}
-    pub const fn on_stop_ok(_reason: &ActorStopReason) {}
-    pub const fn on_stop_failed<E: core::fmt::Debug>(_reason: &ActorStopReason, _err: &E) {}
-    pub const fn on_stop_panicked(_reason: &ActorStopReason) {}
-    pub const fn on_stop_abandoned(_reason: &ActorStopReason, _grace: Duration) {}
-    pub const fn restart_scheduled(_child: ActorId, _attempt: u32, _delay: Duration) {}
-    pub const fn restart_gave_up(_child: ActorId, _rebuilds: u32) {}
-    pub const fn child_escalated(_child: ActorId) {}
-    pub const fn death_notice(_watcher: ActorId, _reason: &ActorStopReason, _cleanup_failed: bool) {
+            pub const fn record_stop_reason(_reason: &ActorStopReason) {}
+            pub const fn spawned() {}
+            pub const fn on_start_ok() {}
+            pub const fn on_start_failed(_err: &PanicError) {}
+            pub const fn handler_crashed(_err: &PanicError) {}
+            pub const fn on_stop_ok(_reason: &ActorStopReason) {}
+            pub const fn on_stop_failed<E: core::fmt::Debug>(_reason: &ActorStopReason, _err: &E) {}
+            pub const fn on_stop_panicked(_reason: &ActorStopReason) {}
+            pub const fn on_stop_abandoned(_reason: &ActorStopReason, _grace: Duration) {}
+            pub const fn restart_scheduled(_child: ActorId, _attempt: u32, _delay: Duration) {}
+            pub const fn restart_gave_up(_child: ActorId, _rebuilds: u32) {}
+            pub const fn child_escalated(_child: ActorId) {}
+            pub const fn death_notice(
+                _watcher: ActorId,
+                _reason: &ActorStopReason,
+                _cleanup_failed: bool,
+            ) {
+            }
+        };
     }
+    inert_trace_surface!();
 }
 
 pub use imp::SendContext;

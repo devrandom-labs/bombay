@@ -6,14 +6,17 @@
 use core::convert::Infallible;
 
 use core::time::Duration;
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    Arc, Mutex,
+    atomic::{AtomicBool, Ordering},
+};
 
 use bombay::{
     actor::{
         Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult, Spawn, SpawnLinked,
         SpawnSupervised, Supervisor, Watch, WeakActorRef,
     },
-    error::ActorStopReason,
+    error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{Capacity, Mailboxed},
     message::Msg,
     restart::{RestartConfig, RestartPolicy, SupervisionStrategy, jittered_backoff},
@@ -263,6 +266,30 @@ async fn lifecycle_span_carries_identity_and_records_stop_reason() {
         vec![spawn_site_id],
         "spawn site linked via follows_from",
     );
+
+    // The three lifecycle trace events fire exactly once each — the emissions
+    // themselves, not just the span, are part of the observable surface.
+    let traces = store.events_at("TRACE");
+    for expected in ["actor spawned", "actor started", "actor stopped"] {
+        assert_eq!(
+            traces
+                .iter()
+                .filter(|e| field(&e.fields, "message").as_deref() == Some(expected))
+                .count(),
+            1,
+            "exactly one `{expected}` trace event",
+        );
+    }
+    let stopped = store
+        .events
+        .iter()
+        .find(|e| field(&e.fields, "message").as_deref() == Some("actor stopped"))
+        .expect("actor stopped event present");
+    assert_eq!(
+        field(&stopped.fields, "reason"),
+        Some(ActorStopReason::Normal.to_string()),
+        "the stopped event carries the reason as a structured field",
+    );
 }
 
 #[derive(Debug)]
@@ -319,6 +346,56 @@ async fn on_stop_error_emits_one_error_event_with_fields() {
         "reason is a structured field, not formatted into the message",
     );
     assert_eq!(field(&errors[0].fields, "err").as_deref(), Some("StopErr"));
+}
+
+struct FailingStart;
+impl Mailboxed for FailingStart {
+    type Msg = Ping;
+}
+impl Actor for FailingStart {
+    type Args = ();
+    type Error = StopErr;
+    async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Err(StopErr)
+    }
+    async fn handle(
+        &mut self,
+        _: Ping,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+/// A failed `on_start` is an `error!` event carrying the wrapped hook error —
+/// the one emission on the no-actor-was-ever-built path.
+#[tokio::test]
+async fn on_start_failure_emits_one_error_event() {
+    let (store, _guard) = capture::install();
+    let prepared = PreparedActor::<FailingStart>::new(default_cap());
+    let result = timeout(terminate_bound(), prepared.run(()))
+        .await
+        .expect("startup failure must resolve inside the bound");
+    assert!(
+        matches!(result, RunResult::StartupFailed(_)),
+        "an on_start Err is a startup failure, got {result:?}",
+    );
+
+    let store = store.lock().unwrap();
+    let errors = store.events_at("ERROR");
+    assert_eq!(errors.len(), 1, "exactly one error event, got {errors:?}");
+    assert_eq!(
+        field(&errors[0].fields, "message").as_deref(),
+        Some("on_start failed"),
+    );
+    // The production path wraps the hook's Err in exactly this constructor, so
+    // the `?err` Debug rendering is reproducible rather than a substring guess.
+    let expected = format!(
+        "{:?}",
+        PanicError::new(Box::new(StopErr), PanicReason::OnStart)
+    );
+    assert_eq!(field(&errors[0].fields, "err"), Some(expected));
 }
 
 struct PanickingStop;
@@ -742,5 +819,216 @@ async fn scheduled_restart_emits_warn_with_attempt_and_delay() {
         field(&warns[0].fields, "child.id"),
         Some(format!("{child_id:?}")),
         "the warn names the dead incarnation",
+    );
+}
+
+/// Spec D7: a tripped restart budget is an `error!` event carrying the exact
+/// lifetime rebuild count and the child's id. A zero budget makes the very
+/// first failure the trip — `record_failure` counts the tripping failure
+/// itself, so `rebuilds` is 1 (`GiveUp::Yes { rebuilds }` semantics).
+#[tokio::test]
+async fn restart_give_up_emits_one_error_event() {
+    let (store, _guard) = capture::install();
+
+    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(default_cap());
+    let sup = prepared.actor_ref().clone();
+    let join = prepared.spawn_supervised_task((), link_rx);
+
+    // Zero budget: one failure is one too many — the first crash escalates,
+    // so no backoff ever arms and no paused clock is needed.
+    let cfg = RestartConfig::new(RestartPolicy::Permanent).with_max_restarts(0);
+    let (births_tx, mut births_rx) = mpsc::unbounded_channel::<()>();
+    // Anchors the incarnation: an unanchored child would ref-count-stop and
+    // (under `Permanent`) trip the zero budget on its own schedule.
+    let anchors: Arc<Mutex<Vec<ActorRef<CrashingHandle>>>> = Arc::new(Mutex::new(Vec::new()));
+    let factory_anchors = Arc::clone(&anchors);
+    let child_id = timeout(
+        terminate_bound(),
+        sup.supervise(cfg, move || {
+            let child = CrashingHandle::spawn(());
+            factory_anchors
+                .lock()
+                .expect("anchor lock")
+                .push(child.clone());
+            let _ = births_tx.send(());
+            child
+        }),
+    )
+    .await
+    .expect("supervise must not hang")
+    .expect("the supervisor is alive");
+
+    timeout(terminate_bound(), births_rx.recv())
+        .await
+        .expect("first birth within the bound")
+        .expect("the birth tape is open");
+    let first = anchors.lock().expect("anchor lock")[0].clone();
+    // One controlled crash: the handler's Err trips the zero budget at once.
+    first.tell(Ping).try_send().expect("mailbox has capacity");
+
+    // The supervisor gives up and stops — the synchronization point: the error
+    // event fires strictly before its RunResult resolves.
+    let outcome = timeout(terminate_bound(), join)
+        .await
+        .expect("the escalating supervisor stops inside the bound")
+        .expect("join");
+    assert!(
+        matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::RestartLimitExceeded { child, rebuilds: 1 },
+                ..
+            } if child == child_id
+        ),
+        "the zero budget trips as RestartLimitExceeded, got {outcome:?}",
+    );
+
+    // The crashing child also emits a `handler crashed` error — filter by
+    // message, never by total ERROR count.
+    let store = store.lock().unwrap();
+    let gave_up: Vec<_> = store
+        .events
+        .iter()
+        .filter(|e| {
+            field(&e.fields, "message").as_deref() == Some("restart budget exhausted, giving up")
+        })
+        .collect();
+    assert_eq!(
+        gave_up.len(),
+        1,
+        "exactly one give-up event, got {gave_up:?}"
+    );
+    assert_eq!(gave_up[0].level, "ERROR");
+    assert_eq!(
+        field(&gave_up[0].fields, "restart.rebuilds").as_deref(),
+        Some("1"),
+        "the tripping failure itself is counted",
+    );
+    assert_eq!(
+        field(&gave_up[0].fields, "child.id"),
+        Some(format!("{child_id:?}")),
+        "the event names the child whose budget tripped",
+    );
+}
+
+/// A child whose FIRST incarnation starts fine (and crashes in its handler),
+/// while the REBUILD's `on_start` panics — the knowable crash loop the
+/// supervisor escalates on instead of burning budget.
+struct RebuildBomb;
+impl Mailboxed for RebuildBomb {
+    type Msg = Ping;
+}
+impl Actor for RebuildBomb {
+    type Args = Arc<AtomicBool>;
+    type Error = StopErr;
+    async fn on_start(started_before: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        if started_before.swap(true, Ordering::SeqCst) {
+            panic!("rebuild on_start boom");
+        }
+        Ok(RebuildBomb)
+    }
+    async fn handle(
+        &mut self,
+        _: Ping,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        Err(StopErr)
+    }
+}
+
+/// Spec D7: a child dying in a lifecycle hook is refused a restart — the
+/// escalation is an `error!` event naming the incarnation that died in the
+/// hook (the REBUILD's id, not the first incarnation's), and the supervisor
+/// stops with `ChildLifecycleFailed`.
+///
+/// The first incarnation must die a NON-hook death: an `on_start` panic on the
+/// very first spawn can race the watch install and reach the supervisor as a
+/// synthetic `AlreadyDead` (restart-worthy), never escalating. The rebuild
+/// path has no such race — the loop installs the watch synchronously, before
+/// the fresh incarnation ever polls — so the hook panic is staged there.
+#[tokio::test(start_paused = true)]
+async fn child_lifecycle_failure_escalates_with_error_event() {
+    let (store, _guard) = capture::install();
+
+    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(default_cap());
+    let sup = prepared.actor_ref().clone();
+    let join = prepared.spawn_supervised_task((), link_rx);
+
+    let started_before = Arc::new(AtomicBool::new(false));
+    let (births_tx, mut births_rx) = mpsc::unbounded_channel();
+    let anchors: Arc<Mutex<Vec<ActorRef<RebuildBomb>>>> = Arc::new(Mutex::new(Vec::new()));
+    let factory_anchors = Arc::clone(&anchors);
+    let factory_flag = Arc::clone(&started_before);
+    let first_id = timeout(
+        terminate_bound(),
+        sup.supervise(RestartConfig::new(RestartPolicy::Permanent), move || {
+            let child = RebuildBomb::spawn(Arc::clone(&factory_flag));
+            factory_anchors
+                .lock()
+                .expect("anchor lock")
+                .push(child.clone());
+            let _ = births_tx.send(child.id());
+            child
+        }),
+    )
+    .await
+    .expect("supervise must not hang")
+    .expect("the supervisor is alive");
+
+    let born_first = timeout(terminate_bound(), births_rx.recv())
+        .await
+        .expect("first birth within the bound")
+        .expect("the birth tape is open");
+    assert_eq!(
+        born_first, first_id,
+        "the first incarnation is the returned id"
+    );
+    let first = anchors.lock().expect("anchor lock")[0].clone();
+    // A handler crash (non-hook death) schedules an ordinary restart; the
+    // paused clock auto-advances its backoff.
+    first.tell(Ping).try_send().expect("mailbox has capacity");
+    // The rebuild's birth: its `on_start` panics, which the supervisor refuses
+    // to restart — escalation names THIS id.
+    let rebuild_id = timeout(terminate_bound(), births_rx.recv())
+        .await
+        .expect("rebuild within the bound")
+        .expect("the birth tape is open");
+
+    let outcome = timeout(terminate_bound(), join)
+        .await
+        .expect("the escalating supervisor stops inside the bound")
+        .expect("join");
+    assert!(
+        matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::ChildLifecycleFailed { child },
+                ..
+            } if child == rebuild_id
+        ),
+        "a hook death escalates as ChildLifecycleFailed, got {outcome:?}",
+    );
+
+    // Other ERROR events fire on this path (`handler crashed`, `on_start
+    // failed`) — filter by message, never by total ERROR count.
+    let store = store.lock().unwrap();
+    let escalations: Vec<_> = store
+        .events
+        .iter()
+        .filter(|e| {
+            field(&e.fields, "message").as_deref() == Some("child lifecycle-hook failure escalated")
+        })
+        .collect();
+    assert_eq!(
+        escalations.len(),
+        1,
+        "exactly one escalation event, got {escalations:?}"
+    );
+    assert_eq!(escalations[0].level, "ERROR");
+    assert_eq!(
+        field(&escalations[0].fields, "child.id"),
+        Some(format!("{rebuild_id:?}")),
+        "the escalation names the incarnation that died in the hook",
     );
 }
