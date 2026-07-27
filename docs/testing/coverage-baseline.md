@@ -3,7 +3,7 @@
 > **Scope change 2026-07-27 (#213):** the vendored kameo fork left the tree — workspace
 > member `.` (`src/`), its root `tests/` BDD suites (`core_*_bdd`, `console_wire_*`),
 > `examples/`, `benches/overhead.rs`, and the `actors/` utility crate are **deleted**;
-> `console/` is excluded from the workspace pending the apps/console card. Coverage and
+> `apps/console/` is excluded from the workspace pending its re-point onto bombay-core (console card). Coverage and
 > mutation scope is now **bombay-core + bombay_macros (derive_msg) + mutants-gate** only.
 > Sections below that describe the vendored crate's suites are historical record.
 
@@ -63,7 +63,7 @@ under the god-level bar (no #61 quarantine). It is measured by the same
 `--workspace` coverage run and adds a **reproducible mutation gate**:
 
 ```bash
-nix build .#mutants -L   # cargo-mutants over the workspace + macros/src/derive_msg.rs, plus
+nix build .#mutants -L   # cargo-mutants over the workspace + crates/macros/src/derive_msg.rs, plus
                           # a mutants-gate verdict tool: fails on any survivor, any timeout,
                           # an interrupted run (fewer recorded outcomes than candidates), or a
                           # per-`file::function` viability collapse against the committed
@@ -82,7 +82,7 @@ ratchet baseline was regenerated under #186: `WeakActorRef::with_sender` is gone
 `upgrade_preserves_id_cancel_and_abort`), `ActorRef::abort_handle` joins
 `known_zero_viable`, `cancel_token` moves to a caught floor of 1 (it lost `const`, so
 whole-body mutants now compile), and `AskFut::poll`'s floor ratchets 1 → 3. All of
-`macros/src/derive_msg.rs` stays empirically 0-viable, covered by #170's compile-fail
+`crates/macros/src/derive_msg.rs` stays empirically 0-viable, covered by #170's compile-fail
 lane. (The pre-#186 point-in-time reading, 2026-07-17: 64 viable / 215 total, 0 missed.)
 
 ### `mailbox` (#112, redesigned #133) — done
@@ -165,7 +165,7 @@ downcast/`with_str`/clone-shares-`Arc`, and Display-message stability. **Mutatio
 cards (#120/#121, request builders #118, the Zenoh tier).
 
 ### `message` (#114) — done
-`bombay-core/src/message.rs` carries the `Msg` marker trait: an actor's single closed
+`crates/bombay-core/src/message.rs` carries the `Msg` marker trait: an actor's single closed
 message type, queued **by value**, with `SLOT_BUDGET` (default 256 B / 4 cache lines)
 as the per-slot byte bound. Trait covered by 3 `bombay-core` unit tests — default-256
 pin, hand-override, and usability as a generic bound. Mutation testing yields no
@@ -176,16 +176,16 @@ longer silent: the standing gate (`nix build .#mutants`, #171/#165) reports outc
 **per `file::function`**, so a file contributing zero candidates shows up as such in the
 run rather than being folded into an aggregate total.
 
-The `#[derive(Msg)]` proc-macro (`macros/src/derive_msg.rs`) implements the trait and
+The `#[derive(Msg)]` proc-macro (`crates/macros/src/derive_msg.rs`) implements the trait and
 emits a compile-time slot-size tripwire; it sits outside the `bombay-core` mutation
 gate by design (proc-macros compile out-of-process, same as the "known limitation"
-below) and is instead covered by: native runtime tests (`macros/tests/derive_msg.rs`)
+below) and is instead covered by: native runtime tests (`crates/macros/tests/derive_msg.rs`)
 for the generated impl on the default budget and the `#[msg(budget = N)]` override;
 `parse_budget` unit tests for the attribute grammar (value present, absent,
 non-integer, bare key, unknown key, duplicate within one `#[msg(...)]` and across two,
 negative, and overflowing-integer rejection); direct `syn::parse_str::<DeriveMsg>`
 unit tests for the generic- and union-rejection guards; and six paired `///`
-doctests on the derive in `macros/src/lib.rs` — three that must keep compiling
+doctests on the derive in `crates/macros/src/lib.rs` — three that must keep compiling
 (the initial within-budget example, the boxed-remedy, and the `#[msg(budget = N)]`
 escape) plus three `compile_fail` (budget tripwire, generic rejected, union
 rejected). No README change —
@@ -203,18 +203,18 @@ the rebuilt spine is not behind the umbrella yet (same as #113/#133).
 > So **none** of the six `///` doctests — and none of the three `compile_fail` probes —
 > execute under `nix flake check`. `bombay-nextest` covers the `macros` crate because
 > nextest defaults to the whole workspace; `cargo test --doc` does not. The same applies
-> to `bombay-core/src/reply.rs:32`'s consume-once probe: **all four `compile_fail`
+> to `crates/bombay-core/src/reply.rs:32`'s consume-once probe: **all four `compile_fail`
 > doctests in the rebuilt spine are dead in the gate**, and no `trybuild` compensates.
 >
 > Concretely: delete the `const _: () = assert!(…)` tripwire from
-> `macros/src/derive_msg.rs:64-68` and the gate stays green — every in-gate
+> `crates/macros/src/derive_msg.rs:64-68` and the gate stays green — every in-gate
 > `#[derive(Msg)]` type is within budget, and `examples/msg_budget.rs`'s tripwire demo
 > is commented out (`:26-33`). `size_exactly_at_budget_compiles` guards `<=` vs `<`,
 > not assert-vs-no-assert. The unit tests (`parse_budget` grammar, generic/union
 > guards) DO run and are unaffected. Tracked as **#170**.
 
 ### `reply` (#115) — done
-`bombay-core/src/reply.rs` carries the typed single-shot reply channel:
+`crates/bombay-core/src/reply.rs` carries the typed single-shot reply channel:
 `ReplySender<R, E>` / `ReplyReceiver<R, E>` / `reply_channel()` over
 `tokio::sync::oneshot<Result<R, E>>` (ADR-0002). Kameo's `Box<dyn Any>`
 `Reply`-trait erasure is **dropped** — a typed port erases nothing, so any
@@ -241,7 +241,7 @@ loom N/A (delegated to tokio oneshot), same as #113.
 `DelegatedReply`/`ForwardedReply` deferred to #116/#118 (recorded on #115).
 
 ### `actor` (#116) — done
-`bombay-core/src/actor/` carries the local actor spine: the `Actor` trait +
+`crates/bombay-core/src/actor/` carries the local actor spine: the `Actor` trait +
 lifecycle hooks (`mod.rs`), the run-loop (`kind.rs`), the minimal
 `ActorRef`/`WeakActorRef` handle (`actor_ref.rs`), and the spawn entry points
 `PreparedActor`/`RunResult` + the `Spawn` ext-trait (`spawn.rs`). The loop is
@@ -346,7 +346,7 @@ Mutation: baseline regenerated — **92 viable / 314 total, 0 missed, 0 timeout*
 (see the gate paragraph above). MIRI sweep + seeds legs green on PR #188.
 
 ### `recipient` type-erased fan-in (#145) — done
-`bombay-core/src/actor/recipient.rs` carries `Recipient<M>` / `WeakRecipient<M>`:
+`crates/bombay-core/src/actor/recipient.rs` carries `Recipient<M>` / `WeakRecipient<M>`:
 type-erased, zero-box fan-in handles that broadcast one `M` to **heterogeneous**
 actors whose closed menu satisfies `A::Msg: From<M>` (ADR-0004). A private
 `ErasedRecipient<M>` / `ErasedWeakRecipient<M>` trait object (`Arc<dyn …>`) erases
@@ -464,12 +464,12 @@ change.
 > `WeakActorRef::with_sender` is visible in the committed baseline (`known_zero_viable`)
 > rather than averaged into an aggregate "13 caught, 8 unviable" that hides it — and
 > `with_sender` now additionally carries a hand-written compensating test in
-> `bombay-core/src/actor/actor_ref.rs`, so a wrong-`id`/stale-`cancel` copy that its own 0
+> `crates/bombay-core/src/actor/actor_ref.rs`, so a wrong-`id`/stale-`cancel` copy that its own 0
 > viable mutants cannot catch is caught there instead. The current whole-package +
 > `derive_msg.rs` measurement (2026-07-17, this branch, complete run — not interrupted) is
 > **64 viable / 215 total** mutants (64 caught, 0 missed, 0 timeout, 151 unviable; 215 vs.
 > the 205 candidates PR #157 attempted, because the sweep now also covers
-> `macros/src/derive_msg.rs`, which is empirically 0-viable and is documented as such rather
+> `crates/macros/src/derive_msg.rs`, which is empirically 0-viable and is documented as such rather
 > than silently absent). The baseline floors 47 functions with viable ≥ 1 and documents 48
 > functions — including all of `derive_msg.rs` — as 0-viable by design.
 
@@ -540,7 +540,7 @@ records the analysis. No README change (same pre-public posture as #112–#117;
 the vendored-kameo API the README documents is unchanged).
 
 ### `registry` local name→actor lookup (#119) — done
-`bombay-core/src/registry.rs`: concrete `Registry` over
+`crates/bombay-core/src/registry.rs`: concrete `Registry` over
 `papaya::HashMap<Cow<'static, str>, Box<dyn ErasedEntry>>` (erased **weak**
 handles — a registration never pins the actor), register-once decided
 atomically inside `papaya::HashMap::compute`, dead entries read as absent on
@@ -704,7 +704,7 @@ same target.
 > **⚠️ Corrected 2026-07-17 (#168) — this lane asserts flume's guarantees, and the
 > in-gate replay replays nothing.** Two distinct problems:
 >
-> 1. **Wrong surface (tracked as #164).** `bombay-core/src/mailbox.rs:200` is
+> 1. **Wrong surface (tracked as #164).** `crates/bombay-core/src/mailbox.rs:200` is
 >    `flume::bounded`, and `try_send`/`drain` are thin glue over it, so the FIFO +
 >    exactly-once assertion above discriminates **flume's** ordering through ~50 lines of
 >    bombay code against a `VecDeque` oracle. #152's 3,539,931 green executions largely
@@ -765,14 +765,14 @@ cannot catch.
 The `macros` crate (`messages.rs` 0/437, the `derive_*`) runs at **compile time**, in a separate
 process during the build of crates that USE the macros — runtime `llvm-cov` of the test binaries
 cannot see it. Covering it needs expansion/`trybuild` tests, a distinct concern (not "write more
-runtime scenarios"). Likewise `demo.rs` is a non-SUT demo entrypoint. `console/src/main.rs` and
+runtime scenarios"). Likewise `demo.rs` is a non-SUT demo entrypoint. `apps/console/src/main.rs` and
 the literal `event::read()` poll are now exercised by the **Tier-2 PTY smoke test** (#83, below);
 note that `llvm-cov` still reports them near-0% because the test drives a *separate* compiled
 process, whose instrumentation the test-binary coverage run does not aggregate — the guarantee is
 behavioural (the binary boots, polls input, and quits cleanly), not a line-count bump.
 
 ### Tier-2 (PTY / "Selenium-for-terminals") — #83
-`console/tests/pty_smoke.rs` drives the real `bombay-console --demo` binary through a
+`apps/console/tests/pty_smoke.rs` drives the real `bombay-console --demo` binary through a
 pseudo-terminal (`portable-pty`), re-emulates the visible screen from the raw PTY bytes with
 `vt100`, and asserts on the rendered grid: dashboard renders → `?` opens the help popup (via the
 real `event::read()` poll) → `Esc` dismisses → `/`+query echoes → `q` exits cleanly. This is the
@@ -909,7 +909,7 @@ the #148 fail-fast bounds are MIRI-aware via `test_support::terminate_bound()` (
 native, 10 min under the interpreter — MIRI's virtual clock ticks 5 µs per basic block).
 
 ## Exact-memory reclamation (#151) — in-gate counting allocator
-`bombay-core/tests/alloc_exact.rs` — a **dedicated one-test binary** (a
+`crates/bombay-core/tests/alloc_exact.rs` — a **dedicated one-test binary** (a
 `#[global_allocator]` counts its whole process, and only a lone test is
 process-isolated under both nextest and plain `cargo test`) asserting the ADR-0003
 `queue → Signal → Sender → Arc<Shared>` cycle reclaims to an **exact** bytes+allocs

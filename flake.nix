@@ -344,7 +344,7 @@
                   # latency rises to 180s, negligible over the multi-minute sweep.
                   cargo mutants \
                     --package bombay-core --package bombay_macros \
-                    --file 'bombay-core/**' --file 'macros/src/derive_msg.rs' \
+                    --file 'crates/bombay-core/**' --file 'crates/macros/src/derive_msg.rs' \
                     --no-shuffle --colors never --timeout 180 \
                     --output "$out" || true
                   cargo run --release -p mutants-gate -- \
