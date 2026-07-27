@@ -13,6 +13,12 @@ publish = false
 # `pub(crate)`). A feature, not `#[doc(hidden)]` — see CLAUDE.md API-design rules.
 # Card #150; #151 extends this seam with its counting allocator.
 [features]
+default = ["tracing"]
+# Structured actor-lifecycle spans/events (card #209). Default-on like axum and
+# upstream kameo — with no subscriber installed the per-event cost is one
+# static-atomic interest check. Opt out with `default-features = false`; every
+# call site then compiles out (gate check `bombay-tracing-off` proves it).
+tracing = ["dep:tracing"]
 test-support = []
 
 [dependencies]
@@ -26,6 +32,7 @@ downcast-rs = { workspace = true }
 papaya = { workspace = true }
 smallvec = { workspace = true }
 fastrand = { workspace = true }
+tracing = { workspace = true, optional = true }
 
 [dev-dependencies]
 # Upstream kameo from crates.io — dev-only, for the head-to-head
@@ -50,6 +57,11 @@ async-channel = "2.5.0"
 thingbuf = "0.1.6"
 crossbeam-channel = "0.5.15"
 bombay_macros = { path = "../macros" }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", default-features = false, features = [
+  "registry",
+  "std",
+] }
 
 [[bench]]
 name = "mailbox"
