@@ -21,6 +21,8 @@ use bombay::{
 };
 use tokio::{sync::mpsc, time::timeout};
 
+use capture::field;
+
 mod capture {
     use std::fmt::Write as _;
     use std::sync::{Arc, Mutex};
@@ -171,8 +173,6 @@ mod capture {
         (store, tracing::subscriber::set_default(subscriber))
     }
 }
-
-use capture::field;
 
 #[derive(Debug)]
 struct Ping;
@@ -588,9 +588,9 @@ async fn death_notice_delivery_emits_one_trace_event_per_edge() {
 
     let prepared = PreparedActor::<Probe>::new(default_cap());
     let target_ref = prepared.actor_ref().clone();
-    watcher
-        .watch(&target_ref)
+    timeout(terminate_bound(), watcher.watch(&target_ref))
         .await
+        .expect("watch registration must complete inside the bound")
         .expect("a linked watcher can watch");
     drop(target_ref);
 

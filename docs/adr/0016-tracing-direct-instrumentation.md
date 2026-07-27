@@ -62,7 +62,8 @@ never installs a subscriber (tracing docs: libraries must not call
 
 - otel/fmt/console integration is downstream configuration, not bombay code;
   a subscriber sees the lifecycle span (with `stop.reason` recorded at
-  teardown), per-message `actor.handle` spans parented to the caller's span
+  teardown — empty on the kill/startup-failure paths, which never reach it),
+  per-message `actor.handle` spans parented to the caller's span
   (cross-actor traces stitch into one tree), and error-level events for every
   lifecycle failure.
 - Feature on with no subscriber: one static-atomic interest check per call
