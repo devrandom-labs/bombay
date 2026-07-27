@@ -483,7 +483,7 @@ async fn finish_actor<A: Actor>(
             // dropped its future (which is what releases the borrow of `state`).
             // Death is announced regardless, and the armed flag already says the
             // cleanup never finished.
-            log_on_stop_abandoned::<A>(&reason);
+            trace::on_stop_abandoned(&reason, ON_STOP_NOTICE_GRACE);
         }
     }
 
@@ -663,47 +663,15 @@ async fn run_lifecycle_supervised<A: Supervisor>(
 /// Logs a failed/panicked `on_stop` without altering the preserved stop reason
 /// and without unwrapping (a double-panic on the shutdown path can abort the
 /// process — std `Drop` docs).
-#[expect(
-    clippy::print_stderr,
-    reason = "diagnostic-only surface until the tracing feature lands (#66); \
-              an on_stop failure must be surfaced, never swallowed"
-)]
 fn log_on_stop_outcome<A: Actor>(
     reason: &ActorStopReason,
     stop_result: Result<Result<(), A::Error>, Box<dyn std::any::Any + Send>>,
 ) {
     match stop_result {
-        Ok(Ok(())) => {}
-        Ok(Err(err)) => {
-            eprintln!(
-                "[bombay] on_stop for {} returned an error: {err:?} (stop reason: {reason})",
-                A::name()
-            );
-        }
-        Err(_payload) => {
-            eprintln!(
-                "[bombay] on_stop for {} panicked (stop reason: {reason})",
-                A::name()
-            );
-        }
+        Ok(Ok(())) => trace::on_stop_ok(reason),
+        Ok(Err(err)) => trace::on_stop_failed(reason, &err),
+        Err(_payload) => trace::on_stop_panicked(reason),
     }
-}
-
-/// Logs an `on_stop` abandoned at [`ON_STOP_NOTICE_GRACE`]. Separate from
-/// [`log_on_stop_outcome`] because there is no result to report — the hook never
-/// produced one — and because a hook that outlives its bound is a distinct,
-/// leak-shaped defect in user code that must never pass silently.
-#[expect(
-    clippy::print_stderr,
-    reason = "diagnostic-only surface until the tracing feature lands (#66); \
-              an abandoned on_stop leaves resources unreleased and must be surfaced"
-)]
-fn log_on_stop_abandoned<A: Actor>(reason: &ActorStopReason) {
-    eprintln!(
-        "[bombay] on_stop for {} exceeded the {ON_STOP_NOTICE_GRACE:?} notice grace \
-         and was abandoned (stop reason: {reason})",
-        A::name()
-    );
 }
 
 #[cfg(test)]

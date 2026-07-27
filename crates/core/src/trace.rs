@@ -105,22 +105,18 @@ mod imp {
         tracing::error!(?err, "on_start failed");
     }
 
-    #[expect(dead_code, reason = "wired by the on_stop-event slice of #209")]
     pub fn on_stop_ok(reason: &ActorStopReason) {
         tracing::trace!(%reason, "actor stopped");
     }
 
-    #[expect(dead_code, reason = "wired by the on_stop-event slice of #209")]
     pub fn on_stop_failed<E: core::fmt::Debug>(reason: &ActorStopReason, err: &E) {
         tracing::error!(%reason, ?err, "on_stop returned an error");
     }
 
-    #[expect(dead_code, reason = "wired by the on_stop-event slice of #209")]
     pub fn on_stop_panicked(reason: &ActorStopReason) {
         tracing::error!(%reason, "on_stop panicked");
     }
 
-    #[expect(dead_code, reason = "wired by the on_stop-event slice of #209")]
     pub fn on_stop_abandoned(reason: &ActorStopReason, grace: Duration) {
         tracing::error!(%reason, ?grace, "on_stop exceeded the notice grace and was abandoned");
     }
@@ -178,19 +174,14 @@ mod imp {
     pub const fn spawned() {}
     pub const fn on_start_ok() {}
     pub const fn on_start_failed(_err: &PanicError) {}
-    #[expect(dead_code, reason = "wired by the on_stop-event slice of #209")]
     pub const fn on_stop_ok(_reason: &ActorStopReason) {}
-    #[expect(dead_code, reason = "wired by the on_stop-event slice of #209")]
     pub const fn on_stop_failed<E: core::fmt::Debug>(_reason: &ActorStopReason, _err: &E) {}
-    #[expect(dead_code, reason = "wired by the on_stop-event slice of #209")]
     pub const fn on_stop_panicked(_reason: &ActorStopReason) {}
-    #[expect(dead_code, reason = "wired by the on_stop-event slice of #209")]
     pub const fn on_stop_abandoned(_reason: &ActorStopReason, _grace: Duration) {}
 }
 
-// The `on_stop_*` event helpers stay module-internal until the on_stop-event
-// slice of #209 wires them (re-exporting them unused trips `unused_imports`).
 pub use imp::SendContext;
 pub use imp::{
-    instrument, lifecycle_span, on_start_failed, on_start_ok, record_stop_reason, spawned,
+    instrument, lifecycle_span, on_start_failed, on_start_ok, on_stop_abandoned, on_stop_failed,
+    on_stop_ok, on_stop_panicked, record_stop_reason, spawned,
 };

@@ -5,8 +5,10 @@
 
 use core::convert::Infallible;
 
+use core::time::Duration;
+
 use bombay::{
-    actor::{Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult},
+    actor::{Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult, WeakActorRef},
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -255,5 +257,172 @@ async fn lifecycle_span_carries_identity_and_records_stop_reason() {
         span.follows,
         vec![spawn_site_id],
         "spawn site linked via follows_from",
+    );
+}
+
+#[derive(Debug)]
+struct StopErr;
+
+struct FailingStop;
+impl Mailboxed for FailingStop {
+    type Msg = Ping;
+}
+impl Actor for FailingStop {
+    type Args = ();
+    type Error = StopErr;
+    async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Ok(FailingStop)
+    }
+    async fn handle(
+        &mut self,
+        _: Ping,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+    async fn on_stop(
+        &mut self,
+        _: WeakActorRef<Self>,
+        _: ActorStopReason,
+    ) -> Result<(), Self::Error> {
+        Err(StopErr)
+    }
+}
+
+/// Spec D8: an `on_stop` error is an `error!` event with structured
+/// `reason` + `err` fields — the eprintln replacement can actually fail.
+#[tokio::test]
+async fn on_stop_error_emits_one_error_event_with_fields() {
+    let (store, _guard) = capture::install();
+    let prepared = PreparedActor::<FailingStop>::new(default_cap());
+    let result = timeout(terminate_bound(), prepared.run(()))
+        .await
+        .expect("actor must stop inside the bound");
+    assert!(matches!(result, RunResult::Stopped { .. }));
+
+    let store = store.lock().unwrap();
+    let errors = store.events_at("ERROR");
+    assert_eq!(errors.len(), 1, "exactly one error event, got {errors:?}");
+    assert_eq!(
+        field(&errors[0].fields, "message").as_deref(),
+        Some("on_stop returned an error"),
+    );
+    assert_eq!(
+        field(&errors[0].fields, "reason"),
+        Some(ActorStopReason::Normal.to_string()),
+        "reason is a structured field, not formatted into the message",
+    );
+    assert_eq!(field(&errors[0].fields, "err").as_deref(), Some("StopErr"));
+}
+
+struct PanickingStop;
+impl Mailboxed for PanickingStop {
+    type Msg = Ping;
+}
+impl Actor for PanickingStop {
+    type Args = ();
+    type Error = Infallible;
+    async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Ok(PanickingStop)
+    }
+    async fn handle(
+        &mut self,
+        _: Ping,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+    async fn on_stop(
+        &mut self,
+        _: WeakActorRef<Self>,
+        _: ActorStopReason,
+    ) -> Result<(), Self::Error> {
+        panic!("boom")
+    }
+}
+
+/// Spec D8: a panicking `on_stop` is caught by the runtime and surfaced as an
+/// `error!` event with the preserved stop reason as a structured field.
+#[tokio::test]
+async fn on_stop_panic_emits_one_error_event() {
+    let (store, _guard) = capture::install();
+    let prepared = PreparedActor::<PanickingStop>::new(default_cap());
+    let result = timeout(terminate_bound(), prepared.run(()))
+        .await
+        .expect("actor must stop inside the bound");
+    assert!(matches!(result, RunResult::Stopped { .. }));
+
+    let store = store.lock().unwrap();
+    let errors = store.events_at("ERROR");
+    assert_eq!(errors.len(), 1, "exactly one error event, got {errors:?}");
+    assert_eq!(
+        field(&errors[0].fields, "message").as_deref(),
+        Some("on_stop panicked"),
+    );
+    assert_eq!(
+        field(&errors[0].fields, "reason"),
+        Some(ActorStopReason::Normal.to_string()),
+        "reason is a structured field, not formatted into the message",
+    );
+}
+
+struct HangingStop;
+impl Mailboxed for HangingStop {
+    type Msg = Ping;
+}
+impl Actor for HangingStop {
+    type Args = ();
+    type Error = Infallible;
+    async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Ok(HangingStop)
+    }
+    async fn handle(
+        &mut self,
+        _: Ping,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+    async fn on_stop(
+        &mut self,
+        _: WeakActorRef<Self>,
+        _: ActorStopReason,
+    ) -> Result<(), Self::Error> {
+        std::future::pending::<()>().await;
+        Ok(())
+    }
+}
+
+/// Spec D8: an `on_stop` that outlives the 5 s notice grace is abandoned, and
+/// the abandonment is an `error!` event carrying `reason` + `grace` fields.
+/// Paused clock: tokio auto-advances past the grace instantly.
+#[tokio::test(start_paused = true)]
+async fn on_stop_abandoned_emits_one_error_event() {
+    let (store, _guard) = capture::install();
+    let prepared = PreparedActor::<HangingStop>::new(default_cap());
+    let result = timeout(terminate_bound(), prepared.run(()))
+        .await
+        .expect("actor must stop inside the bound");
+    assert!(matches!(result, RunResult::Stopped { .. }));
+
+    let store = store.lock().unwrap();
+    let errors = store.events_at("ERROR");
+    assert_eq!(errors.len(), 1, "exactly one error event, got {errors:?}");
+    assert_eq!(
+        field(&errors[0].fields, "message").as_deref(),
+        Some("on_stop exceeded the notice grace and was abandoned"),
+    );
+    assert_eq!(
+        field(&errors[0].fields, "reason"),
+        Some(ActorStopReason::Normal.to_string()),
+        "reason is a structured field, not formatted into the message",
+    );
+    assert_eq!(
+        field(&errors[0].fields, "grace"),
+        Some(format!("{:?}", Duration::from_secs(5))),
+        "grace rides the event as a structured field",
     );
 }
