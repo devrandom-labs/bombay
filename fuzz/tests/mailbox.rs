@@ -9,7 +9,7 @@
 use std::collections::VecDeque;
 
 use bolero::{TypeGenerator, check};
-use bombay_core::mailbox::{
+use bombay::mailbox::{
     ActorId, Capacity, Mailbox, MailboxSender, Mailboxed, Signal, TrySendError,
 };
 

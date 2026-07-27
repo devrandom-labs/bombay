@@ -57,13 +57,13 @@ impl ToTokens for DeriveMsg {
         );
         tokens.extend(quote! {
             #[automatically_derived]
-            impl ::bombay_core::message::Msg for #ident {
+            impl ::bombay::message::Msg for #ident {
                 #budget_const
             }
 
             const _: () = ::core::assert!(
                 ::core::mem::size_of::<#ident>()
-                    <= <#ident as ::bombay_core::message::Msg>::SLOT_BUDGET,
+                    <= <#ident as ::bombay::message::Msg>::SLOT_BUDGET,
                 #over_budget
             );
         });

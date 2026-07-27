@@ -1,6 +1,6 @@
 //! Model-based fuzz of the single-shot reply channel (`reply_channel`, card
 //! #115 / #118). The response port is the typed end of every `ask`; it is
-//! currently only covered by `proptest` in `bombay-core`, never by a fuzzer.
+//! currently only covered by `proptest` in `bombay`, never by a fuzzer.
 //!
 //! Drives `send` / `send_err` / receiver-drop / sender-drop and asserts the
 //! exact outcome matrix:
@@ -16,8 +16,8 @@
 //! other targets in this workspace.
 
 use bolero::{TypeGenerator, check};
-use bombay_core::error::AskError;
-use bombay_core::reply::reply_channel;
+use bombay::error::AskError;
+use bombay::reply::reply_channel;
 
 #[derive(Debug, TypeGenerator)]
 enum Op {

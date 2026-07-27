@@ -3,7 +3,7 @@
 //! time, assertions run under nextest). Compile-fail behaviour (the tripwire,
 //! generics, unions) lives in the paired `compile_fail` doctests on the derive.
 
-use bombay_core::message::Msg;
+use bombay::message::Msg;
 
 #[derive(bombay_macros::Msg)]
 enum Small {

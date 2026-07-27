@@ -2,14 +2,14 @@
 
 Fault-tolerant async actors on Tokio — a Zenoh-native rebuild of the [kameo](https://github.com/tqwewe/kameo) actor framework, pairing with [nexus](https://github.com/devrandom-labs/nexus) for event-sourced, single-writer aggregates. The core is transport- and domain-agnostic: an actor is a single-writer consistency boundary, whether ephemeral, stateful, or nexus-backed.
 
-> **Status:** the local actor spine (`bombay-core`) is rebuilt from scratch and works today; the Zenoh remote layer is under active development. The vendored kameo fork that used to live beside it is gone — upstream [kameo](https://github.com/tqwewe/kameo) (tag `v0.22.2`) serves as the read-only reference oracle. Process, roadmap, and engineering rules live in [`CLAUDE.md`](CLAUDE.md).
+> **Status:** the local actor spine (the `bombay` crate, `crates/core/`) is rebuilt from scratch and works today; the Zenoh remote layer is under active development. The vendored kameo fork that used to live beside it is gone — upstream [kameo](https://github.com/tqwewe/kameo) (tag `v0.22.2`) serves as the read-only reference oracle. Process, roadmap, and engineering rules live in [`CLAUDE.md`](CLAUDE.md).
 
-## Using bombay-core
+## Using bombay
 
 An actor owns its state, declares one closed message enum, and handles messages one at a time. Replies travel on typed one-shot ports carried inside the message:
 
 ```rust
-use bombay_core::{
+use bombay::{
     actor::{Actor, ActorRef, Spawn as _},
     mailbox::Mailboxed,
     message::Msg,
@@ -76,7 +76,7 @@ async fn main() {
 - **Death-watch** — being watched is universal and passive; watching is the opt-in `Watch: Actor` supertrait with the `on_link_died` hook. Its default is OTP's rule: a **linked** *abnormal* death propagates, anything else is observed and the actor continues (override it to trap). Spawn a watcher with `spawn_linked`, then `watch` (one-directional, notify-only), `link` (bidirectional, propagating), or `unwatch`; each returns `Err(ActorNotLinked)` if the actor was not spawned linked. Death travels on its own unbounded channel and is fired from a task-owned guard's `Drop`, so no notice is lost to a full mailbox, a panic, or a hard kill.
 - **Supervision** — an opt-in `Supervisor: Watch` supertrait spawned via `spawn_supervised`. Register a child with `supervise(config, factory)` under an **explicit** `RestartPolicy` (`Permanent` / `Transient` / `Never`) — there is no default policy: the surveyed systems (OTP, Kubernetes, Akka) disagree across the whole range, so the caller must state it (ADR-0012). A dead child is **rebuilt** from its factory, never resumed (a fresh actor with a new `ActorId`); restarts are spaced by exponential backoff + jitter and bounded by two counters — a consecutive-failure trip that resets on healthy uptime, and a never-reset lifetime budget. When a child fails past its budget, the supervisor stops with `RestartLimitExceeded` / `ChildLifecycleFailed`, which is itself a death notice to *its* watcher (the escalation ladder). Which siblings share a failed child's fate is the supervisor's `supervision_strategy()` (default `OneForOne` — the failed child alone): `RestForOne` also cycles the failed child's *younger* siblings, `OneForAll` the whole set — the ladder's coarser rungs, stopped crash-only and rebuilt in birth order without blocking the supervisor (ADR-0014). `stop_child` terminates a child gracefully (cancel → `stop_grace` → abort); `unsupervise` detaches one without stopping it. See ADR-0012 (accounting), ADR-0013 (lazy reactivation stays out of the core), ADR-0014 (set-cycle coordination).
 - **Registry** — a process-local, lock-free-read name registry: register an actor under a name, look it up (weak handles — a registered actor can still die), remove it.
-- **`ActorId`** — a process-local, unforgeable **pure-name** routing key (`bombay_core::ActorId`): minted at spawn and obtainable only from a spawned actor — no public constructor, no readable `u64` (no getter / `From` / `Display`), and deliberately **not** serializable. It names an actor for the mailbox, death-watch, and supervision *inside this process*; the dataspace identity of an actor is its future KERI AID (#121), a separate coordinate — never this handle. Holding an `ActorId` grants nothing; send-authority lives only in `ActorRef` (ADR-0015).
+- **`ActorId`** — a process-local, unforgeable **pure-name** routing key (`bombay::ActorId`): minted at spawn and obtainable only from a spawned actor — no public constructor, no readable `u64` (no getter / `From` / `Display`), and deliberately **not** serializable. It names an actor for the mailbox, death-watch, and supervision *inside this process*; the dataspace identity of an actor is its future KERI AID (#121), a separate coordinate — never this handle. Holding an `ActorId` grants nothing; send-authority lives only in `ActorRef` (ADR-0015).
 - **Mailbox** — bounded only: `Mailbox::<A>::bounded(capacity, id)`. Backpressure via `send`, fail-fast via `try_send`; a queued message keeps the actor alive until it is handled.
 - **Errors** — `TellError` and `AskError`, which classify retry-safety by method (`is_retryable` / `is_terminal`) and hand the undelivered message back; `PanicError` + `PanicReason`; and `ActorStopReason` (`Normal`, `Killed`, `Panicked`, `SupervisorRestart`, `LinkDied`, `AlreadyDead`, `RestartLimitExceeded`, `ChildLifecycleFailed`).
 
@@ -94,7 +94,7 @@ cargo build
 ```bash
 cargo nextest run                       # the whole workspace
 cargo test --doc                        # doc-tests (nextest does not run these)
-cargo test -p bombay-core               # one crate
+cargo test -p bombay               # one crate
 ```
 
 Or run everything the CI gate runs in one shot:

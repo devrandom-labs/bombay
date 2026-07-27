@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "Proc-macros for bombay-core — the #[derive(Msg)] slot-size tripwire."
+description = "Proc-macros for bombay — the #[derive(Msg)] slot-size tripwire."
 publish = false
 
 [lib]
@@ -17,7 +17,7 @@ quote = "1.0.35"
 syn = { version = "2.0.52", features = ["extra-traits", "full"] }
 
 [dev-dependencies]
-bombay-core = { path = "../bombay-core" }
+bombay = { path = "../core" }
 
 [lints]
 workspace = true

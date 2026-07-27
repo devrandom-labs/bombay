@@ -19,12 +19,12 @@
 use std::collections::HashMap;
 
 use bolero::{TypeGenerator, check};
-use bombay_core::actor::{Actor, ActorRef};
-use bombay_core::error::NameTaken;
-use bombay_core::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal};
-use bombay_core::message::Msg;
-use bombay_core::registry::Registry;
-use bombay_core::test_support::unstarted_actor;
+use bombay::actor::{Actor, ActorRef};
+use bombay::error::NameTaken;
+use bombay::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal};
+use bombay::message::Msg;
+use bombay::registry::Registry;
+use bombay::test_support::unstarted_actor;
 
 struct Probe;
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -57,7 +57,7 @@ struct ActorState {
     live: bool,
     handle: Option<(
         ActorRef<Probe>,
-        bombay_core::mailbox::MailboxReceiver<Probe>,
+        bombay::mailbox::MailboxReceiver<Probe>,
     )>,
 }
 
@@ -104,7 +104,7 @@ fn claim_is_live(actors: &HashMap<u64, ActorState>, id: u64, incarnation: u64) -
 
 fn new_actor() -> (
     ActorRef<Probe>,
-    bombay_core::mailbox::MailboxReceiver<Probe>,
+    bombay::mailbox::MailboxReceiver<Probe>,
 ) {
     let cap = Capacity::try_from(4usize).expect("valid capacity");
     let (tx, rx) = Mailbox::<Probe>::bounded(cap, ActorId::from_raw_for_test(0));

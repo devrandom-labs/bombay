@@ -1,6 +1,6 @@
 # cargo-mutants configuration (read by default at `.cargo/mutants.toml`).
 #
-# Skip list. `log_on_stop_outcome` (bombay-core/src/actor/spawn.rs) is
+# Skip list. `log_on_stop_outcome` (crates/core/src/actor/spawn.rs) is
 # diagnostic-only: it returns `()` and mutates no state — its sole effect is an
 # `eprintln!` on the shutdown path (it is already `#[expect(clippy::print_stderr)]`
 # for exactly that reason). The "replace ... with ()" mutant therefore has no

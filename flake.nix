@@ -103,7 +103,7 @@
 
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
-        # The fuzz workspace has its OWN Cargo.lock (bolero + bombay-core path
+        # The fuzz workspace has its OWN Cargo.lock (bolero + bombay path
         # dep). Vendor it separately so the replay check builds offline without
         # touching the root workspace's vendored deps.
         fuzzCargoArtifacts = craneLib.vendorCargoDeps { cargoLock = ./fuzz/Cargo.lock; };
@@ -282,7 +282,7 @@
           shellHook = ''
             echo "bombay MIRI shell (card #150) — nightly, scheduled-lane only."
             echo "  cargo miri setup"
-            echo "  MIRIFLAGS=\"-Zmiri-strict-provenance -Zmiri-many-seeds=64\" cargo miri test -p bombay-core"
+            echo "  MIRIFLAGS=\"-Zmiri-strict-provenance -Zmiri-many-seeds=64\" cargo miri test -p bombay"
           '';
         };
 
@@ -304,7 +304,7 @@
         # `packages.coverage` is **llvm-cov on every system** — reliable and the
         # one that actually completes here; `coverage-tarpaulin` stays exposed on
         # Linux for anyone who wants the ptrace engine. `--workspace` covers
-        # bombay-core + macros + mutants-gate.
+        # bombay (crates/core) + macros + mutants-gate.
         packages =
           let
             # Mutation testing for the rebuilt core (cards #112+, #165, #171). A
@@ -322,7 +322,7 @@
             # single source of truth; `set -o pipefail` makes the gate's exit
             # code (not tee's) fail the derivation. The `--file` globs are
             # single-quoted so cargo-mutants — not the shell — does the matching,
-            # scoping the sweep to bombay-core + derive_msg.rs (bench-only
+            # scoping the sweep to crates/core + derive_msg.rs (bench-only
             # kameo-arm code stays out).
             mutants = craneLib.mkCargoDerivation (
               commonArgs
@@ -343,8 +343,8 @@
                   # as the suite grows; a genuinely-looping mutant's detection
                   # latency rises to 180s, negligible over the multi-minute sweep.
                   cargo mutants \
-                    --package bombay-core --package bombay_macros \
-                    --file 'crates/bombay-core/**' --file 'crates/macros/src/derive_msg.rs' \
+                    --package bombay --package bombay_macros \
+                    --file 'crates/core/**' --file 'crates/macros/src/derive_msg.rs' \
                     --no-shuffle --colors never --timeout 180 \
                     --output "$out" || true
                   cargo run --release -p mutants-gate -- \

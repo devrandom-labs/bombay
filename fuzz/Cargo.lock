@@ -102,7 +102,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bombay-core"
+name = "bombay"
 version = "0.1.0"
 dependencies = [
  "downcast-rs",
@@ -123,7 +123,7 @@ version = "0.0.0"
 dependencies = [
  "bolero",
  "bolero-generator",
- "bombay-core",
+ "bombay",
  "tokio",
 ]
 
