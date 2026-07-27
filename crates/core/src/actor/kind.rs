@@ -594,6 +594,7 @@ fn handle_child_death(
         // A lifecycle-hook failure re-panics on the next incarnation: escalate at
         // once, bypassing both backoff and the counters.
         RestartVerdict::Escalate => {
+            trace::child_escalated(notice.id);
             ControlFlow::Break(ActorStopReason::ChildLifecycleFailed { child: notice.id })
         }
         RestartVerdict::Restart => restart_or_give_up(children, ctx, strategy, rng, notice.id),
@@ -703,12 +704,17 @@ fn restart_or_give_up(
         .expect("caller verified membership in the same synchronous scope");
     let delay = match child.tracker.record_failure(&child.config, Instant::now()) {
         GiveUp::Yes { rebuilds } => {
+            trace::restart_gave_up(id, rebuilds);
             return ControlFlow::Break(ActorStopReason::RestartLimitExceeded {
                 child: id,
                 rebuilds,
             });
         }
-        GiveUp::No { attempt } => jittered_backoff(&child.config, attempt, rng),
+        GiveUp::No { attempt } => {
+            let backoff = jittered_backoff(&child.config, attempt, rng);
+            trace::restart_scheduled(id, attempt, backoff);
+            backoff
+        }
     };
     // `child` borrow ends above; the set path reborrows `children`.
     match strategy {

@@ -6,15 +6,20 @@
 use core::convert::Infallible;
 
 use core::time::Duration;
+use std::sync::{Arc, Mutex};
 
 use bombay::{
-    actor::{Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult, WeakActorRef},
+    actor::{
+        Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult, Spawn,
+        SpawnSupervised, Supervisor, Watch, WeakActorRef,
+    },
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed},
     message::Msg,
-    test_support::terminate_bound,
+    restart::{RestartConfig, RestartPolicy, SupervisionStrategy, jittered_backoff},
+    test_support::{set_supervisor_rng_seed, terminate_bound},
 };
-use tokio::time::timeout;
+use tokio::{sync::mpsc, time::timeout};
 
 mod capture {
     use std::fmt::Write as _;
@@ -546,5 +551,118 @@ async fn on_stop_abandoned_emits_one_error_event() {
         field(&errors[0].fields, "grace"),
         Some(format!("{:?}", Duration::from_secs(5))),
         "grace rides the event as a structured field",
+    );
+}
+
+/// An idle supervisor: the scenario is driven entirely through a child crash,
+/// never supervisor messages.
+#[derive(Debug)]
+struct SupMsg;
+impl Msg for SupMsg {}
+
+struct Sup;
+impl Mailboxed for Sup {
+    type Msg = SupMsg;
+}
+impl Actor for Sup {
+    type Args = ();
+    type Error = Infallible;
+    async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Ok(Sup)
+    }
+    async fn handle(
+        &mut self,
+        _: SupMsg,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+impl Watch for Sup {}
+impl Supervisor for Sup {
+    fn supervision_strategy() -> SupervisionStrategy {
+        SupervisionStrategy::OneForOne
+    }
+}
+
+/// Spec D7: a scheduled child restart is a `warn` event carrying exact
+/// structured `restart.attempt` / `restart.delay` fields (seeded RNG). The
+/// paused clock auto-advances the backoff so the rebuild — which happens
+/// strictly AFTER the warn is emitted — is the synchronization point.
+#[tokio::test(start_paused = true)]
+async fn scheduled_restart_emits_warn_with_attempt_and_delay() {
+    const SEED: u64 = 7;
+    // Seeds the supervisor's jitter RNG for this thread; must precede the spawn.
+    set_supervisor_rng_seed(Some(SEED));
+    let (store, _guard) = capture::install();
+
+    let cfg = RestartConfig::new(RestartPolicy::Permanent);
+    let sup = Sup::spawn_supervised(());
+    let (births_tx, mut births_rx) = mpsc::unbounded_channel::<()>();
+    // Anchors every incarnation: an unanchored rebuild would ref-count-stop and
+    // (under `Permanent`) churn through further restarts, each with its own warn.
+    let anchors: Arc<Mutex<Vec<ActorRef<CrashingHandle>>>> = Arc::new(Mutex::new(Vec::new()));
+    let factory_anchors = Arc::clone(&anchors);
+    let child_id = timeout(
+        terminate_bound(),
+        sup.supervise(cfg, move || {
+            let child = CrashingHandle::spawn(());
+            factory_anchors
+                .lock()
+                .expect("anchor lock")
+                .push(child.clone());
+            let _ = births_tx.send(());
+            child
+        }),
+    )
+    .await
+    .expect("supervise must not hang")
+    .expect("the supervisor is alive");
+
+    // The first incarnation spawns inline in `supervise`; discard its birth.
+    timeout(terminate_bound(), births_rx.recv())
+        .await
+        .expect("first birth within the bound")
+        .expect("the birth tape is open");
+    let first = anchors.lock().expect("anchor lock")[0].clone();
+    // One controlled crash: the handler's Err kills the first incarnation.
+    first.tell(Ping).try_send().expect("mailbox has capacity");
+    // The rebuild's birth proves the restart was scheduled AND its backoff
+    // elapsed — the warn fires synchronously before either.
+    timeout(terminate_bound(), births_rx.recv())
+        .await
+        .expect("rebuild within the bound")
+        .expect("the birth tape is open");
+
+    // Mirrors production: the seeded supervisor RNG's FIRST draw is this
+    // backoff's jitter (nothing else consumes it before the first crash).
+    let expected = jittered_backoff(&cfg, 1, &mut fastrand::Rng::with_seed(SEED));
+
+    let store = store.lock().unwrap();
+    let warns = store.events_at("WARN");
+    assert_eq!(
+        warns.len(),
+        1,
+        "exactly one restart-scheduled warn, got {warns:?}"
+    );
+    assert_eq!(
+        field(&warns[0].fields, "message").as_deref(),
+        Some("child restart scheduled"),
+    );
+    assert_eq!(
+        field(&warns[0].fields, "restart.attempt").as_deref(),
+        Some("1"),
+        "first consecutive failure is attempt 1",
+    );
+    assert_eq!(
+        field(&warns[0].fields, "restart.delay"),
+        Some(format!("{expected:?}")),
+        "seeded jitter makes the delay exact",
+    );
+    assert_eq!(
+        field(&warns[0].fields, "child.id"),
+        Some(format!("{child_id:?}")),
+        "the warn names the dead incarnation",
     );
 }

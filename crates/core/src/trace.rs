@@ -132,6 +132,18 @@ mod imp {
     pub fn on_stop_abandoned(reason: &ActorStopReason, grace: Duration) {
         tracing::error!(%reason, ?grace, "on_stop exceeded the notice grace and was abandoned");
     }
+
+    pub fn restart_scheduled(child: ActorId, attempt: u32, delay: Duration) {
+        tracing::warn!(child.id = ?child, restart.attempt = attempt, restart.delay = ?delay, "child restart scheduled");
+    }
+
+    pub fn restart_gave_up(child: ActorId, rebuilds: u32) {
+        tracing::error!(child.id = ?child, restart.rebuilds = rebuilds, "restart budget exhausted, giving up");
+    }
+
+    pub fn child_escalated(child: ActorId) {
+        tracing::error!(child.id = ?child, "child lifecycle-hook failure escalated");
+    }
 }
 
 #[cfg(not(feature = "tracing"))]
@@ -187,10 +199,14 @@ mod imp {
     pub const fn on_stop_failed<E: core::fmt::Debug>(_reason: &ActorStopReason, _err: &E) {}
     pub const fn on_stop_panicked(_reason: &ActorStopReason) {}
     pub const fn on_stop_abandoned(_reason: &ActorStopReason, _grace: Duration) {}
+    pub const fn restart_scheduled(_child: ActorId, _attempt: u32, _delay: Duration) {}
+    pub const fn restart_gave_up(_child: ActorId, _rebuilds: u32) {}
+    pub const fn child_escalated(_child: ActorId) {}
 }
 
 pub use imp::SendContext;
 pub use imp::{
-    Span, handler_crashed, instrument, lifecycle_span, on_start_failed, on_start_ok,
-    on_stop_abandoned, on_stop_failed, on_stop_ok, on_stop_panicked, record_stop_reason, spawned,
+    Span, child_escalated, handler_crashed, instrument, lifecycle_span, on_start_failed,
+    on_start_ok, on_stop_abandoned, on_stop_failed, on_stop_ok, on_stop_panicked,
+    record_stop_reason, restart_gave_up, restart_scheduled, spawned,
 };
