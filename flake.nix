@@ -188,6 +188,28 @@
             }
           );
 
+          # Card #209: the `tracing` feature must be zero-cost when off — an
+          # opt-out build compiles clean AND carries no tracing crate in its
+          # resolved normal-dep graph (spec D9's "events compile out" bullet,
+          # made mechanical).
+          bombay-tracing-off = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              pnameSuffix = "-tracing-off";
+              buildPhaseCargoCommand = ''
+                cargo check -p bombay --no-default-features
+                if cargo tree -p bombay --no-default-features -e normal --prefix none \
+                  | grep -q '^tracing '; then
+                  echo 'tracing leaked into the --no-default-features dep graph' >&2
+                  exit 1
+                fi
+              '';
+              doInstallCargoArtifacts = false;
+              doCheck = false;
+            }
+          );
+
           # nextest does NOT run doctests, so verify the doc-comment examples
           # separately with `cargo test --doc` (crane's dedicated wrapper).
           #
