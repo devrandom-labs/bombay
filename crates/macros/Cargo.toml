@@ -1,0 +1,23 @@
+[package]
+name = "bombay_macros"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Proc-macros for bombay — the #[derive(Msg)] slot-size tripwire."
+publish = false
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.78"
+quote = "1.0.35"
+syn = { version = "2.0.52", features = ["extra-traits", "full"] }
+
+[dev-dependencies]
+bombay = { path = "../core" }
+
+[lints]
+workspace = true

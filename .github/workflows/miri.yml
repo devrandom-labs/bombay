@@ -50,7 +50,7 @@ jobs:
         env:
           RUSTUP_TOOLCHAIN: ${{ env.MIRI_TOOLCHAIN }}
           MIRIFLAGS: "-Zmiri-strict-provenance"
-        run: cargo miri test -p bombay-core --lib -- --skip prop_
+        run: cargo miri test -p bombay --lib -- --skip prop_
 
   # Leg 2 — schedule exploration over the tests that have real OS-thread
   # overlap (#172 re-pointed this leg; #150's trio was current_thread and had
@@ -120,7 +120,7 @@ jobs:
         # ~5 min CPU at 64 seeds, inside the budget.
         run: |
           echo "exploring seeds ${MIRI_SEEDS} (event: ${{ github.event_name }})"
-          cargo miri test -p bombay-core --lib -- \
+          cargo miri test -p bombay --lib -- \
             concurrent_senders_single_writer_exact_count \
             n_senders_one_receiver_preserve_per_sender_order \
             registry::tests::concurrent_register_single_winner_on_one_name \

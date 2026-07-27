@@ -1,6 +1,6 @@
 //! Model-based fuzz of the actor MESSAGE LOOP (`spawn.rs::run_lifecycle` /
 //! `kind.rs::run_message_loop`) and its stop modes — the surface #149 left
-//! uncovered (its target only reached `bombay_core::mailbox`, i.e. flume).
+//! uncovered (its target only reached `bombay::mailbox`, i.e. flume).
 //!
 //! Asserts bombay's OWN invariants, not flume's: drain-or-abandon per stop
 //! mode, a message enqueued before the last ref drops is still handled, and the
@@ -9,7 +9,7 @@
 //! not a re-encoding of the loop.
 //!
 //! bolero's corpus is filesystem-backed, so this target is fuzz-lane only; the
-//! same loop is MIRI-covered by `bombay-core`'s `#[tokio::test]` cases (the
+//! same loop is MIRI-covered by `bombay`'s `#[tokio::test]` cases (the
 //! miri lane drives `PreparedActor::run` green — ADR-0005).
 
 use std::future::IntoFuture;
@@ -17,11 +17,11 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use bolero::{TypeGenerator, check};
-use bombay_core::actor::{Actor, ActorRef, PreparedActor, RunResult, WeakActorRef};
-use bombay_core::error::ActorStopReason;
-use bombay_core::mailbox::{ActorId, Capacity, Mailboxed, Signal};
-use bombay_core::message::Msg;
-use bombay_core::test_support::{terminate_bound, watch_signal};
+use bombay::actor::{Actor, ActorRef, PreparedActor, RunResult, WeakActorRef};
+use bombay::error::ActorStopReason;
+use bombay::mailbox::{ActorId, Capacity, Mailboxed, Signal};
+use bombay::message::Msg;
+use bombay::test_support::{terminate_bound, watch_signal};
 
 /// One driver step. `Send` enqueues a message; `StopInBand` enqueues a FIFO
 /// `Signal::Stop`; `CancelStop` fires the out-of-band cancel token; `Kill`
@@ -30,7 +30,7 @@ use bombay_core::test_support::{terminate_bound, watch_signal};
 /// #195). The whole script is applied before `run`, so execution is
 /// deterministic on the single-threaded runtime — a sound fuzz oracle.
 ///
-/// `Signal::Watch` carries a boxed `WatchReg`, which lives in bombay-core's
+/// `Signal::Watch` carries a boxed `WatchReg`, which lives in bombay's
 /// private `watch` module and is not part of the public API. The fuzz crate
 /// mints one through the `test-support`-gated `test_support::watch_signal` seam,
 /// which builds the watcher's unbounded link channel internally and returns the
@@ -266,7 +266,7 @@ where
         // this oracle refuses to do. The invariant here is the registration arm
         // itself: enqueuing `Signal::Watch` under random interleavings must not
         // panic and the loop must terminate (bounded above). Deterministic
-        // death-delivery stays covered by bombay-core's `#[tokio::test]` cases.
+        // death-delivery stays covered by bombay's `#[tokio::test]` cases.
         drop(link_rxs);
         outcome
     })

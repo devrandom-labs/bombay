@@ -1,0 +1,83 @@
+[package]
+name = "bombay"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Bombay runtime core — the rebuilt local actor spine (mailbox, message, reply, actor loop). Transport- and domain-agnostic."
+publish = false
+
+# Test-only helpers shared by BOTH the src unit tests (via `cfg(test)`) and the
+# integration tests in `tests/` (which link the lib externally and so cannot see
+# `pub(crate)`). A feature, not `#[doc(hidden)]` — see CLAUDE.md API-design rules.
+# Card #150; #151 extends this seam with its counting allocator.
+[features]
+test-support = []
+
+[dependencies]
+tokio = { workspace = true, features = ["sync", "rt", "macros", "time"] }
+flume = { workspace = true }
+pin-project-lite = { workspace = true }
+tokio-util = { workspace = true }
+futures = { workspace = true }
+thiserror = { workspace = true }
+downcast-rs = { workspace = true }
+papaya = { workspace = true }
+smallvec = { workspace = true }
+fastrand = { workspace = true }
+
+[dev-dependencies]
+# Upstream kameo from crates.io — dev-only, for the head-to-head
+# `*_vs_kameo` benches (card #213 re-pointed these off the deleted vendored
+# fork). The production crate never depends on it.
+kameo = "0.22.2"
+tokio = { workspace = true, features = [
+  "rt",
+  "rt-multi-thread",
+  "macros",
+  "sync",
+  "time",
+  "test-util",
+] }
+proptest = { workspace = true }
+criterion = { version = "0.8", features = ["async_tokio"] }
+bombay = { path = ".", features = ["test-support"] }
+# Card #206: compile-time proof that `ActorId` is not (de)serializable.
+serde = { workspace = true }
+static_assertions = { workspace = true }
+async-channel = "2.5.0"
+thingbuf = "0.1.6"
+crossbeam-channel = "0.5.15"
+bombay_macros = { path = "../macros" }
+
+[[bench]]
+name = "mailbox"
+harness = false
+
+[[bench]]
+name = "request_vs_kameo"
+harness = false
+
+[[bench]]
+name = "registry_vs_kameo"
+harness = false
+
+[[bench]]
+name = "channels"
+harness = false
+
+[[bench]]
+name = "reply"
+harness = false
+
+[[bench]]
+name = "watcher_fanout"
+harness = false
+
+[[bench]]
+name = "supervision_vs_kameo"
+harness = false
+
+[lints]
+workspace = true
