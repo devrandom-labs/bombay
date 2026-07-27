@@ -51,6 +51,11 @@ serde_json = "1.0"
 # Compile-time trait-impl assertions — card #206 pins `ActorId` non-serializable
 # (`assert_not_impl_any!`), a dev-only build-time proof.
 static_assertions = "1.1"
+# Actor-lifecycle instrumentation (card #209): the library emits spans/events;
+# subscribers (fmt, otel, console) are always downstream's choice. No default
+# features: `attributes` (the #[instrument] proc macro + syn subtree) is unused
+# — all spans here are manual.
+tracing = { version = "0.1", default-features = false, features = ["std"] }
 
 # ============================================================
 # Bombay — god-level lint config (adopted from nexus — card #61).

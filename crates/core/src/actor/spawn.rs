@@ -10,7 +10,7 @@
 //! `tokio::time::timeout` panics without a timer, and the alternative — an
 //! unbounded `on_stop` — strands watchers behind a hung user hook.
 
-use core::time::Duration;
+use core::{future::Future, time::Duration};
 use std::{fmt, panic::AssertUnwindSafe};
 
 use futures::{
@@ -32,6 +32,7 @@ use crate::{
     error::{ActorStopReason, PanicError, PanicReason},
     id::next_actor_id,
     mailbox::{Capacity, Mailbox, MailboxReceiver, Signal},
+    trace,
     watch::{LinkReceiver, Watchers},
 };
 
@@ -153,15 +154,30 @@ impl<A: Actor> PreparedActor<A> {
     /// Runs the actor in the current task until it stops. Aborts (hard kill)
     /// short-circuit to [`RunResult::Killed`], skipping `on_stop`.
     ///
+    /// The `actor.lifecycle` span is created eagerly at call time (not first
+    /// poll), so it `follows_from` the caller's span — the spawn site.
+    ///
     /// # Panics
     ///
     /// If the current runtime has no TIME driver: teardown bounds
     /// [`on_stop`](Actor::on_stop) with a timer (see that hook's docs).
-    pub async fn run(self, args: A::Args) -> RunResult<A> {
-        let lifecycle = run_lifecycle(args, self.actor_ref, self.mailbox_rx);
-        Abortable::new(lifecycle, self.abort_registration)
-            .await
-            .unwrap_or(RunResult::Killed)
+    pub fn run(self, args: A::Args) -> impl Future<Output = RunResult<A>> {
+        let Self {
+            actor_ref,
+            mailbox_rx,
+            abort_registration,
+        } = self;
+        let span = trace::lifecycle_span::<A>(actor_ref.id());
+        trace::instrument(
+            async move {
+                trace::spawned();
+                let lifecycle = run_lifecycle(args, actor_ref, mailbox_rx);
+                Abortable::new(lifecycle, abort_registration)
+                    .await
+                    .unwrap_or(RunResult::Killed)
+            },
+            span,
+        )
     }
 
     /// Spawns the actor in a background tokio task. The runtime must have the
@@ -205,11 +221,30 @@ impl<A: Watch> PreparedActor<A> {
     /// Runs the linked actor in the current task until it stops, draining death
     /// notices off `link_rx` alongside messages. Aborts (hard kill) short-circuit
     /// to [`RunResult::Killed`], skipping `on_stop`.
-    pub async fn run_linked(self, args: A::Args, link_rx: LinkReceiver) -> RunResult<A> {
-        let lifecycle = run_lifecycle_linked(args, self.actor_ref, self.mailbox_rx, link_rx);
-        Abortable::new(lifecycle, self.abort_registration)
-            .await
-            .unwrap_or(RunResult::Killed)
+    ///
+    /// The `actor.lifecycle` span is created eagerly at call time (not first
+    /// poll), so it `follows_from` the caller's span — the spawn site.
+    pub fn run_linked(
+        self,
+        args: A::Args,
+        link_rx: LinkReceiver,
+    ) -> impl Future<Output = RunResult<A>> {
+        let Self {
+            actor_ref,
+            mailbox_rx,
+            abort_registration,
+        } = self;
+        let span = trace::lifecycle_span::<A>(actor_ref.id());
+        trace::instrument(
+            async move {
+                trace::spawned();
+                let lifecycle = run_lifecycle_linked(args, actor_ref, mailbox_rx, link_rx);
+                Abortable::new(lifecycle, abort_registration)
+                    .await
+                    .unwrap_or(RunResult::Killed)
+            },
+            span,
+        )
     }
 
     /// Spawns the linked actor in a background tokio task.
@@ -227,11 +262,30 @@ impl<A: Supervisor> PreparedActor<A> {
     /// the three-arm loop that drains its mailbox and link channel *and* rebuilds
     /// dead children under their restart policies (#196). Aborts (hard kill)
     /// short-circuit to [`RunResult::Killed`], skipping `on_stop`.
-    pub async fn run_supervised(self, args: A::Args, link_rx: LinkReceiver) -> RunResult<A> {
-        let lifecycle = run_lifecycle_supervised(args, self.actor_ref, self.mailbox_rx, link_rx);
-        Abortable::new(lifecycle, self.abort_registration)
-            .await
-            .unwrap_or(RunResult::Killed)
+    ///
+    /// The `actor.lifecycle` span is created eagerly at call time (not first
+    /// poll), so it `follows_from` the caller's span — the spawn site.
+    pub fn run_supervised(
+        self,
+        args: A::Args,
+        link_rx: LinkReceiver,
+    ) -> impl Future<Output = RunResult<A>> {
+        let Self {
+            actor_ref,
+            mailbox_rx,
+            abort_registration,
+        } = self;
+        let span = trace::lifecycle_span::<A>(actor_ref.id());
+        trace::instrument(
+            async move {
+                trace::spawned();
+                let lifecycle = run_lifecycle_supervised(args, actor_ref, mailbox_rx, link_rx);
+                Abortable::new(lifecycle, abort_registration)
+                    .await
+                    .unwrap_or(RunResult::Killed)
+            },
+            span,
+        )
     }
 
     /// Spawns the supervisor in a background tokio task.
@@ -275,12 +329,17 @@ async fn start_actor<A: Actor>(
     let state = match started {
         Ok(Ok(actor)) => actor,
         Ok(Err(err)) => {
-            return Err(PanicError::new(Box::new(err), PanicReason::OnStart));
+            let panic_err = PanicError::new(Box::new(err), PanicReason::OnStart);
+            trace::on_start_failed(&panic_err);
+            return Err(panic_err);
         }
         Err(payload) => {
-            return Err(PanicError::from_panic_any(payload, PanicReason::OnStart));
+            let panic_err = PanicError::from_panic_any(payload, PanicReason::OnStart);
+            trace::on_start_failed(&panic_err);
+            return Err(panic_err);
         }
     };
+    trace::on_start_ok();
 
     // Ref-count-driven stop goes live (#117): the loop must not hold a strong
     // self-ref, or the mailbox never closes and the "all-senders-gone" arm stays
@@ -403,6 +462,7 @@ async fn finish_actor<A: Actor>(
     mut watchers: Watchers,
     reason: ActorStopReason,
 ) -> RunResult<A> {
+    trace::record_stop_reason(&reason);
     apply_raced_registrations(&mut mailbox_rx, &mut watchers);
     watchers.set_reason(reason.clone());
 
@@ -423,7 +483,7 @@ async fn finish_actor<A: Actor>(
             // dropped its future (which is what releases the borrow of `state`).
             // Death is announced regardless, and the armed flag already says the
             // cleanup never finished.
-            log_on_stop_abandoned::<A>(&reason);
+            trace::on_stop_abandoned(&reason, ON_STOP_NOTICE_GRACE);
         }
     }
 
@@ -603,47 +663,15 @@ async fn run_lifecycle_supervised<A: Supervisor>(
 /// Logs a failed/panicked `on_stop` without altering the preserved stop reason
 /// and without unwrapping (a double-panic on the shutdown path can abort the
 /// process — std `Drop` docs).
-#[expect(
-    clippy::print_stderr,
-    reason = "diagnostic-only surface until the tracing feature lands (#66); \
-              an on_stop failure must be surfaced, never swallowed"
-)]
 fn log_on_stop_outcome<A: Actor>(
     reason: &ActorStopReason,
     stop_result: Result<Result<(), A::Error>, Box<dyn std::any::Any + Send>>,
 ) {
     match stop_result {
-        Ok(Ok(())) => {}
-        Ok(Err(err)) => {
-            eprintln!(
-                "[bombay] on_stop for {} returned an error: {err:?} (stop reason: {reason})",
-                A::name()
-            );
-        }
-        Err(_payload) => {
-            eprintln!(
-                "[bombay] on_stop for {} panicked (stop reason: {reason})",
-                A::name()
-            );
-        }
+        Ok(Ok(())) => trace::on_stop_ok(reason),
+        Ok(Err(err)) => trace::on_stop_failed(reason, &err),
+        Err(_payload) => trace::on_stop_panicked(reason),
     }
-}
-
-/// Logs an `on_stop` abandoned at [`ON_STOP_NOTICE_GRACE`]. Separate from
-/// [`log_on_stop_outcome`] because there is no result to report — the hook never
-/// produced one — and because a hook that outlives its bound is a distinct,
-/// leak-shaped defect in user code that must never pass silently.
-#[expect(
-    clippy::print_stderr,
-    reason = "diagnostic-only surface until the tracing feature lands (#66); \
-              an abandoned on_stop leaves resources unreleased and must be surfaced"
-)]
-fn log_on_stop_abandoned<A: Actor>(reason: &ActorStopReason) {
-    eprintln!(
-        "[bombay] on_stop for {} exceeded the {ON_STOP_NOTICE_GRACE:?} notice grace \
-         and was abandoned (stop reason: {reason})",
-        A::name()
-    );
 }
 
 #[cfg(test)]

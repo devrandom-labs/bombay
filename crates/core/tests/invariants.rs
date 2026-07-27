@@ -70,6 +70,7 @@ use std::{
 use tokio::{sync::oneshot, task::yield_now, time::timeout};
 
 use bombay::{
+    SendContext,
     actor::{Actor, ActorRef, PreparedActor, RunResult, WeakActorRef},
     error::{ActorStopReason, PanicError, PanicReason, TellError},
     mailbox::{Capacity, Mailboxed, Signal, TrySendError},
@@ -1175,6 +1176,7 @@ async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
         .try_send(Signal::Message {
             msg: Cmd::Drain,
             self_sender: actor_ref.mailbox_sender().clone(),
+            ctx: SendContext::capture(),
         })
         .expect("the one free slot accepts Drain");
 
@@ -1182,6 +1184,7 @@ async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
     let rejected = actor_ref.mailbox_sender().try_send(Signal::Message {
         msg: Cmd::Drain,
         self_sender: actor_ref.mailbox_sender().clone(),
+        ctx: SendContext::capture(),
     });
     let Err(TrySendError::Full(returned)) = rejected else {
         panic!("expected Full rejection, got {rejected:?}");

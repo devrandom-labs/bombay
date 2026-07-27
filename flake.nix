@@ -188,6 +188,28 @@
             }
           );
 
+          # Card #209: the `tracing` feature must be zero-cost when off — an
+          # opt-out build compiles clean AND carries no tracing crate in its
+          # resolved normal-dep graph (spec D9's "events compile out" bullet,
+          # made mechanical).
+          bombay-tracing-off = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              pnameSuffix = "-tracing-off";
+              buildPhaseCargoCommand = ''
+                cargo check -p bombay --no-default-features
+                if cargo tree -p bombay --no-default-features -e normal --prefix none \
+                  | grep -q '^tracing '; then
+                  echo 'tracing leaked into the --no-default-features dep graph' >&2
+                  exit 1
+                fi
+              '';
+              doInstallCargoArtifacts = false;
+              doCheck = false;
+            }
+          );
+
           # nextest does NOT run doctests, so verify the doc-comment examples
           # separately with `cargo test --doc` (crane's dedicated wrapper).
           #
@@ -341,11 +363,19 @@
                   # serialize to ~60s, grazing the old cap and mis-reporting a
                   # legitimately-CAUGHT mutant as a Timeout. 180 restores headroom
                   # as the suite grows; a genuinely-looping mutant's detection
-                  # latency rises to 180s, negligible over the multi-minute sweep.
+                  # latency rises to the cap, negligible over the multi-minute
+                  # sweep.
+                  # Raised 180→360 (#209): the bound is WALL clock, so a host
+                  # that sleeps or throttles mid-sweep (observed: an overnight
+                  # local run flaked 4 previously-caught actor_ref mutants, and
+                  # once the unmutated baseline, as Timeouts at "7s build + full
+                  # cap test") converts caught mutants into Timeout FAILs. The
+                  # worst honest mutant measures ~70s awake; 360 is ~5x that,
+                  # and a genuinely-looping mutant still fails, just later.
                   cargo mutants \
                     --package bombay --package bombay_macros \
                     --file 'crates/core/**' --file 'crates/macros/src/derive_msg.rs' \
-                    --no-shuffle --colors never --timeout 180 \
+                    --no-shuffle --colors never --timeout 360 \
                     --output "$out" || true
                   cargo run --release -p mutants-gate -- \
                     check "$out/mutants.out" "$PWD/mutants-baseline.json" \

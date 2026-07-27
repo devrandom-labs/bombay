@@ -978,3 +978,35 @@ when that type ships.
 The design was validated by an executable discrete-event model
 (`docs/superpowers/specs/2026-07-25-199-cycle-model.rs`) before the spec — the SUT's DST expectations
 cross-check against it; every coordinator element is load-bearing by a reproduced counterexample.
+
+## Tracing feature (#209) — capture-subscriber suite
+
+`crates/core/tests/tracing_capture.rs` — **9 tests** over the `tracing` feature's spans and
+events. The whole binary is `#![cfg(feature = "tracing")]` (a `--no-default-features` build
+has no surface to test); the off build is covered instead by the `bombay-tracing-off` flake
+check, which compiles `-p bombay --no-default-features` and fails if the `tracing` crate
+appears in the resolved normal-dep graph. A hand-rolled `CaptureLayer` over the
+`tracing-subscriber` registry (installed as the *thread* default per test — current-thread
+runtime, so every actor task emits on the capturing thread) records spans
+(id / resolved parent / `follows_from` links / fields) and events (level / enclosing span /
+fields):
+
+- **lifecycle span identity** — `actor.lifecycle` carries `actor.name` + `actor.id` at
+  creation, records `stop.reason` at teardown, is a **root** (`parent == None`), and
+  `follows_from` exactly the spawn-site span;
+- **`on_stop` failure events** — error / panic / grace-abandonment each emit **exactly one**
+  `error!` with structured `reason` (+ `err` / `grace`) fields — the retired-`eprintln!`
+  replacements can actually fail their assertions;
+- **handle-span parenting** — `actor.handle` parents to the caller's span captured at
+  enqueue (with `msg.kind` + `actor.name`); no caller span at enqueue → contextual fallback
+  to the lifecycle span;
+- **handler crash** — a handler's `Err` emits one `error!` firing *inside* that message's
+  `actor.handle` span;
+- **restart warn** — a seeded supervisor RNG (`set_supervisor_rng_seed`, paused clock) pins
+  the scheduled-restart `warn!`'s exact `restart.attempt` / `restart.delay` / `child.id`;
+- **death notice** — delivering a death notice is one `trace!` per watcher edge with
+  `watcher.id` / `reason` / `cleanup_failed`.
+
+Structural half: the two slot-size tripwires in `mailbox.rs` pin `SendContext` (the
+caller-span envelope field) to at most **one word**, so the #209 context can never silently
+fatten every queue slot.

@@ -21,6 +21,7 @@ use crate::{
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{ActorId, MailboxReceiver, Mailboxed, Signal},
     restart::{GiveUp, RestartVerdict, SupervisionStrategy, jittered_backoff, should_restart},
+    trace,
     watch::{LinkDied, LinkReceiver, LinkSender, WatchReg, Watchers},
 };
 
@@ -184,7 +185,11 @@ async fn handle_mailbox_step<A: Actor>(
         return ControlFlow::Break(ActorStopReason::Normal);
     };
     match next {
-        Signal::Message { msg, self_sender } => {
+        Signal::Message {
+            msg,
+            self_sender,
+            ctx,
+        } => {
             // Steady state: share the external allocation — one CAS, no alloc.
             // Drain window (external refs gone; the dequeued self_sender is what
             // kept the message deliverable, ADR-0003): mint a fresh shared alloc
@@ -204,7 +209,8 @@ async fn handle_mailbox_step<A: Actor>(
                     None,
                 )
             });
-            handle_message(state, actor_ref, self_ref, msg).await
+            let span: trace::Span = ctx.handle_span::<A>();
+            trace::instrument(handle_message(state, actor_ref, self_ref, msg), span).await
         }
         // In-band graceful stop (FIFO): everything queued ahead was already handled.
         Signal::Stop => ControlFlow::Break(ActorStopReason::Normal),
@@ -588,6 +594,7 @@ fn handle_child_death(
         // A lifecycle-hook failure re-panics on the next incarnation: escalate at
         // once, bypassing both backoff and the counters.
         RestartVerdict::Escalate => {
+            trace::child_escalated(notice.id);
             ControlFlow::Break(ActorStopReason::ChildLifecycleFailed { child: notice.id })
         }
         RestartVerdict::Restart => restart_or_give_up(children, ctx, strategy, rng, notice.id),
@@ -697,12 +704,17 @@ fn restart_or_give_up(
         .expect("caller verified membership in the same synchronous scope");
     let delay = match child.tracker.record_failure(&child.config, Instant::now()) {
         GiveUp::Yes { rebuilds } => {
+            trace::restart_gave_up(id, rebuilds);
             return ControlFlow::Break(ActorStopReason::RestartLimitExceeded {
                 child: id,
                 rebuilds,
             });
         }
-        GiveUp::No { attempt } => jittered_backoff(&child.config, attempt, rng),
+        GiveUp::No { attempt } => {
+            let backoff = jittered_backoff(&child.config, attempt, rng);
+            trace::restart_scheduled(id, attempt, backoff);
+            backoff
+        }
     };
     // `child` borrow ends above; the set path reborrows `children`.
     match strategy {
@@ -886,11 +898,13 @@ async fn handle_message<A: Actor>(
         // A returned Err is a controlled crash: observe via on_panic, then stop.
         Ok(Err(err)) => {
             let panic = PanicError::new(Box::new(err), PanicReason::HandlerPanic);
+            trace::handler_crashed(&panic);
             ControlFlow::Break(run_on_panic(state, self_ref, panic).await)
         }
         // The handler unwound: catch, observe via on_panic, then stop.
         Err(payload) => {
             let panic = PanicError::from_panic_any(payload, PanicReason::HandlerPanic);
+            trace::handler_crashed(&panic);
             ControlFlow::Break(run_on_panic(state, self_ref, panic).await)
         }
     }

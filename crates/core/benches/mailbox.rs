@@ -9,6 +9,7 @@
 
 use std::num::NonZeroUsize;
 
+use bombay::SendContext;
 use bombay::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal};
 use criterion::{BatchSize, Criterion, black_box, criterion_group, criterion_main};
 
@@ -55,6 +56,7 @@ fn enqueue(c: &mut Criterion) {
                     tx.try_send(Signal::Message {
                         msg: black_box(command(i)),
                         self_sender: tx.clone(),
+                        ctx: SendContext::capture(),
                     })
                     .expect("capacity available");
                 }
@@ -81,6 +83,7 @@ fn roundtrip(c: &mut Criterion) {
                         tx.send(Signal::Message {
                             msg: black_box(command(i)),
                             self_sender: tx.clone(),
+                            ctx: SendContext::capture(),
                         })
                         .await
                         .expect("send");

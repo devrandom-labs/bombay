@@ -106,7 +106,22 @@
     "crates/core/src/watch.rs::Watchers::cleanup_failed": 2,
     "crates/core/src/watch.rs::Watchers::record_cleanup_succeeded": 1,
     "crates/core/src/watch.rs::Watchers::remove": 2,
-    "crates/core/src/watch.rs::Watchers::set_reason": 1
+    "crates/core/src/watch.rs::Watchers::set_reason": 1,
+    "crates/core/src/actor/spawn.rs::log_on_stop_outcome": 1,
+    "crates/core/src/trace.rs::imp::SendContext::capture": 1,
+    "crates/core/src/trace.rs::imp::child_escalated": 1,
+    "crates/core/src/trace.rs::imp::death_notice": 1,
+    "crates/core/src/trace.rs::imp::handler_crashed": 1,
+    "crates/core/src/trace.rs::imp::on_start_failed": 1,
+    "crates/core/src/trace.rs::imp::on_start_ok": 1,
+    "crates/core/src/trace.rs::imp::on_stop_abandoned": 1,
+    "crates/core/src/trace.rs::imp::on_stop_failed": 1,
+    "crates/core/src/trace.rs::imp::on_stop_ok": 1,
+    "crates/core/src/trace.rs::imp::on_stop_panicked": 1,
+    "crates/core/src/trace.rs::imp::record_stop_reason": 1,
+    "crates/core/src/trace.rs::imp::restart_gave_up": 1,
+    "crates/core/src/trace.rs::imp::restart_scheduled": 1,
+    "crates/core/src/trace.rs::imp::spawned": 1
   },
   "known_zero_viable": [
     "crates/core/src/actor/actor_ref.rs::<impl Clone for ActorRef<A>>::clone",
@@ -218,6 +233,9 @@
     "crates/core/src/test_support.rs::terminate_bound",
     "crates/core/src/test_support.rs::unstarted_actor",
     "crates/core/src/test_support.rs::watch_signal",
+    "crates/core/src/trace.rs::imp::SendContext::handle_span",
+    "crates/core/src/trace.rs::imp::instrument",
+    "crates/core/src/trace.rs::imp::lifecycle_span",
     "crates/macros/src/derive_msg.rs::<impl Parse for DeriveMsg>::parse",
     "crates/macros/src/derive_msg.rs::<impl ToTokens for DeriveMsg>::to_tokens",
     "crates/macros/src/derive_msg.rs::parse_budget"

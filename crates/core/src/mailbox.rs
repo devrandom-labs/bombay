@@ -37,6 +37,7 @@ use flume::r#async::SendFut;
 use crate::{
     actor::SupervisionOp,
     error::ActorStopReason,
+    trace::{self, SendContext},
     watch::{LinkDied, WatchReg},
 };
 
@@ -149,6 +150,10 @@ pub enum Signal<A: Mailboxed> {
         msg: A::Msg,
         /// A strong clone of the enqueuing sender (the actor's own mailbox).
         self_sender: MailboxSender<A>,
+        /// Caller-side trace context captured at enqueue (card #209): the
+        /// sender's current span, so the handler's span parents to it. A ZST
+        /// when the `tracing` feature is off.
+        ctx: SendContext,
     },
     /// Asks the actor to stop after draining messages queued before it.
     Stop,
@@ -250,6 +255,7 @@ impl<A: Mailboxed> MailboxSender<A> {
             inner: self.tx.send_async(Signal::Message {
                 msg,
                 self_sender: self.clone(),
+                ctx: SendContext::capture(),
             }),
         }
     }
@@ -266,6 +272,7 @@ impl<A: Mailboxed> MailboxSender<A> {
         self.try_send(Signal::Message {
             msg,
             self_sender: self.clone(),
+            ctx: SendContext::capture(),
         })
     }
 
@@ -365,6 +372,7 @@ impl<A: Mailboxed> MailboxReceiver<A> {
     pub(crate) fn reject_queued_watchers(&self, reason: &ActorStopReason, cleanup_failed: bool) {
         for signal in self.rx.drain() {
             if let Signal::Watch(reg) = signal {
+                trace::death_notice(reg.watcher, reason, cleanup_failed);
                 let _ = reg.link_tx.try_send(LinkDied {
                     id: self.me,
                     reason: reason.clone(),
@@ -575,6 +583,7 @@ mod tests {
             Signal::Message {
                 msg: 42,
                 self_sender: tx.clone(),
+                ctx: SendContext::capture(),
             },
         )
         .await
@@ -595,6 +604,7 @@ mod tests {
         tx.try_send(Signal::Message {
             msg: 7,
             self_sender: tx.clone(),
+            ctx: SendContext::capture(),
         })
         .expect("send into max-capacity mailbox");
 
@@ -642,14 +652,24 @@ mod tests {
         // Every cold control variant is boxed — `Watch(Box<WatchReg>)` and
         // `Supervision(Box<SupervisionOp>)` — so a small-message actor's queue
         // slot is bounded by the hot Message path: `msg` + the embedded
-        // `self_sender` (one Arc pointer, ADR-0003) + a discriminant word.
+        // `self_sender` (one Arc pointer, ADR-0003) + the caller-span trace
+        // context (ONE word — a boxed-and-niched `Span`, card #209; a ZST in an
+        // off build, so the term adds nothing there) + a discriminant word.
         // Inlined, `WatchReg` (a `flume::Sender` + id + flag) or `SupervisionOp`
         // (a `RestartConfig` + an erased factory + a tracker) would blow this
         // bound for EVERY message. Guards the "every slot = largest variant" trap.
-        let hot_bound = size_of::<u64>() + size_of::<MailboxSender<Probe>>() + size_of::<usize>();
+        assert!(
+            size_of::<SendContext>() <= size_of::<usize>(),
+            "trace context must stay one word — box, never inline, a Span in the envelope"
+        );
+        let hot_bound = size_of::<u64>()
+            + size_of::<MailboxSender<Probe>>()
+            + size_of::<SendContext>()
+            + size_of::<usize>();
         assert!(
             size_of::<Signal<Probe>>() <= hot_bound,
-            "Signal<Probe> slot is {} bytes (hot bound {hot_bound}); a cold variant is not boxed",
+            "Signal<Probe> slot is {} bytes (hot bound {hot_bound} = msg + self_sender + \
+             trace ctx + discriminant); a cold variant is not boxed",
             size_of::<Signal<Probe>>()
         );
     }
@@ -662,6 +682,8 @@ mod tests {
     ///
     /// Measured (aarch64): `small = 16 B`, `fat inline = 4104 B`, `boxed = 16 B`
     /// → for 1_000 queued messages, **4.10 MB vs 16 KB (256×)**. See #122.
+    /// Since #209 every slot also carries the ONE-word caller-span trace
+    /// context, so each bound below gains that word (zero in an off build).
     #[test]
     #[expect(
         dead_code,
@@ -703,9 +725,16 @@ mod tests {
         let fat = size_of::<Signal<Fat>>();
         let boxed = size_of::<Signal<BoxedFat>>();
 
-        assert!(small <= 24, "small slot = {small}");
+        let small_bound = 24 + size_of::<SendContext>();
+        assert!(
+            small <= small_bound,
+            "small slot = {small} (bound 24 + one #209 trace-context word)"
+        );
         assert!(fat >= 4096, "fat inline slot = {fat}");
-        assert!(boxed <= 24, "boxed slot = {boxed}");
+        assert!(
+            boxed <= small_bound,
+            "boxed slot = {boxed} (bound 24 + one #209 trace-context word)"
+        );
 
         let queued = 1_000;
         let (fat_total, boxed_total) = (fat * queued, boxed * queued);
@@ -765,6 +794,7 @@ mod tests {
             Signal::Message {
                 msg: 5,
                 self_sender: tx.clone(),
+                ctx: SendContext::capture(),
             },
         )
         .await
@@ -785,6 +815,7 @@ mod tests {
             Signal::Message {
                 msg: 1,
                 self_sender: tx.clone(),
+                ctx: SendContext::capture(),
             },
         )
         .await
@@ -810,6 +841,7 @@ mod tests {
                 Signal::Message {
                     msg: i,
                     self_sender: tx.clone(),
+                    ctx: SendContext::capture(),
                 },
             )
             .await
@@ -839,7 +871,8 @@ mod tests {
         assert!(matches!(
             tx.send(Signal::Message {
                 msg: 9,
-                self_sender: tx.clone()
+                self_sender: tx.clone(),
+                ctx: SendContext::capture(),
             })
             .await,
             Err(SendError(Signal::Message { msg: 9, .. }))
@@ -847,7 +880,8 @@ mod tests {
         assert!(matches!(
             tx.try_send(Signal::Message {
                 msg: 9,
-                self_sender: tx.clone()
+                self_sender: tx.clone(),
+                ctx: SendContext::capture(),
             }),
             Err(TrySendError::Closed(Signal::Message { msg: 9, .. }))
         ));
@@ -861,6 +895,7 @@ mod tests {
             Signal::Message {
                 msg: 1,
                 self_sender: tx.clone(),
+                ctx: SendContext::capture(),
             },
         )
         .await
@@ -931,6 +966,7 @@ mod tests {
         tx.try_send(Signal::Message {
             msg: canary,
             self_sender: tx.clone(),
+            ctx: SendContext::capture(),
         })
         .expect("enqueue into an open mailbox");
 
@@ -954,6 +990,7 @@ mod tests {
         tx.try_send(Signal::Message {
             msg: 1,
             self_sender: tx.clone(),
+            ctx: SendContext::capture(),
         })
         .expect("first signal fits");
 
@@ -961,6 +998,7 @@ mod tests {
         let rejected = tx.try_send(Signal::Message {
             msg: 2,
             self_sender: tx.clone(),
+            ctx: SendContext::capture(),
         });
         assert!(matches!(
             rejected,
@@ -975,6 +1013,7 @@ mod tests {
         tx.try_send(Signal::Message {
             msg: 3,
             self_sender: tx.clone(),
+            ctx: SendContext::capture(),
         })
         .expect("fits after drain");
     }
@@ -1025,6 +1064,7 @@ mod tests {
                         Signal::Message {
                             msg: (sender_id, seq),
                             self_sender: tx.clone(),
+                            ctx: SendContext::capture(),
                         },
                     )
                     .await
@@ -1103,7 +1143,7 @@ mod tests {
                     let expected = messages.len();
                     let producer = tokio::spawn(async move {
                         for message in messages {
-                            send_bounded(&tx, Signal::Message { msg: message, self_sender: tx.clone() })
+                            send_bounded(&tx, Signal::Message { msg: message, self_sender: tx.clone(), ctx: SendContext::capture() })
                                 .await
                                 .expect("send");
                         }
