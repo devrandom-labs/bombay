@@ -37,7 +37,7 @@ use flume::r#async::SendFut;
 use crate::{
     actor::SupervisionOp,
     error::ActorStopReason,
-    trace::SendContext,
+    trace::{self, SendContext},
     watch::{LinkDied, WatchReg},
 };
 
@@ -372,6 +372,7 @@ impl<A: Mailboxed> MailboxReceiver<A> {
     pub(crate) fn reject_queued_watchers(&self, reason: &ActorStopReason, cleanup_failed: bool) {
         for signal in self.rx.drain() {
             if let Signal::Watch(reg) = signal {
+                trace::death_notice(reg.watcher, reason, cleanup_failed);
                 let _ = reg.link_tx.try_send(LinkDied {
                     id: self.me,
                     reason: reason.clone(),

@@ -144,6 +144,10 @@ mod imp {
     pub fn child_escalated(child: ActorId) {
         tracing::error!(child.id = ?child, "child lifecycle-hook failure escalated");
     }
+
+    pub fn death_notice(watcher: ActorId, reason: &ActorStopReason, cleanup_failed: bool) {
+        tracing::trace!(watcher.id = ?watcher, %reason, cleanup_failed, "death notice delivered");
+    }
 }
 
 #[cfg(not(feature = "tracing"))]
@@ -202,11 +206,13 @@ mod imp {
     pub const fn restart_scheduled(_child: ActorId, _attempt: u32, _delay: Duration) {}
     pub const fn restart_gave_up(_child: ActorId, _rebuilds: u32) {}
     pub const fn child_escalated(_child: ActorId) {}
+    pub const fn death_notice(_watcher: ActorId, _reason: &ActorStopReason, _cleanup_failed: bool) {
+    }
 }
 
 pub use imp::SendContext;
 pub use imp::{
-    Span, child_escalated, handler_crashed, instrument, lifecycle_span, on_start_failed,
-    on_start_ok, on_stop_abandoned, on_stop_failed, on_stop_ok, on_stop_panicked,
+    Span, child_escalated, death_notice, handler_crashed, instrument, lifecycle_span,
+    on_start_failed, on_start_ok, on_stop_abandoned, on_stop_failed, on_stop_ok, on_stop_panicked,
     record_stop_reason, restart_gave_up, restart_scheduled, spawned,
 };

@@ -4,7 +4,7 @@
 //! non-blocking notify (from `Drop`, which cannot await) can never lose a
 //! notice — see the design doc for the Erlang/Akka grounding.
 
-use crate::{error::ActorStopReason, mailbox::ActorId};
+use crate::{error::ActorStopReason, mailbox::ActorId, trace};
 use smallvec::SmallVec;
 
 /// A death notice: the actor `id` stopped for `reason`; `linked` is `true` iff
@@ -174,6 +174,7 @@ impl Drop for Watchers {
         let cleanup_failed = self.cleanup_failed();
         let me = self.me;
         for edge in self.list.drain(..) {
+            trace::death_notice(edge.watcher, &reason, cleanup_failed);
             // Unbounded channel: send only fails if the watcher itself is gone,
             // in which case the edge is stale and correctly dropped.
             let _ = edge.tx.try_send(LinkDied {

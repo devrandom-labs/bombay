@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 
 use bombay::{
     actor::{
-        Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult, Spawn,
+        Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult, Spawn, SpawnLinked,
         SpawnSupervised, Supervisor, Watch, WeakActorRef,
     },
     error::ActorStopReason,
@@ -551,6 +551,84 @@ async fn on_stop_abandoned_emits_one_error_event() {
         field(&errors[0].fields, "grace"),
         Some(format!("{:?}", Duration::from_secs(5))),
         "grace rides the event as a structured field",
+    );
+}
+
+/// An idle watcher: it observes deaths (default OTP hook) and is never messaged.
+struct Watcher;
+impl Mailboxed for Watcher {
+    type Msg = Ping;
+}
+impl Actor for Watcher {
+    type Args = ();
+    type Error = Infallible;
+    async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Ok(Watcher)
+    }
+    async fn handle(
+        &mut self,
+        _: Ping,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+impl Watch for Watcher {}
+
+/// Card #209 Task 7: delivering a death notice to a watcher is a `trace!` event
+/// carrying the watcher's id, the stop reason, and the cleanup outcome —
+/// emitted once per edge, from the dying actor's teardown.
+#[tokio::test]
+async fn death_notice_delivery_emits_one_trace_event_per_edge() {
+    let (store, _guard) = capture::install();
+
+    let watcher = Watcher::spawn_linked(());
+    let watcher_id = watcher.id();
+
+    let prepared = PreparedActor::<Probe>::new(default_cap());
+    let target_ref = prepared.actor_ref().clone();
+    watcher
+        .watch(&target_ref)
+        .await
+        .expect("a linked watcher can watch");
+    drop(target_ref);
+
+    // All senders gone => Normal stop; the notice fires in the target's
+    // teardown, strictly BEFORE its RunResult resolves.
+    let result = timeout(terminate_bound(), prepared.run(()))
+        .await
+        .expect("target must stop inside the bound");
+    assert!(
+        matches!(
+            result,
+            RunResult::Stopped {
+                reason: ActorStopReason::Normal,
+                ..
+            }
+        ),
+        "all-senders-gone normal stop, got {result:?}",
+    );
+
+    let store = store.lock().unwrap();
+    let notices: Vec<_> = store
+        .events
+        .iter()
+        .filter(|e| field(&e.fields, "message").as_deref() == Some("death notice delivered"))
+        .collect();
+    assert_eq!(notices.len(), 1, "one watcher, one notice");
+    assert_eq!(notices[0].level, "TRACE");
+    assert_eq!(
+        field(&notices[0].fields, "watcher.id"),
+        Some(format!("{watcher_id:?}")),
+    );
+    assert_eq!(
+        field(&notices[0].fields, "reason"),
+        Some(ActorStopReason::Normal.to_string()),
+    );
+    assert_eq!(
+        field(&notices[0].fields, "cleanup_failed").as_deref(),
+        Some("false")
     );
 }
 
