@@ -39,12 +39,21 @@ Downstream apps that want `log` output enable the `tracing/log` feature in
 their own tree (cargo feature unification reaches bombay's `tracing` dep);
 bombay does nothing.
 
-### D2 — feature gating: `#[cfg]` at each site (kameo-style)
+### D2 — feature gating: single cfg surface in `trace.rs` (amended in execution)
 
-Direct `tracing::` calls behind `#[cfg(feature = "tracing")]`, matching the
-oracle (kameo v0.22.2). Rejected: tokio-style internal shim macros — cleaner
-call sites but spans, `.instrument()`, and struct fields need `cfg` anyway, so
-the shim only half-covers; ~10 sites don't justify the indirection.
+As designed, this section said per-site `#[cfg(feature = "tracing")]`,
+kameo-style. What shipped is the opposite concentration: **all** cfg lives in
+`crates/core/src/trace.rs`, which holds two mirrored `imp` halves — the real
+implementation under `#[cfg(feature = "tracing")]`, and a no-op half with
+identical signatures (`Span`/`SendContext` as ZSTs, `const fn` stubs) under
+`#[cfg(not(feature = "tracing"))]` — re-exported so every call site is
+cfg-free. Per-site cfg was rejected during execution: the envelope field
+(`SendContext` riding `Signal::Message`) and `instrument`'s `impl Future`
+return force cfg-carrying *types* regardless, so per-site gating would have
+smeared the same conditionals across `mailbox`/`spawn`/`kind`/`watch` instead
+of concentrating them in one module. Mirrored halves keep exactly one surface
+to audit, and the off half is verified wholesale by the `bombay-tracing-off`
+gate check (D9).
 
 ### D3 — default-ON
 
@@ -101,9 +110,15 @@ parents to the current (lifecycle) span. Cross-actor otel traces stitch: a
 sender inside an HTTP request span produces a handler span in the same trace
 tree — this is the whole "nice otel" property.
 
-Envelope footprint: feature off → field absent (zero). Feature on, no
-subscriber → a disabled `Span`, a few words, no alloc, no refcount. Feature on
-with subscriber → one span-handle clone per send, the unavoidable price of
+Envelope footprint (amended in execution): the envelope field is
+`Option<Box<Span>>` — **one word per slot**, niched on `None`. The original
+"a disabled `Span`, a few words, no alloc" inline claim broke the #114
+slot-size tripwires: an inline `Span` pushed `Signal<Probe>` to 56 bytes.
+Boxing restores the slot to 24 bytes + the one context word and preserves the
+#207 zero-alloc tell: the box is allocated **only** when the sender is inside
+an *enabled* span — with no subscriber installed (or the feature off, where
+`SendContext` is a ZST) the field is `None` and the send path allocates
+nothing. The one small allocation per traced send is the unavoidable price of
 context propagation in any architecture.
 
 ### D7 — events and levels
@@ -171,3 +186,26 @@ workflow.
 
 `console` (tokio-console), `otel` re-export feature, `metrics` — separate
 features per #66, own cards at first concrete need.
+
+## Execution deltas
+
+Recorded at close; where a delta touches a decision above, that section is
+amended in place (D2, D6).
+
+- **D3 confirmed:** shipped `default = ["tracing"]` in `crates/core/Cargo.toml`.
+- **D2 reversed:** cfg concentrated in `trace.rs` mirrored on/off halves; call
+  sites cfg-free (see the amended D2).
+- **`actor.id` uses the `?` sigil (Debug):** `ActorId` deliberately has no
+  `Display` — it is a pure name (ADR-0015) — so the field records its `Debug`
+  form, as do `child.id` and `watcher.id`.
+- **Envelope span is boxed:** `Option<Box<Span>>`, one word per slot, allocated
+  only under an enabled span (see the amended D6).
+- **D7 field names as shipped:** the scheduled-restart `warn!` carries
+  `restart.attempt`, `restart.delay` (a `Duration`, Debug-formatted — not
+  `delay_ms`), and `child.id`; the give-up `error!` carries `restart.rebuilds`
+  (the lifetime budget counter), not `restart.attempt`.
+- **Death-notice emission covers every delivery edge:** `trace::death_notice`
+  fires from the teardown guard (`watch.rs`) *and* from
+  `MailboxReceiver::reject_queued_watchers` (`mailbox.rs`), so watchers whose
+  `Watch` was still queued at kill / receiver-drop / startup-failure are traced
+  too.

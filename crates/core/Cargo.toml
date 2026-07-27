@@ -8,10 +8,6 @@ repository.workspace = true
 description = "Bombay runtime core — the rebuilt local actor spine (mailbox, message, reply, actor loop). Transport- and domain-agnostic."
 publish = false
 
-# Test-only helpers shared by BOTH the src unit tests (via `cfg(test)`) and the
-# integration tests in `tests/` (which link the lib externally and so cannot see
-# `pub(crate)`). A feature, not `#[doc(hidden)]` — see CLAUDE.md API-design rules.
-# Card #150; #151 extends this seam with its counting allocator.
 [features]
 default = ["tracing"]
 # Structured actor-lifecycle spans/events (card #209). Default-on like axum and
@@ -19,6 +15,10 @@ default = ["tracing"]
 # static-atomic interest check. Opt out with `default-features = false`; every
 # call site then compiles out (gate check `bombay-tracing-off` proves it).
 tracing = ["dep:tracing"]
+# Test-only helpers shared by BOTH the src unit tests (via `cfg(test)`) and the
+# integration tests in `tests/` (which link the lib externally and so cannot see
+# `pub(crate)`). A feature, not `#[doc(hidden)]` — see CLAUDE.md API-design rules.
+# Card #150; #151 extends this seam with its counting allocator.
 test-support = []
 
 [dependencies]

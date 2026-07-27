@@ -80,6 +80,16 @@ async fn main() {
 - **Mailbox** — bounded only: `Mailbox::<A>::bounded(capacity, id)`. Backpressure via `send`, fail-fast via `try_send`; a queued message keeps the actor alive until it is handled.
 - **Errors** — `TellError` and `AskError`, which classify retry-safety by method (`is_retryable` / `is_terminal`) and hand the undelivered message back; `PanicError` + `PanicReason`; and `ActorStopReason` (`Normal`, `Killed`, `Panicked`, `SupervisorRestart`, `LinkDied`, `AlreadyDead`, `RestartLimitExceeded`, `ChildLifecycleFailed`).
 
+## Observability
+
+The `tracing` feature is on by default: hook up any [`tracing`](https://docs.rs/tracing) subscriber (fmt logs, `tracing-opentelemetry` for OpenTelemetry export, …) — bombay only emits, it never installs one. What a subscriber sees:
+
+- a root **`actor.lifecycle`** span per actor (`actor.name`, `actor.id`), linked `follows_from` its spawn site and recording `stop.reason` at teardown;
+- a per-message **`actor.handle`** span parented to the sender's span captured at enqueue, so cross-actor traces stitch into one tree;
+- `error!` events for lifecycle failures (`on_start` failure, handler crash, `on_stop` error/panic/abandonment, restart budget exhausted) and a `warn!` for each scheduled child restart.
+
+With no subscriber the per-call-site cost is one static-atomic interest check and sends allocate nothing. Opt out with `default-features = false` — every span and event compiles out, and a dedicated gate check proves the `tracing` crate leaves the dependency graph. To keep the feature but strip levels statically, enable `tracing`'s `release_max_level_*` features in your own build.
+
 ## Building
 
 Bombay builds on stable Rust (edition 2024, ≥ 1.85). The pinned toolchain lives in `rust-toolchain.toml`, so plain `rustup` and Nix resolve the same compiler.
@@ -94,7 +104,6 @@ cargo build
 ```bash
 cargo nextest run                       # the whole workspace
 cargo test --doc                        # doc-tests (nextest does not run these)
-cargo test -p bombay               # one crate
 ```
 
 Or run everything the CI gate runs in one shot:

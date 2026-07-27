@@ -37,3 +37,4 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | [0013](0013-virtual-actors-not-in-core.md) | Virtual-actor lazy reactivation stays out of the core | Accepted |
 | [0014](0014-set-cycle-widen-not-queue-not-block.md) | Set-restart cycles coalesce by widening | Accepted |
 | [0015](0015-actorid-process-local-pure-name.md) | `ActorId`: process-local pure name; restart mints a new incarnation | Accepted |
+| [0016](0016-tracing-direct-instrumentation.md) | Observability: direct `tracing` instrumentation, no observer seam | Accepted |
