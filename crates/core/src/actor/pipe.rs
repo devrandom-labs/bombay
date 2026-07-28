@@ -316,4 +316,78 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
     }
+
+    /// A responder whose reply waits on an external gate.
+    struct GatedB {
+        gate: Option<tokio::sync::oneshot::Receiver<()>>,
+    }
+    #[derive(Debug)]
+    enum GatedBMsg {
+        Get(ReplySender<u32>),
+    }
+    impl Msg for GatedBMsg {}
+    impl Mailboxed for GatedB {
+        type Msg = GatedBMsg;
+    }
+    impl Actor for GatedB {
+        type Args = tokio::sync::oneshot::Receiver<()>;
+        type Error = core::convert::Infallible;
+        async fn on_start(gate: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self { gate: Some(gate) })
+        }
+        async fn handle(
+            &mut self,
+            GatedBMsg::Get(reply): GatedBMsg,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            if let Some(gate) = self.gate.take() {
+                let _opened = gate.await;
+            }
+            drop(reply.send(99));
+            Ok(())
+        }
+    }
+
+    /// ITP liveness (card invariant 4): A pipes an ask to B and KEEPS
+    /// PROCESSING while B's reply is pending. Order proved by construction:
+    /// B's gate opens only after A answered a second message, so if the pipe
+    /// blocked A's turn, this test would deadlock (and the bound would trip).
+    #[tokio::test]
+    async fn actor_keeps_processing_while_piped_ask_is_pending() {
+        let (gate_tx, gate_rx) = tokio::sync::oneshot::channel::<()>();
+        let b_ref = GatedB::spawn(gate_rx);
+        let a_ref = Sink::spawn(());
+
+        // Fire the pipe from outside a handler for setup simplicity — the
+        // mechanism is identical (same detached task); the in-handler shape
+        // is exercised by the doc example test in Task 8.
+        let b = b_ref.clone();
+        a_ref.pipe_to_self(
+            async move {
+                b.ask(|reply| GatedBMsg::Get(reply))
+                    .no_timeout()
+                    .await
+                    .expect("B replies once the gate opens")
+            },
+            |res: Result<u32, PanicError>| SinkMsg::Piped(res),
+        );
+
+        // OVERLAP PROOF: while B is gated (reply pending), A answers an ask.
+        let seen = tokio::time::timeout(terminate_bound(), a_ref.ask(|reply| SinkMsg::Read(reply)))
+            .await
+            .expect("A must answer while the piped ask is still pending")
+            .expect("A replies");
+        assert!(
+            seen.is_empty(),
+            "the piped result cannot have arrived yet — B is gated",
+        );
+
+        // Only now open the gate; the piped reply then lands in A.
+        gate_tx.send(()).expect("B is waiting on the gate");
+        let seen = tokio::time::timeout(terminate_bound(), wait_for_seen(&a_ref, 1))
+            .await
+            .expect("the piped reply arrives after the gate opens");
+        assert_eq!(seen, vec![Ok(99)]);
+    }
 }
