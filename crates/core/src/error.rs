@@ -209,6 +209,12 @@ pub enum PanicReason {
     /// The `on_link_died` lifecycle hook itself failed.
     #[error("on_link_died hook")]
     OnLinkDied,
+    /// A future piped via [`ActorRef::pipe_to_self`](crate::actor::ActorRef::pipe_to_self)
+    /// unwound. The panic happened in a detached task, outside any actor turn
+    /// or lifecycle hook — the actor itself is untouched and receives the
+    /// failure as a message.
+    #[error("piped future")]
+    PipedFuture,
 }
 
 impl PanicReason {
@@ -216,7 +222,10 @@ impl PanicReason {
     /// handler — the "refuse to restart-storm" signal for a supervisor.
     #[must_use]
     pub const fn is_lifecycle_hook(self) -> bool {
-        !matches!(self, Self::HandlerPanic)
+        matches!(
+            self,
+            Self::OnStart | Self::OnStop | Self::OnPanic | Self::OnLinkDied
+        )
     }
 }
 
@@ -606,6 +615,11 @@ mod tests {
         assert!(
             !PanicReason::HandlerPanic.is_lifecycle_hook(),
             "a handler panic is runtime, not lifecycle"
+        );
+        assert!(
+            !PanicReason::PipedFuture.is_lifecycle_hook(),
+            "a piped-future panic happens outside any turn or hook — it must \
+             never trip a supervisor's refuse-to-restart-storm signal",
         );
     }
 
