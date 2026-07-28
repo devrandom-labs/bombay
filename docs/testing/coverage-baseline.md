@@ -674,6 +674,51 @@ as the bottleneck. No README
 change (same pre-public posture as #112–#118; the vendored-kameo
 `ActorRegistry` bullet the README documents is unchanged).
 
+### `timer` surface (#223) — done
+`crates/core/src/actor/timer.rs` carries the sanctioned non-pinning timer
+primitives: `ActorRef::send_after` / `send_interval`, `Recipient::send_after` /
+`send_interval`, and `TimerHandle::cancel`. The timer task holds only a weak
+handle to the target and upgrades it at fire, so an armed timer never pins
+ref-count stop (ADR-0003 deviation from kameo v0.22.2). Fired messages are
+ordinary `A::Msg` deliveries through the bounded mailbox, with the same
+backpressure semantics as any sender. Cancellation is sleep-phase-atomic via
+`CancellationToken`; `JoinHandle::abort` is never used, avoiding flume's
+indeterminate-cancel window (ADR-0008). Intervals arm the next tick only after
+the prior tick is enqueued (arm-after-enqueue), self-reap on target death, and
+contain a panicking `make_msg` to the timer task.
+
+**11 unit tests** (all in `crates/core/src/actor/timer.rs`):
+- **Round-trip / value** — `send_after_fires_exact_value_after_delay` (paused
+  clock, exact menu value, no early delivery).
+- **Cancel semantics** — `cancel_before_fire_never_delivers_and_reaps_task`
+  (cancel reaps the task, then advancing far past the deadline delivers
+  nothing); `cancel_after_fire_is_noop` (late cancel is harmless).
+- **Non-pinning / lifecycle** — `armed_timer_does_not_pin_refcount_stop`;
+  `dead_target_at_fire_drops_cleanly` (no panic, no leak, task exits via
+  `ExitGuard`);
+- **Interval cadence / backpressure** — `interval_ticks_arrive_with_fresh_messages`
+  (fresh `FnMut` per tick, ordered); `interval_does_not_overlap_or_burst_when_mailbox_full`
+  (gated sink with capacity 1, arm-after-enqueue bounds queued ticks to the
+  structural maximum).
+- **Interval containment / reaping** — `interval_self_reaps_on_target_death`;
+  `interval_factory_panic_kills_timer_not_actor` (factory panic traced, actor
+  untouched).
+- **Erasure** — `recipient_send_after_fires_through_erasure`;
+  `recipient_interval_and_cancel` (`Recipient<u32>` round-trip via `From`).
+
+**Mutation:** see `mutants-baseline.json` — new `floors` / `known_zero_viable`
+entries for the timer surface functions and the three trace events.
+
+**Bench** (`benches/timers.rs`, measured 2026-07-28, M4 Pro): `arm_send_after_10k`
+≈ **4.90 ms** / 10 000 timers (≈ 490 ns / timer, 2.04 Melem/s); baseline
+`arm_delay_queue_insert_10k` ≈ **0.31 ms** / 10 000 inserts (≈ 31 ns / insert,
+31.9 Melem/s). The per-task cost is the price of not introducing a shared
+owner/service; a future named-key timer layer can justify a `DelayQueue`-style
+wheel if scheduling becomes hot. Recorded in ADR-0018.
+
+No further README change beyond the timer bullet added to the public-API-at-a-glance
+section; the surface is now documented there.
+
 ### `watch` — links + death-watch (#195, slice 1 of #120) — done
 The death-watch half of #120: an actor learns, on **every** exit path (normal /
 panic / kill), when a watched peer stops. Two verbs on one mechanism — `watch`
