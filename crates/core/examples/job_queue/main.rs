@@ -37,6 +37,7 @@ async fn main() {
             .with_min_backoff(Duration::from_millis(10))
             .with_max_restarts(20),
         registry: Arc::clone(&registry),
+        worker_stopped_tx: None,
     })
     .await;
 

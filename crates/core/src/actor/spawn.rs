@@ -15,6 +15,7 @@ use std::{fmt, panic::AssertUnwindSafe};
 
 use futures::{
     FutureExt,
+    future::Aborted,
     stream::{AbortHandle, AbortRegistration, Abortable},
 };
 use tokio::task::JoinHandle;
@@ -25,7 +26,7 @@ use crate::{
         Actor, ActorRef, Supervisor, Watch, WeakActorRef,
         kind::{
             LinkedChannels, LoopHandles, SupervisedState, run_linked_message_loop,
-            run_message_loop, run_supervised_message_loop,
+            run_message_loop, run_supervised_message_loop, teardown_children,
         },
         supervision::{Children, CycleState},
     },
@@ -52,7 +53,7 @@ pub const DEFAULT_MAILBOX_CAPACITY: usize = 64;
 ///
 /// Distinct from a supervisor's `stop_grace`, which bounds cancel→abort from the
 /// *outside*; this bounds notice delay from the *inside*.
-const ON_STOP_NOTICE_GRACE: Duration = if cfg!(miri) {
+pub(super) const ON_STOP_NOTICE_GRACE: Duration = if cfg!(miri) {
     // Under MIRI the clock is virtual: it advances 5 µs per basic block executed
     // (`miri/src/clock.rs`: `NANOSECONDS_PER_BASIC_BLOCK = 5000`), independent of
     // real elapsed time. A wall-clock-calibrated bound therefore measures nothing
@@ -260,8 +261,11 @@ impl<A: Watch> PreparedActor<A> {
 impl<A: Supervisor> PreparedActor<A> {
     /// Runs the actor as a **supervisor** in the current task until it stops:
     /// the three-arm loop that drains its mailbox and link channel *and* rebuilds
-    /// dead children under their restart policies (#196). Aborts (hard kill)
-    /// short-circuit to [`RunResult::Killed`], skipping `on_stop`.
+    /// dead children under their restart policies (#196). A hard kill aborts the
+    /// message-service future, but the always-runs epilogue still tears down every
+    /// remaining supervised child before returning [`RunResult::Killed`]; `on_stop`
+    /// is skipped on kill. On graceful paths the sweep runs before the supervisor's
+    /// own death is announced (#245, ADR-0019).
     ///
     /// The `actor.lifecycle` span is created eagerly at call time (not first
     /// poll), so it `follows_from` the caller's span — the spawn site.
@@ -279,16 +283,17 @@ impl<A: Supervisor> PreparedActor<A> {
         trace::instrument(
             async move {
                 trace::spawned();
-                let lifecycle = run_lifecycle_supervised(args, actor_ref, mailbox_rx, link_rx);
-                Abortable::new(lifecycle, abort_registration)
+                run_lifecycle_supervised(args, actor_ref, mailbox_rx, link_rx, abort_registration)
                     .await
-                    .unwrap_or(RunResult::Killed)
             },
             span,
         )
     }
 
-    /// Spawns the supervisor in a background tokio task.
+    /// Spawns the supervisor in a background tokio task. A hard kill aborts
+    /// the message-service future, but the epilogue still tears down every
+    /// remaining supervised child before returning [`RunResult::Killed`]; `on_stop`
+    /// is skipped on kill (#245, ADR-0019).
     pub fn spawn_supervised_task(
         self,
         args: A::Args,
@@ -590,11 +595,44 @@ fn supervisor_rng() -> fastrand::Rng {
     seed.map_or_else(fastrand::Rng::new, fastrand::Rng::with_seed)
 }
 
+/// The abortable region returns the pieces needed for graceful teardown, or
+/// the startup-failure payload so the epilogue can still run the sweep and
+/// then answer the queued watchers. A kill during `on_start` aborts the
+/// region entirely; the epilogue still runs and the result is `Killed`.
+enum SupervisedLifecycleResult<A: Actor> {
+    Graceful(
+        A,
+        WeakActorRef<A>,
+        MailboxReceiver<A>,
+        Watchers,
+        ActorStopReason,
+    ),
+    StartupFailed(PanicError, MailboxReceiver<A>),
+}
+
+/// The supervisor lifecycle (#196, #245): the shared [`start_actor`] prologue
+/// and the supervised-message loop live INSIDE an [`Abortable`] boundary, so
+/// a hard kill aborts the whole lifecycle (including a hanging `on_start`).
+/// The child table and the deferred-abort queue are created OUTSIDE that
+/// boundary and borrowed into the loop, so they survive a kill and are swept by
+/// the always-runs epilogue. A graceful completion returns the pieces needed by
+/// [`finish_actor`]; a startup failure carries the [`PanicError`] for the
+/// epilogue to answer; an abort maps to [`RunResult::Killed`] directly after the
+/// sweep, so `on_stop` is skipped on kill and watchers are notified by
+/// `MailboxReceiver`'s drop (#195).
+///
+/// The epilogue order is load-bearing: every remaining child is stopped and
+/// joined (or provably aborted) BEFORE the supervisor's own death is announced
+/// on graceful paths, so a supervisor's watcher never observes a live child that
+/// outlasted its supervisor. On the kill path the supervisor's own death
+/// announcement precedes the child sweep (a brutal kill is brutal); the sweep
+/// still runs, so children are never orphaned.
 async fn run_lifecycle_supervised<A: Supervisor>(
     args: A::Args,
     actor_ref: ActorRef<A>,
     mut mailbox_rx: MailboxReceiver<A>,
     link_rx: LinkReceiver,
+    abort_registration: AbortRegistration,
 ) -> RunResult<A> {
     // Captured before `start_actor` consumes the strong `actor_ref`: the loop
     // needs the supervisor's own id and a clone of its link sender to install
@@ -613,51 +651,92 @@ async fn run_lifecycle_supervised<A: Supervisor>(
         .cloned()
         .expect("a supervisor is always spawned linked, so it owns a link channel");
 
-    let StartedActor {
-        mut state,
-        mut watchers,
-        handles,
-        weak,
-    } = match start_actor(args, actor_ref).await {
-        Ok(started) => started,
-        Err(err) => return startup_failed(err, &mailbox_rx),
-    };
-
+    // The child table and the deferred-abort queue live OUTSIDE the abortable
+    // region so they survive a hard kill and can be swept by the always-runs
+    // epilogue.
     let mut children = Children::new();
-    let mut retries = DelayQueue::new();
-    // Deferred hard-kills for `stop_child`ed children: cancelled now, aborted when
-    // their `stop_grace` deadline fires on this second queue's select arm — the
-    // loop stays responsive through the grace instead of blocking on it.
     let mut pending_aborts = DelayQueue::new();
-    // The set-cycle coordinator (card #199): `Idle` until a set-strategy trigger
-    // starts a cycle; loop-owned beside the child table it coordinates.
-    let mut cycle = CycleState::Idle;
-    // Jitter RNG for restart backoff: entropy-seeded in production, or a fixed
-    // seed under a test seam so restart timing is replayable (the DST contract on
-    // `jittered_backoff`).
-    let mut rng = supervisor_rng();
-    let reason = run_supervised_message_loop(
-        &mut state,
-        &weak,
-        &handles,
-        &mut watchers,
-        SupervisedState {
-            channels: LinkedChannels {
-                mailbox_rx: &mut mailbox_rx,
-                link_rx: &link_rx,
-            },
-            children: &mut children,
-            retries: &mut retries,
-            pending_aborts: &mut pending_aborts,
-            cycle: &mut cycle,
-            rng: &mut rng,
-            sup_id,
-            sup_link_tx,
-        },
-    )
-    .await;
 
-    finish_actor(state, weak, mailbox_rx, watchers, reason).await
+    // Capture references into the abortable region so the epilogue can keep
+    // owning the child table and pending-abort queue.
+    let children_ref = &mut children;
+    let pending_aborts_ref = &mut pending_aborts;
+    let link_rx_ref = &link_rx;
+
+    let lifecycle = Abortable::new(
+        async move {
+            let StartedActor {
+                mut state,
+                mut watchers,
+                handles,
+                weak,
+            } = match start_actor(args, actor_ref).await {
+                Ok(started) => started,
+                Err(err) => return SupervisedLifecycleResult::StartupFailed(err, mailbox_rx),
+            };
+
+            // The restart-backoff queue and the set-cycle coordinator are only
+            // needed while the loop is running; a kill drops them with the loop.
+            let mut retries = DelayQueue::new();
+            let mut cycle = CycleState::Idle;
+            let mut rng = supervisor_rng();
+            let reason = run_supervised_message_loop(
+                &mut state,
+                &weak,
+                &handles,
+                &mut watchers,
+                SupervisedState {
+                    channels: LinkedChannels {
+                        mailbox_rx: &mut mailbox_rx,
+                        link_rx: link_rx_ref,
+                    },
+                    children: children_ref,
+                    retries: &mut retries,
+                    pending_aborts: pending_aborts_ref,
+                    cycle: &mut cycle,
+                    rng: &mut rng,
+                    sup_id,
+                    sup_link_tx,
+                },
+            )
+            .await;
+            SupervisedLifecycleResult::Graceful(state, weak, mailbox_rx, watchers, reason)
+        },
+        abort_registration,
+    );
+
+    let lifecycle_result = lifecycle.await;
+
+    // Epilogue (always runs): every remaining supervised child is torn down
+    // before the supervisor's own death is announced on graceful paths. The
+    // pending-abort queue is drained first: its entries were already cancelled
+    // and their grace is truncated at supervisor exit (their PendingAbort Drop
+    // performs the abort). Then the live child table is cancelled and joined.
+    pending_aborts.clear();
+    teardown_children(&mut children, &link_rx).await;
+
+    match lifecycle_result {
+        Ok(SupervisedLifecycleResult::Graceful(
+            final_state,
+            final_weak,
+            final_mailbox_rx,
+            final_watchers,
+            reason,
+        )) => {
+            finish_actor(
+                final_state,
+                final_weak,
+                final_mailbox_rx,
+                final_watchers,
+                reason,
+            )
+            .await
+        }
+        Ok(SupervisedLifecycleResult::StartupFailed(err, startup_mailbox_rx)) => {
+            startup_failed(err, &startup_mailbox_rx)
+        }
+        Err(Aborted) => RunResult::Killed,
+    }
 }
 
 /// Logs a failed/panicked `on_stop` without altering the preserved stop reason
@@ -3392,9 +3471,12 @@ mod tests {
 
         use core::time::Duration;
 
+        use super::super::ON_STOP_NOTICE_GRACE;
+        use super::{bounded, watch_before_start};
         use crate::{
             actor::{
                 ActorRef, PreparedActor, RunResult, Spawn, SpawnSupervised, Supervisor, Watch,
+                WeakActorRef,
             },
             error::{ActorStopReason, Infallible},
             mailbox::{ActorId, Capacity, MailboxSender, Mailboxed, Signal},
@@ -3688,8 +3770,18 @@ mod tests {
                 .expect("the command reaches the live incarnation");
         }
 
-        async fn supervise_worker(
-            sup: &ActorRef<Sup>,
+        /// One scheduler tick under a paused current-thread runtime.
+        ///
+        /// `start_paused` + `current_thread` auto-advance time only when every task is
+        /// idle. The one-millisecond sleep therefore yields the supervisor until it has
+        /// drained the mailbox and applied the `Signal::Supervision` registration ops
+        /// queued by `supervise`. Stopping or killing immediately after is deterministic.
+        async fn quiesce() {
+            tokio::time::sleep(Duration::from_millis(1)).await;
+        }
+
+        async fn supervise_worker<S: Supervisor>(
+            sup: &ActorRef<S>,
             policy: RestartPolicy,
             id_tx: flume::Sender<ActorId>,
             senders: &Senders,
@@ -4157,6 +4249,377 @@ mod tests {
                     if c == child && rebuilds == 1),
                 "the escalation reason rides up the ladder, got {:?}",
                 notice.reason,
+            );
+        }
+
+        /// #245: a supervisor whose own `on_stop` parks is still bounded on a
+        /// hard kill. The kill aborts only the message-service future; the
+        /// epilogue still runs and is abandoned by `ON_STOP_NOTICE_GRACE` rather
+        /// than hanging forever. The death notice carries `cleanup_failed`.
+        struct HangingStopSup {
+            entered: Option<tokio::sync::oneshot::Sender<()>>,
+        }
+        #[derive(Debug)]
+        struct HsMsg;
+        impl Msg for HsMsg {}
+        impl Mailboxed for HangingStopSup {
+            type Msg = HsMsg;
+        }
+        impl crate::actor::Actor for HangingStopSup {
+            type Args = tokio::sync::oneshot::Sender<()>;
+            type Error = core::convert::Infallible;
+            async fn on_start(entered: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self {
+                    entered: Some(entered),
+                })
+            }
+            async fn handle(
+                &mut self,
+                _: HsMsg,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Ok(())
+            }
+            async fn on_stop(
+                &mut self,
+                _: WeakActorRef<Self>,
+                _: ActorStopReason,
+            ) -> Result<(), Self::Error> {
+                if let Some(entered) = self.entered.take() {
+                    let _ = entered.send(());
+                }
+                core::future::pending().await
+            }
+        }
+        impl crate::actor::Watch for HangingStopSup {}
+        impl crate::actor::Supervisor for HangingStopSup {}
+
+        /// A supervisor that records whether its `on_stop` ran — used to prove
+        /// that a hard kill skips the hook.
+        struct FlagSup {
+            stopped: Arc<AtomicU32>,
+        }
+        impl Mailboxed for FlagSup {
+            type Msg = Noop;
+        }
+        impl crate::actor::Actor for FlagSup {
+            type Args = Arc<AtomicU32>;
+            type Error = Infallible;
+            async fn on_start(stopped: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self { stopped })
+            }
+            async fn handle(
+                &mut self,
+                _: Noop,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Ok(())
+            }
+            async fn on_stop(
+                &mut self,
+                _: WeakActorRef<Self>,
+                _: ActorStopReason,
+            ) -> Result<(), Self::Error> {
+                self.stopped.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }
+        }
+        impl crate::actor::Watch for FlagSup {}
+        impl crate::actor::Supervisor for FlagSup {}
+
+        /// #245 (ADR-0019): a supervisor stopping Normal tears down its live
+        /// children before its own RunResult resolves. The sweep is the single
+        /// non-skippable site; the children are provably dead (mailbox closed)
+        /// before the supervisor finishes.
+        #[tokio::test(start_paused = true)]
+        async fn supervisor_normal_stop_tears_down_children() {
+            let cap = Capacity::try_from(8usize).expect("valid capacity");
+            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let sup = prepared.actor_ref().clone();
+            let join = prepared.spawn_supervised_task((), _link_rx);
+
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let a = supervise_worker(&sup, RestartPolicy::Permanent, id_tx.clone(), &senders).await;
+            assert_eq!(recv_id(&id_rx).await, a, "child A recorded");
+            let b = supervise_worker(&sup, RestartPolicy::Permanent, id_tx, &senders).await;
+            assert_eq!(recv_id(&id_rx).await, b, "child B recorded");
+
+            let a_sender = senders.lock().expect("lock")[0].clone();
+            let b_sender = senders.lock().expect("lock")[1].clone();
+
+            // Registration ops ride the supervisor's mailbox; stopping must not race them
+            // here. The production-side race is tracked separately. TODO(#248)
+            quiesce().await;
+
+            sup.stop();
+
+            // The children must be dead before the supervisor's RunResult resolves.
+            await_closed(&a_sender).await;
+            await_closed(&b_sender).await;
+
+            let outcome = bounded(join).await.expect("the supervisor joins");
+            assert!(
+                matches!(
+                    outcome,
+                    RunResult::Stopped {
+                        reason: ActorStopReason::Normal,
+                        ..
+                    }
+                ),
+                "expected a normal stop, got {outcome:?}",
+            );
+        }
+
+        /// #245 (ADR-0019): a hard kill on a supervisor still tears down its
+        /// children and returns `RunResult::Killed`; the supervisor's `on_stop` is
+        /// skipped.
+        #[tokio::test(start_paused = true)]
+        async fn supervisor_kill_tears_down_children() {
+            let cap = Capacity::try_from(8usize).expect("valid capacity");
+            let stopped = Arc::new(AtomicU32::new(0));
+            let (prepared, _link_rx) = PreparedActor::<FlagSup>::new_linked(cap);
+            let sup = prepared.actor_ref().clone();
+            let join = prepared.spawn_supervised_task(Arc::clone(&stopped), _link_rx);
+
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let a = supervise_worker(&sup, RestartPolicy::Permanent, id_tx.clone(), &senders).await;
+            assert_eq!(recv_id(&id_rx).await, a, "child A recorded");
+            let b = supervise_worker(&sup, RestartPolicy::Permanent, id_tx, &senders).await;
+            assert_eq!(recv_id(&id_rx).await, b, "child B recorded");
+
+            let a_sender = senders.lock().expect("lock")[0].clone();
+            let b_sender = senders.lock().expect("lock")[1].clone();
+
+            // Registration ops ride the supervisor's mailbox; stopping must not race them
+            // here. The production-side race is tracked separately. TODO(#248)
+            quiesce().await;
+
+            sup.kill();
+
+            await_closed(&a_sender).await;
+            await_closed(&b_sender).await;
+
+            let outcome = bounded(join).await.expect("the supervisor joins");
+            assert!(
+                matches!(outcome, RunResult::Killed),
+                "expected Killed, got {outcome:?}"
+            );
+            assert_eq!(
+                stopped.load(Ordering::SeqCst),
+                0,
+                "on_stop was skipped on kill"
+            );
+        }
+
+        /// #245 (ADR-0019): the sweep joins children promptly; a child that stops
+        /// on cancel completes the sweep well before its large stop_grace. The
+        /// old `stop_surviving_children` slept the full grace and never joined.
+        #[tokio::test(start_paused = true)]
+        async fn teardown_joins_early_not_grace_sleep() {
+            let cap = Capacity::try_from(8usize).expect("valid capacity");
+            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let sup = prepared.actor_ref().clone();
+            let join = prepared.spawn_supervised_task((), _link_rx);
+
+            let (id_tx, id_rx) = flume::unbounded::<ActorId>();
+            let senders: Senders = Arc::new(Mutex::new(Vec::new()));
+
+            let _child = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(
+                    RestartConfig::new(RestartPolicy::Permanent)
+                        .with_stop_grace(Duration::from_secs(60)),
+                    worker_factory(id_tx, Arc::clone(&senders)),
+                ),
+            )
+            .await
+            .expect("supervise must not hang")
+            .expect("the supervisor is alive");
+            assert_eq!(recv_id(&id_rx).await, _child, "child recorded");
+
+            let before = tokio::time::Instant::now();
+            sup.stop();
+            let outcome = bounded(join).await.expect("the supervisor joins");
+            let elapsed = tokio::time::Instant::now().duration_since(before);
+
+            assert!(
+                elapsed < Duration::from_secs(1),
+                "sweep joined promptly, not after the 60 s grace: {elapsed:?}"
+            );
+            assert!(
+                matches!(
+                    outcome,
+                    RunResult::Stopped {
+                        reason: ActorStopReason::Normal,
+                        ..
+                    }
+                ),
+                "expected a normal stop, got {outcome:?}",
+            );
+        }
+
+        /// #245 (ADR-0019): a child that ignores cancellation is aborted at its
+        /// stop_grace and the supervisor still exits within a bounded window.
+        #[tokio::test(start_paused = true)]
+        async fn teardown_aborts_cancel_ignoring_child() {
+            let cap = Capacity::try_from(8usize).expect("valid capacity");
+            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let sup = prepared.actor_ref().clone();
+            let join = prepared.spawn_supervised_task((), _link_rx);
+
+            let entered = Arc::new(tokio::sync::Notify::new());
+            let parker_senders: Arc<Mutex<Vec<MailboxSender<Parker>>>> =
+                Arc::new(Mutex::new(Vec::new()));
+
+            let grace = Duration::from_secs(1);
+            let factory = {
+                let entered = Arc::clone(&entered);
+                let parker_senders = Arc::clone(&parker_senders);
+                move || {
+                    let child = Parker::spawn(Arc::clone(&entered));
+                    parker_senders
+                        .lock()
+                        .expect("lock")
+                        .push(child.mailbox_sender().clone());
+                    child
+                }
+            };
+            let _parker_id = tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(
+                    RestartConfig::new(RestartPolicy::Permanent).with_stop_grace(grace),
+                    factory,
+                ),
+            )
+            .await
+            .expect("supervise must not hang")
+            .expect("supervisor alive");
+
+            let parker_sender = parker_senders.lock().expect("lock")[0].clone();
+            parker_sender
+                .try_send_message(ParkCmd)
+                .expect("the park command reaches the parker");
+            tokio::time::timeout(terminate_bound(), entered.notified())
+                .await
+                .expect("the parker enters its parked handler");
+
+            sup.stop();
+
+            let outcome = tokio::time::timeout(terminate_bound(), async {
+                tokio::time::sleep(grace + Duration::from_secs(1)).await;
+                while !parker_sender.is_closed() {
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
+                join.await
+            })
+            .await
+            .expect("the supervisor exits within the child grace plus padding");
+            let outcome = outcome.expect("the supervisor joins");
+            assert!(
+                matches!(
+                    outcome,
+                    RunResult::Stopped {
+                        reason: ActorStopReason::Normal,
+                        ..
+                    }
+                ),
+                "expected a normal stop, got {outcome:?}",
+            );
+        }
+
+        /// #245 (spec §3): a hard kill landing WHILE the supervised actor's
+        /// `on_stop` is parked no longer instant-drops the hook. The abortable
+        /// region (message service) has already completed; the kill is a no-op,
+        /// and `ON_STOP_NOTICE_GRACE` abandons the hung hook. The result is
+        /// `Stopped` with `cleanup_failed = true`.
+        #[tokio::test(start_paused = true)]
+        async fn supervised_kill_during_on_stop_is_bounded() {
+            let cap = Capacity::try_from(8usize).expect("valid capacity");
+            let (prepared, link_rx) = PreparedActor::<HangingStopSup>::new_linked(cap);
+            let notice_rx = watch_before_start(&prepared);
+            let actor_ref = prepared.actor_ref().clone();
+            let (entered_tx, entered_rx) = tokio::sync::oneshot::channel();
+            let join = prepared.spawn_supervised_task(entered_tx, link_rx);
+
+            actor_ref.stop();
+            bounded(entered_rx).await.expect("on_stop entered");
+            actor_ref.kill(); // abortable region already completed: no-op
+
+            let outcome = bounded(join).await.expect("the supervisor joins");
+            assert!(
+                matches!(
+                    outcome,
+                    RunResult::Stopped {
+                        reason: ActorStopReason::Normal,
+                        ..
+                    }
+                ),
+                "expected a normal stop (hook abandoned, not killed), got {outcome:?}",
+            );
+
+            let notice = tokio::time::timeout(
+                ON_STOP_NOTICE_GRACE + Duration::from_secs(1),
+                notice_rx.recv_async(),
+            )
+            .await
+            .expect("the notice arrives within the grace bound")
+            .expect("the notice channel is open");
+            assert!(
+                notice.cleanup_failed,
+                "the hung on_stop was abandoned, so cleanup_failed is true"
+            );
+        }
+
+        /// #245: a supervisor whose `on_start` parks forever can still be killed
+        /// in bounded time, because `on_start` lives INSIDE the `Abortable`
+        /// region. Before the boundary move, `start_actor` ran outside it and a
+        /// hard kill could not interrupt a hanging `on_start`.
+        struct HangingStartSup;
+        #[derive(Debug)]
+        struct HsStartMsg;
+        impl Msg for HsStartMsg {}
+        impl Mailboxed for HangingStartSup {
+            type Msg = HsStartMsg;
+        }
+        impl crate::actor::Actor for HangingStartSup {
+            type Args = ();
+            type Error = core::convert::Infallible;
+            async fn on_start(_: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                core::future::pending().await
+            }
+            async fn handle(
+                &mut self,
+                _: HsStartMsg,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Ok(())
+            }
+        }
+        impl crate::actor::Watch for HangingStartSup {}
+        impl crate::actor::Supervisor for HangingStartSup {}
+
+        #[tokio::test(start_paused = true)]
+        async fn supervised_kill_during_on_start_is_bounded() {
+            let cap = Capacity::try_from(8usize).expect("valid capacity");
+            let (prepared, _link_rx) = PreparedActor::<HangingStartSup>::new_linked(cap);
+            let actor_ref = prepared.actor_ref().clone();
+            let join = prepared.spawn_supervised_task((), _link_rx);
+
+            actor_ref.kill();
+
+            let outcome = bounded(join)
+                .await
+                .expect("the supervisor joins within the bound");
+            assert!(
+                matches!(outcome, RunResult::Killed),
+                "expected Killed after aborting a hung on_start, got {outcome:?}",
             );
         }
 

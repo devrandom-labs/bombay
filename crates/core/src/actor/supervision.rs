@@ -61,6 +61,30 @@ impl ChildHandle {
     }
 }
 
+/// A child handle stored in the supervisor's deferred-abort queue.
+///
+/// The queue owns the handle until its `stop_grace` deadline fires, at which
+/// point the child is hard-aborted. If the supervisor exits earlier, every
+/// queued entry is dropped (via [`DelayQueue::clear`]) and this type's [`Drop`]
+/// aborts the child, truncating the remaining grace at supervisor exit.
+#[derive(Debug)]
+pub struct PendingAbort(ChildHandle);
+
+impl PendingAbort {
+    pub(crate) const fn new(handle: ChildHandle) -> Self {
+        Self(handle)
+    }
+}
+
+impl Drop for PendingAbort {
+    fn drop(&mut self) {
+        // The supervisor is leaving; the child has already been cancelled and
+        // now must be hard-aborted even if its stop_grace deadline has not yet
+        // fired. Abort is idempotent, so the normal timer-fire path is safe.
+        self.0.abort.abort();
+    }
+}
+
 /// What installing the supervisor's watch edge on a freshly-spawned child did.
 ///
 /// The install is a single non-blocking [`try_send`](crate::mailbox::MailboxSender::try_send)

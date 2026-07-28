@@ -26,7 +26,10 @@ use tokio::time::timeout;
 
 const WORK: Duration = Duration::from_millis(5);
 
-fn config(registry: &Arc<Registry>) -> DispatcherConfig {
+fn config(
+    registry: &Arc<Registry>,
+    worker_stopped_tx: Option<flume::Sender<ActorId>>,
+) -> DispatcherConfig {
     DispatcherConfig {
         workers: 2,
         queue_cap: 8,
@@ -38,7 +41,12 @@ fn config(registry: &Arc<Registry>) -> DispatcherConfig {
             .with_max_restarts(50)
             .with_max_total(200),
         registry: Arc::clone(registry),
+        worker_stopped_tx,
     }
+}
+
+fn config_no_seam(registry: &Arc<Registry>) -> DispatcherConfig {
+    config(registry, None)
 }
 
 /// Every terminal await is bounded — a hung app flow must fail the test, not
@@ -79,7 +87,8 @@ const fn ok_job(id: u64) -> Job {
 #[tokio::test]
 async fn sequence_submit_stats_drain_reports_exact_counts() {
     let registry = Arc::new(Registry::new());
-    let app = app::start(config(&registry)).await;
+    let (worker_stopped_tx, worker_stopped_rx) = flume::unbounded::<ActorId>();
+    let app = app::start(config(&registry, Some(worker_stopped_tx))).await;
     // clients resolve the dispatcher by NAME — the registry seam is load-bearing
     let dispatcher = registry
         .lookup::<Dispatcher>(DISPATCHER_NAME)
@@ -118,7 +127,24 @@ async fn sequence_submit_stats_drain_reports_exact_counts() {
         },
         "every submitted job completed exactly once on the happy path",
     );
-    let _ = app.dispatcher.id();
+
+    // The supervisor's own exit tears down its children (ADR-0019); wait for
+    // the dispatcher death to be observed, then assert every worker reported
+    // its stop through the example-level seam.
+    let observed = poll_observed_death(&app).await;
+    assert!(
+        observed.is_some(),
+        "the overseer must observe the dispatcher's death"
+    );
+    let mut seen = Vec::new();
+    for _ in 0..2 {
+        let id = bounded(worker_stopped_rx.recv_async())
+            .await
+            .expect("worker must report its stop");
+        assert!(!seen.contains(&id), "duplicate worker stop signal: {id:?}");
+        seen.push(id);
+    }
+    assert_eq!(seen.len(), 2, "both workers stopped");
 }
 
 #[allow(
@@ -128,7 +154,7 @@ async fn sequence_submit_stats_drain_reports_exact_counts() {
 #[tokio::test]
 async fn lifecycle_crash_rebuild_requeue_no_job_lost() {
     let registry = Arc::new(Registry::new());
-    let app = app::start(config(&registry)).await;
+    let app = app::start(config_no_seam(&registry)).await;
     let dispatcher = registry
         .lookup::<Dispatcher>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
@@ -234,7 +260,7 @@ async fn lifecycle_crash_rebuild_requeue_no_job_lost() {
 async fn boundary_queue_full_draining_and_timeout_classified() {
     let registry = Arc::new(Registry::new());
     // one slow worker + tiny queue so rejection layers are reachable
-    let mut cfg = config(&registry);
+    let mut cfg = config_no_seam(&registry);
     cfg.workers = 1;
     cfg.queue_cap = 2;
     let app = app::start(cfg).await;
@@ -311,7 +337,7 @@ const PER_PRODUCER: u64 = 25;
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn linear_concurrent_producers_no_loss_no_phantom() {
     let registry = Arc::new(Registry::new());
-    let mut cfg = config(&registry);
+    let mut cfg = config_no_seam(&registry);
     cfg.workers = 3;
     cfg.queue_cap = 1024; // accept everything; loss-accounting is the subject
     let _app = app::start(cfg).await;
