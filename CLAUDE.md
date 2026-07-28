@@ -34,6 +34,15 @@ This project is **GitHub-project-cards-driven with test-driven development**. Do
    Enable the tracked hooks once per clone (mirrors nexus): `git config core.hooksPath .githooks`. The `pre-commit` hook lints any staged GitHub Actions workflow; it no longer forces a per-commit README change (that mechanical rule is what bloated the README).
 5. **`nix flake check` is the single gate** (build + clippy + fmt + tests). It sources from the **git tree** — an untracked file is invisible to it, so a check over a new file passes vacuously until you `git add`. A silent `nix build` means *cached*; a derivation that truly ran logs `building '...drv'`.
 6. **No Claude/Anthropic attribution** in commit messages or PR bodies (no `Co-Authored-By` trailer, no "Generated with" line).
+7. **The compositional example grows with every card (walking skeleton).** The
+   job-queue app (`crates/core/examples/job_queue/`, card #218) is the M1
+   compositional proof. Every subsequent feature card MUST carry an explicit
+   checklist bullet — "extend the job-queue app + its integration test
+   (`crates/core/tests/app_job_queue.rs`) with this feature" — added when the
+   card is picked up, shipped or explicitly deferred like any other bullet.
+   Warts surfaced while working on examples are logged in `docs/warts/` and
+   filed as M1 issues at each phase boundary; a card does not close with
+   unfiled warts.
 
 ### Checking cards — use `gh`, never Linear
 

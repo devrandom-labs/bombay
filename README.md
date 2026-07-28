@@ -69,6 +69,12 @@ async fn main() {
 
 `#[derive(bombay_macros::Msg)]` derives the marker trait with a compile-time slot-size tripwire: a message enum whose `size_of` exceeds its budget (default 256 B) fails the build — box the fat variant or raise it with `#[msg(budget = N)]`.
 
+For the whole spine composed — supervised workers, crash-and-rebuild, re-queued
+jobs, name lookup, timers, pipes, and a drained shutdown — run the flagship
+example: `cargo run -p bombay --example job_queue` (source:
+[`crates/core/examples/job_queue/`](crates/core/examples/job_queue/), gate test:
+[`crates/core/tests/app_job_queue.rs`](crates/core/tests/app_job_queue.rs)).
+
 ## The public API at a glance
 
 - **Actor** — `Actor` (a `Mailboxed` subtrait, so the mailbox is keyed on the actor) with `on_start` / `handle` / `on_panic` / `on_stop`. Spawn via `Actor::spawn` or `spawn_with_capacity`, or build a `PreparedActor` to hand out its `ActorRef` and pre-send before the loop starts.
