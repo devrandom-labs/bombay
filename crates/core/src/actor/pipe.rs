@@ -177,6 +177,35 @@ mod tests {
         );
     }
 
+    /// An in-flight pipe holds only a weak ref: an actor whose ONLY remaining
+    /// tie is a never-resolving pipe still ref-count-stops when the last
+    /// external strong ref drops (card invariant 2, ADR-0003/ADR-0017).
+    #[tokio::test]
+    async fn in_flight_pipe_does_not_pin_refcount_stop() {
+        let actor_ref = Sink::spawn(());
+        actor_ref.pipe_to_self(
+            async {
+                core::future::pending::<()>().await;
+                0u32
+            },
+            SinkMsg::Piped,
+        );
+        let weak = actor_ref.downgrade();
+        drop(actor_ref);
+
+        // The actor must die: the weak handle stops upgrading within the bound.
+        tokio::time::timeout(terminate_bound(), async {
+            loop {
+                if weak.upgrade().is_none() {
+                    return;
+                }
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .expect("with only a pending pipe left, the actor must ref-count-stop");
+    }
+
     /// Polls the sink until `n` outcomes arrived (each poll is itself a
     /// bounded ask; the outer timeout bounds the whole wait).
     async fn wait_for_seen(actor_ref: &ActorRef<Sink>, n: usize) -> Vec<Result<u32, String>> {
