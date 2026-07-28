@@ -492,6 +492,54 @@ gates in `dst_races.rs`.
 The sweep also cut the surface's mutation wall-clock ~30 % (fast catches replace
 20 s hangs). No README change (same target-API posture as #145–#147).
 
+### `pipe_to_self` + `pipe_ask` (#226) — done
+Detached weak-reference pipe primitive (`crates/core/src/actor/pipe.rs`) plus the
+flat-error `pipe_ask` sugar. `pipe_to_self(future, mapper)` captures only a
+`WeakActorRef` while the future is in-flight, upgrades it at resolution, maps the
+`Result<T, PanicError>` to `A::Msg`, and delivers through the ordinary mailbox; a
+panic in the piped future is surfaced as `PanicReason::PipedFuture` (the
+`is_lifecycle_hook` predicate was flipped to a positive match so future variants
+cannot silently misclassify). `pipe_ask(target, make_msg, mapper)` delegates to the
+same primitive and flattens `AskError<M, E>` + `PanicError` into one
+`PipeAskError<E>` union, so callers match a single closed error menu.
+
+New public API: `ActorRef::pipe_to_self`, `ActorRef::pipe_ask`, `PipeAskError<E>`,
+and `PanicReason::PipedFuture`; `spawn_pipe` stays `pub(crate)`. Two trace
+breadcrumbs (`pipe_mapper_panicked`, `pipe_result_dropped`) cover the off-actor
+panic and dead-target drop paths.
+
+**12 tests** (`crates/core/src/actor/pipe.rs`) organized by the card's invariants:
+- **Round-trip / typed delivery** — `piped_future_result_arrives_as_mapped_message`
+  and `pipe_ask_delivers_flat_ok` prove the happy path reaches the actor's own
+  menu and `pipe_ask` collapses the nested results to `Result<R, PipeAskError<E>>`.
+- **Panic surfacing** — `piped_panic_reaches_handler_with_piped_future_reason`
+  asserts the `PanicError` reason and verifies falsifiability by mutating the
+  reason back to `HandlerPanic`.
+- **Non-pinning** — `in_flight_pipe_does_not_pin` and
+  `in_flight_pipe_ask_does_not_pin` drop the sole strong `ActorRef` while futures
+  are still running and assert the actor stops cleanly (a strong capture would keep
+  it alive). Probe-verified: stubbing the `WeakActorRef` capture to a strong clone
+  turns the test red.
+- **Dead / killed target** — `actor_dead_before_resolution_drops_result_cleanly`
+  drops the actor before the future resolves and asserts no panic / no message;
+  `pipe_resolving_into_killed_actor_swallows_result_cleanly` resolves against a
+  closed mailbox and asserts the detached task exits without panicking.
+- **Liveness overlap** — `actor_keeps_processing_while_piped_ask_is_pending` holds
+  an inner ask open on a gated responder and proves the actor still accepts and
+  processes other messages (`no_timeout` on the inner ask keeps it from colliding
+  with the test's own `terminate_bound` wrapper).
+- **Flatten lossless** — `flatten_maps_every_variant_distinctly` tests every arm
+  of `PipeAskError::flatten` without sleeps (`Timeout`/`Interrupted` arms are
+  exercised by constructing the source variants directly).
+- **E2E error arms** — `pipe_ask_dead_target_flatters_to_target_dead` and
+  `pipe_ask_handler_error_flatters_to_handler_error` cover the two ask error paths
+  that reach the actor (dead target before delivery, handler domain error in reply).
+
+**Mutation:** `pipe_ask`, `pipe_to_self`, `PipeAskError::flatten` each carry a
+floor of 1 caught mutant; `spawn_pipe` is `known_zero_viable`. The two trace
+helpers also carry a floor of 1, exercised by dedicated tests in
+`crates/core/tests/tracing_capture.rs`.
+
 ### `request` ask/tell builders (#118) — done
 The send surface: `TellRequest` (`.await` / `try_send` / `.timeout(d)`),
 `AskRequest` (typed port in the message, default-5s/override/`no_timeout`),
