@@ -143,6 +143,40 @@ mod tests {
         assert_eq!(seen, vec![Ok(42)], "the exact mapped value round-trips");
     }
 
+    /// A panic inside the piped future arrives at the mapper as
+    /// `Err(PanicError)` with `PanicReason::PipedFuture`, and the actor keeps
+    /// running (card invariant 5; the panic is not the actor's turn).
+    #[tokio::test]
+    async fn piped_panic_reaches_mapper_typed_and_actor_survives() {
+        let actor_ref = Sink::spawn(());
+        actor_ref.pipe_to_self(
+            async { panic!("boom in the pipe") },
+            |res: Result<u32, PanicError>| {
+                let err = res.expect_err("the piped panic must surface as Err");
+                assert_eq!(
+                    err.reason(),
+                    PanicReason::PipedFuture,
+                    "the panic is attributed to the pipe, not a hook or turn",
+                );
+                SinkMsg::Piped(Err(err))
+            },
+        );
+
+        let seen = tokio::time::timeout(terminate_bound(), wait_for_seen(&actor_ref, 1))
+            .await
+            .expect("the mapped panic must arrive within the bound");
+        assert_eq!(seen.len(), 1);
+        let e = seen[0].as_ref().expect_err("stored as the Err arm");
+        assert!(
+            e.contains("boom in the pipe"),
+            "the payload string survives into PanicError, got: {e}",
+        );
+        assert!(
+            actor_ref.is_alive(),
+            "a piped-future panic must never kill the actor",
+        );
+    }
+
     /// Polls the sink until `n` outcomes arrived (each poll is itself a
     /// bounded ask; the outer timeout bounds the whole wait).
     async fn wait_for_seen(actor_ref: &ActorRef<Sink>, n: usize) -> Vec<Result<u32, String>> {
