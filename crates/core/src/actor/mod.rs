@@ -22,11 +22,13 @@ mod pipe;
 mod recipient;
 mod spawn;
 mod supervision;
+mod timer;
 
 pub use self::{
     actor_ref::{ActorRef, WeakActorRef},
     recipient::{Recipient, RecipientAskRequest, ReplyRecipient, WeakRecipient},
     spawn::{DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult},
+    timer::TimerHandle,
 };
 
 // The supervision types stay OFF the public API — the `supervise` verb returns a
