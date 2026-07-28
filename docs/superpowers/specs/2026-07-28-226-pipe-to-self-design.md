@@ -107,6 +107,50 @@ pipe_to_self(future, mapper):
 | Mapper panics | Kills only the pipe task (a mapper panic cannot be re-mapped); documented sharp edge, `tracing` event under the feature |
 | Ordering vs other messages | None guaranteed — the pipe is an ordinary racing sender; documented |
 
+## `pipe_ask` sugar (folded in 2026-07-28)
+
+The motivating case (ask another actor) pays a triple-nested mapper input
+through the generic primitive plus a manual target clone. Pekko's answer is a
+second verb (`context.ask` beside `pipeToSelf`); Rust cannot specialize
+`pipe_to_self` for `T = Result`, so the second verb is the honest mechanism.
+
+```rust
+impl<A: Actor> ActorRef<A> {
+    /// Asks `target` without blocking the turn: sugar over `pipe_to_self`
+    /// with the error union flattened once, here, instead of at every call
+    /// site. Clones `target` internally — no caller-side clone dance.
+    pub fn pipe_ask<B, R, E, F, M>(&self, target: &ActorRef<B>, make_msg: F, mapper: M)
+    where
+        B: Actor,
+        R: Send + 'static,
+        E: ReplyError,
+        F: FnOnce(ReplySender<R, E>) -> B::Msg + Send + 'static,
+        M: FnOnce(Result<R, PipeAskError<E>>) -> A::Msg + Send + 'static;
+}
+
+/// The flat failure union a piped ask can produce — one match at the mapper.
+#[derive(thiserror::Error, Debug)]
+pub enum PipeAskError<E = Infallible> {
+    #[error("target not alive")]           TargetDead,      // Deliver(ActorNotAlive)
+    #[error("target mailbox full")]        MailboxFull,     // Deliver(MailboxFull)
+    #[error("delivery timed out")]         SendTimeout,     // Deliver(SendTimeout)
+    #[error("reply timed out")]            ReplyTimeout,    // AskError::Timeout
+    #[error("target died before replying")] Interrupted,    // AskError::Interrupted
+    #[error(transparent)]                  Handler(E),      // AskError::Handler
+    #[error(transparent)]                  Panicked(PanicError), // piped future unwound
+}
+```
+
+- Delegates to the same `spawn_pipe` primitive (non-pinning, drain-window
+  drop, backpressure — inherited, asserted by delegation tests).
+- Flatten is **variant-lossless** (each source variant → distinct target
+  variant) but drops the undelivered `B::Msg` payload a `Deliver` failure
+  carries: fire-and-forget has no caller to hand the message back to. Recorded
+  in the ADR fate table — a structural property of piping, not an oversight.
+- Uses the ask builder's default deadline (`DEFAULT_ASK_TIMEOUT` budgets
+  delivery + reply), so an accidental cycle through a piped ask self-resolves
+  as `SendTimeout`/`ReplyTimeout` instead of deadlocking silently.
+
 ## `PanicReason` delta
 
 New variant `PanicReason::PipedFuture` — a piped-future panic is neither a
@@ -148,7 +192,17 @@ Every surveyed framework shares this limit.
    `Err(PanicError)` with `PanicReason::PipedFuture`, actor keeps running.
 6. **Kill race:** kill with external strong held, pipe resolves into closed
    mailbox ⇒ swallowed cleanly.
-7. **Doc invariant:** `request.rs` ask-ban text points at `pipe_to_self`.
+7. **Doc invariant:** `request.rs` ask-ban text points at `pipe_ask` /
+   `pipe_to_self` as the sanctioned pattern.
+8. **Sugar round-trip:** `pipe_ask` delivers the flat `Ok(R)` through the
+   mailbox; call site borrows `&ActorRef<B>` (no clone dance — the borrow IS
+   the assertion).
+9. **Flatten lossless:** each `PipeAskError` variant produced and asserted
+   individually — dead target, full mailbox (bounded-1 saturated target),
+   reply timeout, interrupted (target dies mid-ask), handler domain error,
+   panicked.
+10. **Sugar inherits primitive:** non-pinning + dead-self-drop asserted
+    through `pipe_ask` (delegation, not re-implementation).
 
 Wiring: ADR-0017, mutants-baseline entries for new fns, README public-API
 bullet.
@@ -161,8 +215,7 @@ bullet.
 - **Run-loop `FuturesUnordered` lane:** see decision 6.
 - **Cancel/abort handle:** no card invariant needs it; YAGNI until a second
   concrete use (#230 stream attachment owns lifecycle control).
-- **`pipe_ask` sugar in this card:** the ask case pays a triple-nested
-  `Result<Result<R, AskError<M, E>>, PanicError>` at the mapper plus a manual
-  target clone. Real UX cost, Pekko solves it with a second verb
-  (`context.ask`). Deferred to **#239** (filed, on the board) — #226 ships the
-  primitive only.
+- **Deferring `pipe_ask` sugar:** briefly filed as #239, then folded back in
+  (user decision 2026-07-28; #239 closed as merged, #226 card carries the
+  scope-widening note). Shipping the primitive alone would make the
+  triple-nested `Result` the documented pattern.
