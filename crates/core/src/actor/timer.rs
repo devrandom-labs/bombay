@@ -123,14 +123,18 @@ impl<M: Clone + Send + 'static> Recipient<M> {
     }
 }
 
-fn spawn_interval<W, F>(weak: W, period: Duration, mut make_msg: F) -> TimerHandle
+fn spawn_interval<W, F, G>(weak: W, period: Duration, mut make_msg: F, guard: G) -> TimerHandle
 where
     W: WeakTarget,
     F: FnMut() -> W::M + Send + 'static,
+    G: Send + 'static,
 {
     let token = CancellationToken::new();
     let task_token = token.clone();
     let _join = tokio::spawn(async move {
+        // The guard is owned by the spawned task; its Drop signals task exit.
+        let _guard = guard;
+
         loop {
             tokio::select! {
                 biased;
@@ -168,7 +172,7 @@ impl<A: Actor> ActorRef<A> {
     where
         F: FnMut() -> A::Msg + Send + 'static,
     {
-        spawn_interval(self.downgrade(), period, make_msg)
+        spawn_interval(self.downgrade(), period, make_msg, ())
     }
 }
 
@@ -179,7 +183,7 @@ impl<M: Clone + Send + 'static> Recipient<M> {
     where
         F: FnMut() -> M + Send + 'static,
     {
-        spawn_interval(self.downgrade(), period, make_msg)
+        spawn_interval(self.downgrade(), period, make_msg, ())
     }
 }
 
@@ -192,45 +196,8 @@ impl<A: Actor> ActorRef<A> {
         G: Send + 'static,
         F: FnMut() -> A::Msg + Send + 'static,
     {
-        spawn_interval_with_guard(self.downgrade(), period, make_msg, probe)
+        spawn_interval(self.downgrade(), period, make_msg, probe)
     }
-}
-
-#[cfg(test)]
-fn spawn_interval_with_guard<W, F, G>(
-    weak: W,
-    period: Duration,
-    mut make_msg: F,
-    guard: G,
-) -> TimerHandle
-where
-    W: WeakTarget,
-    F: FnMut() -> W::M + Send + 'static,
-    G: Send + 'static,
-{
-    let token = CancellationToken::new();
-    let task_token = token.clone();
-    let _join = tokio::spawn(async move {
-        let _guard = guard;
-        loop {
-            tokio::select! {
-                biased;
-                () = task_token.cancelled() => {
-                    trace::timer_cancelled(weak.id());
-                    return;
-                }
-                () = tokio::time::sleep(period) => {}
-            }
-            let Ok(msg) = std::panic::catch_unwind(AssertUnwindSafe(&mut make_msg)) else {
-                trace::timer_factory_panicked(weak.id());
-                return;
-            };
-            if weak.fire(msg).await.is_break() {
-                return;
-            }
-        }
-    });
-    TimerHandle { token }
 }
 
 #[cfg(test)]
