@@ -580,4 +580,28 @@ mod tests {
             .expect("mapped sentinel arrives");
         assert_eq!(seen, vec![Ok(0)]);
     }
+
+    /// Widened invariant 4: the sugar inherits non-pinning by delegation — an
+    /// in-flight pipe_ask holds no strong ref to A.
+    #[tokio::test]
+    async fn in_flight_pipe_ask_does_not_pin_refcount_stop() {
+        let (_gate_tx, gate_rx) = tokio::sync::oneshot::channel::<()>();
+        let b_ref = GatedB::spawn(gate_rx); // gate never opens; B never replies
+        let a_ref = Sink::spawn(());
+        a_ref.pipe_ask(
+            &b_ref,
+            |reply| GatedBMsg::Get(reply),
+            |res: Result<u32, PipeAskError>| SinkMsg::PipedAsk(res.map_err(|e| e.to_string())),
+        );
+        let weak = a_ref.downgrade();
+        drop(a_ref);
+        tokio::time::timeout(terminate_bound(), async {
+            while weak.upgrade().is_some() {
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .expect("A must ref-count-stop while its pipe_ask is still pending");
+        drop(b_ref);
+    }
 }
