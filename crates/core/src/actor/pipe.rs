@@ -81,6 +81,10 @@ where
 #[cfg(test)]
 mod tests {
     use core::time::Duration;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
 
     use crate::{
         actor::{Actor, ActorRef, Spawn as _},
@@ -204,6 +208,98 @@ mod tests {
         })
         .await
         .expect("with only a pending pipe left, the actor must ref-count-stop");
+    }
+
+    /// Fires a oneshot when dropped — how the tests observe "the detached
+    /// pipe task exited", whichever path it took.
+    struct ExitGuard(Option<tokio::sync::oneshot::Sender<()>>);
+    impl Drop for ExitGuard {
+        fn drop(&mut self) {
+            if let Some(tx) = self.0.take() {
+                let _sent = tx.send(());
+            }
+        }
+    }
+
+    /// Actor dead before the pipe resolves: the result is dropped, the mapper
+    /// never runs, and the detached task exits cleanly — no panic against the
+    /// dead handle (card invariant 3).
+    #[tokio::test]
+    async fn actor_dead_before_resolution_drops_result_cleanly() {
+        let (gate_tx, gate_rx) = tokio::sync::oneshot::channel::<()>();
+        let (exit_tx, exit_rx) = tokio::sync::oneshot::channel::<()>();
+        let mapper_ran = Arc::new(AtomicBool::new(false));
+
+        let actor_ref = Sink::spawn(());
+        let guard = ExitGuard(Some(exit_tx));
+        let ran = Arc::clone(&mapper_ran);
+        actor_ref.pipe_to_self(
+            async move {
+                let _ = gate_rx.await;
+                7u32
+            },
+            move |res| {
+                let _hold = guard;
+                ran.store(true, Ordering::SeqCst);
+                SinkMsg::Piped(res)
+            },
+        );
+
+        // Kill the actor first, then let the pipe resolve.
+        let weak = actor_ref.downgrade();
+        drop(actor_ref);
+        tokio::time::timeout(terminate_bound(), async {
+            while weak.upgrade().is_some() {
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .expect("actor stops once its last strong ref drops");
+
+        gate_tx
+            .send(())
+            .expect("pipe future is waiting on the gate");
+        tokio::time::timeout(terminate_bound(), exit_rx)
+            .await
+            .expect("the detached task must exit within the bound")
+            .expect("guard dropped, not leaked");
+        assert!(
+            !mapper_ran.load(Ordering::SeqCst),
+            "a dead actor's mapper must never run — the result is dropped whole",
+        );
+    }
+
+    /// Kill race (card invariant 6): external strong refs still alive, mailbox
+    /// already closed by kill. The upgrade succeeds, the tell fails — and the
+    /// failure is swallowed, no panic in the detached task.
+    #[tokio::test]
+    async fn pipe_resolving_into_killed_mailbox_is_swallowed() {
+        let (gate_tx, gate_rx) = tokio::sync::oneshot::channel::<()>();
+        let (exit_tx, exit_rx) = tokio::sync::oneshot::channel::<()>();
+
+        let actor_ref = Sink::spawn(());
+        let guard = ExitGuard(Some(exit_tx));
+        actor_ref.pipe_to_self(
+            async move {
+                let _ = gate_rx.await;
+                9u32
+            },
+            move |res| {
+                let _hold = guard;
+                SinkMsg::Piped(res)
+            },
+        );
+
+        actor_ref.kill();
+        // Keep `actor_ref` (strong) alive across the resolution on purpose.
+        gate_tx
+            .send(())
+            .expect("pipe future is waiting on the gate");
+        tokio::time::timeout(terminate_bound(), exit_rx)
+            .await
+            .expect("the detached task must exit despite the closed mailbox")
+            .expect("guard dropped, not leaked");
+        drop(actor_ref);
     }
 
     /// Polls the sink until `n` outcomes arrived (each poll is itself a
