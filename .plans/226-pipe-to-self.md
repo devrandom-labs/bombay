@@ -55,7 +55,8 @@ Numbering = Task N in the detailed plan (each has exact code there).
    **SEQUENTIAL — depends on 6.** Verify:
    `cargo nextest run -p bombay actor_keeps_processing`
 8. `PipeAskError` enum (error.rs) + `flatten` + `pipe_ask` verb + flat-Ok
-   round-trip test. Mirror `E`/`R` bounds from `request.rs` `ask` EXACTLY.
+   round-trip test. Bounds: `E: Send + 'static`, `R: Send + 'static` — nothing
+   stricter (`ReplySender`/`ask` impose no `E` bound; pre-flight CHECK verified).
    **SEQUENTIAL — depends on 7** (pipe.rs + error.rs both touched by earlier
    steps). Verify: `cargo nextest run -p bombay pipe_ask_delivers_flat_ok`
 9. Flatten-lossless pure-fn test (ALL arms) + e2e dead-target + e2e

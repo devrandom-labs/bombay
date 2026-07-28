@@ -123,7 +123,7 @@ impl<A: Actor> ActorRef<A> {
     where
         B: Actor,
         R: Send + 'static,
-        E: ReplyError,
+        E: Send + 'static,   // ReplySender/ask impose NO bound on E; only the spawn crossing does
         F: FnOnce(ReplySender<R, E>) -> B::Msg + Send + 'static,
         M: FnOnce(Result<R, PipeAskError<E>>) -> A::Msg + Send + 'static;
 }
