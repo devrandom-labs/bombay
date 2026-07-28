@@ -261,7 +261,10 @@ trait WeakTarget: Send + 'static {
 }
 
 impl<A: Actor> WeakTarget for WeakActorRef<A> { /* upgrade → tell(msg).await */ }
-impl<M: Send + 'static> WeakTarget for WeakRecipient<M> { /* upgrade → tell(msg).await */ }
+impl<M: Clone + Send + 'static> WeakTarget for WeakRecipient<M> { /* upgrade → tell(msg).await */ }
+// NOTE the `Clone` bound: the erased plumbing (`ErasedRecipient`/
+// `ErasedWeakRecipient`, recipient.rs:29-31) requires `M: Clone + Send + 'static`;
+// without it `downgrade()`/`tell()` don't compile. Pre-flight CHECK finding.
 ```
 
 `fire` fate handling (both impls): upgrade failure → `trace::timer_fire_dropped(self.id())`,
@@ -310,7 +313,7 @@ impl<A: Actor> ActorRef<A> {
     }
 }
 
-impl<M: Send + 'static> Recipient<M> {
+impl<M: Clone + Send + 'static> Recipient<M> {
     /// [`ActorRef::send_after`] for the erased tell-side handle.
     #[must_use = "dropping the handle detaches the timer; keep it to be able to cancel"]
     pub fn send_after(&self, delay: Duration, msg: M) -> TimerHandle {
@@ -494,7 +497,8 @@ where
 ```
 
 Public verbs on `ActorRef<A>` (`F: FnMut() -> A::Msg + Send + 'static`) and
-`Recipient<M>` (`F: FnMut() -> M + Send + 'static`), same doc-comment style as
+`Recipient<M>` (`M: Clone + Send + 'static`, `F: FnMut() -> M + Send + 'static`
+— same `Clone` bound reason as Step 3), same doc-comment style as
 `send_after`, both `#[must_use]`. Plus `#[cfg(test)] send_interval_probed`
 mirroring `send_after_probed`.
 
@@ -524,7 +528,7 @@ async fn recipient_send_after_fires_through_erasure() {
     assert_eq!(seen, vec![5]);
 }
 
-/// Recipient interval + cancel-before-fire on the erased path.
+/// Recipient interval on the erased path; cancel after two ticks stops it.
 #[tokio::test(start_paused = true)]
 async fn recipient_interval_and_cancel() {
     let actor_ref = Sink::spawn(());
