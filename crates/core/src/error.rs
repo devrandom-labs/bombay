@@ -168,6 +168,44 @@ impl<M, E> From<TellError<M>> for AskError<M, E> {
     }
 }
 
+/// The flat failure union a piped ask ([`crate::actor::ActorRef::pipe_ask`])
+/// can produce.
+///
+/// Panic, delivery, and reply failures collapsed into ONE match at the mapper,
+/// instead of the triple-nested
+/// `Result<Result<R, AskError<M, E>>, PanicError>` the generic pipe would
+/// hand back.
+///
+/// Variant-lossless with respect to [`AskError`]/[`TellError`] (each source
+/// variant maps to a distinct variant here), but the undelivered message a
+/// `Deliver` failure carries is dropped: fire-and-forget has no caller to
+/// hand it back to (ADR-0017 fate table).
+#[derive(thiserror::Error, Debug)]
+pub enum PipeAskError<E = Infallible> {
+    /// The target was already dead at delivery (`TellError::ActorNotAlive`).
+    #[error("target not alive")]
+    TargetDead,
+    /// The target's mailbox was full on a non-waiting path
+    /// (`TellError::MailboxFull`).
+    #[error("target mailbox full")]
+    MailboxFull,
+    /// Delivery waited its whole deadline (`TellError::SendTimeout`).
+    #[error("delivery timed out")]
+    SendTimeout,
+    /// Delivered, but no reply within the deadline (`AskError::Timeout`).
+    #[error("reply timed out")]
+    ReplyTimeout,
+    /// The target died after accepting the message (`AskError::Interrupted`).
+    #[error("target died before replying")]
+    Interrupted,
+    /// The target's handler answered with its domain error, un-erased.
+    #[error(transparent)]
+    Handler(E),
+    /// The piped ask future itself unwound (`PanicReason::PipedFuture`).
+    #[error(transparent)]
+    Panicked(PanicError),
+}
+
 /// The empty error type for actors whose handlers cannot fail.
 ///
 /// A local re-export placeholder until the message/reply cards settle the
@@ -209,6 +247,12 @@ pub enum PanicReason {
     /// The `on_link_died` lifecycle hook itself failed.
     #[error("on_link_died hook")]
     OnLinkDied,
+    /// A future piped via [`ActorRef::pipe_to_self`](crate::actor::ActorRef::pipe_to_self)
+    /// unwound. The panic happened in a detached task, outside any actor turn
+    /// or lifecycle hook — the actor itself is untouched and receives the
+    /// failure as a message.
+    #[error("piped future")]
+    PipedFuture,
 }
 
 impl PanicReason {
@@ -216,7 +260,10 @@ impl PanicReason {
     /// handler — the "refuse to restart-storm" signal for a supervisor.
     #[must_use]
     pub const fn is_lifecycle_hook(self) -> bool {
-        !matches!(self, Self::HandlerPanic)
+        matches!(
+            self,
+            Self::OnStart | Self::OnStop | Self::OnPanic | Self::OnLinkDied
+        )
     }
 }
 
@@ -606,6 +653,11 @@ mod tests {
         assert!(
             !PanicReason::HandlerPanic.is_lifecycle_hook(),
             "a handler panic is runtime, not lifecycle"
+        );
+        assert!(
+            !PanicReason::PipedFuture.is_lifecycle_hook(),
+            "a piped-future panic happens outside any turn or hook — it must \
+             never trip a supervisor's refuse-to-restart-storm signal",
         );
     }
 

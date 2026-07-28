@@ -18,6 +18,7 @@ use crate::{
 
 mod actor_ref;
 mod kind;
+mod pipe;
 mod recipient;
 mod spawn;
 mod supervision;

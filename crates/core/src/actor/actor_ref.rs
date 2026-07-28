@@ -144,8 +144,10 @@ impl<A: Actor> ActorRef<A> {
     /// override via [`timeout`](AskRequest::timeout), opt out via
     /// [`no_timeout`](AskRequest::no_timeout)) budgets delivery *and* reply.
     /// Handlers must never `ask(..).await` another actor (#122-#4) — that is
-    /// the bounded-mailbox cycle deadlock; the deadline is the backstop, not
-    /// the license.
+    /// the bounded-mailbox cycle deadlock; use
+    /// [`pipe_ask`](crate::actor::ActorRef::pipe_ask) (or
+    /// [`pipe_to_self`](crate::actor::ActorRef::pipe_to_self)) from a handler
+    /// instead. The deadline is the backstop, not the license.
     pub fn ask<R, E>(
         &self,
         make_msg: impl FnOnce(ReplySender<R, E>) -> A::Msg,

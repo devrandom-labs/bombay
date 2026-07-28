@@ -298,9 +298,12 @@ pub struct Ask<M, R, E = Infallible> {
 /// [`DEFAULT_ASK_TIMEOUT`]; opt out with [`no_timeout`](Self::no_timeout).
 ///
 /// **Discipline (#122-#4):** a *handler* must never `ask(..).await` another
-/// actor — that is the bounded-mailbox cycle deadlock. Handlers `tell` (or
-/// emit an event) and take the reply as a new message; blocking asks belong
-/// outside handlers, where the deadline backstops any accidental cycle.
+/// actor — that is the bounded-mailbox cycle deadlock. Handlers use
+/// [`pipe_ask`](crate::actor::ActorRef::pipe_ask) (or the generic
+/// [`pipe_to_self`](crate::actor::ActorRef::pipe_to_self)) — fire the
+/// request, END the turn, take the reply as a new message. Blocking asks
+/// belong outside handlers, where the deadline backstops any accidental
+/// cycle.
 #[must_use = "an ask does nothing until awaited"]
 pub struct AskRequest<'a, A: Mailboxed, R, E = Infallible> {
     mailbox: &'a MailboxSender<A>,

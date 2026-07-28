@@ -117,6 +117,14 @@ mod imp {
         tracing::error!(?err, "handler crashed");
     }
 
+    pub fn pipe_mapper_panicked<A: Actor>() {
+        tracing::error!(actor = %A::name(), "pipe_to_self mapper panicked; result dropped");
+    }
+
+    pub fn pipe_result_dropped<A: Actor>() {
+        tracing::debug!(actor = %A::name(), "piped result arrived after stop; dropped");
+    }
+
     pub fn on_stop_ok(reason: &ActorStopReason) {
         tracing::trace!(%reason, "actor stopped");
     }
@@ -205,6 +213,16 @@ mod imp {
             pub const fn on_start_ok() {}
             pub const fn on_start_failed(_err: &PanicError) {}
             pub const fn handler_crashed(_err: &PanicError) {}
+            #[expect(
+                clippy::extra_unused_type_parameters,
+                reason = "mirrors the tracing-on signature so call sites stay cfg-free"
+            )]
+            pub const fn pipe_mapper_panicked<A: Actor>() {}
+            #[expect(
+                clippy::extra_unused_type_parameters,
+                reason = "mirrors the tracing-on signature so call sites stay cfg-free"
+            )]
+            pub const fn pipe_result_dropped<A: Actor>() {}
             pub const fn on_stop_ok(_reason: &ActorStopReason) {}
             pub const fn on_stop_failed<E: core::fmt::Debug>(_reason: &ActorStopReason, _err: &E) {}
             pub const fn on_stop_panicked(_reason: &ActorStopReason) {}
@@ -227,5 +245,6 @@ pub use imp::SendContext;
 pub use imp::{
     Span, child_escalated, death_notice, handler_crashed, instrument, lifecycle_span,
     on_start_failed, on_start_ok, on_stop_abandoned, on_stop_failed, on_stop_ok, on_stop_panicked,
-    record_stop_reason, restart_gave_up, restart_scheduled, spawned,
+    pipe_mapper_panicked, pipe_result_dropped, record_stop_reason, restart_gave_up,
+    restart_scheduled, spawned,
 };

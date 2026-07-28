@@ -1032,3 +1032,139 @@ async fn child_lifecycle_failure_escalates_with_error_event() {
         "the escalation names the incarnation that died in the hook",
     );
 }
+
+/// Card #226: a pipe whose mapper panics emits exactly one `error!` event
+/// with the actor name, and the pipe task exits cleanly.
+#[tokio::test]
+async fn pipe_mapper_panic_emits_one_error_event() {
+    let (store, _guard) = capture::install();
+
+    struct Sink;
+    #[derive(Debug)]
+    struct M;
+    impl Msg for M {}
+    impl Mailboxed for Sink {
+        type Msg = M;
+    }
+    impl Actor for Sink {
+        type Args = ();
+        type Error = Infallible;
+        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self)
+        }
+        async fn handle(
+            &mut self,
+            _: M,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+
+    let actor_ref = Sink::spawn(());
+    actor_ref.pipe_to_self(async { 1u32 }, |_res: Result<u32, PanicError>| {
+        panic!("mapper boom")
+    });
+
+    // The mapper panic fires in a detached task; give it a bounded moment.
+    timeout(terminate_bound(), async {
+        loop {
+            {
+                let store = store.lock().unwrap();
+                let events: Vec<_> = store
+                    .events
+                    .iter()
+                    .filter(|e| {
+                        field(&e.fields, "message").as_deref()
+                            == Some("pipe_to_self mapper panicked; result dropped")
+                    })
+                    .collect();
+                if events.len() == 1 {
+                    assert_eq!(events[0].level, "ERROR");
+                    return;
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("the mapper-panic event must be emitted within the bound");
+}
+
+/// Card #226: a piped result that resolves after its target has stopped
+/// emits exactly one `debug!` event and exits cleanly.
+#[tokio::test]
+async fn pipe_result_dropped_after_stop_emits_one_debug_event() {
+    let (store, _guard) = capture::install();
+
+    struct Sink;
+    #[derive(Debug)]
+    struct M;
+    impl Msg for M {}
+    impl Mailboxed for Sink {
+        type Msg = M;
+    }
+    impl Actor for Sink {
+        type Args = ();
+        type Error = Infallible;
+        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self)
+        }
+        async fn handle(
+            &mut self,
+            _: M,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+
+    let (gate_tx, gate_rx) = tokio::sync::oneshot::channel::<()>();
+    let actor_ref = Sink::spawn(());
+    actor_ref.pipe_to_self(
+        async move {
+            let _ = gate_rx.await;
+            1u32
+        },
+        |_res: Result<u32, PanicError>| M,
+    );
+
+    let weak = actor_ref.downgrade();
+    drop(actor_ref);
+    timeout(terminate_bound(), async {
+        while weak.upgrade().is_some() {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("actor stops once its last strong ref drops");
+
+    gate_tx
+        .send(())
+        .expect("pipe future is waiting on the gate");
+
+    timeout(terminate_bound(), async {
+        loop {
+            {
+                let store = store.lock().unwrap();
+                let events: Vec<_> = store
+                    .events
+                    .iter()
+                    .filter(|e| {
+                        field(&e.fields, "message").as_deref()
+                            == Some("piped result arrived after stop; dropped")
+                    })
+                    .collect();
+                if events.len() == 1 {
+                    assert_eq!(events[0].level, "DEBUG");
+                    return;
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("the post-stop drop event must be emitted within the bound");
+}
