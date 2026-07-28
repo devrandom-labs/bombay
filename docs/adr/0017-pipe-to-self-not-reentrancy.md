@@ -20,8 +20,8 @@ untested per call site.
   resolution, and delivers the mapped `A::Msg` through the ordinary mailbox.
   Non-pinning by construction, panic surfaced typed via `PanicError`,
   closed-menu preserved, zero run-loop surgery.
-- **B — run-loop `FuturesUnordered` lane** (Pekko `pipeToSelf` internal
-  precedent). Rejected: bypasses the mailbox, which forks ordering semantics,
+- **B — run-loop `FuturesUnordered` lane.** Rejected: bypasses the mailbox,
+  which forks ordering semantics,
   requires `kind.rs`/`spawn.rs` surgery, and shares nothing with the later
   timers card (#223).
 - **C — Orleans-style reentrancy** (`[Reentrant]` / `[AlwaysInterleave]`).
