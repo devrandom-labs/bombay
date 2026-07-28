@@ -252,12 +252,14 @@ lifecycle hooks (`mod.rs`), the run-loop (`kind.rs`), the minimal
 `reason` is preserved). Four `catch_unwind` boundaries turn a panic into an
 inspectable `PanicError` instead of tearing down the task — `handle`, `on_stop`,
 `on_start`, and `on_panic` — and a hard kill is a uniform `futures::Abortable`
-wrap of the whole lifecycle (skips `on_stop` → `RunResult::Killed`). A `handle`
-that returns `Err` is a controlled crash routed through `on_panic` exactly like a
-caught unwind (both → `ActorStopReason::Panicked`). `default_capacity()` is
-pinned by a unit test so its `expect` can never trip.
+wrap of the message-service future (skips `on_stop` → `RunResult::Killed`); for
+supervised actors the lifecycle epilogue still tears down every remaining child
+before the task returns. A `handle` that returns `Err` is a controlled crash
+routed through `on_panic` exactly like a caught unwind (both →
+`ActorStopReason::Panicked`). `default_capacity()` is pinned by a unit test so its
+`expect` can never trip.
 
-**14 tests** (13 in `spawn.rs`, 1 in `actor_ref.rs`), organized by the rule-#7
+**19 tests** (18 in `spawn.rs`, 1 in `actor_ref.rs`), organized by the rule-#7
 cross-cutting categories:
 - **Sequence/protocol** — queued-messages-then-`Signal::Stop` handled in order
   then stop; `*stop = true` stops after the current handler returns; on-start
@@ -1063,9 +1065,11 @@ when that type ships.
   OneForAll (all-rebuilt / reverse-stop-birth-rebuild / count-once-against-budget), RestForOne
   (suffix-only / last-child-degenerates-to-OneForOne), `Never`-excluded-from-set, the four
   mid-cycle races (sibling-death-absorbed, unsupervise-mid-cycle-no-wedge, widen-supersedes-deadline,
-  serves-messages-during-teardown), and the heterogeneous-children sequence (two actor types through
-  the erased factory edges). Each headline set-restart test is **bite-checked** by flipping the
-  supervisor to the default `OneForOne` and confirming it fails (the #149 vacuous-green guard).
+  serves-messages-during-teardown), the heterogeneous-children sequence (two actor types through
+  the erased factory edges), and supervisor-exit teardown (normal stop, hard kill, early join under
+  paused clock, abort of a cancel-ignoring child, bounded kill-during-`on_stop`). Each headline
+  set-restart test is **bite-checked** by flipping the supervisor to the default `OneForOne` and
+  confirming it fails (the #149 vacuous-green guard).
 - **DST (`tests/dst_races.rs`)** — `dst_restart_storm_deterministic` (same seed + schedule ⇒
   identical `(virtual_ms, tag)` rebuild trace; keyed on logical tags, never process-global
   `ActorId`s), `dst_concurrent_link_unlink_die` (8 seeds; no rebuild after `unsupervise`, no wedge),

@@ -28,6 +28,7 @@ use bombay::{
     restart::RestartConfig,
 };
 use core::ops::ControlFlow;
+use flume::Sender;
 
 // ---------------------------------------------------------------- domain ----
 
@@ -120,11 +121,13 @@ pub enum WorkerError {
 pub struct WorkerArgs {
     pub slot: usize,
     pub dispatcher: Recipient<Done>,
+    pub stopped_tx: Option<Sender<ActorId>>,
 }
 
 pub struct Worker {
     slot: usize,
     dispatcher: Recipient<Done>,
+    stopped_tx: Option<Sender<ActorId>>,
 }
 
 impl Mailboxed for Worker {
@@ -139,7 +142,19 @@ impl Actor for Worker {
         Ok(Self {
             slot: args.slot,
             dispatcher: args.dispatcher,
+            stopped_tx: args.stopped_tx,
         })
+    }
+
+    async fn on_stop(
+        &mut self,
+        actor_ref: WeakActorRef<Self>,
+        _: ActorStopReason,
+    ) -> Result<(), WorkerError> {
+        if let Some(tx) = &self.stopped_tx {
+            let _ = tx.send(actor_ref.id());
+        }
+        Ok(())
     }
 
     #[expect(
@@ -204,8 +219,6 @@ pub enum DispatcherMsg {
     Drain {
         reply: ReplySender<DrainReport>,
     },
-    /// Self-signal: all children detached+stopped, reply and stop.
-    FinishStop,
     Stats {
         reply: ReplySender<Stats>,
     },
@@ -232,6 +245,7 @@ pub struct DispatcherConfig {
     pub retry_backoff: Duration,
     pub restart: RestartConfig,
     pub registry: Arc<Registry>,
+    pub worker_stopped_tx: Option<Sender<ActorId>>,
 }
 
 pub struct Dispatcher {
@@ -248,7 +262,6 @@ pub struct Dispatcher {
     pending_retries: u32,
     stats: Stats,
     draining: bool,
-    stopping: bool,
     drain_reply: Option<ReplySender<DrainReport>>,
 }
 
@@ -262,17 +275,20 @@ impl Actor for Dispatcher {
 
     async fn on_start(cfg: DispatcherConfig, actor_ref: ActorRef<Self>) -> Result<Self, AppError> {
         cfg.registry.register(DISPATCHER_NAME, &actor_ref)?;
+        let worker_stopped_tx = cfg.worker_stopped_tx.clone();
         for slot in 0..cfg.workers {
             // WEAK capture is mandatory: the factory lives in this actor's own
             // child table — a strong ref would be a self-cycle and the
             // dispatcher could never ref-count-stop.
             let disp: WeakActorRef<Self> = actor_ref.downgrade();
             let done_port: Recipient<Done> = actor_ref.recipient::<Done>();
+            let stopped_tx = worker_stopped_tx.clone();
             actor_ref
                 .supervise(cfg.restart, move || {
                     let worker = Worker::spawn(WorkerArgs {
                         slot,
                         dispatcher: done_port.clone(),
+                        stopped_tx: stopped_tx.clone(),
                     });
                     if let Some(strong_disp) = disp.upgrade() {
                         // best-effort: a full mailbox loses the roster update —
@@ -302,7 +318,6 @@ impl Actor for Dispatcher {
             pending_retries: 0,
             stats: Stats::default(),
             draining: false,
-            stopping: false,
             drain_reply: None,
         })
     }
@@ -334,7 +349,7 @@ impl Actor for Dispatcher {
                     bump(&mut self.stats.completed);
                 }
                 self.dispatch();
-                self.finish_drain_if_quiet(&actor_ref).await;
+                self.finish_drain_if_quiet(stop);
             }
             DispatcherMsg::Retry(job) => {
                 #[expect(
@@ -362,7 +377,7 @@ impl Actor for Dispatcher {
                     .map(|(actor_id, _)| *actor_id)
                     .collect();
                 self.dispatch();
-                self.finish_drain_if_quiet(&actor_ref).await;
+                self.finish_drain_if_quiet(stop);
             }
             DispatcherMsg::Stats { reply } => {
                 let _ = reply.send(self.stats.clone());
@@ -370,19 +385,7 @@ impl Actor for Dispatcher {
             DispatcherMsg::Drain { reply } => {
                 self.draining = true;
                 self.drain_reply = Some(reply);
-                self.finish_drain_if_quiet(&actor_ref).await;
-            }
-            DispatcherMsg::FinishStop => {
-                if let Some(reply) = self.drain_reply.take() {
-                    let _ = reply.send(DrainReport {
-                        submitted: self.stats.submitted,
-                        completed: self.stats.completed,
-                        failed: self.stats.failed,
-                        retried: self.stats.retried,
-                        rebuilds: self.stats.rebuilds,
-                    });
-                }
-                *stop = true;
+                self.finish_drain_if_quiet(stop);
             }
         }
         Ok(())
@@ -455,40 +458,27 @@ impl Dispatcher {
         }
     }
 
-    /// Drain complete? Detach-and-stop every worker FIRST — a supervisor
-    /// stopping `Normal` does NOT stop its children (verified: only the
-    /// escalation path calls `stop_surviving_children`; `spawn.rs`'s
-    /// supervised lifecycle runs no child sweep) — then self-signal
-    /// `FinishStop`. The mailbox is FIFO, so the stop signals are processed
-    /// before the final message; the reply and `*stop = true` happen in the
-    /// `FinishStop` arm.
-    async fn finish_drain_if_quiet(&mut self, actor_ref: &ActorRef<Self>) {
+    /// Drain complete? Reply and stop directly. The supervisor's own exit
+    /// now tears down any remaining children (ADR-0019), so the app no longer
+    /// needs to detach-and-stop each worker before finishing the drain.
+    fn finish_drain_if_quiet(&mut self, stop: &mut bool) {
         if !self.draining
-            || self.stopping
             || !self.pending.is_empty()
             || !self.outstanding.is_empty()
             || self.pending_retries != 0
         {
             return;
         }
-        self.stopping = true;
-        let ids: Vec<ActorId> = self.roster.values().map(|(id, _)| *id).collect();
-        for id in ids {
-            // enqueues the detach+stop signal into our own mailbox; an error
-            // here means our own mailbox is gone — nothing left to stop
-            let _ = actor_ref.stop_child(id).await;
+        if let Some(reply) = self.drain_reply.take() {
+            let _ = reply.send(DrainReport {
+                submitted: self.stats.submitted,
+                completed: self.stats.completed,
+                failed: self.stats.failed,
+                retried: self.stats.retried,
+                rebuilds: self.stats.rebuilds,
+            });
         }
-        // best-effort self-signal: if the mailbox is momentarily full, the
-        // message occupying it re-enters this method and retries (the
-        // `stopping` flag keeps the child stops one-shot — reset it so the
-        // retry path can re-send FinishStop)
-        if actor_ref
-            .tell(DispatcherMsg::FinishStop)
-            .try_send()
-            .is_err()
-        {
-            self.stopping = false;
-        }
+        *stop = true;
     }
 }
 
