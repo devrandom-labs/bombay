@@ -12,6 +12,18 @@ timers → pipe → drain), shipped as a runnable example AND an integration tes
 build and in what order; that document tells you the code.** Spec (rationale):
 `docs/superpowers/specs/2026-07-28-218-job-queue-exit-gate-design.md`.
 
+Pre-flight CHECK round is DONE and its findings are already folded into the
+plan document: plan-doc Task 1 is complete (ignore it — do NOT touch CLAUDE.md,
+the wart log's existing rows, or GitHub); the drain path now detaches+stops
+children explicitly (`stop_child` loop + `FinishStop` self-signal — a
+supervisor stopping `Normal` does NOT stop its children, verified); lint
+`#[expect(..., reason)]` attributes are in the code blocks (workspace denies
+`panic`/`expect_used`/`unwrap_used`/`print_stdout`); `AskError::Timeout` is the
+verified variant name and the boundary test asserts `!is_retryable()`;
+`tracing-subscriber` dev-dep exists but needs the `fmt` feature added; the
+lifecycle test polls for the initial roster instead of asserting it
+immediately. Follow the plan document as amended.
+
 Invariants that must hold:
 - At-least-once: no submitted job lost across worker crash + rebuild; every job
   completed ≥1× or recorded failed; queue empty at drain. NEVER assert
@@ -78,22 +90,26 @@ one-line wart, issue cell `pending`) — do not file issues yourself.
    `#[derive(bombay_macros::Msg)]` note (~line 70 of README.md).
    Verify: none (prose).
 
-5. **Teardown fact-check** — PARALLEL OK with steps 2–4 (read-only). Plan doc
-   Task 3 Step 3: read the supervised-loop teardown in
-   `crates/core/src/actor/kind.rs` and answer: does a supervisor stopping with
-   reason `Normal` stop its remaining children? Report the answer with
-   file:line evidence in your final output. If NO, append a `blocker` wart row
-   and say so loudly in the final report — do NOT work around it.
+5. **Wart row for the teardown gap** — SEQUENTIAL after step 1. The pre-flight
+   CHECK verified a supervisor stopping `Normal` does NOT stop its remaining
+   children (`kind.rs` — `stop_surviving_children` only on the escalation
+   path; the supervised lifecycle in `spawn.rs` runs no child sweep). The app
+   works around it with the `stop_child` + `FinishStop` drain. APPEND a
+   `boilerplate`-severity row to `docs/warts/218-example-warts.md` describing
+   this (issue cell `pending`) if no equivalent row exists yet.
 
-6. **Final pass** — SEQUENTIAL, after all: `cargo clippy -p bombay --examples
-   --tests 2>&1 | tail -30` — fix warnings in YOUR new files only (never touch
-   lint config, never `#[allow]` without a `reason`). `cargo fmt --all`.
+6. **Final pass** — SEQUENTIAL, after all: `cargo clippy -p bombay --example
+   job_queue --test app_job_queue 2>&1 | tail -30` (target ONLY the new files —
+   pre-existing test files fail the restriction lints, that backlog is card
+   #136 and out of scope). Fix warnings in YOUR files only (never touch lint
+   config; every `#[expect]` carries a `reason`). `cargo fmt --all`.
 
 ## Verification
 
 - `cargo check -p bombay --example job_queue` — PASS
-- `cargo check -p bombay --tests` — PASS
-- `cargo clippy -p bombay --examples --tests` — no warnings from the new files
+- `cargo check -p bombay --test app_job_queue` — PASS
+- `cargo clippy -p bombay --example job_queue --test app_job_queue` — no
+  warnings from the new files
 - `cargo fmt --all` run
 - DO NOT run `cargo test` / `cargo nextest` / `nix flake check` (sandbox
   hang); the controller runs them after review.

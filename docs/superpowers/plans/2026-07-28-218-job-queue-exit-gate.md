@@ -153,9 +153,8 @@ The app module is shared verbatim between the example and the test via `#[path]`
 
 mod app;
 
-#[tokio::main]
-async fn main() {
-    unimplemented!("demo narration lands in Task 6");
+fn main() {
+    // demo narration lands in Task 7 (`unimplemented!` is workspace-denied)
 }
 ```
 
@@ -171,6 +170,13 @@ async fn main() {
 //!
 //! The app under test is the real example (`examples/job_queue/app.rs`),
 //! included by path so the demo and the gate compile the same code.
+
+#![expect(
+    clippy::expect_used,
+    clippy::unwrap_used,
+    clippy::panic,
+    reason = "test assertions fail loudly by design"
+)]
 
 #[path = "../examples/job_queue/app.rs"]
 mod app;
@@ -353,6 +359,7 @@ pub struct DrainReport {
 
 /// Stats counters only ever increment by one; overflowing u64 that way is a
 /// programmer bug, not a data limit.
+#[expect(clippy::expect_used, reason = "u64 event-counter overflow is a programmer bug, not a data limit")]
 fn bump(counter: &mut u64) {
     *counter = counter.checked_add(1).expect("u64 event counter overflow");
 }
@@ -408,6 +415,7 @@ impl Actor for Worker {
         Ok(Self { slot: args.slot, dispatcher: args.dispatcher })
     }
 
+    #[expect(clippy::panic, reason = "a poison job simulates an actor bug on purpose; the loop catches it")]
     async fn handle(
         &mut self,
         msg: WorkerMsg,
@@ -453,6 +461,8 @@ pub enum DispatcherMsg {
     Retry(Job),
     WorkerReplaced { slot: usize, id: ActorId, worker: Recipient<Job> },
     Drain { reply: ReplySender<DrainReport> },
+    /// Self-signal: all children detached+stopped, reply and stop.
+    FinishStop,
     Stats { reply: ReplySender<Stats> },
 }
 
@@ -491,6 +501,7 @@ pub struct Dispatcher {
     retries: HashMap<u64, u32>,
     stats: Stats,
     draining: bool,
+    stopping: bool,
     drain_reply: Option<ReplySender<DrainReport>>,
 }
 
@@ -543,6 +554,7 @@ impl Actor for Dispatcher {
             retries: HashMap::new(),
             stats: Stats::default(),
             draining: false,
+            stopping: false,
             drain_reply: None,
         })
     }
@@ -574,7 +586,7 @@ impl Actor for Dispatcher {
                     bump(&mut self.stats.completed);
                 }
                 self.dispatch();
-                self.maybe_finish_drain(stop);
+                self.finish_drain_if_quiet(&actor_ref).await;
             }
             DispatcherMsg::Retry(job) => {
                 self.pending.push_front(job);
@@ -588,7 +600,7 @@ impl Actor for Dispatcher {
                 }
                 self.stats.worker_ids = self.roster.values().map(|(id, _)| *id).collect();
                 self.dispatch();
-                self.maybe_finish_drain(stop);
+                self.finish_drain_if_quiet(&actor_ref).await;
             }
             DispatcherMsg::Stats { reply } => {
                 let _ = reply.send(self.stats.clone());
@@ -596,7 +608,19 @@ impl Actor for Dispatcher {
             DispatcherMsg::Drain { reply } => {
                 self.draining = true;
                 self.drain_reply = Some(reply);
-                self.maybe_finish_drain(stop);
+                self.finish_drain_if_quiet(&actor_ref).await;
+            }
+            DispatcherMsg::FinishStop => {
+                if let Some(reply) = self.drain_reply.take() {
+                    let _ = reply.send(DrainReport {
+                        submitted: self.stats.submitted,
+                        completed: self.stats.completed,
+                        failed: self.stats.failed,
+                        retried: self.stats.retried,
+                        rebuilds: self.stats.rebuilds,
+                    });
+                }
+                *stop = true;
             }
         }
         Ok(())
@@ -661,20 +685,35 @@ impl Dispatcher {
         }
     }
 
-    fn maybe_finish_drain(&mut self, stop: &mut bool) {
-        if !self.draining || !self.pending.is_empty() || !self.outstanding.is_empty() {
+    /// Drain complete? Detach-and-stop every worker FIRST — a supervisor
+    /// stopping `Normal` does NOT stop its children (verified: only the
+    /// escalation path calls `stop_surviving_children`; `spawn.rs`'s
+    /// supervised lifecycle runs no child sweep) — then self-signal
+    /// `FinishStop`. The mailbox is FIFO, so the stop signals are processed
+    /// before the final message; the reply and `*stop = true` happen in the
+    /// `FinishStop` arm.
+    async fn finish_drain_if_quiet(&mut self, actor_ref: &ActorRef<Self>) {
+        if !self.draining
+            || self.stopping
+            || !self.pending.is_empty()
+            || !self.outstanding.is_empty()
+        {
             return;
         }
-        if let Some(reply) = self.drain_reply.take() {
-            let _ = reply.send(DrainReport {
-                submitted: self.stats.submitted,
-                completed: self.stats.completed,
-                failed: self.stats.failed,
-                retried: self.stats.retried,
-                rebuilds: self.stats.rebuilds,
-            });
+        self.stopping = true;
+        let ids: Vec<ActorId> = self.roster.values().map(|(id, _)| *id).collect();
+        for id in ids {
+            // enqueues the detach+stop signal into our own mailbox; an error
+            // here means our own mailbox is gone — nothing left to stop
+            let _ = actor_ref.stop_child(id).await;
         }
-        *stop = true;
+        // best-effort self-signal: if the mailbox is momentarily full, the
+        // message occupying it re-enters this method and retries (the
+        // `stopping` flag keeps the child stops one-shot — reset it so the
+        // retry path can re-send FinishStop)
+        if actor_ref.tell(DispatcherMsg::FinishStop).try_send().is_err() {
+            self.stopping = false;
+        }
     }
 }
 
@@ -736,6 +775,7 @@ pub struct App {
 
 /// Wires the whole spine: linked overseer, supervised dispatcher (which
 /// registers itself and supervises its workers in `on_start`), watch edge.
+#[expect(clippy::expect_used, reason = "spawn_linked structurally guarantees the link channel")]
 pub async fn start(cfg: DispatcherConfig) -> App {
     let overseer = Overseer::spawn_linked(());
     let dispatcher = Dispatcher::spawn_supervised(cfg);
@@ -795,10 +835,20 @@ async fn lifecycle_crash_rebuild_requeue_no_job_lost() {
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
-    let before = bounded(dispatcher.ask(|reply| DispatcherMsg::Stats { reply }))
-        .await
-        .expect("stats reply");
-    assert_eq!(before.worker_ids.len(), 2, "both slots announced via WorkerReplaced");
+    // the initial WorkerReplaced announcements race the first Stats ask —
+    // poll until both slots are in the roster
+    let mut before = None;
+    for _ in 0..200 {
+        let stats = bounded(dispatcher.ask(|reply| DispatcherMsg::Stats { reply }))
+            .await
+            .expect("stats reply");
+        if stats.worker_ids.len() == 2 {
+            before = Some(stats);
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    let before = before.expect("both slots must announce via WorkerReplaced within the bound");
 
     // 6 completable jobs + 2 always-crashing jobs (one Err, one panic)
     for id in 0..6u64 {
@@ -905,7 +955,7 @@ git commit -m "test(examples): lifecycle gate — crash, rebuild, re-queue, retr
 rg -n 'pub enum AskError' -A 30 crates/core/src/error.rs
 ```
 
-The test below writes `AskError::Handler(..)` for a `send_err` reply and a timeout variant spelled `AskError::ReplyTimeout { .. }` — replace both `matches!` patterns with the real names found here, and assert the classification methods (`is_retryable`/`is_terminal`) per the doc comments on those variants (#113 decided timeouts are NOT retryable).
+Verified during pre-flight CHECK (`error.rs:88-126`): the handler variant is `AskError::Handler(E)` and the timeout variant is `AskError::Timeout` (no fields as written below — confirm the exact shape when reading). `is_terminal()` is true ONLY for `Deliver(ActorNotAlive)` — a timeout is neither terminal nor retryable, so the test asserts `!err.is_retryable()` plus the variant match.
 
 - [ ] **Step 2: Append the boundary test**
 
@@ -945,7 +995,8 @@ async fn boundary_queue_full_draining_and_timeout_classified() {
         "expected typed QueueFull, got {err:?}",
     );
 
-    // a zero ask deadline elapses before any reply: timeout classified terminal
+    // a zero ask deadline elapses before any reply: classified as Timeout,
+    // which is NOT retryable (#113) and not terminal either
     let err = bounded(
         dispatcher
             .ask(|reply| DispatcherMsg::Stats { reply })
@@ -953,7 +1004,10 @@ async fn boundary_queue_full_draining_and_timeout_classified() {
     )
     .await
     .expect_err("zero deadline cannot be met");
-    assert!(err.is_terminal(), "#113: ask timeouts are not retryable, got {err:?}");
+    assert!(
+        matches!(err, AskError::Timeout) && !err.is_retryable(),
+        "#113: ask timeouts are not retryable, got {err:?}",
+    );
 
     // drain while the slow jobs are still in flight, then submit → Draining
     let drain_dispatcher = dispatcher.clone();
@@ -1092,7 +1146,7 @@ git commit -m "test(examples): linearizability gate — concurrent producers, no
 rg -n 'tracing-subscriber' crates/core/Cargo.toml Cargo.toml
 ```
 
-If `tracing-subscriber` is NOT a dev-dependency: add it to `crates/core/Cargo.toml` `[dev-dependencies]` with its version declared at the workspace root per the shared convention (`tracing-subscriber = { workspace = true }` + root `[workspace.dependencies]` entry, latest version), and log a wart (`paper-cut`: no out-of-the-box way to see bombay's own tracing story from an example). `cargo-hakari` is not wired in this repo — skip it.
+Verified during pre-flight CHECK: `tracing-subscriber` IS already a dev-dependency (`crates/core/Cargo.toml:62-65`) but with only `registry`/`std` features — `tracing_subscriber::fmt()` needs the `fmt` feature. Add `"fmt"` to that existing feature list (wherever the features are declared — crate dev-dep or workspace root). `cargo-hakari` is not wired in this repo — skip it.
 
 - [ ] **Step 2: Write the demo**
 
@@ -1117,6 +1171,11 @@ use bombay::{
     restart::{RestartConfig, RestartPolicy},
 };
 
+#[expect(
+    clippy::print_stdout,
+    clippy::expect_used,
+    reason = "a demo binary narrates its results and fails loudly"
+)]
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt().init(); // bombay only emits; the app subscribes
