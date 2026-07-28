@@ -1,4 +1,4 @@
-//! send_after / send_interval (card #223): the sanctioned non-pinning timer
+//! `send_after` / `send_interval` (card #223): the sanctioned non-pinning timer
 //! surface. Design record: docs/superpowers/specs/2026-07-28-223-timers-design.md,
 //! ADR-0018.
 
@@ -41,7 +41,7 @@ impl<A: Actor> WeakTarget for WeakActorRef<A> {
     type M = A::Msg;
 
     fn id(&self) -> ActorId {
-        WeakActorRef::id(self)
+        Self::id(self)
     }
 
     async fn fire(&self, msg: A::Msg) -> ControlFlow<()> {
@@ -61,7 +61,7 @@ impl<M: Clone + Send + 'static> WeakTarget for WeakRecipient<M> {
     type M = M;
 
     fn id(&self) -> ActorId {
-        WeakRecipient::id(self)
+        Self::id(self)
     }
 
     async fn fire(&self, msg: M) -> ControlFlow<()> {
