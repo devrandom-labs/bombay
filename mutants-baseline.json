@@ -55,6 +55,7 @@
     "crates/core/src/actor/supervision.rs::Children::position": 4,
     "crates/core/src/actor/supervision.rs::Children::rekey": 3,
     "crates/core/src/actor/supervision.rs::Children::remove": 2,
+    "crates/core/src/actor/timer.rs::TimerHandle::cancel": 1,
     "crates/core/src/error.rs::ActorStopReason::is_normal": 2,
     "crates/core/src/error.rs::AskError<M, E>::err": 1,
     "crates/core/src/error.rs::AskError<M, E>::is_retryable": 2,
