@@ -24,6 +24,13 @@ This project is **GitHub-project-cards-driven with test-driven development**. Do
    - **One invariant per bullet.** Never bundle several into a prose list. A card that says "assert no panic, FIFO + exactly-once, self-pin drain-or-abandon per stop mode" reads as *one checked box* when only the first ships; as three bullets it visibly reads 1/3 done, and nobody closes that.
    - **Split wiring from invariants.** A bullet about a workspace, a flake check, or a CI lane is *wiring* — objectively done when it runs. A bullet about a property being asserted is an *invariant*. Bundled in one card, the wiring completes, the card feels done, and the invariants get silently trimmed. Prefer separate cards, or at minimum separate bullets.
    - **Close `COMPLETED` only when every bullet is either shipped (name the file/test/check) or explicitly deferred to a named follow-up card.** Silence is not a deferral. Record deferrals in the PR body.
+   - **Cold-start compatible.** Every card body must let a fresh session start
+     work from `gh issue view <N>` alone: the problem, root cause with
+     file:line evidence where known, decisions already made (link the
+     ADR/spec), the current workaround state, and the scope bullets. Context
+     that lives only in a chat session is lost context — land it on the card
+     before the session ends. When a session makes a decision or discovery
+     about a card, update the card then, not at close time.
    - *Why this rule exists:* #149 shipped every wiring bullet (isolated `fuzz/` workspace, in-gate replay check, nightly quarantine, capacity boundaries) and dropped its one semantic bullet (`recv`/`send_message`/self-pin drain-or-abandon per stop mode), then closed `COMPLETED`. The result was a fuzz lane pointed at flume rather than bombay's invariants — which #152 then reported green over 3.5M executions. Green lanes over the wrong surface look exactly like green lanes over the right one. See #164/#165/#166.
 4. **Keep `README.md` a user-facing public-API document — maintain it per *card*, not per *commit*.** The README describes the public API and how to use/test it; card numbers, per-module test narratives, and internal progress never belong in it (those live in commits, PRs, and `docs/`). When you finish a card, *before the PR*, classify what it changed and update the README accordingly:
    - **Public API changed** (new/renamed/removed public item, new feature flag, changed default behavior, new example) → update the relevant *"public API at a glance"* bullet and the usage example if user-visible. **This is the main case.**
