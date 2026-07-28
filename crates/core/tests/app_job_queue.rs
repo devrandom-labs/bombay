@@ -16,6 +16,7 @@ use app::{
     SubmitError,
 };
 use bombay::{
+    ActorId,
     error::AskError,
     registry::Registry,
     restart::{RestartConfig, RestartPolicy},
@@ -46,6 +47,26 @@ async fn bounded<F: IntoFuture>(fut: F) -> F::Output {
     timeout(terminate_bound(), fut)
         .await
         .expect("app flow must resolve within the terminate bound")
+}
+
+/// Poll the overseer until it records the dispatcher's death or the global
+/// terminate bound expires. Drain can take >1s (three 500ms jobs on one worker),
+/// so a fixed small iteration count is not enough.
+async fn poll_observed_death(app: &app::App) -> Option<(ActorId, bool)> {
+    let deadline = tokio::time::Instant::now() + terminate_bound();
+    while tokio::time::Instant::now() < deadline {
+        let seen = bounded(
+            app.overseer
+                .ask(|reply| app::OverseerMsg::Observed { reply }),
+        )
+        .await
+        .expect("overseer reply");
+        if seen.is_some() {
+            return seen;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    None
 }
 
 const fn ok_job(id: u64) -> Job {
@@ -201,19 +222,7 @@ async fn lifecycle_crash_rebuild_requeue_no_job_lost() {
 
     // the dispatcher stopped normally after drain; the overseer must see it
     let dispatcher_id = dispatcher.id();
-    let mut observed = None;
-    for _ in 0..200 {
-        observed = bounded(
-            app.overseer
-                .ask(|reply| app::OverseerMsg::Observed { reply }),
-        )
-        .await
-        .expect("overseer reply");
-        if observed.is_some() {
-            break;
-        }
-        tokio::time::sleep(Duration::from_millis(5)).await;
-    }
+    let observed = poll_observed_death(&app).await;
     assert_eq!(
         observed,
         Some((dispatcher_id, true)),
@@ -288,19 +297,7 @@ async fn boundary_queue_full_draining_and_timeout_classified() {
     );
 
     // the dispatcher stops normally after drain; the overseer must see it
-    let mut observed = None;
-    for _ in 0..200 {
-        observed = bounded(
-            app.overseer
-                .ask(|reply| app::OverseerMsg::Observed { reply }),
-        )
-        .await
-        .expect("overseer reply");
-        if observed.is_some() {
-            break;
-        }
-        tokio::time::sleep(Duration::from_millis(5)).await;
-    }
+    let observed = poll_observed_death(&app).await;
     assert_eq!(
         observed,
         Some((dispatcher_id, true)),
