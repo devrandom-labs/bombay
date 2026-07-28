@@ -130,7 +130,7 @@ mod tests {
 
     use crate::{
         actor::{Actor, ActorRef, Spawn as _},
-        error::{AskError, PanicError, PanicReason, PipeAskError, TellError},
+        error::{PanicError, PanicReason, PipeAskError},
         mailbox::Mailboxed,
         message::Msg,
         reply::ReplySender,
@@ -456,5 +456,128 @@ mod tests {
             .await
             .expect("flat Ok arrives");
         assert_eq!(seen, vec![Ok(99)]);
+    }
+
+    /// Every source variant maps to a DISTINCT flat variant (lossless by
+    /// variant; widened card invariant). Pure-fn test: exact, no timing.
+    #[test]
+    fn flatten_maps_every_variant_distinctly() {
+        use crate::error::{AskError, PipeAskError, TellError};
+        let f = PipeAskError::<&'static str>::flatten::<u32, ()>;
+
+        assert!(matches!(f(Ok(Ok(1))), Ok(1)));
+        assert!(matches!(
+            f(Ok(Err(AskError::Deliver(TellError::ActorNotAlive(()))))),
+            Err(PipeAskError::TargetDead)
+        ));
+        assert!(matches!(
+            f(Ok(Err(AskError::Deliver(TellError::MailboxFull(()))))),
+            Err(PipeAskError::MailboxFull)
+        ));
+        assert!(matches!(
+            f(Ok(Err(AskError::Deliver(TellError::SendTimeout(()))))),
+            Err(PipeAskError::SendTimeout)
+        ));
+        assert!(matches!(
+            f(Ok(Err(AskError::Timeout))),
+            Err(PipeAskError::ReplyTimeout)
+        ));
+        assert!(matches!(
+            f(Ok(Err(AskError::Interrupted))),
+            Err(PipeAskError::Interrupted)
+        ));
+        assert!(matches!(
+            f(Ok(Err(AskError::Handler("conflict")))),
+            Err(PipeAskError::Handler("conflict"))
+        ));
+        let panic_err = PanicError::from_panic_any(Box::new("boom"), PanicReason::PipedFuture);
+        assert!(matches!(f(Err(panic_err)), Err(PipeAskError::Panicked(_))));
+    }
+
+    /// Dead target end-to-end: piping an ask at a dead actor lands
+    /// `PipeAskError::TargetDead` in the mapper.
+    #[tokio::test]
+    async fn pipe_ask_dead_target_flattens_to_target_dead() {
+        let (_gate_tx, gate_rx) = tokio::sync::oneshot::channel::<()>();
+        let b_ref = GatedB::spawn(gate_rx);
+        b_ref.kill();
+        tokio::time::timeout(terminate_bound(), async {
+            while b_ref.is_alive() {
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .expect("killed B closes its mailbox within the bound");
+
+        let a_ref = Sink::spawn(());
+        a_ref.pipe_ask(
+            &b_ref,
+            |reply| GatedBMsg::Get(reply),
+            |res: Result<u32, PipeAskError>| {
+                assert!(
+                    matches!(res, Err(PipeAskError::TargetDead)),
+                    "dead target must flatten to TargetDead, got {res:?}",
+                );
+                SinkMsg::PipedAsk(Ok(0)) // sentinel: mapper ran with the right arm
+            },
+        );
+        let seen = tokio::time::timeout(terminate_bound(), wait_for_seen(&a_ref, 1))
+            .await
+            .expect("mapped sentinel arrives");
+        assert_eq!(seen, vec![Ok(0)]);
+    }
+
+    /// A small domain error for the handler-error arm.
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct Conflict;
+
+    /// A responder whose handler replies with a domain error.
+    struct FailingB;
+    #[derive(Debug)]
+    enum FailingBMsg {
+        Get(ReplySender<u32, Conflict>),
+    }
+    impl Msg for FailingBMsg {}
+    impl Mailboxed for FailingB {
+        type Msg = FailingBMsg;
+    }
+    impl Actor for FailingB {
+        type Args = ();
+        type Error = core::convert::Infallible;
+        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self)
+        }
+        async fn handle(
+            &mut self,
+            FailingBMsg::Get(reply): FailingBMsg,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            let _ = reply.send_err(Conflict);
+            Ok(())
+        }
+    }
+
+    /// Handler domain error end-to-end: flattens to `Handler(E)` un-erased.
+    #[tokio::test]
+    async fn pipe_ask_handler_error_flattens_unerased() {
+        let b_ref = FailingB::spawn(());
+        let a_ref = Sink::spawn(());
+
+        a_ref.pipe_ask(
+            &b_ref,
+            |reply| FailingBMsg::Get(reply),
+            |res: Result<u32, PipeAskError<Conflict>>| {
+                assert!(
+                    matches!(res, Err(PipeAskError::Handler(Conflict))),
+                    "handler error must flatten un-erased, got {res:?}",
+                );
+                SinkMsg::PipedAsk(Ok(0))
+            },
+        );
+        let seen = tokio::time::timeout(terminate_bound(), wait_for_seen(&a_ref, 1))
+            .await
+            .expect("mapped sentinel arrives");
+        assert_eq!(seen, vec![Ok(0)]);
     }
 }
