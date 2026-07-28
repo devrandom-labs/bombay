@@ -206,7 +206,7 @@ recorded in ADR-0018.
 
 - [TR-2011] Aceto et al., *Modelling and Simulation of Asynchronous
   Real-Time Systems using Timed Rebeca*, EPTCS 58, 2011. arXiv:1108.0228.
-  Journal: Sci. Comput. Program. 89 (2014), DOI 10.1016/j.scico.2014.01.008.
+  Journal: Science of Computer Programming 89 (2014), DOI 10.1016/j.scico.2014.01.008.
 - [OTA-2016] Sirjani, Khamespanah, *On Time Actors*, LNCS 9660, 2016,
   DOI 10.1007/978-3-319-30734-3_25.
 - [43Y-2016] De Koster, Van Cutsem, De Meuter, *43 Years of Actors*,
