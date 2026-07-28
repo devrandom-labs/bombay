@@ -193,7 +193,7 @@ recorded in ADR-0018.
 
 ## Deferred (named, per card rule)
 
-- **Receive-timeout** (idle T, reset on message): follow-up card, filed
+- **Receive-timeout** (idle T, reset on message): follow-up card #241, filed
   before this card's PR. Run-loop idle arm with its own invariants; Pekko
   separates `setReceiveTimeout` from timers for the same reason.
 - **Named-key timers** (Pekko `startSingleTimer` replace/debounce +

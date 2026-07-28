@@ -134,8 +134,8 @@ structural bound. The first tick fires at `t = period`; no immediate-tick option
 
 ## Deferred
 
-- **Receive-timeout** (idle T, reset on message): follow-up card, not this PR.
-  Pekko separates `setReceiveTimeout` from timers for the same reason.
+- **Receive-timeout** (idle T, reset on message): follow-up card (#241), not
+  this PR. Pekko separates `setReceiveTimeout` from timers for the same reason.
 - **Named-key timers** (Pekko `startSingleTimer` replace/debounce + strong cancel
   filtering): buildable receiver-side on top of `TimerHandle` without unbuilding
   anything.
