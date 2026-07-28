@@ -1168,3 +1168,135 @@ async fn pipe_result_dropped_after_stop_emits_one_debug_event() {
     .await
     .expect("the post-stop drop event must be emitted within the bound");
 }
+
+/// Card #223: cancelling a `send_after` timer before it fires emits exactly one
+/// `trace!` event carrying the target id.
+#[tokio::test(start_paused = true)]
+async fn timer_cancel_before_fire_emits_trace_event() {
+    let (store, _guard) = capture::install();
+    let actor_ref = Probe::spawn(());
+    let id = actor_ref.id();
+    let handle = actor_ref.send_after(Duration::from_secs(1), Ping);
+    handle.cancel();
+
+    timeout(terminate_bound(), async {
+        loop {
+            {
+                let store = store.lock().unwrap();
+                let events: Vec<_> = store
+                    .events
+                    .iter()
+                    .filter(|e| {
+                        field(&e.fields, "message").as_deref()
+                            == Some("timer cancelled before fire")
+                    })
+                    .collect();
+                if events.len() == 1 {
+                    assert_eq!(events[0].level, "TRACE");
+                    assert_eq!(
+                        field(&events[0].fields, "target.id"),
+                        Some(format!("{:?}", id)),
+                        "the event names the target actor id",
+                    );
+                    return;
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("the timer-cancelled event must be emitted within the bound");
+}
+
+/// Card #223: a timer that fires after its target has stopped emits exactly one
+/// `debug!` event carrying the target id.
+#[tokio::test]
+async fn timer_fire_at_dead_target_emits_debug_event() {
+    let (store, _guard) = capture::install();
+    let actor_ref = Probe::spawn(());
+    let id = actor_ref.id();
+    let _handle = actor_ref.send_after(Duration::from_millis(10), Ping);
+    let weak = actor_ref.downgrade();
+    drop(actor_ref);
+
+    timeout(terminate_bound(), async {
+        while weak.upgrade().is_some() {
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("actor stops once its last strong ref drops");
+
+    timeout(terminate_bound(), async {
+        loop {
+            {
+                let store = store.lock().unwrap();
+                let events: Vec<_> = store
+                    .events
+                    .iter()
+                    .filter(|e| {
+                        field(&e.fields, "message").as_deref()
+                            == Some("timer fired after target stopped; message dropped")
+                    })
+                    .collect();
+                if events.len() == 1 {
+                    assert_eq!(events[0].level, "DEBUG");
+                    assert_eq!(
+                        field(&events[0].fields, "target.id"),
+                        Some(format!("{:?}", id)),
+                        "the event names the target actor id",
+                    );
+                    return;
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("the dead-target drop event must be emitted within the bound");
+}
+
+/// Card #223: a panicking `send_interval` message factory emits exactly one
+/// `error!` event carrying the target id; the actor is untouched.
+#[tokio::test(start_paused = true)]
+async fn timer_interval_factory_panic_emits_error_event() {
+    let (store, _guard) = capture::install();
+    let actor_ref = Probe::spawn(());
+    let id = actor_ref.id();
+    let _handle = actor_ref.send_interval(Duration::from_secs(1), || -> Ping {
+        panic!("factory boom")
+    });
+
+    timeout(terminate_bound(), async {
+        loop {
+            {
+                let store = store.lock().unwrap();
+                let events: Vec<_> = store
+                    .events
+                    .iter()
+                    .filter(|e| {
+                        field(&e.fields, "message").as_deref()
+                            == Some("send_interval message factory panicked; timer stopped")
+                    })
+                    .collect();
+                if events.len() == 1 {
+                    assert_eq!(events[0].level, "ERROR");
+                    assert_eq!(
+                        field(&events[0].fields, "target.id"),
+                        Some(format!("{:?}", id)),
+                        "the event names the target actor id",
+                    );
+                    return;
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("the factory-panic event must be emitted within the bound");
+
+    assert!(
+        actor_ref.is_alive(),
+        "a factory panic must never touch the actor",
+    );
+}

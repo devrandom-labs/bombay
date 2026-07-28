@@ -92,5 +92,9 @@ harness = false
 name = "supervision_vs_kameo"
 harness = false
 
+[[bench]]
+name = "timers"
+harness = false
+
 [lints]
 workspace = true
