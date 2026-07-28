@@ -38,8 +38,10 @@ File: `crates/core/src/actor/kind.rs`.
 Replace `stop_surviving_children` (line ~499) with:
 
 ```rust
-async fn teardown_children(children: &mut Children, link_rx: &LinkReceiver)
+pub(super) async fn teardown_children(children: &mut Children, link_rx: &LinkReceiver)
 ```
+
+(`pub(super)` — it is called from sibling `spawn.rs`.)
 
 Behavior (the join loop — line-level design is yours, this contract is not):
 
@@ -59,11 +61,13 @@ Behavior (the join loop — line-level design is yours, this contract is not):
    wedge the supervisor's exit.
 
 Notes:
-- `link_rx.recv_async()` never yields `Err` here for the same reason as the
-  loop's arm (the caller still holds a sender clone) — but the epilogue no
-  longer holds `sup_link_tx` by construction unless you pass it; simplest is
-  to treat `Err` as "channel drained, nothing more will arrive" and break to
-  the abort phase. Decide locally, document with a one-line why.
+- `link_rx.recv_async()` CAN yield `Err` in the epilogue: `sup_link_tx`
+  lives inside the abortable region and is gone by sweep time. Treat `Err`
+  as "channel drained, nothing more will arrive" and proceed to the abort
+  phase; one-line why comment.
+- The post-abort missing-notice case needs a NEW trace event: add it to
+  `trace.rs` in BOTH halves (the `#[cfg(feature = "tracing")]` half and the
+  inert macro-hidden half — follow the existing pattern; both must compile).
 - Update the doc comment: this is the single sweep site, join semantics,
   bounds, and the kill/no-wedge rationale (cite ADR-0019).
 
@@ -78,6 +82,9 @@ actually shrank; otherwise leave it.
 Existing unit test `stop_surviving_children_cancels_and_aborts_live_ones`
 (~line 1425): rework to call `teardown_children` with a link channel; it must
 still assert cancel-then-abort for a cancel-ignoring child (straggler leg).
+The current throwaway `ChildHandle`s emit no death notices — wire mocks that
+send the `LinkDied` notice on cancel/abort (small helper task per handle);
+real-actor coverage lives in the Step 3 lifecycle tests.
 
 Verification: `cargo check -p bombay` + `cargo clippy -p bombay --lib`.
 
@@ -103,8 +110,8 @@ File: `crates/core/src/actor/spawn.rs`.
    - Match the abortable result:
      - `Ok(graceful output)` → `finish_actor(state, weak, mailbox_rx,
        watchers, reason).await` exactly as today (startup-failure path also
-       preserved exactly as today — it must run the sweep too, since
-       `on_start` may have spawned children before failing).
+       preserved exactly as today; the sweep runs over its empty table —
+       harmless, keeps the epilogue unconditional).
      - `Err(Aborted)` → `RunResult::Killed`.
 
 `run_supervised` (~line 268): the `Abortable::new(lifecycle, ...)` +
@@ -148,18 +155,22 @@ invariant per test:
    over a pending future not wired to its cancel token); assert it is aborted
    at its grace and the supervisor still exits within bound.
 5. `kill_during_on_stop` existing test (~line 2728,
-   `kill_during_on_stop_marks_cleanup_failed`): only touch it if it exercises
-   a SUPERVISED actor; it uses plain `spawn`, so expected NO change. Confirm
-   and state so in your report.
-6. Escalation-path regression: an existing test covers children being stopped
+   `kill_during_on_stop_marks_cleanup_failed`): uses plain `spawn` — NO
+   change. Confirm and state so in your report.
+6. NEW `supervised_kill_during_on_stop_is_bounded`: SUPERVISED actor whose
+   `on_stop` parks; stop it gracefully, then `kill()` while the hook is
+   parked — the kill no longer instant-drops the hook (registration's region
+   already completed); assert the actor still finishes within the
+   `ON_STOP_NOTICE_GRACE` bound with `cleanup_failed` semantics preserved.
+   Comment cites the spec §3.
+7. Escalation-path regression: an existing test covers children being stopped
    on escalation — confirm it still passes with the sweep moved to the
    epilogue (it should, the sweep now runs later but before the task ends).
 
-Mutants baseline: `teardown_children` is a new fn and the old
-`stop_surviving_children` entry must be renamed/replaced in the mutants
-baseline (`mutants-baseline.json` — BOTH path-keyed sections if present:
-floors map AND known_zero_viable list; memory says missing entries fail the
-gate as Unaccounted). Mirror the shape of neighboring entries.
+Mutants baseline: `stop_surviving_children` appears ONLY in the `floors`
+map (value `1`), not in `known_zero_viable` — rename that one entry to
+`teardown_children`. Any OTHER new fn you introduce also needs a floors
+entry (missing entries fail the gate as Unaccounted).
 
 Verification: `cargo check -p bombay --tests` + `cargo clippy -p bombay --tests`.
 Do NOT run the tests — no `cargo test`/`cargo nextest` (sandboxed; they hang).
@@ -182,7 +193,8 @@ Steps 1–2 semantics); run after Step 2 compiles.
    `flume::Sender<ActorId>` (or equivalent) carried in the worker config,
    fired in the worker's `on_stop`. Keep it example-level and minimal.
 3. `app_job_queue.rs`: extend the drain test — after drain completes and the
-   dispatcher has terminated (existing join/termination handle), assert EVERY
+   dispatcher's death is observed via the existing `poll_observed_death(app)`
+   helper (there is no join handle; `App` exposes refs), assert EVERY
    worker's stop signal was received (bounded recv per worker). This is the
    invariant the workaround could never prove: workers actually stopped after
    drain, torn down by the supervisor, not by the app.
