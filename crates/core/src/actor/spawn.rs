@@ -3770,6 +3770,16 @@ mod tests {
                 .expect("the command reaches the live incarnation");
         }
 
+        /// One scheduler tick under a paused current-thread runtime.
+        ///
+        /// `start_paused` + `current_thread` auto-advance time only when every task is
+        /// idle. The one-millisecond sleep therefore yields the supervisor until it has
+        /// drained the mailbox and applied the `Signal::Supervision` registration ops
+        /// queued by `supervise`. Stopping or killing immediately after is deterministic.
+        async fn quiesce() {
+            tokio::time::sleep(Duration::from_millis(1)).await;
+        }
+
         async fn supervise_worker<S: Supervisor>(
             sup: &ActorRef<S>,
             policy: RestartPolicy,
@@ -4341,6 +4351,10 @@ mod tests {
             let a_sender = senders.lock().expect("lock")[0].clone();
             let b_sender = senders.lock().expect("lock")[1].clone();
 
+            // Registration ops ride the supervisor's mailbox; stopping must not race them
+            // here. The production-side race is tracked separately. TODO(#248)
+            quiesce().await;
+
             sup.stop();
 
             // The children must be dead before the supervisor's RunResult resolves.
@@ -4381,6 +4395,10 @@ mod tests {
 
             let a_sender = senders.lock().expect("lock")[0].clone();
             let b_sender = senders.lock().expect("lock")[1].clone();
+
+            // Registration ops ride the supervisor's mailbox; stopping must not race them
+            // here. The production-side race is tracked separately. TODO(#248)
+            quiesce().await;
 
             sup.kill();
 

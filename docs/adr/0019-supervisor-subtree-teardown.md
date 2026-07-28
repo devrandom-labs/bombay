@@ -96,6 +96,15 @@ mechanism details are engineering choices where the literature is silent.
   Fire-and-forget: no join, reaper lost on runtime shutdown; kill path gets
   "signals sent, hopefully" instead of the proven contract.
 
+## Known residual window
+
+`supervise()` spawns the child inline but its table registration rides the
+supervisor's mailbox as a `Signal::Supervision` op. A supervisor that stops
+or is killed before dequeuing that op exits with the child never inserted —
+the sweep covers the TABLE, so the queued child is orphaned. Discovered by
+this card's lifecycle tests (they carry a paused-clock `quiesce()` barrier
+until the window closes). Tracked as #248.
+
 ## Consequences
 
 - Supervisor exit latency now includes the sweep: bounded by the largest
