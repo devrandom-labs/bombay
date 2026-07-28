@@ -43,8 +43,24 @@ invariant, too weak for an exit gate).
 | Component | Traits / spawn path | State |
 |---|---|---|
 | `Dispatcher` | `Actor + Watch + Supervisor` (`OneForOne`), `spawn_supervised`, registered in `Registry` as `"dispatcher"` | `VecDeque<Job>` pending; `HashMap<ActorId, Job>` outstanding (in-flight per worker); roster `Vec<(ActorId, Recipient<WorkerMsg>)>`; `draining: bool`; stats counters; per-job retry counts |
-| `Worker` × N | plain `Actor` (watched, does not watch), children via `supervise(config, factory)` with explicit `RestartPolicy::Permanent` | worker index; handle back to dispatcher |
+| `Worker` × N | plain `Actor` (watched, does not watch), children via `supervise(config, factory)` with explicit `RestartPolicy::Permanent` | worker slot index; `Recipient<Done>` back to dispatcher |
+| `Overseer` | `Actor + Watch`, `spawn_linked`, `watch`es (notify-only) the dispatcher | last observed death: `Option<(ActorId, bool /* normal */)>` |
 | Producer / client | not an actor — plain tokio task in `main` / test body; finds dispatcher through `Registry` | — |
+
+**Design revision (2026-07-28, source-verified against `actor/kind.rs`):** a
+supervisor's `on_link_died` hook never fires for its own supervised children —
+the restart table consumes the death notice (`kind.rs` `dispatch_death`), and
+no rebuild hook delivers the fresh incarnation's `ActorRef`/`ActorId` back to
+the supervisor; the factory closure is the only scope holding it. Roster
+maintenance and outstanding-job re-queue therefore ride a
+`WorkerReplaced { slot, id, worker }` message that the factory `try_send`s to
+the dispatcher on **every** incarnation (initial and rebuilt). The factory
+captures a `WeakActorRef<Dispatcher>` — a strong capture would be a self-cycle
+(the factory lives in the dispatcher's own child table), so the dispatcher
+would never ref-count-stop. Death-watch stays load-bearing through the
+`Overseer`, which observes the dispatcher's death from outside. Both
+underlying gaps are filed as warts (rebuild-observation hole; roster update
+competing with user backlog → #225 evidence).
 
 `Job { id: u64, payload: JobKind }`, `JobKind::{ Ok(Duration), Fail, Poison }`:
 `Ok` completes after simulated async work, `Fail` makes the worker return
@@ -55,15 +71,19 @@ crash kinds route to supervisor rebuild.
 
 ```text
 DispatcherMsg:
-  Submit { job, reply: ReplySender<Result<(), SubmitError>> } // ask; typed backpressure
-  Done   { worker: ActorId, job_id: u64 }                    // worker ack; tell
-  Retry  { job }                                             // send_after re-entry
+  Submit { job, reply: ReplySender<(), SubmitError> }        // ask; typed rejection via send_err
+  Done(Done { slot, job_id })                                // worker ack; tell via Recipient<Done>
+  Retry { job }                                              // send_after re-entry
+  WorkerReplaced { slot, id, worker: Recipient<Job> }        // factory try_send, every incarnation
   Drain  { reply: ReplySender<DrainReport> }                 // shutdown protocol
   Stats  { reply: ReplySender<Stats> }                       // observability ask
 
 WorkerMsg:
-  Run      { job }
+  Run(Job)                                                   // via From<Job> (Recipient<Job> roster)
   WorkDone { job_id, outcome }                               // pipe_to_self re-entry
+
+OverseerMsg:
+  Observed { reply: ReplySender<Option<(ActorId, bool)>> }   // did dispatcher die, normally?
 ```
 
 ### Data flow
@@ -72,12 +92,13 @@ WorkerMsg:
   (`Recipient::tell(Run)`) or queues → worker runs the job off-turn via
   `pipe_to_self(do_work(job), WorkDone)` → on `WorkDone` the worker tells
   `Done` → dispatcher clears outstanding, hands the worker its next job.
-- **Failure path:** `Poison`/`Fail` → worker dies → supervisor machinery
-  rebuilds it from the factory (fresh `ActorId`); the dispatcher's
-  `on_link_died` override removes the dead roster entry and re-queues the
-  outstanding job via `send_after(backoff, Retry)`. Retries are capped per
-  job; past the cap the job is recorded failed in stats — no infinite poison
-  loop, nothing silently dropped.
+- **Failure path:** `Poison` (handler panic) / `Fail` (handler `Err`) → worker
+  dies → supervisor machinery rebuilds it from the factory (fresh `ActorId`)
+  → the factory `try_send`s `WorkerReplaced` → the dispatcher swaps the roster
+  entry and re-queues that slot's outstanding job via
+  `send_after(backoff, Retry)`. Retries are capped per job; past the cap the
+  job is recorded failed in stats — no infinite poison loop, nothing silently
+  dropped.
 - **Drain:** `Drain` sets `draining` (further `Submit` rejected typed), waits
   for pending + outstanding to empty, `stop_child`s each worker, sets
   `*stop = true`, replies with a `DrainReport`. Registry entry removed in
@@ -88,7 +109,8 @@ WorkerMsg:
 | Spine seam | Where it is load-bearing |
 |---|---|
 | `spawn_supervised` / `supervise` / `RestartPolicy` / `OneForOne` | worker rebuild under induced crash |
-| `on_link_died` (Watch) | outstanding-job re-queue |
+| factory re-entry + `WeakActorRef` | `WorkerReplaced` roster swap + outstanding-job re-queue |
+| `spawn_linked` / `watch` / `on_link_died` (Watch) | `Overseer` observing dispatcher death from outside |
 | `ask` + `.timeout()`, `tell`, `try_send` | Submit/Stats/Drain vs Done/Run/Retry |
 | `pipe_to_self` | worker async work re-entry |
 | `send_after` + `TimerHandle` | retry backoff |
