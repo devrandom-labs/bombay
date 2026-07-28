@@ -49,10 +49,10 @@ impl<A: Actor> ActorRef<A> {
         F: FnOnce(ReplySender<R, E>) -> B::Msg + Send + 'static,
         M: FnOnce(Result<R, PipeAskError<E>>) -> A::Msg + Send + 'static,
     {
-        let target = target.clone();
+        let owned = target.clone();
         spawn_pipe(
             self.downgrade(),
-            async move { target.ask(make_msg).await },
+            async move { owned.ask(make_msg).await },
             move |out| mapper(PipeAskError::flatten(out)),
         );
     }
@@ -67,7 +67,7 @@ impl<A: Actor> ActorRef<A> {
     /// The task holds only a [`WeakActorRef`], so an in-flight pipe never
     /// keeps the actor alive (ADR-0003 / ADR-0017). If the actor is gone when
     /// the future resolves, the result is dropped. A panic in `future`
-    /// reaches `mapper` as `Err(`[`PanicError`]`)` — the actor decides; the
+    /// reaches `mapper` as an `Err` carrying [`PanicError`] — the actor decides; the
     /// panic never touches the actor itself. Delivery waits for mailbox
     /// capacity like any sender (backpressure, not a failure). No ordering is
     /// guaranteed relative to other senders.
@@ -87,7 +87,7 @@ impl<A: Actor> ActorRef<A> {
 /// The shared non-pinning delayed-self-send primitive (#223/#230 reuse seam):
 /// weak-hold while pending, upgrade-or-drop at resolution, backpressured
 /// send, closed-mailbox failure swallowed.
-pub(crate) fn spawn_pipe<A, T, F, M>(weak: WeakActorRef<A>, future: F, mapper: M)
+pub fn spawn_pipe<A, T, F, M>(weak: WeakActorRef<A>, future: F, mapper: M)
 where
     A: Actor,
     T: Send + 'static,
@@ -105,12 +105,9 @@ where
             trace::pipe_result_dropped::<A>();
             return;
         };
-        let msg = match std::panic::catch_unwind(AssertUnwindSafe(|| mapper(out))) {
-            Ok(msg) => msg,
-            Err(_) => {
-                trace::pipe_mapper_panicked::<A>();
-                return;
-            }
+        let Ok(msg) = std::panic::catch_unwind(AssertUnwindSafe(|| mapper(out))) else {
+            trace::pipe_mapper_panicked::<A>();
+            return;
         };
         // Race with stop/kill: the mailbox closed between upgrade and enqueue.
         // Nothing to hand the message back to — swallow, per the fate table.

@@ -169,8 +169,10 @@ impl<M, E> From<TellError<M>> for AskError<M, E> {
 }
 
 /// The flat failure union a piped ask ([`crate::actor::ActorRef::pipe_ask`])
-/// can produce — panic, delivery, and reply failures collapsed into ONE match
-/// at the mapper, instead of the triple-nested
+/// can produce.
+///
+/// Panic, delivery, and reply failures collapsed into ONE match at the mapper,
+/// instead of the triple-nested
 /// `Result<Result<R, AskError<M, E>>, PanicError>` the generic pipe would
 /// hand back.
 ///
