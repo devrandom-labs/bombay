@@ -161,3 +161,8 @@ bullet.
 - **Run-loop `FuturesUnordered` lane:** see decision 6.
 - **Cancel/abort handle:** no card invariant needs it; YAGNI until a second
   concrete use (#230 stream attachment owns lifecycle control).
+- **`pipe_ask` sugar in this card:** the ask case pays a triple-nested
+  `Result<Result<R, AskError<M, E>>, PanicError>` at the mapper plus a manual
+  target clone. Real UX cost, Pekko solves it with a second verb
+  (`context.ask`). Deferred to **#239** (filed, on the board) — #226 ships the
+  primitive only.
