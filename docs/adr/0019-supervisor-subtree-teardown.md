@@ -25,9 +25,15 @@ wrapped the entire supervised lifecycle.
    deliberate contract revision.
 3. **Abortable boundary.** In the supervised lifecycle only, `Abortable`
    wraps prologue + message loop, not the epilogue: `kill()` aborts message
-   service, and the sweep still runs. Plain and linked lifecycles are
-   unchanged. Kill still skips `on_stop`; watchers of a killed supervisor now
-   receive the true `Killed` reason.
+   service, and the sweep still runs. The child table (and the deferred-
+   abort queue) live outside the abortable region so they survive the
+   abort; actor state, watchers, and the mailbox stay inside — kill skips
+   `on_stop` automatically, watchers keep the #195 notice-on-drop path, and
+   on kill the death announcement precedes the sweep (graceful paths sweep
+   first). Post-abort death confirmation is bounded by
+   `ON_STOP_NOTICE_GRACE` — tokio abort is not preemptive, so a
+   non-yielding child must not wedge the supervisor's exit. Plain and
+   linked lifecycles are unchanged.
 
 ## Research grounding
 

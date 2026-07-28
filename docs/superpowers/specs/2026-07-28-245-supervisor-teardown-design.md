@@ -84,15 +84,36 @@ recorded in ADR-0019.
 
 ### 3. Kill semantics deltas (supervised actors only)
 
-- Kill still skips `on_stop`: the epilogue branches on `Killed` before
-  `finish_actor`'s hook (or `finish_actor` grows the branch — implementer's
-  choice, invariant is "no `on_stop` on kill").
-- Watchers of a killed supervisor now receive the true `Killed` reason from
-  the epilogue instead of `MailboxReceiver::drop`'s synthetic notice.
-- Kill during a hung `on_stop` no longer instant-drops the hook; the
-  existing `ON_STOP_NOTICE_GRACE` timeout abandons it. Bounded, crash-only
+Abort drops the future's locals, so only what lives OUTSIDE the `Abortable`
+region survives a kill. The design moves out exactly two things: `children`
+and `pending_aborts` (borrowed into the loop, swept by the epilogue).
+`state`, `watchers`, and `mailbox_rx` stay inside and drop on abort, which
+gives the kill semantics for free:
+
+- Kill skips `on_stop` automatically (state is gone); `finish_actor` needs
+  no `Killed` branch and `Killed` never reaches it — the epilogue returns
+  `RunResult::Killed` directly after the sweep.
+- Watchers of a killed supervisor keep today's notice-on-drop machinery
+  (#195, `MailboxReceiver::drop`). On kill the death announcement therefore
+  precedes the child sweep (announce-then-sweep); on all graceful paths the
+  sweep runs first (children-then-announce). Documented asymmetry — kill is
+  brutal.
+- `pending_aborts` entries (children already `stop_child`ed, cancelled,
+  awaiting their deferred abort deadline) are aborted at sweep end — their
+  grace is truncated to the sweep's duration at supervisor exit.
+- Kill during a hung `on_stop` no longer instant-drops the hook (the
+  registration's region has already completed); the existing
+  `ON_STOP_NOTICE_GRACE` timeout abandons it. Bounded, crash-only
   preserved; the affected test's assertion changes with a comment citing
   this spec.
+- `run_supervised` no longer wraps the lifecycle in `Abortable`; the
+  registration is consumed inside `run_lifecycle_supervised`. Plain and
+  linked lifecycles are untouched.
+
+Join bound detail: post-abort death confirmation is itself bounded (reuse
+`ON_STOP_NOTICE_GRACE`) — tokio abort is not preemptive, so a child stuck
+in non-yielding code can never be collected; the sweep traces the missing
+notice and proceeds rather than wedging the supervisor's exit.
 
 ### 4. Tests (TDD — failing first)
 
