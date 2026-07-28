@@ -12,9 +12,51 @@ use futures::FutureExt as _;
 
 use crate::{
     actor::{Actor, ActorRef, WeakActorRef},
-    error::{PanicError, PanicReason},
+    error::{AskError, PanicError, PanicReason, PipeAskError, TellError},
+    reply::ReplySender,
     trace,
 };
+
+impl<E> PipeAskError<E> {
+    /// Flattens the generic pipe's nested outcome into the single-match shape.
+    fn flatten<R, M>(out: Result<Result<R, AskError<M, E>>, PanicError>) -> Result<R, Self> {
+        match out {
+            Ok(Ok(r)) => Ok(r),
+            Ok(Err(AskError::Deliver(TellError::ActorNotAlive(_)))) => Err(Self::TargetDead),
+            Ok(Err(AskError::Deliver(TellError::MailboxFull(_)))) => Err(Self::MailboxFull),
+            Ok(Err(AskError::Deliver(TellError::SendTimeout(_)))) => Err(Self::SendTimeout),
+            Ok(Err(AskError::Timeout)) => Err(Self::ReplyTimeout),
+            Ok(Err(AskError::Interrupted)) => Err(Self::Interrupted),
+            Ok(Err(AskError::Handler(e))) => Err(Self::Handler(e)),
+            Err(panic) => Err(Self::Panicked(panic)),
+        }
+    }
+}
+
+impl<A: Actor> ActorRef<A> {
+    /// Asks `target` without blocking the turn: [`pipe_to_self`] specialized
+    /// for the ask case, with the error union flattened once (here) instead of
+    /// at every call site, and the target cloned internally (no caller-side
+    /// clone dance). Uses the ask builder's default deadline, so an accidental
+    /// cycle self-resolves as a timeout instead of deadlocking.
+    ///
+    /// [`pipe_to_self`]: ActorRef::pipe_to_self
+    pub fn pipe_ask<B, R, E, F, M>(&self, target: &ActorRef<B>, make_msg: F, mapper: M)
+    where
+        B: Actor,
+        R: Send + 'static,
+        E: Send + 'static,
+        F: FnOnce(ReplySender<R, E>) -> B::Msg + Send + 'static,
+        M: FnOnce(Result<R, PipeAskError<E>>) -> A::Msg + Send + 'static,
+    {
+        let target = target.clone();
+        spawn_pipe(
+            self.downgrade(),
+            async move { target.ask(make_msg).await },
+            move |out| mapper(PipeAskError::flatten(out)),
+        );
+    }
+}
 
 impl<A: Actor> ActorRef<A> {
     /// Runs `future` on a detached task and delivers its outcome to this
@@ -88,7 +130,7 @@ mod tests {
 
     use crate::{
         actor::{Actor, ActorRef, Spawn as _},
-        error::{PanicError, PanicReason},
+        error::{AskError, PanicError, PanicReason, PipeAskError, TellError},
         mailbox::Mailboxed,
         message::Msg,
         reply::ReplySender,
@@ -104,6 +146,8 @@ mod tests {
     enum SinkMsg {
         /// The mapped pipe result re-entering the menu.
         Piped(Result<u32, PanicError>),
+        /// The mapped pipe_ask result re-entering the menu.
+        PipedAsk(Result<u32, String>),
         /// Read back everything that arrived.
         Read(ReplySender<Vec<Result<u32, String>>>),
     }
@@ -128,6 +172,7 @@ mod tests {
                     self.seen
                         .push(res.map_err(|e| e.with_str(|s| s.to_owned()).unwrap_or_default()));
                 }
+                SinkMsg::PipedAsk(res) => self.seen.push(res),
                 SinkMsg::Read(reply) => drop(reply.send(self.seen.clone())),
             }
             Ok(())
@@ -344,7 +389,7 @@ mod tests {
             if let Some(gate) = self.gate.take() {
                 let _opened = gate.await;
             }
-            drop(reply.send(99));
+            let _ = reply.send(99);
             Ok(())
         }
     }
@@ -388,6 +433,28 @@ mod tests {
         let seen = tokio::time::timeout(terminate_bound(), wait_for_seen(&a_ref, 1))
             .await
             .expect("the piped reply arrives after the gate opens");
+        assert_eq!(seen, vec![Ok(99)]);
+    }
+
+    /// Sugar round-trip (widened card scope): `pipe_ask` borrows the target
+    /// (no caller-side clone — the `&b_ref` at the call site IS the
+    /// assertion) and the mapper receives ONE flat Result.
+    #[tokio::test]
+    async fn pipe_ask_delivers_flat_ok() {
+        let (gate_tx, gate_rx) = tokio::sync::oneshot::channel::<()>();
+        gate_tx.send(()).expect("open the gate up front");
+        let b_ref = GatedB::spawn(gate_rx);
+        let a_ref = Sink::spawn(());
+
+        a_ref.pipe_ask(
+            &b_ref,
+            |reply| GatedBMsg::Get(reply),
+            |res: Result<u32, PipeAskError>| SinkMsg::PipedAsk(res.map_err(|e| e.to_string())),
+        );
+
+        let seen = tokio::time::timeout(terminate_bound(), wait_for_seen(&a_ref, 1))
+            .await
+            .expect("flat Ok arrives");
         assert_eq!(seen, vec![Ok(99)]);
     }
 }
