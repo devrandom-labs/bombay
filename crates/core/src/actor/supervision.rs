@@ -85,6 +85,55 @@ impl Drop for PendingAbort {
     }
 }
 
+/// An armed [`SuperviseReg`] in transit on the supervisor's mailbox.
+///
+/// The first incarnation is already spawned and its handle is live, but the
+/// registration has not yet been consumed by the loop. If the supervisor exits
+/// (or the op is otherwise dropped) while still armed, the guard cancels and
+/// then aborts the first incarnation so it is never orphaned. This is the #248
+/// backstop for the kill path, startup-failure path, and any `Supervision` op
+/// that races a stop and is discarded by `apply_raced_registrations`.
+///
+/// The op is disarmed by the loop when it is applied (in `apply_supervision_op`)
+/// or by `supervise` when the mailbox handback proves the supervisor is already
+/// dead, in which case the caller keeps the child running unsupervised.
+/// pub so that the public [`SupervisionOp::Add`] variant is not more private than
+/// its payload; the module itself is crate-private, so this does not escape the
+/// crate.
+pub struct ArmedReg(Option<SuperviseReg>);
+
+impl ArmedReg {
+    pub(crate) const fn new(reg: SuperviseReg) -> Self {
+        Self(Some(reg))
+    }
+
+    /// Extracts the inner registration. Disarm is called at most once per armed
+    /// value; a second call is a programmer bug.
+    #[expect(
+        clippy::expect_used,
+        reason = "disarm is called at most once per armed value; a second call is an \
+                  unreachable programmer bug, surfaced as a panic"
+    )]
+    pub(crate) fn disarm(mut self) -> SuperviseReg {
+        self.0.take().expect("ArmedReg already disarmed")
+    }
+}
+
+impl Drop for ArmedReg {
+    fn drop(&mut self) {
+        // #248 / ADR-0019 amendment: if the registration was never applied, stop
+        // the first incarnation. Cancel first so a cooperative child that wins the
+        // race sees a graceful edge; abort guarantees termination because Drop
+        // cannot await a grace.
+        if let Some(reg) = &self.0
+            && let Some(handle) = &reg.child.handle
+        {
+            handle.cancel.cancel();
+            handle.abort.abort();
+        }
+    }
+}
+
 /// What installing the supervisor's watch edge on a freshly-spawned child did.
 ///
 /// The install is a single non-blocking [`try_send`](crate::mailbox::MailboxSender::try_send)
@@ -218,7 +267,7 @@ pub struct SuperviseReg {
 /// `Signal::Supervision(Box<SupervisionOp>)` without being re-exported.)
 pub enum SupervisionOp {
     /// Start supervising a child that is already running.
-    Add(SuperviseReg),
+    Add(ArmedReg),
     /// Drop the supervision edge. The child keeps running, now unwatched — the
     /// caller is taking ownership of its lifetime.
     Remove(ActorId),
@@ -406,7 +455,9 @@ mod tests {
     use tokio::time::Instant;
     use tokio_util::sync::CancellationToken;
 
-    use super::{Child, ChildHandle, Children, Spawned, WatchInstaller, WatchOutcome};
+    use super::{
+        ArmedReg, Child, ChildHandle, Children, Spawned, SuperviseReg, WatchInstaller, WatchOutcome,
+    };
     use crate::{
         mailbox::ActorId,
         restart::{RestartConfig, RestartPolicy, RestartTracker},
@@ -644,6 +695,50 @@ mod tests {
             original.abort.is_aborted(),
             "a cloned handle must abort the SAME task",
         );
+    }
+
+    /// #248: dropping an armed `SuperviseReg` (the op was never applied) cancels and
+    /// aborts the first incarnation, so a queued registration is never orphaned.
+    #[test]
+    fn armed_reg_drop_cancels_and_aborts_first_incarnation() {
+        let id = ActorId::from_raw_for_test(1);
+        let child = child_entry(id);
+        let handle = child.handle.clone().expect("live first incarnation");
+        let reg = SuperviseReg {
+            child,
+            id,
+            install_watch: noop_installer(),
+        };
+        drop(ArmedReg::new(reg));
+        assert!(
+            handle.cancel.is_cancelled(),
+            "the guard cancels the first incarnation"
+        );
+        assert!(
+            handle.abort.is_aborted(),
+            "the guard aborts the first incarnation"
+        );
+    }
+
+    /// #248: a disarmed guard leaves the first incarnation untouched; the child is
+    /// now owned by the supervisor's loop or the caller.
+    #[test]
+    fn disarmed_reg_drop_leaves_first_incarnation_alive() {
+        let id = ActorId::from_raw_for_test(1);
+        let child = child_entry(id);
+        let handle = child.handle.clone().expect("live first incarnation");
+        let reg = SuperviseReg {
+            child,
+            id,
+            install_watch: noop_installer(),
+        };
+        let _disarmed = ArmedReg::new(reg).disarm();
+        drop(_disarmed);
+        assert!(
+            !handle.cancel.is_cancelled(),
+            "disarmed guard must not cancel"
+        );
+        assert!(!handle.abort.is_aborted(), "disarmed guard must not abort");
     }
 
     /// The escalation sweep's input: `drain_live_handles` hands back every LIVE

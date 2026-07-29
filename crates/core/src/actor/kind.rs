@@ -19,8 +19,8 @@ use crate::{
     actor::{
         Actor, ActorRef, Supervisor, Watch, WeakActorRef,
         supervision::{
-            ChildHandle, Children, CycleState, PendingAbort, Spawned, SuperviseReg, SupervisionOp,
-            WatchInstaller, WatchOutcome,
+            ArmedReg, ChildHandle, Children, CycleState, PendingAbort, Spawned, SuperviseReg,
+            SupervisionOp, WatchInstaller, WatchOutcome,
         },
     },
     error::{ActorStopReason, PanicError, PanicReason},
@@ -889,6 +889,25 @@ fn install_child_watch(sup: &SupervisorRef, handle: &ChildHandle, install_watch:
     }
 }
 
+/// Disarms the armed registration, inserts the child into the table, and installs
+/// the supervisor's watch edge on the first incarnation. Insertion must precede
+/// the watch install so that a death racing registration routes to the restart
+/// policy, never to the peer-watch hook (the #196 registration-hazard fix). The
+/// handle is cloned out before the move so the watch-install can name the child
+/// after `child` is consumed by `insert`.
+fn install_registration(children: &mut Children, sup: &SupervisorRef, armed: ArmedReg) {
+    let SuperviseReg {
+        child,
+        id,
+        install_watch,
+    } = armed.disarm();
+    let first_handle = child.handle.clone();
+    children.insert(id, child);
+    if let Some(handle) = first_handle {
+        install_child_watch(sup, &handle, install_watch);
+    }
+}
+
 /// Applies a child-table [`SupervisionOp`] that arrived on the supervisor's own
 /// mailbox. The table is task-owned, so this is its ONLY writer — no lock, and
 /// no ordering rule beyond the mailbox's FIFO.
@@ -899,23 +918,7 @@ fn apply_supervision_op(
     op: SupervisionOp,
 ) {
     match op {
-        // Insert FIRST, then install the watch edge on the first incarnation:
-        // once the table holds `id`, a death for it routes to the restart policy,
-        // never to the peer-watch hook (the #196 registration-hazard fix). The
-        // handle is cloned out before the move so the watch-install can name the
-        // child after `child` is consumed by `insert`.
-        SupervisionOp::Add(reg) => {
-            let SuperviseReg {
-                child,
-                id,
-                install_watch,
-            } = reg;
-            let first_handle = child.handle.clone();
-            children.insert(id, child);
-            if let Some(handle) = first_handle {
-                install_child_watch(sup, &handle, install_watch);
-            }
-        }
+        SupervisionOp::Add(armed) => install_registration(children, sup, armed),
         // Drop the supervision edge; the child keeps running, now unwatched. If it
         // was an AWAITED cycle member, count the teardown down — else the cycle
         // waits forever for a death that will land as a table-miss.
@@ -950,6 +953,57 @@ fn apply_supervision_op(
                     cycle_count_down(ctx, id);
                 }
             }
+        }
+    }
+}
+
+/// Drains queued supervision ops from a supervisor's mailbox after the message
+/// loop has exited gracefully. The loop is gone, so cycle bookkeeping is
+/// unnecessary and discarded; the goal is to land every queued child in the
+/// table so the following teardown sweep treats it like any other supervised
+/// child. This is mechanism 1 of #248 / the ADR-0019 amendment.
+///
+/// `Add` is disarmed, inserted, and watched (insert-before-watch, #196). `Remove`
+/// detaches the child without stopping it. `Stop` cancels and schedules a deferred
+/// abort (the following `pending_aborts.clear()` truncates the grace). `Watch`/
+/// `Unwatch` are applied to `watchers`. Messages and `Signal::Stop` are discarded.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the epilogue needs one borrow per task-owned structure plus the \
+              supervisor identity and link sender; grouping would not reduce \
+              complexity and would widen the SupervisorRef API"
+)]
+pub(super) fn drain_queued_supervision<A: Actor>(
+    mailbox_rx: &mut MailboxReceiver<A>,
+    children: &mut Children,
+    watchers: &mut Watchers,
+    pending_aborts: &mut DelayQueue<PendingAbort>,
+    sup_id: ActorId,
+    sup_link_tx: LinkSender,
+) {
+    let sup = SupervisorRef {
+        id: sup_id,
+        link_tx: sup_link_tx,
+    };
+    for signal in mailbox_rx.drain() {
+        match signal {
+            Signal::Supervision(op) => match *op {
+                SupervisionOp::Add(armed) => install_registration(children, &sup, armed),
+                SupervisionOp::Remove(id) => {
+                    children.remove(id);
+                }
+                SupervisionOp::Stop(id) => {
+                    if let Some(child) = children.remove(id)
+                        && let Some(handle) = child.handle
+                    {
+                        handle.cancel.cancel();
+                        pending_aborts.insert(PendingAbort::new(handle), child.config.stop_grace);
+                    }
+                }
+            },
+            Signal::Watch(reg) => watchers.apply(*reg),
+            Signal::Unwatch(id) => watchers.remove(id),
+            Signal::Message { .. } | Signal::Stop => {}
         }
     }
 }
@@ -1018,8 +1072,8 @@ mod supervised_tests {
     };
     use crate::{
         actor::supervision::{
-            Child, ChildHandle, Children, CycleState, RebuildFactory, Spawned, SuperviseReg,
-            SupervisionOp, WatchInstaller, WatchOutcome, watch_installer,
+            ArmedReg, Child, ChildHandle, Children, CycleState, RebuildFactory, Spawned,
+            SuperviseReg, SupervisionOp, WatchInstaller, WatchOutcome, watch_installer,
         },
         error::{ActorStopReason, PanicError, PanicReason},
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
@@ -1377,11 +1431,11 @@ mod supervised_tests {
                 pending_aborts: &mut pending_aborts,
                 cycle: &mut cycle,
             },
-            SupervisionOp::Add(SuperviseReg {
+            SupervisionOp::Add(ArmedReg::new(SuperviseReg {
                 child: child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
                 id,
                 install_watch: noop_installer(),
-            }),
+            })),
         );
         assert!(children.get_mut(id).is_some(), "Add installs the child");
 
@@ -1427,11 +1481,11 @@ mod supervised_tests {
                 pending_aborts: &mut pending_aborts,
                 cycle: &mut cycle,
             },
-            SupervisionOp::Add(SuperviseReg {
+            SupervisionOp::Add(ArmedReg::new(SuperviseReg {
                 child: child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
                 id: other,
                 install_watch: noop_installer(),
-            }),
+            })),
         );
         let survivor = {
             let entry = children.get_mut(other).expect("present");

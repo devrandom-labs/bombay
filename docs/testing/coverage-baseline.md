@@ -1113,3 +1113,28 @@ fields):
 Structural half: the two slot-size tripwires in `mailbox.rs` pin `SendContext` (the
 caller-span envelope field) to at most **one word**, so the #209 context can never silently
 fatten every queue slot.
+
+## Queued-registration teardown (#248) — drain + drop-guard
+
+Closes ADR-0019's residual window (a `supervise` registration still queued at
+supervisor exit orphaned its already-spawned child). Unit half
+(`supervision.rs`): an armed registration's drop cancels **and** aborts the
+first incarnation; a disarmed one touches neither edge. Lifecycle half
+(`spawn.rs`, paused current-thread):
+
+- **stop with the `Add` still queued** — graceful epilogue drain inserts the
+  child and the sweep joins it before `RunResult::Stopped` resolves (no
+  barrier: there is no await between `supervise` returning and `stop()`);
+- **kill with the `Add` still queued** — the dropped mailbox fires the
+  drop-guard; child provably dead, `RunResult::Killed`, `on_stop` skipped;
+- **queued `Remove` detaches** — the child survives the supervisor and still
+  accepts messages (ownership transfer honored, not swept);
+- **queued `Stop` still stops** — drained onto `pending_aborts`, grace
+  truncated at exit;
+- **failed-send handback** — `supervise` on a dead supervisor now *asserts*
+  the anchored child keeps running unsupervised (the disarm path; this
+  contract previously had no regression test).
+
+The two `quiesce()` barriers the #245 lifecycle tests carried (their comments
+pointed here) are **removed** — the teardown invariant holds whether the ops
+were applied by the loop or drained by the epilogue.
