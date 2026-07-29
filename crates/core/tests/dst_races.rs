@@ -63,7 +63,7 @@ use bombay::{
         WeakActorRef,
     },
     error::{ActorStopReason, AskError, TellError},
-    mailbox::{Capacity, Mailboxed, Signal},
+    mailbox::{Capacity, ControlSignal, Mailboxed, Signal},
     message::Msg,
     reply::ReplySender,
     restart::{RestartConfig, RestartPolicy, SupervisionStrategy},
@@ -1451,35 +1451,45 @@ async fn seeded_control_user_interleavings_preserve_per_lane_fifo() {
             .expect("the handler must reach the gate, not hang")
             .expect("the handler is parked");
 
-        // The link receivers of every Watch minted per id, in script order.
-        let mut rxs_a = Vec::new();
-        let mut rxs_b = Vec::new();
-        let mut last_watch_a = false;
-        let mut last_watch_b = false;
+        // The link receivers of every Watch minted per id, split by survival:
+        // an edge survives iff no Unwatch for its id follows it in the script
+        // (`Watchers::remove` clears ALL edges of the id). Surviving DUPLICATE
+        // edges each deliver a notice at teardown.
+        let mut alive_a = Vec::new();
+        let mut dead_a = Vec::new();
+        let mut alive_b = Vec::new();
+        let mut dead_b = Vec::new();
         for step in &script {
             match step {
                 None => bounded(target_ref.tell(Ping)).await.expect("user tell"),
-                Some(op) => {
-                    let (signal, link_rx) = watch_signal(op.watcher(), false);
-                    // Overtake witness: lands synchronously while the handler
-                    // is parked and the user lane full.
-                    target_ref
-                        .mailbox_sender()
-                        .send_control(signal)
-                        .expect("control op lands on the full mailbox");
-                    match op {
-                        ScriptCtl::WatchA => {
-                            last_watch_a = true;
-                            rxs_a.push(link_rx);
+                Some(op) => match op {
+                    ScriptCtl::WatchA | ScriptCtl::WatchB => {
+                        let (signal, link_rx) = watch_signal(op.watcher(), false);
+                        // Overtake witness: lands synchronously while the handler
+                        // is parked and the user lane full.
+                        target_ref
+                            .mailbox_sender()
+                            .send_control(signal)
+                            .expect("control op lands on the full mailbox");
+                        if matches!(op, ScriptCtl::WatchA) {
+                            alive_a.push(link_rx);
+                        } else {
+                            alive_b.push(link_rx);
                         }
-                        ScriptCtl::UnwatchA => last_watch_a = false,
-                        ScriptCtl::WatchB => {
-                            last_watch_b = true;
-                            rxs_b.push(link_rx);
-                        }
-                        ScriptCtl::UnwatchB => last_watch_b = false,
                     }
-                }
+                    ScriptCtl::UnwatchA | ScriptCtl::UnwatchB => {
+                        target_ref
+                            .mailbox_sender()
+                            .send_control(ControlSignal::Unwatch(op.watcher()))
+                            .expect("unwatch lands on the full mailbox");
+                        // Every edge minted so far for this id is now removed.
+                        if matches!(op, ScriptCtl::UnwatchA) {
+                            dead_a.append(&mut alive_a);
+                        } else {
+                            dead_b.append(&mut alive_b);
+                        }
+                    }
+                },
             }
         }
 
@@ -1505,28 +1515,29 @@ async fn seeded_control_user_interleavings_preserve_per_lane_fifo() {
             "seed {seed}: the parked message plus all 4 scripted tells were handled",
         );
 
-        // Control intra-lane FIFO: last op on each id wins its edge state.
-        let expect = [
-            (last_watch_a, &mut rxs_a, "A"),
-            (last_watch_b, &mut rxs_b, "B"),
-        ];
-        for (last_was_watch, rxs, name) in expect {
-            if last_was_watch {
-                let last = rxs.pop().expect("a Watch op minted a receiver");
-                let notice = timeout(TERMINATE, last.recv_async())
+        // Control intra-lane FIFO: every edge that survived to teardown (no
+        // later Unwatch for its id) delivers a notice; every removed edge is
+        // silent. Duplicates survive together (Erlang-style monitors).
+        let expect = [(alive_a, dead_a, "A"), (alive_b, dead_b, "B")];
+        for (alive, dead, name) in expect {
+            for rx in alive {
+                let notice = timeout(TERMINATE, rx.recv_async())
                     .await
-                    .expect("seed {seed}: the surviving edge must deliver")
+                    .expect("seed {seed}: every surviving edge must deliver")
                     .expect("the link channel is open");
                 assert_eq!(
                     notice.id, target_id,
-                    "seed {seed}: watcher {name}'s last-op edge names the target",
+                    "seed {seed}: watcher {name}'s surviving edge names the target",
                 );
-            } else {
                 assert!(
-                    rxs.iter().all(|rx| rx.try_recv().is_err()),
-                    "seed {seed}: watcher {name} ends Unwatch — every edge removed, no notice",
+                    matches!(notice.reason, ActorStopReason::Collected),
+                    "seed {seed}: the true reason rides watcher {name}'s notice",
                 );
             }
+            assert!(
+                dead.iter().all(|rx| rx.try_recv().is_err()),
+                "seed {seed}: watcher {name}'s removed edges deliver no notice",
+            );
         }
     }
 }

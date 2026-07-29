@@ -463,15 +463,18 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
         "ask 2 enqueued — lane full"
     );
 
-    // The supervise factory mirrors the app's own (weak dispatcher + done
-    // port); its `WorkerReplaced` roster tell rides the USER lane and is
-    // dropped on the full mailbox — wart 3, unchanged by this card (#244).
+    // The supervise factory mirrors the app's own — but captures NO strong
+    // dispatcher handle: the closure lives in the dispatcher's own child
+    // table, so a captured `Recipient` would be a self-cycle and ref-count
+    // stop (ADR-0003) could never fire. The done port is derived INSIDE the
+    // closure from the weak ref instead. Its `WorkerReplaced` roster tell
+    // rides the USER lane and is dropped on the full mailbox — wart 3,
+    // unchanged by this card (#244).
     let (birth_tx, birth_rx) = flume::unbounded::<u32>();
     let (stopped_tx, stopped_rx) = flume::unbounded::<ActorId>();
     let stash: Arc<Mutex<Option<ActorRef<app::Worker>>>> = Arc::new(Mutex::new(None));
     let next = Arc::new(std::sync::atomic::AtomicU32::new(0));
     let child_id = {
-        let done_port = dispatcher_ref.recipient::<app::Done>();
         let disp_weak: WeakActorRef<Dispatcher> = dispatcher_ref.downgrade();
         let stash = Arc::clone(&stash);
         let next = Arc::clone(&next);
@@ -479,20 +482,21 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
         bounded(dispatcher_ref.supervise(restart, move || {
             let seq = next.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             birth_tx.try_send(seq).expect("unbounded birth tape");
+            let disp = disp_weak
+                .upgrade()
+                .expect("the dispatcher is alive whenever this factory runs");
             let worker = app::Worker::spawn(app::WorkerArgs {
                 slot: 9,
-                dispatcher: done_port.clone(),
+                dispatcher: disp.recipient::<app::Done>(),
                 stopped_tx: Some(stopped_tx.clone()),
             });
-            if let Some(disp) = disp_weak.upgrade() {
-                let _ = disp
-                    .tell(DispatcherMsg::WorkerReplaced {
-                        slot: 9,
-                        id: worker.id(),
-                        worker: worker.recipient::<app::Job>(),
-                    })
-                    .try_send(); // wart 3: dropped while the mailbox is full
-            }
+            let _ = disp
+                .tell(DispatcherMsg::WorkerReplaced {
+                    slot: 9,
+                    id: worker.id(),
+                    worker: worker.recipient::<app::Job>(),
+                })
+                .try_send(); // wart 3: dropped while the mailbox is full
             *stash.lock().expect("stash lock") = Some(worker.clone());
             worker
         }))
@@ -549,7 +553,28 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
          this card); the rebuild's landed once the backlog had drained",
     );
 
-    drop(dispatcher_ref); // collection: backlog drained, supervisor stops
+    // The adopted child is stopped via the supervisor's own `stop_child`
+    // (control lane): its graceful stop drops the worker's `Recipient<Done>`
+    // — a STRONG dispatcher sender (recipient.rs erases a strong `ActorRef`),
+    // so a live worker pins the dispatcher exactly like the app's own workers
+    // do, and collection below could never fire while it lives. Releasing it
+    // first is what lets the ref-count stop happen at all; the app's real
+    // dispatcher never relies on collection (it stops in-band on Drain).
+    bounded(dispatcher_ref.stop_child(occupant_id))
+        .await
+        .expect("the dispatcher is alive");
+    // Incarnation 1's graceful stop is the one stop the seam reports
+    // (incarnation 0 was killed — `on_stop` skipped).
+    let swept = bounded(stopped_rx.recv_async())
+        .await
+        .expect("the surviving incarnation is stopped via stop_child");
+    assert_eq!(swept, occupant_id, "the stopped incarnation is the rebuild");
+    assert!(
+        stopped_rx.try_recv().is_err(),
+        "exactly one graceful child stop (the killed incarnation skips on_stop)",
+    );
+
+    drop(dispatcher_ref); // every strong sender gone: collection fires
     let outcome = bounded(run).await.expect("run joins");
     assert!(
         matches!(
@@ -560,17 +585,6 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
             }
         ),
         "ref-drop collection, got {outcome:?}",
-    );
-    // The adopted child was swept at supervisor exit (#245): incarnation 1's
-    // graceful stop is the one stop the seam reports (incarnation 0 was
-    // killed — `on_stop` skipped).
-    let swept = bounded(stopped_rx.recv_async())
-        .await
-        .expect("the surviving incarnation is stopped with the supervisor");
-    assert_eq!(swept, occupant_id, "the swept incarnation is the rebuild");
-    assert!(
-        stopped_rx.try_recv().is_err(),
-        "exactly one graceful child stop (the killed incarnation skips on_stop)",
     );
     // Lineage semantics (ADR-0015): `supervise` returned the FIRST
     // incarnation's id; the roster/sweep name the REBUILD, a fresh id.
