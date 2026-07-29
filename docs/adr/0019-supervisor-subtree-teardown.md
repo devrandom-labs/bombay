@@ -96,14 +96,48 @@ mechanism details are engineering choices where the literature is silent.
   Fire-and-forget: no join, reaper lost on runtime shutdown; kill path gets
   "signals sent, hopefully" instead of the proven contract.
 
-## Known residual window
+## Resolution (#248)
 
-`supervise()` spawns the child inline but its table registration rides the
-supervisor's mailbox as a `Signal::Supervision` op. A supervisor that stops
-or is killed before dequeuing that op exits with the child never inserted —
-the sweep covers the TABLE, so the queued child is orphaned. Discovered by
-this card's lifecycle tests (they carry a paused-clock `quiesce()` barrier
-until the window closes). Tracked as #248.
+The residual window is closed by **both** of the following mechanisms, split by
+exit path so each covers exactly what the other cannot:
+
+| Path | Mailbox in epilogue? | Mechanism |
+|---|---|---|
+| Graceful stop (`stop()`, ref-count) | yes | **drain** queued ops into the child table before the sweep |
+| Kill (`kill()` → `Err(Aborted)`) | no — dropped inside the aborted future | **drop-guard** on each queued `Add` registration |
+| Startup failure | yes, but `startup_failed` needs queued Watch regs | **drop-guard** (draining would eat the watchers) |
+
+1. **Graceful-path drain.** `run_lifecycle_supervised` restructures its epilogue:
+   on the `Graceful` arm it drains the supervisor's mailbox **before**
+   `pending_aborts.clear()` and `teardown_children`. The drain routes queued
+   `Signal::Supervision` ops with the same FIFO semantics the loop uses:
+   - `Add` → disarm, `children.insert`, then `install_child_watch` (insert-before-watch,
+     #196), so the following sweep can join the child's death instead of burning the
+     full grace.
+   - `Remove` → `children.remove(id)`: the child is detached and keeps running; it
+     is **not** swept.
+   - `Stop` → remove, cancel, and schedule a `PendingAbort` on `pending_aborts`; the
+     immediately-following `clear()` truncates the grace and aborts the child.
+   - `Watch`/`Unwatch` → applied to `watchers` as in `apply_raced_registrations`.
+   - `Message` and `Signal::Stop` are discarded.
+
+   The cloned `sup_link_tx` used by the drain is captured before the `Abortable`
+   region, because the loop consumes the original copy.
+
+2. **Drop-guard backstop.** `SupervisionOp::Add` now carries an `ArmedReg`: a
+   newtype wrapping `Option<SuperviseReg>`. It is disarmed when the loop applies the
+   op (`apply_supervision_op`) and when `supervise` gets a mailbox-closed handback
+   (so the anchored child keeps running unsupervised). If still armed when dropped,
+   the guard cancels and aborts the first incarnation's handle. This covers the kill
+   path, startup-failure path, and any `Supervision` op that races a stop and is
+   discarded by `apply_raced_registrations`.
+
+Both mechanisms preserve the ADR-0019 invariant: every child (table or queued) is
+provably dead or aborted before the supervisor's `RunResult` resolves on graceful
+paths; on the kill path the supervisor's own death announcement precedes the child
+abort, but nothing is orphaned. The failed-send contract is also preserved: a
+`supervise` on a dead supervisor returns `ActorNotAlive`, and the anchored child is
+explicitly disarmed so it continues running unsupervised.
 
 ## Consequences
 

@@ -19,12 +19,12 @@ use crate::{
     actor::{
         Actor, Spawn, Supervisor, Watch,
         supervision::{
-            Child, ChildHandle, RebuildFactory, Spawned, SuperviseReg, SupervisionOp,
+            ArmedReg, Child, ChildHandle, RebuildFactory, Spawned, SuperviseReg, SupervisionOp,
             watch_installer,
         },
     },
     error::{ActorNotLinked, ActorStopReason, TellError},
-    mailbox::{ActorId, MailboxSender, Signal},
+    mailbox::{ActorId, MailboxSender, SendError, Signal},
     reply::ReplySender,
     request::{AskRequest, TellRequest},
     restart::{RestartConfig, RestartTracker},
@@ -354,10 +354,11 @@ impl<S: Supervisor> ActorRef<S> {
     ///
     /// [`TellError::ActorNotAlive`] if the supervisor's mailbox is closed (it has
     /// stopped). The first incarnation was already spawned; the dropped
-    /// [`SendError`](crate::mailbox::SendError) takes the registration — and with
-    /// it the installer's transient sender — so an *unanchored* first incarnation
-    /// then ref-count-stops rather than continuing, while an anchored one keeps
-    /// running, now unsupervised.
+    /// [`SendError`](crate::mailbox::SendError) takes the registration and the
+    /// installer's transient sender, so an *unanchored* first incarnation
+    /// ref-count-stops while an anchored one keeps running unsupervised. The
+    /// handback disarm is deliberate so the armed guard does not abort the child
+    /// that will continue unsupervised.
     pub async fn supervise<A, F>(
         &self,
         config: impl Into<RestartConfig>,
@@ -391,13 +392,21 @@ impl<S: Supervisor> ActorRef<S> {
         };
         match self
             .mailbox_sender()
-            .send(Signal::Supervision(Box::new(SupervisionOp::Add(reg))))
+            .send(Signal::Supervision(Box::new(SupervisionOp::Add(
+                ArmedReg::new(reg),
+            ))))
             .await
         {
             Ok(()) => Ok(id),
             // The supervisor's mailbox is closed (it stopped). `send().await` errors
             // only on a closed mailbox, so this is the genuine dead-supervisor path.
-            Err(_) => Err(TellError::ActorNotAlive(())),
+            Err(SendError(Signal::Supervision(op))) => {
+                if let SupervisionOp::Add(armed) = *op {
+                    let _reg = armed.disarm();
+                }
+                Err(TellError::ActorNotAlive(()))
+            }
+            Err(SendError(_)) => Err(TellError::ActorNotAlive(())),
         }
     }
 
