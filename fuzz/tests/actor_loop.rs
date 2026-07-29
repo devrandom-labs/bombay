@@ -28,7 +28,7 @@ use bombay::test_support::{terminate_bound, watch_signal};
 /// aborts (hard kill); `Watch` enqueues a control-lane `ControlSignal::Watch`
 /// registration and `Unwatch` enqueues a control-lane `ControlSignal::Unwatch`
 /// (card #195; both moved onto the #225 control lane, ADR-0021 — they now
-/// OVERtake the user backlog instead of queueing FIFO behind it). The whole
+/// overtake the user backlog instead of queueing FIFO behind it). The whole
 /// script is applied before `run`, so execution is deterministic on the
 /// single-threaded runtime — a sound fuzz oracle.
 ///
