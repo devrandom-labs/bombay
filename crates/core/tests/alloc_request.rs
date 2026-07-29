@@ -15,7 +15,7 @@ use std::{alloc::System, future::IntoFuture};
 use bombay::{
     actor::{Actor, ActorRef},
     error::Infallible,
-    mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal},
+    mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Recv, Signal},
     message::Msg,
     reply::ReplySender,
     test_support::{CountingAlloc, terminate_bound, unstarted_actor},
@@ -95,10 +95,10 @@ fn round(
                 .await
                 .expect("the ask must be received within the bound")
                 .expect("the ask is queued");
-            let Signal::Message {
+            let Recv::Signal(Signal::Message {
                 msg: ProbeMsg::Get { reply },
                 ..
-            } = signal
+            }) = signal
             else {
                 unreachable!("only the ask is queued")
             };

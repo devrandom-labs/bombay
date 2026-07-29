@@ -3,7 +3,7 @@
 
 use core::time::Duration;
 
-use bombay::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal};
+use bombay::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Recv, Signal};
 use bombay::message::Msg;
 use bombay::test_support::terminate_bound;
 use tokio::time::timeout;
@@ -55,20 +55,20 @@ async fn derived_msg_command_round_trips_through_the_real_mailbox() {
         .expect("the deposit must round-trip, not hang");
     assert!(matches!(
         first,
-        Some(Signal::Message {
+        Some(Recv::Signal(Signal::Message {
             msg: BankCmd::Deposit { cents: 250 },
             ..
-        })
+        }))
     ));
     let second = timeout(DELIVERY, rx.recv())
         .await
         .expect("the balance query must round-trip, not hang");
     assert!(matches!(
         second,
-        Some(Signal::Message {
+        Some(Recv::Signal(Signal::Message {
             msg: BankCmd::Balance,
             ..
-        })
+        }))
     ));
 }
 
@@ -95,13 +95,13 @@ async fn stop_signal_preserves_fifo_order_with_derived_messages() {
         .expect("the withdraw must round-trip, not hang");
     assert!(matches!(
         msg,
-        Some(Signal::Message {
+        Some(Recv::Signal(Signal::Message {
             msg: BankCmd::Withdraw { cents: 100 },
             ..
-        })
+        }))
     ));
     let stop = timeout(DELIVERY, rx.recv())
         .await
         .expect("the queued Stop must arrive, not hang");
-    assert!(matches!(stop, Some(Signal::Stop)));
+    assert!(matches!(stop, Some(Recv::Signal(Signal::Stop))));
 }

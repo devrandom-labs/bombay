@@ -202,7 +202,7 @@ mod tests {
     use crate::{
         actor::{Actor, ActorRef},
         error::{NameTaken, WrongActorType},
-        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
+        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
         message::Msg,
     };
     use proptest::prelude::*;

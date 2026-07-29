@@ -33,11 +33,11 @@ pub use self::{
 
 // The supervision types stay OFF the public API — the `supervise` verb returns a
 // bare `ActorId`, and `SuperviseReg`/`SupervisionOp` only ride inside the
-// `Signal::Supervision(Box<SupervisionOp>)` variant, exactly as `WatchReg` rides
-// `Signal::Watch(Box<WatchReg>)` without being re-exported. `SupervisionOp` needs
-// a `pub(crate)` re-export only because `mailbox` (outside this module) names it
-// in that variant; `ChildHandle`/`SuperviseReg` are used solely within `actor`
-// and reach their definitions directly.
+// `ControlSignal::Supervision(Box<SupervisionOp>)` variant, exactly as `WatchReg`
+// rides `ControlSignal::Watch(Box<WatchReg>)` without being re-exported.
+// `SupervisionOp` needs a `pub(crate)` re-export only because `mailbox` (outside
+// this module) names it in that variant; `ChildHandle`/`SuperviseReg` are used
+// solely within `actor` and reach their definitions directly.
 pub(crate) use self::supervision::SupervisionOp;
 
 /// A single-writer, identity-agnostic unit of concurrency: owned state behind a

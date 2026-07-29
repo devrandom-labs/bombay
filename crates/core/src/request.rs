@@ -99,13 +99,11 @@ impl<'a, A: Mailboxed> TellRequest<'a, A> {
 }
 
 /// Recovers the domain message from a bounced [`Signal`]. The request layer
-/// only ever enqueues `Signal::Message`, so the other arms cannot bounce here.
+/// only ever enqueues `Signal::Message`, so the other arm cannot bounce here.
 fn undelivered_msg<A: Mailboxed>(signal: Signal<A>) -> A::Msg {
     match signal {
         Signal::Message { msg, .. } => msg,
-        Signal::Stop | Signal::Watch(_) | Signal::Unwatch(_) | Signal::Supervision(_) => {
-            unreachable!("the request layer enqueues only Signal::Message")
-        }
+        Signal::Stop => unreachable!("the request layer enqueues only Signal::Message"),
     }
 }
 
@@ -434,7 +432,7 @@ mod tests {
     use crate::{
         actor::{Actor, ActorRef, ReplyRecipient, Spawn},
         error::{AskError, TellError},
-        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
+        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
         message::Msg,
         reply::ReplySender,
         test_support::terminate_bound,

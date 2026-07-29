@@ -30,7 +30,7 @@ use smallvec::SmallVec;
 use tokio_util::{sync::CancellationToken, time::delay_queue};
 
 use crate::{
-    mailbox::{ActorId, MailboxSender, Mailboxed, Signal, TrySendError},
+    mailbox::{ActorId, ControlClosed, ControlSignal, MailboxSender, Mailboxed},
     restart::{RestartConfig, RestartPolicy, RestartTracker},
     watch::WatchReg,
 };
@@ -136,19 +136,22 @@ impl Drop for ArmedReg {
 
 /// What installing the supervisor's watch edge on a freshly-spawned child did.
 ///
-/// The install is a single non-blocking [`try_send`](crate::mailbox::MailboxSender::try_send)
-/// of a [`Signal::Watch`](crate::mailbox::Signal::Watch) onto the child's bounded
-/// mailbox — never an `await`, so a slow or flooded child can never stall the
-/// supervisor's loop. The three outcomes are exactly `try_send`'s three results.
+/// The install is a single synchronous [`send_control`](crate::mailbox::MailboxSender::send_control)
+/// of a [`ControlSignal::Watch`](crate::mailbox::ControlSignal::Watch) onto the
+/// child's UNBOUNDED control lane — never an `await`, so a slow or flooded child
+/// can never stall the supervisor's loop. Since #225 the lane has no capacity to
+/// exhaust, so the pre-split `Full` outcome (a flooded child killed as a failed
+/// incarnation) is gone: a flooded child is now watched, late but always
+/// (ADR-0021). The two outcomes are exactly `send_control`'s two results.
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "an install resolves to exactly these two outcomes; the set is closed"
+)]
 pub enum WatchOutcome {
     /// The registration was accepted: the watch edge is live and the child is
-    /// supervised. The normal case — a freshly-spawned child's mailbox is empty.
+    /// supervised. The normal case — and since #225 also the flooded case: the
+    /// unbounded control lane always has room.
     Installed,
-    /// The child's mailbox was **full** — it was flooded in the window between
-    /// its spawn and the loop's watch-install. The child is alive but
-    /// unwatchable without waiting; the loop treats this as an immediate failed
-    /// incarnation rather than blocking on a bounded send.
-    Full,
     /// The child's mailbox was **closed** — it died in the unwatched window
     /// between its spawn (in the caller's task) and the loop's table insert. Its
     /// own death notice never reached the supervisor (it was not yet a watcher),
@@ -173,16 +176,16 @@ pub type WatchInstaller = Box<dyn FnOnce(WatchReg) -> WatchOutcome + Send>;
 
 /// Builds the one-shot [`WatchInstaller`] over a child incarnation's typed
 /// mailbox `sender`. On call it enqueues the supervisor's watch registration
-/// with a single non-blocking [`try_send`](MailboxSender::try_send) and reports
-/// the outcome; then the closure — and the strong `sender` it captured — is
-/// dropped, so the sender never outlives registration and the table's
-/// sender-less [`ChildHandle`] cannot pin the child (ADR-0003).
+/// with a single synchronous [`send_control`](MailboxSender::send_control) onto
+/// the child's unbounded control lane and reports the outcome; then the closure
+/// — and the strong `sender` it captured — is dropped, so the sender never
+/// outlives registration and the table's sender-less [`ChildHandle`] cannot pin
+/// the child (ADR-0003).
 pub fn watch_installer<A: Mailboxed + 'static>(sender: MailboxSender<A>) -> WatchInstaller {
     Box::new(
-        move |reg| match sender.try_send(Signal::Watch(Box::new(reg))) {
+        move |reg| match sender.send_control(ControlSignal::Watch(Box::new(reg))) {
             Ok(()) => WatchOutcome::Installed,
-            Err(TrySendError::Full(_)) => WatchOutcome::Full,
-            Err(TrySendError::Closed(_)) => WatchOutcome::Closed,
+            Err(ControlClosed(_)) => WatchOutcome::Closed,
         },
     )
 }
@@ -254,17 +257,17 @@ pub struct SuperviseReg {
     pub(crate) install_watch: WatchInstaller,
 }
 
-/// A child-table operation shipped over the supervisor's own mailbox.
+/// A child-table operation shipped over the supervisor's own control lane.
 ///
 /// The table is task-owned, so *all* mutation goes through the loop and arrives
-/// in mailbox FIFO order — there is no lock to take and no ordering rule for a
-/// caller to get wrong.
+/// in control-lane FIFO order — there is no lock to take and no ordering rule
+/// for a caller to get wrong.
 ///
 /// Exhaustive on purpose: the supervision verb set is deliberately closed so the
 /// supervised run-loop is a total match; new arms are added under their driving
 /// cards. (No `clippy::exhaustive_enums` `#[expect]` — that lint fires only on
 /// *exported* enums, and this one is crate-private, riding
-/// `Signal::Supervision(Box<SupervisionOp>)` without being re-exported.)
+/// `ControlSignal::Supervision(Box<SupervisionOp>)` without being re-exported.)
 pub enum SupervisionOp {
     /// Start supervising a child that is already running.
     Add(ArmedReg),

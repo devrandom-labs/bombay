@@ -24,7 +24,7 @@ use std::{alloc::System, future::IntoFuture, pin::pin};
 use bombay::{
     actor::{Actor, ActorRef, ReplyRecipient},
     error::Infallible,
-    mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
+    mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
     message::Msg,
     reply::ReplySender,
     request::Ask,
@@ -101,10 +101,10 @@ fn round(
                 .await
                 .expect("the direct ask must be received within the bound")
                 .expect("the direct ask is queued");
-            let Signal::Message {
+            let Recv::Signal(Signal::Message {
                 msg: ProbeMsg::Get { reply },
                 ..
-            } = signal
+            }) = signal
             else {
                 unreachable!("only the direct ask is queued")
             };
@@ -131,10 +131,10 @@ fn round(
                 .await
                 .expect("the erased ask must be received within the bound")
                 .expect("the erased ask is queued");
-            let Signal::Message {
+            let Recv::Signal(Signal::Message {
                 msg: ProbeMsg::Erased(Ask { reply, .. }),
                 ..
-            } = signal
+            }) = signal
             else {
                 unreachable!("only the erased ask is queued")
             };

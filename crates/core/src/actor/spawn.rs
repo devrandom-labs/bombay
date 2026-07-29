@@ -33,7 +33,7 @@ use crate::{
     },
     error::{ActorStopReason, PanicError, PanicReason},
     id::next_actor_id,
-    mailbox::{Capacity, Mailbox, MailboxReceiver, Signal},
+    mailbox::{Capacity, ControlSignal, Mailbox, MailboxReceiver},
     trace,
     watch::{LinkReceiver, Watchers},
 };
@@ -387,31 +387,35 @@ fn startup_failed<A: Actor>(err: PanicError, mailbox_rx: &MailboxReceiver<A>) ->
     RunResult::StartupFailed(err)
 }
 
-/// Moves every `Watch`/`Unwatch` currently queued in the mailbox into the watcher
-/// set, discarding the rest of the backlog.
+/// Moves every `Watch`/`Unwatch` currently queued on the CONTROL lane into the
+/// watcher set, discarding the user-lane backlog.
 ///
-/// Two duties, one pass. **Registrations:** a `Watch` that raced the stop is
+/// Two duties, two drains. **Registrations:** a `Watch` that raced the stop is
 /// otherwise a silently missed death, and an `Unwatch` that raced it would
 /// otherwise spuriously notify a former watcher — applied through the same
-/// `Watchers` methods the run-loop uses, so both stay FIFO-consistent.
-/// **Cycle release:** a queued `Signal::Message` holds a strong `self_sender`
-/// (ADR-0003), so draining is what breaks the channel↔backlog cycle.
+/// `Watchers` methods the run-loop uses, so both stay FIFO-consistent (the
+/// control lane preserves their relative order, ADR-0021). **Cycle release:**
+/// a queued `Signal::Message` holds a strong `self_sender` (ADR-0003), so
+/// draining the user lane is what breaks the channel↔backlog cycle.
 fn apply_raced_registrations<A: Actor>(
     mailbox_rx: &mut MailboxReceiver<A>,
     watchers: &mut Watchers,
 ) {
     for signal in mailbox_rx.drain() {
+        drop(signal);
+    }
+    for signal in mailbox_rx.drain_control() {
         match signal {
-            Signal::Watch(reg) => watchers.apply(*reg),
-            Signal::Unwatch(id) => watchers.remove(id),
+            ControlSignal::Watch(reg) => watchers.apply(*reg),
+            ControlSignal::Unwatch(id) => watchers.remove(id),
             // A `Supervision` op that raced the stop is discarded with the rest
-            // of the backlog. On the graceful supervisor path the mailbox was
+            // of the backlog. On the graceful supervisor path the lane was
             // already drained into the child table before this function runs; the
             // only `Supervision` ops still arriving here are those that race
             // `on_stop` (a `supervise` tell after the loop exited). The armed
             // `Add` guard (#248) cancels and aborts them when this discard drops
             // the op, so the child is never orphaned.
-            Signal::Message { .. } | Signal::Stop | Signal::Supervision(_) => {}
+            ControlSignal::Supervision(_) => {}
         }
     }
 }
@@ -801,7 +805,7 @@ mod tests {
     use crate::{
         actor::{ActorRef, PreparedActor, RunResult, WeakActorRef},
         error::{ActorNotLinked, ActorStopReason, PanicReason},
-        mailbox::{ActorId, Capacity, Mailboxed, Signal},
+        mailbox::{ActorId, Capacity, ControlSignal, Mailboxed, Signal},
         message::Msg,
         test_support::terminate_bound,
         watch::{LinkDied, LinkReceiver, WatchReg},
@@ -1493,7 +1497,7 @@ mod tests {
         prepared
             .actor_ref()
             .mailbox_sender()
-            .try_send(Signal::Watch(Box::new(WatchReg {
+            .send_control(ControlSignal::Watch(Box::new(WatchReg {
                 watcher: ActorId::from_raw_for_test(1),
                 link_tx,
                 linked: false,
@@ -2402,12 +2406,11 @@ mod tests {
         // Register a watcher directly via the mailbox (`ActorRef::watch` is Task 9).
         target
             .mailbox_sender()
-            .send(Signal::Watch(Box::new(WatchReg {
+            .send_control(ControlSignal::Watch(Box::new(WatchReg {
                 watcher: ActorId::from_raw_for_test(999),
                 link_tx: watch_tx,
                 linked: false,
             })))
-            .await
             .expect("registration delivered");
 
         target.stop(); // graceful
@@ -2435,12 +2438,11 @@ mod tests {
 
         target
             .mailbox_sender()
-            .send(Signal::Watch(Box::new(WatchReg {
+            .send_control(ControlSignal::Watch(Box::new(WatchReg {
                 watcher: ActorId::from_raw_for_test(999),
                 link_tx: watch_tx,
                 linked: false,
             })))
-            .await
             .expect("registration delivered");
 
         drop(target); // last strong ref gone -> ref-count collection
@@ -2465,12 +2467,11 @@ mod tests {
         let (tx, rx) = flume::unbounded::<LinkDied>();
         target
             .mailbox_sender()
-            .send(Signal::Watch(Box::new(WatchReg {
+            .send_control(ControlSignal::Watch(Box::new(WatchReg {
                 watcher: ActorId::from_raw_for_test(1),
                 link_tx: tx,
                 linked: false,
             })))
-            .await
             .expect("registration delivered");
         target.tell(Boom).try_send().expect("provoke the panic");
         let notice = bounded(rx.recv_async())
@@ -2511,12 +2512,11 @@ mod tests {
         let (tx, rx) = flume::unbounded::<LinkDied>();
         target
             .mailbox_sender()
-            .send(Signal::Watch(Box::new(WatchReg {
+            .send_control(ControlSignal::Watch(Box::new(WatchReg {
                 watcher: ActorId::from_raw_for_test(1),
                 link_tx: tx,
                 linked: false,
             })))
-            .await
             .expect("registration delivered");
         // The reg must reach the guard before the abort (see helper doc).
         watch_and_await_applied(&target, &handled).await;
@@ -2551,7 +2551,7 @@ mod tests {
         let (tx, rx) = flume::unbounded::<LinkDied>();
         target
             .mailbox_sender()
-            .try_send(Signal::Watch(Box::new(WatchReg {
+            .send_control(ControlSignal::Watch(Box::new(WatchReg {
                 watcher: ActorId::from_raw_for_test(1),
                 link_tx: tx,
                 linked: false,
@@ -2644,18 +2644,16 @@ mod tests {
 
         // The teardown drain already ran; this send still succeeds (receiver
         // alive) — the acceptance that must not become a silent missed death.
+        // Synchronous on the unbounded control lane: no capacity to await.
         let (tx, rx) = flume::unbounded::<LinkDied>();
-        bounded(
-            target
-                .mailbox_sender()
-                .send(Signal::Watch(Box::new(WatchReg {
-                    watcher: ActorId::from_raw_for_test(1),
-                    link_tx: tx,
-                    linked: false,
-                }))),
-        )
-        .await
-        .expect("mailbox is still open during on_stop");
+        target
+            .mailbox_sender()
+            .send_control(ControlSignal::Watch(Box::new(WatchReg {
+                watcher: ActorId::from_raw_for_test(1),
+                link_tx: tx,
+                linked: false,
+            })))
+            .expect("mailbox is still open during on_stop");
 
         release_tx.send(()).expect("release on_stop");
 
@@ -2972,12 +2970,11 @@ mod tests {
             .clone();
         target
             .mailbox_sender()
-            .send(Signal::Watch(Box::new(WatchReg {
+            .send_control(ControlSignal::Watch(Box::new(WatchReg {
                 watcher: watcher.id(),
                 link_tx,
                 linked: false,
             })))
-            .await
             .expect("registration delivered");
 
         target.stop();
@@ -3009,24 +3006,18 @@ mod tests {
         let actor_ref = prepared.actor_ref().clone();
         let (tx, rx) = flume::unbounded::<LinkDied>();
 
-        bounded(
-            actor_ref
-                .mailbox_sender()
-                .send(Signal::Watch(Box::new(WatchReg {
-                    watcher: ActorId::from_raw_for_test(1),
-                    link_tx: tx,
-                    linked: false,
-                }))),
-        )
-        .await
-        .expect("watch enqueued");
-        bounded(
-            actor_ref
-                .mailbox_sender()
-                .send(Signal::Unwatch(ActorId::from_raw_for_test(1))),
-        )
-        .await
-        .expect("unwatch enqueued");
+        actor_ref
+            .mailbox_sender()
+            .send_control(ControlSignal::Watch(Box::new(WatchReg {
+                watcher: ActorId::from_raw_for_test(1),
+                link_tx: tx,
+                linked: false,
+            })))
+            .expect("watch enqueued");
+        actor_ref
+            .mailbox_sender()
+            .send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(1)))
+            .expect("unwatch enqueued");
         actor_ref.stop(); // cancel BEFORE run() drains anything
 
         let outcome = bounded(prepared.run((handled, stopped))).await;
@@ -3247,12 +3238,11 @@ mod tests {
         // notifications actually run.
         let (fence_tx, fence_rx) = flume::unbounded::<LinkDied>();
         peer.mailbox_sender()
-            .send(Signal::Watch(Box::new(WatchReg {
+            .send_control(ControlSignal::Watch(Box::new(WatchReg {
                 watcher: ActorId::from_raw_for_test(0xF),
                 link_tx: fence_tx,
                 linked: false,
             })))
-            .await
             .expect("fence registered on peer");
 
         // Graceful stop (NOT kill): the teardown drain applies every pending
@@ -3333,15 +3323,15 @@ mod tests {
             let watcher_id = ActorId::from_raw_for_test(u64::try_from(i).expect("fits u64") + 1);
             tasks.push(tokio::spawn(async move {
                 b.wait().await; // real overlap: all registrations race
-                // Bounded: a broken run-loop that never drains the mailbox would
-                // otherwise leave this send parked forever (the #179 pattern).
-                bounded(sender.send(Signal::Watch(Box::new(WatchReg {
-                    watcher: watcher_id,
-                    link_tx: tx,
-                    linked: false,
-                }))))
-                .await
-                .expect("registration delivered");
+                // Synchronous on the unbounded control lane (ADR-0021): the
+                // registration can never park on a full mailbox.
+                sender
+                    .send_control(ControlSignal::Watch(Box::new(WatchReg {
+                        watcher: watcher_id,
+                        link_tx: tx,
+                        linked: false,
+                    })))
+                    .expect("registration delivered");
             }));
         }
         for t in tasks {
@@ -3382,12 +3372,11 @@ mod tests {
         let (tx, rx) = flume::unbounded::<LinkDied>();
         target
             .mailbox_sender()
-            .send(Signal::Watch(Box::new(WatchReg {
+            .send_control(ControlSignal::Watch(Box::new(WatchReg {
                 watcher: ActorId::from_raw_for_test(1),
                 link_tx: tx,
                 linked: false,
             })))
-            .await
             .expect("registration delivered");
 
         drop(rx); // the watcher's receiver is gone => the edge is now stale
@@ -3553,7 +3542,7 @@ mod tests {
                 WeakActorRef,
             },
             error::{ActorStopReason, Infallible},
-            mailbox::{ActorId, Capacity, MailboxSender, Mailboxed, Signal},
+            mailbox::{ActorId, Capacity, ControlSignal, MailboxSender, Mailboxed, Signal},
             message::Msg,
             restart::{Jitter, RestartConfig, RestartPolicy, SupervisionStrategy},
             test_support::terminate_bound,
@@ -4026,7 +4015,7 @@ mod tests {
             let sup = Sup::spawn_supervised(());
             let (watch_tx, watch_rx) = flume::unbounded::<LinkDied>();
             sup.mailbox_sender()
-                .try_send(Signal::Watch(Box::new(WatchReg {
+                .send_control(ControlSignal::Watch(Box::new(WatchReg {
                     watcher: ActorId::from_raw_for_test(999),
                     link_tx: watch_tx,
                     linked: false,
@@ -4102,7 +4091,7 @@ mod tests {
             let sup = Sup::spawn_supervised(());
             let (watch_tx, watch_rx) = flume::unbounded::<LinkDied>();
             sup.mailbox_sender()
-                .try_send(Signal::Watch(Box::new(WatchReg {
+                .send_control(ControlSignal::Watch(Box::new(WatchReg {
                     watcher: ActorId::from_raw_for_test(999),
                     link_tx: watch_tx,
                     linked: false,
@@ -4481,17 +4470,13 @@ mod tests {
         async fn escalation_notifies_the_supervisors_watcher() {
             let sup = Sup::spawn_supervised(());
             let (watch_tx, watch_rx) = flume::unbounded::<LinkDied>();
-            tokio::time::timeout(
-                terminate_bound(),
-                sup.mailbox_sender().send(Signal::Watch(Box::new(WatchReg {
+            sup.mailbox_sender()
+                .send_control(ControlSignal::Watch(Box::new(WatchReg {
                     watcher: ActorId::from_raw_for_test(999_999),
                     link_tx: watch_tx,
                     linked: false,
-                }))),
-            )
-            .await
-            .expect("registration must not hang")
-            .expect("registration delivered");
+                })))
+                .expect("registration delivered");
 
             let (id_tx, id_rx) = flume::unbounded::<ActorId>();
             let senders: Senders = Arc::new(Mutex::new(Vec::new()));

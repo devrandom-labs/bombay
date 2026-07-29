@@ -10,7 +10,7 @@
 use std::num::NonZeroUsize;
 
 use bombay::SendContext;
-use bombay::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal};
+use bombay::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Recv, Signal};
 use criterion::{BatchSize, Criterion, black_box, criterion_group, criterion_main};
 
 /// A realistically-sized actor command (~40 bytes) — a handful of fields, closer
@@ -92,7 +92,7 @@ fn roundtrip(c: &mut Criterion) {
 
                 let mut received = 0u32;
                 while received < 1000 {
-                    let Some(Signal::Message { .. }) = rx.recv().await else {
+                    let Some(Recv::Signal(Signal::Message { .. })) = rx.recv().await else {
                         break;
                     };
                     received += 1;
