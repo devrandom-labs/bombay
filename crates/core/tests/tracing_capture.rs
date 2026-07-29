@@ -231,11 +231,11 @@ async fn lifecycle_span_carries_identity_and_records_stop_reason() {
         matches!(
             result,
             RunResult::Stopped {
-                reason: ActorStopReason::Normal,
+                reason: ActorStopReason::Collected,
                 ..
             }
         ),
-        "all-senders-gone normal stop, got {result:?}",
+        "all-senders-gone collected stop, got {result:?}",
     );
 
     let store = store.lock().unwrap();
@@ -254,7 +254,7 @@ async fn lifecycle_span_carries_identity_and_records_stop_reason() {
     );
     assert_eq!(
         field(&span.fields, "stop.reason"),
-        Some(ActorStopReason::Normal.to_string()),
+        Some(ActorStopReason::Collected.to_string()),
         "stop.reason recorded onto the lifecycle span at teardown",
     );
     assert_eq!(
@@ -287,7 +287,7 @@ async fn lifecycle_span_carries_identity_and_records_stop_reason() {
         .expect("actor stopped event present");
     assert_eq!(
         field(&stopped.fields, "reason"),
-        Some(ActorStopReason::Normal.to_string()),
+        Some(ActorStopReason::Collected.to_string()),
         "the stopped event carries the reason as a structured field",
     );
 }
@@ -342,7 +342,7 @@ async fn on_stop_error_emits_one_error_event_with_fields() {
     );
     assert_eq!(
         field(&errors[0].fields, "reason"),
-        Some(ActorStopReason::Normal.to_string()),
+        Some(ActorStopReason::Collected.to_string()),
         "reason is a structured field, not formatted into the message",
     );
     assert_eq!(field(&errors[0].fields, "err").as_deref(), Some("StopErr"));
@@ -445,7 +445,7 @@ async fn on_stop_panic_emits_one_error_event() {
     );
     assert_eq!(
         field(&errors[0].fields, "reason"),
-        Some(ActorStopReason::Normal.to_string()),
+        Some(ActorStopReason::Collected.to_string()),
         "reason is a structured field, not formatted into the message",
     );
 }
@@ -621,7 +621,7 @@ async fn on_stop_abandoned_emits_one_error_event() {
     );
     assert_eq!(
         field(&errors[0].fields, "reason"),
-        Some(ActorStopReason::Normal.to_string()),
+        Some(ActorStopReason::Collected.to_string()),
         "reason is a structured field, not formatted into the message",
     );
     assert_eq!(
@@ -671,8 +671,8 @@ async fn death_notice_delivery_emits_one_trace_event_per_edge() {
         .expect("a linked watcher can watch");
     drop(target_ref);
 
-    // All senders gone => Normal stop; the notice fires in the target's
-    // teardown, strictly BEFORE its RunResult resolves.
+    // All senders gone => Collected stop (#253/ADR-0020); the notice fires in
+    // the target's teardown, strictly BEFORE its RunResult resolves.
     let result = timeout(terminate_bound(), prepared.run(()))
         .await
         .expect("target must stop inside the bound");
@@ -680,11 +680,11 @@ async fn death_notice_delivery_emits_one_trace_event_per_edge() {
         matches!(
             result,
             RunResult::Stopped {
-                reason: ActorStopReason::Normal,
+                reason: ActorStopReason::Collected,
                 ..
             }
         ),
-        "all-senders-gone normal stop, got {result:?}",
+        "all-senders-gone collected stop, got {result:?}",
     );
 
     let store = store.lock().unwrap();
@@ -701,7 +701,7 @@ async fn death_notice_delivery_emits_one_trace_event_per_edge() {
     );
     assert_eq!(
         field(&notices[0].fields, "reason"),
-        Some(ActorStopReason::Normal.to_string()),
+        Some(ActorStopReason::Collected.to_string()),
     );
     assert_eq!(
         field(&notices[0].fields, "cleanup_failed").as_deref(),
@@ -908,6 +908,58 @@ async fn restart_give_up_emits_one_error_event() {
         field(&gave_up[0].fields, "child.id"),
         Some(format!("{child_id:?}")),
         "the event names the child whose budget tripped",
+    );
+}
+
+/// #253/ADR-0020: a supervised `Permanent` child whose factory anchors nothing
+/// ref-count-collects once. The quiet death is witnessed by a `debug!` event
+/// carrying the child's id; no `restart_scheduled` warn is emitted because no
+/// policy rebuilds a collected child.
+#[tokio::test(start_paused = true)]
+async fn collected_child_emits_debug_event_and_no_restart_scheduled() {
+    let (store, _guard) = capture::install();
+
+    let sup = Sup::spawn_supervised(());
+    let child_id = timeout(
+        terminate_bound(),
+        sup.supervise(RestartConfig::new(RestartPolicy::Permanent), || {
+            Probe::spawn(())
+        }),
+    )
+    .await
+    .expect("supervise must not hang")
+    .expect("the supervisor is alive");
+
+    // Let the supervisor install the watch edge and receive the Collected notice.
+    tokio::time::sleep(Duration::from_secs(1)).await;
+
+    drop(sup);
+
+    let store = store.lock().unwrap();
+    let collected: Vec<_> = store
+        .events
+        .iter()
+        .filter(|e| {
+            field(&e.fields, "message").as_deref()
+                == Some("supervised child collected (all refs dropped); left dead")
+        })
+        .collect();
+    assert_eq!(
+        collected.len(),
+        1,
+        "exactly one child_collected event, got {collected:?}"
+    );
+    assert_eq!(collected[0].level, "DEBUG");
+    assert_eq!(
+        field(&collected[0].fields, "child.id"),
+        Some(format!("{child_id:?}")),
+        "the event names the collected child",
+    );
+
+    let warns = store.events_at("WARN");
+    assert!(
+        warns.is_empty(),
+        "no restart_scheduled warn for a collected child, got {warns:?}"
     );
 }
 

@@ -164,6 +164,10 @@ mod imp {
         tracing::error!(child.id = ?child, "child lifecycle-hook failure escalated");
     }
 
+    pub fn child_collected(child: ActorId) {
+        tracing::debug!(child.id = ?child, "supervised child collected (all refs dropped); left dead");
+    }
+
     pub fn child_teardown_abandoned(child: ActorId, grace: Duration) {
         tracing::error!(child.id = ?child, ?grace, "child teardown notice missing after abort; abandoning");
     }
@@ -248,6 +252,7 @@ mod imp {
             pub const fn restart_scheduled(_child: ActorId, _attempt: u32, _delay: Duration) {}
             pub const fn restart_gave_up(_child: ActorId, _rebuilds: u32) {}
             pub const fn child_escalated(_child: ActorId) {}
+            pub const fn child_collected(_child: ActorId) {}
             pub const fn child_teardown_abandoned(_child: ActorId, _grace: Duration) {}
             pub const fn death_notice(
                 _watcher: ActorId,
@@ -262,9 +267,9 @@ mod imp {
 
 pub use imp::SendContext;
 pub use imp::{
-    Span, child_escalated, child_teardown_abandoned, death_notice, handler_crashed, instrument,
-    lifecycle_span, on_start_failed, on_start_ok, on_stop_abandoned, on_stop_failed, on_stop_ok,
-    on_stop_panicked, pipe_mapper_panicked, pipe_result_dropped, record_stop_reason,
-    restart_gave_up, restart_scheduled, spawned, timer_cancelled, timer_factory_panicked,
-    timer_fire_dropped,
+    Span, child_collected, child_escalated, child_teardown_abandoned, death_notice,
+    handler_crashed, instrument, lifecycle_span, on_start_failed, on_start_ok, on_stop_abandoned,
+    on_stop_failed, on_stop_ok, on_stop_panicked, pipe_mapper_panicked, pipe_result_dropped,
+    record_stop_reason, restart_gave_up, restart_scheduled, spawned, timer_cancelled,
+    timer_factory_panicked, timer_fire_dropped,
 };

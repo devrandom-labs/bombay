@@ -951,23 +951,26 @@ mod tests {
             matches!(
                 outcome,
                 RunResult::Stopped {
-                    reason: ActorStopReason::Normal,
+                    reason: ActorStopReason::Collected,
                     ..
                 }
             ),
-            "ref-count stop is a clean normal stop",
+            "ref-count stop is reported as Collected (ADR-0020)",
         );
     }
 
-    /// @bug (card #117) The everyday `tell` then release-the-handle pattern: a
-    /// message enqueued while a strong ref existed must still be handled even if
-    /// the last strong ref drops before the loop dequeues it. The queued message
-    /// must **pin the actor alive** (ref-count stop drains the backlog). Here the
-    /// `Tick` is enqueued before spawning while no external ref is held, so once
-    /// the loop downgrades its own ref after `on_start` the sender count hits 0
-    /// with `Tick` still queued. FAILS while the loop merely upgrades a weak
-    /// self-ref (upgrade returns `None`, the message is abandoned) — Design E
-    /// embeds the sender in the signal so the message keeps itself deliverable.
+    /// @bug (card #117 / ADR-0003 / #253) The everyday `tell` then
+    /// release-the-handle pattern: a message enqueued while a strong ref existed
+    /// must still be handled even if the last strong ref drops before the loop
+    /// dequeues it. The queued message must **pin the actor alive** (ref-count
+    /// stop drains the backlog). Here the `Tick` is enqueued before spawning
+    /// while no external ref is held, so once the loop downgrades its own ref
+    /// after `on_start` the sender count hits 0 with `Tick` still queued. FAILS
+    /// while the loop merely upgrades a weak self-ref (upgrade returns `None`,
+    /// the message is abandoned) — Design E embeds the sender in the signal so
+    /// the message keeps itself deliverable. After #253 the stop reason is
+    /// `Collected`: the message was handled, then the actor was collected once
+    /// every strong ref was gone.
     #[tokio::test]
     async fn queued_message_is_handled_even_if_last_ref_drops_first() {
         let handled = Arc::new(AtomicU32::new(0));
@@ -994,7 +997,7 @@ mod tests {
         assert!(matches!(
             outcome,
             RunResult::Stopped {
-                reason: ActorStopReason::Normal,
+                reason: ActorStopReason::Collected,
                 ..
             }
         ));
@@ -2108,13 +2111,12 @@ mod tests {
         assert!(matches!(
             outcome,
             RunResult::Stopped {
-                reason: ActorStopReason::Normal,
+                reason: ActorStopReason::Collected,
                 ..
             }
         ));
     }
 
-    /// DST: `WeakActorRef::upgrade` racing the last-strong-ref drop (#117).
     /// `upgrade` (`fetch_update` on flume's `sender_count`) races the strong
     /// ref's drop (`count 1→0`). Every upgrade must yield either a valid ref
     /// with the actor's identity or `None` — never a torn/dangling handle — and
@@ -2172,7 +2174,7 @@ mod tests {
         assert!(matches!(
             outcome,
             RunResult::Stopped {
-                reason: ActorStopReason::Normal,
+                reason: ActorStopReason::Collected,
                 ..
             }
         ));
@@ -2383,10 +2385,11 @@ mod tests {
         );
     }
 
-    /// Lifecycle (card #195): a registered watcher is notified on the NORMAL stop
-    /// path with the actor's id, a normal reason, and `linked == false` (a `watch`
-    /// edge). The notification is the `Watchers` guard's `Drop` on the graceful
-    /// teardown, after the loop returns `Normal`.
+    /// Lifecycle (card #195) / #253 boundary pair: an explicit `stop()` is the
+    /// graceful `Normal` half; a ref-count drop is the `Collected` half. This
+    /// test pins that `stop()` reports exactly `Normal` to a watcher — a test
+    /// on `is_normal()` would now be insufficient because `Collected` is also
+    /// normal-family.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn watch_notified_on_normal_stop() {
         use crate::actor::Spawn;
@@ -2410,7 +2413,43 @@ mod tests {
         target.stop(); // graceful
         let notice = bounded(watch_rx.recv_async()).await.expect("watch fired");
         assert_eq!(notice.id, target.id());
-        assert!(notice.reason.is_normal(), "normal stop => normal reason");
+        assert!(
+            matches!(notice.reason, ActorStopReason::Normal),
+            "explicit stop() must report Normal, got {:?}",
+            notice.reason,
+        );
+        assert!(!notice.linked, "a watch edge carries linked == false");
+    }
+
+    /// #253/ADR-0020 boundary: dropping the last strong ref to a plain actor is
+    /// reported to its watcher as `Collected`, NOT `Normal` — cancellation (stop)
+    /// and ref-count collection are distinct stop causes.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn watch_notified_on_collected_stop() {
+        use crate::actor::Spawn;
+
+        let handled = Arc::new(AtomicU32::new(0));
+        let stopped = Arc::new(AtomicU32::new(0));
+        let target = Counter::spawn((Arc::clone(&handled), Arc::clone(&stopped)));
+        let (watch_tx, watch_rx) = flume::unbounded::<LinkDied>();
+
+        target
+            .mailbox_sender()
+            .send(Signal::Watch(Box::new(WatchReg {
+                watcher: ActorId::from_raw_for_test(999),
+                link_tx: watch_tx,
+                linked: false,
+            })))
+            .await
+            .expect("registration delivered");
+
+        drop(target); // last strong ref gone -> ref-count collection
+        let notice = bounded(watch_rx.recv_async()).await.expect("watch fired");
+        assert!(
+            matches!(notice.reason, ActorStopReason::Collected),
+            "ref-count stop is Collected, got {:?}",
+            notice.reason,
+        );
         assert!(!notice.linked, "a watch edge carries linked == false");
     }
 
@@ -3549,6 +3588,55 @@ mod tests {
         impl Watch for Sup {}
         impl Supervisor for Sup {}
 
+        /// An anchorless child used in #253 tests: it exists only as long as
+        /// someone else holds a strong ref.
+        struct Leaf;
+        #[derive(Debug)]
+        struct LeafMsg;
+        impl Msg for LeafMsg {}
+        impl Mailboxed for Leaf {
+            type Msg = LeafMsg;
+        }
+        impl crate::actor::Actor for Leaf {
+            type Args = ();
+            type Error = Infallible;
+            async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self)
+            }
+            async fn handle(
+                &mut self,
+                _: LeafMsg,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Ok(())
+            }
+        }
+
+        /// A child that stays alive as long as the test anchors it.
+        struct AnchorChild;
+        #[derive(Debug)]
+        struct AnchorMsg;
+        impl Msg for AnchorMsg {}
+        impl Mailboxed for AnchorChild {
+            type Msg = AnchorMsg;
+        }
+        impl crate::actor::Actor for AnchorChild {
+            type Args = ();
+            type Error = Infallible;
+            async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                Ok(Self)
+            }
+            async fn handle(
+                &mut self,
+                _: AnchorMsg,
+                _: ActorRef<Self>,
+                _: &mut bool,
+            ) -> Result<(), Self::Error> {
+                Ok(())
+            }
+        }
+
         /// The same do-nothing supervisor as [`Sup`], but overriding
         /// [`Supervisor::supervision_strategy`] to `OneForAll` — the SUT for the
         /// wired set-cycle smoke (card #199).
@@ -3925,6 +4013,153 @@ mod tests {
                 .await
                 .expect("an unpinned child must ref-count-stop, not hang forever")
                 .expect("on_stop ran");
+
+            drop(sup);
+        }
+
+        /// #253/ADR-0020: an anchorless `Permanent` child ref-count-collects ONCE
+        /// and is left dead — no rebuild churn, no `RestartLimitExceeded`, the
+        /// supervisor and its siblings survive. On pre-#253 main this escalated
+        /// within ~3 s of virtual time (consecutive trips `max_restarts = 5`).
+        #[tokio::test(start_paused = true)]
+        async fn collected_permanent_child_is_left_dead_and_supervisor_survives() {
+            let sup = Sup::spawn_supervised(());
+            let (watch_tx, watch_rx) = flume::unbounded::<LinkDied>();
+            sup.mailbox_sender()
+                .try_send(Signal::Watch(Box::new(WatchReg {
+                    watcher: ActorId::from_raw_for_test(999),
+                    link_tx: watch_tx,
+                    linked: false,
+                })))
+                .expect("install supervisor watcher");
+
+            let spawn_count = Arc::new(AtomicU32::new(0));
+            let leaf_factory = {
+                let count = Arc::clone(&spawn_count);
+                move || {
+                    count.fetch_add(1, Ordering::SeqCst);
+                    Leaf::spawn(())
+                }
+            };
+            let anchor = Arc::new(Mutex::new(None::<ActorRef<AnchorChild>>));
+            let anchor_factory = {
+                let anchor = Arc::clone(&anchor);
+                move || {
+                    let child = AnchorChild::spawn(());
+                    *anchor.lock().expect("lock") = Some(child.clone());
+                    child
+                }
+            };
+
+            tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(RestartConfig::new(RestartPolicy::Permanent), leaf_factory),
+            )
+            .await
+            .expect("leaf supervise must not hang")
+            .expect("supervisor is alive");
+            tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(RestartConfig::new(RestartPolicy::Permanent), anchor_factory),
+            )
+            .await
+            .expect("anchor supervise must not hang")
+            .expect("supervisor is alive");
+
+            // Advance far past every backoff the old churn would have used.
+            tokio::time::sleep(Duration::from_secs(300)).await;
+
+            assert_eq!(
+                spawn_count.load(Ordering::SeqCst),
+                1,
+                "anchorless Permanent child collected exactly once"
+            );
+            assert!(
+                sup.is_alive(),
+                "supervisor must survive the collected child"
+            );
+            assert!(
+                watch_rx.try_recv().is_err(),
+                "supervisor must not have died (no RestartLimitExceeded)"
+            );
+            assert!(
+                anchor
+                    .lock()
+                    .expect("lock")
+                    .as_ref()
+                    .expect("anchored")
+                    .is_alive(),
+                "anchored sibling must survive"
+            );
+
+            drop(sup);
+        }
+
+        /// #253/ADR-0020: even with the budgets disabled, an anchorless `Permanent`
+        /// child does not churn forever — collection is not a failure.
+        #[tokio::test(start_paused = true)]
+        async fn collected_child_does_not_churn_even_unbudgeted() {
+            let sup = Sup::spawn_supervised(());
+            let (watch_tx, watch_rx) = flume::unbounded::<LinkDied>();
+            sup.mailbox_sender()
+                .try_send(Signal::Watch(Box::new(WatchReg {
+                    watcher: ActorId::from_raw_for_test(999),
+                    link_tx: watch_tx,
+                    linked: false,
+                })))
+                .expect("install supervisor watcher");
+
+            let spawn_count = Arc::new(AtomicU32::new(0));
+            let leaf_factory = {
+                let count = Arc::clone(&spawn_count);
+                move || {
+                    count.fetch_add(1, Ordering::SeqCst);
+                    Leaf::spawn(())
+                }
+            };
+            let anchor = Arc::new(Mutex::new(None::<ActorRef<AnchorChild>>));
+            let anchor_factory = {
+                let anchor = Arc::clone(&anchor);
+                move || {
+                    let child = AnchorChild::spawn(());
+                    *anchor.lock().expect("lock") = Some(child.clone());
+                    child
+                }
+            };
+
+            let unbudgeted = RestartConfig::new(RestartPolicy::Permanent)
+                .with_max_restarts(u32::MAX)
+                .with_max_total(u32::MAX);
+            tokio::time::timeout(terminate_bound(), sup.supervise(unbudgeted, leaf_factory))
+                .await
+                .expect("leaf supervise must not hang")
+                .expect("supervisor is alive");
+            tokio::time::timeout(
+                terminate_bound(),
+                sup.supervise(RestartConfig::new(RestartPolicy::Permanent), anchor_factory),
+            )
+            .await
+            .expect("anchor supervise must not hang")
+            .expect("supervisor is alive");
+
+            tokio::time::sleep(Duration::from_secs(300)).await;
+
+            assert_eq!(
+                spawn_count.load(Ordering::SeqCst),
+                1,
+                "unbudgeted anchorless child still collected exactly once"
+            );
+            assert!(sup.is_alive(), "supervisor must survive");
+            assert!(watch_rx.try_recv().is_err(), "no supervisor death notice");
+            assert!(
+                anchor
+                    .lock()
+                    .expect("lock")
+                    .as_ref()
+                    .expect("anchored")
+                    .is_alive(),
+                "anchored sibling must survive"
+            );
 
             drop(sup);
         }

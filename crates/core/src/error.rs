@@ -343,6 +343,14 @@ pub enum ActorStopReason {
     /// The actor finished its work and shut down cleanly.
     #[error("stopped normally")]
     Normal,
+    /// Every strong handle was dropped and the queue drained — no message can
+    /// ever arrive again, so the actor collected itself (ref-count-driven stop,
+    /// ADR-0003). Collection is not failure: it is classified normal, links do
+    /// not propagate it, and a supervisor leaves a collected child dead under
+    /// every policy (ADR-0020) — restarting an actor nobody can reach would
+    /// make garbage collection observable.
+    #[error("collected: every strong ref was dropped")]
+    Collected,
     /// The actor was killed — a hard stop with no cleanup.
     #[error("killed")]
     Killed,
@@ -405,7 +413,10 @@ impl ActorStopReason {
     /// branches on.
     #[must_use]
     pub const fn is_normal(&self) -> bool {
-        matches!(self, Self::Normal | Self::SupervisorRestart)
+        matches!(
+            self,
+            Self::Normal | Self::SupervisorRestart | Self::Collected
+        )
     }
 }
 
@@ -774,6 +785,10 @@ mod tests {
         );
 
         assert_eq!(ActorStopReason::Normal.to_string(), "stopped normally");
+        assert_eq!(
+            ActorStopReason::Collected.to_string(),
+            "collected: every strong ref was dropped"
+        );
         assert_eq!(ActorStopReason::Killed.to_string(), "killed");
         assert_eq!(
             ActorStopReason::SupervisorRestart.to_string(),
@@ -804,6 +819,14 @@ mod tests {
             !matches!(ActorStopReason::AlreadyDead, ActorStopReason::Killed),
             "one variant per failure domain: already-dead is not a kill",
         );
+    }
+
+    /// #253/ADR-0020: ref-count collection is an expected, normal stop — not a
+    /// failure — so links do not propagate it and `Transient` already leaves it
+    /// dead.
+    #[test]
+    fn collected_is_normal() {
+        assert!(ActorStopReason::Collected.is_normal());
     }
 
     /// A supervisor that gave up on a child stops ITSELF, and that stop must be

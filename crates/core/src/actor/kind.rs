@@ -157,16 +157,40 @@ pub(super) async fn run_message_loop<A: Actor>(
     watchers: &mut Watchers,
 ) -> ActorStopReason {
     loop {
-        let signal = handles
-            .cancel
-            .run_until_cancelled(mailbox_rx.recv())
-            .await
-            .flatten();
+        let poll = poll_mailbox(&handles.cancel, mailbox_rx).await;
         if let ControlFlow::Break(reason) =
-            handle_mailbox_step(state, self_ref, handles, watchers, signal).await
+            handle_mailbox_step(state, self_ref, handles, watchers, poll).await
         {
             return reason;
         }
+    }
+}
+
+/// One poll of the mailbox arm with the two stop causes kept distinct — the
+/// split #253 needs: cancellation is a graceful stop (`Normal`), a closed
+/// mailbox is ref-count collection (`Collected`, ADR-0020). Flattening them
+/// into one `None` is exactly the bug that made collection restart-worthy.
+pub(super) enum MailboxPoll<A: Mailboxed> {
+    /// The cancel token fired: an out-of-band graceful stop.
+    Cancelled,
+    /// The mailbox closed: every strong sender is gone and the queue is
+    /// drained (ADR-0003 drain-then-stop already happened).
+    Closed,
+    /// An ordinary signal.
+    Signal(Signal<A>),
+}
+
+/// Awaits the next mailbox event under the cancel token and names which of
+/// the three outcomes happened. The one place the
+/// `run_until_cancelled(recv())` nesting is interpreted.
+async fn poll_mailbox<A: Mailboxed>(
+    cancel: &CancellationToken,
+    mailbox_rx: &mut MailboxReceiver<A>,
+) -> MailboxPoll<A> {
+    match cancel.run_until_cancelled(mailbox_rx.recv()).await {
+        None => MailboxPoll::Cancelled,
+        Some(None) => MailboxPoll::Closed,
+        Some(Some(signal)) => MailboxPoll::Signal(signal),
     }
 }
 
@@ -175,21 +199,21 @@ pub(super) async fn run_message_loop<A: Actor>(
 /// treat every signal identically — the linked loop only *adds* a death arm, it
 /// never diverges on the message side.
 ///
-/// `signal` is the flattened result of
-/// `cancel.run_until_cancelled(mailbox_rx.recv())`: `None` collapses both stop
-/// cases — the cancel token firing (out-of-band graceful stop) and all strong
-/// senders gone (all-senders-gone stop, reachable because the loop holds only a
-/// weak self-ref) — into one clean normal stop, which is exactly how the loop
-/// treats them.
+/// `poll` distinguishes the two stop causes that `cancel.run_until_cancelled(recv())`
+/// collapses into `None`: a cancel-token graceful stop (`Normal`) and a closed
+/// mailbox from ref-count collection (`Collected`). `Signal::Stop` and a
+/// handler-set `stop = true` remain `Normal`.
 async fn handle_mailbox_step<A: Actor>(
     state: &mut A,
     self_ref: &WeakActorRef<A>,
     handles: &LoopHandles,
     watchers: &mut Watchers,
-    signal: Option<Signal<A>>,
+    poll: MailboxPoll<A>,
 ) -> ControlFlow<ActorStopReason> {
-    let Some(next) = signal else {
-        return ControlFlow::Break(ActorStopReason::Normal);
+    let next = match poll {
+        MailboxPoll::Cancelled => return ControlFlow::Break(ActorStopReason::Normal),
+        MailboxPoll::Closed => return ControlFlow::Break(ActorStopReason::Collected),
+        MailboxPoll::Signal(next) => next,
     };
     match next {
         Signal::Message {
@@ -281,9 +305,9 @@ pub(super) async fn run_linked_message_loop<A: Watch>(
                     Err(_) => link_open = false,
                 }
             }
-            maybe = handles.cancel.run_until_cancelled(mailbox_rx.recv()) => {
+            maybe = poll_mailbox(&handles.cancel, mailbox_rx) => {
                 if let ControlFlow::Break(reason) =
-                    handle_mailbox_step(state, self_ref, handles, watchers, maybe.flatten()).await
+                    handle_mailbox_step(state, self_ref, handles, watchers, maybe).await
                 {
                     return reason;
                 }
@@ -425,12 +449,9 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
                     drop(expired);
                 }
             }
-            maybe = handles.cancel.run_until_cancelled(mailbox_rx.recv()) => {
-                match maybe.flatten() {
-                    // The supervised loop gives `Supervision` an effect (the plain
-                    // and linked loops ignore it): apply the table mutation here,
-                    // so it never reaches `handle_mailbox_step`'s reserved arm.
-                    Some(Signal::Supervision(op)) => apply_supervision_op(
+            maybe = poll_mailbox(&handles.cancel, mailbox_rx) => {
+                match maybe {
+                    MailboxPoll::Signal(Signal::Supervision(op)) => apply_supervision_op(
                         children,
                         &supervisor,
                         &mut SetCycleCtx::new(retries, pending_aborts, cycle),
@@ -663,7 +684,14 @@ fn handle_child_death(
     // persist across incarnations) but now holds no handle.
     child.handle = None;
     Some(match should_restart(child.config.policy, &notice.reason) {
-        RestartVerdict::LeaveDead => ControlFlow::Continue(()),
+        RestartVerdict::LeaveDead => {
+            // #253/ADR-0020: a collected child is left dead SILENTLY by policy —
+            // the trace event is the only witness (the #244 observability concern).
+            if matches!(notice.reason, ActorStopReason::Collected) {
+                trace::child_collected(notice.id);
+            }
+            ControlFlow::Continue(())
+        }
         // A lifecycle-hook failure re-panics on the next incarnation: escalate at
         // once, bypassing both backoff and the counters.
         RestartVerdict::Escalate => {
