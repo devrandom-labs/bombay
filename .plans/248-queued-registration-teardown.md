@@ -56,7 +56,11 @@ All steps are SEQUENTIAL — they share `supervision.rs`, `kind.rs`,
      then `abort.abort()` (cancel first so a cooperative child that wins the
      race still sees a graceful edge; abort guarantees termination — Drop
      cannot await a grace). Comment cites #248 + ADR-0019 amendment.
-   - Change `SupervisionOp::Add(SuperviseReg)` → `Add(ArmedReg)`.
+   - Change `SupervisionOp::Add(SuperviseReg)` → `Add(ArmedReg)`. Update the
+     two `kind.rs` test constructions of `SupervisionOp::Add(SuperviseReg
+     { ... })` (~lines 1380 and 1430) to wrap with `ArmedReg::new(...)`, and
+     add `ArmedReg` to the import lists in `actor_ref.rs` (~line 22) and
+     `kind.rs` (~line 22).
    - Unit tests in `supervision.rs`'s test mod (reuse the existing mock
      `handle(id)`/`child_entry(id)` helpers, ~line 417): (a) dropping an
      armed reg cancels + aborts the handle (assert via the
@@ -89,7 +93,10 @@ All steps are SEQUENTIAL — they share `supervision.rs`, `kind.rs`,
      `drain_queued_supervision` — simple name, Joel's preference), signature
      roughly `(mailbox_rx: &mut MailboxReceiver<A>, children: &mut Children,
      watchers: &mut Watchers, pending_aborts: &mut DelayQueue<PendingAbort>,
-     sup: &SupervisorRef)`, draining `mailbox_rx.drain()`:
+     sup_id: ActorId, sup_link_tx: LinkSender)` — `SupervisorRef`'s fields
+     are private to `kind.rs` and it has no constructor, so the helper takes
+     the raw pieces and builds the `SupervisorRef` itself inside `kind.rs`
+     (do NOT widen `SupervisorRef`'s API). Drain `mailbox_rx.drain()`:
      - `Signal::Supervision(op)` → match `*op`: `Add(armed)` → disarm,
        `children.insert`, `install_child_watch` (reuse it — Full/Closed
        outcomes already abort + synthesize the death onto the link channel,
@@ -138,6 +145,11 @@ All steps are SEQUENTIAL — they share `supervision.rs`, `kind.rs`,
      needs A in the table first) — comment it citing #248's resolution.
    - New test `queued_stop_still_stops_child`: supervise A, quiesce,
      `stop_child(A)` + `stop()` back-to-back — assert A closed before join.
+   - Extend `supervise_on_a_dead_supervisor_reports_actor_not_alive`
+     (~spawn.rs:3959): after the `ActorNotAlive` error, additionally assert
+     the anchored child's mailbox sender is still OPEN (the disarm-on-handback
+     path must not abort it) — the failed-send contract currently has no
+     regression test; then stop the child to end the test.
 
 6. **ADR amendment** — `docs/adr/0019-supervisor-subtree-teardown.md`:
    replace the "Known residual window" section (lines 99-106) with a
@@ -148,19 +160,21 @@ All steps are SEQUENTIAL — they share `supervision.rs`, `kind.rs`,
 7. **Mutants baseline** — `mutants-baseline.json` (repo root; follow the
    existing entry shape): add entries for `ArmedReg::new`, `disarm`, the
    `Drop` impl, and `drain_queued_supervision`. `disarm` returns
-   `SuperviseReg` (non-Default) → `known_zero_viable` list if the gate
-   demands it; check how the two path-keyed sections are structured before
-   editing (memory: floors map + known_zero_viable list — update BOTH or
-   the gate fails closed).
+   `SuperviseReg` (non-Default) → `known_zero_viable`; `ArmedReg::new`
+   likely also `known_zero_viable` (returns the non-Default wrapper). Check
+   how the two path-keyed sections are structured before editing (floors map
+   + known_zero_viable LIST — update BOTH or the gate fails closed).
+   `run_lifecycle_supervised` and `supervise` are already in
+   `known_zero_viable` (entries ~145/199) — no floor change for their
+   changed bodies; leave `apply_supervision_op`'s floor (2) unless the gate
+   complains.
 
-8. **Job-queue app** (walking-skeleton rule, CLAUDE.md item 7) —
-   `crates/core/examples/job_queue/` + `crates/core/tests/app_job_queue.rs`:
-   read the app's shutdown path. If it can stop its supervisor immediately
-   after a `supervise` call with no intervening await (deterministic under
-   the test's runtime), extend the integration test with that shutdown-race
-   assertion. If the app's structure makes the race non-deterministic or
-   contrived, DO NOT force it — write one sentence in the plan-execution
-   report explaining why, so Claude can record the deferral on the card.
+8. **Job-queue app** (walking-skeleton rule, CLAUDE.md item 7) — DEFERRED.
+   Pre-flight CHECK confirmed the app supervises workers inside
+   `Dispatcher::on_start` and awaits a `Stats` ask before returning
+   (`examples/job_queue/app.rs:300-320`, `app.rs:474-485`) — no natural
+   supervise+stop back-to-back site; forcing one would be a contrived race.
+   Do NOT touch the app. Claude records the deferral on the card at close.
 
 ## Verification (per step and final)
 
