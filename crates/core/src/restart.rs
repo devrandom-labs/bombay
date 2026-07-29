@@ -27,6 +27,9 @@ use crate::error::ActorStopReason;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RestartPolicy {
     /// Rebuild on every exit, normal or abnormal (a server: exiting is a bug).
+    /// Being collected — every strong ref dropped, so the actor is unreachable —
+    /// is the caller's decision, not an exit; `Permanent` does not resurrect it
+    /// (#253, ADR-0020).
     Permanent,
     /// Rebuild on abnormal exit only; a normal stop is the actor's own decision.
     Transient,
@@ -71,9 +74,16 @@ pub enum RestartVerdict {
 
 /// The decision table: which deaths deserve a rebuild under `policy`.
 ///
-/// A lifecycle-hook panic short-circuits *every* policy: the hook runs again on
-/// the very next incarnation, so a restart is knowably a crash loop rather than
-/// a gamble ([`PanicReason::is_lifecycle_hook`](crate::error::PanicReason::is_lifecycle_hook)).
+/// Two reasons short-circuit *every* policy and are therefore handled before the
+/// `policy` match:
+///
+/// - A lifecycle-hook panic: the hook runs again on the very next incarnation,
+///   so a restart is knowably a crash loop rather than a gamble
+///   ([`PanicReason::is_lifecycle_hook`](crate::error::PanicReason::is_lifecycle_hook)).
+/// - Ref-count collection ([`ActorStopReason::Collected`](crate::error::ActorStopReason::Collected)):
+///   nobody can reach the actor again, so rebuilding it would make garbage
+///   collection observable (#253, ADR-0020).
+///
 /// A propagated [`LinkDied`](ActorStopReason::LinkDied) is classified by the
 /// outer variant — the nested reason belongs to a *different* actor and is
 /// diagnostic only.
@@ -81,6 +91,11 @@ pub enum RestartVerdict {
 pub const fn should_restart(policy: RestartPolicy, reason: &ActorStopReason) -> RestartVerdict {
     if matches!(reason, ActorStopReason::Panicked(err) if err.reason().is_lifecycle_hook()) {
         return RestartVerdict::Escalate;
+    }
+    // Ref-count collection is not a failure: nobody can reach the actor again,
+    // so no policy rebuilds it (#253, ADR-0020).
+    if matches!(reason, ActorStopReason::Collected) {
+        return RestartVerdict::LeaveDead;
     }
     match policy {
         RestartPolicy::Transient if reason.is_normal() => RestartVerdict::LeaveDead,
@@ -442,9 +457,10 @@ mod tests {
     /// back-stop them (`should_restart`'s arms produce no body mutants), so the
     /// `match` below is a **compile-time tripwire**: adding a variant to the
     /// enum stops this file compiling until the array is extended.
-    fn all_reasons() -> [ActorStopReason; 8] {
+    fn all_reasons() -> [ActorStopReason; 9] {
         let reasons = [
             ActorStopReason::Normal,
+            ActorStopReason::Collected,
             ActorStopReason::SupervisorRestart,
             ActorStopReason::Killed,
             ActorStopReason::AlreadyDead,
@@ -458,6 +474,7 @@ mod tests {
         for reason in &reasons {
             match reason {
                 ActorStopReason::Normal
+                | ActorStopReason::Collected
                 | ActorStopReason::SupervisorRestart
                 | ActorStopReason::Killed
                 | ActorStopReason::AlreadyDead
@@ -475,15 +492,25 @@ mod tests {
     }
 
     /// `Permanent` means "this actor exiting is a bug" — every reason, normal
-    /// or abnormal, is a rebuild.
+    /// or abnormal, is a rebuild. Collection is the caller dropping all refs,
+    /// not the actor exiting; `Permanent` does not resurrect an unreachable
+    /// actor (#253/ADR-0020).
     #[test]
-    fn permanent_restarts_on_every_reason() {
+    fn permanent_restarts_on_every_reason_except_collected() {
         for reason in all_reasons() {
-            assert_eq!(
-                should_restart(RestartPolicy::Permanent, &reason),
-                RestartVerdict::Restart,
-                "Permanent must restart on {reason:?}",
-            );
+            if matches!(reason, ActorStopReason::Collected) {
+                assert_eq!(
+                    should_restart(RestartPolicy::Permanent, &reason),
+                    RestartVerdict::LeaveDead,
+                    "Permanent leaves a collected child dead",
+                );
+            } else {
+                assert_eq!(
+                    should_restart(RestartPolicy::Permanent, &reason),
+                    RestartVerdict::Restart,
+                    "Permanent must restart on {reason:?}",
+                );
+            }
         }
     }
 
@@ -494,6 +521,7 @@ mod tests {
     fn transient_splits_every_reason_between_dead_and_restart() {
         let leave_dead = [
             ActorStopReason::Normal,
+            ActorStopReason::Collected, // #253/ADR-0020: collection, not failure
             ActorStopReason::SupervisorRestart, // the supervisor's own cycle
         ];
         let restart = [
@@ -544,6 +572,23 @@ mod tests {
                 should_restart(RestartPolicy::Never, &reason),
                 RestartVerdict::LeaveDead,
                 "{reason:?}",
+            );
+        }
+    }
+
+    /// #253/ADR-0020: ref-count collection is not a failure — no policy rebuilds
+    /// a collected child, exactly as no policy restarts past a lifecycle panic.
+    #[test]
+    fn collected_leaves_dead_under_every_policy() {
+        for policy in [
+            RestartPolicy::Permanent,
+            RestartPolicy::Transient,
+            RestartPolicy::Never,
+        ] {
+            assert_eq!(
+                should_restart(policy, &ActorStopReason::Collected),
+                RestartVerdict::LeaveDead,
+                "{policy:?}",
             );
         }
     }

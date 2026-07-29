@@ -134,7 +134,9 @@
     "crates/core/src/watch.rs::Watchers::cleanup_failed": 2,
     "crates/core/src/watch.rs::Watchers::record_cleanup_succeeded": 1,
     "crates/core/src/watch.rs::Watchers::remove": 2,
-    "crates/core/src/watch.rs::Watchers::set_reason": 1
+    "crates/core/src/watch.rs::Watchers::set_reason": 1,
+    "crates/core/src/actor/kind.rs::poll_mailbox": 1,
+    "crates/core/src/trace.rs::imp::child_collected": 1
   },
   "known_zero_viable": [
     "crates/core/src/actor/actor_ref.rs::<impl Clone for ActorRef<A>>::clone",

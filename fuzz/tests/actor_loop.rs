@@ -279,8 +279,10 @@ where
 ///   ONLY because dropping the last external ref closes the mailbox; a leaked
 ///   strong self-ref would hang here (`bounded` fires). Falsification anchor:
 ///   `drop(actor_ref)` at spawn.rs:165.
-/// * **RunResult matches the path** — a `Kill` aborts to `Killed`; every other
-///   mode is a normal `Stopped`.
+/// * **RunResult matches the path** — a `Kill` aborts to `Killed`;
+///   `StopInBand`/`CancelStop` end as `Stopped { Normal }` (graceful stop);
+///   a pure drop-refs fall-through ends as `Stopped { Collected }`
+///   (#253/ADR-0020).
 #[test]
 fn actor_loop_state_machine() {
     check!().with_type::<Vec<Op>>().for_each(|ops| {
@@ -291,7 +293,10 @@ fn actor_loop_state_machine() {
                 matches!(outcome, RunResult::Killed),
                 "a hard kill must abort to Killed, got {outcome:?}",
             );
-        } else {
+        } else if ops
+            .iter()
+            .any(|op| matches!(op, Op::StopInBand | Op::CancelStop))
+        {
             assert!(
                 matches!(
                     outcome,
@@ -300,7 +305,18 @@ fn actor_loop_state_machine() {
                         ..
                     }
                 ),
-                "every non-kill stop mode is a normal stop, got {outcome:?}",
+                "a graceful stop mode must yield Normal, got {outcome:?}",
+            );
+        } else {
+            assert!(
+                matches!(
+                    outcome,
+                    RunResult::Stopped {
+                        reason: ActorStopReason::Collected,
+                        ..
+                    }
+                ),
+                "pure ref-count collection must yield Collected, got {outcome:?}",
             );
         }
         assert_eq!(
@@ -335,7 +351,8 @@ fn on_start_panic_yields_startup_failed() {
 
 /// The stop reason survives a failing `on_stop`: the panic is caught and logged
 /// (`log_on_stop_outcome`), the reason preserved, the outcome still `Stopped`,
-/// and the handled count unchanged.
+/// and the handled count unchanged. A graceful stop mode preserves `Normal`; a
+/// pure drop-refs fall-through preserves `Collected` (#253/ADR-0020).
 #[test]
 fn stop_reason_preserved_through_panicking_on_stop() {
     check!().with_type::<Vec<Op>>().for_each(|ops| {
@@ -348,16 +365,32 @@ fn stop_reason_preserved_through_panicking_on_stop() {
             .collect();
         let handled = Arc::new(AtomicU32::new(0));
         let outcome = drive::<StopPanics>(&ops, Arc::clone(&handled));
-        assert!(
-            matches!(
-                outcome,
-                RunResult::Stopped {
-                    reason: ActorStopReason::Normal,
-                    ..
-                }
-            ),
-            "a failing on_stop must not corrupt the outcome, got {outcome:?}",
-        );
+        if ops
+            .iter()
+            .any(|op| matches!(op, Op::StopInBand | Op::CancelStop))
+        {
+            assert!(
+                matches!(
+                    outcome,
+                    RunResult::Stopped {
+                        reason: ActorStopReason::Normal,
+                        ..
+                    }
+                ),
+                "a graceful stop preserves Normal through a failing on_stop, got {outcome:?}",
+            );
+        } else {
+            assert!(
+                matches!(
+                    outcome,
+                    RunResult::Stopped {
+                        reason: ActorStopReason::Collected,
+                        ..
+                    }
+                ),
+                "ref-count collection preserves Collected through a failing on_stop, got {outcome:?}",
+            );
+        }
         assert_eq!(
             handled.load(Ordering::SeqCst),
             expected_handled(&ops),

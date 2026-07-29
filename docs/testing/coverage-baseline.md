@@ -1142,3 +1142,39 @@ first incarnation; a disarmed one touches neither edge. Lifecycle half
 The two `quiesce()` barriers the #245 lifecycle tests carried (their comments
 pointed here) are **removed** — the teardown invariant holds whether the ops
 were applied by the loop or drained by the epilogue.
+
+## Ref-count collection is not restart-worthy (#253, ADR-0020)
+
+Splits the two stop causes the run-loop had collapsed into `Normal`: a cancel-
+token graceful stop stays `Normal`; an all-senders-gone ref-count stop becomes
+`ActorStopReason::Collected`. `Collected` is classified normal but is
+`LeaveDead` under every `RestartPolicy`, so an unanchored supervised child
+collects once instead of churning the supervisor to death.
+
+- **Decision table (`restart.rs`)** — `collected_leaves_dead_under_every_policy`
+  pins `Permanent`/`Transient`/`Never` all returning `LeaveDead`;
+  `permanent_restarts_on_every_reason_except_collected` and the updated
+  `transient_splits_every_reason_between_dead_and_restart` keep the exhaustive
+  variant coverage.
+- **Classification (`error.rs`)** — `Collected.is_normal()` is `true` and its
+  `Display` message is pinned.
+- **Loop split (`kind.rs`)** — `MailboxPoll`/`poll_mailbox` keep `Cancelled`,
+  `Closed`, and `Signal` distinct; the change is covered by the boundary tests
+  below and the updated fuzz oracles.
+- **Boundary tests (`spawn.rs`)** — `dropping_last_actor_ref_stops_the_actor`
+  and `queued_message_is_handled_even_if_last_ref_drops_first` now assert
+  `Collected`; `watch_notified_on_collected_stop` distinguishes explicit `stop()`
+  (`Normal`) from ref-count drop (`Collected`).
+- **Supervision probe (`spawn.rs` `supervised_rebuild`)** —
+  `collected_permanent_child_is_left_dead_and_supervisor_survives` (default
+  budget) and `collected_child_does_not_churn_even_unbudgeted` (`max_restarts =
+  max_total = u32::MAX`) both anchor a Permanent child with no strong ref and
+  assert exactly one incarnation, a surviving supervisor, no
+  `RestartLimitExceeded`, and a surviving anchored sibling.
+- **Observability (`tracing_capture.rs`)** —
+  `collected_child_emits_debug_event_and_no_restart_scheduled` asserts the
+  `child_collected` debug trace names the child and that no `restart_scheduled`
+  warn fires.
+- **Fuzz oracles (`fuzz/tests/actor_loop.rs`)** — the actor-loop state machine
+  and the failing-`on_stop` preservation test split non-kill outcomes into
+  `Normal` (graceful stop) and `Collected` (pure drop-refs fall-through).

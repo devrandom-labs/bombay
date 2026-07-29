@@ -332,20 +332,16 @@ impl<S: Supervisor> ActorRef<S> {
     /// #171: a strong self-ref in the loop-owned table makes ref-count-driven stop
     /// unreachable).
     ///
-    /// **An unanchored child is actively fatal, not merely idle.** The instant the
-    /// loop installs the watch edge and drops the installer's transient sender, a
-    /// child no one else holds a strong ref to has zero senders and ref-count-stops
-    /// (ADR-0003). For a [`Permanent`](crate::restart::RestartPolicy::Permanent)
-    /// child — or a [`Transient`](crate::restart::RestartPolicy::Transient) one
-    /// that dies abnormally — the supervisor rebuilds it, the rebuild also stops
-    /// at once, and every incarnation dies with an uptime of ≈0. That never earns
-    /// the healthy-uptime reset (default `reset_after` = 1 min), so `consecutive`
-    /// only climbs: within a few backoffs the supervisor trips `max_restarts`
-    /// (default 5) and **escalates to its OWN death via
-    /// [`RestartLimitExceeded`](crate::error::ActorStopReason::RestartLimitExceeded).**
-    /// Where an ordinary unreferenced actor just stops quietly, supervision
-    /// converts "the child quietly stopped" into rebuild churn that kills the
-    /// supervisor — so a supervised child MUST have a liveness anchor.
+    /// **An unanchored child is collected, not rebuilt.** If nobody else holds a
+    /// strong ref to the child, it ref-count-stops once the supervisor installs the
+    /// watch edge and drops the installer's transient sender (ADR-0003). That
+    /// stop is reported as [`ActorStopReason::Collected`](crate::error::ActorStopReason::Collected),
+    /// and a supervisor leaves a collected child dead under **every** policy
+    /// (#253, ADR-0020). The supervisor keeps running; the subtree is not killed.
+    /// A child that is wanted but allowed to become unreachable is still an app
+    /// bug — it simply no longer escalates into restart-churn that destroys the
+    /// supervisor. A supervised child that is meant to stay alive MUST have a
+    /// liveness anchor.
     ///
     /// This `.await`s for the supervisor's own mailbox capacity — ordinary
     /// backpressure, not failure.
