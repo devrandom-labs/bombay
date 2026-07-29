@@ -1,8 +1,9 @@
 //! Death-watch primitives (card #195): the `LinkDied` notice, the watch
-//! registration `Signal` carries, and the `Watchers` guard whose `Drop` is the
-//! death event. Death travels on a dedicated UNBOUNDED channel so the guard's
-//! non-blocking notify (from `Drop`, which cannot await) can never lose a
-//! notice — see the design doc for the Erlang/Akka grounding.
+//! registration the control lane's `ControlSignal` carries (ADR-0021), and the
+//! `Watchers` guard whose `Drop` is the death event. Death travels on a
+//! dedicated UNBOUNDED channel so the guard's non-blocking notify (from `Drop`,
+//! which cannot await) can never lose a notice — see the design doc for the
+//! Erlang/Akka grounding.
 
 use crate::{error::ActorStopReason, mailbox::ActorId, trace};
 use smallvec::SmallVec;
@@ -38,7 +39,7 @@ pub type LinkSender = flume::Sender<LinkDied>;
 /// The receiver half, drained by a `Watch` actor's run-loop.
 pub type LinkReceiver = flume::Receiver<LinkDied>;
 
-/// A watch registration in transit on the message mailbox: "notify `watcher` on
+/// A watch registration in transit on the control lane (ADR-0021): "notify `watcher` on
 /// my death, over `link_tx`; `linked` decides propagate-vs-notify."
 #[derive(Clone, Debug)]
 pub struct WatchReg {

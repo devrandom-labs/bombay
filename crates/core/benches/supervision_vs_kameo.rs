@@ -19,8 +19,9 @@
 //! rather than hidden behind a matched-looking number:
 //!
 //! * **No notify-only watch on the kameo side.** bombay's `watch` is a
-//!   one-directional, notify-only edge that rides the *target's* message mailbox
-//!   (a `Signal::Watch`) and pins nothing (ADR-0003 weak children). kameo has
+//!   one-directional, notify-only edge that rides the *target's* unbounded
+//!   control lane (a `ControlSignal::Watch`, ADR-0021) and pins nothing
+//!   (ADR-0003 weak children). kameo has
 //!   only bidirectional `link`, guarded by a per-actor `Mutex<Links>` locked on
 //!   *both* peers (id-ordered) at registration. So the fan-out arm compares
 //!   bombay's `watch` against kameo's `link` — the closest primitive — and the

@@ -845,15 +845,19 @@ mod tests {
     fn cold_variants_are_boxed_so_message_slots_stay_small() {
         use std::mem::size_of;
 
-        // Every cold control variant is boxed — `Watch(Box<WatchReg>)` and
-        // `Supervision(Box<SupervisionOp>)` — so a small-message actor's queue
-        // slot is bounded by the hot Message path: `msg` + the embedded
-        // `self_sender` (one Arc pointer, ADR-0003) + the caller-span trace
-        // context (ONE word — a boxed-and-niched `Span`, card #209; a ZST in an
-        // off build, so the term adds nothing there) + a discriminant word.
+        // Every cold CONTROL payload is boxed — `ControlSignal::Watch(Box<WatchReg>)`
+        // and `ControlSignal::Supervision(Box<SupervisionOp>)` — so a small-message
+        // actor's USER-lane slot is bounded by the hot Message path: `msg` + the
+        // embedded `self_sender` + the caller-span trace context (ONE word — a
+        // boxed-and-niched `Span`, card #209; a ZST in an off build, so the term
+        // adds nothing there) + a discriminant word. Since #225 the `self_sender`
+        // is TWO `flume::Sender`s (user + control halves, ADR-0021) — one Arc
+        // word each, measured 8 B — so the Message slot grew by exactly one word;
+        // the allocation PROFILE (zero per-message heap boxes) is untouched.
         // Inlined, `WatchReg` (a `flume::Sender` + id + flag) or `SupervisionOp`
-        // (a `RestartConfig` + an erased factory + a tracker) would blow this
-        // bound for EVERY message. Guards the "every slot = largest variant" trap.
+        // (a `RestartConfig` + an erased factory + a tracker) would blow the
+        // control lane's own slot bound for EVERY op. Guards the "every slot =
+        // largest variant" trap on both lanes.
         assert!(
             size_of::<SendContext>() <= size_of::<usize>(),
             "trace context must stay one word — box, never inline, a Span in the envelope"
@@ -865,8 +869,16 @@ mod tests {
         assert!(
             size_of::<Signal<Probe>>() <= hot_bound,
             "Signal<Probe> slot is {} bytes (hot bound {hot_bound} = msg + self_sender + \
-             trace ctx + discriminant); a cold variant is not boxed",
+             trace ctx + discriminant); a user-lane variant is not bounded",
             size_of::<Signal<Probe>>()
+        );
+        // The control lane's own tripwire: `WatchReg`/`SupervisionOp` boxed,
+        // `Unwatch(ActorId)` one word — the whole enum stays two words
+        // (measured aarch64: 16 B = one payload word + one discriminant word).
+        assert!(
+            size_of::<ControlSignal>() <= 2 * size_of::<usize>(),
+            "ControlSignal slot is {} bytes (> 2 words); a cold control payload is not boxed",
+            size_of::<ControlSignal>()
         );
     }
 
@@ -876,10 +888,12 @@ mod tests {
     /// every slot — even tiny messages — unless the user boxes it (the same
     /// discipline `LinkDied` uses).
     ///
-    /// Measured (aarch64): `small = 16 B`, `fat inline = 4104 B`, `boxed = 16 B`
-    /// → for 1_000 queued messages, **4.10 MB vs 16 KB (256×)**. See #122.
+    /// Measured (aarch64): `small = 40 B`, `fat inline = 4104 B+`, `boxed = 40 B`
+    /// → for 1_000 queued messages, **4.10 MB vs 40 KB**. See #122.
     /// Since #209 every slot also carries the ONE-word caller-span trace
-    /// context, so each bound below gains that word (zero in an off build).
+    /// context, so each bound below gains that word (zero in an off build);
+    /// since #225 the embedded `self_sender` is two `flume::Sender`s (user +
+    /// control halves, ADR-0021), another +8 B on every slot.
     #[test]
     #[expect(
         dead_code,
@@ -921,15 +935,16 @@ mod tests {
         let fat = size_of::<Signal<Fat>>();
         let boxed = size_of::<Signal<BoxedFat>>();
 
-        let small_bound = 24 + size_of::<SendContext>();
+        let small_bound = 32 + size_of::<SendContext>();
         assert!(
             small <= small_bound,
-            "small slot = {small} (bound 24 + one #209 trace-context word)"
+            "small slot = {small} (bound 32 + one #209 trace-context word: 16 msg + \
+             16 two-lane self_sender)"
         );
         assert!(fat >= 4096, "fat inline slot = {fat}");
         assert!(
             boxed <= small_bound,
-            "boxed slot = {boxed} (bound 24 + one #209 trace-context word)"
+            "boxed slot = {boxed} (bound 32 + one #209 trace-context word)"
         );
 
         let queued = 1_000;
@@ -958,6 +973,9 @@ mod tests {
             format!("{closed:?}"),
             "TrySendError::Closed(receiver dropped)"
         );
+
+        let ctl_closed = ControlClosed(ControlSignal::Unwatch(ActorId::from_raw_for_test(1)));
+        assert_eq!(format!("{ctl_closed:?}"), "ControlClosed(receiver dropped)");
     }
 
     #[tokio::test]
@@ -1023,7 +1041,10 @@ mod tests {
             recv_bounded(&mut rx).await,
             Some(Recv::Signal(Signal::Message { msg: 1, .. }))
         ));
-        assert!(matches!(recv_bounded(&mut rx).await, Some(Recv::Signal(Signal::Stop))));
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Signal(Signal::Stop))
+        ));
     }
 
     #[tokio::test]
@@ -1180,6 +1201,125 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn send_control_reports_closed_after_receiver_drop_and_hands_back_the_signal() {
+        let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
+        drop(rx);
+
+        let returned = tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(7)));
+        let Err(ControlClosed(ControlSignal::Unwatch(id))) = returned else {
+            panic!("a closed control lane hands the signal back, got {returned:?}");
+        };
+        assert_eq!(
+            id,
+            ActorId::from_raw_for_test(7),
+            "the exact undelivered signal came back"
+        );
+    }
+
+    #[tokio::test]
+    async fn upgraded_weak_sender_sends_on_both_lanes() {
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(2), ActorId::from_raw_for_test(0));
+        let weak = tx.downgrade();
+
+        let strong = weak.upgrade().expect("channel still alive");
+        strong
+            .send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(3)))
+            .expect("control via the upgraded pair");
+        send_bounded(
+            &strong,
+            Signal::Message {
+                msg: 5,
+                self_sender: tx.clone(),
+                ctx: SendContext::capture(),
+            },
+        )
+        .await
+        .expect("message via the upgraded pair");
+
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Control(ControlSignal::Unwatch(_)))
+        ));
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Signal(Signal::Message { msg: 5, .. }))
+        ));
+    }
+
+    #[tokio::test]
+    async fn control_overtakes_an_earlier_user_message() {
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
+        send_bounded(
+            &tx,
+            Signal::Message {
+                msg: 1,
+                self_sender: tx.clone(),
+                ctx: SendContext::capture(),
+            },
+        )
+        .await
+        .expect("message queued first");
+        tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(2)))
+            .expect("control queued second");
+
+        // The merge serves the control lane first even though the user signal
+        // was enqueued earlier — the deliberate ordering relaxation (ADR-0021,
+        // invariant 4).
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Control(ControlSignal::Unwatch(_)))
+        ));
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Signal(Signal::Message { msg: 1, .. }))
+        ));
+    }
+
+    #[tokio::test]
+    async fn control_lane_preserves_its_own_fifo() {
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
+        for tag in 0..8u64 {
+            tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(tag)))
+                .expect("control enqueued");
+        }
+        for tag in 0..8u64 {
+            let Some(Recv::Control(ControlSignal::Unwatch(id))) = recv_bounded(&mut rx).await
+            else {
+                panic!("expected the control signal");
+            };
+            assert_eq!(id, ActorId::from_raw_for_test(tag), "intra-lane FIFO");
+        }
+    }
+
+    #[tokio::test]
+    async fn recv_returns_none_only_when_both_lanes_are_closed_and_empty() {
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
+        send_bounded(
+            &tx,
+            Signal::Message {
+                msg: 1,
+                self_sender: tx.clone(),
+                ctx: SendContext::capture(),
+            },
+        )
+        .await
+        .expect("queued");
+        tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(1)))
+            .expect("control queued");
+        drop(tx);
+
+        // Both lanes drain first (control ahead), then — with the queued
+        // message's embedded `self_sender` released by the drain and `tx` gone
+        // — the disconnected pair reports None (the lanes close together, ADR-0021).
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Control(_))
+        ));
+        assert!(matches!(recv_bounded(&mut rx).await, Some(Recv::Signal(_))));
+        assert!(recv_bounded(&mut rx).await.is_none());
+    }
+
+    #[tokio::test]
     async fn full_mailbox_rejects_try_send_and_returns_the_message() {
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1), ActorId::from_raw_for_test(0));
 
@@ -1273,10 +1413,10 @@ mod tests {
         let mut next_expected = vec![0u32; SENDERS as usize];
         let mut total = 0u32;
         while let Some(signal) = recv_bounded(&mut rx).await {
-            let Signal::Message {
+            let Recv::Signal(Signal::Message {
                 msg: (sender_id, seq),
                 ..
-            } = signal
+            }) = signal
             else {
                 panic!("unexpected non-message signal");
             };
@@ -1296,6 +1436,16 @@ mod tests {
         for handle in handles {
             handle.await.expect("sender task panicked");
         }
+    }
+
+    /// One producer step in the control-lane property: a user-lane message or a
+    /// control-lane signal. The control arm is an `Unwatch` whose `ActorId`
+    /// carries the FIFO tag — the one control variant constructible without a
+    /// link channel.
+    #[derive(Clone, Copy, Debug)]
+    enum LaneOp {
+        Msg(u64),
+        Control(u64),
     }
 
     proptest! {
@@ -1321,49 +1471,94 @@ mod tests {
         }
 
         /// A single sender's messages come out in the exact order they went in,
-        /// for any message sequence and any capacity — the queue neither drops,
-        /// duplicates, nor reorders (FIFO).
+        /// for any message sequence and any capacity, EVEN WITH control signals
+        /// interleaved (card #225, ADR-0021): the queue neither drops,
+        /// duplicates, nor reorders — user-lane FIFO survives the control-lane
+        /// merge, and the control signals keep their own intra-lane FIFO
+        /// (invariants 2 and 3). MIRI-skipped by prefix (the repo's `prop_`
+        /// naming contract).
         #[test]
         fn prop_fifo_roundtrip_single_sender(
-            messages in prop::collection::vec(any::<u64>(), 0..200),
+            ops in prop::collection::vec(
+                prop_oneof![
+                    any::<u64>().prop_map(LaneOp::Msg),
+                    any::<u64>().prop_map(LaneOp::Control),
+                ],
+                0..200,
+            ),
             capacity in 1usize..=64,
         ) {
-            let sent = messages.clone();
-            let received = Builder::new_current_thread()
+            let sent_msgs: Vec<u64> = ops
+                .iter()
+                .filter_map(|op| match op {
+                    LaneOp::Msg(m) => Some(*m),
+                    LaneOp::Control(_) => None,
+                })
+                .collect();
+            let sent_ctls: Vec<ActorId> = ops
+                .iter()
+                .filter_map(|op| match op {
+                    LaneOp::Control(tag) => Some(ActorId::from_raw_for_test(*tag)),
+                    LaneOp::Msg(_) => None,
+                })
+                .collect();
+            let msg_count = sent_msgs.len();
+            let ctl_count = sent_ctls.len();
+            let (got_msgs, got_ctls) = Builder::new_current_thread()
                 .enable_time()
                 .build()
                 .expect("current-thread runtime")
                 .block_on(async move {
                     let (tx, mut rx) =
                         Mailbox::<Probe>::bounded(cap(capacity), ActorId::from_raw_for_test(0));
-                    let expected = messages.len();
+                    let expected = ops.len();
                     let producer = tokio::spawn(async move {
-                        for message in messages {
-                            send_bounded(&tx, Signal::Message { msg: message, self_sender: tx.clone(), ctx: SendContext::capture() })
-                                .await
-                                .expect("send");
+                        for op in ops {
+                            match op {
+                                LaneOp::Msg(message) => {
+                                    send_bounded(&tx, Signal::Message { msg: message, self_sender: tx.clone(), ctx: SendContext::capture() })
+                                        .await
+                                        .expect("send");
+                                }
+                                LaneOp::Control(tag) => {
+                                    tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(tag)))
+                                        .expect("control send on the unbounded lane");
+                                }
+                            }
                         }
                     });
 
-                    let mut got = Vec::with_capacity(expected);
-                    while got.len() < expected {
-                        let Some(Signal::Message { msg: message, .. }) = recv_bounded(&mut rx).await else {
-                            break;
-                        };
-                        got.push(message);
+                    let mut got_msgs = Vec::with_capacity(msg_count);
+                    let mut got_ctls = Vec::with_capacity(ctl_count);
+                    while got_msgs.len() + got_ctls.len() < expected {
+                        match recv_bounded(&mut rx).await {
+                            Some(Recv::Signal(Signal::Message { msg: message, .. })) => {
+                                got_msgs.push(message);
+                            }
+                            Some(Recv::Control(ControlSignal::Unwatch(id))) => {
+                                got_ctls.push(id);
+                            }
+                            Some(Recv::Signal(Signal::Stop)) | None => {
+                                panic!("only Message/Control were enqueued, got Stop or closed")
+                            }
+                            Some(Recv::Control(_)) => {
+                                panic!("only Unwatch controls were enqueued")
+                            }
+                        }
                     }
                     // The consumer has taken all it will take. Stop the producer
                     // so a mutation that makes `recv` drop messages fails on the
-                    // `received != sent` assertion below, instead of deadlocking
-                    // the producer on a full, undrained queue (card #179). In the
-                    // unmutated run every message was delivered and consumed, so
-                    // the producer has already finished and this abort is a no-op.
+                    // subsequence assertions below, instead of deadlocking the
+                    // producer on a full, undrained queue (card #179). In the
+                    // unmutated run every item was delivered and consumed, so the
+                    // producer has already finished and this abort is a no-op.
                     producer.abort();
                     let _ = producer.await;
-                    got
+                    (got_msgs, got_ctls)
                 });
 
-            prop_assert_eq!(received, sent);
+            prop_assert_eq!(got_msgs, sent_msgs, "user-lane FIFO broken under control interleavings");
+            prop_assert_eq!(got_ctls, sent_ctls, "control-lane intra-FIFO broken");
         }
     }
 }

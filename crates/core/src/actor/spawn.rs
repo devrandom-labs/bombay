@@ -3442,16 +3442,16 @@ mod tests {
         }
     }
 
-    /// `@bug` Defensive (card #195): the regression test for the Full/Closed
-    /// conflation bug. Registration rides the target's bounded message mailbox, so a
-    /// momentarily-full-but-ALIVE target must apply BACKPRESSURE — `send().await`
-    /// waits for a slot — never be mistaken for dead. The buggy `try_send` returned
-    /// `Full` for exactly this case and its `is_err()` synthesized a spurious
-    /// `LinkDied { reason: AlreadyDead }`, which (for a `link` edge) self-terminates
-    /// the watcher from ordinary backpressure. Here `a` watches a saturated target;
-    /// the slot later frees, the edge installs, and `a` sees ONLY the target's real
-    /// (Normal) death — `already_dead == 0`. FAILS with `try_send` (the spurious
-    /// synthetic death bumps `already_dead`).
+    /// `@bug` Defensive (card #195; strengthened by #225): the regression test for
+    /// the Full/Closed conflation bug. Pre-#225 the registration rode the target's
+    /// bounded mailbox, so a momentarily-full-but-ALIVE target had to apply
+    /// BACKPRESSURE — never be mistaken for dead (the buggy `try_send` returned
+    /// `Full` for exactly this case and synthesized a spurious
+    /// `LinkDied { reason: AlreadyDead }`). Since #225 the registration rides the
+    /// UNBOUNDED control lane (ADR-0021), so the conflation is impossible by
+    /// construction — there is no `Full` case at all: `watch` on a saturated
+    /// target completes WITHOUT waiting for a slot, and `a` sees ONLY the
+    /// target's real (Normal) death — `already_dead == 0`.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn watch_full_but_alive_target_backpressures_no_spurious_death() {
         use crate::actor::Spawn;
@@ -3469,25 +3469,23 @@ mod tests {
             .await
             .expect("enqueue #2 fills the 1-slot mailbox");
 
-        // a watches the full-but-alive target. Buggy `try_send` returns at once after
-        // synthesizing a spurious AlreadyDead death; correct `send().await` PARKS
-        // under backpressure until the slot frees.
+        // a watches the full-but-alive target. Pre-#225 this parked under
+        // backpressure until the slot freed; on the control lane it completes
+        // IMMEDIATELY — proven by joining the task BEFORE the gate is released.
         let a = spawn_recorder();
         let watch_task = {
             let watcher = a.handle.clone();
             let target = target.clone();
             tokio::spawn(async move { watcher.watch(&target).await })
         };
-
-        // Free the mailbox: the handler returns, target drains msg #2, capacity opens
-        // and the parked registration completes.
-        release_tx.send(()).expect("release the gate");
         bounded(watch_task)
             .await
             .expect("watch task joins")
-            .expect("watch succeeds");
+            .expect("watch completes on the control lane despite the full mailbox");
 
-        // Stop the target normally; the correctly-installed edge delivers a's ONLY death.
+        // Free the mailbox and stop the target normally; the correctly-installed
+        // edge delivers a's ONLY death.
+        release_tx.send(()).expect("release the gate");
         target.stop();
 
         // Positive signal: a receives a death (real Normal stop with send().await; the
@@ -3542,7 +3540,7 @@ mod tests {
                 WeakActorRef,
             },
             error::{ActorStopReason, Infallible},
-            mailbox::{ActorId, Capacity, ControlSignal, MailboxSender, Mailboxed, Signal},
+            mailbox::{ActorId, Capacity, ControlSignal, MailboxSender, Mailboxed},
             message::Msg,
             restart::{Jitter, RestartConfig, RestartPolicy, SupervisionStrategy},
             test_support::terminate_bound,

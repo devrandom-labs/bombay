@@ -373,9 +373,12 @@ async fn handle_link_died<A: Watch>(
 ///    `retries.is_empty()`: `DelayQueue`'s stream yields `Ready(None)` on an
 ///    empty queue, which under `biased` would spin the select and starve the
 ///    mailbox — the identical hazard the `link_open` flag guards.
-/// 3. **the message mailbox** — a [`Signal::Supervision`] mutates the child
-///    table ([`apply_supervision_op`]); every other signal is the shared
+/// 3. **the message mailbox** — a [`ControlSignal::Supervision`] mutates the
+///    child table ([`apply_supervision_op`]); every other signal is the shared
 ///    [`handle_mailbox_step`], exactly as the plain and linked loops treat it.
+///    Control signals are merged ahead of the user backlog inside `recv`
+///    (ADR-0021), so a `supervise` op never queues behind the supervisor's own
+///    message traffic.
 ///
 /// Because a *waiting* child's deadline leaves arm 2 `Pending`, the supervisor
 /// keeps serving its mailbox throughout a child's backoff — the whole reason the
@@ -1736,7 +1739,8 @@ mod supervised_tests {
         let (sup, link_rx) = supervisor(ActorId::from_raw_for_test(100));
         let child_id = ActorId::from_raw_for_test(8);
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1), child_id);
-        tx.try_send(Signal::Stop).expect("the one user-lane slot fills");
+        tx.try_send(Signal::Stop)
+            .expect("the one user-lane slot fills");
         let h = handle(child_id);
         install_child_watch(&sup, &h, watch_installer(tx));
 

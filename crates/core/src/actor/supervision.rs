@@ -18,7 +18,7 @@
 //! supervisor's loop, not inside the `&mut self` a panicking handler can tear
 //! (crash-only recovery applied to our own runtime — bookkeeping that survives a
 //! fault is what makes the fault recoverable). Every mutation therefore arrives
-//! as a [`SupervisionOp`] on the supervisor's own mailbox, which is why nothing
+//! as a [`SupervisionOp`] on the supervisor's own control lane (ADR-0021), which is why nothing
 //! here takes a lock or documents an ordering rule.
 //!
 //! [`Watchers`]: crate::watch::Watchers
@@ -143,10 +143,6 @@ impl Drop for ArmedReg {
 /// exhaust, so the pre-split `Full` outcome (a flooded child killed as a failed
 /// incarnation) is gone: a flooded child is now watched, late but always
 /// (ADR-0021). The two outcomes are exactly `send_control`'s two results.
-#[expect(
-    clippy::exhaustive_enums,
-    reason = "an install resolves to exactly these two outcomes; the set is closed"
-)]
 pub enum WatchOutcome {
     /// The registration was accepted: the watch edge is live and the child is
     /// supervised. The normal case — and since #225 also the flooded case: the
@@ -240,7 +236,7 @@ pub struct Child {
     pub(crate) cycling: bool,
 }
 
-/// A supervise registration in transit on the supervisor's own mailbox.
+/// A supervise registration in transit on the supervisor's own control lane (ADR-0021).
 ///
 /// The first incarnation is already spawned — in the *caller's* task, before the
 /// registration is enqueued — which is what lets `supervise` be a `tell` that

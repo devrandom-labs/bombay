@@ -10,7 +10,7 @@
 use std::num::NonZeroUsize;
 
 use bombay::SendContext;
-use bombay::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Recv, Signal};
+use bombay::mailbox::{ActorId, Capacity, ControlSignal, Mailbox, Mailboxed, Recv, Signal};
 use criterion::{BatchSize, Criterion, black_box, criterion_group, criterion_main};
 
 /// A realistically-sized actor command (~40 bytes) — a handful of fields, closer
@@ -104,5 +104,57 @@ fn roundtrip(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, enqueue, roundtrip);
+/// Control-delivery latency vs user-queue depth (card #225, ADR-0021): one
+/// `send_control` + one `recv` of that control signal, with the user lane
+/// pre-filled to {0, 64, 1024} of a 1024-deep mailbox, plus a fully-saturated
+/// 64-deep one (at-cap). A FLAT curve is the invariant — a watch/supervision
+/// op must not queue behind the user backlog; the pre-#225 shape was a send
+/// that BLOCKED at `at-cap`.
+fn control_latency(c: &mut Criterion) {
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .expect("current-thread runtime");
+
+    let mut group = c.benchmark_group("control_delivery_latency");
+    for (cap_n, depth, label) in [
+        (1024_usize, 0_u64, "depth_0"),
+        (1024, 64, "depth_64"),
+        (1024, 1024, "depth_1024"),
+        (64, 64, "at_cap_64"),
+    ] {
+        group.bench_function(label, |b| {
+            b.iter_batched_ref(
+                || {
+                    let (tx, rx) =
+                        Mailbox::<Bench>::bounded(cap(cap_n), ActorId::from_raw_for_test(0));
+                    for i in 0..depth {
+                        tx.try_send(Signal::Message {
+                            msg: command(i),
+                            self_sender: tx.clone(),
+                            ctx: SendContext::capture(),
+                        })
+                        .expect("setup depth fits capacity");
+                    }
+                    (tx, rx)
+                },
+                |(tx, rx)| {
+                    tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(1)))
+                        .expect("the unbounded lane accepts");
+                    let delivered = rt
+                        .block_on(rx.recv())
+                        .expect("the control signal is delivered ahead of the backlog");
+                    assert!(
+                        matches!(delivered, Recv::Control(_)),
+                        "the control signal overtakes the pre-filled backlog",
+                    );
+                    black_box(delivered);
+                },
+                BatchSize::SmallInput,
+            );
+        });
+    }
+    group.finish();
+}
+
+criterion_group!(benches, enqueue, roundtrip, control_latency);
 criterion_main!(benches);

@@ -650,10 +650,10 @@ mod tests {
         assert!(
             matches!(
                 first,
-                Signal::Message {
+                Recv::Signal(Signal::Message {
                     msg: ProbeMsg(1),
                     ..
-                }
+                })
             ),
             "the fill message drains first (FIFO)",
         );
@@ -677,10 +677,10 @@ mod tests {
         assert!(
             matches!(
                 delivered,
-                Signal::Message {
+                Recv::Signal(Signal::Message {
                     msg: ProbeMsg(7),
                     ..
-                }
+                })
             ),
             "the exact timed message was enqueued",
         );
@@ -706,10 +706,10 @@ mod tests {
         assert!(
             matches!(
                 delivered,
-                Signal::Message {
+                Recv::Signal(Signal::Message {
                     msg: ProbeMsg(3),
                     ..
-                }
+                })
             ),
             "the exact message was enqueued",
         );

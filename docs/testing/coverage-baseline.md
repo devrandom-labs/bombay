@@ -122,6 +122,25 @@ concurrency coverage until then.
 > and #88 still carry it. ADR-0005 chose **MIRI** for the ref-model precisely because it
 > interprets flume's *real* `std::sync` atomics, which loom cannot reach.
 
+**Control-signal lane (#225, ADR-0021).** The mailbox is now two lanes: the bounded
+user lane (`Signal::Message`/`Stop`) plus an UNBOUNDED control lane
+(`ControlSignal::Watch`/`Unwatch`/`Supervision`), merged control-first inside
+`MailboxReceiver::recv`. Coverage: `tests/control_lane.rs` pins every card
+invariant — watch and supervise ops land on a FULL mailbox before the backlog
+drains (mailbox-level ordering witness + actor-level end-to-end), intra-lane
+FIFO (watch→unwatch = no notice; reversed = notice), the overtake relaxation,
+`Stop` still draining prior messages, the #195 teardown obligation answered on
+the new lane, the graceful-teardown supervise regression (#245/#248 semantics),
+and the load-bearing 10k control flood (lane grows, no panic, FIFO holds, user
+lane still drains). `mailbox.rs` unit tests add the closed-lane handback, the
+paired weak upgrade, overtake/FIFO/None-only-when-both-closed merges, and the
+re-based slot tripwires (`MailboxSender` = two 8 B `flume::Sender`s, measured);
+`prop_fifo_roundtrip_single_sender` now interleaves control signals
+(MIRI `prop_` prefix contract); `benches/mailbox.rs` gains the
+`control_delivery_latency` arm (flat 77–80 ns across depths {0, 64, 1024,
+at-cap}, M4 Pro). The `dst_races.rs` suite gains the gated full-mailbox
+`watch()` interleaving, and the fuzz targets drive `send_control`.
+
 ### `id` (#206) — done
 `ActorId` extracted from `mailbox` into its own `id` module as a process-local,
 unforgeable **pure-name** handle: `pub(crate) from_raw` mint (spawn path) +

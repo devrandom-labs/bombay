@@ -409,8 +409,7 @@ impl<S: Supervisor> ActorRef<S> {
             .mailbox_sender()
             .send_control(ControlSignal::Supervision(Box::new(SupervisionOp::Add(
                 ArmedReg::new(reg),
-            ))))
-        {
+            )))) {
             Ok(()) => Ok(id),
             // The supervisor's mailbox is closed (it stopped). `send_control` errors
             // only on a closed lane (an unbounded lane has no full case), so this

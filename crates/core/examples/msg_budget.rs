@@ -33,7 +33,7 @@ impl Mailboxed for BankAccount {
 //     }
 //
 // The escape hatch is `#[msg(budget = 8192)]` on the enum, or boxing the
-// field (as `Signal` itself boxes the cold `LinkDied` payload).
+// field (the same discipline `ControlSignal` uses for its cold payloads).
 
 /// A command set that legitimately needs more than the default budget —
 /// `#[msg(budget = N)]` raises the ceiling instead of forcing a box.
