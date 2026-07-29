@@ -1,12 +1,18 @@
-//! The actor's in-memory mailbox: a bounded MPSC queue of [`Signal`]s.
+//! The actor's in-memory mailbox: a bounded MPSC queue of [`Signal`]s plus,
+//! since #225, a second UNBOUNDED lane of [`ControlSignal`]s (ADR-0021).
 //!
 //! The local tier of the two-tier message model (#66): typed, in-memory,
 //! **zero-serialize**. `tell` moves an `A::Msg` into a queue slot — no
 //! per-message heap box.
 //!
 //! Construction hangs off the [`Mailbox`] namespace: `Mailbox::<A>::bounded(cap, id)`.
-//! Bounded is the only mode — a full mailbox exerts backpressure rather than
-//! growing without limit (an unbounded queue is a memory footgun).
+//! The USER lane is bounded — a full mailbox exerts backpressure rather than
+//! growing without limit (an unbounded queue is a memory footgun). The CONTROL
+//! lane (watch registration/removal, supervision ops) is deliberately unbounded
+//! and merged ahead of the user backlog inside [`MailboxReceiver::recv`], so
+//! runtime supervision never queues behind user messages (Erlang/OTP 28's
+//! EEP-76; #218 wart 3). Its bound is the caller's own call rate, the same
+//! trust class as the unbounded link channel.
 //!
 //! **The channel seam.** The queue is backed by `flume` (chosen on measured
 //! evidence — see `docs/adr/0001`), but that is an implementation detail: `flume`
@@ -128,10 +134,14 @@ pub trait Mailboxed {
 /// mailbox-composition surface ([`Mailbox::bounded`] takes it).
 pub use crate::id::ActorId;
 
-/// A signal in an actor's mailbox: a domain message or a system control signal.
+/// A signal on an actor mailbox's **user lane**: a domain message, or the
+/// in-band graceful-stop marker.
 ///
 /// A **concrete, closed** envelope — no `Box<dyn>` at either layer. `tell` moves
 /// an `A::Msg` into a [`Signal::Message`] slot, so a send is zero-allocation.
+/// Watch/supervision control signals do NOT live here: since #225 they ride the
+/// separate unbounded control lane ([`ControlSignal`]), merged ahead of this
+/// backlog inside [`MailboxReceiver::recv`] (ADR-0021).
 #[expect(
     clippy::exhaustive_enums,
     reason = "the signal set is deliberately closed so the run-loop is a total match; \
@@ -155,19 +165,58 @@ pub enum Signal<A: Mailboxed> {
         /// when the `tracing` feature is off.
         ctx: SendContext,
     },
-    /// Asks the actor to stop after draining messages queued before it.
+    /// Asks the actor to stop after draining messages queued before it. Stays
+    /// on the USER lane deliberately (ADR-0021): a control signal may overtake
+    /// the backlog, but a `Stop` must not — "handle everything I already sent,
+    /// then stop" is the whole contract of an in-band stop.
     Stop,
+}
+
+/// A runtime control signal on the mailbox's **control lane** (card #225,
+/// ADR-0021): watch registration, watch removal, and supervision ops.
+///
+/// Control signals ride their own UNBOUNDED channel and are merged ahead of the
+/// user backlog inside [`MailboxReceiver::recv`], so a watch or a supervision op
+/// reaches a full-mailbox actor without queueing behind user messages. The lane
+/// is FIFO *within itself* — a watch-then-unwatch pair applies in order — while
+/// a control signal enqueued after a user message may overtake it.
+///
+/// Non-generic by construction: no payload mentions the actor's `Msg`, so every
+/// actor's control lane carries this one concrete type.
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "the control-signal set is deliberately closed so the run-loop is a total match; \
+              new arms are added under their driving cards"
+)]
+pub enum ControlSignal {
     /// A watch registration: enqueue a watcher onto this actor's watcher set so
     /// it is notified when this actor stops. Boxed — a cold control path; inlining
-    /// `WatchReg` (which holds a `flume::Sender`) would inflate every message slot.
+    /// `WatchReg` (which holds a `flume::Sender`) would inflate every control
+    /// slot.
     Watch(Box<WatchReg>),
     /// Deregister a watcher by id (the `unwatch` path).
     Unwatch(ActorId),
     /// A supervision-table operation for the supervisor's loop (card #196).
     /// Boxed for the same reason [`Watch`](Self::Watch) is: the op embeds a
-    /// restart config plus an erased rebuild factory, and every queue slot costs
-    /// the largest variant — inlining it would tax the hot `Message` path.
+    /// restart config plus an erased rebuild factory, and every control slot
+    /// costs the largest variant.
     Supervision(Box<SupervisionOp>),
+}
+
+/// One delivery from [`MailboxReceiver::recv`]: which lane the item came in on.
+///
+/// The control lane is merged ahead of the user lane (control-first biased,
+/// ADR-0021); consumers match the two kinds without learning the policy.
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "a recv yields exactly one of the two lanes; the set is closed"
+)]
+pub enum Recv<A: Mailboxed> {
+    /// A control-lane signal (watch/supervision), served ahead of the user
+    /// backlog.
+    Control(ControlSignal),
+    /// A user-lane signal (a domain message or the in-band stop marker).
+    Signal(Signal<A>),
 }
 
 /// The construction namespace for an actor's mailbox.
@@ -178,12 +227,13 @@ pub enum Signal<A: Mailboxed> {
 pub struct Mailbox<A: Mailboxed>(PhantomData<fn() -> A>);
 
 impl<A: Mailboxed> Mailbox<A> {
-    /// Creates a bounded mailbox with room for `capacity` queued signals, owned
-    /// by the actor identified as `id`.
+    /// Creates a bounded mailbox with room for `capacity` queued USER-lane
+    /// signals, owned by the actor identified as `id`, plus the paired UNBOUNDED
+    /// control lane (card #225, ADR-0021) that watch/supervision ops ride.
     ///
     /// The receiver carries `id` because its `Drop` is the actor's true death
-    /// edge: a [`Signal::Watch`] still queued when the receiver goes away must
-    /// be answered with a death notice naming this actor (see
+    /// edge: a [`ControlSignal::Watch`] still queued when the receiver goes away
+    /// must be answered with a death notice naming this actor (see
     /// [`MailboxReceiver`]'s `Drop`), and only the receiver ever sees that
     /// backlog on a hard kill.
     ///
@@ -192,7 +242,17 @@ impl<A: Mailboxed> Mailbox<A> {
     #[must_use]
     pub fn bounded(capacity: Capacity, id: ActorId) -> (MailboxSender<A>, MailboxReceiver<A>) {
         let (tx, rx) = flume::bounded(capacity.get());
-        (MailboxSender { tx }, MailboxReceiver { rx, me: id })
+        let (ctl_tx, ctl_rx) = flume::unbounded();
+        (
+            MailboxSender { tx, ctl_tx },
+            MailboxReceiver {
+                rx,
+                ctl_rx,
+                user_open: true,
+                ctl_open: true,
+                me: id,
+            },
+        )
     }
 }
 
@@ -200,12 +260,18 @@ impl<A: Mailboxed> Mailbox<A> {
 /// while any sender is alive.
 pub struct MailboxSender<A: Mailboxed> {
     tx: flume::Sender<Signal<A>>,
+    /// The UNBOUNDED control lane (card #225, ADR-0021). Always paired with `tx`
+    /// — every strong handle carries both halves, so the two channels share a
+    /// sender count and disconnect together; [`is_closed`](Self::is_closed)
+    /// needs to check only one.
+    ctl_tx: flume::Sender<ControlSignal>,
 }
 
 impl<A: Mailboxed> Clone for MailboxSender<A> {
     fn clone(&self) -> Self {
         Self {
             tx: self.tx.clone(),
+            ctl_tx: self.ctl_tx.clone(),
         }
     }
 }
@@ -276,10 +342,33 @@ impl<A: Mailboxed> MailboxSender<A> {
         })
     }
 
+    /// Enqueues a control signal on the UNBOUNDED control lane, to be served
+    /// ahead of the user backlog (card #225, ADR-0021).
+    ///
+    /// Synchronous: the lane has no capacity to await, so a watch registration
+    /// or supervision op never queues behind user messages — the whole point of
+    /// the lane. The bound on lane growth is the caller's own call rate, the
+    /// same trust class as the unbounded link channel. A control send embeds no
+    /// `self_sender`: only [`Signal::Message`] pins the actor (ADR-0003).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ControlClosed`] (carrying `signal` back) if the receiver has
+    /// been dropped, i.e. the actor is no longer running.
+    pub fn send_control(&self, signal: ControlSignal) -> Result<(), ControlClosed> {
+        self.ctl_tx
+            .send(signal)
+            .map_err(|err| ControlClosed(err.into_inner()))
+    }
+
     /// Whether the mailbox has closed — the receiver (the actor's run-loop) has
     /// been dropped, so no further signal can be delivered. A send-and-observe
     /// backup to push death-detection; **not** a pre-send liveness gate (that
     /// would be TOCTOU-wrong — a send races the close either way).
+    ///
+    /// Checks only the user-lane half: the receiver drops both lanes together
+    /// and every [`MailboxSender`] carries both halves, so the two disconnect
+    /// edges are coupled by construction and one check speaks for both lanes.
     #[must_use]
     pub fn is_closed(&self) -> bool {
         self.tx.is_disconnected()
@@ -290,6 +379,7 @@ impl<A: Mailboxed> MailboxSender<A> {
     pub fn downgrade(&self) -> WeakMailboxSender<A> {
         WeakMailboxSender {
             weak: self.tx.downgrade(),
+            ctl_weak: self.ctl_tx.downgrade(),
         }
     }
 }
@@ -300,14 +390,26 @@ impl<A: Mailboxed> MailboxSender<A> {
 /// [`MailboxSender`] still exists — the primitive death-watch is built on.
 pub struct WeakMailboxSender<A: Mailboxed> {
     weak: flume::WeakSender<Signal<A>>,
+    ctl_weak: flume::WeakSender<ControlSignal>,
 }
 
 impl<A: Mailboxed> WeakMailboxSender<A> {
     /// Upgrades to a strong [`MailboxSender`], or `None` if every strong sender
     /// has been dropped (the actor is gone).
+    ///
+    /// Both lanes upgrade together or not at all: the strong counts cannot
+    /// diverge (every [`MailboxSender`] carries both halves), and a half-paired
+    /// sender would break the coupled-disconnect invariant
+    /// [`is_closed`](MailboxSender::is_closed) relies on — so a half-upgrade
+    /// (a sender pair dropped between the two upgrades) reports dead.
     #[must_use]
     pub fn upgrade(&self) -> Option<MailboxSender<A>> {
-        self.weak.upgrade().map(|tx| MailboxSender { tx })
+        match (self.weak.upgrade(), self.ctl_weak.upgrade()) {
+            (Some(tx), Some(ctl_tx)) => Some(MailboxSender { tx, ctl_tx }),
+            // A half-pair lost the race with a dropping sender pair; the claimed
+            // half is released with the tuple and the handle reports dead.
+            _ => None,
+        }
     }
 }
 
@@ -315,6 +417,7 @@ impl<A: Mailboxed> Clone for WeakMailboxSender<A> {
     fn clone(&self) -> Self {
         Self {
             weak: self.weak.clone(),
+            ctl_weak: self.ctl_weak.clone(),
         }
     }
 }
@@ -322,22 +425,81 @@ impl<A: Mailboxed> Clone for WeakMailboxSender<A> {
 /// The single consumer of an actor's mailbox. The run-loop pulls from it.
 pub struct MailboxReceiver<A: Mailboxed> {
     rx: flume::Receiver<Signal<A>>,
+    ctl_rx: flume::Receiver<ControlSignal>,
+    /// Per-lane close latches for the [`recv`](Self::recv) merge (the link-arm
+    /// guard pattern from `actor::kind`): once a lane reports
+    /// disconnected-and-empty it can never deliver again, so its select arm is
+    /// disabled — a ready `Err` under `biased` would otherwise spin the merge
+    /// and starve the surviving lane.
+    user_open: bool,
+    ctl_open: bool,
     /// The owning actor's identity — stamped onto the death notice sent for any
-    /// still-queued [`Signal::Watch`] when the backlog is rejected
+    /// still-queued [`ControlSignal::Watch`] when the backlog is rejected
     /// ([`reject_queued_watchers`](MailboxReceiver::reject_queued_watchers),
     /// which this receiver's `Drop` also routes through).
     me: ActorId,
 }
 
 impl<A: Mailboxed> MailboxReceiver<A> {
-    /// Receives the next signal, waiting until one is available.
+    /// Receives the next item, control lane first, waiting until one is available.
     ///
-    /// Returns `None` once every sender has dropped and the queue is drained.
-    pub async fn recv(&mut self) -> Option<Signal<A>> {
-        self.rx.recv_async().await.ok()
+    /// The two-lane merge (card #225, ADR-0021): `try_recv` the control lane,
+    /// then the user lane, else a `biased` select over both `recv_async`
+    /// futures with the control arm first — a queued control signal is always
+    /// served ahead of the user backlog, and one that arrives while the loop
+    /// was parked overtakes the backlog from the very next poll. Cancel-safe:
+    /// `recv` sits under `run_until_cancelled` and the loops' biased selects,
+    /// and flume buffers items in shared state, so dropping the losing arm's
+    /// future loses nothing.
+    ///
+    /// Returns `None` once BOTH lanes are closed and drained. The lanes
+    /// disconnect together (every sender carries both halves), so `None` keeps
+    /// its pre-split meaning: every strong sender is gone and the backlog is
+    /// empty.
+    pub async fn recv(&mut self) -> Option<Recv<A>> {
+        // Fast path: serve a waiting item without yielding to the scheduler.
+        // Control first — that is the lane's raison d'être (a full user
+        // backlog must not delay it).
+        if self.ctl_open {
+            match self.ctl_rx.try_recv() {
+                Ok(signal) => return Some(Recv::Control(signal)),
+                Err(flume::TryRecvError::Disconnected) => self.ctl_open = false,
+                Err(flume::TryRecvError::Empty) => {}
+            }
+        }
+        if self.user_open {
+            match self.rx.try_recv() {
+                Ok(signal) => return Some(Recv::Signal(signal)),
+                Err(flume::TryRecvError::Disconnected) => self.user_open = false,
+                Err(flume::TryRecvError::Empty) => {}
+            }
+        }
+        loop {
+            tokio::select! {
+                biased;
+                ctl = self.ctl_rx.recv_async(), if self.ctl_open => {
+                    match ctl {
+                        Ok(signal) => return Some(Recv::Control(signal)),
+                        // Disconnected AND drained: latch the arm off so a ready
+                        // `Err` cannot spin the biased select (the link-arm
+                        // guard pattern).
+                        Err(_) => self.ctl_open = false,
+                    }
+                }
+                user = self.rx.recv_async(), if self.user_open => {
+                    match user {
+                        Ok(signal) => return Some(Recv::Signal(signal)),
+                        Err(_) => self.user_open = false,
+                    }
+                }
+                // Both lanes latched off: closed and drained.
+                else => return None,
+            }
+        }
     }
 
-    /// Drains every currently-queued signal without waiting, in FIFO order.
+    /// Drains every currently-queued USER-lane signal without waiting, in FIFO
+    /// order.
     ///
     /// A queued [`Signal::Message`] holds a strong `self_sender` (ADR-0003), so
     /// draining is what releases those senders and breaks the self-referential
@@ -346,11 +508,20 @@ impl<A: Mailboxed> MailboxReceiver<A> {
         self.rx.drain()
     }
 
-    /// Drains the backlog, answering every still-queued [`Signal::Watch`] with a
-    /// death notice carrying `reason`, and releasing the queued messages'
-    /// `self_sender` cycle — the two duties documented on [`Drop`](Self::drop),
-    /// which routes through here with the synthetic
-    /// [`AlreadyDead`](ActorStopReason::AlreadyDead).
+    /// Drains every currently-queued CONTROL-lane signal without waiting, in
+    /// FIFO order (card #225, ADR-0021): the teardown paths' view of the
+    /// watch/supervision backlog. Graceful teardown APPLIES the drained ops
+    /// (`drain_queued_supervision`, `apply_raced_registrations`); a hard kill
+    /// ANSWERS the drained watches ([`reject_queued_watchers`](Self::reject_queued_watchers)).
+    pub fn drain_control(&mut self) -> impl Iterator<Item = ControlSignal> + '_ {
+        self.ctl_rx.drain()
+    }
+
+    /// Drains BOTH lanes' backlogs, answering every still-queued
+    /// [`ControlSignal::Watch`] with a death notice carrying `reason`, and
+    /// releasing the queued messages' `self_sender` cycle — the two duties
+    /// documented on [`Drop`](Self::drop), which routes through here with the
+    /// synthetic [`AlreadyDead`](ActorStopReason::AlreadyDead).
     ///
     /// Callers that *know* the true stop reason pre-empt that fallback by calling
     /// this first: the startup-failure path (card #196) answers with
@@ -370,8 +541,20 @@ impl<A: Mailboxed> MailboxReceiver<A> {
     // is the mailbox's single consumer, and `drain(&mut self)` next door hands out
     // a borrowing iterator that cannot overlap with this call).
     pub(crate) fn reject_queued_watchers(&self, reason: &ActorStopReason, cleanup_failed: bool) {
+        // User lane: no watches live here since #225 — draining simply drops the
+        // backlog, which releases each queued message's strong `self_sender`
+        // (ADR-0003) and so discharges the leak-fix half of this drain.
         for signal in self.rx.drain() {
-            if let Signal::Watch(reg) = signal {
+            drop(signal);
+        }
+        // Control lane: every still-queued watch registration is answered. A
+        // queued `Unwatch` is unenforceable here (the watcher set is gone with
+        // the loop); as in Erlang, a `demonitor` racing the death may still be
+        // followed by a delivered notice. A queued `Supervision` op is dropped
+        // — the armed registration's own `Drop` stops the never-tabled child
+        // (#248), same as on the pre-split path.
+        for signal in self.ctl_rx.drain() {
+            if let ControlSignal::Watch(reg) = signal {
                 trace::death_notice(reg.watcher, reason, cleanup_failed);
                 let _ = reg.link_tx.try_send(LinkDied {
                     id: self.me,
@@ -385,8 +568,9 @@ impl<A: Mailboxed> MailboxReceiver<A> {
 }
 
 impl<A: Mailboxed> Drop for MailboxReceiver<A> {
-    /// Drops the receiver **and** its backlog — and answers every still-queued
-    /// [`Signal::Watch`] with a synthetic death notice first.
+    /// Drops the receiver **and** both lanes' backlogs — and answers every
+    /// still-queued [`ControlSignal::Watch`] with a synthetic death notice
+    /// first.
     ///
     /// Two duties, one drain (both discharged by
     /// [`reject_queued_watchers`](Self::reject_queued_watchers)):
@@ -397,10 +581,10 @@ impl<A: Mailboxed> Drop for MailboxReceiver<A> {
     ///    Unlike tokio's mpsc, flume's `Receiver::drop` does **not** purge its
     ///    queue, so on a hard kill (the run-loop future is dropped mid-backlog)
     ///    that cycle would leak. Draining releases the embedded senders.
-    /// 2. **No missed death (card #195).** A queued `Signal::Watch` was accepted
-    ///    by a successful `send` — the watcher believes it is watching. This
-    ///    drop is the last code that ever sees the registration, so it must
-    ///    deliver the notice: reason
+    /// 2. **No missed death (card #195; moved lanes intact by #225).** A queued
+    ///    `ControlSignal::Watch` was accepted by a successful send — the watcher
+    ///    believes it is watching. This drop is the last code that ever sees the
+    ///    registration, so it must deliver the notice: reason
     ///    [`AlreadyDead`](ActorStopReason::AlreadyDead), because the true stop
     ///    reason is unknowable *here* (Erlang's `noproc`), paired with
     ///    `cleanup_failed: false` — no cleanup outcome is observable from here
@@ -414,9 +598,9 @@ impl<A: Mailboxed> Drop for MailboxReceiver<A> {
     ///    non-blocking into the watcher's UNBOUNDED link channel and only fails
     ///    if the watcher itself is gone — a stale edge, correctly skipped.
     ///
-    /// A queued `Signal::Unwatch` is unenforceable here (the watcher set is gone
-    /// with the loop); as in Erlang, a `demonitor` racing the death may still be
-    /// followed by a delivered notice.
+    /// A queued `ControlSignal::Unwatch` is unenforceable here (the watcher set
+    /// is gone with the loop); as in Erlang, a `demonitor` racing the death may
+    /// still be followed by a delivered notice.
     fn drop(&mut self) {
         self.reject_queued_watchers(&ActorStopReason::AlreadyDead, false);
     }
@@ -447,9 +631,7 @@ impl<A: Mailboxed> Future for SendMessageFut<'_, A> {
                 Signal::Message {
                     msg: undelivered, ..
                 } => undelivered,
-                Signal::Stop | Signal::Watch(_) | Signal::Unwatch(_) | Signal::Supervision(_) => {
-                    unreachable!("send_message enqueues only Signal::Message")
-                }
+                Signal::Stop => unreachable!("send_message enqueues only Signal::Message"),
             })
         })
     }
@@ -464,6 +646,20 @@ pub struct SendError<A: Mailboxed>(pub Signal<A>);
 impl<A: Mailboxed> fmt::Debug for SendError<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("SendError(receiver dropped)")
+    }
+}
+
+/// The control lane is closed — the receiver was dropped, so the control
+/// signal could not be delivered.
+///
+/// Carries the undelivered [`ControlSignal`] back to the caller (rule 3: never
+/// silently drop the payload). The control lane is unbounded, so closure is the
+/// ONLY failure mode of [`MailboxSender::send_control`] — there is no `Full`.
+pub struct ControlClosed(pub ControlSignal);
+
+impl fmt::Debug for ControlClosed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("ControlClosed(receiver dropped)")
     }
 }
 
@@ -510,16 +706,16 @@ mod tests {
     }
 
     #[test]
-    fn signal_watch_and_unwatch_are_carried() {
+    fn control_watch_and_unwatch_are_carried() {
         let (tx, _rx) = flume::unbounded::<LinkDied>();
         let reg = WatchReg {
             watcher: ActorId::from_raw_for_test(9),
             link_tx: tx,
             linked: true,
         };
-        // Compiles only if Signal carries Watch/Unwatch (this is the whole assertion).
-        let _watch: Signal<Probe> = Signal::Watch(Box::new(reg));
-        let _unwatch: Signal<Probe> = Signal::Unwatch(ActorId::from_raw_for_test(9));
+        // Compiles only if ControlSignal carries Watch/Unwatch (this is the whole assertion).
+        let _watch: ControlSignal = ControlSignal::Watch(Box::new(reg));
+        let _unwatch: ControlSignal = ControlSignal::Unwatch(ActorId::from_raw_for_test(9));
     }
 
     /// A message tagged with `(sender_id, seq)`; also proves `Msg` is any
@@ -553,7 +749,7 @@ mod tests {
     /// exits 3 on a timeout, so those alone kept the whole sweep red, and a
     /// timeout burns the full budget while reporting as neither caught nor
     /// missed.
-    async fn recv_bounded<A: Mailboxed>(rx: &mut MailboxReceiver<A>) -> Option<Signal<A>> {
+    async fn recv_bounded<A: Mailboxed>(rx: &mut MailboxReceiver<A>) -> Option<Recv<A>> {
         tokio::time::timeout(terminate_bound(), rx.recv())
             .await
             .expect("recv must not hang: a queued message went missing")
@@ -591,7 +787,7 @@ mod tests {
 
         assert!(matches!(
             recv_bounded(&mut rx).await,
-            Some(Signal::Message { msg: 42, .. })
+            Some(Recv::Signal(Signal::Message { msg: 42, .. }))
         ));
     }
 
@@ -610,7 +806,7 @@ mod tests {
 
         assert!(matches!(
             recv_bounded(&mut rx).await,
-            Some(Signal::Message { msg: 7, .. })
+            Some(Recv::Signal(Signal::Message { msg: 7, .. }))
         ));
     }
 
@@ -649,15 +845,19 @@ mod tests {
     fn cold_variants_are_boxed_so_message_slots_stay_small() {
         use std::mem::size_of;
 
-        // Every cold control variant is boxed — `Watch(Box<WatchReg>)` and
-        // `Supervision(Box<SupervisionOp>)` — so a small-message actor's queue
-        // slot is bounded by the hot Message path: `msg` + the embedded
-        // `self_sender` (one Arc pointer, ADR-0003) + the caller-span trace
-        // context (ONE word — a boxed-and-niched `Span`, card #209; a ZST in an
-        // off build, so the term adds nothing there) + a discriminant word.
+        // Every cold CONTROL payload is boxed — `ControlSignal::Watch(Box<WatchReg>)`
+        // and `ControlSignal::Supervision(Box<SupervisionOp>)` — so a small-message
+        // actor's USER-lane slot is bounded by the hot Message path: `msg` + the
+        // embedded `self_sender` + the caller-span trace context (ONE word — a
+        // boxed-and-niched `Span`, card #209; a ZST in an off build, so the term
+        // adds nothing there) + a discriminant word. Since #225 the `self_sender`
+        // is TWO `flume::Sender`s (user + control halves, ADR-0021) — one Arc
+        // word each, measured 8 B — so the Message slot grew by exactly one word;
+        // the allocation PROFILE (zero per-message heap boxes) is untouched.
         // Inlined, `WatchReg` (a `flume::Sender` + id + flag) or `SupervisionOp`
-        // (a `RestartConfig` + an erased factory + a tracker) would blow this
-        // bound for EVERY message. Guards the "every slot = largest variant" trap.
+        // (a `RestartConfig` + an erased factory + a tracker) would blow the
+        // control lane's own slot bound for EVERY op. Guards the "every slot =
+        // largest variant" trap on both lanes.
         assert!(
             size_of::<SendContext>() <= size_of::<usize>(),
             "trace context must stay one word — box, never inline, a Span in the envelope"
@@ -669,8 +869,16 @@ mod tests {
         assert!(
             size_of::<Signal<Probe>>() <= hot_bound,
             "Signal<Probe> slot is {} bytes (hot bound {hot_bound} = msg + self_sender + \
-             trace ctx + discriminant); a cold variant is not boxed",
+             trace ctx + discriminant); a user-lane variant is not bounded",
             size_of::<Signal<Probe>>()
+        );
+        // The control lane's own tripwire: `WatchReg`/`SupervisionOp` boxed,
+        // `Unwatch(ActorId)` one word — the whole enum stays two words
+        // (measured aarch64: 16 B = one payload word + one discriminant word).
+        assert!(
+            size_of::<ControlSignal>() <= 2 * size_of::<usize>(),
+            "ControlSignal slot is {} bytes (> 2 words); a cold control payload is not boxed",
+            size_of::<ControlSignal>()
         );
     }
 
@@ -680,10 +888,12 @@ mod tests {
     /// every slot — even tiny messages — unless the user boxes it (the same
     /// discipline `LinkDied` uses).
     ///
-    /// Measured (aarch64): `small = 16 B`, `fat inline = 4104 B`, `boxed = 16 B`
-    /// → for 1_000 queued messages, **4.10 MB vs 16 KB (256×)**. See #122.
+    /// Measured (aarch64): `small = 40 B`, `fat inline = 4104 B+`, `boxed = 40 B`
+    /// → for 1_000 queued messages, **4.10 MB vs 40 KB**. See #122.
     /// Since #209 every slot also carries the ONE-word caller-span trace
-    /// context, so each bound below gains that word (zero in an off build).
+    /// context, so each bound below gains that word (zero in an off build);
+    /// since #225 the embedded `self_sender` is two `flume::Sender`s (user +
+    /// control halves, ADR-0021), another +8 B on every slot.
     #[test]
     #[expect(
         dead_code,
@@ -725,15 +935,16 @@ mod tests {
         let fat = size_of::<Signal<Fat>>();
         let boxed = size_of::<Signal<BoxedFat>>();
 
-        let small_bound = 24 + size_of::<SendContext>();
+        let small_bound = 32 + size_of::<SendContext>();
         assert!(
             small <= small_bound,
-            "small slot = {small} (bound 24 + one #209 trace-context word)"
+            "small slot = {small} (bound 32 + one #209 trace-context word: 16 msg + \
+             16 two-lane self_sender)"
         );
         assert!(fat >= 4096, "fat inline slot = {fat}");
         assert!(
             boxed <= small_bound,
-            "boxed slot = {boxed} (bound 24 + one #209 trace-context word)"
+            "boxed slot = {boxed} (bound 32 + one #209 trace-context word)"
         );
 
         let queued = 1_000;
@@ -762,6 +973,9 @@ mod tests {
             format!("{closed:?}"),
             "TrySendError::Closed(receiver dropped)"
         );
+
+        let ctl_closed = ControlClosed(ControlSignal::Unwatch(ActorId::from_raw_for_test(1)));
+        assert_eq!(format!("{ctl_closed:?}"), "ControlClosed(receiver dropped)");
     }
 
     #[tokio::test]
@@ -802,7 +1016,7 @@ mod tests {
 
         assert!(matches!(
             recv_bounded(&mut rx).await,
-            Some(Signal::Message { msg: 5, .. })
+            Some(Recv::Signal(Signal::Message { msg: 5, .. }))
         ));
     }
 
@@ -825,9 +1039,12 @@ mod tests {
         // FIFO: the domain message precedes the control signal that followed it.
         assert!(matches!(
             recv_bounded(&mut rx).await,
-            Some(Signal::Message { msg: 1, .. })
+            Some(Recv::Signal(Signal::Message { msg: 1, .. }))
         ));
-        assert!(matches!(recv_bounded(&mut rx).await, Some(Signal::Stop)));
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Signal(Signal::Stop))
+        ));
     }
 
     #[tokio::test]
@@ -850,7 +1067,7 @@ mod tests {
 
         assert!(matches!(
             recv_bounded(&mut rx).await,
-            Some(Signal::Message { msg: 0, .. })
+            Some(Recv::Signal(Signal::Message { msg: 0, .. }))
         ));
 
         let flushed: Vec<u64> = rx
@@ -905,18 +1122,18 @@ mod tests {
         // Queued message drains first, then the disconnected channel ends.
         assert!(matches!(
             recv_bounded(&mut rx).await,
-            Some(Signal::Message { msg: 1, .. })
+            Some(Recv::Signal(Signal::Message { msg: 1, .. }))
         ));
         assert!(recv_bounded(&mut rx).await.is_none());
     }
 
-    /// `@bug` (card #195 review): a `Signal::Watch` still QUEUED when the
-    /// receiver drops (hard kill mid-backlog, or the graceful window between the
-    /// teardown drain and the receiver drop) was accepted by a successful `send`
-    /// — silently discarding it is a missed death, the worst bug in the
-    /// death-watch subsystem. The receiver's drop must instead deliver a
-    /// synthetic [`LinkDied`](LinkDied) with the actor's own id,
-    /// reason [`AlreadyDead`](ActorStopReason::AlreadyDead)
+    /// `@bug` (card #195 review; moved to the control lane by #225): a
+    /// `ControlSignal::Watch` still QUEUED when the receiver drops (hard kill
+    /// mid-backlog, or the graceful window between the teardown drain and the
+    /// receiver drop) was accepted by a successful send — silently discarding
+    /// it is a missed death, the worst bug in the death-watch subsystem. The
+    /// receiver's drop must instead deliver a synthetic [`LinkDied`](LinkDied)
+    /// with the actor's own id, reason [`AlreadyDead`](ActorStopReason::AlreadyDead)
     /// (the true reason is unknowable here — Erlang's `noproc`), and the edge's
     /// `linked` flag preserved. FAILS while the drop drain `for_each(drop)`s the
     /// registration.
@@ -925,12 +1142,12 @@ mod tests {
         let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(77));
 
         let (link_tx, link_rx) = flume::unbounded::<LinkDied>();
-        tx.try_send(Signal::Watch(Box::new(WatchReg {
+        tx.send_control(ControlSignal::Watch(Box::new(WatchReg {
             watcher: ActorId::from_raw_for_test(1),
             link_tx,
             linked: true,
         })))
-        .expect("reg enqueued into the open mailbox");
+        .expect("reg enqueued into the open control lane");
 
         drop(rx); // receiver gone with the reg still queued
 
@@ -984,6 +1201,126 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn send_control_reports_closed_after_receiver_drop_and_hands_back_the_signal() {
+        let (tx, rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
+        drop(rx);
+
+        let returned = tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(7)));
+        let Err(ControlClosed(ControlSignal::Unwatch(id))) = returned else {
+            panic!("a closed control lane hands the signal back, got {returned:?}");
+        };
+        assert_eq!(
+            id,
+            ActorId::from_raw_for_test(7),
+            "the exact undelivered signal came back"
+        );
+    }
+
+    #[tokio::test]
+    async fn upgraded_weak_sender_sends_on_both_lanes() {
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(2), ActorId::from_raw_for_test(0));
+        let weak = tx.downgrade();
+
+        let strong = weak.upgrade().expect("channel still alive");
+        strong
+            .send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(3)))
+            .expect("control via the upgraded pair");
+        send_bounded(
+            &strong,
+            Signal::Message {
+                msg: 5,
+                self_sender: tx.clone(),
+                ctx: SendContext::capture(),
+            },
+        )
+        .await
+        .expect("message via the upgraded pair");
+
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Control(ControlSignal::Unwatch(_)))
+        ));
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Signal(Signal::Message { msg: 5, .. }))
+        ));
+    }
+
+    #[tokio::test]
+    async fn control_overtakes_an_earlier_user_message() {
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
+        send_bounded(
+            &tx,
+            Signal::Message {
+                msg: 1,
+                self_sender: tx.clone(),
+                ctx: SendContext::capture(),
+            },
+        )
+        .await
+        .expect("message queued first");
+        tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(2)))
+            .expect("control queued second");
+
+        // The merge serves the control lane first even though the user signal
+        // was enqueued earlier — the deliberate ordering relaxation (ADR-0021,
+        // invariant 4).
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Control(ControlSignal::Unwatch(_)))
+        ));
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Signal(Signal::Message { msg: 1, .. }))
+        ));
+    }
+
+    #[tokio::test]
+    async fn control_lane_preserves_its_own_fifo() {
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
+        for tag in 0..8u64 {
+            tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(tag)))
+                .expect("control enqueued");
+        }
+        for tag in 0..8u64 {
+            let Some(Recv::Control(ControlSignal::Unwatch(id))) = recv_bounded(&mut rx).await
+            else {
+                panic!("expected the control signal");
+            };
+            assert_eq!(id, ActorId::from_raw_for_test(tag), "intra-lane FIFO");
+        }
+    }
+
+    #[tokio::test]
+    async fn recv_returns_none_only_when_both_lanes_are_closed_and_empty() {
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
+        send_bounded(
+            &tx,
+            Signal::Message {
+                msg: 1,
+                self_sender: tx.clone(),
+                ctx: SendContext::capture(),
+            },
+        )
+        .await
+        .expect("queued");
+        tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(1)))
+            .expect("control queued");
+        drop(tx);
+
+        // Both lanes drain first (control ahead), then — with the queued
+        // message's embedded `self_sender` released by the drain and `tx` gone
+        // — the disconnected pair reports None (the lanes close together, ADR-0021).
+        assert!(matches!(
+            recv_bounded(&mut rx).await,
+            Some(Recv::Control(ControlSignal::Unwatch(id)))
+                if id == ActorId::from_raw_for_test(1)
+        ));
+        assert!(matches!(recv_bounded(&mut rx).await, Some(Recv::Signal(_))));
+        assert!(recv_bounded(&mut rx).await.is_none());
+    }
+
+    #[tokio::test]
     async fn full_mailbox_rejects_try_send_and_returns_the_message() {
         let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1), ActorId::from_raw_for_test(0));
 
@@ -1008,7 +1345,7 @@ mod tests {
         // Draining one slot frees capacity for the next try_send.
         assert!(matches!(
             recv_bounded(&mut rx).await,
-            Some(Signal::Message { msg: 1, .. })
+            Some(Recv::Signal(Signal::Message { msg: 1, .. }))
         ));
         tx.try_send(Signal::Message {
             msg: 3,
@@ -1030,7 +1367,7 @@ mod tests {
         ));
         assert!(matches!(
             recv_bounded(&mut rx).await,
-            Some(Signal::Message { msg: 1, .. })
+            Some(Recv::Signal(Signal::Message { msg: 1, .. }))
         ));
 
         // Receiver dropped: a try now reports the terminal Closed, not Full.
@@ -1077,10 +1414,10 @@ mod tests {
         let mut next_expected = vec![0u32; SENDERS as usize];
         let mut total = 0u32;
         while let Some(signal) = recv_bounded(&mut rx).await {
-            let Signal::Message {
+            let Recv::Signal(Signal::Message {
                 msg: (sender_id, seq),
                 ..
-            } = signal
+            }) = signal
             else {
                 panic!("unexpected non-message signal");
             };
@@ -1100,6 +1437,16 @@ mod tests {
         for handle in handles {
             handle.await.expect("sender task panicked");
         }
+    }
+
+    /// One producer step in the control-lane property: a user-lane message or a
+    /// control-lane signal. The control arm is an `Unwatch` whose `ActorId`
+    /// carries the FIFO tag — the one control variant constructible without a
+    /// link channel.
+    #[derive(Clone, Copy, Debug)]
+    enum LaneOp {
+        Msg(u64),
+        Control(u64),
     }
 
     proptest! {
@@ -1125,49 +1472,94 @@ mod tests {
         }
 
         /// A single sender's messages come out in the exact order they went in,
-        /// for any message sequence and any capacity — the queue neither drops,
-        /// duplicates, nor reorders (FIFO).
+        /// for any message sequence and any capacity, EVEN WITH control signals
+        /// interleaved (card #225, ADR-0021): the queue neither drops,
+        /// duplicates, nor reorders — user-lane FIFO survives the control-lane
+        /// merge, and the control signals keep their own intra-lane FIFO
+        /// (invariants 2 and 3). MIRI-skipped by prefix (the repo's `prop_`
+        /// naming contract).
         #[test]
         fn prop_fifo_roundtrip_single_sender(
-            messages in prop::collection::vec(any::<u64>(), 0..200),
+            ops in prop::collection::vec(
+                prop_oneof![
+                    any::<u64>().prop_map(LaneOp::Msg),
+                    any::<u64>().prop_map(LaneOp::Control),
+                ],
+                0..200,
+            ),
             capacity in 1usize..=64,
         ) {
-            let sent = messages.clone();
-            let received = Builder::new_current_thread()
+            let sent_msgs: Vec<u64> = ops
+                .iter()
+                .filter_map(|op| match op {
+                    LaneOp::Msg(m) => Some(*m),
+                    LaneOp::Control(_) => None,
+                })
+                .collect();
+            let sent_ctls: Vec<ActorId> = ops
+                .iter()
+                .filter_map(|op| match op {
+                    LaneOp::Control(tag) => Some(ActorId::from_raw_for_test(*tag)),
+                    LaneOp::Msg(_) => None,
+                })
+                .collect();
+            let msg_count = sent_msgs.len();
+            let ctl_count = sent_ctls.len();
+            let (got_msgs, got_ctls) = Builder::new_current_thread()
                 .enable_time()
                 .build()
                 .expect("current-thread runtime")
                 .block_on(async move {
                     let (tx, mut rx) =
                         Mailbox::<Probe>::bounded(cap(capacity), ActorId::from_raw_for_test(0));
-                    let expected = messages.len();
+                    let expected = ops.len();
                     let producer = tokio::spawn(async move {
-                        for message in messages {
-                            send_bounded(&tx, Signal::Message { msg: message, self_sender: tx.clone(), ctx: SendContext::capture() })
-                                .await
-                                .expect("send");
+                        for op in ops {
+                            match op {
+                                LaneOp::Msg(message) => {
+                                    send_bounded(&tx, Signal::Message { msg: message, self_sender: tx.clone(), ctx: SendContext::capture() })
+                                        .await
+                                        .expect("send");
+                                }
+                                LaneOp::Control(tag) => {
+                                    tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(tag)))
+                                        .expect("control send on the unbounded lane");
+                                }
+                            }
                         }
                     });
 
-                    let mut got = Vec::with_capacity(expected);
-                    while got.len() < expected {
-                        let Some(Signal::Message { msg: message, .. }) = recv_bounded(&mut rx).await else {
-                            break;
-                        };
-                        got.push(message);
+                    let mut got_msgs = Vec::with_capacity(msg_count);
+                    let mut got_ctls = Vec::with_capacity(ctl_count);
+                    while got_msgs.len() + got_ctls.len() < expected {
+                        match recv_bounded(&mut rx).await {
+                            Some(Recv::Signal(Signal::Message { msg: message, .. })) => {
+                                got_msgs.push(message);
+                            }
+                            Some(Recv::Control(ControlSignal::Unwatch(id))) => {
+                                got_ctls.push(id);
+                            }
+                            Some(Recv::Signal(Signal::Stop)) | None => {
+                                panic!("only Message/Control were enqueued, got Stop or closed")
+                            }
+                            Some(Recv::Control(_)) => {
+                                panic!("only Unwatch controls were enqueued")
+                            }
+                        }
                     }
                     // The consumer has taken all it will take. Stop the producer
                     // so a mutation that makes `recv` drop messages fails on the
-                    // `received != sent` assertion below, instead of deadlocking
-                    // the producer on a full, undrained queue (card #179). In the
-                    // unmutated run every message was delivered and consumed, so
-                    // the producer has already finished and this abort is a no-op.
+                    // subsequence assertions below, instead of deadlocking the
+                    // producer on a full, undrained queue (card #179). In the
+                    // unmutated run every item was delivered and consumed, so the
+                    // producer has already finished and this abort is a no-op.
                     producer.abort();
                     let _ = producer.await;
-                    got
+                    (got_msgs, got_ctls)
                 });
 
-            prop_assert_eq!(received, sent);
+            prop_assert_eq!(got_msgs, sent_msgs, "user-lane FIFO broken under control interleavings");
+            prop_assert_eq!(got_ctls, sent_ctls, "control-lane intra-FIFO broken");
         }
     }
 }

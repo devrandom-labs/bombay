@@ -3,7 +3,7 @@
 //!
 //! Run with `cargo run -p bombay --example msg_budget`.
 
-use bombay::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal};
+use bombay::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Recv, Signal};
 use bombay::message::Msg;
 use std::error::Error;
 use std::mem::size_of;
@@ -33,7 +33,7 @@ impl Mailboxed for BankAccount {
 //     }
 //
 // The escape hatch is `#[msg(budget = 8192)]` on the enum, or boxing the
-// field (as `Signal` itself boxes the cold `LinkDied` payload).
+// field (the same discipline `ControlSignal` uses for its cold payloads).
 
 /// A command set that legitimately needs more than the default budget —
 /// `#[msg(budget = N)]` raises the ceiling instead of forcing a box.
@@ -86,28 +86,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("draining the mailbox by value — no per-message heap box:");
     while let Some(signal) = rx.recv().await {
         match signal {
-            Signal::Message {
+            Recv::Signal(Signal::Message {
                 msg: BankCmd::Deposit { cents },
                 ..
-            } => {
+            }) => {
                 println!("  Signal::Message(Deposit {{ cents: {cents} }})");
             }
-            Signal::Message {
+            Recv::Signal(Signal::Message {
                 msg: BankCmd::Withdraw { cents },
                 ..
-            } => {
+            }) => {
                 println!("  Signal::Message(Withdraw {{ cents: {cents} }})");
             }
-            Signal::Message {
+            Recv::Signal(Signal::Message {
                 msg: BankCmd::Balance,
                 ..
-            } => println!("  Signal::Message(Balance)"),
-            Signal::Stop => {
+            }) => println!("  Signal::Message(Balance)"),
+            Recv::Signal(Signal::Stop) => {
                 println!("  Signal::Stop — done");
                 break;
             }
-            Signal::Watch(_) | Signal::Unwatch(_) | Signal::Supervision(_) => {
-                println!("  Signal::Watch/Unwatch/Supervision(..)");
+            Recv::Control(_) => {
+                println!("  ControlSignal(..) — the #225 control lane");
             }
         }
     }

@@ -461,7 +461,7 @@ mod tests {
     use crate::{
         actor::{Actor, ActorRef},
         error::TellError,
-        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
+        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
         message::Msg,
         test_support::terminate_bound,
     };
@@ -587,10 +587,10 @@ mod tests {
             .expect("the converted variant must arrive, not hang");
         assert!(matches!(
             delivered,
-            Some(Signal::Message {
+            Some(Recv::Signal(Signal::Message {
                 msg: LedgerCmd::Post,
                 ..
-            })
+            }))
         ));
     }
 
@@ -612,20 +612,20 @@ mod tests {
             .expect("the ledger's own variant must arrive, not hang");
         assert!(matches!(
             to_ledger,
-            Some(Signal::Message {
+            Some(Recv::Signal(Signal::Message {
                 msg: LedgerCmd::Post,
                 ..
-            })
+            }))
         ));
         let to_audit = timeout(DELIVERY, audit_rx.recv())
             .await
             .expect("the audit's own variant must arrive, not hang");
         assert!(matches!(
             to_audit,
-            Some(Signal::Message {
+            Some(Recv::Signal(Signal::Message {
                 msg: AuditCmd::Record,
                 ..
-            })
+            }))
         ));
     }
 
@@ -674,10 +674,10 @@ mod tests {
             .expect("the awaited tell must deliver, not hang");
         assert!(matches!(
             delivered,
-            Some(Signal::Message {
+            Some(Recv::Signal(Signal::Message {
                 msg: LedgerCmd::Post,
                 ..
-            })
+            }))
         ));
     }
 

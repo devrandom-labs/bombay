@@ -202,7 +202,7 @@ mod tests {
     use crate::{
         actor::{Actor, ActorRef},
         error::{NameTaken, WrongActorType},
-        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
+        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
         message::Msg,
     };
     use proptest::prelude::*;
@@ -306,9 +306,9 @@ mod tests {
         let received = timeout(Duration::from_secs(5), rx.recv())
             .await
             .expect("recv must not hang");
-        let Some(Signal::Message {
+        let Some(Recv::Signal(Signal::Message {
             msg: ProbeMsg(n), ..
-        }) = received
+        })) = received
         else {
             panic!("expected the message on the ORIGINAL receiver");
         };

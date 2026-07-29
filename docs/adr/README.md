@@ -39,3 +39,4 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | [0015](0015-actorid-process-local-pure-name.md) | `ActorId`: process-local pure name; restart mints a new incarnation | Accepted |
 | [0016](0016-tracing-direct-instrumentation.md) | Observability: direct `tracing` instrumentation, no observer seam | Accepted |
 | [0020](0020-collected-stop-not-restart-worthy.md) | Ref-count death is not restart-worthy (`Collected`) | Accepted |
+| [0021](0021-control-signal-lane.md) | Control-signal lane: watch/supervision never queue behind user backlog | Accepted |

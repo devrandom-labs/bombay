@@ -24,7 +24,7 @@ use crate::{
         },
     },
     error::{ActorStopReason, PanicError, PanicReason},
-    mailbox::{ActorId, MailboxReceiver, Mailboxed, Signal},
+    mailbox::{ActorId, ControlSignal, MailboxReceiver, Mailboxed, Recv, Signal},
     restart::{GiveUp, RestartVerdict, SupervisionStrategy, jittered_backoff, should_restart},
     trace,
     watch::{LinkDied, LinkReceiver, LinkSender, WatchReg, Watchers},
@@ -176,12 +176,15 @@ pub(super) enum MailboxPoll<A: Mailboxed> {
     /// The mailbox closed: every strong sender is gone and the queue is
     /// drained (ADR-0003 drain-then-stop already happened).
     Closed,
-    /// An ordinary signal.
+    /// A control-lane signal (watch/supervision), merged ahead of the user
+    /// backlog by `MailboxReceiver::recv` (card #225, ADR-0021).
+    Control(ControlSignal),
+    /// An ordinary user-lane signal.
     Signal(Signal<A>),
 }
 
 /// Awaits the next mailbox event under the cancel token and names which of
-/// the three outcomes happened. The one place the
+/// the outcomes happened. The one place the
 /// `run_until_cancelled(recv())` nesting is interpreted.
 async fn poll_mailbox<A: Mailboxed>(
     cancel: &CancellationToken,
@@ -190,7 +193,8 @@ async fn poll_mailbox<A: Mailboxed>(
     match cancel.run_until_cancelled(mailbox_rx.recv()).await {
         None => MailboxPoll::Cancelled,
         Some(None) => MailboxPoll::Closed,
-        Some(Some(signal)) => MailboxPoll::Signal(signal),
+        Some(Some(Recv::Control(signal))) => MailboxPoll::Control(signal),
+        Some(Some(Recv::Signal(signal))) => MailboxPoll::Signal(signal),
     }
 }
 
@@ -213,6 +217,26 @@ async fn handle_mailbox_step<A: Actor>(
     let next = match poll {
         MailboxPoll::Cancelled => return ControlFlow::Break(ActorStopReason::Normal),
         MailboxPoll::Closed => return ControlFlow::Break(ActorStopReason::Collected),
+        // Register/deregister a watcher on the task-owned guard. The guard's `Drop`
+        // (in `run_lifecycle`) fires the death notices, so being watched is
+        // universal and passive — every actor honors it. Control signals are
+        // served ahead of the user backlog (ADR-0021), so a watch reaches a
+        // full-mailbox actor without waiting on its queue.
+        MailboxPoll::Control(ControlSignal::Watch(reg)) => {
+            watchers.apply(*reg);
+            return ControlFlow::Continue(());
+        }
+        MailboxPoll::Control(ControlSignal::Unwatch(id)) => {
+            watchers.remove(id);
+            return ControlFlow::Continue(());
+        }
+        // An unsupervised loop owns no child table, so there is nothing to apply
+        // the op to. Reserved-arm shape, exactly as `LinkDied` was before #195
+        // made it real: the supervised loop (the next slice of #196) is what
+        // gives this signal an effect.
+        MailboxPoll::Control(ControlSignal::Supervision(_)) => {
+            return ControlFlow::Continue(());
+        }
         MailboxPoll::Signal(next) => next,
     };
     match next {
@@ -243,24 +267,10 @@ async fn handle_mailbox_step<A: Actor>(
             let span: trace::Span = ctx.handle_span::<A>();
             trace::instrument(handle_message(state, actor_ref, self_ref, msg), span).await
         }
-        // In-band graceful stop (FIFO): everything queued ahead was already handled.
+        // In-band graceful stop (FIFO on the USER lane, ADR-0021): everything
+        // queued ahead was already handled. Control signals may overtake a
+        // `Stop`, but a `Stop` never overtakes the messages queued before it.
         Signal::Stop => ControlFlow::Break(ActorStopReason::Normal),
-        // Register/deregister a watcher on the task-owned guard. The guard's `Drop`
-        // (in `run_lifecycle`) fires the death notices, so being watched is
-        // universal and passive — every actor honors it.
-        Signal::Watch(reg) => {
-            watchers.apply(*reg);
-            ControlFlow::Continue(())
-        }
-        Signal::Unwatch(id) => {
-            watchers.remove(id);
-            ControlFlow::Continue(())
-        }
-        // An unsupervised loop owns no child table, so there is nothing to apply
-        // the op to. Reserved-arm shape, exactly as `LinkDied` was before #195
-        // made it real: the supervised loop (the next slice of #196) is what
-        // gives this signal an effect.
-        Signal::Supervision(_) => ControlFlow::Continue(()),
     }
 }
 
@@ -363,9 +373,12 @@ async fn handle_link_died<A: Watch>(
 ///    `retries.is_empty()`: `DelayQueue`'s stream yields `Ready(None)` on an
 ///    empty queue, which under `biased` would spin the select and starve the
 ///    mailbox — the identical hazard the `link_open` flag guards.
-/// 3. **the message mailbox** — a [`Signal::Supervision`] mutates the child
-///    table ([`apply_supervision_op`]); every other signal is the shared
+/// 3. **the message mailbox** — a [`ControlSignal::Supervision`] mutates the
+///    child table ([`apply_supervision_op`]); every other signal is the shared
 ///    [`handle_mailbox_step`], exactly as the plain and linked loops treat it.
+///    Control signals are merged ahead of the user backlog inside `recv`
+///    (ADR-0021), so a `supervise` op never queues behind the supervisor's own
+///    message traffic.
 ///
 /// Because a *waiting* child's deadline leaves arm 2 `Pending`, the supervisor
 /// keeps serving its mailbox throughout a child's backoff — the whole reason the
@@ -451,7 +464,7 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
             }
             maybe = poll_mailbox(&handles.cancel, mailbox_rx) => {
                 match maybe {
-                    MailboxPoll::Signal(Signal::Supervision(op)) => apply_supervision_op(
+                    MailboxPoll::Control(ControlSignal::Supervision(op)) => apply_supervision_op(
                         children,
                         &supervisor,
                         &mut SetCycleCtx::new(retries, pending_aborts, cycle),
@@ -894,25 +907,19 @@ fn rebuild_child(children: &mut Children, sup: &SupervisorRef, old_id: ActorId) 
 /// registration-hazard fix: a death cannot be observed for an id the table holds,
 /// then routed to the peer-watch hook that would kill the supervisor.
 ///
-/// The install is a single non-blocking `try_send` (inside `install_watch`),
-/// never an await, so a slow child can never stall the loop. Its three outcomes:
+/// The install is a single synchronous send on the child's UNBOUNDED control
+/// lane (inside `install_watch`), never an await, so a slow child can never
+/// stall the loop — and since #225 never a kill-on-full either: the lane has no
+/// capacity to exhaust, so a flooded child is watched (late) instead of being
+/// synthesized as a failed incarnation (ADR-0021). Its two outcomes:
 ///
 /// - [`Installed`](WatchOutcome::Installed): the edge is live; done.
 /// - [`Closed`](WatchOutcome::Closed): the child died in its unwatched window, so
 ///   its own notice never reached us — synthesize the `AlreadyDead` one, which the
 ///   next poll turns into a restart (the child is table-present).
-/// - [`Full`](WatchOutcome::Full): the child was flooded before we could watch it.
-///   A bounded wait here would stall ALL supervision, so the child is killed and
-///   synthesized as an immediate failed incarnation; the restart policy then
-///   rebuilds it (or, under `Never`, leaves it dead — the caller's intent).
 fn install_child_watch(sup: &SupervisorRef, handle: &ChildHandle, install_watch: WatchInstaller) {
     match install_watch(sup.watch_reg()) {
         WatchOutcome::Installed => {}
-        WatchOutcome::Full => {
-            handle.cancel.cancel();
-            handle.abort.abort();
-            sup.synthesize_child_death(handle.id);
-        }
         WatchOutcome::Closed => sup.synthesize_child_death(handle.id),
     }
 }
@@ -985,16 +992,19 @@ fn apply_supervision_op(
     }
 }
 
-/// Drains queued supervision ops from a supervisor's mailbox after the message
-/// loop has exited gracefully. The loop is gone, so cycle bookkeeping is
+/// Drains queued supervision ops from a supervisor's CONTROL lane after the
+/// message loop has exited gracefully. The loop is gone, so cycle bookkeeping is
 /// unnecessary and discarded; the goal is to land every queued child in the
 /// table so the following teardown sweep treats it like any other supervised
-/// child. This is mechanism 1 of #248 / the ADR-0019 amendment.
+/// child. This is mechanism 1 of #248 / the ADR-0019 amendment, moved lanes
+/// intact by #225: the graceful path APPLIES the ops through the same logic the
+/// loop uses, never the reject path.
 ///
 /// `Add` is disarmed, inserted, and watched (insert-before-watch, #196). `Remove`
 /// detaches the child without stopping it. `Stop` cancels and schedules a deferred
 /// abort (the following `pending_aborts.clear()` truncates the grace). `Watch`/
-/// `Unwatch` are applied to `watchers`. Messages and `Signal::Stop` are discarded.
+/// `Unwatch` are applied to `watchers`. The user-lane backlog is discarded — but
+/// still drained, releasing each queued message's strong `self_sender` (ADR-0003).
 #[expect(
     clippy::too_many_arguments,
     reason = "the epilogue needs one borrow per task-owned structure plus the \
@@ -1013,9 +1023,9 @@ pub(super) fn drain_queued_supervision<A: Actor>(
         id: sup_id,
         link_tx: sup_link_tx,
     };
-    for signal in mailbox_rx.drain() {
+    for signal in mailbox_rx.drain_control() {
         match signal {
-            Signal::Supervision(op) => match *op {
+            ControlSignal::Supervision(op) => match *op {
                 SupervisionOp::Add(armed) => install_registration(children, &sup, armed),
                 SupervisionOp::Remove(id) => {
                     children.remove(id);
@@ -1029,10 +1039,14 @@ pub(super) fn drain_queued_supervision<A: Actor>(
                     }
                 }
             },
-            Signal::Watch(reg) => watchers.apply(*reg),
-            Signal::Unwatch(id) => watchers.remove(id),
-            Signal::Message { .. } | Signal::Stop => {}
+            ControlSignal::Watch(reg) => watchers.apply(*reg),
+            ControlSignal::Unwatch(id) => watchers.remove(id),
         }
+    }
+    // The user backlog is abandoned on this path, never applied — but draining
+    // it releases each queued message's strong `self_sender` (ADR-0003).
+    for signal in mailbox_rx.drain() {
+        drop(signal);
     }
 }
 
@@ -1095,8 +1109,8 @@ mod supervised_tests {
     use fastrand::Rng;
 
     use super::{
-        SetCycleCtx, SupervisorRef, apply_supervision_op, handle_child_death, install_child_watch,
-        rebuild_child, teardown_children,
+        SetCycleCtx, SupervisorRef, apply_supervision_op, drain_queued_supervision,
+        handle_child_death, install_child_watch, rebuild_child, teardown_children,
     };
     use crate::{
         actor::supervision::{
@@ -1104,21 +1118,38 @@ mod supervised_tests {
             SuperviseReg, SupervisionOp, WatchInstaller, WatchOutcome, watch_installer,
         },
         error::{ActorStopReason, PanicError, PanicReason},
-        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
+        mailbox::{ActorId, Capacity, ControlSignal, Mailbox, MailboxReceiver, Mailboxed, Signal},
         message::Msg,
         restart::{RestartConfig, RestartPolicy, RestartTracker, SupervisionStrategy},
-        watch::{LinkDied, LinkReceiver, LinkSender},
+        watch::{LinkDied, LinkReceiver, LinkSender, WatchReg, Watchers},
     };
     use core::ops::ControlFlow;
 
     /// A minimal actor purely to key a real mailbox in the watch-install tests —
-    /// its `Msg` is never handled here, only enqueued and drained.
+    /// its `Msg` is never handled here, only enqueued and drained. The `Actor`
+    /// impl exists so `drain_queued_supervision` (generic over `A: Actor`) can
+    /// take its mailbox.
     struct Probe;
     #[derive(Debug)]
     struct ProbeMsg;
     impl Msg for ProbeMsg {}
     impl Mailboxed for Probe {
         type Msg = ProbeMsg;
+    }
+    impl crate::actor::Actor for Probe {
+        type Args = ();
+        type Error = core::convert::Infallible;
+        async fn on_start((): (), _: crate::actor::ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self)
+        }
+        async fn handle(
+            &mut self,
+            _: ProbeMsg,
+            _: crate::actor::ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
     }
 
     fn cap(n: usize) -> Capacity {
@@ -1645,9 +1676,9 @@ mod supervised_tests {
     }
 
     /// The registration-hazard fix, happy path: installing the watch on an OPEN
-    /// child enqueues the supervisor's MONITORING edge onto the child's mailbox and
-    /// synthesizes no death. The watcher on the enqueued reg is the supervisor —
-    /// this is the edge that later carries the child's death back.
+    /// child enqueues the supervisor's MONITORING edge onto the child's CONTROL
+    /// lane and synthesizes no death. The watcher on the enqueued reg is the
+    /// supervisor — this is the edge that later carries the child's death back.
     #[tokio::test]
     async fn install_child_watch_enqueues_the_edge_on_an_open_child() {
         let (sup, link_rx) = supervisor(ActorId::from_raw_for_test(100));
@@ -1659,8 +1690,11 @@ mod supervised_tests {
             link_rx.try_recv().is_err(),
             "an installed edge self-heals nothing",
         );
-        let signal = rx.drain().next().expect("the watch reg reached the child");
-        let Signal::Watch(reg) = signal else {
+        let signal = rx
+            .drain_control()
+            .next()
+            .expect("the watch reg reached the child's control lane");
+        let ControlSignal::Watch(reg) = signal else {
             panic!("expected a queued Watch reg");
         };
         assert_eq!(
@@ -1709,27 +1743,50 @@ mod supervised_tests {
         );
     }
 
-    /// A child flooded before the loop could watch it (`try_send` reports `Full`)
-    /// is not waited on — a bounded wait would stall ALL supervision. It is killed
-    /// (cancel + abort) and synthesized as an immediate `AlreadyDead` failure, so
-    /// the restart policy rebuilds it. Proves the loop never blocks on a full
-    /// child mailbox.
+    /// #225 / ADR-0021 — the deliberate semantic CHANGE: a child flooded before
+    /// the loop could watch it is no longer a failed incarnation. The install
+    /// rides the child's UNBOUNDED control lane, which has no capacity to
+    /// exhaust, so the edge lands on the full child and NOTHING is killed or
+    /// synthesized. Regression-guards the removed `WatchOutcome::Full`: the
+    /// kill-and-synthesize behaviour was the bounded-lane compromise; on the
+    /// control lane the registration is never lost to user backlog (the exact
+    /// point of the card).
     #[tokio::test]
-    async fn install_child_watch_kills_and_synthesizes_when_child_mailbox_full() {
+    async fn install_child_watch_lands_on_a_flooded_child_via_the_control_lane() {
         let (sup, link_rx) = supervisor(ActorId::from_raw_for_test(100));
         let child_id = ActorId::from_raw_for_test(8);
-        let (tx, _rx) = Mailbox::<Probe>::bounded(cap(1), child_id);
-        tx.try_send(Signal::Stop).expect("the one slot fills");
+        let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(1), child_id);
+        tx.try_send(Signal::Stop)
+            .expect("the one user-lane slot fills");
         let h = handle(child_id);
         install_child_watch(&sup, &h, watch_installer(tx));
 
-        assert!(h.cancel.is_cancelled(), "a flooded child is cancelled...");
-        assert!(h.abort.is_aborted(), "...and hard-aborted, never waited on");
-        let notice = link_rx
-            .try_recv()
-            .expect("the killed incarnation is synthesized as a death");
-        assert_eq!(notice.id, child_id);
-        assert!(matches!(notice.reason, ActorStopReason::AlreadyDead));
+        assert!(
+            !h.cancel.is_cancelled(),
+            "a flooded child is watched, never killed",
+        );
+        assert!(
+            !h.abort.is_aborted(),
+            "and never aborted as a failed incarnation",
+        );
+        assert!(
+            link_rx.try_recv().is_err(),
+            "no synthetic death — the edge landed on the live child",
+        );
+        // The watch reg rode the control lane AROUND the full user lane...
+        let signal = rx
+            .drain_control()
+            .next()
+            .expect("the watch reg reached the flooded child's control lane");
+        let ControlSignal::Watch(reg) = signal else {
+            panic!("expected a queued Watch reg on the control lane");
+        };
+        assert_eq!(reg.watcher, ActorId::from_raw_for_test(100));
+        // ...and the earlier user-lane signal is untouched behind it.
+        assert!(
+            matches!(rx.drain().next(), Some(Signal::Stop)),
+            "the flooded user backlog is undisturbed",
+        );
     }
 
     /// @bug (card #196 Task-10 review) The rebuild-path half of the hazard fix:
@@ -1781,10 +1838,10 @@ mod supervised_tests {
             .take()
             .expect("the factory spawned a fresh incarnation");
         let signal = rx
-            .drain()
+            .drain_control()
             .next()
-            .expect("the watch reg reached the rebuilt child");
-        let Signal::Watch(reg) = signal else {
+            .expect("the watch reg reached the rebuilt child's control lane");
+        let ControlSignal::Watch(reg) = signal else {
             panic!("expected a queued Watch reg on the rebuilt child");
         };
         assert_eq!(
@@ -1795,6 +1852,108 @@ mod supervised_tests {
         assert!(
             sup_link_rx.try_recv().is_err(),
             "an open rebuild synthesizes no death",
+        );
+    }
+
+    /// The #248 epilogue path on the #225 lane, pinned at the unit level: the
+    /// epilogue is not deterministically reachable from outside a live loop
+    /// (control-first recv always applies a queued op in-loop first), so the
+    /// drain is driven directly here with a preloaded control lane —
+    /// `Add` + `Watch` + `Stop`. The `Add` lands in the child table through the
+    /// SAME apply logic the loop uses (insert-before-watch, #196), the `Watch`
+    /// in the watcher set, and the `Stop` (on an already-tabled child) cancels
+    /// it and defers the abort onto `pending_aborts`.
+    #[tokio::test]
+    async fn drain_queued_supervision_applies_a_preloaded_control_lane() {
+        let sup_id = ActorId::from_raw_for_test(100);
+        let (sup, _sup_link_rx) = supervisor(sup_id);
+        let SupervisorRef {
+            link_tx: sup_link_tx,
+            ..
+        } = sup;
+        let (tx, mut mailbox_rx) = Mailbox::<Probe>::bounded(cap(8), sup_id);
+
+        // Add: a fresh child whose watch install lands on its open control lane.
+        let add_id = ActorId::from_raw_for_test(1);
+        let (child_tx, _child_rx) = Mailbox::<Probe>::bounded(cap(4), add_id);
+        let add_reg = SuperviseReg {
+            child: child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
+            id: add_id,
+            install_watch: watch_installer(child_tx),
+        };
+        tx.send_control(ControlSignal::Supervision(Box::new(SupervisionOp::Add(
+            ArmedReg::new(add_reg),
+        ))))
+        .expect("add enqueued");
+
+        // Watch: a watcher edge on the supervisor itself.
+        let (watch_link_tx, watch_link_rx) = flume::unbounded::<LinkDied>();
+        tx.send_control(ControlSignal::Watch(Box::new(WatchReg {
+            watcher: ActorId::from_raw_for_test(9),
+            link_tx: watch_link_tx,
+            linked: false,
+        })))
+        .expect("watch enqueued");
+
+        // Stop: an already-tabled child — cancel now, abort deferred.
+        let stop_id = ActorId::from_raw_for_test(2);
+        let stop_handle = handle(stop_id);
+        let stop_edges = stop_handle.clone();
+        let mut children = Children::new();
+        children.insert(stop_id, {
+            let mut entry = child(RestartConfig::new(RestartPolicy::Permanent), Instant::now());
+            entry.handle = Some(stop_handle);
+            entry
+        });
+        tx.send_control(ControlSignal::Supervision(Box::new(SupervisionOp::Stop(
+            stop_id,
+        ))))
+        .expect("stop enqueued");
+
+        let mut watchers = Watchers::new(sup_id);
+        let mut pending_aborts = DelayQueue::new();
+        drain_queued_supervision(
+            &mut mailbox_rx,
+            &mut children,
+            &mut watchers,
+            &mut pending_aborts,
+            sup_id,
+            sup_link_tx,
+        );
+
+        assert!(
+            children.get_mut(add_id).is_some(),
+            "the drained Add landed in the child table",
+        );
+        assert!(
+            children.get_mut(stop_id).is_none(),
+            "the drained Stop dropped the table entry",
+        );
+        assert!(
+            stop_edges.cancel.is_cancelled(),
+            "the drained Stop cancelled the child",
+        );
+        assert!(
+            !stop_edges.abort.is_aborted(),
+            "the abort is DEFERRED, not fired inline",
+        );
+        assert_eq!(
+            pending_aborts.len(),
+            1,
+            "the drained Stop's abort waits on pending_aborts",
+        );
+
+        // The drained Watch was applied to the watcher set: dropping the guard
+        // fires its notice.
+        watchers.set_reason(ActorStopReason::Normal);
+        drop(watchers);
+        let notice = watch_link_rx
+            .try_recv()
+            .expect("the drained Watch must be applied to the watcher set");
+        assert_eq!(notice.id, sup_id, "the notice names the supervisor");
+        assert!(
+            matches!(notice.reason, ActorStopReason::Normal),
+            "the guard's reason rides the notice",
         );
     }
 

@@ -63,7 +63,7 @@ use bombay::{
         WeakActorRef,
     },
     error::{ActorStopReason, AskError, TellError},
-    mailbox::{Capacity, Mailboxed, Signal},
+    mailbox::{Capacity, ControlSignal, Mailboxed, Signal},
     message::Msg,
     reply::ReplySender,
     restart::{RestartConfig, RestartPolicy, SupervisionStrategy},
@@ -1208,4 +1208,336 @@ fn dst_backoff_distribution_measured() {
         !(d1 == d2 && d2 == d3),
         "jitter must vary the measured delays across seeds, got identical runs: {d1:?}",
     );
+}
+
+// ---------------------------------------------------------------------------
+// Scenario 8 (card #225, ADR-0021) — control-signal interleavings: the public
+// `watch` API against a target whose handler is PARKED and whose user lane is
+// FULL. Pre-#225 the registration awaited mailbox capacity and this test's
+// bounded wrapper fired; on the control lane it completes immediately, and the
+// installed edge delivers the death notice once the backlog has drained.
+// ---------------------------------------------------------------------------
+
+/// A linked watcher that tapes every death notice id its hook receives.
+struct TapingWatcher {
+    notices: flume::Sender<bombay::ActorId>,
+}
+impl Mailboxed for TapingWatcher {
+    type Msg = Ping;
+}
+impl Actor for TapingWatcher {
+    type Args = flume::Sender<bombay::ActorId>;
+    type Error = Infallible;
+    async fn on_start(notices: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        Ok(Self { notices })
+    }
+    async fn handle(
+        &mut self,
+        _: Ping,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+    async fn on_stop(
+        &mut self,
+        _: WeakActorRef<Self>,
+        _: ActorStopReason,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+impl Watch for TapingWatcher {
+    async fn on_link_died(
+        &mut self,
+        id: bombay::ActorId,
+        _: ActorStopReason,
+        _: bool,
+    ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
+        self.notices
+            .try_send(id)
+            .expect("the notice tape is unbounded");
+        Ok(core::ops::ControlFlow::Continue(()))
+    }
+}
+
+/// A spy whose FIRST handler call parks until the test releases it — the gate
+/// that keeps the user backlog undrained while the control ops land.
+struct GatedSpy {
+    release: Option<oneshot::Receiver<()>>,
+    handled: Arc<AtomicU32>,
+}
+impl Mailboxed for GatedSpy {
+    type Msg = Ping;
+}
+impl Actor for GatedSpy {
+    // (entered, release, handled)
+    type Args = (oneshot::Sender<()>, oneshot::Receiver<()>, Arc<AtomicU32>);
+    type Error = Infallible;
+    async fn on_start(
+        (entered, release, handled): Self::Args,
+        _: ActorRef<Self>,
+    ) -> Result<Self, Self::Error> {
+        let _ = entered.send(()); // "loop parked on the first handler"
+        Ok(Self {
+            release: Some(release),
+            handled,
+        })
+    }
+    async fn handle(
+        &mut self,
+        _: Ping,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        if let Some(release) = self.release.take() {
+            let _ = release.await; // park with the backlog queued behind us
+        }
+        self.handled.fetch_add(1, Ordering::SeqCst);
+        Ok(())
+    }
+    async fn on_stop(
+        &mut self,
+        _: WeakActorRef<Self>,
+        _: ActorStopReason,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+/// The full-mailbox interleaving, deterministically: the target parks in its
+/// first handler with three more messages queued (lane FULL); a linked watcher's
+/// `watch()` must still complete (control lane, not capacity), the backlog must
+/// drain in order afterwards, and the installed edge must deliver the notice.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn watch_completes_while_target_backlog_is_full_and_parked() {
+    let (entered_tx, entered_rx) = oneshot::channel();
+    let (release_tx, release_rx) = oneshot::channel();
+    let handled = Arc::new(AtomicU32::new(0));
+
+    let prepared = PreparedActor::<GatedSpy>::new(cap(3));
+    let target_ref = prepared.actor_ref().clone();
+    let target_id = target_ref.id();
+    let run = prepared.spawn((entered_tx, release_rx, Arc::clone(&handled)));
+
+    // The loop dequeues message 1 and parks in its handler...
+    bounded(target_ref.tell(Ping)).await.expect("message 1");
+    timeout(TERMINATE, entered_rx)
+        .await
+        .expect("the handler must reach the gate, not hang")
+        .expect("the handler is parked");
+    // ...and the user lane is now filled to capacity behind it.
+    for _ in 0..3 {
+        bounded(target_ref.tell(Ping)).await.expect("backlog fill");
+    }
+
+    // The watcher registers from a real linked actor: pre-#225 this `.await`ed
+    // the full bounded mailbox and deadlocked against the parked handler.
+    let (notice_tx, notice_rx) = flume::unbounded();
+    let (watcher_prepared, watcher_link_rx) = PreparedActor::<TapingWatcher>::new_linked(cap(1));
+    let watcher_ref = watcher_prepared.actor_ref().clone();
+    let watcher_run = watcher_prepared.spawn_linked_task(notice_tx, watcher_link_rx);
+    bounded(watcher_ref.watch(&target_ref))
+        .await
+        .expect("watch must complete on the control lane, not await the full backlog");
+
+    // Release the gate: the control op applies, then the backlog drains FIFO.
+    release_tx.send(()).expect("release the parked handler");
+    drop(target_ref); // collection after the drain
+    let outcome = timeout(TERMINATE, run)
+        .await
+        .expect("the target must stop, not hang")
+        .expect("join");
+    assert!(
+        matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Collected,
+                ..
+            }
+        ),
+        "ref-drop collection, got {outcome:?}",
+    );
+    assert_eq!(
+        handled.load(Ordering::SeqCst),
+        4,
+        "the full backlog drained, undisturbed by the control op",
+    );
+
+    // The edge installed through the full backlog delivers the death notice.
+    let noticed = timeout(TERMINATE, notice_rx.recv_async())
+        .await
+        .expect("the installed edge must deliver, not hang")
+        .expect("the notice tape is open");
+    assert_eq!(noticed, target_id, "the watcher learned the target's death");
+
+    drop(watcher_ref);
+    let watcher_outcome = timeout(TERMINATE, watcher_run)
+        .await
+        .expect("the watcher must stop, not hang")
+        .expect("join");
+    assert!(
+        matches!(watcher_outcome, RunResult::Stopped { .. }),
+        "the watcher stops cleanly, got {watcher_outcome:?}",
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Scenario 9 (card #225, ADR-0021) — SEEDED control/user interleavings. Per
+// seed, a fastrand script interleaves user-lane tells with control-lane
+// watch/unwatch ops over two watcher ids, all enqueued while the target's
+// handler is parked and its mailbox FULL. After release: every user message
+// is handled (user FIFO intact under control interleavings), and each watcher
+// id's edge state is its script's LAST op (control intra-lane FIFO), proven
+// by notice/no-notice at teardown. The overtake half is structural here: the
+// sync `send_control` lands while the handler is parked and the lane is full.
+// ---------------------------------------------------------------------------
+
+/// The control op kinds a seeded script can hold: each `Watch` mints a fresh
+/// registration (`Watchers::apply` keeps duplicates, Erlang-style), each
+/// `Unwatch` removes every edge of its id.
+#[derive(Clone, Copy, Debug)]
+enum ScriptCtl {
+    WatchA,
+    UnwatchA,
+    WatchB,
+    UnwatchB,
+}
+
+impl ScriptCtl {
+    fn watcher(self) -> bombay::ActorId {
+        match self {
+            Self::WatchA | Self::UnwatchA => bombay::ActorId::from_raw_for_test(101),
+            Self::WatchB | Self::UnwatchB => bombay::ActorId::from_raw_for_test(102),
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn seeded_control_user_interleavings_preserve_per_lane_fifo() {
+    use bombay::test_support::watch_signal;
+
+    for seed in [3_u64, 17, 42] {
+        let mut rng = fastrand::Rng::with_seed(seed);
+
+        // A seeded script: exactly 4 user tells (fills cap(4) while parked)
+        // plus 6 control ops over the two ids, shuffled together.
+        let mut script: Vec<Option<ScriptCtl>> = vec![None; 4];
+        for _ in 0..6 {
+            let op = match rng.usize(..4) {
+                0 => ScriptCtl::WatchA,
+                1 => ScriptCtl::UnwatchA,
+                2 => ScriptCtl::WatchB,
+                _ => ScriptCtl::UnwatchB,
+            };
+            script.push(Some(op));
+        }
+        rng.shuffle(&mut script);
+
+        let (entered_tx, entered_rx) = oneshot::channel();
+        let (release_tx, release_rx) = oneshot::channel();
+        let handled = Arc::new(AtomicU32::new(0));
+        let prepared = PreparedActor::<GatedSpy>::new(cap(4));
+        let target_ref = prepared.actor_ref().clone();
+        let target_id = target_ref.id();
+        let run = prepared.spawn((entered_tx, release_rx, Arc::clone(&handled)));
+
+        // Park the handler, then play the script against the full mailbox.
+        bounded(target_ref.tell(Ping))
+            .await
+            .expect("park the handler");
+        timeout(TERMINATE, entered_rx)
+            .await
+            .expect("the handler must reach the gate, not hang")
+            .expect("the handler is parked");
+
+        // The link receivers of every Watch minted per id, split by survival:
+        // an edge survives iff no Unwatch for its id follows it in the script
+        // (`Watchers::remove` clears ALL edges of the id). Surviving DUPLICATE
+        // edges each deliver a notice at teardown.
+        let mut alive_a = Vec::new();
+        let mut dead_a = Vec::new();
+        let mut alive_b = Vec::new();
+        let mut dead_b = Vec::new();
+        for step in &script {
+            match step {
+                None => bounded(target_ref.tell(Ping)).await.expect("user tell"),
+                Some(op) => match op {
+                    ScriptCtl::WatchA | ScriptCtl::WatchB => {
+                        let (signal, link_rx) = watch_signal(op.watcher(), false);
+                        // Overtake witness: lands synchronously while the handler
+                        // is parked and the user lane full.
+                        target_ref
+                            .mailbox_sender()
+                            .send_control(signal)
+                            .expect("control op lands on the full mailbox");
+                        if matches!(op, ScriptCtl::WatchA) {
+                            alive_a.push(link_rx);
+                        } else {
+                            alive_b.push(link_rx);
+                        }
+                    }
+                    ScriptCtl::UnwatchA | ScriptCtl::UnwatchB => {
+                        target_ref
+                            .mailbox_sender()
+                            .send_control(ControlSignal::Unwatch(op.watcher()))
+                            .expect("unwatch lands on the full mailbox");
+                        // Every edge minted so far for this id is now removed.
+                        if matches!(op, ScriptCtl::UnwatchA) {
+                            dead_a.append(&mut alive_a);
+                        } else {
+                            dead_b.append(&mut alive_b);
+                        }
+                    }
+                },
+            }
+        }
+
+        release_tx.send(()).expect("release the parked handler");
+        drop(target_ref); // collection after the drain
+        let outcome = timeout(TERMINATE, run)
+            .await
+            .expect("the target must stop, not hang")
+            .expect("join");
+        assert!(
+            matches!(
+                outcome,
+                RunResult::Stopped {
+                    reason: ActorStopReason::Collected,
+                    ..
+                }
+            ),
+            "seed {seed}: ref-drop collection, got {outcome:?}",
+        );
+        assert_eq!(
+            handled.load(Ordering::SeqCst),
+            5,
+            "seed {seed}: the parked message plus all 4 scripted tells were handled",
+        );
+
+        // Control intra-lane FIFO: every edge that survived to teardown (no
+        // later Unwatch for its id) delivers a notice; every removed edge is
+        // silent. Duplicates survive together (Erlang-style monitors).
+        let expect = [(alive_a, dead_a, "A"), (alive_b, dead_b, "B")];
+        for (alive, dead, name) in expect {
+            for rx in alive {
+                let notice = timeout(TERMINATE, rx.recv_async())
+                    .await
+                    .expect("seed {seed}: every surviving edge must deliver")
+                    .expect("the link channel is open");
+                assert_eq!(
+                    notice.id, target_id,
+                    "seed {seed}: watcher {name}'s surviving edge names the target",
+                );
+                assert!(
+                    matches!(notice.reason, ActorStopReason::Collected),
+                    "seed {seed}: the true reason rides watcher {name}'s notice",
+                );
+            }
+            assert!(
+                dead.iter().all(|rx| rx.try_recv().is_err()),
+                "seed {seed}: watcher {name}'s removed edges deliver no notice",
+            );
+        }
+    }
 }

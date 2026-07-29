@@ -397,3 +397,199 @@ async fn linear_concurrent_producers_no_loss_no_phantom() {
         "at-least-once accounting: no lost job, no phantom job",
     );
 }
+
+// ---------------------------------------------------------------------------
+// Card #225 — the control lane at APP level (walking skeleton): a dispatcher
+// whose mailbox is FULL still adopts a supervised child promptly.
+// ---------------------------------------------------------------------------
+
+/// The dispatcher's user lane is filled to capacity (two pending `Submit`
+/// asks, mailbox cap 2) BEFORE the loop starts. A `supervise` op enqueued
+/// against that full mailbox rides the unbounded control lane (ADR-0021), so
+/// it is applied before the backlog drains — proven by the child being
+/// adopted: its death drives a rebuild, which only a table-present, watched
+/// child can produce. Pre-#225 the `supervise` call parked on the full
+/// mailbox and this test's bounded wrapper fired.
+///
+/// NOT fixed here (and asserted as such): the #218 wart-3 `WorkerReplaced`
+/// roster update is a USER message — it still rides the bounded lane, so
+/// incarnation 0's roster tell (fired at the inline spawn, mailbox full) is
+/// dropped. Incarnation 1's, fired during the in-loop rebuild after the
+/// backlog drained, lands — the roster ends with exactly the rebuild. #244
+/// tracks the underlying loss.
+#[tokio::test]
+async fn supervise_lands_while_dispatcher_backlog_is_full() {
+    use std::sync::Mutex;
+
+    use bombay::{
+        actor::{ActorRef, PreparedActor, RunResult, Spawn, WeakActorRef},
+        error::ActorStopReason,
+        mailbox::Capacity,
+        test_support::set_supervisor_rng_seed,
+    };
+    use futures::FutureExt;
+
+    set_supervisor_rng_seed(Some(3));
+    let registry = Arc::new(Registry::new());
+    let cfg = DispatcherConfig {
+        workers: 0, // the test drives `supervise` itself
+        ..config_no_seam(&registry)
+    };
+    let (prepared, link_rx) =
+        PreparedActor::<Dispatcher>::new_linked(Capacity::try_from(2usize).expect("cap"));
+    let dispatcher_ref = prepared.actor_ref().clone();
+
+    // Fill the user lane: two `Submit` asks, each polled exactly once so the
+    // message enqueues but the reply stays pending — mailbox now FULL.
+    let mut ask1 = Box::pin(
+        dispatcher_ref
+            .ask(|reply| DispatcherMsg::Submit {
+                job: ok_job(900),
+                reply,
+            })
+            .into_future(),
+    );
+    let mut ask2 = Box::pin(
+        dispatcher_ref
+            .ask(|reply| DispatcherMsg::Submit {
+                job: ok_job(901),
+                reply,
+            })
+            .into_future(),
+    );
+    assert!(ask1.as_mut().now_or_never().is_none(), "ask 1 enqueued");
+    assert!(
+        ask2.as_mut().now_or_never().is_none(),
+        "ask 2 enqueued — lane full"
+    );
+
+    // The supervise factory mirrors the app's own — but captures NO strong
+    // dispatcher handle: the closure lives in the dispatcher's own child
+    // table, so a captured `Recipient` would be a self-cycle and ref-count
+    // stop (ADR-0003) could never fire. The done port is derived INSIDE the
+    // closure from the weak ref instead. Its `WorkerReplaced` roster tell
+    // rides the USER lane and is dropped on the full mailbox — wart 3,
+    // unchanged by this card (#244).
+    let (birth_tx, birth_rx) = flume::unbounded::<u32>();
+    let (stopped_tx, stopped_rx) = flume::unbounded::<ActorId>();
+    let stash: Arc<Mutex<Option<ActorRef<app::Worker>>>> = Arc::new(Mutex::new(None));
+    let next = Arc::new(std::sync::atomic::AtomicU32::new(0));
+    let child_id = {
+        let disp_weak: WeakActorRef<Dispatcher> = dispatcher_ref.downgrade();
+        let stash = Arc::clone(&stash);
+        let next = Arc::clone(&next);
+        let restart = cfg.restart.clone();
+        bounded(dispatcher_ref.supervise(restart, move || {
+            let seq = next.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            birth_tx.try_send(seq).expect("unbounded birth tape");
+            let disp = disp_weak
+                .upgrade()
+                .expect("the dispatcher is alive whenever this factory runs");
+            let worker = app::Worker::spawn(app::WorkerArgs {
+                slot: 9,
+                dispatcher: disp.recipient::<app::Done>(),
+                stopped_tx: Some(stopped_tx.clone()),
+            });
+            let _ = disp
+                .tell(DispatcherMsg::WorkerReplaced {
+                    slot: 9,
+                    id: worker.id(),
+                    worker: worker.recipient::<app::Job>(),
+                })
+                .try_send(); // wart 3: dropped while the mailbox is full
+            *stash.lock().expect("stash lock") = Some(worker.clone());
+            worker
+        }))
+        .await
+        .expect("supervise must not hang on the full backlog")
+    };
+    // The first incarnation spawned inline at the call — with the mailbox full.
+    assert_eq!(
+        birth_rx.try_recv().ok(),
+        Some(0),
+        "incarnation 0 was born at the supervise call",
+    );
+
+    let run = prepared.spawn_supervised_task(cfg, link_rx);
+
+    // Kill incarnation 0: only an APPLIED Add (table insert + installed watch
+    // edge, or the installer's self-healing Closed path) turns that death into
+    // a rebuild. No rebuild ⇒ the op was lost to the backlog.
+    stash
+        .lock()
+        .expect("stash lock")
+        .as_ref()
+        .expect("incarnation 0 stashed")
+        .kill();
+    let reborn = bounded(birth_rx.recv_async())
+        .await
+        .expect("a rebuild must arrive — the supervise op was applied");
+    assert_eq!(
+        reborn, 1,
+        "the backlogged dispatcher adopted and rebuilt the child"
+    );
+
+    // The user backlog drained AFTER the control op: both asks resolve.
+    bounded(&mut ask1).await.expect("submit 1 reply");
+    bounded(&mut ask2).await.expect("submit 2 reply");
+
+    // Wart 3, true semantics: ONLY incarnation 0's `WorkerReplaced` was
+    // dropped — the mailbox was full at the inline first spawn. Incarnation
+    // 1's factory ran during the in-loop rebuild AFTER the backlog drained, so
+    // its roster tell landed. The roster holds exactly the rebuild.
+    let stats = bounded(dispatcher_ref.ask(|reply| DispatcherMsg::Stats { reply }))
+        .await
+        .expect("stats reply");
+    let occupant_id = stash
+        .lock()
+        .expect("stash lock")
+        .as_ref()
+        .expect("incarnation 1 stashed")
+        .id();
+    assert_eq!(
+        stats.worker_ids,
+        vec![occupant_id],
+        "only incarnation 0's roster update was dropped (wart 3 — #244, not \
+         this card); the rebuild's landed once the backlog had drained",
+    );
+
+    // The adopted child is stopped via the supervisor's own `stop_child`
+    // (control lane): its graceful stop drops the worker's `Recipient<Done>`
+    // — a STRONG dispatcher sender (recipient.rs erases a strong `ActorRef`),
+    // so a live worker pins the dispatcher exactly like the app's own workers
+    // do, and collection below could never fire while it lives. Releasing it
+    // first is what lets the ref-count stop happen at all; the app's real
+    // dispatcher never relies on collection (it stops in-band on Drain).
+    bounded(dispatcher_ref.stop_child(occupant_id))
+        .await
+        .expect("the dispatcher is alive");
+    // Incarnation 1's graceful stop is the one stop the seam reports
+    // (incarnation 0 was killed — `on_stop` skipped).
+    let swept = bounded(stopped_rx.recv_async())
+        .await
+        .expect("the surviving incarnation is stopped via stop_child");
+    assert_eq!(swept, occupant_id, "the stopped incarnation is the rebuild");
+    assert!(
+        stopped_rx.try_recv().is_err(),
+        "exactly one graceful child stop (the killed incarnation skips on_stop)",
+    );
+
+    drop(dispatcher_ref); // every strong sender gone: collection fires
+    let outcome = bounded(run).await.expect("run joins");
+    assert!(
+        matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Collected,
+                ..
+            }
+        ),
+        "ref-drop collection, got {outcome:?}",
+    );
+    // Lineage semantics (ADR-0015): `supervise` returned the FIRST
+    // incarnation's id; the roster/sweep name the REBUILD, a fresh id.
+    assert_ne!(
+        child_id, occupant_id,
+        "the returned id names the first incarnation; the rebuild minted a fresh one",
+    );
+}

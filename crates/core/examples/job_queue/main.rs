@@ -14,6 +14,7 @@ use app::{
     DISPATCHER_NAME, Dispatcher, DispatcherConfig, DispatcherMsg, Job, JobKind, OverseerMsg,
 };
 use bombay::{
+    actor::Spawn,
     registry::Registry,
     restart::{RestartConfig, RestartPolicy},
 };
@@ -60,6 +61,63 @@ async fn main() {
             })
             .await
             .expect("submit accepted");
+    }
+
+    // Card #225 control-lane beat: a burst of submits is in flight (the
+    // dispatcher's mailbox is busy) when a new worker is `supervise`d — the op
+    // rides the unbounded control lane (ADR-0021), so it lands promptly instead
+    // of queueing behind the burst.
+    let mut burst = Vec::new();
+    for id in 100..108u64 {
+        let dispatcher = dispatcher.clone();
+        burst.push(tokio::spawn(async move {
+            dispatcher
+                .ask(|reply| DispatcherMsg::Submit {
+                    job: Job {
+                        id,
+                        kind: JobKind::Ok(Duration::from_millis(20)),
+                    },
+                    reply,
+                })
+                .await
+        }));
+    }
+    let extra_worker_id = dispatcher
+        .supervise(
+            RestartConfig::new(RestartPolicy::Permanent)
+                .with_min_backoff(Duration::from_millis(10))
+                .with_max_restarts(20),
+            {
+                let disp = dispatcher.downgrade();
+                let done_port = dispatcher.recipient::<app::Done>();
+                move || {
+                    let worker = app::Worker::spawn(app::WorkerArgs {
+                        slot: 3,
+                        dispatcher: done_port.clone(),
+                        stopped_tx: None,
+                    });
+                    if let Some(d) = disp.upgrade() {
+                        // same WorkerReplaced seam as on_start's factories
+                        let _ = d
+                            .tell(DispatcherMsg::WorkerReplaced {
+                                slot: 3,
+                                id: worker.id(),
+                                worker: worker.recipient::<Job>(),
+                            })
+                            .try_send();
+                    }
+                    worker
+                }
+            },
+        )
+        .await
+        .expect("supervise lands on the control lane, never behind the burst");
+    println!("supervised extra worker {extra_worker_id:?} mid-burst (control lane)");
+    for submit in burst {
+        submit
+            .await
+            .expect("burst task")
+            .expect("burst submit accepted");
     }
 
     let report = dispatcher

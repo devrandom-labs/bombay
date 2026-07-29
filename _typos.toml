@@ -32,3 +32,7 @@ alph = "alph"
 # whose handler deliberately fails/panics); an agent-noun, not a misspelling of
 # "Failure".
 failer = "failer"
+# `raison` — "raison d'être" in the mailbox control-lane doc (card #225).
+raison = "raison"
+# `CAF` — the C++ Actor Framework, cited by name in ADR-0021.
+CAF = "CAF"

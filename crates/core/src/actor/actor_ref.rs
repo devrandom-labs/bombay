@@ -24,7 +24,7 @@ use crate::{
         },
     },
     error::{ActorNotLinked, ActorStopReason, TellError},
-    mailbox::{ActorId, MailboxSender, SendError, Signal},
+    mailbox::{ActorId, ControlClosed, ControlSignal, MailboxSender},
     reply::ReplySender,
     request::{AskRequest, TellRequest},
     restart::{RestartConfig, RestartTracker},
@@ -206,17 +206,22 @@ impl<A: Watch> ActorRef<A> {
     /// `target` may be any [`Actor`] (being watched is universal); it need not
     /// itself be a [`Watch`] actor.
     ///
-    /// The registration rides `target`'s bounded message mailbox, so this `.await`s
-    /// for mailbox capacity — ordinary backpressure, not a failure. It resolves only
-    /// once the registration is enqueued (or `target` is found already dead).
+    /// The registration rides `target`'s UNBOUNDED control lane (ADR-0021), so
+    /// this never waits on `target`'s user backlog — it resolves once the
+    /// registration is enqueued (or `target` is found already dead).
     ///
     /// # Errors
     ///
     /// [`ActorNotLinked`] if this actor was spawned via the plain `spawn` path and
     /// so has no link channel to receive notices on. Spawn watchers with
     /// `spawn_linked`.
+    #[expect(
+        clippy::unused_async,
+        reason = "the verb stays async so #225 does not break its signature; the body is \
+                  synchronous since the control lane is unbounded"
+    )]
     pub async fn watch<B: Actor>(&self, target: &ActorRef<B>) -> Result<(), ActorNotLinked> {
-        self.register_on(target, false).await
+        self.register_on(target, false)
     }
 
     /// Links with `peer`: bidirectional. Each side's
@@ -228,8 +233,8 @@ impl<A: Watch> ActorRef<A> {
     ///
     /// Both link channels are checked present **before** either registration, so a
     /// missing channel is an atomic `Err` with no half-installed one-directional
-    /// edge. Like [`watch`](Self::watch), each registration `.await`s for the peer's
-    /// mailbox capacity (backpressure).
+    /// edge. Like [`watch`](Self::watch), each registration rides the peer's
+    /// unbounded control lane (ADR-0021), so it never waits on the backlog.
     ///
     /// Repeated `link` calls install duplicate edges (a recorded divergence from
     /// Erlang's at-most-one link per pair; the duplicate notice's first `Break`
@@ -241,44 +246,53 @@ impl<A: Watch> ActorRef<A> {
     ///
     /// [`ActorNotLinked`] if **either** actor lacks a link channel (was not spawned
     /// via `spawn_linked`) — checked up front, so neither side is mutated on `Err`.
+    #[expect(
+        clippy::unused_async,
+        reason = "the verb stays async so #225 does not break its signature; the body is \
+                  synchronous since the control lane is unbounded"
+    )]
     pub async fn link<B: Watch>(&self, peer: &ActorRef<B>) -> Result<(), ActorNotLinked> {
         // Both sides must be linked-spawned before either edge is installed, so a
         // plain-spawned peer yields a clean `Err` and never a half-link.
         if self.link_tx().is_none() || peer.link_tx().is_none() {
             return Err(ActorNotLinked);
         }
-        self.register_on(peer, true).await?;
-        peer.register_on(self, true).await
+        self.register_on(peer, true)?;
+        peer.register_on(self, true)
     }
 
     /// Stops watching `target`: removes **every** edge this actor holds on
     /// `target` — watch and link edges alike, coarser than Erlang's per-monitor
-    /// `demonitor`. Best-effort — the send `.await`s for capacity and, if
-    /// `target` has already stopped, simply fails with nothing left to remove.
+    /// `demonitor`. Best-effort — the removal rides `target`'s UNBOUNDED control
+    /// lane (ADR-0021), so it never waits on the backlog and simply fails with
+    /// nothing left to remove if `target` has already stopped.
     /// As with Erlang's `demonitor`, an `unwatch` racing the target's death may
     /// still be followed by a delivered notice.
+    #[expect(
+        clippy::unused_async,
+        reason = "the verb stays async so #225 does not break its signature; the body is \
+                  synchronous since the control lane is unbounded"
+    )]
     pub async fn unwatch<B: Actor>(&self, target: &ActorRef<B>) {
         let _ = target
             .mailbox_sender()
-            .send(Signal::Unwatch(self.id()))
-            .await;
+            .send_control(ControlSignal::Unwatch(self.id()));
     }
 
     /// Registers this actor as a watcher on `target` with the given `linked` flag:
     /// reads this actor's own `link_tx` (the receive end the notice will arrive on)
-    /// and enqueues a [`WatchReg`] onto `target`'s mailbox, `.await`ing for capacity.
+    /// and enqueues a [`WatchReg`] onto `target`'s UNBOUNDED control lane.
     ///
-    /// The `.await` on [`send`](MailboxSender::send) is true backpressure: a
-    /// momentarily-full but alive mailbox makes it WAIT, and it errors **only** when
-    /// the mailbox is closed (`target` dead). On that closed error this actor is
-    /// given an immediate synthetic [`LinkDied`] on its own channel (Erlang's
+    /// [`send_control`](MailboxSender::send_control) is synchronous and errors
+    /// **only** on a closed mailbox (`target` dead) — the unbounded lane has no
+    /// full-but-alive case. On that closed error this actor is given an
+    /// immediate synthetic [`LinkDied`] on its own channel (Erlang's
     /// link-to-dead rule) — the reason is
     /// [`AlreadyDead`](ActorStopReason::AlreadyDead), its own failure domain
     /// (Erlang's `noproc`): the target's true reason is unknowable once its mailbox
     /// is gone, and conflating that with a real [`Killed`](ActorStopReason::Killed)
-    /// would misinform a supervisor. A full-mailbox (`Full`) case must never take
-    /// this branch, or ordinary backpressure would self-terminate a linked watcher.
-    async fn register_on<B: Actor>(
+    /// would misinform a supervisor.
+    fn register_on<B: Actor>(
         &self,
         target: &ActorRef<B>,
         linked: bool,
@@ -293,12 +307,12 @@ impl<A: Watch> ActorRef<A> {
         };
         if target
             .mailbox_sender()
-            .send(Signal::Watch(Box::new(reg)))
-            .await
+            .send_control(ControlSignal::Watch(Box::new(reg)))
             .is_err()
         {
-            // `send().await` errors ONLY on a closed mailbox (target dead), never on
-            // a full-but-alive one — so this is the genuine link-to-dead path.
+            // `send_control` errors ONLY on a closed mailbox (target dead) — the
+            // unbounded lane has no full-but-alive case — so this is the genuine
+            // link-to-dead path.
             let _ = link_tx.try_send(LinkDied {
                 id: target.id(),
                 reason: ActorStopReason::AlreadyDead,
@@ -343,18 +357,23 @@ impl<S: Supervisor> ActorRef<S> {
     /// supervisor. A supervised child that is meant to stay alive MUST have a
     /// liveness anchor.
     ///
-    /// This `.await`s for the supervisor's own mailbox capacity — ordinary
-    /// backpressure, not failure.
+    /// The registration rides the supervisor's UNBOUNDED control lane
+    /// (ADR-0021), so it never waits on the supervisor's user backlog.
     ///
     /// # Errors
     ///
     /// [`TellError::ActorNotAlive`] if the supervisor's mailbox is closed (it has
     /// stopped). The first incarnation was already spawned; the dropped
-    /// [`SendError`](crate::mailbox::SendError) takes the registration and the
-    /// installer's transient sender, so an *unanchored* first incarnation
-    /// ref-count-stops while an anchored one keeps running unsupervised. The
-    /// handback disarm is deliberate so the armed guard does not abort the child
-    /// that will continue unsupervised.
+    /// [`ControlClosed`](crate::mailbox::ControlClosed) handback takes the
+    /// registration and the installer's transient sender, so an *unanchored*
+    /// first incarnation ref-count-stops while an anchored one keeps running
+    /// unsupervised. The handback disarm is deliberate so the armed guard does
+    /// not abort the child that will continue unsupervised.
+    #[expect(
+        clippy::unused_async,
+        reason = "the verb stays async so #225 does not break its signature; the body is \
+                  synchronous since the control lane is unbounded"
+    )]
     pub async fn supervise<A, F>(
         &self,
         config: impl Into<RestartConfig>,
@@ -388,21 +407,22 @@ impl<S: Supervisor> ActorRef<S> {
         };
         match self
             .mailbox_sender()
-            .send(Signal::Supervision(Box::new(SupervisionOp::Add(
+            .send_control(ControlSignal::Supervision(Box::new(SupervisionOp::Add(
                 ArmedReg::new(reg),
-            ))))
-            .await
-        {
+            )))) {
             Ok(()) => Ok(id),
-            // The supervisor's mailbox is closed (it stopped). `send().await` errors
-            // only on a closed mailbox, so this is the genuine dead-supervisor path.
-            Err(SendError(Signal::Supervision(op))) => {
+            // The supervisor's mailbox is closed (it stopped). `send_control` errors
+            // only on a closed lane (an unbounded lane has no full case), so this
+            // is the genuine dead-supervisor path. The handback carries the op, so
+            // the armed guard is disarmed here rather than aborting a child that
+            // will keep running unsupervised.
+            Err(ControlClosed(ControlSignal::Supervision(op))) => {
                 if let SupervisionOp::Add(armed) = *op {
                     let _reg = armed.disarm();
                 }
                 Err(TellError::ActorNotAlive(()))
             }
-            Err(SendError(_)) => Err(TellError::ActorNotAlive(())),
+            Err(ControlClosed(_)) => Err(TellError::ActorNotAlive(())),
         }
     }
 
@@ -422,16 +442,21 @@ impl<S: Supervisor> ActorRef<S> {
     /// child then stays supervised under a fresh id. Detachment is guaranteed only
     /// for a child that is not mid-restart.
     ///
-    /// The op rides the supervisor's own mailbox (the child table is loop-owned;
-    /// all mutation goes through the loop), so this `.await`s for mailbox capacity
-    /// — ordinary backpressure, not failure.
+    /// The op rides the supervisor's UNBOUNDED control lane (the child table is
+    /// loop-owned; all mutation goes through the loop — ADR-0021), so it never
+    /// waits on the supervisor's user backlog.
     ///
     /// # Errors
     ///
     /// [`TellError::ActorNotAlive`] if the supervisor's mailbox is closed (it has
     /// stopped); the edge it would have dropped is already gone with it.
+    #[expect(
+        clippy::unused_async,
+        reason = "the verb stays async so #225 does not break its signature; the body is \
+                  synchronous since the control lane is unbounded"
+    )]
     pub async fn unsupervise(&self, id: ActorId) -> Result<(), TellError<()>> {
-        self.send_supervision(SupervisionOp::Remove(id)).await
+        self.send_supervision(SupervisionOp::Remove(id))
     }
 
     /// Stops supervising `id` AND stops the child: `cancel` → `stop_grace` →
@@ -443,31 +468,36 @@ impl<S: Supervisor> ActorRef<S> {
     ///
     /// The stop is crash-only and bounded: the child is asked to stop gracefully,
     /// then hard-aborted if it has not stopped within its `stop_grace` — it never
-    /// depends on the child cooperating. The op rides the supervisor's own mailbox,
-    /// so this `.await`s for mailbox capacity (backpressure).
+    /// depends on the child cooperating.
     ///
     /// Best-effort against a **concurrently-dying** child, exactly as
     /// [`unsupervise`](Self::unsupervise): a child whose restart is already armed
     /// may be re-keyed under a new incarnation before the `Stop` lands, which then
-    /// no-ops on the stale key.
+    /// no-ops on the stale key. The op rides the supervisor's UNBOUNDED control
+    /// lane (ADR-0021), so it never waits on the user backlog.
     ///
     /// # Errors
     ///
     /// [`TellError::ActorNotAlive`] if the supervisor's mailbox is closed (it has
     /// stopped); a stopped supervisor has already dropped every child handle.
+    #[expect(
+        clippy::unused_async,
+        reason = "the verb stays async so #225 does not break its signature; the body is \
+                  synchronous since the control lane is unbounded"
+    )]
     pub async fn stop_child(&self, id: ActorId) -> Result<(), TellError<()>> {
-        self.send_supervision(SupervisionOp::Stop(id)).await
+        self.send_supervision(SupervisionOp::Stop(id))
     }
 
-    /// Ships a child-table [`SupervisionOp`] to the supervisor's own mailbox, the
-    /// table's single writer. Errors only on a closed mailbox (`send().await`
-    /// never errors on a full-but-alive one), which is the genuine dead-supervisor
-    /// path — mapped to the terminal [`TellError::ActorNotAlive`].
-    async fn send_supervision(&self, op: SupervisionOp) -> Result<(), TellError<()>> {
+    /// Ships a child-table [`SupervisionOp`] to the supervisor's own control
+    /// lane, the table's single writer. Errors only on a closed lane
+    /// (`send_control` never errors on a full-but-alive mailbox — the unbounded
+    /// lane has no full case), which is the genuine dead-supervisor path —
+    /// mapped to the terminal [`TellError::ActorNotAlive`].
+    fn send_supervision(&self, op: SupervisionOp) -> Result<(), TellError<()>> {
         match self
             .mailbox_sender()
-            .send(Signal::Supervision(Box::new(op)))
-            .await
+            .send_control(ControlSignal::Supervision(Box::new(op)))
         {
             Ok(()) => Ok(()),
             Err(_) => Err(TellError::ActorNotAlive(())),
@@ -578,7 +608,7 @@ mod tests {
 
     use crate::{
         error::TellError,
-        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Signal},
+        mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
         message::Msg,
     };
 
@@ -677,10 +707,10 @@ mod tests {
         assert!(
             matches!(
                 queued,
-                Some(Signal::Message {
+                Some(Recv::Signal(Signal::Message {
                     msg: ProbeMsg(9),
                     ..
-                })
+                }))
             ),
             "the queued message still self-pins and is delivered",
         );
