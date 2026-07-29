@@ -1060,7 +1060,11 @@ when that type ships.
   `retries.len() == 1`), `rebuild_child_is_superseded_for_cycling_entries`,
   `removing_an_awaited_member_counts_the_teardown_down` (the wedge counterexample). Plus the
   `Children` cycle-op units in `supervision.rs` (`flag_cycle` reverse-order + widen-idempotence,
-  `absorb_cycling_death`, `cycling_rebuild_ids` birth-order + `Never`-exclusion).
+  `absorb_cycling_death`, `cycling_rebuild_ids` birth-order + `Never`-exclusion). #252 adds
+  `prop_flag_cycle_awaiting_equals_newly_flagged_live_count` — a proptest pinning
+  `awaiting == stops.len()` (exact count of newly flagged live suffix members, never capped)
+  across table sizes 0..16 and the empty-suffix boundary, the bound the conversion's
+  panic-over-sentinel `expect` relies on.
 - **Behavioral (`spawn.rs` `supervised_rebuild`)** — end-to-end against the wired loop:
   OneForAll (all-rebuilt / reverse-stop-birth-rebuild / count-once-against-budget), RestForOne
   (suffix-only / last-child-degenerates-to-OneForOne), `Never`-excluded-from-set, the four

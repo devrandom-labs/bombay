@@ -399,7 +399,19 @@ impl Children {
                 stops.push((handle.clone(), child.config.stop_grace));
             }
         }
-        let awaiting = u32::try_from(stops.len()).unwrap_or(u32::MAX);
+        // `stops` holds at most one edge per member of the suffix `[from..]`, so its
+        // length is bounded by the child table length and cannot overflow u32: a
+        // silent `unwrap_or(MAX)` here would wedge the cycle forever (waiting on MAX
+        // deaths that never land), so an overflow is surfaced as a panic rather than
+        // absorbed.
+        #[expect(
+            clippy::expect_used,
+            reason = "the awaiting count is bounded by the child table length and \
+                      cannot overflow u32; an overflow would be an unreachable bug, \
+                      surfaced as a panic rather than a silent cycle wedge"
+        )]
+        let awaiting = u32::try_from(stops.len())
+            .expect("awaiting is bounded by the child table length; cannot overflow u32");
         (stops, awaiting)
     }
 
@@ -454,6 +466,8 @@ mod tests {
     use futures::stream::AbortHandle;
     use tokio::time::Instant;
     use tokio_util::sync::CancellationToken;
+
+    use proptest::{prop_assert_eq, proptest};
 
     use super::{
         ArmedReg, Child, ChildHandle, Children, Spawned, SuperviseReg, WatchInstaller, WatchOutcome,
@@ -954,5 +968,39 @@ mod tests {
         );
         assert_eq!(children.position(ActorId::from_raw_for_test(7)), Some(1));
         assert_eq!(children.position(ActorId::from_raw_for_test(9)), None);
+    }
+
+    proptest! {
+        /// `awaiting` is exactly the number of newly flagged live members of the
+        /// suffix — never capped or saturated — across table sizes including the
+        /// empty-table and empty-suffix boundaries. MIRI-skipped by prefix (the
+        /// repo's `prop_` naming contract).
+        #[test]
+        fn prop_flag_cycle_awaiting_equals_newly_flagged_live_count(
+            members in proptest::collection::vec((proptest::bool::ANY, proptest::bool::ANY), 0..16),
+            from_seed: usize,
+        ) {
+            let mut children = Children::new();
+            for (i, (live, pre_cycling)) in members.iter().enumerate() {
+                let id = ActorId::from_raw_for_test(u64::try_from(i).expect("i < 16") + 1);
+                let mut child = child_entry(id);
+                if !live {
+                    child.handle = None;
+                }
+                child.cycling = *pre_cycling;
+                children.insert(id, child);
+            }
+            // `from` covers the full boundary range [0, len] — len = empty suffix.
+            let from = if members.is_empty() { 0 } else { from_seed % (members.len() + 1) };
+
+            let (stops, awaiting) = children.flag_cycle(from);
+
+            let expected = members[from..]
+                .iter()
+                .filter(|(live, pre_cycling)| *live && !*pre_cycling)
+                .count();
+            prop_assert_eq!(stops.len(), expected);
+            prop_assert_eq!(usize::try_from(awaiting).expect("awaiting fits usize in test"), expected);
+        }
     }
 }
