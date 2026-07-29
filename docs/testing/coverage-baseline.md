@@ -771,9 +771,9 @@ Tests (bombay lib, all TDD — written failing first):
   `many_watchers_all_notified` (8-way `Barrier` linearizability),
   `watch_does_not_pin_target` (ADR-0003: watching holds no strong ref),
   `plain_spawned_watch_actor_watch_errs`,
-  `watch_full_but_alive_target_backpressures_no_spurious_death` (the
-  async/backpressure regression guard — a busy-but-alive target must not be
-  mistaken for dead).
+  `watch_full_but_alive_target_lands_immediately_no_spurious_death` (the
+  registration regression guard — a busy-but-alive target takes the watch on
+  the control lane (ADR-0021) and must never be mistaken for dead).
 - **reaction / propagation** — `linked_actor_receives_death_of_watched_target`,
   `link_propagates_on_abnormal`, `link_does_not_propagate_on_normal`,
   `trap_exit_via_override_keeps_running`, `dead_target_watch_immediate_linkdied`.

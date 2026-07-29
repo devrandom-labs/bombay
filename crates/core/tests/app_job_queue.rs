@@ -412,9 +412,11 @@ async fn linear_concurrent_producers_no_loss_no_phantom() {
 /// mailbox and this test's bounded wrapper fired.
 ///
 /// NOT fixed here (and asserted as such): the #218 wart-3 `WorkerReplaced`
-/// roster update is a USER message — it still rides the bounded lane and is
-/// dropped on the full mailbox below, so the roster stays empty even though
-/// the child is supervised. #244 tracks it.
+/// roster update is a USER message — it still rides the bounded lane, so
+/// incarnation 0's roster tell (fired at the inline spawn, mailbox full) is
+/// dropped. Incarnation 1's, fired during the in-loop rebuild after the
+/// backlog drained, lands — the roster ends with exactly the rebuild. #244
+/// tracks the underlying loss.
 #[tokio::test]
 async fn supervise_lands_while_dispatcher_backlog_is_full() {
     use std::sync::Mutex;
@@ -527,14 +529,24 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
     bounded(&mut ask1).await.expect("submit 1 reply");
     bounded(&mut ask2).await.expect("submit 2 reply");
 
-    // Wart 3, asserted unchanged: the roster update was dropped on the full
-    // mailbox, so the roster stays EMPTY even though the child is supervised.
+    // Wart 3, true semantics: ONLY incarnation 0's `WorkerReplaced` was
+    // dropped — the mailbox was full at the inline first spawn. Incarnation
+    // 1's factory ran during the in-loop rebuild AFTER the backlog drained, so
+    // its roster tell landed. The roster holds exactly the rebuild.
     let stats = bounded(dispatcher_ref.ask(|reply| DispatcherMsg::Stats { reply }))
         .await
         .expect("stats reply");
-    assert!(
-        stats.worker_ids.is_empty(),
-        "WorkerReplaced rides the user lane and was dropped — #244, not this card",
+    let occupant_id = stash
+        .lock()
+        .expect("stash lock")
+        .as_ref()
+        .expect("incarnation 1 stashed")
+        .id();
+    assert_eq!(
+        stats.worker_ids,
+        vec![occupant_id],
+        "only incarnation 0's roster update was dropped (wart 3 — #244, not \
+         this card); the rebuild's landed once the backlog had drained",
     );
 
     drop(dispatcher_ref); // collection: backlog drained, supervisor stops
@@ -555,19 +567,15 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
     let swept = bounded(stopped_rx.recv_async())
         .await
         .expect("the surviving incarnation is stopped with the supervisor");
-    assert_eq!(
-        swept,
-        stash
-            .lock()
-            .expect("stash lock")
-            .as_ref()
-            .expect("incarnation 1 stashed")
-            .id(),
-        "the swept incarnation is the rebuild",
-    );
+    assert_eq!(swept, occupant_id, "the swept incarnation is the rebuild");
     assert!(
         stopped_rx.try_recv().is_err(),
         "exactly one graceful child stop (the killed incarnation skips on_stop)",
     );
-    let _ = child_id;
+    // Lineage semantics (ADR-0015): `supervise` returned the FIRST
+    // incarnation's id; the roster/sweep name the REBUILD, a fresh id.
+    assert_ne!(
+        child_id, occupant_id,
+        "the returned id names the first incarnation; the rebuild minted a fresh one",
+    );
 }

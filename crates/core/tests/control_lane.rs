@@ -363,15 +363,17 @@ async fn supervise_op_applies_before_full_backlog_drains() {
         1,
         "the surviving incarnation was swept at supervisor exit (#245)",
     );
-    assert_eq!(
-        child_id,
-        stash
-            .lock()
-            .expect("stash lock")
-            .as_ref()
-            .expect("incarnation 1 stashed")
-            .id(),
-        "the returned id names the supervised lineage"
+    // Lineage semantics (ADR-0015): `supervise` returns the FIRST incarnation's
+    // id; the stash holds the REBUILD, a fresh actor with a fresh id.
+    let occupant_id = stash
+        .lock()
+        .expect("stash lock")
+        .as_ref()
+        .expect("the rebuild is stashed")
+        .id();
+    assert_ne!(
+        child_id, occupant_id,
+        "the rebuild mints a new incarnation id; the returned id names the first",
     );
 }
 
@@ -398,8 +400,14 @@ async fn control_lane_fifo_watch_then_unwatch() {
     drop(actor_ref);
     let outcome = bounded(run).await.expect("run joins");
     assert!(
-        matches!(outcome, RunResult::Stopped { .. }),
-        "the actor stops, got {outcome:?}",
+        matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Collected,
+                ..
+            }
+        ),
+        "ref-drop collection, got {outcome:?}",
     );
     assert!(
         link_rx.try_recv().is_err(),
@@ -436,37 +444,6 @@ async fn control_lane_fifo_watch_then_unwatch() {
         .await
         .expect("unwatch-then-watch keeps the edge — the notice must arrive");
     assert_eq!(notice.id, target_id, "the notice names the watched actor");
-}
-
-/// Invariant 4 (overtake): a control signal enqueued AFTER a user message is
-/// served BEFORE it — the deliberate ordering relaxation (ADR-0021).
-#[tokio::test]
-async fn control_overtakes_earlier_user_message() {
-    let (tx, mut rx) = Mailbox::<Probe>::bounded(cap(4), ActorId::from_raw_for_test(0));
-    bounded(tx.send(Signal::Message {
-        msg: 1,
-        self_sender: tx.clone(),
-        ctx: SendContext::capture(),
-    }))
-    .await
-    .expect("user message queued first");
-    tx.send_control(ControlSignal::Unwatch(ActorId::from_raw_for_test(2)))
-        .expect("control queued second");
-
-    assert!(
-        matches!(
-            bounded(rx.recv()).await.expect("first item"),
-            Recv::Control(ControlSignal::Unwatch(_))
-        ),
-        "the control signal overtakes the earlier user message",
-    );
-    assert!(
-        matches!(
-            bounded(rx.recv()).await.expect("second item"),
-            Recv::Signal(Signal::Message { msg: 1, .. })
-        ),
-        "the user message follows, undisturbed",
-    );
 }
 
 /// Invariant 4 (Stop): `Stop` stays on the USER lane — control signals may
@@ -551,11 +528,16 @@ async fn queued_watch_answered_on_teardown() {
 
 /// Step-5 regression: a supervise op queued BEHIND an in-band `Stop` still
 /// lands — it rides the control lane, overtakes the Stop, and is applied
-/// before the loop exits. The graceful-teardown semantics hold on the new
-/// lane: the adopted child is stopped WITH the supervisor (#245's sweep), not
-/// orphaned. (The op-arriving-after-loop-exit half of #248 rides the same
-/// `drain_control` path; its races stay covered by the spawn.rs suite, which
-/// now enqueues through `send_control`.)
+/// IN-LOOP (control-first recv) before the loop exits. The graceful-teardown
+/// semantics hold on the new lane: the adopted child is stopped WITH the
+/// supervisor (#245's sweep), not orphaned.
+///
+/// Which path this pins: the IN-LOOP application — a live loop always sees a
+/// queued control op before it exits, so the epilogue drain
+/// (`drain_queued_supervision`, kind.rs) sees an EMPTY lane here. The epilogue
+/// path itself is not deterministically reachable from outside the loop; it is
+/// pinned at the UNIT level in kind.rs
+/// (`drain_queued_supervision_applies_a_preloaded_control_lane`).
 #[tokio::test(start_paused = true)]
 async fn supervise_op_queued_behind_stop_still_lands() {
     set_supervisor_rng_seed(Some(11));

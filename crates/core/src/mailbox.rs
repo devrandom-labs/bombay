@@ -1313,7 +1313,8 @@ mod tests {
         // — the disconnected pair reports None (the lanes close together, ADR-0021).
         assert!(matches!(
             recv_bounded(&mut rx).await,
-            Some(Recv::Control(_))
+            Some(Recv::Control(ControlSignal::Unwatch(id)))
+                if id == ActorId::from_raw_for_test(1)
         ));
         assert!(matches!(recv_bounded(&mut rx).await, Some(Recv::Signal(_))));
         assert!(recv_bounded(&mut rx).await.is_none());

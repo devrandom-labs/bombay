@@ -468,8 +468,7 @@ impl<S: Supervisor> ActorRef<S> {
     ///
     /// The stop is crash-only and bounded: the child is asked to stop gracefully,
     /// then hard-aborted if it has not stopped within its `stop_grace` — it never
-    /// depends on the child cooperating. The op rides the supervisor's own mailbox,
-    /// so this `.await`s for mailbox capacity (backpressure).
+    /// depends on the child cooperating.
     ///
     /// Best-effort against a **concurrently-dying** child, exactly as
     /// [`unsupervise`](Self::unsupervise): a child whose restart is already armed

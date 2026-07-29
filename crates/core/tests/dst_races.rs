@@ -1381,3 +1381,152 @@ async fn watch_completes_while_target_backlog_is_full_and_parked() {
         "the watcher stops cleanly, got {watcher_outcome:?}",
     );
 }
+
+// ---------------------------------------------------------------------------
+// Scenario 9 (card #225, ADR-0021) — SEEDED control/user interleavings. Per
+// seed, a fastrand script interleaves user-lane tells with control-lane
+// watch/unwatch ops over two watcher ids, all enqueued while the target's
+// handler is parked and its mailbox FULL. After release: every user message
+// is handled (user FIFO intact under control interleavings), and each watcher
+// id's edge state is its script's LAST op (control intra-lane FIFO), proven
+// by notice/no-notice at teardown. The overtake half is structural here: the
+// sync `send_control` lands while the handler is parked and the lane is full.
+// ---------------------------------------------------------------------------
+
+/// The control op kinds a seeded script can hold: each `Watch` mints a fresh
+/// registration (`Watchers::apply` keeps duplicates, Erlang-style), each
+/// `Unwatch` removes every edge of its id.
+#[derive(Clone, Copy, Debug)]
+enum ScriptCtl {
+    WatchA,
+    UnwatchA,
+    WatchB,
+    UnwatchB,
+}
+
+impl ScriptCtl {
+    fn watcher(self) -> bombay::ActorId {
+        match self {
+            Self::WatchA | Self::UnwatchA => bombay::ActorId::from_raw_for_test(101),
+            Self::WatchB | Self::UnwatchB => bombay::ActorId::from_raw_for_test(102),
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn seeded_control_user_interleavings_preserve_per_lane_fifo() {
+    use bombay::test_support::watch_signal;
+
+    for seed in [3_u64, 17, 42] {
+        let mut rng = fastrand::Rng::with_seed(seed);
+
+        // A seeded script: exactly 4 user tells (fills cap(4) while parked)
+        // plus 6 control ops over the two ids, shuffled together.
+        let mut script: Vec<Option<ScriptCtl>> = vec![None; 4];
+        for _ in 0..6 {
+            let op = match rng.usize(..4) {
+                0 => ScriptCtl::WatchA,
+                1 => ScriptCtl::UnwatchA,
+                2 => ScriptCtl::WatchB,
+                _ => ScriptCtl::UnwatchB,
+            };
+            script.push(Some(op));
+        }
+        rng.shuffle(&mut script);
+
+        let (entered_tx, entered_rx) = oneshot::channel();
+        let (release_tx, release_rx) = oneshot::channel();
+        let handled = Arc::new(AtomicU32::new(0));
+        let prepared = PreparedActor::<GatedSpy>::new(cap(4));
+        let target_ref = prepared.actor_ref().clone();
+        let target_id = target_ref.id();
+        let run = prepared.spawn((entered_tx, release_rx, Arc::clone(&handled)));
+
+        // Park the handler, then play the script against the full mailbox.
+        bounded(target_ref.tell(Ping))
+            .await
+            .expect("park the handler");
+        timeout(TERMINATE, entered_rx)
+            .await
+            .expect("the handler must reach the gate, not hang")
+            .expect("the handler is parked");
+
+        // The link receivers of every Watch minted per id, in script order.
+        let mut rxs_a = Vec::new();
+        let mut rxs_b = Vec::new();
+        let mut last_watch_a = false;
+        let mut last_watch_b = false;
+        for step in &script {
+            match step {
+                None => bounded(target_ref.tell(Ping)).await.expect("user tell"),
+                Some(op) => {
+                    let (signal, link_rx) = watch_signal(op.watcher(), false);
+                    // Overtake witness: lands synchronously while the handler
+                    // is parked and the user lane full.
+                    target_ref
+                        .mailbox_sender()
+                        .send_control(signal)
+                        .expect("control op lands on the full mailbox");
+                    match op {
+                        ScriptCtl::WatchA => {
+                            last_watch_a = true;
+                            rxs_a.push(link_rx);
+                        }
+                        ScriptCtl::UnwatchA => last_watch_a = false,
+                        ScriptCtl::WatchB => {
+                            last_watch_b = true;
+                            rxs_b.push(link_rx);
+                        }
+                        ScriptCtl::UnwatchB => last_watch_b = false,
+                    }
+                }
+            }
+        }
+
+        release_tx.send(()).expect("release the parked handler");
+        drop(target_ref); // collection after the drain
+        let outcome = timeout(TERMINATE, run)
+            .await
+            .expect("the target must stop, not hang")
+            .expect("join");
+        assert!(
+            matches!(
+                outcome,
+                RunResult::Stopped {
+                    reason: ActorStopReason::Collected,
+                    ..
+                }
+            ),
+            "seed {seed}: ref-drop collection, got {outcome:?}",
+        );
+        assert_eq!(
+            handled.load(Ordering::SeqCst),
+            5,
+            "seed {seed}: the parked message plus all 4 scripted tells were handled",
+        );
+
+        // Control intra-lane FIFO: last op on each id wins its edge state.
+        let expect = [
+            (last_watch_a, &mut rxs_a, "A"),
+            (last_watch_b, &mut rxs_b, "B"),
+        ];
+        for (last_was_watch, rxs, name) in expect {
+            if last_was_watch {
+                let last = rxs.pop().expect("a Watch op minted a receiver");
+                let notice = timeout(TERMINATE, last.recv_async())
+                    .await
+                    .expect("seed {seed}: the surviving edge must deliver")
+                    .expect("the link channel is open");
+                assert_eq!(
+                    notice.id, target_id,
+                    "seed {seed}: watcher {name}'s last-op edge names the target",
+                );
+            } else {
+                assert!(
+                    rxs.iter().all(|rx| rx.try_recv().is_err()),
+                    "seed {seed}: watcher {name} ends Unwatch — every edge removed, no notice",
+                );
+            }
+        }
+    }
+}

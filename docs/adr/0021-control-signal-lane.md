@@ -19,11 +19,10 @@ backlog.
 ## Research grounding
 
 - **Erlang/OTP 28, EEP-76 "Priority Messages".** OTP 28 added an opt-in
-  priority lane: messages sent to a *priority alias* bypass the regular
-  message queue and are received ahead of it — the ecosystem's own
-  acknowledgement that some signals must not queue behind a backlog
-  (`erlang.org/blog/highlights-otp-28`, `system/doc/reference_manual`
-  processes chapter, github.com/erlang/otp).
+  priority mechanism: a priority message is *inserted before ordinary
+  messages in the message queue* — same queue, preferential position — so a
+  marked signal does not wait out a backlog (erlang.org/blog/highlights-otp-28,
+  `system/doc/reference_manual` processes chapter, github.com/erlang/otp).
 - **Apache Pekko `ControlAwareMailbox`.** "Very useful if an actor needs to be
   able to receive control messages immediately no matter how many other
   messages are already in the mailbox" (pekko.apache.org/docs/pekko/1.3/
@@ -32,10 +31,11 @@ backlog.
 - **CAF (C++ Actor Framework).** Urgent messages are put into a *different
   queue of the receiver's mailbox* (CAF 0.18 docs, Message Passing) — the
   two-queue shape, in C++.
-- **ractor.** Four message classes — signals, stop, supervision — are all
-  served ahead of ordinary actor messages, which are "the lowest priority of
-  the 4 message types" (github.com/slawlor/ractor README). The closest Rust
-  sibling, and it made supervision first-class-priority by design.
+- **ractor.** Of its 4 message types, the first 3 — signals, stop,
+  supervision — are served ahead of ordinary actor messages, which are "the
+  lowest priority of the 4 message types" (github.com/slawlor/ractor README).
+  The closest Rust sibling, and it made supervision first-class-priority by
+  design.
 - **In-tree precedent.** The unbounded link channel + `biased;` select arm
   (`actor/kind.rs`, `run_linked_message_loop`) already runs a
   control-before-messages merge for death notices, with a closed-arm latch to

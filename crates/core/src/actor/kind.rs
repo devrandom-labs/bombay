@@ -1109,8 +1109,8 @@ mod supervised_tests {
     use fastrand::Rng;
 
     use super::{
-        SetCycleCtx, SupervisorRef, apply_supervision_op, handle_child_death, install_child_watch,
-        rebuild_child, teardown_children,
+        SetCycleCtx, SupervisorRef, apply_supervision_op, drain_queued_supervision,
+        handle_child_death, install_child_watch, rebuild_child, teardown_children,
     };
     use crate::{
         actor::supervision::{
@@ -1121,18 +1121,35 @@ mod supervised_tests {
         mailbox::{ActorId, Capacity, ControlSignal, Mailbox, MailboxReceiver, Mailboxed, Signal},
         message::Msg,
         restart::{RestartConfig, RestartPolicy, RestartTracker, SupervisionStrategy},
-        watch::{LinkDied, LinkReceiver, LinkSender},
+        watch::{LinkDied, LinkReceiver, LinkSender, WatchReg, Watchers},
     };
     use core::ops::ControlFlow;
 
     /// A minimal actor purely to key a real mailbox in the watch-install tests —
-    /// its `Msg` is never handled here, only enqueued and drained.
+    /// its `Msg` is never handled here, only enqueued and drained. The `Actor`
+    /// impl exists so `drain_queued_supervision` (generic over `A: Actor`) can
+    /// take its mailbox.
     struct Probe;
     #[derive(Debug)]
     struct ProbeMsg;
     impl Msg for ProbeMsg {}
     impl Mailboxed for Probe {
         type Msg = ProbeMsg;
+    }
+    impl crate::actor::Actor for Probe {
+        type Args = ();
+        type Error = core::convert::Infallible;
+        async fn on_start((): (), _: crate::actor::ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self)
+        }
+        async fn handle(
+            &mut self,
+            _: ProbeMsg,
+            _: crate::actor::ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
     }
 
     fn cap(n: usize) -> Capacity {
@@ -1835,6 +1852,108 @@ mod supervised_tests {
         assert!(
             sup_link_rx.try_recv().is_err(),
             "an open rebuild synthesizes no death",
+        );
+    }
+
+    /// The #248 epilogue path on the #225 lane, pinned at the unit level: the
+    /// epilogue is not deterministically reachable from outside a live loop
+    /// (control-first recv always applies a queued op in-loop first), so the
+    /// drain is driven directly here with a preloaded control lane —
+    /// `Add` + `Watch` + `Stop`. The `Add` lands in the child table through the
+    /// SAME apply logic the loop uses (insert-before-watch, #196), the `Watch`
+    /// in the watcher set, and the `Stop` (on an already-tabled child) cancels
+    /// it and defers the abort onto `pending_aborts`.
+    #[tokio::test]
+    async fn drain_queued_supervision_applies_a_preloaded_control_lane() {
+        let sup_id = ActorId::from_raw_for_test(100);
+        let (sup, _sup_link_rx) = supervisor(sup_id);
+        let SupervisorRef {
+            link_tx: sup_link_tx,
+            ..
+        } = sup;
+        let (tx, mut mailbox_rx) = Mailbox::<Probe>::bounded(cap(8), sup_id);
+
+        // Add: a fresh child whose watch install lands on its open control lane.
+        let add_id = ActorId::from_raw_for_test(1);
+        let (child_tx, _child_rx) = Mailbox::<Probe>::bounded(cap(4), add_id);
+        let add_reg = SuperviseReg {
+            child: child(RestartConfig::new(RestartPolicy::Permanent), Instant::now()),
+            id: add_id,
+            install_watch: watch_installer(child_tx),
+        };
+        tx.send_control(ControlSignal::Supervision(Box::new(SupervisionOp::Add(
+            ArmedReg::new(add_reg),
+        ))))
+        .expect("add enqueued");
+
+        // Watch: a watcher edge on the supervisor itself.
+        let (watch_link_tx, watch_link_rx) = flume::unbounded::<LinkDied>();
+        tx.send_control(ControlSignal::Watch(Box::new(WatchReg {
+            watcher: ActorId::from_raw_for_test(9),
+            link_tx: watch_link_tx,
+            linked: false,
+        })))
+        .expect("watch enqueued");
+
+        // Stop: an already-tabled child — cancel now, abort deferred.
+        let stop_id = ActorId::from_raw_for_test(2);
+        let stop_handle = handle(stop_id);
+        let stop_edges = stop_handle.clone();
+        let mut children = Children::new();
+        children.insert(stop_id, {
+            let mut entry = child(RestartConfig::new(RestartPolicy::Permanent), Instant::now());
+            entry.handle = Some(stop_handle);
+            entry
+        });
+        tx.send_control(ControlSignal::Supervision(Box::new(SupervisionOp::Stop(
+            stop_id,
+        ))))
+        .expect("stop enqueued");
+
+        let mut watchers = Watchers::new(sup_id);
+        let mut pending_aborts = DelayQueue::new();
+        drain_queued_supervision(
+            &mut mailbox_rx,
+            &mut children,
+            &mut watchers,
+            &mut pending_aborts,
+            sup_id,
+            sup_link_tx,
+        );
+
+        assert!(
+            children.get_mut(add_id).is_some(),
+            "the drained Add landed in the child table",
+        );
+        assert!(
+            children.get_mut(stop_id).is_none(),
+            "the drained Stop dropped the table entry",
+        );
+        assert!(
+            stop_edges.cancel.is_cancelled(),
+            "the drained Stop cancelled the child",
+        );
+        assert!(
+            !stop_edges.abort.is_aborted(),
+            "the abort is DEFERRED, not fired inline",
+        );
+        assert_eq!(
+            pending_aborts.len(),
+            1,
+            "the drained Stop's abort waits on pending_aborts",
+        );
+
+        // The drained Watch was applied to the watcher set: dropping the guard
+        // fires its notice.
+        watchers.set_reason(ActorStopReason::Normal);
+        drop(watchers);
+        let notice = watch_link_rx
+            .try_recv()
+            .expect("the drained Watch must be applied to the watcher set");
+        assert_eq!(notice.id, sup_id, "the notice names the supervisor");
+        assert!(
+            matches!(notice.reason, ActorStopReason::Normal),
+            "the guard's reason rides the notice",
         );
     }
 

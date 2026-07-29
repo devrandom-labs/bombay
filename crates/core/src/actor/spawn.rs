@@ -3453,7 +3453,7 @@ mod tests {
     /// target completes WITHOUT waiting for a slot, and `a` sees ONLY the
     /// target's real (Normal) death — `already_dead == 0`.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn watch_full_but_alive_target_backpressures_no_spurious_death() {
+    async fn watch_full_but_alive_target_lands_immediately_no_spurious_death() {
         use crate::actor::Spawn;
         use tokio::sync::oneshot;
 
@@ -3499,7 +3499,8 @@ mod tests {
         assert_eq!(
             a.already_dead.load(Ordering::SeqCst),
             0,
-            "a full-but-alive target must backpressure, NOT synthesize a spurious death",
+            "a full-but-alive target takes the watch on the control lane, NEVER \
+             a spurious death",
         );
         assert_eq!(
             a.deaths.load(Ordering::SeqCst),
