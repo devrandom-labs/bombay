@@ -9,17 +9,24 @@
 #[path = "../examples/job_queue/app.rs"]
 mod app;
 
-use std::{future::IntoFuture, sync::Arc, time::Duration};
+use std::{
+    future::IntoFuture,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use app::{
-    DISPATCHER_NAME, Dispatcher, DispatcherConfig, DispatcherMsg, DrainReport, Job, JobKind,
-    SubmitError,
+    DISPATCHER_NAME, Dispatcher, DispatcherConfig, DispatcherMsg, DrainReport, Intake, IntakeMsg,
+    Job, JobKind, SubmitError,
 };
 use bombay::{
     ActorId,
+    actor::Spawn as _,
     error::AskError,
+    mailbox::Capacity,
     registry::Registry,
     restart::{RestartConfig, RestartPolicy},
+    stash::Stashed,
     test_support::terminate_bound,
 };
 use tokio::time::timeout;
@@ -655,4 +662,85 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
         child_id, occupant_id,
         "the returned id names the first incarnation; the rebuild minted a fresh one",
     );
+}
+
+/// #224 walking skeleton: pause intake, submit while paused (deferred, asker
+/// still waiting), resume — the deferred submissions complete in order,
+/// ahead of a post-resume submission. Real time, NOT `start_paused`: the
+/// deferred ask rides the 5 s default ask deadline.
+#[tokio::test]
+async fn intake_defers_submissions_during_maintenance() {
+    let registry = Arc::new(Registry::new());
+    let app = app::start(config_no_seam(&registry)).await;
+    let dispatcher = registry
+        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .expect("registered under the dispatcher type")
+        .expect("dispatcher is alive");
+    let intake = Stashed::<Intake>::spawn((
+        dispatcher,
+        Capacity::try_from(8usize).expect("valid intake stash capacity"),
+    ));
+
+    // Maintenance: submissions stash instead of forwarding. The tell's await
+    // is delivery, so `Pause` is enqueued before anything below it.
+    bounded(intake.tell(IntakeMsg::Pause))
+        .await
+        .expect("pause delivered");
+
+    // Deferred ask A: the reply future pends on the stashed Submit. The
+    // ActorRef is cloned into the task (the ask builder borrows it);
+    // completion order is taped by job id.
+    let order = Arc::new(Mutex::new(Vec::new()));
+    let intake_a = intake.clone();
+    let order_a = Arc::clone(&order);
+    let a = tokio::spawn(async move {
+        let reply = intake_a
+            .ask(|reply| IntakeMsg::Submit {
+                job: ok_job(100),
+                reply,
+            })
+            .await;
+        order_a.lock().expect("order").push(100u64);
+        reply
+    });
+    // Deterministic enqueue order Pause, A, Resume: on the current-thread
+    // runtime one yield runs A's task to its first pending point (the ask's
+    // reply await), so its Submit is enqueued before Resume is sent.
+    tokio::task::yield_now().await;
+    assert!(
+        order.lock().expect("order").is_empty(),
+        "A is deferred: no reply while paused"
+    );
+
+    bounded(intake.tell(IntakeMsg::Resume))
+        .await
+        .expect("resume delivered");
+    let intake_b = intake.clone();
+    let order_b = Arc::clone(&order);
+    let b = tokio::spawn(async move {
+        let reply = intake_b
+            .ask(|reply| IntakeMsg::Submit {
+                job: ok_job(101),
+                reply,
+            })
+            .await;
+        order_b.lock().expect("order").push(101u64);
+        reply
+    });
+
+    let a_reply = bounded(a).await.expect("A task joins");
+    let b_reply = bounded(b).await.expect("B task joins");
+    assert!(a_reply.is_ok(), "deferred A completes Ok: {a_reply:?}");
+    assert!(b_reply.is_ok(), "post-resume B completes Ok: {b_reply:?}");
+    assert_eq!(
+        order.lock().expect("order").as_slice(),
+        [100, 101],
+        "the deferred submission completes ahead of the post-resume one"
+    );
+
+    // Both submissions landed exactly once on the dispatcher.
+    let stats = bounded(app.dispatcher.ask(|reply| DispatcherMsg::Stats { reply }))
+        .await
+        .expect("stats reply");
+    assert_eq!(stats.submitted, 2);
 }

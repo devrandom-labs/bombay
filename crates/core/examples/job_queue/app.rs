@@ -22,12 +22,12 @@ use bombay::{
         SpawnSupervised as _, Supervisor, Watch, WeakActorRef,
     },
     error::{ActorStopReason, NameTaken, PanicError, TellError},
-    mailbox::Mailboxed,
+    mailbox::{Capacity, Mailboxed},
     registry::Registry,
     reply::ReplySender,
     restart::RestartConfig,
 };
-use core::ops::ControlFlow;
+use core::{convert::Infallible, ops::ControlFlow};
 use flume::Sender;
 
 // ---------------------------------------------------------------- domain ----
@@ -489,6 +489,94 @@ impl Dispatcher {
             });
         }
         *stop = true;
+    }
+}
+
+// ------------------------------------------------------------ intake -------
+
+/// Front door for submissions (card #224).
+///
+/// A `Stashed` actor that defers `Submit`s during maintenance and forwards
+/// them on `Resume` — the walking-skeleton demonstration of the bounded stash.
+pub struct Intake {
+    dispatcher: ActorRef<Dispatcher>,
+    maintenance: bool,
+}
+
+#[allow(
+    dead_code,
+    reason = "Pause/Resume are exercised by the integration tests"
+)]
+#[derive(Debug, bombay_macros::Msg)]
+pub enum IntakeMsg {
+    Submit {
+        job: Job,
+        reply: ReplySender<(), SubmitError>,
+    },
+    Pause,
+    Resume,
+}
+
+impl Mailboxed for Intake {
+    type Msg = IntakeMsg;
+}
+
+impl bombay::stash::StashActor for Intake {
+    type Args = (ActorRef<Dispatcher>, Capacity);
+    type Error = Infallible;
+
+    fn stash_capacity((_, cap): &Self::Args) -> Capacity {
+        *cap
+    }
+
+    async fn on_start(
+        (dispatcher, _): Self::Args,
+        _: ActorRef<bombay::stash::Stashed<Self>>,
+    ) -> Result<Self, Infallible> {
+        Ok(Self {
+            dispatcher,
+            maintenance: false,
+        })
+    }
+
+    async fn handle(
+        &mut self,
+        msg: IntakeMsg,
+        _: ActorRef<bombay::stash::Stashed<Self>>,
+        stash: &mut bombay::stash::Stash<IntakeMsg>,
+        _: &mut bool,
+    ) -> Result<(), Infallible> {
+        match msg {
+            IntakeMsg::Pause => self.maintenance = true,
+            IntakeMsg::Resume => {
+                self.maintenance = false;
+                stash.unstash_all();
+            }
+            submit @ IntakeMsg::Submit { .. } if self.maintenance => {
+                // Full stash = shed load with the same typed refusal the
+                // dispatcher uses for a full queue: the asker learns NOW.
+                // (`send_err` is the typed-rejection verb — `send` sends Ok;
+                // precedent: the dispatcher's own Submit arm above.)
+                if let Err(overflow) = stash.stash(submit)
+                    && let IntakeMsg::Submit { reply, .. } = overflow.msg()
+                {
+                    let _ = reply.send_err(SubmitError::QueueFull);
+                }
+            }
+            IntakeMsg::Submit { job, reply } => {
+                // Forward: the dispatcher answers the original asker directly.
+                if self
+                    .dispatcher
+                    .tell(DispatcherMsg::Submit { job, reply })
+                    .await
+                    .is_err()
+                {
+                    // Dispatcher gone: nothing to answer with — the dropped
+                    // reply port surfaces the typed ask-side error.
+                }
+            }
+        }
+        Ok(())
     }
 }
 

@@ -11,12 +11,15 @@ mod app;
 use std::{sync::Arc, time::Duration};
 
 use app::{
-    DISPATCHER_NAME, Dispatcher, DispatcherConfig, DispatcherMsg, Job, JobKind, OverseerMsg,
+    DISPATCHER_NAME, Dispatcher, DispatcherConfig, DispatcherMsg, Intake, IntakeMsg, Job, JobKind,
+    OverseerMsg,
 };
 use bombay::{
     actor::Spawn,
+    mailbox::Capacity,
     registry::Registry,
     restart::{RestartConfig, RestartPolicy},
+    stash::Stashed,
 };
 
 #[expect(
@@ -49,14 +52,22 @@ async fn main() {
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
+    // Card #224: submissions go through a `Stashed<Intake>` front door — a
+    // bounded-stash gate that can defer submits during maintenance. This
+    // demo never pauses it; the deferral path is the app-level test.
+    let intake = Stashed::<Intake>::spawn((
+        dispatcher.clone(),
+        Capacity::try_from(8usize).expect("valid intake stash capacity"),
+    ));
+
     for id in 0..20u64 {
         let kind = match id {
             7 | 11 => JobKind::Poison,
             13 => JobKind::Fail,
             _ => JobKind::Ok(Duration::from_millis(20)),
         };
-        dispatcher
-            .ask(|reply| DispatcherMsg::Submit {
+        intake
+            .ask(|reply| IntakeMsg::Submit {
                 job: Job { id, kind },
                 reply,
             })
@@ -64,16 +75,16 @@ async fn main() {
             .expect("submit accepted");
     }
 
-    // Card #225 control-lane beat: a burst of submits is in flight (the
-    // dispatcher's mailbox is busy) when a new worker is `supervise`d — the op
-    // rides the unbounded control lane (ADR-0021), so it lands promptly instead
-    // of queueing behind the burst.
+    // Card #225 control-lane beat: a burst of submits is in flight through
+    // the intake when a new worker is `supervise`d — the op rides the
+    // unbounded control lane (ADR-0021), so it lands promptly instead of
+    // queueing behind the burst.
     let mut burst = Vec::new();
     for id in 100..108u64 {
-        let dispatcher = dispatcher.clone();
+        let intake = intake.clone();
         burst.push(tokio::spawn(async move {
-            dispatcher
-                .ask(|reply| DispatcherMsg::Submit {
+            intake
+                .ask(|reply| IntakeMsg::Submit {
                     job: Job {
                         id,
                         kind: JobKind::Ok(Duration::from_millis(20)),
