@@ -14,7 +14,6 @@ use smallvec::SmallVec;
 use tokio::time::{Instant, sleep};
 use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
-use crate::actor::spawn::ON_STOP_NOTICE_GRACE;
 use crate::{
     actor::{
         Actor, ActorRef, Supervisor, Watch, WeakActorRef,
@@ -522,12 +521,16 @@ async fn dispatch_death<A: Supervisor>(
 /// watch edges installed at spawn already carry those notices. Per-child bound is
 /// its own `stop_grace`, graces run concurrently (the sweep is bounded by the
 /// largest grace, not their sum). A child whose grace fires before its notice is
-/// hard-aborted; post-abort confirmation is bounded by
-/// [`ON_STOP_NOTICE_GRACE`], after which a missing notice is traced and the
+/// hard-aborted; post-abort confirmation is bounded by the supervisor's
+/// `on_stop_grace`, after which a missing notice is traced and the
 /// supervisor exits anyway — a non-yielding child must not wedge the supervisor.
 /// A child in a backoff window has no live handle and is skipped by
 /// [`drain_live_handles`](Children::drain_live_handles).
-pub(super) async fn teardown_children(children: &mut Children, link_rx: &LinkReceiver) {
+pub(super) async fn teardown_children(
+    children: &mut Children,
+    link_rx: &LinkReceiver,
+    on_stop_grace: Duration,
+) {
     let handles = children.drain_live_handles();
     if handles.is_empty() {
         return;
@@ -582,16 +585,16 @@ pub(super) async fn teardown_children(children: &mut Children, link_rx: &LinkRec
 
     // Post-abort confirmation: aborted children must still announce their death
     // so the supervisor's own watchers can observe a clean teardown. Bounded by
-    // `ON_STOP_NOTICE_GRACE`; a non-yielding child may never produce a notice, so
+    // `on_stop_grace`; a non-yielding child may never produce a notice, so
     // trace the missing ones and proceed rather than wedging the exit.
     if !aborted.is_empty() {
-        let mut bound = std::pin::pin!(sleep(ON_STOP_NOTICE_GRACE));
+        let mut bound = std::pin::pin!(sleep(on_stop_grace));
         loop {
             tokio::select! {
                 biased;
                 () = &mut bound => {
                     for (id, _) in &aborted {
-                        trace::child_teardown_abandoned(*id, ON_STOP_NOTICE_GRACE);
+                        trace::child_teardown_abandoned(*id, on_stop_grace);
                     }
                     break;
                 }
@@ -605,7 +608,7 @@ pub(super) async fn teardown_children(children: &mut Children, link_rx: &LinkRec
                         }
                     } else {
                         for (id, _) in &aborted {
-                            trace::child_teardown_abandoned(*id, ON_STOP_NOTICE_GRACE);
+                            trace::child_teardown_abandoned(*id, on_stop_grace);
                         }
                         break;
                     }
@@ -1113,6 +1116,7 @@ mod supervised_tests {
         handle_child_death, install_child_watch, rebuild_child, teardown_children,
     };
     use crate::{
+        actor::spawn::DEFAULT_ON_STOP_NOTICE_GRACE,
         actor::supervision::{
             ArmedReg, Child, ChildHandle, Children, CycleState, RebuildFactory, Spawned,
             SuperviseReg, SupervisionOp, WatchInstaller, WatchOutcome, watch_installer,
@@ -1658,7 +1662,7 @@ mod supervised_tests {
         dead_entry.handle = None;
         children.insert(dead, dead_entry);
 
-        teardown_children(&mut children, &link_rx).await;
+        teardown_children(&mut children, &link_rx, DEFAULT_ON_STOP_NOTICE_GRACE).await;
 
         assert!(
             alive_edges.cancel.is_cancelled(),
@@ -1672,6 +1676,135 @@ mod supervised_tests {
             children.ids().count(),
             0,
             "the sweep empties the child table",
+        );
+    }
+
+    /// Minimal tracing capture for the unit tests in this module — mirrors
+    /// `tests/tracing_capture.rs::capture`, which integration tests cannot share
+    /// with in-crate unit tests.
+    #[cfg(feature = "tracing")]
+    mod trace_capture {
+        use std::fmt::Write as _;
+        use std::sync::{Arc, Mutex};
+
+        use tracing::{
+            Event, Subscriber,
+            field::{Field, Visit},
+        };
+        use tracing_subscriber::{
+            Layer, layer::Context, layer::SubscriberExt as _, registry::LookupSpan,
+        };
+
+        /// One captured event: its level and recorded fields (the `message`
+        /// field carries the format message).
+        #[derive(Debug, Clone)]
+        pub struct EventRec {
+            pub level: String,
+            pub fields: Vec<(String, String)>,
+        }
+
+        pub fn field(fields: &[(String, String)], name: &str) -> Option<String> {
+            fields
+                .iter()
+                .find(|(k, _)| k == name)
+                .map(|(_, v)| v.clone())
+        }
+
+        struct FieldVisitor<'a>(&'a mut Vec<(String, String)>);
+
+        impl Visit for FieldVisitor<'_> {
+            fn record_debug(&mut self, f: &Field, value: &dyn core::fmt::Debug) {
+                let mut s = String::new();
+                let _ = write!(s, "{value:?}");
+                self.0.push((f.name().to_owned(), s));
+            }
+            fn record_str(&mut self, f: &Field, value: &str) {
+                self.0.push((f.name().to_owned(), value.to_owned()));
+            }
+        }
+
+        #[derive(Clone, Default)]
+        pub struct CaptureLayer {
+            pub store: Arc<Mutex<Vec<EventRec>>>,
+        }
+
+        impl<S: Subscriber + for<'a> LookupSpan<'a>> Layer<S> for CaptureLayer {
+            fn on_event(&self, event: &Event<'_>, _ctx: Context<'_, S>) {
+                let mut fields = Vec::new();
+                event.record(&mut FieldVisitor(&mut fields));
+                self.store
+                    .lock()
+                    .expect("capture store poisoned")
+                    .push(EventRec {
+                        level: event.metadata().level().to_string(),
+                        fields,
+                    });
+            }
+        }
+
+        /// Installs a fresh capture subscriber as the THREAD default. Tests must
+        /// run on a current-thread runtime (`#[tokio::test]` default) so the
+        /// sweep's events emit on this thread.
+        pub fn install() -> (Arc<Mutex<Vec<EventRec>>>, tracing::subscriber::DefaultGuard) {
+            let layer = CaptureLayer::default();
+            let store = Arc::clone(&layer.store);
+            let subscriber = tracing_subscriber::registry().with(layer);
+            (store, tracing::subscriber::set_default(subscriber))
+        }
+    }
+
+    /// A child that is aborted at supervisor exit but never confirms its death
+    /// (a non-yielding child produces no notice) must not wedge the sweep: after
+    /// `on_stop_grace` the supervisor traces the missing notice and proceeds.
+    /// Kills the `child_teardown_abandoned` -> () mutant (trace.rs:172).
+    #[cfg(feature = "tracing")]
+    #[tokio::test(start_paused = true)]
+    async fn teardown_traces_abandonment_when_a_child_never_confirms_death() {
+        let (link_tx, link_rx) = flume::unbounded();
+        let mut children = Children::new();
+        let child_id = ActorId::from_raw_for_test(1);
+        let mut entry = child(
+            RestartConfig::new(RestartPolicy::Permanent).with_stop_grace(Duration::ZERO),
+            Instant::now(),
+        );
+        // A SILENT handle: no backing task, so no `LinkDied` ever arrives — the
+        // aborted child never confirms its death. `link_tx` stays bound for the
+        // whole sweep so the channel never closes and the sweep parks on
+        // `recv_async` until the (virtual) `on_stop_grace` deadline fires.
+        entry.handle = Some(handle(child_id));
+        children.insert(child_id, entry);
+
+        let (store, _guard) = trace_capture::install();
+        let on_stop_grace = Duration::from_secs(1);
+        teardown_children(&mut children, &link_rx, on_stop_grace).await;
+        drop(link_tx);
+
+        let expected_id = format!("{child_id:?}");
+        let captured = store.lock().expect("capture store poisoned");
+        let events: Vec<_> = captured
+            .iter()
+            .filter(|e| {
+                trace_capture::field(&e.fields, "message").as_deref()
+                    == Some("child teardown notice missing after abort; abandoning")
+            })
+            .collect();
+        assert_eq!(events.len(), 1, "exactly one abandonment trace event fires");
+        let event = events[0];
+        assert_eq!(event.level, "ERROR", "the abandonment is an error event");
+        assert_eq!(
+            trace_capture::field(&event.fields, "child.id").as_deref(),
+            Some(expected_id.as_str()),
+            "the event names the abandoned child",
+        );
+        assert!(
+            trace_capture::field(&event.fields, "grace").is_some_and(|grace| !grace.is_empty()),
+            "the event carries the grace that elapsed",
+        );
+        drop(captured);
+        assert_eq!(
+            children.ids().count(),
+            0,
+            "the sweep still empties the child table",
         );
     }
 

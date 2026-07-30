@@ -219,7 +219,7 @@ mod tests {
     use core::time::Duration;
 
     use crate::{
-        actor::{Actor, ActorRef, PreparedActor, Recipient, Spawn as _},
+        actor::{Actor, ActorRef, PreparedActor, Recipient, Spawn as _, SpawnConfig},
         mailbox::{Capacity, Mailboxed},
         message::Msg,
         reply::ReplySender,
@@ -465,7 +465,10 @@ mod tests {
             capacity: usize,
         ) -> ActorRef<Self> {
             let cap = Capacity::try_from(capacity).expect("valid test capacity");
-            let prepared = PreparedActor::<Self>::new(cap);
+            let prepared = PreparedActor::<Self>::new(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let actor_ref = prepared.actor_ref().clone();
             let _join = prepared.spawn(gate);
             actor_ref

@@ -93,7 +93,7 @@ pub fn watch_signal(watcher: ActorId, linked: bool) -> (ControlSignal, LinkRecei
 /// Measured (#150): the 8×50-sender race needs ~20 s real under MIRI and passes
 /// comfortably inside this bound.
 ///
-/// Deliberately NOT equal to `actor::spawn`'s `ON_STOP_NOTICE_GRACE` (card
+/// Deliberately NOT equal to `actor::spawn`'s `DEFAULT_ON_STOP_NOTICE_GRACE` (card
 /// #196), which was byte-identical to this bound until it was raised. Identical
 /// magnitudes put a harness deadline on the same instant as a hook abandonment,
 /// so a test that raced the grace would fail on whichever timer the runtime

@@ -18,8 +18,8 @@ use std::{
 use bombay::{
     ActorId,
     actor::{
-        Actor, ActorRef, Recipient, Spawn as _, SpawnLinked as _, SpawnSupervised as _, Supervisor,
-        Watch, WeakActorRef,
+        Actor, ActorRef, Recipient, Spawn as _, SpawnConfig, SpawnLinked as _,
+        SpawnSupervised as _, Supervisor, Watch, WeakActorRef,
     },
     error::{ActorStopReason, NameTaken, PanicError, TellError},
     mailbox::Mailboxed,
@@ -246,6 +246,9 @@ pub struct DispatcherConfig {
     pub restart: RestartConfig,
     pub registry: Arc<Registry>,
     pub worker_stopped_tx: Option<Sender<ActorId>>,
+    /// Per-worker `on_stop` notice grace, wired into each worker's
+    /// [`SpawnConfig`] (card #257).
+    pub worker_grace: Duration,
 }
 
 pub struct Dispatcher {
@@ -276,6 +279,7 @@ impl Actor for Dispatcher {
     async fn on_start(cfg: DispatcherConfig, actor_ref: ActorRef<Self>) -> Result<Self, AppError> {
         cfg.registry.register(DISPATCHER_NAME, &actor_ref)?;
         let worker_stopped_tx = cfg.worker_stopped_tx.clone();
+        let worker_grace = cfg.worker_grace;
         for slot in 0..cfg.workers {
             // WEAK capture is mandatory: the factory lives in this actor's own
             // child table — a strong ref would be a self-cycle and the
@@ -285,11 +289,17 @@ impl Actor for Dispatcher {
             let stopped_tx = worker_stopped_tx.clone();
             actor_ref
                 .supervise(cfg.restart, move || {
-                    let worker = Worker::spawn(WorkerArgs {
-                        slot,
-                        dispatcher: done_port.clone(),
-                        stopped_tx: stopped_tx.clone(),
-                    });
+                    let worker = Worker::spawn_with_config(
+                        SpawnConfig {
+                            on_stop_grace: worker_grace,
+                            ..Default::default()
+                        },
+                        WorkerArgs {
+                            slot,
+                            dispatcher: done_port.clone(),
+                            stopped_tx: stopped_tx.clone(),
+                        },
+                    );
                     if let Some(strong_disp) = disp.upgrade() {
                         // best-effort: a full mailbox loses the roster update —
                         // wart #3, evidence on #225

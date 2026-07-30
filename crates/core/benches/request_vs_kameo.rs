@@ -73,7 +73,7 @@ const PRODUCERS: u64 = 4;
 
 mod core_side {
     use bombay::{
-        actor::{Actor, ActorRef, Spawn as _},
+        actor::{Actor, ActorRef, Spawn as _, SpawnConfig},
         mailbox::{Capacity, Mailboxed},
         message::Msg,
         reply::ReplySender,
@@ -117,7 +117,13 @@ mod core_side {
 
     pub fn spawn() -> ActorRef<Counter> {
         let cap = Capacity::new(NonZeroUsize::new(CAP).expect("nonzero")).expect("within max");
-        Counter::spawn_with_capacity(cap, ())
+        Counter::spawn_with_config(
+            SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            },
+            (),
+        )
     }
 }
 

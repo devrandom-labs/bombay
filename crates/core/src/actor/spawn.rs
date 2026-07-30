@@ -4,7 +4,7 @@
 //! `on_stop`).
 //!
 //! **Runtime requirement:** the graceful teardown bounds `on_stop` with
-//! [`ON_STOP_NOTICE_GRACE`], so every actor needs a tokio runtime with the TIME
+//! [`DEFAULT_ON_STOP_NOTICE_GRACE`], so every actor needs a tokio runtime with the TIME
 //! driver enabled (`Builder::enable_time`, or `enable_all` / `#[tokio::main]`).
 //! Card #196 widened this from the opt-in send timeouts (#118) to every actor:
 //! `tokio::time::timeout` panics without a timer, and the alternative — an
@@ -39,36 +39,22 @@ use crate::{
 };
 
 /// The default mailbox capacity for the ergonomic spawn path (4 cache-lines'
-/// worth of slots is a sane starting point; tune with `spawn_with_capacity`).
+/// worth of slots is a sane starting point; tune with `spawn_with_config`).
 pub const DEFAULT_MAILBOX_CAPACITY: usize = 64;
 
-/// How long a dying actor's `on_stop` may run before its death notices go out
-/// anyway (card #196).
+/// The default grace a dying actor's `on_stop` gets before its death notices go
+/// out anyway (card #196). Per-actor overridable via
+/// [`SpawnConfig::on_stop_grace`]; read only by [`SpawnConfig::default`].
 ///
-/// The notices must carry `on_stop`'s outcome (`LinkDied::cleanup_failed`), so
-/// the hook runs *first* — but a watcher must never be stranded behind a user
-/// hook that never returns. Past this bound the hook's future is dropped and the
-/// death is announced with `cleanup_failed = true`. OTP's shape: a child's
-/// `terminate/2` runs before exit signals propagate, bounded by the child spec's
-/// `shutdown` timeout, after which the child is brutally killed.
+/// The notices must carry `on_stop`'s outcome (`LinkDied::cleanup_failed`), so the
+/// hook runs *first* — but a watcher must never be stranded behind a user hook
+/// that never returns. Past this bound the hook's future is dropped and the death
+/// is announced with `cleanup_failed = true`. OTP's shape: a child's `terminate/2`
+/// runs before exit signals propagate, bounded by the child spec's `shutdown`.
 ///
 /// Distinct from a supervisor's `stop_grace`, which bounds cancel→abort from the
 /// *outside*; this bounds notice delay from the *inside*.
-pub(super) const ON_STOP_NOTICE_GRACE: Duration = if cfg!(miri) {
-    // Under MIRI the clock is virtual: it advances 5 µs per basic block executed
-    // (`miri/src/clock.rs`: `NANOSECONDS_PER_BASIC_BLOCK = 5000`), independent of
-    // real elapsed time. A wall-clock-calibrated bound therefore measures nothing
-    // there — it counts interpreted basic blocks — and abandons an `on_stop` that
-    // is making fine progress, turning the MIRI lane (`miri.yml` runs every lib
-    // test, including the parked-hook one) into a false `cleanup_failed`.
-    // `test_support::terminate_bound` scales for the same reason, but is precedent
-    // in SHAPE only: it is test-only code behind the `test-support` feature, while
-    // this is production. A STOPGAP — the right fix is an injectable grace on the
-    // config surface #196 is growing, at which point this fork goes away.
-    Duration::from_mins(10)
-} else {
-    Duration::from_secs(5)
-};
+pub(super) const DEFAULT_ON_STOP_NOTICE_GRACE: Duration = Duration::from_secs(5);
 
 /// The default capacity as a validated [`Capacity`]. Infallible for the fixed
 /// constant 64 (in `1..=Capacity::MAX`); the `expect` is proven by
@@ -80,6 +66,29 @@ pub(super) fn default_capacity() -> Capacity {
                   the conversion is infallible and pinned by a unit test"
     )]
     Capacity::try_from(DEFAULT_MAILBOX_CAPACITY).expect("64 is a valid capacity")
+}
+
+/// Per-spawn configuration for a [`PreparedActor`]: the bounded mailbox capacity
+/// and the [`on_stop`](Actor::on_stop) notice grace (card #257).
+///
+/// Build the common case with struct-update over [`SpawnConfig::default`]:
+/// `SpawnConfig { capacity, ..Default::default() }`.
+#[derive(Debug, Clone, Copy)]
+pub struct SpawnConfig {
+    /// The bounded mailbox capacity.
+    pub capacity: Capacity,
+    /// How long `on_stop` may run before the death notices go out anyway; see
+    /// [`DEFAULT_ON_STOP_NOTICE_GRACE`].
+    pub on_stop_grace: Duration,
+}
+
+impl Default for SpawnConfig {
+    fn default() -> Self {
+        Self {
+            capacity: default_capacity(),
+            on_stop_grace: DEFAULT_ON_STOP_NOTICE_GRACE,
+        }
+    }
 }
 
 /// The total outcome of running an actor to completion in the current task.
@@ -123,6 +132,7 @@ pub struct PreparedActor<A: Actor> {
     actor_ref: ActorRef<A>,
     mailbox_rx: MailboxReceiver<A>,
     abort_registration: AbortRegistration,
+    on_stop_grace: Duration,
 }
 
 impl<A: Actor> fmt::Debug for PreparedActor<A> {
@@ -134,16 +144,18 @@ impl<A: Actor> fmt::Debug for PreparedActor<A> {
 }
 
 impl<A: Actor> PreparedActor<A> {
-    /// Prepares an actor with a mailbox of the given `capacity`.
-    pub fn new(capacity: Capacity) -> Self {
+    /// Prepares an actor from a [`SpawnConfig`] (mailbox capacity + `on_stop`
+    /// notice grace).
+    pub fn new(config: SpawnConfig) -> Self {
         let id = next_actor_id();
-        let (mailbox_tx, mailbox_rx) = Mailbox::<A>::bounded(capacity, id);
+        let (mailbox_tx, mailbox_rx) = Mailbox::<A>::bounded(config.capacity, id);
         let (abort_handle, abort_registration) = AbortHandle::new_pair();
         let actor_ref = ActorRef::new(id, mailbox_tx, CancellationToken::new(), abort_handle, None);
         Self {
             actor_ref,
             mailbox_rx,
             abort_registration,
+            on_stop_grace: config.on_stop_grace,
         }
     }
 
@@ -168,12 +180,13 @@ impl<A: Actor> PreparedActor<A> {
             actor_ref,
             mailbox_rx,
             abort_registration,
+            on_stop_grace,
         } = self;
         let span = trace::lifecycle_span::<A>(actor_ref.id());
         trace::instrument(
             async move {
                 trace::spawned();
-                let lifecycle = run_lifecycle(args, actor_ref, mailbox_rx);
+                let lifecycle = run_lifecycle(args, actor_ref, mailbox_rx, on_stop_grace);
                 Abortable::new(lifecycle, abort_registration)
                     .await
                     .unwrap_or(RunResult::Killed)
@@ -198,9 +211,9 @@ impl<A: Watch> PreparedActor<A> {
     /// run-loop to drain. A plain [`new`](Self::new) leaves `link_tx` `None`, so a
     /// plain-spawned `Watch` actor cannot watch (it has no channel).
     #[must_use = "a prepared actor and its link receiver must be run"]
-    pub fn new_linked(capacity: Capacity) -> (Self, LinkReceiver) {
+    pub fn new_linked(config: SpawnConfig) -> (Self, LinkReceiver) {
         let id = next_actor_id();
-        let (mailbox_tx, mailbox_rx) = Mailbox::<A>::bounded(capacity, id);
+        let (mailbox_tx, mailbox_rx) = Mailbox::<A>::bounded(config.capacity, id);
         let (abort_handle, abort_registration) = AbortHandle::new_pair();
         let (link_tx, link_rx) = flume::unbounded();
         let actor_ref = ActorRef::new(
@@ -215,6 +228,7 @@ impl<A: Watch> PreparedActor<A> {
                 actor_ref,
                 mailbox_rx,
                 abort_registration,
+                on_stop_grace: config.on_stop_grace,
             },
             link_rx,
         )
@@ -235,12 +249,14 @@ impl<A: Watch> PreparedActor<A> {
             actor_ref,
             mailbox_rx,
             abort_registration,
+            on_stop_grace,
         } = self;
         let span = trace::lifecycle_span::<A>(actor_ref.id());
         trace::instrument(
             async move {
                 trace::spawned();
-                let lifecycle = run_lifecycle_linked(args, actor_ref, mailbox_rx, link_rx);
+                let lifecycle =
+                    run_lifecycle_linked(args, actor_ref, mailbox_rx, link_rx, on_stop_grace);
                 Abortable::new(lifecycle, abort_registration)
                     .await
                     .unwrap_or(RunResult::Killed)
@@ -279,13 +295,21 @@ impl<A: Supervisor> PreparedActor<A> {
             actor_ref,
             mailbox_rx,
             abort_registration,
+            on_stop_grace,
         } = self;
         let span = trace::lifecycle_span::<A>(actor_ref.id());
         trace::instrument(
             async move {
                 trace::spawned();
-                run_lifecycle_supervised(args, actor_ref, mailbox_rx, link_rx, abort_registration)
-                    .await
+                run_lifecycle_supervised(
+                    args,
+                    actor_ref,
+                    mailbox_rx,
+                    link_rx,
+                    abort_registration,
+                    on_stop_grace,
+                )
+                .await
             },
             span,
         )
@@ -422,7 +446,7 @@ fn apply_raced_registrations<A: Actor>(
 
 /// Lifecycle epilogue shared by the plain and linked loops: apply the `Watch`/
 /// `Unwatch` signals that raced the stop, run `on_stop` under `catch_unwind`
-/// **bounded by [`ON_STOP_NOTICE_GRACE`]** (Err/panic/timeout logged, `reason`
+/// **bounded by the spawn's `on_stop_grace`** (Err/panic/timeout logged, `reason`
 /// preserved), then fire the death notices by dropping the guard.
 ///
 /// **Ordering (card #196, revising #195).** #195 dropped the guard *first*, so a
@@ -430,7 +454,7 @@ fn apply_raced_registrations<A: Actor>(
 /// cleanup outcome ([`LinkDied::cleanup_failed`](crate::watch::LinkDied)), which
 /// does not exist until the hook has run — so the hook now runs first and the
 /// property #195 protected is preserved as a *bound*: a notice is delayed by at
-/// most [`ON_STOP_NOTICE_GRACE`], after which the hook's future is dropped and
+/// most `on_stop_grace`, after which the hook's future is dropped and
 /// the death is announced as a failed cleanup. OTP's shape: a child's
 /// `terminate/2` runs before its exit signals propagate, bounded by the child
 /// spec's `shutdown`.
@@ -467,12 +491,19 @@ fn apply_raced_registrations<A: Actor>(
 /// `timerless_runtime_panics_teardown_and_reports_failed_cleanup`, plus the
 /// ordering tests `watch_accepted_during_on_stop_still_notified` and
 /// `unwatch_queued_before_stop_suppresses_notice`.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the epilogue needs one borrow per task-owned structure plus the \
+              stop reason and its grace; grouping would not reduce complexity \
+              (the kind.rs SetCycleCtx/too_many_arguments precedent)"
+)]
 async fn finish_actor<A: Actor>(
     mut state: A,
     weak: WeakActorRef<A>,
     mut mailbox_rx: MailboxReceiver<A>,
     mut watchers: Watchers,
     reason: ActorStopReason,
+    on_stop_grace: Duration,
 ) -> RunResult<A> {
     trace::record_stop_reason(&reason);
     apply_raced_registrations(&mut mailbox_rx, &mut watchers);
@@ -483,7 +514,7 @@ async fn finish_actor<A: Actor>(
     // timer, and neither path returns here to set a flag afterwards.
     watchers.assume_cleanup_failed();
     let stop_fut = AssertUnwindSafe(state.on_stop(weak, reason.clone())).catch_unwind();
-    match tokio::time::timeout(ON_STOP_NOTICE_GRACE, stop_fut).await {
+    match tokio::time::timeout(on_stop_grace, stop_fut).await {
         Ok(stop_result) => {
             if matches!(&stop_result, Ok(Ok(()))) {
                 watchers.record_cleanup_succeeded();
@@ -495,7 +526,7 @@ async fn finish_actor<A: Actor>(
             // dropped its future (which is what releases the borrow of `state`).
             // Death is announced regardless, and the armed flag already says the
             // cleanup never finished.
-            trace::on_stop_abandoned(&reason, ON_STOP_NOTICE_GRACE);
+            trace::on_stop_abandoned(&reason, on_stop_grace);
         }
     }
 
@@ -524,6 +555,7 @@ async fn run_lifecycle<A: Actor>(
     args: A::Args,
     actor_ref: ActorRef<A>,
     mut mailbox_rx: MailboxReceiver<A>,
+    on_stop_grace: Duration,
 ) -> RunResult<A> {
     let StartedActor {
         mut state,
@@ -538,7 +570,7 @@ async fn run_lifecycle<A: Actor>(
     let reason =
         run_message_loop(&mut state, &weak, &handles, &mut mailbox_rx, &mut watchers).await;
 
-    finish_actor(state, weak, mailbox_rx, watchers, reason).await
+    finish_actor(state, weak, mailbox_rx, watchers, reason, on_stop_grace).await
 }
 
 /// The linked-actor lifecycle (#195): identical to [`run_lifecycle`] but drives the
@@ -550,6 +582,7 @@ async fn run_lifecycle_linked<A: Watch>(
     actor_ref: ActorRef<A>,
     mut mailbox_rx: MailboxReceiver<A>,
     link_rx: LinkReceiver,
+    on_stop_grace: Duration,
 ) -> RunResult<A> {
     let StartedActor {
         mut state,
@@ -573,7 +606,7 @@ async fn run_lifecycle_linked<A: Watch>(
     )
     .await;
 
-    finish_actor(state, weak, mailbox_rx, watchers, reason).await
+    finish_actor(state, weak, mailbox_rx, watchers, reason, on_stop_grace).await
 }
 
 /// The supervisor lifecycle (#196): the shared [`start_actor`]/[`finish_actor`]
@@ -638,6 +671,13 @@ enum SupervisedLifecycleResult<A: Actor> {
 /// never orphaned. Queued registrations on the kill/startup-failure paths are
 /// covered by the armed drop-guard on each `Add` op.
 #[expect(
+    clippy::too_many_arguments,
+    reason = "the lifecycle threads the spawn inputs (args, ref, mailbox, link \
+              channel, abort registration) plus the per-spawn grace; grouping \
+              would not reduce complexity (the kind.rs too_many_arguments \
+              precedent)"
+)]
+#[expect(
     clippy::too_many_lines,
     reason = "the lifecycle function intentionally sequences start, abortable \
               loop, and the three-branch epilogue; splitting would obscure the \
@@ -649,6 +689,7 @@ async fn run_lifecycle_supervised<A: Supervisor>(
     mut mailbox_rx: MailboxReceiver<A>,
     link_rx: LinkReceiver,
     abort_registration: AbortRegistration,
+    on_stop_grace: Duration,
 ) -> RunResult<A> {
     // Captured before `start_actor` consumes the strong `actor_ref`: the loop
     // needs the supervisor's own id and a clone of its link sender to install
@@ -755,24 +796,25 @@ async fn run_lifecycle_supervised<A: Supervisor>(
                 epilogue_sup_link_tx,
             );
             pending_aborts.clear();
-            teardown_children(&mut children, &link_rx).await;
+            teardown_children(&mut children, &link_rx, on_stop_grace).await;
             finish_actor(
                 final_state,
                 final_weak,
                 final_mailbox_rx,
                 final_watchers,
                 reason,
+                on_stop_grace,
             )
             .await
         }
         Ok(SupervisedLifecycleResult::StartupFailed(err, startup_mailbox_rx)) => {
             pending_aborts.clear();
-            teardown_children(&mut children, &link_rx).await;
+            teardown_children(&mut children, &link_rx, on_stop_grace).await;
             startup_failed(err, &startup_mailbox_rx)
         }
         Err(Aborted) => {
             pending_aborts.clear();
-            teardown_children(&mut children, &link_rx).await;
+            teardown_children(&mut children, &link_rx, on_stop_grace).await;
             RunResult::Killed
         }
     }
@@ -801,7 +843,7 @@ mod tests {
 
     use core::time::Duration;
 
-    use super::{DEFAULT_MAILBOX_CAPACITY, ON_STOP_NOTICE_GRACE};
+    use super::{DEFAULT_MAILBOX_CAPACITY, DEFAULT_ON_STOP_NOTICE_GRACE, SpawnConfig};
     use crate::{
         actor::{ActorRef, PreparedActor, RunResult, WeakActorRef},
         error::{ActorNotLinked, ActorStopReason, PanicReason},
@@ -896,7 +938,10 @@ mod tests {
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
 
-        let prepared = PreparedActor::<Counter>::new(cap(8));
+        let prepared = PreparedActor::<Counter>::new(SpawnConfig {
+            capacity: cap(8),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         bounded(actor_ref.tell(Tick)).await.expect("send 1");
         bounded(actor_ref.tell(Tick)).await.expect("send 2");
@@ -933,7 +978,10 @@ mod tests {
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
 
-        let prepared = PreparedActor::<Counter>::new(cap(8));
+        let prepared = PreparedActor::<Counter>::new(SpawnConfig {
+            capacity: cap(8),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         let join = prepared.spawn((Arc::clone(&handled), Arc::clone(&stopped)));
 
@@ -980,7 +1028,10 @@ mod tests {
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
 
-        let prepared = PreparedActor::<Counter>::new(cap(8));
+        let prepared = PreparedActor::<Counter>::new(SpawnConfig {
+            capacity: cap(8),
+            ..Default::default()
+        });
         bounded(prepared.actor_ref().tell(Tick))
             .await
             .expect("enqueue before spawn");
@@ -1042,7 +1093,10 @@ mod tests {
         }
 
         let handled = Arc::new(AtomicU32::new(0));
-        let prepared = PreparedActor::<Stopper>::new(cap(8));
+        let prepared = PreparedActor::<Stopper>::new(SpawnConfig {
+            capacity: cap(8),
+            ..Default::default()
+        });
         // Enqueue BEFORE spawning and hold no external ref: once the loop
         // downgrades its own ref after on_start, only the queued self_senders
         // keep the actor alive — the drain window.
@@ -1107,7 +1161,10 @@ mod tests {
         }
 
         let finished = Arc::new(AtomicU32::new(0));
-        let prepared = PreparedActor::<Berserker>::new(cap(4));
+        let prepared = PreparedActor::<Berserker>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         bounded(prepared.actor_ref().tell(Rampage))
             .await
             .expect("send");
@@ -1181,7 +1238,10 @@ mod tests {
         let (release_tx, release_rx) = oneshot::channel();
         let handled = Arc::new(AtomicU32::new(0));
 
-        let prepared = PreparedActor::<Slow>::new(cap(8));
+        let prepared = PreparedActor::<Slow>::new(SpawnConfig {
+            capacity: cap(8),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         // Two messages: the first blocks until released; the second must be abandoned.
         bounded(actor_ref.tell(Work)).await.expect("send 1");
@@ -1232,7 +1292,10 @@ mod tests {
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
 
-        let prepared = PreparedActor::<Counter>::new(cap(8));
+        let prepared = PreparedActor::<Counter>::new(SpawnConfig {
+            capacity: cap(8),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         bounded(actor_ref.tell(Tick)).await.expect("enqueue 1");
         bounded(actor_ref.tell(Tick)).await.expect("enqueue 2");
@@ -1290,7 +1353,10 @@ mod tests {
         }
 
         let handled = Arc::new(AtomicU32::new(0));
-        let prepared = PreparedActor::<Once>::new(cap(8));
+        let prepared = PreparedActor::<Once>::new(SpawnConfig {
+            capacity: cap(8),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         bounded(actor_ref.tell(Go)).await.expect("send 1");
         bounded(actor_ref.tell(Go)).await.expect("send 2");
@@ -1359,7 +1425,10 @@ mod tests {
         let (gate_tx, gate_rx) = oneshot::channel();
         let seen = Arc::new(Mutex::new(Vec::new()));
 
-        let prepared = PreparedActor::<Recorder>::new(cap(8));
+        let prepared = PreparedActor::<Recorder>::new(SpawnConfig {
+            capacity: cap(8),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         let run = tokio::spawn(prepared.run((gate_rx, Arc::clone(&seen))));
 
@@ -1411,7 +1480,12 @@ mod tests {
             }
         }
 
-        let outcome = PreparedActor::<NeverStarts>::new(cap(4)).run(()).await;
+        let outcome = PreparedActor::<NeverStarts>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        })
+        .run(())
+        .await;
         let RunResult::StartupFailed(err) = outcome else {
             panic!("expected StartupFailed, got {outcome:?}");
         };
@@ -1449,7 +1523,12 @@ mod tests {
             }
         }
 
-        let outcome = PreparedActor::<PanicsOnStart>::new(cap(4)).run(()).await;
+        let outcome = PreparedActor::<PanicsOnStart>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        })
+        .run(())
+        .await;
         let RunResult::StartupFailed(err) = outcome else {
             panic!("expected StartupFailed, got {outcome:?}");
         };
@@ -1528,7 +1607,10 @@ mod tests {
     /// can never start, instead of escalating on the first failure.
     #[tokio::test]
     async fn startup_failure_answers_queued_watchers_with_on_start_reason() {
-        let prepared = PreparedActor::<FailingStart>::new(cap(4));
+        let prepared = PreparedActor::<FailingStart>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let link_rx = watch_before_start(&prepared);
 
         let outcome = bounded(prepared.run(())).await;
@@ -1546,7 +1628,10 @@ mod tests {
     /// pinned on BOTH entry points rather than inferred from shared code.
     #[tokio::test]
     async fn linked_startup_failure_answers_queued_watchers_with_on_start_reason() {
-        let (prepared, own_link_rx) = PreparedActor::<FailingStart>::new_linked(cap(4));
+        let (prepared, own_link_rx) = PreparedActor::<FailingStart>::new_linked(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let watcher_link_rx = watch_before_start(&prepared);
 
         let outcome = bounded(prepared.run_linked((), own_link_rx)).await;
@@ -1626,7 +1711,10 @@ mod tests {
         let stop_reason: Arc<Mutex<Option<ActorStopReason>>> = Arc::new(Mutex::new(None));
         let counter_at_stop = Arc::new(Mutex::new(None));
 
-        let prepared = PreparedActor::<Torn>::new(cap(4));
+        let prepared = PreparedActor::<Torn>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         bounded(actor_ref.tell(Explode)).await.expect("send");
 
@@ -1669,7 +1757,10 @@ mod tests {
         let stop_reason = Arc::new(Mutex::new(None));
         let counter_at_stop: Arc<Mutex<Option<u32>>> = Arc::new(Mutex::new(None));
 
-        let prepared = PreparedActor::<Torn>::new(cap(4));
+        let prepared = PreparedActor::<Torn>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         bounded(actor_ref.tell(Explode)).await.expect("send");
         // Bounded: if the send is a no-op the actor never panics and the loop
@@ -1716,7 +1807,10 @@ mod tests {
             }
         }
 
-        let prepared = PreparedActor::<Bomb>::new(cap(4));
+        let prepared = PreparedActor::<Bomb>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         let handle = prepared.spawn(());
         bounded(actor_ref.tell(Trigger))
@@ -1774,7 +1868,10 @@ mod tests {
             }
         }
 
-        let prepared = PreparedActor::<Failer>::new(cap(4));
+        let prepared = PreparedActor::<Failer>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         bounded(actor_ref.tell(Do)).await.expect("send");
         // Bounded: if the send is a no-op the handler never returns Err and the
@@ -1851,7 +1948,10 @@ mod tests {
         let finished = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
 
-        let prepared = PreparedActor::<Blocker>::new(cap(4));
+        let prepared = PreparedActor::<Blocker>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         bounded(actor_ref.tell(Block)).await.expect("send");
         let handle = prepared.spawn((entered_tx, Arc::clone(&finished), Arc::clone(&stopped)));
@@ -1903,7 +2003,10 @@ mod tests {
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
 
-        let prepared = PreparedActor::<Counter>::new(cap(4));
+        let prepared = PreparedActor::<Counter>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         let run = tokio::spawn(prepared.run((Arc::clone(&handled), Arc::clone(&stopped))));
 
@@ -1966,7 +2069,10 @@ mod tests {
     /// `Debug` impl against being stubbed to an empty formatter.
     #[test]
     fn prepared_actor_debug_names_struct() {
-        let prepared = PreparedActor::<Counter>::new(cap(4));
+        let prepared = PreparedActor::<Counter>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let shown = format!("{prepared:?}");
         assert!(
             shown.contains("PreparedActor"),
@@ -2028,7 +2134,13 @@ mod tests {
 
         let (done_tx, done_rx) = oneshot::channel();
         let total = SENDERS * PER_SENDER;
-        let actor_ref = Sink::spawn_with_capacity(cap(4), (total, done_tx));
+        let actor_ref = Sink::spawn_with_config(
+            SpawnConfig {
+                capacity: cap(4),
+                ..Default::default()
+            },
+            (total, done_tx),
+        );
 
         let start = Arc::new(Barrier::new(SENDERS as usize));
         let mut tasks = Vec::new();
@@ -2072,7 +2184,10 @@ mod tests {
         const REFS: usize = 8;
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
-        let prepared = PreparedActor::<Counter>::new(cap(REFS));
+        let prepared = PreparedActor::<Counter>::new(SpawnConfig {
+            capacity: cap(REFS),
+            ..Default::default()
+        });
         let refs: Vec<_> = (0..REFS).map(|_| prepared.actor_ref().clone()).collect();
         let join = prepared.spawn((Arc::clone(&handled), Arc::clone(&stopped)));
 
@@ -2132,7 +2247,10 @@ mod tests {
 
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
-        let prepared = PreparedActor::<Counter>::new(cap(8));
+        let prepared = PreparedActor::<Counter>::new(SpawnConfig {
+            capacity: cap(8),
+            ..Default::default()
+        });
         let strong = prepared.actor_ref().clone();
         let weak = strong.downgrade();
         let id = strong.id();
@@ -2542,7 +2660,13 @@ mod tests {
 
         let (entered_tx, entered_rx) = oneshot::channel();
         let (_release_tx, release_rx) = oneshot::channel();
-        let target = Gate::spawn_with_capacity(cap(1), (entered_tx, release_rx));
+        let target = Gate::spawn_with_config(
+            SpawnConfig {
+                capacity: cap(1),
+                ..Default::default()
+            },
+            (entered_tx, release_rx),
+        );
 
         // Park the single handler so the loop cannot dequeue anything further.
         bounded(target.tell(Enter)).await.expect("enqueue Enter");
@@ -2749,7 +2873,10 @@ mod tests {
     /// outcome does not exist yet, so every notice claims a clean cleanup.
     #[tokio::test(start_paused = true)]
     async fn on_stop_error_marks_cleanup_failed_on_notice() {
-        let prepared = PreparedActor::<FailingStop>::new(cap(4));
+        let prepared = PreparedActor::<FailingStop>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let link_rx = watch_before_start(&prepared);
         let actor_ref = prepared.actor_ref().clone();
 
@@ -2771,7 +2898,7 @@ mod tests {
     }
 
     /// `@bug` Lifecycle (card #196): a HANGING `on_stop` delays the death notice by
-    /// at most [`ON_STOP_NOTICE_GRACE`] — never unboundedly. This is the property
+    /// at most [`DEFAULT_ON_STOP_NOTICE_GRACE`] — never unboundedly. This is the property
     /// card #195's notify-first order protected, preserved as a bound rather than
     /// lost when #196 moved `on_stop` in front of the notices. The hook is
     /// abandoned (its future dropped) and the death is announced as a failed
@@ -2779,7 +2906,10 @@ mod tests {
     /// bound then expires with no notice at all.
     #[tokio::test(start_paused = true)]
     async fn death_notice_within_grace_of_hanging_on_stop() {
-        let prepared = PreparedActor::<HangingStop>::new(cap(4));
+        let prepared = PreparedActor::<HangingStop>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let link_rx = watch_before_start(&prepared);
         let actor_ref = prepared.actor_ref().clone();
         let (entered_tx, _entered_rx) = tokio::sync::oneshot::channel();
@@ -2793,7 +2923,7 @@ mod tests {
         // The paused clock auto-advances once every task parks, so this consumes
         // the grace without stalling the suite for real seconds.
         let notice = tokio::time::timeout(
-            ON_STOP_NOTICE_GRACE + Duration::from_secs(1),
+            DEFAULT_ON_STOP_NOTICE_GRACE + Duration::from_secs(1),
             link_rx.recv_async(),
         )
         .await
@@ -2807,6 +2937,59 @@ mod tests {
             notice.reason.is_normal(),
             "the recorded stop reason survives the abandoned hook, got {:?}",
             notice.reason,
+        );
+    }
+
+    /// `@bug` Config (card #257): an explicit `SpawnConfig.on_stop_grace` is the bound
+    /// a hanging `on_stop` is abandoned at — NOT the 5 s default. FAILS while teardown
+    /// ignores the field and reads the default: the outer `SMALL + ε` bound then
+    /// expires with no notice, because the default 5 s grace has not elapsed.
+    #[tokio::test(start_paused = true)]
+    async fn spawn_with_explicit_grace_observes_that_bound() {
+        const SMALL: Duration = Duration::from_millis(50);
+        let prepared = PreparedActor::<HangingStop>::new(SpawnConfig {
+            capacity: cap(4),
+            on_stop_grace: SMALL,
+        });
+        let link_rx = watch_before_start(&prepared);
+        let actor_ref = prepared.actor_ref().clone();
+        let (entered_tx, _entered_rx) = tokio::sync::oneshot::channel();
+
+        let _join = prepared.spawn(entered_tx);
+        actor_ref.stop();
+        drop(actor_ref);
+
+        // Bound just past the SMALL grace but far below the 5 s default: only a teardown
+        // that honors the config lets the notice arrive inside this window.
+        let notice = tokio::time::timeout(SMALL + Duration::from_millis(10), link_rx.recv_async())
+            .await
+            .expect("the notice must arrive at the explicit grace, not the 5 s default")
+            .expect("the link channel is still open");
+        assert!(
+            notice.cleanup_failed,
+            "an abandoned on_stop counts as a failed cleanup",
+        );
+        assert!(
+            notice.reason.is_normal(),
+            "the recorded stop reason survives the abandoned hook, got {:?}",
+            notice.reason,
+        );
+    }
+
+    /// Guard (card #257): the production grace carries NO `cfg!(miri)` fork — the
+    /// stopgap the config surface replaced. FAILS if the fork is reintroduced.
+    #[test]
+    fn grace_const_has_no_miri_fork() {
+        let src = include_str!("spawn.rs");
+        let idx = src
+            .find("DEFAULT_ON_STOP_NOTICE_GRACE: Duration")
+            .expect("the default grace const is defined here");
+        // The const's definition line must resolve to a plain literal, not a cfg fork.
+        let line_end = src[idx..].find(';').expect("const has a terminating ;");
+        let def = &src[idx..idx + line_end];
+        assert!(
+            !def.contains("cfg!(miri)"),
+            "the production on_stop grace must not fork on MIRI; inject via SpawnConfig instead:\n{def}",
         );
     }
 
@@ -2832,7 +3015,10 @@ mod tests {
             .expect("a runtime with no time driver");
 
         let (join, link_rx) = rt.block_on(async {
-            let prepared = PreparedActor::<Counter>::new(cap(4));
+            let prepared = PreparedActor::<Counter>::new(SpawnConfig {
+                capacity: cap(4),
+                ..Default::default()
+            });
             let link_rx = watch_before_start(&prepared);
             let actor_ref = prepared.actor_ref().clone();
             let join = prepared.spawn((Arc::new(AtomicU32::new(0)), Arc::new(AtomicU32::new(0))));
@@ -2877,7 +3063,10 @@ mod tests {
     /// `dst_races.rs` covers the `RunResult` side but sees no notices.
     #[tokio::test(start_paused = true)]
     async fn kill_during_on_stop_marks_cleanup_failed() {
-        let prepared = PreparedActor::<HangingStop>::new(cap(4));
+        let prepared = PreparedActor::<HangingStop>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let link_rx = watch_before_start(&prepared);
         let actor_ref = prepared.actor_ref().clone();
         let (entered_tx, entered_rx) = tokio::sync::oneshot::channel();
@@ -3002,7 +3191,10 @@ mod tests {
     async fn unwatch_queued_before_stop_suppresses_notice() {
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
-        let prepared = PreparedActor::<Counter>::new(cap(8));
+        let prepared = PreparedActor::<Counter>::new(SpawnConfig {
+            capacity: cap(8),
+            ..Default::default()
+        });
         let actor_ref = prepared.actor_ref().clone();
         let (tx, rx) = flume::unbounded::<LinkDied>();
 
@@ -3459,7 +3651,13 @@ mod tests {
 
         let (entered_tx, entered_rx) = oneshot::channel();
         let (release_tx, release_rx) = oneshot::channel();
-        let target = Gate::spawn_with_capacity(cap(1), (entered_tx, release_rx));
+        let target = Gate::spawn_with_config(
+            SpawnConfig {
+                capacity: cap(1),
+                ..Default::default()
+            },
+            (entered_tx, release_rx),
+        );
 
         // Saturate target while it stays alive: msg #1 enters the blocking handler
         // (dequeued), msg #2 then fills the single mailbox slot.
@@ -3533,12 +3731,12 @@ mod tests {
 
         use core::time::Duration;
 
-        use super::super::ON_STOP_NOTICE_GRACE;
+        use super::super::DEFAULT_ON_STOP_NOTICE_GRACE;
         use super::{bounded, watch_before_start};
         use crate::{
             actor::{
-                ActorRef, PreparedActor, RunResult, Spawn, SpawnSupervised, Supervisor, Watch,
-                WeakActorRef,
+                ActorRef, PreparedActor, RunResult, Spawn, SpawnConfig, SpawnSupervised,
+                Supervisor, Watch, WeakActorRef,
             },
             error::{ActorStopReason, Infallible},
             mailbox::{ActorId, Capacity, ControlSignal, MailboxSender, Mailboxed},
@@ -4208,7 +4406,10 @@ mod tests {
             use crate::{actor::PreparedActor, error::TellError, mailbox::Capacity};
 
             let cap = Capacity::try_from(4usize).expect("valid capacity");
-            let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let sup = prepared.actor_ref().clone();
             let join = prepared.spawn_supervised_task((), link_rx);
             sup.kill();
@@ -4406,7 +4607,10 @@ mod tests {
         #[tokio::test(start_paused = true)]
         async fn escalation_stops_surviving_children() {
             let cap = Capacity::try_from(8usize).expect("valid capacity");
-            let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let sup = prepared.actor_ref().clone();
             let join = prepared.spawn_supervised_task((), link_rx);
 
@@ -4508,7 +4712,7 @@ mod tests {
 
         /// #245: a supervisor whose own `on_stop` parks is still bounded on a
         /// hard kill. The kill aborts only the message-service future; the
-        /// epilogue still runs and is abandoned by `ON_STOP_NOTICE_GRACE` rather
+        /// epilogue still runs and is abandoned by `DEFAULT_ON_STOP_NOTICE_GRACE` rather
         /// than hanging forever. The death notice carries `cleanup_failed`.
         struct HangingStopSup {
             entered: Option<tokio::sync::oneshot::Sender<()>>,
@@ -4590,7 +4794,10 @@ mod tests {
         #[tokio::test(start_paused = true)]
         async fn supervisor_normal_stop_tears_down_children() {
             let cap = Capacity::try_from(8usize).expect("valid capacity");
-            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let sup = prepared.actor_ref().clone();
             let join = prepared.spawn_supervised_task((), _link_rx);
 
@@ -4631,7 +4838,10 @@ mod tests {
         async fn supervisor_kill_tears_down_children() {
             let cap = Capacity::try_from(8usize).expect("valid capacity");
             let stopped = Arc::new(AtomicU32::new(0));
-            let (prepared, _link_rx) = PreparedActor::<FlagSup>::new_linked(cap);
+            let (prepared, _link_rx) = PreparedActor::<FlagSup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let sup = prepared.actor_ref().clone();
             let join = prepared.spawn_supervised_task(Arc::clone(&stopped), _link_rx);
 
@@ -4669,7 +4879,10 @@ mod tests {
         #[tokio::test(start_paused = true)]
         async fn supervisor_stop_with_queued_registration_tears_down_child() {
             let cap = Capacity::try_from(8usize).expect("valid capacity");
-            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let sup = prepared.actor_ref().clone();
             let join = prepared.spawn_supervised_task((), _link_rx);
 
@@ -4703,7 +4916,10 @@ mod tests {
         async fn supervisor_kill_with_queued_registration_orphans_nothing() {
             let cap = Capacity::try_from(8usize).expect("valid capacity");
             let stopped = Arc::new(AtomicU32::new(0));
-            let (prepared, _link_rx) = PreparedActor::<FlagSup>::new_linked(cap);
+            let (prepared, _link_rx) = PreparedActor::<FlagSup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let sup = prepared.actor_ref().clone();
             let join = prepared.spawn_supervised_task(Arc::clone(&stopped), _link_rx);
 
@@ -4735,7 +4951,10 @@ mod tests {
         #[tokio::test(start_paused = true)]
         async fn queued_remove_detaches_instead_of_sweeping() {
             let cap = Capacity::try_from(8usize).expect("valid capacity");
-            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let sup = prepared.actor_ref().clone();
             let join = prepared.spawn_supervised_task((), _link_rx);
 
@@ -4778,7 +4997,10 @@ mod tests {
         #[tokio::test(start_paused = true)]
         async fn queued_stop_still_stops_child() {
             let cap = Capacity::try_from(8usize).expect("valid capacity");
-            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let sup = prepared.actor_ref().clone();
             let join = prepared.spawn_supervised_task((), _link_rx);
 
@@ -4815,7 +5037,10 @@ mod tests {
         #[tokio::test(start_paused = true)]
         async fn teardown_joins_early_not_grace_sleep() {
             let cap = Capacity::try_from(8usize).expect("valid capacity");
-            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let sup = prepared.actor_ref().clone();
             let join = prepared.spawn_supervised_task((), _link_rx);
 
@@ -4861,7 +5086,10 @@ mod tests {
         #[tokio::test(start_paused = true)]
         async fn teardown_aborts_cancel_ignoring_child() {
             let cap = Capacity::try_from(8usize).expect("valid capacity");
-            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(cap);
+            let (prepared, _link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let sup = prepared.actor_ref().clone();
             let join = prepared.spawn_supervised_task((), _link_rx);
 
@@ -4928,12 +5156,15 @@ mod tests {
         /// #245 (spec §3): a hard kill landing WHILE the supervised actor's
         /// `on_stop` is parked no longer instant-drops the hook. The abortable
         /// region (message service) has already completed; the kill is a no-op,
-        /// and `ON_STOP_NOTICE_GRACE` abandons the hung hook. The result is
+        /// and `DEFAULT_ON_STOP_NOTICE_GRACE` abandons the hung hook. The result is
         /// `Stopped` with `cleanup_failed = true`.
         #[tokio::test(start_paused = true)]
         async fn supervised_kill_during_on_stop_is_bounded() {
             let cap = Capacity::try_from(8usize).expect("valid capacity");
-            let (prepared, link_rx) = PreparedActor::<HangingStopSup>::new_linked(cap);
+            let (prepared, link_rx) = PreparedActor::<HangingStopSup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let notice_rx = watch_before_start(&prepared);
             let actor_ref = prepared.actor_ref().clone();
             let (entered_tx, entered_rx) = tokio::sync::oneshot::channel();
@@ -4956,7 +5187,7 @@ mod tests {
             );
 
             let notice = tokio::time::timeout(
-                ON_STOP_NOTICE_GRACE + Duration::from_secs(1),
+                DEFAULT_ON_STOP_NOTICE_GRACE + Duration::from_secs(1),
                 notice_rx.recv_async(),
             )
             .await
@@ -5000,7 +5231,10 @@ mod tests {
         #[tokio::test(start_paused = true)]
         async fn supervised_kill_during_on_start_is_bounded() {
             let cap = Capacity::try_from(8usize).expect("valid capacity");
-            let (prepared, _link_rx) = PreparedActor::<HangingStartSup>::new_linked(cap);
+            let (prepared, _link_rx) = PreparedActor::<HangingStartSup>::new_linked(SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            });
             let actor_ref = prepared.actor_ref().clone();
             let join = prepared.spawn_supervised_task((), _link_rx);
 

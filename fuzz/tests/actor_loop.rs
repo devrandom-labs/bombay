@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use bolero::{TypeGenerator, check};
-use bombay::actor::{Actor, ActorRef, PreparedActor, RunResult, WeakActorRef};
+use bombay::actor::{Actor, ActorRef, PreparedActor, RunResult, SpawnConfig, WeakActorRef};
 use bombay::error::ActorStopReason;
 use bombay::mailbox::{ActorId, Capacity, ControlSignal, Mailboxed, Signal};
 use bombay::message::Msg;
@@ -222,7 +222,7 @@ where
         .count();
     let cap = Capacity::try_from(enqueued.max(1)).expect("valid capacity");
     runtime().block_on(async {
-        let prepared = PreparedActor::<A>::new(cap);
+        let prepared = PreparedActor::<A>::new(SpawnConfig { capacity: cap, ..Default::default() });
         let actor_ref = prepared.actor_ref().clone();
         // Keep each `Watch` registration's `LinkReceiver` alive for the whole
         // run: dropping it would close the link channel, making the guard's

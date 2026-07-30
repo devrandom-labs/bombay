@@ -71,7 +71,7 @@ use tokio::{sync::oneshot, task::yield_now, time::timeout};
 
 use bombay::{
     SendContext,
-    actor::{Actor, ActorRef, PreparedActor, RunResult, WeakActorRef},
+    actor::{Actor, ActorRef, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
     error::{ActorStopReason, PanicError, PanicReason, TellError},
     mailbox::{Capacity, Mailboxed, Signal, TrySendError},
     message::Msg,
@@ -196,7 +196,10 @@ async fn i1_single_writer_mutual_exclusion() {
     let max = Arc::new(AtomicU32::new(0));
     let handled = Arc::new(AtomicU32::new(0));
 
-    let prepared = PreparedActor::<Excl>::new(cap(4));
+    let prepared = PreparedActor::<Excl>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((
         Arc::clone(&concurrent),
@@ -288,7 +291,10 @@ async fn i3_macro_step_atomicity() {
         }
     }
 
-    let prepared = PreparedActor::<Acc>::new(cap(4));
+    let prepared = PreparedActor::<Acc>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn(());
     for n in 1..=10u64 {
@@ -350,7 +356,10 @@ async fn i5_fifo_exactly_once() {
     }
 
     let seen = Arc::new(Mutex::new(Vec::new()));
-    let prepared = PreparedActor::<Rec>::new(cap(8));
+    let prepared = PreparedActor::<Rec>::new(SpawnConfig {
+        capacity: cap(8),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn(Arc::clone(&seen));
     for v in 0..N {
@@ -444,7 +453,10 @@ async fn i7_no_reentrancy_self_send_is_enqueued() {
 
     let in_handle = Arc::new(AtomicBool::new(false));
     let handled = Arc::new(Mutex::new(Vec::new()));
-    let prepared = PreparedActor::<Reentry>::new(cap(8));
+    let prepared = PreparedActor::<Reentry>::new(SpawnConfig {
+        capacity: cap(8),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((Arc::clone(&in_handle), Arc::clone(&handled)));
     bounded(actor_ref.tell(M::First)).await.expect("send First");
@@ -533,7 +545,10 @@ impl Actor for Life {
 #[tokio::test]
 async fn i8_i10_i11_lifecycle_order_normal() {
     let log = Arc::new(Mutex::new(Vec::new()));
-    let prepared = PreparedActor::<Life>::new(cap(8));
+    let prepared = PreparedActor::<Life>::new(SpawnConfig {
+        capacity: cap(8),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((None, Arc::clone(&log)));
     for _ in 0..3 {
@@ -567,7 +582,10 @@ async fn i8_i10_i11_lifecycle_order_normal() {
 #[tokio::test]
 async fn i8_i10_i11_lifecycle_order_panic() {
     let log = Arc::new(Mutex::new(Vec::new()));
-    let prepared = PreparedActor::<Life>::new(cap(8));
+    let prepared = PreparedActor::<Life>::new(SpawnConfig {
+        capacity: cap(8),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((Some(2), Arc::clone(&log)));
     bounded(actor_ref.tell(Tick)).await.expect("send 1");
@@ -641,7 +659,11 @@ async fn i9c_on_stop_not_run_on_startup_failure() {
     let spy = Arc::new(AtomicU32::new(0));
     let outcome = timeout(
         TERMINATE,
-        PreparedActor::<MaybeStart>::new(cap(4)).run((true, Arc::clone(&spy))),
+        PreparedActor::<MaybeStart>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        })
+        .run((true, Arc::clone(&spy))),
     )
     .await
     .expect("startup failure must terminate the run");
@@ -657,7 +679,10 @@ async fn i9c_on_stop_not_run_on_startup_failure() {
 
     // Normal stop → on_stop runs exactly once.
     let spy2 = Arc::new(AtomicU32::new(0));
-    let prepared = PreparedActor::<MaybeStart>::new(cap(4));
+    let prepared = PreparedActor::<MaybeStart>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
@@ -690,7 +715,10 @@ async fn i9c_on_stop_not_run_on_startup_failure() {
 #[tokio::test]
 async fn i12_alive_window() {
     let handled = Arc::new(AtomicU32::new(0));
-    let prepared = PreparedActor::<Bank>::new(cap(8));
+    let prepared = PreparedActor::<Bank>::new(SpawnConfig {
+        capacity: cap(8),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
 
     // (a) enqueue before the loop starts, plus a Stop to end it.
@@ -779,7 +807,10 @@ impl Actor for Cleanup {
 /// AND the reason is preserved, not rewritten to Panicked/OnStop.
 #[tokio::test]
 async fn i14a_normal_stop_on_stop_panic_preserves_normal() {
-    let prepared = PreparedActor::<Cleanup>::new(cap(4));
+    let prepared = PreparedActor::<Cleanup>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
@@ -803,7 +834,10 @@ async fn i14a_normal_stop_on_stop_panic_preserves_normal() {
 /// the error is logged, never unwrapped, and the reason is preserved.
 #[tokio::test]
 async fn i14b_normal_stop_on_stop_err_preserves_normal() {
-    let prepared = PreparedActor::<Cleanup>::new(cap(4));
+    let prepared = PreparedActor::<Cleanup>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
@@ -829,7 +863,10 @@ async fn i14b_normal_stop_on_stop_err_preserves_normal() {
 /// does not overwrite it with OnStop.
 #[tokio::test]
 async fn i14c_handler_panic_then_on_stop_panic_preserves_original_cause() {
-    let prepared = PreparedActor::<Cleanup>::new(cap(4));
+    let prepared = PreparedActor::<Cleanup>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     bounded(actor_ref.tell(Do)).await.expect("send");
     let outcome = timeout(TERMINATE, prepared.run((true, StopMode::Panic)))
@@ -907,12 +944,18 @@ async fn i15_fault_isolation() {
         }
     }
 
-    let a_prepared = PreparedActor::<Faulty>::new(cap(4));
+    let a_prepared = PreparedActor::<Faulty>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let a_ref = a_prepared.actor_ref().clone();
     let a_run = a_prepared.spawn(());
 
     let b_spy = Arc::new(AtomicU32::new(0));
-    let b_prepared = PreparedActor::<Healthy>::new(cap(4));
+    let b_prepared = PreparedActor::<Healthy>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let b_ref = b_prepared.actor_ref().clone();
     let b_run = b_prepared.spawn(Arc::clone(&b_spy));
 
@@ -972,7 +1015,14 @@ async fn i15_fault_isolation() {
 #[test]
 fn i17_distinct_ids() {
     let ids: Vec<_> = (0..100)
-        .map(|_| PreparedActor::<Bank>::new(cap(1)).actor_ref().id())
+        .map(|_| {
+            PreparedActor::<Bank>::new(SpawnConfig {
+                capacity: cap(1),
+                ..Default::default()
+            })
+            .actor_ref()
+            .id()
+        })
         .collect();
     assert_eq!(ids.len(), 100, "built 100 actors");
     for i in 0..ids.len() {
@@ -997,7 +1047,12 @@ async fn i17b_concurrent_mint_distinct_ids() {
             let barrier = Arc::clone(&barrier);
             tokio::spawn(async move {
                 barrier.wait().await;
-                PreparedActor::<Bank>::new(cap(1)).actor_ref().id()
+                PreparedActor::<Bank>::new(SpawnConfig {
+                    capacity: cap(1),
+                    ..Default::default()
+                })
+                .actor_ref()
+                .id()
             })
         })
         .collect();
@@ -1049,7 +1104,10 @@ fn i24_actor_id_root_export_and_test_ctor() {
 #[tokio::test]
 async fn i19_send_and_weak_upgrade_after_termination() {
     let handled = Arc::new(AtomicU32::new(0));
-    let prepared = PreparedActor::<Bank>::new(cap(4));
+    let prepared = PreparedActor::<Bank>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let weak = actor_ref.downgrade();
     bounded(actor_ref.mailbox_sender().send(Signal::Stop))
@@ -1157,7 +1215,10 @@ async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
     let (release_tx, release_rx) = oneshot::channel();
     let (drained_tx, drained_rx) = oneshot::channel();
 
-    let prepared = PreparedActor::<Gate>::new(cap(1));
+    let prepared = PreparedActor::<Gate>::new(SpawnConfig {
+        capacity: cap(1),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((entered_tx, release_rx, drained_tx));
 
@@ -1243,7 +1304,10 @@ async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
 #[tokio::test]
 async fn actor_not_alive_unifies_terminal() {
     // Leg 1: never run. Dropping the PreparedActor drops the only receiver.
-    let prepared = PreparedActor::<Bank>::new(cap(4));
+    let prepared = PreparedActor::<Bank>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let never_run = prepared.actor_ref().clone();
     drop(prepared);
 
@@ -1288,7 +1352,10 @@ async fn actor_not_alive_unifies_terminal() {
         }
     }
 
-    let prepared = PreparedActor::<FailStart>::new(cap(4));
+    let prepared = PreparedActor::<FailStart>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let failed = prepared.actor_ref().clone();
     let outcome = timeout(TERMINATE, prepared.run(()))
         .await

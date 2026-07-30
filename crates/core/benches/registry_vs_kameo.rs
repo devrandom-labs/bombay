@@ -63,7 +63,7 @@ use bombay::registry::Registry;
 
 mod core_side {
     use bombay::{
-        actor::{Actor, ActorRef, Spawn as _},
+        actor::{Actor, ActorRef, Spawn as _, SpawnConfig},
         mailbox::{Capacity, Mailboxed},
         message::Msg,
     };
@@ -95,7 +95,13 @@ mod core_side {
 
     pub fn spawn() -> ActorRef<Svc> {
         let cap = Capacity::new(NonZeroUsize::new(64).expect("nonzero")).expect("within max");
-        Svc::spawn_with_capacity(cap, ())
+        Svc::spawn_with_config(
+            SpawnConfig {
+                capacity: cap,
+                ..Default::default()
+            },
+            (),
+        )
     }
 }
 

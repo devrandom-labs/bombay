@@ -9,9 +9,8 @@
 use core::{any::type_name, future::Future, ops::ControlFlow};
 
 use crate::{
-    actor::spawn::default_capacity,
     error::{ActorStopReason, PanicError, ReplyError},
-    mailbox::{ActorId, Capacity, Mailboxed},
+    mailbox::{ActorId, Mailboxed},
     message::Msg,
     restart::SupervisionStrategy,
 };
@@ -27,7 +26,7 @@ mod timer;
 pub use self::{
     actor_ref::{ActorRef, WeakActorRef},
     recipient::{Recipient, RecipientAskRequest, ReplyRecipient, WeakRecipient},
-    spawn::{DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult},
+    spawn::{DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult, SpawnConfig},
     timer::TimerHandle,
 };
 
@@ -171,16 +170,17 @@ pub trait Watch: Actor {
 /// The runtime must have the TIME driver enabled — teardown bounds
 /// [`on_stop`](Actor::on_stop) with a timer, and panics without one.
 pub trait Spawn: Actor {
-    /// Spawns with the [`DEFAULT_MAILBOX_CAPACITY`](spawn::DEFAULT_MAILBOX_CAPACITY).
+    /// Spawns with the default [`SpawnConfig`].
     #[must_use]
     fn spawn(args: Self::Args) -> ActorRef<Self> {
-        Self::spawn_with_capacity(default_capacity(), args)
+        Self::spawn_with_config(SpawnConfig::default(), args)
     }
 
-    /// Spawns with an explicit mailbox `capacity`.
+    /// Spawns with an explicit [`SpawnConfig`] (mailbox capacity + `on_stop`
+    /// notice grace).
     #[must_use]
-    fn spawn_with_capacity(capacity: Capacity, args: Self::Args) -> ActorRef<Self> {
-        let prepared = PreparedActor::<Self>::new(capacity);
+    fn spawn_with_config(config: SpawnConfig, args: Self::Args) -> ActorRef<Self> {
+        let prepared = PreparedActor::<Self>::new(config);
         let actor_ref = prepared.actor_ref().clone();
         let _join = prepared.spawn(args);
         actor_ref
@@ -196,17 +196,17 @@ impl<A: Actor> Spawn for A {}
 /// when a watched actor stops. A `Watch` actor spawned via the plain [`Spawn`]
 /// path has no link channel and cannot watch.
 pub trait SpawnLinked: Watch {
-    /// Spawns a linked actor with the
-    /// [`DEFAULT_MAILBOX_CAPACITY`](spawn::DEFAULT_MAILBOX_CAPACITY).
+    /// Spawns a linked actor with the default [`SpawnConfig`].
     #[must_use]
     fn spawn_linked(args: Self::Args) -> ActorRef<Self> {
-        Self::spawn_linked_with_capacity(default_capacity(), args)
+        Self::spawn_linked_with_config(SpawnConfig::default(), args)
     }
 
-    /// Spawns a linked actor with an explicit mailbox `capacity`.
+    /// Spawns a linked actor with an explicit [`SpawnConfig`] (mailbox capacity
+    /// + `on_stop` notice grace).
     #[must_use]
-    fn spawn_linked_with_capacity(capacity: Capacity, args: Self::Args) -> ActorRef<Self> {
-        let (prepared, link_rx) = PreparedActor::<Self>::new_linked(capacity);
+    fn spawn_linked_with_config(config: SpawnConfig, args: Self::Args) -> ActorRef<Self> {
+        let (prepared, link_rx) = PreparedActor::<Self>::new_linked(config);
         let actor_ref = prepared.actor_ref().clone();
         let _join = prepared.spawn_linked_task(args, link_rx);
         actor_ref
@@ -244,17 +244,17 @@ pub trait Supervisor: Watch {
 /// after spawn via `ActorRef::supervise` (a later card); a supervisor with no
 /// children behaves exactly as a `spawn_linked` [`Watch`] actor.
 pub trait SpawnSupervised: Supervisor {
-    /// Spawns a supervisor with the
-    /// [`DEFAULT_MAILBOX_CAPACITY`](spawn::DEFAULT_MAILBOX_CAPACITY).
+    /// Spawns a supervisor with the default [`SpawnConfig`].
     #[must_use]
     fn spawn_supervised(args: Self::Args) -> ActorRef<Self> {
-        Self::spawn_supervised_with_capacity(default_capacity(), args)
+        Self::spawn_supervised_with_config(SpawnConfig::default(), args)
     }
 
-    /// Spawns a supervisor with an explicit mailbox `capacity`.
+    /// Spawns a supervisor with an explicit [`SpawnConfig`] (mailbox capacity
+    /// + `on_stop` notice grace).
     #[must_use]
-    fn spawn_supervised_with_capacity(capacity: Capacity, args: Self::Args) -> ActorRef<Self> {
-        let (prepared, link_rx) = PreparedActor::<Self>::new_linked(capacity);
+    fn spawn_supervised_with_config(config: SpawnConfig, args: Self::Args) -> ActorRef<Self> {
+        let (prepared, link_rx) = PreparedActor::<Self>::new_linked(config);
         let actor_ref = prepared.actor_ref().clone();
         let _join = prepared.spawn_supervised_task(args, link_rx);
         actor_ref

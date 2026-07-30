@@ -59,8 +59,8 @@ use tokio::{
 use bombay::{
     SendContext,
     actor::{
-        Actor, ActorRef, PreparedActor, RunResult, Spawn, SpawnSupervised, Supervisor, Watch,
-        WeakActorRef,
+        Actor, ActorRef, PreparedActor, RunResult, Spawn, SpawnConfig, SpawnSupervised, Supervisor,
+        Watch, WeakActorRef,
     },
     error::{ActorStopReason, AskError, TellError},
     mailbox::{Capacity, ControlSignal, Mailboxed, Signal},
@@ -187,7 +187,10 @@ async fn kill_during_on_start_yields_killed_no_on_stop_no_handling() {
     let handled = Arc::new(AtomicU32::new(0));
     let stopped = Arc::new(AtomicU32::new(0));
 
-    let prepared = PreparedActor::<StartGate>::new(cap(4));
+    let prepared = PreparedActor::<StartGate>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     // Pre-queue a message: it must never be handled, because on_start never ends.
     bounded(actor_ref.tell(Ping)).await.expect("pre-queue");
@@ -283,7 +286,10 @@ async fn kill_during_on_stop_yields_killed_and_skips_post_park_effect() {
     let (_release_tx, release_rx) = oneshot::channel(); // never fired
     let post_park = Arc::new(AtomicU32::new(0));
 
-    let prepared = PreparedActor::<StopGate>::new(cap(4));
+    let prepared = PreparedActor::<StopGate>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let run = prepared.spawn((entered_tx, release_rx, Arc::clone(&post_park)));
 
@@ -361,7 +367,10 @@ async fn stop_then_kill_before_observe_is_killed_and_skips_on_stop() {
     let (started_tx, started_rx) = oneshot::channel();
     let stopped = Arc::new(AtomicU32::new(0));
 
-    let prepared = PreparedActor::<StartSignaled>::new(cap(4));
+    let prepared = PreparedActor::<StartSignaled>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let run = tokio::spawn(prepared.run((started_tx, Arc::clone(&stopped))));
 
@@ -398,7 +407,10 @@ async fn graceful_stop_completes_then_kill_is_a_noop() {
     let handled = Arc::new(AtomicU32::new(0));
     let stopped = Arc::new(AtomicU32::new(0));
 
-    let prepared = PreparedActor::<Spy>::new(cap(4));
+    let prepared = PreparedActor::<Spy>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
@@ -448,7 +460,10 @@ async fn idempotent_stop_stops_once_and_runs_on_stop_once() {
     let handled = Arc::new(AtomicU32::new(0));
     let stopped = Arc::new(AtomicU32::new(0));
 
-    let prepared = PreparedActor::<Spy>::new(cap(4));
+    let prepared = PreparedActor::<Spy>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let clone = actor_ref.clone();
 
@@ -493,7 +508,10 @@ async fn stop_racing_a_queued_stop_signal_stops_normally_once() {
     let handled = Arc::new(AtomicU32::new(0));
     let stopped = Arc::new(AtomicU32::new(0));
 
-    let prepared = PreparedActor::<Spy>::new(cap(4));
+    let prepared = PreparedActor::<Spy>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
@@ -537,7 +555,10 @@ async fn send_after_graceful_stop_fails() {
     let handled = Arc::new(AtomicU32::new(0));
     let stopped = Arc::new(AtomicU32::new(0));
 
-    let prepared = PreparedActor::<Spy>::new(cap(4));
+    let prepared = PreparedActor::<Spy>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     bounded(actor_ref.mailbox_sender().send(Signal::Stop))
         .await
@@ -635,7 +656,10 @@ async fn kill_after_normal_completion_is_a_noop() {
     let handled = Arc::new(AtomicU32::new(0));
     let stopped = Arc::new(AtomicU32::new(0));
 
-    let prepared = PreparedActor::<SelfStop>::new(cap(4));
+    let prepared = PreparedActor::<SelfStop>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     bounded(actor_ref.tell(Ping))
         .await
@@ -746,7 +770,13 @@ async fn cyclic_topology_never_deadlocks() {
         let nodes: Vec<ActorRef<Node>> = (0..3)
             .map(|_| {
                 use bombay::actor::Spawn as _;
-                Node::spawn_with_capacity(cap(1), ())
+                Node::spawn_with_config(
+                    SpawnConfig {
+                        capacity: cap(1),
+                        ..Default::default()
+                    },
+                    (),
+                )
             })
             .collect();
         for (i, node) in nodes.iter().enumerate() {
@@ -1315,7 +1345,10 @@ async fn watch_completes_while_target_backlog_is_full_and_parked() {
     let (release_tx, release_rx) = oneshot::channel();
     let handled = Arc::new(AtomicU32::new(0));
 
-    let prepared = PreparedActor::<GatedSpy>::new(cap(3));
+    let prepared = PreparedActor::<GatedSpy>::new(SpawnConfig {
+        capacity: cap(3),
+        ..Default::default()
+    });
     let target_ref = prepared.actor_ref().clone();
     let target_id = target_ref.id();
     let run = prepared.spawn((entered_tx, release_rx, Arc::clone(&handled)));
@@ -1334,7 +1367,11 @@ async fn watch_completes_while_target_backlog_is_full_and_parked() {
     // The watcher registers from a real linked actor: pre-#225 this `.await`ed
     // the full bounded mailbox and deadlocked against the parked handler.
     let (notice_tx, notice_rx) = flume::unbounded();
-    let (watcher_prepared, watcher_link_rx) = PreparedActor::<TapingWatcher>::new_linked(cap(1));
+    let (watcher_prepared, watcher_link_rx) =
+        PreparedActor::<TapingWatcher>::new_linked(SpawnConfig {
+            capacity: cap(1),
+            ..Default::default()
+        });
     let watcher_ref = watcher_prepared.actor_ref().clone();
     let watcher_run = watcher_prepared.spawn_linked_task(notice_tx, watcher_link_rx);
     bounded(watcher_ref.watch(&target_ref))
@@ -1437,7 +1474,10 @@ async fn seeded_control_user_interleavings_preserve_per_lane_fifo() {
         let (entered_tx, entered_rx) = oneshot::channel();
         let (release_tx, release_rx) = oneshot::channel();
         let handled = Arc::new(AtomicU32::new(0));
-        let prepared = PreparedActor::<GatedSpy>::new(cap(4));
+        let prepared = PreparedActor::<GatedSpy>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
         let target_ref = prepared.actor_ref().clone();
         let target_id = target_ref.id();
         let run = prepared.spawn((entered_tx, release_rx, Arc::clone(&handled)));
