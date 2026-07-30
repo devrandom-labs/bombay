@@ -31,23 +31,26 @@ Invariants that must hold:
   drops the strong `actor_ref`; the new field is only a flume link-channel
   sender clone.)
 - I-D: the `link_open` disable flag in `run_linked_message_loop`
-  (`kind.rs:301-314`) STAYS. Rationale: `LinkReceiver` is a public type alias
-  (`watch.rs:40`), so `run_linked` can be handed a receiver whose senders are
-  not the loop's own — the all-senders-gone `Err` + `biased` spin hazard the
-  flag guards is still constructible. Do NOT remove the flag; only update the
-  doc comment (see step 3).
+  (`kind.rs:301-314`) STAYS, as a cheap defensive guard. Be precise in the
+  doc rewrite: after this change the `Err` arm is unreachable on the
+  production path (`run_linked_message_loop` has one callsite,
+  `run_lifecycle_linked`, which passes the actor's own receiver, and the
+  loop's `LoopHandles` now holds a sender for its whole life) — the flag
+  guards only a mismatched receiver an in-module test could construct. Do
+  NOT claim a publicly reachable hazard. Do NOT remove the flag.
 
-Design precedent: the supervised loop already holds a loop-lifetime clone of
-the supervisor's own link sender (`kind.rs:363-369`, `kind.rs:414-420`), with
-exactly this channel-never-closes reasoning. This change makes the linked
-loop's drain-window mint consistent with that.
+Design precedent: the supervisor path already holds a loop-lifetime clone of
+its own link sender (`sup_link_tx`, built in `spawn.rs:706-713`, reasoning
+documented in `run_supervised_message_loop`), with exactly this
+channel-never-closes logic. This change makes the linked loop's drain-window
+mint consistent with that.
 
 ## Steps (all SEQUENTIAL — every step touches kind.rs and/or spawn.rs)
 
 1. **`LoopHandles` gains the link sender** — `crates/core/src/actor/kind.rs:37-40`:
-   add field `pub(super) link_tx: Option<LinkSender>` (import
-   `crate::watch::LinkSender` at the top of the file with the existing `use`
-   block — no inline paths). Doc-comment the field: the loop's own cold copy
+   add field `pub(super) link_tx: Option<LinkSender>` (`LinkSender` is
+   already in kind.rs's top `use` block — nothing to import). Doc-comment the
+   field: the loop's own cold copy
    for drain-window minting (ADR-0010), `None` on the plain-spawn path,
    fixes #260.
 
@@ -90,11 +93,15 @@ loop's drain-window mint consistent with that.
      vacuous — the registration must carry the SAME channel the loop drains):
      - Watcher spawned via `spawn_linked_task`, messages enqueued before
        spawn, no external watcher ref (drain window).
-     - Handler: `watch(&target)` → assert/record `Ok`, signal the test
-       (oneshot A), then await oneshot B (bounded).
+     - CRITICAL state-lifetime detail (pre-flight CHECK finding): the watcher
+       state holds `Option<ActorRef<Target>>`, NOT a bare ref — a held strong
+       target ref would pin the target and `Collected` never fires, hanging
+       the test. The handler `.take()`s it, calls `watch(&target)` →
+       assert/record `Ok`, **drops the target ref**, THEN signals the test
+       (oneshot A) and awaits oneshot B (bounded).
      - Test: on A, drop `t_ref` and await the target's join handle (target
-       reaches `Collected`; its watcher-guard `Drop` fires the notice), then
-       fire B.
+       reaches `Collected` — possible only because the watcher released its
+       copy; the watcher-guard `Drop` fires the notice), then fire B.
      - Watcher's `on_link_died` override records `(id, reason, linked)`.
        After the watcher's join handle resolves, assert exactly one notice:
        `id == target id`, `linked == false`, and
