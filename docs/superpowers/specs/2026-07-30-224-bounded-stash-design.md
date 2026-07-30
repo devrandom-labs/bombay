@@ -26,7 +26,7 @@ buffer once, in core, bounded and tested.
 - **Varela — SALSA partial messages (via De Koster §3.2):** *"These partial
   messages are stored in a separate mailbox"* — the fixed-interface deferral
   template is a **separate runtime-owned buffer**, not interleaved user state.
-- **Briot, Guerraoui, Löhr — ACM CSur 30(3) 1998:** the underlying need is
+- **Briot, Guerraoui, Löhr — ACM Computing Surveys 30(3), 1998:** the underlying need is
   **conditional synchronization** — a state-dependent (not type-dependent)
   acceptance gate; a type system cannot express it, a runtime buffer can.
 - **Karmani & Agha, actor-model survey:** the model's one hard law is
