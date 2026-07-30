@@ -42,6 +42,7 @@ pub mod registry;
 pub mod reply;
 pub mod request;
 pub mod restart;
+pub mod stash;
 mod trace;
 mod watch;
 

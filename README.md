@@ -86,6 +86,11 @@ example: `cargo run -p bombay --example job_queue` (source:
 - **Registry** — a process-local, lock-free-read name registry: register an actor under a name, look it up (weak handles — a registered actor can still die), remove it.
 - **`ActorId`** — a process-local, unforgeable **pure-name** routing key (`bombay::ActorId`): minted at spawn and obtainable only from a spawned actor — no public constructor, no readable `u64` (no getter / `From` / `Display`), and deliberately **not** serializable. It names an actor for the mailbox, death-watch, and supervision *inside this process*; the dataspace identity of an actor is its future KERI AID (#121), a separate coordinate — never this handle. Holding an `ActorId` grants nothing; send-authority lives only in `ActorRef` (ADR-0015).
 - **Mailbox** — bounded only: `Mailbox::<A>::bounded(capacity, id)`. Backpressure via `send`, fail-fast via `try_send`; a queued message keeps the actor alive until it is handled, and carries a one-word `SendContext` (the sender's span, for trace stitching).
+- **Bounded stash** — defer messages your current state can't accept:
+  implement `StashActor` (handler receives `&mut Stash`), spawn
+  `Stashed::<You>`; `unstash_all` replays ahead of the mailbox backlog in
+  arrival order; overflow hands the message back (`StashFull`), and a
+  stashed message never keeps a dying actor alive.
 - **Errors** — `TellError` and `AskError`, which classify retry-safety by method (`is_retryable` / `is_terminal`) and hand the undelivered message back; `PanicError` + `PanicReason`; and `ActorStopReason` (`Normal`, `Collected`, `Killed`, `Panicked`, `SupervisorRestart`, `LinkDied`, `AlreadyDead`, `RestartLimitExceeded`, `ChildLifecycleFailed`).
 
 ## Observability
