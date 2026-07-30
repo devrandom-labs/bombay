@@ -383,6 +383,7 @@ async fn start_actor<A: Actor>(
     let handles = LoopHandles {
         cancel: actor_ref.cancel_token().clone(),
         abort: actor_ref.abort_handle().clone(),
+        link_tx: actor_ref.link_tx().cloned(),
     };
     let weak = actor_ref.downgrade();
     drop(actor_ref);
@@ -1183,6 +1184,313 @@ mod tests {
             finished.load(Ordering::SeqCst),
             0,
             "the parked handler was aborted, never finished"
+        );
+    }
+
+    /// #260 fixture: a trivial plain actor — the watch TARGET for the
+    /// handler-context watch tests below.
+    struct WatchTarget;
+    impl Mailboxed for WatchTarget {
+        type Msg = Ping;
+    }
+    impl crate::actor::Actor for WatchTarget {
+        type Args = ();
+        type Error = core::convert::Infallible;
+        async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            Ok(Self)
+        }
+        async fn handle(
+            &mut self,
+            _: Ping,
+            _: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            Ok(())
+        }
+    }
+
+    /// #260 fixture: a `Watch` actor (default hook) whose `handle` calls
+    /// `actor_ref.watch(&target)` from INSIDE the handler — the handler-context
+    /// watch path — records the result, and stops. Shared by the drain-window
+    /// regression and its steady-state control.
+    struct HandlerWatcher {
+        target: ActorRef<WatchTarget>,
+        result: Arc<std::sync::Mutex<Option<Result<(), ActorNotLinked>>>>,
+    }
+    impl Mailboxed for HandlerWatcher {
+        type Msg = Ping;
+    }
+    impl crate::actor::Actor for HandlerWatcher {
+        type Args = (
+            ActorRef<WatchTarget>,
+            Arc<std::sync::Mutex<Option<Result<(), ActorNotLinked>>>>,
+        );
+        type Error = core::convert::Infallible;
+        async fn on_start(
+            (target, result): Self::Args,
+            _: ActorRef<Self>,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self { target, result })
+        }
+        async fn handle(
+            &mut self,
+            _: Ping,
+            actor_ref: ActorRef<Self>,
+            stop: &mut bool,
+        ) -> Result<(), Self::Error> {
+            let outcome = actor_ref.watch(&self.target).await;
+            *self.result.lock().expect("lock") = Some(outcome);
+            *stop = true;
+            Ok(())
+        }
+    }
+    impl crate::actor::Watch for HandlerWatcher {}
+
+    /// #260 fixture for `drain_window_watch_delivers_death_notice`: a `Watch`
+    /// actor whose `handle` registers a watch on the target from INSIDE the
+    /// handler, records every `on_link_died` notice, and parks on a release
+    /// gate so the test can sequence the target's death before the loop
+    /// resumes. Module-level (not fn-local) so the test stays under the
+    /// 80-line bar.
+    struct DrainWatcher {
+        // `Option`, not a bare ref: the handler `.take()`s and DROPS it after
+        // registering, so the watcher does not pin the target — otherwise
+        // `Collected` never fires and the test hangs.
+        target: Option<ActorRef<WatchTarget>>,
+        notices: Arc<std::sync::Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
+        entered: Option<tokio::sync::oneshot::Sender<()>>,
+        release: Option<tokio::sync::oneshot::Receiver<()>>,
+    }
+    impl Mailboxed for DrainWatcher {
+        type Msg = Ping;
+    }
+    impl crate::actor::Actor for DrainWatcher {
+        type Args = (
+            ActorRef<WatchTarget>,
+            Arc<std::sync::Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
+            tokio::sync::oneshot::Sender<()>,
+            tokio::sync::oneshot::Receiver<()>,
+        );
+        type Error = core::convert::Infallible;
+        async fn on_start(
+            (target, notices, entered, release): Self::Args,
+            _: ActorRef<Self>,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                target: Some(target),
+                notices,
+                entered: Some(entered),
+                release: Some(release),
+            })
+        }
+        async fn handle(
+            &mut self,
+            _: Ping,
+            actor_ref: ActorRef<Self>,
+            _: &mut bool,
+        ) -> Result<(), Self::Error> {
+            let target = self.target.take().expect("one Ping enqueued");
+            actor_ref
+                .watch(&target)
+                .await
+                .expect("drain-window watch succeeds");
+            drop(target); // release the pin BEFORE the test drops its own ref
+            self.entered
+                .take()
+                .expect("entered once")
+                .send(())
+                .expect("the test is listening");
+            // Park until the target has actually died, so the notice is
+            // queued on this actor's link channel when the loop resumes.
+            bounded(self.release.take().expect("release once"))
+                .await
+                .expect("the release channel is open");
+            Ok(())
+        }
+    }
+    impl crate::actor::Watch for DrainWatcher {
+        async fn on_link_died(
+            &mut self,
+            id: ActorId,
+            reason: ActorStopReason,
+            linked: bool,
+        ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
+            self.notices
+                .lock()
+                .expect("lock")
+                .push((id, reason, linked));
+            Ok(core::ops::ControlFlow::Continue(()))
+        }
+    }
+
+    /// #260 regression (I-A): a handler-context `watch` in the DRAIN WINDOW (no
+    /// external strong watcher ref; the handler's ref is minted from the queued
+    /// message's `self_sender`) succeeds exactly as in steady state — the
+    /// minted ref carries the loop's own cold copy of `link_tx`. FAILED before
+    /// the fix with `Err(ActorNotLinked)`.
+    #[tokio::test]
+    async fn drain_window_handler_watch_succeeds() {
+        let t_prepared = PreparedActor::<WatchTarget>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
+        let t_ref = t_prepared.actor_ref().clone();
+        let t_join = t_prepared.spawn(());
+
+        let result: Arc<std::sync::Mutex<Option<Result<(), ActorNotLinked>>>> =
+            Arc::new(std::sync::Mutex::new(None));
+        let (prepared, link_rx) = PreparedActor::<HandlerWatcher>::new_linked(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
+        // Enqueue BEFORE running and hold no external watcher ref: once the loop
+        // downgrades its own ref after on_start, only the queued self_sender
+        // keeps the actor alive — the drain window.
+        bounded(prepared.actor_ref().tell(Ping))
+            .await
+            .expect("send");
+
+        let outcome =
+            bounded(prepared.run_linked((t_ref.clone(), Arc::clone(&result)), link_rx)).await;
+
+        assert_eq!(
+            *result.lock().expect("lock"),
+            Some(Ok(())),
+            "a handler-context watch in the drain window succeeds"
+        );
+        assert!(matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Normal,
+                ..
+            }
+        ));
+        // `RunResult::Stopped` carries the final state, whose target ref would
+        // pin the target and stall the `Collected` stop below.
+        drop(outcome);
+
+        drop(t_ref);
+        bounded(t_join).await.expect("join");
+    }
+
+    /// #260 control (I-A, steady-state sibling of
+    /// `drain_window_handler_watch_succeeds`): with an external watcher ref HELD
+    /// across the run, the handler's `ActorRef` comes from the shared upgrade —
+    /// a handler-context `watch` succeeds there too. Handler-context
+    /// steady-state watch is otherwise untested (existing watch tests register
+    /// from outside a handler).
+    #[tokio::test]
+    async fn steady_state_handler_watch_succeeds() {
+        let t_prepared = PreparedActor::<WatchTarget>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
+        let t_ref = t_prepared.actor_ref().clone();
+        let t_join = t_prepared.spawn(());
+
+        let result: Arc<std::sync::Mutex<Option<Result<(), ActorNotLinked>>>> =
+            Arc::new(std::sync::Mutex::new(None));
+        let (prepared, link_rx) = PreparedActor::<HandlerWatcher>::new_linked(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
+        // The external strong ref is HELD across the run — steady state: the
+        // handler's ref is the shared upgrade, not a drain-window mint.
+        let w_ref = prepared.actor_ref().clone();
+        bounded(prepared.actor_ref().tell(Ping))
+            .await
+            .expect("send");
+
+        let outcome =
+            bounded(prepared.run_linked((t_ref.clone(), Arc::clone(&result)), link_rx)).await;
+
+        assert_eq!(
+            *result.lock().expect("lock"),
+            Some(Ok(())),
+            "a handler-context watch in steady state succeeds"
+        );
+        assert!(matches!(
+            outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Normal,
+                ..
+            }
+        ));
+        // `RunResult::Stopped` carries the final state, whose target ref would
+        // pin the target and stall the `Collected` stop below.
+        drop(outcome);
+
+        drop(w_ref);
+        drop(t_ref);
+        bounded(t_join).await.expect("join");
+    }
+
+    /// #260 (I-A, the non-vacuous half): the `Ok` from a drain-window
+    /// handler-context `watch` is backed by the REAL registration — the death
+    /// notice arrives on the loop's OWN link channel (the one the linked loop
+    /// drains) and reaches `on_link_died`.
+    #[tokio::test]
+    async fn drain_window_watch_delivers_death_notice() {
+        use tokio::sync::oneshot;
+
+        // Target: plain-spawned; the test holds its only external ref.
+        let t_prepared = PreparedActor::<WatchTarget>::new(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
+        let t_ref = t_prepared.actor_ref().clone();
+        let t_id = t_ref.id();
+        let t_join = t_prepared.spawn(());
+
+        let notices: Arc<std::sync::Mutex<Vec<(ActorId, ActorStopReason, bool)>>> =
+            Arc::new(std::sync::Mutex::new(Vec::new()));
+        let (entered_tx, entered_rx) = oneshot::channel();
+        let (release_tx, release_rx) = oneshot::channel();
+
+        let (prepared, link_rx) = PreparedActor::<DrainWatcher>::new_linked(SpawnConfig {
+            capacity: cap(4),
+            ..Default::default()
+        });
+        // Enqueue BEFORE spawning and hold no external watcher ref — the drain
+        // window.
+        bounded(prepared.actor_ref().tell(Ping))
+            .await
+            .expect("send");
+        let w_join = prepared.spawn_linked_task(
+            (t_ref.clone(), Arc::clone(&notices), entered_tx, release_rx),
+            link_rx,
+        );
+
+        // The handler ran: the watch is registered and the watcher's copy of
+        // the target ref is dropped.
+        bounded(entered_rx)
+            .await
+            .expect("the watcher entered its handler");
+        drop(t_ref);
+        // The target stops `Collected` — possible only because the watcher
+        // released its copy — and its watcher-guard `Drop` fires the notice
+        // onto the watcher's link channel.
+        let t_outcome = bounded(t_join).await.expect("join");
+        assert!(matches!(
+            t_outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Collected,
+                ..
+            }
+        ));
+        release_tx.send(()).expect("the watcher is parked");
+
+        bounded(w_join).await.expect("join");
+        let (id, reason, linked) = {
+            let recorded = notices.lock().expect("lock");
+            assert_eq!(recorded.len(), 1, "exactly one death notice");
+            recorded[0].clone()
+        };
+        assert_eq!(id, t_id, "the notice names the target");
+        assert!(!linked, "a watch (monitor) notice is not linked");
+        assert!(
+            matches!(reason, ActorStopReason::Collected),
+            "the target's real reason, got {reason:?}"
         );
     }
 

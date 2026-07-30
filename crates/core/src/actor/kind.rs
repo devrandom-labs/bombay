@@ -31,12 +31,18 @@ use crate::{
 
 /// The loop's own copies of the cold lifecycle handles (ADR-0010): grouped so the
 /// message loop stays within the argument budget and its linked sibling can reuse
-/// them. `cancel` ends the loop out-of-band; both are cloned into a fresh
+/// them. `cancel` ends the loop out-of-band; all three are cloned into a fresh
 /// [`ActorRef`] to mint a drain-window handler ref when no external strong ref
 /// survives.
 pub(super) struct LoopHandles {
     pub(super) cancel: CancellationToken,
     pub(super) abort: AbortHandle,
+    /// The loop's own cold copy of the actor's link-channel sender, cloned into
+    /// the drain-window handler-ref mint so a handler-context `watch`/`link`
+    /// there behaves exactly as in steady state (#260). `None` on the
+    /// plain-spawn path (a plain actor has no link channel). Not a mailbox
+    /// sender — it does not pin the ref-count stop (I-C).
+    pub(super) link_tx: Option<LinkSender>,
 }
 
 /// The two channels the linked loop selects over, grouped so the loop stays
@@ -247,20 +253,19 @@ async fn handle_mailbox_step<A: Actor>(
             // Steady state: share the external allocation — one CAS, no alloc.
             // Drain window (external refs gone; the dequeued self_sender is what
             // kept the message deliverable, ADR-0003): mint a fresh shared alloc
-            // from that sender plus the loop's own cold copies (ADR-0010), with no
-            // link channel — a rebuilt handler ref needs none. Either way the
+            // from that sender plus the loop's own cold copies (ADR-0010). The
+            // minted ref carries the loop's own cold copy of `link_tx`, so a
+            // handler-context `watch`/`link` in the drain window behaves exactly
+            // as in steady state (#260); on the plain-spawn path that copy is
+            // `None` and `watch` still errs `ActorNotLinked`. Either way the
             // handler's ref pins the actor while it is held.
-            // TODO(#195 Q5): this drain-window ref carries `link_tx: None`, so if
-            // handler-context self-watch is ever added, a self-`watch`/`link` here
-            // would wrongly get `ActorNotLinked` — thread the actor's own link_tx
-            // through `LoopHandles` if that capability lands.
             let actor_ref = self_ref.upgrade().unwrap_or_else(|| {
                 ActorRef::new(
                     self_ref.id(),
                     self_sender,
                     handles.cancel.clone(),
                     handles.abort.clone(),
-                    None,
+                    handles.link_tx.clone(),
                 )
             });
             let span: trace::Span = ctx.handle_span::<A>();
@@ -282,11 +287,15 @@ async fn handle_mailbox_step<A: Actor>(
 /// Death is handled before messages (`biased;`) so a failure is reacted to
 /// promptly. The link arm is disabled once `recv_async` reports the channel closed:
 /// with `biased` a ready `Err` would otherwise spin the select and starve the
-/// mailbox arm. The channel closes only when the actor's own `link_tx` (in
-/// `RefShared`) and every watcher-held clone are gone — which means all strong
-/// `ActorRef`s have dropped, so the mailbox is closing too and the mailbox arm then
-/// drives the imminent normal stop. Disabling loses nothing: no further death can
-/// ever arrive on a closed channel.
+/// mailbox arm. On the production path that `Err` is unreachable: the loop's
+/// [`LoopHandles`] holds a clone of the actor's own link sender for the loop's
+/// whole life (#260), and this loop's one callsite (`run_lifecycle_linked`)
+/// passes the actor's own receiver, so the channel never reaches
+/// all-senders-gone while the loop lives. The `link_open` flag stays as a cheap
+/// defensive guard against a mismatched, externally-constructed [`LinkReceiver`]
+/// (a public alias) whose senders have all dropped — a shape only an in-module
+/// test can construct. Disabling loses nothing there: no further death can ever
+/// arrive on a closed channel.
 pub(super) async fn run_linked_message_loop<A: Watch>(
     state: &mut A,
     self_ref: &WeakActorRef<A>,
