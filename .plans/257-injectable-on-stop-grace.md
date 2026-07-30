@@ -20,14 +20,28 @@ executable checklist; when a step says "see plan", use the code block there verb
 
 ## Steps
 
-### Step 1 — SpawnConfig + plain const + PreparedActor field + migrate all call sites  [SEQUENTIAL — foundation]
+### Step 1 — SpawnConfig + rename const + PreparedActor field + migrate ALL call sites  [SEQUENTIAL — foundation]
 
-Files: `crates/core/src/actor/spawn.rs`, `crates/core/src/actor/mod.rs`, `crates/core/src/actor/timer.rs`,
-`crates/core/tests/{invariants,control_lane,tracing_capture,dst_races,app_job_queue}.rs`.
+Files: `crates/core/src/actor/spawn.rs`, `crates/core/src/actor/kind.rs`, `crates/core/src/actor/mod.rs`,
+`crates/core/src/actor/timer.rs`, `crates/core/src/test_support.rs` (doc only),
+`crates/core/tests/{invariants,control_lane,tracing_capture,dst_races,app_job_queue}.rs`,
+`crates/core/benches/{registry_vs_kameo.rs,request_vs_kameo.rs}`.
 
 1a. In `spawn.rs`, replace the whole `ON_STOP_NOTICE_GRACE` const (lines 45-71) with
 `pub(super) const DEFAULT_ON_STOP_NOTICE_GRACE: Duration = Duration::from_secs(5);` plus the doc comment
 (see plan Task 1 Step 1). NO `cfg!(miri)`.
+
+1a-rename. The rename breaks every reference to the OLD name — they MUST all move to
+`DEFAULT_ON_STOP_NOTICE_GRACE` in THIS step or nothing compiles (CHECK finding 1). This is a pure rename
+here; Step 2 changes the READ, not the name. Rename at:
+  - PRODUCTION uses, still reading the renamed const for now: `spawn.rs:486` (`timeout(...)`),
+    `spawn.rs:498` (`trace::on_stop_abandoned`), `kind.rs:588` (`sleep(...)`), `kind.rs:594` + `kind.rs:608`
+    (`trace::child_teardown_abandoned`), and the import `kind.rs:17`
+    (`use crate::actor::spawn::ON_STOP_NOTICE_GRACE;` → `...::DEFAULT_ON_STOP_NOTICE_GRACE;`).
+  - TEST-module imports + uses (CHECK finding 5): `spawn.rs:804` (`use super::{DEFAULT_MAILBOX_CAPACITY,
+    ON_STOP_NOTICE_GRACE}` → add `SpawnConfig`, rename the grace), `spawn.rs:3536`
+    (`use super::super::ON_STOP_NOTICE_GRACE`), and the two uses `spawn.rs:2796` + `spawn.rs:4959`
+    (`ON_STOP_NOTICE_GRACE + Duration::from_secs(1)`).
 
 1b. Add the `SpawnConfig` struct with `Default` (capacity = `default_capacity()`, grace =
 `DEFAULT_ON_STOP_NOTICE_GRACE`) — see plan Task 1 Step 2. `#[derive(Debug, Clone)]`, both fields `pub`,
@@ -35,20 +49,36 @@ NOT `#[non_exhaustive]`.
 
 1c. Add `on_stop_grace: Duration` field to `PreparedActor`. Change `new` and `new_linked` to take
 `config: SpawnConfig` (use `config.capacity` for `Mailbox::bounded`, store `config.on_stop_grace`) —
-see plan Task 1 Step 3. `finish_actor` / `teardown_children` bodies stay UNCHANGED in this step (they still
-read the default const) — that keeps the field unused-but-stored so Step 2 can wire it TDD-style.
+see plan Task 1 Step 3. `finish_actor` / `teardown_children` bodies otherwise UNCHANGED in this step:
+they keep reading the (now renamed) `DEFAULT_ON_STOP_NOTICE_GRACE` const, NOT the field. That leaves the
+field stored-but-unused so Step 2 can flip const→field TDD-style. (The const's "read only by
+`SpawnConfig::default`" is the END state, after Step 2 — not yet true here.)
 
 1d. In `mod.rs`: re-export `SpawnConfig`; rewrite `spawn_with_capacity` → `spawn_with_config`,
 `spawn_linked_with_capacity` → `spawn_linked_with_config`, `spawn_supervised_with_capacity` →
 `spawn_supervised_with_config`; zero-arg `spawn`/`spawn_linked`/`spawn_supervised` use
-`SpawnConfig::default()` — see plan Task 1 Step 4. Drop any now-unused `default_capacity` import.
+`SpawnConfig::default()` — see plan Task 1 Step 4. KEEP `#[must_use]` on ALL SIX methods (CHECK finding 6 —
+present today on `mod.rs:181,207,255` and the zero-arg forms; the plan's code blocks dropped it, re-add it).
+Drop the now-unused `default_capacity` AND likely-unused `Capacity` imports from `mod.rs` (CHECK finding 9 —
+the compiler will flag them).
 
-1e. Mechanically migrate EVERY remaining call site (transformation rule in plan Task 1 Step 5). Find them:
-`rg -n "new\(cap|new_linked\(|_with_capacity\(" crates/core/src crates/core/tests`. Add `SpawnConfig` to
-each file's imports. Note: many are in `spawn.rs`'s own `#[cfg(test)]` module and other test files —
-`new(cap(4))` → `new(SpawnConfig { capacity: cap(4), ..Default::default() })`, etc.
+1e. Migrate EVERY remaining call site. Do NOT trust a narrow regex — the CHECK found `new(default_cap())`
+(8+ sites in `tracing_capture.rs`), `new_linked(Capacity::try_from(...))` (`app_job_queue.rs:439`), and the
+benches, all missed by `new\(cap`. Prefer compiler-driven: after 1a-1d, run `cargo check -p bombay
+--all-targets` and fix each error. The transformation is always: the OLD `Capacity`/`usize`-capacity arg
+becomes `SpawnConfig { capacity: <that arg>, ..Default::default() }`. Discovery aid (superset):
+`rg -n "::new\(|::new_linked\(|_with_capacity\(" crates/core`.
 
-Expected: crate compiles, no behavior change. `sonic`-suitable for the mechanical 1e sweep.
+  DANGER — do NOT blanket-transform (CHECK finding 7): `timer.rs:463`
+  `GatedSink::spawn_with_capacity(gate, capacity: usize)` is a LOCAL test helper, NOT the trait method
+  (arg order `(gate, usize)`). Leave its NAME and signature alone; only its BODY changes — the `new(cap)`
+  at `timer.rs:468` migrates to `new(SpawnConfig { capacity: cap, ..Default::default() })`.
+
+1f. Doc rot from the rename (CHECK finding 8): fix the dangling intra-doc link `` [`ON_STOP_NOTICE_GRACE`] ``
+at `spawn.rs:7` (module doc), `spawn.rs:42` ("tune with `spawn_with_capacity`" → `spawn_with_config`),
+`test_support.rs:96` (references the old const name), and the test doc comments at `spawn.rs:2774,4511,4931`.
+
+Expected: `cargo check -p bombay --all-targets` clean, no behavior change.
 
 ### Step 2 — thread the grace into finish_actor + teardown_children + run_lifecycle*  [SEQUENTIAL — depends on Step 1]
 
@@ -68,9 +98,14 @@ and add `on_stop_grace` to the `Self { .. }` destructure in `PreparedActor::run`
 `finish_actor(...)` AND all three `teardown_children(...)` calls.
 
 2d. Give `teardown_children` (kind.rs) an `on_stop_grace: Duration` param; replace the three
-`ON_STOP_NOTICE_GRACE` uses (~588 sleep, ~594 + ~608 trace calls) with the param; remove
-`use crate::actor::spawn::ON_STOP_NOTICE_GRACE;` (~17); add `use core::time::Duration;` if absent —
-plan Task 2 Step 5. Update doc-comment references to the old const name in both files.
+`DEFAULT_ON_STOP_NOTICE_GRACE` uses (~588 sleep, ~594 + ~608 trace calls — renamed in Step 1a) with the
+param. The import was already renamed in Step 1a; after this step it is unused (both remaining reads become
+the param) — remove `use crate::actor::spawn::DEFAULT_ON_STOP_NOTICE_GRACE;` if the compiler flags it.
+`use core::time::Duration;` already exists at `kind.rs:4` (CHECK finding 10 — no-op). Update the
+doc-comment references (`kind.rs:526,585`) to name the parameter.
+  - IN-MODULE TEST CALLER (CHECK finding 3): `kind.rs`'s own test `teardown_children_cancels_and_aborts_live_ones`
+    (~1661) calls `teardown_children(&mut children, &link_rx)` — add the third arg
+    `DEFAULT_ON_STOP_NOTICE_GRACE` (or a small paused-clock value if the test cares) so it compiles.
 
 Expected: crate compiles; the new test now passes (Claude verifies via the gate).
 

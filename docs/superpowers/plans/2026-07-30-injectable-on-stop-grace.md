@@ -122,13 +122,15 @@ Re-export `SpawnConfig` (add to the `spawn::{...}` use at ~30):
     spawn::{DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult, SpawnConfig},
 ```
 
-Rewrite the three `_with_capacity` methods to `_with_config` and the zero-arg forms to use `SpawnConfig::default()`. `Spawn` (~176):
+Rewrite the three `_with_capacity` methods to `_with_config` and the zero-arg forms to use `SpawnConfig::default()`. **Keep `#[must_use]` on every method — it is present on all three `_with_capacity` methods and the zero-arg forms today; dropping it is a silent public-API regression clippy will not flag.** `Spawn` (~176):
 
 ```rust
+    #[must_use]
     fn spawn(args: Self::Args) -> ActorRef<Self> {
         Self::spawn_with_config(SpawnConfig::default(), args)
     }
 
+    #[must_use]
     fn spawn_with_config(config: SpawnConfig, args: Self::Args) -> ActorRef<Self> {
         let prepared = PreparedActor::<Self>::new(config);
         let actor_ref = prepared.actor_ref().clone();
@@ -140,10 +142,12 @@ Rewrite the three `_with_capacity` methods to `_with_config` and the zero-arg fo
 `SpawnLinked` (~202):
 
 ```rust
+    #[must_use]
     fn spawn_linked(args: Self::Args) -> ActorRef<Self> {
         Self::spawn_linked_with_config(SpawnConfig::default(), args)
     }
 
+    #[must_use]
     fn spawn_linked_with_config(config: SpawnConfig, args: Self::Args) -> ActorRef<Self> {
         let (prepared, link_rx) = PreparedActor::<Self>::new_linked(config);
         let actor_ref = prepared.actor_ref().clone();
@@ -155,10 +159,12 @@ Rewrite the three `_with_capacity` methods to `_with_config` and the zero-arg fo
 `SpawnSupervised` (~250):
 
 ```rust
+    #[must_use]
     fn spawn_supervised(args: Self::Args) -> ActorRef<Self> {
         Self::spawn_supervised_with_config(SpawnConfig::default(), args)
     }
 
+    #[must_use]
     fn spawn_supervised_with_config(config: SpawnConfig, args: Self::Args) -> ActorRef<Self> {
         let (prepared, link_rx) = PreparedActor::<Self>::new_linked(config);
         let actor_ref = prepared.actor_ref().clone();
@@ -167,7 +173,7 @@ Rewrite the three `_with_capacity` methods to `_with_config` and the zero-arg fo
     }
 ```
 
-Remove the now-unused `default_capacity` import from `mod.rs` if the compiler flags it (it is now only used inside `spawn.rs`). Keep `DEFAULT_MAILBOX_CAPACITY` if still referenced in docs.
+Remove the now-unused `default_capacity` and likely-unused `Capacity` imports from `mod.rs` if the compiler flags them. Keep `DEFAULT_MAILBOX_CAPACITY` if still referenced in docs.
 
 - [ ] **Step 5: Migrate every remaining call site mechanically**
 
