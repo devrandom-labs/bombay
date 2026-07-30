@@ -21,15 +21,16 @@ use app::{
 };
 use bombay::{
     ActorId,
-    actor::Spawn as _,
-    error::AskError,
-    mailbox::Capacity,
+    actor::{Actor, ActorRef, PreparedActor, RunResult, Spawn as _, SpawnConfig, Watch},
+    error::{ActorStopReason, AskError},
+    mailbox::{Capacity, Mailboxed},
+    message::Msg,
     registry::Registry,
     restart::{RestartConfig, RestartPolicy},
     stash::Stashed,
     test_support::terminate_bound,
 };
-use tokio::time::timeout;
+use tokio::{sync::oneshot, time::timeout};
 
 const WORK: Duration = Duration::from_millis(5);
 
@@ -743,4 +744,218 @@ async fn intake_defers_submissions_during_maintenance() {
         .await
         .expect("stats reply");
     assert_eq!(stats.submitted, 2);
+}
+
+// ---------------------------------------------------------------------------
+// Card #266 — walking skeleton: a DRAIN-WINDOW watch against the real app.
+//
+// A short-lived auditor is spawned with its only message enqueued BEFORE the
+// run and no external ref held (the drain window); its handler `watch`es the
+// dispatcher through the handler-context ref and parks on a release gate
+// until the test has observed the dispatcher's death — a drain-window actor
+// with an empty backlog self-collects the moment its handler returns, so
+// without the gate the queued notice would race the auditor's own
+// `Collected` stop.
+
+/// The auditor: a `Watch` actor whose single (drain-window) handler registers
+/// a watch on the dispatcher and parks; its recording hook captures the
+/// dispatcher's death notice after release.
+struct Auditor {
+    dispatcher: Option<ActorRef<Dispatcher>>,
+    watch_result: Arc<Mutex<Option<Result<(), ()>>>>,
+    notices: Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
+    entered: Option<oneshot::Sender<()>>,
+    release: Option<oneshot::Receiver<()>>,
+}
+#[derive(Debug)]
+struct AuditGo;
+impl Msg for AuditGo {}
+impl Mailboxed for Auditor {
+    type Msg = AuditGo;
+}
+impl Actor for Auditor {
+    type Args = (
+        ActorRef<Dispatcher>,
+        Arc<Mutex<Option<Result<(), ()>>>>,
+        Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
+        oneshot::Sender<()>,
+        oneshot::Receiver<()>,
+    );
+    type Error = core::convert::Infallible;
+    async fn on_start(
+        (dispatcher, watch_result, notices, entered, release): Self::Args,
+        _: ActorRef<Self>,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            dispatcher: Some(dispatcher),
+            watch_result,
+            notices,
+            entered: Some(entered),
+            release: Some(release),
+        })
+    }
+    async fn handle(
+        &mut self,
+        _: AuditGo,
+        actor_ref: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        let dispatcher = self.dispatcher.take().expect("one AuditGo enqueued");
+        let outcome = bounded(actor_ref.watch(&dispatcher)).await.map_err(|_| ());
+        *self.watch_result.lock().expect("lock") = Some(outcome);
+        drop(dispatcher); // the auditor must not pin the dispatcher
+        self.entered
+            .take()
+            .expect("entered once")
+            .send(())
+            .expect("the test is listening");
+        // Park until the dispatcher has actually died, so its notice is
+        // queued on this actor's link channel when the loop resumes.
+        bounded(self.release.take().expect("release once"))
+            .await
+            .expect("the release channel is open");
+        Ok(())
+    }
+}
+impl Watch for Auditor {
+    async fn on_link_died(
+        &mut self,
+        id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
+        self.notices
+            .lock()
+            .expect("lock")
+            .push((id, reason, linked));
+        Ok(core::ops::ControlFlow::Continue(()))
+    }
+}
+
+/// Everything the auditor choreography needs, grouped so the test stays
+/// under the line cap.
+struct AuditorRig {
+    watch_result: Arc<Mutex<Option<Result<(), ()>>>>,
+    notices: Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
+    auditor_join: tokio::task::JoinHandle<RunResult<Auditor>>,
+    entered: oneshot::Receiver<()>,
+    release: oneshot::Sender<()>,
+}
+
+/// Spawns the auditor in the DRAIN WINDOW: its only message is enqueued
+/// before the run and no external ref is held.
+async fn start_auditor(dispatcher: &ActorRef<Dispatcher>) -> AuditorRig {
+    let watch_result = Arc::new(Mutex::new(None));
+    let notices: Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>> =
+        Arc::new(Mutex::new(Vec::new()));
+    let (entered_tx, entered) = oneshot::channel();
+    let (release, release_rx) = oneshot::channel();
+    let (prepared, link_rx) = PreparedActor::<Auditor>::new_linked(SpawnConfig {
+        capacity: Capacity::try_from(2).expect("valid capacity"),
+        ..Default::default()
+    });
+    bounded(prepared.actor_ref().tell(AuditGo))
+        .await
+        .expect("enqueue before run");
+    let auditor_join = prepared.spawn_linked_task(
+        (
+            dispatcher.clone(),
+            Arc::clone(&watch_result),
+            Arc::clone(&notices),
+            entered_tx,
+            release_rx,
+        ),
+        link_rx,
+    );
+    AuditorRig {
+        watch_result,
+        notices,
+        auditor_join,
+        entered,
+        release,
+    }
+}
+
+/// The exact auditor assertions: the drain-window watch succeeded, and the
+/// hook recorded exactly one unlinked notice naming the dispatcher with its
+/// true (`Normal`) stop reason.
+fn assert_auditor_notice(
+    watch_result: &Arc<Mutex<Option<Result<(), ()>>>>,
+    notices: &Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
+    dispatcher_id: ActorId,
+) {
+    assert_eq!(
+        *watch_result.lock().expect("lock"),
+        Some(Ok(())),
+        "the drain-window watch itself succeeded"
+    );
+    let recorded = notices.lock().expect("lock").clone();
+    assert_eq!(recorded.len(), 1, "exactly one death notice");
+    let (id, reason, linked) = &recorded[0];
+    assert_eq!(*id, dispatcher_id, "the notice names the dispatcher");
+    assert!(!linked, "a watch notice is not linked");
+    assert!(
+        matches!(reason, ActorStopReason::Normal),
+        "the dispatcher's exact stop reason, got {reason:?}"
+    );
+}
+
+/// Card #266 walking skeleton: a drain-window `watch` against the real app's
+/// dispatcher observes the dispatcher's exact stop reason at app shutdown.
+#[tokio::test]
+async fn drain_window_auditor_observes_dispatcher_death() {
+    let registry = Arc::new(Registry::new());
+    let app = app::start(config_no_seam(&registry)).await;
+    let dispatcher = registry
+        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .expect("registered under the dispatcher type")
+        .expect("dispatcher is alive");
+    let dispatcher_id = dispatcher.id();
+    let rig = start_auditor(&dispatcher).await;
+
+    bounded(rig.entered)
+        .await
+        .expect("the auditor registered its watch from the drain window");
+
+    // Drive the app to shutdown: an idle drain stops the dispatcher normally.
+    let report = bounded(
+        dispatcher
+            .ask(|reply| DispatcherMsg::Drain { reply })
+            .no_timeout(),
+    )
+    .await
+    .expect("drain reply");
+    assert_eq!(
+        report,
+        DrainReport {
+            submitted: 0,
+            completed: 0,
+            failed: 0,
+            retried: 0,
+            rebuilds: 0,
+        },
+        "no jobs were submitted",
+    );
+    let observed = poll_observed_death(&app).await;
+    assert_eq!(
+        observed,
+        Some((dispatcher_id, true)),
+        "the overseer observed the dispatcher's normal death",
+    );
+
+    rig.release.send(()).expect("the auditor is parked");
+    let auditor_outcome = bounded(rig.auditor_join).await.expect("join auditor");
+    assert!(
+        matches!(
+            auditor_outcome,
+            RunResult::Stopped {
+                reason: ActorStopReason::Collected,
+                ..
+            }
+        ),
+        "the auditor drains the queued notice, then collects, got {auditor_outcome:?}"
+    );
+    drop(auditor_outcome);
+
+    assert_auditor_notice(&rig.watch_result, &rig.notices, dispatcher_id);
 }

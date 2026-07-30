@@ -57,7 +57,7 @@ use tokio::{
 };
 
 use bombay::{
-    SendContext,
+    ActorId, SendContext,
     actor::{
         Actor, ActorRef, PreparedActor, RunResult, Spawn, SpawnConfig, SpawnSupervised, Supervisor,
         Watch, WeakActorRef,
@@ -1579,5 +1579,370 @@ async fn seeded_control_user_interleavings_preserve_per_lane_fifo() {
                 "seed {seed}: watcher {name}'s removed edges deliver no notice",
             );
         }
+    }
+}
+
+// ===========================================================================
+// Card #266 — drain/steady watch equivalence under seeded death/close races.
+//
+// The strict trace oracle lives in `tests/drain_equivalence.rs`; this leg
+// fuzzes the CHOREOGRAPHY around it: a seeded LCG (same pattern as
+// `cyclic_topology_never_deadlocks`) derives the knob-set — how many
+// watch-messages are queued (1..=3), whether the target is dropped or killed,
+// whether death is injected while the watcher is parked in its handler
+// (notice queued before the loop resumes) or only after the loop's break
+// decision (designed-lost, card #266 decision 1), plus extra yield points —
+// and the SAME knob-set runs in steady mode (external watcher ref held,
+// message enqueued after spawn) and drain mode (no external ref, enqueued
+// before). The oracle is the canonicalized outcome: the SORTED notice
+// multiset by (reason-kind, linked) — order relative to other events may
+// race — plus the ordered watch-result list and the final reason-kind.
+// Exact counts are asserted per knob-set: N queued watch-messages install N
+// duplicate edges, so a pre-break death delivers exactly N notices and a
+// post-break death exactly 0.
+//
+// `WatchReasonKind` duplicates `drain_equivalence.rs`'s `ReasonKind` —
+// integration tests share no code across files; keep this copy minimal.
+// ===========================================================================
+
+/// Canonical `ActorStopReason` mirror (no `PartialEq` upstream), with `Ord`
+/// so the notice multiset can be sorted. Exhaustive match: a new upstream
+/// variant breaks compilation here.
+#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
+enum WatchReasonKind {
+    Normal,
+    SupervisorRestart,
+    Collected,
+    Killed,
+    AlreadyDead,
+    Panicked,
+    LinkDied(Box<Self>),
+    RestartLimitExceeded,
+    ChildLifecycleFailed,
+}
+
+impl WatchReasonKind {
+    fn of(reason: &ActorStopReason) -> Self {
+        match reason {
+            ActorStopReason::Normal => Self::Normal,
+            ActorStopReason::SupervisorRestart => Self::SupervisorRestart,
+            ActorStopReason::Collected => Self::Collected,
+            ActorStopReason::Killed => Self::Killed,
+            ActorStopReason::AlreadyDead => Self::AlreadyDead,
+            ActorStopReason::Panicked(_) => Self::Panicked,
+            ActorStopReason::LinkDied { reason: inner, .. } => {
+                Self::LinkDied(Box::new(Self::of(inner)))
+            }
+            ActorStopReason::RestartLimitExceeded { .. } => Self::RestartLimitExceeded,
+            ActorStopReason::ChildLifecycleFailed { .. } => Self::ChildLifecycleFailed,
+        }
+    }
+}
+
+/// The seeded-race watcher: every queued `RaceGo` registers another watch on
+/// the SAME target from that message's own handler ref; the LAST one drops
+/// the watcher's target pin, signals `entered`, and parks on `release`.
+/// `on_stop` signals the loop's break decision (`stopping`) and parks again,
+/// so the test can inject the target's death either side of the break.
+struct RaceWatcher {
+    target: Option<ActorRef<Spy>>,
+    watches_left: usize,
+    watch_results: Arc<Mutex<Vec<bool>>>,
+    notices: Arc<Mutex<Vec<(WatchReasonKind, bool)>>>,
+    entered: Option<oneshot::Sender<()>>,
+    release: Option<oneshot::Receiver<()>>,
+    stopping: Option<oneshot::Sender<()>>,
+    stop_release: Option<oneshot::Receiver<()>>,
+}
+
+struct RaceWatcherArgs {
+    target: ActorRef<Spy>,
+    watches: usize,
+    watch_results: Arc<Mutex<Vec<bool>>>,
+    notices: Arc<Mutex<Vec<(WatchReasonKind, bool)>>>,
+    entered: oneshot::Sender<()>,
+    release: oneshot::Receiver<()>,
+    stopping: oneshot::Sender<()>,
+    stop_release: oneshot::Receiver<()>,
+}
+
+#[derive(Debug)]
+struct RaceGo;
+impl Msg for RaceGo {}
+impl Mailboxed for RaceWatcher {
+    type Msg = RaceGo;
+}
+impl Actor for RaceWatcher {
+    type Args = RaceWatcherArgs;
+    type Error = Infallible;
+    async fn on_start(args: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        let RaceWatcherArgs {
+            target,
+            watches,
+            watch_results,
+            notices,
+            entered,
+            release,
+            stopping,
+            stop_release,
+        } = args;
+        Ok(Self {
+            target: Some(target),
+            watches_left: watches,
+            watch_results,
+            notices,
+            entered: Some(entered),
+            release: Some(release),
+            stopping: Some(stopping),
+            stop_release: Some(stop_release),
+        })
+    }
+    async fn handle(
+        &mut self,
+        _: RaceGo,
+        actor_ref: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Self::Error> {
+        let borrowed = self.target.as_ref().expect("the target is present");
+        let outcome = bounded(actor_ref.watch(borrowed)).await.is_ok();
+        self.watch_results.lock().expect("lock").push(outcome);
+        self.watches_left = self
+            .watches_left
+            .checked_sub(1)
+            .expect("exactly `watches` messages were enqueued");
+        if self.watches_left > 0 {
+            return Ok(());
+        }
+        let owned = self.target.take().expect("the target is present");
+        drop(owned); // release the pin BEFORE the test drops its own ref
+        self.entered
+            .take()
+            .expect("entered once")
+            .send(())
+            .expect("the test is listening");
+        bounded(self.release.take().expect("release once"))
+            .await
+            .expect("the release channel is open");
+        Ok(())
+    }
+    async fn on_stop(
+        &mut self,
+        _: WeakActorRef<Self>,
+        _: ActorStopReason,
+    ) -> Result<(), Self::Error> {
+        self.stopping
+            .take()
+            .expect("on_stop runs once")
+            .send(())
+            .expect("the test is listening");
+        // Parked past the loop's break decision; the configured 1-minute
+        // grace (SpawnConfig::on_stop_grace) never trips in this choreography.
+        bounded(self.stop_release.take().expect("stop_release once"))
+            .await
+            .expect("the stop_release channel is open");
+        Ok(())
+    }
+}
+impl Watch for RaceWatcher {
+    async fn on_link_died(
+        &mut self,
+        _id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> Result<std::ops::ControlFlow<ActorStopReason>, Self::Error> {
+        self.notices
+            .lock()
+            .expect("lock")
+            .push((WatchReasonKind::of(&reason), linked));
+        Ok(std::ops::ControlFlow::Continue(()))
+    }
+}
+
+/// One seeded knob-set, shared verbatim by the steady and drain runs.
+#[derive(Debug, Clone, Copy)]
+struct RaceKnobs {
+    watches: usize,
+    kill: bool,
+    after_release: bool,
+    yields: u64,
+}
+
+/// The canonicalized outcome: (sorted notice multiset, watch results, final
+/// reason-kind). Sorting makes the oracle robust to notice/other-event
+/// interleavings while keeping exact counts.
+type RaceOutcome = (Vec<(WatchReasonKind, bool)>, Vec<bool>, WatchReasonKind);
+
+/// Kills or drops the target and asserts its exact terminal outcome.
+async fn race_death_and_join(
+    kill: bool,
+    target_ref: ActorRef<Spy>,
+    target_join: tokio::task::JoinHandle<RunResult<Spy>>,
+) {
+    if kill {
+        target_ref.kill();
+    } else {
+        drop(target_ref);
+    }
+    let outcome = bounded(target_join).await.expect("join target");
+    if kill {
+        assert!(
+            matches!(outcome, RunResult::Killed),
+            "kill -> Killed, got {outcome:?}"
+        );
+    } else {
+        assert!(
+            matches!(
+                outcome,
+                RunResult::Stopped {
+                    reason: ActorStopReason::Collected,
+                    ..
+                }
+            ),
+            "drop -> Collected, got {outcome:?}"
+        );
+    }
+}
+
+/// Runs one seeded scenario. `steady` decides ONLY the two allowed things:
+/// the held external watcher ref and enqueue-after-run vs enqueue-before-run.
+/// The choreography is oneshot-gated: `stopping` proves the loop's break
+/// decision, so a post-break (`after_release`) death deterministically
+/// delivers ZERO notices (designed-lost), a pre-break death exactly N.
+async fn race_run(steady: bool, knobs: RaceKnobs) -> RaceOutcome {
+    let t_prepared = PreparedActor::<Spy>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
+    let target_ref = t_prepared.actor_ref().clone();
+    let target_join = t_prepared.spawn((Arc::new(AtomicU32::new(0)), Arc::new(AtomicU32::new(0))));
+
+    let watch_results = Arc::new(Mutex::new(Vec::new()));
+    let notices = Arc::new(Mutex::new(Vec::new()));
+    let (entered_tx, entered) = oneshot::channel();
+    let (release, release_rx) = oneshot::channel();
+    let (stopping_tx, stopping) = oneshot::channel();
+    let (stop_release, stop_release_rx) = oneshot::channel();
+    let (w_prepared, w_link_rx) = PreparedActor::<RaceWatcher>::new_linked(SpawnConfig {
+        capacity: cap(8),
+        on_stop_grace: Duration::from_mins(1),
+    });
+    let external = if steady {
+        Some(w_prepared.actor_ref().clone())
+    } else {
+        None
+    };
+    if !steady {
+        for _ in 0..knobs.watches {
+            bounded(w_prepared.actor_ref().tell(RaceGo))
+                .await
+                .expect("enqueue before run");
+        }
+    }
+    let args = RaceWatcherArgs {
+        target: target_ref.clone(),
+        watches: knobs.watches,
+        watch_results: Arc::clone(&watch_results),
+        notices: Arc::clone(&notices),
+        entered: entered_tx,
+        release: release_rx,
+        stopping: stopping_tx,
+        stop_release: stop_release_rx,
+    };
+    let watcher_join = w_prepared.spawn_linked_task(args, w_link_rx);
+    if steady {
+        let held = external.as_ref().expect("steady holds a ref");
+        for _ in 0..knobs.watches {
+            bounded(held.tell(RaceGo)).await.expect("enqueue after run");
+        }
+    }
+
+    bounded(entered).await.expect("all watches registered");
+    for _ in 0..knobs.yields {
+        tokio::task::yield_now().await;
+    }
+    // The death injection point is a KNOB (shared), never a mode branch:
+    // `deferred` moves the target's fate to whichever side of the break
+    // decision the seed chose.
+    let mut deferred = Some((target_ref, target_join));
+    if !knobs.after_release {
+        let (t_ref, t_join) = deferred.take().expect("injected once");
+        race_death_and_join(knobs.kill, t_ref, t_join).await;
+    }
+    release.send(()).expect("the watcher is parked");
+    drop(external);
+    bounded(stopping)
+        .await
+        .expect("the break decision was taken");
+    if let Some((t_ref, t_join)) = deferred.take() {
+        race_death_and_join(knobs.kill, t_ref, t_join).await;
+    }
+    stop_release.send(()).expect("on_stop is parked");
+    let watcher_outcome = bounded(watcher_join).await.expect("join watcher");
+    assert!(
+        matches!(watcher_outcome, RunResult::Stopped { .. }),
+        "the watcher stops gracefully, got {watcher_outcome:?}"
+    );
+    let RunResult::Stopped { reason, .. } = watcher_outcome else {
+        panic!("asserted Stopped above")
+    };
+
+    let mut sorted = notices.lock().expect("lock").clone();
+    sorted.sort();
+    let results = watch_results.lock().expect("lock").clone();
+    (sorted, results, WatchReasonKind::of(&reason))
+}
+
+/// Card #266 (bullet 7): seeded watch-vs-death-vs-close races must be
+/// steady/drain equivalent. Per seed, the steady run IS the oracle: full
+/// equality on the canonicalized outcome, plus explicit per-knob exact
+/// assertions so the pair cannot pass on two equally-wrong runs.
+#[tokio::test]
+async fn drain_window_watch_races_target_death_and_close_equivalence() {
+    for seed in [0xDEAD_BEEF_u64, 42, 7, 0xBAD_C0FFE] {
+        let mut lcg = seed;
+        let mut next = || {
+            lcg = lcg.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+            lcg >> 33
+        };
+        let knobs = RaceKnobs {
+            watches: 1 + usize::try_from(next() % 3).expect("a u64 mod 3 fits usize"),
+            kill: next() % 2 == 0,
+            after_release: next() % 2 == 0,
+            yields: next() % 4,
+        };
+        let steady = race_run(true, knobs).await;
+        let drain = race_run(false, knobs).await;
+        assert_eq!(
+            steady, drain,
+            "seed {seed:#x}: steady and drain runs diverge ({knobs:?})"
+        );
+
+        let expected_reason = if knobs.kill {
+            WatchReasonKind::Killed
+        } else {
+            WatchReasonKind::Collected
+        };
+        let expected_count = if knobs.after_release {
+            0
+        } else {
+            knobs.watches
+        };
+        let expected: Vec<(WatchReasonKind, bool)> = (0..expected_count)
+            .map(|_| (expected_reason.clone(), false))
+            .collect();
+        assert_eq!(
+            steady.0, expected,
+            "seed {seed:#x}: the exact notice multiset ({knobs:?})"
+        );
+        assert_eq!(
+            steady.1,
+            vec![true; knobs.watches],
+            "seed {seed:#x}: every watch succeeded ({knobs:?})"
+        );
+        assert_eq!(
+            steady.2,
+            WatchReasonKind::Collected,
+            "seed {seed:#x}: the watcher collects ({knobs:?})"
+        );
     }
 }

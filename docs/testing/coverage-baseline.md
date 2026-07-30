@@ -811,6 +811,28 @@ Tests (bombay lib, all TDD — written failing first):
   (`handle_mailbox_step`, `start_actor`, `run_linked_message_loop`) were
   already keyed `known_zero_viable`, and their post-change mutants are the
   same `Default`-requiring whole-body replacements (unviable by construction).
+- **drain-window watch/link equivalence (#266)** — `tests/drain_equivalence.rs`
+  pins the ADR-0010 invariant that handler-context `watch`/`link` (plus the
+  rest of the spec'd-equivalent verb set: `is_alive`, `tell`, `ask`,
+  `unwatch`) behaves identically on the steady-state shared upgrade and on a
+  drain-window mint: a strict trace oracle (ONE parameterized
+  `run_script(mode, death)`, full `Vec<TraceEvent>` equality against a
+  `vec![..]` literal, role-keyed never raw-`ActorId`-keyed) for graceful and
+  killed target deaths, plus adversarial legs — both link edges installed
+  (watcher-side kill, peer-side watcher `Collected`), a linked peer's panic
+  propagating as `LinkDied { Panicked }` through the default hook, per-message
+  mints registering independent duplicate edges (two watches, two notices),
+  the designed-lost late notice after the loop's break decision (GREEN pin,
+  Erlang `DOWN`-to-dead parity, decision 1), and the spec'd
+  `pipe_to_self`/`send_after` drain-window result-drop divergences (decision
+  2; steady delivery already pinned by `pipe.rs`/`timer.rs` unit tests).
+  `tests/dst_races.rs` gains the seeded
+  `drain_window_watch_races_target_death_and_close_equivalence` leg (4-seed
+  LCG knobs; sorted notice-multiset canonicalization, exact counts per
+  injection point), and `tests/app_job_queue.rs` the drain-window auditor
+  walking skeleton against the real job-queue app. `Watch::on_link_died`
+  documents the designed-lost rule. Test-only card — no production-code
+  change beyond that doc note, so no `mutants-baseline.json` movement.
 - **reaction / propagation** — `linked_actor_receives_death_of_watched_target`,
   `link_propagates_on_abnormal`, `link_does_not_propagate_on_normal`,
   `trap_exit_via_override_keeps_running`, `dead_target_watch_immediate_linkdied`.
