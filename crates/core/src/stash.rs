@@ -3,7 +3,7 @@
 //! ADR-0022.
 //!
 //! Research anchor: conditional synchronization for fixed-interface actors
-//! (De Koster et al., AGERE! 2016, §4.2; Briot–Guerraoui–Löhr, ACM `CSur` 1998);
+//! (De Koster et al., AGERE! 2016, §4.2; Briot–Guerraoui–Löhr, ACM Computing Surveys 1998);
 //! replay preserves arrival order, overflow refuses loudly (guaranteed
 //! delivery — silent drop is the one forbidden outcome).
 
