@@ -203,3 +203,86 @@ async fn replayed_stop_abandons_rest_of_batch() {
     .expect("actor stops after the replayed stop");
     assert_eq!(read(&t), vec![1], "batch ends at stop; 2 is abandoned");
 }
+
+/// Invariants 4 + 7: a non-empty stash does not pin. Drop every external
+/// ref while a message sits stashed → the actor ref-count-stops (Collected)
+/// within the bound, and the stashed message is never served.
+#[tokio::test]
+async fn stashed_messages_do_not_pin_refcount_stop() {
+    let t = tape();
+    let actor_ref = spawn_prequeued(vec![GateMsg::Item(1)], Arc::clone(&t));
+    // Sync: wait until the message was taken (and stashed) so the drop below
+    // races nothing.
+    let seen = timeout(terminate_bound(), actor_ref.ask(GateMsg::Read))
+        .await
+        .expect("probe within bound")
+        .expect("alive");
+    assert_eq!(seen, Vec::<u32>::new(), "1 is stashed, not served");
+    let weak = actor_ref.downgrade();
+    drop(actor_ref);
+    timeout(terminate_bound(), async {
+        while weak.upgrade().is_some() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .expect("non-empty stash must not keep the actor alive");
+    assert_eq!(
+        read(&t),
+        Vec::<u32>::new(),
+        "deferred message dies deferred"
+    );
+}
+
+/// Invariant 5: in-band `Signal::Stop` with a non-empty stash — the actor
+/// stops Normal and the stashed message is never served (Stop abandons the
+/// queued backlog; the deferred backlog ranks no higher, spec D6).
+#[tokio::test]
+async fn inband_stop_drops_stash() {
+    let t = tape();
+    let actor_ref = spawn_prequeued(vec![GateMsg::Item(1)], Arc::clone(&t));
+    timeout(terminate_bound(), actor_ref.ask(GateMsg::Read))
+        .await
+        .expect("probe within bound")
+        .expect("alive — 1 is stashed");
+    timeout(
+        terminate_bound(),
+        actor_ref.mailbox_sender().send(Signal::Stop),
+    )
+    .await
+    .expect("send within bound")
+    .expect("stop enqueued");
+    let weak = actor_ref.downgrade();
+    drop(actor_ref);
+    timeout(terminate_bound(), async {
+        while weak.upgrade().is_some() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .expect("in-band stop lands");
+    assert_eq!(read(&t), Vec::<u32>::new(), "stash dropped on Stop");
+}
+
+/// Invariant 6: `kill()` with a non-empty stash — hard abort, stashed
+/// message never served.
+#[tokio::test]
+async fn kill_drops_stash() {
+    let t = tape();
+    let actor_ref = spawn_prequeued(vec![GateMsg::Item(1)], Arc::clone(&t));
+    timeout(terminate_bound(), actor_ref.ask(GateMsg::Read))
+        .await
+        .expect("probe within bound")
+        .expect("alive — 1 is stashed");
+    actor_ref.kill();
+    let weak = actor_ref.downgrade();
+    drop(actor_ref);
+    timeout(terminate_bound(), async {
+        while weak.upgrade().is_some() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .expect("kill lands");
+    assert_eq!(read(&t), Vec::<u32>::new(), "stash dropped on kill");
+}
