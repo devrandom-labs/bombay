@@ -38,5 +38,9 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | [0014](0014-set-cycle-widen-not-queue-not-block.md) | Set-restart cycles coalesce by widening | Accepted |
 | [0015](0015-actorid-process-local-pure-name.md) | `ActorId`: process-local pure name; restart mints a new incarnation | Accepted |
 | [0016](0016-tracing-direct-instrumentation.md) | Observability: direct `tracing` instrumentation, no observer seam | Accepted |
+| [0017](0017-pipe-to-self-not-reentrancy.md) | Pipe-to-self: detached weak pipe, not reentrancy | Accepted |
+| [0018](0018-timer-surface.md) | Timer surface: `send_after` / `send_interval` + `TimerHandle` | Accepted |
+| [0019](0019-supervisor-subtree-teardown.md) | Supervisor exit tears down its subtree — signal, bounded join, abort | Accepted |
 | [0020](0020-collected-stop-not-restart-worthy.md) | Ref-count death is not restart-worthy (`Collected`) | Accepted |
 | [0021](0021-control-signal-lane.md) | Control-signal lane: watch/supervision never queue behind user backlog | Accepted |
+| [0022](0022-bounded-stash.md) | Bounded stash: `Stashed<S>` composition, in-step replay | Accepted |
