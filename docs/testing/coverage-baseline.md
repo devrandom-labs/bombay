@@ -796,6 +796,21 @@ Tests (bombay lib, all TDD — written failing first):
   `watch_full_but_alive_target_lands_immediately_no_spurious_death` (the
   registration regression guard — a busy-but-alive target takes the watch on
   the control lane (ADR-0021) and must never be mistaken for dead).
+- **handler-context watch (#260)** — `drain_window_handler_watch_succeeds`
+  (the #260 regression: a `watch` from INSIDE a handler in the drain window
+  succeeds exactly as in steady state, because the drain-window-minted handler
+  ref now carries the loop's own cold copy of `link_tx` through `LoopHandles` —
+  FAILED before the fix with `Err(ActorNotLinked)`),
+  `drain_window_watch_delivers_death_notice` (the `Ok` is not vacuous: the
+  registration carries the SAME link channel the loop drains, proved end-to-end
+  by the target's `Collected` notice reaching `on_link_died`), and
+  `steady_state_handler_watch_succeeds` (the steady-state control — the
+  handler's ref comes from the shared upgrade; handler-context steady-state
+  watch was otherwise untested). No new function shapes, so no new
+  `mutants-baseline.json` entries: the three touched functions
+  (`handle_mailbox_step`, `start_actor`, `run_linked_message_loop`) were
+  already keyed `known_zero_viable`, and their post-change mutants are the
+  same `Default`-requiring whole-body replacements (unviable by construction).
 - **reaction / propagation** — `linked_actor_receives_death_of_watched_target`,
   `link_propagates_on_abnormal`, `link_does_not_propagate_on_normal`,
   `trap_exit_via_override_keeps_running`, `dead_target_watch_immediate_linkdied`.
