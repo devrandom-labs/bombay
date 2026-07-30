@@ -557,11 +557,12 @@ async fn replay_runs_before_backlog_in_arrival_order() {
     assert_eq!(seen, vec![1, 2, 3], "stash replays first, in arrival order");
 }
 
-/// D2 snapshot end to end: after the first Open's batch drains, the stash
-/// must be EMPTY — a later serve must not drag along any stale replay, and
-/// order stays [1, 2].
+/// D2 end to end: after the first Open's batch drains, the stash must be
+/// EMPTY — a later serve must not drag along any stale replay, and order
+/// stays [1, 2]. (True mid-replay-stash snapshot coverage is the unit test
+/// `unstash_is_a_snapshot_not_a_live_view`.)
 #[tokio::test]
-async fn message_stashed_after_snapshot_waits_for_next_unstash() {
+async fn no_stale_replay_after_batch_drains() {
     let t = tape();
     // Close-after-open variant: reuse Gate but drive it so 2 arrives while
     // closed again. Simplest deterministic driver: two rounds.
@@ -1036,7 +1037,10 @@ git commit -m "docs: README stash bullet + coverage baseline [#224]"
 
 **Files:**
 - Modify: `crates/core/examples/job_queue/app.rs` (new `Intake` section)
-- Modify: `crates/core/examples/job_queue/main.rs` (wire intake in front of the dispatcher if the demo flow submits directly)
+- Modify: `crates/core/examples/job_queue/main.rs` — **mandatory**: the demo
+  submits directly (`main.rs:58,76` `dispatcher.ask(DispatcherMsg::Submit ..)`),
+  so route those submissions through a `Stashed<Intake>` front door; an
+  unreferenced `Intake` would trip `dead_code` in the flake gate
 - Modify: `crates/core/tests/app_job_queue.rs` (new test)
 
 - [ ] **Step 1: Add the `Intake` actor to `app.rs`**
@@ -1100,9 +1104,11 @@ impl bombay::stash::StashActor for Intake {
             submit @ IntakeMsg::Submit { .. } if self.maintenance => {
                 // Full stash = shed load with the same typed refusal the
                 // dispatcher uses for a full queue: the asker learns NOW.
+                // (`send_err` is the typed-rejection verb — `send` sends Ok;
+                // precedent app.rs:346.)
                 if let Err(overflow) = stash.stash(submit) {
                     if let IntakeMsg::Submit { reply, .. } = overflow.msg() {
-                        drop(reply.send(Err(SubmitError::QueueFull)));
+                        reply.send_err(SubmitError::QueueFull);
                     }
                 }
             }
