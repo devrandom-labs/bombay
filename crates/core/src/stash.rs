@@ -273,6 +273,7 @@ mod tests {
     fn capacity_bounds_held_plus_ready() {
         let mut stash = Stash::bounded(cap(2));
         stash.stash(1u32).expect("slot 1");
+        assert!(!stash.is_empty(), "one held message means non-empty");
         stash.unstash_all(); // 1 moves to ready — still counts
         stash.stash(2u32).expect("slot 2");
         let err = stash.stash(3u32).expect_err("cap 2 must refuse the 3rd");
@@ -321,7 +322,7 @@ mod tests {
         stash.unstash_all();
         stash.stash(3u32).expect("3");
         stash.unstash_all(); // 3 joins BEHIND the already-ready 1, 2
-        let drained: Vec<u32> = std::iter::from_fn(|| stash.pop_ready()).collect();
+        let drained: Vec<u32> = std::iter::from_fn(|| stash.pop_ready()).take(4).collect();
         assert_eq!(drained, vec![1, 2, 3]);
         assert!(stash.is_empty());
     }

@@ -8,7 +8,11 @@ use std::sync::{Arc, Mutex};
 use tokio::time::timeout;
 
 use bombay::{
-    actor::{ActorRef, PreparedActor, Spawn, SpawnConfig, SpawnSupervised, Supervisor, Watch},
+    actor::{
+        ActorRef, PreparedActor, Spawn, SpawnConfig, SpawnSupervised, Supervisor, Watch,
+        WeakActorRef,
+    },
+    error::ActorStopReason,
     mailbox::{Capacity, Mailboxed, Signal},
     message::Msg,
     reply::ReplySender,
@@ -385,5 +389,84 @@ async fn restart_gets_a_fresh_stash() {
         seen,
         Vec::<u32>::new(),
         "a stale stash must not survive restart (fresh incarnation from Args)"
+    );
+}
+
+/// Mutant pin: `Stashed::name` reports the user type's name, not the
+/// wrapper's — logs name the interesting type.
+#[test]
+fn stashed_name_is_the_user_type() {
+    assert_eq!(
+        <Stashed<Gate> as bombay::actor::Actor>::name(),
+        core::any::type_name::<Gate>(),
+        "Stashed reports the user type's name"
+    );
+}
+
+/// Minimal probe for hook delegation: its `on_stop` pushes 999 onto the
+/// tape, so a `Stashed::on_stop` that forgot to delegate leaves the tape
+/// empty.
+struct StopProbe {
+    tape: Arc<Mutex<Vec<u32>>>,
+}
+
+#[derive(Debug)]
+struct StopProbeMsg;
+impl Msg for StopProbeMsg {}
+impl Mailboxed for StopProbe {
+    type Msg = StopProbeMsg;
+}
+
+impl StashActor for StopProbe {
+    type Args = Arc<Mutex<Vec<u32>>>;
+    type Error = Infallible;
+
+    fn stash_capacity(_: &Self::Args) -> Capacity {
+        cap(1)
+    }
+
+    async fn on_start(tape: Self::Args, _: ActorRef<Stashed<Self>>) -> Result<Self, Infallible> {
+        Ok(Self { tape })
+    }
+
+    async fn handle(
+        &mut self,
+        _: StopProbeMsg,
+        _: ActorRef<Stashed<Self>>,
+        _: &mut Stash<StopProbeMsg>,
+        _: &mut bool,
+    ) -> Result<(), Infallible> {
+        Ok(())
+    }
+
+    async fn on_stop(
+        &mut self,
+        _: WeakActorRef<Stashed<Self>>,
+        _: ActorStopReason,
+    ) -> Result<(), Infallible> {
+        self.tape.lock().expect("tape").push(999);
+        Ok(())
+    }
+}
+
+/// Mutant pin: `Stashed::on_stop` DELEGATES to `StashActor::on_stop` — a
+/// `-> Ok(())` body-replacement mutant skips the user hook and the tape
+/// never sees 999.
+#[tokio::test]
+async fn stashed_on_stop_delegates_to_user_hook() {
+    let t = tape();
+    let actor_ref = Stashed::<StopProbe>::spawn(Arc::clone(&t));
+    drop(actor_ref);
+    timeout(terminate_bound(), async {
+        while read(&t).is_empty() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .expect("on_stop ran within the bound");
+    assert_eq!(
+        read(&t),
+        vec![999],
+        "Stashed::on_stop delegates to StashActor::on_stop"
     );
 }
