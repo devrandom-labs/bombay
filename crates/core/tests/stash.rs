@@ -2,18 +2,19 @@
 //! vs the mailbox backlog, snapshot semantics end to end, stop-mode fates,
 //! and restart hygiene. Every terminal await is bounded.
 
-use core::{convert::Infallible, num::NonZeroUsize};
+use core::{convert::Infallible, num::NonZeroUsize, time::Duration};
 use std::sync::{Arc, Mutex};
 
 use tokio::time::timeout;
 
 use bombay::{
-    actor::{ActorRef, PreparedActor, Spawn, SpawnConfig},
+    actor::{ActorRef, PreparedActor, Spawn, SpawnConfig, SpawnSupervised, Supervisor, Watch},
     mailbox::{Capacity, Mailboxed, Signal},
     message::Msg,
     reply::ReplySender,
+    restart::{RestartConfig, RestartPolicy},
     stash::{Stash, StashActor, Stashed},
-    test_support::terminate_bound,
+    test_support::{set_supervisor_rng_seed, terminate_bound},
 };
 
 fn cap(n: usize) -> Capacity {
@@ -35,6 +36,8 @@ enum GateMsg {
     /// Served like `Item`, then stops the actor (mid-batch stop probe).
     ItemThenStop(u32),
     Read(ReplySender<Vec<u32>>),
+    /// Panics the handler (restart probe).
+    Boom,
 }
 
 impl Msg for GateMsg {}
@@ -66,6 +69,7 @@ impl StashActor for Gate {
                 self.open = true;
                 stash.unstash_all();
             }
+            GateMsg::Boom => panic!("gate boom"),
             item @ (GateMsg::Item(_) | GateMsg::ItemThenStop(_)) if !self.open => {
                 stash
                     .stash(item)
@@ -285,4 +289,101 @@ async fn kill_drops_stash() {
     .await
     .expect("kill lands");
     assert_eq!(read(&t), Vec::<u32>::new(), "stash dropped on kill");
+}
+
+/// Minimal supervisor: exists only to own the `Stashed<Gate>` child.
+struct Sup;
+
+#[derive(Debug)]
+struct SupMsg;
+impl Msg for SupMsg {}
+impl Mailboxed for Sup {
+    type Msg = SupMsg;
+}
+impl bombay::actor::Actor for Sup {
+    type Args = ();
+    type Error = Infallible;
+    async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Infallible> {
+        Ok(Sup)
+    }
+    async fn handle(
+        &mut self,
+        _: SupMsg,
+        _: ActorRef<Self>,
+        _: &mut bool,
+    ) -> Result<(), Infallible> {
+        Ok(())
+    }
+}
+impl Watch for Sup {}
+impl Supervisor for Sup {}
+
+/// Invariant 8: restart = new incarnation from Args; a stale stash must not
+/// leak across incarnations. Incarnation 0 stashes 1 then panics; the
+/// rebuilt incarnation is Opened and must serve NOTHING from the old stash.
+#[tokio::test(start_paused = true)]
+async fn restart_gets_a_fresh_stash() {
+    set_supervisor_rng_seed(Some(7));
+    let t = tape();
+    let sup_ref = Sup::spawn_supervised(());
+
+    let spawned: Arc<Mutex<Vec<ActorRef<Stashed<Gate>>>>> = Arc::new(Mutex::new(Vec::new()));
+    let factory_tape = Arc::clone(&t);
+    let factory_spawned = Arc::clone(&spawned);
+    let config = RestartConfig::new(RestartPolicy::Permanent)
+        .with_min_backoff(Duration::from_millis(1))
+        .with_max_backoff(Duration::from_millis(1));
+    timeout(
+        terminate_bound(),
+        sup_ref.supervise(config, move || {
+            let child = Stashed::<Gate>::spawn(Arc::clone(&factory_tape));
+            factory_spawned.lock().expect("spawned").push(child.clone());
+            child
+        }),
+    )
+    .await
+    .expect("supervise within bound")
+    .expect("supervisor alive");
+
+    // Incarnation 0: stash 1 (closed gate), sync, then crash it.
+    let inc0 = spawned.lock().expect("spawned")[0].clone();
+    timeout(terminate_bound(), inc0.tell(GateMsg::Item(1)))
+        .await
+        .expect("tell within bound")
+        .expect("delivered");
+    timeout(terminate_bound(), inc0.ask(GateMsg::Read))
+        .await
+        .expect("probe within bound")
+        .expect("alive — 1 is stashed");
+    timeout(terminate_bound(), inc0.tell(GateMsg::Boom))
+        .await
+        .expect("tell within bound")
+        .expect("boom delivered");
+
+    // Paused clock: advance past the 1 ms backoff until incarnation 1 exists.
+    let inc1 = timeout(terminate_bound(), async {
+        loop {
+            tokio::time::sleep(Duration::from_millis(2)).await;
+            if let Some(child) = spawned.lock().expect("spawned").get(1).cloned() {
+                return child;
+            }
+        }
+    })
+    .await
+    .expect("rebuild within bound");
+
+    // Open the fresh incarnation: a leaked stash would now serve 1.
+    timeout(terminate_bound(), inc1.tell(GateMsg::Open))
+        .await
+        .expect("tell within bound")
+        .expect("open delivered");
+    let seen = timeout(terminate_bound(), inc1.ask(GateMsg::Read))
+        .await
+        .expect("probe within bound")
+        .expect("alive");
+    assert_eq!(
+        seen,
+        Vec::<u32>::new(),
+        "a stale stash must not survive restart (fresh incarnation from Args)"
+    );
 }
