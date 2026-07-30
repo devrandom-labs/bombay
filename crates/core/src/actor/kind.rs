@@ -14,7 +14,6 @@ use smallvec::SmallVec;
 use tokio::time::{Instant, sleep};
 use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
-use crate::actor::spawn::ON_STOP_NOTICE_GRACE;
 use crate::{
     actor::{
         Actor, ActorRef, Supervisor, Watch, WeakActorRef,
@@ -522,12 +521,16 @@ async fn dispatch_death<A: Supervisor>(
 /// watch edges installed at spawn already carry those notices. Per-child bound is
 /// its own `stop_grace`, graces run concurrently (the sweep is bounded by the
 /// largest grace, not their sum). A child whose grace fires before its notice is
-/// hard-aborted; post-abort confirmation is bounded by
-/// [`ON_STOP_NOTICE_GRACE`], after which a missing notice is traced and the
+/// hard-aborted; post-abort confirmation is bounded by the supervisor's
+/// `on_stop_grace`, after which a missing notice is traced and the
 /// supervisor exits anyway — a non-yielding child must not wedge the supervisor.
 /// A child in a backoff window has no live handle and is skipped by
 /// [`drain_live_handles`](Children::drain_live_handles).
-pub(super) async fn teardown_children(children: &mut Children, link_rx: &LinkReceiver) {
+pub(super) async fn teardown_children(
+    children: &mut Children,
+    link_rx: &LinkReceiver,
+    on_stop_grace: Duration,
+) {
     let handles = children.drain_live_handles();
     if handles.is_empty() {
         return;
@@ -582,16 +585,16 @@ pub(super) async fn teardown_children(children: &mut Children, link_rx: &LinkRec
 
     // Post-abort confirmation: aborted children must still announce their death
     // so the supervisor's own watchers can observe a clean teardown. Bounded by
-    // `ON_STOP_NOTICE_GRACE`; a non-yielding child may never produce a notice, so
+    // `on_stop_grace`; a non-yielding child may never produce a notice, so
     // trace the missing ones and proceed rather than wedging the exit.
     if !aborted.is_empty() {
-        let mut bound = std::pin::pin!(sleep(ON_STOP_NOTICE_GRACE));
+        let mut bound = std::pin::pin!(sleep(on_stop_grace));
         loop {
             tokio::select! {
                 biased;
                 () = &mut bound => {
                     for (id, _) in &aborted {
-                        trace::child_teardown_abandoned(*id, ON_STOP_NOTICE_GRACE);
+                        trace::child_teardown_abandoned(*id, on_stop_grace);
                     }
                     break;
                 }
@@ -605,7 +608,7 @@ pub(super) async fn teardown_children(children: &mut Children, link_rx: &LinkRec
                         }
                     } else {
                         for (id, _) in &aborted {
-                            trace::child_teardown_abandoned(*id, ON_STOP_NOTICE_GRACE);
+                            trace::child_teardown_abandoned(*id, on_stop_grace);
                         }
                         break;
                     }
@@ -1113,6 +1116,7 @@ mod supervised_tests {
         handle_child_death, install_child_watch, rebuild_child, teardown_children,
     };
     use crate::{
+        actor::spawn::DEFAULT_ON_STOP_NOTICE_GRACE,
         actor::supervision::{
             ArmedReg, Child, ChildHandle, Children, CycleState, RebuildFactory, Spawned,
             SuperviseReg, SupervisionOp, WatchInstaller, WatchOutcome, watch_installer,
@@ -1658,7 +1662,7 @@ mod supervised_tests {
         dead_entry.handle = None;
         children.insert(dead, dead_entry);
 
-        teardown_children(&mut children, &link_rx).await;
+        teardown_children(&mut children, &link_rx, DEFAULT_ON_STOP_NOTICE_GRACE).await;
 
         assert!(
             alive_edges.cancel.is_cancelled(),

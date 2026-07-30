@@ -28,7 +28,10 @@ use tokio::time::timeout;
 
 use bombay::{
     SendContext,
-    actor::{Actor, ActorRef, PreparedActor, RunResult, Spawn, Supervisor, Watch, WeakActorRef},
+    actor::{
+        Actor, ActorRef, PreparedActor, RunResult, Spawn, SpawnConfig, Supervisor, Watch,
+        WeakActorRef,
+    },
     error::ActorStopReason,
     mailbox::{ActorId, Capacity, ControlSignal, Mailbox, Mailboxed, Recv, Signal},
     message::Msg,
@@ -252,7 +255,10 @@ async fn watch_installs_before_full_backlog_drains() {
     // installs a real edge — the death notice arrives at stop.
     let handled = Arc::new(AtomicU32::new(0));
     let stopped = Arc::new(AtomicU32::new(0));
-    let prepared = PreparedActor::<Spy>::new(cap(1));
+    let prepared = PreparedActor::<Spy>::new(SpawnConfig {
+        capacity: cap(1),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     bounded(actor_ref.tell(Ping))
         .await
@@ -294,7 +300,10 @@ async fn watch_installs_before_full_backlog_drains() {
 async fn supervise_op_applies_before_full_backlog_drains() {
     set_supervisor_rng_seed(Some(7));
     let handled = Arc::new(AtomicU32::new(0));
-    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(cap(2));
+    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+        capacity: cap(2),
+        ..Default::default()
+    });
     let sup_ref = prepared.actor_ref().clone();
 
     // Fill the user lane to capacity; nothing is draining yet.
@@ -385,7 +394,10 @@ async fn control_lane_fifo_watch_then_unwatch() {
     let watcher = ActorId::from_raw_for_test(1);
 
     // watch THEN unwatch: no edge survives — no death notice.
-    let prepared = PreparedActor::<Spy>::new(cap(4));
+    let prepared = PreparedActor::<Spy>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let (watch, link_rx) = watch_signal(watcher, false);
     actor_ref
@@ -415,7 +427,10 @@ async fn control_lane_fifo_watch_then_unwatch() {
     );
 
     // unwatch THEN watch: the edge survives — the death notice arrives.
-    let prepared = PreparedActor::<Spy>::new(cap(4));
+    let prepared = PreparedActor::<Spy>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     let target_id = actor_ref.id();
     actor_ref
@@ -452,7 +467,10 @@ async fn control_lane_fifo_watch_then_unwatch() {
 async fn stop_still_drains_prior_messages() {
     let handled = Arc::new(AtomicU32::new(0));
     let stopped = Arc::new(AtomicU32::new(0));
-    let prepared = PreparedActor::<Spy>::new(cap(4));
+    let prepared = PreparedActor::<Spy>::new(SpawnConfig {
+        capacity: cap(4),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
 
     bounded(actor_ref.tell(Ping)).await.expect("message 1");
@@ -542,7 +560,10 @@ async fn queued_watch_answered_on_teardown() {
 async fn supervise_op_queued_behind_stop_still_lands() {
     set_supervisor_rng_seed(Some(11));
     let handled = Arc::new(AtomicU32::new(0));
-    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(cap(2));
+    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+        capacity: cap(2),
+        ..Default::default()
+    });
     let sup_ref = prepared.actor_ref().clone();
 
     let (mut factory, tape_rx, child_stops, _stash) = Factory::new();

@@ -13,8 +13,8 @@ use std::sync::{
 
 use bombay::{
     actor::{
-        Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult, Spawn, SpawnLinked,
-        SpawnSupervised, Supervisor, Watch, WeakActorRef,
+        Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult, Spawn, SpawnConfig,
+        SpawnLinked, SpawnSupervised, Supervisor, Watch, WeakActorRef,
     },
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{Capacity, Mailboxed},
@@ -218,7 +218,10 @@ async fn lifecycle_span_carries_identity_and_records_stop_reason() {
         .expect("enabled by capture layer")
         .into_u64();
 
-    let prepared = PreparedActor::<Probe>::new(default_cap());
+    let prepared = PreparedActor::<Probe>::new(SpawnConfig {
+        capacity: default_cap(),
+        ..Default::default()
+    });
     let id = prepared.actor_ref().id();
     // Construct the run future INSIDE the spawn-site span: the lifecycle span
     // is created eagerly at `run()` call time, which is what `spawn()` relies
@@ -327,7 +330,10 @@ impl Actor for FailingStop {
 #[tokio::test]
 async fn on_stop_error_emits_one_error_event_with_fields() {
     let (store, _guard) = capture::install();
-    let prepared = PreparedActor::<FailingStop>::new(default_cap());
+    let prepared = PreparedActor::<FailingStop>::new(SpawnConfig {
+        capacity: default_cap(),
+        ..Default::default()
+    });
     let result = timeout(terminate_bound(), prepared.run(()))
         .await
         .expect("actor must stop inside the bound");
@@ -373,7 +379,10 @@ impl Actor for FailingStart {
 #[tokio::test]
 async fn on_start_failure_emits_one_error_event() {
     let (store, _guard) = capture::install();
-    let prepared = PreparedActor::<FailingStart>::new(default_cap());
+    let prepared = PreparedActor::<FailingStart>::new(SpawnConfig {
+        capacity: default_cap(),
+        ..Default::default()
+    });
     let result = timeout(terminate_bound(), prepared.run(()))
         .await
         .expect("startup failure must resolve inside the bound");
@@ -430,7 +439,10 @@ impl Actor for PanickingStop {
 #[tokio::test]
 async fn on_stop_panic_emits_one_error_event() {
     let (store, _guard) = capture::install();
-    let prepared = PreparedActor::<PanickingStop>::new(default_cap());
+    let prepared = PreparedActor::<PanickingStop>::new(SpawnConfig {
+        capacity: default_cap(),
+        ..Default::default()
+    });
     let result = timeout(terminate_bound(), prepared.run(()))
         .await
         .expect("actor must stop inside the bound");
@@ -483,7 +495,10 @@ impl Actor for HangingStop {
 #[tokio::test]
 async fn handle_span_parents_to_the_callers_span() {
     let (store, _guard) = capture::install();
-    let prepared = PreparedActor::<Probe>::new(default_cap());
+    let prepared = PreparedActor::<Probe>::new(SpawnConfig {
+        capacity: default_cap(),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
 
     let send_site = tracing::info_span!("send_site");
@@ -522,7 +537,10 @@ async fn handle_span_parents_to_the_callers_span() {
 #[tokio::test]
 async fn handle_span_without_caller_parents_to_lifecycle() {
     let (store, _guard) = capture::install();
-    let prepared = PreparedActor::<Probe>::new(default_cap());
+    let prepared = PreparedActor::<Probe>::new(SpawnConfig {
+        capacity: default_cap(),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     actor_ref
         .tell(Ping)
@@ -564,7 +582,10 @@ impl Actor for CrashingHandle {
 #[tokio::test]
 async fn handler_crash_emits_one_error_event_inside_the_handle_span() {
     let (store, _guard) = capture::install();
-    let prepared = PreparedActor::<CrashingHandle>::new(default_cap());
+    let prepared = PreparedActor::<CrashingHandle>::new(SpawnConfig {
+        capacity: default_cap(),
+        ..Default::default()
+    });
     let actor_ref = prepared.actor_ref().clone();
     actor_ref
         .tell(Ping)
@@ -606,7 +627,10 @@ async fn handler_crash_emits_one_error_event_inside_the_handle_span() {
 #[tokio::test(start_paused = true)]
 async fn on_stop_abandoned_emits_one_error_event() {
     let (store, _guard) = capture::install();
-    let prepared = PreparedActor::<HangingStop>::new(default_cap());
+    let prepared = PreparedActor::<HangingStop>::new(SpawnConfig {
+        capacity: default_cap(),
+        ..Default::default()
+    });
     let result = timeout(terminate_bound(), prepared.run(()))
         .await
         .expect("actor must stop inside the bound");
@@ -663,7 +687,10 @@ async fn death_notice_delivery_emits_one_trace_event_per_edge() {
     let watcher = Watcher::spawn_linked(());
     let watcher_id = watcher.id();
 
-    let prepared = PreparedActor::<Probe>::new(default_cap());
+    let prepared = PreparedActor::<Probe>::new(SpawnConfig {
+        capacity: default_cap(),
+        ..Default::default()
+    });
     let target_ref = prepared.actor_ref().clone();
     timeout(terminate_bound(), watcher.watch(&target_ref))
         .await
@@ -830,7 +857,10 @@ async fn scheduled_restart_emits_warn_with_attempt_and_delay() {
 async fn restart_give_up_emits_one_error_event() {
     let (store, _guard) = capture::install();
 
-    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(default_cap());
+    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+        capacity: default_cap(),
+        ..Default::default()
+    });
     let sup = prepared.actor_ref().clone();
     let join = prepared.spawn_supervised_task((), link_rx);
 
@@ -1003,7 +1033,10 @@ impl Actor for RebuildBomb {
 async fn child_lifecycle_failure_escalates_with_error_event() {
     let (store, _guard) = capture::install();
 
-    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(default_cap());
+    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+        capacity: default_cap(),
+        ..Default::default()
+    });
     let sup = prepared.actor_ref().clone();
     let join = prepared.spawn_supervised_task((), link_rx);
 

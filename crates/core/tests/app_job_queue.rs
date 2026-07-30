@@ -42,6 +42,7 @@ fn config(
             .with_max_total(200),
         registry: Arc::clone(registry),
         worker_stopped_tx,
+        worker_grace: Duration::from_secs(5),
     }
 }
 
@@ -145,6 +146,66 @@ async fn sequence_submit_stats_drain_reports_exact_counts() {
         seen.push(id);
     }
     assert_eq!(seen.len(), 2, "both workers stopped");
+}
+
+/// Card #257 bullet 4: the app wires `DispatcherConfig.worker_grace` into each
+/// worker's `SpawnConfig.on_stop_grace`. A DISTINCT non-default grace (30 s,
+/// not the 5 s default) must not change the drain contract: the job completes,
+/// the graceful supervisor teardown still stops the worker, and the worker's
+/// `on_stop` reports through the app-level seam inside the harness bound.
+#[tokio::test]
+async fn worker_drains_under_custom_on_stop_grace() {
+    let registry = Arc::new(Registry::new());
+    let (worker_stopped_tx, worker_stopped_rx) = flume::unbounded::<ActorId>();
+    let cfg = DispatcherConfig {
+        workers: 1,
+        worker_grace: Duration::from_secs(30),
+        ..config(&registry, Some(worker_stopped_tx))
+    };
+    let app = app::start(cfg).await;
+    let dispatcher = registry
+        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .expect("registered under the dispatcher type")
+        .expect("dispatcher is alive");
+
+    bounded(dispatcher.ask(|reply| DispatcherMsg::Submit {
+        job: ok_job(1),
+        reply,
+    }))
+    .await
+    .expect("submit accepted under cap");
+
+    let report = bounded(
+        dispatcher
+            .ask(|reply| DispatcherMsg::Drain { reply })
+            .no_timeout(),
+    )
+    .await
+    .expect("drain reply");
+    assert_eq!(
+        report,
+        DrainReport {
+            submitted: 1,
+            completed: 1,
+            failed: 0,
+            retried: 0,
+            rebuilds: 0
+        },
+        "the single job drains cleanly under the custom grace",
+    );
+
+    // Drain stops the dispatcher gracefully (the file's shutdown idiom); the
+    // supervisor teardown then stops the worker, whose `on_stop` must report
+    // within the harness bound — the grace flows app → `SpawnConfig` →
+    // `teardown_children`.
+    let observed = poll_observed_death(&app).await;
+    assert!(
+        observed.is_some(),
+        "the overseer must observe the dispatcher's death"
+    );
+    bounded(worker_stopped_rx.recv_async())
+        .await
+        .expect("worker must report its stop within the bound");
 }
 
 #[allow(
@@ -422,7 +483,7 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
     use std::sync::Mutex;
 
     use bombay::{
-        actor::{ActorRef, PreparedActor, RunResult, Spawn, WeakActorRef},
+        actor::{ActorRef, PreparedActor, RunResult, Spawn, SpawnConfig, WeakActorRef},
         error::ActorStopReason,
         mailbox::Capacity,
         test_support::set_supervisor_rng_seed,
@@ -435,8 +496,10 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
         workers: 0, // the test drives `supervise` itself
         ..config_no_seam(&registry)
     };
-    let (prepared, link_rx) =
-        PreparedActor::<Dispatcher>::new_linked(Capacity::try_from(2usize).expect("cap"));
+    let (prepared, link_rx) = PreparedActor::<Dispatcher>::new_linked(SpawnConfig {
+        capacity: Capacity::try_from(2usize).expect("cap"),
+        ..Default::default()
+    });
     let dispatcher_ref = prepared.actor_ref().clone();
 
     // Fill the user lane: two `Submit` asks, each polled exactly once so the
