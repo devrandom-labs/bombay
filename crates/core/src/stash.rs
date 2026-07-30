@@ -3,18 +3,25 @@
 //! ADR-0022.
 //!
 //! Research anchor: conditional synchronization for fixed-interface actors
-//! (De Koster et al., AGERE! 2016, §4.2; Briot–Guerraoui–Löhr, ACM CSur 1998);
+//! (De Koster et al., AGERE! 2016, §4.2; Briot–Guerraoui–Löhr, ACM `CSur` 1998);
 //! replay preserves arrival order, overflow refuses loudly (guaranteed
 //! delivery — silent drop is the one forbidden outcome).
 
+use core::{any::type_name, future::Future};
 use std::collections::VecDeque;
 
-use crate::mailbox::Capacity;
+use crate::{
+    actor::{Actor, ActorRef, WeakActorRef},
+    error::{ActorStopReason, PanicError, ReplyError},
+    mailbox::{Capacity, Mailboxed},
+    message::Msg,
+};
 
-/// A bounded, single-producer deferral buffer. `stash` defers a message the
-/// current state cannot accept; `unstash_all` snapshots everything held for
-/// front-of-line replay by [`Stashed`]'s handle wrapper — ahead of the
-/// mailbox backlog, in stash-arrival order.
+/// A bounded, single-producer deferral buffer.
+///
+/// `stash` defers a message the current state cannot accept; `unstash_all`
+/// snapshots everything held for front-of-line replay by [`Stashed`]'s handle
+/// wrapper — ahead of the mailbox backlog, in stash-arrival order.
 #[derive(Debug)]
 pub struct Stash<M> {
     /// `stash()` pushes here (back). Waits for an `unstash_all`.
@@ -51,7 +58,7 @@ impl<M> StashFull<M> {
 impl<M> Stash<M> {
     /// Builds an empty stash bounded to `cap` messages. Crate-private: a
     /// stash exists only inside a [`Stashed`] (forget-proof by construction).
-    pub(crate) fn bounded(cap: Capacity) -> Self {
+    pub(crate) const fn bounded(cap: Capacity) -> Self {
         Self {
             held: VecDeque::new(),
             ready: VecDeque::new(),
@@ -61,6 +68,12 @@ impl<M> Stash<M> {
 
     /// Messages currently deferred (held + awaiting replay).
     #[must_use]
+    #[expect(
+        clippy::manual_saturating_arithmetic,
+        reason = "the house arithmetic rule bans saturating_* in capacity paths \
+                  (restart.rs documents the ceiling policy); checked_add + explicit \
+                  MAX is the canonical shape — an unreachable overflow reads as full"
+    )]
     pub fn len(&self) -> usize {
         // Both queues are bounded by `cap`, but per the arithmetic-safety
         // rule the sum is still checked: an (unreachable) overflow reads as
@@ -104,6 +117,142 @@ impl<M> Stash<M> {
     /// [`Stashed`] handle wrapper drives replay.
     pub(crate) fn pop_ready(&mut self) -> Option<M> {
         self.ready.pop_front()
+    }
+}
+
+/// Opt-in actor shape with deferral: [`Actor`]'s hooks, plus the stash as a
+/// `handle` parameter.
+///
+/// Implement this instead of `Actor`, then spawn `Stashed::<Self>` — the
+/// wrapper owns the buffer and drives replay; there is no wiring to forget.
+pub trait StashActor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
+    /// The argument passed to [`on_start`](StashActor::on_start).
+    type Args: Send;
+    /// The actor's own domain error, kept typed end to end.
+    type Error: ReplyError;
+
+    /// Stash capacity, from the actor's own constructor input. Required and
+    /// explicit — bounded is the point; there is no global default. Ignore
+    /// `args` for a type-fixed bound, or thread it through for a
+    /// spawn-tunable one. Never a `SpawnConfig` field (spec D8).
+    fn stash_capacity(args: &Self::Args) -> Capacity;
+
+    /// Builds the actor state. See [`Actor::on_start`].
+    fn on_start(
+        args: Self::Args,
+        actor_ref: ActorRef<Stashed<Self>>,
+    ) -> impl Future<Output = Result<Self, Self::Error>> + Send;
+
+    /// Handles one message; `stash` defers what the current state cannot
+    /// accept ([`Stash::stash`]) and releases it ([`Stash::unstash_all`]).
+    /// See [`Actor::handle`] for `stop` and error semantics.
+    fn handle(
+        &mut self,
+        msg: Self::Msg,
+        actor_ref: ActorRef<Stashed<Self>>,
+        stash: &mut Stash<Self::Msg>,
+        stop: &mut bool,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send;
+
+    /// See [`Actor::on_panic`]. No stash access: the state is poisoned and
+    /// the stash dies with the incarnation (spec D6).
+    fn on_panic(
+        &mut self,
+        actor_ref: WeakActorRef<Stashed<Self>>,
+        err: PanicError,
+    ) -> impl Future<Output = ActorStopReason> + Send {
+        let _ = actor_ref;
+        async move { ActorStopReason::Panicked(err) }
+    }
+
+    /// See [`Actor::on_stop`]. No stash access: whatever is still deferred
+    /// at stop is dropped (spec D6) — a stashed ask's reply port drops with
+    /// it and the asker sees the usual typed ask-side error.
+    fn on_stop(
+        &mut self,
+        actor_ref: WeakActorRef<Stashed<Self>>,
+        reason: ActorStopReason,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send {
+        let _ = (actor_ref, reason);
+        async { Ok(()) }
+    }
+}
+
+/// The only way to have a stash: framework-owned composition over user state.
+///
+/// A `Stashed<S>` is a plain [`Actor`] — every existing verb (spawn, tell,
+/// ask, watch, supervise-as-child, timers, `Recipient`) works unchanged.
+#[derive(Debug)]
+pub struct Stashed<S: StashActor> {
+    state: S,
+    stash: Stash<S::Msg>,
+}
+
+impl<S: StashActor> Mailboxed for Stashed<S> {
+    type Msg = S::Msg;
+}
+
+impl<S: StashActor> Actor for Stashed<S> {
+    type Args = S::Args;
+    type Error = S::Error;
+
+    fn name() -> &'static str {
+        // The user's type is the interesting name in logs, not the wrapper's.
+        type_name::<S>()
+    }
+
+    async fn on_start(args: S::Args, actor_ref: ActorRef<Self>) -> Result<Self, S::Error> {
+        let cap = S::stash_capacity(&args);
+        let state = S::on_start(args, actor_ref).await?;
+        Ok(Self {
+            state,
+            stash: Stash::bounded(cap),
+        })
+    }
+
+    /// The whole replay mechanism (spec D3): run the user handler, then drain
+    /// `ready` — still inside the current `handle_message` step, so replayed
+    /// messages run ahead of the entire mailbox backlog, in stash-arrival
+    /// order, under the step's own strong `actor_ref` (no upgrade, no
+    /// drain-window hazard). A replayed handler's `Err`/panic/`stop` routes
+    /// exactly as a delivered message's would.
+    async fn handle(
+        &mut self,
+        msg: S::Msg,
+        actor_ref: ActorRef<Self>,
+        stop: &mut bool,
+    ) -> Result<(), S::Error> {
+        S::handle(
+            &mut self.state,
+            msg,
+            actor_ref.clone(),
+            &mut self.stash,
+            stop,
+        )
+        .await?;
+        while !*stop {
+            let Some(m) = self.stash.pop_ready() else {
+                break;
+            };
+            S::handle(&mut self.state, m, actor_ref.clone(), &mut self.stash, stop).await?;
+        }
+        Ok(())
+    }
+
+    async fn on_panic(
+        &mut self,
+        actor_ref: WeakActorRef<Self>,
+        err: PanicError,
+    ) -> ActorStopReason {
+        S::on_panic(&mut self.state, actor_ref, err).await
+    }
+
+    async fn on_stop(
+        &mut self,
+        actor_ref: WeakActorRef<Self>,
+        reason: ActorStopReason,
+    ) -> Result<(), S::Error> {
+        S::on_stop(&mut self.state, actor_ref, reason).await
     }
 }
 
