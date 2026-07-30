@@ -138,6 +138,13 @@ pub trait Watch: Actor {
     /// death, is observed and the actor continues. Override to trap (return
     /// `Continue` for a linked abnormal death) or to react programmatically.
     ///
+    /// A notice that arrives after the run-loop has already taken its stop
+    /// decision (e.g. a target dying after the mailbox-closed `Collected`
+    /// break) is dropped by design and never reaches this hook: a stopping
+    /// actor observes nothing further — Erlang parity, where a `DOWN`
+    /// delivered to an already-dead process is dropped, and delivering
+    /// post-break would violate finish-current-then-stop (card #266).
+    ///
     /// # Errors
     ///
     /// Returns [`Self::Error`] if a custom override fails; the default hook is
