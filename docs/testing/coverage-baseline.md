@@ -740,6 +740,28 @@ wheel if scheduling becomes hot. Recorded in ADR-0018.
 No further README change beyond the timer bullet added to the public-API-at-a-glance
 section; the surface is now documented there.
 
+### `stash` (#224) — done
+Bounded deferral via framework-owned composition: `Stash<M>` (two-queue buffer —
+`held` behind `stash()`, `ready` behind `unstash_all()`, snapshot semantics),
+`StashFull<M>` typed overflow handback (`TellError` precedent — the message
+comes back, never dropped, never panicked), the opt-in `StashActor` trait
+(`Actor`'s hooks + `&mut Stash` handle param + required `stash_capacity(&args)`),
+and the `Stashed<S>` wrapper whose `Actor::handle` runs the user handler then
+drains `ready` in the same step — replay ahead of the mailbox backlog, in
+stash-arrival order, with **zero** `kind.rs`/loop changes (ADR-0022).
+`Stash::bounded`/`pop_ready` are `pub(crate)`: a stash cannot exist or drain
+outside the wrapper (forget-trap unrepresentable). Tests: 4 unit
+(`src/stash.rs` — cap bounds held+ready, exact-message handback, snapshot
+semantics, arrival-order replay across rounds) + 7 integration
+(`tests/stash.rs` — replay-before-backlog `[T, A, B, D]` order, no stale
+replay after a drained batch, mid-batch `stop` abandons the rest, non-pinning
+`Collected` with a non-empty stash, in-band `Signal::Stop` drop, `kill()`
+drop, supervised restart gets a structurally fresh stash). Walking skeleton:
+`Stashed<Intake>` job-queue intake gate (`examples/job_queue`,
+`tests/app_job_queue.rs::intake_defers_submissions_during_maintenance`).
+**Mutation:** see `mutants-baseline.json` — entries for `Stash::*`,
+`StashFull::*`, and the `Stashed`/`StashActor` impls.
+
 ### `watch` — links + death-watch (#195, slice 1 of #120) — done
 The death-watch half of #120: an actor learns, on **every** exit path (normal /
 panic / kill), when a watched peer stops. Two verbs on one mechanism — `watch`
