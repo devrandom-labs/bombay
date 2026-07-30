@@ -59,6 +59,7 @@
     "crates/core/src/actor/supervision.rs::Children::rekey": 3,
     "crates/core/src/actor/supervision.rs::Children::remove": 2,
     "crates/core/src/actor/supervision.rs::<impl Drop for ArmedReg>::drop": 1,
+    "crates/core/src/actor/supervision.rs::<impl Drop for PendingAbort>::drop": 1,
     "crates/core/src/actor/timer.rs::TimerHandle::cancel": 1,
     "crates/core/src/error.rs::ActorStopReason::is_normal": 2,
     "crates/core/src/error.rs::AskError<M, E>::err": 1,
@@ -138,7 +139,6 @@
     "crates/core/src/watch.rs::Watchers::record_cleanup_succeeded": 1,
     "crates/core/src/watch.rs::Watchers::remove": 2,
     "crates/core/src/watch.rs::Watchers::set_reason": 1,
-    "crates/core/src/actor/kind.rs::poll_mailbox": 1,
     "crates/core/src/trace.rs::imp::child_collected": 1
   },
   "known_zero_viable": [
@@ -158,6 +158,7 @@
     "crates/core/src/actor/kind.rs::dispatch_death",
     "crates/core/src/actor/kind.rs::handle_link_died",
     "crates/core/src/actor/kind.rs::handle_mailbox_step",
+    "crates/core/src/actor/kind.rs::poll_mailbox",
     "crates/core/src/actor/kind.rs::restart_or_give_up",
     "crates/core/src/actor/kind.rs::run_linked_message_loop",
     "crates/core/src/actor/kind.rs::run_message_loop",
