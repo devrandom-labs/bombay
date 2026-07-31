@@ -1256,3 +1256,55 @@ collects once instead of churning the supervisor to death.
 - **Fuzz oracles (`fuzz/tests/actor_loop.rs`)** — the actor-loop state machine
   and the failing-`on_stop` preservation test split non-kill outcomes into
   `Normal` (graceful stop) and `Collected` (pure drop-refs fall-through).
+
+## Drain-window supervision equivalence (#267)
+
+Closes the supervision-verb half of the ADR-0010 mint-equivalence surface #266
+left deferred: a handler-context `supervise` / `stop_child` / `unsupervise`
+behaves identically whether the handler's `ActorRef` is the steady-state shared
+upgrade or a drain-window mint. Unlike watch/link (ops on the OTHER actor's
+lane), supervision ops target the issuing supervisor's OWN control lane while
+its loop is inside the handler, so every choreography is built around
+ops-applying-after-handler-return. New file
+`crates/core/tests/drain_supervision_equivalence.rs` (sibling of
+`drain_equivalence.rs`, same oracle discipline: ONE mode-blind runner per
+scenario, `Mode` influencing only the held external ref and
+enqueue-before/after, full-trace `assert_eq!` against a `vec![..]` literal then
+steady-vs-drain, exact per-incarnation `RunResult` assertions via a
+factory-captured incarnation slot, started-count via a start-notification
+channel, every await `bounded()`, oneshot gates):
+
+- **supervise install + restart edge** — a drain-minted `supervise` inserts
+  the table entry and installs the watch edge for real: a killed Permanent
+  child is rebuilt (biased death arm → zero-backoff retry → rebuild before
+  the `Collected` break), and the rebuild is swept by the exit teardown.
+  Runs under `start_paused`: probe-verified this card that an at-now
+  `DelayQueue` deadline polls ready at the immediately following select
+  iteration ONLY under a frozen virtual instant — under a real clock the
+  wheel's deadline lapses ~1 ms later and the drain-mode `Closed` break
+  would always win, so the paused clock is what makes the
+  rebuild-before-collect ordering deterministic (the `control_lane.rs` /
+  `dst_races.rs` discipline).
+- **stop_child** — graceful cancel from the mint; the child joins
+  `Stopped { Normal }` before the supervisor exits (the epilogue's
+  `PendingAbort` drop-abort a proven no-op), never rebuilt, supervisor
+  collects identically.
+- **unsupervise** — detach from the mint: the child answers its liveness
+  probe after the supervisor's death (the sweep only sweeps table children),
+  never rebuilt.
+- **supervise racing the supervisor's own stop flag** — the flag bypasses
+  the last mailbox poll, so the queued `Add` is applied by the graceful
+  epilogue's `drain_queued_supervision` and swept by `teardown_children`
+  (installed-then-swept `Stopped { Normal }`, never guard-aborted `Killed`)
+  — the #248 never-orphaned invariant re-asserted for the mint path, and
+  exhaustive for the mint-path race because the control-first merge makes
+  the `Collected`-break race unreachable from a handler's own queued op
+  (positive finding, documented in the file header). The #248
+  `SendError`-handback disarm is documented as UNREACHABLE from a mint (the
+  mint's own sender keeps both lanes open), not tested — no test can
+  construct it.
+
+Test-only card: zero production-code changes, so `mutants-baseline.json` and
+the README are untouched. The falsifiability caveat (the 60 s `stop_grace`
+tripwire vs `TERMINATE` under real-time legs, and its paused-clock/miri
+behavior) is recorded in the test-file header.
