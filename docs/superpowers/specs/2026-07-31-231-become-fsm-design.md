@@ -133,6 +133,12 @@ oracle catches three ways.
   does — a deliberate, recorded extension of ADR-0022, not a silent
   reversal. The terminal hooks stay stash-less.
 - **D7 — State timeouts are framework events, not menu variants.**
+  *(Amended 2026-07-31 by ADR-0025 / the #274 framework-event-plane spec:
+  the mechanism below is superseded — state timeouts ride the loop-owned
+  declarative deadline plane (`Actor::next_deadline`/`on_deadline`), where
+  cancellation is a synchronous slot update and staleness is
+  unrepresentable; the epoch stamping and the lane question are moot. The
+  `Fsm<S>::Msg == S::Msg` constraint and the no-envelope rule stand.)*
   `fn state_timeout(&State) -> Option<Duration>` declares them; firing
   delivers to `fn on_state_timeout(…) -> Result<Step, E>`. Every arming is
   stamped with the wrapper's transition **epoch**; a timeout that

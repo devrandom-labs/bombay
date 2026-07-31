@@ -1,6 +1,10 @@
 # ADR-0024: Behavior switching — ship `FsmActor`/`Fsm<S>` with declarative admission
 
 Date: 2026-07-31 · Status: accepted (design; build is a follow-up card) · Card: #231
+· Amended 2026-07-31 by [ADR-0025](0025-framework-event-plane-deadlines.md): D7's
+epoch-stamped delivery is superseded by the loop-owned declarative deadline
+plane (staleness becomes unrepresentable; no epoch machinery, no `Signal`
+variant, no timer task).
 
 ## Context
 
