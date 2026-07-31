@@ -846,7 +846,7 @@ mod tests {
 
     use super::{DEFAULT_MAILBOX_CAPACITY, DEFAULT_ON_STOP_NOTICE_GRACE, SpawnConfig};
     use crate::{
-        actor::{ActorRef, PreparedActor, RunResult, WeakActorRef},
+        actor::{ActorRef, Flow, PreparedActor, RunResult, WeakActorRef},
         error::{ActorNotLinked, ActorStopReason, PanicReason},
         mailbox::{ActorId, Capacity, ControlSignal, Mailboxed, Signal},
         message::Msg,
@@ -890,14 +890,9 @@ mod tests {
             Ok(Self { handled, stopped })
         }
 
-        async fn handle(
-            &mut self,
-            _: Tick,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, _: Tick, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             self.handled.fetch_add(1, Ordering::SeqCst);
-            Ok(())
+            Ok(Flow::Continue)
         }
 
         async fn on_stop(
@@ -1085,11 +1080,10 @@ mod tests {
                 &mut self,
                 _: Halt,
                 actor_ref: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            ) -> Result<Flow, Self::Error> {
                 self.handled.fetch_add(1, Ordering::SeqCst);
                 actor_ref.stop(); // out-of-band cancel via the drain-window ref
-                Ok(())
+                Ok(Flow::Continue)
             }
         }
 
@@ -1152,12 +1146,11 @@ mod tests {
                 &mut self,
                 _: Rampage,
                 actor_ref: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            ) -> Result<Flow, Self::Error> {
                 actor_ref.kill();
                 std::future::pending::<()>().await; // aborted here, never below
                 self.finished.fetch_add(1, Ordering::SeqCst);
-                Ok(())
+                Ok(Flow::Continue)
             }
         }
 
@@ -1199,13 +1192,8 @@ mod tests {
         async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self)
         }
-        async fn handle(
-            &mut self,
-            _: Ping,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
 
@@ -1236,12 +1224,10 @@ mod tests {
             &mut self,
             _: Ping,
             actor_ref: ActorRef<Self>,
-            stop: &mut bool,
-        ) -> Result<(), Self::Error> {
+        ) -> Result<Flow, Self::Error> {
             let outcome = actor_ref.watch(&self.target).await;
             *self.result.lock().expect("lock") = Some(outcome);
-            *stop = true;
-            Ok(())
+            Ok(Flow::Stop)
         }
     }
     impl crate::actor::Watch for HandlerWatcher {}
@@ -1287,8 +1273,7 @@ mod tests {
             &mut self,
             _: Ping,
             actor_ref: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        ) -> Result<Flow, Self::Error> {
             let target = self.target.take().expect("one Ping enqueued");
             actor_ref
                 .watch(&target)
@@ -1305,7 +1290,7 @@ mod tests {
             bounded(self.release.take().expect("release once"))
                 .await
                 .expect("the release channel is open");
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
     impl crate::actor::Watch for DrainWatcher {
@@ -1525,12 +1510,7 @@ mod tests {
                     handled,
                 })
             }
-            async fn handle(
-                &mut self,
-                _: Work,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            async fn handle(&mut self, _: Work, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 if let Some(entered) = self.entered.take() {
                     let _ = entered.send(());
                 }
@@ -1538,7 +1518,7 @@ mod tests {
                     let _ = release.await;
                 }
                 self.handled.fetch_add(1, Ordering::SeqCst);
-                Ok(())
+                Ok(Flow::Continue)
             }
         }
 
@@ -1629,8 +1609,8 @@ mod tests {
         );
     }
 
-    /// Sequence: a handler that sets `*stop = true` stops the actor cleanly after it
-    /// returns `Ok` — a following queued message is never handled.
+    /// Sequence: a handler that returns `Ok(Flow::Stop)` stops the actor cleanly
+    /// after the current handler — a following queued message is never handled.
     #[tokio::test]
     async fn stop_flag_stops_after_current_handler() {
         struct Once {
@@ -1648,15 +1628,9 @@ mod tests {
             async fn on_start(handled: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Self { handled })
             }
-            async fn handle(
-                &mut self,
-                _: Go,
-                _: ActorRef<Self>,
-                stop: &mut bool,
-            ) -> Result<(), Self::Error> {
+            async fn handle(&mut self, _: Go, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 self.handled.fetch_add(1, Ordering::SeqCst);
-                *stop = true;
-                Ok(())
+                Ok(Flow::Stop)
             }
         }
 
@@ -1716,17 +1690,12 @@ mod tests {
                 let _ = gate.await; // block startup until the test has enqueued messages
                 Ok(Self { seen })
             }
-            async fn handle(
-                &mut self,
-                N(n): N,
-                _: ActorRef<Self>,
-                stop: &mut bool,
-            ) -> Result<(), Self::Error> {
+            async fn handle(&mut self, N(n): N, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 self.seen.lock().expect("lock").push(n);
                 if n == 2 {
-                    *stop = true;
+                    return Ok(Flow::Stop);
                 }
-                Ok(())
+                Ok(Flow::Continue)
             }
         }
 
@@ -1778,13 +1747,8 @@ mod tests {
             async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Err(Boom)
             }
-            async fn handle(
-                &mut self,
-                _: Never,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            async fn handle(&mut self, _: Never, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
         }
 
@@ -1821,13 +1785,8 @@ mod tests {
             async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 panic!("startup boom")
             }
-            async fn handle(
-                &mut self,
-                _: Never,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            async fn handle(&mut self, _: Never, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
         }
 
@@ -1865,13 +1824,8 @@ mod tests {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Err(Refuses)
         }
-        async fn handle(
-            &mut self,
-            _: Nothing,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Nothing, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
     impl crate::actor::Watch for FailingStart {}
@@ -1982,12 +1936,7 @@ mod tests {
                     counter_at_stop,
                 })
             }
-            async fn handle(
-                &mut self,
-                _: Explode,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            async fn handle(&mut self, _: Explode, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 self.counter = 99; // torn write BEFORE the panic
                 panic!("handler boom");
             }
@@ -2105,12 +2054,7 @@ mod tests {
             async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Bomb)
             }
-            async fn handle(
-                &mut self,
-                _: Trigger,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            async fn handle(&mut self, _: Trigger, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 panic!("boom")
             }
         }
@@ -2166,12 +2110,7 @@ mod tests {
             async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Failer)
             }
-            async fn handle(
-                &mut self,
-                _: Do,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            async fn handle(&mut self, _: Do, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 Err(Nope)
             }
         }
@@ -2229,18 +2168,13 @@ mod tests {
                     stopped,
                 })
             }
-            async fn handle(
-                &mut self,
-                _: Block,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            async fn handle(&mut self, _: Block, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 if let Some(entered) = self.entered.take() {
                     let _ = entered.send(());
                 }
                 std::future::pending::<()>().await; // never completes until aborted
                 self.finished.fetch_add(1, Ordering::SeqCst);
-                Ok(())
+                Ok(Flow::Continue)
             }
             async fn on_stop(
                 &mut self,
@@ -2423,20 +2357,15 @@ mod tests {
                     done: Some(done),
                 })
             }
-            async fn handle(
-                &mut self,
-                _: Bump,
-                _: ActorRef<Self>,
-                stop: &mut bool,
-            ) -> Result<(), Self::Error> {
+            async fn handle(&mut self, _: Bump, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 self.count += 1;
                 if self.count == self.done_at {
                     if let Some(done) = self.done.take() {
                         let _ = done.send(self.count);
                     }
-                    *stop = true;
+                    return Ok(Flow::Stop);
                 }
-                Ok(())
+                Ok(Flow::Continue)
             }
         }
 
@@ -2625,12 +2554,7 @@ mod tests {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Panicker)
         }
-        async fn handle(
-            &mut self,
-            _: Boom,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, _: Boom, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             panic!("boom")
         }
     }
@@ -2652,13 +2576,8 @@ mod tests {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Trapper)
         }
-        async fn handle(
-            &mut self,
-            _: Never,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Never, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
     impl crate::actor::Watch for Trapper {
@@ -2716,14 +2635,9 @@ mod tests {
                 last: slots.last,
             })
         }
-        async fn handle(
-            &mut self,
-            _: Ping,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             self.handled.fetch_add(1, Ordering::SeqCst);
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
     impl crate::actor::Watch for Recorder {
@@ -3044,13 +2958,8 @@ mod tests {
                     release: Some(release),
                 })
             }
-            async fn handle(
-                &mut self,
-                _: Never,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            async fn handle(&mut self, _: Never, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
             async fn on_stop(
                 &mut self,
@@ -3118,13 +3027,8 @@ mod tests {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self)
         }
-        async fn handle(
-            &mut self,
-            _: Nothing,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Nothing, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
         async fn on_stop(
             &mut self,
@@ -3153,13 +3057,8 @@ mod tests {
                 entered: Some(entered),
             })
         }
-        async fn handle(
-            &mut self,
-            _: Nothing,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Nothing, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
         async fn on_stop(
             &mut self,
@@ -3422,13 +3321,8 @@ mod tests {
         async fn on_start(seen: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self { seen })
         }
-        async fn handle(
-            &mut self,
-            _: Never,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Never, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
     impl crate::actor::Watch for Observer {
@@ -3926,19 +3820,14 @@ mod tests {
                 release: Some(release),
             })
         }
-        async fn handle(
-            &mut self,
-            _: Enter,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, _: Enter, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             if let Some(entered) = self.entered.take() {
                 let _ = entered.send(());
             }
             if let Some(release) = self.release.take() {
                 let _ = release.await; // park here, holding the mailbox saturated
             }
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 
@@ -4043,7 +3932,7 @@ mod tests {
         use super::{bounded, watch_before_start};
         use crate::{
             actor::{
-                ActorRef, PreparedActor, RunResult, Spawn, SpawnConfig, SpawnSupervised,
+                ActorRef, Flow, PreparedActor, RunResult, Spawn, SpawnConfig, SpawnSupervised,
                 Supervisor, Watch, WeakActorRef,
             },
             error::{ActorStopReason, Infallible},
@@ -4070,13 +3959,8 @@ mod tests {
             async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Self)
             }
-            async fn handle(
-                &mut self,
-                _: Noop,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            async fn handle(&mut self, _: Noop, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
         }
         impl Watch for Sup {}
@@ -4097,13 +3981,8 @@ mod tests {
             async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Self)
             }
-            async fn handle(
-                &mut self,
-                _: LeafMsg,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            async fn handle(&mut self, _: LeafMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
         }
 
@@ -4125,9 +4004,8 @@ mod tests {
                 &mut self,
                 _: AnchorMsg,
                 _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            ) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
         }
 
@@ -4144,13 +4022,8 @@ mod tests {
             async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Self)
             }
-            async fn handle(
-                &mut self,
-                _: Noop,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            async fn handle(&mut self, _: Noop, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
         }
         impl Watch for AllSup {}
@@ -4222,17 +4095,11 @@ mod tests {
             async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Self)
             }
-            async fn handle(
-                &mut self,
-                cmd: Cmd,
-                _: ActorRef<Self>,
-                stop: &mut bool,
-            ) -> Result<(), Self::Error> {
+            async fn handle(&mut self, cmd: Cmd, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 match cmd {
                     Cmd::Crash => panic!("crash on command"),
-                    Cmd::StopNormally => *stop = true,
+                    Cmd::StopNormally => Ok(Flow::Stop),
                 }
-                Ok(())
             }
         }
 
@@ -4256,16 +4123,11 @@ mod tests {
             async fn on_start(entered: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Self { entered })
             }
-            async fn handle(
-                &mut self,
-                _: ParkCmd,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            async fn handle(&mut self, _: ParkCmd, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 self.entered.notify_one();
                 // Park with no cancel-awareness: only an abort can end this task.
                 core::future::pending::<()>().await;
-                Ok(())
+                Ok(Flow::Continue)
             }
         }
 
@@ -4291,10 +4153,9 @@ mod tests {
                 &mut self,
                 _: CountTick,
                 _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            ) -> Result<Flow, Self::Error> {
                 self.handled.fetch_add(1, Ordering::SeqCst);
-                Ok(())
+                Ok(Flow::Continue)
             }
         }
         impl Watch for CountingSup {}
@@ -4355,12 +4216,7 @@ mod tests {
             async fn on_start(report: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Self { hits: 0, report })
             }
-            async fn handle(
-                &mut self,
-                cmd: StCmd,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            async fn handle(&mut self, cmd: StCmd, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 match cmd {
                     StCmd::Bump => {
                         self.hits += 1;
@@ -4368,7 +4224,7 @@ mod tests {
                     }
                     StCmd::Crash => panic!("crash on command"),
                 }
-                Ok(())
+                Ok(Flow::Continue)
             }
         }
 
@@ -4473,9 +4329,8 @@ mod tests {
                     &mut self,
                     _: Idle,
                     _: ActorRef<Self>,
-                    _: &mut bool,
-                ) -> Result<(), Self::Error> {
-                    Ok(())
+                ) -> Result<Flow, Self::Error> {
+                    Ok(Flow::Continue)
                 }
                 async fn on_stop(
                     &mut self,
@@ -5039,13 +4894,8 @@ mod tests {
                     entered: Some(entered),
                 })
             }
-            async fn handle(
-                &mut self,
-                _: HsMsg,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            async fn handle(&mut self, _: HsMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
             async fn on_stop(
                 &mut self,
@@ -5075,13 +4925,8 @@ mod tests {
             async fn on_start(stopped: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Self { stopped })
             }
-            async fn handle(
-                &mut self,
-                _: Noop,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            async fn handle(&mut self, _: Noop, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
             async fn on_stop(
                 &mut self,
@@ -5528,9 +5373,8 @@ mod tests {
                 &mut self,
                 _: HsStartMsg,
                 _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            ) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
         }
         impl crate::actor::Watch for HangingStartSup {}
@@ -5931,13 +5775,8 @@ mod tests {
             async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Self)
             }
-            async fn handle(
-                &mut self,
-                _: Noop,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            async fn handle(&mut self, _: Noop, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
         }
         impl Watch for RestSup {}
@@ -5985,13 +5824,12 @@ mod tests {
                 &mut self,
                 msg: TapeMsg,
                 _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            ) -> Result<Flow, Self::Error> {
                 match msg {
                     TapeMsg::Idle => {}
                     TapeMsg::Boom => panic!("tape worker boom"),
                 }
-                Ok(())
+                Ok(Flow::Continue)
             }
             async fn on_stop(
                 &mut self,
@@ -6582,10 +6420,9 @@ mod tests {
                 &mut self,
                 _: CountTick,
                 _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            ) -> Result<Flow, Self::Error> {
                 self.handled.fetch_add(1, Ordering::SeqCst);
-                Ok(())
+                Ok(Flow::Continue)
             }
         }
         impl Watch for CountingAllSup {}
@@ -6624,13 +6461,12 @@ mod tests {
                 &mut self,
                 msg: TapeMsg,
                 _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            ) -> Result<Flow, Self::Error> {
                 match msg {
                     TapeMsg::Idle => {}
                     TapeMsg::Boom => panic!("on-stop-panicker boom"),
                 }
-                Ok(())
+                Ok(Flow::Continue)
             }
             async fn on_stop(
                 &mut self,

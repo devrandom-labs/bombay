@@ -187,7 +187,7 @@ fn silence_bench_crashes() {
 }
 
 mod core_side {
-    use bombay::actor::{Actor, ActorRef, Spawn as _, Supervisor, Watch, WeakActorRef};
+    use bombay::actor::{Actor, ActorRef, Flow, Spawn as _, Supervisor, Watch, WeakActorRef};
     use bombay::error::{ActorStopReason, Infallible};
     use bombay::mailbox::{ActorId, MailboxSender, Mailboxed};
     use bombay::message::Msg;
@@ -213,13 +213,8 @@ mod core_side {
         async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self)
         }
-        async fn handle(
-            &mut self,
-            _: Idle,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Idle, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
 
@@ -237,13 +232,8 @@ mod core_side {
         async fn on_start(ack: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self { ack })
         }
-        async fn handle(
-            &mut self,
-            _: Idle,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Idle, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
     impl Watch for Observer {
@@ -272,13 +262,8 @@ mod core_side {
         async fn on_start(stopped: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self { stopped })
         }
-        async fn handle(
-            &mut self,
-            _: Idle,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Idle, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
         async fn on_stop(
             &mut self,
@@ -313,12 +298,7 @@ mod core_side {
             let _ = tick.send(());
             Ok(Self { _tick: tick })
         }
-        async fn handle(
-            &mut self,
-            _: Crash,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, _: Crash, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             panic!("bench crash");
         }
     }
@@ -339,9 +319,8 @@ mod core_side {
                     &mut self,
                     _: Idle,
                     _: ActorRef<Self>,
-                    _: &mut bool,
-                ) -> Result<(), Self::Error> {
-                    Ok(())
+                ) -> Result<Flow, Self::Error> {
+                    Ok(Flow::Continue)
                 }
             }
             impl Watch for $name {}

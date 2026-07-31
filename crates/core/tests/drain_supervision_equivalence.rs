@@ -67,7 +67,8 @@ use tokio::{
 use bombay::{
     ActorId,
     actor::{
-        Actor, ActorRef, PreparedActor, RunResult, SpawnConfig, Supervisor, Watch, WeakActorRef,
+        Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, Supervisor, Watch,
+        WeakActorRef,
     },
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed},
@@ -180,18 +181,13 @@ impl Actor for Child {
         let _ = started.send(());
         Ok(Self)
     }
-    async fn handle(
-        &mut self,
-        msg: ChildMsg,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, msg: ChildMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         match msg {
             ChildMsg::Ping { reply } => {
                 let _ = reply.send(PING);
             }
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 
@@ -304,8 +300,7 @@ impl Actor for SupScript {
         &mut self,
         msg: SupMsg,
         actor_ref: ActorRef<Self>,
-        stop: &mut bool,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Flow, Self::Error> {
         match msg {
             SupMsg::Supervise => self.supervise_step(&actor_ref).await,
             SupMsg::StopChild => {
@@ -332,10 +327,10 @@ impl Actor for SupScript {
             }
             SupMsg::SuperviseAndStop => {
                 self.supervise_step(&actor_ref).await;
-                *stop = true;
+                return Ok(Flow::Stop);
             }
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,

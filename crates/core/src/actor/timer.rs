@@ -219,7 +219,7 @@ mod tests {
     use core::time::Duration;
 
     use crate::{
-        actor::{Actor, ActorRef, PreparedActor, Recipient, Spawn as _, SpawnConfig},
+        actor::{Actor, ActorRef, Flow, PreparedActor, Recipient, Spawn as _, SpawnConfig},
         mailbox::{Capacity, Mailboxed},
         message::Msg,
         reply::ReplySender,
@@ -250,17 +250,12 @@ mod tests {
             Ok(Self { seen: Vec::new() })
         }
 
-        async fn handle(
-            &mut self,
-            msg: Self::Msg,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, msg: Self::Msg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             match msg {
                 SinkMsg::Tick(n) => self.seen.push(n),
                 SinkMsg::Read(reply) => drop(reply.send(self.seen.clone())),
             }
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 
@@ -440,12 +435,7 @@ mod tests {
             })
         }
 
-        async fn handle(
-            &mut self,
-            msg: Self::Msg,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, msg: Self::Msg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             match msg {
                 GatedMsg::Tick(n) => {
                     if let Some(gate) = self.gate.take() {
@@ -455,7 +445,7 @@ mod tests {
                 }
                 GatedMsg::Read(reply) => drop(reply.send(self.seen.clone())),
             }
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 

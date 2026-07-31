@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use bolero::{TypeGenerator, check};
-use bombay::actor::{Actor, ActorRef, PreparedActor, RunResult, SpawnConfig, WeakActorRef};
+use bombay::actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, WeakActorRef};
 use bombay::error::ActorStopReason;
 use bombay::mailbox::{ActorId, Capacity, ControlSignal, Mailboxed, Signal};
 use bombay::message::Msg;
@@ -99,10 +99,9 @@ impl Actor for Counter {
         &mut self,
         _: Tick,
         _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
-        Ok(())
+        Ok(Flow::Continue)
     }
 
     async fn on_stop(
@@ -134,10 +133,9 @@ impl Actor for StartPanics {
         &mut self,
         _: Tick,
         _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
-        Ok(())
+        Ok(Flow::Continue)
     }
 
     async fn on_stop(
@@ -170,10 +168,9 @@ impl Actor for StopPanics {
         &mut self,
         _: Tick,
         _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
-        Ok(())
+        Ok(Flow::Continue)
     }
 
     async fn on_stop(

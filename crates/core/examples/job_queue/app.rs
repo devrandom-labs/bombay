@@ -18,7 +18,7 @@ use std::{
 use bombay::{
     ActorId,
     actor::{
-        Actor, ActorRef, Recipient, Spawn as _, SpawnConfig, SpawnLinked as _,
+        Actor, ActorRef, Flow, Recipient, Spawn as _, SpawnConfig, SpawnLinked as _,
         SpawnSupervised as _, Supervisor, Watch, WeakActorRef,
     },
     error::{ActorStopReason, NameTaken, PanicError, TellError},
@@ -165,8 +165,7 @@ impl Actor for Worker {
         &mut self,
         msg: WorkerMsg,
         actor_ref: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), WorkerError> {
+    ) -> Result<Flow, WorkerError> {
         match msg {
             WorkerMsg::Run(job) => match job.kind {
                 JobKind::Poison => panic!("poison job {id}", id = job.id),
@@ -183,7 +182,7 @@ impl Actor for Worker {
                             WorkerMsg::WorkDone { job_id }
                         },
                     );
-                    Ok(())
+                    Ok(Flow::Continue)
                 }
             },
             WorkerMsg::WorkDone { job_id } => self
@@ -193,6 +192,7 @@ impl Actor for Worker {
                     job_id,
                 })
                 .await
+                .map(|()| Flow::Continue)
                 .map_err(WorkerError::AckLost),
         }
     }
@@ -336,9 +336,8 @@ impl Actor for Dispatcher {
         &mut self,
         msg: DispatcherMsg,
         actor_ref: ActorRef<Self>,
-        stop: &mut bool,
-    ) -> Result<(), AppError> {
-        match msg {
+    ) -> Result<Flow, AppError> {
+        let flow = match msg {
             DispatcherMsg::Submit { job, reply } => {
                 if self.draining {
                     let _ = reply.send_err(SubmitError::Draining);
@@ -350,6 +349,7 @@ impl Actor for Dispatcher {
                     self.dispatch();
                     let _ = reply.send(());
                 }
+                Flow::Continue
             }
             DispatcherMsg::Done(Done { slot, job_id }) => {
                 // guard against a stale ack from a pre-rebuild incarnation
@@ -359,7 +359,7 @@ impl Actor for Dispatcher {
                     bump(&mut self.stats.completed);
                 }
                 self.dispatch();
-                self.finish_drain_if_quiet(stop);
+                self.finish_drain_if_quiet()
             }
             DispatcherMsg::Retry(job) => {
                 #[expect(
@@ -374,6 +374,7 @@ impl Actor for Dispatcher {
                 }
                 self.pending.push_front(job);
                 self.dispatch();
+                Flow::Continue
             }
             DispatcherMsg::WorkerReplaced { slot, id, worker } => {
                 let rebuilt = self.roster.insert(slot, (id, worker)).is_some();
@@ -387,18 +388,19 @@ impl Actor for Dispatcher {
                     .map(|(actor_id, _)| *actor_id)
                     .collect();
                 self.dispatch();
-                self.finish_drain_if_quiet(stop);
+                self.finish_drain_if_quiet()
             }
             DispatcherMsg::Stats { reply } => {
                 let _ = reply.send(self.stats.clone());
+                Flow::Continue
             }
             DispatcherMsg::Drain { reply } => {
                 self.draining = true;
                 self.drain_reply = Some(reply);
-                self.finish_drain_if_quiet(stop);
+                self.finish_drain_if_quiet()
             }
-        }
-        Ok(())
+        };
+        Ok(flow)
     }
 
     async fn on_stop(&mut self, _: WeakActorRef<Self>, _: ActorStopReason) -> Result<(), AppError> {
@@ -468,16 +470,16 @@ impl Dispatcher {
         }
     }
 
-    /// Drain complete? Reply and stop directly. The supervisor's own exit
-    /// now tears down any remaining children (ADR-0019), so the app no longer
-    /// needs to detach-and-stop each worker before finishing the drain.
-    fn finish_drain_if_quiet(&mut self, stop: &mut bool) {
+    /// Drain complete? Reply and stop directly (`Flow::Stop`). The supervisor's
+    /// own exit now tears down any remaining children (ADR-0019), so the app no
+    /// longer needs to detach-and-stop each worker before finishing the drain.
+    fn finish_drain_if_quiet(&mut self) -> Flow {
         if !self.draining
             || !self.pending.is_empty()
             || !self.outstanding.is_empty()
             || self.pending_retries != 0
         {
-            return;
+            return Flow::Continue;
         }
         if let Some(reply) = self.drain_reply.take() {
             let _ = reply.send(DrainReport {
@@ -488,7 +490,7 @@ impl Dispatcher {
                 rebuilds: self.stats.rebuilds,
             });
         }
-        *stop = true;
+        Flow::Stop
     }
 }
 
@@ -544,8 +546,7 @@ impl bombay::stash::StashActor for Intake {
         msg: IntakeMsg,
         _: ActorRef<bombay::stash::Stashed<Self>>,
         stash: &mut bombay::stash::Stash<IntakeMsg>,
-        _: &mut bool,
-    ) -> Result<(), Infallible> {
+    ) -> Result<Flow, Infallible> {
         match msg {
             IntakeMsg::Pause => self.maintenance = true,
             IntakeMsg::Resume => {
@@ -576,7 +577,7 @@ impl bombay::stash::StashActor for Intake {
                 }
             }
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 
@@ -607,15 +608,10 @@ impl Actor for Overseer {
         Ok(Self { seen: None })
     }
 
-    async fn handle(
-        &mut self,
-        msg: OverseerMsg,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, msg: OverseerMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         let OverseerMsg::Observed { reply } = msg;
         let _ = reply.send(self.seen);
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 

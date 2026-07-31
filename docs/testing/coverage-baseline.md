@@ -281,7 +281,7 @@ routed through `on_panic` exactly like a caught unwind (both →
 **19 tests** (18 in `spawn.rs`, 1 in `actor_ref.rs`), organized by the rule-#7
 cross-cutting categories:
 - **Sequence/protocol** — queued-messages-then-`Signal::Stop` handled in order
-  then stop; `*stop = true` stops after the current handler returns; on-start
+  then stop; `Ok(Flow::Stop)` stops after the current handler returns; on-start
   messages handled *after* `on_start` in FIFO order (proves the no-buffer /
   mailbox-waits contract); a returned `Err` stops as `Panicked`.
 - **Lifecycle** — graceful cancel finishes the in-flight handler then stops;

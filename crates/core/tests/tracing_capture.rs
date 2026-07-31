@@ -13,8 +13,8 @@ use std::sync::{
 
 use bombay::{
     actor::{
-        Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, PreparedActor, RunResult, Spawn, SpawnConfig,
-        SpawnLinked, SpawnSupervised, Supervisor, Watch, WeakActorRef,
+        Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, Flow, PreparedActor, RunResult, Spawn,
+        SpawnConfig, SpawnLinked, SpawnSupervised, Supervisor, Watch, WeakActorRef,
     },
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{Capacity, Mailboxed},
@@ -191,13 +191,8 @@ impl Actor for Probe {
     async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(Probe)
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
 }
 
@@ -308,13 +303,8 @@ impl Actor for FailingStop {
     async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(FailingStop)
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -364,13 +354,8 @@ impl Actor for FailingStart {
     async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Err(StopErr)
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
 }
 
@@ -417,13 +402,8 @@ impl Actor for PanickingStop {
     async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(PanickingStop)
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -472,13 +452,8 @@ impl Actor for HangingStop {
     async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(HangingStop)
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -567,12 +542,7 @@ impl Actor for CrashingHandle {
     async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(CrashingHandle)
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         Err(StopErr)
     }
 }
@@ -666,13 +636,8 @@ impl Actor for Watcher {
     async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(Watcher)
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
 }
 impl Watch for Watcher {}
@@ -752,13 +717,8 @@ impl Actor for Sup {
     async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(Sup)
     }
-    async fn handle(
-        &mut self,
-        _: SupMsg,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: SupMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
 }
 impl Watch for Sup {}
@@ -1009,12 +969,7 @@ impl Actor for RebuildBomb {
         }
         Ok(RebuildBomb)
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         Err(StopErr)
     }
 }
@@ -1137,13 +1092,8 @@ async fn pipe_mapper_panic_emits_one_error_event() {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self)
         }
-        async fn handle(
-            &mut self,
-            _: M,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: M, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
 
@@ -1196,13 +1146,8 @@ async fn pipe_result_dropped_after_stop_emits_one_debug_event() {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self)
         }
-        async fn handle(
-            &mut self,
-            _: M,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: M, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
 

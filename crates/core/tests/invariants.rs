@@ -71,7 +71,7 @@ use tokio::{sync::oneshot, task::yield_now, time::timeout};
 
 use bombay::{
     SendContext,
-    actor::{Actor, ActorRef, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
+    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
     error::{ActorStopReason, PanicError, PanicReason, TellError},
     mailbox::{Capacity, Mailboxed, Signal, TrySendError},
     message::Msg,
@@ -118,14 +118,9 @@ impl Actor for Bank {
     async fn on_start(handled: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(Self { handled })
     }
-    async fn handle(
-        &mut self,
-        _: Poke,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Poke, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 
@@ -172,12 +167,7 @@ async fn i1_single_writer_mutual_exclusion() {
                 done_at,
             })
         }
-        async fn handle(
-            &mut self,
-            _: Bump,
-            _: ActorRef<Self>,
-            stop: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, _: Bump, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             let n = self.concurrent.fetch_add(1, Ordering::SeqCst) + 1;
             self.max.fetch_max(n, Ordering::SeqCst);
             yield_now().await;
@@ -186,9 +176,9 @@ async fn i1_single_writer_mutual_exclusion() {
             self.concurrent.fetch_sub(1, Ordering::SeqCst);
             let handled = self.handled.fetch_add(1, Ordering::SeqCst) + 1;
             if handled == self.done_at {
-                *stop = true;
+                return Ok(Flow::Stop);
             }
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 
@@ -278,16 +268,11 @@ async fn i3_macro_step_atomicity() {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self { counter: 0 })
         }
-        async fn handle(
-            &mut self,
-            Add(n): Add,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, Add(n): Add, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             let old = self.counter;
             yield_now().await;
             self.counter = old + n;
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 
@@ -344,14 +329,9 @@ async fn i5_fifo_exactly_once() {
         async fn on_start(seen: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self { seen })
         }
-        async fn handle(
-            &mut self,
-            V(v): V,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, V(v): V, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             self.seen.lock().expect("lock").push(v);
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 
@@ -420,12 +400,7 @@ async fn i7_no_reentrancy_self_send_is_enqueued() {
         ) -> Result<Self, Self::Error> {
             Ok(Self { in_handle, handled })
         }
-        async fn handle(
-            &mut self,
-            msg: M,
-            actor_ref: ActorRef<Self>,
-            stop: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, msg: M, actor_ref: ActorRef<Self>) -> Result<Flow, Self::Error> {
             match msg {
                 M::First => {
                     assert!(
@@ -444,10 +419,10 @@ async fn i7_no_reentrancy_self_send_is_enqueued() {
                         "Second did NOT run reentrantly inside First",
                     );
                     self.handled.lock().expect("lock").push("Second");
-                    *stop = true;
+                    return Ok(Flow::Stop);
                 }
             }
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 
@@ -512,18 +487,13 @@ impl Actor for Life {
             log,
         })
     }
-    async fn handle(
-        &mut self,
-        _: Tick,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Tick, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         self.count += 1;
         if self.panic_at == Some(self.count) {
             panic!("handler boom");
         }
         self.log.lock().expect("lock").push("handle");
-        Ok(())
+        Ok(Flow::Continue)
     }
     async fn on_panic(&mut self, _: WeakActorRef<Self>, err: PanicError) -> ActorStopReason {
         self.log.lock().expect("lock").push("panic");
@@ -637,13 +607,8 @@ async fn i9c_on_stop_not_run_on_startup_failure() {
         async fn on_start((fail, spy): Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
             if fail { Err(Boom) } else { Ok(Self { spy }) }
         }
-        async fn handle(
-            &mut self,
-            _: Go,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Go, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
         async fn on_stop(
             &mut self,
@@ -784,11 +749,11 @@ impl Actor for Cleanup {
             on_stop_mode,
         })
     }
-    async fn handle(&mut self, _: Do, _: ActorRef<Self>, _: &mut bool) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Do, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         if self.handler_panics {
             panic!("handler boom");
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -908,12 +873,7 @@ async fn i15_fault_isolation() {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Faulty)
         }
-        async fn handle(
-            &mut self,
-            _: Crash,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, _: Crash, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             panic!("actor A handler boom");
         }
     }
@@ -933,14 +893,9 @@ async fn i15_fault_isolation() {
         async fn on_start(handled: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self { handled })
         }
-        async fn handle(
-            &mut self,
-            _: Work,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, _: Work, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             self.handled.fetch_add(1, Ordering::SeqCst);
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 
@@ -1184,12 +1139,7 @@ async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
                 drained: Some(drained),
             })
         }
-        async fn handle(
-            &mut self,
-            msg: Cmd,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, msg: Cmd, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             match msg {
                 Cmd::Block => {
                     if let Some(entered) = self.entered.take() {
@@ -1207,7 +1157,7 @@ async fn i20_i21_backpressure_and_capacity_freed_by_draining() {
                     }
                 }
             }
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 
@@ -1342,13 +1292,8 @@ async fn actor_not_alive_unifies_terminal() {
         async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Err(Boom)
         }
-        async fn handle(
-            &mut self,
-            _: Go,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Go, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
 

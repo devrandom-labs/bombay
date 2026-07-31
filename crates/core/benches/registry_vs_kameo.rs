@@ -63,7 +63,7 @@ use bombay::registry::Registry;
 
 mod core_side {
     use bombay::{
-        actor::{Actor, ActorRef, Spawn as _, SpawnConfig},
+        actor::{Actor, ActorRef, Flow, Spawn as _, SpawnConfig},
         mailbox::{Capacity, Mailboxed},
         message::Msg,
     };
@@ -83,13 +83,8 @@ mod core_side {
         async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self)
         }
-        async fn handle(
-            &mut self,
-            _: Ping,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
 

@@ -12,7 +12,7 @@ use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_mai
 use tokio_util::time::DelayQueue;
 
 use bombay::{
-    actor::{Actor, ActorRef, Spawn as _},
+    actor::{Actor, ActorRef, Flow, Spawn as _},
     mailbox::Mailboxed,
     message::Msg,
 };
@@ -37,13 +37,8 @@ impl Actor for Bench {
         Ok(Bench)
     }
 
-    async fn handle(
-        &mut self,
-        _: BenchMsg,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: BenchMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
 }
 

@@ -32,7 +32,7 @@ use tokio::{sync::oneshot, task::JoinHandle};
 
 use bombay::{
     ActorId,
-    actor::{Actor, ActorRef, PreparedActor, RunResult, SpawnConfig, Watch, WeakActorRef},
+    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, Watch, WeakActorRef},
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -153,13 +153,8 @@ impl Actor for Target {
     async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(Self)
     }
-    async fn handle(
-        &mut self,
-        _: TargetMsg,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: TargetMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
 }
 
@@ -186,12 +181,7 @@ impl Actor for EchoPeer {
     async fn on_start(notices: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(Self { notices })
     }
-    async fn handle(
-        &mut self,
-        msg: PeerMsg,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, msg: PeerMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         match msg {
             PeerMsg::Tick => {}
             PeerMsg::Query { reply } => {
@@ -199,7 +189,7 @@ impl Actor for EchoPeer {
             }
             PeerMsg::Boom => panic!("peer crash on command"),
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 impl Watch for EchoPeer {
@@ -350,8 +340,7 @@ impl Actor for Scripted {
         &mut self,
         msg: ScriptedMsg,
         actor_ref: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Flow, Self::Error> {
         match msg {
             ScriptedMsg::Run => self.execute_script(&actor_ref).await,
             ScriptedMsg::Noop => {
@@ -361,7 +350,7 @@ impl Actor for Scripted {
                 }
             }
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -655,12 +644,7 @@ impl Actor for LinkWatcher {
             release: Some(release),
         })
     }
-    async fn handle(
-        &mut self,
-        _: LinkUp,
-        actor_ref: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: LinkUp, actor_ref: ActorRef<Self>) -> Result<Flow, Self::Error> {
         let peer = self.peer.take().expect("one LinkUp enqueued");
         let outcome = bounded(actor_ref.link(&peer)).await.map_err(|_| ());
         *self.link_result.lock().expect("lock") = Some(outcome);
@@ -673,7 +657,7 @@ impl Actor for LinkWatcher {
         bounded(self.release.take().expect("release once"))
             .await
             .expect("the release channel is open");
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 impl Watch for LinkWatcher {
@@ -875,8 +859,7 @@ impl Actor for TrapWatcher {
         &mut self,
         msg: TrapMsg,
         actor_ref: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Flow, Self::Error> {
         match msg {
             TrapMsg::LinkUp => {
                 let peer = self.peer.take().expect("LinkUp runs once");
@@ -896,7 +879,7 @@ impl Actor for TrapWatcher {
                     .expect("the release channel is open");
             }
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 impl Watch for TrapWatcher {}
@@ -1010,8 +993,7 @@ impl Actor for DupWatcher {
         &mut self,
         msg: DupMsg,
         actor_ref: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Flow, Self::Error> {
         match msg {
             DupMsg::WatchFirst => {
                 let target = self.target.as_ref().expect("the target is present");
@@ -1033,7 +1015,7 @@ impl Actor for DupWatcher {
                     .expect("the release channel is open");
             }
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 impl Watch for DupWatcher {
@@ -1154,17 +1136,12 @@ impl Actor for LateWatcher {
             stop_release: Some(stop_release),
         })
     }
-    async fn handle(
-        &mut self,
-        _: LateGo,
-        actor_ref: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: LateGo, actor_ref: ActorRef<Self>) -> Result<Flow, Self::Error> {
         let target = self.target.take().expect("one LateGo enqueued");
         let outcome = bounded(actor_ref.watch(&target)).await.map_err(|_| ());
         *self.watch_result.lock().expect("lock") = Some(outcome);
         drop(target); // the watcher must not pin the target
-        Ok(())
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -1295,8 +1272,7 @@ impl Actor for PipeCounter {
         &mut self,
         msg: PipeMsg,
         actor_ref: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
         match msg {
             PipeMsg::KickPipe => {
@@ -1310,7 +1286,7 @@ impl Actor for PipeCounter {
             }
             PipeMsg::Piped | PipeMsg::Tick => {}
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 

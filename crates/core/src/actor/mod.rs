@@ -39,6 +39,18 @@ pub use self::{
 // solely within `actor` and reach their definitions directly.
 pub(crate) use self::supervision::SupervisionOp;
 
+/// The handler's continuation decision: keep running, or stop cleanly
+/// (reason `Normal`) after the current message.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Flow {
+    /// Keep the actor running; poll the mailbox for the next message.
+    Continue,
+    /// Stop after this handler: reason `Normal`, backlog abandoned,
+    /// `on_stop` runs. Deliberately carries no reason — a self-stop's
+    /// only honest reason is `Normal` (ADR-0023).
+    Stop,
+}
+
 /// A single-writer, identity-agnostic unit of concurrency: owned state behind a
 /// mailbox, driven by one task that handles messages sequentially.
 ///
@@ -72,15 +84,17 @@ pub trait Actor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
         actor_ref: ActorRef<Self>,
     ) -> impl Future<Output = Result<Self, Self::Error>> + Send;
 
-    /// Handles one message. Set `*stop = true` to stop the actor cleanly after
-    /// this handler returns `Ok`. A returned `Err` is treated as a controlled
-    /// crash (routed to `on_panic`, then stop).
+    /// Handles one message. The return value is the continuation decision:
+    /// `Ok(Flow::Continue)` keeps the actor running; `Ok(Flow::Stop)` stops it
+    /// cleanly (reason `Normal`) after this handler, before any further mailbox
+    /// poll; a returned `Err` is a controlled crash (routed to `on_panic`, then
+    /// stop). The three outcomes are one exhaustive value — signalling stop
+    /// *and* crash at once is unrepresentable.
     fn handle(
         &mut self,
         msg: Self::Msg,
         actor_ref: ActorRef<Self>,
-        stop: &mut bool,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send;
+    ) -> impl Future<Output = Result<Flow, Self::Error>> + Send;
 
     /// Observes a caught panic and names the terminal stop reason. Infallible
     /// and stop-only — it cannot resume the actor. `&mut self` is poisoned.
@@ -289,13 +303,8 @@ mod watch_trait_tests {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(W)
         }
-        async fn handle(
-            &mut self,
-            _: M,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: M, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
     impl Watch for W {}
@@ -362,13 +371,8 @@ mod supervisor_trait_tests {
                 async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
                     unreachable!("trait-surface test: never spawned")
                 }
-                async fn handle(
-                    &mut self,
-                    _: M2,
-                    _: ActorRef<Self>,
-                    _: &mut bool,
-                ) -> Result<(), Self::Error> {
-                    Ok(())
+                async fn handle(&mut self, _: M2, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                    Ok(Flow::Continue)
                 }
             }
             impl Watch for $t {}

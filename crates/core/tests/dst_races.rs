@@ -59,8 +59,8 @@ use tokio::{
 use bombay::{
     ActorId, SendContext,
     actor::{
-        Actor, ActorRef, PreparedActor, RunResult, Spawn, SpawnConfig, SpawnSupervised, Supervisor,
-        Watch, WeakActorRef,
+        Actor, ActorRef, Flow, PreparedActor, RunResult, Spawn, SpawnConfig, SpawnSupervised,
+        Supervisor, Watch, WeakActorRef,
     },
     error::{ActorStopReason, AskError, TellError},
     mailbox::{Capacity, ControlSignal, Mailboxed, Signal},
@@ -110,14 +110,9 @@ impl Actor for Spy {
     ) -> Result<Self, Self::Error> {
         Ok(Self { handled, stopped })
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
-        Ok(())
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -163,14 +158,9 @@ async fn kill_during_on_start_yields_killed_no_on_stop_no_handling() {
             let _ = release.await; // park here forever (test never releases)
             Ok(Self { handled, stopped })
         }
-        async fn handle(
-            &mut self,
-            _: Ping,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             self.handled.fetch_add(1, Ordering::SeqCst);
-            Ok(())
+            Ok(Flow::Continue)
         }
         async fn on_stop(
             &mut self,
@@ -258,13 +248,8 @@ async fn kill_during_on_stop_yields_killed_and_skips_post_park_effect() {
                 post_park,
             })
         }
-        async fn handle(
-            &mut self,
-            _: Ping,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
         async fn on_stop(
             &mut self,
@@ -337,13 +322,8 @@ impl Actor for StartSignaled {
         let _ = started.send(()); // on_start done; the loop is about to park on recv
         Ok(Self { stopped })
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -607,11 +587,12 @@ async fn send_after_graceful_stop_fails() {
 }
 
 // ---------------------------------------------------------------------------
-// Scenario 7 — `kill()` after a normal completion (via the handler stop flag).
+// Scenario 7 — `kill()` after a normal completion (via the handler returning
+// `Flow::Stop`).
 // ---------------------------------------------------------------------------
 
-/// An actor that finishes itself by setting the stop flag in its handler, then
-/// counts `on_stop`.
+/// An actor that finishes itself by returning `Flow::Stop` from its handler,
+/// then counts `on_stop`.
 struct SelfStop {
     handled: Arc<AtomicU32>,
     stopped: Arc<AtomicU32>,
@@ -628,15 +609,9 @@ impl Actor for SelfStop {
     ) -> Result<Self, Self::Error> {
         Ok(Self { handled, stopped })
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        stop: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
-        *stop = true; // stop cleanly after this handler returns Ok
-        Ok(())
+        Ok(Flow::Stop) // stop cleanly after this handler returns
     }
     async fn on_stop(
         &mut self,
@@ -648,7 +623,8 @@ impl Actor for SelfStop {
     }
 }
 
-/// The actor stops normally via its handler's stop flag; a `kill()` issued AFTER
+/// The actor stops normally via its handler returning `Flow::Stop`; a `kill()`
+/// issued AFTER
 /// the run has returned is a no-op — no panic, and the outcome stays `Normal` with
 /// `on_stop` having run once.
 #[tokio::test]
@@ -670,7 +646,7 @@ async fn kill_after_normal_completion_is_a_noop() {
         prepared.run((Arc::clone(&handled), Arc::clone(&stopped))),
     )
     .await
-    .expect("the stop flag must terminate the actor");
+    .expect("Flow::Stop must terminate the actor");
 
     // Actor already finished normally; killing the corpse must not panic.
     actor_ref.kill();
@@ -732,12 +708,7 @@ impl Actor for Node {
             processed: 0,
         })
     }
-    async fn handle(
-        &mut self,
-        msg: NodeMsg,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, msg: NodeMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         match msg {
             NodeMsg::SetNext(next) => self.next = Some(next),
             NodeMsg::Work { hops } => {
@@ -754,7 +725,7 @@ impl Actor for Node {
                 let _ = reply.send(self.processed);
             }
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 
@@ -866,12 +837,7 @@ impl Actor for Worker {
     async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(Self)
     }
-    async fn handle(
-        &mut self,
-        _: Crash,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Crash, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         panic!("crash on command")
     }
 }
@@ -895,13 +861,8 @@ macro_rules! storm_supervisor {
             async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
                 Ok(Self)
             }
-            async fn handle(
-                &mut self,
-                _: SupIdle,
-                _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
-                Ok(())
+            async fn handle(&mut self, _: SupIdle, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
             }
         }
         impl Watch for $t {}
@@ -1261,13 +1222,8 @@ impl Actor for TapingWatcher {
     async fn on_start(notices: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(Self { notices })
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -1314,17 +1270,12 @@ impl Actor for GatedSpy {
             handled,
         })
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         if let Some(release) = self.release.take() {
             let _ = release.await; // park with the backlog queued behind us
         }
         self.handled.fetch_add(1, Ordering::SeqCst);
-        Ok(())
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -1697,12 +1648,7 @@ impl Actor for RaceWatcher {
             stop_release: Some(stop_release),
         })
     }
-    async fn handle(
-        &mut self,
-        _: RaceGo,
-        actor_ref: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: RaceGo, actor_ref: ActorRef<Self>) -> Result<Flow, Self::Error> {
         let borrowed = self.target.as_ref().expect("the target is present");
         let outcome = bounded(actor_ref.watch(borrowed)).await.is_ok();
         self.watch_results.lock().expect("lock").push(outcome);
@@ -1711,7 +1657,7 @@ impl Actor for RaceWatcher {
             .checked_sub(1)
             .expect("exactly `watches` messages were enqueued");
         if self.watches_left > 0 {
-            return Ok(());
+            return Ok(Flow::Continue);
         }
         let owned = self.target.take().expect("the target is present");
         drop(owned); // release the pin BEFORE the test drops its own ref
@@ -1723,7 +1669,7 @@ impl Actor for RaceWatcher {
         bounded(self.release.take().expect("release once"))
             .await
             .expect("the release channel is open");
-        Ok(())
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,

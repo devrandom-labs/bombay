@@ -22,7 +22,7 @@
 use std::{alloc::System, future::IntoFuture, pin::pin};
 
 use bombay::{
-    actor::{Actor, ActorRef, ReplyRecipient},
+    actor::{Actor, ActorRef, Flow, ReplyRecipient},
     error::Infallible,
     mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
     message::Msg,
@@ -65,13 +65,8 @@ impl Actor for Probe {
     async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(Self)
     }
-    async fn handle(
-        &mut self,
-        _: ProbeMsg,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: ProbeMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
 }
 

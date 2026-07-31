@@ -49,7 +49,7 @@
 //! (5 RMWs → 2 under ADR-0010), which is where the uniform −13…−17% comes
 //! from.
 
-use bombay::actor::{Actor, ActorRef, Spawn};
+use bombay::actor::{Actor, ActorRef, Flow, Spawn};
 use bombay::error::Infallible;
 use bombay::mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, MailboxSender, Mailboxed};
 use bombay::message::Msg;
@@ -137,14 +137,9 @@ impl Actor for Watcher {
         Ok(Self { ack })
     }
 
-    async fn handle(
-        &mut self,
-        _: Notify,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Notify, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         let _ = self.ack.send(());
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 
