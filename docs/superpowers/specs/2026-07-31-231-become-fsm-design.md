@@ -177,6 +177,16 @@ oracle catches three ways.
 
 ## Trait surface (spec of record)
 
+*(Amended 2026-07-31, pre-build with Joel: the policy items —
+`initial_state`, `stash_capacity`, `gate`, `state_timeout`,
+`on_state_timeout` — are **required**, not defaulted; policies are explicit
+per the `SupervisionStrategy` no-default precedent (#196), and a declared
+deadline with a defaulted do-nothing reaction would be a silent pair.
+`state_timeout` takes `&self` so magnitudes are Args-tunable per instance
+(the D8 constructor-input channel — never `SpawnConfig`). `gate` stays a
+static declaration table (#243-derivable). A blanket `spawn_fsm` hides
+`Fsm<S>` at call sites.)*
+
 Verified compiling and behaviorally equivalent to the idiom in the spike
 (mock-mechanics caveat: D7 envelope note). Written `async fn` for brevity;
 the build uses the house RPITIT style
