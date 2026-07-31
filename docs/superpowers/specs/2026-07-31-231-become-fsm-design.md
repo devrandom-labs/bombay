@@ -74,7 +74,7 @@ oracle catches three ways.
   typestate machinery that fights the closed-menu dynamic dispatch. Related
   work, not adopted.
 - Harel statecharts (*Statecharts: A Visual Formalism for Complex Systems*,
-  Sci. Comput. Program. 8, 1987) — hierarchical/nested states. YAGNI at the
+  Science of Computer Programming 8, 1987) — hierarchical/nested states. YAGNI at the
   first consumer (3 flat states); add at the second concrete use per the API
   rules.
 - Pekko Typed behavior-return (pekko.apache.org/docs/pekko/current/typed/fsm.html)
