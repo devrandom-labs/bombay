@@ -200,7 +200,7 @@ mod tests {
 
     use super::Registry;
     use crate::{
-        actor::{Actor, ActorRef},
+        actor::{Actor, ActorRef, Flow},
         error::{NameTaken, WrongActorType},
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
         message::Msg,
@@ -224,13 +224,8 @@ mod tests {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Probe)
         }
-        async fn handle(
-            &mut self,
-            _: ProbeMsg,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: ProbeMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
 
@@ -247,13 +242,8 @@ mod tests {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Other)
         }
-        async fn handle(
-            &mut self,
-            _: OtherMsg,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: OtherMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
 

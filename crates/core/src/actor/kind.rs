@@ -16,7 +16,7 @@ use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
 use crate::{
     actor::{
-        Actor, ActorRef, Supervisor, Watch, WeakActorRef,
+        Actor, ActorRef, Flow, Supervisor, Watch, WeakActorRef,
         supervision::{
             ArmedReg, ChildHandle, Children, CycleState, PendingAbort, Spawned, SuperviseReg,
             SupervisionOp, WatchInstaller, WatchOutcome,
@@ -211,7 +211,7 @@ async fn poll_mailbox<A: Mailboxed>(
 /// `poll` distinguishes the two stop causes that `cancel.run_until_cancelled(recv())`
 /// collapses into `None`: a cancel-token graceful stop (`Normal`) and a closed
 /// mailbox from ref-count collection (`Collected`). `Signal::Stop` and a
-/// handler-set `stop = true` remain `Normal`.
+/// handler's `Flow::Stop` remain `Normal`.
 async fn handle_mailbox_step<A: Actor>(
     state: &mut A,
     self_ref: &WeakActorRef<A>,
@@ -1070,13 +1070,12 @@ async fn handle_message<A: Actor>(
     self_ref: &WeakActorRef<A>,
     msg: A::Msg,
 ) -> ControlFlow<ActorStopReason> {
-    let mut stop = false;
-    let result = AssertUnwindSafe(state.handle(msg, actor_ref, &mut stop))
+    let result = AssertUnwindSafe(state.handle(msg, actor_ref))
         .catch_unwind()
         .await;
     match result {
-        Ok(Ok(())) if stop => ControlFlow::Break(ActorStopReason::Normal),
-        Ok(Ok(())) => ControlFlow::Continue(()),
+        Ok(Ok(Flow::Continue)) => ControlFlow::Continue(()),
+        Ok(Ok(Flow::Stop)) => ControlFlow::Break(ActorStopReason::Normal),
         // A returned Err is a controlled crash: observe via on_panic, then stop.
         Ok(Err(err)) => {
             let panic = PanicError::new(Box::new(err), PanicReason::HandlerPanic);
@@ -1159,9 +1158,8 @@ mod supervised_tests {
             &mut self,
             _: ProbeMsg,
             _: crate::actor::ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        ) -> Result<crate::actor::Flow, Self::Error> {
+            Ok(crate::actor::Flow::Continue)
         }
     }
 

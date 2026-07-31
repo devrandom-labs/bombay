@@ -430,7 +430,7 @@ mod tests {
 
     use super::Ask;
     use crate::{
-        actor::{Actor, ActorRef, ReplyRecipient, Spawn},
+        actor::{Actor, ActorRef, Flow, ReplyRecipient, Spawn},
         error::{AskError, TellError},
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
         message::Msg,
@@ -454,13 +454,8 @@ mod tests {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Probe)
         }
-        async fn handle(
-            &mut self,
-            _: ProbeMsg,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: ProbeMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
 
@@ -531,8 +526,7 @@ mod tests {
             &mut self,
             msg: CounterMsg,
             _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        ) -> Result<Flow, Self::Error> {
             match msg {
                 CounterMsg::Add(n) => self.count += n,
                 CounterMsg::Get { reply } => drop(reply.send(self.count)),
@@ -551,7 +545,7 @@ mod tests {
                     panic!("dies mid-handle: the reply port drops unsent")
                 }
             }
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 
@@ -1032,12 +1026,11 @@ mod tests {
                 &mut self,
                 FrontMsg::ForwardGet { reply }: FrontMsg,
                 _: ActorRef<Self>,
-                _: &mut bool,
-            ) -> Result<(), Self::Error> {
+            ) -> Result<Flow, Self::Error> {
                 // Forwarding = moving the port into another actor's message.
                 // Fire-and-forget (#122-#4 discipline: no ask().await here).
                 drop(self.back.tell(CounterMsg::Get { reply }).try_send());
-                Ok(())
+                Ok(Flow::Continue)
             }
         }
 

@@ -126,7 +126,7 @@ mod tests {
     };
 
     use crate::{
-        actor::{Actor, ActorRef, Spawn as _},
+        actor::{Actor, ActorRef, Flow, Spawn as _},
         error::{PanicError, PanicReason, PipeAskError},
         mailbox::Mailboxed,
         message::Msg,
@@ -158,12 +158,7 @@ mod tests {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Self { seen: Vec::new() })
         }
-        async fn handle(
-            &mut self,
-            msg: SinkMsg,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&mut self, msg: SinkMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
             match msg {
                 SinkMsg::Piped(res) => {
                     self.seen
@@ -172,7 +167,7 @@ mod tests {
                 SinkMsg::PipedAsk(res) => self.seen.push(res),
                 SinkMsg::Read(reply) => drop(reply.send(self.seen.clone())),
             }
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 
@@ -381,13 +376,12 @@ mod tests {
             &mut self,
             GatedBMsg::Get(reply): GatedBMsg,
             _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        ) -> Result<Flow, Self::Error> {
             if let Some(gate) = self.gate.take() {
                 let _opened = gate.await;
             }
             let _ = reply.send(99);
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 
@@ -548,10 +542,9 @@ mod tests {
             &mut self,
             FailingBMsg::Get(reply): FailingBMsg,
             _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        ) -> Result<Flow, Self::Error> {
             let _ = reply.send_err(Conflict);
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 

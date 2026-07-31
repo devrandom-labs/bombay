@@ -19,7 +19,7 @@
 use std::collections::HashMap;
 
 use bolero::{TypeGenerator, check};
-use bombay::actor::{Actor, ActorRef};
+use bombay::actor::{Actor, ActorRef, Flow};
 use bombay::error::NameTaken;
 use bombay::mailbox::{ActorId, Capacity, Mailbox, Mailboxed, Signal};
 use bombay::message::Msg;
@@ -43,9 +43,8 @@ impl Actor for Probe {
         &mut self,
         _: ProbeMsg,
         _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    ) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
 }
 

@@ -29,7 +29,7 @@ use tokio::time::timeout;
 use bombay::{
     SendContext,
     actor::{
-        Actor, ActorRef, PreparedActor, RunResult, Spawn, SpawnConfig, Supervisor, Watch,
+        Actor, ActorRef, Flow, PreparedActor, RunResult, Spawn, SpawnConfig, Supervisor, Watch,
         WeakActorRef,
     },
     error::ActorStopReason,
@@ -81,14 +81,9 @@ impl Actor for Spy {
     ) -> Result<Self, Self::Error> {
         Ok(Self { handled, stopped })
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
-        Ok(())
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -113,14 +108,9 @@ impl Actor for Sup {
     async fn on_start(handled: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
         Ok(Self { handled })
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
-        Ok(())
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
@@ -152,13 +142,8 @@ impl Actor for LeafChild {
         tape.try_send(seq).expect("the birth tape is unbounded");
         Ok(Self { stops })
     }
-    async fn handle(
-        &mut self,
-        _: Ping,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,

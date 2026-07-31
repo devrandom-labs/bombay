@@ -10,7 +10,7 @@ An actor owns its state, declares one closed message enum, and handles messages 
 
 ```rust
 use bombay::{
-    actor::{Actor, ActorRef, Spawn as _},
+    actor::{Actor, ActorRef, Flow, Spawn as _},
     mailbox::Mailboxed,
     message::Msg,
     reply::ReplySender,
@@ -43,15 +43,14 @@ impl Actor for Counter {
         &mut self,
         msg: CounterMsg,
         _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Flow, Self::Error> {
         match msg {
             CounterMsg::Inc(n) => self.count += i64::from(n),
             CounterMsg::Get { reply } => {
                 let _ = reply.send(self.count);
             }
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 
@@ -77,7 +76,7 @@ example: `cargo run -p bombay --example job_queue` (source:
 
 ## The public API at a glance
 
-- **Actor** — `Actor` (a `Mailboxed` subtrait, so the mailbox is keyed on the actor) with `on_start` / `handle` / `on_panic` / `on_stop`. Spawn via `Actor::spawn` or `spawn_with_config` (likewise `spawn_linked_with_config` / `spawn_supervised_with_config`), which take a `SpawnConfig { capacity, on_stop_grace }` — the bounded mailbox capacity plus the per-spawn grace a dying actor's `on_stop` gets before its death notices go out anyway (default 5 s, tunable per spawn). Or build a `PreparedActor::new(SpawnConfig { capacity, ..Default::default() })` to hand out its `ActorRef` and pre-send before the loop starts.
+- **Actor** — `Actor` (a `Mailboxed` subtrait, so the mailbox is keyed on the actor) with `on_start` / `handle` / `on_panic` / `on_stop`. `handle` returns its continuation decision: `Ok(Flow::Continue)` keeps the actor running, `Ok(Flow::Stop)` stops it cleanly (reason `Normal`) after the current message, and a returned `Err` is a controlled crash. Spawn via `Actor::spawn` or `spawn_with_config` (likewise `spawn_linked_with_config` / `spawn_supervised_with_config`), which take a `SpawnConfig { capacity, on_stop_grace }` — the bounded mailbox capacity plus the per-spawn grace a dying actor's `on_stop` gets before its death notices go out anyway (default 5 s, tunable per spawn). Or build a `PreparedActor::new(SpawnConfig { capacity, ..Default::default() })` to hand out its `ActorRef` and pre-send before the loop starts.
 - **`ActorRef`** — two words, one shared allocation, so a clone is a single refcount bump. `tell` (fire-and-forget) and `ask` (request/reply) are builders: `.await` either one, give it a `.timeout(..)`, or resolve a `tell` without waiting via `.try_send()`. Plus `stop()` (graceful — the in-flight handler finishes), `kill()` (hard — no `on_stop`), `downgrade()` → `WeakActorRef`, and type-erased `Recipient` / `ReplyRecipient`. Dropping the last strong `ActorRef` stops the actor once its backlog drains.
 - **Pipe, don't block** — `pipe_to_self(future, mapper)` runs any future off-turn and re-enters its result as an ordinary message (panic surfaced typed, in-flight pipes never pin the actor); `pipe_ask(target, make_msg, mapper)` is the ask-shaped sugar with the whole failure union flattened to one `PipeAskError` match.
 - **Timers** — `send_after(delay, msg)` and `send_interval(period, make_msg)` on both `ActorRef` and type-erased `Recipient`; both return a `TimerHandle` whose `cancel()` is idempotent and explicit (dropping detaches, the timer still fires). Fired messages are ordinary menu messages through the bounded mailbox, so backpressure is preserved, and armed timers hold a weak handle so they never pin the actor.

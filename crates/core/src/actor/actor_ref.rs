@@ -603,6 +603,7 @@ impl<A: Actor> WeakActorRef<A> {
 mod tests {
     use super::*;
 
+    use crate::actor::Flow;
     use futures::stream::AbortHandle;
     use tokio_util::sync::CancellationToken;
 
@@ -630,13 +631,8 @@ mod tests {
         async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
             Ok(Probe)
         }
-        async fn handle(
-            &mut self,
-            _: ProbeMsg,
-            _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
-            Ok(())
+        async fn handle(&mut self, _: ProbeMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
 

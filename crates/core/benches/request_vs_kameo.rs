@@ -73,7 +73,7 @@ const PRODUCERS: u64 = 4;
 
 mod core_side {
     use bombay::{
-        actor::{Actor, ActorRef, Spawn as _, SpawnConfig},
+        actor::{Actor, ActorRef, Flow, Spawn as _, SpawnConfig},
         mailbox::{Capacity, Mailboxed},
         message::Msg,
         reply::ReplySender,
@@ -103,15 +103,14 @@ mod core_side {
             &mut self,
             msg: CounterMsg,
             _: ActorRef<Self>,
-            _: &mut bool,
-        ) -> Result<(), Self::Error> {
+        ) -> Result<Flow, Self::Error> {
             match msg {
                 CounterMsg::Note(cmd) => self.seen = self.seen.wrapping_add(cmd.id),
                 CounterMsg::Get { reply } => {
                     let _ = reply.send(self.seen);
                 }
             }
-            Ok(())
+            Ok(Flow::Continue)
         }
     }
 

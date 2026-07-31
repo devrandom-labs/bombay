@@ -11,7 +11,7 @@ use core::{any::type_name, future::Future};
 use std::collections::VecDeque;
 
 use crate::{
-    actor::{Actor, ActorRef, WeakActorRef},
+    actor::{Actor, ActorRef, Flow, WeakActorRef},
     error::{ActorStopReason, PanicError, ReplyError},
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -145,14 +145,13 @@ pub trait StashActor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
 
     /// Handles one message; `stash` defers what the current state cannot
     /// accept ([`Stash::stash`]) and releases it ([`Stash::unstash_all`]).
-    /// See [`Actor::handle`] for `stop` and error semantics.
+    /// See [`Actor::handle`] for the [`Flow`] return and error semantics.
     fn handle(
         &mut self,
         msg: Self::Msg,
         actor_ref: ActorRef<Stashed<Self>>,
         stash: &mut Stash<Self::Msg>,
-        stop: &mut bool,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send;
+    ) -> impl Future<Output = Result<Flow, Self::Error>> + Send;
 
     /// See [`Actor::on_panic`]. No stash access: the state is poisoned and
     /// the stash dies with the incarnation (spec D6).
@@ -214,29 +213,21 @@ impl<S: StashActor> Actor for Stashed<S> {
     /// `ready` — still inside the current `handle_message` step, so replayed
     /// messages run ahead of the entire mailbox backlog, in stash-arrival
     /// order, under the step's own strong `actor_ref` (no upgrade, no
-    /// drain-window hazard). A replayed handler's `Err`/panic/`stop` routes
-    /// exactly as a delivered message's would.
-    async fn handle(
-        &mut self,
-        msg: S::Msg,
-        actor_ref: ActorRef<Self>,
-        stop: &mut bool,
-    ) -> Result<(), S::Error> {
-        S::handle(
-            &mut self.state,
-            msg,
-            actor_ref.clone(),
-            &mut self.stash,
-            stop,
-        )
-        .await?;
-        while !*stop {
-            let Some(m) = self.stash.pop_ready() else {
-                break;
-            };
-            S::handle(&mut self.state, m, actor_ref.clone(), &mut self.stash, stop).await?;
+    /// drain-window hazard). A replayed handler's `Err`/panic/`Flow::Stop`
+    /// routes exactly as a delivered message's would.
+    async fn handle(&mut self, msg: S::Msg, actor_ref: ActorRef<Self>) -> Result<Flow, S::Error> {
+        if S::handle(&mut self.state, msg, actor_ref.clone(), &mut self.stash).await? == Flow::Stop
+        {
+            return Ok(Flow::Stop);
         }
-        Ok(())
+        while let Some(m) = self.stash.pop_ready() {
+            if S::handle(&mut self.state, m, actor_ref.clone(), &mut self.stash).await?
+                == Flow::Stop
+            {
+                return Ok(Flow::Stop);
+            }
+        }
+        Ok(Flow::Continue)
     }
 
     async fn on_panic(

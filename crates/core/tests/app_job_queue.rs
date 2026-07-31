@@ -21,7 +21,7 @@ use app::{
 };
 use bombay::{
     ActorId,
-    actor::{Actor, ActorRef, PreparedActor, RunResult, Spawn as _, SpawnConfig, Watch},
+    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, Spawn as _, SpawnConfig, Watch},
     error::{ActorStopReason, AskError},
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -794,12 +794,7 @@ impl Actor for Auditor {
             release: Some(release),
         })
     }
-    async fn handle(
-        &mut self,
-        _: AuditGo,
-        actor_ref: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&mut self, _: AuditGo, actor_ref: ActorRef<Self>) -> Result<Flow, Self::Error> {
         let dispatcher = self.dispatcher.take().expect("one AuditGo enqueued");
         let outcome = bounded(actor_ref.watch(&dispatcher)).await.map_err(|_| ());
         *self.watch_result.lock().expect("lock") = Some(outcome);
@@ -814,7 +809,7 @@ impl Actor for Auditor {
         bounded(self.release.take().expect("release once"))
             .await
             .expect("the release channel is open");
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 impl Watch for Auditor {

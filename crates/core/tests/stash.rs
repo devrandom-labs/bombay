@@ -9,7 +9,7 @@ use tokio::time::timeout;
 
 use bombay::{
     actor::{
-        ActorRef, PreparedActor, Spawn, SpawnConfig, SpawnSupervised, Supervisor, Watch,
+        ActorRef, Flow, PreparedActor, Spawn, SpawnConfig, SpawnSupervised, Supervisor, Watch,
         WeakActorRef,
     },
     error::ActorStopReason,
@@ -66,8 +66,7 @@ impl StashActor for Gate {
         msg: GateMsg,
         _: ActorRef<Stashed<Self>>,
         stash: &mut Stash<GateMsg>,
-        stop: &mut bool,
-    ) -> Result<(), Infallible> {
+    ) -> Result<Flow, Infallible> {
         match msg {
             GateMsg::Open => {
                 self.open = true;
@@ -82,11 +81,11 @@ impl StashActor for Gate {
             GateMsg::Item(n) => self.tape.lock().expect("tape").push(n),
             GateMsg::ItemThenStop(n) => {
                 self.tape.lock().expect("tape").push(n);
-                *stop = true;
+                return Ok(Flow::Stop);
             }
             GateMsg::Read(reply) => drop(reply.send(self.tape.lock().expect("tape").clone())),
         }
-        Ok(())
+        Ok(Flow::Continue)
     }
 }
 
@@ -310,13 +309,8 @@ impl bombay::actor::Actor for Sup {
     async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Infallible> {
         Ok(Sup)
     }
-    async fn handle(
-        &mut self,
-        _: SupMsg,
-        _: ActorRef<Self>,
-        _: &mut bool,
-    ) -> Result<(), Infallible> {
-        Ok(())
+    async fn handle(&mut self, _: SupMsg, _: ActorRef<Self>) -> Result<Flow, Infallible> {
+        Ok(Flow::Continue)
     }
 }
 impl Watch for Sup {}
@@ -434,9 +428,8 @@ impl StashActor for StopProbe {
         _: StopProbeMsg,
         _: ActorRef<Stashed<Self>>,
         _: &mut Stash<StopProbeMsg>,
-        _: &mut bool,
-    ) -> Result<(), Infallible> {
-        Ok(())
+    ) -> Result<Flow, Infallible> {
+        Ok(Flow::Continue)
     }
 
     async fn on_stop(
