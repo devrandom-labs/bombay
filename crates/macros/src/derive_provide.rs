@@ -50,13 +50,7 @@ impl Parse for DeriveProvide {
         let fields = named
             .named
             .iter()
-            .map(|f| {
-                let ident = f
-                    .ident
-                    .clone()
-                    .expect("named fields always carry an identifier");
-                (ident, f.ty.clone())
-            })
+            .filter_map(|f| f.ident.clone().map(|ident| (ident, f.ty.clone())))
             .collect::<Vec<_>>();
         if fields.is_empty() {
             return Err(syn::Error::new_spanned(
