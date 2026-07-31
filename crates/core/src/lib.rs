@@ -34,6 +34,7 @@ compile_error!(
 );
 
 pub mod actor;
+pub mod caps;
 pub mod error;
 mod id;
 pub mod mailbox;

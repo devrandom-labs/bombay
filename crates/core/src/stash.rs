@@ -123,6 +123,10 @@ impl<M> Stash<M> {
 /// Opt-in actor shape with deferral: [`Actor`]'s hooks, plus the stash as a
 /// `handle` parameter.
 ///
+/// > Staged supersession (ADR-0026): deferral becomes the `Stashing`
+/// > capability on the [`caps`](crate::caps) surface at stage 2 (#279);
+/// > this shape remains fully supported until then.
+///
 /// Implement this instead of `Actor`, then spawn `Stashed::<Self>` — the
 /// wrapper owns the buffer and drives replay; there is no wiring to forget.
 pub trait StashActor: Mailboxed<Msg: Msg> + Sized + Send + 'static {

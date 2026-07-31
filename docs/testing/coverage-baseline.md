@@ -1308,3 +1308,23 @@ Test-only card: zero production-code changes, so `mutants-baseline.json` and
 the README are untouched. The falsifiability caveat (the 60 s `stop_grace`
 tripwire vs `TERMINATE` under real-time legs, and its paused-clock/miri
 behavior) is recorded in the test-file header.
+
+## Card #278 — caps machinery, stage 1 (ADR-0026)
+
+- `crates/core/src/caps.rs` unit tests: name-default + Shell name
+  forwarding (kill the two `name` mutant pairs), unit-`CapSet` build.
+  The O2 compile-gate lives as a `compile_fail` doctest on `Ctx::cap`
+  and EXECUTES in the doc lane (verified against a main baseline —
+  the #170 lesson; bombay had zero compile_fail doctests before, now 1).
+- `crates/core/tests/caps_stage1.rs`: O1/O4 (third-party capability +
+  policy-from-args through the one gated accessor, ask round-trip),
+  `Flow::Stop` → `Normal` through the Shell, and the panic pipeline
+  (`on_panic` then `on_stop`, in order) forwarded to caps-level hooks.
+- `crates/macros`: `#[derive(Provide)]` — 8 parser unit tests (input
+  guards: generic/enum/union/tuple/unit/empty rejections, per-field
+  emission), success + duplicate-field `compile_fail` doctests
+  (macros compile_fail count 3 → 4).
+- `crates/core/tests/app_job_queue.rs`: walking skeleton — accepted
+  submissions audited exactly (workers: 0 so the cap refusal is
+  reachable), refused submissions not audited, audit queried over the
+  caps surface.

@@ -54,6 +54,10 @@ pub enum Flow {
 /// A single-writer, identity-agnostic unit of concurrency: owned state behind a
 /// mailbox, driven by one task that handles messages sequentially.
 ///
+/// > Staged supersession (ADR-0026): new code can use the distilled
+/// > [`caps::Actor`](crate::caps::Actor) surface; this trait remains fully
+/// > supported while the migration stages land.
+///
 /// `Actor` is a subtrait of [`Mailboxed`] (the mailbox is keyed on the actor),
 /// and its message type is bounded `: Msg` so every actor's `Msg` gets the
 /// compile-time slot-size tripwire (card #114).
