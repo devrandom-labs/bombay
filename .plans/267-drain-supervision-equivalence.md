@@ -114,8 +114,19 @@ Fixtures:
   enqueues after.
 - Child `RestartConfig`: policy `Permanent`, `min_backoff` **zero** (Test A's
   determinism needs the retry deadline already expired at handler return —
-  fact 4), `stop_grace` 60 s (fact 6). Use the actual `RestartConfig`
-  construction API (`with_*` setters exist; check the code, not this plan).
+  fact 4), `stop_grace` 60 s (fact 6). Construction:
+  `RestartConfig::new(RestartPolicy::Permanent)` + `with_min_backoff` /
+  `with_stop_grace` (`restart.rs:174-242`). NOTE (CHECK nit A): the default
+  jitter is 20%, but `jittered_backoff` scales the base delay
+  (`restart.rs:297-302`), and 20% of `Duration::ZERO` is zero — so
+  `min_backoff = 0` alone DOES give an already-expired deadline; say so in the
+  Test A doc comment rather than leaving it implied.
+- Falsifiability caveat (CHECK nit B), for the file doc comment: the
+  60 s-grace-vs-`TERMINATE` tripwire holds on the tokio leg
+  (`terminate_bound()` = 15 s, `test_support.rs:103-109`); under miri the
+  bound is 30 min so a missing edge would pass slowly instead of failing —
+  a non-issue while the miri leg excludes these integration tests, but the
+  doc comment must state it.
 
 Verification: `cargo check -p bombay --tests` compiles (test bodies may be
 `todo!()`-free stubs only if a later step fills them — prefer landing each test
@@ -160,6 +171,12 @@ Script messages: `[Supervise, StopChild, Park]`.
   BEFORE the supervisor may exit, so the epilogue's `PendingAbort` drop-abort
   (fact 3) is a proven no-op, not a race) → `release` → (Steady: drop ref) →
   `bounded(sup_join)` → `Stopped { reason: Collected }`.
+- Choreography note (CHECK nit C): after `Stop` removed the table entry, the
+  child's `Normal` death notice still lands on the supervisor's `link_rx` and
+  routes to the PEER `on_link_died` hook — harmless with the default hook
+  (non-linked normal death → `Continue`, `mod.rs:152-166`); in drain mode a
+  post-break notice is dropped by design (#266). Trace equality is unaffected;
+  acknowledge the notice in the test doc comment.
 - Assert trace == `vec![SuperviseOk(true), StopChildOk(true),
   Finished(Collected)]`, steady == drain, started-count == 1 (a stopped child
   is never rebuilt — the edge was dropped before the death could route).
