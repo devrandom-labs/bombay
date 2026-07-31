@@ -51,12 +51,13 @@ is the whole migration. Invariants that must hold at the end:
      unrepresentable (this replaces the old "after this handler returns `Ok`"
      prose).
    - Migrate the two in-file test fixtures (`mod.rs:292-299` and the
-     `actor_boilerplate!` macro at `mod.rs:365-372`).
-   - Verify: `cargo check -p bombay` (lib + this file's unit tests compile via
-     `cargo check -p bombay --profile test` is NOT needed separately —
-     all-targets comes in step 10).
+     `actor_boilerplate!` macro starting `mod.rs:354`, param at `:369`).
+   - NOTE: the lib does NOT compile after this step alone — `kind.rs:1074`
+     and `stash.rs`'s `Stashed` impl still use the old shape. First green
+     `cargo check -p bombay` is after step 3; `--all-targets` comes in the
+     Verification section.
 
-2. **`crates/core/src/actor/kind.rs:1067-1093` — `handle_message`.**
+2. **`crates/core/src/actor/kind.rs:1067-1095` — `handle_message`.**
    SEQUENTIAL — depends on step 1.
    - Delete `let mut stop = false;` and the `&mut stop` arg.
    - Map: `Ok(Ok(Flow::Continue)) => ControlFlow::Continue(())`,
@@ -95,7 +96,8 @@ is the whole migration. Invariants that must hold at the end:
      ```
      Keep the spec-D3 doc comment (`:213-218`), updating the "`stop`" word to
      `Flow::Stop`.
-   - Migrate this file's own test fixtures.
+   - This file's test mod is pure `Stash` unit tests (capacity/overflow/
+     replay-order) — no handler fixtures; nothing else to migrate here.
 
 4. **`crates/core/src/actor/spawn.rs` — 41 fixture sites.**
    PARALLEL OK after steps 1-3 (disjoint from 5-9). Mechanical: remove the
@@ -112,7 +114,7 @@ is the whole migration. Invariants that must hold at the end:
    `pipe.rs` (3), `actor_ref.rs` (1). All `_: &mut bool` noise — pure
    mechanical, sonic-suitable.
 
-6. **`crates/core/tests/` — 55 sites, 13 files.** PARALLEL OK (disjoint from
+6. **`crates/core/tests/` — 55 sites, 12 files.** PARALLEL OK (disjoint from
    src). Mechanical, sonic-suitable. Files: `invariants.rs` (12),
    `tracing_capture.rs` (11), `dst_races.rs` (11), `drain_equivalence.rs` (8),
    `control_lane.rs` (3), `stash.rs` (3),
@@ -123,7 +125,11 @@ is the whole migration. Invariants that must hold at the end:
    stop behavior, STOP and report as blocked (none is known to).
 
 7. **`crates/core/examples/job_queue/app.rs` — the walking skeleton.**
-   PARALLEL OK. The one *designed* (non-fixture) migration:
+   PARALLEL OK. app.rs has FOUR handler impls; three are mechanical —
+   `Worker` (`app.rs:164-168`), `Overseer` (`:610-614`), and `Intake`
+   (`:542-547`, a **`StashActor`** impl — its signature follows step 3's
+   trait, stash param kept, stop param dropped). The one *designed*
+   migration is the Dispatcher:
    - `finish_drain_if_quiet(&mut self, stop: &mut bool)` (`app.rs:474-491`)
      becomes `fn finish_drain_if_quiet(&mut self) -> Flow` (returns
      `Flow::Stop` where it wrote `*stop = true`, else `Flow::Continue`).
@@ -150,6 +156,9 @@ is the whole migration. Invariants that must hold at the end:
       `Ok(Flow::Continue)`.
     - The **Actor** bullet (`README.md:80`): mention `handle` returns
       `Flow` (`Continue`/`Stop`) — one clause, no new section.
+    - Also `docs/testing/coverage-baseline.md:284`: reword the one clause
+      naming the old mechanism (`*stop = true`) to `Flow::Stop`; behavior
+      prose is already accurate.
 
 11. **`mutants-baseline.json` reconciliation.** SEQUENTIAL — last.
     Run `cargo mutants --list` (list only — NEVER `cargo mutants` proper, it
