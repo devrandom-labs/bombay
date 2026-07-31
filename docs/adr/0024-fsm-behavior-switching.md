@@ -26,18 +26,20 @@ Full design + spike record:
   built twice — `StashActor` + manual bookkeeping vs a mock
   `FsmActor`/`Fsm<S>` — and driven through a 6-scenario mode-blind
   equivalence oracle (#266 pattern). Observable behavior identical.
-- **The idiom carries 6 silent-failure sites**, each verified falsifiable by
-  mutation (forgotten unstash → 2 scenarios fail; forgotten release on the
-  second exit edge → 1 fails — a bug actually committed in the idiom's first
-  draft; naive stale-deadline arm → spurious stop while Ready). One site
-  (timer cancel on the second exit edge) **escapes the oracle entirely**.
+- **The idiom carries 7 manual transition obligations** (enumerated in the
+  spec). Mutation runs on 4 of them: 3 caught by the oracle (forgotten
+  unstash → 2 scenarios fail; forgotten release on the second exit edge →
+  1 fails — a bug actually committed in the idiom's first draft; naive
+  stale-deadline arm → spurious stop while Ready) and 1 — timer cancel on
+  the second exit edge — **escapes the oracle entirely**.
 - **The helper concentrates the residual risk into 1 declaration site**
   (a forgotten `Defer` declaration), which the same oracle catches in 3
   scenarios at once.
 - **Transition cost is zero**: gross-alloc delta (CountingAlloc, #207
-  pattern) — `Goto` = `Stay` = 2 (both are the test probe channel);
-  arming a state timeout = 3 (one `send_after` task, the ADR-0018 model),
-  paid per state entry, never per message.
+  pattern) — `Goto` = `Stay` = 2 (both are the test probe channel).
+  Arming a state timeout measured 3 **on the mock's public-envelope
+  `send_after` path** (per state entry, never per message); the shipped
+  (non-envelope) mechanism's arm cost is a build-card measurement.
 - **User LOC**: 124 (helper) vs 106 (idiom) — a small ceremony premium (the
   gate fn + hook overrides), not a reduction; the win is the failure-class
   removal, not brevity.
@@ -69,7 +71,7 @@ hierarchy (Harel 1987 — YAGNI at one consumer), Pekko behavior-return
 ## Options considered
 
 **A. Idiom-only** — document `match self.state` + manual bookkeeping. Zero
-new API, but the 6 verified silent-failure sites remain user obligations, one
+new API, but the 7 manual transition obligations remain the user's, one
 of them invisible even to a deliberately adversarial test suite; the
 rehydration deadline must be a public menu variant (slot cost, stale-guard
 arms). Rejected: the card's own failure class ("what if users forget",
@@ -83,7 +85,9 @@ forgettable class.
 **C. Wrapper with declarative admission (P-shaped)** *(chosen)* — B plus
 `fn gate(&State, &Msg) -> Disposition { Deliver | Defer | Ignore }`:
 admission declared once, enforced by the wrapper; `handle` never sees a
-message its state declared away. `Disposition` is a domain enum, not a bool
+message its state declared away (sole qualified exception: at stash
+capacity the `on_defer_full` handback — consumer-controlled — delivers by
+default). `Disposition` is a domain enum, not a bool
 (bool-blindness; and it recovers P's `ignore` as declared intent). Manual
 stash stays as the escape hatch.
 
@@ -100,8 +104,9 @@ unchanged). Load-bearing points (full surface in the spec):
 - `enum Step<St> { Stay, Goto(St), Stop }` — `Flow` (ADR-0023) + one
   variant, `Copy`, zero-box; the state switch commits only after `Ok`, so
   poisoning holds by construction. `Goto(current)` ≡ `Stay`.
-- State NAME/DATA split (gen_statem): `type State: Clone + PartialEq +
-  Send + 'static` tag enum held by the wrapper; data stays in `self`.
+- State NAME/DATA split (gen_statem): `type State: Copy + PartialEq +
+  Send + 'static` tag enum held by the wrapper (the `Copy` bound makes
+  `Step<State>` unconditionally `Copy`); data stays in `self`.
 - On state *change* only: epoch bump → cancel state timeout → switch →
   release stash → arm new timeout → replay re-gated **in the new state**,
   ahead of the mailbox backlog (ADR-0022 snapshot semantics).
@@ -110,9 +115,19 @@ unchanged). Load-bearing points (full surface in the spec):
   wrapper — unrepresentable in user code. **`Fsm<S>::Msg == S::Msg`** is a
   hard constraint (no public envelope; #114 tripwires and `Recipient`
   minting untouched); the internal delivery mechanism is the build card's
-  first decision.
+  first decision, under a recorded constraint: ADR-0021's control lane is
+  deliberately non-generic and consumed by the run-loop (never routed to
+  `Actor::handle`), so a control-lane timeout is a new lane/routing shape,
+  not ADR-0021 as-is — an epoch-only event needs no `A::Msg` payload, so
+  non-genericity is satisfiable; the routing into the wrapper is the open
+  question.
 - Defer overflow routes the intact message to `on_defer_full` (handback,
   ADR-0022 precedent) — silent drop stays unrepresentable.
+- The two handler-plane hooks (`on_state_timeout`, `on_defer_full`) take
+  `&mut Stash` like `handle` — a deliberate, recorded extension of
+  ADR-0022's "stash access is `handle`-only" consequence (which was scoped
+  to the terminal hooks and anticipated this follow-up). `on_stop`/`on_panic`
+  stay stash-less.
 - The shape lattice `Actor ⊂ StashActor ⊂ FsmActor` is realized by
   composition; `StashActor` stays (harden-never-migrate; the
   gen_server-beside-gen_statem precedent). No base-trait inversion.
@@ -130,7 +145,7 @@ unchanged). Load-bearing points (full surface in the spec):
 - #243 (derive) gains a fixed semantic target; any macro is sugar over
   `FsmActor`.
 - Accepted wart: Rust exhaustiveness cannot see the gate, so gated-away
-  `(state, msg)` pairs still need a catch-all `handle` arm (~2 lines); a
-  future derive could absorb it.
+  `(state, msg)` pairs still need a catch-all `handle` arm
+  (`_ => Ok(Step::Stay)`, ~2 lines); a future derive could absorb it.
 - README/public-API docs change only when the build card ships (no API
   change from this card).

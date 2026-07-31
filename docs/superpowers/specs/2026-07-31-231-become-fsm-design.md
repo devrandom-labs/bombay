@@ -26,9 +26,9 @@ no allocation on the transition path (no Pekko-style behavior objects); the
 `Stashed<S>` house pattern) with **value-return transitions** and **P-style
 declarative message admission**. Decided by a both-ways spike against the
 nexus-shaped lifecycle, not by prose (the #199 lesson): identical observable
-behavior, zero transition allocations, and the idiom's six silent-failure
-sites collapse to one declaration site that the equivalence oracle catches
-three ways.
+behavior, zero transition allocations, and the idiom's seven manual
+transition obligations collapse to one declaration site that the equivalence
+oracle catches three ways.
 
 ## Research corpus (all primary-source-verified 2026-07-31)
 
@@ -89,9 +89,11 @@ three ways.
   existing verb — spawn/tell/ask/watch/supervise/timers/`Recipient` — works
   unchanged. `FsmActor` is the description the wrapper consumes, not a new
   runtime citizen.
-- **D2 — gen_statem's name/data split.** `type State: Clone + PartialEq +
+- **D2 — gen_statem's name/data split.** `type State: Copy + PartialEq +
   Send + 'static` is a plain tag enum the wrapper owns and passes to `handle`
-  by reference; state *data* stays in `self`. Payload-carrying state enums
+  by reference; state *data* stays in `self`. The `Copy` bound is what makes
+  `Step<State>`'s derived `Copy` unconditional (a derived `Copy` on a generic
+  enum is conditional on the parameter). Payload-carrying state enums
   (the fused Rust idiom) remain possible per-actor but are not what the
   wrapper observes.
 - **D3 — Transition is a value return.**
@@ -119,7 +121,17 @@ three ways.
   `on_defer_full(&mut self, &State, msg, …) -> Result<Step, E>`. Default
   implementation delivers to `handle` (visible-but-unrefused shedding);
   consumers override for loud typed refusal (the `TellError`/`StashFull`
-  handback precedent).
+  handback precedent). This is the one qualified exception to "handle never
+  sees a gated-away message": at capacity, the default hands it back through
+  a hook the consumer controls.
+- **D6b — Stash access extends to the two handler-plane hooks.** ADR-0022's
+  consequence "stash access is `handle`-only" was scoped to the *terminal*
+  hooks (`on_stop`/`on_panic` — poisoned or stopping state), and anticipated
+  a follow-up if live hooks ever needed access. `on_state_timeout` and
+  `on_defer_full` are handler-plane (they receive control while the actor is
+  live and return `Step`), so they take `&mut Stash` exactly as `handle`
+  does — a deliberate, recorded extension of ADR-0022, not a silent
+  reversal. The terminal hooks stay stash-less.
 - **D7 — State timeouts are framework events, not menu variants.**
   `fn state_timeout(&State) -> Option<Duration>` declares them; firing
   delivers to `fn on_state_timeout(…) -> Result<Step, E>`. Every arming is
@@ -128,9 +140,16 @@ three ways.
   dropped by the wrapper — **staleness is unrepresentable in user code**.
   `Fsm<S>::Msg == S::Msg` is a hard constraint: no public envelope, no slot
   growth (#114 tripwires untouched), `Recipient` minting unchanged. The
-  internal delivery mechanism (control-lane variant per ADR-0021 vs run-loop
-  plumbing) is the build card's first decision; the spike's public envelope
-  was a mock compromise and is **not** the shipped design.
+  internal delivery mechanism is the build card's first decision, under two
+  recorded constraints: (i) ADR-0021's control lane is deliberately
+  **non-generic** (one concrete `ControlSignal` for every actor — no
+  `A::Msg` in any payload) and its signals are consumed by the run-loop, not
+  routed to `Actor::handle`, so a control-lane timeout is a *new lane/routing
+  shape*, not ADR-0021 as-is; (ii) an epoch-only event needs no message
+  payload, so non-genericity is satisfiable — the open question is the
+  routing into the wrapper. The spike's public envelope was a mock
+  compromise and is **not** the shipped design; its `send_after`-based arm
+  cost does not transfer (see Spike record).
 - **D8 — The shape lattice; no hierarchy inversion.**
   `Actor ⊂ StashActor ⊂ FsmActor` conceptually (Agha: `become` is primitive;
   a plain actor is the one-state case) — realized by composition, each rung
@@ -150,7 +169,10 @@ three ways.
 ## Trait surface (spec of record)
 
 Verified compiling and behaviorally equivalent to the idiom in the spike
-(mock-mechanics caveat: D7 envelope note).
+(mock-mechanics caveat: D7 envelope note). Written `async fn` for brevity;
+the build uses the house RPITIT style
+(`fn … -> impl Future<Output = …> + Send`, the #9 `MaybeSend`-ready pattern
+of `Actor`/`StashActor`).
 
 ```rust
 /// Per-state message admission (the P trio).
@@ -165,7 +187,7 @@ pub trait FsmActor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
     type Args: Send;
     type Error: ReplyError;
     /// State NAME (tag enum); state DATA stays in `self` (D2).
-    type State: Clone + PartialEq + Send + 'static;
+    type State: Copy + PartialEq + Send + 'static;
 
     fn initial_state(args: &Self::Args) -> Self::State;
     fn stash_capacity(args: &Self::Args) -> Capacity;          // ADR-0022: explicit, bounded
@@ -246,10 +268,17 @@ transition.
 | User-side LOC (tokei, code) | 106 | 124 (+18: gate + hook overrides) |
 | Menu variants | 5 (deadline must be public) | 4 |
 | Transition gross allocs (CountingAlloc, #207 pattern) | n/a | **Goto = Stay = 2** (both probe-channel; transition adds **0**) |
-| State-timeout arm | same both ways | 3 (one `send_after` task, ADR-0018 model; per state-entry, never per message) |
+| State-timeout arm | same both ways | 3 **on the mock's public-envelope `send_after` path** (per state entry, never per message); the shipped (non-envelope, D7) mechanism's arm cost is unmeasured — a build-card measurement |
 
-**Falsifiability (every claim below verified by mutating the variant and
-watching the oracle):**
+**The idiom's manual transition obligations (7, as marked `[F#]` in the
+spike's `agg_idiom.rs`):** [F1] carry the timer handle as a field; [F2] arm
+the rehydration deadline in `on_start`; [F3] unstash on the Loading→Ready
+edge; [F4] cancel the deadline on that edge; [F4-dup] cancel it again on the
+Loading→Draining edge (per-EDGE, not per-state); [F5] stale-deadline guard
+arms in every other phase; [F6] unstash on the Loading→Draining edge.
+
+**Falsifiability (mutation runs — 4 of the 7 mutated; each row below is a
+run, not an inference):**
 
 | Omitted step | Caught by |
 |---|---|
@@ -259,7 +288,9 @@ watching the oracle):**
 | idiom [F4-dup] timer cancel on second exit edge | **nothing — escapes the suite** |
 | helper: forgotten `Defer` declaration | s1, s2, s5 (three at once) |
 
-The ledger: idiom = 6 scattered silent-failure sites, one invisible even to
+F1/F2/F4 were not mutation-run (F1 is structural — without the field, F4
+cannot compile; F2's omission fails s3 by inspection). The ledger: idiom =
+7 scattered obligations, 3 of 4 mutated ones caught, one invisible even to
 this deliberately adversarial oracle; helper = 1 declaration site, caught
 three ways. Concentration, not just reduction, is the safety property.
 
@@ -267,7 +298,7 @@ three ways. Concentration, not just reduction, is the safety property.
 
 - **Gate/exhaustiveness wart:** `handle`'s `match (state, msg)` cannot see
   the gate, so pairs declared `Defer`/`Ignore` still require a catch-all arm
-  (~2 lines of `_ => Step::Stay` ceremony). Accepted; a derive (#243) could
+  (~2 lines of `_ => Ok(Step::Stay)` ceremony). Accepted; a derive (#243) could
   eventually generate the match and absorb it.
 - **Mock envelope wart (not shipped):** the spike delivered state timeouts
   via a public `FsmMsg<M>` envelope, which leaked `tell(FsmMsg::User(..))`
