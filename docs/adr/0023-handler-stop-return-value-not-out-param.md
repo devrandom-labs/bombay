@@ -20,16 +20,21 @@ records why an out-param boolean beats a return value or a context verb. Card
   that). Bombay's reply redesign (#115/#118) dropped `Context`, which silently
   promoted the internal out-param into the public trait. The signature was
   never *designed* to be public — upstream keeps it hidden.
-- **Exactly one production consumer.** `kind.rs::handle_message` initializes
-  the flag, runs the handler under `catch_unwind`, and maps
-  `Ok(()) if stop → Break(ActorStopReason::Normal)`. Everything else
-  (`Stashed<S>` replay, the job-queue example, ~120 `&mut bool` occurrences
-  across src/tests/examples) is pass-through or fixture noise — almost all
-  impls write `_: &mut bool`.
-- **The Err-vs-stop precedence exists only as match-arm order.** A handler that
-  sets `*stop = true` *and* returns `Err` crashes; the flag is silently
-  discarded. Nothing in the type or the trait doc states this — it is an
-  undocumented invariant enforceable only by a test.
+- **One run-loop consumer, one composition reader.** `kind.rs::handle_message`
+  initializes the flag, runs the handler under `catch_unwind`, and maps
+  `Ok(()) if stop → Break(ActorStopReason::Normal)`; `Stashed<S>::handle`
+  additionally *reads* it to gate replay (`while !*stop`). Every other
+  occurrence — 129 `&mut bool` sites total (src 60, tests 55, examples 5,
+  benches 9) — is an impl signature, and 114 of them are `_: &mut bool`:
+  signature noise in the common case.
+- **The Err-vs-stop precedence is prose-and-match-arm-order only.** A handler
+  that sets `*stop = true` *and* returns `Err` crashes; the flag is silently
+  discarded. The trait doc does imply this (stop is conditioned on "after
+  this handler returns `Ok`", `mod.rs:75-77`), but the type happily expresses
+  the contradictory pair, the enforcement is one match-arm ordering in
+  `handle_message`, and no test pins it — all 12 fixtures that set
+  `*stop = true` return `Ok` (verified in the #259 audit). Documented but
+  structurally unenforced and untested.
 - **The trait surface already speaks return-value flow.**
   `Watch::on_link_died` returns
   `Result<ControlFlow<ActorStopReason>, Self::Error>` — the analogous
@@ -42,11 +47,15 @@ records why an out-param boolean beats a return value or a context verb. Card
   arm, and the linked/supervised loops poll their `biased;` link → retries →
   deferred-abort arms first (`kind.rs::run_linked_message_loop`,
   `run_supervised_message_loop`). A token stop set inside a handler therefore
-  still dispatches every ready death notice before the loop observes it —
-  violating the property #266 pinned: a notice arriving after the stop
-  decision is dropped, never delivered ("finish-current-then-stop, observe
-  nothing further"). Step-synchronous stop is expressible only inside the
-  handler step itself; the design question is only its *shape*.
+  still dispatches every ready death notice to `on_link_died` before the loop
+  observes it. Today's flag makes the handler's decision and the loop's break
+  coincide within one step — nothing is observed in between; the token cannot
+  express that coupling, so replacing the flag with it would be an observable
+  *semantic change* (post-decision hook dispatches), not a refactor. (#266
+  pins notice-drops after the *loop's* break decision; the token option would
+  not violate that letter — the loop would simply decide later — which is
+  precisely why it is a weakening.) Step-synchronous stop is expressible only
+  inside the handler step itself; the design question is only its *shape*.
 - **Composition must observe the decision synchronously.** `Stashed<S>`
   (ADR-0022) replays stashed messages *within* the current `handle_message`
   step and short-circuits replay on stop (`while !*stop`,
@@ -96,7 +105,8 @@ shares C2's composition problem.
 **C2. Delete the mechanism; in-handler stop = `actor_ref.stop()`.** Rejected
 on semantics, not taste: the token is observed after the biased housekeeping
 arms (see Verified facts), so it cannot express "stop before observing
-anything further" — the #266-pinned contract — and `Stashed` replay could not
+anything further" — the step-synchronous coupling today's flag provides (see
+Verified facts; a semantic change, not a refactor) — and `Stashed` replay could not
 see the decision without peeking `pub(crate)` loop state.
 
 **D. Return `Result<ControlFlow<()>, Self::Error>` (std vocabulary).**
@@ -139,7 +149,7 @@ pub enum Flow {
 ## Consequences
 
 - **Breaking signature change, pre-1.0, owned here** (the ADR-0021 precedent).
-  The mechanical migration (~120 sites, overwhelmingly test fixtures swapping
+  The mechanical migration (129 sites incl. benches, overwhelmingly fixtures swapping
   `_: &mut bool` for `Ok(Flow::Continue)`) is follow-up card #271 — this card
   (#259) decides only.
 - The follow-up card carries the walking-skeleton bullet: the job-queue
