@@ -1,5 +1,14 @@
 # 274 — build the deadline plane (ADR-0025), then FsmActor/Fsm<S> (ADR-0024)
 
+> **SUPERSEDED IN PART by ADR-0026 (#277, 2026-07-31).** S2/S3 as written
+> are void: `next_deadline`/`on_deadline` do NOT land on `Actor` — they
+> live in the `Deadlined` capability, so the plane part is BLOCKED ON
+> ADR-0026 stage 1 (`CapSet`/`Ctx` machinery + the open-`Has` spike gate)
+> and the loops query the cap set, not the actor. Part 2 (S6–S11) is
+> replaced by stage 4 (`Phased`). Semantics, tests, and oracle ports in
+> this plan remain the correct content; re-seat them per ADR-0026 when
+> the stage-4 card is planned.
+
 ## Context
 
 Design is FIXED by:

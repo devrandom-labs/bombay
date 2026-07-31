@@ -18,8 +18,8 @@ fewer functions, less user cognitive load, no god-object collapse.
 - **Surface baseline**: ≈80 named public items, ≈175–180 user-touchable
   entries, 10 traits, 18 trait methods (28 with the planned `FsmActor`),
   29 error variants. Obligations: plain actor 3 trait impls; supervised
-  pair 7 impls **including two empty marker impls**; planned phased actor
-  7 required methods.
+  pair **8 impls counting derives** (Dispatcher 5 incl. **two empty
+  marker impls**, Worker 3); planned phased actor 7 required methods.
 - **Hook-family duplication ×4**: `on_start`/`handle`/`on_panic`/`on_stop`
   declared in `Actor`, `StashActor`, planned `FsmActor`, plus `Stashed`'s
   forwarding impl — drifting only by the wrapper type leaking into
@@ -30,7 +30,9 @@ fewer functions, less user cognitive load, no god-object collapse.
   planned `Fsm<S>` has the same hole. "A supervisor that defers while
   rebuilding a child" is UNREPRESENTABLE today. The tier system is not
   flexibility; it is a set of fixed, non-composable rungs.
-- **~11 spawn entry points** over 3 real start-kinds; the ref-type rule
+- **14 public start-driving entry points** over 3 real start-kinds (6
+  `Spawn*` trait verbs + 8 `PreparedActor` methods incl. the three
+  current-task `run*` variants); the ref-type rule
   (strong iff a message exists to mint from) is sound but enforced by
   prose across five documents.
 - **Candidate spike green** (`spike-277-b`, stable Rust): ONE trait with
@@ -94,10 +96,16 @@ param sugar later without semantic change.
    is exactly what `Caps` declares, compile-gated. **No runtime-checked
    capability accessor, ever** — no `try_get::<Cap>() -> Option<_>`. The
    moment capability access can fail at runtime, the design has failed.
-2. **The capability system is OPEN.** `CapSet`/`Has<C>` are public traits
-   with a derive; third parties write capabilities exactly as bevy users
-   write custom `SystemParam`s. Adding a capability never again means a
-   new actor-shape trait or wrapper.
+2. **The capability system is OPEN — a design target with a named
+   obstacle, NOT spike-verified.** The spike proved compile-gating only
+   for the CLOSED encoding (exact `Caps = tuple` equality bounds). A
+   naive open `Has<C>` over tuples is coherence-infeasible on stable
+   (`impl<A,B> Has<A> for (A,B)` and `impl<A,B> Has<B> for (A,B)` unify
+   at `(X,X)` → E0119; no specialization). The viable open encodings —
+   frunk-style indexed `Has<C, Index>`, or bevy's actual model
+   (derive-on-named-struct cap sets, tuples only as core-provided sugar)
+   — MUST be spiked as stage 1's first gate. Openness remains the law;
+   its encoding is stage 1's proof obligation.
 3. **Composition rules are compile-time law.** Cap requirements ride
    bounds (`Supervising` requires `Watching`); invalid stacks do not
    compile. The empty-marker-impl ritual dies.
@@ -113,11 +121,16 @@ param sugar later without semantic change.
 
 Surface relocations (semantics byte-identical, declaration point moves):
 
-- ADR-0025's `next_deadline`/`on_deadline` move **off `Actor` onto the
-  capability machinery** — the loop asks the cap set; plain actors no
-  longer carry deadline items at all. The plane's semantics (arm
-  placement, fires-once, WeakActorRef rule, turn-boundary delivery) are
-  untouched.
+- ADR-0025's `next_deadline`/`on_deadline` move **off `Actor` into a
+  first-class `Deadlined<DP: DeadlinePolicy>` capability** — the loop
+  asks the cap set; plain actors carry no deadline items. This is a
+  deliberate **narrowing** of ADR-0025's every-actor seat (its "no
+  narrower seam than the trait" reasoning predates the cap machinery,
+  which IS the narrower seam), not a byte-identical move: the plane's
+  *semantics* (arm placement, fires-once, WeakActorRef rule,
+  turn-boundary delivery) are untouched, and #241's recorded
+  non-phased consumer path re-routes through `Deadlined` (a
+  receive-timeout wrapper composes it; `Phased` requires/embeds it).
 - ADR-0024's `FsmActor` becomes `Phased<P: PhasePolicy>` — D1–D10
   semantics preserved verbatim (Step/Disposition/gen_statem-P transition
   rules, required policy items, `&self`-tunable magnitudes); the
@@ -153,3 +166,12 @@ Surface relocations (semantics byte-identical, declaration point moves):
   sections stand).
 - Allocation profile unchanged: caps are plain monomorphized structs, no
   boxing on any hot path; #207 guards re-assert during migration.
+- **Open risks, named** (each a gate on its stage): (i) stage 1 — the
+  open-`Has` encoding (E0119; indexed vs struct-derive) must spike green
+  before anything else builds on it; (ii) stage 3 — the supervised loop
+  (3-arm, DelayQueue, teardown per ADR-0019) was NOT modeled in the
+  spike, and the compile-time loop-selection mechanism (type-driven
+  dispatch from `Caps`) is unspecified — stage 3 designs it with the
+  drain/supervision equivalence suites as its oracle; (iii) spike crates
+  are preserved on the `spikes/277` branch until their dependent stage
+  lands (session scratchpads are not durable evidence).

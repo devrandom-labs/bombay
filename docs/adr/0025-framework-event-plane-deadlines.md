@@ -1,6 +1,11 @@
 # ADR-0025: Framework-event plane — loop-owned declarative deadlines
 
 Date: 2026-07-31 · Status: accepted (amends ADR-0024 D7) · Cards: #274, #241
+· Amended 2026-07-31 by [ADR-0026](0026-core-distillation-one-trait-caps.md):
+the SEAT of Decision 1's two methods narrows from every-actor `Actor`
+defaults to the `Deadlined` capability (the cap machinery is the "narrower
+seam" this ADR said did not exist). All plane semantics — arm placement,
+fires-once, WeakActorRef rule, turn-boundary delivery — stand unchanged.
 
 ## Context
 

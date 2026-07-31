@@ -5,6 +5,11 @@ Date: 2026-07-31 · Status: accepted (design; build is a follow-up card) · Card
 epoch-stamped delivery is superseded by the loop-owned declarative deadline
 plane (staleness becomes unrepresentable; no epoch machinery, no `Signal`
 variant, no timer task).
+· Amended 2026-07-31 by [ADR-0026](0026-core-distillation-one-trait-caps.md):
+the SURFACE moves — `FsmActor`/`Fsm<S>` becomes the `Phased<P: PhasePolicy>`
+capability, and D8's "`StashActor` stays" is superseded by the staged
+migration to `Stashing` (both under ADR-0026's semantics-preservation
+mapping; every D1–D10 semantic stands).
 
 ## Context
 
