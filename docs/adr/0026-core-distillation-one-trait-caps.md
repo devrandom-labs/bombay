@@ -1,0 +1,155 @@
+# ADR-0026: Core distillation — one `Actor` trait, capabilities as plugged types
+
+Date: 2026-07-31 · Status: accepted (design; migration is staged follow-up
+cards) · Card: #277 · Amends the *surface* (never the semantics) of
+ADR-0022/0024/0025; gates #274.
+
+## Context
+
+The core grew by accretion: every capability added either a trait tier
+(`Watch` ⊂ `Supervisor`), a parallel actor-shape trait + wrapper
+(`StashActor`/`Stashed`, planned `FsmActor`/`Fsm`), free verbs, or config —
+four extension paradigms. Joel's direction (2026-07-31): deep holistic
+distillation — **extreme flexibility AND extreme compile-time safety**,
+fewer functions, less user cognitive load, no god-object collapse.
+
+## Verified facts (audit, 2026-07-31; full data in the #277 spec)
+
+- **Surface baseline**: ≈80 named public items, ≈175–180 user-touchable
+  entries, 10 traits, 18 trait methods (28 with the planned `FsmActor`),
+  29 error variants. Obligations: plain actor 3 trait impls; supervised
+  pair 7 impls **including two empty marker impls**; planned phased actor
+  7 required methods.
+- **Hook-family duplication ×4**: `on_start`/`handle`/`on_panic`/`on_stop`
+  declared in `Actor`, `StashActor`, planned `FsmActor`, plus `Stashed`'s
+  forwarding impl — drifting only by the wrapper type leaking into
+  `actor_ref` and appended params (`handle` arity 3→4→5).
+- **The flexibility hole — the decisive fact**: the paradigms do not
+  compose. There is **no `impl Watch for Stashed<S>`** (verified,
+  `stash.rs`): a deferring actor cannot itself watch or supervise; the
+  planned `Fsm<S>` has the same hole. "A supervisor that defers while
+  rebuilding a child" is UNREPRESENTABLE today. The tier system is not
+  flexibility; it is a set of fixed, non-composable rungs.
+- **~11 spawn entry points** over 3 real start-kinds; the ref-type rule
+  (strong iff a message exists to mint from) is sound but enforced by
+  prose across five documents.
+- **Candidate spike green** (`spike-277-b`, stable Rust): ONE trait with
+  `type Caps` covers plain/deferring/phased/watching with behavioral
+  parity on defer-replay, phase-gating, and deadline scenarios; capability
+  misuse is a **compile error** (proven by a `compile_fail` doctest);
+  user-state vs framework-state borrows split trivially (disjoint
+  fields). Metrics vs baseline: plain 3→**1** impl; deferring 3→**2** and
+  the spawn-the-wrapper trap is gone; phased 3 impls/7 methods →
+  **2 impls/6 methods** with the machine as one coherent unit; watching
+  needs **zero** extra impls (policy chosen by name).
+- **Bonus re-proof**: a one-queue model of the phase stash livelocked
+  instantly — ADR-0022's two-queue snapshot rule is load-bearing and
+  survives distillation untouched.
+
+## Research grounding
+
+Mechanism (production Rust, docs-verified): axum's `Handler` (plain fns;
+blanket impls over extractor-typed params) and bevy's `SystemParam`
+(`Query`/`Res`/`Local` as typed capability requests, third-party-extensible
+via derive) prove params/slots-as-capabilities at scale; tower's `Service`
+sets the minimal-surface bar and its poll_ready/call panic contract warns
+that fewest items ≠ fewest obligations — obligations must move into types,
+not into prose. Constraint: associated-type **defaults** are unstable
+(rust-lang #29661), so a pure slot design taxes every actor with every
+slot declaration; the chosen hybrid avoids that (one `Caps` type, `()` for
+plain). Semantics corpus unchanged from ADR-0024/0025 (Agha; De Koster
+AGERE! 2016; P PLDI 2013; Timed Rebeca SCP 2014).
+
+## Options considered
+
+**A. Status-quo-plus** — keep the lattice, tighten (required policy items,
+`spawn_fsm` sugar). Rejected: leaves the ×4 hook duplication, the empty
+marker impls, the 11-entry spawn surface, and above all the composition
+hole — the paradigms still don't compose.
+
+**B. One trait + `Caps` as plugged capability types** *(chosen — the
+spiked hybrid)*: `Actor` keeps only identity + behavior (`Msg`, `Args`,
+`Error`, `Caps`, `init`, `handle`, + defaulted `on_stop`/`on_panic`/
+`name`); every capability is a type in `Caps` carrying its policy as a
+plugged trait impl (strategy-as-type, required by construction); access
+is compile-gated through the one `Ctx`.
+
+**C. Pure GAT/slot surface** — every capability an associated type on
+`Actor`. Rejected as a *separate* option: without associated-type
+defaults (unstable) every actor declares every slot. Its intent is
+subsumed by B (`Caps` IS a slot; `()` is the default the language won't
+give us per-slot).
+
+**D. Pure axum-style free-fn handlers** (no trait; handler registered at
+spawn, params via tuple blanket impls). Rejected: adds the coherence
+marker + arity-macro machinery for marginal gain over B, and loses the
+natural home for `Args`/`Error`/lifecycle defaults. B can adopt D's
+param sugar later without semantic change.
+
+## Decision
+
+**B**, under five hard constraints (Joel's anti-god-object law):
+
+1. **`Ctx` is a typed window, never a god object.** Its reachable surface
+   is exactly what `Caps` declares, compile-gated. **No runtime-checked
+   capability accessor, ever** — no `try_get::<Cap>() -> Option<_>`. The
+   moment capability access can fail at runtime, the design has failed.
+2. **The capability system is OPEN.** `CapSet`/`Has<C>` are public traits
+   with a derive; third parties write capabilities exactly as bevy users
+   write custom `SystemParam`s. Adding a capability never again means a
+   new actor-shape trait or wrapper.
+3. **Composition rules are compile-time law.** Cap requirements ride
+   bounds (`Supervising` requires `Watching`); invalid stacks do not
+   compile. The empty-marker-impl ritual dies.
+4. **The expert floor stays.** `PreparedActor`, mailbox primitives, and
+   the run-loop seams remain public-as-today beneath the ergonomic
+   surface; distillation applies to what typical users must touch, not
+   what experts may touch.
+5. **Capabilities are small separate units** — `Stashing`+`StashPolicy`,
+   `Phased`+`PhasePolicy` (states, gate, deadlines, timeout reaction as
+   ONE unit), `Watching`+`WatchPolicy`, `Supervising`+strategy. One
+   *entry* trait, many plugged parts; the 10-item `FsmActor` shape is
+   explicitly the rejected direction.
+
+Surface relocations (semantics byte-identical, declaration point moves):
+
+- ADR-0025's `next_deadline`/`on_deadline` move **off `Actor` onto the
+  capability machinery** — the loop asks the cap set; plain actors no
+  longer carry deadline items at all. The plane's semantics (arm
+  placement, fires-once, WeakActorRef rule, turn-boundary delivery) are
+  untouched.
+- ADR-0024's `FsmActor` becomes `Phased<P: PhasePolicy>` — D1–D10
+  semantics preserved verbatim (Step/Disposition/gen_statem-P transition
+  rules, required policy items, `&self`-tunable magnitudes); the
+  hook-ref drift disappears structurally (policy signatures are fixed
+  per capability, not re-declared per trait tier).
+- ADR-0022's `StashActor`/`Stashed` becomes `Stashing`+`StashPolicy` —
+  two-queue snapshot, bounded refusal-with-handback, D6 terminal-hook
+  rules all preserved; the spawn-the-wrapper trap is gone.
+- `Watch`/`Supervisor`/the three `Spawn*` traits collapse into
+  `Watching`/`Supervising` caps + **one `spawn`** (+ `spawn_with`
+  config variant); loop shape is selected by `Caps` at compile time
+  (monomorphized — no runtime branch). `ActorRef`/`WeakActorRef` **both
+  stay**: the strong/weak split carries liveness-pinning semantics
+  (ADR-0003/0010/0020) and is not surface noise — what dies is its
+  *re-litigation per hook signature*.
+
+## Consequences
+
+- **Migration is staged follow-up cards** (pre-1.0; our own unshipped
+  surface — harden-never-migrate protects semantics, which are preserved
+  invariant-by-invariant in the spec's mapping table): (1) core trait +
+  `Caps`/`Ctx`/derive machinery + plain path; (2) `Stashing`; (3)
+  `Watching`/`Supervising` + spawn collapse; (4) `Phased` on the
+  ADR-0025 plane — **replaces #274 part 2**; #274's plane part (loop
+  arm) proceeds under the relocated declaration; (5) delivery-error
+  consolidation (the 3×-spelled TellError/AskError/PipeAskError family)
+  as its own audited card.
+- **#243 (derive) is re-targeted**: menu derive (merging `Msg`+
+  `Mailboxed` into one declaration, keeping the #114 tripwire),
+  per-state `gate` exhaustiveness, and the custom-capability derive.
+- The `.plans/274-fsm-build.md` plan is revised against stage (4);
+  ADR-0024/0025 receive surface-amendment notes (their semantics
+  sections stand).
+- Allocation profile unchanged: caps are plain monomorphized structs, no
+  boxing on any hot path; #207 guards re-assert during migration.

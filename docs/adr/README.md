@@ -46,4 +46,5 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | [0022](0022-bounded-stash.md) | Bounded stash: `Stashed<S>` composition, in-step replay | Accepted |
 | [0023](0023-handler-stop-return-value-not-out-param.md) | Handler stop signalling: return-value `Flow`, not `stop: &mut bool` | Accepted |
 | [0024](0024-fsm-behavior-switching.md) | Behavior switching: `FsmActor`/`Fsm<S>` wrapper, declarative admission | Accepted (D7 amended by 0025) |
-| [0025](0025-framework-event-plane-deadlines.md) | Framework-event plane: loop-owned declarative deadlines | Accepted |
+| [0025](0025-framework-event-plane-deadlines.md) | Framework-event plane: loop-owned declarative deadlines | Accepted (surface seat amended by 0026) |
+| [0026](0026-core-distillation-one-trait-caps.md) | Core distillation: one `Actor` trait, capabilities as plugged types | Accepted |
