@@ -67,37 +67,43 @@ Implement (names final per spec):
   then `A::init(args, Ctx{..})` (Ctx borrows the freshly built caps and
   the actor_ref param); `handle` = `A::handle(&mut self.user, msg, Ctx{..})`;
   `name`/`on_panic`/`on_stop` forward to the `caps::Actor` items.
-- `pub async fn spawn<A: caps::Actor>(args: A::Args) -> Handle<A>` and
-  `spawn_with(config: crate::actor::SpawnConfig, args) -> Handle<A>` —
-  thin over the existing blanket `Spawn` (`actor/mod.rs:196,203`) on
-  `Shell<A>`. (They are sync fns today upstream; mirror the existing
-  signatures — do NOT invent async spawn if `Spawn::spawn` is sync.)
+- `pub fn spawn<A: caps::Actor>(args: A::Args) -> Handle<A>` and
+  `pub fn spawn_with<A: caps::Actor>(config: crate::actor::SpawnConfig, args: A::Args) -> Handle<A>`
+  — **SYNC**, mirroring the blanket `Spawn::spawn`/`spawn_with_config`
+  (mod.rs:196-211, sync + `#[must_use]`), thin over that blanket on
+  `Shell<A>`. `#[must_use]` on both and on `Ctx::self_ref`
+  (pedantic must_use_candidate fires otherwise).
 Expected: compiles clippy-clean; zero changes inside `actor/`, `stash/`,
 `mailbox.rs`.
 
-**S2. `#[derive(CapSet)]` in bombay_macros.** PARALLEL OK with S3/S4
+**S2. `#[derive(Provide)]` in bombay_macros** — named for what it emits
+(a derive named CapSet that emits no CapSet impl is a lie; a
+build-generating `CapSet` derive is #243's). PARALLEL OK with S3/S4
 (different crate).
-Files: NEW `crates/macros/src/derive_capset.rs`; `crates/macros/src/lib.rs`
+Files: NEW `crates/macros/src/derive_provide.rs`; `crates/macros/src/lib.rs`
 (register, following `derive_msg.rs`'s structure: `mod` + re-export +
-doc with a `compile_fail` doctest).
-- On a named struct: emit `impl<A> bombay::caps::CapSet<A> for TheStruct`
-  — WRONG shape: the derive cannot know `A`. Instead emit exactly what
-  the Addendum spike hand-wrote: the derive takes the actor type via
-  attribute `#[capset(actor = MyActor, args = MyArgs)]`? NO — keep it
-  simpler and fully general: derive emits (a) one
-  `impl bombay::caps::Provide<FieldTy> for TheStruct` per field
-  (E0119 rejects duplicate field types — the O3 feature), and (b) an
-  inherent `fn build_from(parts: (FieldTy, ...)) -> Self`? NO — decision:
-  the derive emits ONLY the `Provide` impls (the open seam, the part
-  users must not hand-write); `CapSet::build` remains a hand-written
-  impl this stage (it needs policy knowledge the derive cannot infer).
-  Doc this split explicitly; a `build`-generating attribute is future
-  work under #243. Keep the derive ~mirror of `derive_msg.rs` in size.
-- Derive doc carries TWO doctests: one success (struct with two distinct
-  cap fields, `cap::<C>()` works) and one `compile_fail` (duplicate
-  field type → E0119).
-Expected: `cargo check -p bombay_macros` + the doctests compile as
-written (execution is the controller's gate; see S5 verification note).
+doc doctests; emit **absolute `::bombay::caps::Provide<#field_ty>` paths**
+exactly as derive_msg emits `::bombay::message::Msg` — bombay_macros has
+bombay only as a dev-dependency).
+Input validation mirrors `derive_msg.rs:25-38`: reject generic structs,
+tuple structs, unit structs, enums, and unions with spanned
+`syn::Error`s — a silently-empty derive is worse than an error.
+Doctest constraint: bombay_macros dev-deps have NO tokio — the success
+doctest must be COMPILE-ONLY (define the actor, reference `cx.cap` in a
+handler body; never call `caps::spawn`, never await anything at top
+level).
+- Decision (fixed): the derive emits ONLY one
+  `impl ::bombay::caps::Provide<FieldTy> for TheStruct` per named field
+  (E0119 rejects duplicate field types — the O3 feature).
+  `CapSet::build` remains hand-written this stage (it needs policy
+  knowledge the derive cannot infer); doc this split loudly in the
+  derive header; a build-generating `CapSet` derive is #243.
+- Derive doc carries TWO doctests: one success (COMPILE-ONLY per the
+  constraint above; struct with two distinct cap fields, `cx.cap::<C>()`
+  referenced in a handler body) and one `compile_fail` (duplicate field
+  type → E0119).
+Expected: `cargo check -p bombay_macros`; doctests compile as written
+(execution verified by the controller; see Verification).
 
 **S3. Tests.** After S1; PARALLEL OK with S2/S4 (new files only).
 Files: unit tests in `caps.rs` `#[cfg(test)]` + NEW
@@ -157,9 +163,12 @@ Expected final: `cargo check -p bombay -p bombay_macros` +
   `cargo check -p bombay --tests --examples`.
 - NEVER cargo test/nextest/miri/mutants (sandbox hangs) — controller
   runs `nix flake check` after `git add` (untracked files are invisible
-  to it) AND verifies the compile_fail doctests EXECUTE
-  (`cargo test --doc -p bombay 2>&1 | grep -c compile_fail` ≥ 2 — the
-  #170 vacuous-tripwire lesson).
+  to it) AND verifies the compile_fail doctests EXECUTE — per package,
+  against a baseline measured on main first (the #170 vacuous-tripwire
+  lesson): `cargo test --doc -p bombay` must run ≥1 compile_fail (the
+  O2 `Ctx::cap` doctest — bombay's only one) and
+  `cargo test --doc -p bombay_macros` must run exactly baseline+1
+  compile_fail (the new duplicate-field E0119 doctest).
 - Final line: `<<<KIMI-DONE: done|blocked>>>`.
 
 ## Out of scope
