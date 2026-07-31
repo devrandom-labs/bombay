@@ -28,15 +28,29 @@ actor logic at all?** Design that once; #274 and #241 become consumers.
   current state, re-read by the loop after every state-touching step. No
   set/cancel verbs — nothing to forget, nothing to race (the same
   forget-proofing argument as the #231 gate).
-- **P-D2 — One hook.** `Actor::on_deadline(&mut self, actor_ref)
-  -> Result<Flow, Self::Error>` (default `Ok(Flow::Continue)`), run at a
-  turn boundary under the same `catch_unwind`/poisoning treatment as
-  `handle`; crash domain `PanicReason::OnDeadline`.
+- **P-D2 — One hook.** `Actor::on_deadline(&mut self,
+  actor_ref: WeakActorRef<Self>) -> Result<Flow, Self::Error>` (default
+  `Ok(Flow::Continue)`), run at a turn boundary under the same
+  `catch_unwind`/poisoning treatment as `handle`; crash domain
+  `PanicReason::OnDeadline`, classified handler-like (NOT
+  `is_lifecycle_hook` — restart-eligible; pinned by a build test).
+  **Weak, not strong, by drain-window necessity**: `handle`'s strong ref
+  is minted from the dequeued message's `self_sender` when
+  `self_ref.upgrade()` fails; a deadline fire has no message, and a
+  loop-held sender would kill `Collected` (ADR-0003/0010/0020). Deadlines
+  keep firing through the drain window; transitions and `Flow` work
+  unchanged there, self-sends degrade (upgrade `None`) — the
+  `on_panic`/`on_stop` signature family. `FsmActor::on_state_timeout`'s
+  ref parameter becomes `WeakActorRef` accordingly (#231 spec amended).
 - **P-D3 — Arm placement**: one guarded `sleep_until` arm per loop,
   immediately above the mailbox arm, below all existing housekeeping arms
-  (link → [retries → aborts] → **deadline** → mailbox). The only new
-  ordering relation is deadline-before-mailbox (P1); every relation pinned
-  by the drain/supervision equivalence suites is untouched.
+  (link → [retries → aborts] → **deadline** → mailbox). **No existing
+  inter-arm relation changes**; the new arm's own relations — below each
+  housekeeping arm, above the mailbox (P1) — all get build-time ordering
+  pins. The plain loop (today a straight `poll_mailbox().await`, no
+  select) gains its **first** `select!` here; since cancellation is
+  observed inside the mailbox arm, a due deadline delays cancel
+  observation by at most one hook turn (bounded; pinned by a build test).
 - **P-D4 — Fires-once-per-value**: after firing for value `d`, the arm
   re-enables only when `next_deadline() != Some(d)`. Spin-proof by
   construction (P3) — the `DelayQueue` `is_empty()` guard's sibling.
@@ -48,7 +62,10 @@ actor logic at all?** Design that once; #274 and #241 become consumers.
   design** (staleness unrepresentable: cancel is a synchronous slot
   update in the owning task). #241 expresses reset-on-message as
   `last_activity + T` over the same slot (P4); its verb/menu surface stays
-  on #241.
+  on #241 — except the same-instant tie, which the plane pre-decides:
+  a due deadline fires before a simultaneously-queued message (biased arm
+  order; the reverse starves, P1b). #241's ADR records that, it does not
+  choose it.
 - **P-D7 — Untouched**: ADR-0018 timers (delayed user *messages*); the
   link channel (the plane's death-event lane; folding = migration for no
   gain).

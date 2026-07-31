@@ -116,18 +116,42 @@ delivering through one hook. Epoch-free, task-free, `Signal`-free; serves
 
    /// Expiry delivery, at a turn boundary, under the same catch_unwind
    /// and poisoning treatment as `handle`. Default: keep running.
-   fn on_deadline(&mut self, actor_ref: ActorRef<Self>)
+   fn on_deadline(&mut self, actor_ref: WeakActorRef<Self>)
        -> impl Future<Output = Result<Flow, Self::Error>> + Send;
    ```
    A panic/`Err` in the hook is a controlled crash tagged with a new
-   `PanicReason::OnDeadline` variant (one variant, one failure domain).
+   `PanicReason::OnDeadline` variant (one variant, one failure domain),
+   classified **handler-like, NOT `is_lifecycle_hook`** — a deadline hook
+   is ordinary state processing (restart-eligible under supervision),
+   unlike `OnLinkDied`'s escalate-without-restart. The `matches!` list in
+   `error.rs::is_lifecycle_hook` does not change; the build pins this
+   with a test (adding a variant compiles either way — silence is not a
+   decision).
+
+   **The hook takes `WeakActorRef`, not `ActorRef` — a drain-window
+   necessity, not a style choice.** `handle`'s strong ref is minted from
+   the dequeued message's `self_sender` when `self_ref.upgrade()` fails
+   (the ADR-0003/0010 drain window); a deadline fire carries no message,
+   so no mint source exists, and a loop-held sender would keep the
+   mailbox open forever and kill `Collected` (ADR-0020). Deadlines
+   therefore **keep firing through the drain window** (the arm sits above
+   the mailbox arm, so a due deadline fires before the backlog finishes
+   draining); inside the hook, transitions and `Flow` decisions work
+   unchanged — only self-sends degrade (upgrade returns `None`), exactly
+   as in `on_panic`/`on_stop`, whose signatures this follows.
 2. **One deadline arm per loop** (plain, linked, supervised), placed
    **immediately above the mailbox arm and below every existing
    housekeeping arm** (link → [retries → aborts] → deadline → mailbox).
-   Minimal perturbation: the only new ordering relation is
-   deadline-before-mailbox — the one P1 proves necessary — and every
-   ordering pinned by the existing drain/supervision equivalence suites is
-   untouched.
+   Minimal perturbation: **no existing inter-arm relation changes**; the
+   new arm introduces its own relations — below link/retries/aborts (a
+   ready death notice or due rebuild beats a due deadline) and above the
+   mailbox (the one P1 proves necessary) — and the build's ordering pins
+   must cover all of them, not just deadline-before-mailbox. The plain
+   loop is today a straight `poll_mailbox().await` with no select; it
+   gains its **first** `select!` here. Consequence recorded: cancellation
+   is observed inside the mailbox arm (`run_until_cancelled`), so a due
+   deadline delays cancel observation by at most one hook turn — bounded,
+   and pinned by a build test.
 3. **Fires-once-per-value guard** (model P3): after firing for deadline
    value `d`, the arm re-enables only when `next_deadline()` reports a
    value ≠ `d`. A hook that leaves its deadline unchanged cannot busy-loop
@@ -140,11 +164,17 @@ delivering through one hook. Epoch-free, task-free, `Signal`-free; serves
    (they never touch actor state).
 5. **Consumers:** `Fsm<S>` (#274) implements `next_deadline` from
    `(state, entered_at)` and overrides `on_deadline` to run
-   `FsmActor::on_state_timeout` — ADR-0024's epoch clause is superseded
-   (staleness is unrepresentable, not filtered). #241 builds its
-   reset-on-message surface on the same slot (model P4); its API shape
-   stays on that card. Future framework events (M3 liveliness) join the
-   plane rather than adding plumbing.
+   `FsmActor::on_state_timeout` (whose `actor_ref` parameter becomes
+   `WeakActorRef`, following the hook rule above) — ADR-0024's epoch
+   clause is superseded (staleness is unrepresentable, not filtered).
+   #241 builds its reset-on-message surface on the same slot (model P4);
+   its API shape stays on that card — with one edge the plane
+   **pre-decides**: on a same-instant tie between a due deadline and a
+   queued message, the deadline fires first (biased arm order; the
+   reverse placement starves, P1b) — "message wins the tie" is not
+   implementable on this plane, and #241's ADR records that rather than
+   choosing it. Future framework events (M3 liveliness) join the plane
+   rather than adding plumbing.
 6. **Untouched:** ADR-0018's `send_after`/`send_interval` (user-plane
    delayed *messages* — a different thing than deadlines); the link-notice
    channel (the plane's death-event lane, shipped in #195 — folding it in

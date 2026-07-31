@@ -138,7 +138,10 @@ oracle catches three ways.
   declarative deadline plane (`Actor::next_deadline`/`on_deadline`), where
   cancellation is a synchronous slot update and staleness is
   unrepresentable; the epoch stamping and the lane question are moot. The
-  `Fsm<S>::Msg == S::Msg` constraint and the no-envelope rule stand.)*
+  `Fsm<S>::Msg == S::Msg` constraint and the no-envelope rule stand.
+  `on_state_timeout`'s `actor_ref` parameter becomes `WeakActorRef` —
+  ADR-0025's drain-window rule: a deadline fire has no message to mint a
+  strong ref from.)*
   `fn state_timeout(&State) -> Option<Duration>` declares them; firing
   delivers to `fn on_state_timeout(…) -> Result<Step, E>`. Every arming is
   stamped with the wrapper's transition **epoch**; a timeout that
@@ -233,9 +236,10 @@ on user message m:
     Deliver -> step = S::handle(&mut data, &state, m, ref, &mut stash)?
     Defer   -> stash.stash(m); on StashFull(m) -> step = S::on_defer_full(.., m, ..)?
     Ignore  -> step = Stay
-on state-timeout event with epoch e:
-  if e != current epoch -> drop (stale; user never observes)   // D7
-  else step = S::on_state_timeout(&mut data, &state, ..)?
+on state-timeout event with epoch e:                 // SUPERSEDED by
+  if e != current epoch -> drop (stale)              // ADR-0025: no epochs;
+  else step = S::on_state_timeout(&mut data, ..)?    // expiry arrives via
+                                                     // Actor::on_deadline
 apply(step):
   Stay -> (); Stop -> return Flow::Stop
   Goto(next) if next != state:                                  // D3/D4
