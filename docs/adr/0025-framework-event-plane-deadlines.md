@@ -71,8 +71,8 @@ De Meuter, *43 Years of Actors*, AGERE! 2016, DOI 10.1145/3001886.3001890)
 outlaws blocking/preemption within a turn — time is observable **only at
 turn boundaries**, which is exactly where the arm fires (model P5).
 **Timed Rebeca** (Reynisson et al., *Modelling and simulation of
-asynchronous real-time systems using Timed Rebeca*, Sci. Comput. Program.
-89, 2014) formalizes actor time this way: non-preemptive message servers,
+asynchronous real-time systems using Timed Rebeca*, Science of Computer
+Programming 89, 2014) formalizes actor time this way: non-preemptive message servers,
 time advancing between servings, deadlines first-class. Active-object
 duration guards (De Boer et al., ACM Computing Surveys 50(5), 2017) advance
 time between activations in the cooperative family. Mechanism: the Rust
