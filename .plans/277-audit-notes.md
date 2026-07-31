@@ -139,6 +139,46 @@ Open questions the spike must answer:
   (compile-time: Caps decides linked/supervised loop) — kills the
   11-entry spawn surface?
 
+## Candidate (b) spike RESULTS (spike-277-b, all green 2026-07-31)
+
+5 walkthrough tests + 1 compile_fail doctest pass. Proven on stable Rust:
+- **ONE trait** (`Actor` w/ `type Caps: CapSet<Self>`) covers plain /
+  deferring / phased / watching; behavioral parity on defer-replay,
+  phase-gate, deadline mini-scenarios.
+- **Compile-gated capability access**: `cx.stash()` on a plain actor is a
+  compile error (doctest-proven). The prose ref-rule class becomes types.
+- **Q1 (borrow-split) answered**: user state (&mut self.actor) and
+  framework state (&mut cx) are disjoint fields — compiles trivially.
+- **Empty marker impls eliminated** (W4: `Caps = Watching<OtpPropagation>`
+  — death policy chosen BY NAME; no `impl Watch {}`/`impl Supervisor {}`).
+- **No wrapper-spawn trap**: `spawn::<Intake>` identical to plain spawn.
+- **Policies as plugged types work** (StashPolicy/PhasePolicy/WatchPolicy
+  = named units, required by construction — Joel's strategy-as-type).
+- NOTE: as spiked, (b) is really a (b)+(c) HYBRID: `Caps` IS an
+  associated-type slot; policies are types. The pure axum-style variant
+  (handler as free fn over param tuples) was NOT needed for the wins —
+  assess in ADR as extra macro machinery for marginal gain.
+- BONUS FINDING: first model draft used a single stash queue → instant
+  livelock; two-queue snapshot (ADR-0022) is load-bearing, re-proven.
+
+### Metrics (candidate b vs baseline a; impls/methods/types)
+
+| task | (a) shipped/planned | (b) spiked | delta |
+|---|---|---|---|
+| plain ask | 3 / 2 / 2 | **1 / 2 / 2** | −2 impls (Msg+Mailboxed absorbed; keep #114 tripwire via derive on the one trait) |
+| deferring | 3 / 3 / 2 + wrapper-spawn trap | **2 / 3 / 3** | −1 impl, trap gone |
+| phased | 3 / 7 / 3 (FsmActor plan) | **2 / 6 / 4** | −1 impl −1 method; machine = ONE unit |
+| watching | +2 EMPTY impls + own spawn verb | **0 extra impls** (policy by name) | ceremony gone |
+
+### Remaining for ADR (next stretch)
+- Candidate (c)-pure note: ATD-unstable boilerplate tax (already
+  researched); (b) hybrid subsumes its intent.
+- Type-safety ledger + invariant mapping (poisoning/drain/ADR-chain →
+  how each maps onto Ctx/Caps surface; the ONE-Ref question Q2 needs the
+  liveness-pinning story — tell-pins vs Collected — treat carefully).
+- Distillation ADR-0026 + spec + revised #274 plan; spawn surface
+  collapse (Q4) design; migration map (pre-1.0, semantics preserved).
+
 ## Open threads
 
 - Two Explore sweeps (inventory; duplication map) → results feed the
