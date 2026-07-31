@@ -45,3 +45,4 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | [0021](0021-control-signal-lane.md) | Control-signal lane: watch/supervision never queue behind user backlog | Accepted |
 | [0022](0022-bounded-stash.md) | Bounded stash: `Stashed<S>` composition, in-step replay | Accepted |
 | [0023](0023-handler-stop-return-value-not-out-param.md) | Handler stop signalling: return-value `Flow`, not `stop: &mut bool` | Accepted |
+| [0024](0024-fsm-behavior-switching.md) | Behavior switching: `FsmActor`/`Fsm<S>` wrapper, declarative admission | Accepted |
