@@ -1,0 +1,17 @@
+[package]
+name = "spike-231"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+bombay = { path = "/Users/joel/Code/devrandom/bombay/crates/core", features = ["test-support"] }
+tokio = { version = "1.47", features = ["full", "test-util"] }
+
+[[test]]
+name = "equivalence"
+path = "tests/equivalence.rs"
+
+[[test]]
+name = "alloc_gross"
+path = "tests/alloc_gross.rs"

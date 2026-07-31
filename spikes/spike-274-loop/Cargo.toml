@@ -1,0 +1,8 @@
+[package]
+name = "spike-274-loop"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+tokio = { version = "1.47", features = ["full", "test-util"] }
