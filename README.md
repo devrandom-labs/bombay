@@ -90,6 +90,31 @@ example: `cargo run -p bombay --example job_queue` (source:
   `Stashed::<You>`; `unstash_all` replays ahead of the mailbox backlog in
   arrival order; overflow hands the message back (`StashFull`), and a
   stashed message never keeps a dying actor alive.
+- **Capabilities (staged)** — the distilled surface (ADR-0026): implement
+  `caps::Actor` — one trait (`init` / `handle(msg, cx)`), with everything
+  else plugged in as capability TYPES on `type Caps` (`()` for a plain
+  actor) and reached through the compile-gated `cx.cap::<C>()` (a
+  capability your set doesn't declare is a compile error, never a runtime
+  check). Cap-set structs get their per-field access impls from
+  `#[derive(bombay_macros::Provide)]`; any crate can define its own
+  capability. Spawn via `caps::spawn` / `caps::spawn_with`:
+
+  ```rust
+  struct Audit { entries: u64 }
+  impl caps::Actor for Audit {
+      type Msg = AuditMsg; type Args = (); type Error = Infallible;
+      type Caps = ();   // plain — no capability ceremony
+      async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Infallible> {
+          Ok(Self { entries: 0 })
+      }
+      async fn handle(&mut self, msg: AuditMsg, _: caps::Ctx<'_, Self>)
+          -> Result<Flow, Infallible> { /* … */ Ok(Flow::Continue) }
+  }
+  let audit = caps::spawn::<Audit>(());
+  ```
+
+  The classic surface below remains fully supported while the ADR-0026
+  stages land.
 - **Errors** — `TellError` and `AskError`, which classify retry-safety by method (`is_retryable` / `is_terminal`) and hand the undelivered message back; `PanicError` + `PanicReason`; and `ActorStopReason` (`Normal`, `Collected`, `Killed`, `Panicked`, `SupervisorRestart`, `LinkDied`, `AlreadyDead`, `RestartLimitExceeded`, `ChildLifecycleFailed`).
 
 ## Observability

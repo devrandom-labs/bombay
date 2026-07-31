@@ -168,10 +168,34 @@ Surface relocations (semantics byte-identical, declaration point moves):
   boxing on any hot path; #207 guards re-assert during migration.
 - **Open risks, named** (each a gate on its stage): (i) stage 1 — the
   open-`Has` encoding (E0119; indexed vs struct-derive) must spike green
-  before anything else builds on it; (ii) stage 3 — the supervised loop
+  before anything else builds on it — **RESOLVED, see Addendum**; (ii) stage 3 — the supervised loop
   (3-arm, DelayQueue, teardown per ADR-0019) was NOT modeled in the
   spike, and the compile-time loop-selection mechanism (type-driven
   dispatch from `Caps`) is unspecified — stage 3 designs it with the
   drain/supervision equivalence suites as its oracle; (iii) spike crates
   are preserved on the `spikes/277` branch until their dependent stage
   lands (session scratchpads are not durable evidence).
+
+## Addendum (2026-07-31) — stage-1 gate result: struct-derive encoding
+
+The open-encoding spike (`spike-278`, preserved on the `spikes/277`
+branch) is green on stable for the **bevy-shaped encoding**: named-struct
+cap sets with one derive-generated `Provide<FieldType>` impl per field,
+plus `CapSet::build(&Args)`. Proof obligations, each a passing test:
+
+- **O1 openness**: a capability defined wholly outside core (a
+  rate-limiter with its own policy trait) composes with core caps on a
+  user struct through the one public seam — zero core changes.
+- **O2 gating**: `Ctx::cap::<C>()` is bounded on `Caps: Provide<C>` — a
+  non-providing set is a compile error (`compile_fail` doctest).
+- **O3 duplicates**: two fields of one cap type produce overlapping
+  `Provide` impls — E0119 rejects duplicate capabilities by construction.
+- **O4 strategy-as-type**: policies (`StashPolicy`, `RatePolicy`) remain
+  plugged types feeding behavior from `Args`.
+
+**Decided**: constraint 2's encoding is derive-on-named-struct;
+`Provide<C>` is the open seam; frunk-style indexed `Has` is unnecessary
+(tuples stay core-provided sugar for the common closed combos, exactly
+as the main text allows). The E0119 hazard becomes a *feature* at O3:
+the same coherence rule that killed the naive encoding now rejects
+duplicate caps for free.

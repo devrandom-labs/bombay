@@ -21,6 +21,7 @@ use bombay::{
         Actor, ActorRef, Flow, Recipient, Spawn as _, SpawnConfig, SpawnLinked as _,
         SpawnSupervised as _, Supervisor, Watch, WeakActorRef,
     },
+    caps,
     error::{ActorStopReason, NameTaken, PanicError, TellError},
     mailbox::{Capacity, Mailboxed},
     registry::Registry,
@@ -249,6 +250,9 @@ pub struct DispatcherConfig {
     /// Per-worker `on_stop` notice grace, wired into each worker's
     /// [`SpawnConfig`] (card #257).
     pub worker_grace: Duration,
+    /// Optional audit sink on the caps surface (card #278 walking
+    /// skeleton): every accepted submission is recorded there.
+    pub audit: Option<caps::Handle<AuditLog>>,
 }
 
 pub struct Dispatcher {
@@ -266,6 +270,7 @@ pub struct Dispatcher {
     stats: Stats,
     draining: bool,
     drain_reply: Option<ReplySender<DrainReport>>,
+    audit: Option<caps::Handle<AuditLog>>,
 }
 
 impl Mailboxed for Dispatcher {
@@ -329,6 +334,7 @@ impl Actor for Dispatcher {
             stats: Stats::default(),
             draining: false,
             drain_reply: None,
+            audit: cfg.audit,
         })
     }
 
@@ -345,9 +351,15 @@ impl Actor for Dispatcher {
                     let _ = reply.send_err(SubmitError::QueueFull);
                 } else {
                     bump(&mut self.stats.submitted);
+                    let job_id = job.id;
                     self.pending.push_back(job);
                     self.dispatch();
                     let _ = reply.send(());
+                    if let Some(audit) = &self.audit {
+                        // Best-effort audit trail: a dead/full sink never
+                        // blocks intake (same posture as the roster wart).
+                        let _ = audit.tell(AuditMsg::Recorded { job_id }).await;
+                    }
                 }
                 Flow::Continue
             }
@@ -658,5 +670,53 @@ pub async fn start(cfg: DispatcherConfig) -> App {
     App {
         dispatcher,
         overseer,
+    }
+}
+
+// -------------------------------------------------------------- audit ----
+
+/// The audit sink's closed menu.
+#[allow(
+    dead_code,
+    reason = "Count and the recorded job id are exercised by the integration tests"
+)]
+#[derive(Debug, bombay_macros::Msg)]
+pub enum AuditMsg {
+    /// A submission was accepted by the dispatcher.
+    Recorded { job_id: u64 },
+    /// How many acceptances have been recorded?
+    Count { reply: ReplySender<u64> },
+}
+
+/// Append-only audit trail on the distilled caps surface (ADR-0026 stage
+/// 1, card #278): ONE trait impl, `Caps = ()`, spawned via
+/// [`caps::spawn`] — the walking-skeleton demonstration that a plain
+/// caps actor composes with the existing app unchanged.
+pub struct AuditLog {
+    entries: u64,
+}
+
+impl Mailboxed for AuditLog {
+    type Msg = AuditMsg;
+}
+
+impl caps::Actor for AuditLog {
+    type Msg = AuditMsg;
+    type Args = ();
+    type Error = Infallible;
+    type Caps = ();
+
+    async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Infallible> {
+        Ok(Self { entries: 0 })
+    }
+
+    async fn handle(&mut self, msg: AuditMsg, _: caps::Ctx<'_, Self>) -> Result<Flow, Infallible> {
+        match msg {
+            AuditMsg::Recorded { job_id: _ } => bump(&mut self.entries),
+            AuditMsg::Count { reply } => {
+                let _ = reply.send(self.entries);
+            }
+        }
+        Ok(Flow::Continue)
     }
 }

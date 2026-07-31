@@ -1,6 +1,8 @@
 mod derive_msg;
+mod derive_provide;
 
 use derive_msg::DeriveMsg;
+use derive_provide::DeriveProvide;
 use proc_macro::TokenStream;
 use quote::ToTokens;
 use syn::parse_macro_input;
@@ -59,4 +61,48 @@ use syn::parse_macro_input;
 pub fn derive_msg(input: TokenStream) -> TokenStream {
     let derive_msg = parse_macro_input!(input as DeriveMsg);
     TokenStream::from(derive_msg.into_token_stream())
+}
+
+/// Derive [`Provide`](https://docs.rs/bombay/latest/bombay/caps/trait.Provide.html)
+/// impls for a capability-set struct — one per named field (ADR-0026).
+///
+/// This is the OPEN seam of the caps encoding: the impls land on your
+/// own struct, so any crate can define capabilities. It deliberately
+/// does NOT generate `CapSet::build` (building needs your policy
+/// choices; write it by hand — a build-generating derive is card #243).
+///
+/// A cap set with two distinct capabilities — compiles (compile-only
+/// example: no runtime here):
+/// ```
+/// struct Tokens { left: u32 }
+/// struct Tags { seen: Vec<u64> }
+///
+/// #[derive(bombay_macros::Provide)]
+/// struct MyCaps {
+///     tokens: Tokens,
+///     tags: Tags,
+/// }
+///
+/// fn takes<C>(_: &mut impl bombay::caps::Provide<C>) {}
+/// fn wire(caps: &mut MyCaps) {
+///     takes::<Tokens>(caps);
+///     takes::<Tags>(caps);
+/// }
+/// ```
+///
+/// Duplicate capability TYPES are rejected by coherence — two fields of
+/// one type would need two `Provide<Tokens>` impls (E0119):
+/// ```compile_fail
+/// struct Tokens { left: u32 }
+///
+/// #[derive(bombay_macros::Provide)]
+/// struct Dup {
+///     a: Tokens,
+///     b: Tokens,
+/// }
+/// ```
+#[proc_macro_derive(Provide)]
+pub fn derive_provide(input: TokenStream) -> TokenStream {
+    let derive_provide = parse_macro_input!(input as DeriveProvide);
+    TokenStream::from(derive_provide.into_token_stream())
 }

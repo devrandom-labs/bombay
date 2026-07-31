@@ -22,6 +22,7 @@ use app::{
 use bombay::{
     ActorId,
     actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, Spawn as _, SpawnConfig, Watch},
+    caps,
     error::{ActorStopReason, AskError},
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -51,6 +52,7 @@ fn config(
         registry: Arc::clone(registry),
         worker_stopped_tx,
         worker_grace: Duration::from_secs(5),
+        audit: None,
     }
 }
 
@@ -953,4 +955,49 @@ async fn drain_window_auditor_observes_dispatcher_death() {
     drop(auditor_outcome);
 
     assert_auditor_notice(&rig.watch_result, &rig.notices, dispatcher_id);
+}
+
+/// Card #278 walking skeleton: a caps-surface actor (`AuditLog`,
+/// `Caps = ()`) composes with the existing app — every ACCEPTED
+/// submission is audited (exact count), a refused one is not.
+#[tokio::test]
+async fn accepted_submissions_are_audited_on_the_caps_surface() {
+    let registry = Arc::new(Registry::new());
+    let audit = caps::spawn::<app::AuditLog>(());
+    let cfg = app::DispatcherConfig {
+        // no workers: the queue genuinely fills, so the cap refusal is
+        // reachable (live workers would drain pending under the cap)
+        workers: 0,
+        queue_cap: 3,
+        audit: Some(audit.clone()),
+        ..config_no_seam(&registry)
+    };
+    let app = app::start(cfg).await;
+    let dispatcher = registry
+        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .expect("registered under the dispatcher type")
+        .expect("dispatcher is alive");
+
+    for id in 0..3u64 {
+        bounded(dispatcher.ask(|reply| DispatcherMsg::Submit {
+            job: ok_job(id),
+            reply,
+        }))
+        .await
+        .expect("submit accepted under cap");
+    }
+    // 4th submit: refused at the queue cap — must NOT be audited.
+    let refused = bounded(dispatcher.ask(|reply| DispatcherMsg::Submit {
+        job: ok_job(99),
+        reply,
+    }))
+    .await;
+    assert!(refused.is_err(), "queue_cap 3 refuses the 4th");
+
+    let count = bounded(audit.ask(|reply| app::AuditMsg::Count { reply }))
+        .await
+        .expect("audit count reply");
+    assert_eq!(count, 3, "exactly the accepted submissions are audited");
+
+    drop(app);
 }

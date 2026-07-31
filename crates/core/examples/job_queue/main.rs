@@ -43,6 +43,7 @@ async fn main() {
         registry: Arc::clone(&registry),
         worker_stopped_tx: None,
         worker_grace: Duration::from_secs(5),
+        audit: None,
     })
     .await;
 
