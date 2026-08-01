@@ -48,7 +48,7 @@ async fn main() {
 
     // clients never hold the spawn handle — they resolve by name
     let dispatcher = registry
-        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 

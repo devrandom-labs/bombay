@@ -1392,3 +1392,27 @@ behavior) is recorded in the test-file header.
   `OtpPropagation::on_link_died`, …) and four stale known-zero entries
   removed — the sweep scope (`crates/core/**` + `derive_msg.rs`) now
   reconciles to zero unaccounted / zero stale floors by list.
+
+## Card #289 (caps-aware registry lookup, ADR-0027)
+
+`Registry::lookup` re-keyed on the handle type (`R: Resolvable`, sealed, one
+blanket impl for `ActorRef<A>`) so a caps actor resolves as
+`lookup::<caps::Handle<A>>` — the `Shell` adapter no longer appears in user
+code (wart of #280, file removed).
+
+- NEW `registry::tests::caps_handle_resolves_without_naming_shell` — a caps
+  actor (minimal `CapProbe`, uninhabited menu) registers and resolves through
+  the same door, keyed by its `Handle` alias; id-asserted against the
+  registrant.
+- Existing registry tests / benches re-spelled mechanically
+  (`lookup::<Probe>` → `lookup::<ActorRef<Probe>>`); every invariant and
+  assertion unchanged — read/write liveness, wrong-type boundary, and the
+  linearizability trio still pin the same rules.
+- `examples/job_queue/main.rs` + `tests/app_job_queue.rs` (8 sites) now
+  resolve the dispatcher via `caps::Handle<Dispatcher>` (walking-skeleton
+  bullet).
+- Mutants: `<impl Resolvable for ActorRef<A>>::from_ref` added to
+  `known_zero_viable` (sole mutant is `Default::default()` — `ActorRef` has
+  no `Default`, unviable by construction); `lookup`'s floor stays 3
+  (verified via `cargo mutants --list`: `Ok(Some(Default))` remains
+  unviable for the same reason).

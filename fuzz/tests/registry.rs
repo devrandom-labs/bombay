@@ -156,7 +156,7 @@ fn registry_state_machine() {
                 Op::Lookup { name } => {
                     let name_s = name.to_string();
                     let got = registry
-                        .lookup::<Probe>(&name_s)
+                        .lookup::<ActorRef<Probe>>(&name_s)
                         .expect("same type — never a type conflict on lookup");
 
                     match claims.get(&name).copied() {
