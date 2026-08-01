@@ -1416,3 +1416,31 @@ code (wart of #280, file removed).
   no `Default`, unviable by construction); `lookup`'s floor stays 3
   (verified via `cargo mutants --list`: `Ok(Some(Default))` remains
   unviable for the same reason).
+
+## Card #290 (declared seats + one `DeadlinePolicy<Cx>`, ADR-0028)
+- NEW `crates/core/tests/caps_seats.rs` — the new-surface pins: `NoDefer`
+  stash type is a ZST (`size_of == 0`; no buffer exists), the
+  type-equality pin `TokenOf<NoDefer machine> = Never`, `PhaseView` Debug
+  names type+anchor, a full `NoDefer`+`ByPhase`-seat machine end-to-end
+  (grace anchored at phase entry, `Step::Stop`), a `ByState` seat through
+  the unified trait (sliding idle deadline, `Step<Never> ≅ Flow` stop),
+  and `NoTimeout` never arms across a paused-clock hour.
+- NEW executing `compile_fail,E0053` doctest on `NoDefer`: a `NoDefer`
+  machine's gate returning `Disposition<Deferred>` does not compile —
+  falsified both ways (the legal-gate scaffold was compiled standalone
+  clean before pinning the illegal one).
+- Migrated semantics-preserving (same choreography, same trace
+  assertions): `deadline_plane.rs` (13), `caps_phased.rs` (7, policies
+  re-seated on `Bounded<SP>`/seat structs), `phase_equivalence.rs` (6 —
+  the mode-blind oracle green UNCHANGED), `alloc_phased.rs` (now a
+  `NoDefer` machine: the zero-alloc window includes no stash existing at
+  all), caps.rs unit tests, `benches/deadline_arm.rs`, and the job-queue
+  Worker (`Capacity::MIN` ceremony deleted — wart 281 fix recorded).
+- Mutants baseline trued up from `cargo mutants --list` (genotype-audited
+  one by one): floors for `PhaseBuffer for Stashing` (`next_ready`,
+  `release_all`) and `PhaseView::fmt`; known-zero for the seat fns whose
+  single mutant is an unviable `Default::default()` (`DeferOutcome`,
+  `Stashing`, `Instant`, `Step`, `Flow`, `Deadlined` carry no `Default`).
+  The `Default` derives on `NoStash`/`NoDefer`/`NoTimeout` were REMOVED
+  precisely so their unit-struct `build` mutants stay unviable instead of
+  becoming equivalent-viable survivors.

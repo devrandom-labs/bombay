@@ -122,30 +122,36 @@ example: `cargo run -p bombay --example job_queue` (source:
   and supervising are the `Watching<WP>` / `Supervising<SS>` capability
   types above, and the one `caps::spawn` picks the loop shape from the cap
   set at compile time.
-- **Deadlines** — the `caps::Deadlined<DP>` capability (ADR-0025's
-  declarative plane): the plugged `DeadlinePolicy` declares
-  `next_deadline(&actor) -> Option<Instant>` as a **pure function of actor
-  state** — no arm/cancel verbs, nothing to forget, nothing to race — and
-  the run loop re-reads it every iteration (all three loop shapes), firing
-  `on_deadline(&mut actor, WeakActorRef)` once per value at a turn
-  boundary, under the same catch/crash treatment as a handler
-  (`PanicReason::OnDeadline`, restart-eligible). A due deadline preempts
-  the mailbox backlog but never a ready death notice; a disabled slot
-  costs nothing (armed, ~3% per-message throughput). Sliding idle timers
-  are one policy away: declare `last_activity + T`.
+- **Deadlines** — ONE context-generic `caps::DeadlinePolicy<Cx>` seat
+  (ADR-0025's declarative plane, unified by ADR-0028) carrying the pair
+  `next_deadline` / `on_deadline` in one trait — a declared deadline
+  cannot exist without its reaction. `caps::Deadlined<DP>` plugs it with
+  `Cx = ByState<A>`: the slot is a **pure function of actor state** — no
+  arm/cancel verbs, nothing to forget, nothing to race — and the run loop
+  re-reads it every iteration (all three loop shapes), firing the reaction
+  once per value at a turn boundary, under the same catch/crash treatment
+  as a handler (`PanicReason::OnDeadline`, restart-eligible). Reactions
+  speak `Step<Never>` (≅ `Flow` — a plain actor is a one-phase machine).
+  A due deadline preempts the mailbox backlog but never a ready death
+  notice; a disabled slot costs nothing (armed, ~3% per-message
+  throughput). Sliding idle timers are one policy away: declare
+  `last_activity + T`.
 - **Phases** — the `caps::Phased<P>` capability: a `PhasePolicy` is the
-  whole machine as ONE plugged unit — phase tag enum, declarative
-  per-phase admission (`gate → Deliver | Defer | Ignore`, P-style: the
-  handler never sees a message its phase declared away), per-phase
-  deadlines (`phase_deadline(&self, phase)`, magnitudes from your spawn
-  args), and the required timeout reaction. Transition with
+  machine's core (phase tag enum + declarative per-phase admission,
+  `gate → Deliver | Defer | Ignore`, P-style: the handler never sees a
+  message its phase declared away) with its two seats DECLARED as plugged
+  types (ADR-0028): `type Deferral` = `NoDefer` (no stash exists; the
+  gate's verdict type cannot even spell `Defer` — uninhabited token) or
+  `Bounded<SP>` (bound via the reused `StashPolicy`); `type Timeout` =
+  `NoTimeout` or a `DeadlinePolicy<ByPhase<Self>>` strategy (per-phase
+  magnitudes from your spawn args, anchored at phase entry). Opting out
+  is an explicit named plug — never a silent default. Transition with
   `cx.cap::<Phased<P>>().goto(next)` — committed only after your handler
-  returns `Ok`, releasing the embedded stash so deferred messages replay
-  re-gated in the NEW phase, ahead of the backlog; a left phase's deadline
-  is *unrepresentable*, not filtered (no epochs, no timer tasks, zero
-  allocations on the transition path). `Phased` embeds its own stash and
-  deadline seat — plugging `Stashing`/`Deadlined` beside it is rejected at
-  derive time.
+  returns `Ok`, releasing the stash so deferred messages replay re-gated
+  in the NEW phase, ahead of the backlog; a left phase's deadline is
+  *unrepresentable*, not filtered (no epochs, no timer tasks, zero
+  allocations on the transition path). `Phased` embeds its seats —
+  plugging `Stashing`/`Deadlined` beside it is rejected at derive time.
 - **Errors** — `TellError` and `AskError`, which classify retry-safety by method (`is_retryable` / `is_terminal`) and hand the undelivered message back; `PanicError` + `PanicReason`; and `ActorStopReason` (`Normal`, `Collected`, `Killed`, `Panicked`, `SupervisorRestart`, `LinkDied`, `AlreadyDead`, `RestartLimitExceeded`, `ChildLifecycleFailed`).
 
 ## Observability

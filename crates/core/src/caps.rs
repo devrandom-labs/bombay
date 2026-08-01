@@ -282,7 +282,7 @@ impl<M: Send + 'static> PhaseBuffer<M> for Stashing<M> {
 
 /// The [`NoDefer`] machine's stash type: zero-sized, holds nothing — a
 /// defer-path allocation is unrepresentable, not merely unexercised.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NoStash;
 
 impl sealed::Sealed for NoStash {}
@@ -403,7 +403,7 @@ pub type DeferRouted<P> = Result<
 ///     }
 /// }
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NoDefer;
 
 impl sealed::Sealed for NoDefer {}
@@ -648,7 +648,7 @@ pub trait DeadlinePolicy<Cx: DeadlineCx>: Send + 'static {
 /// The slot is constantly `None`, so the loop's deadline arm never arms
 /// and the (unreachable) reaction is `Stay`. A named opt-out, never a
 /// silent default (#196 `OneForOne` precedent).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NoTimeout;
 
 impl<P: PhasePolicy> DeadlinePolicy<ByPhase<P>> for NoTimeout {

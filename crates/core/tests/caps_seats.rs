@@ -202,6 +202,21 @@ fn a_no_defer_machines_stash_type_is_zero_sized() {
     );
 }
 
+/// `PhaseView` is a real diagnostic surface: its Debug form names the
+/// type and shows the anchor (an empty-writing `fmt` is a bug).
+#[test]
+fn phase_view_debug_names_the_type_and_anchor() {
+    let view: PhaseView<WPolicy> = PhaseView {
+        phase: WPhase::Serving,
+        entered_at: std::time::Instant::now().into(),
+    };
+    let s = format!("{view:?}");
+    assert!(
+        s.starts_with("PhaseView") && s.contains("entered_at"),
+        "Debug must name the type and the anchor field, got: {s}",
+    );
+}
+
 /// The full seated machine, end to end on the paused clock: all-Deliver
 /// gating in Serving, a declared Ignore in Draining, and the plugged
 /// seat's grace deadline firing exactly at `entered(Draining) + grace`
