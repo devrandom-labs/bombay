@@ -123,6 +123,44 @@ impl Parse for DeriveProvide {
                  stage 3 composition law)",
             ));
         }
+        // Stage-4 composition laws (ADR-0026, card #281), friendly halves.
+        let phased: Vec<&(Ident, Type)> = fields
+            .iter()
+            .filter(|(_, ty)| cap_type_arg(ty, "Phased").is_some())
+            .collect();
+        if let Some((_, second)) = phased.get(1) {
+            return Err(syn::Error::new_spanned(
+                second,
+                "at most one `Phased` field per cap set: an actor has one \
+                 phase machine (and the loop has one deadline arm)",
+            ));
+        }
+        if let Some((_, phased_ty)) = phased.first() {
+            if fields
+                .iter()
+                .any(|(_, ty)| cap_type_arg(ty, "Deadlined").is_some())
+            {
+                return Err(syn::Error::new_spanned(
+                    phased_ty,
+                    "`Phased` EMBEDS the deadline seat (its phase deadline \
+                     rides the ADR-0025 plane); a separate `Deadlined` field \
+                     would be a second deadline for the loop's one arm — \
+                     drop it",
+                ));
+            }
+            if fields
+                .iter()
+                .any(|(_, ty)| cap_type_arg(ty, "Stashing").is_some())
+            {
+                return Err(syn::Error::new_spanned(
+                    phased_ty,
+                    "`Phased` embeds its own bounded stash (the gate defers \
+                     into it, `Phased::stash` is the manual escape hatch); a \
+                     separate `Stashing` field would double-buffer deferral \
+                     — drop it",
+                ));
+            }
+        }
         Ok(Self {
             ident: derive.ident,
             fields,
@@ -146,15 +184,32 @@ impl ToTokens for DeriveProvide {
 
         // The loop-participation half (ADR-0026 stage 2): every cap set is
         // `Replay<Msg>` so the `Shell` can drain in-step replay uniformly. A
-        // `Stashing<M>` field forwards to its own `Replay` impl; a set with no
-        // stash field yields `None` for any message type. Emitting exactly one
-        // shape (never both) keeps the impls non-overlapping (no E0119).
+        // `Stashing<M>` field forwards to its own `Replay` impl; a `Phased<P>`
+        // field forwards to its embedded phase stash (Parse rejects the two
+        // together); a set with neither yields `None` for any message type.
+        // Emitting exactly one shape keeps the impls non-overlapping (no
+        // E0119).
         let stash_fields: Vec<(&Ident, &Type)> = self
             .fields
             .iter()
             .filter_map(|(field, ty)| stash_message_ty(ty).map(|m| (field, m)))
             .collect();
-        if stash_fields.is_empty() {
+        let phased_field: Option<(&Ident, &Type)> = self
+            .fields
+            .iter()
+            .find_map(|(field, ty)| cap_type_arg(ty, "Phased").map(|p| (field, p)));
+        if let Some((field, policy)) = phased_field {
+            let actor = quote!(<#policy as ::bombay::caps::PhasePolicy>::Actor);
+            let msg = quote!(<#actor as ::bombay::caps::Actor>::Msg);
+            tokens.extend(quote! {
+                #[automatically_derived]
+                impl ::bombay::caps::Replay<#msg> for #ident {
+                    fn next_replay(&mut self) -> ::core::option::Option<#msg> {
+                        ::bombay::caps::Replay::next_replay(&mut self.#field)
+                    }
+                }
+            });
+        } else if stash_fields.is_empty() {
             tokens.extend(quote! {
                 #[automatically_derived]
                 impl<__CapsReplayMsg> ::bombay::caps::Replay<__CapsReplayMsg> for #ident {
@@ -177,8 +232,55 @@ impl ToTokens for DeriveProvide {
         }
 
         emit_watch_supervise(&self.fields, ident, tokens);
-        emit_deadline(&self.fields, ident, tokens);
+        emit_deadline(&self.fields, phased_field, ident, tokens);
+        emit_admission(phased_field, ident, tokens);
     }
+}
+
+/// Stage-4 admission participation (ADR-0026, card #281): a `Phased<P>`
+/// field forwards `admit`/`commit` to the machine (concrete over the
+/// policy's served actor); every other set delivers everything and
+/// commits nothing.
+fn emit_admission(phased: Option<(&Ident, &Type)>, ident: &Ident, tokens: &mut TokenStream) {
+    if let Some((field, policy)) = phased {
+        let actor = quote!(<#policy as ::bombay::caps::PhasePolicy>::Actor);
+        let msg = quote!(<#actor as ::bombay::caps::Actor>::Msg);
+        let err = quote!(<#actor as ::bombay::caps::Actor>::Error);
+        tokens.extend(quote! {
+            #[automatically_derived]
+            impl ::bombay::caps::Admission<#actor> for #ident {
+                async fn admit(
+                    &mut self,
+                    actor: &mut #actor,
+                    msg: #msg,
+                ) -> ::core::result::Result<::bombay::caps::Admitted<#msg>, #err> {
+                    ::bombay::caps::Admission::admit(&mut self.#field, actor, msg).await
+                }
+                fn commit(&mut self) {
+                    ::bombay::caps::Admission::commit(&mut self.#field);
+                }
+            }
+        });
+        return;
+    }
+    tokens.extend(quote! {
+        #[automatically_derived]
+        impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::Admission<__CapsActor>
+            for #ident
+        {
+            async fn admit(
+                &mut self,
+                _: &mut __CapsActor,
+                msg: <__CapsActor as ::bombay::caps::Actor>::Msg,
+            ) -> ::core::result::Result<
+                ::bombay::caps::Admitted<<__CapsActor as ::bombay::caps::Actor>::Msg>,
+                <__CapsActor as ::bombay::caps::Actor>::Error,
+            > {
+                ::core::result::Result::Ok(::bombay::caps::Admitted::Deliver(msg))
+            }
+            fn commit(&mut self) {}
+        }
+    });
 }
 
 /// Stage-4 participation (ADR-0026, card #281): the ADR-0025 deadline
@@ -186,11 +288,38 @@ impl ToTokens for DeriveProvide {
 ///
 /// A `Deadlined<DP>` field emits a `DeadlineHook` impl forwarding to the
 /// field (gated on `DP: DeadlinePolicy<A>`, exactly as `HasWatching` gates
-/// its policy); a set without one emits the disabled blanket (`None`, arm
+/// its policy); a `Phased<P>` field emits one forwarding to the machine —
+/// its phase deadline IS the set's deadline seat (Parse rejects the two
+/// together); a set with neither emits the disabled blanket (`None`, arm
 /// never polls). Emitting exactly one shape keeps the impls
 /// non-overlapping (no E0119) — and two `Deadlined` fields emit two
 /// forwarding impls, rejected by coherence like every duplicate cap.
-fn emit_deadline(fields: &[(Ident, Type)], ident: &Ident, tokens: &mut TokenStream) {
+fn emit_deadline(
+    fields: &[(Ident, Type)],
+    phased: Option<(&Ident, &Type)>,
+    ident: &Ident,
+    tokens: &mut TokenStream,
+) {
+    if let Some((field, policy)) = phased {
+        let actor = quote!(<#policy as ::bombay::caps::PhasePolicy>::Actor);
+        let err = quote!(<#actor as ::bombay::caps::Actor>::Error);
+        tokens.extend(quote! {
+            #[automatically_derived]
+            impl ::bombay::caps::DeadlineHook<#actor> for #ident {
+                fn next_deadline(&self, actor: &#actor) -> ::core::option::Option<::bombay::caps::DeadlineInstant> {
+                    ::bombay::caps::DeadlineHook::next_deadline(&self.#field, actor)
+                }
+                async fn on_deadline(
+                    &mut self,
+                    actor: &mut #actor,
+                    actor_ref: ::bombay::actor::WeakActorRef<::bombay::caps::Shell<#actor>>,
+                ) -> ::core::result::Result<::bombay::actor::Flow, #err> {
+                    ::bombay::caps::DeadlineHook::on_deadline(&mut self.#field, actor, actor_ref).await
+                }
+            }
+        });
+        return;
+    }
     let deadlined: Vec<(&Ident, &Type)> = fields
         .iter()
         .filter_map(|(field, ty)| cap_type_arg(ty, "Deadlined").map(|dp| (field, dp)))
@@ -571,8 +700,8 @@ mod tests {
             "forwards to the Deadlined field's own hook: {out}"
         );
         assert!(
-            !out.contains(":: core :: option :: Option :: None }"),
-            "a deadlined set must NOT emit the disabled blanket: {out}"
+            !out.contains("fn next_deadline (& self , _ : & __CapsActor)"),
+            "a deadlined set must NOT emit the disabled DeadlineHook blanket: {out}"
         );
     }
 
@@ -593,6 +722,100 @@ mod tests {
         assert!(
             !out.contains("DeadlinePolicy"),
             "no policy gate on the disabled blanket: {out}"
+        );
+    }
+
+    /// Stage 4 (card #281): a `Phased<P>` field is the set's admission,
+    /// replay, AND deadline seat — three concrete forwarding impls over
+    /// the policy's served actor, no blankets.
+    #[test]
+    fn a_phased_field_emits_admission_replay_and_deadline_forwarding() {
+        use quote::ToTokens as _;
+        let parsed =
+            syn::parse_str::<DeriveProvide>("struct Caps { phased: Phased<WorkerPhases> }")
+                .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        let actor = "< WorkerPhases as :: bombay :: caps :: PhasePolicy > :: Actor";
+        assert_eq!(
+            out.matches(&format!(
+                ":: bombay :: caps :: Admission < {actor} > for Caps"
+            ))
+            .count(),
+            1,
+            "one concrete Admission impl over the served actor: {out}"
+        );
+        assert_eq!(
+            out.matches(&format!(
+                ":: bombay :: caps :: DeadlineHook < {actor} > for Caps"
+            ))
+            .count(),
+            1,
+            "the phase deadline IS the set's deadline seat: {out}"
+        );
+        assert!(
+            out.contains(":: bombay :: caps :: Replay :: next_replay (& mut self . phased)"),
+            "replay forwards to the embedded phase stash: {out}"
+        );
+        assert!(
+            !out.contains("__CapsReplayMsg") && !out.contains("Admitted :: Deliver (msg) }"),
+            "a phased set gets NO blankets: {out}"
+        );
+    }
+
+    /// Stage 4: a non-phased set delivers everything and commits nothing.
+    #[test]
+    fn no_phased_field_emits_the_deliver_blanket() {
+        use quote::ToTokens as _;
+        let parsed = syn::parse_str::<DeriveProvide>("struct Caps { rate: Limiter }")
+            .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        assert_eq!(
+            out.matches(":: bombay :: caps :: Admission < __CapsActor > for Caps")
+                .count(),
+            1,
+            "every derived set gets exactly one Admission impl: {out}"
+        );
+        assert!(
+            out.contains(":: bombay :: caps :: Admitted :: Deliver (msg)"),
+            "the blanket delivers everything: {out}"
+        );
+    }
+
+    /// Stage-4 composition law: `Phased` embeds the deadline seat, so a
+    /// sibling `Deadlined` is rejected readably.
+    #[test]
+    fn phased_with_deadlined_is_rejected() {
+        let err = syn::parse_str::<DeriveProvide>(
+            "struct Caps { phased: Phased<P>, deadlined: Deadlined<DP> }",
+        )
+        .unwrap_err();
+        assert!(
+            err.to_string().contains("EMBEDS the deadline seat"),
+            "unexpected error: {err}"
+        );
+    }
+
+    /// Stage-4 composition law: `Phased` embeds its own stash, so a
+    /// sibling `Stashing` is rejected readably.
+    #[test]
+    fn phased_with_stashing_is_rejected() {
+        let err =
+            syn::parse_str::<DeriveProvide>("struct Caps { phased: Phased<P>, buf: Stashing<M> }")
+                .unwrap_err();
+        assert!(
+            err.to_string().contains("double-buffer deferral"),
+            "unexpected error: {err}"
+        );
+    }
+
+    /// Stage-4 composition law: one phase machine per actor.
+    #[test]
+    fn two_phased_fields_are_rejected() {
+        let err = syn::parse_str::<DeriveProvide>("struct Caps { a: Phased<P1>, b: Phased<P2> }")
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("at most one `Phased`"),
+            "unexpected error: {err}"
         );
     }
 

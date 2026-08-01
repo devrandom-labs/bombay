@@ -18,7 +18,7 @@
 //!   per-field impls, and duplicate capability fields are rejected by
 //!   coherence, E0119).
 
-use core::{any::type_name, future::Future, marker::PhantomData, ops::ControlFlow};
+use core::{any::type_name, future::Future, marker::PhantomData, ops::ControlFlow, time::Duration};
 
 use tokio::time::Instant;
 
@@ -67,11 +67,18 @@ pub trait Actor: Sized + Send + 'static {
     /// replay uniformly — `()` and non-stashing sets yield `None`, a set with
     /// a [`Stashing`] field drains it — [`SelectRunner<Self>`](SelectRunner)
     /// so every cap set names its run-loop shape at compile time (stage 3),
-    /// and [`DeadlineHook<Self>`](DeadlineHook) so every loop shape can poll
+    /// [`DeadlineHook<Self>`](DeadlineHook) so every loop shape can poll
     /// the ADR-0025 deadline plane uniformly (stage 4) — `()` and
-    /// deadline-less sets stay disabled. The derive emits all of them
-    /// alongside `Provide`, so none is a separate thing to forget.
-    type Caps: CapSet<Self> + Replay<Self::Msg> + SelectRunner<Self> + DeadlineHook<Self>;
+    /// deadline-less sets stay disabled — and [`Admission<Self>`](Admission)
+    /// so a [`Phased`] gate classifies every delivered or replayed message
+    /// before the handler — `()` and non-phased sets deliver everything.
+    /// The derive emits all of them alongside `Provide`, so none is a
+    /// separate thing to forget.
+    type Caps: CapSet<Self>
+        + Replay<Self::Msg>
+        + SelectRunner<Self>
+        + DeadlineHook<Self>
+        + Admission<Self>;
 
     /// A human-readable name for logs/tracing. Defaults to the type name.
     #[must_use]
@@ -371,6 +378,333 @@ impl<A: Actor, DP: DeadlinePolicy<A>> DeadlineHook<A> for Deadlined<DP> {
     }
 }
 
+/// Per-phase message admission — the P trio (ADR-0024 D5, P PLDI 2013
+/// `defer`/`ignore` made payload-capable): what the framework does with a
+/// message BEFORE the handler is consulted.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Disposition {
+    /// Hand it to `handle` now.
+    Deliver,
+    /// Stash it; re-gate on every phase change (P `defer`).
+    Defer,
+    /// Drop it deliberately, by declaration (P `ignore` — recorded
+    /// intent, never a silent loss).
+    Ignore,
+}
+
+/// A policy hook's transition decision — `Flow` (ADR-0023) plus one
+/// variant, `Copy`, zero-box (ADR-0024 D3).
+///
+/// `Goto(current)` is deliberately a no-op (`gen_statem` `next_state` to
+/// the same state): no unstash, no deadline reset. In `handle`, the
+/// transition verb is [`Phased::goto`] instead — recorded there,
+/// committed by the framework only after the handler returns `Ok`, so
+/// D3's commit-after-Ok law holds with no `Step` return channel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Step<Ph> {
+    /// Stay in the current phase (`gen_statem` `keep_state`).
+    Stay,
+    /// Transition (no-op when already there).
+    Goto(Ph),
+    /// Stop cleanly (reason `Normal`), like `Flow::Stop`.
+    Stop,
+}
+
+/// The [`PhasePolicy::on_defer_full`] verdict — ADR-0024 D6's overflow
+/// handback, never a silent drop.
+#[derive(Debug)]
+pub enum Overflow<M, Ph> {
+    /// Deliver the overflowed message to `handle` after all — the
+    /// default: visible-but-unrefused shedding.
+    Redeliver(M),
+    /// The hook absorbed it (typically a loud typed refusal); apply this
+    /// step.
+    Handled(Step<Ph>),
+}
+
+/// The phase-machine policy — ONE plugged unit (ADR-0026 constraint 5):
+/// phases, admission, deadlines, and the timeout reaction cannot be
+/// half-implemented.
+///
+/// The `caps`-surface seat of ADR-0024's `FsmActor` (D1–D10 semantics
+/// preserved). A phase policy is actor-specific — it gates the actor's
+/// closed menu — so the served actor is the [`Actor`](PhasePolicy::Actor)
+/// associated type, and `Phased<P>` stays a one-parameter field type.
+///
+/// Every policy item is REQUIRED except [`on_defer_full`]
+/// (safe-mechanics default: redeliver): declaring a phase deadline forces
+/// writing its reaction — the silent declared-timeout-defaulted-handler
+/// pair is unrepresentable (the `SupervisionStrategy` no-default
+/// precedent, #196).
+///
+/// [`on_defer_full`]: PhasePolicy::on_defer_full
+pub trait PhasePolicy: Send + Sized + 'static {
+    /// The served actor (whose menu the gate classifies).
+    type Actor: Actor;
+    /// The phase NAME — a plain tag enum (`gen_statem`'s name/data split,
+    /// D2); phase DATA stays in the actor. `Copy` keeps `Step<Phase>`
+    /// unconditionally `Copy`.
+    type Phase: Copy + PartialEq + Send + 'static;
+
+    /// Builds the policy instance from the spawn args — the D8 magnitude
+    /// channel (`Args`-tunable per instance, never `SpawnConfig`).
+    fn build(args: &<Self::Actor as Actor>::Args) -> Self;
+
+    /// The phase the machine starts in.
+    fn initial(args: &<Self::Actor as Actor>::Args) -> Self::Phase;
+
+    /// The deferral bound (ADR-0022: explicit, bounded — deferral without
+    /// a bound is the rejected design).
+    fn stash_capacity(args: &<Self::Actor as Actor>::Args) -> Capacity;
+
+    /// The whole admission protocol in one declarative place (D5) — a
+    /// static declaration table (#243-derivable). `handle` never sees a
+    /// message its phase declared away.
+    fn gate(phase: Self::Phase, msg: &<Self::Actor as Actor>::Msg) -> Disposition;
+
+    /// The phase's deadline magnitude; `None` = no deadline. Takes
+    /// `&self` so magnitudes ride the `Args`-built policy instance (D8).
+    /// Keep it a pure function of `(self, phase)`.
+    fn phase_deadline(&self, phase: Self::Phase) -> Option<Duration>;
+
+    /// The declared deadline expired while still in `phase` — REQUIRED:
+    /// declaring a deadline forces writing its reaction. Runs on the
+    /// ADR-0025 plane (turn boundary, `WeakActorRef` by the drain-window
+    /// rule, crash domain `PanicReason::OnDeadline`). A left phase's
+    /// timeout is unrepresentable: the slot changes with the phase, and
+    /// the loop re-reads it every iteration — nothing stale can fire.
+    ///
+    /// # Errors
+    ///
+    /// A returned `Err` is a controlled crash, exactly as a handler's.
+    fn on_phase_timeout(
+        actor: &mut Self::Actor,
+        phase: Self::Phase,
+        actor_ref: WeakActorRef<Shell<Self::Actor>>,
+        stash: &mut Stashing<<Self::Actor as Actor>::Msg>,
+    ) -> impl Future<Output = Result<Step<Self::Phase>, <Self::Actor as Actor>::Error>> + Send;
+
+    /// A declaratively-deferred message found the stash at capacity (D6).
+    /// The message is handed back INTACT; the default redelivers it to
+    /// `handle` (visible-but-unrefused shedding) — override for a loud
+    /// typed refusal. Stash access per D6b (a handler-plane hook).
+    ///
+    /// # Errors
+    ///
+    /// A returned `Err` is a controlled crash, exactly as a handler's.
+    fn on_defer_full(
+        actor: &mut Self::Actor,
+        phase: Self::Phase,
+        msg: <Self::Actor as Actor>::Msg,
+        stash: &mut Stashing<<Self::Actor as Actor>::Msg>,
+    ) -> impl Future<Output = DeferVerdict<Self>> + Send {
+        let _ = (actor, phase, stash);
+        async move { Ok(Overflow::Redeliver(msg)) }
+    }
+}
+
+/// [`PhasePolicy::on_defer_full`]'s outcome, named so the hook's RPITIT
+/// stays readable: the [`Overflow`] verdict or the actor's own error.
+pub type DeferVerdict<P> = Result<
+    Overflow<<<P as PhasePolicy>::Actor as Actor>::Msg, <P as PhasePolicy>::Phase>,
+    <<P as PhasePolicy>::Actor as Actor>::Error,
+>;
+
+/// The phase capability (ADR-0026 stage 4, card #281) — ADR-0024's
+/// machine as one plugged unit, riding the ADR-0025 plane.
+///
+/// Owns the machine state the framework must observe: the committed
+/// phase, its entry instant (the deadline anchor), the pending
+/// transition, and the bounded phase stash (ADR-0022 two-queue snapshot,
+/// the [`Stashing`] surface reused). **Embeds the deadline seat**: a
+/// `Phased` field IS the cap set's deadline participation — plugging a
+/// separate [`Deadlined`] beside it is rejected (one deadline seat per
+/// actor; the loop has one arm).
+///
+/// Transition effects run on phase CHANGE only, in D4 order: switch →
+/// reset the entry instant → release the stash; deadline cancel/re-arm is
+/// IMPLICIT (the loop re-reads [`next_deadline`](DeadlineHook) from the
+/// new phase — that is the whole point of the declarative plane). The
+/// released batch replays in-step, re-gated in the NEW phase, ahead of
+/// the mailbox backlog.
+pub struct Phased<P: PhasePolicy> {
+    policy: P,
+    phase: P::Phase,
+    pending: Option<P::Phase>,
+    entered_at: Instant,
+    stash: Stashing<<P::Actor as Actor>::Msg>,
+}
+
+impl<P: PhasePolicy> Phased<P> {
+    /// Builds the machine from the spawn args: policy instance, initial
+    /// phase, empty bounded stash, entry clock started now.
+    #[must_use]
+    pub fn build(args: &<P::Actor as Actor>::Args) -> Self {
+        Self {
+            policy: P::build(args),
+            phase: P::initial(args),
+            pending: None,
+            entered_at: Instant::now(),
+            stash: Stashing::bounded(P::stash_capacity(args)),
+        }
+    }
+
+    /// The committed phase. A [`goto`](Phased::goto) in the current
+    /// handler is not yet visible here — phases change at step
+    /// boundaries (D3).
+    #[must_use]
+    pub const fn phase(&self) -> P::Phase {
+        self.phase
+    }
+
+    /// Requests a transition, committed by the framework only after the
+    /// current handler returns `Ok` (D3: a mid-handler panic never
+    /// observes a half-switched phase). Last call wins within one
+    /// handler; `goto(current)` commits to a no-op (D3's
+    /// `Goto(current) ≡ Stay`).
+    pub const fn goto(&mut self, next: P::Phase) {
+        self.pending = Some(next);
+    }
+
+    /// The phase stash — D5's manual escape hatch (`stash`/`unstash_all`
+    /// for release timing that is not transition-shaped), same bounded
+    /// buffer the gate defers into.
+    pub const fn stash(&mut self) -> &mut Stashing<<P::Actor as Actor>::Msg> {
+        &mut self.stash
+    }
+
+    /// Applies a policy hook's step at its boundary (the hook return IS
+    /// the boundary).
+    fn apply(&mut self, step: Step<P::Phase>) -> Flow {
+        match step {
+            Step::Stay => Flow::Continue,
+            Step::Stop => Flow::Stop,
+            Step::Goto(next) => {
+                self.commit_to(next);
+                Flow::Continue
+            }
+        }
+    }
+
+    /// The D4 transition effects, on phase CHANGE only: switch → reset
+    /// the deadline anchor → release the stash (replayed by the Shell's
+    /// in-step drain, re-gated in the new phase). Deadline cancel/re-arm
+    /// is implicit via the declarative slot.
+    fn commit_to(&mut self, next: P::Phase) {
+        if next != self.phase {
+            self.phase = next;
+            self.entered_at = Instant::now();
+            self.stash.unstash_all();
+        }
+    }
+
+    /// Commits a pending [`goto`](Phased::goto), if any.
+    fn commit_pending(&mut self) {
+        if let Some(next) = self.pending.take() {
+            self.commit_to(next);
+        }
+    }
+}
+
+impl<P: PhasePolicy> Replay<<P::Actor as Actor>::Msg> for Phased<P> {
+    fn next_replay(&mut self) -> Option<<P::Actor as Actor>::Msg> {
+        self.stash.pop_ready()
+    }
+}
+
+impl<P: PhasePolicy> DeadlineHook<P::Actor> for Phased<P> {
+    /// `entered_at + phase_deadline(phase)` — the ADR-0025 declarative
+    /// slot as a pure function of machine state. An overflowing sum is
+    /// beyond representable time, i.e. never: reported as no deadline.
+    fn next_deadline(&self, _: &P::Actor) -> Option<Instant> {
+        self.policy
+            .phase_deadline(self.phase)
+            .and_then(|d| self.entered_at.checked_add(d))
+    }
+
+    async fn on_deadline(
+        &mut self,
+        actor: &mut P::Actor,
+        actor_ref: WeakActorRef<Shell<P::Actor>>,
+    ) -> Result<Flow, <P::Actor as Actor>::Error> {
+        let step = P::on_phase_timeout(actor, self.phase, actor_ref, &mut self.stash).await?;
+        Ok(self.apply(step))
+    }
+}
+
+/// The in-step admission hook a capability set exposes — the third
+/// loop-participation trait, servicing [`Phased`]'s gate on EVERY
+/// delivered or replayed message (ADR-0026 stage 4).
+///
+/// The [`Shell`] routes each message through
+/// [`admit`](Admission::admit) before the user handler and calls
+/// [`commit`](Admission::commit) after a delivered handler returns `Ok`
+/// (never after `Err`/panic — D3). `()` and non-phased sets deliver
+/// everything and commit nothing. Derive-emitted; users never hand-write
+/// it.
+pub trait Admission<A: Actor> {
+    /// Classifies one message: hand it to the handler, or absorb it
+    /// (deferred, ignored, or consumed by the overflow hook — whose step
+    /// may stop the actor).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`A::Error`](Actor::Error) if the overflow hook fails — a
+    /// controlled crash, exactly as a handler `Err`.
+    fn admit(
+        &mut self,
+        actor: &mut A,
+        msg: A::Msg,
+    ) -> impl Future<Output = Result<Admitted<A::Msg>, A::Error>> + Send;
+
+    /// Commits a pending transition after a delivered handler's `Ok`.
+    fn commit(&mut self);
+}
+
+/// One [`Admission::admit`] verdict.
+#[derive(Debug)]
+pub enum Admitted<M> {
+    /// Deliver to the user handler.
+    Deliver(M),
+    /// Absorbed by the cap set; the step's continuation decision.
+    Absorbed(Flow),
+}
+
+impl<A: Actor> Admission<A> for () {
+    async fn admit(&mut self, _: &mut A, msg: A::Msg) -> Result<Admitted<A::Msg>, A::Error> {
+        Ok(Admitted::Deliver(msg))
+    }
+
+    fn commit(&mut self) {}
+}
+
+impl<P: PhasePolicy> Admission<P::Actor> for Phased<P> {
+    async fn admit(
+        &mut self,
+        actor: &mut P::Actor,
+        msg: <P::Actor as Actor>::Msg,
+    ) -> Result<Admitted<<P::Actor as Actor>::Msg>, <P::Actor as Actor>::Error> {
+        match P::gate(self.phase, &msg) {
+            Disposition::Deliver => Ok(Admitted::Deliver(msg)),
+            Disposition::Ignore => Ok(Admitted::Absorbed(Flow::Continue)),
+            Disposition::Defer => match self.stash.stash(msg) {
+                Ok(()) => Ok(Admitted::Absorbed(Flow::Continue)),
+                Err(full) => {
+                    let refused = full.msg();
+                    match P::on_defer_full(actor, self.phase, refused, &mut self.stash).await? {
+                        Overflow::Redeliver(m) => Ok(Admitted::Deliver(m)),
+                        Overflow::Handled(step) => Ok(Admitted::Absorbed(self.apply(step))),
+                    }
+                }
+            },
+        }
+    }
+
+    fn commit(&mut self) {
+        self.commit_pending();
+    }
+}
+
 /// The death-reaction policy seat of the [`Watching`] capability — the
 /// relocated `on_link_died` hook (ADR-0026 stage 3, card #280).
 ///
@@ -649,42 +983,30 @@ impl<A: Actor> crate::actor::Actor for Shell<A> {
             },
         )
         .await?;
+        // An init-time `Phased::goto` commits here — before any message —
+        // rather than dangling until the first handled step.
+        caps.commit();
         Ok(Self { user, caps })
     }
 
-    /// One delivered message, then in-step replay (ADR-0022): run the user
-    /// handler, then drain the cap set's [`Replay`] queue in the same step —
-    /// ahead of the whole mailbox backlog, in stash-arrival order, under this
-    /// step's strong `actor_ref` (no upgrade, no drain-window hazard). A
-    /// replayed handler's `Err`/panic/`Flow::Stop` routes exactly as a
-    /// delivered message's would; `Flow::Stop` abandons the rest of the batch.
-    /// For a plain actor (`Caps = ()`) the drain loop never enters.
+    /// One delivered message, then in-step replay (ADR-0022): run the
+    /// [`step`](Shell::step) (admission → user handler → transition
+    /// commit), then drain the cap set's [`Replay`] queue in the same step
+    /// — ahead of the whole mailbox backlog, in stash-arrival order, under
+    /// this step's strong `actor_ref` (no upgrade, no drain-window
+    /// hazard). Replayed messages re-enter admission, so a [`Phased`] gate
+    /// re-classifies them in the CURRENT phase (a re-deferred message goes
+    /// to `held`, never back into the draining batch — the snapshot
+    /// bound). A replayed handler's `Err`/panic/`Flow::Stop` routes
+    /// exactly as a delivered message's would; `Flow::Stop` abandons the
+    /// rest of the batch. For a plain actor (`Caps = ()`) admission is a
+    /// pass-through and the drain loop never enters.
     async fn handle(&mut self, msg: A::Msg, actor_ref: ActorRef<Self>) -> Result<Flow, A::Error> {
-        if A::handle(
-            &mut self.user,
-            msg,
-            Ctx {
-                caps: &mut self.caps,
-                self_ref: &actor_ref,
-            },
-        )
-        .await?
-            == Flow::Stop
-        {
+        if self.step(msg, &actor_ref).await? == Flow::Stop {
             return Ok(Flow::Stop);
         }
         while let Some(m) = self.caps.next_replay() {
-            if A::handle(
-                &mut self.user,
-                m,
-                Ctx {
-                    caps: &mut self.caps,
-                    self_ref: &actor_ref,
-                },
-            )
-            .await?
-                == Flow::Stop
-            {
+            if self.step(m, &actor_ref).await? == Flow::Stop {
                 return Ok(Flow::Stop);
             }
         }
@@ -701,11 +1023,11 @@ impl<A: Actor> crate::actor::Actor for Shell<A> {
 
     /// Expiry rides the cap set's hook, then the same in-step replay drain
     /// as [`handle`](Self::handle) — a phase timeout may release a stash
-    /// batch that must replay ahead of the backlog. The drain needs a
-    /// strong ref for the replayed handlers' `Ctx`; a deadline fire has no
-    /// message to mint one from, so in the drain window (`upgrade` fails)
-    /// the released batch waits for the next delivered step — and dies
-    /// with the incarnation if none comes (ADR-0022 D6).
+    /// batch that must replay ahead of the backlog, re-gated. The drain
+    /// needs a strong ref for the replayed handlers' `Ctx`; a deadline
+    /// fire has no message to mint one from, so in the drain window
+    /// (`upgrade` fails) the released batch waits for the next delivered
+    /// step — and dies with the incarnation if none comes (ADR-0022 D6).
     async fn on_deadline(&mut self, actor_ref: WeakActorRef<Self>) -> Result<Flow, A::Error> {
         if self
             .caps
@@ -719,17 +1041,7 @@ impl<A: Actor> crate::actor::Actor for Shell<A> {
             return Ok(Flow::Continue);
         };
         while let Some(m) = self.caps.next_replay() {
-            if A::handle(
-                &mut self.user,
-                m,
-                Ctx {
-                    caps: &mut self.caps,
-                    self_ref: &strong,
-                },
-            )
-            .await?
-                == Flow::Stop
-            {
+            if self.step(m, &strong).await? == Flow::Stop {
                 return Ok(Flow::Stop);
             }
         }
@@ -750,6 +1062,32 @@ impl<A: Actor> crate::actor::Actor for Shell<A> {
         reason: ActorStopReason,
     ) -> Result<(), A::Error> {
         A::on_stop(&mut self.user, actor_ref, reason).await
+    }
+}
+
+impl<A: Actor> Shell<A> {
+    /// One handler step under admission (stage 4): the cap set classifies
+    /// the message first — a [`Phased`] gate defers/ignores/sheds without
+    /// the handler ever seeing it — then a delivered message runs the user
+    /// handler, and a pending [`Phased::goto`] commits ONLY after its `Ok`
+    /// (D3: an `Err`/panic never observes a half-switched phase).
+    async fn step(&mut self, msg: A::Msg, actor_ref: &ActorRef<Self>) -> Result<Flow, A::Error> {
+        match self.caps.admit(&mut self.user, msg).await? {
+            Admitted::Absorbed(flow) => Ok(flow),
+            Admitted::Deliver(m) => {
+                let flow = A::handle(
+                    &mut self.user,
+                    m,
+                    Ctx {
+                        caps: &mut self.caps,
+                        self_ref: actor_ref,
+                    },
+                )
+                .await?;
+                self.caps.commit();
+                Ok(flow)
+            }
+        }
     }
 }
 
@@ -995,6 +1333,16 @@ mod tests {
                 None
             }
         }
+        impl<A: Actor> super::super::Admission<A> for RecCaps {
+            async fn admit(
+                &mut self,
+                _: &mut A,
+                msg: A::Msg,
+            ) -> Result<super::super::Admitted<A::Msg>, A::Error> {
+                Ok(super::super::Admitted::Deliver(msg))
+            }
+            fn commit(&mut self) {}
+        }
         impl<A: Actor> super::super::DeadlineHook<A> for RecCaps {
             fn next_deadline(&self, _: &A) -> Option<tokio::time::Instant> {
                 None
@@ -1067,6 +1415,16 @@ mod tests {
             fn next_replay(&mut self) -> Option<M> {
                 None
             }
+        }
+        impl<A: Actor> super::super::Admission<A> for SupCaps {
+            async fn admit(
+                &mut self,
+                _: &mut A,
+                msg: A::Msg,
+            ) -> Result<super::super::Admitted<A::Msg>, A::Error> {
+                Ok(super::super::Admitted::Deliver(msg))
+            }
+            fn commit(&mut self) {}
         }
         impl<A: Actor> super::super::DeadlineHook<A> for SupCaps {
             fn next_deadline(&self, _: &A) -> Option<tokio::time::Instant> {
@@ -1330,6 +1688,16 @@ mod tests {
                 None
             }
         }
+        impl<A: Actor> super::super::Admission<A> for IdleCaps {
+            async fn admit(
+                &mut self,
+                _: &mut A,
+                msg: A::Msg,
+            ) -> Result<super::super::Admitted<A::Msg>, A::Error> {
+                Ok(super::super::Admitted::Deliver(msg))
+            }
+            fn commit(&mut self) {}
+        }
         impl<A: Actor> DeadlineHook<A> for IdleCaps
         where
             IdlePolicy: DeadlinePolicy<A>,
@@ -1433,6 +1801,234 @@ mod tests {
                 shell.user.fires, 1,
                 "the policy observed expiry through &mut user state",
             );
+        }
+    }
+
+    /// Stage-4 (card #281): the `Phased` machine's unit-level laws that
+    /// need `Shell` internals — commit-after-Ok (D3) and the D6 default
+    /// overflow verdict. Behavior over the real loop lives in
+    /// `tests/caps_phased.rs` and the equivalence oracle.
+    mod phased {
+        use core::num::NonZeroUsize;
+        use core::time::Duration;
+
+        use futures::stream::AbortHandle;
+        use tokio_util::sync::CancellationToken;
+
+        use super::super::{
+            Actor, Admission, CapSet, Ctx, Disposition, Flow, Overflow, PhasePolicy, Phased, Shell,
+            Stashing, Step,
+        };
+        use crate::{
+            actor::{ActorRef, WeakActorRef},
+            mailbox::{ActorId, Capacity, Mailbox, Mailboxed},
+            message::Msg,
+        };
+
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        enum Ph {
+            A,
+            B,
+        }
+
+        #[derive(Debug)]
+        enum MMsg {
+            GotoBThenFail,
+            GotoBThenOk,
+        }
+        impl Msg for MMsg {}
+
+        struct M;
+        impl Mailboxed for M {
+            type Msg = MMsg;
+        }
+
+        struct MPolicy;
+        impl PhasePolicy for MPolicy {
+            type Actor = M;
+            type Phase = Ph;
+            fn build((): &()) -> Self {
+                Self
+            }
+            fn initial((): &()) -> Ph {
+                Ph::A
+            }
+            fn stash_capacity((): &()) -> Capacity {
+                Capacity::new(NonZeroUsize::new(4).expect("nonzero")).expect("valid")
+            }
+            fn gate(_: Ph, _: &MMsg) -> Disposition {
+                Disposition::Deliver
+            }
+            fn phase_deadline(&self, _: Ph) -> Option<Duration> {
+                None
+            }
+            async fn on_phase_timeout(
+                _: &mut M,
+                _: Ph,
+                _: WeakActorRef<Shell<M>>,
+                _: &mut Stashing<MMsg>,
+            ) -> Result<Step<Ph>, &'static str> {
+                Ok(Step::Stay)
+            }
+        }
+
+        struct MCaps {
+            phased: Phased<MPolicy>,
+        }
+        impl CapSet<M> for MCaps {
+            fn build(args: &()) -> Self {
+                Self {
+                    phased: Phased::build(args),
+                }
+            }
+        }
+        impl super::super::Provide<Phased<MPolicy>> for MCaps {
+            fn provide(&mut self) -> &mut Phased<MPolicy> {
+                &mut self.phased
+            }
+        }
+        impl super::super::Replay<MMsg> for MCaps {
+            fn next_replay(&mut self) -> Option<MMsg> {
+                super::super::Replay::next_replay(&mut self.phased)
+            }
+        }
+        impl super::super::DeadlineHook<M> for MCaps {
+            fn next_deadline(&self, actor: &M) -> Option<tokio::time::Instant> {
+                super::super::DeadlineHook::next_deadline(&self.phased, actor)
+            }
+            async fn on_deadline(
+                &mut self,
+                actor: &mut M,
+                actor_ref: WeakActorRef<Shell<M>>,
+            ) -> Result<Flow, &'static str> {
+                super::super::DeadlineHook::on_deadline(&mut self.phased, actor, actor_ref).await
+            }
+        }
+        impl Admission<M> for MCaps {
+            async fn admit(
+                &mut self,
+                actor: &mut M,
+                msg: MMsg,
+            ) -> Result<super::super::Admitted<MMsg>, &'static str> {
+                Admission::admit(&mut self.phased, actor, msg).await
+            }
+            fn commit(&mut self) {
+                Admission::commit(&mut self.phased);
+            }
+        }
+        impl<A: Actor> super::super::SelectRunner<A> for MCaps {
+            type Runner = super::super::PlainRun;
+        }
+
+        impl Actor for M {
+            type Msg = MMsg;
+            type Args = ();
+            type Error = &'static str;
+            type Caps = MCaps;
+
+            async fn init((): (), _: Ctx<'_, Self>) -> Result<Self, &'static str> {
+                Ok(Self)
+            }
+
+            async fn handle(
+                &mut self,
+                msg: MMsg,
+                mut cx: Ctx<'_, Self>,
+            ) -> Result<Flow, &'static str> {
+                cx.cap::<Phased<MPolicy>>().goto(Ph::B);
+                match msg {
+                    MMsg::GotoBThenFail => Err("bang"),
+                    MMsg::GotoBThenOk => Ok(Flow::Continue),
+                }
+            }
+        }
+
+        /// A strong ref plus the receiver that keeps its channel open for
+        /// the test's life (the `actor_ref.rs` `build_ref_with_rx` shape).
+        fn strong_ref() -> (
+            ActorRef<Shell<M>>,
+            crate::mailbox::MailboxReceiver<Shell<M>>,
+        ) {
+            let cap = Capacity::try_from(1usize).expect("valid test capacity");
+            let (tx, rx) = Mailbox::<Shell<M>>::bounded(cap, ActorId::from_raw_for_test(11));
+            let (abort, _reg) = AbortHandle::new_pair();
+            let actor_ref = ActorRef::new(
+                ActorId::from_raw_for_test(11),
+                tx,
+                CancellationToken::new(),
+                abort,
+                None,
+            );
+            (actor_ref, rx)
+        }
+
+        /// D3 commit-after-Ok, on the `Shell::step` code order itself: a
+        /// handler that requests a transition and then FAILS never
+        /// commits it (an unwind takes the same post-await path), while
+        /// the same request followed by `Ok` does.
+        #[tokio::test]
+        async fn a_failing_handler_never_commits_its_pending_goto() {
+            let mut shell = Shell {
+                user: M,
+                caps: MCaps::build(&()),
+            };
+            let (actor_ref, _rx) = strong_ref();
+
+            let out =
+                crate::actor::Actor::handle(&mut shell, MMsg::GotoBThenFail, actor_ref.clone())
+                    .await;
+            assert_eq!(out, Err("bang"), "the controlled crash rides out");
+            assert_eq!(
+                shell.caps.phased.phase(),
+                Ph::A,
+                "a failed handler's goto is NEVER committed (D3)",
+            );
+
+            let out = crate::actor::Actor::handle(&mut shell, MMsg::GotoBThenOk, actor_ref).await;
+            assert_eq!(out, Ok(Flow::Continue));
+            assert_eq!(
+                shell.caps.phased.phase(),
+                Ph::B,
+                "the same goto commits after Ok",
+            );
+        }
+
+        /// D6 default: an un-overridden `on_defer_full` hands the INTACT
+        /// message back as `Redeliver` — visible-but-unrefused shedding,
+        /// never a silent drop.
+        #[tokio::test]
+        async fn default_on_defer_full_redelivers_the_intact_message() {
+            let mut actor = M;
+            let mut stash = Stashing::<MMsg>::bounded(
+                Capacity::new(NonZeroUsize::new(1).expect("nonzero")).expect("valid"),
+            );
+            let out = <MPolicy as PhasePolicy>::on_defer_full(
+                &mut actor,
+                Ph::A,
+                MMsg::GotoBThenOk,
+                &mut stash,
+            )
+            .await
+            .expect("the default is infallible");
+            assert!(
+                matches!(out, Overflow::Redeliver(MMsg::GotoBThenOk)),
+                "the default verdict redelivers the exact message",
+            );
+        }
+
+        /// The `()` floor: a capability-less set admits everything and
+        /// commits nothing.
+        #[tokio::test]
+        async fn unit_caps_admit_everything() {
+            let mut unit = ();
+            let out = <() as Admission<M>>::admit(&mut unit, &mut M, MMsg::GotoBThenOk)
+                .await
+                .expect("the unit admission is infallible");
+            assert!(
+                matches!(out, super::super::Admitted::Deliver(MMsg::GotoBThenOk)),
+                "the floor delivers everything",
+            );
+            <() as Admission<M>>::commit(&mut unit);
         }
     }
 

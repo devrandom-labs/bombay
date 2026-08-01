@@ -8,8 +8,8 @@ use std::time::Duration;
 use bombay::{
     actor::Flow,
     caps::{
-        Actor, CapSet, Ctx, DeadlineHook, DeadlineInstant, Handle, PlainRun, Provide, Replay,
-        SelectRunner, Shell, spawn,
+        Actor, Admission, Admitted, CapSet, Ctx, DeadlineHook, DeadlineInstant, Handle, PlainRun,
+        Provide, Replay, SelectRunner, Shell, spawn,
     },
     error::ActorStopReason,
     mailbox::Mailboxed,
@@ -97,6 +97,16 @@ impl<M> Replay<M> for GateCaps {
 // exactly this for you).
 impl<A: Actor> SelectRunner<A> for GateCaps {
     type Runner = PlainRun;
+}
+
+// And its admission participation (stage 4); with no `Phased` cap every
+// message is delivered and nothing commits (the derive emits exactly this
+// for you).
+impl<A: Actor> Admission<A> for GateCaps {
+    async fn admit(&mut self, _: &mut A, msg: A::Msg) -> Result<Admitted<A::Msg>, A::Error> {
+        Ok(Admitted::Deliver(msg))
+    }
+    fn commit(&mut self) {}
 }
 
 // And its deadline participation (stage 4); with no `Deadlined`/`Phased`
