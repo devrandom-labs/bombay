@@ -253,3 +253,50 @@ shape). Mechanism, twice the stage-2 `Replay` precedent:
   loop has one arm) and `Phased`+`Stashing` (the machine embeds its own
   ADR-0022 stash; a sibling would double-buffer deferral), with E0119
   remaining the law for hand-written sets.
+
+## Addendum 4 (2026-08-01) — stage-5 audit result: delivery-failure trio stays split (no change)
+
+Stage 5 (card #282) audited the "3×-spelled" delivery-failure family.
+The full caller-match enumeration (post-#287 main) dissolves the
+premise — the three spellings are three different *kinds* of thing:
+
+- **`TellError` is the one canonical spelling** (3 variants, each
+  carrying `M`; `msg()` total). Producers: `request.rs` (try/timed/
+  blocking sends), `recipient.rs` (erased tell), `actor_ref.rs`
+  (supervision control ops, `TellError<()>`).
+- **`AskError` does not re-spell delivery at all** — it composes it:
+  `Deliver(TellError<M>)` is one variant plus a `From` impl; a failed
+  ask converts with a bare `?`. Zero duplication.
+- **`PipeAskError` is the only true re-spelling** (3 delivery + 2
+  reply-side variants, payload-less), and the flatness is the *product*
+  ADR-0017 bought: one non-nested match at the pipe mapper instead of
+  `Result<Result<R, AskError<M, E>>, PanicError>`. The duplication is
+  confined to a single producer — `PipeAskError::flatten`
+  (`pipe.rs`), an exhaustive match with **no wildcard arm**, so any
+  variant added to `TellError`/`AskError` is a compile error there,
+  never silent drift — plus one pinned unit test.
+- **No consumer outside `pipe.rs` matches a `PipeAskError` variant**
+  anywhere in the repo (src, tests, examples, fuzz). External matches
+  hit `TellError`/`AskError` only; the job-queue app wraps
+  `TellError` as `#[source]` without matching variants.
+
+Both consolidation shapes were assessed and rejected:
+
+1. **Compose** (`PipeAskError::{Ask(AskError<(), E>), Panicked}` or
+   `Deliver(TellError<()>)`): reintroduces the nesting ADR-0017 exists
+   to remove, forces `TellError::MailboxFull(())` unit-payload matches
+   at the mapper, and loses the pipe-tailored Display strings
+   ("target not alive" vs "actor not alive").
+2. **Extract a payload-less kind** (`TellError` →
+   `struct { kind: DeliveryFailure, msg: M }`): rewrites ~25 match
+   sites across production, tests, and fuzz, adds a public type, and
+   nets a reduction of ~2 named variants — a regression against this
+   ADR's own goals (fewer items, less cognitive load).
+
+Related delta noted from #280: `ActorNotLinked` narrowed to
+"floor misuse or channel-less peer" but remains a single-domain bare
+struct per the house rule — no bearing on the trio.
+
+**Decision: no change.** The split-not-erase design (`error.rs:1-16`)
+stands; retryability remains a method, failure domains remain distinct,
+and the one real duplication is compiler-checked lossless.
