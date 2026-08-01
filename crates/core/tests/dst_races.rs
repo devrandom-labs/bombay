@@ -59,14 +59,14 @@ use tokio::{
 use bombay::{
     ActorId, SendContext,
     actor::{
-        Actor, ActorRef, Flow, PreparedActor, RunResult, Spawn, SpawnConfig, SpawnSupervised,
-        Supervisor, Watch, WeakActorRef,
+        Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, SupervisedReact, WeakActorRef,
     },
+    caps,
     error::{ActorStopReason, AskError, TellError},
     mailbox::{Capacity, ControlSignal, Mailboxed, Signal},
     message::Msg,
     reply::ReplySender,
-    restart::{RestartConfig, RestartPolicy, SupervisionStrategy},
+    restart::{RestartConfig, RestartPolicy},
     test_support::{set_supervisor_rng_seed, terminate_bound},
 };
 
@@ -74,6 +74,18 @@ use bombay::{
 /// loop, and the test fails here rather than stalling the whole run. Scaled under
 /// MIRI — see `terminate_bound`.
 const TERMINATE: Duration = terminate_bound();
+
+/// The removed `Spawn` verbs, suite-local over the public floor.
+fn spawn_plain<A: Actor>(args: A::Args) -> ActorRef<A> {
+    spawn_plain_with_config(SpawnConfig::default(), args)
+}
+
+fn spawn_plain_with_config<A: Actor>(config: SpawnConfig, args: A::Args) -> ActorRef<A> {
+    let prepared = PreparedActor::<A>::new(config);
+    let actor_ref = prepared.actor_ref().clone();
+    let _join = prepared.spawn(args);
+    actor_ref
+}
 
 fn cap(n: usize) -> Capacity {
     Capacity::try_from(n).expect("valid test capacity")
@@ -740,8 +752,7 @@ async fn cyclic_topology_never_deadlocks() {
     for seed in [0xDEAD_BEEF_u64, 42, 7, 0xBAD_C0FFE] {
         let nodes: Vec<ActorRef<Node>> = (0..3)
             .map(|_| {
-                use bombay::actor::Spawn as _;
-                Node::spawn_with_config(
+                spawn_plain_with_config::<Node>(
                     SpawnConfig {
                         capacity: cap(1),
                         ..Default::default()
@@ -850,31 +861,42 @@ struct SupIdle;
 impl Msg for SupIdle {}
 
 macro_rules! storm_supervisor {
-    ($t:ident, $strategy:expr) => {
+    ($t:ident, $caps:ident, $strategy:ident) => {
         struct $t;
-        impl Mailboxed for $t {
-            type Msg = SupIdle;
+
+        #[derive(bombay_macros::Provide)]
+        struct $caps {
+            watching: caps::Watching<caps::OtpPropagation>,
+            supervising: caps::Supervising<caps::$strategy>,
         }
-        impl Actor for $t {
+        impl caps::CapSet<$t> for $caps {
+            fn build((): &()) -> Self {
+                Self {
+                    watching: caps::Watching::new(),
+                    supervising: caps::Supervising::new(),
+                }
+            }
+        }
+        impl caps::Actor for $t {
+            type Msg = SupIdle;
             type Args = ();
             type Error = Infallible;
-            async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+            type Caps = $caps;
+            async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
                 Ok(Self)
             }
-            async fn handle(&mut self, _: SupIdle, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+            async fn handle(
+                &mut self,
+                _: SupIdle,
+                _: caps::Ctx<'_, Self>,
+            ) -> Result<Flow, Self::Error> {
                 Ok(Flow::Continue)
-            }
-        }
-        impl Watch for $t {}
-        impl Supervisor for $t {
-            fn supervision_strategy() -> SupervisionStrategy {
-                $strategy
             }
         }
     };
 }
-storm_supervisor!(AllSup, SupervisionStrategy::OneForAll);
-storm_supervisor!(RestSup, SupervisionStrategy::RestForOne);
+storm_supervisor!(AllSup, AllSupCaps, OneForAll);
+storm_supervisor!(RestSup, RestSupCaps, RestForOne);
 
 /// `tag -> current incarnation's strong ref`: kept so a child is not
 /// ref-count-stopped before the storm drives it (in production an external ref
@@ -894,7 +916,7 @@ fn tagged_factory(
     live: LiveChildren,
 ) -> impl FnMut() -> ActorRef<Worker> + Send + 'static {
     move || {
-        let child = Worker::spawn(());
+        let child = spawn_plain::<Worker>(());
         let _ = report.send((origin.elapsed().as_millis(), tag));
         live.lock()
             .expect("live-map lock")
@@ -958,7 +980,7 @@ fn storm_trace(seed: u64, schedule: &[(u64, &'static str)]) -> Vec<(u128, &'stat
         let origin = Instant::now();
         let (tx, mut rx) = mpsc::unbounded_channel::<(u128, &'static str)>();
         let live: LiveChildren = Arc::new(Mutex::new(HashMap::new()));
-        let sup = AllSup::spawn_supervised(());
+        let sup = caps::spawn::<AllSup>(());
 
         for tag in TAGS {
             timeout(
@@ -1021,14 +1043,16 @@ fn dst_restart_storm_deterministic() {
 /// counters, so a surviving supervisor means "no wedge", never "not yet escalated".
 async fn link_unlink_storm<S>(seed: u64)
 where
-    S: SpawnSupervised + Actor<Args = ()>,
+    S: caps::Actor<Args = ()>,
+    caps::Shell<S>: SupervisedReact,
+    <S::Caps as caps::SelectRunner<S>>::Runner: caps::RunKind<S>,
 {
     const TAGS: [&str; 3] = ["a", "b", "c"];
     set_supervisor_rng_seed(Some(seed));
     let origin = Instant::now();
     let (tx, mut rx) = mpsc::unbounded_channel::<(u128, &'static str)>();
     let live: LiveChildren = Arc::new(Mutex::new(HashMap::new()));
-    let sup = S::spawn_supervised(());
+    let sup = caps::spawn::<S>(());
     let cfg = RestartConfig::new(RestartPolicy::Permanent)
         .with_max_restarts(u32::MAX)
         .with_max_total(u32::MAX);
@@ -1128,7 +1152,7 @@ fn backoff_delays(seed: u64, crashes: u32) -> Vec<(u32, u128)> {
         let origin = Instant::now();
         let (tx, mut rx) = mpsc::unbounded_channel::<(u128, &'static str)>();
         let live: LiveChildren = Arc::new(Mutex::new(HashMap::new()));
-        let sup = AllSup::spawn_supervised(());
+        let sup = caps::spawn::<AllSup>(());
         let cfg = RestartConfig::new(RestartPolicy::Permanent)
             .with_max_restarts(u32::MAX)
             .with_max_total(u32::MAX);
@@ -1209,41 +1233,50 @@ fn dst_backoff_distribution_measured() {
 // installed edge delivers the death notice once the backlog has drained.
 // ---------------------------------------------------------------------------
 
-/// A linked watcher that tapes every death notice id its hook receives.
+/// A linked watcher that tapes every death notice id its policy receives.
 struct TapingWatcher {
     notices: flume::Sender<bombay::ActorId>,
 }
-impl Mailboxed for TapingWatcher {
-    type Msg = Ping;
-}
-impl Actor for TapingWatcher {
-    type Args = flume::Sender<bombay::ActorId>;
-    type Error = Infallible;
-    async fn on_start(notices: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
-        Ok(Self { notices })
-    }
-    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
-        Ok(Flow::Continue)
-    }
-    async fn on_stop(
-        &mut self,
-        _: WeakActorRef<Self>,
-        _: ActorStopReason,
-    ) -> Result<(), Self::Error> {
-        Ok(())
-    }
-}
-impl Watch for TapingWatcher {
+
+/// The taping reaction, as a named `WatchPolicy` (stage-3 shape).
+struct TapingPolicy;
+impl caps::WatchPolicy<TapingWatcher> for TapingPolicy {
     async fn on_link_died(
-        &mut self,
+        actor: &mut TapingWatcher,
         id: bombay::ActorId,
         _: ActorStopReason,
         _: bool,
-    ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
-        self.notices
+    ) -> Result<core::ops::ControlFlow<ActorStopReason>, Infallible> {
+        actor
+            .notices
             .try_send(id)
             .expect("the notice tape is unbounded");
         Ok(core::ops::ControlFlow::Continue(()))
+    }
+}
+
+#[derive(bombay_macros::Provide)]
+struct TapingCaps {
+    watching: caps::Watching<TapingPolicy>,
+}
+impl caps::CapSet<TapingWatcher> for TapingCaps {
+    fn build(_: &<TapingWatcher as caps::Actor>::Args) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+        }
+    }
+}
+
+impl caps::Actor for TapingWatcher {
+    type Msg = Ping;
+    type Args = flume::Sender<bombay::ActorId>;
+    type Error = Infallible;
+    type Caps = TapingCaps;
+    async fn init(notices: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+        Ok(Self { notices })
+    }
+    async fn handle(&mut self, _: Ping, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+        Ok(Flow::Continue)
     }
 }
 
@@ -1319,7 +1352,7 @@ async fn watch_completes_while_target_backlog_is_full_and_parked() {
     // the full bounded mailbox and deadlocked against the parked handler.
     let (notice_tx, notice_rx) = flume::unbounded();
     let (watcher_prepared, watcher_link_rx) =
-        PreparedActor::<TapingWatcher>::new_linked(SpawnConfig {
+        PreparedActor::<caps::Shell<TapingWatcher>>::new_linked(SpawnConfig {
             capacity: cap(1),
             ..Default::default()
         });
@@ -1620,13 +1653,42 @@ struct RaceWatcherArgs {
 #[derive(Debug)]
 struct RaceGo;
 impl Msg for RaceGo {}
-impl Mailboxed for RaceWatcher {
-    type Msg = RaceGo;
+/// The recording reaction, as a named `WatchPolicy` (stage-3 shape).
+struct RacePolicy;
+impl caps::WatchPolicy<RaceWatcher> for RacePolicy {
+    async fn on_link_died(
+        actor: &mut RaceWatcher,
+        _id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> Result<std::ops::ControlFlow<ActorStopReason>, Infallible> {
+        actor
+            .notices
+            .lock()
+            .expect("lock")
+            .push((WatchReasonKind::of(&reason), linked));
+        Ok(std::ops::ControlFlow::Continue(()))
+    }
 }
-impl Actor for RaceWatcher {
+
+#[derive(bombay_macros::Provide)]
+struct RaceCaps {
+    watching: caps::Watching<RacePolicy>,
+}
+impl caps::CapSet<RaceWatcher> for RaceCaps {
+    fn build(_: &RaceWatcherArgs) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+        }
+    }
+}
+
+impl caps::Actor for RaceWatcher {
+    type Msg = RaceGo;
     type Args = RaceWatcherArgs;
     type Error = Infallible;
-    async fn on_start(args: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+    type Caps = RaceCaps;
+    async fn init(args: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         let RaceWatcherArgs {
             target,
             watches,
@@ -1648,9 +1710,9 @@ impl Actor for RaceWatcher {
             stop_release: Some(stop_release),
         })
     }
-    async fn handle(&mut self, _: RaceGo, actor_ref: ActorRef<Self>) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, _: RaceGo, cx: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         let borrowed = self.target.as_ref().expect("the target is present");
-        let outcome = bounded(actor_ref.watch(borrowed)).await.is_ok();
+        let outcome = bounded(cx.self_ref().watch(borrowed)).await.is_ok();
         self.watch_results.lock().expect("lock").push(outcome);
         self.watches_left = self
             .watches_left
@@ -1673,7 +1735,7 @@ impl Actor for RaceWatcher {
     }
     async fn on_stop(
         &mut self,
-        _: WeakActorRef<Self>,
+        _: WeakActorRef<caps::Shell<Self>>,
         _: ActorStopReason,
     ) -> Result<(), Self::Error> {
         self.stopping
@@ -1687,20 +1749,6 @@ impl Actor for RaceWatcher {
             .await
             .expect("the stop_release channel is open");
         Ok(())
-    }
-}
-impl Watch for RaceWatcher {
-    async fn on_link_died(
-        &mut self,
-        _id: ActorId,
-        reason: ActorStopReason,
-        linked: bool,
-    ) -> Result<std::ops::ControlFlow<ActorStopReason>, Self::Error> {
-        self.notices
-            .lock()
-            .expect("lock")
-            .push((WatchReasonKind::of(&reason), linked));
-        Ok(std::ops::ControlFlow::Continue(()))
     }
 }
 
@@ -1768,10 +1816,11 @@ async fn race_run(steady: bool, knobs: RaceKnobs) -> RaceOutcome {
     let (release, release_rx) = oneshot::channel();
     let (stopping_tx, stopping) = oneshot::channel();
     let (stop_release, stop_release_rx) = oneshot::channel();
-    let (w_prepared, w_link_rx) = PreparedActor::<RaceWatcher>::new_linked(SpawnConfig {
-        capacity: cap(8),
-        on_stop_grace: Duration::from_mins(1),
-    });
+    let (w_prepared, w_link_rx) =
+        PreparedActor::<caps::Shell<RaceWatcher>>::new_linked(SpawnConfig {
+            capacity: cap(8),
+            on_stop_grace: Duration::from_mins(1),
+        });
     let external = if steady {
         Some(w_prepared.actor_ref().clone())
     } else {

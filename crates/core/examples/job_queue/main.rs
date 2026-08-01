@@ -15,7 +15,6 @@ use app::{
     OverseerMsg,
 };
 use bombay::{
-    actor::Spawn,
     caps,
     mailbox::Capacity,
     registry::Registry,
@@ -49,7 +48,7 @@ async fn main() {
 
     // clients never hold the spawn handle — they resolve by name
     let dispatcher = registry
-        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -105,7 +104,7 @@ async fn main() {
                 let disp = dispatcher.downgrade();
                 let done_port = dispatcher.recipient::<app::Done>();
                 move || {
-                    let worker = app::Worker::spawn(app::WorkerArgs {
+                    let worker = caps::spawn::<app::Worker>(app::WorkerArgs {
                         slot: 3,
                         dispatcher: done_port.clone(),
                         stopped_tx: None,

@@ -219,7 +219,10 @@ mod tests {
     use core::time::Duration;
 
     use crate::{
-        actor::{Actor, ActorRef, Flow, PreparedActor, Recipient, Spawn as _, SpawnConfig},
+        actor::{
+            Actor, ActorRef, Flow, PreparedActor, Recipient, SpawnConfig,
+            test_verbs::TestSpawn as _,
+        },
         mailbox::{Capacity, Mailboxed},
         message::Msg,
         reply::ReplySender,

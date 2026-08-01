@@ -21,21 +21,25 @@ use syn::{
     parse::ParseStream,
 };
 
-/// If `ty` is written `…::Stashing<M>` (any leading path), returns `M`.
+/// If `ty` is written `…::<cap_ident><T>` (any leading path), returns `T`.
 ///
-/// The one deliberate core-type coupling of this derive: it recognizes the
-/// stash capability **structurally** so it can emit that field's loop
-/// participation ([`Replay`](bombay::caps::Replay)) alongside its `Provide`.
-/// Recognizing it structurally — rather than via a `#[stash]` attribute — is
-/// what keeps replay forget-proof: you cannot hold a `Stashing<M>` field the
-/// derive fails to service. An *alias* (`type S = Stashing<X>`) is NOT
-/// recognized; write the type directly.
-fn stash_message_ty(ty: &Type) -> Option<&Type> {
+/// The deliberate core-type coupling of this derive: it recognizes the
+/// core capability types **structurally** so it can emit each field's loop
+/// participation alongside its `Provide` — `Stashing<M>` →
+/// [`Replay`](bombay::caps::Replay), `Watching<WP>` →
+/// [`HasWatching`](bombay::caps::HasWatching), `Supervising<SS>` →
+/// [`HasSupervising`](bombay::caps::HasSupervising) (+ the
+/// [`SelectRunner`](bombay::caps::SelectRunner) loop shape). Structural —
+/// rather than attribute-driven — recognition is what keeps participation
+/// forget-proof: you cannot hold a cap field the derive fails to service.
+/// An *alias* (`type S = Stashing<X>`) is NOT recognized; write the type
+/// directly.
+fn cap_type_arg<'t>(ty: &'t Type, cap_ident: &str) -> Option<&'t Type> {
     let Type::Path(type_path) = ty else {
         return None;
     };
     let segment = type_path.path.segments.last()?;
-    if segment.ident != "Stashing" {
+    if segment.ident != cap_ident {
         return None;
     }
     let PathArguments::AngleBracketed(args) = &segment.arguments else {
@@ -45,6 +49,11 @@ fn stash_message_ty(ty: &Type) -> Option<&Type> {
         GenericArgument::Type(inner) => Some(inner),
         _ => None,
     })
+}
+
+/// See [`cap_type_arg`]: `…::Stashing<M>` → `M`.
+fn stash_message_ty(ty: &Type) -> Option<&Type> {
+    cap_type_arg(ty, "Stashing")
 }
 
 /// A parsed `#[derive(Provide)]` input: the struct identifier and its
@@ -92,6 +101,26 @@ impl Parse for DeriveProvide {
                 &derive.ident,
                 "`#[derive(Provide)]` on an empty struct is a no-op; a \
                  capability-less actor uses `type Caps = ()` instead",
+            ));
+        }
+        // The composition law's friendly half (ADR-0026 stage 3, card #280):
+        // a supervisor IS a watcher, so `Supervising` without a `Watching`
+        // sibling is rejected here with a readable error. The type-level
+        // supertrait (`HasSupervising: HasWatching`) remains the law for
+        // hand-written sets.
+        let has_watching = fields
+            .iter()
+            .any(|(_, ty)| cap_type_arg(ty, "Watching").is_some());
+        if !has_watching
+            && let Some((_, supervising)) = fields
+                .iter()
+                .find(|(_, ty)| cap_type_arg(ty, "Supervising").is_some())
+        {
+            return Err(syn::Error::new_spanned(
+                supervising,
+                "`Supervising` requires a `Watching` field in the same cap \
+                 set: a supervisor watches its children's deaths (ADR-0026 \
+                 stage 3 composition law)",
             ));
         }
         Ok(Self {
@@ -146,7 +175,75 @@ impl ToTokens for DeriveProvide {
                 });
             }
         }
+
+        emit_watch_supervise(&self.fields, ident, tokens);
     }
+}
+
+/// Stage-3 participation + loop selection (ADR-0026, card #280).
+///
+/// A `Watching<WP>` field emits `HasWatching` (policy as associated type;
+/// gated on the policy serving the actor); a `Supervising<SS>` field emits
+/// `HasSupervising` (strategy as associated type; the same policy gate
+/// discharges the `HasWatching` supertrait). Duplicate cap fields emit
+/// overlapping impls and are rejected by coherence (E0119), exactly as
+/// `Provide`. Every derived set then names its loop shape exactly once
+/// (spike-280): `Supervising` ⇒ the three-arm supervised loop, else
+/// `Watching` ⇒ the two-arm linked loop, else the plain one-arm loop (a
+/// stash-only set replays on any shape).
+fn emit_watch_supervise(fields: &[(Ident, Type)], ident: &Ident, tokens: &mut TokenStream) {
+    let mut first_policy = None;
+    for policy in fields
+        .iter()
+        .filter_map(|(_, ty)| cap_type_arg(ty, "Watching"))
+    {
+        first_policy.get_or_insert(policy);
+        tokens.extend(quote! {
+            #[automatically_derived]
+            impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::HasWatching<__CapsActor>
+                for #ident
+            where
+                #policy: ::bombay::caps::WatchPolicy<__CapsActor>,
+            {
+                type Policy = #policy;
+            }
+        });
+    }
+    let mut supervising = false;
+    for strat in fields
+        .iter()
+        .filter_map(|(_, ty)| cap_type_arg(ty, "Supervising"))
+    {
+        supervising = true;
+        // `Parse` guarantees a Watching sibling exists, so a policy is
+        // always available to gate the supertrait for the generic actor.
+        let policy = first_policy.iter();
+        tokens.extend(quote! {
+            #[automatically_derived]
+            impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::HasSupervising<__CapsActor>
+                for #ident
+            where
+                #(#policy: ::bombay::caps::WatchPolicy<__CapsActor>,)*
+            {
+                type Strat = #strat;
+            }
+        });
+    }
+    let runner = if supervising {
+        quote!(::bombay::caps::SupervisedRun)
+    } else if first_policy.is_some() {
+        quote!(::bombay::caps::LinkedRun)
+    } else {
+        quote!(::bombay::caps::PlainRun)
+    };
+    tokens.extend(quote! {
+        #[automatically_derived]
+        impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::SelectRunner<__CapsActor>
+            for #ident
+        {
+            type Runner = #runner;
+        }
+    });
 }
 
 #[cfg(test)]
@@ -259,6 +356,133 @@ mod tests {
         assert!(
             out.contains(":: core :: option :: Option :: None"),
             "the blanket yields None: {out}"
+        );
+    }
+
+    /// Stage 3 (card #280): a `Watching<WP>` field emits the `HasWatching`
+    /// participation impl — generic over the actor, gated on the policy
+    /// actually serving that actor (the where-clause the spike proved
+    /// resolves for both generic and concrete policies).
+    #[test]
+    fn a_watching_field_emits_has_watching_with_the_policy() {
+        use quote::ToTokens as _;
+        let parsed =
+            syn::parse_str::<DeriveProvide>("struct Caps { watching: Watching<RecPolicy> }")
+                .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        assert_eq!(
+            out.matches(":: bombay :: caps :: HasWatching < __CapsActor > for Caps")
+                .count(),
+            1,
+            "exactly one HasWatching impl: {out}"
+        );
+        assert!(
+            out.contains("where RecPolicy : :: bombay :: caps :: WatchPolicy < __CapsActor >"),
+            "the impl is gated on the policy serving the actor: {out}"
+        );
+        assert!(
+            out.contains("type Policy = RecPolicy"),
+            "the declared policy rides the associated type: {out}"
+        );
+    }
+
+    /// Stage 3: a `Supervising<SS>` field (with a `Watching` sibling) emits
+    /// `HasSupervising` with the strategy as the associated type, and the
+    /// SAME policy where-clause (which discharges the `HasWatching`
+    /// supertrait for the generic actor).
+    #[test]
+    fn a_supervising_field_emits_has_supervising_with_the_strategy() {
+        use quote::ToTokens as _;
+        let parsed = syn::parse_str::<DeriveProvide>(
+            "struct Caps { watching: Watching<Otp>, supervising: Supervising<OneForAll> }",
+        )
+        .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        assert_eq!(
+            out.matches(":: bombay :: caps :: HasSupervising < __CapsActor > for Caps")
+                .count(),
+            1,
+            "exactly one HasSupervising impl: {out}"
+        );
+        assert!(
+            out.contains("type Strat = OneForAll"),
+            "the declared strategy rides the associated type: {out}"
+        );
+        assert_eq!(
+            out.matches("where Otp : :: bombay :: caps :: WatchPolicy < __CapsActor >")
+                .count(),
+            2,
+            "both participation impls carry the policy gate: {out}"
+        );
+    }
+
+    /// Stage 3 loop selection: `Supervising` selects the supervised shape.
+    #[test]
+    fn a_supervising_set_selects_the_supervised_runner() {
+        use quote::ToTokens as _;
+        let parsed = syn::parse_str::<DeriveProvide>(
+            "struct Caps { watching: Watching<Otp>, supervising: Supervising<OneForOne> }",
+        )
+        .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        assert_eq!(
+            out.matches(":: bombay :: caps :: SelectRunner < __CapsActor > for Caps")
+                .count(),
+            1,
+            "exactly one SelectRunner impl: {out}"
+        );
+        assert!(
+            out.contains("type Runner = :: bombay :: caps :: SupervisedRun"),
+            "Supervising selects the three-arm loop: {out}"
+        );
+    }
+
+    /// Stage 3 loop selection: `Watching` alone selects the linked shape.
+    #[test]
+    fn a_watching_only_set_selects_the_linked_runner() {
+        use quote::ToTokens as _;
+        let parsed = syn::parse_str::<DeriveProvide>("struct Caps { watching: Watching<Otp> }")
+            .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        assert!(
+            out.contains("type Runner = :: bombay :: caps :: LinkedRun"),
+            "Watching without Supervising selects the two-arm loop: {out}"
+        );
+    }
+
+    /// Stage 3 loop selection: no watch/supervise cap — including a
+    /// stash-only set — selects the plain shape (the stage-2 replay drain
+    /// is loop-agnostic).
+    #[test]
+    fn a_stash_only_set_selects_the_plain_runner() {
+        use quote::ToTokens as _;
+        let parsed = syn::parse_str::<DeriveProvide>("struct Caps { buf: Stashing<GateMsg> }")
+            .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        assert_eq!(
+            out.matches(":: bombay :: caps :: SelectRunner < __CapsActor > for Caps")
+                .count(),
+            1,
+            "every derived set names its loop shape exactly once: {out}"
+        );
+        assert!(
+            out.contains("type Runner = :: bombay :: caps :: PlainRun"),
+            "no watch/supervise cap: plain loop: {out}"
+        );
+    }
+
+    /// Stage 3 composition law, derive-side friendly half: `Supervising`
+    /// without a `Watching` sibling is rejected at expansion with a
+    /// readable error (the type-level supertrait law remains the backstop
+    /// for hand-written sets).
+    #[test]
+    fn supervising_without_watching_is_rejected() {
+        let err =
+            syn::parse_str::<DeriveProvide>("struct Caps { supervising: Supervising<OneForOne> }")
+                .unwrap_err();
+        assert!(
+            err.to_string().contains("requires a `Watching`"),
+            "unexpected error: {err}"
         );
     }
 

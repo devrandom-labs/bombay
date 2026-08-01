@@ -30,6 +30,11 @@ pub use self::{
     timer::TimerHandle,
 };
 
+// Test-local stand-ins for the removed spawn verbs (stage 3, card #280),
+// shared by the in-crate unit tests of pipe/timer/request.
+#[cfg(test)]
+pub(crate) use spawn::test_verbs;
+
 // The supervision types stay OFF the public API — the `supervise` verb returns a
 // bare `ActorId`, and `SuperviseReg`/`SupervisionOp` only ride inside the
 // `ControlSignal::Supervision(Box<SupervisionOp>)` variant, exactly as `WatchReg`
@@ -142,270 +147,57 @@ pub trait Actor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
     }
 }
 
-/// Opt-in capability: an actor that **watches** others and reacts to their death.
+/// Seals [`LinkReact`]/[`SupervisedReact`]: the traits stay nameable (they
+/// appear in public floor bounds) but only this crate implements them —
+/// they are the run-loop's internal dispatch seams, not a user surface.
+/// The one production implementor is [`caps::Shell`](crate::caps::Shell),
+/// conditional on its cap set (ADR-0026 stage 3, card #280).
+pub(crate) mod sealed {
+    /// The seal. Unnameable outside the crate.
+    pub trait Sealed {}
+}
+
+/// The linked run-loop's dispatch seam: a runtime actor that can react to
+/// a link-death notice (ADR-0026 stage 3).
 ///
-/// Only actors spawned via `spawn_linked` (added in a later slice) receive death
-/// notices; a plain actor is still *watchable* (passive) but cannot itself watch.
-/// `Watch` is strictly less authority than a supervisor (restart) — watching is
-/// "get notified", supervising is "rebuild".
-pub trait Watch: Actor {
-    /// Reacts to the death of a watched/linked actor.
-    ///
-    /// Default = OTP semantics: a **linked** (`linked == true`) **abnormal**
-    /// death propagates (`Break`); a `watch` (notify-only) death, or any normal
-    /// death, is observed and the actor continues. Override to trap (return
-    /// `Continue` for a linked abnormal death) or to react programmatically.
-    ///
-    /// A notice that arrives after the run-loop has already taken its stop
-    /// decision (e.g. a target dying after the mailbox-closed `Collected`
-    /// break) is dropped by design and never reaches this hook: a stopping
-    /// actor observes nothing further — Erlang parity, where a `DOWN`
-    /// delivered to an already-dead process is dropped, and delivering
-    /// post-break would violate finish-current-then-stop (card #266).
+/// Replaces the removed `Watch` trait at the loop and floor bound sites —
+/// but is **sealed**: user code declares watching by plugging
+/// [`caps::Watching`](crate::caps::Watching) into its cap set, never by
+/// implementing this.
+pub trait LinkReact: Actor + sealed::Sealed {
+    /// Reacts to the death of a watched/linked actor — the semantics seat
+    /// of [`caps::WatchPolicy`](crate::caps::WatchPolicy). Delivery rules
+    /// are the loop's (a post-break notice is dropped by design, #266).
     ///
     /// # Errors
     ///
-    /// Returns [`Self::Error`] if a custom override fails; the default hook is
-    /// infallible.
+    /// Returns [`Actor::Error`] if the plugged policy fails; the shipped
+    /// [`OtpPropagation`](crate::caps::OtpPropagation) policy is infallible.
     fn on_link_died(
         &mut self,
         id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> impl Future<Output = Result<ControlFlow<ActorStopReason>, Self::Error>> + Send {
-        async move {
-            Ok(if linked && !reason.is_normal() {
-                ControlFlow::Break(ActorStopReason::LinkDied {
-                    id,
-                    reason: Box::new(reason),
-                })
-            } else {
-                ControlFlow::Continue(())
-            })
-        }
-    }
+    ) -> impl Future<Output = Result<ControlFlow<ActorStopReason>, Self::Error>> + Send;
 }
 
-/// Ergonomic spawn entry points, provided for every [`Actor`].
+/// The supervised run-loop's dispatch seam: a link-reactive runtime actor
+/// with a restart-set strategy (ADR-0026 stage 3).
 ///
-/// Spawns onto the current tokio runtime and returns the [`ActorRef`]; the actor
-/// stops via `Signal::Stop`, [`ActorRef::stop`], [`ActorRef::kill`], a handler
-/// crash, or startup failure (ref-count-driven stop is #117).
-///
-/// The runtime must have the TIME driver enabled — teardown bounds
-/// [`on_stop`](Actor::on_stop) with a timer, and panics without one.
-pub trait Spawn: Actor {
-    /// Spawns with the default [`SpawnConfig`].
-    #[must_use]
-    fn spawn(args: Self::Args) -> ActorRef<Self> {
-        Self::spawn_with_config(SpawnConfig::default(), args)
-    }
-
-    /// Spawns with an explicit [`SpawnConfig`] (mailbox capacity + `on_stop`
-    /// notice grace).
-    #[must_use]
-    fn spawn_with_config(config: SpawnConfig, args: Self::Args) -> ActorRef<Self> {
-        let prepared = PreparedActor::<Self>::new(config);
-        let actor_ref = prepared.actor_ref().clone();
-        let _join = prepared.spawn(args);
-        actor_ref
-    }
-}
-
-impl<A: Actor> Spawn for A {}
-
-/// Ergonomic linked-spawn entry points, provided for every [`Watch`] actor.
-///
-/// A linked actor is spawned with its own UNBOUNDED link channel, so it can
-/// `watch`/`link` others and its [`on_link_died`](Watch::on_link_died) hook fires
-/// when a watched actor stops. A `Watch` actor spawned via the plain [`Spawn`]
-/// path has no link channel and cannot watch.
-pub trait SpawnLinked: Watch {
-    /// Spawns a linked actor with the default [`SpawnConfig`].
-    #[must_use]
-    fn spawn_linked(args: Self::Args) -> ActorRef<Self> {
-        Self::spawn_linked_with_config(SpawnConfig::default(), args)
-    }
-
-    /// Spawns a linked actor with an explicit [`SpawnConfig`] (mailbox capacity
-    /// + `on_stop` notice grace).
-    #[must_use]
-    fn spawn_linked_with_config(config: SpawnConfig, args: Self::Args) -> ActorRef<Self> {
-        let (prepared, link_rx) = PreparedActor::<Self>::new_linked(config);
-        let actor_ref = prepared.actor_ref().clone();
-        let _join = prepared.spawn_linked_task(args, link_rx);
-        actor_ref
-    }
-}
-
-impl<A: Watch> SpawnLinked for A {}
-
-/// Authority marker: an [`Actor`] cannot watch, a [`Watch`] actor observes a
-/// peer's death, a `Supervisor` **rebuilds** dead children under a restart
-/// policy.
-///
-/// Restart *policy* (whether a given child comes back) stays per-child,
-/// supplied at `supervise` time. The *strategy* (which siblings share the
-/// failed child's fate) is a property of the supervisor — the seat #196
-/// reserved (card #199, ADR-0014).
-pub trait Supervisor: Watch {
+/// Replaces the removed `Supervisor` trait at the loop and floor bound
+/// sites; sealed like [`LinkReact`]. There is deliberately NO default
+/// strategy — the cap set names one
+/// ([`caps::Supervising`](crate::caps::Supervising),
+/// required-by-construction).
+pub trait SupervisedReact: LinkReact {
     /// The restart-set strategy for this supervisor's children.
-    ///
-    /// Defaults to [`OneForOne`](SupervisionStrategy::OneForOne) — the 2a
-    /// behavior: a failed child is rebuilt alone and siblings never observe
-    /// it. Override to cycle sets ([`RestForOne`](SupervisionStrategy::RestForOne)
-    /// / [`OneForAll`](SupervisionStrategy::OneForAll)).
     #[must_use]
-    fn supervision_strategy() -> SupervisionStrategy {
-        SupervisionStrategy::OneForOne
-    }
+    fn strategy() -> SupervisionStrategy;
 }
 
-/// Ergonomic supervised-spawn entry points, provided for every [`Supervisor`].
-///
-/// A supervisor is spawned **linked** (it owns a link channel, so its children's
-/// deaths reach it) and runs the three-arm supervised loop: the message mailbox,
-/// the link channel, and the restart-backoff queue. Children are registered
-/// after spawn via `ActorRef::supervise` (a later card); a supervisor with no
-/// children behaves exactly as a `spawn_linked` [`Watch`] actor.
-pub trait SpawnSupervised: Supervisor {
-    /// Spawns a supervisor with the default [`SpawnConfig`].
-    #[must_use]
-    fn spawn_supervised(args: Self::Args) -> ActorRef<Self> {
-        Self::spawn_supervised_with_config(SpawnConfig::default(), args)
-    }
-
-    /// Spawns a supervisor with an explicit [`SpawnConfig`] (mailbox capacity
-    /// + `on_stop` notice grace).
-    #[must_use]
-    fn spawn_supervised_with_config(config: SpawnConfig, args: Self::Args) -> ActorRef<Self> {
-        let (prepared, link_rx) = PreparedActor::<Self>::new_linked(config);
-        let actor_ref = prepared.actor_ref().clone();
-        let _join = prepared.spawn_supervised_task(args, link_rx);
-        actor_ref
-    }
-}
-
-impl<A: Supervisor> SpawnSupervised for A {}
-
-#[cfg(test)]
-mod watch_trait_tests {
-    use super::*;
-    use crate::mailbox::ActorId;
-    use core::ops::ControlFlow;
-
-    struct W;
-    #[derive(Debug)]
-    struct M;
-    impl crate::message::Msg for M {}
-    impl crate::mailbox::Mailboxed for W {
-        type Msg = M;
-    }
-    impl Actor for W {
-        type Args = ();
-        type Error = core::convert::Infallible;
-        async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
-            Ok(W)
-        }
-        async fn handle(&mut self, _: M, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
-            Ok(Flow::Continue)
-        }
-    }
-    impl Watch for W {}
-
-    /// The default `on_link_died` hook is OTP-shaped: it `Break`s only for a
-    /// **linked** *and* **abnormal** death, and `Continue`s for a notify-only
-    /// (`linked == false`) death or any normal death. Fails if the default
-    /// collapses to one arm (always break / always continue).
-    #[tokio::test]
-    async fn default_hook_breaks_on_linked_abnormal_and_continues_otherwise() {
-        let mut w = W;
-
-        let out = w
-            .on_link_died(ActorId::from_raw_for_test(1), ActorStopReason::Killed, true)
-            .await
-            .expect("infallible default hook");
-        assert!(
-            matches!(out, ControlFlow::Break(ActorStopReason::LinkDied { .. })),
-            "linked + abnormal must propagate, got {out:?}",
-        );
-
-        let out = w
-            .on_link_died(
-                ActorId::from_raw_for_test(1),
-                ActorStopReason::Killed,
-                false,
-            )
-            .await
-            .expect("infallible default hook");
-        assert!(
-            matches!(out, ControlFlow::Continue(())),
-            "watch (linked=false) + abnormal is notify-only, got {out:?}",
-        );
-
-        let out = w
-            .on_link_died(ActorId::from_raw_for_test(1), ActorStopReason::Normal, true)
-            .await
-            .expect("infallible default hook");
-        assert!(
-            matches!(out, ControlFlow::Continue(())),
-            "linked + normal does not propagate, got {out:?}",
-        );
-    }
-}
-
-#[cfg(test)]
-mod supervisor_trait_tests {
-    use super::*;
-    use crate::restart::SupervisionStrategy;
-
-    struct DefaultSup;
-    struct AllSup;
-    #[derive(Debug)]
-    struct M2;
-    impl crate::message::Msg for M2 {}
-    macro_rules! actor_boilerplate {
-        ($t:ty) => {
-            impl crate::mailbox::Mailboxed for $t {
-                type Msg = M2;
-            }
-            impl Actor for $t {
-                type Args = ();
-                type Error = core::convert::Infallible;
-                async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
-                    unreachable!("trait-surface test: never spawned")
-                }
-                async fn handle(&mut self, _: M2, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
-                    Ok(Flow::Continue)
-                }
-            }
-            impl Watch for $t {}
-        };
-    }
-    actor_boilerplate!(DefaultSup);
-    actor_boilerplate!(AllSup);
-    impl Supervisor for DefaultSup {}
-    impl Supervisor for AllSup {
-        fn supervision_strategy() -> SupervisionStrategy {
-            SupervisionStrategy::OneForAll
-        }
-    }
-
-    /// The strategy seat #196 reserved: a supervisor property with the 2a
-    /// default, overridable per supervisor TYPE. `RestartConfig` (per-child)
-    /// carries no strategy field — the card's compile-visible invariant
-    /// `strategy_is_supervisor_property_not_child` is held structurally by
-    /// this being the only strategy surface in the crate.
-    #[test]
-    fn strategy_is_supervisor_property_with_one_for_one_default() {
-        assert_eq!(
-            DefaultSup::supervision_strategy(),
-            SupervisionStrategy::OneForOne,
-            "default preserves 2a behavior",
-        );
-        assert_eq!(
-            AllSup::supervision_strategy(),
-            SupervisionStrategy::OneForAll
-        );
-    }
-}
+// The former `Spawn`/`SpawnLinked`/`SpawnSupervised` verb traits and the
+// `Watch`/`Supervisor` capability tiers are GONE (ADR-0026 stage 3, card
+// #280): the ONE `caps::spawn` selects the loop shape from the cap set at
+// compile time, and watching/supervising are the `caps::Watching`/
+// `caps::Supervising` capability types. The [`PreparedActor`] floor below
+// remains the expert path to deterministic lifecycle driving.

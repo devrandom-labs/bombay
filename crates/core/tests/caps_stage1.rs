@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use bombay::{
     actor::Flow,
-    caps::{Actor, CapSet, Ctx, Handle, Provide, Replay, Shell, spawn},
+    caps::{Actor, CapSet, Ctx, Handle, PlainRun, Provide, Replay, SelectRunner, Shell, spawn},
     error::ActorStopReason,
     mailbox::Mailboxed,
     reply::ReplySender,
@@ -87,6 +87,13 @@ impl<M> Replay<M> for GateCaps {
     fn next_replay(&mut self) -> Option<M> {
         None
     }
+}
+
+// A hand-written cap set also names its loop shape (stage 3); with no
+// watch/supervise cap that is the plain one-arm loop (the derive emits
+// exactly this for you).
+impl<A: Actor> SelectRunner<A> for GateCaps {
+    type Runner = PlainRun;
 }
 
 struct Gatekeeper {

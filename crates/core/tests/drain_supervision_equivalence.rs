@@ -66,10 +66,8 @@ use tokio::{
 
 use bombay::{
     ActorId,
-    actor::{
-        Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, Supervisor, Watch,
-        WeakActorRef,
-    },
+    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
+    caps,
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -256,8 +254,22 @@ enum SupMsg {
     SuperviseAndStop,
 }
 impl Msg for SupMsg {}
-impl Mailboxed for SupScript {
-    type Msg = SupMsg;
+
+/// Stage-3 authority: the OTP watching policy + the `OneForOne` strategy as
+/// plugged caps (was: empty `Watch`/`Supervisor` marker impls with the same
+/// semantics — the default hook and the default strategy, now NAMED).
+#[derive(bombay_macros::Provide)]
+struct SupScriptCaps {
+    watching: caps::Watching<caps::OtpPropagation>,
+    supervising: caps::Supervising<caps::OneForOne>,
+}
+impl caps::CapSet<SupScript> for SupScriptCaps {
+    fn build(_: &SupScriptArgs) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+            supervising: caps::Supervising::new(),
+        }
+    }
 }
 
 impl SupScript {
@@ -269,7 +281,7 @@ impl SupScript {
     /// factory, `supervise` it against the handler-context ref (the steady
     /// shared upgrade or the drain-window mint — the thing under test), and
     /// record the outcome plus the first incarnation's id.
-    async fn supervise_step(&mut self, actor_ref: &ActorRef<Self>) {
+    async fn supervise_step(&mut self, actor_ref: &caps::Handle<Self>) {
         let factory = self.factory.take().expect("one supervise per script");
         let result = bounded(actor_ref.supervise(child_config(), factory)).await;
         let ok = result.is_ok();
@@ -278,10 +290,12 @@ impl SupScript {
     }
 }
 
-impl Actor for SupScript {
+impl caps::Actor for SupScript {
+    type Msg = SupMsg;
     type Args = SupScriptArgs;
     type Error = Infallible;
-    async fn on_start(args: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+    type Caps = SupScriptCaps;
+    async fn init(args: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         let SupScriptArgs {
             trace,
             factory,
@@ -296,21 +310,17 @@ impl Actor for SupScript {
             release: Some(release),
         })
     }
-    async fn handle(
-        &mut self,
-        msg: SupMsg,
-        actor_ref: ActorRef<Self>,
-    ) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, msg: SupMsg, cx: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         match msg {
-            SupMsg::Supervise => self.supervise_step(&actor_ref).await,
+            SupMsg::Supervise => self.supervise_step(cx.self_ref()).await,
             SupMsg::StopChild => {
                 let id = self.child_id.expect("supervise ran first");
-                let result = bounded(actor_ref.stop_child(id)).await;
+                let result = bounded(cx.self_ref().stop_child(id)).await;
                 self.record(TraceEvent::StopChildOk(result.is_ok()));
             }
             SupMsg::Unsupervise => {
                 let id = self.child_id.expect("supervise ran first");
-                let result = bounded(actor_ref.unsupervise(id)).await;
+                let result = bounded(cx.self_ref().unsupervise(id)).await;
                 self.record(TraceEvent::UnsuperviseOk(result.is_ok()));
             }
             SupMsg::Park => {
@@ -326,7 +336,7 @@ impl Actor for SupScript {
                     .expect("the release channel is open");
             }
             SupMsg::SuperviseAndStop => {
-                self.supervise_step(&actor_ref).await;
+                self.supervise_step(cx.self_ref()).await;
                 return Ok(Flow::Stop);
             }
         }
@@ -334,15 +344,13 @@ impl Actor for SupScript {
     }
     async fn on_stop(
         &mut self,
-        _: WeakActorRef<Self>,
+        _: WeakActorRef<caps::Shell<Self>>,
         reason: ActorStopReason,
     ) -> Result<(), Self::Error> {
         self.record(TraceEvent::Finished(ReasonKind::of(&reason)));
         Ok(())
     }
 }
-impl Watch for SupScript {}
-impl Supervisor for SupScript {}
 
 // ------------------------------------------------------- the oracle harness ---
 
@@ -354,14 +362,14 @@ async fn start_supervisor(
     factory: ChildFactory,
     script: &[SupMsg],
 ) -> (
-    Option<ActorRef<SupScript>>,
-    JoinHandle<RunResult<SupScript>>,
+    Option<caps::Handle<SupScript>>,
+    JoinHandle<RunResult<caps::Shell<SupScript>>>,
     oneshot::Receiver<()>,
     oneshot::Sender<()>,
 ) {
     let (entered_tx, entered) = oneshot::channel();
     let (release, release_rx) = oneshot::channel();
-    let (prepared, link_rx) = PreparedActor::<SupScript>::new_linked(config(8));
+    let (prepared, link_rx) = PreparedActor::<caps::Shell<SupScript>>::new_linked(config(8));
     let external = match mode {
         Mode::Steady => Some(prepared.actor_ref().clone()),
         Mode::Drain => None,
@@ -395,8 +403,8 @@ struct Rig {
     slot: Incarnations,
     started_rx: mpsc::UnboundedReceiver<()>,
     trace: Arc<Mutex<Vec<TraceEvent>>>,
-    external: Option<ActorRef<SupScript>>,
-    sup_join: JoinHandle<RunResult<SupScript>>,
+    external: Option<caps::Handle<SupScript>>,
+    sup_join: JoinHandle<RunResult<caps::Shell<SupScript>>>,
     entered: oneshot::Receiver<()>,
     release: oneshot::Sender<()>,
 }
@@ -443,7 +451,7 @@ fn assert_stopped_normal(outcome: &RunResult<Child>, context: &str) {
 /// Asserts the supervisor's exact ref-count-stop outcome: both modes end
 /// `Collected` (the drain run on the emptied backlog, the steady run once
 /// the test drops the held ref).
-fn assert_collected(outcome: &RunResult<SupScript>) {
+fn assert_collected(outcome: &RunResult<caps::Shell<SupScript>>) {
     assert!(
         matches!(
             outcome,

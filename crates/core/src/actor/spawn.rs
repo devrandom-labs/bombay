@@ -23,7 +23,7 @@ use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
 use crate::{
     actor::{
-        Actor, ActorRef, Supervisor, Watch, WeakActorRef,
+        Actor, ActorRef, LinkReact, SupervisedReact, WeakActorRef,
         kind::{
             LinkedChannels, LoopHandles, SupervisedState, drain_queued_supervision,
             run_linked_message_loop, run_message_loop, run_supervised_message_loop,
@@ -204,12 +204,12 @@ impl<A: Actor> PreparedActor<A> {
     }
 }
 
-impl<A: Watch> PreparedActor<A> {
+impl<A: LinkReact> PreparedActor<A> {
     /// Prepares a **linked** actor: like [`new`](Self::new) but also creates the
     /// actor's UNBOUNDED link channel (so it can watch others), storing the sender
     /// in the [`ActorRef`] (`Some(link_tx)`) and returning the receiver for the
     /// run-loop to drain. A plain [`new`](Self::new) leaves `link_tx` `None`, so a
-    /// plain-spawned `Watch` actor cannot watch (it has no channel).
+    /// plain-prepared actor cannot watch (it has no channel).
     #[must_use = "a prepared actor and its link receiver must be run"]
     pub fn new_linked(config: SpawnConfig) -> (Self, LinkReceiver) {
         let id = next_actor_id();
@@ -275,7 +275,7 @@ impl<A: Watch> PreparedActor<A> {
     }
 }
 
-impl<A: Supervisor> PreparedActor<A> {
+impl<A: SupervisedReact> PreparedActor<A> {
     /// Runs the actor as a **supervisor** in the current task until it stops:
     /// the three-arm loop that drains its mailbox and link channel *and* rebuilds
     /// dead children under their restart policies (#196). A hard kill aborts the
@@ -578,7 +578,7 @@ async fn run_lifecycle<A: Actor>(
 /// two-arm [`run_linked_message_loop`] so the actor also drains its link channel and
 /// reacts to deaths via `on_link_died`. Prologue and teardown are the shared
 /// [`start_actor`]/[`finish_actor`] — a linked actor is watchable too.
-async fn run_lifecycle_linked<A: Watch>(
+async fn run_lifecycle_linked<A: LinkReact>(
     args: A::Args,
     actor_ref: ActorRef<A>,
     mut mailbox_rx: MailboxReceiver<A>,
@@ -684,7 +684,7 @@ enum SupervisedLifecycleResult<A: Actor> {
               loop, and the three-branch epilogue; splitting would obscure the \
               ordering invariants"
 )]
-async fn run_lifecycle_supervised<A: Supervisor>(
+async fn run_lifecycle_supervised<A: SupervisedReact>(
     args: A::Args,
     actor_ref: ActorRef<A>,
     mut mailbox_rx: MailboxReceiver<A>,
@@ -701,7 +701,7 @@ async fn run_lifecycle_supervised<A: Supervisor>(
     let sup_id = actor_ref.id();
     #[expect(
         clippy::expect_used,
-        reason = "a supervisor is always spawned linked (SpawnSupervised uses new_linked), \
+        reason = "a supervisor is always spawned linked (the supervised RunKind uses new_linked), \
                   so its link channel is present; a missing one is a construction-time bug"
     )]
     let sup_link_tx = actor_ref
@@ -835,6 +835,105 @@ fn log_on_stop_outcome<A: Actor>(
     }
 }
 
+/// Test-local stand-ins for the spawn verbs stage 3 removed (card #280).
+///
+/// The loops' unit tests drive RAW runtime actors (no caps layer), which
+/// the public surface no longer spawns directly. `LinkReact`/
+/// `SupervisedReact` are sealed against foreign crates only, so in-crate
+/// test actors implement them via the stamps below; the OTP reaction
+/// semantics themselves are pinned once, in `caps::OtpPropagation`'s tests.
+#[cfg(test)]
+pub(crate) mod test_verbs {
+    use super::{PreparedActor, SpawnConfig};
+    use crate::actor::{Actor, ActorRef, LinkReact, SupervisedReact};
+
+    /// The removed `Spawn` verbs, test-local.
+    pub(crate) trait TestSpawn: Actor {
+        fn spawn(args: Self::Args) -> ActorRef<Self> {
+            Self::spawn_with_config(SpawnConfig::default(), args)
+        }
+        fn spawn_with_config(config: SpawnConfig, args: Self::Args) -> ActorRef<Self> {
+            let prepared = PreparedActor::<Self>::new(config);
+            let actor_ref = prepared.actor_ref().clone();
+            let _join = prepared.spawn(args);
+            actor_ref
+        }
+    }
+    impl<A: Actor> TestSpawn for A {}
+
+    /// The removed `SpawnLinked` verbs, test-local.
+    pub(crate) trait TestSpawnLinked: LinkReact {
+        fn spawn_linked(args: Self::Args) -> ActorRef<Self> {
+            Self::spawn_linked_with_config(SpawnConfig::default(), args)
+        }
+        fn spawn_linked_with_config(config: SpawnConfig, args: Self::Args) -> ActorRef<Self> {
+            let (prepared, link_rx) = PreparedActor::<Self>::new_linked(config);
+            let actor_ref = prepared.actor_ref().clone();
+            let _join = prepared.spawn_linked_task(args, link_rx);
+            actor_ref
+        }
+    }
+    impl<A: LinkReact> TestSpawnLinked for A {}
+
+    /// The removed `SpawnSupervised` verb, test-local.
+    pub(crate) trait TestSpawnSupervised: SupervisedReact {
+        fn spawn_supervised(args: Self::Args) -> ActorRef<Self> {
+            let (prepared, link_rx) = PreparedActor::<Self>::new_linked(SpawnConfig::default());
+            let actor_ref = prepared.actor_ref().clone();
+            let _join = prepared.spawn_supervised_task(args, link_rx);
+            actor_ref
+        }
+    }
+    impl<A: SupervisedReact> TestSpawnSupervised for A {}
+
+    /// Stamps the OTP default reaction (the removed `Watch` trait default)
+    /// onto a test actor so it can drive the linked loop directly.
+    macro_rules! otp_link_react {
+        ($t:ty) => {
+            impl crate::actor::sealed::Sealed for $t {}
+            impl crate::actor::LinkReact for $t {
+                async fn on_link_died(
+                    &mut self,
+                    id: crate::mailbox::ActorId,
+                    reason: crate::error::ActorStopReason,
+                    linked: bool,
+                ) -> Result<core::ops::ControlFlow<crate::error::ActorStopReason>, Self::Error>
+                {
+                    Ok(if linked && !reason.is_normal() {
+                        core::ops::ControlFlow::Break(crate::error::ActorStopReason::LinkDied {
+                            id,
+                            reason: Box::new(reason),
+                        })
+                    } else {
+                        core::ops::ControlFlow::Continue(())
+                    })
+                }
+            }
+        };
+    }
+    pub(crate) use otp_link_react;
+
+    /// Stamps `SupervisedReact` with the pre-stage-3 default strategy.
+    macro_rules! one_for_one_react {
+        ($t:ty) => {
+            impl crate::actor::SupervisedReact for $t {
+                fn strategy() -> crate::restart::SupervisionStrategy {
+                    crate::restart::SupervisionStrategy::OneForOne
+                }
+            }
+        };
+    }
+    pub(crate) use one_for_one_react;
+
+    /// The bare seal, for test actors that hand-write a `LinkReact` impl.
+    macro_rules! sealed_stamp {
+        ($t:ty) => {
+            impl crate::actor::sealed::Sealed for $t {}
+        };
+    }
+    pub(crate) use sealed_stamp;
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::{
@@ -906,7 +1005,7 @@ mod tests {
     }
     // `Watch` with the default OTP hook, so `Counter` can be `spawn_linked` in the
     // link tests (it is used as a linked peer that stops normally).
-    impl crate::actor::Watch for Counter {}
+    crate::actor::spawn::test_verbs::otp_link_react!(Counter);
 
     fn cap(n: usize) -> Capacity {
         Capacity::try_from(n).expect("valid test capacity")
@@ -1230,7 +1329,7 @@ mod tests {
             Ok(Flow::Stop)
         }
     }
-    impl crate::actor::Watch for HandlerWatcher {}
+    crate::actor::spawn::test_verbs::otp_link_react!(HandlerWatcher);
 
     /// #260 fixture for `drain_window_watch_delivers_death_notice`: a `Watch`
     /// actor whose `handle` registers a watch on the target from INSIDE the
@@ -1293,7 +1392,8 @@ mod tests {
             Ok(Flow::Continue)
         }
     }
-    impl crate::actor::Watch for DrainWatcher {
+    crate::actor::spawn::test_verbs::sealed_stamp!(DrainWatcher);
+    impl crate::actor::LinkReact for DrainWatcher {
         async fn on_link_died(
             &mut self,
             id: ActorId,
@@ -1828,7 +1928,7 @@ mod tests {
             Ok(Flow::Continue)
         }
     }
-    impl crate::actor::Watch for FailingStart {}
+    crate::actor::spawn::test_verbs::otp_link_react!(FailingStart);
 
     /// Enqueues a `watch` registration into `prepared`'s still-open mailbox and
     /// hands back the watcher's link receiver — the "registered before the actor
@@ -2327,7 +2427,7 @@ mod tests {
     /// exact (none lost or double-counted) despite real concurrency.
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
     async fn concurrent_senders_single_writer_exact_count() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
         use tokio::sync::{Barrier, oneshot};
 
         const SENDERS: u32 = 8;
@@ -2561,7 +2661,7 @@ mod tests {
     // `Watch` with the default OTP hook: a linked abnormal death `Break`s, so a
     // `Panicker` linked to a peer that dies abnormally propagates (used by the
     // `link_*` tests). Empty impl = the trait's default `on_link_died`.
-    impl crate::actor::Watch for Panicker {}
+    crate::actor::spawn::test_verbs::otp_link_react!(Panicker);
 
     /// A `Watch` actor that TRAPS every death — its `on_link_died` returns
     /// `Continue` even for a linked abnormal death, so it survives a linked peer's
@@ -2580,7 +2680,8 @@ mod tests {
             Ok(Flow::Continue)
         }
     }
-    impl crate::actor::Watch for Trapper {
+    crate::actor::spawn::test_verbs::sealed_stamp!(Trapper);
+    impl crate::actor::LinkReact for Trapper {
         async fn on_link_died(
             &mut self,
             _: ActorId,
@@ -2640,7 +2741,8 @@ mod tests {
             Ok(Flow::Continue)
         }
     }
-    impl crate::actor::Watch for Recorder {
+    crate::actor::spawn::test_verbs::sealed_stamp!(Recorder);
+    impl crate::actor::LinkReact for Recorder {
         async fn on_link_died(
             &mut self,
             id: ActorId,
@@ -2678,7 +2780,7 @@ mod tests {
 
     /// Spawns a linked [`Recorder`] and returns it with its observation slots.
     fn spawn_recorder() -> RecorderProbe {
-        use crate::actor::SpawnLinked;
+        use crate::actor::spawn::test_verbs::TestSpawnLinked;
         let deaths = Arc::new(AtomicU32::new(0));
         let already_dead = Arc::new(AtomicU32::new(0));
         let handled = Arc::new(AtomicU32::new(0));
@@ -2736,7 +2838,7 @@ mod tests {
     /// normal-family.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn watch_notified_on_normal_stop() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
 
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
@@ -2769,7 +2871,7 @@ mod tests {
     /// and ref-count collection are distinct stop causes.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn watch_notified_on_collected_stop() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
 
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
@@ -2801,7 +2903,7 @@ mod tests {
     /// path fires the notice — not a true unwind through the guard.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn watch_notified_on_panic() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
 
         let target = Panicker::spawn(());
         let (tx, rx) = flume::unbounded::<LinkDied>();
@@ -2844,7 +2946,7 @@ mod tests {
     /// `Drop` still runs (no graceful reason set) and reports `Killed`.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn watch_notified_on_kill() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
 
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
@@ -2877,7 +2979,7 @@ mod tests {
     /// abort. FAILS while the receiver's drop drain silently discards it.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn watch_in_flight_at_kill_still_notified() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
         use tokio::sync::oneshot;
 
         let (entered_tx, entered_rx) = oneshot::channel();
@@ -2936,7 +3038,7 @@ mod tests {
     /// to `AlreadyDead`, or (without `MailboxReceiver::drop`'s net) vanishes.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn watch_accepted_during_on_stop_still_notified() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
         use tokio::sync::oneshot;
 
         struct SlowStop {
@@ -3325,7 +3427,8 @@ mod tests {
             Ok(Flow::Continue)
         }
     }
-    impl crate::actor::Watch for Observer {
+    crate::actor::spawn::test_verbs::sealed_stamp!(Observer);
+    impl crate::actor::LinkReact for Observer {
         async fn on_link_died(
             &mut self,
             id: ActorId,
@@ -3344,7 +3447,7 @@ mod tests {
     /// FAILS without the two-arm linked loop (the link channel is never drained).
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn linked_actor_receives_death_of_watched_target() {
-        use crate::actor::{Spawn, SpawnLinked};
+        use crate::actor::spawn::test_verbs::{TestSpawn, TestSpawnLinked};
 
         let seen = Arc::new(std::sync::Mutex::new(None::<ActorId>));
         let watcher = Observer::spawn_linked(Arc::clone(&seen));
@@ -3433,7 +3536,7 @@ mod tests {
     /// panicking — the runtime guard chosen over a typestate handle (ADR-0011).
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn plain_spawned_watch_actor_watch_errs() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
 
         let a = Panicker::spawn(()); // a `Watch` actor, but plain-spawned
         let b = Panicker::spawn(());
@@ -3446,7 +3549,7 @@ mod tests {
     /// hook does not propagate a linked abnormal exit.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn link_propagates_on_abnormal() {
-        use crate::actor::SpawnLinked;
+        use crate::actor::spawn::test_verbs::TestSpawnLinked;
 
         let a = Panicker::spawn_linked(()); // default hook: Break on linked abnormal
         let b = Panicker::spawn_linked(());
@@ -3475,7 +3578,7 @@ mod tests {
     /// `Continue` on a delivered normal death. FAILS if the loop propagates it.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn link_does_not_propagate_on_normal() {
-        use crate::actor::SpawnLinked;
+        use crate::actor::spawn::test_verbs::TestSpawnLinked;
 
         let probe = spawn_recorder();
         let handled = Arc::new(AtomicU32::new(0));
@@ -3499,7 +3602,7 @@ mod tests {
     /// `ControlFlow` and propagates anyway.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn trap_exit_via_override_keeps_running() {
-        use crate::actor::SpawnLinked;
+        use crate::actor::spawn::test_verbs::TestSpawnLinked;
 
         let probe = spawn_recorder(); // hook always Continues
         let b = Panicker::spawn_linked(());
@@ -3522,7 +3625,7 @@ mod tests {
     /// dead-target branch — the counter never reaches 1 and the wait times out.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn dead_target_watch_immediate_linkdied() {
-        use crate::actor::SpawnLinked;
+        use crate::actor::spawn::test_verbs::TestSpawnLinked;
 
         let probe = spawn_recorder();
         let b = Panicker::spawn_linked(());
@@ -3566,7 +3669,7 @@ mod tests {
     /// fires (`deaths == 1`).
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn unwatch_removes_edge_so_death_delivers_no_notice() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
 
         let probe = spawn_recorder();
         let handled = Arc::new(AtomicU32::new(0));
@@ -3613,7 +3716,7 @@ mod tests {
     /// `deaths == 0` proves no half-edge survived.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn link_to_plain_peer_errs_without_half_link() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
 
         let probe = spawn_recorder(); // linked self, hook Continues + bumps `deaths`
         let peer = Panicker::spawn(()); // a `Watch` actor, but plain-spawned => link_tx None
@@ -3670,7 +3773,7 @@ mod tests {
     /// watch edge pins the target alive.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn watch_does_not_pin_target() {
-        use crate::actor::SpawnLinked;
+        use crate::actor::spawn::test_verbs::TestSpawnLinked;
 
         let a = Trapper::spawn_linked(());
         let handled = Arc::new(AtomicU32::new(0));
@@ -3699,7 +3802,7 @@ mod tests {
     /// when the target stops. Exercises the `SmallVec` spill past its inline slot.
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
     async fn many_watchers_all_notified() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
         use tokio::sync::Barrier;
 
         let handled = Arc::new(AtomicU32::new(0));
@@ -3757,7 +3860,7 @@ mod tests {
     /// unwrapped rather than dropped.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn stale_watcher_edge_self_prunes() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
 
         let handled = Arc::new(AtomicU32::new(0));
         let stopped = Arc::new(AtomicU32::new(0));
@@ -3843,7 +3946,7 @@ mod tests {
     /// target's real (Normal) death — `already_dead == 0`.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn watch_full_but_alive_target_lands_immediately_no_spurious_death() {
-        use crate::actor::Spawn;
+        use crate::actor::spawn::test_verbs::TestSpawn;
         use tokio::sync::oneshot;
 
         let (entered_tx, entered_rx) = oneshot::channel();
@@ -3932,8 +4035,9 @@ mod tests {
         use super::{bounded, watch_before_start};
         use crate::{
             actor::{
-                ActorRef, Flow, PreparedActor, RunResult, Spawn, SpawnConfig, SpawnSupervised,
-                Supervisor, Watch, WeakActorRef,
+                ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, SupervisedReact,
+                WeakActorRef,
+                spawn::test_verbs::{TestSpawn, TestSpawnSupervised},
             },
             error::{ActorStopReason, Infallible},
             mailbox::{ActorId, Capacity, ControlSignal, MailboxSender, Mailboxed},
@@ -3963,8 +4067,8 @@ mod tests {
                 Ok(Flow::Continue)
             }
         }
-        impl Watch for Sup {}
-        impl Supervisor for Sup {}
+        crate::actor::spawn::test_verbs::otp_link_react!(Sup);
+        crate::actor::spawn::test_verbs::one_for_one_react!(Sup);
 
         /// An anchorless child used in #253 tests: it exists only as long as
         /// someone else holds a strong ref.
@@ -4026,9 +4130,9 @@ mod tests {
                 Ok(Flow::Continue)
             }
         }
-        impl Watch for AllSup {}
-        impl Supervisor for AllSup {
-            fn supervision_strategy() -> SupervisionStrategy {
+        crate::actor::spawn::test_verbs::otp_link_react!(AllSup);
+        impl crate::actor::SupervisedReact for AllSup {
+            fn strategy() -> SupervisionStrategy {
                 SupervisionStrategy::OneForAll
             }
         }
@@ -4158,8 +4262,8 @@ mod tests {
                 Ok(Flow::Continue)
             }
         }
-        impl Watch for CountingSup {}
-        impl Supervisor for CountingSup {}
+        crate::actor::spawn::test_verbs::otp_link_react!(CountingSup);
+        crate::actor::spawn::test_verbs::one_for_one_react!(CountingSup);
 
         type Senders = Arc<Mutex<Vec<MailboxSender<Worker>>>>;
 
@@ -4243,7 +4347,7 @@ mod tests {
                 .expect("the command reaches the live incarnation");
         }
 
-        async fn supervise_worker<S: Supervisor>(
+        async fn supervise_worker<S: SupervisedReact>(
             sup: &ActorRef<S>,
             policy: RestartPolicy,
             id_tx: flume::Sender<ActorId>,
@@ -4341,7 +4445,7 @@ mod tests {
                     Ok(())
                 }
             }
-            impl Watch for Bystander {}
+            crate::actor::spawn::test_verbs::otp_link_react!(Bystander);
 
             let sup = Sup::spawn_supervised(());
             let (stop_tx, stop_rx) = flume::unbounded::<()>();
@@ -4908,8 +5012,8 @@ mod tests {
                 core::future::pending().await
             }
         }
-        impl crate::actor::Watch for HangingStopSup {}
-        impl crate::actor::Supervisor for HangingStopSup {}
+        crate::actor::spawn::test_verbs::otp_link_react!(HangingStopSup);
+        crate::actor::spawn::test_verbs::one_for_one_react!(HangingStopSup);
 
         /// A supervisor that records whether its `on_stop` ran — used to prove
         /// that a hard kill skips the hook.
@@ -4937,8 +5041,8 @@ mod tests {
                 Ok(())
             }
         }
-        impl crate::actor::Watch for FlagSup {}
-        impl crate::actor::Supervisor for FlagSup {}
+        crate::actor::spawn::test_verbs::otp_link_react!(FlagSup);
+        crate::actor::spawn::test_verbs::one_for_one_react!(FlagSup);
 
         /// #245 (ADR-0019): a supervisor stopping Normal tears down its live
         /// children before its own RunResult resolves. The sweep is the single
@@ -5377,8 +5481,8 @@ mod tests {
                 Ok(Flow::Continue)
             }
         }
-        impl crate::actor::Watch for HangingStartSup {}
-        impl crate::actor::Supervisor for HangingStartSup {}
+        crate::actor::spawn::test_verbs::otp_link_react!(HangingStartSup);
+        crate::actor::spawn::test_verbs::one_for_one_react!(HangingStartSup);
 
         #[tokio::test(start_paused = true)]
         async fn supervised_kill_during_on_start_is_bounded() {
@@ -5779,9 +5883,9 @@ mod tests {
                 Ok(Flow::Continue)
             }
         }
-        impl Watch for RestSup {}
-        impl Supervisor for RestSup {
-            fn supervision_strategy() -> SupervisionStrategy {
+        crate::actor::spawn::test_verbs::otp_link_react!(RestSup);
+        impl crate::actor::SupervisedReact for RestSup {
+            fn strategy() -> SupervisionStrategy {
                 SupervisionStrategy::RestForOne
             }
         }
@@ -5840,7 +5944,7 @@ mod tests {
                 Ok(())
             }
         }
-        impl Watch for TapeWorker {}
+        crate::actor::spawn::test_verbs::otp_link_react!(TapeWorker);
 
         /// The tape-worker factory `supervise` wraps: each call spawns a
         /// fresh `TapeWorker` tagged `tag`, reports `(tag, id)` on `tag_tx`,
@@ -5890,7 +5994,7 @@ mod tests {
             factory: F,
         ) -> ActorId
         where
-            S: Supervisor,
+            S: SupervisedReact,
             A: crate::actor::Actor,
             F: FnMut() -> ActorRef<A> + Send + 'static,
         {
@@ -6425,9 +6529,9 @@ mod tests {
                 Ok(Flow::Continue)
             }
         }
-        impl Watch for CountingAllSup {}
-        impl Supervisor for CountingAllSup {
-            fn supervision_strategy() -> SupervisionStrategy {
+        crate::actor::spawn::test_verbs::otp_link_react!(CountingAllSup);
+        impl crate::actor::SupervisedReact for CountingAllSup {
+            fn strategy() -> SupervisionStrategy {
                 SupervisionStrategy::OneForAll
             }
         }
@@ -6476,7 +6580,7 @@ mod tests {
                 panic!("on_stop panics for {}", self.tag);
             }
         }
-        impl Watch for OnStopPanicker {}
+        crate::actor::spawn::test_verbs::otp_link_react!(OnStopPanicker);
 
         /// The [`OnStopPanicker`] factory `supervise` wraps: spawns a fresh
         /// panicker tagged `tag`, reports `(tag, id)`, and stashes a strong

@@ -199,3 +199,27 @@ plus `CapSet::build(&Args)`. Proof obligations, each a passing test:
 as the main text allows). The E0119 hazard becomes a *feature* at O3:
 the same coherence rule that killed the naive encoding now rejects
 duplicate caps for free.
+
+## Addendum 2 (2026-08-01) — stage-3 gate result: one door, sealed seams
+
+Risk ii is resolved (spike-280, preserved in-tree under
+`spikes/277/spike-280` until the stage lands): loop selection is a
+derive-emitted `SelectRunner<A> { type Runner }` on the cap set — markers
+`PlainRun`/`LinkedRun`/`SupervisedRun`, each `impl RunKind<A>` calling its
+`PreparedActor` floor path — with the `Runner: RunKind<A>` obligation
+discharged at the ONE `caps::spawn` (monomorphized; no runtime branch).
+The loops re-bound onto **sealed** `LinkReact`/`SupervisedReact` seams
+whose only implementor is `Shell<A>`, conditional on derive-emitted
+`HasWatching<A>` (policy as associated type — no E0207) and
+`HasSupervising<A>: HasWatching<A>` (the supertrait IS constraint 3).
+
+**Deviation, decided by Joel (2026-08-01): ONE DOOR.** The migration
+consequence "equivalence suites re-run unchanged" was dropped — keeping
+`Watch`/`Supervisor` as a parallel public tier solely so those suites
+compile unchanged is two ways of doing the same thing. The five traits
+(`Watch`, `Supervisor`, `Spawn`, `SpawnLinked`, `SpawnSupervised`) are
+deleted; the #266/#267 oracle suites are ported to the caps surface
+**semantics-preserving** (same choreography, same trace assertions).
+Constraint 4 is amended accordingly: `PreparedActor`, the mailbox
+primitives, and the run-loop seams remain the public expert floor, but
+the *capability tiers* above them exist only as caps.

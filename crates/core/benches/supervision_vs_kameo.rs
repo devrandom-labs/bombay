@@ -187,11 +187,12 @@ fn silence_bench_crashes() {
 }
 
 mod core_side {
-    use bombay::actor::{Actor, ActorRef, Flow, Spawn as _, Supervisor, Watch, WeakActorRef};
+    use bombay::actor::{Actor, ActorRef, Flow, PreparedActor, SpawnConfig, WeakActorRef};
+    use bombay::caps;
     use bombay::error::{ActorStopReason, Infallible};
     use bombay::mailbox::{ActorId, MailboxSender, Mailboxed};
     use bombay::message::Msg;
-    use bombay::restart::{Jitter, RestartConfig, RestartPolicy, SupervisionStrategy};
+    use bombay::restart::{Jitter, RestartConfig, RestartPolicy};
     use core::ops::ControlFlow;
     use std::sync::{Arc, Mutex};
     use tokio::sync::mpsc::UnboundedSender;
@@ -223,28 +224,41 @@ mod core_side {
     pub struct Observer {
         ack: UnboundedSender<()>,
     }
-    impl Mailboxed for Observer {
-        type Msg = Idle;
-    }
-    impl Actor for Observer {
-        type Args = UnboundedSender<()>;
-        type Error = Infallible;
-        async fn on_start(ack: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
-            Ok(Self { ack })
-        }
-        async fn handle(&mut self, _: Idle, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
-            Ok(Flow::Continue)
-        }
-    }
-    impl Watch for Observer {
+    pub struct AckPolicy;
+    impl caps::WatchPolicy<Observer> for AckPolicy {
         async fn on_link_died(
-            &mut self,
+            actor: &mut Observer,
             _: ActorId,
             _: ActorStopReason,
             _: bool,
-        ) -> Result<ControlFlow<ActorStopReason>, Self::Error> {
-            let _ = self.ack.send(());
+        ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+            let _ = actor.ack.send(());
             Ok(ControlFlow::Continue(()))
+        }
+    }
+
+    #[derive(bombay_macros::Provide)]
+    pub struct ObserverCaps {
+        watching: caps::Watching<AckPolicy>,
+    }
+    impl caps::CapSet<Observer> for ObserverCaps {
+        fn build(_: &UnboundedSender<()>) -> Self {
+            Self {
+                watching: caps::Watching::new(),
+            }
+        }
+    }
+
+    impl caps::Actor for Observer {
+        type Msg = Idle;
+        type Args = UnboundedSender<()>;
+        type Error = Infallible;
+        type Caps = ObserverCaps;
+        async fn init(ack: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+            Ok(Self { ack })
+        }
+        async fn handle(&mut self, _: Idle, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+            Ok(Flow::Continue)
         }
     }
 
@@ -253,21 +267,33 @@ mod core_side {
     pub struct Peer {
         stopped: Option<UnboundedSender<()>>,
     }
-    impl Mailboxed for Peer {
-        type Msg = Idle;
+    // The NAMED OTP policy: a linked abnormal death (the killed peer) `Break`s,
+    // so the surviving peer stops — the propagation this arm measures.
+    #[derive(bombay_macros::Provide)]
+    pub struct PeerCaps {
+        watching: caps::Watching<caps::OtpPropagation>,
     }
-    impl Actor for Peer {
+    impl caps::CapSet<Peer> for PeerCaps {
+        fn build(_: &Option<UnboundedSender<()>>) -> Self {
+            Self {
+                watching: caps::Watching::new(),
+            }
+        }
+    }
+    impl caps::Actor for Peer {
+        type Msg = Idle;
         type Args = Option<UnboundedSender<()>>;
         type Error = Infallible;
-        async fn on_start(stopped: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+        type Caps = PeerCaps;
+        async fn init(stopped: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
             Ok(Self { stopped })
         }
-        async fn handle(&mut self, _: Idle, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+        async fn handle(&mut self, _: Idle, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
             Ok(Flow::Continue)
         }
         async fn on_stop(
             &mut self,
-            _: WeakActorRef<Self>,
+            _: WeakActorRef<caps::Shell<Self>>,
             _: ActorStopReason,
         ) -> Result<(), Self::Error> {
             if let Some(tx) = &self.stopped {
@@ -276,9 +302,6 @@ mod core_side {
             Ok(())
         }
     }
-    // Default `on_link_died`: a linked abnormal death (the killed peer) `Break`s,
-    // so the surviving peer stops — the propagation this arm measures.
-    impl Watch for Peer {}
 
     /// A supervised worker: it acks its birth from `on_start` (so a rebuild is
     /// observable) and crashes on command.
@@ -304,36 +327,43 @@ mod core_side {
     }
 
     macro_rules! supervisor {
-        ($name:ident, $strategy:expr) => {
+        ($name:ident, $caps:ident, $strategy:ident) => {
             pub struct $name;
-            impl Mailboxed for $name {
-                type Msg = Idle;
+
+            #[derive(bombay_macros::Provide)]
+            pub struct $caps {
+                watching: caps::Watching<caps::OtpPropagation>,
+                supervising: caps::Supervising<caps::$strategy>,
             }
-            impl Actor for $name {
+            impl caps::CapSet<$name> for $caps {
+                fn build((): &()) -> Self {
+                    Self {
+                        watching: caps::Watching::new(),
+                        supervising: caps::Supervising::new(),
+                    }
+                }
+            }
+            impl caps::Actor for $name {
+                type Msg = Idle;
                 type Args = ();
                 type Error = Infallible;
-                async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+                type Caps = $caps;
+                async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
                     Ok(Self)
                 }
                 async fn handle(
                     &mut self,
                     _: Idle,
-                    _: ActorRef<Self>,
+                    _: caps::Ctx<'_, Self>,
                 ) -> Result<Flow, Self::Error> {
                     Ok(Flow::Continue)
                 }
             }
-            impl Watch for $name {}
-            impl Supervisor for $name {
-                fn supervision_strategy() -> SupervisionStrategy {
-                    $strategy
-                }
-            }
         };
     }
-    supervisor!(SupOneForOne, SupervisionStrategy::OneForOne);
-    supervisor!(SupOneForAll, SupervisionStrategy::OneForAll);
-    supervisor!(SupRestForOne, SupervisionStrategy::RestForOne);
+    supervisor!(SupOneForOne, SupOneForOneCaps, OneForOne);
+    supervisor!(SupOneForAll, SupOneForAllCaps, OneForAll);
+    supervisor!(SupRestForOne, SupRestForOneCaps, RestForOne);
 
     /// Give-up budgets maxed and backoff pinned to zero: the restart/set arms
     /// measure the death → policy → respawn machinery, not a backoff sleep or an
@@ -352,6 +382,14 @@ mod core_side {
 
     use core::time::Duration;
 
+    /// The removed `Spawn` verb, bench-local over the public floor.
+    pub fn spawn_plain<A: Actor>(args: A::Args) -> ActorRef<A> {
+        let prepared = PreparedActor::<A>::new(SpawnConfig::default());
+        let actor_ref = prepared.actor_ref().clone();
+        let _join = prepared.spawn(args);
+        actor_ref
+    }
+
     /// A per-child anchor: the supervisor pins nothing (ADR-0003), so the factory
     /// stashes each incarnation's sender here to keep it from ref-count-stopping,
     /// and the driver reads it to reach the live incarnation.
@@ -365,7 +403,7 @@ mod core_side {
         slot: Slot,
     ) -> impl FnMut() -> ActorRef<Worker> + Send + 'static {
         move || {
-            let child = Worker::spawn(tick.clone());
+            let child = spawn_plain::<Worker>(tick.clone());
             *slot.lock().expect("slot") = Some(child.mailbox_sender().clone());
             child
         }
@@ -478,7 +516,6 @@ mod kameo_side {
 
 /// One target's death delivered to N observers, over the real notify path.
 fn watch_fanout(c: &mut Criterion) {
-    use bombay::actor::{Spawn as _, SpawnLinked as _};
     use kameo::actor::Spawn as _;
 
     let rt = runtime();
@@ -491,9 +528,9 @@ fn watch_fanout(c: &mut Criterion) {
                 || {
                     rt.block_on(async {
                         let (tx, rx) = unbounded_channel::<()>();
-                        let target = core_side::Target::spawn(());
+                        let target = core_side::spawn_plain::<core_side::Target>(());
                         let observers: Vec<_> = (0..n)
-                            .map(|_| core_side::Observer::spawn_linked(tx.clone()))
+                            .map(|_| bombay::caps::spawn::<core_side::Observer>(tx.clone()))
                             .collect();
                         for obs in &observers {
                             obs.watch(&target).await.expect("linked observer can watch");
@@ -548,7 +585,6 @@ fn watch_fanout(c: &mut Criterion) {
 /// A linked peer's abnormal death propagating across the link and stopping the
 /// survivor.
 fn link_teardown(c: &mut Criterion) {
-    use bombay::actor::SpawnLinked as _;
     use kameo::actor::Spawn as _;
 
     let rt = runtime();
@@ -560,8 +596,8 @@ fn link_teardown(c: &mut Criterion) {
             || {
                 rt.block_on(async {
                     let (tx, rx) = unbounded_channel::<()>();
-                    let survivor = core_side::Peer::spawn_linked(Some(tx));
-                    let victim = core_side::Peer::spawn_linked(None);
+                    let survivor = bombay::caps::spawn::<core_side::Peer>(Some(tx));
+                    let victim = bombay::caps::spawn::<core_side::Peer>(None);
                     survivor.link(&victim).await.expect("both linked-spawned");
                     (survivor, victim, rx)
                 })
@@ -604,7 +640,6 @@ fn link_teardown(c: &mut Criterion) {
 
 /// One child-death → policy → (zero) backoff → respawn round trip.
 fn restart_cycle(c: &mut Criterion) {
-    use bombay::actor::SpawnSupervised as _;
     use kameo::actor::Spawn as _;
 
     silence_bench_crashes();
@@ -618,7 +653,7 @@ fn restart_cycle(c: &mut Criterion) {
         // Every spawn happens INSIDE the runtime context: `spawn_supervised`
         // calls `tokio::spawn`, which panics outside `block_on`/`enter`.
         let sup = rt.block_on(async {
-            let sup = core_side::SupOneForOne::spawn_supervised(());
+            let sup = bombay::caps::spawn::<core_side::SupOneForOne>(());
             sup.supervise(
                 core_side::fast_restart(),
                 core_side::worker_factory(tick_tx.clone(), slot.clone()),
@@ -681,7 +716,6 @@ fn restart_cycle(c: &mut Criterion) {
 
 /// Crash the eldest child under a set strategy; the whole set rebuilds.
 fn set_strategy_coalesce(c: &mut Criterion) {
-    use bombay::actor::SpawnSupervised as _;
     use kameo::actor::Spawn as _;
 
     silence_bench_crashes();
@@ -701,7 +735,7 @@ fn set_strategy_coalesce(c: &mut Criterion) {
                         .map(|_| std::sync::Arc::new(std::sync::Mutex::new(None)))
                         .collect();
                     let sup = rt.block_on(async {
-                        let sup = core_side::$sup::spawn_supervised(());
+                        let sup = bombay::caps::spawn::<core_side::$sup>(());
                         for slot in &slots {
                             sup.supervise(
                                 core_side::fast_restart(),

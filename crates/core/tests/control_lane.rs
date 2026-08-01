@@ -28,16 +28,23 @@ use tokio::time::timeout;
 
 use bombay::{
     SendContext,
-    actor::{
-        Actor, ActorRef, Flow, PreparedActor, RunResult, Spawn, SpawnConfig, Supervisor, Watch,
-        WeakActorRef,
-    },
+    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
+    caps,
     error::ActorStopReason,
     mailbox::{ActorId, Capacity, ControlSignal, Mailbox, Mailboxed, Recv, Signal},
     message::Msg,
     restart::{RestartConfig, RestartPolicy},
     test_support::{set_supervisor_rng_seed, terminate_bound, watch_signal},
 };
+
+/// The removed `Spawn` verb, suite-local over the public floor: prepare,
+/// clone the ref, run in a background task.
+fn spawn_plain<A: Actor>(args: A::Args) -> ActorRef<A> {
+    let prepared = PreparedActor::<A>::new(SpawnConfig::default());
+    let actor_ref = prepared.actor_ref().clone();
+    let _join = prepared.spawn(args);
+    actor_ref
+}
 
 /// The suite-wide fail-fast bound (MIRI-scaled — see `terminate_bound`).
 const TERMINATE: Duration = terminate_bound();
@@ -95,33 +102,40 @@ impl Actor for Spy {
     }
 }
 
-/// A supervisor with no behaviour of its own: `supervise` supplies everything.
+/// A supervisor with no behaviour of its own: `supervise` supplies
+/// everything. Stage-3 shape: the authority is the `Watching` +
+/// `Supervising` caps, not marker impls.
 struct Sup {
     handled: Arc<AtomicU32>,
 }
-impl Mailboxed for Sup {
-    type Msg = Ping;
+
+#[derive(bombay_macros::Provide)]
+struct SupCaps {
+    watching: caps::Watching<caps::OtpPropagation>,
+    supervising: caps::Supervising<caps::OneForOne>,
 }
-impl Actor for Sup {
+impl caps::CapSet<Sup> for SupCaps {
+    fn build(_: &<Sup as caps::Actor>::Args) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+            supervising: caps::Supervising::new(),
+        }
+    }
+}
+
+impl caps::Actor for Sup {
+    type Msg = Ping;
     type Args = Arc<AtomicU32>;
     type Error = Infallible;
-    async fn on_start(handled: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+    type Caps = SupCaps;
+    async fn init(handled: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         Ok(Self { handled })
     }
-    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, _: Ping, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
         Ok(Flow::Continue)
     }
-    async fn on_stop(
-        &mut self,
-        _: WeakActorRef<Self>,
-        _: ActorStopReason,
-    ) -> Result<(), Self::Error> {
-        Ok(())
-    }
 }
-impl Watch for Sup {}
-impl Supervisor for Sup {}
 
 /// A supervised child probe: reports each incarnation's birth sequence onto a
 /// tape and counts how many incarnations ran `on_stop`.
@@ -189,7 +203,7 @@ impl Factory {
             .next
             .checked_add(1)
             .expect("incarnation counter overflow");
-        let child = LeafChild::spawn((seq, self.tape.clone(), Arc::clone(&self.stops)));
+        let child = spawn_plain::<LeafChild>((seq, self.tape.clone(), Arc::clone(&self.stops)));
         *self.stash.lock().expect("stash lock") = Some(child.clone());
         child
     }
@@ -285,7 +299,7 @@ async fn watch_installs_before_full_backlog_drains() {
 async fn supervise_op_applies_before_full_backlog_drains() {
     set_supervisor_rng_seed(Some(7));
     let handled = Arc::new(AtomicU32::new(0));
-    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+    let (prepared, link_rx) = PreparedActor::<caps::Shell<Sup>>::new_linked(SpawnConfig {
         capacity: cap(2),
         ..Default::default()
     });
@@ -545,7 +559,7 @@ async fn queued_watch_answered_on_teardown() {
 async fn supervise_op_queued_behind_stop_still_lands() {
     set_supervisor_rng_seed(Some(11));
     let handled = Arc::new(AtomicU32::new(0));
-    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+    let (prepared, link_rx) = PreparedActor::<caps::Shell<Sup>>::new_linked(SpawnConfig {
         capacity: cap(2),
         ..Default::default()
     });
