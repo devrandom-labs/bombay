@@ -11,7 +11,7 @@ use futures::{
     stream::{AbortHandle, FuturesUnordered},
 };
 use smallvec::SmallVec;
-use tokio::time::{Instant, sleep};
+use tokio::time::{Instant, sleep, sleep_until};
 use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
 use crate::{
@@ -161,13 +161,86 @@ pub(super) async fn run_message_loop<A: Actor>(
     mailbox_rx: &mut MailboxReceiver<A>,
     watchers: &mut Watchers,
 ) -> ActorStopReason {
+    let mut last_fired: Option<Instant> = None;
     loop {
-        let poll = poll_mailbox(&handles.cancel, mailbox_rx).await;
-        if let ControlFlow::Break(reason) =
-            handle_mailbox_step(state, self_ref, handles, watchers, poll).await
-        {
-            return reason;
+        let (armed, due) = arm_deadline(state, last_fired);
+        // The plain loop's FIRST select (ADR-0025): the deadline arm sits
+        // ABOVE the always-ready mailbox arm — below it, a due deadline
+        // starves until the backlog fully drains (model P1b; the placement
+        // is structural, not stylistic). Cancellation is observed inside
+        // `poll_mailbox`, so a due deadline delays cancel observation by at
+        // most one hook turn — bounded, pinned by test. v1 recreates
+        // `sleep_until` per iteration (O(1) wheel ops — hierarchical timing
+        // wheel, Varghese & Lauck, IEEE/ACM ToN 5(6) 1997); a pinned
+        // `Sleep::reset` is the named optimization if the bench shows pain.
+        tokio::select! {
+            biased;
+            () = deadline_sleep(due), if armed => {
+                last_fired = Some(due);
+                if let ControlFlow::Break(reason) = handle_deadline(state, self_ref).await {
+                    return reason;
+                }
+            }
+            poll = poll_mailbox(&handles.cancel, mailbox_rx) => {
+                if let ControlFlow::Break(reason) =
+                    handle_mailbox_step(state, self_ref, handles, watchers, poll).await
+                {
+                    return reason;
+                }
+            }
         }
+    }
+}
+
+/// The deadline arm's per-iteration arming decision (ADR-0025 P-D1/P-D4):
+/// re-reads the declarative slot each iteration — state changes only in
+/// steps the loop itself runs, so this is exact — and disables the arm
+/// when no deadline is declared or the current value already fired
+/// (fires-once-per-value: the spin-hazard class the `DelayQueue` arms
+/// guard with `is_empty()`). The fallback instant is never polled: a
+/// disarmed arm is excluded from the select, and an unpolled `Sleep`
+/// registers nothing with the timer wheel.
+fn arm_deadline<A: Actor>(state: &A, last_fired: Option<Instant>) -> (bool, Instant) {
+    let deadline = state.next_deadline();
+    let armed = deadline.is_some() && deadline != last_fired;
+    (armed, deadline.unwrap_or_else(Instant::now))
+}
+
+/// The deadline arm's future, one async-fn indirection on purpose:
+/// `select!` CONSTRUCTS every arm's future even when its `if` guard is
+/// false, and a `Sleep` built directly would grab the timer-driver handle
+/// there — panicking a timer-less runtime's loop on every iteration (the
+/// pinned timerless behavior is that only the `on_stop` bound needs the
+/// driver). Calling an async fn only builds the state machine; the `Sleep`
+/// inside is created — and registers with the wheel — on first poll, which
+/// a disarmed arm never gets.
+async fn deadline_sleep(due: Instant) {
+    sleep_until(due).await;
+}
+
+/// Runs [`Actor::on_deadline`] under `catch_unwind` and maps the outcome
+/// exactly as a handler step's: `Flow::Continue` keeps looping,
+/// `Flow::Stop` is a `Normal` stop, and a returned `Err` (controlled
+/// crash) or caught unwind is a terminal `Panicked` tagged
+/// [`PanicReason::OnDeadline`] — handler-like, restart-eligible.
+async fn handle_deadline<A: Actor>(
+    state: &mut A,
+    self_ref: &WeakActorRef<A>,
+) -> ControlFlow<ActorStopReason> {
+    let result = AssertUnwindSafe(state.on_deadline(self_ref.clone()))
+        .catch_unwind()
+        .await;
+    match result {
+        Ok(Ok(Flow::Continue)) => ControlFlow::Continue(()),
+        Ok(Ok(Flow::Stop)) => ControlFlow::Break(ActorStopReason::Normal),
+        Ok(Err(err)) => ControlFlow::Break(ActorStopReason::Panicked(PanicError::new(
+            Box::new(err),
+            PanicReason::OnDeadline,
+        ))),
+        Err(payload) => ControlFlow::Break(ActorStopReason::Panicked(PanicError::from_panic_any(
+            payload,
+            PanicReason::OnDeadline,
+        ))),
     }
 }
 
@@ -308,7 +381,9 @@ pub(super) async fn run_linked_message_loop<A: LinkReact>(
         link_rx,
     } = channels;
     let mut link_open = true;
+    let mut last_fired: Option<Instant> = None;
     loop {
+        let (armed, due) = arm_deadline(state, last_fired);
         tokio::select! {
             biased;
             death = link_rx.recv_async(), if link_open => {
@@ -321,6 +396,15 @@ pub(super) async fn run_linked_message_loop<A: LinkReact>(
                     // All link senders are gone: stop polling this arm so a ready
                     // `Err` cannot spin the biased select (see fn docs).
                     Err(_) => link_open = false,
+                }
+            }
+            // The deadline arm (ADR-0025): below the link arm — a ready
+            // death notice beats a due deadline — and above the mailbox
+            // (model P1). No existing inter-arm relation changes.
+            () = deadline_sleep(due), if armed => {
+                last_fired = Some(due);
+                if let ControlFlow::Break(reason) = handle_deadline(state, self_ref).await {
+                    return reason;
                 }
             }
             maybe = poll_mailbox(&handles.cancel, mailbox_rx) => {
@@ -416,7 +500,9 @@ pub(super) async fn run_supervised_message_loop<A: SupervisedReact>(
         link_tx: sup_link_tx,
     };
     let strategy = A::strategy();
+    let mut last_fired: Option<Instant> = None;
     loop {
+        let (armed, due) = arm_deadline(state, last_fired);
         tokio::select! {
             biased;
             death = link_rx.recv_async() => {
@@ -464,10 +550,18 @@ pub(super) async fn run_supervised_message_loop<A: SupervisedReact>(
             // reason as the retries arm. Lowest housekeeping priority, so a ready
             // message or death is still served first.
             expired_abort = pending_aborts.next(), if !pending_aborts.is_empty() => {
-                if let Some(expired) = expired_abort {
-                    // Dropping the PendingAbort aborts the child via its Drop impl;
-                    // explicit abort here is not required.
-                    drop(expired);
+                // Dropping the expired PendingAbort aborts the child via its
+                // Drop impl; explicit abort is not required.
+                drop(expired_abort);
+            }
+            // The deadline arm (ADR-0025): below every housekeeping arm — a
+            // ready death notice, due rebuild, or due abort beats a due
+            // deadline — and above the mailbox (model P1). No existing
+            // inter-arm relation changes.
+            () = deadline_sleep(due), if armed => {
+                last_fired = Some(due);
+                if let ControlFlow::Break(reason) = handle_deadline(state, self_ref).await {
+                    return reason;
                 }
             }
             maybe = poll_mailbox(&handles.cancel, mailbox_rx) => {

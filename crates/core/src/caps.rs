@@ -20,6 +20,8 @@
 
 use core::{any::type_name, future::Future, marker::PhantomData, ops::ControlFlow};
 
+use tokio::time::Instant;
+
 use crate::{
     actor::{
         ActorRef, Flow, LinkReact, PreparedActor, SpawnConfig, SupervisedReact, WeakActorRef,
@@ -35,6 +37,11 @@ use crate::{
 /// The typed overflow handback of the [`Stashing`] capability — re-exported
 /// so a stashing actor imports its whole surface from [`caps`](crate::caps).
 pub use crate::stash::StashFull;
+
+/// The deadline plane's instant type (tokio's, paused-clock testable) —
+/// re-exported so a [`DeadlinePolicy`] and the derive-emitted
+/// [`DeadlineHook`] impls name it without a direct tokio dependency.
+pub use tokio::time::Instant as DeadlineInstant;
 
 /// The one user trait of the distilled surface.
 ///
@@ -58,11 +65,13 @@ pub trait Actor: Sized + Send + 'static {
     ///
     /// Bounded [`Replay<Self::Msg>`](Replay) so the loop can service in-step
     /// replay uniformly — `()` and non-stashing sets yield `None`, a set with
-    /// a [`Stashing`] field drains it — and [`SelectRunner<Self>`](SelectRunner)
-    /// so every cap set names its run-loop shape at compile time (stage 3).
-    /// The derive emits both alongside `Provide`, so neither is a separate
-    /// thing to forget.
-    type Caps: CapSet<Self> + Replay<Self::Msg> + SelectRunner<Self>;
+    /// a [`Stashing`] field drains it — [`SelectRunner<Self>`](SelectRunner)
+    /// so every cap set names its run-loop shape at compile time (stage 3),
+    /// and [`DeadlineHook<Self>`](DeadlineHook) so every loop shape can poll
+    /// the ADR-0025 deadline plane uniformly (stage 4) — `()` and
+    /// deadline-less sets stay disabled. The derive emits all of them
+    /// alongside `Provide`, so none is a separate thing to forget.
+    type Caps: CapSet<Self> + Replay<Self::Msg> + SelectRunner<Self> + DeadlineHook<Self>;
 
     /// A human-readable name for logs/tracing. Defaults to the type name.
     #[must_use]
@@ -240,6 +249,126 @@ impl<M> Replay<M> for Stashing<M> {
 pub trait StashPolicy<A: Actor> {
     /// The stash capacity for this actor, derived from its spawn args.
     fn capacity(args: &A::Args) -> Capacity;
+}
+
+/// The loop hook a capability set exposes for the **ADR-0025 deadline
+/// plane** — the participation half of [`Deadlined`] (and of `Phased`), as
+/// [`Replay`] is of [`Stashing`] (ADR-0026 stage 4, card #281).
+///
+/// Every iteration, each of the three loop shapes re-reads
+/// [`next_deadline`](DeadlineHook::next_deadline) through the [`Shell`]'s
+/// runtime bridge and arms one guarded `sleep_until` arm — above the
+/// mailbox arm, below every housekeeping arm; fires once per value. Expiry
+/// is delivered to [`on_deadline`](DeadlineHook::on_deadline) at a turn
+/// boundary under the same `catch_unwind`/poisoning treatment as `handle`,
+/// crash domain `PanicReason::OnDeadline` (handler-like, restart-eligible).
+///
+/// Derive-emitted (never hand-written by users): a [`Deadlined`] field
+/// forwards to its [`DeadlinePolicy`]; a deadline-less set stays disabled.
+/// `()` — the plain-actor floor — declares no deadline.
+pub trait DeadlineHook<A: Actor> {
+    /// The next instant this actor needs waking; `None` = arm disabled.
+    fn next_deadline(&self, actor: &A) -> Option<Instant>;
+
+    /// Expiry delivery at a turn boundary.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`A::Error`](Actor::Error) if the plugged policy fails — a
+    /// controlled crash, exactly as a handler `Err`.
+    fn on_deadline(
+        &mut self,
+        actor: &mut A,
+        actor_ref: WeakActorRef<Shell<A>>,
+    ) -> impl Future<Output = Result<Flow, A::Error>> + Send;
+}
+
+impl<A: Actor> DeadlineHook<A> for () {
+    fn next_deadline(&self, _: &A) -> Option<Instant> {
+        None
+    }
+
+    async fn on_deadline(
+        &mut self,
+        _: &mut A,
+        _: WeakActorRef<Shell<A>>,
+    ) -> Result<Flow, A::Error> {
+        Ok(Flow::Continue)
+    }
+}
+
+/// The deadline-plane policy seat of the [`Deadlined`] capability.
+///
+/// The relocated ADR-0025 `next_deadline`/`on_deadline` pair (ADR-0026
+/// stage 4, card #281): the loop asks the cap set, plain actors carry no
+/// deadline items.
+///
+/// [`next_deadline`](DeadlinePolicy::next_deadline) is a **pure function
+/// of actor state** (the quinn `poll_timeout` shape): no set/cancel verbs
+/// exist, so there is nothing to forget and nothing to race — magnitudes
+/// live in the actor's own state, sourced from its spawn `Args`. This is
+/// #241's non-phased consumer path (`last_activity + T` over the same
+/// slot).
+pub trait DeadlinePolicy<A: Actor>: Send + 'static {
+    /// The next instant this actor needs waking, read from its state;
+    /// `None` = no deadline.
+    fn next_deadline(actor: &A) -> Option<Instant>;
+
+    /// Reacts to expiry at a turn boundary. Takes a [`WeakActorRef`] by
+    /// drain-window necessity (ADR-0025): a deadline fire carries no
+    /// message to mint a strong ref from — transitions and `Flow`
+    /// decisions work unchanged, self-sends degrade (`upgrade` → `None`).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`A::Error`](Actor::Error) to crash controlled, exactly as
+    /// a handler `Err` (crash domain `PanicReason::OnDeadline`).
+    fn on_deadline(
+        actor: &mut A,
+        actor_ref: WeakActorRef<Shell<A>>,
+    ) -> impl Future<Output = Result<Flow, A::Error>> + Send;
+}
+
+/// The deadline capability (ADR-0026 stage 4) — the ADR-0025 plane's user
+/// seat.
+///
+/// Plugged as a cap-set field, it puts the actor on the loop's deadline
+/// arm: the loop re-reads the policy's declarative slot every iteration
+/// and delivers expiry through it. Zero runtime state — the policy rides
+/// the type, strategy-as-type (ADR-0026 constraint 5). Orthogonal to loop
+/// shape: plain, watching, and supervising sets can all carry it.
+pub struct Deadlined<DP> {
+    policy: PhantomData<DP>,
+}
+
+impl<DP> Deadlined<DP> {
+    /// Builds the (stateless) deadline capability.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            policy: PhantomData,
+        }
+    }
+}
+
+impl<DP> Default for Deadlined<DP> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<A: Actor, DP: DeadlinePolicy<A>> DeadlineHook<A> for Deadlined<DP> {
+    fn next_deadline(&self, actor: &A) -> Option<Instant> {
+        DP::next_deadline(actor)
+    }
+
+    fn on_deadline(
+        &mut self,
+        actor: &mut A,
+        actor_ref: WeakActorRef<Shell<A>>,
+    ) -> impl Future<Output = Result<Flow, A::Error>> + Send {
+        DP::on_deadline(actor, actor_ref)
+    }
 }
 
 /// The death-reaction policy seat of the [`Watching`] capability — the
@@ -562,6 +691,51 @@ impl<A: Actor> crate::actor::Actor for Shell<A> {
         Ok(Flow::Continue)
     }
 
+    /// The loop's deadline arm reads the cap set's declarative slot — the
+    /// runtime bridge of the ADR-0025 plane onto the [`Deadlined`]
+    /// capability (stage 4). A plain set (`Caps = ()`) reports `None` and
+    /// the arm stays disabled.
+    fn next_deadline(&self) -> Option<Instant> {
+        self.caps.next_deadline(&self.user)
+    }
+
+    /// Expiry rides the cap set's hook, then the same in-step replay drain
+    /// as [`handle`](Self::handle) — a phase timeout may release a stash
+    /// batch that must replay ahead of the backlog. The drain needs a
+    /// strong ref for the replayed handlers' `Ctx`; a deadline fire has no
+    /// message to mint one from, so in the drain window (`upgrade` fails)
+    /// the released batch waits for the next delivered step — and dies
+    /// with the incarnation if none comes (ADR-0022 D6).
+    async fn on_deadline(&mut self, actor_ref: WeakActorRef<Self>) -> Result<Flow, A::Error> {
+        if self
+            .caps
+            .on_deadline(&mut self.user, actor_ref.clone())
+            .await?
+            == Flow::Stop
+        {
+            return Ok(Flow::Stop);
+        }
+        let Some(strong) = actor_ref.upgrade() else {
+            return Ok(Flow::Continue);
+        };
+        while let Some(m) = self.caps.next_replay() {
+            if A::handle(
+                &mut self.user,
+                m,
+                Ctx {
+                    caps: &mut self.caps,
+                    self_ref: &strong,
+                },
+            )
+            .await?
+                == Flow::Stop
+            {
+                return Ok(Flow::Stop);
+            }
+        }
+        Ok(Flow::Continue)
+    }
+
     async fn on_panic(
         &mut self,
         actor_ref: WeakActorRef<Self>,
@@ -821,6 +995,18 @@ mod tests {
                 None
             }
         }
+        impl<A: Actor> super::super::DeadlineHook<A> for RecCaps {
+            fn next_deadline(&self, _: &A) -> Option<tokio::time::Instant> {
+                None
+            }
+            async fn on_deadline(
+                &mut self,
+                _: &mut A,
+                _: crate::actor::WeakActorRef<super::super::Shell<A>>,
+            ) -> Result<super::super::Flow, A::Error> {
+                Ok(super::super::Flow::Continue)
+            }
+        }
         impl<A: Actor> HasWatching<A> for RecCaps
         where
             RecPolicy: WatchPolicy<A>,
@@ -880,6 +1066,18 @@ mod tests {
         impl<M> Replay<M> for SupCaps {
             fn next_replay(&mut self) -> Option<M> {
                 None
+            }
+        }
+        impl<A: Actor> super::super::DeadlineHook<A> for SupCaps {
+            fn next_deadline(&self, _: &A) -> Option<tokio::time::Instant> {
+                None
+            }
+            async fn on_deadline(
+                &mut self,
+                _: &mut A,
+                _: crate::actor::WeakActorRef<super::super::Shell<A>>,
+            ) -> Result<super::super::Flow, A::Error> {
+                Ok(super::super::Flow::Continue)
             }
         }
         impl<A: Actor> HasWatching<A> for SupCaps
@@ -1038,6 +1236,202 @@ mod tests {
                 type_name::<<() as SelectRunner<super::Nameless>>::Runner>(),
                 type_name::<PlainRun>(),
                 "a capability-less set runs the plain message loop",
+            );
+        }
+    }
+
+    /// Stage-4 (card #281): the `Deadlined` capability — the ADR-0025
+    /// plane's user seat — and the `DeadlineHook` participation half the
+    /// `Shell` bridges to the loop's deadline arm.
+    mod deadlined {
+        use core::convert::Infallible;
+        use core::time::Duration;
+
+        use tokio::time::Instant;
+
+        use futures::stream::AbortHandle;
+        use tokio_util::sync::CancellationToken;
+
+        use super::super::{
+            Actor, CapSet, Ctx, DeadlineHook, DeadlinePolicy, Deadlined, Flow, Replay,
+            SelectRunner, Shell,
+        };
+        use crate::{
+            actor::{Actor as RuntimeActor, ActorRef, WeakActorRef},
+            mailbox::{ActorId, Capacity, Mailbox, Mailboxed},
+            message::Msg,
+        };
+
+        /// A drain-window weak ref (its strong parent is dropped at
+        /// return): exactly the ref shape the hook must tolerate.
+        fn dead_weak<A: crate::actor::Actor>() -> WeakActorRef<A> {
+            let cap = Capacity::try_from(1usize).expect("valid test capacity");
+            let (tx, _rx) = Mailbox::<A>::bounded(cap, ActorId::from_raw_for_test(9));
+            let (abort, _reg) = AbortHandle::new_pair();
+            let strong = ActorRef::new(
+                ActorId::from_raw_for_test(9),
+                tx,
+                CancellationToken::new(),
+                abort,
+                None,
+            );
+            strong.downgrade()
+        }
+
+        /// An actor whose deadline is a pure function of its own state —
+        /// the quinn `poll_timeout` shape the policy reads.
+        struct Idler {
+            due: Option<Instant>,
+            fires: u32,
+        }
+
+        #[derive(Debug)]
+        struct IdleMsg;
+        impl Msg for IdleMsg {}
+        impl Mailboxed for Idler {
+            type Msg = IdleMsg;
+        }
+
+        struct IdlePolicy;
+
+        impl DeadlinePolicy<Idler> for IdlePolicy {
+            fn next_deadline(actor: &Idler) -> Option<Instant> {
+                actor.due
+            }
+            async fn on_deadline(
+                actor: &mut Idler,
+                _: WeakActorRef<Shell<Idler>>,
+            ) -> Result<Flow, Infallible> {
+                actor.fires = actor.fires.saturating_add(1);
+                actor.due = None;
+                Ok(Flow::Stop)
+            }
+        }
+
+        /// Hand-written cap set (what the derive emits, spelled out).
+        struct IdleCaps {
+            deadlined: Deadlined<IdlePolicy>,
+        }
+
+        impl CapSet<Idler> for IdleCaps {
+            fn build((): &()) -> Self {
+                Self {
+                    deadlined: Deadlined::new(),
+                }
+            }
+        }
+        impl super::super::Provide<Deadlined<IdlePolicy>> for IdleCaps {
+            fn provide(&mut self) -> &mut Deadlined<IdlePolicy> {
+                &mut self.deadlined
+            }
+        }
+        impl<M> Replay<M> for IdleCaps {
+            fn next_replay(&mut self) -> Option<M> {
+                None
+            }
+        }
+        impl<A: Actor> DeadlineHook<A> for IdleCaps
+        where
+            IdlePolicy: DeadlinePolicy<A>,
+        {
+            fn next_deadline(&self, actor: &A) -> Option<Instant> {
+                DeadlineHook::next_deadline(&self.deadlined, actor)
+            }
+            async fn on_deadline(
+                &mut self,
+                actor: &mut A,
+                actor_ref: WeakActorRef<Shell<A>>,
+            ) -> Result<Flow, A::Error> {
+                DeadlineHook::on_deadline(&mut self.deadlined, actor, actor_ref).await
+            }
+        }
+        impl<A: Actor> SelectRunner<A> for IdleCaps {
+            type Runner = super::super::PlainRun;
+        }
+
+        impl Actor for Idler {
+            type Msg = IdleMsg;
+            type Args = ();
+            type Error = Infallible;
+            type Caps = IdleCaps;
+
+            async fn init((): (), _: Ctx<'_, Self>) -> Result<Self, Infallible> {
+                Ok(Self {
+                    due: None,
+                    fires: 0,
+                })
+            }
+
+            async fn handle(&mut self, _: IdleMsg, _: Ctx<'_, Self>) -> Result<Flow, Infallible> {
+                Ok(Flow::Continue)
+            }
+        }
+
+        /// The `()` floor: a capability-less set declares no deadline and
+        /// its expiry hook is inert — the arm stays disabled for plain
+        /// actors.
+        #[tokio::test]
+        async fn unit_caps_declare_no_deadline() {
+            let mut nameless = super::Nameless;
+            assert_eq!(
+                <() as DeadlineHook<super::Nameless>>::next_deadline(&(), &nameless),
+                None,
+            );
+            let out = <() as DeadlineHook<super::Nameless>>::on_deadline(
+                &mut (),
+                &mut nameless,
+                dead_weak(),
+            )
+            .await
+            .expect("the unit hook is infallible");
+            assert_eq!(out, Flow::Continue, "the unit hook keeps running");
+        }
+
+        /// `Shell`'s runtime `next_deadline` forwards to the cap set's
+        /// declared policy — a pure read of user state through the bridge.
+        #[tokio::test]
+        async fn shell_forwards_next_deadline_to_the_declared_policy() {
+            let due = Instant::now() + Duration::from_secs(5);
+            let mut shell = Shell {
+                user: Idler {
+                    due: Some(due),
+                    fires: 0,
+                },
+                caps: IdleCaps::build(&()),
+            };
+            assert_eq!(
+                RuntimeActor::next_deadline(&shell),
+                Some(due),
+                "the bridge reads the policy's pure function of user state",
+            );
+            shell.user.due = None;
+            assert_eq!(
+                RuntimeActor::next_deadline(&shell),
+                None,
+                "no declared deadline disables the arm",
+            );
+        }
+
+        /// `Shell`'s runtime `on_deadline` dispatches expiry INTO the
+        /// declared policy with `&mut user` access, and the policy's
+        /// `Flow` decision rides back out — the stage-4 analogue of the
+        /// stage-3 link-dispatch test.
+        #[tokio::test]
+        async fn shell_dispatches_on_deadline_to_the_declared_policy() {
+            let mut shell = Shell {
+                user: Idler {
+                    due: Some(Instant::now()),
+                    fires: 0,
+                },
+                caps: IdleCaps::build(&()),
+            };
+            let flow = RuntimeActor::on_deadline(&mut shell, dead_weak())
+                .await
+                .expect("the recording policy is infallible");
+            assert_eq!(flow, Flow::Stop, "the policy's Flow decision rides out");
+            assert_eq!(
+                shell.user.fires, 1,
+                "the policy observed expiry through &mut user state",
             );
         }
     }

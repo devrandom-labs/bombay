@@ -7,7 +7,10 @@ use std::time::Duration;
 
 use bombay::{
     actor::Flow,
-    caps::{Actor, CapSet, Ctx, Handle, PlainRun, Provide, Replay, SelectRunner, Shell, spawn},
+    caps::{
+        Actor, CapSet, Ctx, DeadlineHook, DeadlineInstant, Handle, PlainRun, Provide, Replay,
+        SelectRunner, Shell, spawn,
+    },
     error::ActorStopReason,
     mailbox::Mailboxed,
     reply::ReplySender,
@@ -94,6 +97,21 @@ impl<M> Replay<M> for GateCaps {
 // exactly this for you).
 impl<A: Actor> SelectRunner<A> for GateCaps {
     type Runner = PlainRun;
+}
+
+// And its deadline participation (stage 4); with no `Deadlined`/`Phased`
+// cap the arm stays disabled (the derive emits exactly this for you).
+impl<A: Actor> DeadlineHook<A> for GateCaps {
+    fn next_deadline(&self, _: &A) -> Option<DeadlineInstant> {
+        None
+    }
+    async fn on_deadline(
+        &mut self,
+        _: &mut A,
+        _: bombay::actor::WeakActorRef<Shell<A>>,
+    ) -> Result<Flow, A::Error> {
+        Ok(Flow::Continue)
+    }
 }
 
 struct Gatekeeper {

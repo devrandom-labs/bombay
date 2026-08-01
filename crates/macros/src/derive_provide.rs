@@ -177,6 +177,64 @@ impl ToTokens for DeriveProvide {
         }
 
         emit_watch_supervise(&self.fields, ident, tokens);
+        emit_deadline(&self.fields, ident, tokens);
+    }
+}
+
+/// Stage-4 participation (ADR-0026, card #281): the ADR-0025 deadline
+/// plane's loop hook.
+///
+/// A `Deadlined<DP>` field emits a `DeadlineHook` impl forwarding to the
+/// field (gated on `DP: DeadlinePolicy<A>`, exactly as `HasWatching` gates
+/// its policy); a set without one emits the disabled blanket (`None`, arm
+/// never polls). Emitting exactly one shape keeps the impls
+/// non-overlapping (no E0119) — and two `Deadlined` fields emit two
+/// forwarding impls, rejected by coherence like every duplicate cap.
+fn emit_deadline(fields: &[(Ident, Type)], ident: &Ident, tokens: &mut TokenStream) {
+    let deadlined: Vec<(&Ident, &Type)> = fields
+        .iter()
+        .filter_map(|(field, ty)| cap_type_arg(ty, "Deadlined").map(|dp| (field, dp)))
+        .collect();
+    if deadlined.is_empty() {
+        tokens.extend(quote! {
+            #[automatically_derived]
+            impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::DeadlineHook<__CapsActor>
+                for #ident
+            {
+                fn next_deadline(&self, _: &__CapsActor) -> ::core::option::Option<::bombay::caps::DeadlineInstant> {
+                    ::core::option::Option::None
+                }
+                async fn on_deadline(
+                    &mut self,
+                    _: &mut __CapsActor,
+                    _: ::bombay::actor::WeakActorRef<::bombay::caps::Shell<__CapsActor>>,
+                ) -> ::core::result::Result<::bombay::actor::Flow, <__CapsActor as ::bombay::caps::Actor>::Error> {
+                    ::core::result::Result::Ok(::bombay::actor::Flow::Continue)
+                }
+            }
+        });
+        return;
+    }
+    for (field, policy) in deadlined {
+        tokens.extend(quote! {
+            #[automatically_derived]
+            impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::DeadlineHook<__CapsActor>
+                for #ident
+            where
+                #policy: ::bombay::caps::DeadlinePolicy<__CapsActor>,
+            {
+                fn next_deadline(&self, actor: &__CapsActor) -> ::core::option::Option<::bombay::caps::DeadlineInstant> {
+                    ::bombay::caps::DeadlineHook::next_deadline(&self.#field, actor)
+                }
+                async fn on_deadline(
+                    &mut self,
+                    actor: &mut __CapsActor,
+                    actor_ref: ::bombay::actor::WeakActorRef<::bombay::caps::Shell<__CapsActor>>,
+                ) -> ::core::result::Result<::bombay::actor::Flow, <__CapsActor as ::bombay::caps::Actor>::Error> {
+                    ::bombay::caps::DeadlineHook::on_deadline(&mut self.#field, actor, actor_ref).await
+                }
+            }
+        });
     }
 }
 
@@ -483,6 +541,58 @@ mod tests {
         assert!(
             err.to_string().contains("requires a `Watching`"),
             "unexpected error: {err}"
+        );
+    }
+
+    /// Stage 4 (card #281): a `Deadlined<DP>` field emits the
+    /// `DeadlineHook` participation impl — generic over the actor, gated
+    /// on the policy serving that actor (the `HasWatching` shape).
+    #[test]
+    fn a_deadlined_field_emits_a_forwarding_deadline_hook() {
+        use quote::ToTokens as _;
+        let parsed =
+            syn::parse_str::<DeriveProvide>("struct Caps { deadlined: Deadlined<IdlePolicy> }")
+                .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        assert_eq!(
+            out.matches(":: bombay :: caps :: DeadlineHook < __CapsActor > for Caps")
+                .count(),
+            1,
+            "exactly one DeadlineHook impl: {out}"
+        );
+        assert!(
+            out.contains("where IdlePolicy : :: bombay :: caps :: DeadlinePolicy < __CapsActor >"),
+            "the impl is gated on the policy serving the actor: {out}"
+        );
+        assert!(
+            out.contains(
+                ":: bombay :: caps :: DeadlineHook :: next_deadline (& self . deadlined , actor)"
+            ),
+            "forwards to the Deadlined field's own hook: {out}"
+        );
+        assert!(
+            !out.contains(":: core :: option :: Option :: None }"),
+            "a deadlined set must NOT emit the disabled blanket: {out}"
+        );
+    }
+
+    /// Stage 4: a set without a deadline-bearing cap emits the disabled
+    /// blanket — `None`, so the loop arm never polls.
+    #[test]
+    fn no_deadline_field_emits_the_disabled_blanket() {
+        use quote::ToTokens as _;
+        let parsed = syn::parse_str::<DeriveProvide>("struct Caps { buf: Stashing<GateMsg> }")
+            .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        assert_eq!(
+            out.matches(":: bombay :: caps :: DeadlineHook < __CapsActor > for Caps")
+                .count(),
+            1,
+            "every derived set gets exactly one DeadlineHook impl: {out}"
+        );
+        assert!(
+            !out.contains("DeadlinePolicy"),
+            "no policy gate on the disabled blanket: {out}"
         );
     }
 
