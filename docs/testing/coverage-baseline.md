@@ -1335,3 +1335,17 @@ behavior) is recorded in the test-file header.
   submissions audited exactly (workers: 0 so the cap refusal is
   reachable), refused submissions not audited, audit queried over the
   caps surface.
+
+## Card #280 (caps stage 3)
+- NEW `crates/core/tests/caps_stage3.rs` — the (Stashing, Watching,
+  Supervising) deferring-supervisor composition proof (behavioral: in-step
+  replay on the supervised loop + child rebuild + non-child policy notice).
+- `drain_equivalence.rs` / `drain_supervision_equivalence.rs` /
+  `dst_races.rs` / `control_lane.rs` / `tracing_capture.rs` /
+  `caps_stashing.rs` / `app_job_queue.rs` ported to the caps surface,
+  choreography and assertions unchanged.
+- caps.rs unit tests: OtpPropagation 3-case, Shell policy dispatch,
+  strategy-from-type, plain-runner selection; +1 executing compile_fail
+  doctest (Supervising-without-Watching); derive tests 21→27.
+- Mutants baseline: deleted-trait keys removed; NEW stage-3 fns need a
+  true-up from a real `nix build .#mutants` run (stage-2 precedent).
