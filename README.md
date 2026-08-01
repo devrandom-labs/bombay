@@ -122,6 +122,30 @@ example: `cargo run -p bombay --example job_queue` (source:
   and supervising are the `Watching<WP>` / `Supervising<SS>` capability
   types above, and the one `caps::spawn` picks the loop shape from the cap
   set at compile time.
+- **Deadlines** — the `caps::Deadlined<DP>` capability (ADR-0025's
+  declarative plane): the plugged `DeadlinePolicy` declares
+  `next_deadline(&actor) -> Option<Instant>` as a **pure function of actor
+  state** — no arm/cancel verbs, nothing to forget, nothing to race — and
+  the run loop re-reads it every iteration (all three loop shapes), firing
+  `on_deadline(&mut actor, WeakActorRef)` once per value at a turn
+  boundary, under the same catch/crash treatment as a handler
+  (`PanicReason::OnDeadline`, restart-eligible). A due deadline preempts
+  the mailbox backlog but never a ready death notice; a disabled slot
+  costs nothing (armed, ~3% per-message throughput). Sliding idle timers
+  are one policy away: declare `last_activity + T`.
+- **Phases** — the `caps::Phased<P>` capability: a `PhasePolicy` is the
+  whole machine as ONE plugged unit — phase tag enum, declarative
+  per-phase admission (`gate → Deliver | Defer | Ignore`, P-style: the
+  handler never sees a message its phase declared away), per-phase
+  deadlines (`phase_deadline(&self, phase)`, magnitudes from your spawn
+  args), and the required timeout reaction. Transition with
+  `cx.cap::<Phased<P>>().goto(next)` — committed only after your handler
+  returns `Ok`, releasing the embedded stash so deferred messages replay
+  re-gated in the NEW phase, ahead of the backlog; a left phase's deadline
+  is *unrepresentable*, not filtered (no epochs, no timer tasks, zero
+  allocations on the transition path). `Phased` embeds its own stash and
+  deadline seat — plugging `Stashing`/`Deadlined` beside it is rejected at
+  derive time.
 - **Errors** — `TellError` and `AskError`, which classify retry-safety by method (`is_retryable` / `is_terminal`) and hand the undelivered message back; `PanicError` + `PanicReason`; and `ActorStopReason` (`Normal`, `Collected`, `Killed`, `Panicked`, `SupervisorRestart`, `LinkDied`, `AlreadyDead`, `RestartLimitExceeded`, `ChildLifecycleFailed`).
 
 ## Observability

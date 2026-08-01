@@ -108,6 +108,8 @@ async fn main() {
                         slot: 3,
                         dispatcher: done_port.clone(),
                         stopped_tx: None,
+                        drain_grace: Duration::from_secs(5),
+                        refused_tx: None,
                     });
                     if let Some(d) = disp.upgrade() {
                         // same WorkerReplaced seam as on_start's factories

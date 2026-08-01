@@ -1349,3 +1349,46 @@ behavior) is recorded in the test-file header.
   doctest (Supervising-without-Watching); derive tests 21→27.
 - Mutants baseline: deleted-trait keys removed; NEW stage-3 fns need a
   true-up from a real `nix build .#mutants` run (stage-2 precedent).
+
+## Card #281 (caps stage 4 — Deadlined + Phased on the ADR-0025 plane)
+- NEW `crates/core/tests/deadline_plane.rs` — the executable model's
+  P1a/P2/P3/P4/P5 ported against real actors on the caps surface, plus:
+  drain-window fire (weak fails upgrade, `Flow::Stop` → `Normal` before
+  backlog exhaustion), watcher-observed `PanicReason::OnDeadline`, the
+  cancel-delay ≤ one-hook-turn pin, deadline-before-queued-message pins on
+  ALL THREE loop shapes, and death-notice-before-due-deadline pins on the
+  linked + supervised shapes. P1b (arm below the mailbox starves) is the
+  doc-comment counter-model on the arm in `kind.rs`, deliberately not a
+  shipped test.
+- NEW `crates/core/tests/caps_phased.rs` — the machine's own laws: gate
+  trio + replay-re-gated-in-the-new-phase (arrival order, ahead of the
+  backlog), intact overflow handback (override), D6 default
+  redelivers-through-the-gate (dedicated `Shed` actor), `goto(current)`
+  no-op with the deadline-anchor timing pin, left-phase deadline never
+  fires (the staleness-unrepresentable pin replacing ADR-0024's epoch
+  tests), phase-timeout-releases-stash replay INSIDE the deadline turn,
+  Recipient smoke.
+- NEW `crates/core/tests/phase_equivalence.rs` — the #231 6-scenario
+  mode-blind oracle in-repo: idiom (Stashing + manual [F1..F6] + public
+  `LoadDeadline` menu variant) vs `Phased`, identical probe sequences;
+  S4 mode-adapted (no timeout message exists to forge on the plane).
+- NEW `crates/core/tests/alloc_phased.rs` — one-test binary: Stay = Goto
+  = 0 gross allocations; arming a phase deadline = 0 (vs the spike mock's
+  measured 3 on its `send_after` path).
+- caps.rs unit tests: `Deadlined` policy dispatch through the Shell
+  bridge (+ unit-floor disabled hook), commit-after-Ok on the
+  `Shell::step` code order (Err never commits, Ok does), D6 default
+  verdict, unit-floor admission; `spawn.rs` raw-floor fire test;
+  `error.rs` OnDeadline classification pin (NOT `is_lifecycle_hook`).
+- `crates/macros`: derive emission tests for `DeadlineHook`
+  (forwarding + disabled blanket), `Admission`/`Replay`/`DeadlineHook`
+  concrete emission for a `Phased` field, and the three stage-4
+  parse-rejects (Phased+Deadlined, Phased+Stashing, two Phased).
+- NEW `crates/core/benches/deadline_arm.rs` — disabled vs
+  armed-far-future per-message cost (3.26 ms vs 3.36 ms / 10k msgs).
+- Mutants baseline trued up from `cargo mutants --list`: every stage-4
+  fn entered (floors or known-zero), PLUS the stage-2/3 caps fns the
+  baseline had silently missed (`Stashing::*`, `RunKind::spawn_with`,
+  `OtpPropagation::on_link_died`, …) and four stale known-zero entries
+  removed — the sweep scope (`crates/core/**` + `derive_msg.rs`) now
+  reconciles to zero unaccounted / zero stale floors by list.

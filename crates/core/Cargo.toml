@@ -97,5 +97,9 @@ harness = false
 name = "timers"
 harness = false
 
+[[bench]]
+name = "deadline_arm"
+harness = false
+
 [lints]
 workspace = true

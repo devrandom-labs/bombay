@@ -23,10 +23,11 @@ use bombay::{
     ActorId,
     actor::{Flow, PreparedActor, RunResult, SpawnConfig},
     caps,
-    error::{ActorStopReason, AskError},
+    error::{ActorStopReason, AskError, Infallible},
     mailbox::Capacity,
     message::Msg,
     registry::Registry,
+    reply::ReplySender,
     restart::{RestartConfig, RestartPolicy},
     test_support::terminate_bound,
 };
@@ -562,6 +563,8 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
                 slot: 9,
                 dispatcher: disp.recipient::<app::Done>(),
                 stopped_tx: Some(stopped_tx.clone()),
+                drain_grace: Duration::from_secs(5),
+                refused_tx: None,
             });
             let _ = disp
                 .tell(DispatcherMsg::WorkerReplaced {
@@ -1016,4 +1019,96 @@ async fn accepted_submissions_are_audited_on_the_caps_surface() {
     assert_eq!(count, 3, "exactly the accepted submissions are audited");
 
     drop(app);
+}
+
+// ---------------------------------------------------- phased worker (#281) --
+
+/// The drained worker's ack sink — stands in for the dispatcher so the
+/// in-flight completion is observable without the whole app around it.
+#[derive(Debug, bombay_macros::Msg)]
+enum AckMsg {
+    Done(app::Done),
+    Read { reply: ReplySender<Vec<u64>> },
+}
+
+impl From<app::Done> for AckMsg {
+    fn from(done: app::Done) -> Self {
+        Self::Done(done)
+    }
+}
+
+struct AckSink {
+    acked: Vec<u64>,
+}
+
+impl caps::Actor for AckSink {
+    type Msg = AckMsg;
+    type Args = ();
+    type Error = Infallible;
+    type Caps = ();
+
+    async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Infallible> {
+        Ok(Self { acked: Vec::new() })
+    }
+
+    async fn handle(&mut self, msg: AckMsg, _: caps::Ctx<'_, Self>) -> Result<Flow, Infallible> {
+        match msg {
+            AckMsg::Done(done) => self.acked.push(done.job_id),
+            AckMsg::Read { reply } => {
+                let _ = reply.send(self.acked.clone());
+            }
+        }
+        Ok(Flow::Continue)
+    }
+}
+
+/// Card #281 walking skeleton: the `Worker` is now a PHASED actor
+/// (Serving → Draining via `caps::Phased`). A `Drain` while a job is in
+/// flight (1) completes that job first — the ack lands — (2) refuses a
+/// job submitted after the drain LOUDLY on the refusal tape, and (3)
+/// stops normally once the in-flight ack is out.
+#[tokio::test]
+async fn phased_worker_completes_in_flight_then_refuses_and_stops() {
+    let sink = caps::spawn::<AckSink>(());
+    let (stopped_tx, stopped_rx) = flume::unbounded();
+    let (refused_tx, refused_rx) = flume::unbounded();
+
+    let worker = caps::spawn::<app::Worker>(app::WorkerArgs {
+        slot: 0,
+        dispatcher: sink.recipient::<app::Done>(),
+        stopped_tx: Some(stopped_tx),
+        drain_grace: Duration::from_secs(5),
+        refused_tx: Some(refused_tx),
+    });
+
+    // Job 1 goes in flight (its WorkDone self-pipe lands after WORK).
+    bounded(worker.tell(app::WorkerMsg::Run(ok_job(1))))
+        .await
+        .expect("job 1 queued");
+    // Drain mid-flight: Serving -> Draining.
+    bounded(worker.tell(app::WorkerMsg::Drain))
+        .await
+        .expect("drain queued");
+    // A job AFTER the drain: refused loudly, never run.
+    bounded(worker.tell(app::WorkerMsg::Run(ok_job(99))))
+        .await
+        .expect("job 99 queued");
+
+    // The worker stops on its own once the in-flight ack is out.
+    let stopped_id = bounded(stopped_rx.recv_async())
+        .await
+        .expect("worker stopped");
+    assert_eq!(stopped_id, worker.id(), "the drained worker stopped itself");
+
+    let refused: Vec<u64> = refused_rx.drain().collect();
+    assert_eq!(refused, vec![99], "the post-drain job is refused loudly");
+
+    let acked = bounded(sink.ask(|reply| AckMsg::Read { reply }))
+        .await
+        .expect("sink reply");
+    assert_eq!(
+        acked,
+        vec![1],
+        "the in-flight job completed (and only it) before the stop",
+    );
 }

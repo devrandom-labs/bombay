@@ -8,6 +8,8 @@
 
 use core::{any::type_name, future::Future, ops::ControlFlow};
 
+use tokio::time::Instant;
+
 use crate::{
     error::{ActorStopReason, PanicError, ReplyError},
     mailbox::{ActorId, Mailboxed},
@@ -104,6 +106,46 @@ pub trait Actor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
         msg: Self::Msg,
         actor_ref: ActorRef<Self>,
     ) -> impl Future<Output = Result<Flow, Self::Error>> + Send;
+
+    /// The next instant this actor needs waking, as a pure function of its
+    /// current state — the ADR-0025 declarative deadline slot (the quinn
+    /// `poll_timeout` shape). Re-read by the loop every iteration, so state
+    /// changes take effect at the next step boundary; `None` disables the
+    /// arm entirely (a disabled arm registers nothing with the timer wheel —
+    /// a `Sleep` registers lazily on first poll).
+    ///
+    /// This default is the runtime FLOOR every loop polls uniformly; the
+    /// user seat is the [`caps::Deadlined`](crate::caps::Deadlined) /
+    /// [`caps::Phased`](crate::caps::Phased) capability (ADR-0026), which
+    /// [`caps::Shell`](crate::caps::Shell) bridges here.
+    #[must_use]
+    fn next_deadline(&self) -> Option<Instant> {
+        None
+    }
+
+    /// Expiry delivery, at a turn boundary (ADR-0025): runs under the same
+    /// `catch_unwind`/poisoning treatment as [`handle`](Actor::handle), in
+    /// the `PanicReason::OnDeadline` crash domain — handler-like and
+    /// restart-eligible, NOT a lifecycle hook.
+    ///
+    /// Takes a [`WeakActorRef`] by drain-window necessity, not style: a
+    /// deadline fire carries no message to mint a strong ref from, and a
+    /// loop-held sender would keep the mailbox open forever and defeat
+    /// `Collected` (ADR-0020). Deadlines keep firing through the drain
+    /// window; `Flow` decisions work unchanged there — only self-sends
+    /// degrade (`upgrade` returns `None`), the `on_panic`/`on_stop` family.
+    ///
+    /// Fires once per value: after firing for deadline `d`, the arm
+    /// re-enables only when [`next_deadline`](Actor::next_deadline) reports
+    /// a value ≠ `d` — a hook that leaves its deadline unchanged cannot
+    /// busy-loop the biased select.
+    fn on_deadline(
+        &mut self,
+        actor_ref: WeakActorRef<Self>,
+    ) -> impl Future<Output = Result<Flow, Self::Error>> + Send {
+        let _ = actor_ref;
+        async { Ok(Flow::Continue) }
+    }
 
     /// Observes a caught panic and names the terminal stop reason. Infallible
     /// and stop-only — it cannot resume the actor. `&mut self` is poisoned.

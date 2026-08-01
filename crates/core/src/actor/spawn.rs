@@ -1026,6 +1026,72 @@ mod tests {
             .expect("actor lifecycle op must terminate, not hang")
     }
 
+    /// ADR-0025 plane floor (card #281): a declared deadline fires ON the
+    /// plain loop, exactly at its instant (paused clock), delivered
+    /// through `on_deadline` — and the hook's `Flow::Stop` stops the
+    /// actor `Normal`, exactly as a handler's would.
+    #[tokio::test(start_paused = true)]
+    async fn plain_loop_fires_a_due_deadline_and_honors_flow_stop() {
+        struct Alarm {
+            due: tokio::time::Instant,
+            fired_at: Arc<std::sync::Mutex<Vec<tokio::time::Instant>>>,
+        }
+        #[derive(Debug)]
+        struct Nudge;
+        impl Msg for Nudge {}
+        impl Mailboxed for Alarm {
+            type Msg = Nudge;
+        }
+        impl crate::actor::Actor for Alarm {
+            type Args = (
+                tokio::time::Instant,
+                Arc<std::sync::Mutex<Vec<tokio::time::Instant>>>,
+            );
+            type Error = core::convert::Infallible;
+            async fn on_start(
+                (due, fired_at): Self::Args,
+                _: ActorRef<Self>,
+            ) -> Result<Self, Self::Error> {
+                Ok(Self { due, fired_at })
+            }
+            async fn handle(&mut self, _: Nudge, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+                Ok(Flow::Continue)
+            }
+            fn next_deadline(&self) -> Option<tokio::time::Instant> {
+                Some(self.due)
+            }
+            async fn on_deadline(&mut self, _: WeakActorRef<Self>) -> Result<Flow, Self::Error> {
+                self.fired_at
+                    .lock()
+                    .expect("probe mutex never poisoned")
+                    .push(tokio::time::Instant::now());
+                Ok(Flow::Stop)
+            }
+        }
+
+        let due = tokio::time::Instant::now() + Duration::from_millis(10);
+        let fired_at = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let prepared = PreparedActor::<Alarm>::new(SpawnConfig::default());
+        // Hold a strong ref so the mailbox stays open: the fire must come
+        // from the deadline arm, never from ref-count collection.
+        let keepalive = prepared.actor_ref().clone();
+        let result = bounded(prepared.run((due, Arc::clone(&fired_at)))).await;
+
+        let fired = fired_at.lock().expect("probe mutex never poisoned");
+        assert_eq!(fired.as_slice(), [due], "one fire, exactly at the instant");
+        assert!(
+            matches!(
+                result,
+                RunResult::Stopped {
+                    reason: ActorStopReason::Normal,
+                    ..
+                }
+            ),
+            "the hook's Flow::Stop is a Normal stop",
+        );
+        drop(keepalive);
+    }
+
     /// Sequence: two messages then a `Stop` — both are handled (FIFO, before the
     /// stop), `on_stop` runs exactly once, and the outcome is a normal stop.
     #[tokio::test]
