@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use bombay::{
     actor::Flow,
-    caps::{Actor, CapSet, Ctx, Handle, Provide, Shell, spawn},
+    caps::{Actor, CapSet, Ctx, Handle, Provide, Replay, Shell, spawn},
     error::ActorStopReason,
     mailbox::Mailboxed,
     reply::ReplySender,
@@ -78,6 +78,14 @@ impl CapSet<Gatekeeper> for GateCaps {
 impl Provide<RateLimited> for GateCaps {
     fn provide(&mut self) -> &mut RateLimited {
         &mut self.rate
+    }
+}
+
+// A hand-written cap set supplies its own loop-participation hook; with no
+// stash field it yields `None` (the derive emits exactly this for you).
+impl<M> Replay<M> for GateCaps {
+    fn next_replay(&mut self) -> Option<M> {
+        None
     }
 }
 

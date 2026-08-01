@@ -7,10 +7,45 @@
 //! user has; a build-generating derive is card #243. Duplicate field
 //! TYPES produce overlapping `Provide` impls and are rejected by
 //! coherence (E0119) — the intended duplicate-capability guard.
+//!
+//! It ALSO emits the loop-participation half (ADR-0026 stage 2, card #279):
+//! one `bombay::caps::Replay<Msg>` impl so the `Shell` can drain in-step
+//! replay uniformly. A `Stashing<M>` field forwards to its own `Replay`; a
+//! set with no stash field yields `None`. This is the forget-proof wiring
+//! for the `Stashing` capability — a stash you cannot forget to service.
 
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
-use syn::{Data, DeriveInput, Fields, Ident, Type, parse::Parse, parse::ParseStream};
+use syn::{
+    Data, DeriveInput, Fields, GenericArgument, Ident, PathArguments, Type, parse::Parse,
+    parse::ParseStream,
+};
+
+/// If `ty` is written `…::Stashing<M>` (any leading path), returns `M`.
+///
+/// The one deliberate core-type coupling of this derive: it recognizes the
+/// stash capability **structurally** so it can emit that field's loop
+/// participation ([`Replay`](bombay::caps::Replay)) alongside its `Provide`.
+/// Recognizing it structurally — rather than via a `#[stash]` attribute — is
+/// what keeps replay forget-proof: you cannot hold a `Stashing<M>` field the
+/// derive fails to service. An *alias* (`type S = Stashing<X>`) is NOT
+/// recognized; write the type directly.
+fn stash_message_ty(ty: &Type) -> Option<&Type> {
+    let Type::Path(type_path) = ty else {
+        return None;
+    };
+    let segment = type_path.path.segments.last()?;
+    if segment.ident != "Stashing" {
+        return None;
+    }
+    let PathArguments::AngleBracketed(args) = &segment.arguments else {
+        return None;
+    };
+    args.args.iter().find_map(|arg| match arg {
+        GenericArgument::Type(inner) => Some(inner),
+        _ => None,
+    })
+}
 
 /// A parsed `#[derive(Provide)]` input: the struct identifier and its
 /// named fields.
@@ -79,6 +114,38 @@ impl ToTokens for DeriveProvide {
                 }
             });
         }
+
+        // The loop-participation half (ADR-0026 stage 2): every cap set is
+        // `Replay<Msg>` so the `Shell` can drain in-step replay uniformly. A
+        // `Stashing<M>` field forwards to its own `Replay` impl; a set with no
+        // stash field yields `None` for any message type. Emitting exactly one
+        // shape (never both) keeps the impls non-overlapping (no E0119).
+        let stash_fields: Vec<(&Ident, &Type)> = self
+            .fields
+            .iter()
+            .filter_map(|(field, ty)| stash_message_ty(ty).map(|m| (field, m)))
+            .collect();
+        if stash_fields.is_empty() {
+            tokens.extend(quote! {
+                #[automatically_derived]
+                impl<__CapsReplayMsg> ::bombay::caps::Replay<__CapsReplayMsg> for #ident {
+                    fn next_replay(&mut self) -> ::core::option::Option<__CapsReplayMsg> {
+                        ::core::option::Option::None
+                    }
+                }
+            });
+        } else {
+            for (field, msg) in stash_fields {
+                tokens.extend(quote! {
+                    #[automatically_derived]
+                    impl ::bombay::caps::Replay<#msg> for #ident {
+                        fn next_replay(&mut self) -> ::core::option::Option<#msg> {
+                            ::bombay::caps::Replay::next_replay(&mut self.#field)
+                        }
+                    }
+                });
+            }
+        }
     }
 }
 
@@ -141,7 +208,7 @@ mod tests {
     fn one_provide_impl_per_field_is_emitted() {
         use quote::ToTokens as _;
         let parsed =
-            syn::parse_str::<DeriveProvide>("struct Caps { stash: Stashing, rate: Limiter }")
+            syn::parse_str::<DeriveProvide>("struct Caps { stash: Stashing<M>, rate: Limiter }")
                 .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
@@ -151,5 +218,66 @@ mod tests {
         );
         assert!(out.contains("& mut self . stash"), "field access: {out}");
         assert!(out.contains("& mut self . rate"), "field access: {out}");
+    }
+
+    #[test]
+    fn a_stashing_field_emits_a_concrete_replay_forwarding_to_it() {
+        use quote::ToTokens as _;
+        let parsed = syn::parse_str::<DeriveProvide>("struct Caps { buf: Stashing<GateMsg> }")
+            .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        assert_eq!(
+            out.matches("impl :: bombay :: caps :: Replay < GateMsg > for Caps")
+                .count(),
+            1,
+            "one concrete Replay<GateMsg>: {out}"
+        );
+        assert!(
+            out.contains(":: bombay :: caps :: Replay :: next_replay (& mut self . buf)"),
+            "forwards to the stash field's own Replay: {out}"
+        );
+        assert!(
+            !out.contains("__CapsReplayMsg"),
+            "a stash field means NO None-blanket (would overlap, E0119): {out}"
+        );
+    }
+
+    #[test]
+    fn no_stash_field_emits_the_none_blanket() {
+        use quote::ToTokens as _;
+        let parsed = syn::parse_str::<DeriveProvide>("struct Caps { rate: Limiter, tags: Tags }")
+            .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        assert_eq!(
+            out.matches(
+                "impl < __CapsReplayMsg > :: bombay :: caps :: Replay < __CapsReplayMsg > for Caps"
+            )
+            .count(),
+            1,
+            "one None-blanket Replay for a stash-less set: {out}"
+        );
+        assert!(
+            out.contains(":: core :: option :: Option :: None"),
+            "the blanket yields None: {out}"
+        );
+    }
+
+    #[test]
+    fn a_mixed_set_emits_exactly_one_concrete_replay_and_no_blanket() {
+        use quote::ToTokens as _;
+        let parsed = syn::parse_str::<DeriveProvide>(
+            "struct Caps { buf: Stashing<GateMsg>, rate: Limiter }",
+        )
+        .expect("valid cap-set struct");
+        let out = parsed.to_token_stream().to_string();
+        assert_eq!(
+            out.matches("impl :: bombay :: caps :: Replay <").count(),
+            1,
+            "only the stash field participates in replay: {out}"
+        );
+        assert!(
+            !out.contains("__CapsReplayMsg"),
+            "mixed set with a stash: concrete impl only, no blanket: {out}"
+        );
     }
 }
