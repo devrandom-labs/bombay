@@ -44,9 +44,42 @@ use std::borrow::Cow;
 use papaya::{Compute, HashMap, Operation};
 
 use crate::{
-    actor::{Actor, ActorRef, WeakActorRef},
+    actor::{Actor, ActorRef, WeakActorRef, sealed},
     error::{NameTaken, WrongActorType},
 };
+
+/// A handle type the registry can resolve — the key of [`Registry::lookup`].
+///
+/// Lookup is keyed on the handle the caller wants BACK, not on the actor
+/// type, so a type alias can hide an internal adapter: `ActorRef<A>` is
+/// resolvable for every runtime actor, and therefore so is
+/// [`caps::Handle<A>`](crate::caps::Handle) — an alias for `ActorRef` over
+/// the caps [`Shell`](crate::caps::Shell) — without the word `Shell` ever
+/// appearing at a call site (card #289). Both surfaces resolve through the
+/// one door:
+///
+/// - caps: `registry.lookup::<caps::Handle<Dispatcher>>(name)`
+/// - runtime (expert floor): `registry.lookup::<ActorRef<Probe>>(name)`
+///
+/// Sealed: the registry stores [`WeakActorRef`]s, so only ref types the
+/// crate can mint from one are resolvable.
+pub trait Resolvable: sealed::Sealed + Sized {
+    /// The runtime actor type the registry entry is keyed on.
+    type Runtime: Actor;
+
+    /// Wraps the stored entry's upgraded ref as this handle type.
+    fn from_ref(actor_ref: ActorRef<Self::Runtime>) -> Self;
+}
+
+impl<A: Actor> sealed::Sealed for ActorRef<A> {}
+
+impl<A: Actor> Resolvable for ActorRef<A> {
+    type Runtime = A;
+
+    fn from_ref(actor_ref: Self) -> Self {
+        actor_ref
+    }
+}
 
 /// The one liveness rule, shared by every registry path: an entry is alive
 /// while its actor's mailbox channel is open — strong senders still exist
@@ -136,29 +169,32 @@ impl Registry {
         }
     }
 
-    /// Looks up the actor registered under `name`, typed as `A`.
+    /// Looks up the actor registered under `name`, keyed on the handle type
+    /// `R` the caller wants back ([`Resolvable`]): `ActorRef<A>` for a
+    /// runtime actor, [`caps::Handle<A>`](crate::caps::Handle) for a caps
+    /// actor — one door for both surfaces (card #289).
     ///
     /// `Ok(None)` covers both true absence and a dead incumbent (channel
     /// closed) — a dead entry reads as absent on every path, whatever its
     /// type, exactly as `register`'s reclaim rule treats it.
     ///
-    /// The returned [`ActorRef`] is a fresh strong handle: it participates in
-    /// ref-count liveness like any other clone.
+    /// The returned handle is a fresh strong [`ActorRef`]: it participates
+    /// in ref-count liveness like any other clone.
     ///
     /// # Errors
     ///
     /// [`WrongActorType`] — the name is held by a **live** actor of a
-    /// different `Actor` type.
-    pub fn lookup<A: Actor>(&self, name: &str) -> Result<Option<ActorRef<A>>, WrongActorType> {
+    /// different runtime type than `R` resolves.
+    pub fn lookup<R: Resolvable>(&self, name: &str) -> Result<Option<R>, WrongActorType> {
         let guard = self.map.guard();
         let Some(entry) = self.map.get(name, &guard) else {
             return Ok(None);
         };
-        match entry.as_any().downcast_ref::<WeakActorRef<A>>() {
+        match entry.as_any().downcast_ref::<WeakActorRef<R::Runtime>>() {
             // Upgrade alone is not liveness: a lingering strong ref elsewhere
             // keeps `upgrade` succeeding after the receiver dropped, so the
             // channel-open filter applies the same rule `register` uses.
-            Some(weak) => Ok(weak.upgrade().filter(ActorRef::is_alive)),
+            Some(weak) => Ok(weak.upgrade().filter(ActorRef::is_alive).map(R::from_ref)),
             None if entry.is_alive() => Err(WrongActorType),
             None => Ok(None),
         }
@@ -201,6 +237,7 @@ mod tests {
     use super::Registry;
     use crate::{
         actor::{Actor, ActorRef, Flow},
+        caps::{self, Ctx as CapsCtx, Handle},
         error::{NameTaken, WrongActorType},
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
         message::Msg,
@@ -247,6 +284,29 @@ mod tests {
         }
     }
 
+    /// A caps-surface actor (the ONE user trait, ADR-0026): registered and
+    /// resolved through the same registry door as runtime actors, keyed by
+    /// its [`Handle`]. The uninhabited message menu is enough — the registry
+    /// never runs a loop.
+    struct CapProbe;
+    #[derive(Debug)]
+    enum CapMsg {}
+    impl Msg for CapMsg {}
+    impl caps::Actor for CapProbe {
+        type Msg = CapMsg;
+        type Args = ();
+        type Error = core::convert::Infallible;
+        type Caps = ();
+
+        async fn init((): (), _: CapsCtx<'_, Self>) -> Result<Self, Self::Error> {
+            Ok(Self)
+        }
+
+        async fn handle(&mut self, msg: CapMsg, _: CapsCtx<'_, Self>) -> Result<Flow, Self::Error> {
+            match msg {}
+        }
+    }
+
     /// Builds a ref + receiver pair for an actor type. Keeping the receiver in
     /// the test's hands lets each test reap the actor on its own terms (drop of
     /// the receiver is exactly what the run-loop does on stop).
@@ -277,7 +337,7 @@ mod tests {
             .expect("fresh name registers");
 
         let resolved = registry
-            .lookup::<Probe>("counter")
+            .lookup::<ActorRef<Probe>>("counter")
             .expect("same type")
             .expect("live actor resolves");
         assert_eq!(
@@ -305,13 +365,36 @@ mod tests {
         assert_eq!(n, 42, "the exact payload crossed the same channel");
     }
 
+    /// Card #289 (wart of #280): a caps actor registers and resolves through
+    /// the SAME `lookup` door, keyed on the handle type the caller wants
+    /// back — `caps::Handle<CapProbe>` in the turbofish, never the internal
+    /// `Shell` adapter.
+    #[test]
+    fn caps_handle_resolves_without_naming_shell() {
+        let registry = Registry::new();
+        let (actor_ref, _rx): (Handle<CapProbe>, _) = build(1);
+        registry
+            .register("dispatcher", &actor_ref)
+            .expect("fresh name");
+
+        let resolved = registry
+            .lookup::<Handle<CapProbe>>("dispatcher")
+            .expect("same type")
+            .expect("live actor resolves");
+        assert_eq!(
+            resolved.id(),
+            ActorId::from_raw_for_test(1),
+            "resolves the caps registrant through its Handle alias",
+        );
+    }
+
     /// A name never registered reads as absent — `Ok(None)`, not an error.
     #[test]
     fn lookup_of_unknown_name_is_absent() {
         let registry = Registry::new();
         assert!(
             registry
-                .lookup::<Probe>("nobody")
+                .lookup::<ActorRef<Probe>>("nobody")
                 .expect("no entry, no type conflict")
                 .is_none(),
         );
@@ -333,7 +416,7 @@ mod tests {
         );
 
         let resolved = registry
-            .lookup::<Probe>("hot")
+            .lookup::<ActorRef<Probe>>("hot")
             .expect("same type")
             .expect("incumbent still live");
         assert_eq!(
@@ -353,7 +436,7 @@ mod tests {
         registry.register("typed", &actor_ref).expect("fresh name");
         assert_eq!(
             registry
-                .lookup::<Other>("typed")
+                .lookup::<ActorRef<Other>>("typed")
                 .expect_err("a live entry of a different type is a type conflict"),
             WrongActorType,
         );
@@ -372,7 +455,7 @@ mod tests {
         assert!(registry.unregister("cycle"), "removes the live entry");
         assert!(
             registry
-                .lookup::<Probe>("cycle")
+                .lookup::<ActorRef<Probe>>("cycle")
                 .expect("no entry")
                 .is_none(),
             "unregister-then-lookup reads absent",
@@ -386,7 +469,7 @@ mod tests {
             .register("cycle", &second)
             .expect("a freed name is registrable again");
         let resolved = registry
-            .lookup::<Probe>("cycle")
+            .lookup::<ActorRef<Probe>>("cycle")
             .expect("same type")
             .expect("new registrant live");
         assert_eq!(resolved.id(), ActorId::from_raw_for_test(2));
@@ -405,7 +488,7 @@ mod tests {
 
         assert!(
             registry
-                .lookup::<Probe>("ghost")
+                .lookup::<ActorRef<Probe>>("ghost")
                 .expect("dead reads absent")
                 .is_none(),
             "a reaped actor's stale entry must not resolve",
@@ -428,7 +511,7 @@ mod tests {
             .expect("a dead incumbent's name is reclaimable");
 
         let resolved = registry
-            .lookup::<Probe>("seat")
+            .lookup::<ActorRef<Probe>>("seat")
             .expect("same type")
             .expect("replacement live");
         assert_eq!(
@@ -451,7 +534,7 @@ mod tests {
 
         assert!(
             registry
-                .lookup::<Other>("seat")
+                .lookup::<ActorRef<Other>>("seat")
                 .expect("a dead entry cannot claim a type")
                 .is_none(),
         );
@@ -479,7 +562,7 @@ mod tests {
         );
         assert!(
             registry
-                .lookup::<Probe>("pinned?")
+                .lookup::<ActorRef<Probe>>("pinned?")
                 .expect("dead reads absent")
                 .is_none(),
             "and the entry must not resurrect the actor",
@@ -514,7 +597,7 @@ mod tests {
 
         assert!(
             registry
-                .lookup::<Probe>("seat")
+                .lookup::<ActorRef<Probe>>("seat")
                 .expect("dead reads absent")
                 .is_none(),
         );
@@ -541,7 +624,7 @@ mod tests {
 
         assert!(
             registry
-                .lookup::<Probe>("drain")
+                .lookup::<ActorRef<Probe>>("drain")
                 .expect("dying reads absent, never a type conflict")
                 .is_none(),
             "a draining actor must not be resolvable",
@@ -578,7 +661,7 @@ mod tests {
         let registry = Registry::default();
         assert!(
             registry
-                .lookup::<Probe>("anything")
+                .lookup::<ActorRef<Probe>>("anything")
                 .expect("empty")
                 .is_none(),
             "a default registry starts empty",
@@ -651,7 +734,7 @@ mod tests {
             .position(Result::is_ok)
             .expect("one winner exists");
         let resolved = registry
-            .lookup::<Probe>("hot")
+            .lookup::<ActorRef<Probe>>("hot")
             .expect("same type")
             .expect("winner live");
         assert_eq!(
@@ -703,7 +786,7 @@ mod tests {
             .position(Result::is_ok)
             .expect("one winner exists");
         let resolved = registry
-            .lookup::<Probe>("seat")
+            .lookup::<ActorRef<Probe>>("seat")
             .expect("same type")
             .expect("claimant live");
         assert_eq!(resolved.id(), pairs[winner_idx].0.id());
@@ -731,7 +814,7 @@ mod tests {
             for _ in 0..2 {
                 s.spawn(|| {
                     for _ in 0..ROUNDS {
-                        match registry.lookup::<Probe>("churn") {
+                        match registry.lookup::<ActorRef<Probe>>("churn") {
                             Ok(None) => {}
                             Ok(Some(seen)) => assert_eq!(
                                 seen.id(),
@@ -764,13 +847,13 @@ mod tests {
             let (actor_ref, _rx) = build::<Probe>(1);
             prop_assert!(registry.register(name.clone(), &actor_ref).is_ok());
             let resolved = registry
-                .lookup::<Probe>(&name)
+                .lookup::<ActorRef<Probe>>(&name)
                 .expect("same type")
                 .expect("live actor resolves");
             prop_assert_eq!(resolved.id(), ActorId::from_raw_for_test(1));
             prop_assert!(registry.unregister(&name));
             prop_assert!(
-                registry.lookup::<Probe>(&name).expect("no type conflict").is_none(),
+                registry.lookup::<ActorRef<Probe>>(&name).expect("no type conflict").is_none(),
                 "unregister frees the name for re-registration"
             );
         }
@@ -789,11 +872,11 @@ mod tests {
             prop_assert!(registry.register(name_a.clone(), &a).is_ok());
             prop_assert!(registry.register(name_b.clone(), &b).is_ok());
             let ra = registry
-                .lookup::<Probe>(&name_a)
+                .lookup::<ActorRef<Probe>>(&name_a)
                 .expect("same type")
                 .expect("a live");
             let rb = registry
-                .lookup::<Probe>(&name_b)
+                .lookup::<ActorRef<Probe>>(&name_b)
                 .expect("same type")
                 .expect("b live");
             prop_assert_eq!(ra.id(), ActorId::from_raw_for_test(1));

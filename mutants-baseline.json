@@ -279,6 +279,7 @@
     "crates/core/src/mailbox.rs::MailboxSender<A>::downgrade",
     "crates/core/src/mailbox.rs::MailboxSender<A>::send_message",
     "crates/core/src/registry.rs::<impl ErasedEntry for WeakActorRef<A>>::as_any",
+    "crates/core/src/registry.rs::<impl Resolvable for ActorRef<A>>::from_ref",
     "crates/core/src/reply.rs::ReplyReceiver<R, E>::poll_recv",
     "crates/core/src/reply.rs::ReplyReceiver<R, E>::recv",
     "crates/core/src/reply.rs::reply_channel",

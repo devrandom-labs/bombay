@@ -161,7 +161,7 @@ fn lookup_hit(c: &mut Criterion) {
         b.iter(|| {
             black_box(
                 registry
-                    .lookup::<core_side::Svc>("svc")
+                    .lookup::<ActorRef<core_side::Svc>>("svc")
                     .expect("typed")
                     .expect("live"),
             )
@@ -200,7 +200,7 @@ fn lookup_contended(c: &mut Criterion) {
                         for _ in 0..LOOKUPS_PER_READER {
                             black_box(
                                 registry
-                                    .lookup::<core_side::Svc>("svc")
+                                    .lookup::<ActorRef<core_side::Svc>>("svc")
                                     .expect("typed")
                                     .expect("live"),
                             );
@@ -264,7 +264,7 @@ fn lookup_contended_distinct(c: &mut Criterion) {
                         for _ in 0..LOOKUPS_PER_READER {
                             black_box(
                                 registry
-                                    .lookup::<core_side::Svc>(name)
+                                    .lookup::<ActorRef<core_side::Svc>>(name)
                                     .expect("typed")
                                     .expect("live"),
                             );
@@ -334,7 +334,7 @@ fn lookup_under_churn(c: &mut Criterion) {
                         for _ in 0..LOOKUPS_PER_READER {
                             black_box(
                                 registry
-                                    .lookup::<core_side::Svc>("svc")
+                                    .lookup::<ActorRef<core_side::Svc>>("svc")
                                     .expect("typed")
                                     .expect("live"),
                             );

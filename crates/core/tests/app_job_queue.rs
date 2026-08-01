@@ -102,7 +102,7 @@ async fn sequence_submit_stats_drain_reports_exact_counts() {
     let app = app::start(config(&registry, Some(worker_stopped_tx))).await;
     // clients resolve the dispatcher by NAME — the registry seam is load-bearing
     let dispatcher = registry
-        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -174,7 +174,7 @@ async fn worker_drains_under_custom_on_stop_grace() {
     };
     let app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -227,7 +227,7 @@ async fn lifecycle_crash_rebuild_requeue_no_job_lost() {
     let registry = Arc::new(Registry::new());
     let app = app::start(config_no_seam(&registry)).await;
     let dispatcher = registry
-        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -336,7 +336,7 @@ async fn boundary_queue_full_draining_and_timeout_classified() {
     cfg.queue_cap = 2;
     let app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
     let dispatcher_id = dispatcher.id();
@@ -413,7 +413,7 @@ async fn linear_concurrent_producers_no_loss_no_phantom() {
     cfg.queue_cap = 1024; // accept everything; loss-accounting is the subject
     let _app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -679,7 +679,7 @@ async fn intake_defers_submissions_during_maintenance() {
     let registry = Arc::new(Registry::new());
     let app = app::start(config_no_seam(&registry)).await;
     let dispatcher = registry
-        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
     let intake = caps::spawn::<Intake>((
@@ -923,7 +923,7 @@ async fn drain_window_auditor_observes_dispatcher_death() {
     let registry = Arc::new(Registry::new());
     let app = app::start(config_no_seam(&registry)).await;
     let dispatcher = registry
-        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
     let dispatcher_id = dispatcher.id();
@@ -993,7 +993,7 @@ async fn accepted_submissions_are_audited_on_the_caps_surface() {
     };
     let app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
