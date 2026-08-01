@@ -123,49 +123,56 @@ impl Parse for DeriveProvide {
                  stage 3 composition law)",
             ));
         }
-        // Stage-4 composition laws (ADR-0026, card #281), friendly halves.
-        let phased: Vec<&(Ident, Type)> = fields
-            .iter()
-            .filter(|(_, ty)| cap_type_arg(ty, "Phased").is_some())
-            .collect();
-        if let Some((_, second)) = phased.get(1) {
-            return Err(syn::Error::new_spanned(
-                second,
-                "at most one `Phased` field per cap set: an actor has one \
-                 phase machine (and the loop has one deadline arm)",
-            ));
-        }
-        if let Some((_, phased_ty)) = phased.first() {
-            if fields
-                .iter()
-                .any(|(_, ty)| cap_type_arg(ty, "Deadlined").is_some())
-            {
-                return Err(syn::Error::new_spanned(
-                    phased_ty,
-                    "`Phased` EMBEDS the deadline seat (its phase deadline \
-                     rides the ADR-0025 plane); a separate `Deadlined` field \
-                     would be a second deadline for the loop's one arm — \
-                     drop it",
-                ));
-            }
-            if fields
-                .iter()
-                .any(|(_, ty)| cap_type_arg(ty, "Stashing").is_some())
-            {
-                return Err(syn::Error::new_spanned(
-                    phased_ty,
-                    "`Phased` embeds its own bounded stash (the gate defers \
-                     into it, `Phased::stash` is the manual escape hatch); a \
-                     separate `Stashing` field would double-buffer deferral \
-                     — drop it",
-                ));
-            }
-        }
+        reject_phased_conflicts(&fields)?;
         Ok(Self {
             ident: derive.ident,
             fields,
         })
     }
+}
+
+/// Stage-4 composition laws (ADR-0026, card #281), friendly halves: at
+/// most one phase machine per set, and `Phased` embeds its own deadline
+/// seat and stash — sibling `Deadlined`/`Stashing` fields are rejected
+/// readably (E0119/overlap remains the law for hand-written sets).
+fn reject_phased_conflicts(fields: &[(Ident, Type)]) -> syn::Result<()> {
+    let phased: Vec<&(Ident, Type)> = fields
+        .iter()
+        .filter(|(_, ty)| cap_type_arg(ty, "Phased").is_some())
+        .collect();
+    if let Some((_, second)) = phased.get(1) {
+        return Err(syn::Error::new_spanned(
+            second,
+            "at most one `Phased` field per cap set: an actor has one \
+             phase machine (and the loop has one deadline arm)",
+        ));
+    }
+    let Some((_, phased_ty)) = phased.first() else {
+        return Ok(());
+    };
+    if fields
+        .iter()
+        .any(|(_, ty)| cap_type_arg(ty, "Deadlined").is_some())
+    {
+        return Err(syn::Error::new_spanned(
+            phased_ty,
+            "`Phased` EMBEDS the deadline seat (its phase deadline rides \
+             the ADR-0025 plane); a separate `Deadlined` field would be a \
+             second deadline for the loop's one arm — drop it",
+        ));
+    }
+    if fields
+        .iter()
+        .any(|(_, ty)| cap_type_arg(ty, "Stashing").is_some())
+    {
+        return Err(syn::Error::new_spanned(
+            phased_ty,
+            "`Phased` embeds its own bounded stash (the gate defers into \
+             it, `Phased::stash` is the manual escape hatch); a separate \
+             `Stashing` field would double-buffer deferral — drop it",
+        ));
+    }
+    Ok(())
 }
 
 impl ToTokens for DeriveProvide {
