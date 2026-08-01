@@ -49,3 +49,4 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | [0025](0025-framework-event-plane-deadlines.md) | Framework-event plane: loop-owned declarative deadlines | Accepted (surface seat amended by 0026) |
 | [0026](0026-core-distillation-one-trait-caps.md) | Core distillation: one `Actor` trait, capabilities as plugged types | Accepted |
 | [0027](0027-registry-lookup-keyed-on-handle-type.md) | Registry lookup keyed on the handle type (`Resolvable`), not the actor type | Accepted |
+| [0028](0028-phased-conditional-seats-one-deadline-policy.md) | Phased seats declared (`NoDefer`/`NoTimeout`); one `DeadlinePolicy<Cx>`; `Step<Never> ≅ Flow` | Accepted |
