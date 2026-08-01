@@ -357,7 +357,7 @@ fn emit_deadline(
             impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::DeadlineHook<__CapsActor>
                 for #ident
             where
-                #policy: ::bombay::caps::DeadlinePolicy<__CapsActor>,
+                #policy: ::bombay::caps::DeadlinePolicy<::bombay::caps::ByState<__CapsActor>>,
             {
                 fn next_deadline(&self, actor: &__CapsActor) -> ::core::option::Option<::bombay::caps::DeadlineInstant> {
                     ::bombay::caps::DeadlineHook::next_deadline(&self.#field, actor)
@@ -697,8 +697,11 @@ mod tests {
             "exactly one DeadlineHook impl: {out}"
         );
         assert!(
-            out.contains("where IdlePolicy : :: bombay :: caps :: DeadlinePolicy < __CapsActor >"),
-            "the impl is gated on the policy serving the actor: {out}"
+            out.contains(
+                "where IdlePolicy : :: bombay :: caps :: DeadlinePolicy < :: bombay :: caps :: \
+                 ByState < __CapsActor >>"
+            ),
+            "the impl is gated on the policy serving the actor's ByState context: {out}"
         );
         assert!(
             out.contains(
