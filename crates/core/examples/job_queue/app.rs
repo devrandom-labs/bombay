@@ -25,7 +25,7 @@ use bombay::{
     reply::ReplySender,
     restart::RestartConfig,
 };
-use core::{convert::Infallible, ops::ControlFlow};
+use core::{convert::Infallible, num::NonZeroUsize, ops::ControlFlow};
 use flume::Sender;
 
 // ---------------------------------------------------------------- domain ----
@@ -96,10 +96,19 @@ pub struct Done {
     pub job_id: u64,
 }
 
+#[allow(
+    dead_code,
+    reason = "Drain is exercised by the integration tests (card #281 walking skeleton)"
+)]
 #[derive(Debug, bombay_macros::Msg)]
 pub enum WorkerMsg {
     Run(Job),
-    WorkDone { job_id: u64 },
+    WorkDone {
+        job_id: u64,
+    },
+    /// Finish the in-flight job, refuse new ones, then stop (card #281:
+    /// the phased-worker walking skeleton).
+    Drain,
 }
 
 impl From<Job> for WorkerMsg {
@@ -120,25 +129,116 @@ pub struct WorkerArgs {
     pub slot: usize,
     pub dispatcher: Recipient<Done>,
     pub stopped_tx: Option<Sender<ActorId>>,
+    /// How long a draining worker waits for its in-flight job before
+    /// abandoning it — the Draining phase's deadline (card #281), an
+    /// `Args`-tunable magnitude (ADR-0024 D8).
+    pub drain_grace: Duration,
+    /// Optional refusal tape: a job refused while Draining is reported
+    /// here (loud, never a silent drop).
+    pub refused_tx: Option<Sender<u64>>,
+}
+
+/// The worker's operational phases (card #281 walking skeleton).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WorkerPhase {
+    /// Accepting and running jobs.
+    Serving,
+    /// Finishing the in-flight job; new jobs are refused loudly.
+    Draining,
+}
+
+/// The worker's phase machine as ONE declaration: every message is
+/// DELIVERED in every phase — a Draining worker must refuse a new job
+/// loudly (the asker learns), never defer or silently ignore it — and
+/// Draining carries the one deadline: the in-flight grace.
+pub struct WorkerPhases {
+    drain_grace: Duration,
+}
+
+impl caps::PhasePolicy for WorkerPhases {
+    type Actor = Worker;
+    type Phase = WorkerPhase;
+
+    fn build(args: &WorkerArgs) -> Self {
+        Self {
+            drain_grace: args.drain_grace,
+        }
+    }
+
+    fn initial(_: &WorkerArgs) -> WorkerPhase {
+        WorkerPhase::Serving
+    }
+
+    #[expect(
+        clippy::expect_used,
+        reason = "capacity 1 is always within the mailbox capacity bounds"
+    )]
+    fn stash_capacity(_: &WorkerArgs) -> Capacity {
+        // Nothing is ever deferred (the gate delivers everything); the
+        // mandatory bound is the smallest legal one.
+        Capacity::new(NonZeroUsize::MIN).expect("capacity 1 is valid")
+    }
+
+    fn gate(_: WorkerPhase, _: &WorkerMsg) -> caps::Disposition {
+        // Deliberately all-Deliver, written down: refusal is the
+        // handler's job (loud), and the in-flight ack must always land.
+        caps::Disposition::Deliver
+    }
+
+    fn phase_deadline(&self, phase: WorkerPhase) -> Option<Duration> {
+        match phase {
+            WorkerPhase::Serving => None,
+            WorkerPhase::Draining => Some(self.drain_grace),
+        }
+    }
+
+    /// The in-flight job outlived the drain grace: abandon it and stop —
+    /// the dispatcher's at-least-once bookkeeping re-queues it.
+    async fn on_phase_timeout(
+        _: &mut Worker,
+        _: WorkerPhase,
+        _: WeakActorRef<caps::Shell<Worker>>,
+        _: &mut caps::Stashing<WorkerMsg>,
+    ) -> Result<caps::Step<WorkerPhase>, WorkerError> {
+        Ok(caps::Step::Stop)
+    }
+}
+
+#[derive(bombay_macros::Provide)]
+pub struct WorkerCaps {
+    phased: caps::Phased<WorkerPhases>,
+}
+
+impl caps::CapSet<Worker> for WorkerCaps {
+    fn build(args: &WorkerArgs) -> Self {
+        Self {
+            phased: caps::Phased::build(args),
+        }
+    }
 }
 
 pub struct Worker {
     slot: usize,
     dispatcher: Recipient<Done>,
     stopped_tx: Option<Sender<ActorId>>,
+    refused_tx: Option<Sender<u64>>,
+    /// A job is in flight (its `WorkDone` self-pipe has not landed yet).
+    busy: bool,
 }
 
 impl caps::Actor for Worker {
     type Msg = WorkerMsg;
     type Args = WorkerArgs;
     type Error = WorkerError;
-    type Caps = ();
+    type Caps = WorkerCaps;
 
     async fn init(args: WorkerArgs, _: caps::Ctx<'_, Self>) -> Result<Self, WorkerError> {
         Ok(Self {
             slot: args.slot,
             dispatcher: args.dispatcher,
             stopped_tx: args.stopped_tx,
+            refused_tx: args.refused_tx,
+            busy: false,
         })
     }
 
@@ -160,14 +260,25 @@ impl caps::Actor for Worker {
     async fn handle(
         &mut self,
         msg: WorkerMsg,
-        cx: caps::Ctx<'_, Self>,
+        mut cx: caps::Ctx<'_, Self>,
     ) -> Result<Flow, WorkerError> {
+        let phase = cx.cap::<caps::Phased<WorkerPhases>>().phase();
         match msg {
+            // A draining worker refuses new work LOUDLY — the refusal is
+            // taped, never silently dropped; the in-flight job (if any)
+            // still completes below.
+            WorkerMsg::Run(job) if phase == WorkerPhase::Draining => {
+                if let Some(tx) = &self.refused_tx {
+                    let _ = tx.send(job.id);
+                }
+                Ok(Flow::Continue)
+            }
             WorkerMsg::Run(job) => match job.kind {
                 JobKind::Poison => panic!("poison job {id}", id = job.id),
                 JobKind::Fail => Err(WorkerError::JobFailed(job.id)),
                 JobKind::Ok(work) => {
                     let job_id = job.id;
+                    self.busy = true;
                     // never block the turn on the work itself
                     cx.self_ref().pipe_to_self(
                         async move { tokio::time::sleep(work).await },
@@ -181,15 +292,32 @@ impl caps::Actor for Worker {
                     Ok(Flow::Continue)
                 }
             },
-            WorkerMsg::WorkDone { job_id } => self
-                .dispatcher
-                .tell(Done {
-                    slot: self.slot,
-                    job_id,
+            WorkerMsg::WorkDone { job_id } => {
+                self.busy = false;
+                self.dispatcher
+                    .tell(Done {
+                        slot: self.slot,
+                        job_id,
+                    })
+                    .await
+                    .map_err(WorkerError::AckLost)?;
+                // The FlushDone-style self-pipe closes the drain: once the
+                // in-flight ack has landed, a draining worker stops.
+                Ok(if phase == WorkerPhase::Draining {
+                    Flow::Stop
+                } else {
+                    Flow::Continue
                 })
-                .await
-                .map(|()| Flow::Continue)
-                .map_err(WorkerError::AckLost),
+            }
+            WorkerMsg::Drain => {
+                if self.busy {
+                    cx.cap::<caps::Phased<WorkerPhases>>()
+                        .goto(WorkerPhase::Draining);
+                    Ok(Flow::Continue)
+                } else {
+                    Ok(Flow::Stop)
+                }
+            }
         }
     }
 }
@@ -316,6 +444,11 @@ impl caps::Actor for Dispatcher {
                             slot,
                             dispatcher: done_port.clone(),
                             stopped_tx: stopped_tx.clone(),
+                            // The app never drains workers individually
+                            // (the supervisor's teardown covers them); the
+                            // grace mirrors the stop grace.
+                            drain_grace: worker_grace,
+                            refused_tx: None,
                         },
                     );
                     if let Some(strong_disp) = disp.upgrade() {
