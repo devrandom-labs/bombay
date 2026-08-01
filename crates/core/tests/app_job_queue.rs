@@ -21,10 +21,10 @@ use app::{
 };
 use bombay::{
     ActorId,
-    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, Watch},
+    actor::{Flow, PreparedActor, RunResult, SpawnConfig},
     caps,
     error::{ActorStopReason, AskError},
-    mailbox::{Capacity, Mailboxed},
+    mailbox::Capacity,
     message::Msg,
     registry::Registry,
     restart::{RestartConfig, RestartPolicy},
@@ -101,7 +101,7 @@ async fn sequence_submit_stats_drain_reports_exact_counts() {
     let app = app::start(config(&registry, Some(worker_stopped_tx))).await;
     // clients resolve the dispatcher by NAME — the registry seam is load-bearing
     let dispatcher = registry
-        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -173,7 +173,7 @@ async fn worker_drains_under_custom_on_stop_grace() {
     };
     let app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -226,7 +226,7 @@ async fn lifecycle_crash_rebuild_requeue_no_job_lost() {
     let registry = Arc::new(Registry::new());
     let app = app::start(config_no_seam(&registry)).await;
     let dispatcher = registry
-        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -335,7 +335,7 @@ async fn boundary_queue_full_draining_and_timeout_classified() {
     cfg.queue_cap = 2;
     let app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
     let dispatcher_id = dispatcher.id();
@@ -412,7 +412,7 @@ async fn linear_concurrent_producers_no_loss_no_phantom() {
     cfg.queue_cap = 1024; // accept everything; loss-accounting is the subject
     let _app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -492,7 +492,7 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
     use std::sync::Mutex;
 
     use bombay::{
-        actor::{ActorRef, PreparedActor, RunResult, Spawn, SpawnConfig, WeakActorRef},
+        actor::{PreparedActor, SpawnConfig},
         error::ActorStopReason,
         mailbox::Capacity,
         test_support::set_supervisor_rng_seed,
@@ -505,7 +505,7 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
         workers: 0, // the test drives `supervise` itself
         ..config_no_seam(&registry)
     };
-    let (prepared, link_rx) = PreparedActor::<Dispatcher>::new_linked(SpawnConfig {
+    let (prepared, link_rx) = PreparedActor::<caps::Shell<Dispatcher>>::new_linked(SpawnConfig {
         capacity: Capacity::try_from(2usize).expect("cap"),
         ..Default::default()
     });
@@ -544,10 +544,11 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
     // unchanged by this card (#244).
     let (birth_tx, birth_rx) = flume::unbounded::<u32>();
     let (stopped_tx, stopped_rx) = flume::unbounded::<ActorId>();
-    let stash: Arc<Mutex<Option<ActorRef<app::Worker>>>> = Arc::new(Mutex::new(None));
+    let stash: Arc<Mutex<Option<caps::Handle<app::Worker>>>> = Arc::new(Mutex::new(None));
     let next = Arc::new(std::sync::atomic::AtomicU32::new(0));
     let child_id = {
-        let disp_weak: WeakActorRef<Dispatcher> = dispatcher_ref.downgrade();
+        let disp_weak: bombay::actor::WeakActorRef<caps::Shell<Dispatcher>> =
+            dispatcher_ref.downgrade();
         let stash = Arc::clone(&stash);
         let next = Arc::clone(&next);
         let restart = cfg.restart.clone();
@@ -557,7 +558,7 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
             let disp = disp_weak
                 .upgrade()
                 .expect("the dispatcher is alive whenever this factory runs");
-            let worker = app::Worker::spawn(app::WorkerArgs {
+            let worker = caps::spawn::<app::Worker>(app::WorkerArgs {
                 slot: 9,
                 dispatcher: disp.recipient::<app::Done>(),
                 stopped_tx: Some(stopped_tx.clone()),
@@ -675,7 +676,7 @@ async fn intake_defers_submissions_during_maintenance() {
     let registry = Arc::new(Registry::new());
     let app = app::start(config_no_seam(&registry)).await;
     let dispatcher = registry
-        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
     let intake = caps::spawn::<Intake>((
@@ -762,7 +763,7 @@ async fn intake_defers_submissions_during_maintenance() {
 /// a watch on the dispatcher and parks; its recording hook captures the
 /// dispatcher's death notice after release.
 struct Auditor {
-    dispatcher: Option<ActorRef<Dispatcher>>,
+    dispatcher: Option<caps::Handle<Dispatcher>>,
     watch_result: Arc<Mutex<Option<Result<(), ()>>>>,
     notices: Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
     entered: Option<oneshot::Sender<()>>,
@@ -771,21 +772,50 @@ struct Auditor {
 #[derive(Debug)]
 struct AuditGo;
 impl Msg for AuditGo {}
-impl Mailboxed for Auditor {
-    type Msg = AuditGo;
+/// The auditor's recording reaction, a named `WatchPolicy` (stage 3).
+struct AuditPolicy;
+impl caps::WatchPolicy<Auditor> for AuditPolicy {
+    async fn on_link_died(
+        actor: &mut Auditor,
+        id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> Result<core::ops::ControlFlow<ActorStopReason>, core::convert::Infallible> {
+        actor
+            .notices
+            .lock()
+            .expect("lock")
+            .push((id, reason, linked));
+        Ok(core::ops::ControlFlow::Continue(()))
+    }
 }
-impl Actor for Auditor {
+
+#[derive(bombay_macros::Provide)]
+struct AuditorCaps {
+    watching: caps::Watching<AuditPolicy>,
+}
+impl caps::CapSet<Auditor> for AuditorCaps {
+    fn build(_: &<Auditor as caps::Actor>::Args) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+        }
+    }
+}
+
+impl caps::Actor for Auditor {
+    type Msg = AuditGo;
     type Args = (
-        ActorRef<Dispatcher>,
+        caps::Handle<Dispatcher>,
         Arc<Mutex<Option<Result<(), ()>>>>,
         Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
         oneshot::Sender<()>,
         oneshot::Receiver<()>,
     );
     type Error = core::convert::Infallible;
-    async fn on_start(
+    type Caps = AuditorCaps;
+    async fn init(
         (dispatcher, watch_result, notices, entered, release): Self::Args,
-        _: ActorRef<Self>,
+        _: caps::Ctx<'_, Self>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             dispatcher: Some(dispatcher),
@@ -795,9 +825,11 @@ impl Actor for Auditor {
             release: Some(release),
         })
     }
-    async fn handle(&mut self, _: AuditGo, actor_ref: ActorRef<Self>) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, _: AuditGo, cx: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         let dispatcher = self.dispatcher.take().expect("one AuditGo enqueued");
-        let outcome = bounded(actor_ref.watch(&dispatcher)).await.map_err(|_| ());
+        let outcome = bounded(cx.self_ref().watch(&dispatcher))
+            .await
+            .map_err(|_| ());
         *self.watch_result.lock().expect("lock") = Some(outcome);
         drop(dispatcher); // the auditor must not pin the dispatcher
         self.entered
@@ -813,40 +845,25 @@ impl Actor for Auditor {
         Ok(Flow::Continue)
     }
 }
-impl Watch for Auditor {
-    async fn on_link_died(
-        &mut self,
-        id: ActorId,
-        reason: ActorStopReason,
-        linked: bool,
-    ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
-        self.notices
-            .lock()
-            .expect("lock")
-            .push((id, reason, linked));
-        Ok(core::ops::ControlFlow::Continue(()))
-    }
-}
-
 /// Everything the auditor choreography needs, grouped so the test stays
 /// under the line cap.
 struct AuditorRig {
     watch_result: Arc<Mutex<Option<Result<(), ()>>>>,
     notices: Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
-    auditor_join: tokio::task::JoinHandle<RunResult<Auditor>>,
+    auditor_join: tokio::task::JoinHandle<RunResult<caps::Shell<Auditor>>>,
     entered: oneshot::Receiver<()>,
     release: oneshot::Sender<()>,
 }
 
 /// Spawns the auditor in the DRAIN WINDOW: its only message is enqueued
 /// before the run and no external ref is held.
-async fn start_auditor(dispatcher: &ActorRef<Dispatcher>) -> AuditorRig {
+async fn start_auditor(dispatcher: &caps::Handle<Dispatcher>) -> AuditorRig {
     let watch_result = Arc::new(Mutex::new(None));
     let notices: Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>> =
         Arc::new(Mutex::new(Vec::new()));
     let (entered_tx, entered) = oneshot::channel();
     let (release, release_rx) = oneshot::channel();
-    let (prepared, link_rx) = PreparedActor::<Auditor>::new_linked(SpawnConfig {
+    let (prepared, link_rx) = PreparedActor::<caps::Shell<Auditor>>::new_linked(SpawnConfig {
         capacity: Capacity::try_from(2).expect("valid capacity"),
         ..Default::default()
     });
@@ -903,7 +920,7 @@ async fn drain_window_auditor_observes_dispatcher_death() {
     let registry = Arc::new(Registry::new());
     let app = app::start(config_no_seam(&registry)).await;
     let dispatcher = registry
-        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
     let dispatcher_id = dispatcher.id();
@@ -973,7 +990,7 @@ async fn accepted_submissions_are_audited_on_the_caps_surface() {
     };
     let app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<Dispatcher>(DISPATCHER_NAME)
+        .lookup::<caps::Shell<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 

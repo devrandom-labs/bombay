@@ -17,7 +17,7 @@ use tokio::time::Instant;
 
 use crate::{
     actor::{
-        Actor, Spawn, Supervisor, Watch,
+        Actor, LinkReact, SupervisedReact,
         supervision::{
             ArmedReg, Child, ChildHandle, RebuildFactory, Spawned, SuperviseReg, SupervisionOp,
             watch_installer,
@@ -196,15 +196,17 @@ impl<A: Actor> ActorRef<A> {
     }
 }
 
-/// The death-watch verbs (card #195). Only a [`Watch`] actor can watch, and only
-/// if it was spawned via `spawn_linked` (so it owns a link channel to receive
-/// death notices on); a plain-spawned `Watch` actor returns [`ActorNotLinked`].
-impl<A: Watch> ActorRef<A> {
-    /// Watches `target`: this actor's [`on_link_died`](Watch::on_link_died) fires
-    /// when `target` stops. One-directional and notify-only (`linked = false`), so
-    /// the default hook merely observes — a `target` death never propagates here.
-    /// `target` may be any [`Actor`] (being watched is universal); it need not
-    /// itself be a [`Watch`] actor.
+/// The death-watch verbs (card #195). Only a link-reactive actor — one whose
+/// cap set plugs [`Watching`](crate::caps::Watching), giving it the link
+/// channel death notices arrive on — can watch (ADR-0026 stage 3).
+impl<A: LinkReact> ActorRef<A> {
+    /// Watches `target`: this actor's
+    /// [`on_link_died`](LinkReact::on_link_died) reaction (its declared
+    /// [`WatchPolicy`](crate::caps::WatchPolicy)) fires when `target` stops.
+    /// One-directional and notify-only (`linked = false`), so the OTP policy
+    /// merely observes — a `target` death never propagates here. `target`
+    /// may be any [`Actor`] (being watched is universal); it need not itself
+    /// be link-reactive.
     ///
     /// The registration rides `target`'s UNBOUNDED control lane (ADR-0021), so
     /// this never waits on `target`'s user backlog — it resolves once the
@@ -212,9 +214,10 @@ impl<A: Watch> ActorRef<A> {
     ///
     /// # Errors
     ///
-    /// [`ActorNotLinked`] if this actor was spawned via the plain `spawn` path and
-    /// so has no link channel to receive notices on. Spawn watchers with
-    /// `spawn_linked`.
+    /// [`ActorNotLinked`] if this actor runs without a link channel (an
+    /// expert-floor [`PreparedActor::new`](super::PreparedActor::new) spawn;
+    /// the one `caps::spawn` always builds the channel for a `Watching`
+    /// cap set).
     #[expect(
         clippy::unused_async,
         reason = "the verb stays async so #225 does not break its signature; the body is \
@@ -225,11 +228,11 @@ impl<A: Watch> ActorRef<A> {
     }
 
     /// Links with `peer`: bidirectional. Each side's
-    /// [`on_link_died`](Watch::on_link_died) fires on the other's death; the
-    /// default hook propagates an abnormal death (`Break`). Requires both actors to
-    /// be [`Watch`] (both must react). If `peer` is already dead, its side yields an
-    /// immediate synthetic notice on this actor's channel (Erlang's link-to-dead
-    /// rule).
+    /// [`on_link_died`](LinkReact::on_link_died) reaction fires on the
+    /// other's death; the OTP policy propagates an abnormal death (`Break`).
+    /// Requires both actors to be link-reactive (both must react). If `peer`
+    /// is already dead, its side yields an immediate synthetic notice on
+    /// this actor's channel (Erlang's link-to-dead rule).
     ///
     /// Both link channels are checked present **before** either registration, so a
     /// missing channel is an atomic `Err` with no half-installed one-directional
@@ -244,14 +247,14 @@ impl<A: Watch> ActorRef<A> {
     ///
     /// # Errors
     ///
-    /// [`ActorNotLinked`] if **either** actor lacks a link channel (was not spawned
-    /// via `spawn_linked`) — checked up front, so neither side is mutated on `Err`.
+    /// [`ActorNotLinked`] if **either** actor lacks a link channel — checked
+    /// up front, so neither side is mutated on `Err`.
     #[expect(
         clippy::unused_async,
         reason = "the verb stays async so #225 does not break its signature; the body is \
                   synchronous since the control lane is unbounded"
     )]
-    pub async fn link<B: Watch>(&self, peer: &ActorRef<B>) -> Result<(), ActorNotLinked> {
+    pub async fn link<B: LinkReact>(&self, peer: &ActorRef<B>) -> Result<(), ActorNotLinked> {
         // Both sides must be linked-spawned before either edge is installed, so a
         // plain-spawned peer yields a clean `Err` and never a half-link.
         if self.link_tx().is_none() || peer.link_tx().is_none() {
@@ -326,11 +329,11 @@ impl<A: Watch> ActorRef<A> {
     }
 }
 
-/// The restart-supervision verb (card #196). Only a [`Supervisor`] can supervise,
-/// and — like [`watch`](Self::watch)/[`link`](Self::link) — only because it was
-/// spawned via `spawn_supervised` and so owns the link channel a child's death
-/// arrives on.
-impl<S: Supervisor> ActorRef<S> {
+/// The restart-supervision verbs (card #196). Only a supervising actor —
+/// one whose cap set plugs [`Supervising`](crate::caps::Supervising), which
+/// requires [`Watching`](crate::caps::Watching) and so the link channel a
+/// child's death arrives on — can supervise (ADR-0026 stage 3).
+impl<S: SupervisedReact> ActorRef<S> {
     /// Registers a supervised child under an explicit restart policy. The first
     /// incarnation is spawned HERE, in the caller's task — which is what lets this
     /// be a `tell` returning the child's [`ActorId`]. The closure re-runs per
@@ -502,25 +505,6 @@ impl<S: Supervisor> ActorRef<S> {
             Ok(()) => Ok(()),
             Err(_) => Err(TellError::ActorNotAlive(())),
         }
-    }
-
-    /// [`supervise`](Self::supervise) shorthand for a child whose `Args` are
-    /// `Clone`: the rebuild closure re-spawns `A` from a fresh clone of `args`
-    /// each incarnation.
-    ///
-    /// # Errors
-    ///
-    /// [`TellError::ActorNotAlive`] if the supervisor's mailbox is closed, exactly
-    /// as [`supervise`](Self::supervise).
-    pub async fn supervise_cloned<A: Actor>(
-        &self,
-        config: impl Into<RestartConfig>,
-        args: A::Args,
-    ) -> Result<ActorId, TellError<()>>
-    where
-        A::Args: Clone,
-    {
-        self.supervise(config, move || A::spawn(args.clone())).await
     }
 }
 

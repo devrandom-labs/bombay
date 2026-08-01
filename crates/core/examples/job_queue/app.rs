@@ -17,13 +17,10 @@ use std::{
 
 use bombay::{
     ActorId,
-    actor::{
-        Actor, ActorRef, Flow, Recipient, Spawn as _, SpawnConfig, SpawnLinked as _,
-        SpawnSupervised as _, Supervisor, Watch, WeakActorRef,
-    },
+    actor::{Flow, Recipient, SpawnConfig, WeakActorRef},
     caps,
     error::{ActorStopReason, NameTaken, PanicError, TellError},
-    mailbox::{Capacity, Mailboxed},
+    mailbox::Capacity,
     registry::Registry,
     reply::ReplySender,
     restart::RestartConfig,
@@ -131,15 +128,13 @@ pub struct Worker {
     stopped_tx: Option<Sender<ActorId>>,
 }
 
-impl Mailboxed for Worker {
+impl caps::Actor for Worker {
     type Msg = WorkerMsg;
-}
-
-impl Actor for Worker {
     type Args = WorkerArgs;
     type Error = WorkerError;
+    type Caps = ();
 
-    async fn on_start(args: WorkerArgs, _: ActorRef<Self>) -> Result<Self, WorkerError> {
+    async fn init(args: WorkerArgs, _: caps::Ctx<'_, Self>) -> Result<Self, WorkerError> {
         Ok(Self {
             slot: args.slot,
             dispatcher: args.dispatcher,
@@ -149,7 +144,7 @@ impl Actor for Worker {
 
     async fn on_stop(
         &mut self,
-        actor_ref: WeakActorRef<Self>,
+        actor_ref: WeakActorRef<caps::Shell<Self>>,
         _: ActorStopReason,
     ) -> Result<(), WorkerError> {
         if let Some(tx) = &self.stopped_tx {
@@ -165,7 +160,7 @@ impl Actor for Worker {
     async fn handle(
         &mut self,
         msg: WorkerMsg,
-        actor_ref: ActorRef<Self>,
+        cx: caps::Ctx<'_, Self>,
     ) -> Result<Flow, WorkerError> {
         match msg {
             WorkerMsg::Run(job) => match job.kind {
@@ -174,7 +169,7 @@ impl Actor for Worker {
                 JobKind::Ok(work) => {
                     let job_id = job.id;
                     // never block the turn on the work itself
-                    actor_ref.pipe_to_self(
+                    cx.self_ref().pipe_to_self(
                         async move { tokio::time::sleep(work).await },
                         move |outcome: Result<(), PanicError>| {
                             // simulated work cannot panic; a real app would
@@ -273,28 +268,46 @@ pub struct Dispatcher {
     audit: Option<caps::Handle<AuditLog>>,
 }
 
-impl Mailboxed for Dispatcher {
-    type Msg = DispatcherMsg;
+/// The dispatcher's capability set (stage 3, card #280): it watches (the
+/// named OTP policy) and supervises its worker fleet under `OneForOne` —
+/// authority declared as plugged caps, not marker impls. The derive emits
+/// the access seams, the replay hook, and the supervised loop selection.
+#[derive(bombay_macros::Provide)]
+pub struct DispatcherCaps {
+    watching: caps::Watching<caps::OtpPropagation>,
+    supervising: caps::Supervising<caps::OneForOne>,
 }
 
-impl Actor for Dispatcher {
+impl caps::CapSet<Dispatcher> for DispatcherCaps {
+    fn build(_: &DispatcherConfig) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+            supervising: caps::Supervising::new(),
+        }
+    }
+}
+
+impl caps::Actor for Dispatcher {
+    type Msg = DispatcherMsg;
     type Args = DispatcherConfig;
     type Error = AppError;
+    type Caps = DispatcherCaps;
 
-    async fn on_start(cfg: DispatcherConfig, actor_ref: ActorRef<Self>) -> Result<Self, AppError> {
-        cfg.registry.register(DISPATCHER_NAME, &actor_ref)?;
+    async fn init(cfg: DispatcherConfig, cx: caps::Ctx<'_, Self>) -> Result<Self, AppError> {
+        let self_ref = cx.self_ref();
+        cfg.registry.register(DISPATCHER_NAME, self_ref)?;
         let worker_stopped_tx = cfg.worker_stopped_tx.clone();
         let worker_grace = cfg.worker_grace;
         for slot in 0..cfg.workers {
             // WEAK capture is mandatory: the factory lives in this actor's own
             // child table — a strong ref would be a self-cycle and the
             // dispatcher could never ref-count-stop.
-            let disp: WeakActorRef<Self> = actor_ref.downgrade();
-            let done_port: Recipient<Done> = actor_ref.recipient::<Done>();
+            let disp: WeakActorRef<caps::Shell<Self>> = self_ref.downgrade();
+            let done_port: Recipient<Done> = self_ref.recipient::<Done>();
             let stopped_tx = worker_stopped_tx.clone();
-            actor_ref
+            self_ref
                 .supervise(cfg.restart, move || {
-                    let worker = Worker::spawn_with_config(
+                    let worker = caps::spawn_with::<Worker>(
                         SpawnConfig {
                             on_stop_grace: worker_grace,
                             ..Default::default()
@@ -341,7 +354,7 @@ impl Actor for Dispatcher {
     async fn handle(
         &mut self,
         msg: DispatcherMsg,
-        actor_ref: ActorRef<Self>,
+        cx: caps::Ctx<'_, Self>,
     ) -> Result<Flow, AppError> {
         let flow = match msg {
             DispatcherMsg::Submit { job, reply } => {
@@ -392,7 +405,7 @@ impl Actor for Dispatcher {
                 let rebuilt = self.roster.insert(slot, (id, worker)).is_some();
                 if rebuilt {
                     bump(&mut self.stats.rebuilds);
-                    self.requeue_outstanding(slot, &actor_ref);
+                    self.requeue_outstanding(slot, cx.self_ref());
                 }
                 self.stats.worker_ids = self
                     .roster
@@ -415,15 +428,16 @@ impl Actor for Dispatcher {
         Ok(flow)
     }
 
-    async fn on_stop(&mut self, _: WeakActorRef<Self>, _: ActorStopReason) -> Result<(), AppError> {
+    async fn on_stop(
+        &mut self,
+        _: WeakActorRef<caps::Shell<Self>>,
+        _: ActorStopReason,
+    ) -> Result<(), AppError> {
         // reason-independent resource release only (post-panic safe)
         self.registry.unregister(DISPATCHER_NAME);
         Ok(())
     }
 }
-
-impl Watch for Dispatcher {}
-impl Supervisor for Dispatcher {}
 
 impl Dispatcher {
     /// Hand pending jobs to idle slots. `try_tell` keeps this handler
@@ -462,7 +476,7 @@ impl Dispatcher {
         clippy::expect_used,
         reason = "u32 retry counter overflow is a programmer bug, not a data limit"
     )]
-    fn requeue_outstanding(&mut self, slot: usize, actor_ref: &ActorRef<Self>) {
+    fn requeue_outstanding(&mut self, slot: usize, actor_ref: &caps::Handle<Self>) {
         let Some(job) = self.outstanding.remove(&slot) else {
             return;
         };
@@ -515,7 +529,7 @@ impl Dispatcher {
 /// `Submit`s during maintenance and forwards them on `Resume` — the
 /// walking-skeleton demonstration of the bounded stash as a capability.
 pub struct Intake {
-    dispatcher: ActorRef<Dispatcher>,
+    dispatcher: caps::Handle<Dispatcher>,
     maintenance: bool,
 }
 
@@ -563,7 +577,7 @@ impl caps::CapSet<Intake> for IntakeCaps {
 
 impl caps::Actor for Intake {
     type Msg = IntakeMsg;
-    type Args = (ActorRef<Dispatcher>, Capacity);
+    type Args = (caps::Handle<Dispatcher>, Capacity);
     type Error = Infallible;
     type Caps = IntakeCaps;
 
@@ -626,34 +640,54 @@ pub struct Overseer {
     seen: Option<(ActorId, bool)>,
 }
 
-impl Mailboxed for Overseer {
-    type Msg = OverseerMsg;
-}
+/// The overseer's death reaction, a NAMED policy (stage 3): record who died
+/// and whether it was a normal stop; never propagate.
+pub struct RecordDeath;
 
-impl Actor for Overseer {
-    type Args = ();
-    type Error = core::convert::Infallible;
-
-    async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
-        Ok(Self { seen: None })
-    }
-
-    async fn handle(&mut self, msg: OverseerMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
-        let OverseerMsg::Observed { reply } = msg;
-        let _ = reply.send(self.seen);
-        Ok(Flow::Continue)
-    }
-}
-
-impl Watch for Overseer {
+impl caps::WatchPolicy<Overseer> for RecordDeath {
     async fn on_link_died(
-        &mut self,
+        actor: &mut Overseer,
         id: ActorId,
         reason: ActorStopReason,
         _linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Self::Error> {
-        self.seen = Some((id, reason.is_normal()));
+    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+        actor.seen = Some((id, reason.is_normal()));
         Ok(ControlFlow::Continue(()))
+    }
+}
+
+/// The overseer's capability set: watching with the recording policy.
+#[derive(bombay_macros::Provide)]
+pub struct OverseerCaps {
+    watching: caps::Watching<RecordDeath>,
+}
+
+impl caps::CapSet<Overseer> for OverseerCaps {
+    fn build((): &()) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+        }
+    }
+}
+
+impl caps::Actor for Overseer {
+    type Msg = OverseerMsg;
+    type Args = ();
+    type Error = Infallible;
+    type Caps = OverseerCaps;
+
+    async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+        Ok(Self { seen: None })
+    }
+
+    async fn handle(
+        &mut self,
+        msg: OverseerMsg,
+        _: caps::Ctx<'_, Self>,
+    ) -> Result<Flow, Self::Error> {
+        let OverseerMsg::Observed { reply } = msg;
+        let _ = reply.send(self.seen);
+        Ok(Flow::Continue)
     }
 }
 
@@ -662,29 +696,30 @@ impl Watch for Overseer {
 pub struct App {
     /// Bootstrap handle kept alive for the demo; tests resolve via the registry.
     #[allow(dead_code, reason = "public bootstrap handle used by the demo binary")]
-    pub dispatcher: ActorRef<Dispatcher>,
-    pub overseer: ActorRef<Overseer>,
+    pub dispatcher: caps::Handle<Dispatcher>,
+    pub overseer: caps::Handle<Overseer>,
 }
 
-/// Wires the whole spine: linked overseer, supervised dispatcher (which
-/// registers itself and supervises its workers in `on_start`), watch edge.
+/// Wires the whole spine through the ONE spawn (stage 3): the overseer's
+/// `Watching` cap selects the linked loop, the dispatcher's `Supervising`
+/// cap the supervised loop — no per-shape spawn verbs.
 #[expect(
     clippy::expect_used,
-    reason = "spawn_linked structurally guarantees the link channel; on_start must succeed"
+    reason = "the Watching cap structurally guarantees the link channel; init must succeed"
 )]
 pub async fn start(cfg: DispatcherConfig) -> App {
-    let overseer = Overseer::spawn_linked(());
-    let dispatcher = Dispatcher::spawn_supervised(cfg);
+    let overseer = caps::spawn::<Overseer>(());
+    let dispatcher = caps::spawn::<Dispatcher>(cfg);
     overseer
         .watch(&dispatcher)
         .await
-        .expect("overseer was spawned linked");
-    // Ensure `on_start` (registry registration + worker supervision) has
+        .expect("the overseer's Watching cap provides its link channel");
+    // Ensure `init` (registry registration + worker supervision) has
     // completed before returning, so callers can resolve the dispatcher by name.
     let _ = dispatcher
         .ask(|reply| DispatcherMsg::Stats { reply })
         .await
-        .expect("dispatcher on_start completed");
+        .expect("dispatcher init completed");
     App {
         dispatcher,
         overseer,
@@ -712,10 +747,6 @@ pub enum AuditMsg {
 /// caps actor composes with the existing app unchanged.
 pub struct AuditLog {
     entries: u64,
-}
-
-impl Mailboxed for AuditLog {
-    type Msg = AuditMsg;
 }
 
 impl caps::Actor for AuditLog {

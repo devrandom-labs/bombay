@@ -49,7 +49,7 @@
 //! (5 RMWs → 2 under ADR-0010), which is where the uniform −13…−17% comes
 //! from.
 
-use bombay::actor::{Actor, ActorRef, Flow, Spawn};
+use bombay::actor::{Actor, ActorRef, Flow};
 use bombay::error::Infallible;
 use bombay::mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, MailboxSender, Mailboxed};
 use bombay::message::Msg;
@@ -166,8 +166,11 @@ fn watcher_fanout_roundtrip(c: &mut Criterion) {
         // N actors is setup, not the fan-out we measure. Each watcher holds a clone
         // of the ack sender; the producer keeps only the receiver.
         let (ack_tx, mut ack_rx) = mpsc::unbounded_channel::<()>();
-        let fleet: Vec<ActorRef<Watcher>> =
-            rt.block_on(async { (0..n).map(|_| Watcher::spawn(ack_tx.clone())).collect() });
+        let fleet: Vec<ActorRef<Watcher>> = rt.block_on(async {
+            (0..n)
+                .map(|_| spawn_plain::<Watcher>(ack_tx.clone()))
+                .collect()
+        });
         drop(ack_tx);
 
         group.bench_with_input(BenchmarkId::from_parameter(n), &n, |b, &n| {
@@ -190,3 +193,18 @@ fn watcher_fanout_roundtrip(c: &mut Criterion) {
 
 criterion_group!(benches, watcher_fanout_dispatch, watcher_fanout_roundtrip);
 criterion_main!(benches);
+
+/// The removed `Spawn` verb, bench-local over the public floor.
+fn spawn_plain<A: bombay::actor::Actor>(args: A::Args) -> bombay::actor::ActorRef<A> {
+    spawn_plain_cfg::<A>(bombay::actor::SpawnConfig::default(), args)
+}
+
+fn spawn_plain_cfg<A: bombay::actor::Actor>(
+    config: bombay::actor::SpawnConfig,
+    args: A::Args,
+) -> bombay::actor::ActorRef<A> {
+    let prepared = bombay::actor::PreparedActor::<A>::new(config);
+    let actor_ref = prepared.actor_ref().clone();
+    let _join = prepared.spawn(args);
+    actor_ref
+}

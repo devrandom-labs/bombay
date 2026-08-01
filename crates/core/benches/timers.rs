@@ -12,7 +12,7 @@ use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_mai
 use tokio_util::time::DelayQueue;
 
 use bombay::{
-    actor::{Actor, ActorRef, Flow, Spawn as _},
+    actor::{Actor, ActorRef, Flow},
     mailbox::Mailboxed,
     message::Msg,
 };
@@ -53,7 +53,7 @@ fn timer_bench(c: &mut Criterion) {
 
     group.bench_function("arm_send_after_10k", |b| {
         b.to_async(&rt).iter_with_setup(
-            || Bench::spawn(()),
+            || spawn_plain::<Bench>(()),
             |actor_ref| async move {
                 let mut handles = Vec::with_capacity(10_000);
                 for i in 0..10_000 {
@@ -84,3 +84,18 @@ fn timer_bench(c: &mut Criterion) {
 
 criterion_group!(benches, timer_bench);
 criterion_main!(benches);
+
+/// The removed `Spawn` verb, bench-local over the public floor.
+fn spawn_plain<A: bombay::actor::Actor>(args: A::Args) -> bombay::actor::ActorRef<A> {
+    spawn_plain_cfg::<A>(bombay::actor::SpawnConfig::default(), args)
+}
+
+fn spawn_plain_cfg<A: bombay::actor::Actor>(
+    config: bombay::actor::SpawnConfig,
+    args: A::Args,
+) -> bombay::actor::ActorRef<A> {
+    let prepared = bombay::actor::PreparedActor::<A>::new(config);
+    let actor_ref = prepared.actor_ref().clone();
+    let _join = prepared.spawn(args);
+    actor_ref
+}

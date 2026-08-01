@@ -430,7 +430,7 @@ mod tests {
 
     use super::Ask;
     use crate::{
-        actor::{Actor, ActorRef, Flow, ReplyRecipient, Spawn},
+        actor::{Actor, ActorRef, Flow, ReplyRecipient, test_verbs::TestSpawn as Spawn},
         error::{AskError, TellError},
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
         message::Msg,

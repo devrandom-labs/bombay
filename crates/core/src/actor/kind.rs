@@ -16,7 +16,7 @@ use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
 use crate::{
     actor::{
-        Actor, ActorRef, Flow, Supervisor, Watch, WeakActorRef,
+        Actor, ActorRef, Flow, LinkReact, SupervisedReact, WeakActorRef,
         supervision::{
             ArmedReg, ChildHandle, Children, CycleState, PendingAbort, Spawned, SuperviseReg,
             SupervisionOp, WatchInstaller, WatchOutcome,
@@ -107,7 +107,7 @@ impl SupervisorRef {
     /// path), so a propagating `link` buys nothing while the child is supervised.
     /// It would only bite AFTER [`unsupervise`](crate::actor::ActorRef::unsupervise):
     /// the entry is gone, the death falls through to
-    /// [`on_link_died`](crate::actor::Watch::on_link_died), and a propagating edge
+    /// [`on_link_died`](crate::actor::LinkReact::on_link_died), and a propagating edge
     /// (`linked = true`) would make the default hook stop the supervisor on the
     /// detached child's abnormal death — a death the supervisor can never un-watch
     /// (its [`ChildHandle`](crate::actor::supervision::ChildHandle) is sender-less).
@@ -278,9 +278,9 @@ async fn handle_mailbox_step<A: Actor>(
     }
 }
 
-/// The `Watch`-actor run-loop (#195): the plain message loop PLUS a second,
+/// The linked run-loop (#195): the plain message loop PLUS a second,
 /// `biased`-first select arm draining the actor's UNBOUNDED link channel and
-/// dispatching [`Watch::on_link_died`]. A `Break` from the hook (default: a linked
+/// dispatching [`LinkReact::on_link_died`]. A `Break` from the hook (default: a linked
 /// abnormal death) stops the actor with the propagated reason; an `Err`/panic from
 /// the hook is a controlled crash tagged [`PanicReason::OnLinkDied`].
 ///
@@ -296,7 +296,7 @@ async fn handle_mailbox_step<A: Actor>(
 /// (a public alias) whose senders have all dropped — a shape only an in-module
 /// test can construct. Disabling loses nothing there: no further death can ever
 /// arrive on a closed channel.
-pub(super) async fn run_linked_message_loop<A: Watch>(
+pub(super) async fn run_linked_message_loop<A: LinkReact>(
     state: &mut A,
     self_ref: &WeakActorRef<A>,
     handles: &LoopHandles,
@@ -334,10 +334,10 @@ pub(super) async fn run_linked_message_loop<A: Watch>(
     }
 }
 
-/// Runs [`Watch::on_link_died`] under `catch_unwind` and maps the outcome: the
+/// Runs [`LinkReact::on_link_died`] under `catch_unwind` and maps the outcome: the
 /// hook's own `ControlFlow` on success, a terminal `Panicked(OnLinkDied)` on either
 /// a returned `Err` (controlled crash) or a caught unwind.
-async fn handle_link_died<A: Watch>(
+async fn handle_link_died<A: LinkReact>(
     state: &mut A,
     notice: LinkDied,
 ) -> ControlFlow<ActorStopReason> {
@@ -366,12 +366,12 @@ async fn handle_link_died<A: Watch>(
     }
 }
 
-/// The `Supervisor` run-loop (#196): the linked loop PLUS a restart-backoff arm.
+/// The supervised run-loop (#196): the linked loop PLUS a restart-backoff arm.
 /// Three `biased` arms, in priority order:
 ///
 /// 1. **the link channel** — a death notice. A supervised child's drives the
 ///    restart policy ([`handle_child_death`]); any other peer's drives the
-///    user's [`Watch::on_link_died`] hook (the #195 path, unchanged). Unlike the
+///    user's [`LinkReact::on_link_died`] hook (the #195 path, unchanged). Unlike the
 ///    linked loop, this arm needs no `link_open` disable flag: the loop holds a
 ///    clone of the supervisor's own link sender (to install child watch edges),
 ///    so the channel never reaches all-senders-gone and `recv_async` never spins
@@ -391,7 +391,7 @@ async fn handle_link_died<A: Watch>(
 /// Because a *waiting* child's deadline leaves arm 2 `Pending`, the supervisor
 /// keeps serving its mailbox throughout a child's backoff — the whole reason the
 /// delay is a select arm rather than an inline `sleep`.
-pub(super) async fn run_supervised_message_loop<A: Supervisor>(
+pub(super) async fn run_supervised_message_loop<A: SupervisedReact>(
     state: &mut A,
     self_ref: &WeakActorRef<A>,
     handles: &LoopHandles,
@@ -415,7 +415,7 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
         id: sup_id,
         link_tx: sup_link_tx,
     };
-    let strategy = A::supervision_strategy();
+    let strategy = A::strategy();
     loop {
         tokio::select! {
             biased;
@@ -510,7 +510,7 @@ pub(super) async fn run_supervised_message_loop<A: Supervisor>(
               (which folds retries/pending_aborts/cycle into one borrow); even so \
               the death path is 6 args"
 )]
-async fn dispatch_death<A: Supervisor>(
+async fn dispatch_death<A: SupervisedReact>(
     state: &mut A,
     children: &mut Children,
     ctx: &mut SetCycleCtx<'_>,
@@ -669,7 +669,7 @@ impl<'a> SetCycleCtx<'a> {
 /// child — the single table lookup doubles as the membership test.
 ///
 /// `None`: `notice.id` is not a supervised child (a peer this supervisor merely
-/// watches), so the caller routes it to the [`Watch::on_link_died`] hook (the
+/// watches), so the caller routes it to the [`LinkReact::on_link_died`] hook (the
 /// #195 path). `Some(flow)` is the restart decision for a real child —
 /// `Continue` keeps the supervisor running (a rebuild was scheduled, or the child
 /// is left dead), `Break(reason)` escalates: a budget tripped

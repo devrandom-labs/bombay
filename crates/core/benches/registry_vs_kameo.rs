@@ -63,7 +63,7 @@ use bombay::registry::Registry;
 
 mod core_side {
     use bombay::{
-        actor::{Actor, ActorRef, Flow, Spawn as _, SpawnConfig},
+        actor::{Actor, ActorRef, Flow, SpawnConfig},
         mailbox::{Capacity, Mailboxed},
         message::Msg,
     };
@@ -90,7 +90,7 @@ mod core_side {
 
     pub fn spawn() -> ActorRef<Svc> {
         let cap = Capacity::new(NonZeroUsize::new(64).expect("nonzero")).expect("within max");
-        Svc::spawn_with_config(
+        crate::spawn_plain_cfg::<Svc>(
             SpawnConfig {
                 capacity: cap,
                 ..Default::default()
@@ -430,3 +430,18 @@ criterion_group!(
     register_unregister
 );
 criterion_main!(benches);
+
+/// The removed `Spawn` verb, bench-local over the public floor.
+fn spawn_plain<A: bombay::actor::Actor>(args: A::Args) -> bombay::actor::ActorRef<A> {
+    spawn_plain_cfg::<A>(bombay::actor::SpawnConfig::default(), args)
+}
+
+fn spawn_plain_cfg<A: bombay::actor::Actor>(
+    config: bombay::actor::SpawnConfig,
+    args: A::Args,
+) -> bombay::actor::ActorRef<A> {
+    let prepared = bombay::actor::PreparedActor::<A>::new(config);
+    let actor_ref = prepared.actor_ref().clone();
+    let _join = prepared.spawn(args);
+    actor_ref
+}

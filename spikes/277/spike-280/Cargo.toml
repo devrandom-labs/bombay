@@ -1,0 +1,10 @@
+[package]
+name = "spike-280"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+# Spike-only: the red-case cfg flags (r1_*, r3_*) are injected via RUSTFLAGS,
+# so the unknown-cfg lint must not fail the green build.
+[lints.rust]
+unexpected_cfgs = { level = "allow" }

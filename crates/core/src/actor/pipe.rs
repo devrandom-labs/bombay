@@ -126,7 +126,7 @@ mod tests {
     };
 
     use crate::{
-        actor::{Actor, ActorRef, Flow, Spawn as _},
+        actor::{Actor, ActorRef, Flow, test_verbs::TestSpawn as _},
         error::{PanicError, PanicReason, PipeAskError},
         mailbox::Mailboxed,
         message::Msg,

@@ -13,13 +13,14 @@ use std::sync::{
 
 use bombay::{
     actor::{
-        Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, Flow, PreparedActor, RunResult, Spawn,
-        SpawnConfig, SpawnLinked, SpawnSupervised, Supervisor, Watch, WeakActorRef,
+        Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, Flow, PreparedActor, RunResult, SpawnConfig,
+        WeakActorRef,
     },
+    caps,
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{Capacity, Mailboxed},
     message::Msg,
-    restart::{RestartConfig, RestartPolicy, SupervisionStrategy, jittered_backoff},
+    restart::{RestartConfig, RestartPolicy, jittered_backoff},
     test_support::{set_supervisor_rng_seed, terminate_bound},
 };
 use tokio::{sync::mpsc, time::timeout};
@@ -194,6 +195,14 @@ impl Actor for Probe {
     async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         Ok(Flow::Continue)
     }
+}
+
+/// The removed `Spawn` verb, suite-local over the public floor.
+fn spawn_plain<A: Actor>(args: A::Args) -> ActorRef<A> {
+    let prepared = PreparedActor::<A>::new(SpawnConfig::default());
+    let actor_ref = prepared.actor_ref().clone();
+    let _join = prepared.spawn(args);
+    actor_ref
 }
 
 fn default_cap() -> Capacity {
@@ -625,22 +634,33 @@ async fn on_stop_abandoned_emits_one_error_event() {
     );
 }
 
-/// An idle watcher: it observes deaths (default OTP hook) and is never messaged.
+/// An idle watcher: it observes deaths (the named OTP policy) and is never
+/// messaged.
 struct Watcher;
-impl Mailboxed for Watcher {
-    type Msg = Ping;
+
+#[derive(bombay_macros::Provide)]
+struct WatcherCaps {
+    watching: caps::Watching<caps::OtpPropagation>,
 }
-impl Actor for Watcher {
+impl caps::CapSet<Watcher> for WatcherCaps {
+    fn build((): &()) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+        }
+    }
+}
+impl caps::Actor for Watcher {
+    type Msg = Ping;
     type Args = ();
     type Error = Infallible;
-    async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+    type Caps = WatcherCaps;
+    async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         Ok(Watcher)
     }
-    async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, _: Ping, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         Ok(Flow::Continue)
     }
 }
-impl Watch for Watcher {}
 
 /// Card #209 Task 7: delivering a death notice to a watcher is a `trace!` event
 /// carrying the watcher's id, the stop reason, and the cleanup outcome —
@@ -649,7 +669,7 @@ impl Watch for Watcher {}
 async fn death_notice_delivery_emits_one_trace_event_per_edge() {
     let (store, _guard) = capture::install();
 
-    let watcher = Watcher::spawn_linked(());
+    let watcher = caps::spawn::<Watcher>(());
     let watcher_id = watcher.id();
 
     let prepared = PreparedActor::<Probe>::new(SpawnConfig {
@@ -708,23 +728,30 @@ struct SupMsg;
 impl Msg for SupMsg {}
 
 struct Sup;
-impl Mailboxed for Sup {
-    type Msg = SupMsg;
+
+#[derive(bombay_macros::Provide)]
+struct SupCaps {
+    watching: caps::Watching<caps::OtpPropagation>,
+    supervising: caps::Supervising<caps::OneForOne>,
 }
-impl Actor for Sup {
+impl caps::CapSet<Sup> for SupCaps {
+    fn build((): &()) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+            supervising: caps::Supervising::new(),
+        }
+    }
+}
+impl caps::Actor for Sup {
+    type Msg = SupMsg;
     type Args = ();
     type Error = Infallible;
-    async fn on_start(_: (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+    type Caps = SupCaps;
+    async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         Ok(Sup)
     }
-    async fn handle(&mut self, _: SupMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, _: SupMsg, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         Ok(Flow::Continue)
-    }
-}
-impl Watch for Sup {}
-impl Supervisor for Sup {
-    fn supervision_strategy() -> SupervisionStrategy {
-        SupervisionStrategy::OneForOne
     }
 }
 
@@ -740,7 +767,7 @@ async fn scheduled_restart_emits_warn_with_attempt_and_delay() {
     let (store, _guard) = capture::install();
 
     let cfg = RestartConfig::new(RestartPolicy::Permanent);
-    let sup = Sup::spawn_supervised(());
+    let sup = caps::spawn::<Sup>(());
     let (births_tx, mut births_rx) = mpsc::unbounded_channel::<()>();
     // Anchors every incarnation: an unanchored rebuild would ref-count-stop and
     // (under `Permanent`) churn through further restarts, each with its own warn.
@@ -749,7 +776,7 @@ async fn scheduled_restart_emits_warn_with_attempt_and_delay() {
     let child_id = timeout(
         terminate_bound(),
         sup.supervise(cfg, move || {
-            let child = CrashingHandle::spawn(());
+            let child = spawn_plain::<CrashingHandle>(());
             factory_anchors
                 .lock()
                 .expect("anchor lock")
@@ -817,7 +844,7 @@ async fn scheduled_restart_emits_warn_with_attempt_and_delay() {
 async fn restart_give_up_emits_one_error_event() {
     let (store, _guard) = capture::install();
 
-    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+    let (prepared, link_rx) = PreparedActor::<caps::Shell<Sup>>::new_linked(SpawnConfig {
         capacity: default_cap(),
         ..Default::default()
     });
@@ -835,7 +862,7 @@ async fn restart_give_up_emits_one_error_event() {
     let child_id = timeout(
         terminate_bound(),
         sup.supervise(cfg, move || {
-            let child = CrashingHandle::spawn(());
+            let child = spawn_plain::<CrashingHandle>(());
             factory_anchors
                 .lock()
                 .expect("anchor lock")
@@ -909,11 +936,11 @@ async fn restart_give_up_emits_one_error_event() {
 async fn collected_child_emits_debug_event_and_no_restart_scheduled() {
     let (store, _guard) = capture::install();
 
-    let sup = Sup::spawn_supervised(());
+    let sup = caps::spawn::<Sup>(());
     let child_id = timeout(
         terminate_bound(),
         sup.supervise(RestartConfig::new(RestartPolicy::Permanent), || {
-            Probe::spawn(())
+            spawn_plain::<Probe>(())
         }),
     )
     .await
@@ -988,7 +1015,7 @@ impl Actor for RebuildBomb {
 async fn child_lifecycle_failure_escalates_with_error_event() {
     let (store, _guard) = capture::install();
 
-    let (prepared, link_rx) = PreparedActor::<Sup>::new_linked(SpawnConfig {
+    let (prepared, link_rx) = PreparedActor::<caps::Shell<Sup>>::new_linked(SpawnConfig {
         capacity: default_cap(),
         ..Default::default()
     });
@@ -1003,7 +1030,7 @@ async fn child_lifecycle_failure_escalates_with_error_event() {
     let first_id = timeout(
         terminate_bound(),
         sup.supervise(RestartConfig::new(RestartPolicy::Permanent), move || {
-            let child = RebuildBomb::spawn(Arc::clone(&factory_flag));
+            let child = spawn_plain::<RebuildBomb>(Arc::clone(&factory_flag));
             factory_anchors
                 .lock()
                 .expect("anchor lock")
@@ -1097,7 +1124,7 @@ async fn pipe_mapper_panic_emits_one_error_event() {
         }
     }
 
-    let actor_ref = Sink::spawn(());
+    let actor_ref = spawn_plain::<Sink>(());
     actor_ref.pipe_to_self(async { 1u32 }, |_res: Result<u32, PanicError>| {
         panic!("mapper boom")
     });
@@ -1152,7 +1179,7 @@ async fn pipe_result_dropped_after_stop_emits_one_debug_event() {
     }
 
     let (gate_tx, gate_rx) = tokio::sync::oneshot::channel::<()>();
-    let actor_ref = Sink::spawn(());
+    let actor_ref = spawn_plain::<Sink>(());
     actor_ref.pipe_to_self(
         async move {
             let _ = gate_rx.await;
@@ -1204,7 +1231,7 @@ async fn pipe_result_dropped_after_stop_emits_one_debug_event() {
 #[tokio::test(start_paused = true)]
 async fn timer_cancel_before_fire_emits_trace_event() {
     let (store, _guard) = capture::install();
-    let actor_ref = Probe::spawn(());
+    let actor_ref = spawn_plain::<Probe>(());
     let id = actor_ref.id();
     let handle = actor_ref.send_after(Duration::from_secs(1), Ping);
     handle.cancel();
@@ -1243,7 +1270,7 @@ async fn timer_cancel_before_fire_emits_trace_event() {
 #[tokio::test]
 async fn timer_fire_at_dead_target_emits_debug_event() {
     let (store, _guard) = capture::install();
-    let actor_ref = Probe::spawn(());
+    let actor_ref = spawn_plain::<Probe>(());
     let id = actor_ref.id();
     let _handle = actor_ref.send_after(Duration::from_millis(10), Ping);
     let weak = actor_ref.downgrade();
@@ -1291,7 +1318,7 @@ async fn timer_fire_at_dead_target_emits_debug_event() {
 #[tokio::test(start_paused = true)]
 async fn timer_interval_factory_panic_emits_error_event() {
     let (store, _guard) = capture::install();
-    let actor_ref = Probe::spawn(());
+    let actor_ref = spawn_plain::<Probe>(());
     let id = actor_ref.id();
     let _handle = actor_ref.send_interval(Duration::from_secs(1), || -> Ping {
         panic!("factory boom")

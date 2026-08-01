@@ -32,7 +32,8 @@ use tokio::{sync::oneshot, task::JoinHandle};
 
 use bombay::{
     ActorId,
-    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, Watch, WeakActorRef},
+    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
+    caps,
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -175,13 +176,46 @@ impl Msg for PeerMsg {}
 impl Mailboxed for EchoPeer {
     type Msg = PeerMsg;
 }
-impl Actor for EchoPeer {
+/// The peer's recording reaction, a named `WatchPolicy` (stage 3): log the
+/// notice, never propagate — byte-identical to the removed hook override.
+struct PeerRecord;
+impl caps::WatchPolicy<EchoPeer> for PeerRecord {
+    async fn on_link_died(
+        actor: &mut EchoPeer,
+        id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+        actor
+            .notices
+            .lock()
+            .expect("lock")
+            .push((id, ReasonKind::of(&reason), linked));
+        Ok(ControlFlow::Continue(()))
+    }
+}
+
+#[derive(bombay_macros::Provide)]
+struct EchoPeerCaps {
+    watching: caps::Watching<PeerRecord>,
+}
+impl caps::CapSet<EchoPeer> for EchoPeerCaps {
+    fn build(_: &NoticeLog) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+        }
+    }
+}
+
+impl caps::Actor for EchoPeer {
+    type Msg = PeerMsg;
     type Args = NoticeLog;
     type Error = Infallible;
-    async fn on_start(notices: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+    type Caps = EchoPeerCaps;
+    async fn init(notices: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         Ok(Self { notices })
     }
-    async fn handle(&mut self, msg: PeerMsg, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, msg: PeerMsg, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         match msg {
             PeerMsg::Tick => {}
             PeerMsg::Query { reply } => {
@@ -190,20 +224,6 @@ impl Actor for EchoPeer {
             PeerMsg::Boom => panic!("peer crash on command"),
         }
         Ok(Flow::Continue)
-    }
-}
-impl Watch for EchoPeer {
-    async fn on_link_died(
-        &mut self,
-        id: ActorId,
-        reason: ActorStopReason,
-        linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Self::Error> {
-        self.notices
-            .lock()
-            .expect("lock")
-            .push((id, ReasonKind::of(&reason), linked));
-        Ok(ControlFlow::Continue(()))
     }
 }
 
@@ -238,7 +258,7 @@ struct Scripted {
     trace: Arc<Mutex<Vec<TraceEvent>>>,
     ids: RoleIds,
     target: Option<ActorRef<Target>>,
-    peer: Option<ActorRef<EchoPeer>>,
+    peer: Option<caps::Handle<EchoPeer>>,
     entered: Option<oneshot::Sender<()>>,
     release: Option<oneshot::Receiver<()>>,
     done: Option<oneshot::Sender<()>>,
@@ -247,7 +267,7 @@ struct Scripted {
 struct ScriptedArgs {
     trace: Arc<Mutex<Vec<TraceEvent>>>,
     target: ActorRef<Target>,
-    peer: ActorRef<EchoPeer>,
+    peer: caps::Handle<EchoPeer>,
     entered: oneshot::Sender<()>,
     release: oneshot::Receiver<()>,
     done: oneshot::Sender<()>,
@@ -271,7 +291,7 @@ impl Scripted {
     /// The whole oracle script, run against the handler's ref. Every verb's
     /// outcome is recorded in call order; the two `Role::Target` watch calls
     /// bracket an `unwatch` so the second registration is the one that fires.
-    async fn execute_script(&mut self, actor_ref: &ActorRef<Self>) {
+    async fn execute_script(&mut self, actor_ref: &caps::Handle<Self>) {
         let target = self.target.take().expect("the script runs once");
         let peer = self.peer.take().expect("the script runs once");
         self.record(TraceEvent::IsAlive(actor_ref.is_alive()));
@@ -309,10 +329,44 @@ impl Scripted {
     }
 }
 
-impl Actor for Scripted {
+/// The scripted watcher's recording reaction (stage 3): role-map the id and
+/// push the notice into the shared trace — byte-identical semantics to the
+/// removed hook override.
+struct ScriptedRecord;
+impl caps::WatchPolicy<Scripted> for ScriptedRecord {
+    async fn on_link_died(
+        actor: &mut Scripted,
+        id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+        actor.record(TraceEvent::Notice {
+            who: actor.ids.role(id),
+            reason: ReasonKind::of(&reason),
+            linked,
+        });
+        Ok(ControlFlow::Continue(()))
+    }
+}
+
+#[derive(bombay_macros::Provide)]
+struct ScriptedCaps {
+    watching: caps::Watching<ScriptedRecord>,
+}
+impl caps::CapSet<Scripted> for ScriptedCaps {
+    fn build(_: &ScriptedArgs) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+        }
+    }
+}
+
+impl caps::Actor for Scripted {
+    type Msg = ScriptedMsg;
     type Args = ScriptedArgs;
     type Error = Infallible;
-    async fn on_start(args: Self::Args, actor_ref: ActorRef<Self>) -> Result<Self, Self::Error> {
+    type Caps = ScriptedCaps;
+    async fn init(args: Self::Args, cx: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         let ScriptedArgs {
             trace,
             target,
@@ -322,7 +376,7 @@ impl Actor for Scripted {
             done,
         } = args;
         let ids = RoleIds {
-            self_id: actor_ref.id(),
+            self_id: cx.self_ref().id(),
             target: target.id(),
             peer: peer.id(),
         };
@@ -339,10 +393,10 @@ impl Actor for Scripted {
     async fn handle(
         &mut self,
         msg: ScriptedMsg,
-        actor_ref: ActorRef<Self>,
+        cx: caps::Ctx<'_, Self>,
     ) -> Result<Flow, Self::Error> {
         match msg {
-            ScriptedMsg::Run => self.execute_script(&actor_ref).await,
+            ScriptedMsg::Run => self.execute_script(cx.self_ref()).await,
             ScriptedMsg::Noop => {
                 self.record(TraceEvent::SelfDelivered);
                 if let Some(done) = self.done.take() {
@@ -354,26 +408,11 @@ impl Actor for Scripted {
     }
     async fn on_stop(
         &mut self,
-        _: WeakActorRef<Self>,
+        _: WeakActorRef<caps::Shell<Self>>,
         reason: ActorStopReason,
     ) -> Result<(), Self::Error> {
         self.record(TraceEvent::Finished(ReasonKind::of(&reason)));
         Ok(())
-    }
-}
-impl Watch for Scripted {
-    async fn on_link_died(
-        &mut self,
-        id: ActorId,
-        reason: ActorStopReason,
-        linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Self::Error> {
-        self.record(TraceEvent::Notice {
-            who: self.ids.role(id),
-            reason: ReasonKind::of(&reason),
-            linked,
-        });
-        Ok(ControlFlow::Continue(()))
     }
 }
 
@@ -413,12 +452,12 @@ fn spawn_target() -> (ActorRef<Target>, JoinHandle<RunResult<Target>>) {
 }
 
 fn spawn_peer() -> (
-    ActorRef<EchoPeer>,
-    JoinHandle<RunResult<EchoPeer>>,
+    caps::Handle<EchoPeer>,
+    JoinHandle<RunResult<caps::Shell<EchoPeer>>>,
     NoticeLog,
 ) {
     let notices: NoticeLog = Arc::new(Mutex::new(Vec::new()));
-    let (prepared, link_rx) = PreparedActor::<EchoPeer>::new_linked(config(4));
+    let (prepared, link_rx) = PreparedActor::<caps::Shell<EchoPeer>>::new_linked(config(4));
     let peer_ref = prepared.actor_ref().clone();
     let peer_join = prepared.spawn_linked_task(Arc::clone(&notices), link_rx);
     (peer_ref, peer_join, notices)
@@ -430,10 +469,10 @@ async fn start_watcher(
     mode: Mode,
     trace: &Arc<Mutex<Vec<TraceEvent>>>,
     target_ref: &ActorRef<Target>,
-    peer_ref: &ActorRef<EchoPeer>,
+    peer_ref: &caps::Handle<EchoPeer>,
 ) -> (
-    Option<ActorRef<Scripted>>,
-    JoinHandle<RunResult<Scripted>>,
+    Option<caps::Handle<Scripted>>,
+    JoinHandle<RunResult<caps::Shell<Scripted>>>,
     oneshot::Receiver<()>,
     oneshot::Sender<()>,
     oneshot::Receiver<()>,
@@ -441,7 +480,7 @@ async fn start_watcher(
     let (entered_tx, entered) = oneshot::channel();
     let (release, release_rx) = oneshot::channel();
     let (done_tx, done) = oneshot::channel();
-    let (prepared, link_rx) = PreparedActor::<Scripted>::new_linked(config(8));
+    let (prepared, link_rx) = PreparedActor::<caps::Shell<Scripted>>::new_linked(config(8));
     let external = match mode {
         Mode::Steady => Some(prepared.actor_ref().clone()),
         Mode::Drain => None,
@@ -604,7 +643,7 @@ async fn kill_script_trace_equal_steady_vs_drain() {
 /// so the test sequences the peer's death (2a) or its own (2b) against the
 /// parked loop.
 struct LinkWatcher {
-    peer: Option<ActorRef<EchoPeer>>,
+    peer: Option<caps::Handle<EchoPeer>>,
     notices: NoticeLog,
     link_result: Arc<Mutex<Option<Result<(), ()>>>>,
     entered: Option<oneshot::Sender<()>>,
@@ -612,7 +651,7 @@ struct LinkWatcher {
 }
 
 struct LinkWatcherArgs {
-    peer: ActorRef<EchoPeer>,
+    peer: caps::Handle<EchoPeer>,
     notices: NoticeLog,
     link_result: Arc<Mutex<Option<Result<(), ()>>>>,
     entered: oneshot::Sender<()>,
@@ -622,13 +661,43 @@ struct LinkWatcherArgs {
 #[derive(Debug)]
 struct LinkUp;
 impl Msg for LinkUp {}
-impl Mailboxed for LinkWatcher {
-    type Msg = LinkUp;
+/// The link-watcher's recording reaction (stage 3) — the removed hook
+/// override, byte-identical.
+struct LinkRecord;
+impl caps::WatchPolicy<LinkWatcher> for LinkRecord {
+    async fn on_link_died(
+        actor: &mut LinkWatcher,
+        id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+        actor
+            .notices
+            .lock()
+            .expect("lock")
+            .push((id, ReasonKind::of(&reason), linked));
+        Ok(ControlFlow::Continue(()))
+    }
 }
-impl Actor for LinkWatcher {
+
+#[derive(bombay_macros::Provide)]
+struct LinkWatcherCaps {
+    watching: caps::Watching<LinkRecord>,
+}
+impl caps::CapSet<LinkWatcher> for LinkWatcherCaps {
+    fn build(_: &LinkWatcherArgs) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+        }
+    }
+}
+
+impl caps::Actor for LinkWatcher {
+    type Msg = LinkUp;
     type Args = LinkWatcherArgs;
     type Error = Infallible;
-    async fn on_start(args: Self::Args, _: ActorRef<Self>) -> Result<Self, Self::Error> {
+    type Caps = LinkWatcherCaps;
+    async fn init(args: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         let LinkWatcherArgs {
             peer,
             notices,
@@ -644,9 +713,9 @@ impl Actor for LinkWatcher {
             release: Some(release),
         })
     }
-    async fn handle(&mut self, _: LinkUp, actor_ref: ActorRef<Self>) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, _: LinkUp, cx: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         let peer = self.peer.take().expect("one LinkUp enqueued");
-        let outcome = bounded(actor_ref.link(&peer)).await.map_err(|_| ());
+        let outcome = bounded(cx.self_ref().link(&peer)).await.map_err(|_| ());
         *self.link_result.lock().expect("lock") = Some(outcome);
         drop(peer); // do not pin the peer (the DrainWatcher discipline)
         self.entered
@@ -660,30 +729,16 @@ impl Actor for LinkWatcher {
         Ok(Flow::Continue)
     }
 }
-impl Watch for LinkWatcher {
-    async fn on_link_died(
-        &mut self,
-        id: ActorId,
-        reason: ActorStopReason,
-        linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Self::Error> {
-        self.notices
-            .lock()
-            .expect("lock")
-            .push((id, ReasonKind::of(&reason), linked));
-        Ok(ControlFlow::Continue(()))
-    }
-}
 
 /// The shared 2a/2b rig: a linked peer plus a drain-window watcher that links
 /// it (message enqueued before run, no external watcher ref).
 struct LinkRig {
-    peer_ref: ActorRef<EchoPeer>,
+    peer_ref: caps::Handle<EchoPeer>,
     peer_id: ActorId,
-    peer_join: JoinHandle<RunResult<EchoPeer>>,
+    peer_join: JoinHandle<RunResult<caps::Shell<EchoPeer>>>,
     peer_notices: NoticeLog,
     watcher_id: ActorId,
-    watcher_join: JoinHandle<RunResult<LinkWatcher>>,
+    watcher_join: JoinHandle<RunResult<caps::Shell<LinkWatcher>>>,
     watcher_notices: NoticeLog,
     link_result: Arc<Mutex<Option<Result<(), ()>>>>,
     entered: oneshot::Receiver<()>,
@@ -692,7 +747,7 @@ struct LinkRig {
 
 async fn link_rig() -> LinkRig {
     let peer_notices: NoticeLog = Arc::new(Mutex::new(Vec::new()));
-    let (p_prepared, p_link_rx) = PreparedActor::<EchoPeer>::new_linked(config(4));
+    let (p_prepared, p_link_rx) = PreparedActor::<caps::Shell<EchoPeer>>::new_linked(config(4));
     let peer_ref = p_prepared.actor_ref().clone();
     let peer_id = peer_ref.id();
     let peer_join = p_prepared.spawn_linked_task(Arc::clone(&peer_notices), p_link_rx);
@@ -701,7 +756,7 @@ async fn link_rig() -> LinkRig {
     let link_result = Arc::new(Mutex::new(None));
     let (entered_tx, entered) = oneshot::channel();
     let (release, release_rx) = oneshot::channel();
-    let (w_prepared, w_link_rx) = PreparedActor::<LinkWatcher>::new_linked(config(4));
+    let (w_prepared, w_link_rx) = PreparedActor::<caps::Shell<LinkWatcher>>::new_linked(config(4));
     let watcher_id = w_prepared.actor_ref().id();
     // The drain window: enqueue BEFORE running, hold no external watcher ref.
     bounded(w_prepared.actor_ref().tell(LinkUp))
@@ -825,7 +880,7 @@ async fn drain_window_link_installs_both_edges_peer_side() {
 /// ref; handler 2 parks so the test sequences the peer's panic against the
 /// parked loop.
 struct TrapWatcher {
-    peer: Option<ActorRef<EchoPeer>>,
+    peer: Option<caps::Handle<EchoPeer>>,
     linked: Option<oneshot::Sender<()>>,
     release: Option<oneshot::Receiver<()>>,
 }
@@ -835,19 +890,33 @@ enum TrapMsg {
     Park,
 }
 impl Msg for TrapMsg {}
-impl Mailboxed for TrapWatcher {
-    type Msg = TrapMsg;
+
+/// 2c keeps the OTP semantics — under stage 3 that is the NAMED
+/// `OtpPropagation` policy, chosen here rather than inherited.
+#[derive(bombay_macros::Provide)]
+struct TrapWatcherCaps {
+    watching: caps::Watching<caps::OtpPropagation>,
 }
-impl Actor for TrapWatcher {
+impl caps::CapSet<TrapWatcher> for TrapWatcherCaps {
+    fn build(_: &<TrapWatcher as caps::Actor>::Args) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+        }
+    }
+}
+
+impl caps::Actor for TrapWatcher {
+    type Msg = TrapMsg;
     type Args = (
-        ActorRef<EchoPeer>,
+        caps::Handle<EchoPeer>,
         oneshot::Sender<()>,
         oneshot::Receiver<()>,
     );
     type Error = Infallible;
-    async fn on_start(
+    type Caps = TrapWatcherCaps;
+    async fn init(
         (peer, linked, release): Self::Args,
-        _: ActorRef<Self>,
+        _: caps::Ctx<'_, Self>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             peer: Some(peer),
@@ -855,15 +924,11 @@ impl Actor for TrapWatcher {
             release: Some(release),
         })
     }
-    async fn handle(
-        &mut self,
-        msg: TrapMsg,
-        actor_ref: ActorRef<Self>,
-    ) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, msg: TrapMsg, cx: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         match msg {
             TrapMsg::LinkUp => {
                 let peer = self.peer.take().expect("LinkUp runs once");
-                bounded(actor_ref.link(&peer))
+                bounded(cx.self_ref().link(&peer))
                     .await
                     .expect("the drain-window link succeeds");
                 drop(peer);
@@ -882,7 +947,6 @@ impl Actor for TrapWatcher {
         Ok(Flow::Continue)
     }
 }
-impl Watch for TrapWatcher {}
 
 /// #266 (2c): a drain-window `link` propagates the peer's PANIC through the
 /// default hook: the watcher stops `LinkDied { id: peer, reason: Panicked }`.
@@ -892,14 +956,14 @@ impl Watch for TrapWatcher {}
 #[tokio::test]
 async fn drain_window_link_propagates_peer_panic_as_link_died() {
     let peer_notices: NoticeLog = Arc::new(Mutex::new(Vec::new()));
-    let (p_prepared, p_link_rx) = PreparedActor::<EchoPeer>::new_linked(config(4));
+    let (p_prepared, p_link_rx) = PreparedActor::<caps::Shell<EchoPeer>>::new_linked(config(4));
     let peer_ref = p_prepared.actor_ref().clone();
     let peer_id = peer_ref.id();
     let peer_join = p_prepared.spawn_linked_task(peer_notices, p_link_rx);
 
     let (linked_tx, linked) = oneshot::channel();
     let (release, release_rx) = oneshot::channel();
-    let (w_prepared, w_link_rx) = PreparedActor::<TrapWatcher>::new_linked(config(4));
+    let (w_prepared, w_link_rx) = PreparedActor::<caps::Shell<TrapWatcher>>::new_linked(config(4));
     // The drain window: BOTH messages enqueued before the run, no external ref.
     bounded(w_prepared.actor_ref().tell(TrapMsg::LinkUp))
         .await
@@ -968,7 +1032,38 @@ impl DupWatcher {
     }
 }
 
-impl Actor for DupWatcher {
+/// The duplicate-edge watcher's recording reaction (stage 3).
+struct DupRecord;
+impl caps::WatchPolicy<DupWatcher> for DupRecord {
+    async fn on_link_died(
+        actor: &mut DupWatcher,
+        id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+        actor
+            .notices
+            .lock()
+            .expect("lock")
+            .push((id, ReasonKind::of(&reason), linked));
+        Ok(ControlFlow::Continue(()))
+    }
+}
+
+#[derive(bombay_macros::Provide)]
+struct DupWatcherCaps {
+    watching: caps::Watching<DupRecord>,
+}
+impl caps::CapSet<DupWatcher> for DupWatcherCaps {
+    fn build(_: &<DupWatcher as caps::Actor>::Args) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+        }
+    }
+}
+
+impl caps::Actor for DupWatcher {
+    type Msg = DupMsg;
     type Args = (
         ActorRef<Target>,
         Arc<Mutex<Vec<Result<(), ()>>>>,
@@ -977,9 +1072,10 @@ impl Actor for DupWatcher {
         oneshot::Receiver<()>,
     );
     type Error = Infallible;
-    async fn on_start(
+    type Caps = DupWatcherCaps;
+    async fn init(
         (target, watch_results, notices, entered, release): Self::Args,
-        _: ActorRef<Self>,
+        _: caps::Ctx<'_, Self>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             target: Some(target),
@@ -989,20 +1085,16 @@ impl Actor for DupWatcher {
             release: Some(release),
         })
     }
-    async fn handle(
-        &mut self,
-        msg: DupMsg,
-        actor_ref: ActorRef<Self>,
-    ) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, msg: DupMsg, cx: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         match msg {
             DupMsg::WatchFirst => {
                 let target = self.target.as_ref().expect("the target is present");
-                let outcome = bounded(actor_ref.watch(target)).await.map_err(|_| ());
+                let outcome = bounded(cx.self_ref().watch(target)).await.map_err(|_| ());
                 self.record_watch(outcome);
             }
             DupMsg::WatchSecond => {
                 let target = self.target.take().expect("the target is present");
-                let outcome = bounded(actor_ref.watch(&target)).await.map_err(|_| ());
+                let outcome = bounded(cx.self_ref().watch(&target)).await.map_err(|_| ());
                 self.record_watch(outcome);
                 drop(target); // release the pin BEFORE the test drops its ref
                 self.entered
@@ -1018,21 +1110,6 @@ impl Actor for DupWatcher {
         Ok(Flow::Continue)
     }
 }
-impl Watch for DupWatcher {
-    async fn on_link_died(
-        &mut self,
-        id: ActorId,
-        reason: ActorStopReason,
-        linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Self::Error> {
-        self.notices
-            .lock()
-            .expect("lock")
-            .push((id, ReasonKind::of(&reason), linked));
-        Ok(ControlFlow::Continue(()))
-    }
-}
-
 /// #266 (2d): per-message drain-window mints register INDEPENDENT duplicate
 /// edges (`Watchers::apply` keeps duplicates — repeated `watch` calls match
 /// Erlang's independent monitors). Two queued messages watch the same target;
@@ -1046,7 +1123,7 @@ async fn per_message_mints_register_independent_duplicate_edges() {
     let notices: NoticeLog = Arc::new(Mutex::new(Vec::new()));
     let (entered_tx, entered) = oneshot::channel();
     let (release, release_rx) = oneshot::channel();
-    let (w_prepared, w_link_rx) = PreparedActor::<DupWatcher>::new_linked(config(4));
+    let (w_prepared, w_link_rx) = PreparedActor::<caps::Shell<DupWatcher>>::new_linked(config(4));
     // Prerequisite for the per-message mint: no external ref, BOTH messages
     // enqueued before the run.
     bounded(w_prepared.actor_ref().tell(DupMsg::WatchFirst))
@@ -1112,10 +1189,39 @@ struct LateWatcher {
 #[derive(Debug)]
 struct LateGo;
 impl Msg for LateGo {}
-impl Mailboxed for LateWatcher {
-    type Msg = LateGo;
+/// The late watcher's recording reaction (stage 3) — must never fire in the
+/// designed-lost test, which is the point.
+struct LateRecord;
+impl caps::WatchPolicy<LateWatcher> for LateRecord {
+    async fn on_link_died(
+        actor: &mut LateWatcher,
+        id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+        actor
+            .notices
+            .lock()
+            .expect("lock")
+            .push((id, ReasonKind::of(&reason), linked));
+        Ok(ControlFlow::Continue(()))
+    }
 }
-impl Actor for LateWatcher {
+
+#[derive(bombay_macros::Provide)]
+struct LateWatcherCaps {
+    watching: caps::Watching<LateRecord>,
+}
+impl caps::CapSet<LateWatcher> for LateWatcherCaps {
+    fn build(_: &<LateWatcher as caps::Actor>::Args) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+        }
+    }
+}
+
+impl caps::Actor for LateWatcher {
+    type Msg = LateGo;
     type Args = (
         ActorRef<Target>,
         Arc<Mutex<Option<Result<(), ()>>>>,
@@ -1124,9 +1230,10 @@ impl Actor for LateWatcher {
         oneshot::Receiver<()>,
     );
     type Error = Infallible;
-    async fn on_start(
+    type Caps = LateWatcherCaps;
+    async fn init(
         (target, watch_result, notices, stopping, stop_release): Self::Args,
-        _: ActorRef<Self>,
+        _: caps::Ctx<'_, Self>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             target: Some(target),
@@ -1136,16 +1243,16 @@ impl Actor for LateWatcher {
             stop_release: Some(stop_release),
         })
     }
-    async fn handle(&mut self, _: LateGo, actor_ref: ActorRef<Self>) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, _: LateGo, cx: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         let target = self.target.take().expect("one LateGo enqueued");
-        let outcome = bounded(actor_ref.watch(&target)).await.map_err(|_| ());
+        let outcome = bounded(cx.self_ref().watch(&target)).await.map_err(|_| ());
         *self.watch_result.lock().expect("lock") = Some(outcome);
         drop(target); // the watcher must not pin the target
         Ok(Flow::Continue)
     }
     async fn on_stop(
         &mut self,
-        _: WeakActorRef<Self>,
+        _: WeakActorRef<caps::Shell<Self>>,
         _: ActorStopReason,
     ) -> Result<(), Self::Error> {
         self.stopping
@@ -1159,20 +1266,6 @@ impl Actor for LateWatcher {
             .await
             .expect("the stop_release channel is open");
         Ok(())
-    }
-}
-impl Watch for LateWatcher {
-    async fn on_link_died(
-        &mut self,
-        id: ActorId,
-        reason: ActorStopReason,
-        linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Self::Error> {
-        self.notices
-            .lock()
-            .expect("lock")
-            .push((id, ReasonKind::of(&reason), linked));
-        Ok(ControlFlow::Continue(()))
     }
 }
 
@@ -1190,10 +1283,11 @@ async fn late_notice_after_break_decision_is_dropped_by_design() {
     let notices: NoticeLog = Arc::new(Mutex::new(Vec::new()));
     let (stopping_tx, stopping) = oneshot::channel();
     let (stop_release, stop_release_rx) = oneshot::channel();
-    let (w_prepared, w_link_rx) = PreparedActor::<LateWatcher>::new_linked(SpawnConfig {
-        capacity: cap(4),
-        on_stop_grace: Duration::from_mins(1),
-    });
+    let (w_prepared, w_link_rx) =
+        PreparedActor::<caps::Shell<LateWatcher>>::new_linked(SpawnConfig {
+            capacity: cap(4),
+            on_stop_grace: Duration::from_mins(1),
+        });
     // The drain window: enqueue before the run, hold no external ref.
     bounded(w_prepared.actor_ref().tell(LateGo))
         .await

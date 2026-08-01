@@ -18,13 +18,17 @@
 //!   per-field impls, and duplicate capability fields are rejected by
 //!   coherence, E0119).
 
-use core::{any::type_name, future::Future};
+use core::{any::type_name, future::Future, marker::PhantomData, ops::ControlFlow};
 
 use crate::{
-    actor::{ActorRef, Flow, Spawn as RuntimeSpawn, SpawnConfig, WeakActorRef},
+    actor::{
+        ActorRef, Flow, LinkReact, PreparedActor, SpawnConfig, SupervisedReact, WeakActorRef,
+        sealed,
+    },
     error::{ActorStopReason, PanicError, ReplyError},
-    mailbox::{Capacity, Mailboxed},
+    mailbox::{ActorId, Capacity, Mailboxed},
     message::Msg,
+    restart::SupervisionStrategy,
     stash::Stash,
 };
 
@@ -54,9 +58,11 @@ pub trait Actor: Sized + Send + 'static {
     ///
     /// Bounded [`Replay<Self::Msg>`](Replay) so the loop can service in-step
     /// replay uniformly — `()` and non-stashing sets yield `None`, a set with
-    /// a [`Stashing`] field drains it. The derive emits this alongside
-    /// `Provide`, so it is never a separate thing to forget.
-    type Caps: CapSet<Self> + Replay<Self::Msg>;
+    /// a [`Stashing`] field drains it — and [`SelectRunner<Self>`](SelectRunner)
+    /// so every cap set names its run-loop shape at compile time (stage 3).
+    /// The derive emits both alongside `Provide`, so neither is a separate
+    /// thing to forget.
+    type Caps: CapSet<Self> + Replay<Self::Msg> + SelectRunner<Self>;
 
     /// A human-readable name for logs/tracing. Defaults to the type name.
     #[must_use]
@@ -236,6 +242,196 @@ pub trait StashPolicy<A: Actor> {
     fn capacity(args: &A::Args) -> Capacity;
 }
 
+/// The death-reaction policy seat of the [`Watching`] capability — the
+/// relocated `on_link_died` hook (ADR-0026 stage 3, card #280).
+///
+/// Parameterized by the actor so a policy can react through `&mut A`
+/// (record, mutate state); the loop's delivery rules are unchanged (a
+/// notice arriving after the loop's stop decision is dropped, #266).
+/// Policies ride the [`Watching`] TYPE — chosen by name, never inherited.
+pub trait WatchPolicy<A: Actor>: Send + 'static {
+    /// Reacts to the death of a watched/linked actor. `Break(reason)`
+    /// stops the watcher with that reason; `Continue` keeps it running.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`A::Error`](Actor::Error) if the reaction fails — a
+    /// controlled crash, exactly as a handler `Err`.
+    fn on_link_died(
+        actor: &mut A,
+        id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> impl Future<Output = Result<ControlFlow<ActorStopReason>, A::Error>> + Send;
+}
+
+/// The NAMED OTP propagation policy — semantics byte-identical to the
+/// removed `Watch::on_link_died` default.
+///
+/// A **linked abnormal** death propagates
+/// ([`LinkDied`](ActorStopReason::LinkDied) carrying the original reason);
+/// a watch-only (`linked == false`) death, or any normal death, is
+/// observed and the actor continues. Chosen by writing
+/// `Watching<OtpPropagation>` — never inherited silently (card #280).
+pub struct OtpPropagation;
+
+impl<A: Actor> WatchPolicy<A> for OtpPropagation {
+    async fn on_link_died(
+        _actor: &mut A,
+        id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> Result<ControlFlow<ActorStopReason>, A::Error> {
+        Ok(if linked && !reason.is_normal() {
+            ControlFlow::Break(ActorStopReason::LinkDied {
+                id,
+                reason: Box::new(reason),
+            })
+        } else {
+            ControlFlow::Continue(())
+        })
+    }
+}
+
+/// The watching capability (ADR-0026 stage 3).
+///
+/// Plugged as a cap-set field, it makes the actor **link-reactive** — the
+/// loop drains its link channel and dispatches deaths to `WP`. Zero
+/// runtime state (the watchers set stays loop-owned): the policy rides
+/// the type, strategy-as-type (ADR-0026 constraint 5).
+pub struct Watching<WP> {
+    policy: PhantomData<WP>,
+}
+
+impl<WP> Watching<WP> {
+    /// Builds the (stateless) watching capability.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            policy: PhantomData,
+        }
+    }
+}
+
+impl<WP> Default for Watching<WP> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A restart-set strategy named as a TYPE — the [`Supervising`] plug.
+///
+/// There is deliberately no default marker: bounded supervision names its
+/// strategy by construction (the shipped `OneForOne` trait default is
+/// dropped, card #280).
+pub trait Strategy: Send + 'static {
+    /// The runtime strategy this marker names.
+    const STRATEGY: SupervisionStrategy;
+}
+
+/// A failed child is rebuilt alone; siblings never observe it.
+pub struct OneForOne;
+
+/// A failed child restarts itself and every YOUNGER sibling (ADR-0014).
+pub struct RestForOne;
+
+/// A failed child restarts the whole set (ADR-0014).
+pub struct OneForAll;
+
+impl Strategy for OneForOne {
+    const STRATEGY: SupervisionStrategy = SupervisionStrategy::OneForOne;
+}
+
+impl Strategy for RestForOne {
+    const STRATEGY: SupervisionStrategy = SupervisionStrategy::RestForOne;
+}
+
+impl Strategy for OneForAll {
+    const STRATEGY: SupervisionStrategy = SupervisionStrategy::OneForAll;
+}
+
+/// The supervising capability (ADR-0026 stage 3).
+///
+/// Plugged as a cap-set field, it runs the actor on the three-arm
+/// supervised loop — children are registered via the handle's `supervise`
+/// verb, rebuilt under their per-child
+/// [`RestartConfig`](crate::restart::RestartConfig) (path unchanged) and
+/// this set-level strategy. Requires [`Watching`] in the same set
+/// (compile-time law — [`HasSupervising`] bounds [`HasWatching`]). Zero
+/// runtime state: the strategy rides the type.
+pub struct Supervising<SS: Strategy> {
+    strategy: PhantomData<SS>,
+}
+
+impl<SS: Strategy> Supervising<SS> {
+    /// Builds the (stateless) supervising capability.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            strategy: PhantomData,
+        }
+    }
+}
+
+impl<SS: Strategy> Default for Supervising<SS> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// "This cap set watches, with policy [`Policy`](HasWatching::Policy)".
+///
+/// The loop-participation half of [`Watching`], as [`Replay`] is of
+/// [`Stashing`]. Derive-emitted from a `Watching<WP>` field; the
+/// associated type (never a free impl parameter) is what keeps the
+/// [`Shell`]'s conditional impls coherent (spike-280, no E0207/E0119).
+pub trait HasWatching<A: Actor> {
+    /// The declared death-reaction policy.
+    type Policy: WatchPolicy<A>;
+}
+
+/// "This cap set supervises" — the loop-participation half of
+/// [`Supervising`].
+///
+/// The supertrait IS the composition law (ADR-0026 constraint 3):
+/// supervising-without-watching is unsatisfiable, so an invalid stack
+/// does not compile. Derive-emitted from a `Supervising<SS>` field.
+pub trait HasSupervising<A: Actor>: HasWatching<A> {
+    /// The declared restart-set strategy.
+    type Strat: Strategy;
+}
+
+/// Names the run-loop shape for a cap set (ADR-0026 stage 3 — the
+/// compile-time loop selection, spike-280).
+///
+/// Derive-emitted alongside [`Replay`]: a `Supervising` field selects
+/// [`SupervisedRun`], else a `Watching` field selects [`LinkedRun`], else
+/// [`PlainRun`]; `()` selects [`PlainRun`] via the core impl below.
+///
+/// The associated type is deliberately UNBOUNDED here: the "this shape is
+/// actually runnable for this actor" obligation
+/// (`Runner: RunKind<A>`) sits on the ONE [`spawn`], discharging at the
+/// concrete actor — which is what lets the derive-emitted impl stay
+/// generic over `A`.
+pub trait SelectRunner<A: Actor> {
+    /// The selected loop-shape marker.
+    type Runner;
+}
+
+impl<A: Actor> SelectRunner<A> for () {
+    type Runner = PlainRun;
+}
+
+/// Loop-shape marker: the one-arm plain message loop.
+pub struct PlainRun;
+
+/// Loop-shape marker: the two-arm linked loop (mailbox + link channel).
+pub struct LinkedRun;
+
+/// Loop-shape marker: the three-arm supervised loop (mailbox + link
+/// channel + restart-backoff queue).
+pub struct SupervisedRun;
+
 /// The one typed window a handler sees.
 ///
 /// Capability access + the actor's own handle. Its reachable surface is
@@ -383,19 +579,119 @@ impl<A: Actor> crate::actor::Actor for Shell<A> {
     }
 }
 
+impl<A: Actor> sealed::Sealed for Shell<A> {}
+
+/// The stage-3 analogue of stage 2's derive-emitted [`Replay`]: the
+/// `Shell` is link-reactive exactly when the cap set declares
+/// [`Watching`], and the reaction IS the declared policy, reached through
+/// the [`HasWatching::Policy`] associated type with `&mut user` access —
+/// no free policy parameter anywhere (spike-280, O2).
+impl<A: Actor> LinkReact for Shell<A>
+where
+    A::Caps: HasWatching<A>,
+{
+    fn on_link_died(
+        &mut self,
+        id: ActorId,
+        reason: ActorStopReason,
+        linked: bool,
+    ) -> impl Future<Output = Result<ControlFlow<ActorStopReason>, A::Error>> + Send {
+        <<A::Caps as HasWatching<A>>::Policy as WatchPolicy<A>>::on_link_died(
+            &mut self.user,
+            id,
+            reason,
+            linked,
+        )
+    }
+}
+
+impl<A: Actor> SupervisedReact for Shell<A>
+where
+    A::Caps: HasSupervising<A>,
+{
+    fn strategy() -> SupervisionStrategy {
+        <A::Caps as HasSupervising<A>>::Strat::STRATEGY
+    }
+}
+
+/// Runs a selected loop shape (ADR-0026 stage 3, spike-280).
+///
+/// Each marker spawns the [`Shell`] onto its [`PreparedActor`] floor path.
+/// The obligation `SelectRunner::Runner: RunKind<A>` is discharged at the
+/// one [`spawn`] — monomorphized; the "branch" is trait resolution, not
+/// code.
+pub trait RunKind<A: Actor> {
+    /// Spawns the actor onto this loop shape.
+    fn spawn_with(config: SpawnConfig, args: A::Args) -> Handle<A>;
+}
+
+impl<A: Actor> RunKind<A> for PlainRun {
+    fn spawn_with(config: SpawnConfig, args: A::Args) -> Handle<A> {
+        let prepared = PreparedActor::<Shell<A>>::new(config);
+        let handle = prepared.actor_ref().clone();
+        let _join = prepared.spawn(args);
+        handle
+    }
+}
+
+impl<A: Actor> RunKind<A> for LinkedRun
+where
+    A::Caps: HasWatching<A>,
+{
+    fn spawn_with(config: SpawnConfig, args: A::Args) -> Handle<A> {
+        let (prepared, link_rx) = PreparedActor::<Shell<A>>::new_linked(config);
+        let handle = prepared.actor_ref().clone();
+        let _join = prepared.spawn_linked_task(args, link_rx);
+        handle
+    }
+}
+
+impl<A: Actor> RunKind<A> for SupervisedRun
+where
+    A::Caps: HasSupervising<A>,
+{
+    fn spawn_with(config: SpawnConfig, args: A::Args) -> Handle<A> {
+        let (prepared, link_rx) = PreparedActor::<Shell<A>>::new_linked(config);
+        let handle = prepared.actor_ref().clone();
+        let _join = prepared.spawn_supervised_task(args, link_rx);
+        handle
+    }
+}
+
 /// Spawns a `caps` actor with the default [`SpawnConfig`] — the ONE
-/// ergonomic entry (loop shape will be capability-selected in later
-/// stages; stage 1 serves the plain path).
+/// ergonomic entry.
+///
+/// The loop shape is selected from [`Actor::Caps`] at compile time
+/// (monomorphized, no runtime branch): plain sets run the one-arm loop,
+/// [`Watching`] sets the linked loop, [`Supervising`] sets the supervised
+/// loop (ADR-0026 stage 3).
+///
+/// A `Supervising` set without `Watching` does not compile — the
+/// composition law rides the [`HasSupervising`] supertrait (and the
+/// derive rejects it with a readable error):
+///
+/// ```compile_fail
+/// #[derive(bombay_macros::Provide)]
+/// struct RogueCaps {
+///     supervising: bombay::caps::Supervising<bombay::caps::OneForOne>,
+/// }
+/// ```
 #[must_use]
-pub fn spawn<A: Actor>(args: A::Args) -> Handle<A> {
-    <Shell<A> as RuntimeSpawn>::spawn(args)
+pub fn spawn<A: Actor>(args: A::Args) -> Handle<A>
+where
+    <A::Caps as SelectRunner<A>>::Runner: RunKind<A>,
+{
+    spawn_with(SpawnConfig::default(), args)
 }
 
 /// Spawns with an explicit [`SpawnConfig`] (mailbox capacity + stop
-/// grace).
+/// grace); loop shape selected exactly as [`spawn`].
 #[must_use]
-pub fn spawn_with<A: Actor>(config: SpawnConfig, args: A::Args) -> Handle<A> {
-    <Shell<A> as RuntimeSpawn>::spawn_with_config(config, args)
+pub fn spawn_with<A: Actor>(config: SpawnConfig, args: A::Args) -> Handle<A>
+where
+    <A::Caps as SelectRunner<A>>::Runner: RunKind<A>,
+{
+    <<A::Caps as SelectRunner<A>>::Runner as RunKind<A>>::spawn_with(config, args)
 }
 
 #[cfg(test)]
@@ -451,6 +747,299 @@ mod tests {
     #[test]
     fn unit_capset_builds() {
         <() as CapSet<Nameless>>::build(&());
+    }
+
+    /// Stage-3 (card #280): the Watching/Supervising capabilities and the
+    /// compile-time loop selection — behavior tests for the pieces the
+    /// spike (spike-280) proved only compile.
+    mod watching_supervising {
+        use core::any::type_name;
+        use core::convert::Infallible;
+        use core::ops::ControlFlow;
+
+        use super::super::{
+            Actor, CapSet, Ctx, Flow, HasSupervising, HasWatching, OneForAll, OneForOne,
+            OtpPropagation, PlainRun, Replay, RestForOne, SelectRunner, Shell, Strategy,
+            Supervising, WatchPolicy, Watching,
+        };
+        use crate::{
+            actor::{LinkReact, SupervisedReact},
+            error::ActorStopReason,
+            mailbox::{ActorId, Mailboxed},
+            message::Msg,
+            restart::SupervisionStrategy,
+        };
+
+        /// A recording watcher: its policy pushes every notice into the
+        /// actor's own state — the shape the ported equivalence suites'
+        /// recording hooks need (`&mut A` access from a policy).
+        struct Rec {
+            seen: Vec<(ActorId, bool)>,
+        }
+
+        #[derive(Debug)]
+        struct RecMsg;
+        impl Msg for RecMsg {}
+        impl Mailboxed for Rec {
+            type Msg = RecMsg;
+        }
+
+        struct RecPolicy;
+
+        impl WatchPolicy<Rec> for RecPolicy {
+            async fn on_link_died(
+                actor: &mut Rec,
+                id: ActorId,
+                _reason: ActorStopReason,
+                linked: bool,
+            ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+                actor.seen.push((id, linked));
+                Ok(ControlFlow::Continue(()))
+            }
+        }
+
+        /// Hand-written cap set (what the derive emits, spelled out — the
+        /// derive's own emission is unit-tested in `bombay_macros`).
+        struct RecCaps {
+            watching: Watching<RecPolicy>,
+        }
+
+        impl CapSet<Rec> for RecCaps {
+            fn build((): &()) -> Self {
+                Self {
+                    watching: Watching::new(),
+                }
+            }
+        }
+        impl super::super::Provide<Watching<RecPolicy>> for RecCaps {
+            fn provide(&mut self) -> &mut Watching<RecPolicy> {
+                &mut self.watching
+            }
+        }
+        impl<M> Replay<M> for RecCaps {
+            fn next_replay(&mut self) -> Option<M> {
+                None
+            }
+        }
+        impl<A: Actor> HasWatching<A> for RecCaps
+        where
+            RecPolicy: WatchPolicy<A>,
+        {
+            type Policy = RecPolicy;
+        }
+        impl<A: Actor> SelectRunner<A> for RecCaps {
+            type Runner = super::super::LinkedRun;
+        }
+
+        impl Actor for Rec {
+            type Msg = RecMsg;
+            type Args = ();
+            type Error = Infallible;
+            type Caps = RecCaps;
+
+            async fn init((): (), _: Ctx<'_, Self>) -> Result<Self, Infallible> {
+                Ok(Self { seen: Vec::new() })
+            }
+
+            async fn handle(&mut self, _: RecMsg, _: Ctx<'_, Self>) -> Result<Flow, Infallible> {
+                Ok(Flow::Continue)
+            }
+        }
+
+        /// A supervising actor whose cap set names `OneForAll` — the
+        /// strategy-read probe.
+        struct Sup;
+
+        impl Mailboxed for Sup {
+            type Msg = RecMsg;
+        }
+
+        struct SupCaps {
+            watching: Watching<OtpPropagation>,
+            supervising: Supervising<OneForAll>,
+        }
+
+        impl CapSet<Sup> for SupCaps {
+            fn build((): &()) -> Self {
+                Self {
+                    watching: Watching::new(),
+                    supervising: Supervising::new(),
+                }
+            }
+        }
+        impl super::super::Provide<Watching<OtpPropagation>> for SupCaps {
+            fn provide(&mut self) -> &mut Watching<OtpPropagation> {
+                &mut self.watching
+            }
+        }
+        impl super::super::Provide<Supervising<OneForAll>> for SupCaps {
+            fn provide(&mut self) -> &mut Supervising<OneForAll> {
+                &mut self.supervising
+            }
+        }
+        impl<M> Replay<M> for SupCaps {
+            fn next_replay(&mut self) -> Option<M> {
+                None
+            }
+        }
+        impl<A: Actor> HasWatching<A> for SupCaps
+        where
+            OtpPropagation: WatchPolicy<A>,
+        {
+            type Policy = OtpPropagation;
+        }
+        impl<A: Actor> HasSupervising<A> for SupCaps
+        where
+            OtpPropagation: WatchPolicy<A>,
+        {
+            type Strat = OneForAll;
+        }
+        impl<A: Actor> SelectRunner<A> for SupCaps {
+            type Runner = super::super::SupervisedRun;
+        }
+
+        impl Actor for Sup {
+            type Msg = RecMsg;
+            type Args = ();
+            type Error = Infallible;
+            type Caps = SupCaps;
+
+            async fn init((): (), _: Ctx<'_, Self>) -> Result<Self, Infallible> {
+                Ok(Self)
+            }
+
+            async fn handle(&mut self, _: RecMsg, _: Ctx<'_, Self>) -> Result<Flow, Infallible> {
+                Ok(Flow::Continue)
+            }
+        }
+
+        /// The NAMED OTP policy carries the exact semantics of the removed
+        /// `Watch::on_link_died` default: a **linked abnormal** death
+        /// propagates as `Break(LinkDied)` carrying the original reason;
+        /// a watch-only (`linked == false`) abnormal death and a linked
+        /// normal death are observed and continue. Port of the removed
+        /// `default_hook_breaks_on_linked_abnormal_and_continues_otherwise`.
+        #[tokio::test]
+        async fn otp_propagation_breaks_on_linked_abnormal_and_continues_otherwise() {
+            let mut sup = Sup;
+            let id = ActorId::from_raw_for_test(1);
+
+            let out = <OtpPropagation as WatchPolicy<Sup>>::on_link_died(
+                &mut sup,
+                id,
+                ActorStopReason::Killed,
+                true,
+            )
+            .await
+            .expect("infallible policy");
+            match out {
+                ControlFlow::Break(ActorStopReason::LinkDied { id: died, reason }) => {
+                    assert_eq!(died, id, "the notice's id rides the stop reason");
+                    assert!(
+                        matches!(*reason, ActorStopReason::Killed),
+                        "the ORIGINAL reason is preserved, got {reason:?}",
+                    );
+                }
+                other => panic!("linked + abnormal must propagate, got {other:?}"),
+            }
+
+            let out = <OtpPropagation as WatchPolicy<Sup>>::on_link_died(
+                &mut sup,
+                id,
+                ActorStopReason::Killed,
+                false,
+            )
+            .await
+            .expect("infallible policy");
+            assert!(
+                matches!(out, ControlFlow::Continue(())),
+                "watch (linked=false) + abnormal is notify-only, got {out:?}",
+            );
+
+            let out = <OtpPropagation as WatchPolicy<Sup>>::on_link_died(
+                &mut sup,
+                id,
+                ActorStopReason::Normal,
+                true,
+            )
+            .await
+            .expect("infallible policy");
+            assert!(
+                matches!(out, ControlFlow::Continue(())),
+                "linked + normal does not propagate, got {out:?}",
+            );
+        }
+
+        /// `Shell`'s sealed `LinkReact` impl dispatches the loop's death
+        /// notice INTO the cap set's declared policy with `&mut user`
+        /// access — the stage-3 analogue of the stage-2 replay-drain test.
+        #[tokio::test]
+        async fn shell_dispatches_on_link_died_to_the_declared_policy() {
+            let mut shell = Shell {
+                user: Rec { seen: Vec::new() },
+                caps: RecCaps::build(&()),
+            };
+            let id = ActorId::from_raw_for_test(7);
+
+            let out = <Shell<Rec> as LinkReact>::on_link_died(
+                &mut shell,
+                id,
+                ActorStopReason::Killed,
+                true,
+            )
+            .await
+            .expect("recording policy is infallible");
+
+            assert!(
+                matches!(out, ControlFlow::Continue(())),
+                "the recording policy continues, got {out:?}",
+            );
+            assert_eq!(
+                shell.user.seen,
+                vec![(id, true)],
+                "the policy observed the notice through &mut user state",
+            );
+        }
+
+        /// `Shell`'s sealed `SupervisedReact` impl reads the strategy off
+        /// the `Supervising` cap's TYPE — the re-pointed `kind.rs`
+        /// strategy read.
+        #[test]
+        fn shell_strategy_reads_the_supervising_caps_type() {
+            assert_eq!(
+                <Shell<Sup> as SupervisedReact>::strategy(),
+                SupervisionStrategy::OneForAll,
+                "the strategy is the cap set's named type, not a default",
+            );
+        }
+
+        /// The three strategy markers name exactly their runtime strategy —
+        /// kills value-swap mutants on the `STRATEGY` consts.
+        #[test]
+        fn strategy_markers_name_their_runtime_strategy() {
+            assert_eq!(
+                <OneForOne as Strategy>::STRATEGY,
+                SupervisionStrategy::OneForOne
+            );
+            assert_eq!(
+                <RestForOne as Strategy>::STRATEGY,
+                SupervisionStrategy::RestForOne
+            );
+            assert_eq!(
+                <OneForAll as Strategy>::STRATEGY,
+                SupervisionStrategy::OneForAll
+            );
+        }
+
+        /// The plain-actor floor: `()` selects the one-arm loop shape.
+        #[test]
+        fn unit_capset_selects_the_plain_runner() {
+            assert_eq!(
+                type_name::<<() as SelectRunner<super::Nameless>>::Runner>(),
+                type_name::<PlainRun>(),
+                "a capability-less set runs the plain message loop",
+            );
+        }
     }
 
     mod stashing {

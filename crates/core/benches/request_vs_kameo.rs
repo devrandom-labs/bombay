@@ -73,7 +73,7 @@ const PRODUCERS: u64 = 4;
 
 mod core_side {
     use bombay::{
-        actor::{Actor, ActorRef, Flow, Spawn as _, SpawnConfig},
+        actor::{Actor, ActorRef, Flow, SpawnConfig},
         mailbox::{Capacity, Mailboxed},
         message::Msg,
         reply::ReplySender,
@@ -116,7 +116,7 @@ mod core_side {
 
     pub fn spawn() -> ActorRef<Counter> {
         let cap = Capacity::new(NonZeroUsize::new(CAP).expect("nonzero")).expect("within max");
-        Counter::spawn_with_config(
+        crate::spawn_plain_cfg::<Counter>(
             SpawnConfig {
                 capacity: cap,
                 ..Default::default()
@@ -293,3 +293,18 @@ fn ask_roundtrip(c: &mut Criterion) {
 
 criterion_group!(benches, tell_pipeline, tell_contended, ask_roundtrip);
 criterion_main!(benches);
+
+/// The removed `Spawn` verb, bench-local over the public floor.
+fn spawn_plain<A: bombay::actor::Actor>(args: A::Args) -> bombay::actor::ActorRef<A> {
+    spawn_plain_cfg::<A>(bombay::actor::SpawnConfig::default(), args)
+}
+
+fn spawn_plain_cfg<A: bombay::actor::Actor>(
+    config: bombay::actor::SpawnConfig,
+    args: A::Args,
+) -> bombay::actor::ActorRef<A> {
+    let prepared = bombay::actor::PreparedActor::<A>::new(config);
+    let actor_ref = prepared.actor_ref().clone();
+    let _join = prepared.spawn(args);
+    actor_ref
+}

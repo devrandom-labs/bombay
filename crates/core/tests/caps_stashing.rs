@@ -13,13 +13,10 @@ use std::{
 use tokio::time::timeout;
 
 use bombay::{
-    actor::{
-        ActorRef, Flow, PreparedActor, SpawnConfig, SpawnSupervised, Supervisor, Watch,
-        WeakActorRef,
-    },
+    actor::{Flow, PreparedActor, SpawnConfig, WeakActorRef},
     caps::{self, Ctx, Replay, Shell},
     error::ActorStopReason,
-    mailbox::{Capacity, Mailboxed, Signal},
+    mailbox::{Capacity, Signal},
     message::Msg,
     reply::ReplySender,
     restart::{RestartConfig, RestartPolicy},
@@ -309,27 +306,41 @@ async fn kill_drops_stash() {
     assert_eq!(read(&t), Vec::<u32>::new(), "stash dropped on kill");
 }
 
-/// Minimal supervisor: exists only to own the `Gate` child.
+/// Minimal supervisor: exists only to own the `Gate` child. Stage-3 shape:
+/// supervision is the `Watching` + `Supervising` caps — no marker impls.
 struct Sup;
 
 #[derive(Debug)]
 struct SupMsg;
 impl Msg for SupMsg {}
-impl Mailboxed for Sup {
-    type Msg = SupMsg;
+
+#[derive(bombay_macros::Provide)]
+struct SupCaps {
+    watching: caps::Watching<caps::OtpPropagation>,
+    supervising: caps::Supervising<caps::OneForOne>,
 }
-impl bombay::actor::Actor for Sup {
+
+impl caps::CapSet<Sup> for SupCaps {
+    fn build((): &()) -> Self {
+        Self {
+            watching: caps::Watching::new(),
+            supervising: caps::Supervising::new(),
+        }
+    }
+}
+
+impl caps::Actor for Sup {
+    type Msg = SupMsg;
     type Args = ();
     type Error = Infallible;
-    async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Infallible> {
+    type Caps = SupCaps;
+    async fn init((): (), _: Ctx<'_, Self>) -> Result<Self, Infallible> {
         Ok(Sup)
     }
-    async fn handle(&mut self, _: SupMsg, _: ActorRef<Self>) -> Result<Flow, Infallible> {
+    async fn handle(&mut self, _: SupMsg, _: Ctx<'_, Self>) -> Result<Flow, Infallible> {
         Ok(Flow::Continue)
     }
 }
-impl Watch for Sup {}
-impl Supervisor for Sup {}
 
 /// Invariant 8: restart = new incarnation from Args; a stale stash must not
 /// leak across incarnations. Incarnation 0 stashes 1 then panics; the
@@ -338,7 +349,7 @@ impl Supervisor for Sup {}
 async fn restart_gets_a_fresh_stash() {
     set_supervisor_rng_seed(Some(7));
     let t = tape();
-    let sup_ref = Sup::spawn_supervised(());
+    let sup_ref = caps::spawn::<Sup>(());
 
     let spawned: Arc<Mutex<Vec<caps::Handle<Gate>>>> = Arc::new(Mutex::new(Vec::new()));
     let factory_tape = Arc::clone(&t);
