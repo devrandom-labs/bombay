@@ -5,3 +5,5 @@ caps actor requires `lookup::<caps::Shell<Dispatcher>>(name)` — the internal
 adapter leaks into user code (see `examples/job_queue/main.rs`). A caps-aware
 lookup (or a `Handle`-returning alias) belongs to the actor-builder /
 ergonomics arc after ADR-0026 lands.
+
+Fix card: #289.
