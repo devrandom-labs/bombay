@@ -223,3 +223,33 @@ deleted; the #266/#267 oracle suites are ported to the caps surface
 Constraint 4 is amended accordingly: `PreparedActor`, the mailbox
 primitives, and the run-loop seams remain the public expert floor, but
 the *capability tiers* above them exist only as caps.
+
+## Addendum 3 (2026-08-01) — stage-4 seat design: runtime floor + two hooks
+
+Stage 4 (card #281) seats `Deadlined<DP>`/`Phased<P>` without a fourth
+loop shape (the constraint #280 recorded — deadlines are orthogonal to
+shape). Mechanism, twice the stage-2 `Replay` precedent:
+
+- **Runtime floor**: the internal `actor::Actor` trait carries the two
+  ADR-0025 plane methods as defaults (`None`/`Continue`); all three loops
+  poll one guarded `sleep_until` arm uniformly (fires-once, above the
+  mailbox arm, below every housekeeping arm). This narrows nothing back:
+  the USER seat stays the capability — the runtime trait is the loop's
+  internal floor behind the one caps door, and `Shell` bridges it to two
+  new derive-emitted participation traits on the `Caps` bound:
+  `DeadlineHook<A>` (the declarative slot + expiry) and `Admission<A>`
+  (`admit`/`commit` — the gate runs on every delivered AND replayed
+  message).
+- **D3 with an imperative verb**: on the one-trait surface `handle`
+  returns `Flow`, not `Step`, so the transition verb is
+  `Phased::goto(next)` recording a PENDING phase that the `Shell` commits
+  only after the handler's `Ok` — commit-after-Ok is the `step` code
+  order, not a return-type property. `Step` survives where a value
+  return still exists: the policy's timeout/overflow hooks.
+- **"Phased embeds/requires Deadlined", structurally**: a `Phased` field
+  IS the set's deadline participation (its `entered_at +
+  phase_deadline`), so the requirement needs no supertrait — instead the
+  derive REJECTS `Phased`+`Deadlined` (one deadline seat per actor; the
+  loop has one arm) and `Phased`+`Stashing` (the machine embeds its own
+  ADR-0022 stash; a sibling would double-buffer deferral), with E0119
+  remaining the law for hand-written sets.

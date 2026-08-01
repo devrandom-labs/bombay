@@ -2057,6 +2057,7 @@ mod tests {
             assert!(s.is_empty());
             s.stash(1).expect("slot 1");
             s.stash(2).expect("slot 2");
+            assert!(!s.is_empty(), "two messages are deferred");
             assert_eq!(s.len(), 2);
             // Nothing is due for replay until unstash_all snapshots the batch.
             assert_eq!(Replay::next_replay(&mut s), None, "held is not yet ready");

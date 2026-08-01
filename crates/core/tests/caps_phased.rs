@@ -112,7 +112,11 @@ impl PhasePolicy for GPolicy {
         _: &mut Stashing<GMsg>,
     ) -> Result<Step<Phase>, Infallible> {
         let _ = actor.probe.send(Ev::TimedOutAt(Instant::now()));
-        Ok(Step::Stop)
+        Ok(if actor.timeout_goes_ready {
+            Step::Goto(Phase::Ready)
+        } else {
+            Step::Stop
+        })
     }
 
     /// Loud typed refusal with the INTACT payload (D6 override).
@@ -132,11 +136,15 @@ impl PhasePolicy for GPolicy {
 struct GArgs {
     stash_cap: Capacity,
     load_deadline: Option<Duration>,
+    /// `true`: the Loading timeout transitions to Ready (releasing the
+    /// stash INSIDE the deadline turn) instead of stopping.
+    timeout_goes_ready: bool,
     probe: flume::Sender<Ev>,
 }
 
 struct G {
     probe: flume::Sender<Ev>,
+    timeout_goes_ready: bool,
 }
 
 #[derive(bombay_macros::Provide)]
@@ -159,7 +167,10 @@ impl Actor for G {
     type Caps = GCaps;
 
     async fn init(args: GArgs, _: Ctx<'_, Self>) -> Result<Self, Infallible> {
-        Ok(Self { probe: args.probe })
+        Ok(Self {
+            probe: args.probe,
+            timeout_goes_ready: args.timeout_goes_ready,
+        })
     }
 
     async fn handle(&mut self, msg: GMsg, mut cx: Ctx<'_, Self>) -> Result<Flow, Infallible> {
@@ -209,6 +220,7 @@ fn spawn_g(
     let h = spawn::<G>(GArgs {
         stash_cap: cap(stash_cap),
         load_deadline,
+        timeout_goes_ready: false,
         probe: tx,
     });
     (h, rx)
@@ -349,6 +361,146 @@ async fn a_left_phases_deadline_never_fires() {
             Ev::Stopped(true),
         ],
         "no TimedOutAt anywhere: a left phase's deadline is unrepresentable",
+    );
+}
+
+/// A phase timeout may TRANSITION (not just stop): the released batch
+/// replays inside the deadline turn itself — re-gated in the new phase,
+/// ahead of the backlog — and the actor keeps serving afterwards.
+#[tokio::test(start_paused = true)]
+async fn a_phase_timeout_can_release_the_stash_for_in_step_replay() {
+    let (tx, rx) = flume::unbounded();
+    let start = Instant::now();
+    let h = spawn::<G>(GArgs {
+        stash_cap: cap(8),
+        load_deadline: Some(Duration::from_millis(20)),
+        timeout_goes_ready: true,
+        probe: tx,
+    });
+    bounded(h.tell(GMsg::Cmd(1))).await.expect("queued");
+    bounded(h.tell(GMsg::Cmd(2))).await.expect("queued");
+    // The Loading deadline fires at t=20: Goto(Ready) releases both
+    // deferred commands, which replay in the SAME deadline turn.
+    let first = bounded(rx.recv_async()).await.expect("timeout fired");
+    assert_eq!(first, Ev::TimedOutAt(start + Duration::from_millis(20)));
+    bounded(h.tell(GMsg::Cmd(3))).await.expect("queued");
+    bounded(h.tell(GMsg::Quit)).await.expect("queued");
+
+    let evs = collect_until_stopped(&rx).await;
+    assert_eq!(
+        evs,
+        vec![
+            Ev::Processed(1),
+            Ev::Processed(2),
+            Ev::Processed(3),
+            Ev::Stopped(true),
+        ],
+        "the deadline-turn replay lands in Ready, in arrival order, and \
+         the loop keeps serving",
+    );
+}
+
+// -------------------------------------------- default-overflow routing ----
+
+/// A minimal phased actor whose policy KEEPS the D6 default: an overflow
+/// is redelivered to `handle` — visible-but-unrefused shedding.
+struct Shed {
+    probe: flume::Sender<Ev>,
+}
+
+struct ShedPolicy;
+impl PhasePolicy for ShedPolicy {
+    type Actor = Shed;
+    type Phase = Phase;
+    fn build(_: &flume::Sender<Ev>) -> Self {
+        Self
+    }
+    fn initial(_: &flume::Sender<Ev>) -> Phase {
+        Phase::Loading
+    }
+    fn stash_capacity(_: &flume::Sender<Ev>) -> Capacity {
+        cap(1)
+    }
+    fn gate(phase: Phase, msg: &GMsg) -> Disposition {
+        match (phase, msg) {
+            (Phase::Loading, GMsg::Cmd(_)) => Disposition::Defer,
+            _ => Disposition::Deliver,
+        }
+    }
+    fn phase_deadline(&self, _: Phase) -> Option<Duration> {
+        None
+    }
+    async fn on_phase_timeout(
+        _: &mut Shed,
+        _: Phase,
+        _: WeakActorRef<Shell<Shed>>,
+        _: &mut Stashing<GMsg>,
+    ) -> Result<Step<Phase>, Infallible> {
+        Ok(Step::Stay)
+    }
+    // on_defer_full deliberately NOT overridden: the default redelivers.
+}
+
+#[derive(bombay_macros::Provide)]
+struct ShedCaps {
+    phased: Phased<ShedPolicy>,
+}
+impl CapSet<Shed> for ShedCaps {
+    fn build(args: &flume::Sender<Ev>) -> Self {
+        Self {
+            phased: Phased::build(args),
+        }
+    }
+}
+
+impl Actor for Shed {
+    type Msg = GMsg;
+    type Args = flume::Sender<Ev>;
+    type Error = Infallible;
+    type Caps = ShedCaps;
+    async fn init(probe: Self::Args, _: Ctx<'_, Self>) -> Result<Self, Infallible> {
+        Ok(Self { probe })
+    }
+    async fn handle(&mut self, msg: GMsg, _: Ctx<'_, Self>) -> Result<Flow, Infallible> {
+        match msg {
+            // Reachable ONLY through the default overflow redelivery (the
+            // gate defers every Loading Cmd): observing it here IS the
+            // D6-default proof.
+            GMsg::Cmd(n) => {
+                let _ = self.probe.send(Ev::Processed(n));
+            }
+            GMsg::Quit => return Ok(Flow::Stop),
+            _ => {}
+        }
+        Ok(Flow::Continue)
+    }
+    async fn on_stop(
+        &mut self,
+        _: WeakActorRef<Shell<Self>>,
+        reason: ActorStopReason,
+    ) -> Result<(), Infallible> {
+        let _ = self.probe.send(Ev::Stopped(reason.is_normal()));
+        Ok(())
+    }
+}
+
+/// D6 default, end to end: a deferral that overflows the stash is
+/// REDELIVERED to `handle` in the deferring phase — visible, never a
+/// silent drop — while the retained message stays deferred.
+#[tokio::test(start_paused = true)]
+async fn default_overflow_redelivers_through_the_gate() {
+    let (tx, rx) = flume::unbounded();
+    let h = spawn::<Shed>(tx);
+    bounded(h.tell(GMsg::Cmd(1))).await.expect("queued"); // stashed
+    bounded(h.tell(GMsg::Cmd(2))).await.expect("queued"); // overflow -> handle
+    bounded(h.tell(GMsg::Quit)).await.expect("queued");
+
+    let evs = collect_until_stopped(&rx).await;
+    assert_eq!(
+        evs,
+        vec![Ev::Processed(2), Ev::Stopped(true)],
+        "the overflowed message reaches handle (redelivered); the retained \
+         one stays deferred and dies with the incarnation",
     );
 }
 
