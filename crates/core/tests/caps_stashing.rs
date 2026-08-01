@@ -1,23 +1,28 @@
-//! Bounded-stash behavior through the public API (card #224): replay order
-//! vs the mailbox backlog, snapshot semantics end to end, stop-mode fates,
-//! and restart hygiene. Every terminal await is bounded.
+//! Bounded-stash behavior through the `caps` surface (ADR-0022 semantics
+//! ported to the `Stashing` capability, card #279): replay order vs the
+//! mailbox backlog, snapshot semantics end to end, stop-mode fates, restart
+//! hygiene, and the one-queue livelock re-proof. Every terminal await is
+//! bounded. Successor to the removed `tests/stash.rs`.
 
 use core::{convert::Infallible, num::NonZeroUsize, time::Duration};
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::VecDeque,
+    sync::{Arc, Mutex},
+};
 
 use tokio::time::timeout;
 
 use bombay::{
     actor::{
-        ActorRef, Flow, PreparedActor, Spawn, SpawnConfig, SpawnSupervised, Supervisor, Watch,
+        ActorRef, Flow, PreparedActor, SpawnConfig, SpawnSupervised, Supervisor, Watch,
         WeakActorRef,
     },
+    caps::{self, Ctx, Replay, Shell},
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed, Signal},
     message::Msg,
     reply::ReplySender,
     restart::{RestartConfig, RestartPolicy},
-    stash::{Stash, StashActor, Stashed},
     test_support::{set_supervisor_rng_seed, terminate_bound},
 };
 
@@ -33,7 +38,7 @@ struct Gate {
     tape: Arc<Mutex<Vec<u32>>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, bombay_macros::Msg)]
 enum GateMsg {
     Open,
     Item(u32),
@@ -44,37 +49,48 @@ enum GateMsg {
     Boom,
 }
 
-impl Msg for GateMsg {}
-impl Mailboxed for Gate {
-    type Msg = GateMsg;
+/// The gate's cap set: bounded deferral only. `#[derive(Provide)]` emits both
+/// the `Provide` access seam and the `Replay` loop hook.
+#[derive(bombay_macros::Provide)]
+struct GateCaps {
+    stash: caps::Stashing<GateMsg>,
 }
 
-impl StashActor for Gate {
-    type Args = Arc<Mutex<Vec<u32>>>;
-    type Error = Infallible;
+struct GatePolicy;
 
-    fn stash_capacity(_: &Self::Args) -> Capacity {
+impl caps::StashPolicy<Gate> for GatePolicy {
+    fn capacity(_: &<Gate as caps::Actor>::Args) -> Capacity {
         cap(8)
     }
+}
 
-    async fn on_start(tape: Self::Args, _: ActorRef<Stashed<Self>>) -> Result<Self, Infallible> {
+impl caps::CapSet<Gate> for GateCaps {
+    fn build(args: &<Gate as caps::Actor>::Args) -> Self {
+        Self {
+            stash: caps::Stashing::bounded(<GatePolicy as caps::StashPolicy<Gate>>::capacity(args)),
+        }
+    }
+}
+
+impl caps::Actor for Gate {
+    type Msg = GateMsg;
+    type Args = Arc<Mutex<Vec<u32>>>;
+    type Error = Infallible;
+    type Caps = GateCaps;
+
+    async fn init(tape: Self::Args, _: Ctx<'_, Self>) -> Result<Self, Infallible> {
         Ok(Self { open: false, tape })
     }
 
-    async fn handle(
-        &mut self,
-        msg: GateMsg,
-        _: ActorRef<Stashed<Self>>,
-        stash: &mut Stash<GateMsg>,
-    ) -> Result<Flow, Infallible> {
+    async fn handle(&mut self, msg: GateMsg, mut cx: Ctx<'_, Self>) -> Result<Flow, Infallible> {
         match msg {
             GateMsg::Open => {
                 self.open = true;
-                stash.unstash_all();
+                cx.cap::<caps::Stashing<GateMsg>>().unstash_all();
             }
             GateMsg::Boom => panic!("gate boom"),
             item @ (GateMsg::Item(_) | GateMsg::ItemThenStop(_)) if !self.open => {
-                stash
+                cx.cap::<caps::Stashing<GateMsg>>()
                     .stash(item)
                     .expect("test stash sized for the scenario");
             }
@@ -97,10 +113,11 @@ fn read(tape: &Arc<Mutex<Vec<u32>>>) -> Vec<u32> {
     tape.lock().expect("tape").clone()
 }
 
-/// Spawns a `Stashed<Gate>` with the message sequence pre-queued before the
-/// loop starts — a deterministic mailbox, no racing sends.
-fn spawn_prequeued(msgs: Vec<GateMsg>, tape: Arc<Mutex<Vec<u32>>>) -> ActorRef<Stashed<Gate>> {
-    let prepared = PreparedActor::<Stashed<Gate>>::new(SpawnConfig {
+/// Spawns a `Gate` with the message sequence pre-queued before the loop
+/// starts — a deterministic mailbox, no racing sends. Runs on the caps `Shell`
+/// adapter (`caps::Handle<Gate>` = `ActorRef<Shell<Gate>>`).
+fn spawn_prequeued(msgs: Vec<GateMsg>, tape: Arc<Mutex<Vec<u32>>>) -> caps::Handle<Gate> {
+    let prepared = PreparedActor::<Shell<Gate>>::new(SpawnConfig {
         capacity: cap(16),
         ..SpawnConfig::default()
     });
@@ -156,8 +173,6 @@ async fn replay_runs_before_backlog_in_arrival_order() {
 #[tokio::test]
 async fn no_stale_replay_after_batch_drains() {
     let t = tape();
-    // Close-after-open variant: reuse Gate but drive it so 2 arrives while
-    // closed again. Simplest deterministic driver: two rounds.
     let actor_ref = spawn_prequeued(vec![GateMsg::Item(1), GateMsg::Open], Arc::clone(&t));
     let first = timeout(terminate_bound(), async {
         loop {
@@ -294,7 +309,7 @@ async fn kill_drops_stash() {
     assert_eq!(read(&t), Vec::<u32>::new(), "stash dropped on kill");
 }
 
-/// Minimal supervisor: exists only to own the `Stashed<Gate>` child.
+/// Minimal supervisor: exists only to own the `Gate` child.
 struct Sup;
 
 #[derive(Debug)]
@@ -325,7 +340,7 @@ async fn restart_gets_a_fresh_stash() {
     let t = tape();
     let sup_ref = Sup::spawn_supervised(());
 
-    let spawned: Arc<Mutex<Vec<ActorRef<Stashed<Gate>>>>> = Arc::new(Mutex::new(Vec::new()));
+    let spawned: Arc<Mutex<Vec<caps::Handle<Gate>>>> = Arc::new(Mutex::new(Vec::new()));
     let factory_tape = Arc::clone(&t);
     let factory_spawned = Arc::clone(&spawned);
     let config = RestartConfig::new(RestartPolicy::Permanent)
@@ -334,7 +349,7 @@ async fn restart_gets_a_fresh_stash() {
     timeout(
         terminate_bound(),
         sup_ref.supervise(config, move || {
-            let child = Stashed::<Gate>::spawn(Arc::clone(&factory_tape));
+            let child = caps::spawn::<Gate>(Arc::clone(&factory_tape));
             factory_spawned.lock().expect("spawned").push(child.clone());
             child
         }),
@@ -386,20 +401,55 @@ async fn restart_gets_a_fresh_stash() {
     );
 }
 
-/// Mutant pin: `Stashed::name` reports the user type's name, not the
-/// wrapper's — logs name the interesting type.
+/// Mutant pin: the adapter reports the USER type's name, not the wrapper's —
+/// logs name the interesting type.
 #[test]
-fn stashed_name_is_the_user_type() {
+fn shell_name_is_the_user_type() {
     assert_eq!(
-        <Stashed<Gate> as bombay::actor::Actor>::name(),
+        <Shell<Gate> as bombay::actor::Actor>::name(),
         core::any::type_name::<Gate>(),
-        "Stashed reports the user type's name"
+        "Shell reports the user type's name"
     );
 }
 
-/// Minimal probe for hook delegation: its `on_stop` pushes 999 onto the
-/// tape, so a `Stashed::on_stop` that forgot to delegate leaves the tape
-/// empty.
+/// The two-queue snapshot is load-bearing (ADR-0022 / ADR-0026 re-proof): a
+/// handler that re-stashes each replayed message terminates its batch because
+/// `held` is a SEPARATE queue from `ready`; a one-queue design feeds the
+/// re-stash back into the queue being drained and never reaches empty.
+#[test]
+fn two_queue_snapshot_terminates_where_one_queue_livelocks() {
+    // TWO-QUEUE (the real cap): re-stashing during replay lands in `held`, so
+    // the `ready` snapshot drains and replay TERMINATES in exactly the batch
+    // size. A one-queue `Stashing` would loop here past `drained <= 2`.
+    let mut s = caps::Stashing::<u32>::bounded(cap(8));
+    s.stash(1).expect("1");
+    s.stash(2).expect("2");
+    s.unstash_all();
+    let mut drained = 0u32;
+    while let Some(m) = Replay::next_replay(&mut s) {
+        s.stash(m).expect("re-stash into held");
+        drained = drained.checked_add(1).expect("no overflow");
+        assert!(drained <= 2, "two-queue snapshot must terminate the batch");
+    }
+    assert_eq!(drained, 2, "exactly the snapshot batch replays");
+    assert_eq!(s.len(), 2, "re-stashed messages wait for the next unstash");
+
+    // ONE-QUEUE (the rejected model): re-stashing feeds the SAME queue being
+    // drained — bounded here to 8 pops, after which it is STILL non-empty (a
+    // real run loops forever; ADR-0026's instant-livelock re-proof).
+    let mut one: VecDeque<u32> = VecDeque::from([1, 2]);
+    for _ in 0..8 {
+        let m = one.pop_front().expect("one-queue never drains");
+        one.push_back(m);
+    }
+    assert!(
+        !one.is_empty(),
+        "one queue livelocks: it never reaches empty"
+    );
+}
+
+/// Minimal probe for hook delegation: its `on_stop` pushes 999 onto the tape,
+/// so a `Shell::on_stop` that forgot to delegate leaves the tape empty.
 struct StopProbe {
     tape: Arc<Mutex<Vec<u32>>>,
 }
@@ -407,34 +457,24 @@ struct StopProbe {
 #[derive(Debug)]
 struct StopProbeMsg;
 impl Msg for StopProbeMsg {}
-impl Mailboxed for StopProbe {
-    type Msg = StopProbeMsg;
-}
 
-impl StashActor for StopProbe {
+impl caps::Actor for StopProbe {
+    type Msg = StopProbeMsg;
     type Args = Arc<Mutex<Vec<u32>>>;
     type Error = Infallible;
+    type Caps = ();
 
-    fn stash_capacity(_: &Self::Args) -> Capacity {
-        cap(1)
-    }
-
-    async fn on_start(tape: Self::Args, _: ActorRef<Stashed<Self>>) -> Result<Self, Infallible> {
+    async fn init(tape: Self::Args, _: Ctx<'_, Self>) -> Result<Self, Infallible> {
         Ok(Self { tape })
     }
 
-    async fn handle(
-        &mut self,
-        _: StopProbeMsg,
-        _: ActorRef<Stashed<Self>>,
-        _: &mut Stash<StopProbeMsg>,
-    ) -> Result<Flow, Infallible> {
+    async fn handle(&mut self, _: StopProbeMsg, _: Ctx<'_, Self>) -> Result<Flow, Infallible> {
         Ok(Flow::Continue)
     }
 
     async fn on_stop(
         &mut self,
-        _: WeakActorRef<Stashed<Self>>,
+        _: WeakActorRef<Shell<Self>>,
         _: ActorStopReason,
     ) -> Result<(), Infallible> {
         self.tape.lock().expect("tape").push(999);
@@ -442,13 +482,13 @@ impl StashActor for StopProbe {
     }
 }
 
-/// Mutant pin: `Stashed::on_stop` DELEGATES to `StashActor::on_stop` — a
-/// `-> Ok(())` body-replacement mutant skips the user hook and the tape
-/// never sees 999.
+/// Mutant pin: `Shell::on_stop` DELEGATES to `caps::Actor::on_stop` — a
+/// `-> Ok(())` body-replacement mutant skips the user hook and the tape never
+/// sees 999.
 #[tokio::test]
-async fn stashed_on_stop_delegates_to_user_hook() {
+async fn shell_on_stop_delegates_to_user_hook() {
     let t = tape();
-    let actor_ref = Stashed::<StopProbe>::spawn(Arc::clone(&t));
+    let actor_ref = caps::spawn::<StopProbe>(Arc::clone(&t));
     drop(actor_ref);
     timeout(terminate_bound(), async {
         while read(&t).is_empty() {
@@ -460,6 +500,6 @@ async fn stashed_on_stop_delegates_to_user_hook() {
     assert_eq!(
         read(&t),
         vec![999],
-        "Stashed::on_stop delegates to StashActor::on_stop"
+        "Shell::on_stop delegates to caps::Actor::on_stop"
     );
 }

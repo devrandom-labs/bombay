@@ -16,10 +16,10 @@ use app::{
 };
 use bombay::{
     actor::Spawn,
+    caps,
     mailbox::Capacity,
     registry::Registry,
     restart::{RestartConfig, RestartPolicy},
-    stash::Stashed,
 };
 
 #[expect(
@@ -53,10 +53,11 @@ async fn main() {
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
-    // Card #224: submissions go through a `Stashed<Intake>` front door — a
-    // bounded-stash gate that can defer submits during maintenance. This
-    // demo never pauses it; the deferral path is the app-level test.
-    let intake = Stashed::<Intake>::spawn((
+    // Card #224 (caps surface, #279): submissions go through an `Intake`
+    // front door — a `caps::Actor` with a bounded-stash capability that can
+    // defer submits during maintenance. This demo never pauses it; the
+    // deferral path is the app-level test.
+    let intake = caps::spawn::<Intake>((
         dispatcher.clone(),
         Capacity::try_from(8usize).expect("valid intake stash capacity"),
     ));

@@ -21,14 +21,13 @@ use app::{
 };
 use bombay::{
     ActorId,
-    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, Spawn as _, SpawnConfig, Watch},
+    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, Watch},
     caps,
     error::{ActorStopReason, AskError},
     mailbox::{Capacity, Mailboxed},
     message::Msg,
     registry::Registry,
     restart::{RestartConfig, RestartPolicy},
-    stash::Stashed,
     test_support::terminate_bound,
 };
 use tokio::{sync::oneshot, time::timeout};
@@ -679,7 +678,7 @@ async fn intake_defers_submissions_during_maintenance() {
         .lookup::<Dispatcher>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
-    let intake = Stashed::<Intake>::spawn((
+    let intake = caps::spawn::<Intake>((
         dispatcher,
         Capacity::try_from(8usize).expect("valid intake stash capacity"),
     ));

@@ -508,10 +508,12 @@ impl Dispatcher {
 
 // ------------------------------------------------------------ intake -------
 
-/// Front door for submissions (card #224).
+/// Front door for submissions (card #224, migrated to the caps surface at
+/// card #279).
 ///
-/// A `Stashed` actor that defers `Submit`s during maintenance and forwards
-/// them on `Resume` — the walking-skeleton demonstration of the bounded stash.
+/// A plain [`caps::Actor`] carrying a [`caps::Stashing`] capability: it defers
+/// `Submit`s during maintenance and forwards them on `Resume` — the
+/// walking-skeleton demonstration of the bounded stash as a capability.
 pub struct Intake {
     dispatcher: ActorRef<Dispatcher>,
     maintenance: bool,
@@ -531,22 +533,41 @@ pub enum IntakeMsg {
     Resume,
 }
 
-impl Mailboxed for Intake {
-    type Msg = IntakeMsg;
+/// The intake's capability set: bounded deferral, nothing else. `#[derive]`
+/// emits the `Provide` access seam AND the `Replay` loop hook — the stash is
+/// serviced automatically, impossible to forget.
+#[derive(bombay_macros::Provide)]
+pub struct IntakeCaps {
+    stash: caps::Stashing<IntakeMsg>,
 }
 
-impl bombay::stash::StashActor for Intake {
-    type Args = (ActorRef<Dispatcher>, Capacity);
-    type Error = Infallible;
+/// Stash capacity, threaded from the spawn args (never a `SpawnConfig` field,
+/// ADR-0022 D8).
+pub struct IntakePolicy;
 
-    fn stash_capacity((_, cap): &Self::Args) -> Capacity {
+impl caps::StashPolicy<Intake> for IntakePolicy {
+    fn capacity((_, cap): &<Intake as caps::Actor>::Args) -> Capacity {
         *cap
     }
+}
 
-    async fn on_start(
-        (dispatcher, _): Self::Args,
-        _: ActorRef<bombay::stash::Stashed<Self>>,
-    ) -> Result<Self, Infallible> {
+impl caps::CapSet<Intake> for IntakeCaps {
+    fn build(args: &<Intake as caps::Actor>::Args) -> Self {
+        Self {
+            stash: caps::Stashing::bounded(<IntakePolicy as caps::StashPolicy<Intake>>::capacity(
+                args,
+            )),
+        }
+    }
+}
+
+impl caps::Actor for Intake {
+    type Msg = IntakeMsg;
+    type Args = (ActorRef<Dispatcher>, Capacity);
+    type Error = Infallible;
+    type Caps = IntakeCaps;
+
+    async fn init((dispatcher, _): Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Infallible> {
         Ok(Self {
             dispatcher,
             maintenance: false,
@@ -556,21 +577,18 @@ impl bombay::stash::StashActor for Intake {
     async fn handle(
         &mut self,
         msg: IntakeMsg,
-        _: ActorRef<bombay::stash::Stashed<Self>>,
-        stash: &mut bombay::stash::Stash<IntakeMsg>,
+        mut cx: caps::Ctx<'_, Self>,
     ) -> Result<Flow, Infallible> {
         match msg {
             IntakeMsg::Pause => self.maintenance = true,
             IntakeMsg::Resume => {
                 self.maintenance = false;
-                stash.unstash_all();
+                cx.cap::<caps::Stashing<IntakeMsg>>().unstash_all();
             }
             submit @ IntakeMsg::Submit { .. } if self.maintenance => {
                 // Full stash = shed load with the same typed refusal the
                 // dispatcher uses for a full queue: the asker learns NOW.
-                // (`send_err` is the typed-rejection verb — `send` sends Ok;
-                // precedent: the dispatcher's own Submit arm above.)
-                if let Err(overflow) = stash.stash(submit)
+                if let Err(overflow) = cx.cap::<caps::Stashing<IntakeMsg>>().stash(submit)
                     && let IntakeMsg::Submit { reply, .. } = overflow.msg()
                 {
                     let _ = reply.send_err(SubmitError::QueueFull);
