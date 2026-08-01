@@ -112,8 +112,9 @@ reaction); `NoDefer`/`NoTimeout` are explicit named choices (#196
   a defer-path allocation is unrepresentable (type-level pin; the old
   design's `VecDeque` was lazily allocated, so the claim is structural,
   not a measured delta).
-- Open doors, deliberately not taken now: folding `WatchPolicy`'s
-  `ControlFlow` dialect (touches #266 delivery semantics); collapsing
-  handler `Flow` into `Step<Never>`; canned seats (`StopOnDeadline`) at
-  the second concrete use; unsealing `DeadlineCx`/capabilities (the
-  machine-algebra card).
+- Open doors, deliberately not taken now — each with its card: folding
+  `WatchPolicy`'s `ControlFlow` dialect + handler `Flow` into the one
+  `Step` family is **card #297** (a precondition of #295: the algebra
+  needs one verdict, not three); unsealing `DeadlineCx`/capabilities is
+  **card #295** (the machine algebra); canned seats (`StopOnDeadline`)
+  wait for the second concrete use, no card until then.
