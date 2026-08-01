@@ -352,6 +352,57 @@ pub type DeferRouted<P> = Result<
 /// No token, no stash, no bound — an undeclared `Defer` is a COMPILE
 /// error, and no buffer type exists in the machine. A named opt-out,
 /// never a silent default.
+///
+/// The law, pinned: a `NoDefer` machine's gate cannot spell `Defer` —
+/// its verdict type is `Disposition<Never>` and [`Deferred`] does not
+/// fit the uninhabited token:
+///
+/// ```compile_fail,E0053
+/// use bombay::actor::Flow;
+/// use bombay::caps::{
+///     Actor, CapSet, Ctx, Deferred, Disposition, NoDefer, NoTimeout, PhasePolicy,
+/// };
+/// use bombay::message::Msg;
+///
+/// #[derive(Debug)]
+/// struct Ping;
+/// impl Msg for Ping {}
+///
+/// struct A;
+/// #[derive(bombay_macros::Provide)]
+/// struct ACaps {
+///     phased: bombay::caps::Phased<APolicy>,
+/// }
+/// impl CapSet<A> for ACaps {
+///     fn build(args: &()) -> Self {
+///         Self { phased: bombay::caps::Phased::build(args) }
+///     }
+/// }
+/// impl Actor for A {
+///     type Msg = Ping;
+///     type Args = ();
+///     type Error = core::convert::Infallible;
+///     type Caps = ACaps;
+///     async fn init((): (), _: Ctx<'_, Self>) -> Result<Self, Self::Error> {
+///         Ok(Self)
+///     }
+///     async fn handle(&mut self, _: Ping, _: Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+///         Ok(Flow::Continue)
+///     }
+/// }
+///
+/// struct APolicy;
+/// impl PhasePolicy for APolicy {
+///     type Actor = A;
+///     type Phase = ();
+///     type Deferral = NoDefer;   // declared: never defers
+///     type Timeout = NoTimeout;
+///     fn initial(_: &()) {}
+///     fn gate((): (), _: &Ping) -> Disposition<Deferred> {
+///         Disposition::Defer(Deferred)   // E0053: the declared token is `Never`
+///     }
+/// }
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct NoDefer;
 
@@ -405,10 +456,12 @@ impl<P: PhasePolicy, SP: StashPolicy<P::Actor> + Send + 'static> DeferSeat<P> fo
             Ok(()) => Ok(DeferOutcome::Absorbed),
             Err(full) => {
                 let refused = full.msg();
-                Ok(match P::on_defer_full(actor, phase, refused, stash).await? {
-                    Overflow::Redeliver(m) => DeferOutcome::Redeliver(m),
-                    Overflow::Handled(step) => DeferOutcome::Handled(step),
-                })
+                Ok(
+                    match P::on_defer_full(actor, phase, refused, stash).await? {
+                        Overflow::Redeliver(m) => DeferOutcome::Redeliver(m),
+                        Overflow::Handled(step) => DeferOutcome::Handled(step),
+                    },
+                )
             }
         }
     }

@@ -25,7 +25,7 @@ use bombay::{
     reply::ReplySender,
     restart::RestartConfig,
 };
-use core::{convert::Infallible, num::NonZeroUsize, ops::ControlFlow};
+use core::{convert::Infallible, ops::ControlFlow};
 use flume::Sender;
 
 // ---------------------------------------------------------------- domain ----
@@ -147,36 +147,23 @@ pub enum WorkerPhase {
     Draining,
 }
 
-/// The worker's phase machine as ONE declaration: every message is
-/// DELIVERED in every phase — a Draining worker must refuse a new job
-/// loudly (the asker learns), never defer or silently ignore it — and
-/// Draining carries the one deadline: the in-flight grace.
-pub struct WorkerPhases {
-    drain_grace: Duration,
-}
+/// The worker's phase machine as ONE declaration with its seats spelled
+/// out (ADR-0028): every message is DELIVERED in every phase — a Draining
+/// worker must refuse a new job loudly (the asker learns), never defer or
+/// silently ignore it — so the deferral seat is `NoDefer` (no stash
+/// exists, and the gate's verdict type cannot even spell `Defer`); the
+/// one deadline (the in-flight drain grace) rides the plugged
+/// [`DrainGrace`] seat.
+pub struct WorkerPhases;
 
 impl caps::PhasePolicy for WorkerPhases {
     type Actor = Worker;
     type Phase = WorkerPhase;
-
-    fn build(args: &WorkerArgs) -> Self {
-        Self {
-            drain_grace: args.drain_grace,
-        }
-    }
+    type Deferral = caps::NoDefer;
+    type Timeout = DrainGrace;
 
     fn initial(_: &WorkerArgs) -> WorkerPhase {
         WorkerPhase::Serving
-    }
-
-    #[expect(
-        clippy::expect_used,
-        reason = "capacity 1 is always within the mailbox capacity bounds"
-    )]
-    fn stash_capacity(_: &WorkerArgs) -> Capacity {
-        // Nothing is ever deferred (the gate delivers everything); the
-        // mandatory bound is the smallest legal one.
-        Capacity::new(NonZeroUsize::MIN).expect("capacity 1 is valid")
     }
 
     fn gate(_: WorkerPhase, _: &WorkerMsg) -> caps::Disposition {
@@ -184,21 +171,39 @@ impl caps::PhasePolicy for WorkerPhases {
         // handler's job (loud), and the in-flight ack must always land.
         caps::Disposition::Deliver
     }
+}
 
-    fn phase_deadline(&self, phase: WorkerPhase) -> Option<Duration> {
-        match phase {
+/// The Draining grace as a plugged timeout seat (D8: the magnitude rides
+/// `Args` into the seat's `build`).
+pub struct DrainGrace {
+    grace: Duration,
+}
+
+impl caps::DeadlinePolicy<caps::ByPhase<WorkerPhases>> for DrainGrace {
+    fn build(args: &WorkerArgs) -> Self {
+        Self {
+            grace: args.drain_grace,
+        }
+    }
+
+    fn next_deadline(
+        &self,
+        _: &Worker,
+        view: caps::PhaseView<WorkerPhases>,
+    ) -> Option<tokio::time::Instant> {
+        match view.phase {
             WorkerPhase::Serving => None,
-            WorkerPhase::Draining => Some(self.drain_grace),
+            WorkerPhase::Draining => view.entered_at.checked_add(self.grace),
         }
     }
 
     /// The in-flight job outlived the drain grace: abandon it and stop —
     /// the dispatcher's at-least-once bookkeeping re-queues it.
-    async fn on_phase_timeout(
+    async fn on_deadline(
+        &self,
         _: &mut Worker,
-        _: WorkerPhase,
+        _: caps::PhaseView<WorkerPhases>,
         _: WeakActorRef<caps::Shell<Worker>>,
-        _: &mut caps::Stashing<WorkerMsg>,
     ) -> Result<caps::Step<WorkerPhase>, WorkerError> {
         Ok(caps::Step::Stop)
     }

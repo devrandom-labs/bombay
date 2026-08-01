@@ -13,13 +13,14 @@ use tokio::time::{Instant, sleep, timeout};
 use bombay::{
     actor::{Flow, WeakActorRef},
     caps::{
-        Actor, CapSet, Ctx, Disposition, Overflow, PhasePolicy, Phased, Shell, Stashing, Step,
-        spawn,
+        Actor, Bounded, ByPhase, CapSet, Ctx, DeadlinePolicy, Deferred, Disposition, NoTimeout,
+        Overflow, PhasePolicy, PhaseView, Phased, Shell, StashPolicy, Stashing, Step, spawn,
     },
     error::ActorStopReason,
     mailbox::Capacity,
     test_support::terminate_bound,
 };
+use tokio::time::Instant as TokioInstant;
 
 fn cap(n: usize) -> Capacity {
     Capacity::new(NonZeroUsize::new(n).expect("nonzero")).expect("valid")
@@ -65,58 +66,28 @@ enum GMsg {
     Quit,
 }
 
-/// One plugged unit: phases, admission, deadline magnitude (Args-tunable
-/// through the policy instance — the D8 channel), timeout reaction, and a
-/// loud overflow refusal.
-struct GPolicy {
-    load_deadline: Option<Duration>,
-}
+/// One machine, seats declared (ADR-0028): the gate + a [`Bounded`]
+/// deferral over `GStash` (the reused `StashPolicy`) + the `GDeadline`
+/// timeout seat (Args-tunable magnitude — the D8 channel) + a loud
+/// overflow refusal.
+struct GPolicy;
 
 impl PhasePolicy for GPolicy {
     type Actor = G;
     type Phase = Phase;
-
-    fn build(args: &GArgs) -> Self {
-        Self {
-            load_deadline: args.load_deadline,
-        }
-    }
+    type Deferral = Bounded<GStash>;
+    type Timeout = GDeadline;
 
     fn initial(_: &GArgs) -> Phase {
         Phase::Loading
     }
 
-    fn stash_capacity(args: &GArgs) -> Capacity {
-        args.stash_cap
-    }
-
-    fn gate(phase: Phase, msg: &GMsg) -> Disposition {
+    fn gate(phase: Phase, msg: &GMsg) -> Disposition<Deferred> {
         match (phase, msg) {
-            (Phase::Loading, GMsg::Cmd(_)) => Disposition::Defer,
+            (Phase::Loading, GMsg::Cmd(_)) => Disposition::Defer(Deferred),
             (Phase::Ready, GMsg::Noise) => Disposition::Ignore,
             _ => Disposition::Deliver,
         }
-    }
-
-    fn phase_deadline(&self, phase: Phase) -> Option<Duration> {
-        match phase {
-            Phase::Loading => self.load_deadline,
-            Phase::Ready => None,
-        }
-    }
-
-    async fn on_phase_timeout(
-        actor: &mut G,
-        _: Phase,
-        _: WeakActorRef<Shell<G>>,
-        _: &mut Stashing<GMsg>,
-    ) -> Result<Step<Phase>, Infallible> {
-        let _ = actor.probe.send(Ev::TimedOutAt(Instant::now()));
-        Ok(if actor.timeout_goes_ready {
-            Step::Goto(Phase::Ready)
-        } else {
-            Step::Stop
-        })
     }
 
     /// Loud typed refusal with the INTACT payload (D6 override).
@@ -130,6 +101,52 @@ impl PhasePolicy for GPolicy {
             let _ = actor.probe.send(Ev::ShedFull(n));
         }
         Ok(Overflow::Handled(Step::Stay))
+    }
+}
+
+/// The deferral bound, spelled once on the reused `StashPolicy`.
+struct GStash;
+impl StashPolicy<G> for GStash {
+    fn capacity(args: &GArgs) -> Capacity {
+        args.stash_cap
+    }
+}
+
+/// The plugged timeout seat: Loading may carry a deadline (Args-tunable),
+/// Ready never does; the reaction transitions or stops per the actor's
+/// knob.
+struct GDeadline {
+    load_deadline: Option<Duration>,
+}
+
+impl DeadlinePolicy<ByPhase<GPolicy>> for GDeadline {
+    fn build(args: &GArgs) -> Self {
+        Self {
+            load_deadline: args.load_deadline,
+        }
+    }
+
+    fn next_deadline(&self, _: &G, view: PhaseView<GPolicy>) -> Option<TokioInstant> {
+        match view.phase {
+            Phase::Loading => self
+                .load_deadline
+                .and_then(|d| view.entered_at.checked_add(d)),
+            Phase::Ready => None,
+        }
+    }
+
+    async fn on_deadline(
+        &self,
+        actor: &mut G,
+        _: PhaseView<GPolicy>,
+        _: WeakActorRef<Shell<G>>,
+    ) -> Result<Step<Phase>, Infallible> {
+        let _ = actor.probe.send(Ev::TimedOutAt(Instant::now()));
+        Ok(if actor.timeout_goes_ready {
+            Step::Goto(Phase::Ready)
+        } else {
+            Step::Stop
+        })
     }
 }
 
@@ -412,33 +429,25 @@ struct ShedPolicy;
 impl PhasePolicy for ShedPolicy {
     type Actor = Shed;
     type Phase = Phase;
-    fn build(_: &flume::Sender<Ev>) -> Self {
-        Self
-    }
+    type Deferral = Bounded<ShedStash>;
+    type Timeout = NoTimeout;
     fn initial(_: &flume::Sender<Ev>) -> Phase {
         Phase::Loading
     }
-    fn stash_capacity(_: &flume::Sender<Ev>) -> Capacity {
-        cap(1)
-    }
-    fn gate(phase: Phase, msg: &GMsg) -> Disposition {
+    fn gate(phase: Phase, msg: &GMsg) -> Disposition<Deferred> {
         match (phase, msg) {
-            (Phase::Loading, GMsg::Cmd(_)) => Disposition::Defer,
+            (Phase::Loading, GMsg::Cmd(_)) => Disposition::Defer(Deferred),
             _ => Disposition::Deliver,
         }
     }
-    fn phase_deadline(&self, _: Phase) -> Option<Duration> {
-        None
-    }
-    async fn on_phase_timeout(
-        _: &mut Shed,
-        _: Phase,
-        _: WeakActorRef<Shell<Shed>>,
-        _: &mut Stashing<GMsg>,
-    ) -> Result<Step<Phase>, Infallible> {
-        Ok(Step::Stay)
-    }
     // on_defer_full deliberately NOT overridden: the default redelivers.
+}
+
+struct ShedStash;
+impl StashPolicy<Shed> for ShedStash {
+    fn capacity(_: &flume::Sender<Ev>) -> Capacity {
+        cap(1)
+    }
 }
 
 #[derive(bombay_macros::Provide)]

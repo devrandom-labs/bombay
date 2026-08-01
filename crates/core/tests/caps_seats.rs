@@ -17,7 +17,7 @@ use bombay::{
     actor::{Flow, WeakActorRef},
     caps::{
         Actor, ByPhase, ByState, CapSet, Ctx, DeadlinePolicy, Deadlined, Disposition, Never,
-        NoDefer, NoTimeout, PhasePolicy, PhaseView, Phased, Shell, StashOf, Step, spawn,
+        NoDefer, NoTimeout, PhasePolicy, PhaseView, Phased, Shell, StashOf, Step, TokenOf, spawn,
     },
     error::ActorStopReason,
     test_support::terminate_bound,
@@ -185,6 +185,11 @@ impl Actor for W {
     }
 }
 
+/// Type-level pin: a `NoDefer` machine's gate token IS the uninhabited
+/// [`Never`] — an undeclared `Defer` has no constructible payload. (The
+/// compile-fail twin lives as a doctest on `NoDefer`.)
+const _TOKEN_IS_NEVER: fn(TokenOf<WPolicy>) -> Never = |t| t;
+
 /// A `NoDefer` machine carries NO buffer: the stash type the seat
 /// declares is zero-sized. (The old design carved a live `Stashing` into
 /// every machine — with a mandatory ceremonial bound.)
@@ -202,7 +207,7 @@ fn a_no_defer_machines_stash_type_is_zero_sized() {
 /// seat's grace deadline firing exactly at `entered(Draining) + grace`
 /// with a `Step::Stop` reaction.
 #[tokio::test(start_paused = true)]
-async fn by_phase_seat_arms_on_entry_and_fires_its_pair(){
+async fn by_phase_seat_arms_on_entry_and_fires_its_pair() {
     let (tx, rx) = flume::unbounded();
     let h = spawn::<W>(WArgs {
         grace: Duration::from_millis(25),
@@ -312,7 +317,7 @@ impl Actor for Idle {
 /// deadline to t=10+30; the fire lands exactly there and `Step::Stop`
 /// (≅ `Flow::Stop`) stops the actor normally.
 #[tokio::test(start_paused = true)]
-async fn by_state_seat_slides_with_actor_state_and_stops(){
+async fn by_state_seat_slides_with_actor_state_and_stops() {
     let start = Instant::now();
     let (tx, rx) = flume::unbounded();
     let h = spawn::<Idle>((Duration::from_millis(30), tx));

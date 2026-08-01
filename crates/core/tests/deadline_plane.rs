@@ -23,7 +23,10 @@ use tokio::time::{Instant, sleep, timeout};
 
 use bombay::{
     actor::{Flow, SpawnConfig, WeakActorRef},
-    caps::{self, Actor, CapSet, Ctx, DeadlinePolicy, Deadlined, Handle, Shell, spawn, spawn_with},
+    caps::{
+        self, Actor, ByState, CapSet, Ctx, DeadlinePolicy, Deadlined, Handle, Never, Shell, Step,
+        spawn, spawn_with,
+    },
     error::{ActorStopReason, PanicReason},
     mailbox::Capacity,
     reply::ReplySender,
@@ -128,22 +131,27 @@ enum BusyMsg {
 }
 
 struct BusyDl;
-impl DeadlinePolicy<Busy> for BusyDl {
-    fn next_deadline(actor: &Busy) -> Option<Instant> {
+impl DeadlinePolicy<ByState<Busy>> for BusyDl {
+    fn build(_: &<Busy as Actor>::Args) -> Self {
+        Self
+    }
+    fn next_deadline(&self, actor: &Busy, (): ()) -> Option<Instant> {
         actor.due
     }
     async fn on_deadline(
+        &self,
         actor: &mut Busy,
+        (): (),
         _: WeakActorRef<Shell<Busy>>,
-    ) -> Result<Flow, Infallible> {
+    ) -> Result<Step<Never>, Infallible> {
         let _ = actor.probe.send(Ev::Fired);
         if actor.clear_on_fire {
             actor.due = None;
         }
         Ok(if actor.stop_on_fire {
-            Flow::Stop
+            Step::Stop
         } else {
-            Flow::Continue
+            Step::Stay
         })
     }
 }
@@ -154,9 +162,9 @@ struct BusyCaps {
 }
 
 impl CapSet<Busy> for BusyCaps {
-    fn build(_: &BusyArgs) -> Self {
+    fn build(args: &BusyArgs) -> Self {
         Self {
-            deadlined: Deadlined::new(),
+            deadlined: Deadlined::build(args),
         }
     }
 }
@@ -355,16 +363,21 @@ enum TouchMsg {
 }
 
 struct SliderDl;
-impl DeadlinePolicy<Slider> for SliderDl {
-    fn next_deadline(actor: &Slider) -> Option<Instant> {
+impl DeadlinePolicy<ByState<Slider>> for SliderDl {
+    fn build(_: &<Slider as Actor>::Args) -> Self {
+        Self
+    }
+    fn next_deadline(&self, actor: &Slider, (): ()) -> Option<Instant> {
         Some(actor.last_activity + actor.idle)
     }
     async fn on_deadline(
+        &self,
         actor: &mut Slider,
+        (): (),
         _: WeakActorRef<Shell<Slider>>,
-    ) -> Result<Flow, Infallible> {
+    ) -> Result<Step<Never>, Infallible> {
         let _ = actor.probe.send(Ev::FiredAt(Instant::now()));
-        Ok(Flow::Stop)
+        Ok(Step::Stop)
     }
 }
 
@@ -374,9 +387,9 @@ struct SliderCaps {
 }
 
 impl CapSet<Slider> for SliderCaps {
-    fn build(_: &(Duration, flume::Sender<Ev>)) -> Self {
+    fn build(args: &(Duration, flume::Sender<Ev>)) -> Self {
         Self {
-            deadlined: Deadlined::new(),
+            deadlined: Deadlined::build(args),
         }
     }
 }
@@ -450,18 +463,23 @@ struct Drainer {
 }
 
 struct DrainerDl;
-impl DeadlinePolicy<Drainer> for DrainerDl {
-    fn next_deadline(actor: &Drainer) -> Option<Instant> {
+impl DeadlinePolicy<ByState<Drainer>> for DrainerDl {
+    fn build(_: &<Drainer as Actor>::Args) -> Self {
+        Self
+    }
+    fn next_deadline(&self, actor: &Drainer, (): ()) -> Option<Instant> {
         actor.due
     }
     async fn on_deadline(
+        &self,
         actor: &mut Drainer,
+        (): (),
         actor_ref: WeakActorRef<Shell<Drainer>>,
-    ) -> Result<Flow, Infallible> {
+    ) -> Result<Step<Never>, Infallible> {
         let _ = actor
             .probe
             .send(Ev::UpgradeFailed(actor_ref.upgrade().is_none()));
-        Ok(Flow::Stop)
+        Ok(Step::Stop)
     }
 }
 
@@ -471,9 +489,9 @@ struct DrainerCaps {
 }
 
 impl CapSet<Drainer> for DrainerCaps {
-    fn build(_: &flume::Sender<Ev>) -> Self {
+    fn build(args: &flume::Sender<Ev>) -> Self {
         Self {
-            deadlined: Deadlined::new(),
+            deadlined: Deadlined::build(args),
         }
     }
 }
@@ -549,11 +567,19 @@ struct Bomb {
 }
 
 struct BombDl;
-impl DeadlinePolicy<Bomb> for BombDl {
-    fn next_deadline(actor: &Bomb) -> Option<Instant> {
+impl DeadlinePolicy<ByState<Bomb>> for BombDl {
+    fn build(_: &<Bomb as Actor>::Args) -> Self {
+        Self
+    }
+    fn next_deadline(&self, actor: &Bomb, (): ()) -> Option<Instant> {
         actor.due
     }
-    async fn on_deadline(_: &mut Bomb, _: WeakActorRef<Shell<Bomb>>) -> Result<Flow, Infallible> {
+    async fn on_deadline(
+        &self,
+        _: &mut Bomb,
+        (): (),
+        _: WeakActorRef<Shell<Bomb>>,
+    ) -> Result<Step<Never>, Infallible> {
         panic!("deadline bomb");
     }
 }
@@ -564,9 +590,9 @@ struct BombCaps {
 }
 
 impl CapSet<Bomb> for BombCaps {
-    fn build((): &()) -> Self {
+    fn build(args: &()) -> Self {
         Self {
-            deadlined: Deadlined::new(),
+            deadlined: Deadlined::build(args),
         }
     }
 }
@@ -701,17 +727,22 @@ macro_rules! armer {
         }
 
         struct $dl;
-        impl DeadlinePolicy<$actor> for $dl {
-            fn next_deadline(actor: &$actor) -> Option<Instant> {
+        impl DeadlinePolicy<ByState<$actor>> for $dl {
+            fn build(_: &<$actor as Actor>::Args) -> Self {
+                Self
+            }
+            fn next_deadline(&self, actor: &$actor, (): ()) -> Option<Instant> {
                 actor.due
             }
             async fn on_deadline(
+                &self,
                 actor: &mut $actor,
+                (): (),
                 _: WeakActorRef<Shell<$actor>>,
-            ) -> Result<Flow, Infallible> {
+            ) -> Result<Step<Never>, Infallible> {
                 let _ = actor.probe.send(Ev::Fired);
                 actor.due = None;
-                Ok(Flow::Continue)
+                Ok(Step::Stay)
             }
         }
 
@@ -722,9 +753,9 @@ macro_rules! armer {
         }
 
         impl CapSet<$actor> for $caps {
-            fn build(_: &flume::Sender<Ev>) -> Self {
+            fn build(args: &flume::Sender<Ev>) -> Self {
                 Self {
-                    deadlined: Deadlined::new(),
+                    deadlined: Deadlined::build(args),
                     $($field: $finit),*
                 }
             }
@@ -870,17 +901,22 @@ macro_rules! mourner {
         }
 
         struct $dl;
-        impl DeadlinePolicy<$actor> for $dl {
-            fn next_deadline(actor: &$actor) -> Option<Instant> {
+        impl DeadlinePolicy<ByState<$actor>> for $dl {
+            fn build(_: &<$actor as Actor>::Args) -> Self {
+                Self
+            }
+            fn next_deadline(&self, actor: &$actor, (): ()) -> Option<Instant> {
                 actor.due
             }
             async fn on_deadline(
+                &self,
                 actor: &mut $actor,
+                (): (),
                 _: WeakActorRef<Shell<$actor>>,
-            ) -> Result<Flow, Infallible> {
+            ) -> Result<Step<Never>, Infallible> {
                 let _ = actor.probe.send(Ev::Fired);
                 actor.due = None;
-                Ok(Flow::Continue)
+                Ok(Step::Stay)
             }
         }
 
@@ -907,9 +943,9 @@ macro_rules! mourner {
         }
 
         impl CapSet<$actor> for $caps {
-            fn build(_: &flume::Sender<Ev>) -> Self {
+            fn build(args: &flume::Sender<Ev>) -> Self {
                 Self {
-                    deadlined: Deadlined::new(),
+                    deadlined: Deadlined::build(args),
                     watching: caps::Watching::new(),
                     $($field: $finit),*
                 }
