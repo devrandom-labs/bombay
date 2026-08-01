@@ -124,7 +124,7 @@ pub trait PhasePolicy: Send + Sized + 'static {
 | verdicts at policy seats | `Flow` + `Step` | **`Step` only** (`Flow ≅ Step<Never>` at the boundary) |
 | `PhasePolicy` required fns | 6 | **3** (+2 one-line type picks) |
 | deferral bound spelling | `stash_capacity` duplicating `StashPolicy` | **reuse** `StashPolicy` |
-| never-defers machine | 6-line `Capacity::MIN` ceremony + live stash alloc | `type Deferral = NoDefer;` + **zero alloc** |
+| never-defers machine | 6-line `Capacity::MIN` ceremony + a dead stash field | `type Deferral = NoDefer;` + **zero-sized, no buffer type exists** |
 | new public types | — | `Never`, `NoDefer`, `Bounded<SP>`, `NoTimeout`, `ByState`, `ByPhase`, view/fire structs |
 
 If the net core diff exceeds the new-types column's inherent cost, the
@@ -144,8 +144,11 @@ design is wrong — stop and revisit.
 1. **Compile-law probes** (`compile_fail` doctests / trybuild): a
    `NoDefer` gate returning `Defer` does not compile; a timeout seat
    cannot supply `next_deadline` without `on_deadline` (trait shape).
-2. **`alloc_phased.rs` tightened:** `NoDefer` machine build performs zero
-   stash allocation — a falsifiable assertion the old design fails.
+2. **Structural no-buffer pin:** `StashOf<NoDefer machine>` is zero-sized
+   (`size_of == 0`) — no stash exists, so a defer-path allocation is
+   unrepresentable. (Note: the OLD design also allocated lazily at build
+   — `VecDeque::new()` — so the honest claim is type-level absence, not a
+   measured-allocation delta; `alloc_phased.rs` migrates signatures only.)
 3. **`phase_equivalence.rs`:** the 6-scenario oracle green **unchanged**
    for a `Bounded` + timed machine (semantics-preserving migration).
 4. **`caps_phased.rs` / `caps_deadline` tests:** migrated to the new

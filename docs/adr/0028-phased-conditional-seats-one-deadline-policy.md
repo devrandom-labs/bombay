@@ -108,7 +108,10 @@ reaction); `NoDefer`/`NoTimeout` are explicit named choices (#196
   `DeadlinePolicy<ByState<A>>`; `Deadlined::new()` → `Deadlined::build(args)`.
 - The job-queue Worker drops the `Capacity::MIN` ceremony for
   `type Deferral = NoDefer;` and a `DrainGrace` timeout seat; a
-  never-defers machine allocates no stash (new falsifiable alloc test).
+  never-defers machine's stash type is zero-sized — no buffer exists, so
+  a defer-path allocation is unrepresentable (type-level pin; the old
+  design's `VecDeque` was lazily allocated, so the claim is structural,
+  not a measured delta).
 - Open doors, deliberately not taken now: folding `WatchPolicy`'s
   `ControlFlow` dialect (touches #266 delivery semantics); collapsing
   handler `Flow` into `Step<Never>`; canned seats (`StopOnDeadline`) at
