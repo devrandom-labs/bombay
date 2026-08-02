@@ -64,7 +64,7 @@ pub trait Actor: Sized + Send + 'static {
 
     /// Handles one message. Same continuation contract as the shipped
     /// trait ([ADR-0023]): `Ok(Flow::Continue)` keeps running,
-    /// `Ok(Flow::Stop)` stops cleanly after this handler, `Err` is a
+    /// `Ok(Flow::Stop(Normal))` stops cleanly after this handler, `Err` is a
     /// controlled crash.
     ///
     /// [ADR-0023]: https://github.com/devrandom-labs/bombay/blob/main/docs/adr/0023-handler-stop-return-value-not-out-param.md

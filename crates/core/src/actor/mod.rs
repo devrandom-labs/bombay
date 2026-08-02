@@ -90,7 +90,7 @@ pub trait Actor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
     ) -> impl Future<Output = Result<Self, Self::Error>> + Send;
 
     /// Handles one message. The return value is the continuation decision:
-    /// `Ok(Flow::Continue)` keeps the actor running; `Ok(Flow::Stop)` stops it
+    /// `Ok(Flow::Continue)` keeps the actor running; `Ok(Flow::Stop(Normal))` stops it
     /// cleanly (reason `Normal`) after this handler, before any further mailbox
     /// poll; a returned `Err` is a controlled crash (routed to `on_panic`, then
     /// stop). The three outcomes are one exhaustive value — signalling stop
