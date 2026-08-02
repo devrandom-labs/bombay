@@ -445,7 +445,10 @@ async fn handle_link_died<A: LinkReact>(
         .await;
     match result {
         Ok(Ok(Step::Continue)) => ControlFlow::Continue(()),
-        Ok(Ok(Step::Stop(reason))) => ControlFlow::Break(reason),
+        // The policy's verdict carries its OWN reason (e.g. `LinkDied`
+        // wrapping the notice's), distinct from the notice's `reason`
+        // consumed by the call above.
+        Ok(Ok(Step::Stop(propagated))) => ControlFlow::Break(propagated),
         Ok(Ok(Step::Goto(never))) => match never {},
         Ok(Err(err)) => ControlFlow::Break(ActorStopReason::Panicked(PanicError::new(
             Box::new(err),

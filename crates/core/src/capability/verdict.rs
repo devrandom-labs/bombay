@@ -72,10 +72,10 @@ pub enum Disposition<D = Never> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Normal;
 
-/// THE verdict family (ADR-0029): every reaction on the surface answers
-/// "keep going, switch behavior, or stop?" in this one type — typed
-/// `become` (Agha): become(same) / closed-menu become / become(⊥) with an
-/// exit code.
+/// THE verdict family (ADR-0029): the one type every reaction answers in.
+///
+/// "Keep going, switch behavior, or stop?" — typed `become` (Agha):
+/// become(same) / closed-menu become / become(⊥) with an exit code.
 ///
 /// Both parameters default to the plain-actor corner, and each corner is
 /// carved by what its parameters make unconstructible:
