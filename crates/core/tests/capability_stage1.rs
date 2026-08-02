@@ -1,4 +1,4 @@
-//! Card #278 stage-1 integration tests: the caps surface on the Shell
+//! Card #278 stage-1 integration tests: the capability surface on the Shell
 //! adapter — spike proofs O1/O4 ported in-repo, the W1 walkthrough
 //! (plain actor: ONE trait impl + derive(Msg)), and adapter forwarding
 //! (on_stop reason, panic → on_panic domain).
@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use bombay::{
     actor::Flow,
-    caps::{
+    capability::{
         Actor, Admission, Admitted, CapSet, Ctx, DeadlineHook, DeadlineInstant, Handle, PlainRun,
         Provide, Replay, SelectRunner, Shell, spawn,
     },
@@ -246,7 +246,7 @@ impl Actor for Boomer {
     }
 }
 
-/// A handler panic reaches the caps-level `on_panic`, then `on_stop`,
+/// A handler panic reaches the capability-level `on_panic`, then `on_stop`,
 /// in that order — the poisoning pipeline is inherited, not re-built.
 #[tokio::test]
 async fn handler_panic_forwards_to_caps_hooks_in_order() {

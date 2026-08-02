@@ -188,7 +188,7 @@ fn silence_bench_crashes() {
 
 mod core_side {
     use bombay::actor::{Actor, ActorRef, Flow, PreparedActor, SpawnConfig, WeakActorRef};
-    use bombay::caps;
+    use bombay::capability;
     use bombay::error::{ActorStopReason, Infallible};
     use bombay::mailbox::{ActorId, MailboxSender, Mailboxed};
     use bombay::message::Msg;
@@ -225,7 +225,7 @@ mod core_side {
         ack: UnboundedSender<()>,
     }
     pub struct AckPolicy;
-    impl caps::WatchPolicy<Observer> for AckPolicy {
+    impl capability::WatchPolicy<Observer> for AckPolicy {
         async fn on_link_died(
             actor: &mut Observer,
             _: ActorId,
@@ -239,25 +239,29 @@ mod core_side {
 
     #[derive(bombay_macros::Provide)]
     pub struct ObserverCaps {
-        watching: caps::Watching<AckPolicy>,
+        watching: capability::Watching<AckPolicy>,
     }
-    impl caps::CapSet<Observer> for ObserverCaps {
+    impl capability::CapSet<Observer> for ObserverCaps {
         fn build(_: &UnboundedSender<()>) -> Self {
             Self {
-                watching: caps::Watching::new(),
+                watching: capability::Watching::new(),
             }
         }
     }
 
-    impl caps::Actor for Observer {
+    impl capability::Actor for Observer {
         type Msg = Idle;
         type Args = UnboundedSender<()>;
         type Error = Infallible;
         type Caps = ObserverCaps;
-        async fn init(ack: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+        async fn init(ack: Self::Args, _: capability::Ctx<'_, Self>) -> Result<Self, Self::Error> {
             Ok(Self { ack })
         }
-        async fn handle(&mut self, _: Idle, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+        async fn handle(
+            &mut self,
+            _: Idle,
+            _: capability::Ctx<'_, Self>,
+        ) -> Result<Flow, Self::Error> {
             Ok(Flow::Continue)
         }
     }
@@ -271,29 +275,36 @@ mod core_side {
     // so the surviving peer stops — the propagation this arm measures.
     #[derive(bombay_macros::Provide)]
     pub struct PeerCaps {
-        watching: caps::Watching<caps::OtpPropagation>,
+        watching: capability::Watching<capability::OtpPropagation>,
     }
-    impl caps::CapSet<Peer> for PeerCaps {
+    impl capability::CapSet<Peer> for PeerCaps {
         fn build(_: &Option<UnboundedSender<()>>) -> Self {
             Self {
-                watching: caps::Watching::new(),
+                watching: capability::Watching::new(),
             }
         }
     }
-    impl caps::Actor for Peer {
+    impl capability::Actor for Peer {
         type Msg = Idle;
         type Args = Option<UnboundedSender<()>>;
         type Error = Infallible;
         type Caps = PeerCaps;
-        async fn init(stopped: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+        async fn init(
+            stopped: Self::Args,
+            _: capability::Ctx<'_, Self>,
+        ) -> Result<Self, Self::Error> {
             Ok(Self { stopped })
         }
-        async fn handle(&mut self, _: Idle, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+        async fn handle(
+            &mut self,
+            _: Idle,
+            _: capability::Ctx<'_, Self>,
+        ) -> Result<Flow, Self::Error> {
             Ok(Flow::Continue)
         }
         async fn on_stop(
             &mut self,
-            _: WeakActorRef<caps::Shell<Self>>,
+            _: WeakActorRef<capability::Shell<Self>>,
             _: ActorStopReason,
         ) -> Result<(), Self::Error> {
             if let Some(tx) = &self.stopped {
@@ -332,29 +343,29 @@ mod core_side {
 
             #[derive(bombay_macros::Provide)]
             pub struct $caps {
-                watching: caps::Watching<caps::OtpPropagation>,
-                supervising: caps::Supervising<caps::$strategy>,
+                watching: capability::Watching<capability::OtpPropagation>,
+                supervising: capability::Supervising<capability::$strategy>,
             }
-            impl caps::CapSet<$name> for $caps {
+            impl capability::CapSet<$name> for $caps {
                 fn build((): &()) -> Self {
                     Self {
-                        watching: caps::Watching::new(),
-                        supervising: caps::Supervising::new(),
+                        watching: capability::Watching::new(),
+                        supervising: capability::Supervising::new(),
                     }
                 }
             }
-            impl caps::Actor for $name {
+            impl capability::Actor for $name {
                 type Msg = Idle;
                 type Args = ();
                 type Error = Infallible;
                 type Caps = $caps;
-                async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+                async fn init((): (), _: capability::Ctx<'_, Self>) -> Result<Self, Self::Error> {
                     Ok(Self)
                 }
                 async fn handle(
                     &mut self,
                     _: Idle,
-                    _: caps::Ctx<'_, Self>,
+                    _: capability::Ctx<'_, Self>,
                 ) -> Result<Flow, Self::Error> {
                     Ok(Flow::Continue)
                 }
@@ -530,7 +541,7 @@ fn watch_fanout(c: &mut Criterion) {
                         let (tx, rx) = unbounded_channel::<()>();
                         let target = core_side::spawn_plain::<core_side::Target>(());
                         let observers: Vec<_> = (0..n)
-                            .map(|_| bombay::caps::spawn::<core_side::Observer>(tx.clone()))
+                            .map(|_| bombay::capability::spawn::<core_side::Observer>(tx.clone()))
                             .collect();
                         for obs in &observers {
                             obs.watch(&target).await.expect("linked observer can watch");
@@ -596,8 +607,8 @@ fn link_teardown(c: &mut Criterion) {
             || {
                 rt.block_on(async {
                     let (tx, rx) = unbounded_channel::<()>();
-                    let survivor = bombay::caps::spawn::<core_side::Peer>(Some(tx));
-                    let victim = bombay::caps::spawn::<core_side::Peer>(None);
+                    let survivor = bombay::capability::spawn::<core_side::Peer>(Some(tx));
+                    let victim = bombay::capability::spawn::<core_side::Peer>(None);
                     survivor.link(&victim).await.expect("both linked-spawned");
                     (survivor, victim, rx)
                 })
@@ -653,7 +664,7 @@ fn restart_cycle(c: &mut Criterion) {
         // Every spawn happens INSIDE the runtime context: `spawn_supervised`
         // calls `tokio::spawn`, which panics outside `block_on`/`enter`.
         let sup = rt.block_on(async {
-            let sup = bombay::caps::spawn::<core_side::SupOneForOne>(());
+            let sup = bombay::capability::spawn::<core_side::SupOneForOne>(());
             sup.supervise(
                 core_side::fast_restart(),
                 core_side::worker_factory(tick_tx.clone(), slot.clone()),
@@ -735,7 +746,7 @@ fn set_strategy_coalesce(c: &mut Criterion) {
                         .map(|_| std::sync::Arc::new(std::sync::Mutex::new(None)))
                         .collect();
                     let sup = rt.block_on(async {
-                        let sup = bombay::caps::spawn::<core_side::$sup>(());
+                        let sup = bombay::capability::spawn::<core_side::$sup>(());
                         for slot in &slots {
                             sup.supervise(
                                 core_side::fast_restart(),

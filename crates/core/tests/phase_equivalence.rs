@@ -1,5 +1,5 @@
 //! Card #281 — the #231 6-scenario mode-blind equivalence oracle, ported
-//! in-repo onto the caps surface (plan S8; spike record in the #231
+//! in-repo onto the capability surface (plan S8; spike record in the #231
 //! design spec): the same abstract script drives BOTH lifecycle variants
 //! — the idiom (a `Stashing` actor with a manual phase field, a PUBLIC
 //! `LoadDeadline` menu variant armed via `send_after`, and every [F#]
@@ -23,7 +23,7 @@ use tokio::time::{Instant, sleep, timeout};
 
 use bombay::{
     actor::{Flow, TimerHandle, WeakActorRef},
-    caps::{
+    capability::{
         Actor, Bounded, ByPhase, CapSet, Ctx, DeadlinePolicy, Deferred, Disposition, Handle,
         Overflow, PhasePolicy, PhaseView, Phased, Shell, StashFull, StashPolicy, Stashing, Step,
         spawn,

@@ -837,11 +837,11 @@ fn log_on_stop_outcome<A: Actor>(
 
 /// Test-local stand-ins for the spawn verbs stage 3 removed (card #280).
 ///
-/// The loops' unit tests drive RAW runtime actors (no caps layer), which
+/// The loops' unit tests drive RAW runtime actors (no capability layer), which
 /// the public surface no longer spawns directly. `LinkReact`/
 /// `SupervisedReact` are sealed against foreign crates only, so in-crate
 /// test actors implement them via the stamps below; the OTP reaction
-/// semantics themselves are pinned once, in `caps::OtpPropagation`'s tests.
+/// semantics themselves are pinned once, in `capability::OtpPropagation`'s tests.
 #[cfg(test)]
 pub(crate) mod test_verbs {
     use super::{PreparedActor, SpawnConfig};

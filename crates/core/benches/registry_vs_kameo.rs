@@ -59,7 +59,7 @@ use std::{hint::black_box, num::NonZeroUsize, sync::Mutex, thread};
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use tokio::runtime::{Builder, Runtime};
 
-use bombay::registry::Registry;
+use bombay::{actor::ActorRef, registry::Registry};
 
 mod core_side {
     use bombay::{

@@ -3,7 +3,7 @@
 //! docs/superpowers/specs/2026-07-30-224-bounded-stash-design.md.
 //!
 //! This module is now just the **primitive**: the ADR-0022 *surface* is the
-//! [`Stashing`](crate::caps::Stashing) capability on the `caps` module
+//! [`Stashing`](crate::capability::Stashing) capability on the `capability` module
 //! (ADR-0026 stage 2, card #279), which wraps this buffer and is serviced
 //! in-step by the loop. The old `StashActor`/`Stashed<S>` trait+wrapper pair
 //! is removed.
@@ -21,7 +21,7 @@ use crate::mailbox::Capacity;
 ///
 /// `stash` defers a message the current state cannot accept; `unstash_all`
 /// snapshots everything held for front-of-line replay by the
-/// [`Stashing`](crate::caps::Stashing) capability — ahead of the mailbox
+/// [`Stashing`](crate::capability::Stashing) capability — ahead of the mailbox
 /// backlog, in stash-arrival order.
 #[derive(Debug)]
 pub struct Stash<M> {
@@ -58,7 +58,7 @@ impl<M> StashFull<M> {
 
 impl<M> Stash<M> {
     /// Builds an empty stash bounded to `cap` messages. Crate-private: a
-    /// stash exists only inside a [`Stashing`](crate::caps::Stashing)
+    /// stash exists only inside a [`Stashing`](crate::capability::Stashing)
     /// capability (forget-proof by construction).
     pub(crate) const fn bounded(cap: Capacity) -> Self {
         Self {
@@ -116,7 +116,7 @@ impl<M> Stash<M> {
     }
 
     /// Pops the next message due for replay. Crate-private: only the
-    /// [`Stashing`](crate::caps::Stashing) capability drives replay.
+    /// [`Stashing`](crate::capability::Stashing) capability drives replay.
     pub(crate) fn pop_ready(&mut self) -> Option<M> {
         self.ready.pop_front()
     }

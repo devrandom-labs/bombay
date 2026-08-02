@@ -1,4 +1,4 @@
-//! Bounded-stash behavior through the `caps` surface (ADR-0022 semantics
+//! Bounded-stash behavior through the `capability` surface (ADR-0022 semantics
 //! ported to the `Stashing` capability, card #279): replay order vs the
 //! mailbox backlog, snapshot semantics end to end, stop-mode fates, restart
 //! hygiene, and the one-queue livelock re-proof. Every terminal await is
@@ -14,7 +14,7 @@ use tokio::time::timeout;
 
 use bombay::{
     actor::{Flow, PreparedActor, SpawnConfig, WeakActorRef},
-    caps::{self, Ctx, Replay, Shell},
+    capability::{self, Ctx, Replay, Shell},
     error::ActorStopReason,
     mailbox::{Capacity, Signal},
     message::Msg,
@@ -50,26 +50,28 @@ enum GateMsg {
 /// the `Provide` access seam and the `Replay` loop hook.
 #[derive(bombay_macros::Provide)]
 struct GateCaps {
-    stash: caps::Stashing<GateMsg>,
+    stash: capability::Stashing<GateMsg>,
 }
 
 struct GatePolicy;
 
-impl caps::StashPolicy<Gate> for GatePolicy {
-    fn capacity(_: &<Gate as caps::Actor>::Args) -> Capacity {
+impl capability::StashPolicy<Gate> for GatePolicy {
+    fn capacity(_: &<Gate as capability::Actor>::Args) -> Capacity {
         cap(8)
     }
 }
 
-impl caps::CapSet<Gate> for GateCaps {
-    fn build(args: &<Gate as caps::Actor>::Args) -> Self {
+impl capability::CapSet<Gate> for GateCaps {
+    fn build(args: &<Gate as capability::Actor>::Args) -> Self {
         Self {
-            stash: caps::Stashing::bounded(<GatePolicy as caps::StashPolicy<Gate>>::capacity(args)),
+            stash: capability::Stashing::bounded(
+                <GatePolicy as capability::StashPolicy<Gate>>::capacity(args),
+            ),
         }
     }
 }
 
-impl caps::Actor for Gate {
+impl capability::Actor for Gate {
     type Msg = GateMsg;
     type Args = Arc<Mutex<Vec<u32>>>;
     type Error = Infallible;
@@ -83,11 +85,11 @@ impl caps::Actor for Gate {
         match msg {
             GateMsg::Open => {
                 self.open = true;
-                cx.cap::<caps::Stashing<GateMsg>>().unstash_all();
+                cx.cap::<capability::Stashing<GateMsg>>().unstash_all();
             }
             GateMsg::Boom => panic!("gate boom"),
             item @ (GateMsg::Item(_) | GateMsg::ItemThenStop(_)) if !self.open => {
-                cx.cap::<caps::Stashing<GateMsg>>()
+                cx.cap::<capability::Stashing<GateMsg>>()
                     .stash(item)
                     .expect("test stash sized for the scenario");
             }
@@ -111,9 +113,9 @@ fn read(tape: &Arc<Mutex<Vec<u32>>>) -> Vec<u32> {
 }
 
 /// Spawns a `Gate` with the message sequence pre-queued before the loop
-/// starts — a deterministic mailbox, no racing sends. Runs on the caps `Shell`
-/// adapter (`caps::Handle<Gate>` = `ActorRef<Shell<Gate>>`).
-fn spawn_prequeued(msgs: Vec<GateMsg>, tape: Arc<Mutex<Vec<u32>>>) -> caps::Handle<Gate> {
+/// starts — a deterministic mailbox, no racing sends. Runs on the capability `Shell`
+/// adapter (`capability::Handle<Gate>` = `ActorRef<Shell<Gate>>`).
+fn spawn_prequeued(msgs: Vec<GateMsg>, tape: Arc<Mutex<Vec<u32>>>) -> capability::Handle<Gate> {
     let prepared = PreparedActor::<Shell<Gate>>::new(SpawnConfig {
         capacity: cap(16),
         ..SpawnConfig::default()
@@ -307,7 +309,7 @@ async fn kill_drops_stash() {
 }
 
 /// Minimal supervisor: exists only to own the `Gate` child. Stage-3 shape:
-/// supervision is the `Watching` + `Supervising` caps — no marker impls.
+/// supervision is the `Watching` + `Supervising` capabilities — no marker impls.
 struct Sup;
 
 #[derive(Debug)]
@@ -316,20 +318,20 @@ impl Msg for SupMsg {}
 
 #[derive(bombay_macros::Provide)]
 struct SupCaps {
-    watching: caps::Watching<caps::OtpPropagation>,
-    supervising: caps::Supervising<caps::OneForOne>,
+    watching: capability::Watching<capability::OtpPropagation>,
+    supervising: capability::Supervising<capability::OneForOne>,
 }
 
-impl caps::CapSet<Sup> for SupCaps {
+impl capability::CapSet<Sup> for SupCaps {
     fn build((): &()) -> Self {
         Self {
-            watching: caps::Watching::new(),
-            supervising: caps::Supervising::new(),
+            watching: capability::Watching::new(),
+            supervising: capability::Supervising::new(),
         }
     }
 }
 
-impl caps::Actor for Sup {
+impl capability::Actor for Sup {
     type Msg = SupMsg;
     type Args = ();
     type Error = Infallible;
@@ -349,9 +351,9 @@ impl caps::Actor for Sup {
 async fn restart_gets_a_fresh_stash() {
     set_supervisor_rng_seed(Some(7));
     let t = tape();
-    let sup_ref = caps::spawn::<Sup>(());
+    let sup_ref = capability::spawn::<Sup>(());
 
-    let spawned: Arc<Mutex<Vec<caps::Handle<Gate>>>> = Arc::new(Mutex::new(Vec::new()));
+    let spawned: Arc<Mutex<Vec<capability::Handle<Gate>>>> = Arc::new(Mutex::new(Vec::new()));
     let factory_tape = Arc::clone(&t);
     let factory_spawned = Arc::clone(&spawned);
     let config = RestartConfig::new(RestartPolicy::Permanent)
@@ -360,7 +362,7 @@ async fn restart_gets_a_fresh_stash() {
     timeout(
         terminate_bound(),
         sup_ref.supervise(config, move || {
-            let child = caps::spawn::<Gate>(Arc::clone(&factory_tape));
+            let child = capability::spawn::<Gate>(Arc::clone(&factory_tape));
             factory_spawned.lock().expect("spawned").push(child.clone());
             child
         }),
@@ -432,7 +434,7 @@ fn two_queue_snapshot_terminates_where_one_queue_livelocks() {
     // TWO-QUEUE (the real cap): re-stashing during replay lands in `held`, so
     // the `ready` snapshot drains and replay TERMINATES in exactly the batch
     // size. A one-queue `Stashing` would loop here past `drained <= 2`.
-    let mut s = caps::Stashing::<u32>::bounded(cap(8));
+    let mut s = capability::Stashing::<u32>::bounded(cap(8));
     s.stash(1).expect("1");
     s.stash(2).expect("2");
     s.unstash_all();
@@ -469,7 +471,7 @@ struct StopProbe {
 struct StopProbeMsg;
 impl Msg for StopProbeMsg {}
 
-impl caps::Actor for StopProbe {
+impl capability::Actor for StopProbe {
     type Msg = StopProbeMsg;
     type Args = Arc<Mutex<Vec<u32>>>;
     type Error = Infallible;
@@ -493,13 +495,13 @@ impl caps::Actor for StopProbe {
     }
 }
 
-/// Mutant pin: `Shell::on_stop` DELEGATES to `caps::Actor::on_stop` — a
+/// Mutant pin: `Shell::on_stop` DELEGATES to `capability::Actor::on_stop` — a
 /// `-> Ok(())` body-replacement mutant skips the user hook and the tape never
 /// sees 999.
 #[tokio::test]
 async fn shell_on_stop_delegates_to_user_hook() {
     let t = tape();
-    let actor_ref = caps::spawn::<StopProbe>(Arc::clone(&t));
+    let actor_ref = capability::spawn::<StopProbe>(Arc::clone(&t));
     drop(actor_ref);
     timeout(terminate_bound(), async {
         while read(&t).is_empty() {
@@ -511,6 +513,6 @@ async fn shell_on_stop_delegates_to_user_hook() {
     assert_eq!(
         read(&t),
         vec![999],
-        "Shell::on_stop delegates to caps::Actor::on_stop"
+        "Shell::on_stop delegates to capability::Actor::on_stop"
     );
 }

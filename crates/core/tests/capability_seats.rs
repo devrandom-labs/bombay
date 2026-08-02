@@ -15,7 +15,7 @@ use tokio::time::{Instant, sleep, timeout};
 
 use bombay::{
     actor::{Flow, WeakActorRef},
-    caps::{
+    capability::{
         Actor, ByPhase, ByState, CapSet, Ctx, DeadlinePolicy, Deadlined, Disposition, Never,
         NoDefer, NoTimeout, PhasePolicy, PhaseView, Phased, Shell, StashOf, Step, TokenOf, spawn,
     },

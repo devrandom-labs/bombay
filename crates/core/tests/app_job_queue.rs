@@ -22,7 +22,7 @@ use app::{
 use bombay::{
     ActorId,
     actor::{Flow, PreparedActor, RunResult, SpawnConfig},
-    caps,
+    capability,
     error::{ActorStopReason, AskError, Infallible},
     mailbox::Capacity,
     message::Msg,
@@ -102,7 +102,7 @@ async fn sequence_submit_stats_drain_reports_exact_counts() {
     let app = app::start(config(&registry, Some(worker_stopped_tx))).await;
     // clients resolve the dispatcher by NAME — the registry seam is load-bearing
     let dispatcher = registry
-        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<capability::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -174,7 +174,7 @@ async fn worker_drains_under_custom_on_stop_grace() {
     };
     let app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<capability::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -227,7 +227,7 @@ async fn lifecycle_crash_rebuild_requeue_no_job_lost() {
     let registry = Arc::new(Registry::new());
     let app = app::start(config_no_seam(&registry)).await;
     let dispatcher = registry
-        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<capability::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -336,7 +336,7 @@ async fn boundary_queue_full_draining_and_timeout_classified() {
     cfg.queue_cap = 2;
     let app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<capability::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
     let dispatcher_id = dispatcher.id();
@@ -413,7 +413,7 @@ async fn linear_concurrent_producers_no_loss_no_phantom() {
     cfg.queue_cap = 1024; // accept everything; loss-accounting is the subject
     let _app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<capability::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -506,10 +506,11 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
         workers: 0, // the test drives `supervise` itself
         ..config_no_seam(&registry)
     };
-    let (prepared, link_rx) = PreparedActor::<caps::Shell<Dispatcher>>::new_linked(SpawnConfig {
-        capacity: Capacity::try_from(2usize).expect("cap"),
-        ..Default::default()
-    });
+    let (prepared, link_rx) =
+        PreparedActor::<capability::Shell<Dispatcher>>::new_linked(SpawnConfig {
+            capacity: Capacity::try_from(2usize).expect("cap"),
+            ..Default::default()
+        });
     let dispatcher_ref = prepared.actor_ref().clone();
 
     // Fill the user lane: two `Submit` asks, each polled exactly once so the
@@ -545,10 +546,10 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
     // unchanged by this card (#244).
     let (birth_tx, birth_rx) = flume::unbounded::<u32>();
     let (stopped_tx, stopped_rx) = flume::unbounded::<ActorId>();
-    let stash: Arc<Mutex<Option<caps::Handle<app::Worker>>>> = Arc::new(Mutex::new(None));
+    let stash: Arc<Mutex<Option<capability::Handle<app::Worker>>>> = Arc::new(Mutex::new(None));
     let next = Arc::new(std::sync::atomic::AtomicU32::new(0));
     let child_id = {
-        let disp_weak: bombay::actor::WeakActorRef<caps::Shell<Dispatcher>> =
+        let disp_weak: bombay::actor::WeakActorRef<capability::Shell<Dispatcher>> =
             dispatcher_ref.downgrade();
         let stash = Arc::clone(&stash);
         let next = Arc::clone(&next);
@@ -559,7 +560,7 @@ async fn supervise_lands_while_dispatcher_backlog_is_full() {
             let disp = disp_weak
                 .upgrade()
                 .expect("the dispatcher is alive whenever this factory runs");
-            let worker = caps::spawn::<app::Worker>(app::WorkerArgs {
+            let worker = capability::spawn::<app::Worker>(app::WorkerArgs {
                 slot: 9,
                 dispatcher: disp.recipient::<app::Done>(),
                 stopped_tx: Some(stopped_tx.clone()),
@@ -679,10 +680,10 @@ async fn intake_defers_submissions_during_maintenance() {
     let registry = Arc::new(Registry::new());
     let app = app::start(config_no_seam(&registry)).await;
     let dispatcher = registry
-        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<capability::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
-    let intake = caps::spawn::<Intake>((
+    let intake = capability::spawn::<Intake>((
         dispatcher,
         Capacity::try_from(8usize).expect("valid intake stash capacity"),
     ));
@@ -766,7 +767,7 @@ async fn intake_defers_submissions_during_maintenance() {
 /// a watch on the dispatcher and parks; its recording hook captures the
 /// dispatcher's death notice after release.
 struct Auditor {
-    dispatcher: Option<caps::Handle<Dispatcher>>,
+    dispatcher: Option<capability::Handle<Dispatcher>>,
     watch_result: Arc<Mutex<Option<Result<(), ()>>>>,
     notices: Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
     entered: Option<oneshot::Sender<()>>,
@@ -777,7 +778,7 @@ struct AuditGo;
 impl Msg for AuditGo {}
 /// The auditor's recording reaction, a named `WatchPolicy` (stage 3).
 struct AuditPolicy;
-impl caps::WatchPolicy<Auditor> for AuditPolicy {
+impl capability::WatchPolicy<Auditor> for AuditPolicy {
     async fn on_link_died(
         actor: &mut Auditor,
         id: ActorId,
@@ -795,20 +796,20 @@ impl caps::WatchPolicy<Auditor> for AuditPolicy {
 
 #[derive(bombay_macros::Provide)]
 struct AuditorCaps {
-    watching: caps::Watching<AuditPolicy>,
+    watching: capability::Watching<AuditPolicy>,
 }
-impl caps::CapSet<Auditor> for AuditorCaps {
-    fn build(_: &<Auditor as caps::Actor>::Args) -> Self {
+impl capability::CapSet<Auditor> for AuditorCaps {
+    fn build(_: &<Auditor as capability::Actor>::Args) -> Self {
         Self {
-            watching: caps::Watching::new(),
+            watching: capability::Watching::new(),
         }
     }
 }
 
-impl caps::Actor for Auditor {
+impl capability::Actor for Auditor {
     type Msg = AuditGo;
     type Args = (
-        caps::Handle<Dispatcher>,
+        capability::Handle<Dispatcher>,
         Arc<Mutex<Option<Result<(), ()>>>>,
         Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
         oneshot::Sender<()>,
@@ -818,7 +819,7 @@ impl caps::Actor for Auditor {
     type Caps = AuditorCaps;
     async fn init(
         (dispatcher, watch_result, notices, entered, release): Self::Args,
-        _: caps::Ctx<'_, Self>,
+        _: capability::Ctx<'_, Self>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             dispatcher: Some(dispatcher),
@@ -828,7 +829,11 @@ impl caps::Actor for Auditor {
             release: Some(release),
         })
     }
-    async fn handle(&mut self, _: AuditGo, cx: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+    async fn handle(
+        &mut self,
+        _: AuditGo,
+        cx: capability::Ctx<'_, Self>,
+    ) -> Result<Flow, Self::Error> {
         let dispatcher = self.dispatcher.take().expect("one AuditGo enqueued");
         let outcome = bounded(cx.self_ref().watch(&dispatcher))
             .await
@@ -853,23 +858,24 @@ impl caps::Actor for Auditor {
 struct AuditorRig {
     watch_result: Arc<Mutex<Option<Result<(), ()>>>>,
     notices: Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>>,
-    auditor_join: tokio::task::JoinHandle<RunResult<caps::Shell<Auditor>>>,
+    auditor_join: tokio::task::JoinHandle<RunResult<capability::Shell<Auditor>>>,
     entered: oneshot::Receiver<()>,
     release: oneshot::Sender<()>,
 }
 
 /// Spawns the auditor in the DRAIN WINDOW: its only message is enqueued
 /// before the run and no external ref is held.
-async fn start_auditor(dispatcher: &caps::Handle<Dispatcher>) -> AuditorRig {
+async fn start_auditor(dispatcher: &capability::Handle<Dispatcher>) -> AuditorRig {
     let watch_result = Arc::new(Mutex::new(None));
     let notices: Arc<Mutex<Vec<(ActorId, ActorStopReason, bool)>>> =
         Arc::new(Mutex::new(Vec::new()));
     let (entered_tx, entered) = oneshot::channel();
     let (release, release_rx) = oneshot::channel();
-    let (prepared, link_rx) = PreparedActor::<caps::Shell<Auditor>>::new_linked(SpawnConfig {
-        capacity: Capacity::try_from(2).expect("valid capacity"),
-        ..Default::default()
-    });
+    let (prepared, link_rx) =
+        PreparedActor::<capability::Shell<Auditor>>::new_linked(SpawnConfig {
+            capacity: Capacity::try_from(2).expect("valid capacity"),
+            ..Default::default()
+        });
     bounded(prepared.actor_ref().tell(AuditGo))
         .await
         .expect("enqueue before run");
@@ -923,7 +929,7 @@ async fn drain_window_auditor_observes_dispatcher_death() {
     let registry = Arc::new(Registry::new());
     let app = app::start(config_no_seam(&registry)).await;
     let dispatcher = registry
-        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<capability::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
     let dispatcher_id = dispatcher.id();
@@ -976,13 +982,13 @@ async fn drain_window_auditor_observes_dispatcher_death() {
     assert_auditor_notice(&rig.watch_result, &rig.notices, dispatcher_id);
 }
 
-/// Card #278 walking skeleton: a caps-surface actor (`AuditLog`,
+/// Card #278 walking skeleton: a capability-surface actor (`AuditLog`,
 /// `Caps = ()`) composes with the existing app — every ACCEPTED
 /// submission is audited (exact count), a refused one is not.
 #[tokio::test]
 async fn accepted_submissions_are_audited_on_the_caps_surface() {
     let registry = Arc::new(Registry::new());
-    let audit = caps::spawn::<app::AuditLog>(());
+    let audit = capability::spawn::<app::AuditLog>(());
     let cfg = app::DispatcherConfig {
         // no workers: the queue genuinely fills, so the cap refusal is
         // reachable (live workers would drain pending under the cap)
@@ -993,7 +999,7 @@ async fn accepted_submissions_are_audited_on_the_caps_surface() {
     };
     let app = app::start(cfg).await;
     let dispatcher = registry
-        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<capability::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
@@ -1041,17 +1047,21 @@ struct AckSink {
     acked: Vec<u64>,
 }
 
-impl caps::Actor for AckSink {
+impl capability::Actor for AckSink {
     type Msg = AckMsg;
     type Args = ();
     type Error = Infallible;
     type Caps = ();
 
-    async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Infallible> {
+    async fn init((): (), _: capability::Ctx<'_, Self>) -> Result<Self, Infallible> {
         Ok(Self { acked: Vec::new() })
     }
 
-    async fn handle(&mut self, msg: AckMsg, _: caps::Ctx<'_, Self>) -> Result<Flow, Infallible> {
+    async fn handle(
+        &mut self,
+        msg: AckMsg,
+        _: capability::Ctx<'_, Self>,
+    ) -> Result<Flow, Infallible> {
         match msg {
             AckMsg::Done(done) => self.acked.push(done.job_id),
             AckMsg::Read { reply } => {
@@ -1063,17 +1073,17 @@ impl caps::Actor for AckSink {
 }
 
 /// Card #281 walking skeleton: the `Worker` is now a PHASED actor
-/// (Serving → Draining via `caps::Phased`). A `Drain` while a job is in
+/// (Serving → Draining via `capability::Phased`). A `Drain` while a job is in
 /// flight (1) completes that job first — the ack lands — (2) refuses a
 /// job submitted after the drain LOUDLY on the refusal tape, and (3)
 /// stops normally once the in-flight ack is out.
 #[tokio::test]
 async fn phased_worker_completes_in_flight_then_refuses_and_stops() {
-    let sink = caps::spawn::<AckSink>(());
+    let sink = capability::spawn::<AckSink>(());
     let (stopped_tx, stopped_rx) = flume::unbounded();
     let (refused_tx, refused_rx) = flume::unbounded();
 
-    let worker = caps::spawn::<app::Worker>(app::WorkerArgs {
+    let worker = capability::spawn::<app::Worker>(app::WorkerArgs {
         slot: 0,
         dispatcher: sink.recipient::<app::Done>(),
         stopped_tx: Some(stopped_tx),

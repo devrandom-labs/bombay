@@ -18,7 +18,7 @@ use std::{
 use bombay::{
     ActorId,
     actor::{Flow, Recipient, SpawnConfig, WeakActorRef},
-    caps,
+    capability,
     error::{ActorStopReason, NameTaken, PanicError, TellError},
     mailbox::Capacity,
     registry::Registry,
@@ -156,20 +156,20 @@ pub enum WorkerPhase {
 /// [`DrainGrace`] seat.
 pub struct WorkerPhases;
 
-impl caps::PhasePolicy for WorkerPhases {
+impl capability::PhasePolicy for WorkerPhases {
     type Actor = Worker;
     type Phase = WorkerPhase;
-    type Deferral = caps::NoDefer;
+    type Deferral = capability::NoDefer;
     type Timeout = DrainGrace;
 
     fn initial(_: &WorkerArgs) -> WorkerPhase {
         WorkerPhase::Serving
     }
 
-    fn gate(_: WorkerPhase, _: &WorkerMsg) -> caps::Disposition {
+    fn gate(_: WorkerPhase, _: &WorkerMsg) -> capability::Disposition {
         // Deliberately all-Deliver, written down: refusal is the
         // handler's job (loud), and the in-flight ack must always land.
-        caps::Disposition::Deliver
+        capability::Disposition::Deliver
     }
 }
 
@@ -179,7 +179,7 @@ pub struct DrainGrace {
     grace: Duration,
 }
 
-impl caps::DeadlinePolicy<caps::ByPhase<WorkerPhases>> for DrainGrace {
+impl capability::DeadlinePolicy<capability::ByPhase<WorkerPhases>> for DrainGrace {
     fn build(args: &WorkerArgs) -> Self {
         Self {
             grace: args.drain_grace,
@@ -189,7 +189,7 @@ impl caps::DeadlinePolicy<caps::ByPhase<WorkerPhases>> for DrainGrace {
     fn next_deadline(
         &self,
         _: &Worker,
-        view: caps::PhaseView<WorkerPhases>,
+        view: capability::PhaseView<WorkerPhases>,
     ) -> Option<tokio::time::Instant> {
         match view.phase {
             WorkerPhase::Serving => None,
@@ -202,22 +202,22 @@ impl caps::DeadlinePolicy<caps::ByPhase<WorkerPhases>> for DrainGrace {
     async fn on_deadline(
         &self,
         _: &mut Worker,
-        _: caps::PhaseView<WorkerPhases>,
-        _: WeakActorRef<caps::Shell<Worker>>,
-    ) -> Result<caps::Step<WorkerPhase>, WorkerError> {
-        Ok(caps::Step::Stop)
+        _: capability::PhaseView<WorkerPhases>,
+        _: WeakActorRef<capability::Shell<Worker>>,
+    ) -> Result<capability::Step<WorkerPhase>, WorkerError> {
+        Ok(capability::Step::Stop)
     }
 }
 
 #[derive(bombay_macros::Provide)]
 pub struct WorkerCaps {
-    phased: caps::Phased<WorkerPhases>,
+    phased: capability::Phased<WorkerPhases>,
 }
 
-impl caps::CapSet<Worker> for WorkerCaps {
+impl capability::CapSet<Worker> for WorkerCaps {
     fn build(args: &WorkerArgs) -> Self {
         Self {
-            phased: caps::Phased::build(args),
+            phased: capability::Phased::build(args),
         }
     }
 }
@@ -231,13 +231,13 @@ pub struct Worker {
     busy: bool,
 }
 
-impl caps::Actor for Worker {
+impl capability::Actor for Worker {
     type Msg = WorkerMsg;
     type Args = WorkerArgs;
     type Error = WorkerError;
     type Caps = WorkerCaps;
 
-    async fn init(args: WorkerArgs, _: caps::Ctx<'_, Self>) -> Result<Self, WorkerError> {
+    async fn init(args: WorkerArgs, _: capability::Ctx<'_, Self>) -> Result<Self, WorkerError> {
         Ok(Self {
             slot: args.slot,
             dispatcher: args.dispatcher,
@@ -249,7 +249,7 @@ impl caps::Actor for Worker {
 
     async fn on_stop(
         &mut self,
-        actor_ref: WeakActorRef<caps::Shell<Self>>,
+        actor_ref: WeakActorRef<capability::Shell<Self>>,
         _: ActorStopReason,
     ) -> Result<(), WorkerError> {
         if let Some(tx) = &self.stopped_tx {
@@ -265,9 +265,9 @@ impl caps::Actor for Worker {
     async fn handle(
         &mut self,
         msg: WorkerMsg,
-        mut cx: caps::Ctx<'_, Self>,
+        mut cx: capability::Ctx<'_, Self>,
     ) -> Result<Flow, WorkerError> {
-        let phase = cx.cap::<caps::Phased<WorkerPhases>>().phase();
+        let phase = cx.cap::<capability::Phased<WorkerPhases>>().phase();
         match msg {
             // A draining worker refuses new work LOUDLY — the refusal is
             // taped, never silently dropped; the in-flight job (if any)
@@ -316,7 +316,7 @@ impl caps::Actor for Worker {
             }
             WorkerMsg::Drain => {
                 if self.busy {
-                    cx.cap::<caps::Phased<WorkerPhases>>()
+                    cx.cap::<capability::Phased<WorkerPhases>>()
                         .goto(WorkerPhase::Draining);
                     Ok(Flow::Continue)
                 } else {
@@ -378,9 +378,9 @@ pub struct DispatcherConfig {
     /// Per-worker `on_stop` notice grace, wired into each worker's
     /// [`SpawnConfig`] (card #257).
     pub worker_grace: Duration,
-    /// Optional audit sink on the caps surface (card #278 walking
+    /// Optional audit sink on the capability surface (card #278 walking
     /// skeleton): every accepted submission is recorded there.
-    pub audit: Option<caps::Handle<AuditLog>>,
+    pub audit: Option<capability::Handle<AuditLog>>,
 }
 
 pub struct Dispatcher {
@@ -398,35 +398,35 @@ pub struct Dispatcher {
     stats: Stats,
     draining: bool,
     drain_reply: Option<ReplySender<DrainReport>>,
-    audit: Option<caps::Handle<AuditLog>>,
+    audit: Option<capability::Handle<AuditLog>>,
 }
 
 /// The dispatcher's capability set (stage 3, card #280): it watches (the
 /// named OTP policy) and supervises its worker fleet under `OneForOne` —
-/// authority declared as plugged caps, not marker impls. The derive emits
+/// authority declared as plugged capabilities, not marker impls. The derive emits
 /// the access seams, the replay hook, and the supervised loop selection.
 #[derive(bombay_macros::Provide)]
 pub struct DispatcherCaps {
-    watching: caps::Watching<caps::OtpPropagation>,
-    supervising: caps::Supervising<caps::OneForOne>,
+    watching: capability::Watching<capability::OtpPropagation>,
+    supervising: capability::Supervising<capability::OneForOne>,
 }
 
-impl caps::CapSet<Dispatcher> for DispatcherCaps {
+impl capability::CapSet<Dispatcher> for DispatcherCaps {
     fn build(_: &DispatcherConfig) -> Self {
         Self {
-            watching: caps::Watching::new(),
-            supervising: caps::Supervising::new(),
+            watching: capability::Watching::new(),
+            supervising: capability::Supervising::new(),
         }
     }
 }
 
-impl caps::Actor for Dispatcher {
+impl capability::Actor for Dispatcher {
     type Msg = DispatcherMsg;
     type Args = DispatcherConfig;
     type Error = AppError;
     type Caps = DispatcherCaps;
 
-    async fn init(cfg: DispatcherConfig, cx: caps::Ctx<'_, Self>) -> Result<Self, AppError> {
+    async fn init(cfg: DispatcherConfig, cx: capability::Ctx<'_, Self>) -> Result<Self, AppError> {
         let self_ref = cx.self_ref();
         cfg.registry.register(DISPATCHER_NAME, self_ref)?;
         let worker_stopped_tx = cfg.worker_stopped_tx.clone();
@@ -435,12 +435,12 @@ impl caps::Actor for Dispatcher {
             // WEAK capture is mandatory: the factory lives in this actor's own
             // child table — a strong ref would be a self-cycle and the
             // dispatcher could never ref-count-stop.
-            let disp: WeakActorRef<caps::Shell<Self>> = self_ref.downgrade();
+            let disp: WeakActorRef<capability::Shell<Self>> = self_ref.downgrade();
             let done_port: Recipient<Done> = self_ref.recipient::<Done>();
             let stopped_tx = worker_stopped_tx.clone();
             self_ref
                 .supervise(cfg.restart, move || {
-                    let worker = caps::spawn_with::<Worker>(
+                    let worker = capability::spawn_with::<Worker>(
                         SpawnConfig {
                             on_stop_grace: worker_grace,
                             ..Default::default()
@@ -492,7 +492,7 @@ impl caps::Actor for Dispatcher {
     async fn handle(
         &mut self,
         msg: DispatcherMsg,
-        cx: caps::Ctx<'_, Self>,
+        cx: capability::Ctx<'_, Self>,
     ) -> Result<Flow, AppError> {
         let flow = match msg {
             DispatcherMsg::Submit { job, reply } => {
@@ -568,7 +568,7 @@ impl caps::Actor for Dispatcher {
 
     async fn on_stop(
         &mut self,
-        _: WeakActorRef<caps::Shell<Self>>,
+        _: WeakActorRef<capability::Shell<Self>>,
         _: ActorStopReason,
     ) -> Result<(), AppError> {
         // reason-independent resource release only (post-panic safe)
@@ -614,7 +614,7 @@ impl Dispatcher {
         clippy::expect_used,
         reason = "u32 retry counter overflow is a programmer bug, not a data limit"
     )]
-    fn requeue_outstanding(&mut self, slot: usize, actor_ref: &caps::Handle<Self>) {
+    fn requeue_outstanding(&mut self, slot: usize, actor_ref: &capability::Handle<Self>) {
         let Some(job) = self.outstanding.remove(&slot) else {
             return;
         };
@@ -660,14 +660,14 @@ impl Dispatcher {
 
 // ------------------------------------------------------------ intake -------
 
-/// Front door for submissions (card #224, migrated to the caps surface at
+/// Front door for submissions (card #224, migrated to the capability surface at
 /// card #279).
 ///
-/// A plain [`caps::Actor`] carrying a [`caps::Stashing`] capability: it defers
+/// A plain [`capability::Actor`] carrying a [`capability::Stashing`] capability: it defers
 /// `Submit`s during maintenance and forwards them on `Resume` — the
 /// walking-skeleton demonstration of the bounded stash as a capability.
 pub struct Intake {
-    dispatcher: caps::Handle<Dispatcher>,
+    dispatcher: capability::Handle<Dispatcher>,
     maintenance: bool,
 }
 
@@ -690,36 +690,39 @@ pub enum IntakeMsg {
 /// serviced automatically, impossible to forget.
 #[derive(bombay_macros::Provide)]
 pub struct IntakeCaps {
-    stash: caps::Stashing<IntakeMsg>,
+    stash: capability::Stashing<IntakeMsg>,
 }
 
 /// Stash capacity, threaded from the spawn args (never a `SpawnConfig` field,
 /// ADR-0022 D8).
 pub struct IntakePolicy;
 
-impl caps::StashPolicy<Intake> for IntakePolicy {
-    fn capacity((_, cap): &<Intake as caps::Actor>::Args) -> Capacity {
+impl capability::StashPolicy<Intake> for IntakePolicy {
+    fn capacity((_, cap): &<Intake as capability::Actor>::Args) -> Capacity {
         *cap
     }
 }
 
-impl caps::CapSet<Intake> for IntakeCaps {
-    fn build(args: &<Intake as caps::Actor>::Args) -> Self {
+impl capability::CapSet<Intake> for IntakeCaps {
+    fn build(args: &<Intake as capability::Actor>::Args) -> Self {
         Self {
-            stash: caps::Stashing::bounded(<IntakePolicy as caps::StashPolicy<Intake>>::capacity(
-                args,
-            )),
+            stash: capability::Stashing::bounded(<IntakePolicy as capability::StashPolicy<
+                Intake,
+            >>::capacity(args)),
         }
     }
 }
 
-impl caps::Actor for Intake {
+impl capability::Actor for Intake {
     type Msg = IntakeMsg;
-    type Args = (caps::Handle<Dispatcher>, Capacity);
+    type Args = (capability::Handle<Dispatcher>, Capacity);
     type Error = Infallible;
     type Caps = IntakeCaps;
 
-    async fn init((dispatcher, _): Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Infallible> {
+    async fn init(
+        (dispatcher, _): Self::Args,
+        _: capability::Ctx<'_, Self>,
+    ) -> Result<Self, Infallible> {
         Ok(Self {
             dispatcher,
             maintenance: false,
@@ -729,18 +732,18 @@ impl caps::Actor for Intake {
     async fn handle(
         &mut self,
         msg: IntakeMsg,
-        mut cx: caps::Ctx<'_, Self>,
+        mut cx: capability::Ctx<'_, Self>,
     ) -> Result<Flow, Infallible> {
         match msg {
             IntakeMsg::Pause => self.maintenance = true,
             IntakeMsg::Resume => {
                 self.maintenance = false;
-                cx.cap::<caps::Stashing<IntakeMsg>>().unstash_all();
+                cx.cap::<capability::Stashing<IntakeMsg>>().unstash_all();
             }
             submit @ IntakeMsg::Submit { .. } if self.maintenance => {
                 // Full stash = shed load with the same typed refusal the
                 // dispatcher uses for a full queue: the asker learns NOW.
-                if let Err(overflow) = cx.cap::<caps::Stashing<IntakeMsg>>().stash(submit)
+                if let Err(overflow) = cx.cap::<capability::Stashing<IntakeMsg>>().stash(submit)
                     && let IntakeMsg::Submit { reply, .. } = overflow.msg()
                 {
                     let _ = reply.send_err(SubmitError::QueueFull);
@@ -782,7 +785,7 @@ pub struct Overseer {
 /// and whether it was a normal stop; never propagate.
 pub struct RecordDeath;
 
-impl caps::WatchPolicy<Overseer> for RecordDeath {
+impl capability::WatchPolicy<Overseer> for RecordDeath {
     async fn on_link_died(
         actor: &mut Overseer,
         id: ActorId,
@@ -797,31 +800,31 @@ impl caps::WatchPolicy<Overseer> for RecordDeath {
 /// The overseer's capability set: watching with the recording policy.
 #[derive(bombay_macros::Provide)]
 pub struct OverseerCaps {
-    watching: caps::Watching<RecordDeath>,
+    watching: capability::Watching<RecordDeath>,
 }
 
-impl caps::CapSet<Overseer> for OverseerCaps {
+impl capability::CapSet<Overseer> for OverseerCaps {
     fn build((): &()) -> Self {
         Self {
-            watching: caps::Watching::new(),
+            watching: capability::Watching::new(),
         }
     }
 }
 
-impl caps::Actor for Overseer {
+impl capability::Actor for Overseer {
     type Msg = OverseerMsg;
     type Args = ();
     type Error = Infallible;
     type Caps = OverseerCaps;
 
-    async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+    async fn init((): (), _: capability::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         Ok(Self { seen: None })
     }
 
     async fn handle(
         &mut self,
         msg: OverseerMsg,
-        _: caps::Ctx<'_, Self>,
+        _: capability::Ctx<'_, Self>,
     ) -> Result<Flow, Self::Error> {
         let OverseerMsg::Observed { reply } = msg;
         let _ = reply.send(self.seen);
@@ -834,8 +837,8 @@ impl caps::Actor for Overseer {
 pub struct App {
     /// Bootstrap handle kept alive for the demo; tests resolve via the registry.
     #[allow(dead_code, reason = "public bootstrap handle used by the demo binary")]
-    pub dispatcher: caps::Handle<Dispatcher>,
-    pub overseer: caps::Handle<Overseer>,
+    pub dispatcher: capability::Handle<Dispatcher>,
+    pub overseer: capability::Handle<Overseer>,
 }
 
 /// Wires the whole spine through the ONE spawn (stage 3): the overseer's
@@ -846,8 +849,8 @@ pub struct App {
     reason = "the Watching cap structurally guarantees the link channel; init must succeed"
 )]
 pub async fn start(cfg: DispatcherConfig) -> App {
-    let overseer = caps::spawn::<Overseer>(());
-    let dispatcher = caps::spawn::<Dispatcher>(cfg);
+    let overseer = capability::spawn::<Overseer>(());
+    let dispatcher = capability::spawn::<Dispatcher>(cfg);
     overseer
         .watch(&dispatcher)
         .await
@@ -879,25 +882,29 @@ pub enum AuditMsg {
     Count { reply: ReplySender<u64> },
 }
 
-/// Append-only audit trail on the distilled caps surface (ADR-0026 stage
+/// Append-only audit trail on the distilled capability surface (ADR-0026 stage
 /// 1, card #278): ONE trait impl, `Caps = ()`, spawned via
-/// [`caps::spawn`] — the walking-skeleton demonstration that a plain
-/// caps actor composes with the existing app unchanged.
+/// [`capability::spawn`] — the walking-skeleton demonstration that a plain
+/// capability actor composes with the existing app unchanged.
 pub struct AuditLog {
     entries: u64,
 }
 
-impl caps::Actor for AuditLog {
+impl capability::Actor for AuditLog {
     type Msg = AuditMsg;
     type Args = ();
     type Error = Infallible;
     type Caps = ();
 
-    async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Infallible> {
+    async fn init((): (), _: capability::Ctx<'_, Self>) -> Result<Self, Infallible> {
         Ok(Self { entries: 0 })
     }
 
-    async fn handle(&mut self, msg: AuditMsg, _: caps::Ctx<'_, Self>) -> Result<Flow, Infallible> {
+    async fn handle(
+        &mut self,
+        msg: AuditMsg,
+        _: capability::Ctx<'_, Self>,
+    ) -> Result<Flow, Infallible> {
         match msg {
             AuditMsg::Recorded { job_id: _ } => bump(&mut self.entries),
             AuditMsg::Count { reply } => {

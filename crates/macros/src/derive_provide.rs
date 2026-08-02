@@ -1,6 +1,6 @@
-//! `#[derive(Provide)]` — emits one `bombay::caps::Provide<FieldTy>` impl
+//! `#[derive(Provide)]` — emits one `bombay::capability::Provide<FieldTy>` impl
 //! per named field of a capability-set struct (ADR-0026 Addendum: the
-//! open seam of the caps encoding). See card #278.
+//! open seam of the capability encoding). See card #278.
 //!
 //! Deliberately NOT named `CapSet`: this derive does not (and cannot)
 //! generate `CapSet::build` — building needs policy knowledge only the
@@ -9,7 +9,7 @@
 //! coherence (E0119) — the intended duplicate-capability guard.
 //!
 //! It ALSO emits the loop-participation half (ADR-0026 stage 2, card #279):
-//! one `bombay::caps::Replay<Msg>` impl so the `Shell` can drain in-step
+//! one `bombay::capability::Replay<Msg>` impl so the `Shell` can drain in-step
 //! replay uniformly. A `Stashing<M>` field forwards to its own `Replay`; a
 //! set with no stash field yields `None`. This is the forget-proof wiring
 //! for the `Stashing` capability — a stash you cannot forget to service.
@@ -26,10 +26,10 @@ use syn::{
 /// The deliberate core-type coupling of this derive: it recognizes the
 /// core capability types **structurally** so it can emit each field's loop
 /// participation alongside its `Provide` — `Stashing<M>` →
-/// [`Replay`](bombay::caps::Replay), `Watching<WP>` →
-/// [`HasWatching`](bombay::caps::HasWatching), `Supervising<SS>` →
-/// [`HasSupervising`](bombay::caps::HasSupervising) (+ the
-/// [`SelectRunner`](bombay::caps::SelectRunner) loop shape). Structural —
+/// [`Replay`](bombay::capability::Replay), `Watching<WP>` →
+/// [`HasWatching`](bombay::capability::HasWatching), `Supervising<SS>` →
+/// [`HasSupervising`](bombay::capability::HasSupervising) (+ the
+/// [`SelectRunner`](bombay::capability::SelectRunner) loop shape). Structural —
 /// rather than attribute-driven — recognition is what keeps participation
 /// forget-proof: you cannot hold a cap field the derive fails to service.
 /// An *alias* (`type S = Stashing<X>`) is NOT recognized; write the type
@@ -181,7 +181,7 @@ impl ToTokens for DeriveProvide {
         for (field, ty) in &self.fields {
             tokens.extend(quote! {
                 #[automatically_derived]
-                impl ::bombay::caps::Provide<#ty> for #ident {
+                impl ::bombay::capability::Provide<#ty> for #ident {
                     fn provide(&mut self) -> &mut #ty {
                         &mut self.#field
                     }
@@ -206,20 +206,20 @@ impl ToTokens for DeriveProvide {
             .iter()
             .find_map(|(field, ty)| cap_type_arg(ty, "Phased").map(|p| (field, p)));
         if let Some((field, policy)) = phased_field {
-            let actor = quote!(<#policy as ::bombay::caps::PhasePolicy>::Actor);
-            let msg = quote!(<#actor as ::bombay::caps::Actor>::Msg);
+            let actor = quote!(<#policy as ::bombay::capability::PhasePolicy>::Actor);
+            let msg = quote!(<#actor as ::bombay::capability::Actor>::Msg);
             tokens.extend(quote! {
                 #[automatically_derived]
-                impl ::bombay::caps::Replay<#msg> for #ident {
+                impl ::bombay::capability::Replay<#msg> for #ident {
                     fn next_replay(&mut self) -> ::core::option::Option<#msg> {
-                        ::bombay::caps::Replay::next_replay(&mut self.#field)
+                        ::bombay::capability::Replay::next_replay(&mut self.#field)
                     }
                 }
             });
         } else if stash_fields.is_empty() {
             tokens.extend(quote! {
                 #[automatically_derived]
-                impl<__CapsReplayMsg> ::bombay::caps::Replay<__CapsReplayMsg> for #ident {
+                impl<__CapsReplayMsg> ::bombay::capability::Replay<__CapsReplayMsg> for #ident {
                     fn next_replay(&mut self) -> ::core::option::Option<__CapsReplayMsg> {
                         ::core::option::Option::None
                     }
@@ -229,9 +229,9 @@ impl ToTokens for DeriveProvide {
             for (field, msg) in stash_fields {
                 tokens.extend(quote! {
                     #[automatically_derived]
-                    impl ::bombay::caps::Replay<#msg> for #ident {
+                    impl ::bombay::capability::Replay<#msg> for #ident {
                         fn next_replay(&mut self) -> ::core::option::Option<#msg> {
-                            ::bombay::caps::Replay::next_replay(&mut self.#field)
+                            ::bombay::capability::Replay::next_replay(&mut self.#field)
                         }
                     }
                 });
@@ -250,21 +250,21 @@ impl ToTokens for DeriveProvide {
 /// commits nothing.
 fn emit_admission(phased: Option<(&Ident, &Type)>, ident: &Ident, tokens: &mut TokenStream) {
     if let Some((field, policy)) = phased {
-        let actor = quote!(<#policy as ::bombay::caps::PhasePolicy>::Actor);
-        let msg = quote!(<#actor as ::bombay::caps::Actor>::Msg);
-        let err = quote!(<#actor as ::bombay::caps::Actor>::Error);
+        let actor = quote!(<#policy as ::bombay::capability::PhasePolicy>::Actor);
+        let msg = quote!(<#actor as ::bombay::capability::Actor>::Msg);
+        let err = quote!(<#actor as ::bombay::capability::Actor>::Error);
         tokens.extend(quote! {
             #[automatically_derived]
-            impl ::bombay::caps::Admission<#actor> for #ident {
+            impl ::bombay::capability::Admission<#actor> for #ident {
                 async fn admit(
                     &mut self,
                     actor: &mut #actor,
                     msg: #msg,
-                ) -> ::core::result::Result<::bombay::caps::Admitted<#msg>, #err> {
-                    ::bombay::caps::Admission::admit(&mut self.#field, actor, msg).await
+                ) -> ::core::result::Result<::bombay::capability::Admitted<#msg>, #err> {
+                    ::bombay::capability::Admission::admit(&mut self.#field, actor, msg).await
                 }
                 fn commit(&mut self) {
-                    ::bombay::caps::Admission::commit(&mut self.#field);
+                    ::bombay::capability::Admission::commit(&mut self.#field);
                 }
             }
         });
@@ -272,18 +272,18 @@ fn emit_admission(phased: Option<(&Ident, &Type)>, ident: &Ident, tokens: &mut T
     }
     tokens.extend(quote! {
         #[automatically_derived]
-        impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::Admission<__CapsActor>
+        impl<__CapsActor: ::bombay::capability::Actor> ::bombay::capability::Admission<__CapsActor>
             for #ident
         {
             async fn admit(
                 &mut self,
                 _: &mut __CapsActor,
-                msg: <__CapsActor as ::bombay::caps::Actor>::Msg,
+                msg: <__CapsActor as ::bombay::capability::Actor>::Msg,
             ) -> ::core::result::Result<
-                ::bombay::caps::Admitted<<__CapsActor as ::bombay::caps::Actor>::Msg>,
-                <__CapsActor as ::bombay::caps::Actor>::Error,
+                ::bombay::capability::Admitted<<__CapsActor as ::bombay::capability::Actor>::Msg>,
+                <__CapsActor as ::bombay::capability::Actor>::Error,
             > {
-                ::core::result::Result::Ok(::bombay::caps::Admitted::Deliver(msg))
+                ::core::result::Result::Ok(::bombay::capability::Admitted::Deliver(msg))
             }
             fn commit(&mut self) {}
         }
@@ -308,20 +308,20 @@ fn emit_deadline(
     tokens: &mut TokenStream,
 ) {
     if let Some((field, policy)) = phased {
-        let actor = quote!(<#policy as ::bombay::caps::PhasePolicy>::Actor);
-        let err = quote!(<#actor as ::bombay::caps::Actor>::Error);
+        let actor = quote!(<#policy as ::bombay::capability::PhasePolicy>::Actor);
+        let err = quote!(<#actor as ::bombay::capability::Actor>::Error);
         tokens.extend(quote! {
             #[automatically_derived]
-            impl ::bombay::caps::DeadlineHook<#actor> for #ident {
-                fn next_deadline(&self, actor: &#actor) -> ::core::option::Option<::bombay::caps::DeadlineInstant> {
-                    ::bombay::caps::DeadlineHook::next_deadline(&self.#field, actor)
+            impl ::bombay::capability::DeadlineHook<#actor> for #ident {
+                fn next_deadline(&self, actor: &#actor) -> ::core::option::Option<::bombay::capability::DeadlineInstant> {
+                    ::bombay::capability::DeadlineHook::next_deadline(&self.#field, actor)
                 }
                 async fn on_deadline(
                     &mut self,
                     actor: &mut #actor,
-                    actor_ref: ::bombay::actor::WeakActorRef<::bombay::caps::Shell<#actor>>,
+                    actor_ref: ::bombay::actor::WeakActorRef<::bombay::capability::Shell<#actor>>,
                 ) -> ::core::result::Result<::bombay::actor::Flow, #err> {
-                    ::bombay::caps::DeadlineHook::on_deadline(&mut self.#field, actor, actor_ref).await
+                    ::bombay::capability::DeadlineHook::on_deadline(&mut self.#field, actor, actor_ref).await
                 }
             }
         });
@@ -334,17 +334,17 @@ fn emit_deadline(
     if deadlined.is_empty() {
         tokens.extend(quote! {
             #[automatically_derived]
-            impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::DeadlineHook<__CapsActor>
+            impl<__CapsActor: ::bombay::capability::Actor> ::bombay::capability::DeadlineHook<__CapsActor>
                 for #ident
             {
-                fn next_deadline(&self, _: &__CapsActor) -> ::core::option::Option<::bombay::caps::DeadlineInstant> {
+                fn next_deadline(&self, _: &__CapsActor) -> ::core::option::Option<::bombay::capability::DeadlineInstant> {
                     ::core::option::Option::None
                 }
                 async fn on_deadline(
                     &mut self,
                     _: &mut __CapsActor,
-                    _: ::bombay::actor::WeakActorRef<::bombay::caps::Shell<__CapsActor>>,
-                ) -> ::core::result::Result<::bombay::actor::Flow, <__CapsActor as ::bombay::caps::Actor>::Error> {
+                    _: ::bombay::actor::WeakActorRef<::bombay::capability::Shell<__CapsActor>>,
+                ) -> ::core::result::Result<::bombay::actor::Flow, <__CapsActor as ::bombay::capability::Actor>::Error> {
                     ::core::result::Result::Ok(::bombay::actor::Flow::Continue)
                 }
             }
@@ -354,20 +354,20 @@ fn emit_deadline(
     for (field, policy) in deadlined {
         tokens.extend(quote! {
             #[automatically_derived]
-            impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::DeadlineHook<__CapsActor>
+            impl<__CapsActor: ::bombay::capability::Actor> ::bombay::capability::DeadlineHook<__CapsActor>
                 for #ident
             where
-                #policy: ::bombay::caps::DeadlinePolicy<::bombay::caps::ByState<__CapsActor>>,
+                #policy: ::bombay::capability::DeadlinePolicy<::bombay::capability::ByState<__CapsActor>>,
             {
-                fn next_deadline(&self, actor: &__CapsActor) -> ::core::option::Option<::bombay::caps::DeadlineInstant> {
-                    ::bombay::caps::DeadlineHook::next_deadline(&self.#field, actor)
+                fn next_deadline(&self, actor: &__CapsActor) -> ::core::option::Option<::bombay::capability::DeadlineInstant> {
+                    ::bombay::capability::DeadlineHook::next_deadline(&self.#field, actor)
                 }
                 async fn on_deadline(
                     &mut self,
                     actor: &mut __CapsActor,
-                    actor_ref: ::bombay::actor::WeakActorRef<::bombay::caps::Shell<__CapsActor>>,
-                ) -> ::core::result::Result<::bombay::actor::Flow, <__CapsActor as ::bombay::caps::Actor>::Error> {
-                    ::bombay::caps::DeadlineHook::on_deadline(&mut self.#field, actor, actor_ref).await
+                    actor_ref: ::bombay::actor::WeakActorRef<::bombay::capability::Shell<__CapsActor>>,
+                ) -> ::core::result::Result<::bombay::actor::Flow, <__CapsActor as ::bombay::capability::Actor>::Error> {
+                    ::bombay::capability::DeadlineHook::on_deadline(&mut self.#field, actor, actor_ref).await
                 }
             }
         });
@@ -394,10 +394,10 @@ fn emit_watch_supervise(fields: &[(Ident, Type)], ident: &Ident, tokens: &mut To
         first_policy.get_or_insert(policy);
         tokens.extend(quote! {
             #[automatically_derived]
-            impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::HasWatching<__CapsActor>
+            impl<__CapsActor: ::bombay::capability::Actor> ::bombay::capability::HasWatching<__CapsActor>
                 for #ident
             where
-                #policy: ::bombay::caps::WatchPolicy<__CapsActor>,
+                #policy: ::bombay::capability::WatchPolicy<__CapsActor>,
             {
                 type Policy = #policy;
             }
@@ -414,25 +414,25 @@ fn emit_watch_supervise(fields: &[(Ident, Type)], ident: &Ident, tokens: &mut To
         let policy = first_policy.iter();
         tokens.extend(quote! {
             #[automatically_derived]
-            impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::HasSupervising<__CapsActor>
+            impl<__CapsActor: ::bombay::capability::Actor> ::bombay::capability::HasSupervising<__CapsActor>
                 for #ident
             where
-                #(#policy: ::bombay::caps::WatchPolicy<__CapsActor>,)*
+                #(#policy: ::bombay::capability::WatchPolicy<__CapsActor>,)*
             {
                 type Strat = #strat;
             }
         });
     }
     let runner = if supervising {
-        quote!(::bombay::caps::SupervisedRun)
+        quote!(::bombay::capability::SupervisedRun)
     } else if first_policy.is_some() {
-        quote!(::bombay::caps::LinkedRun)
+        quote!(::bombay::capability::LinkedRun)
     } else {
-        quote!(::bombay::caps::PlainRun)
+        quote!(::bombay::capability::PlainRun)
     };
     tokens.extend(quote! {
         #[automatically_derived]
-        impl<__CapsActor: ::bombay::caps::Actor> ::bombay::caps::SelectRunner<__CapsActor>
+        impl<__CapsActor: ::bombay::capability::Actor> ::bombay::capability::SelectRunner<__CapsActor>
             for #ident
         {
             type Runner = #runner;
@@ -503,7 +503,8 @@ mod tests {
                 .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
-            out.matches("impl :: bombay :: caps :: Provide <").count(),
+            out.matches("impl :: bombay :: capability :: Provide <")
+                .count(),
             2,
             "exactly one Provide impl per field: {out}"
         );
@@ -518,13 +519,13 @@ mod tests {
             .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
-            out.matches("impl :: bombay :: caps :: Replay < GateMsg > for Caps")
+            out.matches("impl :: bombay :: capability :: Replay < GateMsg > for Caps")
                 .count(),
             1,
             "one concrete Replay<GateMsg>: {out}"
         );
         assert!(
-            out.contains(":: bombay :: caps :: Replay :: next_replay (& mut self . buf)"),
+            out.contains(":: bombay :: capability :: Replay :: next_replay (& mut self . buf)"),
             "forwards to the stash field's own Replay: {out}"
         );
         assert!(
@@ -541,7 +542,7 @@ mod tests {
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
             out.matches(
-                "impl < __CapsReplayMsg > :: bombay :: caps :: Replay < __CapsReplayMsg > for Caps"
+                "impl < __CapsReplayMsg > :: bombay :: capability :: Replay < __CapsReplayMsg > for Caps"
             )
             .count(),
             1,
@@ -565,13 +566,15 @@ mod tests {
                 .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
-            out.matches(":: bombay :: caps :: HasWatching < __CapsActor > for Caps")
+            out.matches(":: bombay :: capability :: HasWatching < __CapsActor > for Caps")
                 .count(),
             1,
             "exactly one HasWatching impl: {out}"
         );
         assert!(
-            out.contains("where RecPolicy : :: bombay :: caps :: WatchPolicy < __CapsActor >"),
+            out.contains(
+                "where RecPolicy : :: bombay :: capability :: WatchPolicy < __CapsActor >"
+            ),
             "the impl is gated on the policy serving the actor: {out}"
         );
         assert!(
@@ -593,7 +596,7 @@ mod tests {
         .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
-            out.matches(":: bombay :: caps :: HasSupervising < __CapsActor > for Caps")
+            out.matches(":: bombay :: capability :: HasSupervising < __CapsActor > for Caps")
                 .count(),
             1,
             "exactly one HasSupervising impl: {out}"
@@ -603,7 +606,7 @@ mod tests {
             "the declared strategy rides the associated type: {out}"
         );
         assert_eq!(
-            out.matches("where Otp : :: bombay :: caps :: WatchPolicy < __CapsActor >")
+            out.matches("where Otp : :: bombay :: capability :: WatchPolicy < __CapsActor >")
                 .count(),
             2,
             "both participation impls carry the policy gate: {out}"
@@ -620,13 +623,13 @@ mod tests {
         .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
-            out.matches(":: bombay :: caps :: SelectRunner < __CapsActor > for Caps")
+            out.matches(":: bombay :: capability :: SelectRunner < __CapsActor > for Caps")
                 .count(),
             1,
             "exactly one SelectRunner impl: {out}"
         );
         assert!(
-            out.contains("type Runner = :: bombay :: caps :: SupervisedRun"),
+            out.contains("type Runner = :: bombay :: capability :: SupervisedRun"),
             "Supervising selects the three-arm loop: {out}"
         );
     }
@@ -639,7 +642,7 @@ mod tests {
             .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert!(
-            out.contains("type Runner = :: bombay :: caps :: LinkedRun"),
+            out.contains("type Runner = :: bombay :: capability :: LinkedRun"),
             "Watching without Supervising selects the two-arm loop: {out}"
         );
     }
@@ -654,13 +657,13 @@ mod tests {
             .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
-            out.matches(":: bombay :: caps :: SelectRunner < __CapsActor > for Caps")
+            out.matches(":: bombay :: capability :: SelectRunner < __CapsActor > for Caps")
                 .count(),
             1,
             "every derived set names its loop shape exactly once: {out}"
         );
         assert!(
-            out.contains("type Runner = :: bombay :: caps :: PlainRun"),
+            out.contains("type Runner = :: bombay :: capability :: PlainRun"),
             "no watch/supervise cap: plain loop: {out}"
         );
     }
@@ -691,21 +694,21 @@ mod tests {
                 .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
-            out.matches(":: bombay :: caps :: DeadlineHook < __CapsActor > for Caps")
+            out.matches(":: bombay :: capability :: DeadlineHook < __CapsActor > for Caps")
                 .count(),
             1,
             "exactly one DeadlineHook impl: {out}"
         );
         assert!(
             out.contains(
-                "where IdlePolicy : :: bombay :: caps :: DeadlinePolicy < :: bombay :: caps :: \
+                "where IdlePolicy : :: bombay :: capability :: DeadlinePolicy < :: bombay :: capability :: \
                  ByState < __CapsActor >>"
             ),
             "the impl is gated on the policy serving the actor's ByState context: {out}"
         );
         assert!(
             out.contains(
-                ":: bombay :: caps :: DeadlineHook :: next_deadline (& self . deadlined , actor)"
+                ":: bombay :: capability :: DeadlineHook :: next_deadline (& self . deadlined , actor)"
             ),
             "forwards to the Deadlined field's own hook: {out}"
         );
@@ -724,7 +727,7 @@ mod tests {
             .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
-            out.matches(":: bombay :: caps :: DeadlineHook < __CapsActor > for Caps")
+            out.matches(":: bombay :: capability :: DeadlineHook < __CapsActor > for Caps")
                 .count(),
             1,
             "every derived set gets exactly one DeadlineHook impl: {out}"
@@ -745,10 +748,10 @@ mod tests {
             syn::parse_str::<DeriveProvide>("struct Caps { phased: Phased<WorkerPhases> }")
                 .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
-        let actor = "< WorkerPhases as :: bombay :: caps :: PhasePolicy > :: Actor";
+        let actor = "< WorkerPhases as :: bombay :: capability :: PhasePolicy > :: Actor";
         assert_eq!(
             out.matches(&format!(
-                ":: bombay :: caps :: Admission < {actor} > for Caps"
+                ":: bombay :: capability :: Admission < {actor} > for Caps"
             ))
             .count(),
             1,
@@ -756,14 +759,14 @@ mod tests {
         );
         assert_eq!(
             out.matches(&format!(
-                ":: bombay :: caps :: DeadlineHook < {actor} > for Caps"
+                ":: bombay :: capability :: DeadlineHook < {actor} > for Caps"
             ))
             .count(),
             1,
             "the phase deadline IS the set's deadline seat: {out}"
         );
         assert!(
-            out.contains(":: bombay :: caps :: Replay :: next_replay (& mut self . phased)"),
+            out.contains(":: bombay :: capability :: Replay :: next_replay (& mut self . phased)"),
             "replay forwards to the embedded phase stash: {out}"
         );
         assert!(
@@ -780,13 +783,13 @@ mod tests {
             .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
-            out.matches(":: bombay :: caps :: Admission < __CapsActor > for Caps")
+            out.matches(":: bombay :: capability :: Admission < __CapsActor > for Caps")
                 .count(),
             1,
             "every derived set gets exactly one Admission impl: {out}"
         );
         assert!(
-            out.contains(":: bombay :: caps :: Admitted :: Deliver (msg)"),
+            out.contains(":: bombay :: capability :: Admitted :: Deliver (msg)"),
             "the blanket delivers everything: {out}"
         );
     }
@@ -838,7 +841,8 @@ mod tests {
         .expect("valid cap-set struct");
         let out = parsed.to_token_stream().to_string();
         assert_eq!(
-            out.matches("impl :: bombay :: caps :: Replay <").count(),
+            out.matches("impl :: bombay :: capability :: Replay <")
+                .count(),
             1,
             "only the stash field participates in replay: {out}"
         );
