@@ -1,4 +1,16 @@
-# Behavior Algebra Prototype (card #295, pass 1) Implementation Plan
+# Behaviorpass executable model — build plan (card #298; formerly the #295 prototype plan)
+
+> **RETARGETED 2026-08-02:** #295 pass-1 ships **ADR-0030 only**. This plan
+> was written as an in-repo #295 prototype; per #298's division of labor it is
+> now the **behaviorpass** build plan — the executable model (essence-fold,
+> five capability layers, model-vs-real trace oracle) lives in the new
+> `bombay-matrix` repo (#298), with bombay pinned as a dependency, NOT in
+> `crates/core/tests/`. The task CONTENT (the fold, the layers, the oracle
+> scenarios) carries over verbatim as behaviorpass's frozen reference; only
+> the home changes (`bombay-matrix/tests|src`, not `crates/core/tests/behavior_algebra/`),
+> and the file paths, commit scope (`[#298]`), and "no in-repo commit" rule
+> below must be re-read against that home. The `run` fold body is authored
+> by the behaviorpass autoresearch loop, not hand-written.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

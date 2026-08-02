@@ -38,7 +38,7 @@ Closure under composition is structural (`Out: Behavior`). Both traits are SEALE
 
 ### The five capabilities as layers
 
-Base = handler floor · `Stashing`/`Deadlined`/`Watching` = source-adding layers routing their own events · `Phased` = both planes (gate wraps the step; its seats add events) · `Supervising` = source-adding layer whose reactions restart CHILDREN — the outer fold over child folds, still ONE kind of thing (demonstrated by the prototype's model, not asserted).
+Base = handler floor · `Stashing`/`Deadlined`/`Watching` = source-adding layers routing their own events · `Phased` = both planes (gate wraps the step; its seats add events) · `Supervising` = source-adding layer whose reactions restart CHILDREN — the outer fold over child folds, still ONE kind of thing (to be demonstrated by the behaviorpass executable model, #298 — not asserted).
 
 ### Laws in signatures
 
@@ -48,10 +48,13 @@ Base = handler floor · `Stashing`/`Deadlined`/`Watching` = source-adding layers
 4. Priority = stack order: outer layers' events outrank inner ones; `Supervising<Watching<Deadlined<Base>>>` derives today's arm order (encoding deferred with the select work).
 5. Agha floor as upper bound: anything not derivable from typed-become + merged sources is accidental structure.
 
-### Typed-become audit — findings (prototype pass)
+### Typed-become audit — findings (design pass)
+
+Analytical findings from the design session; the behaviorpass executable
+model (#298) is where each is mechanically confirmed against the real loop.
 
 - The pending-goto side channel (`Ctx::goto` + `commit()` + the D3 code-order proof) is accidental structure: with the verdict carrying `Goto` (ADR-0029's family used as designed), committing a phase on `Err` is UNREPRESENTABLE — D3's test shrinks from a code-order proof to a tautology. The real-surface migration of this finding rides the implementation pass (and reshapes with #286's handler API).
-- The two-queue stash (held vs released) re-derives itself in the model's `Phased` drain — it is essential structure, not an implementation artifact.
+- The two-queue stash (held vs released) re-derives itself in a layered `Phased` drain — it is essential structure, not an implementation artifact.
 - Replay-batch atomicity is preserved BY CONSTRUCTION: the layer drains its batch inside its own `step`, so no outer event interleaves — resolving the drain-as-source question in favor of current behavior.
 
 ## Alternatives rejected
@@ -63,11 +66,11 @@ Base = handler floor · `Stashing`/`Deadlined`/`Watching` = source-adding layers
 ## Open doors (each gated, none silent)
 
 - The async merged-select encoding over an open source set: gated on #298's monomorphization-slope measurements (required pre-reading, card comment). Stays on #295.
-- Unsealing `Behavior`/`Capability`/`DeadlineCx` + the out-of-crate capability proof: contingent on Joel's unseal decision; model-grade closure proof ships in this pass.
-- The full oracle-over-derived-loop (#266 6-scenario, 24-point lattice): rides the implementation pass; this pass ships model-vs-real equality for plain/phased/deadline scenarios.
+- Unsealing `Behavior`/`Capability`/`DeadlineCx` + the out-of-crate capability proof: contingent on Joel's unseal decision; the model-grade closure proof is part of the behaviorpass harness (#298).
+- The full oracle-over-derived-loop (#266 6-scenario, 24-point lattice): rides the implementation pass; model-vs-real trace equality is built and autoresearched in the behaviorpass harness (#298), not in-repo under this card.
 
 ## Consequences
 
-- The prototype (`crates/core/tests/behavior_algebra/`) is the executable spec and doubles as bombay-matrix's frozen reference (#298).
+- **#295 pass-1 ships this ADR only** (the conceptual design — "fewer *kinds* of things", #298's division of labor). The executable form — the ~50-line essence-fold, the five model layers, the model-vs-real trace oracle — is the frozen reference of the **behaviorpass** harness (`bombay-matrix`, #298), built and concision-golfed there by autoresearch, NOT an in-repo artifact of this card.
 - No public API change in this pass; the run loop is untouched.
 - The implementation pass derives the three loops from the algebra and must keep the #266-family oracles green unchanged.

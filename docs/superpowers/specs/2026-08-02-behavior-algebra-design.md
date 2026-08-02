@@ -5,6 +5,16 @@
 ADR-0028 (two-layer law, names this card), ADR-0029 (one verdict family —
 precondition, shipped)
 
+> **Amendment (2026-08-02, same day):** #295 pass-1 ships **ADR-0030 only**.
+> Per #298's division of labor — conceptual concision ("fewer *kinds*") is
+> ADR work; the executable form and mechanical concision are the autoresearch
+> loop's job — the executable prototype below (the essence-fold, the five
+> model layers, the model-vs-real oracle) is **not** an in-repo #295 artifact.
+> It is the design of the **behaviorpass** harness's frozen reference
+> (`bombay-matrix`, #298), and the sections from "The executable prototype"
+> onward read as behaviorpass's build spec, not this card's. Nothing in the
+> algebra/laws/naming above changes.
+
 ## Problem
 
 The capability layer is three sealed hooks (`Admission`/`Replay` on the
