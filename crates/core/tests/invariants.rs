@@ -71,7 +71,7 @@ use tokio::{sync::oneshot, task::yield_now, time::timeout};
 
 use bombay::{
     SendContext,
-    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
+    actor::{Actor, ActorRef, Flow, Normal, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
     error::{ActorStopReason, PanicError, PanicReason, TellError},
     mailbox::{Capacity, Mailboxed, Signal, TrySendError},
     message::Msg,
@@ -176,7 +176,7 @@ async fn i1_single_writer_mutual_exclusion() {
             self.concurrent.fetch_sub(1, Ordering::SeqCst);
             let handled = self.handled.fetch_add(1, Ordering::SeqCst) + 1;
             if handled == self.done_at {
-                return Ok(Flow::Stop);
+                return Ok(Flow::Stop(Normal));
             }
             Ok(Flow::Continue)
         }
@@ -419,7 +419,7 @@ async fn i7_no_reentrancy_self_send_is_enqueued() {
                         "Second did NOT run reentrantly inside First",
                     );
                     self.handled.lock().expect("lock").push("Second");
-                    return Ok(Flow::Stop);
+                    return Ok(Flow::Stop(Normal));
                 }
             }
             Ok(Flow::Continue)

@@ -2,11 +2,11 @@
 //! [`OtpPropagation`] policy, and the [`HasWatching`] loop-participation
 //! half (ADR-0026 stage 3, card #280).
 
-use core::{future::Future, marker::PhantomData, ops::ControlFlow};
+use core::{future::Future, marker::PhantomData};
 
 use crate::{error::ActorStopReason, mailbox::ActorId};
 
-use super::Actor;
+use super::{Actor, Never, Step};
 
 /// The death-reaction policy seat of the [`Watching`] capability — the
 /// relocated `on_link_died` hook (ADR-0026 stage 3, card #280).
@@ -16,8 +16,10 @@ use super::Actor;
 /// notice arriving after the loop's stop decision is dropped, #266).
 /// Policies ride the [`Watching`] TYPE — chosen by name, never inherited.
 pub trait WatchPolicy<A: Actor>: Send + 'static {
-    /// Reacts to the death of a watched/linked actor. `Break(reason)`
-    /// stops the watcher with that reason; `Continue` keeps it running.
+    /// Reacts to the death of a watched/linked actor, in the watch corner
+    /// of the [`Step`] family (ADR-0029): `Stop(reason)` stops the watcher
+    /// with that reason; `Continue` keeps it running (`Goto` is
+    /// uninhabited — phase `Never`).
     ///
     /// # Errors
     ///
@@ -28,7 +30,7 @@ pub trait WatchPolicy<A: Actor>: Send + 'static {
         id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> impl Future<Output = Result<ControlFlow<ActorStopReason>, A::Error>> + Send;
+    ) -> impl Future<Output = Result<Step<Never, ActorStopReason>, A::Error>> + Send;
 }
 
 /// The NAMED OTP propagation policy — semantics byte-identical to the
@@ -47,14 +49,14 @@ impl<A: Actor> WatchPolicy<A> for OtpPropagation {
         id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, A::Error> {
+    ) -> Result<Step<Never, ActorStopReason>, A::Error> {
         Ok(if linked && !reason.is_normal() {
-            ControlFlow::Break(ActorStopReason::LinkDied {
+            Step::Stop(ActorStopReason::LinkDied {
                 id,
                 reason: Box::new(reason),
             })
         } else {
-            ControlFlow::Continue(())
+            Step::Continue
         })
     }
 }
@@ -98,17 +100,17 @@ pub trait HasWatching<A: Actor> {
 
 #[cfg(test)]
 mod tests {
-    use core::ops::ControlFlow;
-
     use super::super::fixtures::Sup;
-    use super::{OtpPropagation, WatchPolicy};
+    use super::{OtpPropagation, Step, WatchPolicy};
     use crate::{error::ActorStopReason, mailbox::ActorId};
 
     /// The NAMED OTP policy carries the exact semantics of the removed
     /// `Watch::on_link_died` default: a **linked abnormal** death
     /// propagates as `Break(LinkDied)` carrying the original reason;
     /// a watch-only (`linked == false`) abnormal death and a linked
-    /// normal death are observed and continue. Port of the removed
+    /// normal death are observed and continue. Respelled on the `Step`
+    /// family's watch corner (ADR-0029), same trace assertions — the
+    /// #266-ported oracle. Port of the removed
     /// `default_hook_breaks_on_linked_abnormal_and_continues_otherwise`.
     #[tokio::test]
     async fn otp_propagation_breaks_on_linked_abnormal_and_continues_otherwise() {
@@ -124,7 +126,7 @@ mod tests {
         .await
         .expect("infallible policy");
         match out {
-            ControlFlow::Break(ActorStopReason::LinkDied { id: died, reason }) => {
+            Step::Stop(ActorStopReason::LinkDied { id: died, reason }) => {
                 assert_eq!(died, id, "the notice's id rides the stop reason");
                 assert!(
                     matches!(*reason, ActorStopReason::Killed),
@@ -143,7 +145,7 @@ mod tests {
         .await
         .expect("infallible policy");
         assert!(
-            matches!(out, ControlFlow::Continue(())),
+            matches!(out, Step::Continue),
             "watch (linked=false) + abnormal is notify-only, got {out:?}",
         );
 
@@ -156,7 +158,7 @@ mod tests {
         .await
         .expect("infallible policy");
         assert!(
-            matches!(out, ControlFlow::Continue(())),
+            matches!(out, Step::Continue),
             "linked + normal does not propagate, got {out:?}",
         );
     }

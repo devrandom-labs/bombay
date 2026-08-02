@@ -66,7 +66,7 @@ use tokio::{
 
 use bombay::{
     ActorId,
-    actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
+    actor::{Actor, ActorRef, Flow, Normal, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
     capability,
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed},
@@ -341,7 +341,7 @@ impl capability::Actor for SupScript {
             }
             SupMsg::SuperviseAndStop => {
                 self.supervise_step(cx.self_ref()).await;
-                return Ok(Flow::Stop);
+                return Ok(Flow::Stop(Normal));
             }
         }
         Ok(Flow::Continue)

@@ -11,7 +11,7 @@ use core::{convert::Infallible, num::NonZeroUsize, time::Duration};
 use tokio::time::{Instant, sleep, timeout};
 
 use bombay::{
-    actor::{Flow, WeakActorRef},
+    actor::{Flow, Normal, WeakActorRef},
     capability::{
         Actor, Bounded, ByPhase, CapSet, Ctx, DeadlinePolicy, Deferred, Disposition, NoTimeout,
         Overflow, PhasePolicy, PhaseView, Phased, Shell, StashPolicy, Stashing, Step, spawn,
@@ -100,7 +100,7 @@ impl PhasePolicy for GPolicy {
         if let GMsg::Cmd(n) = msg {
             let _ = actor.probe.send(Ev::ShedFull(n));
         }
-        Ok(Overflow::Handled(Step::Stay))
+        Ok(Overflow::Handled(Step::Continue))
     }
 }
 
@@ -145,7 +145,7 @@ impl DeadlinePolicy<ByPhase<GPolicy>> for GDeadline {
         Ok(if actor.timeout_goes_ready {
             Step::Goto(Phase::Ready)
         } else {
-            Step::Stop
+            Step::Stop(Normal)
         })
     }
 }
@@ -207,7 +207,7 @@ impl Actor for G {
                 // no unstash, no deadline-anchor reset.
                 cx.cap::<Phased<GPolicy>>().goto(Phase::Loading);
             }
-            (_, GMsg::Quit) => return Ok(Flow::Stop),
+            (_, GMsg::Quit) => return Ok(Flow::Stop(Normal)),
             // Every remaining pair is gated Defer/Ignore; reaching here
             // means the gate leaked (Rust's exhaustiveness cannot see the
             // gate — the recorded ADR-0024 wart — so the arm exists and
@@ -478,7 +478,7 @@ impl Actor for Shed {
             GMsg::Cmd(n) => {
                 let _ = self.probe.send(Ev::Processed(n));
             }
-            GMsg::Quit => return Ok(Flow::Stop),
+            GMsg::Quit => return Ok(Flow::Stop(Normal)),
             _ => {}
         }
         Ok(Flow::Continue)

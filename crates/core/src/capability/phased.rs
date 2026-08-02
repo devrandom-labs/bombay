@@ -365,11 +365,13 @@ impl<P: PhasePolicy> Phased<P> {
     }
 
     /// Applies a policy hook's step at its boundary (the hook return IS
-    /// the boundary).
+    /// the boundary). Not an adapter (ADR-0029): the `Goto` arm is the
+    /// transition-commit point (D3/D4) and the machine consumes its own
+    /// phase — the other arms are corner-to-corner identities.
     fn apply(&mut self, step: Step<P::Phase>) -> Flow {
         match step {
-            Step::Stay => Flow::Continue,
-            Step::Stop => Flow::Stop,
+            Step::Continue => Flow::Continue,
+            Step::Stop(normal) => Flow::Stop(normal),
             Step::Goto(next) => {
                 self.commit_to(next);
                 Flow::Continue

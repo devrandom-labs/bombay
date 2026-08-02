@@ -45,7 +45,7 @@ pub use shell::{Handle, LinkedRun, PlainRun, SelectRunner, Shell, SupervisedRun}
 pub use spawn::{RunKind, spawn, spawn_with};
 pub use stashing::{Replay, StashPolicy, Stashing};
 pub use supervising::{HasSupervising, OneForAll, OneForOne, RestForOne, Strategy, Supervising};
-pub use verdict::{Deferred, Disposition, Never, Overflow, Step};
+pub use verdict::{Deferred, Disposition, Flow, Never, Normal, Overflow, Step};
 pub use watching::{HasWatching, OtpPropagation, WatchPolicy, Watching};
 
 /// The typed overflow handback of the [`Stashing`] capability — re-exported

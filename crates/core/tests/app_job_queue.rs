@@ -22,7 +22,7 @@ use app::{
 use bombay::{
     ActorId,
     actor::{Flow, PreparedActor, RunResult, SpawnConfig},
-    capability,
+    capability::{self, Never, Step},
     error::{ActorStopReason, AskError, Infallible},
     mailbox::Capacity,
     message::Msg,
@@ -784,13 +784,13 @@ impl capability::WatchPolicy<Auditor> for AuditPolicy {
         id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> Result<core::ops::ControlFlow<ActorStopReason>, core::convert::Infallible> {
+    ) -> Result<Step<Never, ActorStopReason>, core::convert::Infallible> {
         actor
             .notices
             .lock()
             .expect("lock")
             .push((id, reason, linked));
-        Ok(core::ops::ControlFlow::Continue(()))
+        Ok(Step::Continue)
     }
 }
 

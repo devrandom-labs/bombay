@@ -1,6 +1,8 @@
 # ADR-0023: Handler stop signalling — return-value `Flow`, not `stop: &mut bool`
 
-Date: 2026-07-31 · Status: accepted · Card: #259
+Date: 2026-07-31 · Status: accepted · Card: #259 · Spelling amended by
+ADR-0029 (`Flow` is the handler corner of the one `Step` family;
+`Flow::Stop` is spelled `Flow::Stop(Normal)` — semantics verbatim)
 
 ## Context
 

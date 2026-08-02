@@ -1,13 +1,15 @@
 //! The shared verdict vocabulary of the capability surface: [`Never`],
-//! [`Deferred`], [`Disposition`], [`Step`], [`Overflow`] (ADR-0024 /
-//! ADR-0028). Card #297 folds the remaining dialects into this family.
+//! [`Normal`], [`Deferred`], [`Disposition`], the ONE [`Step`] family (with
+//! its [`Flow`] handler corner), and [`Overflow`] (ADR-0024 / ADR-0028 /
+//! ADR-0029).
 
 /// The uninhabited type with two structural jobs (ADR-0028).
 ///
-/// As a phase: [`Step<Never>`](Step) has no constructible `Goto` — it is
-/// isomorphic to [`Flow`](crate::actor::Flow) (a plain actor is a one-phase machine), which is
-/// how one [`DeadlinePolicy`](super::DeadlinePolicy) trait serves both [`Deadlined`](super::Deadlined) and
-/// [`Phased`](super::Phased). As a defer token: [`Disposition<Never>`](Disposition) has
+/// As a phase: [`Step<Never>`](Step) has no constructible `Goto` — a plain
+/// actor is a one-phase machine, which is how one
+/// [`DeadlinePolicy`](super::DeadlinePolicy) trait serves both [`Deadlined`](super::Deadlined) and
+/// [`Phased`](super::Phased), and how [`Flow`] is a corner of [`Step`] rather than
+/// its own dialect (ADR-0029). As a defer token: [`Disposition<Never>`](Disposition) has
 /// no constructible `Defer` — a machine that plugged [`NoDefer`](super::NoDefer) cannot
 /// even SPELL a deferral; the law is the type, not a convention.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,8 +42,55 @@ pub enum Disposition<D = Never> {
     Ignore,
 }
 
-/// A policy hook's transition decision — `Flow` (ADR-0023) plus one
-/// variant, `Copy`, zero-box (ADR-0024 D3).
+/// The one spellable stop reason at the handler and seat corners of
+/// [`Step`] (ADR-0029) — a unit witness, not an
+/// [`ActorStopReason`](crate::error::ActorStopReason).
+///
+/// ADR-0023's law survives as a type: a self-stop's only honest reason is
+/// `Normal`, so the reason position holds a type with exactly one
+/// inhabitant — fabricating `Killed`/`Panicked`/`LinkDied` is
+/// unrepresentable, not discouraged. The run loop discharges this marker
+/// to `ActorStopReason::Normal` at its single consumption point.
+///
+/// The law, pinned both ways: a handler-corner verdict cannot carry a
+/// runtime reason —
+///
+/// ```compile_fail,E0308
+/// use bombay::actor::Flow;
+/// use bombay::error::ActorStopReason;
+///
+/// let _: Flow = Flow::Stop(ActorStopReason::Killed);
+/// ```
+///
+/// while the one honest reason is exactly spellable:
+///
+/// ```
+/// use bombay::actor::{Flow, Normal};
+///
+/// let _: Flow = Flow::Stop(Normal);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Normal;
+
+/// THE verdict family (ADR-0029): the one type every reaction answers in.
+///
+/// "Keep going, switch behavior, or stop?" — typed `become` (Agha):
+/// become(same) / closed-menu become / become(⊥) with an exit code.
+///
+/// Both parameters default to the plain-actor corner, and each corner is
+/// carved by what its parameters make unconstructible:
+///
+/// - [`Flow`] = `Step<Never, Normal>` — handlers, [`DeadlineHook`](super::DeadlineHook),
+///   [`Admitted::Absorbed`](super::Admitted::Absorbed): no `Goto`, no reason but [`Normal`];
+/// - `Step<Ph>` = `Step<Ph, Normal>` — policy seats
+///   ([`DeadlinePolicy`](super::DeadlinePolicy), [`Overflow::Handled`](Overflow::Handled)): no reason but
+///   [`Normal`];
+/// - `Step<Never, ActorStopReason>` — the watch corner
+///   ([`WatchPolicy`](super::WatchPolicy)): `Stop` PROPAGATES a reason that already
+///   exists (the peer's death); no `Goto`.
+///
+/// `Copy` follows the parameters: seat verdicts stay `Copy`; only the
+/// watch corner (boxed nested reason) is move-only.
 ///
 /// `Goto(current)` is deliberately a no-op (`gen_statem` `next_state` to
 /// the same state): no unstash, no deadline reset. In `handle`, the
@@ -49,14 +98,25 @@ pub enum Disposition<D = Never> {
 /// committed by the framework only after the handler returns `Ok`, so
 /// D3's commit-after-Ok law holds with no `Step` return channel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Step<Ph> {
-    /// Stay in the current phase (`gen_statem` `keep_state`).
-    Stay,
+pub enum Step<Ph = Never, R = Normal> {
+    /// Keep the current behavior (`gen_statem` `keep_state`); poll for
+    /// the next event.
+    Continue,
     /// Transition (no-op when already there).
     Goto(Ph),
-    /// Stop cleanly (reason `Normal`), like `Flow::Stop`.
-    Stop,
+    /// Stop after this reaction, with the corner's reason: the [`Normal`]
+    /// witness at the handler/seat corners (backlog abandoned, `on_stop`
+    /// runs — ADR-0023), a carried
+    /// [`ActorStopReason`](crate::error::ActorStopReason) at the watch corner.
+    Stop(R),
 }
+
+/// The handler plane's corner of [`Step`] (ADR-0023 name, ADR-0029
+/// shape): `Continue | Stop(Normal)` — `Goto` is uninhabited and no
+/// reason but [`Normal`] is spellable.
+///
+/// Re-exported at [`actor::Flow`](crate::actor::Flow), where ADR-0023 put it.
+pub type Flow = Step;
 
 /// The [`PhasePolicy::on_defer_full`](super::PhasePolicy::on_defer_full) verdict — ADR-0024 D6's overflow
 /// handback, never a silent drop.

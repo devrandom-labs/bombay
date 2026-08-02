@@ -70,9 +70,9 @@ pub trait DeadlineCx: sealed::Sealed {
     /// The served actor.
     type Actor: Actor;
     /// The transition vocabulary of [`on_deadline`](DeadlinePolicy::on_deadline)'s
-    /// [`Step`] verdict: [`Never`] for phase-less contexts (`Step<Never> ≅
-    /// Flow` — `Goto` is unconstructible), the machine's phase for
-    /// [`ByPhase`].
+    /// [`Step`] verdict: [`Never`] for phase-less contexts (`Step<Never>`
+    /// IS `Flow` — `Goto` is unconstructible, ADR-0029), the machine's
+    /// phase for [`ByPhase`].
     type Phase: Copy + PartialEq + Send + 'static;
     /// The capability-curated window passed (by value — `Copy`) beside
     /// the actor: `()` for [`ByState`] (the actor IS the view),
@@ -163,8 +163,8 @@ pub trait DeadlinePolicy<Cx: DeadlineCx>: Send + 'static {
     fn next_deadline(&self, actor: &Cx::Actor, view: Cx::View) -> Option<Instant>;
 
     /// Reacts to expiry at a turn boundary, in the context's transition
-    /// vocabulary ([`Step<Cx::Phase>`](Step) — `Flow`-isomorphic when the
-    /// context is phase-less). Takes a [`WeakActorRef`] by drain-window
+    /// vocabulary ([`Step<Cx::Phase>`](Step) — literally `Flow` when the
+    /// context is phase-less, ADR-0029). Takes a [`WeakActorRef`] by drain-window
     /// necessity (ADR-0025): a deadline fire carries no message to mint a
     /// strong ref from; self-sends degrade (`upgrade` → `None`).
     ///
@@ -204,7 +204,7 @@ impl<P: PhasePolicy> DeadlinePolicy<ByPhase<P>> for NoTimeout {
         _: WeakActorRef<Shell<P::Actor>>,
     ) -> Result<Step<P::Phase>, <P::Actor as Actor>::Error> {
         // Unreachable in practice: a constantly-None slot never fires.
-        Ok(Step::Stay)
+        Ok(Step::Continue)
     }
 }
 
@@ -244,13 +244,9 @@ impl<A: Actor, DP: DeadlinePolicy<ByState<A>>> DeadlineHook<A> for Deadlined<DP>
         actor: &mut A,
         actor_ref: WeakActorRef<Shell<A>>,
     ) -> Result<Flow, A::Error> {
-        // `Step<Never> ≅ Flow` — the phase-less context's Goto is
-        // uninhabited, so the adapter is total.
-        Ok(match self.policy.on_deadline(actor, (), actor_ref).await? {
-            Step::Stay => Flow::Continue,
-            Step::Stop => Flow::Stop,
-            Step::Goto(never) => match never {},
-        })
+        // `Step<Never> = Flow` (ADR-0029): the policy's verdict IS the
+        // hook's — the #290 adapter is gone.
+        self.policy.on_deadline(actor, (), actor_ref).await
     }
 }
 

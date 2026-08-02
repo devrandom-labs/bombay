@@ -897,15 +897,20 @@ pub(crate) mod test_verbs {
                     id: crate::mailbox::ActorId,
                     reason: crate::error::ActorStopReason,
                     linked: bool,
-                ) -> Result<core::ops::ControlFlow<crate::error::ActorStopReason>, Self::Error>
-                {
+                ) -> Result<
+                    crate::capability::Step<
+                        crate::capability::Never,
+                        crate::error::ActorStopReason,
+                    >,
+                    Self::Error,
+                > {
                     Ok(if linked && !reason.is_normal() {
-                        core::ops::ControlFlow::Break(crate::error::ActorStopReason::LinkDied {
+                        crate::capability::Step::Stop(crate::error::ActorStopReason::LinkDied {
                             id,
                             reason: Box::new(reason),
                         })
                     } else {
-                        core::ops::ControlFlow::Continue(())
+                        crate::capability::Step::Continue
                     })
                 }
             }
@@ -945,7 +950,7 @@ mod tests {
 
     use super::{DEFAULT_MAILBOX_CAPACITY, DEFAULT_ON_STOP_NOTICE_GRACE, SpawnConfig};
     use crate::{
-        actor::{ActorRef, Flow, PreparedActor, RunResult, WeakActorRef},
+        actor::{ActorRef, Flow, Normal, PreparedActor, RunResult, WeakActorRef},
         error::{ActorNotLinked, ActorStopReason, PanicReason},
         mailbox::{ActorId, Capacity, ControlSignal, Mailboxed, Signal},
         message::Msg,
@@ -1065,7 +1070,7 @@ mod tests {
                     .lock()
                     .expect("probe mutex never poisoned")
                     .push(tokio::time::Instant::now());
-                Ok(Flow::Stop)
+                Ok(Flow::Stop(Normal))
             }
         }
 
@@ -1392,7 +1397,7 @@ mod tests {
         ) -> Result<Flow, Self::Error> {
             let outcome = actor_ref.watch(&self.target).await;
             *self.result.lock().expect("lock") = Some(outcome);
-            Ok(Flow::Stop)
+            Ok(Flow::Stop(Normal))
         }
     }
     crate::actor::spawn::test_verbs::otp_link_react!(HandlerWatcher);
@@ -1465,12 +1470,13 @@ mod tests {
             id: ActorId,
             reason: ActorStopReason,
             linked: bool,
-        ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
+        ) -> Result<crate::capability::Step<crate::capability::Never, ActorStopReason>, Self::Error>
+        {
             self.notices
                 .lock()
                 .expect("lock")
                 .push((id, reason, linked));
-            Ok(core::ops::ControlFlow::Continue(()))
+            Ok(crate::capability::Step::Continue)
         }
     }
 
@@ -1775,7 +1781,7 @@ mod tests {
         );
     }
 
-    /// Sequence: a handler that returns `Ok(Flow::Stop)` stops the actor cleanly
+    /// Sequence: a handler that returns `Ok(Flow::Stop(Normal))` stops the actor cleanly
     /// after the current handler — a following queued message is never handled.
     #[tokio::test]
     async fn stop_flag_stops_after_current_handler() {
@@ -1796,7 +1802,7 @@ mod tests {
             }
             async fn handle(&mut self, _: Go, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 self.handled.fetch_add(1, Ordering::SeqCst);
-                Ok(Flow::Stop)
+                Ok(Flow::Stop(Normal))
             }
         }
 
@@ -1859,7 +1865,7 @@ mod tests {
             async fn handle(&mut self, N(n): N, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 self.seen.lock().expect("lock").push(n);
                 if n == 2 {
-                    return Ok(Flow::Stop);
+                    return Ok(Flow::Stop(Normal));
                 }
                 Ok(Flow::Continue)
             }
@@ -2529,7 +2535,7 @@ mod tests {
                     if let Some(done) = self.done.take() {
                         let _ = done.send(self.count);
                     }
-                    return Ok(Flow::Stop);
+                    return Ok(Flow::Stop(Normal));
                 }
                 Ok(Flow::Continue)
             }
@@ -2753,8 +2759,9 @@ mod tests {
             _: ActorId,
             _: ActorStopReason,
             _: bool,
-        ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
-            Ok(core::ops::ControlFlow::Continue(())) // trap: never propagate
+        ) -> Result<crate::capability::Step<crate::capability::Never, ActorStopReason>, Self::Error>
+        {
+            Ok(crate::capability::Step::Continue) // trap: never propagate
         }
     }
 
@@ -2814,7 +2821,8 @@ mod tests {
             id: ActorId,
             reason: ActorStopReason,
             linked: bool,
-        ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
+        ) -> Result<crate::capability::Step<crate::capability::Never, ActorStopReason>, Self::Error>
+        {
             *self.last.lock().expect("lock") = Some((id, linked));
             if matches!(reason, ActorStopReason::AlreadyDead) {
                 // Bump BEFORE `deaths`, so a reader observing `deaths == 1` (SeqCst)
@@ -2822,7 +2830,7 @@ mod tests {
                 self.already_dead.fetch_add(1, Ordering::SeqCst);
             }
             self.deaths.fetch_add(1, Ordering::SeqCst);
-            Ok(core::ops::ControlFlow::Continue(())) // trap: never propagate
+            Ok(crate::capability::Step::Continue) // trap: never propagate
         }
     }
 
@@ -3500,9 +3508,10 @@ mod tests {
             id: ActorId,
             _reason: ActorStopReason,
             _linked: bool,
-        ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
+        ) -> Result<crate::capability::Step<crate::capability::Never, ActorStopReason>, Self::Error>
+        {
             *self.seen.lock().expect("lock") = Some(id);
-            Ok(core::ops::ControlFlow::Continue(()))
+            Ok(crate::capability::Step::Continue)
         }
     }
 
@@ -3665,7 +3674,7 @@ mod tests {
     /// wait on `count == 1` proves the death was delivered and the hook ran, so
     /// asserting `is_alive()` afterwards pins that the loop HONORED the `Continue`
     /// rather than not-yet-having-fired. FAILS if the loop ignores the hook's
-    /// `ControlFlow` and propagates anyway.
+    /// verdict and propagates anyway.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn trap_exit_via_override_keeps_running() {
         use crate::actor::spawn::test_verbs::TestSpawnLinked;
@@ -4101,7 +4110,7 @@ mod tests {
         use super::{bounded, watch_before_start};
         use crate::{
             actor::{
-                ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, SupervisedReact,
+                ActorRef, Flow, Normal, PreparedActor, RunResult, SpawnConfig, SupervisedReact,
                 WeakActorRef,
                 spawn::test_verbs::{TestSpawn, TestSpawnSupervised},
             },
@@ -4268,7 +4277,7 @@ mod tests {
             async fn handle(&mut self, cmd: Cmd, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
                 match cmd {
                     Cmd::Crash => panic!("crash on command"),
-                    Cmd::StopNormally => Ok(Flow::Stop),
+                    Cmd::StopNormally => Ok(Flow::Stop(Normal)),
                 }
             }
         }

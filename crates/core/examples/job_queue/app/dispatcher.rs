@@ -10,7 +10,7 @@ use std::{
 
 use bombay::{
     ActorId,
-    actor::{Flow, Recipient, SpawnConfig, WeakActorRef},
+    actor::{Flow, Normal, Recipient, SpawnConfig, WeakActorRef},
     capability,
     error::{ActorStopReason, NameTaken, TellError},
     registry::Registry,
@@ -328,7 +328,7 @@ impl Dispatcher {
         }
     }
 
-    /// Drain complete? Reply and stop directly (`Flow::Stop`). The supervisor's
+    /// Drain complete? Reply and stop directly (`Flow::Stop(Normal)`). The supervisor's
     /// own exit now tears down any remaining children (ADR-0019), so the app no
     /// longer needs to detach-and-stop each worker before finishing the drain.
     fn finish_drain_if_quiet(&mut self) -> Flow {
@@ -348,6 +348,6 @@ impl Dispatcher {
                 rebuilds: self.stats.rebuilds,
             });
         }
-        Flow::Stop
+        Flow::Stop(Normal)
     }
 }

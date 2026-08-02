@@ -83,7 +83,7 @@ impl DeadlinePolicy<ByPhase<Pol>> for PolDl {
         _: PhaseView<Pol>,
         _: WeakActorRef<Shell<P>>,
     ) -> Result<Step<Phase>, Infallible> {
-        Ok(Step::Stay)
+        Ok(Step::Continue)
     }
 }
 

@@ -6,11 +6,12 @@
 //! here is a **minimal scaffold** — ref-count-driven stop, `Recipient` erasure,
 //! and the `tell`/`ask` builders are #117/#118.
 
-use core::{any::type_name, future::Future, ops::ControlFlow};
+use core::{any::type_name, future::Future};
 
 use tokio::time::Instant;
 
 use crate::{
+    capability::{Never, Step},
     error::{ActorStopReason, PanicError, ReplyError},
     mailbox::{ActorId, Mailboxed},
     message::Msg,
@@ -46,17 +47,10 @@ pub(crate) use spawn::test_verbs;
 // solely within `actor` and reach their definitions directly.
 pub(crate) use self::supervision::SupervisionOp;
 
-/// The handler's continuation decision: keep running, or stop cleanly
-/// (reason `Normal`) after the current message.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Flow {
-    /// Keep the actor running; poll the mailbox for the next message.
-    Continue,
-    /// Stop after this handler: reason `Normal`, backlog abandoned,
-    /// `on_stop` runs. Deliberately carries no reason — a self-stop's
-    /// only honest reason is `Normal` (ADR-0023).
-    Stop,
-}
+// The handler's continuation decision (ADR-0023) — since ADR-0029 the
+// handler CORNER of the one `Step` verdict family, re-exported here where
+// ADR-0023 put it, with the `Normal` witness its `Stop` now names.
+pub use crate::capability::{Flow, Normal};
 
 /// A single-writer, identity-agnostic unit of concurrency: owned state behind a
 /// mailbox, driven by one task that handles messages sequentially.
@@ -96,7 +90,7 @@ pub trait Actor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
     ) -> impl Future<Output = Result<Self, Self::Error>> + Send;
 
     /// Handles one message. The return value is the continuation decision:
-    /// `Ok(Flow::Continue)` keeps the actor running; `Ok(Flow::Stop)` stops it
+    /// `Ok(Flow::Continue)` keeps the actor running; `Ok(Flow::Stop(Normal))` stops it
     /// cleanly (reason `Normal`) after this handler, before any further mailbox
     /// poll; a returned `Err` is a controlled crash (routed to `on_panic`, then
     /// stop). The three outcomes are one exhaustive value — signalling stop
@@ -209,7 +203,12 @@ pub(crate) mod sealed {
 pub trait LinkReact: Actor + sealed::Sealed {
     /// Reacts to the death of a watched/linked actor — the semantics seat
     /// of [`capability::WatchPolicy`](crate::capability::WatchPolicy). Delivery rules
-    /// are the loop's (a post-break notice is dropped by design, #266).
+    /// are the loop's (a post-stop notice is dropped by design, #266).
+    ///
+    /// The verdict is the watch corner of the [`Step`](crate::capability::Step) family
+    /// (ADR-0029): `Stop(reason)` stops the watcher with that reason —
+    /// propagation carries a reason that already EXISTS (the peer's
+    /// death), which is why this corner, alone, is reason-carrying.
     ///
     /// # Errors
     ///
@@ -220,7 +219,7 @@ pub trait LinkReact: Actor + sealed::Sealed {
         id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> impl Future<Output = Result<ControlFlow<ActorStopReason>, Self::Error>> + Send;
+    ) -> impl Future<Output = Result<Step<Never, ActorStopReason>, Self::Error>> + Send;
 }
 
 /// The supervised run-loop's dispatch seam: a link-reactive runtime actor

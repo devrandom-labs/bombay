@@ -16,12 +16,13 @@ use tokio_util::{sync::CancellationToken, time::DelayQueue};
 
 use crate::{
     actor::{
-        Actor, ActorRef, Flow, LinkReact, SupervisedReact, WeakActorRef,
+        Actor, ActorRef, Flow, LinkReact, Normal, SupervisedReact, WeakActorRef,
         supervision::{
             ArmedReg, ChildHandle, Children, CycleState, PendingAbort, Spawned, SuperviseReg,
             SupervisionOp, WatchInstaller, WatchOutcome,
         },
     },
+    capability::Step,
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{ActorId, ControlSignal, MailboxReceiver, Mailboxed, Recv, Signal},
     restart::{GiveUp, RestartVerdict, SupervisionStrategy, jittered_backoff, should_restart},
@@ -232,7 +233,10 @@ async fn handle_deadline<A: Actor>(
         .await;
     match result {
         Ok(Ok(Flow::Continue)) => ControlFlow::Continue(()),
-        Ok(Ok(Flow::Stop)) => ControlFlow::Break(ActorStopReason::Normal),
+        // The one point where the handler plane's `Normal` witness is
+        // discharged to the runtime reason (ADR-0029).
+        Ok(Ok(Flow::Stop(Normal))) => ControlFlow::Break(ActorStopReason::Normal),
+        Ok(Ok(Flow::Goto(never))) => match never {},
         Ok(Err(err)) => ControlFlow::Break(ActorStopReason::Panicked(PanicError::new(
             Box::new(err),
             PanicReason::OnDeadline,
@@ -419,8 +423,10 @@ pub(super) async fn run_linked_message_loop<A: LinkReact>(
 }
 
 /// Runs [`LinkReact::on_link_died`] under `catch_unwind` and maps the outcome: the
-/// hook's own `ControlFlow` on success, a terminal `Panicked(OnLinkDied)` on either
-/// a returned `Err` (controlled crash) or a caught unwind.
+/// hook's own watch-corner verdict (`Step<Never, ActorStopReason>`, ADR-0029) on
+/// success — `Stop(reason)` breaks the loop with the CARRIED reason — a terminal
+/// `Panicked(OnLinkDied)` on either a returned `Err` (controlled crash) or a
+/// caught unwind.
 async fn handle_link_died<A: LinkReact>(
     state: &mut A,
     notice: LinkDied,
@@ -438,7 +444,12 @@ async fn handle_link_died<A: LinkReact>(
         .catch_unwind()
         .await;
     match result {
-        Ok(Ok(flow)) => flow,
+        Ok(Ok(Step::Continue)) => ControlFlow::Continue(()),
+        // The policy's verdict carries its OWN reason (e.g. `LinkDied`
+        // wrapping the notice's), distinct from the notice's `reason`
+        // consumed by the call above.
+        Ok(Ok(Step::Stop(propagated))) => ControlFlow::Break(propagated),
+        Ok(Ok(Step::Goto(never))) => match never {},
         Ok(Err(err)) => ControlFlow::Break(ActorStopReason::Panicked(PanicError::new(
             Box::new(err),
             PanicReason::OnLinkDied,
@@ -1169,7 +1180,10 @@ async fn handle_message<A: Actor>(
         .await;
     match result {
         Ok(Ok(Flow::Continue)) => ControlFlow::Continue(()),
-        Ok(Ok(Flow::Stop)) => ControlFlow::Break(ActorStopReason::Normal),
+        // The one point where the handler plane's `Normal` witness is
+        // discharged to the runtime reason (ADR-0029).
+        Ok(Ok(Flow::Stop(Normal))) => ControlFlow::Break(ActorStopReason::Normal),
+        Ok(Ok(Flow::Goto(never))) => match never {},
         // A returned Err is a controlled crash: observe via on_panic, then stop.
         Ok(Err(err)) => {
             let panic = PanicError::new(Box::new(err), PanicReason::HandlerPanic);

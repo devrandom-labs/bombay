@@ -15,7 +15,7 @@ use tokio::time::timeout;
 use bombay::{
     ActorId,
     actor::{Actor, ActorRef, Flow, PreparedActor, SpawnConfig},
-    capability,
+    capability::{self, Never, Step},
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -96,9 +96,9 @@ impl capability::WatchPolicy<DeferSup> for RecordPeerDeath {
         id: ActorId,
         reason: ActorStopReason,
         _linked: bool,
-    ) -> Result<core::ops::ControlFlow<ActorStopReason>, Infallible> {
+    ) -> Result<Step<Never, ActorStopReason>, Infallible> {
         actor.peer_deaths.push((id, reason.is_normal()));
-        Ok(core::ops::ControlFlow::Continue(()))
+        Ok(Step::Continue)
     }
 }
 

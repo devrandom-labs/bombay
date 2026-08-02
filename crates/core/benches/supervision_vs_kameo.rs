@@ -188,12 +188,11 @@ fn silence_bench_crashes() {
 
 mod core_side {
     use bombay::actor::{Actor, ActorRef, Flow, PreparedActor, SpawnConfig, WeakActorRef};
-    use bombay::capability;
+    use bombay::capability::{self, Never, Step};
     use bombay::error::{ActorStopReason, Infallible};
     use bombay::mailbox::{ActorId, MailboxSender, Mailboxed};
     use bombay::message::Msg;
     use bombay::restart::{Jitter, RestartConfig, RestartPolicy};
-    use core::ops::ControlFlow;
     use std::sync::{Arc, Mutex};
     use tokio::sync::mpsc::UnboundedSender;
 
@@ -231,9 +230,9 @@ mod core_side {
             _: ActorId,
             _: ActorStopReason,
             _: bool,
-        ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+        ) -> Result<Step<Never, ActorStopReason>, Infallible> {
             let _ = actor.ack.send(());
-            Ok(ControlFlow::Continue(()))
+            Ok(Step::Continue)
         }
     }
 
@@ -422,7 +421,6 @@ mod core_side {
 }
 
 mod kameo_side {
-    use core::ops::ControlFlow;
     use kameo::actor::{ActorId, ActorRef, WeakActorRef};
     use kameo::error::{ActorStopReason, Infallible};
     use kameo::prelude::*;
@@ -446,9 +444,9 @@ mod kameo_side {
             _: WeakActorRef<Self>,
             _: ActorId,
             _: ActorStopReason,
-        ) -> Result<ControlFlow<ActorStopReason>, Self::Error> {
+        ) -> Result<core::ops::ControlFlow<ActorStopReason>, Self::Error> {
             let _ = self.ack.send(());
-            Ok(ControlFlow::Continue(()))
+            Ok(core::ops::ControlFlow::Continue(()))
         }
     }
 
