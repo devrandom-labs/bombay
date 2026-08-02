@@ -6,7 +6,7 @@
 
 #![expect(clippy::expect_used, reason = "test assertions fail loudly by design")]
 
-#[path = "../examples/job_queue/app.rs"]
+#[path = "../examples/job_queue/app/mod.rs"]
 mod app;
 
 use std::{
