@@ -6,7 +6,7 @@
 use std::time::Duration;
 
 use bombay::{
-    actor::Flow,
+    actor::{Flow, Normal},
     capability::{
         Actor, Admission, Admitted, CapSet, Ctx, DeadlineHook, DeadlineInstant, Handle, PlainRun,
         Provide, Replay, SelectRunner, Shell, spawn,
@@ -155,7 +155,7 @@ impl Actor for Gatekeeper {
                 let _ = reply.send(admitted);
                 Ok(Flow::Continue)
             }
-            GateMsg::Stop => Ok(Flow::Stop),
+            GateMsg::Stop => Ok(Flow::Stop(Normal)),
         }
     }
 
@@ -184,7 +184,7 @@ async fn caps_actor_round_trip_with_third_party_cap() {
         "third-party Burst2 policy refuses the third submit"
     );
 
-    // Flow::Stop path + on_stop forwarding through the Shell.
+    // Flow::Stop(Normal) path + on_stop forwarding through the Shell.
     gate.tell(GateMsg::Stop).await.expect("tell stop");
     let reason = tokio::time::timeout(Duration::from_secs(5), rx.recv())
         .await
@@ -192,7 +192,7 @@ async fn caps_actor_round_trip_with_third_party_cap() {
         .expect("probe open");
     assert!(
         matches!(reason, ActorStopReason::Normal),
-        "Flow::Stop maps to Normal through the adapter; got {reason:?}"
+        "Flow::Stop(Normal) maps to Normal through the adapter; got {reason:?}"
     );
 }
 

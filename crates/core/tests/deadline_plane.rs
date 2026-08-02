@@ -22,7 +22,7 @@ use core::{convert::Infallible, num::NonZeroUsize, time::Duration};
 use tokio::time::{Instant, sleep, timeout};
 
 use bombay::{
-    actor::{Flow, SpawnConfig, WeakActorRef},
+    actor::{Flow, Normal, SpawnConfig, WeakActorRef},
     capability::{
         self, Actor, ByState, CapSet, Ctx, DeadlinePolicy, Deadlined, Handle, Never, Shell, Step,
         spawn, spawn_with,
@@ -149,9 +149,9 @@ impl DeadlinePolicy<ByState<Busy>> for BusyDl {
             actor.due = None;
         }
         Ok(if actor.stop_on_fire {
-            Step::Stop
+            Step::Stop(Normal)
         } else {
-            Step::Stay
+            Step::Continue
         })
     }
 }
@@ -187,7 +187,7 @@ impl Actor for Busy {
 
     async fn handle(&mut self, msg: BusyMsg, _: Ctx<'_, Self>) -> Result<Flow, Infallible> {
         let BusyMsg::Item(n) = msg else {
-            return Ok(Flow::Stop);
+            return Ok(Flow::Stop(Normal));
         };
         let _ = self.probe.send(Ev::Handled(n));
         if self.work > Duration::ZERO {
@@ -377,7 +377,7 @@ impl DeadlinePolicy<ByState<Slider>> for SliderDl {
         _: WeakActorRef<Shell<Slider>>,
     ) -> Result<Step<Never>, Infallible> {
         let _ = actor.probe.send(Ev::FiredAt(Instant::now()));
-        Ok(Step::Stop)
+        Ok(Step::Stop(Normal))
     }
 }
 
@@ -455,7 +455,7 @@ async fn p4_sliding_deadline_resets_on_activity() {
 
 /// The drain-window scenario: deadlines keep firing after every external
 /// strong ref is gone (the arm sits above the mailbox arm), the hook's
-/// `WeakActorRef` fails to upgrade there, and its `Flow::Stop` ends the
+/// `WeakActorRef` fails to upgrade there, and its `Flow::Stop(Normal)` ends the
 /// actor `Normal` BEFORE the backlog is exhausted.
 struct Drainer {
     due: Option<Instant>,
@@ -479,7 +479,7 @@ impl DeadlinePolicy<ByState<Drainer>> for DrainerDl {
         let _ = actor
             .probe
             .send(Ev::UpgradeFailed(actor_ref.upgrade().is_none()));
-        Ok(Step::Stop)
+        Ok(Step::Stop(Normal))
     }
 }
 
@@ -511,7 +511,7 @@ impl Actor for Drainer {
 
     async fn handle(&mut self, msg: BusyMsg, _: Ctx<'_, Self>) -> Result<Flow, Infallible> {
         let BusyMsg::Item(n) = msg else {
-            return Ok(Flow::Stop);
+            return Ok(Flow::Stop(Normal));
         };
         let _ = self.probe.send(Ev::Handled(n));
         sleep(Duration::from_millis(5)).await;
@@ -530,7 +530,7 @@ impl Actor for Drainer {
 
 /// Drain window: 10 messages queued, every external strong ref dropped,
 /// deadline due at +12 ms (mid-drain, ~2–3 messages in at 5 ms each). The
-/// hook fires, its weak ref fails upgrade, and `Flow::Stop` stops the
+/// hook fires, its weak ref fails upgrade, and `Flow::Stop(Normal)` stops the
 /// actor `Normal` before the backlog finishes.
 #[tokio::test(start_paused = true)]
 async fn drain_window_deadline_fires_with_a_dead_weak_ref_and_stops() {
@@ -554,7 +554,7 @@ async fn drain_window_deadline_fires_with_a_dead_weak_ref_and_stops() {
     assert_eq!(
         evs.last(),
         Some(&Ev::Stopped(true)),
-        "the hook's Flow::Stop is a Normal stop, not Collected: {evs:?}",
+        "the hook's Flow::Stop(Normal) is a Normal stop, not Collected: {evs:?}",
     );
 }
 
@@ -622,13 +622,13 @@ impl capability::WatchPolicy<Watcher> for TapeDeath {
         _: bombay::ActorId,
         reason: ActorStopReason,
         _: bool,
-    ) -> Result<core::ops::ControlFlow<ActorStopReason>, Infallible> {
+    ) -> Result<Step<Never, ActorStopReason>, Infallible> {
         let on_deadline_panic = matches!(
             &reason,
             ActorStopReason::Panicked(e) if e.reason() == PanicReason::OnDeadline
         );
         let _ = actor.probe.send(Ev::PeerDied { on_deadline_panic });
-        Ok(core::ops::ControlFlow::Continue(()))
+        Ok(Step::Continue)
     }
 }
 
@@ -742,7 +742,7 @@ macro_rules! armer {
             ) -> Result<Step<Never>, Infallible> {
                 let _ = actor.probe.send(Ev::Fired);
                 actor.due = None;
-                Ok(Step::Stay)
+                Ok(Step::Continue)
             }
         }
 
@@ -780,7 +780,7 @@ macro_rules! armer {
                     ArmMsg::Next => {
                         let _ = self.probe.send(Ev::Handled(200));
                     }
-                    ArmMsg::Quit => return Ok(Flow::Stop),
+                    ArmMsg::Quit => return Ok(Flow::Stop(Normal)),
                 }
                 Ok(Flow::Continue)
             }
@@ -916,7 +916,7 @@ macro_rules! mourner {
             ) -> Result<Step<Never>, Infallible> {
                 let _ = actor.probe.send(Ev::Fired);
                 actor.due = None;
-                Ok(Step::Stay)
+                Ok(Step::Continue)
             }
         }
 
@@ -927,11 +927,11 @@ macro_rules! mourner {
                 _: bombay::ActorId,
                 _: ActorStopReason,
                 _: bool,
-            ) -> Result<core::ops::ControlFlow<ActorStopReason>, Infallible> {
+            ) -> Result<Step<Never, ActorStopReason>, Infallible> {
                 let _ = actor.probe.send(Ev::PeerDied {
                     on_deadline_panic: false,
                 });
-                Ok(core::ops::ControlFlow::Continue(()))
+                Ok(Step::Continue)
             }
         }
 
@@ -982,7 +982,7 @@ macro_rules! mourner {
                         sleep(Duration::from_millis(10)).await;
                         self.due = Some(Instant::now());
                     }
-                    MournMsg::Quit => return Ok(Flow::Stop),
+                    MournMsg::Quit => return Ok(Flow::Stop(Normal)),
                 }
                 Ok(Flow::Continue)
             }

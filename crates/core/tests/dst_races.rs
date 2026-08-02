@@ -59,9 +59,10 @@ use tokio::{
 use bombay::{
     ActorId, SendContext,
     actor::{
-        Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, SupervisedReact, WeakActorRef,
+        Actor, ActorRef, Flow, Normal, PreparedActor, RunResult, SpawnConfig, SupervisedReact,
+        WeakActorRef,
     },
-    capability,
+    capability::{self, Never, Step},
     error::{ActorStopReason, AskError, TellError},
     mailbox::{Capacity, ControlSignal, Mailboxed, Signal},
     message::Msg,
@@ -600,10 +601,10 @@ async fn send_after_graceful_stop_fails() {
 
 // ---------------------------------------------------------------------------
 // Scenario 7 — `kill()` after a normal completion (via the handler returning
-// `Flow::Stop`).
+// `Flow::Stop(Normal)`).
 // ---------------------------------------------------------------------------
 
-/// An actor that finishes itself by returning `Flow::Stop` from its handler,
+/// An actor that finishes itself by returning `Flow::Stop(Normal)` from its handler,
 /// then counts `on_stop`.
 struct SelfStop {
     handled: Arc<AtomicU32>,
@@ -623,7 +624,7 @@ impl Actor for SelfStop {
     }
     async fn handle(&mut self, _: Ping, _: ActorRef<Self>) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
-        Ok(Flow::Stop) // stop cleanly after this handler returns
+        Ok(Flow::Stop(Normal)) // stop cleanly after this handler returns
     }
     async fn on_stop(
         &mut self,
@@ -635,7 +636,7 @@ impl Actor for SelfStop {
     }
 }
 
-/// The actor stops normally via its handler returning `Flow::Stop`; a `kill()`
+/// The actor stops normally via its handler returning `Flow::Stop(Normal)`; a `kill()`
 /// issued AFTER
 /// the run has returned is a no-op — no panic, and the outcome stays `Normal` with
 /// `on_stop` having run once.
@@ -658,7 +659,7 @@ async fn kill_after_normal_completion_is_a_noop() {
         prepared.run((Arc::clone(&handled), Arc::clone(&stopped))),
     )
     .await
-    .expect("Flow::Stop must terminate the actor");
+    .expect("Flow::Stop(Normal) must terminate the actor");
 
     // Actor already finished normally; killing the corpse must not panic.
     actor_ref.kill();
@@ -1246,12 +1247,12 @@ impl capability::WatchPolicy<TapingWatcher> for TapingPolicy {
         id: bombay::ActorId,
         _: ActorStopReason,
         _: bool,
-    ) -> Result<core::ops::ControlFlow<ActorStopReason>, Infallible> {
+    ) -> Result<Step<Never, ActorStopReason>, Infallible> {
         actor
             .notices
             .try_send(id)
             .expect("the notice tape is unbounded");
-        Ok(core::ops::ControlFlow::Continue(()))
+        Ok(Step::Continue)
     }
 }
 
@@ -1661,13 +1662,13 @@ impl capability::WatchPolicy<RaceWatcher> for RacePolicy {
         _id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> Result<std::ops::ControlFlow<ActorStopReason>, Infallible> {
+    ) -> Result<Step<Never, ActorStopReason>, Infallible> {
         actor
             .notices
             .lock()
             .expect("lock")
             .push((WatchReasonKind::of(&reason), linked));
-        Ok(std::ops::ControlFlow::Continue(()))
+        Ok(Step::Continue)
     }
 }
 

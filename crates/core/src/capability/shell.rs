@@ -2,20 +2,20 @@
 //! runtime loop, [`Handle`] names its ref type, and [`SelectRunner`] plus
 //! the loop-shape markers pick the loop at compile time (spike-280).
 
-use core::{future::Future, ops::ControlFlow};
+use core::future::Future;
 
 use tokio::time::Instant;
 
 use crate::{
-    actor::{ActorRef, Flow, LinkReact, SupervisedReact, WeakActorRef, sealed},
+    actor::{ActorRef, Flow, LinkReact, Normal, SupervisedReact, WeakActorRef, sealed},
     error::{ActorStopReason, PanicError},
     mailbox::{ActorId, Mailboxed},
     restart::SupervisionStrategy,
 };
 
 use super::{
-    Actor, Admission, Admitted, CapSet, Ctx, DeadlineHook, HasSupervising, HasWatching, Replay,
-    Strategy, WatchPolicy,
+    Actor, Admission, Admitted, CapSet, Ctx, DeadlineHook, HasSupervising, HasWatching, Never,
+    Replay, Step, Strategy, WatchPolicy,
 };
 
 /// Names the run-loop shape for a cap set (ADR-0026 stage 3 — the
@@ -106,12 +106,12 @@ impl<A: Actor> crate::actor::Actor for Shell<A> {
     /// rest of the batch. For a plain actor (`Caps = ()`) admission is a
     /// pass-through and the drain loop never enters.
     async fn handle(&mut self, msg: A::Msg, actor_ref: ActorRef<Self>) -> Result<Flow, A::Error> {
-        if self.step(msg, &actor_ref).await? == Flow::Stop {
-            return Ok(Flow::Stop);
+        if self.step(msg, &actor_ref).await? == Flow::Stop(Normal) {
+            return Ok(Flow::Stop(Normal));
         }
         while let Some(m) = self.caps.next_replay() {
-            if self.step(m, &actor_ref).await? == Flow::Stop {
-                return Ok(Flow::Stop);
+            if self.step(m, &actor_ref).await? == Flow::Stop(Normal) {
+                return Ok(Flow::Stop(Normal));
             }
         }
         Ok(Flow::Continue)
@@ -137,16 +137,16 @@ impl<A: Actor> crate::actor::Actor for Shell<A> {
             .caps
             .on_deadline(&mut self.user, actor_ref.clone())
             .await?
-            == Flow::Stop
+            == Flow::Stop(Normal)
         {
-            return Ok(Flow::Stop);
+            return Ok(Flow::Stop(Normal));
         }
         let Some(strong) = actor_ref.upgrade() else {
             return Ok(Flow::Continue);
         };
         while let Some(m) = self.caps.next_replay() {
-            if self.step(m, &strong).await? == Flow::Stop {
-                return Ok(Flow::Stop);
+            if self.step(m, &strong).await? == Flow::Stop(Normal) {
+                return Ok(Flow::Stop(Normal));
             }
         }
         Ok(Flow::Continue)
@@ -211,7 +211,7 @@ where
         id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> impl Future<Output = Result<ControlFlow<ActorStopReason>, A::Error>> + Send {
+    ) -> impl Future<Output = Result<Step<Never, ActorStopReason>, A::Error>> + Send {
         <<A::Caps as HasWatching<A>>::Policy as WatchPolicy<A>>::on_link_died(
             &mut self.user,
             id,
@@ -234,7 +234,6 @@ where
 mod tests {
     use core::any::type_name;
     use core::convert::Infallible;
-    use core::ops::ControlFlow;
     use core::time::Duration;
 
     use futures::stream::AbortHandle;
@@ -244,8 +243,8 @@ mod tests {
     use super::super::fixtures::{M, MCaps, MMsg, Nameless, Ph, RecMsg, Sup, dead_weak};
     use super::super::{
         Actor, Admission, Admitted, ByState, CapSet, Ctx, DeadlineHook, DeadlinePolicy, Deadlined,
-        HasWatching, LinkedRun, Never, PlainRun, Provide, Replay, SelectRunner, Shell, Step,
-        WatchPolicy, Watching,
+        HasWatching, LinkedRun, Never, Normal, PlainRun, Provide, Replay, SelectRunner, Shell,
+        Step, WatchPolicy, Watching,
     };
     use crate::{
         actor::{Actor as RuntimeActor, ActorRef, Flow, LinkReact, SupervisedReact, WeakActorRef},
@@ -274,9 +273,9 @@ mod tests {
             id: ActorId,
             _reason: ActorStopReason,
             linked: bool,
-        ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+        ) -> Result<Step<Never, ActorStopReason>, Infallible> {
             actor.seen.push((id, linked));
-            Ok(ControlFlow::Continue(()))
+            Ok(Step::Continue)
         }
     }
 
@@ -377,7 +376,7 @@ mod tests {
         ) -> Result<Step<Never>, Infallible> {
             actor.fires = actor.fires.saturating_add(1);
             actor.due = None;
-            Ok(Step::Stop)
+            Ok(Step::Stop(Normal))
         }
     }
 
@@ -492,7 +491,7 @@ mod tests {
                 .expect("recording policy is infallible");
 
         assert!(
-            matches!(out, ControlFlow::Continue(())),
+            matches!(out, Step::Continue),
             "the recording policy continues, got {out:?}",
         );
         assert_eq!(
@@ -565,7 +564,11 @@ mod tests {
         let flow = RuntimeActor::on_deadline(&mut shell, dead_weak())
             .await
             .expect("the recording policy is infallible");
-        assert_eq!(flow, Flow::Stop, "the policy's Flow decision rides out");
+        assert_eq!(
+            flow,
+            Flow::Stop(Normal),
+            "the policy's Flow decision rides out"
+        );
         assert_eq!(
             shell.user.fires, 1,
             "the policy observed expiry through &mut user state",

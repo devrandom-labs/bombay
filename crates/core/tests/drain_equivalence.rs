@@ -18,7 +18,7 @@
 //! drain-window result-drop is the spec'd fate (weak-upgrade seam,
 //! ADR-0010/0017) and is pinned by dedicated divergence tests instead.
 
-use core::{convert::Infallible, ops::ControlFlow};
+use core::convert::Infallible;
 use std::{
     future::IntoFuture,
     sync::{
@@ -33,7 +33,7 @@ use tokio::{sync::oneshot, task::JoinHandle};
 use bombay::{
     ActorId,
     actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
-    capability,
+    capability::{self, Never, Step},
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -185,13 +185,13 @@ impl capability::WatchPolicy<EchoPeer> for PeerRecord {
         id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+    ) -> Result<Step<Never, ActorStopReason>, Infallible> {
         actor
             .notices
             .lock()
             .expect("lock")
             .push((id, ReasonKind::of(&reason), linked));
-        Ok(ControlFlow::Continue(()))
+        Ok(Step::Continue)
     }
 }
 
@@ -343,13 +343,13 @@ impl capability::WatchPolicy<Scripted> for ScriptedRecord {
         id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+    ) -> Result<Step<Never, ActorStopReason>, Infallible> {
         actor.record(TraceEvent::Notice {
             who: actor.ids.role(id),
             reason: ReasonKind::of(&reason),
             linked,
         });
-        Ok(ControlFlow::Continue(()))
+        Ok(Step::Continue)
     }
 }
 
@@ -674,13 +674,13 @@ impl capability::WatchPolicy<LinkWatcher> for LinkRecord {
         id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+    ) -> Result<Step<Never, ActorStopReason>, Infallible> {
         actor
             .notices
             .lock()
             .expect("lock")
             .push((id, ReasonKind::of(&reason), linked));
-        Ok(ControlFlow::Continue(()))
+        Ok(Step::Continue)
     }
 }
 
@@ -1056,13 +1056,13 @@ impl capability::WatchPolicy<DupWatcher> for DupRecord {
         id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+    ) -> Result<Step<Never, ActorStopReason>, Infallible> {
         actor
             .notices
             .lock()
             .expect("lock")
             .push((id, ReasonKind::of(&reason), linked));
-        Ok(ControlFlow::Continue(()))
+        Ok(Step::Continue)
     }
 }
 
@@ -1219,13 +1219,13 @@ impl capability::WatchPolicy<LateWatcher> for LateRecord {
         id: ActorId,
         reason: ActorStopReason,
         linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+    ) -> Result<Step<Never, ActorStopReason>, Infallible> {
         actor
             .notices
             .lock()
             .expect("lock")
             .push((id, ReasonKind::of(&reason), linked));
-        Ok(ControlFlow::Continue(()))
+        Ok(Step::Continue)
     }
 }
 

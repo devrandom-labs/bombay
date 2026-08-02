@@ -14,7 +14,7 @@ use core::{convert::Infallible, mem::size_of, time::Duration};
 use tokio::time::{Instant, sleep, timeout};
 
 use bombay::{
-    actor::{Flow, WeakActorRef},
+    actor::{Flow, Normal, WeakActorRef},
     capability::{
         Actor, ByPhase, ByState, CapSet, Ctx, DeadlinePolicy, Deadlined, Disposition, Never,
         NoDefer, NoTimeout, PhasePolicy, PhaseView, Phased, Shell, StashOf, Step, TokenOf, spawn,
@@ -120,7 +120,7 @@ impl DeadlinePolicy<ByPhase<WPolicy>> for Grace {
         _: WeakActorRef<Shell<W>>,
     ) -> Result<Step<WPhase>, Infallible> {
         let _ = actor.probe.send(Ev::TimedOutAt(Instant::now()));
-        Ok(Step::Stop)
+        Ok(Step::Stop(Normal))
     }
 }
 
@@ -220,7 +220,7 @@ fn phase_view_debug_names_the_type_and_anchor() {
 /// The full seated machine, end to end on the paused clock: all-Deliver
 /// gating in Serving, a declared Ignore in Draining, and the plugged
 /// seat's grace deadline firing exactly at `entered(Draining) + grace`
-/// with a `Step::Stop` reaction.
+/// with a `Step::Stop(Normal)` reaction.
 #[tokio::test(start_paused = true)]
 async fn by_phase_seat_arms_on_entry_and_fires_its_pair() {
     let (tx, rx) = flume::unbounded();
@@ -282,7 +282,7 @@ impl DeadlinePolicy<ByState<Idle>> for IdleDl {
         _: WeakActorRef<Shell<Idle>>,
     ) -> Result<Step<Never>, Infallible> {
         let _ = actor.probe.send(Ev::TimedOutAt(Instant::now()));
-        Ok(Step::Stop)
+        Ok(Step::Stop(Normal))
     }
 }
 
@@ -329,8 +329,8 @@ impl Actor for Idle {
 }
 
 /// `ByState` through the unified trait: a poke at t=10 slides the idle
-/// deadline to t=10+30; the fire lands exactly there and `Step::Stop`
-/// (≅ `Flow::Stop`) stops the actor normally.
+/// deadline to t=10+30; the fire lands exactly there and `Step::Stop(Normal)`
+/// (≅ `Flow::Stop(Normal)`) stops the actor normally.
 #[tokio::test(start_paused = true)]
 async fn by_state_seat_slides_with_actor_state_and_stops() {
     let start = Instant::now();
@@ -405,7 +405,7 @@ impl Actor for Quiet {
                 let _ = self.probe.send(Ev::Served(n));
                 Ok(Flow::Continue)
             }
-            _ => Ok(Flow::Stop),
+            _ => Ok(Flow::Stop(Normal)),
         }
     }
 

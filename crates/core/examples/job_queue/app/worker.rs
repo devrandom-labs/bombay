@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use bombay::{
     ActorId,
-    actor::{Flow, Recipient, WeakActorRef},
+    actor::{Flow, Normal, Recipient, WeakActorRef},
     capability,
     error::{ActorStopReason, PanicError, TellError},
 };
@@ -130,7 +130,7 @@ impl capability::DeadlinePolicy<capability::ByPhase<WorkerPhases>> for DrainGrac
         _: capability::PhaseView<WorkerPhases>,
         _: WeakActorRef<capability::Shell<Worker>>,
     ) -> Result<capability::Step<WorkerPhase>, WorkerError> {
-        Ok(capability::Step::Stop)
+        Ok(capability::Step::Stop(Normal))
     }
 }
 
@@ -234,7 +234,7 @@ impl capability::Actor for Worker {
                 // The FlushDone-style self-pipe closes the drain: once the
                 // in-flight ack has landed, a draining worker stops.
                 Ok(if phase == WorkerPhase::Draining {
-                    Flow::Stop
+                    Flow::Stop(Normal)
                 } else {
                     Flow::Continue
                 })
@@ -245,7 +245,7 @@ impl capability::Actor for Worker {
                         .goto(WorkerPhase::Draining);
                     Ok(Flow::Continue)
                 } else {
-                    Ok(Flow::Stop)
+                    Ok(Flow::Stop(Normal))
                 }
             }
         }

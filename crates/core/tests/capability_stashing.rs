@@ -13,7 +13,7 @@ use std::{
 use tokio::time::timeout;
 
 use bombay::{
-    actor::{Flow, PreparedActor, SpawnConfig, WeakActorRef},
+    actor::{Flow, Normal, PreparedActor, SpawnConfig, WeakActorRef},
     capability::{self, Ctx, Replay, Shell},
     error::ActorStopReason,
     mailbox::{Capacity, Signal},
@@ -96,7 +96,7 @@ impl capability::Actor for Gate {
             GateMsg::Item(n) => self.tape.lock().expect("tape").push(n),
             GateMsg::ItemThenStop(n) => {
                 self.tape.lock().expect("tape").push(n);
-                return Ok(Flow::Stop);
+                return Ok(Flow::Stop(Normal));
             }
             GateMsg::Read(reply) => drop(reply.send(self.tape.lock().expect("tape").clone())),
         }

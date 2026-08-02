@@ -22,7 +22,7 @@ use core::{convert::Infallible, num::NonZeroUsize, time::Duration};
 use tokio::time::{Instant, sleep, timeout};
 
 use bombay::{
-    actor::{Flow, TimerHandle, WeakActorRef},
+    actor::{Flow, Normal, TimerHandle, WeakActorRef},
     capability::{
         Actor, Bounded, ByPhase, CapSet, Ctx, DeadlinePolicy, Deferred, Disposition, Handle,
         Overflow, PhasePolicy, PhaseView, Phased, Shell, StashFull, StashPolicy, Stashing, Step,
@@ -120,7 +120,7 @@ impl PhasePolicy for AggPolicy {
         if let FsmMsg::Cmd { id } = msg {
             let _ = actor.probe.send(Probe::ShedFull(id));
         }
-        Ok(Overflow::Handled(Step::Stay))
+        Ok(Overflow::Handled(Step::Continue))
     }
 }
 
@@ -156,14 +156,14 @@ impl DeadlinePolicy<ByPhase<AggPolicy>> for AggDeadline {
         Ok(match view.phase {
             Phase::Loading => {
                 let _ = actor.probe.send(Probe::LoadTimedOut);
-                Step::Stop
+                Step::Stop(Normal)
             }
             // Unreachable: no deadline is declared for these phases and a
             // left phase's deadline cannot fire. Kept total; a leak trips
             // every scenario's oracle assertion.
             Phase::Ready | Phase::Draining => {
                 let _ = actor.probe.send(Probe::StaleTimeoutLeaked);
-                Step::Stay
+                Step::Continue
             }
         })
     }
@@ -226,7 +226,7 @@ impl Actor for AggFsm {
             }
             (Phase::Draining, FsmMsg::FlushDone) => {
                 let _ = self.probe.send(Probe::Snapshotted);
-                return Ok(Flow::Stop);
+                return Ok(Flow::Stop(Normal));
             }
             // Unreachable by declaration (gated Defer/Ignore); Rust's
             // exhaustiveness cannot see the gate (recorded ADR-0024 wart).
@@ -344,11 +344,11 @@ impl Actor for AggIdiom {
             }
             (Phase::Draining, IdiomMsg::FlushDone) => {
                 let _ = self.probe.send(Probe::Snapshotted);
-                return Ok(Flow::Stop);
+                return Ok(Flow::Stop(Normal));
             }
             (Phase::Loading, IdiomMsg::LoadDeadline) => {
                 let _ = self.probe.send(Probe::LoadTimedOut);
-                return Ok(Flow::Stop);
+                return Ok(Flow::Stop(Normal));
             }
             // [F5] stale-deadline guard arms in every other phase: a
             // fired-and-queued deadline must be swallowed silently.

@@ -10,8 +10,8 @@ An actor owns its state, declares one closed message enum, and handles messages 
 
 ```rust
 use bombay::{
-    actor::{Actor, ActorRef, Flow, Spawn as _},
-    mailbox::Mailboxed,
+    actor::Flow,
+    capability::{self, Ctx},
     message::Msg,
     reply::ReplySender,
 };
@@ -27,22 +27,20 @@ enum CounterMsg {
 }
 impl Msg for CounterMsg {}
 
-impl Mailboxed for Counter {
+impl capability::Actor for Counter {
     type Msg = CounterMsg;
-}
-
-impl Actor for Counter {
     type Args = ();
     type Error = std::convert::Infallible;
+    type Caps = (); // plain actor — no capability ceremony
 
-    async fn on_start((): (), _: ActorRef<Self>) -> Result<Self, Self::Error> {
+    async fn init((): (), _: Ctx<'_, Self>) -> Result<Self, Self::Error> {
         Ok(Self { count: 0 })
     }
 
     async fn handle(
         &mut self,
         msg: CounterMsg,
-        _: ActorRef<Self>,
+        _: Ctx<'_, Self>,
     ) -> Result<Flow, Self::Error> {
         match msg {
             CounterMsg::Inc(n) => self.count += i64::from(n),
@@ -56,7 +54,7 @@ impl Actor for Counter {
 
 #[tokio::main]
 async fn main() {
-    let counter = Counter::spawn(());
+    let counter = capability::spawn::<Counter>(());
     counter.tell(CounterMsg::Inc(3)).await.expect("delivered");
     let count = counter
         .ask(|reply| CounterMsg::Get { reply })
@@ -76,7 +74,7 @@ example: `cargo run -p bombay --example job_queue` (source:
 
 ## The public API at a glance
 
-- **Actor** — the ONE user trait is `capability::Actor` (`init` / `handle(msg, cx)` + defaulted `on_panic` / `on_stop`); everything else — deferral, watching, supervising — is a capability TYPE plugged into `type Caps`. `handle` returns its continuation decision: `Ok(Flow::Continue)` keeps the actor running, `Ok(Flow::Stop)` stops it cleanly (reason `Normal`) after the current message, and a returned `Err` is a controlled crash. Spawn via the ONE `capability::spawn` / `capability::spawn_with(SpawnConfig { capacity, on_stop_grace }, args)` — the run-loop shape (plain / linked / supervised) is selected from `Caps` at **compile time**, monomorphized, no runtime branch and no per-shape spawn verbs (ADR-0026 stage 3). The expert floor remains: the runtime `Actor` trait (`Mailboxed` subtrait) plus `PreparedActor::new(SpawnConfig { .. })` to hand out an `ActorRef` and pre-send before the loop starts.
+- **Actor** — the ONE user trait is `capability::Actor` (`init` / `handle(msg, cx)` + defaulted `on_panic` / `on_stop`); everything else — deferral, watching, supervising — is a capability TYPE plugged into `type Caps`. `handle` returns its continuation decision: `Ok(Flow::Continue)` keeps the actor running, `Ok(Flow::Stop(Normal))` stops it cleanly after the current message — `Normal` is a unit witness, the only reason a self-stop can spell (ADR-0029: every reaction on the surface answers in ONE verdict family `Step<Ph, R>` — `Continue | Goto(phase) | Stop(reason)`; `Flow` is its phase-less, `Normal`-only corner, a `WatchPolicy` speaks the reason-carrying corner `Step<Never, ActorStopReason>`) — and a returned `Err` is a controlled crash. Spawn via the ONE `capability::spawn` / `capability::spawn_with(SpawnConfig { capacity, on_stop_grace }, args)` — the run-loop shape (plain / linked / supervised) is selected from `Caps` at **compile time**, monomorphized, no runtime branch and no per-shape spawn verbs (ADR-0026 stage 3). The expert floor remains: the runtime `Actor` trait (`Mailboxed` subtrait) plus `PreparedActor::new(SpawnConfig { .. })` to hand out an `ActorRef` and pre-send before the loop starts.
 - **`ActorRef`** — two words, one shared allocation, so a clone is a single refcount bump. `tell` (fire-and-forget) and `ask` (request/reply) are builders: `.await` either one, give it a `.timeout(..)`, or resolve a `tell` without waiting via `.try_send()`. Plus `stop()` (graceful — the in-flight handler finishes), `kill()` (hard — no `on_stop`), `downgrade()` → `WeakActorRef`, and type-erased `Recipient` / `ReplyRecipient`. Dropping the last strong `ActorRef` stops the actor once its backlog drains.
 - **Pipe, don't block** — `pipe_to_self(future, mapper)` runs any future off-turn and re-enters its result as an ordinary message (panic surfaced typed, in-flight pipes never pin the actor); `pipe_ask(target, make_msg, mapper)` is the ask-shaped sugar with the whole failure union flattened to one `PipeAskError` match.
 - **Timers** — `send_after(delay, msg)` and `send_interval(period, make_msg)` on both `ActorRef` and type-erased `Recipient`; both return a `TimerHandle` whose `cancel()` is idempotent and explicit (dropping detaches, the timer still fires). Fired messages are ordinary menu messages through the bounded mailbox, so backpressure is preserved, and armed timers hold a weak handle so they never pin the actor.
@@ -131,7 +129,8 @@ example: `cargo run -p bombay --example job_queue` (source:
   re-reads it every iteration (all three loop shapes), firing the reaction
   once per value at a turn boundary, under the same catch/crash treatment
   as a handler (`PanicReason::OnDeadline`, restart-eligible). Reactions
-  speak `Step<Never>` (≅ `Flow` — a plain actor is a one-phase machine).
+  speak `Step<Never>` (= `Flow` — a plain actor is a one-phase machine,
+  ADR-0029).
   A due deadline preempts the mailbox backlog but never a ready death
   notice; a disabled slot costs nothing (armed, ~3% per-message
   throughput). Sliding idle timers are one policy away: declare

@@ -1,9 +1,15 @@
 //! The `Overseer`: app-level death-watch consumer with a NAMED recording
 //! policy (never propagates).
 
-use core::{convert::Infallible, ops::ControlFlow};
+use core::convert::Infallible;
 
-use bombay::{ActorId, actor::Flow, capability, error::ActorStopReason, reply::ReplySender};
+use bombay::{
+    ActorId,
+    actor::Flow,
+    capability::{self, Never, Step},
+    error::ActorStopReason,
+    reply::ReplySender,
+};
 
 /// Watches the dispatcher from outside — the app-level death-watch consumer.
 #[derive(Debug, bombay_macros::Msg)]
@@ -28,9 +34,9 @@ impl capability::WatchPolicy<Overseer> for RecordDeath {
         id: ActorId,
         reason: ActorStopReason,
         _linked: bool,
-    ) -> Result<ControlFlow<ActorStopReason>, Infallible> {
+    ) -> Result<Step<Never, ActorStopReason>, Infallible> {
         actor.seen = Some((id, reason.is_normal()));
-        Ok(ControlFlow::Continue(()))
+        Ok(Step::Continue)
     }
 }
 

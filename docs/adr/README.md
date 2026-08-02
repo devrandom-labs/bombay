@@ -44,9 +44,10 @@ Status is one of: `Proposed` · `Accepted` · `Superseded by ADR-NNNN` · `Rejec
 | [0020](0020-collected-stop-not-restart-worthy.md) | Ref-count death is not restart-worthy (`Collected`) | Accepted |
 | [0021](0021-control-signal-lane.md) | Control-signal lane: watch/supervision never queue behind user backlog | Accepted |
 | [0022](0022-bounded-stash.md) | Bounded stash: `Stashed<S>` composition, in-step replay | Accepted |
-| [0023](0023-handler-stop-return-value-not-out-param.md) | Handler stop signalling: return-value `Flow`, not `stop: &mut bool` | Accepted |
+| [0023](0023-handler-stop-return-value-not-out-param.md) | Handler stop signalling: return-value `Flow`, not `stop: &mut bool` | Accepted (spelling amended by 0029) |
 | [0024](0024-fsm-behavior-switching.md) | Behavior switching: `FsmActor`/`Fsm<S>` wrapper, declarative admission | Accepted (D7 amended by 0025; surface amended by 0026) |
 | [0025](0025-framework-event-plane-deadlines.md) | Framework-event plane: loop-owned declarative deadlines | Accepted (surface seat amended by 0026) |
 | [0026](0026-core-distillation-one-trait-caps.md) | Core distillation: one `Actor` trait, capabilities as plugged types | Accepted |
 | [0027](0027-registry-lookup-keyed-on-handle-type.md) | Registry lookup keyed on the handle type (`Resolvable`), not the actor type | Accepted |
-| [0028](0028-phased-conditional-seats-one-deadline-policy.md) | Phased seats declared (`NoDefer`/`NoTimeout`); one `DeadlinePolicy<Cx>`; `Step<Never> ≅ Flow` | Accepted |
+| [0028](0028-phased-conditional-seats-one-deadline-policy.md) | Phased seats declared (`NoDefer`/`NoTimeout`); one `DeadlinePolicy<Cx>`; `Step<Never> ≅ Flow` | Accepted (the `≅` becomes `=` in 0029) |
+| [0029](0029-one-verdict-family.md) | One verdict family: `Step<Ph, R>` (`Continue \| Goto \| Stop(reason)`); `Flow` is its handler corner | Accepted |
