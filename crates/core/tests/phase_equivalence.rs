@@ -19,13 +19,14 @@
 
 use core::{convert::Infallible, num::NonZeroUsize, time::Duration};
 
-use tokio::time::{sleep, timeout};
+use tokio::time::{Instant, sleep, timeout};
 
 use bombay::{
     actor::{Flow, TimerHandle, WeakActorRef},
     caps::{
-        Actor, CapSet, Ctx, Disposition, Handle, Overflow, PhasePolicy, Phased, Shell, StashFull,
-        Stashing, Step, spawn,
+        Actor, Bounded, ByPhase, CapSet, Ctx, DeadlinePolicy, Deferred, Disposition, Handle,
+        Overflow, PhasePolicy, PhaseView, Phased, Shell, StashFull, StashPolicy, Stashing, Step,
+        spawn,
     },
     mailbox::Capacity,
     test_support::terminate_bound,
@@ -89,57 +90,23 @@ struct AggPolicy;
 impl PhasePolicy for AggPolicy {
     type Actor = AggFsm;
     type Phase = Phase;
-
-    fn build(_: &AggArgs) -> Self {
-        Self
-    }
+    type Deferral = Bounded<AggStash>;
+    type Timeout = AggDeadline;
 
     fn initial(_: &AggArgs) -> Phase {
         Phase::Loading
     }
 
-    fn stash_capacity(args: &AggArgs) -> Capacity {
-        args.0
-    }
-
-    fn gate(phase: Phase, msg: &FsmMsg) -> Disposition {
+    fn gate(phase: Phase, msg: &FsmMsg) -> Disposition<Deferred> {
         match (phase, msg) {
             // Commands cannot be decided before the fold completes.
-            (Phase::Loading, FsmMsg::Cmd { .. }) => Disposition::Defer,
+            (Phase::Loading, FsmMsg::Cmd { .. }) => Disposition::Defer(Deferred),
             // Late/duplicate signals outside their phase: declared noise.
             (Phase::Ready | Phase::Draining, FsmMsg::Replay { .. })
             | (Phase::Loading | Phase::Ready, FsmMsg::FlushDone)
             | (Phase::Draining, FsmMsg::Drain) => Disposition::Ignore,
             _ => Disposition::Deliver,
         }
-    }
-
-    fn phase_deadline(&self, phase: Phase) -> Option<Duration> {
-        match phase {
-            Phase::Loading => Some(LOAD_DEADLINE),
-            Phase::Ready | Phase::Draining => None,
-        }
-    }
-
-    async fn on_phase_timeout(
-        actor: &mut AggFsm,
-        phase: Phase,
-        _: WeakActorRef<Shell<AggFsm>>,
-        _: &mut Stashing<FsmMsg>,
-    ) -> Result<Step<Phase>, Infallible> {
-        Ok(match phase {
-            Phase::Loading => {
-                let _ = actor.probe.send(Probe::LoadTimedOut);
-                Step::Stop
-            }
-            // Unreachable: no deadline is declared for these phases and a
-            // left phase's deadline cannot fire. Kept total; a leak trips
-            // every scenario's oracle assertion.
-            Phase::Ready | Phase::Draining => {
-                let _ = actor.probe.send(Probe::StaleTimeoutLeaked);
-                Step::Stay
-            }
-        })
     }
 
     /// Loud shedding at stash capacity — the same typed-refusal behavior
@@ -154,6 +121,51 @@ impl PhasePolicy for AggPolicy {
             let _ = actor.probe.send(Probe::ShedFull(id));
         }
         Ok(Overflow::Handled(Step::Stay))
+    }
+}
+
+/// The deferral bound, spelled once on the reused `StashPolicy`.
+struct AggStash;
+impl StashPolicy<AggFsm> for AggStash {
+    fn capacity(args: &AggArgs) -> Capacity {
+        args.0
+    }
+}
+
+/// The plugged timeout seat: only Loading carries a deadline.
+struct AggDeadline;
+
+impl DeadlinePolicy<ByPhase<AggPolicy>> for AggDeadline {
+    fn build(_: &AggArgs) -> Self {
+        Self
+    }
+
+    fn next_deadline(&self, _: &AggFsm, view: PhaseView<AggPolicy>) -> Option<Instant> {
+        match view.phase {
+            Phase::Loading => view.entered_at.checked_add(LOAD_DEADLINE),
+            Phase::Ready | Phase::Draining => None,
+        }
+    }
+
+    async fn on_deadline(
+        &self,
+        actor: &mut AggFsm,
+        view: PhaseView<AggPolicy>,
+        _: WeakActorRef<Shell<AggFsm>>,
+    ) -> Result<Step<Phase>, Infallible> {
+        Ok(match view.phase {
+            Phase::Loading => {
+                let _ = actor.probe.send(Probe::LoadTimedOut);
+                Step::Stop
+            }
+            // Unreachable: no deadline is declared for these phases and a
+            // left phase's deadline cannot fire. Kept total; a leak trips
+            // every scenario's oracle assertion.
+            Phase::Ready | Phase::Draining => {
+                let _ = actor.probe.send(Probe::StaleTimeoutLeaked);
+                Step::Stay
+            }
+        })
     }
 }
 

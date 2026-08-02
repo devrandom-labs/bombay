@@ -19,14 +19,15 @@ use std::alloc::System;
 use bombay::{
     actor::{Flow, WeakActorRef},
     caps::{
-        Actor, Admission, CapSet, Ctx, DeadlineHook, Disposition, PhasePolicy, Phased, Shell,
-        Stashing, Step,
+        Actor, Admission, ByPhase, CapSet, Ctx, DeadlineHook, DeadlinePolicy, Disposition, NoDefer,
+        PhasePolicy, PhaseView, Phased, Shell, Step,
     },
     error::Infallible,
-    mailbox::{Capacity, Mailboxed},
+    mailbox::Mailboxed,
     message::Msg,
     test_support::CountingAlloc,
 };
+use tokio::time::Instant;
 
 use core::time::Duration;
 
@@ -55,29 +56,32 @@ struct Pol;
 impl PhasePolicy for Pol {
     type Actor = P;
     type Phase = Phase;
-    fn build((): &()) -> Self {
-        Self
-    }
+    type Deferral = NoDefer;
+    type Timeout = PolDl;
     fn initial((): &()) -> Phase {
         Phase::A
-    }
-    fn stash_capacity((): &()) -> Capacity {
-        Capacity::try_from(4usize).expect("valid test capacity")
     }
     fn gate(_: Phase, _: &Tick) -> Disposition {
         Disposition::Deliver
     }
-    fn phase_deadline(&self, phase: Phase) -> Option<Duration> {
-        match phase {
+}
+
+struct PolDl;
+impl DeadlinePolicy<ByPhase<Pol>> for PolDl {
+    fn build((): &()) -> Self {
+        Self
+    }
+    fn next_deadline(&self, _: &P, view: PhaseView<Pol>) -> Option<Instant> {
+        match view.phase {
             Phase::A | Phase::B => None,
-            Phase::Timed => Some(Duration::from_secs(30)),
+            Phase::Timed => view.entered_at.checked_add(Duration::from_secs(30)),
         }
     }
-    async fn on_phase_timeout(
+    async fn on_deadline(
+        &self,
         _: &mut P,
-        _: Phase,
+        _: PhaseView<Pol>,
         _: WeakActorRef<Shell<P>>,
-        _: &mut Stashing<Tick>,
     ) -> Result<Step<Phase>, Infallible> {
         Ok(Step::Stay)
     }

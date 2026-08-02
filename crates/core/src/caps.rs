@@ -18,7 +18,7 @@
 //!   per-field impls, and duplicate capability fields are rejected by
 //!   coherence, E0119).
 
-use core::{any::type_name, future::Future, marker::PhantomData, ops::ControlFlow, time::Duration};
+use core::{any::type_name, future::Future, marker::PhantomData, ops::ControlFlow};
 
 use tokio::time::Instant;
 
@@ -258,6 +258,224 @@ pub trait StashPolicy<A: Actor> {
     fn capacity(args: &A::Args) -> Capacity;
 }
 
+/// A [`Phased`] machine's stash storage seam — sealed; the two
+/// implementors are [`Stashing`] (the [`Bounded`] seat) and [`NoStash`]
+/// (the [`NoDefer`] seat: a ZST with nothing to hold).
+pub trait PhaseBuffer<M>: sealed::Sealed + Send + 'static {
+    /// Pops the next released message, oldest first (the in-step replay
+    /// drain — [`Replay`] semantics).
+    fn next_ready(&mut self) -> Option<M>;
+    /// Releases everything held (the D4 transition effect).
+    fn release_all(&mut self);
+}
+
+impl<M: Send + 'static> sealed::Sealed for Stashing<M> {}
+impl<M: Send + 'static> PhaseBuffer<M> for Stashing<M> {
+    fn next_ready(&mut self) -> Option<M> {
+        self.pop_ready()
+    }
+
+    fn release_all(&mut self) {
+        self.unstash_all();
+    }
+}
+
+/// The [`NoDefer`] machine's stash type: zero-sized, holds nothing — a
+/// defer-path allocation is unrepresentable, not merely unexercised.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NoStash;
+
+impl sealed::Sealed for NoStash {}
+impl<M: Send + 'static> PhaseBuffer<M> for NoStash {
+    fn next_ready(&mut self) -> Option<M> {
+        None
+    }
+
+    fn release_all(&mut self) {}
+}
+
+/// One [`DeferSeat::admit_defer`] verdict — how the seat routed a gated
+/// `Defer`.
+#[derive(Debug)]
+pub enum DeferOutcome<M, Ph> {
+    /// Stashed; the loop continues.
+    Absorbed,
+    /// The stash was full and the overflow hook redelivered the message
+    /// to `handle` (D6 default: visible-but-unrefused shedding).
+    Redeliver(M),
+    /// The overflow hook absorbed it; apply this step.
+    Handled(Step<Ph>),
+}
+
+/// The deferral seat of a [`Phased`] machine (ADR-0028).
+///
+/// Sealed, core-provided: [`NoDefer`] or [`Bounded`]. The seat owns the
+/// gate's `Defer` token type, the stash storage type, and the defer
+/// routing; plugging it (or not) is the declaration the gate's verdict
+/// type enforces.
+pub trait DeferSeat<P: PhasePolicy>: sealed::Sealed + Send + 'static {
+    /// The gate's `Defer` payload — [`Never`] (uninhabited: cannot defer)
+    /// or [`Deferred`].
+    type Token: Send + 'static;
+    /// The stash storage — [`NoStash`] (ZST) or [`Stashing`].
+    type Stash: PhaseBuffer<<P::Actor as Actor>::Msg>;
+
+    /// Carves the storage from the spawn args.
+    fn build_stash(args: &<P::Actor as Actor>::Args) -> Self::Stash;
+
+    /// Routes a gated `Defer`: stash it, or hand the overflow to
+    /// [`PhasePolicy::on_defer_full`] (D6). Statically unreachable for
+    /// [`NoDefer`] — the token is uninhabited.
+    ///
+    /// # Errors
+    ///
+    /// Returns the actor's error if the overflow hook fails — a
+    /// controlled crash, exactly as a handler `Err`.
+    fn admit_defer(
+        token: Self::Token,
+        actor: &mut P::Actor,
+        phase: P::Phase,
+        msg: <P::Actor as Actor>::Msg,
+        stash: &mut Self::Stash,
+    ) -> impl Future<Output = DeferRouted<P>> + Send;
+}
+
+/// [`DeferSeat::admit_defer`]'s outcome, named so the hook's RPITIT stays
+/// readable: the routing verdict or the actor's own error.
+pub type DeferRouted<P> = Result<
+    DeferOutcome<<<P as PhasePolicy>::Actor as Actor>::Msg, <P as PhasePolicy>::Phase>,
+    <<P as PhasePolicy>::Actor as Actor>::Error,
+>;
+
+/// The explicit "this machine never defers" seat.
+///
+/// No token, no stash, no bound — an undeclared `Defer` is a COMPILE
+/// error, and no buffer type exists in the machine. A named opt-out,
+/// never a silent default.
+///
+/// The law, pinned: a `NoDefer` machine's gate cannot spell `Defer` —
+/// its verdict type is `Disposition<Never>` and [`Deferred`] does not
+/// fit the uninhabited token:
+///
+/// ```compile_fail,E0053
+/// use bombay::actor::Flow;
+/// use bombay::caps::{
+///     Actor, CapSet, Ctx, Deferred, Disposition, NoDefer, NoTimeout, PhasePolicy,
+/// };
+/// use bombay::message::Msg;
+///
+/// #[derive(Debug)]
+/// struct Ping;
+/// impl Msg for Ping {}
+///
+/// struct A;
+/// #[derive(bombay_macros::Provide)]
+/// struct ACaps {
+///     phased: bombay::caps::Phased<APolicy>,
+/// }
+/// impl CapSet<A> for ACaps {
+///     fn build(args: &()) -> Self {
+///         Self { phased: bombay::caps::Phased::build(args) }
+///     }
+/// }
+/// impl Actor for A {
+///     type Msg = Ping;
+///     type Args = ();
+///     type Error = core::convert::Infallible;
+///     type Caps = ACaps;
+///     async fn init((): (), _: Ctx<'_, Self>) -> Result<Self, Self::Error> {
+///         Ok(Self)
+///     }
+///     async fn handle(&mut self, _: Ping, _: Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+///         Ok(Flow::Continue)
+///     }
+/// }
+///
+/// struct APolicy;
+/// impl PhasePolicy for APolicy {
+///     type Actor = A;
+///     type Phase = ();
+///     type Deferral = NoDefer;   // declared: never defers
+///     type Timeout = NoTimeout;
+///     fn initial(_: &()) {}
+///     fn gate((): (), _: &Ping) -> Disposition<Deferred> {
+///         Disposition::Defer(Deferred)   // E0053: the declared token is `Never`
+///     }
+/// }
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NoDefer;
+
+impl sealed::Sealed for NoDefer {}
+impl<P: PhasePolicy> DeferSeat<P> for NoDefer {
+    type Token = Never;
+    type Stash = NoStash;
+
+    fn build_stash(_: &<P::Actor as Actor>::Args) -> NoStash {
+        NoStash
+    }
+
+    async fn admit_defer(
+        token: Never,
+        _: &mut P::Actor,
+        _: P::Phase,
+        _: <P::Actor as Actor>::Msg,
+        _: &mut NoStash,
+    ) -> Result<DeferOutcome<<P::Actor as Actor>::Msg, P::Phase>, <P::Actor as Actor>::Error> {
+        match token {}
+    }
+}
+
+/// The bounded deferral seat.
+///
+/// Gate `Defer`s go into a [`Stashing`] whose capacity is the plugged
+/// [`StashPolicy`]'s (REUSED — the bound is spelled once, ADR-0022:
+/// deferral without a bound is the rejected design); overflow routes
+/// through [`PhasePolicy::on_defer_full`] with the message INTACT (D6).
+pub struct Bounded<SP> {
+    marker: PhantomData<SP>,
+}
+
+impl<SP> sealed::Sealed for Bounded<SP> {}
+impl<P: PhasePolicy, SP: StashPolicy<P::Actor> + Send + 'static> DeferSeat<P> for Bounded<SP> {
+    type Token = Deferred;
+    type Stash = Stashing<<P::Actor as Actor>::Msg>;
+
+    fn build_stash(args: &<P::Actor as Actor>::Args) -> Self::Stash {
+        Stashing::bounded(SP::capacity(args))
+    }
+
+    async fn admit_defer(
+        Deferred: Deferred,
+        actor: &mut P::Actor,
+        phase: P::Phase,
+        msg: <P::Actor as Actor>::Msg,
+        stash: &mut Self::Stash,
+    ) -> Result<DeferOutcome<<P::Actor as Actor>::Msg, P::Phase>, <P::Actor as Actor>::Error> {
+        match stash.stash(msg) {
+            Ok(()) => Ok(DeferOutcome::Absorbed),
+            Err(full) => {
+                let refused = full.msg();
+                Ok(
+                    match P::on_defer_full(actor, phase, refused, stash).await? {
+                        Overflow::Redeliver(m) => DeferOutcome::Redeliver(m),
+                        Overflow::Handled(step) => DeferOutcome::Handled(step),
+                    },
+                )
+            }
+        }
+    }
+}
+
+/// The stash type a [`PhasePolicy`]'s deferral seat declares —
+/// [`NoStash`] for [`NoDefer`], [`Stashing`] for [`Bounded`].
+pub type StashOf<P> = <<P as PhasePolicy>::Deferral as DeferSeat<P>>::Stash;
+
+/// The gate token a [`PhasePolicy`]'s deferral seat declares —
+/// [`Never`] for [`NoDefer`] (a `Defer` verdict cannot be constructed),
+/// [`Deferred`] for [`Bounded`].
+pub type TokenOf<P> = <<P as PhasePolicy>::Deferral as DeferSeat<P>>::Token;
+
 /// The loop hook a capability set exposes for the **ADR-0025 deadline
 /// plane** — the participation half of [`Deadlined`] (and of `Phased`), as
 /// [`Replay`] is of [`Stashing`] (ADR-0026 stage 4, card #281).
@@ -304,89 +522,234 @@ impl<A: Actor> DeadlineHook<A> for () {
     }
 }
 
-/// The deadline-plane policy seat of the [`Deadlined`] capability.
+/// What a deadline is computed FROM — the sealed context a capability
+/// curates for its [`DeadlinePolicy`] seat (ADR-0028; sealed until the
+/// machine-algebra card opens capability authorship).
 ///
-/// The relocated ADR-0025 `next_deadline`/`on_deadline` pair (ADR-0026
-/// stage 4, card #281): the loop asks the cap set, plain actors carry no
-/// deadline items.
-///
-/// [`next_deadline`](DeadlinePolicy::next_deadline) is a **pure function
-/// of actor state** (the quinn `poll_timeout` shape): no set/cancel verbs
-/// exist, so there is nothing to forget and nothing to race — magnitudes
-/// live in the actor's own state, sourced from its spawn `Args`. This is
-/// #241's non-phased consumer path (`last_activity + T` over the same
-/// slot).
-pub trait DeadlinePolicy<A: Actor>: Send + 'static {
-    /// The next instant this actor needs waking, read from its state;
-    /// `None` = no deadline.
-    fn next_deadline(actor: &A) -> Option<Instant>;
+/// The anti-god-object law rides here: a seat sees exactly what its
+/// context declares — [`ByState`] exposes actor state, [`ByPhase`] the
+/// phase clock — never a grab-bag.
+pub trait DeadlineCx: sealed::Sealed {
+    /// The served actor.
+    type Actor: Actor;
+    /// The transition vocabulary of [`on_deadline`](DeadlinePolicy::on_deadline)'s
+    /// [`Step`] verdict: [`Never`] for phase-less contexts (`Step<Never> ≅
+    /// Flow` — `Goto` is unconstructible), the machine's phase for
+    /// [`ByPhase`].
+    type Phase: Copy + PartialEq + Send + 'static;
+    /// The capability-curated window passed (by value — `Copy`) beside
+    /// the actor: `()` for [`ByState`] (the actor IS the view),
+    /// [`PhaseView`] for [`ByPhase`] (the phase clock).
+    type View: Copy + Send + 'static;
+}
 
-    /// Reacts to expiry at a turn boundary. Takes a [`WeakActorRef`] by
-    /// drain-window necessity (ADR-0025): a deadline fire carries no
-    /// message to mint a strong ref from — transitions and `Flow`
-    /// decisions work unchanged, self-sends degrade (`upgrade` → `None`).
+/// [`Deadlined`]'s context: the slot reads **actor state**.
+///
+/// The quinn `poll_timeout` shape — no set/cancel verbs, nothing to
+/// forget, nothing to race; magnitudes live in the actor's own state,
+/// sourced from its spawn `Args`. This is #241's non-phased consumer
+/// path (`last_activity + T` over the same slot).
+pub struct ByState<A> {
+    marker: PhantomData<A>,
+}
+
+impl<A: Actor> sealed::Sealed for ByState<A> {}
+impl<A: Actor> DeadlineCx for ByState<A> {
+    type Actor = A;
+    type Phase = Never;
+    type View = ();
+}
+
+/// [`Phased`]'s context: the view is the **phase clock**.
+///
+/// Slot and reaction receive a [`PhaseView`] (committed phase + entry
+/// instant) and speak the machine's own transition verb,
+/// [`Step<Phase>`](Step).
+pub struct ByPhase<P> {
+    marker: PhantomData<P>,
+}
+
+impl<P: PhasePolicy> sealed::Sealed for ByPhase<P> {}
+impl<P: PhasePolicy> DeadlineCx for ByPhase<P> {
+    type Actor = P::Actor;
+    type Phase = P::Phase;
+    type View = PhaseView<P>;
+}
+
+/// The [`ByPhase`] slot's read window: the committed phase and its entry
+/// instant (the deadline anchor, reset on phase CHANGE only — D4).
+pub struct PhaseView<P: PhasePolicy> {
+    /// The committed phase.
+    pub phase: P::Phase,
+    /// When it was entered — the anchor a seat adds its magnitude to
+    /// (`entered_at.checked_add(d)`; an overflowing sum is beyond
+    /// representable time, i.e. no deadline).
+    pub entered_at: Instant,
+}
+
+impl<P: PhasePolicy> Clone for PhaseView<P> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<P: PhasePolicy> Copy for PhaseView<P> {}
+
+impl<P: PhasePolicy> core::fmt::Debug for PhaseView<P> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("PhaseView")
+            .field("entered_at", &self.entered_at)
+            .finish_non_exhaustive()
+    }
+}
+
+/// THE deadline-plane policy seat (ADR-0028).
+///
+/// ONE context-generic trait serving [`Deadlined`] (`Cx = ByState<A>`)
+/// and [`Phased`] (`Cx = ByPhase<P>`) — the relocated ADR-0025 pair,
+/// unified.
+///
+/// The pair lives in one trait ON PURPOSE: the silent
+/// declared-deadline/defaulted-reaction pair is unrepresentable — you
+/// cannot implement the slot without its reaction (#196 no-default
+/// precedent). Opting OUT is the explicit named [`NoTimeout`] plug.
+pub trait DeadlinePolicy<Cx: DeadlineCx>: Send + 'static {
+    /// Builds the seat from the spawn args — the D8 magnitude channel
+    /// (`Args`-tunable per instance, never `SpawnConfig`).
+    fn build(args: &<Cx::Actor as Actor>::Args) -> Self
+    where
+        Self: Sized;
+
+    /// The next instant this actor needs waking, read from actor state
+    /// and the context's view; `None` = no deadline. Keep it a **pure
+    /// function of `(self, actor, view)`** — the loop re-reads it every
+    /// iteration (the declarative slot; re-arming is implicit).
+    fn next_deadline(&self, actor: &Cx::Actor, view: Cx::View) -> Option<Instant>;
+
+    /// Reacts to expiry at a turn boundary, in the context's transition
+    /// vocabulary ([`Step<Cx::Phase>`](Step) — `Flow`-isomorphic when the
+    /// context is phase-less). Takes a [`WeakActorRef`] by drain-window
+    /// necessity (ADR-0025): a deadline fire carries no message to mint a
+    /// strong ref from; self-sends degrade (`upgrade` → `None`).
     ///
     /// # Errors
     ///
-    /// Returns [`A::Error`](Actor::Error) to crash controlled, exactly as
-    /// a handler `Err` (crash domain `PanicReason::OnDeadline`).
+    /// Returns the actor's error to crash controlled, exactly as a
+    /// handler `Err` (crash domain `PanicReason::OnDeadline`).
     fn on_deadline(
-        actor: &mut A,
-        actor_ref: WeakActorRef<Shell<A>>,
-    ) -> impl Future<Output = Result<Flow, A::Error>> + Send;
+        &self,
+        actor: &mut Cx::Actor,
+        view: Cx::View,
+        actor_ref: WeakActorRef<Shell<Cx::Actor>>,
+    ) -> impl Future<Output = Result<Step<Cx::Phase>, <Cx::Actor as Actor>::Error>> + Send;
+}
+
+/// The explicit "this machine has no deadlines" seat.
+///
+/// The slot is constantly `None`, so the loop's deadline arm never arms
+/// and the (unreachable) reaction is `Stay`. A named opt-out, never a
+/// silent default (#196 `OneForOne` precedent).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NoTimeout;
+
+impl<P: PhasePolicy> DeadlinePolicy<ByPhase<P>> for NoTimeout {
+    fn build(_: &<P::Actor as Actor>::Args) -> Self {
+        Self
+    }
+
+    fn next_deadline(&self, _: &P::Actor, _: PhaseView<P>) -> Option<Instant> {
+        None
+    }
+
+    async fn on_deadline(
+        &self,
+        _: &mut P::Actor,
+        _: PhaseView<P>,
+        _: WeakActorRef<Shell<P::Actor>>,
+    ) -> Result<Step<P::Phase>, <P::Actor as Actor>::Error> {
+        // Unreachable in practice: a constantly-None slot never fires.
+        Ok(Step::Stay)
+    }
 }
 
 /// The deadline capability (ADR-0026 stage 4) — the ADR-0025 plane's user
-/// seat.
+/// seat, `Cx = ByState` (ADR-0028).
 ///
 /// Plugged as a cap-set field, it puts the actor on the loop's deadline
 /// arm: the loop re-reads the policy's declarative slot every iteration
-/// and delivers expiry through it. Zero runtime state — the policy rides
-/// the type, strategy-as-type (ADR-0026 constraint 5). Orthogonal to loop
-/// shape: plain, watching, and supervising sets can all carry it.
+/// and delivers expiry through it. Carries the `Args`-built policy
+/// instance (strategy-as-plugged-type, ADR-0026 constraint 5). Orthogonal
+/// to loop shape: plain, watching, and supervising sets can all carry it.
 pub struct Deadlined<DP> {
-    policy: PhantomData<DP>,
+    policy: DP,
 }
 
 impl<DP> Deadlined<DP> {
-    /// Builds the (stateless) deadline capability.
+    /// Builds the capability from the spawn args (the seat's D8 magnitude
+    /// channel).
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn build<A: Actor>(args: &A::Args) -> Self
+    where
+        DP: DeadlinePolicy<ByState<A>>,
+    {
         Self {
-            policy: PhantomData,
+            policy: DP::build(args),
         }
     }
 }
 
-impl<DP> Default for Deadlined<DP> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<A: Actor, DP: DeadlinePolicy<A>> DeadlineHook<A> for Deadlined<DP> {
+impl<A: Actor, DP: DeadlinePolicy<ByState<A>>> DeadlineHook<A> for Deadlined<DP> {
     fn next_deadline(&self, actor: &A) -> Option<Instant> {
-        DP::next_deadline(actor)
+        self.policy.next_deadline(actor, ())
     }
 
-    fn on_deadline(
+    async fn on_deadline(
         &mut self,
         actor: &mut A,
         actor_ref: WeakActorRef<Shell<A>>,
-    ) -> impl Future<Output = Result<Flow, A::Error>> + Send {
-        DP::on_deadline(actor, actor_ref)
+    ) -> Result<Flow, A::Error> {
+        // `Step<Never> ≅ Flow` — the phase-less context's Goto is
+        // uninhabited, so the adapter is total.
+        Ok(match self.policy.on_deadline(actor, (), actor_ref).await? {
+            Step::Stay => Flow::Continue,
+            Step::Stop => Flow::Stop,
+            Step::Goto(never) => match never {},
+        })
     }
 }
+
+/// The uninhabited type with two structural jobs (ADR-0028).
+///
+/// As a phase: [`Step<Never>`](Step) has no constructible `Goto` — it is
+/// isomorphic to [`Flow`] (a plain actor is a one-phase machine), which is
+/// how one [`DeadlinePolicy`] trait serves both [`Deadlined`] and
+/// [`Phased`]. As a defer token: [`Disposition<Never>`](Disposition) has
+/// no constructible `Defer` — a machine that plugged [`NoDefer`] cannot
+/// even SPELL a deferral; the law is the type, not a convention.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Never {}
+
+/// The [`Bounded`] deferral seat's gate token: `Disposition::Defer(Deferred)`.
+///
+/// Constructible only because the seat is plugged — its existence in a
+/// gate's verdict type IS the deferral declaration.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Deferred;
 
 /// Per-phase message admission — the P trio (ADR-0024 D5, P PLDI 2013
 /// `defer`/`ignore` made payload-capable): what the framework does with a
 /// message BEFORE the handler is consulted.
+///
+/// Generic over the deferral token `D` (default [`Never`]): a gate whose
+/// policy plugged [`NoDefer`] returns plain `Disposition` and cannot
+/// construct `Defer`; a [`Bounded`] policy's gate returns
+/// `Disposition<Deferred>` (ADR-0028).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Disposition {
+pub enum Disposition<D = Never> {
     /// Hand it to `handle` now.
     Deliver,
-    /// Stash it; re-gate on every phase change (P `defer`).
-    Defer,
+    /// Stash it; re-gate on every phase change (P `defer`). Carries the
+    /// plugged seat's token — the declaration rides the verdict type.
+    Defer(D),
     /// Drop it deliberately, by declaration (P `ignore` — recorded
     /// intent, never a silent loss).
     Ignore,
@@ -422,20 +785,24 @@ pub enum Overflow<M, Ph> {
     Handled(Step<Ph>),
 }
 
-/// The phase-machine policy — ONE plugged unit (ADR-0026 constraint 5):
-/// phases, admission, deadlines, and the timeout reaction cannot be
-/// half-implemented.
+/// The phase-machine policy — ONE machine with DECLARED seats.
+///
+/// ADR-0028, correcting ADR-0026 constraint 5's boundary: the unit is
+/// the machine plus its *required* core; the deferral and deadline seats
+/// are plugged strategies, present exactly when declared.
 ///
 /// The `caps`-surface seat of ADR-0024's `FsmActor` (D1–D10 semantics
 /// preserved). A phase policy is actor-specific — it gates the actor's
 /// closed menu — so the served actor is the [`Actor`](PhasePolicy::Actor)
 /// associated type, and `Phased<P>` stays a one-parameter field type.
 ///
-/// Every policy item is REQUIRED except [`on_defer_full`]
-/// (safe-mechanics default: redeliver): declaring a phase deadline forces
-/// writing its reaction — the silent declared-timeout-defaulted-handler
-/// pair is unrepresentable (the `SupervisionStrategy` no-default
-/// precedent, #196).
+/// The silent-pair law (#196) holds structurally in both directions:
+/// a `Defer` verdict without the [`Bounded`] seat does not compile (the
+/// token is uninhabited); a deadline slot without its reaction does not
+/// exist (the pair shares one [`DeadlinePolicy`] trait); and opting out
+/// is the explicit named plug ([`NoDefer`] / [`NoTimeout`]), never a
+/// silent default. The seat declarations ARE the static declaration
+/// table (#243/#286-inferable).
 ///
 /// [`on_defer_full`]: PhasePolicy::on_defer_full
 pub trait PhasePolicy: Send + Sized + 'static {
@@ -445,49 +812,32 @@ pub trait PhasePolicy: Send + Sized + 'static {
     /// D2); phase DATA stays in the actor. `Copy` keeps `Step<Phase>`
     /// unconditionally `Copy`.
     type Phase: Copy + PartialEq + Send + 'static;
+    /// The deferral seat: [`NoDefer`] (no token, no stash, no bound) or
+    /// [`Bounded`] over the reused [`StashPolicy`].
+    type Deferral: DeferSeat<Self>;
+    /// The deadline seat: [`NoTimeout`] (slot constantly disarmed) or a
+    /// plugged [`DeadlinePolicy`] strategy over [`ByPhase`] (`Self` is
+    /// legal for the one-struct style).
+    type Timeout: DeadlinePolicy<ByPhase<Self>>;
 
-    /// Builds the policy instance from the spawn args — the D8 magnitude
-    /// channel (`Args`-tunable per instance, never `SpawnConfig`).
-    fn build(args: &<Self::Actor as Actor>::Args) -> Self;
-
-    /// The phase the machine starts in.
+    /// The phase the machine starts in. (There is no policy instance:
+    /// every core item is a static declaration; instance-tunable
+    /// magnitudes — the D8 channel — ride the SEATS' `build(args)`.)
     fn initial(args: &<Self::Actor as Actor>::Args) -> Self::Phase;
-
-    /// The deferral bound (ADR-0022: explicit, bounded — deferral without
-    /// a bound is the rejected design).
-    fn stash_capacity(args: &<Self::Actor as Actor>::Args) -> Capacity;
 
     /// The whole admission protocol in one declarative place (D5) — a
     /// static declaration table (#243-derivable). `handle` never sees a
-    /// message its phase declared away.
-    fn gate(phase: Self::Phase, msg: &<Self::Actor as Actor>::Msg) -> Disposition;
-
-    /// The phase's deadline magnitude; `None` = no deadline. Takes
-    /// `&self` so magnitudes ride the `Args`-built policy instance (D8).
-    /// Keep it a pure function of `(self, phase)`.
-    fn phase_deadline(&self, phase: Self::Phase) -> Option<Duration>;
-
-    /// The declared deadline expired while still in `phase` — REQUIRED:
-    /// declaring a deadline forces writing its reaction. Runs on the
-    /// ADR-0025 plane (turn boundary, `WeakActorRef` by the drain-window
-    /// rule, crash domain `PanicReason::OnDeadline`). A left phase's
-    /// timeout is unrepresentable: the slot changes with the phase, and
-    /// the loop re-reads it every iteration — nothing stale can fire.
-    ///
-    /// # Errors
-    ///
-    /// A returned `Err` is a controlled crash, exactly as a handler's.
-    fn on_phase_timeout(
-        actor: &mut Self::Actor,
-        phase: Self::Phase,
-        actor_ref: WeakActorRef<Shell<Self::Actor>>,
-        stash: &mut Stashing<<Self::Actor as Actor>::Msg>,
-    ) -> impl Future<Output = Result<Step<Self::Phase>, <Self::Actor as Actor>::Error>> + Send;
+    /// message its phase declared away. The verdict type carries the
+    /// deferral declaration: [`Disposition`] (= `Disposition<Never>`)
+    /// for a [`NoDefer`] machine, `Disposition<Deferred>` for [`Bounded`].
+    fn gate(phase: Self::Phase, msg: &<Self::Actor as Actor>::Msg) -> Disposition<TokenOf<Self>>;
 
     /// A declaratively-deferred message found the stash at capacity (D6).
     /// The message is handed back INTACT; the default redelivers it to
     /// `handle` (visible-but-unrefused shedding) — override for a loud
     /// typed refusal. Stash access per D6b (a handler-plane hook).
+    /// Reachable only from the [`Bounded`] seat; dead code under
+    /// [`NoDefer`].
     ///
     /// # Errors
     ///
@@ -528,24 +878,25 @@ pub type DeferVerdict<P> = Result<
 /// released batch replays in-step, re-gated in the NEW phase, ahead of
 /// the mailbox backlog.
 pub struct Phased<P: PhasePolicy> {
-    policy: P,
+    timeout: P::Timeout,
     phase: P::Phase,
     pending: Option<P::Phase>,
     entered_at: Instant,
-    stash: Stashing<<P::Actor as Actor>::Msg>,
+    stash: StashOf<P>,
 }
 
 impl<P: PhasePolicy> Phased<P> {
-    /// Builds the machine from the spawn args: policy instance, initial
-    /// phase, empty bounded stash, entry clock started now.
+    /// Builds the machine from the spawn args: plugged timeout seat,
+    /// initial phase, the deferral seat's storage (a ZST for [`NoDefer`]
+    /// — no buffer exists), entry clock started now.
     #[must_use]
     pub fn build(args: &<P::Actor as Actor>::Args) -> Self {
         Self {
-            policy: P::build(args),
+            timeout: <P::Timeout as DeadlinePolicy<ByPhase<P>>>::build(args),
             phase: P::initial(args),
             pending: None,
             entered_at: Instant::now(),
-            stash: Stashing::bounded(P::stash_capacity(args)),
+            stash: <P::Deferral as DeferSeat<P>>::build_stash(args),
         }
     }
 
@@ -564,13 +915,6 @@ impl<P: PhasePolicy> Phased<P> {
     /// `Goto(current) ≡ Stay`).
     pub const fn goto(&mut self, next: P::Phase) {
         self.pending = Some(next);
-    }
-
-    /// The phase stash — D5's manual escape hatch (`stash`/`unstash_all`
-    /// for release timing that is not transition-shaped), same bounded
-    /// buffer the gate defers into.
-    pub const fn stash(&mut self) -> &mut Stashing<<P::Actor as Actor>::Msg> {
-        &mut self.stash
     }
 
     /// Applies a policy hook's step at its boundary (the hook return IS
@@ -594,7 +938,7 @@ impl<P: PhasePolicy> Phased<P> {
         if next != self.phase {
             self.phase = next;
             self.entered_at = Instant::now();
-            self.stash.unstash_all();
+            self.stash.release_all();
         }
     }
 
@@ -606,20 +950,38 @@ impl<P: PhasePolicy> Phased<P> {
     }
 }
 
+impl<P, SP> Phased<P>
+where
+    P: PhasePolicy<Deferral = Bounded<SP>>,
+    SP: StashPolicy<P::Actor> + Send + 'static,
+{
+    /// The phase stash — D5's manual escape hatch (`stash`/`unstash_all`
+    /// for release timing that is not transition-shaped), same bounded
+    /// buffer the gate defers into. Exists only on a [`Bounded`] machine:
+    /// a [`NoDefer`] machine has no buffer to reach.
+    pub const fn stash(&mut self) -> &mut Stashing<<P::Actor as Actor>::Msg> {
+        &mut self.stash
+    }
+}
+
 impl<P: PhasePolicy> Replay<<P::Actor as Actor>::Msg> for Phased<P> {
     fn next_replay(&mut self) -> Option<<P::Actor as Actor>::Msg> {
-        self.stash.pop_ready()
+        self.stash.next_ready()
     }
 }
 
 impl<P: PhasePolicy> DeadlineHook<P::Actor> for Phased<P> {
-    /// `entered_at + phase_deadline(phase)` — the ADR-0025 declarative
-    /// slot as a pure function of machine state. An overflowing sum is
-    /// beyond representable time, i.e. never: reported as no deadline.
-    fn next_deadline(&self, _: &P::Actor) -> Option<Instant> {
-        self.policy
-            .phase_deadline(self.phase)
-            .and_then(|d| self.entered_at.checked_add(d))
+    /// The plugged seat's slot over the phase clock ([`PhaseView`]) —
+    /// the ADR-0025 declarative slot as a pure function of machine state.
+    /// Structurally `None` under [`NoTimeout`].
+    fn next_deadline(&self, actor: &P::Actor) -> Option<Instant> {
+        self.timeout.next_deadline(
+            actor,
+            PhaseView {
+                phase: self.phase,
+                entered_at: self.entered_at,
+            },
+        )
     }
 
     async fn on_deadline(
@@ -627,7 +989,11 @@ impl<P: PhasePolicy> DeadlineHook<P::Actor> for Phased<P> {
         actor: &mut P::Actor,
         actor_ref: WeakActorRef<Shell<P::Actor>>,
     ) -> Result<Flow, <P::Actor as Actor>::Error> {
-        let step = P::on_phase_timeout(actor, self.phase, actor_ref, &mut self.stash).await?;
+        let view = PhaseView {
+            phase: self.phase,
+            entered_at: self.entered_at,
+        };
+        let step = self.timeout.on_deadline(actor, view, actor_ref).await?;
         Ok(self.apply(step))
     }
 }
@@ -687,16 +1053,23 @@ impl<P: PhasePolicy> Admission<P::Actor> for Phased<P> {
         match P::gate(self.phase, &msg) {
             Disposition::Deliver => Ok(Admitted::Deliver(msg)),
             Disposition::Ignore => Ok(Admitted::Absorbed(Flow::Continue)),
-            Disposition::Defer => match self.stash.stash(msg) {
-                Ok(()) => Ok(Admitted::Absorbed(Flow::Continue)),
-                Err(full) => {
-                    let refused = full.msg();
-                    match P::on_defer_full(actor, self.phase, refused, &mut self.stash).await? {
-                        Overflow::Redeliver(m) => Ok(Admitted::Deliver(m)),
-                        Overflow::Handled(step) => Ok(Admitted::Absorbed(self.apply(step))),
-                    }
+            Disposition::Defer(token) => {
+                // The seat routes it (stash, or D6 overflow). Statically
+                // unreachable under NoDefer: the token is uninhabited.
+                match <P::Deferral as DeferSeat<P>>::admit_defer(
+                    token,
+                    actor,
+                    self.phase,
+                    msg,
+                    &mut self.stash,
+                )
+                .await?
+                {
+                    DeferOutcome::Absorbed => Ok(Admitted::Absorbed(Flow::Continue)),
+                    DeferOutcome::Redeliver(m) => Ok(Admitted::Deliver(m)),
+                    DeferOutcome::Handled(step) => Ok(Admitted::Absorbed(self.apply(step))),
                 }
-            },
+            }
         }
     }
 
@@ -1611,8 +1984,8 @@ mod tests {
         use tokio_util::sync::CancellationToken;
 
         use super::super::{
-            Actor, CapSet, Ctx, DeadlineHook, DeadlinePolicy, Deadlined, Flow, Replay,
-            SelectRunner, Shell,
+            Actor, ByState, CapSet, Ctx, DeadlineHook, DeadlinePolicy, Deadlined, Flow, Never,
+            Replay, SelectRunner, Shell, Step,
         };
         use crate::{
             actor::{Actor as RuntimeActor, ActorRef, WeakActorRef},
@@ -1652,17 +2025,22 @@ mod tests {
 
         struct IdlePolicy;
 
-        impl DeadlinePolicy<Idler> for IdlePolicy {
-            fn next_deadline(actor: &Idler) -> Option<Instant> {
+        impl DeadlinePolicy<ByState<Idler>> for IdlePolicy {
+            fn build((): &()) -> Self {
+                Self
+            }
+            fn next_deadline(&self, actor: &Idler, (): ()) -> Option<Instant> {
                 actor.due
             }
             async fn on_deadline(
+                &self,
                 actor: &mut Idler,
+                (): (),
                 _: WeakActorRef<Shell<Idler>>,
-            ) -> Result<Flow, Infallible> {
+            ) -> Result<Step<Never>, Infallible> {
                 actor.fires = actor.fires.saturating_add(1);
                 actor.due = None;
-                Ok(Flow::Stop)
+                Ok(Step::Stop)
             }
         }
 
@@ -1672,9 +2050,9 @@ mod tests {
         }
 
         impl CapSet<Idler> for IdleCaps {
-            fn build((): &()) -> Self {
+            fn build(args: &()) -> Self {
                 Self {
-                    deadlined: Deadlined::new(),
+                    deadlined: Deadlined::build(args),
                 }
             }
         }
@@ -1700,7 +2078,7 @@ mod tests {
         }
         impl<A: Actor> DeadlineHook<A> for IdleCaps
         where
-            IdlePolicy: DeadlinePolicy<A>,
+            IdlePolicy: DeadlinePolicy<ByState<A>>,
         {
             fn next_deadline(&self, actor: &A) -> Option<Instant> {
                 DeadlineHook::next_deadline(&self.deadlined, actor)
@@ -1810,14 +2188,13 @@ mod tests {
     /// `tests/caps_phased.rs` and the equivalence oracle.
     mod phased {
         use core::num::NonZeroUsize;
-        use core::time::Duration;
 
         use futures::stream::AbortHandle;
         use tokio_util::sync::CancellationToken;
 
         use super::super::{
             Actor, Admission, CapSet, Ctx, Disposition, Flow, Overflow, PhasePolicy, Phased, Shell,
-            Stashing, Step,
+            Stashing,
         };
         use crate::{
             actor::{ActorRef, WeakActorRef},
@@ -1847,28 +2224,13 @@ mod tests {
         impl PhasePolicy for MPolicy {
             type Actor = M;
             type Phase = Ph;
-            fn build((): &()) -> Self {
-                Self
-            }
+            type Deferral = super::super::NoDefer;
+            type Timeout = super::super::NoTimeout;
             fn initial((): &()) -> Ph {
                 Ph::A
             }
-            fn stash_capacity((): &()) -> Capacity {
-                Capacity::new(NonZeroUsize::new(4).expect("nonzero")).expect("valid")
-            }
             fn gate(_: Ph, _: &MMsg) -> Disposition {
                 Disposition::Deliver
-            }
-            fn phase_deadline(&self, _: Ph) -> Option<Duration> {
-                None
-            }
-            async fn on_phase_timeout(
-                _: &mut M,
-                _: Ph,
-                _: WeakActorRef<Shell<M>>,
-                _: &mut Stashing<MMsg>,
-            ) -> Result<Step<Ph>, &'static str> {
-                Ok(Step::Stay)
             }
         }
 

@@ -14,7 +14,9 @@ use tokio::time::Instant;
 
 use bombay::{
     actor::{Flow, WeakActorRef},
-    caps::{Actor, CapSet, Ctx, DeadlinePolicy, Deadlined, Handle, Shell, spawn},
+    caps::{
+        Actor, ByState, CapSet, Ctx, DeadlinePolicy, Deadlined, Handle, Never, Shell, Step, spawn,
+    },
     reply::ReplySender,
 };
 
@@ -34,11 +36,19 @@ enum PumpMsg {
 }
 
 struct PumpDl;
-impl DeadlinePolicy<Pump> for PumpDl {
-    fn next_deadline(actor: &Pump) -> Option<Instant> {
+impl DeadlinePolicy<ByState<Pump>> for PumpDl {
+    fn build(_: &Option<Duration>) -> Self {
+        Self
+    }
+    fn next_deadline(&self, actor: &Pump, (): ()) -> Option<Instant> {
         actor.due
     }
-    async fn on_deadline(_: &mut Pump, _: WeakActorRef<Shell<Pump>>) -> Result<Flow, Infallible> {
+    async fn on_deadline(
+        &self,
+        _: &mut Pump,
+        (): (),
+        _: WeakActorRef<Shell<Pump>>,
+    ) -> Result<Step<Never>, Infallible> {
         unreachable!("the bench deadline sits 1 h out and never fires");
     }
 }
@@ -49,9 +59,9 @@ struct PumpCaps {
 }
 
 impl CapSet<Pump> for PumpCaps {
-    fn build(_: &Option<Duration>) -> Self {
+    fn build(args: &Option<Duration>) -> Self {
         Self {
-            deadlined: Deadlined::new(),
+            deadlined: Deadlined::build(args),
         }
     }
 }
