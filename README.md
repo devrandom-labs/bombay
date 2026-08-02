@@ -76,56 +76,56 @@ example: `cargo run -p bombay --example job_queue` (source:
 
 ## The public API at a glance
 
-- **Actor** — the ONE user trait is `caps::Actor` (`init` / `handle(msg, cx)` + defaulted `on_panic` / `on_stop`); everything else — deferral, watching, supervising — is a capability TYPE plugged into `type Caps`. `handle` returns its continuation decision: `Ok(Flow::Continue)` keeps the actor running, `Ok(Flow::Stop)` stops it cleanly (reason `Normal`) after the current message, and a returned `Err` is a controlled crash. Spawn via the ONE `caps::spawn` / `caps::spawn_with(SpawnConfig { capacity, on_stop_grace }, args)` — the run-loop shape (plain / linked / supervised) is selected from `Caps` at **compile time**, monomorphized, no runtime branch and no per-shape spawn verbs (ADR-0026 stage 3). The expert floor remains: the runtime `Actor` trait (`Mailboxed` subtrait) plus `PreparedActor::new(SpawnConfig { .. })` to hand out an `ActorRef` and pre-send before the loop starts.
+- **Actor** — the ONE user trait is `capability::Actor` (`init` / `handle(msg, cx)` + defaulted `on_panic` / `on_stop`); everything else — deferral, watching, supervising — is a capability TYPE plugged into `type Caps`. `handle` returns its continuation decision: `Ok(Flow::Continue)` keeps the actor running, `Ok(Flow::Stop)` stops it cleanly (reason `Normal`) after the current message, and a returned `Err` is a controlled crash. Spawn via the ONE `capability::spawn` / `capability::spawn_with(SpawnConfig { capacity, on_stop_grace }, args)` — the run-loop shape (plain / linked / supervised) is selected from `Caps` at **compile time**, monomorphized, no runtime branch and no per-shape spawn verbs (ADR-0026 stage 3). The expert floor remains: the runtime `Actor` trait (`Mailboxed` subtrait) plus `PreparedActor::new(SpawnConfig { .. })` to hand out an `ActorRef` and pre-send before the loop starts.
 - **`ActorRef`** — two words, one shared allocation, so a clone is a single refcount bump. `tell` (fire-and-forget) and `ask` (request/reply) are builders: `.await` either one, give it a `.timeout(..)`, or resolve a `tell` without waiting via `.try_send()`. Plus `stop()` (graceful — the in-flight handler finishes), `kill()` (hard — no `on_stop`), `downgrade()` → `WeakActorRef`, and type-erased `Recipient` / `ReplyRecipient`. Dropping the last strong `ActorRef` stops the actor once its backlog drains.
 - **Pipe, don't block** — `pipe_to_self(future, mapper)` runs any future off-turn and re-enters its result as an ordinary message (panic surfaced typed, in-flight pipes never pin the actor); `pipe_ask(target, make_msg, mapper)` is the ask-shaped sugar with the whole failure union flattened to one `PipeAskError` match.
 - **Timers** — `send_after(delay, msg)` and `send_interval(period, make_msg)` on both `ActorRef` and type-erased `Recipient`; both return a `TimerHandle` whose `cancel()` is idempotent and explicit (dropping detaches, the timer still fires). Fired messages are ordinary menu messages through the bounded mailbox, so backpressure is preserved, and armed timers hold a weak handle so they never pin the actor.
-- **Death-watch** — being watched is universal and passive; watching is the `caps::Watching<WP>` capability: plug it into your cap set and the actor runs on the linked loop with the `watch` / `link` / `unwatch` verbs on its handle (compile-gated — a plain actor's handle simply has no `watch`). The reaction is the plugged `WatchPolicy` — chosen by NAME, never inherited: ship-provided `OtpPropagation` is OTP's rule (a **linked** *abnormal* death propagates, anything else is observed), or write your own policy reacting through `&mut actor`. Death travels on its own unbounded channel and is fired from a task-owned guard's `Drop`, so no notice is lost to a full mailbox, a panic, or a hard kill.
-- **Supervision** — the `caps::Supervising<SS>` capability, which **requires** `Watching` in the same cap set (an invalid stack does not compile — the composition law rides a supertrait, and the derive rejects it with a readable error). The restart-set strategy `SS` is a TYPE (`caps::OneForOne` / `RestForOne` / `OneForAll`) with **no default** — like the per-child policy, it is required by construction. Register a child with `supervise(config, factory)` under an **explicit** `RestartPolicy` (`Permanent` / `Transient` / `Never`) — no default policy either: the surveyed systems (OTP, Kubernetes, Akka) disagree across the whole range, so the caller must state it (ADR-0012). A dead child is **rebuilt** from its factory, never resumed (a fresh actor with a new `ActorId`); restarts are spaced by exponential backoff + jitter and bounded by two counters — a consecutive-failure trip that resets on healthy uptime, and a never-reset lifetime budget. A child that ref-count-collects is reported as `ActorStopReason::Collected` and left dead under every policy — collection is not failure (ADR-0020). When a child fails past its budget or in a lifecycle hook, the supervisor stops with `RestartLimitExceeded` / `ChildLifecycleFailed`, which is itself a death notice to *its* watcher (the escalation ladder). `RestForOne` also cycles the failed child's *younger* siblings, `OneForAll` the whole set — the ladder's coarser rungs, stopped crash-only and rebuilt in birth order without blocking the supervisor (ADR-0014). `stop_child` terminates a child gracefully (cancel → `stop_grace` → abort); `unsupervise` detaches one without stopping it. A supervisor's own exit — graceful stop, hard kill, or escalation — tears down every remaining supervised child (cancel → bounded join → abort), so children never outlive their supervisor. Because capabilities compose, a supervisor can also carry a `Stashing` cap — the deferring supervisor the old trait tiers could not express. See ADR-0012, ADR-0014, ADR-0019, ADR-0026.
-- **Registry** — a process-local, lock-free-read name registry: register an actor under a name, look it up (weak handles — a registered actor can still die), remove it. Lookup is keyed on the handle type you want back, so both surfaces resolve through the one door: `registry.lookup::<caps::Handle<Dispatcher>>(name)` for a caps actor, `registry.lookup::<ActorRef<Probe>>(name)` on the expert floor (ADR-0027).
+- **Death-watch** — being watched is universal and passive; watching is the `capability::Watching<WP>` capability: plug it into your cap set and the actor runs on the linked loop with the `watch` / `link` / `unwatch` verbs on its handle (compile-gated — a plain actor's handle simply has no `watch`). The reaction is the plugged `WatchPolicy` — chosen by NAME, never inherited: ship-provided `OtpPropagation` is OTP's rule (a **linked** *abnormal* death propagates, anything else is observed), or write your own policy reacting through `&mut actor`. Death travels on its own unbounded channel and is fired from a task-owned guard's `Drop`, so no notice is lost to a full mailbox, a panic, or a hard kill.
+- **Supervision** — the `capability::Supervising<SS>` capability, which **requires** `Watching` in the same cap set (an invalid stack does not compile — the composition law rides a supertrait, and the derive rejects it with a readable error). The restart-set strategy `SS` is a TYPE (`capability::OneForOne` / `RestForOne` / `OneForAll`) with **no default** — like the per-child policy, it is required by construction. Register a child with `supervise(config, factory)` under an **explicit** `RestartPolicy` (`Permanent` / `Transient` / `Never`) — no default policy either: the surveyed systems (OTP, Kubernetes, Akka) disagree across the whole range, so the caller must state it (ADR-0012). A dead child is **rebuilt** from its factory, never resumed (a fresh actor with a new `ActorId`); restarts are spaced by exponential backoff + jitter and bounded by two counters — a consecutive-failure trip that resets on healthy uptime, and a never-reset lifetime budget. A child that ref-count-collects is reported as `ActorStopReason::Collected` and left dead under every policy — collection is not failure (ADR-0020). When a child fails past its budget or in a lifecycle hook, the supervisor stops with `RestartLimitExceeded` / `ChildLifecycleFailed`, which is itself a death notice to *its* watcher (the escalation ladder). `RestForOne` also cycles the failed child's *younger* siblings, `OneForAll` the whole set — the ladder's coarser rungs, stopped crash-only and rebuilt in birth order without blocking the supervisor (ADR-0014). `stop_child` terminates a child gracefully (cancel → `stop_grace` → abort); `unsupervise` detaches one without stopping it. A supervisor's own exit — graceful stop, hard kill, or escalation — tears down every remaining supervised child (cancel → bounded join → abort), so children never outlive their supervisor. Because capabilities compose, a supervisor can also carry a `Stashing` cap — the deferring supervisor the old trait tiers could not express. See ADR-0012, ADR-0014, ADR-0019, ADR-0026.
+- **Registry** — a process-local, lock-free-read name registry: register an actor under a name, look it up (weak handles — a registered actor can still die), remove it. Lookup is keyed on the handle type you want back, so both surfaces resolve through the one door: `registry.lookup::<capability::Handle<Dispatcher>>(name)` for a capability actor, `registry.lookup::<ActorRef<Probe>>(name)` on the expert floor (ADR-0027).
 - **`ActorId`** — a process-local, unforgeable **pure-name** routing key (`bombay::ActorId`): minted at spawn and obtainable only from a spawned actor — no public constructor, no readable `u64` (no getter / `From` / `Display`), and deliberately **not** serializable. It names an actor for the mailbox, death-watch, and supervision *inside this process*; the dataspace identity of an actor is its future KERI AID (#121), a separate coordinate — never this handle. Holding an `ActorId` grants nothing; send-authority lives only in `ActorRef` (ADR-0015).
 - **Mailbox** — bounded only: `Mailbox::<A>::bounded(capacity, id)`. Backpressure via `send`, fail-fast via `try_send`; a queued message keeps the actor alive until it is handled, and carries a one-word `SendContext` (the sender's span, for trace stitching).
 - **Bounded stash** — the first real capability (ADR-0026 stage 2): defer
-  messages your current state can't accept. Put a `caps::Stashing<Msg>` in your
-  `caps::Actor`'s `Caps` set (a `#[derive(Provide)]` struct whose capacity
+  messages your current state can't accept. Put a `capability::Stashing<Msg>` in your
+  `capability::Actor`'s `Caps` set (a `#[derive(Provide)]` struct whose capacity
   comes from a required `StashPolicy`), then
   `cx.cap::<Stashing<Msg>>().stash(msg)` / `.unstash_all()`. The loop replays
   released messages in-step, ahead of the mailbox backlog, in arrival order;
   overflow hands the message back (`StashFull`); a stashed message never keeps
   a dying actor alive. The replay wiring is derive-emitted — automatic and
-  impossible to forget (ADR-0022 semantics on the caps surface).
+  impossible to forget (ADR-0022 semantics on the capability surface).
 - **Capabilities (staged)** — the distilled surface (ADR-0026): implement
-  `caps::Actor` — one trait (`init` / `handle(msg, cx)`), with everything
+  `capability::Actor` — one trait (`init` / `handle(msg, cx)`), with everything
   else plugged in as capability TYPES on `type Caps` (`()` for a plain
   actor) and reached through the compile-gated `cx.cap::<C>()` (a
   capability your set doesn't declare is a compile error, never a runtime
   check). Cap-set structs get their per-field access impls from
   `#[derive(bombay_macros::Provide)]`; any crate can define its own
-  capability. Spawn via `caps::spawn` / `caps::spawn_with`:
+  capability. Spawn via `capability::spawn` / `capability::spawn_with`:
 
   ```rust
   struct Audit { entries: u64 }
-  impl caps::Actor for Audit {
+  impl capability::Actor for Audit {
       type Msg = AuditMsg; type Args = (); type Error = Infallible;
       type Caps = ();   // plain — no capability ceremony
-      async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Infallible> {
+      async fn init((): (), _: capability::Ctx<'_, Self>) -> Result<Self, Infallible> {
           Ok(Self { entries: 0 })
       }
-      async fn handle(&mut self, msg: AuditMsg, _: caps::Ctx<'_, Self>)
+      async fn handle(&mut self, msg: AuditMsg, _: capability::Ctx<'_, Self>)
           -> Result<Flow, Infallible> { /* … */ Ok(Flow::Continue) }
   }
-  let audit = caps::spawn::<Audit>(());
+  let audit = capability::spawn::<Audit>(());
   ```
 
   Stage 3 (ADR-0026) made this THE surface: the former `Watch` /
   `Supervisor` trait tiers and the six `Spawn*` verbs are gone — watching
   and supervising are the `Watching<WP>` / `Supervising<SS>` capability
-  types above, and the one `caps::spawn` picks the loop shape from the cap
+  types above, and the one `capability::spawn` picks the loop shape from the cap
   set at compile time.
-- **Deadlines** — ONE context-generic `caps::DeadlinePolicy<Cx>` seat
+- **Deadlines** — ONE context-generic `capability::DeadlinePolicy<Cx>` seat
   (ADR-0025's declarative plane, unified by ADR-0028) carrying the pair
   `next_deadline` / `on_deadline` in one trait — a declared deadline
-  cannot exist without its reaction. `caps::Deadlined<DP>` plugs it with
+  cannot exist without its reaction. `capability::Deadlined<DP>` plugs it with
   `Cx = ByState<A>`: the slot is a **pure function of actor state** — no
   arm/cancel verbs, nothing to forget, nothing to race — and the run loop
   re-reads it every iteration (all three loop shapes), firing the reaction
@@ -136,7 +136,7 @@ example: `cargo run -p bombay --example job_queue` (source:
   notice; a disabled slot costs nothing (armed, ~3% per-message
   throughput). Sliding idle timers are one policy away: declare
   `last_activity + T`.
-- **Phases** — the `caps::Phased<P>` capability: a `PhasePolicy` is the
+- **Phases** — the `capability::Phased<P>` capability: a `PhasePolicy` is the
   machine's core (phase tag enum + declarative per-phase admission,
   `gate → Deliver | Defer | Ignore`, P-style: the handler never sees a
   message its phase declared away) with its two seats DECLARED as plugged

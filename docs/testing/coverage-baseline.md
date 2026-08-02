@@ -8,6 +8,16 @@
 > mutation scope is now **bombay + bombay_macros (derive_msg) + mutants-gate** only.
 > Sections below that describe the vendored crate's suites are historical record.
 
+> **Path rename 2026-08-02 (#292):** the `caps` module is now `capability`, split one
+> file per unit — `crates/core/src/caps.rs` → `crates/core/src/capability/{actor,ctx,
+> stashing,verdict,deadline,phased,watching,supervising,shell,spawn}.rs` — and the
+> integration suites renamed with it: `tests/caps_stage1.rs` → `capability_stage1.rs`,
+> `caps_stage3.rs` → `capability_stage3.rs`, `caps_stashing.rs` → `capability_stashing.rs`,
+> `caps_phased.rs` → `capability_phased.rs`, `caps_seats.rs` → `capability_seats.rs`. The
+> job-queue example split too: `examples/job_queue/app.rs` → `app/{domain,worker,
+> dispatcher,intake,overseer,audit}.rs` + `app/mod.rs`. Old paths in the per-card
+> sections below are historical record (the #213 precedent).
+
 > **Audited 2026-07-17 by #168** (scope-vs-shipped sweep over #112–#117, #145–#152).
 > Five claims in this document were corrected in place; each correction is a blockquote
 > marked `Corrected 2026-07-17 (#168)` in the relevant section. In short:
@@ -1444,3 +1454,23 @@ code (wart of #280, file removed).
   The `Default` derives on `NoStash`/`NoDefer`/`NoTimeout` were REMOVED
   precisely so their unit-struct `build` mutants stay unviable instead of
   becoming equivalent-viable survivors.
+
+## Card #292 (rename `caps` → `capability`; module + example split)
+
+Zero semantic change, zero coverage change — a pure rename/move card.
+
+- The whole `caps` surface renamed to `capability` (no `pub use capability as
+  caps` alias — one door, pre-1.0) and split one file per unit; unit tests
+  moved with their units, shared hand-written cap-set fixtures now live in
+  `capability::fixtures` (`#[cfg(test)]`).
+- All 525 tests green unchanged; the three `compile_fail` doctests re-pointed
+  and falsified for the RIGHT error (derive composition-law error + `E0277`,
+  not a path-resolution `E0433` — the vacuous-pass hazard of renaming paths
+  under `compile_fail`).
+- Mutants baseline re-keyed (`file::fn` keys carry the path): all 56
+  `caps.rs::*` entries re-pointed at their `capability/<unit>.rs` homes and
+  cross-checked against `cargo mutants --list` — every key present, no
+  unaccounted capability fns.
+- Drive-by fix: `benches/registry_vs_kameo.rs` had not compiled since #294
+  (missing `ActorRef` import) — benches are invisible to the flake gate
+  (`cargo check --all-targets` is not in CI), wart filed on #292's PR.
