@@ -29,7 +29,7 @@ use tokio::time::timeout;
 use bombay::{
     SendContext,
     actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
-    caps,
+    capability,
     error::ActorStopReason,
     mailbox::{ActorId, Capacity, ControlSignal, Mailbox, Mailboxed, Recv, Signal},
     message::Msg,
@@ -104,34 +104,34 @@ impl Actor for Spy {
 
 /// A supervisor with no behaviour of its own: `supervise` supplies
 /// everything. Stage-3 shape: the authority is the `Watching` +
-/// `Supervising` caps, not marker impls.
+/// `Supervising` capabilities, not marker impls.
 struct Sup {
     handled: Arc<AtomicU32>,
 }
 
 #[derive(bombay_macros::Provide)]
 struct SupCaps {
-    watching: caps::Watching<caps::OtpPropagation>,
-    supervising: caps::Supervising<caps::OneForOne>,
+    watching: capability::Watching<capability::OtpPropagation>,
+    supervising: capability::Supervising<capability::OneForOne>,
 }
-impl caps::CapSet<Sup> for SupCaps {
-    fn build(_: &<Sup as caps::Actor>::Args) -> Self {
+impl capability::CapSet<Sup> for SupCaps {
+    fn build(_: &<Sup as capability::Actor>::Args) -> Self {
         Self {
-            watching: caps::Watching::new(),
-            supervising: caps::Supervising::new(),
+            watching: capability::Watching::new(),
+            supervising: capability::Supervising::new(),
         }
     }
 }
 
-impl caps::Actor for Sup {
+impl capability::Actor for Sup {
     type Msg = Ping;
     type Args = Arc<AtomicU32>;
     type Error = Infallible;
     type Caps = SupCaps;
-    async fn init(handled: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+    async fn init(handled: Self::Args, _: capability::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         Ok(Self { handled })
     }
-    async fn handle(&mut self, _: Ping, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, _: Ping, _: capability::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         self.handled.fetch_add(1, Ordering::SeqCst);
         Ok(Flow::Continue)
     }
@@ -299,7 +299,7 @@ async fn watch_installs_before_full_backlog_drains() {
 async fn supervise_op_applies_before_full_backlog_drains() {
     set_supervisor_rng_seed(Some(7));
     let handled = Arc::new(AtomicU32::new(0));
-    let (prepared, link_rx) = PreparedActor::<caps::Shell<Sup>>::new_linked(SpawnConfig {
+    let (prepared, link_rx) = PreparedActor::<capability::Shell<Sup>>::new_linked(SpawnConfig {
         capacity: cap(2),
         ..Default::default()
     });
@@ -559,7 +559,7 @@ async fn queued_watch_answered_on_teardown() {
 async fn supervise_op_queued_behind_stop_still_lands() {
     set_supervisor_rng_seed(Some(11));
     let handled = Arc::new(AtomicU32::new(0));
-    let (prepared, link_rx) = PreparedActor::<caps::Shell<Sup>>::new_linked(SpawnConfig {
+    let (prepared, link_rx) = PreparedActor::<capability::Shell<Sup>>::new_linked(SpawnConfig {
         capacity: cap(2),
         ..Default::default()
     });

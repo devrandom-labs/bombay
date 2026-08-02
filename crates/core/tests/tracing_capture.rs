@@ -16,7 +16,7 @@ use bombay::{
         Actor, ActorRef, DEFAULT_MAILBOX_CAPACITY, Flow, PreparedActor, RunResult, SpawnConfig,
         WeakActorRef,
     },
-    caps,
+    capability,
     error::{ActorStopReason, PanicError, PanicReason},
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -640,24 +640,24 @@ struct Watcher;
 
 #[derive(bombay_macros::Provide)]
 struct WatcherCaps {
-    watching: caps::Watching<caps::OtpPropagation>,
+    watching: capability::Watching<capability::OtpPropagation>,
 }
-impl caps::CapSet<Watcher> for WatcherCaps {
+impl capability::CapSet<Watcher> for WatcherCaps {
     fn build((): &()) -> Self {
         Self {
-            watching: caps::Watching::new(),
+            watching: capability::Watching::new(),
         }
     }
 }
-impl caps::Actor for Watcher {
+impl capability::Actor for Watcher {
     type Msg = Ping;
     type Args = ();
     type Error = Infallible;
     type Caps = WatcherCaps;
-    async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+    async fn init((): (), _: capability::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         Ok(Watcher)
     }
-    async fn handle(&mut self, _: Ping, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, _: Ping, _: capability::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         Ok(Flow::Continue)
     }
 }
@@ -669,7 +669,7 @@ impl caps::Actor for Watcher {
 async fn death_notice_delivery_emits_one_trace_event_per_edge() {
     let (store, _guard) = capture::install();
 
-    let watcher = caps::spawn::<Watcher>(());
+    let watcher = capability::spawn::<Watcher>(());
     let watcher_id = watcher.id();
 
     let prepared = PreparedActor::<Probe>::new(SpawnConfig {
@@ -731,26 +731,30 @@ struct Sup;
 
 #[derive(bombay_macros::Provide)]
 struct SupCaps {
-    watching: caps::Watching<caps::OtpPropagation>,
-    supervising: caps::Supervising<caps::OneForOne>,
+    watching: capability::Watching<capability::OtpPropagation>,
+    supervising: capability::Supervising<capability::OneForOne>,
 }
-impl caps::CapSet<Sup> for SupCaps {
+impl capability::CapSet<Sup> for SupCaps {
     fn build((): &()) -> Self {
         Self {
-            watching: caps::Watching::new(),
-            supervising: caps::Supervising::new(),
+            watching: capability::Watching::new(),
+            supervising: capability::Supervising::new(),
         }
     }
 }
-impl caps::Actor for Sup {
+impl capability::Actor for Sup {
     type Msg = SupMsg;
     type Args = ();
     type Error = Infallible;
     type Caps = SupCaps;
-    async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+    async fn init((): (), _: capability::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         Ok(Sup)
     }
-    async fn handle(&mut self, _: SupMsg, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+    async fn handle(
+        &mut self,
+        _: SupMsg,
+        _: capability::Ctx<'_, Self>,
+    ) -> Result<Flow, Self::Error> {
         Ok(Flow::Continue)
     }
 }
@@ -767,7 +771,7 @@ async fn scheduled_restart_emits_warn_with_attempt_and_delay() {
     let (store, _guard) = capture::install();
 
     let cfg = RestartConfig::new(RestartPolicy::Permanent);
-    let sup = caps::spawn::<Sup>(());
+    let sup = capability::spawn::<Sup>(());
     let (births_tx, mut births_rx) = mpsc::unbounded_channel::<()>();
     // Anchors every incarnation: an unanchored rebuild would ref-count-stop and
     // (under `Permanent`) churn through further restarts, each with its own warn.
@@ -844,7 +848,7 @@ async fn scheduled_restart_emits_warn_with_attempt_and_delay() {
 async fn restart_give_up_emits_one_error_event() {
     let (store, _guard) = capture::install();
 
-    let (prepared, link_rx) = PreparedActor::<caps::Shell<Sup>>::new_linked(SpawnConfig {
+    let (prepared, link_rx) = PreparedActor::<capability::Shell<Sup>>::new_linked(SpawnConfig {
         capacity: default_cap(),
         ..Default::default()
     });
@@ -936,7 +940,7 @@ async fn restart_give_up_emits_one_error_event() {
 async fn collected_child_emits_debug_event_and_no_restart_scheduled() {
     let (store, _guard) = capture::install();
 
-    let sup = caps::spawn::<Sup>(());
+    let sup = capability::spawn::<Sup>(());
     let child_id = timeout(
         terminate_bound(),
         sup.supervise(RestartConfig::new(RestartPolicy::Permanent), || {
@@ -1015,7 +1019,7 @@ impl Actor for RebuildBomb {
 async fn child_lifecycle_failure_escalates_with_error_event() {
     let (store, _guard) = capture::install();
 
-    let (prepared, link_rx) = PreparedActor::<caps::Shell<Sup>>::new_linked(SpawnConfig {
+    let (prepared, link_rx) = PreparedActor::<capability::Shell<Sup>>::new_linked(SpawnConfig {
         capacity: default_cap(),
         ..Default::default()
     });

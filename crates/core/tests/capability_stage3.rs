@@ -15,7 +15,7 @@ use tokio::time::timeout;
 use bombay::{
     ActorId,
     actor::{Actor, ActorRef, Flow, PreparedActor, SpawnConfig},
-    caps,
+    capability,
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -38,23 +38,27 @@ async fn bounded<F: core::future::IntoFuture>(fut: F) -> F::Output {
 // ------------------------------------------------------------ leaf child ----
 
 /// The supervised child: reports each incarnation's birth on an unbounded
-/// tape. A plain caps actor (`Caps = ()`).
+/// tape. A plain capability actor (`Caps = ()`).
 struct Leaf;
 
 #[derive(Debug)]
 struct LeafMsg;
 impl Msg for LeafMsg {}
 
-impl caps::Actor for Leaf {
+impl capability::Actor for Leaf {
     type Msg = LeafMsg;
     type Args = flume::Sender<()>;
     type Error = Infallible;
     type Caps = ();
-    async fn init(births: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Infallible> {
+    async fn init(births: Self::Args, _: capability::Ctx<'_, Self>) -> Result<Self, Infallible> {
         births.send(()).expect("the birth tape is unbounded");
         Ok(Self)
     }
-    async fn handle(&mut self, _: LeafMsg, _: caps::Ctx<'_, Self>) -> Result<Flow, Infallible> {
+    async fn handle(
+        &mut self,
+        _: LeafMsg,
+        _: capability::Ctx<'_, Self>,
+    ) -> Result<Flow, Infallible> {
         Ok(Flow::Continue)
     }
 }
@@ -86,7 +90,7 @@ impl Actor for Peer {
 /// Records a non-child death through `&mut actor` — a supervised child's
 /// death routes to the restart machinery instead and never lands here.
 struct RecordPeerDeath;
-impl caps::WatchPolicy<DeferSup> for RecordPeerDeath {
+impl capability::WatchPolicy<DeferSup> for RecordPeerDeath {
     async fn on_link_died(
         actor: &mut DeferSup,
         id: ActorId,
@@ -118,24 +122,24 @@ enum DeferMsg {
 /// The composition the tiers could not express, as three plain fields.
 #[derive(bombay_macros::Provide)]
 struct DeferSupCaps {
-    stash: caps::Stashing<DeferMsg>,
-    watching: caps::Watching<RecordPeerDeath>,
-    supervising: caps::Supervising<caps::OneForOne>,
+    stash: capability::Stashing<DeferMsg>,
+    watching: capability::Watching<RecordPeerDeath>,
+    supervising: capability::Supervising<capability::OneForOne>,
 }
 
-impl caps::CapSet<DeferSup> for DeferSupCaps {
-    fn build(_: &<DeferSup as caps::Actor>::Args) -> Self {
+impl capability::CapSet<DeferSup> for DeferSupCaps {
+    fn build(_: &<DeferSup as capability::Actor>::Args) -> Self {
         Self {
-            stash: caps::Stashing::bounded(cap(8)),
-            watching: caps::Watching::new(),
-            supervising: caps::Supervising::new(),
+            stash: capability::Stashing::bounded(cap(8)),
+            watching: capability::Watching::new(),
+            supervising: capability::Supervising::new(),
         }
     }
 }
 
 /// The per-incarnation liveness anchors the factory fills (the external
 /// strong refs production code would hold).
-type Anchors = Arc<Mutex<Vec<caps::Handle<Leaf>>>>;
+type Anchors = Arc<Mutex<Vec<capability::Handle<Leaf>>>>;
 
 struct DeferSup {
     open: bool,
@@ -146,7 +150,7 @@ struct DeferSup {
     peer: Option<ActorRef<Peer>>,
 }
 
-impl caps::Actor for DeferSup {
+impl capability::Actor for DeferSup {
     type Msg = DeferMsg;
     type Args = (flume::Sender<()>, Anchors, ActorRef<Peer>);
     type Error = Infallible;
@@ -154,7 +158,7 @@ impl caps::Actor for DeferSup {
 
     async fn init(
         (births, anchors, peer): Self::Args,
-        _: caps::Ctx<'_, Self>,
+        _: capability::Ctx<'_, Self>,
     ) -> Result<Self, Infallible> {
         Ok(Self {
             open: false,
@@ -169,18 +173,18 @@ impl caps::Actor for DeferSup {
     async fn handle(
         &mut self,
         msg: DeferMsg,
-        mut cx: caps::Ctx<'_, Self>,
+        mut cx: capability::Ctx<'_, Self>,
     ) -> Result<Flow, Infallible> {
         match msg {
             item @ DeferMsg::Item(_) if !self.open => {
-                cx.cap::<caps::Stashing<DeferMsg>>()
+                cx.cap::<capability::Stashing<DeferMsg>>()
                     .stash(item)
                     .expect("stash sized for the scenario");
             }
             DeferMsg::Item(n) => self.tape.push(n),
             DeferMsg::Open => {
                 self.open = true;
-                cx.cap::<caps::Stashing<DeferMsg>>().unstash_all();
+                cx.cap::<capability::Stashing<DeferMsg>>().unstash_all();
             }
             DeferMsg::Supervise { reply } => {
                 let births = self.births.clone();
@@ -193,7 +197,7 @@ impl caps::Actor for DeferSup {
                     // child ref-count-stops as `Collected` and is left dead
                     // by every policy (ADR-0020) — the rebuild probe needs a
                     // live handle to kill.
-                    let child = caps::spawn::<Leaf>(births.clone());
+                    let child = capability::spawn::<Leaf>(births.clone());
                     anchors.lock().expect("anchors").push(child.clone());
                     child
                 }))
@@ -234,7 +238,7 @@ async fn deferring_supervisor_composes_all_three_caps() {
     let peer_id = peer_ref.id();
     let _peer_join = peer_prepared.spawn(());
 
-    let sup = caps::spawn::<DeferSup>((births_tx, Arc::clone(&anchors), peer_ref.clone()));
+    let sup = capability::spawn::<DeferSup>((births_tx, Arc::clone(&anchors), peer_ref.clone()));
 
     // (1) Deferral before the gate opens: 1 and 2 stash; 3 arrives after
     // Open and must serve BEHIND the replayed batch.

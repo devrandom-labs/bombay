@@ -63,10 +63,10 @@ pub fn derive_msg(input: TokenStream) -> TokenStream {
     TokenStream::from(derive_msg.into_token_stream())
 }
 
-/// Derive [`Provide`](https://docs.rs/bombay/latest/bombay/caps/trait.Provide.html)
+/// Derive [`Provide`](https://docs.rs/bombay/latest/bombay/capability/trait.Provide.html)
 /// impls for a capability-set struct — one per named field (ADR-0026).
 ///
-/// This is the OPEN seam of the caps encoding: the impls land on your
+/// This is the OPEN seam of the capability encoding: the impls land on your
 /// own struct, so any crate can define capabilities. It deliberately
 /// does NOT generate `CapSet::build` (building needs your policy
 /// choices; write it by hand — a build-generating derive is card #243).
@@ -83,7 +83,7 @@ pub fn derive_msg(input: TokenStream) -> TokenStream {
 ///     tags: Tags,
 /// }
 ///
-/// fn takes<C>(_: &mut impl bombay::caps::Provide<C>) {}
+/// fn takes<C>(_: &mut impl bombay::capability::Provide<C>) {}
 /// fn wire(caps: &mut MyCaps) {
 ///     takes::<Tokens>(caps);
 ///     takes::<Tags>(caps);

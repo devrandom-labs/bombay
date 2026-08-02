@@ -1,5 +1,5 @@
 //! ADR-0025 deadline-arm cost (card #281, plan S5): per-message throughput
-//! of the plain caps loop with the arm DISABLED (`next_deadline = None` —
+//! of the plain capability loop with the arm DISABLED (`next_deadline = None` —
 //! the price every existing actor pays for the plane) vs ARMED at a
 //! far-future instant (the steady re-arm cost: one `sleep_until` recreated
 //! per iteration; O(1) wheel ops — hierarchical timing wheel, Varghese &
@@ -14,7 +14,7 @@ use tokio::time::Instant;
 
 use bombay::{
     actor::{Flow, WeakActorRef},
-    caps::{
+    capability::{
         Actor, ByState, CapSet, Ctx, DeadlinePolicy, Deadlined, Handle, Never, Shell, Step, spawn,
     },
     reply::ReplySender,

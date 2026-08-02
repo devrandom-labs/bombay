@@ -67,7 +67,7 @@ use tokio::{
 use bombay::{
     ActorId,
     actor::{Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, WeakActorRef},
-    caps,
+    capability,
     error::ActorStopReason,
     mailbox::{Capacity, Mailboxed},
     message::Msg,
@@ -256,18 +256,18 @@ enum SupMsg {
 impl Msg for SupMsg {}
 
 /// Stage-3 authority: the OTP watching policy + the `OneForOne` strategy as
-/// plugged caps (was: empty `Watch`/`Supervisor` marker impls with the same
+/// plugged capabilities (was: empty `Watch`/`Supervisor` marker impls with the same
 /// semantics — the default hook and the default strategy, now NAMED).
 #[derive(bombay_macros::Provide)]
 struct SupScriptCaps {
-    watching: caps::Watching<caps::OtpPropagation>,
-    supervising: caps::Supervising<caps::OneForOne>,
+    watching: capability::Watching<capability::OtpPropagation>,
+    supervising: capability::Supervising<capability::OneForOne>,
 }
-impl caps::CapSet<SupScript> for SupScriptCaps {
+impl capability::CapSet<SupScript> for SupScriptCaps {
     fn build(_: &SupScriptArgs) -> Self {
         Self {
-            watching: caps::Watching::new(),
-            supervising: caps::Supervising::new(),
+            watching: capability::Watching::new(),
+            supervising: capability::Supervising::new(),
         }
     }
 }
@@ -281,7 +281,7 @@ impl SupScript {
     /// factory, `supervise` it against the handler-context ref (the steady
     /// shared upgrade or the drain-window mint — the thing under test), and
     /// record the outcome plus the first incarnation's id.
-    async fn supervise_step(&mut self, actor_ref: &caps::Handle<Self>) {
+    async fn supervise_step(&mut self, actor_ref: &capability::Handle<Self>) {
         let factory = self.factory.take().expect("one supervise per script");
         let result = bounded(actor_ref.supervise(child_config(), factory)).await;
         let ok = result.is_ok();
@@ -290,12 +290,12 @@ impl SupScript {
     }
 }
 
-impl caps::Actor for SupScript {
+impl capability::Actor for SupScript {
     type Msg = SupMsg;
     type Args = SupScriptArgs;
     type Error = Infallible;
     type Caps = SupScriptCaps;
-    async fn init(args: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+    async fn init(args: Self::Args, _: capability::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         let SupScriptArgs {
             trace,
             factory,
@@ -310,7 +310,11 @@ impl caps::Actor for SupScript {
             release: Some(release),
         })
     }
-    async fn handle(&mut self, msg: SupMsg, cx: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+    async fn handle(
+        &mut self,
+        msg: SupMsg,
+        cx: capability::Ctx<'_, Self>,
+    ) -> Result<Flow, Self::Error> {
         match msg {
             SupMsg::Supervise => self.supervise_step(cx.self_ref()).await,
             SupMsg::StopChild => {
@@ -344,7 +348,7 @@ impl caps::Actor for SupScript {
     }
     async fn on_stop(
         &mut self,
-        _: WeakActorRef<caps::Shell<Self>>,
+        _: WeakActorRef<capability::Shell<Self>>,
         reason: ActorStopReason,
     ) -> Result<(), Self::Error> {
         self.record(TraceEvent::Finished(ReasonKind::of(&reason)));
@@ -362,14 +366,14 @@ async fn start_supervisor(
     factory: ChildFactory,
     script: &[SupMsg],
 ) -> (
-    Option<caps::Handle<SupScript>>,
-    JoinHandle<RunResult<caps::Shell<SupScript>>>,
+    Option<capability::Handle<SupScript>>,
+    JoinHandle<RunResult<capability::Shell<SupScript>>>,
     oneshot::Receiver<()>,
     oneshot::Sender<()>,
 ) {
     let (entered_tx, entered) = oneshot::channel();
     let (release, release_rx) = oneshot::channel();
-    let (prepared, link_rx) = PreparedActor::<caps::Shell<SupScript>>::new_linked(config(8));
+    let (prepared, link_rx) = PreparedActor::<capability::Shell<SupScript>>::new_linked(config(8));
     let external = match mode {
         Mode::Steady => Some(prepared.actor_ref().clone()),
         Mode::Drain => None,
@@ -403,8 +407,8 @@ struct Rig {
     slot: Incarnations,
     started_rx: mpsc::UnboundedReceiver<()>,
     trace: Arc<Mutex<Vec<TraceEvent>>>,
-    external: Option<caps::Handle<SupScript>>,
-    sup_join: JoinHandle<RunResult<caps::Shell<SupScript>>>,
+    external: Option<capability::Handle<SupScript>>,
+    sup_join: JoinHandle<RunResult<capability::Shell<SupScript>>>,
     entered: oneshot::Receiver<()>,
     release: oneshot::Sender<()>,
 }
@@ -451,7 +455,7 @@ fn assert_stopped_normal(outcome: &RunResult<Child>, context: &str) {
 /// Asserts the supervisor's exact ref-count-stop outcome: both modes end
 /// `Collected` (the drain run on the emptied backlog, the steady run once
 /// the test drops the held ref).
-fn assert_collected(outcome: &RunResult<caps::Shell<SupScript>>) {
+fn assert_collected(outcome: &RunResult<capability::Shell<SupScript>>) {
     assert!(
         matches!(
             outcome,

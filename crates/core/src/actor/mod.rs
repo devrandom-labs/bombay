@@ -62,7 +62,7 @@ pub enum Flow {
 /// mailbox, driven by one task that handles messages sequentially.
 ///
 /// > Staged supersession (ADR-0026): new code can use the distilled
-/// > [`caps::Actor`](crate::caps::Actor) surface; this trait remains fully
+/// > [`capability::Actor`](crate::capability::Actor) surface; this trait remains fully
 /// > supported while the migration stages land.
 ///
 /// `Actor` is a subtrait of [`Mailboxed`] (the mailbox is keyed on the actor),
@@ -115,9 +115,9 @@ pub trait Actor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
     /// a `Sleep` registers lazily on first poll).
     ///
     /// This default is the runtime FLOOR every loop polls uniformly; the
-    /// user seat is the [`caps::Deadlined`](crate::caps::Deadlined) /
-    /// [`caps::Phased`](crate::caps::Phased) capability (ADR-0026), which
-    /// [`caps::Shell`](crate::caps::Shell) bridges here.
+    /// user seat is the [`capability::Deadlined`](crate::capability::Deadlined) /
+    /// [`capability::Phased`](crate::capability::Phased) capability (ADR-0026), which
+    /// [`capability::Shell`](crate::capability::Shell) bridges here.
     #[must_use]
     fn next_deadline(&self) -> Option<Instant> {
         None
@@ -192,7 +192,7 @@ pub trait Actor: Mailboxed<Msg: Msg> + Sized + Send + 'static {
 /// Seals [`LinkReact`]/[`SupervisedReact`]: the traits stay nameable (they
 /// appear in public floor bounds) but only this crate implements them —
 /// they are the run-loop's internal dispatch seams, not a user surface.
-/// The one production implementor is [`caps::Shell`](crate::caps::Shell),
+/// The one production implementor is [`capability::Shell`](crate::capability::Shell),
 /// conditional on its cap set (ADR-0026 stage 3, card #280).
 pub(crate) mod sealed {
     /// The seal. Unnameable outside the crate.
@@ -204,17 +204,17 @@ pub(crate) mod sealed {
 ///
 /// Replaces the removed `Watch` trait at the loop and floor bound sites —
 /// but is **sealed**: user code declares watching by plugging
-/// [`caps::Watching`](crate::caps::Watching) into its cap set, never by
+/// [`capability::Watching`](crate::capability::Watching) into its cap set, never by
 /// implementing this.
 pub trait LinkReact: Actor + sealed::Sealed {
     /// Reacts to the death of a watched/linked actor — the semantics seat
-    /// of [`caps::WatchPolicy`](crate::caps::WatchPolicy). Delivery rules
+    /// of [`capability::WatchPolicy`](crate::capability::WatchPolicy). Delivery rules
     /// are the loop's (a post-break notice is dropped by design, #266).
     ///
     /// # Errors
     ///
     /// Returns [`Actor::Error`] if the plugged policy fails; the shipped
-    /// [`OtpPropagation`](crate::caps::OtpPropagation) policy is infallible.
+    /// [`OtpPropagation`](crate::capability::OtpPropagation) policy is infallible.
     fn on_link_died(
         &mut self,
         id: ActorId,
@@ -229,7 +229,7 @@ pub trait LinkReact: Actor + sealed::Sealed {
 /// Replaces the removed `Supervisor` trait at the loop and floor bound
 /// sites; sealed like [`LinkReact`]. There is deliberately NO default
 /// strategy — the cap set names one
-/// ([`caps::Supervising`](crate::caps::Supervising),
+/// ([`capability::Supervising`](crate::capability::Supervising),
 /// required-by-construction).
 pub trait SupervisedReact: LinkReact {
     /// The restart-set strategy for this supervisor's children.
@@ -239,7 +239,7 @@ pub trait SupervisedReact: LinkReact {
 
 // The former `Spawn`/`SpawnLinked`/`SpawnSupervised` verb traits and the
 // `Watch`/`Supervisor` capability tiers are GONE (ADR-0026 stage 3, card
-// #280): the ONE `caps::spawn` selects the loop shape from the cap set at
-// compile time, and watching/supervising are the `caps::Watching`/
-// `caps::Supervising` capability types. The [`PreparedActor`] floor below
+// #280): the ONE `capability::spawn` selects the loop shape from the cap set at
+// compile time, and watching/supervising are the `capability::Watching`/
+// `capability::Supervising` capability types. The [`PreparedActor`] floor below
 // remains the expert path to deterministic lifecycle driving.

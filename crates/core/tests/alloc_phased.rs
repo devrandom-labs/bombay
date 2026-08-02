@@ -1,6 +1,6 @@
 //! Zero-allocation guard for the `Phased` transition path (card #281,
 //! plan S9 — the ADR-0024 "no allocation on the transition path"
-//! constraint, re-proven on the caps surface).
+//! constraint, re-proven on the capability surface).
 //!
 //! ONE test, in its OWN binary, on purpose — same rationale as
 //! `alloc_exact.rs`: a `#[global_allocator]` counts every allocation in
@@ -18,7 +18,7 @@ use std::alloc::System;
 
 use bombay::{
     actor::{Flow, WeakActorRef},
-    caps::{
+    capability::{
         Actor, Admission, ByPhase, CapSet, Ctx, DeadlineHook, DeadlinePolicy, Disposition, NoDefer,
         PhasePolicy, PhaseView, Phased, Shell, Step,
     },

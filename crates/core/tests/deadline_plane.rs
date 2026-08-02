@@ -1,4 +1,4 @@
-//! Card #281 — the ADR-0025 deadline plane, integration-tested on the caps
+//! Card #281 — the ADR-0025 deadline plane, integration-tested on the capability
 //! surface (`Deadlined<DP>` is the user seat; the loop arm is the SUT).
 //!
 //! Ports the executable model's properties (spike-274-loop, the durable
@@ -23,7 +23,7 @@ use tokio::time::{Instant, sleep, timeout};
 
 use bombay::{
     actor::{Flow, SpawnConfig, WeakActorRef},
-    caps::{
+    capability::{
         self, Actor, ByState, CapSet, Ctx, DeadlinePolicy, Deadlined, Handle, Never, Shell, Step,
         spawn, spawn_with,
     },
@@ -616,7 +616,7 @@ impl Actor for Bomb {
 
 /// Records whether a watched death carried the `OnDeadline` crash domain.
 struct TapeDeath;
-impl caps::WatchPolicy<Watcher> for TapeDeath {
+impl capability::WatchPolicy<Watcher> for TapeDeath {
     async fn on_link_died(
         actor: &mut Watcher,
         _: bombay::ActorId,
@@ -643,13 +643,13 @@ enum WatchMsg {
 
 #[derive(bombay_macros::Provide)]
 struct WatcherCaps {
-    watching: caps::Watching<TapeDeath>,
+    watching: capability::Watching<TapeDeath>,
 }
 
 impl CapSet<Watcher> for WatcherCaps {
     fn build(_: &flume::Sender<Ev>) -> Self {
         Self {
-            watching: caps::Watching::new(),
+            watching: capability::Watching::new(),
         }
     }
 }
@@ -799,11 +799,11 @@ macro_rules! armer {
 
 armer!(ArmerPlain, ArmerPlainDl, ArmerPlainCaps {});
 armer!(ArmerLinked, ArmerLinkedDl, ArmerLinkedCaps {
-    watching: caps::Watching<caps::OtpPropagation> = caps::Watching::new(),
+    watching: capability::Watching<capability::OtpPropagation> = capability::Watching::new(),
 });
 armer!(ArmerSup, ArmerSupDl, ArmerSupCaps {
-    watching: caps::Watching<caps::OtpPropagation> = caps::Watching::new(),
-    supervising: caps::Supervising<caps::OneForOne> = caps::Supervising::new(),
+    watching: capability::Watching<capability::OtpPropagation> = capability::Watching::new(),
+    supervising: capability::Supervising<capability::OneForOne> = capability::Supervising::new(),
 });
 
 /// Drives one armer through the pin: `Arm` and `Next` are both queued
@@ -921,7 +921,7 @@ macro_rules! mourner {
         }
 
         struct $wp;
-        impl caps::WatchPolicy<$actor> for $wp {
+        impl capability::WatchPolicy<$actor> for $wp {
             async fn on_link_died(
                 actor: &mut $actor,
                 _: bombay::ActorId,
@@ -938,7 +938,7 @@ macro_rules! mourner {
         #[derive(bombay_macros::Provide)]
         struct $caps {
             deadlined: Deadlined<$dl>,
-            watching: caps::Watching<$wp>,
+            watching: capability::Watching<$wp>,
             $($field: $fty),*
         }
 
@@ -946,7 +946,7 @@ macro_rules! mourner {
             fn build(args: &flume::Sender<Ev>) -> Self {
                 Self {
                     deadlined: Deadlined::build(args),
-                    watching: caps::Watching::new(),
+                    watching: capability::Watching::new(),
                     $($field: $finit),*
                 }
             }
@@ -1006,7 +1006,7 @@ mourner!(
     MournerLinkedCaps {}
 );
 mourner!(MournerSup, MournerSupDl, MournerSupWp, MournerSupCaps {
-    supervising: caps::Supervising<caps::OneForOne> = caps::Supervising::new(),
+    supervising: capability::Supervising<capability::OneForOne> = capability::Supervising::new(),
 });
 
 async fn drive_mourner<A>(h: Handle<A>, rx: flume::Receiver<Ev>) -> Vec<Ev>

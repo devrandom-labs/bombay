@@ -15,7 +15,7 @@ use app::{
     OverseerMsg,
 };
 use bombay::{
-    caps,
+    capability,
     mailbox::Capacity,
     registry::Registry,
     restart::{RestartConfig, RestartPolicy},
@@ -48,15 +48,15 @@ async fn main() {
 
     // clients never hold the spawn handle — they resolve by name
     let dispatcher = registry
-        .lookup::<caps::Handle<Dispatcher>>(DISPATCHER_NAME)
+        .lookup::<capability::Handle<Dispatcher>>(DISPATCHER_NAME)
         .expect("registered under the dispatcher type")
         .expect("dispatcher is alive");
 
-    // Card #224 (caps surface, #279): submissions go through an `Intake`
-    // front door — a `caps::Actor` with a bounded-stash capability that can
+    // Card #224 (capability surface, #279): submissions go through an `Intake`
+    // front door — a `capability::Actor` with a bounded-stash capability that can
     // defer submits during maintenance. This demo never pauses it; the
     // deferral path is the app-level test.
-    let intake = caps::spawn::<Intake>((
+    let intake = capability::spawn::<Intake>((
         dispatcher.clone(),
         Capacity::try_from(8usize).expect("valid intake stash capacity"),
     ));
@@ -104,7 +104,7 @@ async fn main() {
                 let disp = dispatcher.downgrade();
                 let done_port = dispatcher.recipient::<app::Done>();
                 move || {
-                    let worker = caps::spawn::<app::Worker>(app::WorkerArgs {
+                    let worker = capability::spawn::<app::Worker>(app::WorkerArgs {
                         slot: 3,
                         dispatcher: done_port.clone(),
                         stopped_tx: None,

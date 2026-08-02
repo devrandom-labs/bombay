@@ -1,4 +1,4 @@
-//! Card #281 — `Phased<P>` behavior on the caps surface (ADR-0024 D1–D10
+//! Card #281 — `Phased<P>` behavior on the capability surface (ADR-0024 D1–D10
 //! re-seated per ADR-0026): the gate trio, replay-in-the-new-phase,
 //! overflow handback, `goto(current)` ≡ no-op, and the
 //! staleness-unrepresentable phase deadline riding the ADR-0025 plane.
@@ -12,7 +12,7 @@ use tokio::time::{Instant, sleep, timeout};
 
 use bombay::{
     actor::{Flow, WeakActorRef},
-    caps::{
+    capability::{
         Actor, Bounded, ByPhase, CapSet, Ctx, DeadlinePolicy, Deferred, Disposition, NoTimeout,
         Overflow, PhasePolicy, PhaseView, Phased, Shell, StashPolicy, Stashing, Step, spawn,
     },
@@ -232,7 +232,7 @@ impl Actor for G {
 fn spawn_g(
     stash_cap: usize,
     load_deadline: Option<Duration>,
-) -> (bombay::caps::Handle<G>, flume::Receiver<Ev>) {
+) -> (bombay::capability::Handle<G>, flume::Receiver<Ev>) {
     let (tx, rx) = flume::unbounded();
     let h = spawn::<G>(GArgs {
         stash_cap: cap(stash_cap),
@@ -513,7 +513,7 @@ async fn default_overflow_redelivers_through_the_gate() {
     );
 }
 
-/// Spawn/tell/`Recipient`-mint smoke: a phased actor is an ordinary caps
+/// Spawn/tell/`Recipient`-mint smoke: a phased actor is an ordinary capability
 /// actor — the closed menu holds (`Fsm::Msg == S::Msg` re-seated: no
 /// envelope), so tell-side erasure works unchanged.
 #[tokio::test(start_paused = true)]

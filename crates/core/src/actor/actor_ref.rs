@@ -197,12 +197,12 @@ impl<A: Actor> ActorRef<A> {
 }
 
 /// The death-watch verbs (card #195). Only a link-reactive actor — one whose
-/// cap set plugs [`Watching`](crate::caps::Watching), giving it the link
+/// cap set plugs [`Watching`](crate::capability::Watching), giving it the link
 /// channel death notices arrive on — can watch (ADR-0026 stage 3).
 impl<A: LinkReact> ActorRef<A> {
     /// Watches `target`: this actor's
     /// [`on_link_died`](LinkReact::on_link_died) reaction (its declared
-    /// [`WatchPolicy`](crate::caps::WatchPolicy)) fires when `target` stops.
+    /// [`WatchPolicy`](crate::capability::WatchPolicy)) fires when `target` stops.
     /// One-directional and notify-only (`linked = false`), so the OTP policy
     /// merely observes — a `target` death never propagates here. `target`
     /// may be any [`Actor`] (being watched is universal); it need not itself
@@ -216,7 +216,7 @@ impl<A: LinkReact> ActorRef<A> {
     ///
     /// [`ActorNotLinked`] if this actor runs without a link channel (an
     /// expert-floor [`PreparedActor::new`](super::PreparedActor::new) spawn;
-    /// the one `caps::spawn` always builds the channel for a `Watching`
+    /// the one `capability::spawn` always builds the channel for a `Watching`
     /// cap set).
     #[expect(
         clippy::unused_async,
@@ -330,8 +330,8 @@ impl<A: LinkReact> ActorRef<A> {
 }
 
 /// The restart-supervision verbs (card #196). Only a supervising actor —
-/// one whose cap set plugs [`Supervising`](crate::caps::Supervising), which
-/// requires [`Watching`](crate::caps::Watching) and so the link channel a
+/// one whose cap set plugs [`Supervising`](crate::capability::Supervising), which
+/// requires [`Watching`](crate::capability::Watching) and so the link channel a
 /// child's death arrives on — can supervise (ADR-0026 stage 3).
 impl<S: SupervisedReact> ActorRef<S> {
     /// Registers a supervised child under an explicit restart policy. The first

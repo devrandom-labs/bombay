@@ -53,12 +53,12 @@ use crate::{
 /// Lookup is keyed on the handle the caller wants BACK, not on the actor
 /// type, so a type alias can hide an internal adapter: `ActorRef<A>` is
 /// resolvable for every runtime actor, and therefore so is
-/// [`caps::Handle<A>`](crate::caps::Handle) — an alias for `ActorRef` over
-/// the caps [`Shell`](crate::caps::Shell) — without the word `Shell` ever
+/// [`capability::Handle<A>`](crate::capability::Handle) — an alias for `ActorRef` over
+/// the capability [`Shell`](crate::capability::Shell) — without the word `Shell` ever
 /// appearing at a call site (card #289). Both surfaces resolve through the
 /// one door:
 ///
-/// - caps: `registry.lookup::<caps::Handle<Dispatcher>>(name)`
+/// - capability: `registry.lookup::<capability::Handle<Dispatcher>>(name)`
 /// - runtime (expert floor): `registry.lookup::<ActorRef<Probe>>(name)`
 ///
 /// Sealed: the registry stores [`WeakActorRef`]s, so only ref types the
@@ -171,7 +171,7 @@ impl Registry {
 
     /// Looks up the actor registered under `name`, keyed on the handle type
     /// `R` the caller wants back ([`Resolvable`]): `ActorRef<A>` for a
-    /// runtime actor, [`caps::Handle<A>`](crate::caps::Handle) for a caps
+    /// runtime actor, [`capability::Handle<A>`](crate::capability::Handle) for a capability
     /// actor — one door for both surfaces (card #289).
     ///
     /// `Ok(None)` covers both true absence and a dead incumbent (channel
@@ -237,7 +237,7 @@ mod tests {
     use super::Registry;
     use crate::{
         actor::{Actor, ActorRef, Flow},
-        caps::{self, Ctx as CapsCtx, Handle},
+        capability::{self, Ctx as CapsCtx, Handle},
         error::{NameTaken, WrongActorType},
         mailbox::{ActorId, Capacity, Mailbox, MailboxReceiver, Mailboxed, Recv, Signal},
         message::Msg,
@@ -284,7 +284,7 @@ mod tests {
         }
     }
 
-    /// A caps-surface actor (the ONE user trait, ADR-0026): registered and
+    /// A capability-surface actor (the ONE user trait, ADR-0026): registered and
     /// resolved through the same registry door as runtime actors, keyed by
     /// its [`Handle`]. The uninhabited message menu is enough — the registry
     /// never runs a loop.
@@ -292,7 +292,7 @@ mod tests {
     #[derive(Debug)]
     enum CapMsg {}
     impl Msg for CapMsg {}
-    impl caps::Actor for CapProbe {
+    impl capability::Actor for CapProbe {
         type Msg = CapMsg;
         type Args = ();
         type Error = core::convert::Infallible;
@@ -365,9 +365,9 @@ mod tests {
         assert_eq!(n, 42, "the exact payload crossed the same channel");
     }
 
-    /// Card #289 (wart of #280): a caps actor registers and resolves through
+    /// Card #289 (wart of #280): a capability actor registers and resolves through
     /// the SAME `lookup` door, keyed on the handle type the caller wants
-    /// back — `caps::Handle<CapProbe>` in the turbofish, never the internal
+    /// back — `capability::Handle<CapProbe>` in the turbofish, never the internal
     /// `Shell` adapter.
     #[test]
     fn caps_handle_resolves_without_naming_shell() {
@@ -384,7 +384,7 @@ mod tests {
         assert_eq!(
             resolved.id(),
             ActorId::from_raw_for_test(1),
-            "resolves the caps registrant through its Handle alias",
+            "resolves the capability registrant through its Handle alias",
         );
     }
 

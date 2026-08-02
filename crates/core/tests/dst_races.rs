@@ -61,7 +61,7 @@ use bombay::{
     actor::{
         Actor, ActorRef, Flow, PreparedActor, RunResult, SpawnConfig, SupervisedReact, WeakActorRef,
     },
-    caps,
+    capability,
     error::{ActorStopReason, AskError, TellError},
     mailbox::{Capacity, ControlSignal, Mailboxed, Signal},
     message::Msg,
@@ -866,29 +866,29 @@ macro_rules! storm_supervisor {
 
         #[derive(bombay_macros::Provide)]
         struct $caps {
-            watching: caps::Watching<caps::OtpPropagation>,
-            supervising: caps::Supervising<caps::$strategy>,
+            watching: capability::Watching<capability::OtpPropagation>,
+            supervising: capability::Supervising<capability::$strategy>,
         }
-        impl caps::CapSet<$t> for $caps {
+        impl capability::CapSet<$t> for $caps {
             fn build((): &()) -> Self {
                 Self {
-                    watching: caps::Watching::new(),
-                    supervising: caps::Supervising::new(),
+                    watching: capability::Watching::new(),
+                    supervising: capability::Supervising::new(),
                 }
             }
         }
-        impl caps::Actor for $t {
+        impl capability::Actor for $t {
             type Msg = SupIdle;
             type Args = ();
             type Error = Infallible;
             type Caps = $caps;
-            async fn init((): (), _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+            async fn init((): (), _: capability::Ctx<'_, Self>) -> Result<Self, Self::Error> {
                 Ok(Self)
             }
             async fn handle(
                 &mut self,
                 _: SupIdle,
-                _: caps::Ctx<'_, Self>,
+                _: capability::Ctx<'_, Self>,
             ) -> Result<Flow, Self::Error> {
                 Ok(Flow::Continue)
             }
@@ -980,7 +980,7 @@ fn storm_trace(seed: u64, schedule: &[(u64, &'static str)]) -> Vec<(u128, &'stat
         let origin = Instant::now();
         let (tx, mut rx) = mpsc::unbounded_channel::<(u128, &'static str)>();
         let live: LiveChildren = Arc::new(Mutex::new(HashMap::new()));
-        let sup = caps::spawn::<AllSup>(());
+        let sup = capability::spawn::<AllSup>(());
 
         for tag in TAGS {
             timeout(
@@ -1043,16 +1043,16 @@ fn dst_restart_storm_deterministic() {
 /// counters, so a surviving supervisor means "no wedge", never "not yet escalated".
 async fn link_unlink_storm<S>(seed: u64)
 where
-    S: caps::Actor<Args = ()>,
-    caps::Shell<S>: SupervisedReact,
-    <S::Caps as caps::SelectRunner<S>>::Runner: caps::RunKind<S>,
+    S: capability::Actor<Args = ()>,
+    capability::Shell<S>: SupervisedReact,
+    <S::Caps as capability::SelectRunner<S>>::Runner: capability::RunKind<S>,
 {
     const TAGS: [&str; 3] = ["a", "b", "c"];
     set_supervisor_rng_seed(Some(seed));
     let origin = Instant::now();
     let (tx, mut rx) = mpsc::unbounded_channel::<(u128, &'static str)>();
     let live: LiveChildren = Arc::new(Mutex::new(HashMap::new()));
-    let sup = caps::spawn::<S>(());
+    let sup = capability::spawn::<S>(());
     let cfg = RestartConfig::new(RestartPolicy::Permanent)
         .with_max_restarts(u32::MAX)
         .with_max_total(u32::MAX);
@@ -1152,7 +1152,7 @@ fn backoff_delays(seed: u64, crashes: u32) -> Vec<(u32, u128)> {
         let origin = Instant::now();
         let (tx, mut rx) = mpsc::unbounded_channel::<(u128, &'static str)>();
         let live: LiveChildren = Arc::new(Mutex::new(HashMap::new()));
-        let sup = caps::spawn::<AllSup>(());
+        let sup = capability::spawn::<AllSup>(());
         let cfg = RestartConfig::new(RestartPolicy::Permanent)
             .with_max_restarts(u32::MAX)
             .with_max_total(u32::MAX);
@@ -1240,7 +1240,7 @@ struct TapingWatcher {
 
 /// The taping reaction, as a named `WatchPolicy` (stage-3 shape).
 struct TapingPolicy;
-impl caps::WatchPolicy<TapingWatcher> for TapingPolicy {
+impl capability::WatchPolicy<TapingWatcher> for TapingPolicy {
     async fn on_link_died(
         actor: &mut TapingWatcher,
         id: bombay::ActorId,
@@ -1257,25 +1257,25 @@ impl caps::WatchPolicy<TapingWatcher> for TapingPolicy {
 
 #[derive(bombay_macros::Provide)]
 struct TapingCaps {
-    watching: caps::Watching<TapingPolicy>,
+    watching: capability::Watching<TapingPolicy>,
 }
-impl caps::CapSet<TapingWatcher> for TapingCaps {
-    fn build(_: &<TapingWatcher as caps::Actor>::Args) -> Self {
+impl capability::CapSet<TapingWatcher> for TapingCaps {
+    fn build(_: &<TapingWatcher as capability::Actor>::Args) -> Self {
         Self {
-            watching: caps::Watching::new(),
+            watching: capability::Watching::new(),
         }
     }
 }
 
-impl caps::Actor for TapingWatcher {
+impl capability::Actor for TapingWatcher {
     type Msg = Ping;
     type Args = flume::Sender<bombay::ActorId>;
     type Error = Infallible;
     type Caps = TapingCaps;
-    async fn init(notices: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+    async fn init(notices: Self::Args, _: capability::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         Ok(Self { notices })
     }
-    async fn handle(&mut self, _: Ping, _: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+    async fn handle(&mut self, _: Ping, _: capability::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
         Ok(Flow::Continue)
     }
 }
@@ -1352,7 +1352,7 @@ async fn watch_completes_while_target_backlog_is_full_and_parked() {
     // the full bounded mailbox and deadlocked against the parked handler.
     let (notice_tx, notice_rx) = flume::unbounded();
     let (watcher_prepared, watcher_link_rx) =
-        PreparedActor::<caps::Shell<TapingWatcher>>::new_linked(SpawnConfig {
+        PreparedActor::<capability::Shell<TapingWatcher>>::new_linked(SpawnConfig {
             capacity: cap(1),
             ..Default::default()
         });
@@ -1655,7 +1655,7 @@ struct RaceGo;
 impl Msg for RaceGo {}
 /// The recording reaction, as a named `WatchPolicy` (stage-3 shape).
 struct RacePolicy;
-impl caps::WatchPolicy<RaceWatcher> for RacePolicy {
+impl capability::WatchPolicy<RaceWatcher> for RacePolicy {
     async fn on_link_died(
         actor: &mut RaceWatcher,
         _id: ActorId,
@@ -1673,22 +1673,22 @@ impl caps::WatchPolicy<RaceWatcher> for RacePolicy {
 
 #[derive(bombay_macros::Provide)]
 struct RaceCaps {
-    watching: caps::Watching<RacePolicy>,
+    watching: capability::Watching<RacePolicy>,
 }
-impl caps::CapSet<RaceWatcher> for RaceCaps {
+impl capability::CapSet<RaceWatcher> for RaceCaps {
     fn build(_: &RaceWatcherArgs) -> Self {
         Self {
-            watching: caps::Watching::new(),
+            watching: capability::Watching::new(),
         }
     }
 }
 
-impl caps::Actor for RaceWatcher {
+impl capability::Actor for RaceWatcher {
     type Msg = RaceGo;
     type Args = RaceWatcherArgs;
     type Error = Infallible;
     type Caps = RaceCaps;
-    async fn init(args: Self::Args, _: caps::Ctx<'_, Self>) -> Result<Self, Self::Error> {
+    async fn init(args: Self::Args, _: capability::Ctx<'_, Self>) -> Result<Self, Self::Error> {
         let RaceWatcherArgs {
             target,
             watches,
@@ -1710,7 +1710,11 @@ impl caps::Actor for RaceWatcher {
             stop_release: Some(stop_release),
         })
     }
-    async fn handle(&mut self, _: RaceGo, cx: caps::Ctx<'_, Self>) -> Result<Flow, Self::Error> {
+    async fn handle(
+        &mut self,
+        _: RaceGo,
+        cx: capability::Ctx<'_, Self>,
+    ) -> Result<Flow, Self::Error> {
         let borrowed = self.target.as_ref().expect("the target is present");
         let outcome = bounded(cx.self_ref().watch(borrowed)).await.is_ok();
         self.watch_results.lock().expect("lock").push(outcome);
@@ -1735,7 +1739,7 @@ impl caps::Actor for RaceWatcher {
     }
     async fn on_stop(
         &mut self,
-        _: WeakActorRef<caps::Shell<Self>>,
+        _: WeakActorRef<capability::Shell<Self>>,
         _: ActorStopReason,
     ) -> Result<(), Self::Error> {
         self.stopping
@@ -1817,7 +1821,7 @@ async fn race_run(steady: bool, knobs: RaceKnobs) -> RaceOutcome {
     let (stopping_tx, stopping) = oneshot::channel();
     let (stop_release, stop_release_rx) = oneshot::channel();
     let (w_prepared, w_link_rx) =
-        PreparedActor::<caps::Shell<RaceWatcher>>::new_linked(SpawnConfig {
+        PreparedActor::<capability::Shell<RaceWatcher>>::new_linked(SpawnConfig {
             capacity: cap(8),
             on_stop_grace: Duration::from_mins(1),
         });
