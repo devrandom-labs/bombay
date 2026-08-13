@@ -1,0 +1,371 @@
+# Bombay architecture backlog
+
+This is the canonical executable backlog. It contains only current selection
+rules, dependency state, unfinished-item contracts, and runtime invariants.
+Completed campaign narratives are intentionally omitted from this public tree.
+
+## Working rules
+
+For every feature:
+
+1. Inspect the exact locked source, public API, tests, and documentation for
+   Bombay Behavior, Observe, Timers, Communication, and Address; also inspect
+   Transition and Machine Executor when the execution path is affected.
+3. Record the feature-specific verification and ownership map here before
+   moving the item from `blocked` to `active` or changing implementation.
+4. State the observable invariant and add an inversion test that proves it.
+5. Compose existing typed primitives. Do not add `dyn`, `Any`, downcasts,
+   parallel spawn paths, runtime policy, or a duplicate Behavior protocol.
+6. Before completion, try to remove every added type, trait, alias, field,
+   task, channel, adapter, and public export that lacks an independent
+   invariant.
+7. Reconcile this ledger, run workspace tests, rustfmt, Clippy, and
+   rustdoc, then use `feature-complete`. Use `distilled` only after the final
+   project-wide ownership and interface audit. Never use `done`.
+
+Priority is `P0` through `P3`; points are relative size. States are
+`unblocked`, `active`, `blocked`, `feature-complete`, and `distilled`.
+`Blocked by` and `Unblocks` are inverse edges until the prerequisite is
+complete. Repair any disagreement before selecting work. Select from the
+dependency graph, not table order. An item blocked only by its own fresh
+cross-crate verification is eligible for verification, not implementation.
+
+## Current dependency graph
+
+All runtime-foundation and engine-path items are distilled: A1-A4, A6,
+B1-B8, C1-C3, C6-C8, D1-D5, F1, V1, X1-X7. Their evidence is historical and
+must not be treated as a waiver of per-feature verification.
+
+| ID | Work | Priority | Points | State | Blocked by | Unblocks |
+|---|---|---:|---:|---|---|---|
+| A5 | Executor conformance beyond Tokio | P2 | 3 | blocked | C5; a second executor | M2 |
+| C4 | Hung-fold detection capability | P3 | 8 | blocked | fresh verification; concrete policy owner and oracle | operations policy |
+| C5 | Additional router/clock implementations | P3 | 8 | blocked | fresh verification; concrete second consumers | A5, P1 |
+| F2 | General control-protocol decision | P2 | 5 | blocked | concrete second priority protocol | M2 |
+| F3 | Typed reply-to and timeout composition | P1 | 5 | feature-complete | — | M2 |
+| F4 | Backpressured stream-ingestion adapter | P1 | 8 | blocked | fresh verification; `mnesis-bombay` Phases 0-4 | M2 |
+| F5 | Typed heterogeneous fan-in decision | P2 | 5 | blocked | concrete fan-in invariant | M2 |
+| F6 | Replacement-incarnation observation protocol | P1 | 5 | feature-complete | — | M2 |
+| F7 | Transactional root activation | P0 | 5 | feature-complete | — | M2 |
+| R1 | Supersede legacy Bombay with this runtime and publish renamed crates | P0 | 5 | active | — | M2 |
+| L1 | Worker-pool and key-persistent routing library | P2 | 8 | blocked | concrete library consumer | M3 |
+| L2 | Typed local pub/sub boundary | P2 | 8 | blocked | concrete group consumer; Zenoh boundary | M3 |
+| L3 | Intake stashing and typed admission refusal | P1 | 5 | feature-complete | — | M3 |
+| L4 | Graceful in-flight worker draining | P1 | 8 | feature-complete | — | M3 |
+| L5 | Retry scheduling and backoff composition | P1 | 5 | feature-complete | — | M3 |
+| L6 | Queryable application reporting | P1 | 5 | feature-complete | — | M3 |
+| L7 | Reusable scheduler-library decision | P2 | 5 | blocked | invariant beyond Behavior timers | M3 |
+| E1 | Facade builders and authoring macros | P1 | 8 | feature-complete | — | M4 |
+| E2 | Static type-inference diagnostics | P1 | 5 | feature-complete | — | M4 |
+| E3 | Cookbook and public usage guidance | P1 | 8 | feature-complete | — | M4 |
+| P1 | Single-threaded/no-std portability decision | P3 | 8 | blocked | C5; concrete embedded consumer | M2 |
+| Q1 | Reproducible CI and build matrix | P0 | 5 | feature-complete | — | M5 |
+| Q2 | Coverage and integration breadth | P1 | 8 | feature-complete | — | M5 |
+| Q3 | Concurrency, property, fuzz, and Miri gates | P1 | 13 | feature-complete | — | M5 |
+| Q4 | Mutation-testing gates | P1 | 8 | feature-complete | — | M5 |
+| Q5 | Allocation and competitive benchmark gates | P0 | 13 | feature-complete | — | M5 |
+| Q6 | Doctest and panic-mode gates | P1 | 5 | feature-complete | — | M5 |
+| Q7 | Lifecycle observation ordering contract | P0 | 3 | feature-complete | — | M5 |
+| S1 | Comparative actor-model and composition synthesis | P0 | 13 | feature-complete | — | M5 |
+| M2 | Runtime-operations milestone distillation | P1 | 8 | blocked | A5, F2, F4, F5, P1, R1 | FV1 |
+| M3 | Optional-library milestone distillation | P2 | 8 | blocked | L1, L2, L7 | optional release |
+| M4 | Developer-experience milestone distillation | P1 | 8 | feature-complete | — | FV1 |
+| M5 | Competitive-verification milestone distillation | P1 | 13 | feature-complete | — | FV1 |
+| FV1 | Competitive local-framework release audit | P1 | 13 | blocked | M2 | framework release |
+| K1 | KERI identity/authority handoff | P2 | 8 | blocked | bombay/KERI integration repository and ledger | K2 |
+| K2 | Zenoh transport/discovery handoff | P2 | 13 | blocked | K1; owning integration repository and ledger | K3 |
+| K3 | Authenticated remote-actor handoff | P2 | 13 | blocked | K2; owning integration repository and ledger | remote framework |
+
+There is currently no implementation-eligible item. Feature-complete items
+await their named milestone or release audit; blocked items require the
+external evidence shown above.
+
+## Current dependency snapshot
+
+The workspace temporarily locks Behavior commit
+`31f33897dbcdf8fd92da39affe125c90f59d32a2` while its 0.9.5 release runs
+through CI, plus Communication 0.1.1, Address 0.1.1, Observe 0.1.0, Timers
+0.1.0, Transition 0.1.0, and Machine Executor 0.1.0. The exact Cargo lock is
+authoritative. The Bombay
+Communication owner checkout's source matches the locked 0.1.1 package, while
+its workspace manifest still declares 0.1.0; the registry version remains
+authoritative.
+
+Ownership remains:
+
+- Behavior owns pure folds, event/protocol algebra, births, wrappers, and typed
+  send products.
+- Communication owns the sole two-lane mailbox, per-lane FIFO, backpressure,
+  closure, and rejected-payload recovery.
+- Address owns typed identity, registration, and generation fencing.
+- Observe owns exact-generation terminal publication.
+- Timers owns keyed, generation-safe monotonic scheduling.
+- Transition owns the affine machine step; Machine Executor owns ordered
+  execution turns; `bombay-engine` owns their Behavior orchestration.
+- bombay owns addresses, `System`, `Handle`, spawning, effect
+  interpretation, endpoint selection through `DeliveryRouter`, and exact
+  incarnation retirement.
+
+## Unfinished contracts
+
+### Runtime operations: A5, C4, C5, F2-F7, P1, R1, M2
+
+#### R1 verification — 2026-08-13
+
+The repository identity decision is explicit: the legacy implementation in
+`devrandom-labs/bombay` is removed, and the runtime formerly developed as
+Actorpass supersedes it wholesale. This is not a merge of the two runtimes.
+The exact imported source is Actorpass
+`0f42fc27411944b93c8e30c68c3b44b3101274fc`, including F7 transactional
+activation. The public core package is renamed to `bombay-rs` with Rust crate
+name `bombay`; `bombay-behavior-engine` is renamed to `bombay-engine`; and
+`actorpass-framework` is renamed to `bombay-framework`.
+
+The locked neighboring contracts remain Behavior
+`31f33897dbcdf8fd92da39affe125c90f59d32a2`, Communication 0.1.1, Address
+0.1.1, Observe 0.1.0, Timers 0.1.0, Transition 0.1.0, and Machine Executor
+0.1.0. Their source, public APIs, tests, and relevant documentation were
+already rechecked for F7 at this exact runtime revision; R1 changes no algebra,
+protocol, lifecycle ordering, or ownership boundary. Behavior remains the pure
+algebra owner; Communication the mailbox owner; Address registration owner;
+Observe terminal-publication owner; Timers schedule owner; Transition/Machine
+Executor ordered-machine owners; the renamed Bombay core remains runtime
+composition owner; and `bombay-engine` remains Behavior orchestration owner.
+
+R1 must update every manifest, crate import, public re-export, test, example,
+benchmark, fuzz target, research workspace, diagnostic probe, CI/build input,
+and current document. Historical evidence may retain old commit/repository
+provenance only when explicitly labeled historical. Completion requires one
+package graph with no live `actorpass`, `actorpass-framework`, or
+`bombay-behavior-engine` package/import and all repository gates passing.
+
+- A5 requires the same temporal conformance suite for a real second executor;
+  trait conformance alone is insufficient.
+- C4 remains consumer-gated. Hung-fold detection needs an explicit policy
+  owner and an oracle; it may not smuggle cancellation policy into the kernel.
+- C5 and P1 require concrete second router, clock, or embedded consumers before
+  generalizing the current Tokio runtime.
+- F2 requires a second priority protocol. Typed shutdown alone does not justify
+  a general control framework.
+- F3 is ordinary application protocol: a request carries a typed `Recipient`,
+  timeout uses existing timers, and late reply and peer retirement are explicit.
+  No ask object, correlation registry, reply channel, or runtime handle exists.
+- F4 belongs in a focused adapter owning one bounded pump, source cancellation,
+  actor backpressure, and accounting for rejected payloads.
+- F5 defaults to an explicit typed event sum. It may reopen only when a real
+  consumer cannot preserve types and payload ownership that way.
+- F6 is Behavior-owned replacement-resolution algebra first; bombay only
+  interprets a runtime fact if that algebra requires one.
+
+#### F7 verification — 2026-08-13
+
+F7 is the focused operation requested by
+`devrandom-labs/bombay#307`, with `bombay-entity` 0.1.0 and
+`mnesis-bombay` as concrete consumers. The exact bombay source is
+`6466232b00d36b021098499498f59f6f594023ed`; the locked dependencies are
+Behavior `31f33897dbcdf8fd92da39affe125c90f59d32a2`, Communication 0.1.1,
+Address 0.1.1, Observe 0.1.0, Timers 0.1.0, Transition 0.1.0, and Machine
+Executor 0.1.0. Entity 0.1.0 was inspected at
+`68d0f503205a569ddda88124f5add8e8a652e18f`. For each owner, current source,
+public API, tests, and relevant documentation were rechecked for this feature.
+
+The ownership map is exact: Behavior owns the pure initialization fold and
+typed effects; Machine Executor and the bombay Behavior Engine own ordered
+execution and effect interpretation; Communication owns the sole two-lane
+mailbox and rejected-payload recovery; Address owns exact registration
+generations; Observe owns exact terminal publication; Timers owns only keyed,
+generation-safe schedules and is not on this activation path. Bombay owns
+provisional resource construction, initialize-before-register ordering,
+registration, launch, cancellation, and terminal retirement. Entity owns
+stable entity identity, activation coordination, admission, fences, draining,
+passivation, and the policy choice between graceful and forced retirement.
+
+The public-contract gap is demonstrated by
+`mnesis-bombay/tests/bombay_entity_contract.rs`: `System::spawn` commits
+registration synchronously before the launched task polls `Driver::run_init`,
+whereas Entity may commit its stable endpoint only after preparation and
+transactional activation succeed. Bombay's child-birth path already proves
+the required sequence: `prepare_provisional` → `Driver::run_init` → `commit`
+→ `run_initialized`. The implementation must make that sequence canonical
+for roots, preserve typed initialization/effect/registration errors, and
+return a cloneable delivery-only capability separately from one affine
+graceful/forced retirement capability without exposing private typestates,
+mailbox senders, registration leases, observation subjects, executor handles,
+`dyn`, `Any`, or downstream vocabulary.
+
+The observable invariant is: successful return happens only after the entire
+initialization fold and all initialization effects complete, then exact
+registration commits and the initialized incarnation launches; failure leaves
+no routable endpoint, and provisional resources retire exactly once. The
+endpoint is cloneable, retirement authority is not, graceful and forced
+retirement both await the exact terminal outcome, and no returned endpoint can
+survive failed initialization. Inversion tests must fail if registration moves
+before initialization, launch moves before initialization effects, a failed
+provisional registration leaks, retirement authority becomes cloneable, or a
+failed initialization yields a live endpoint. A downstream compile/conformance
+probe must implement Entity 0.1.0's `LocalEntityRuntime` without private types
+or erasure.
+
+The implementation reuses the private provisional/committed typestates and
+the single `PreparedIncarnation::launch` operation shared by ordinary root
+spawn, transactional root activation, and child birth. That operation owns
+the sole task, abort-control, completion, and lifecycle-start ceremony;
+`System::activate` reaches it through the
+`Driver::run_init`/`Incarnation::run_initialized` path. `System::activate`
+returns `RootEndpoint<B>` separately from the affine
+`BehaviorRetirement<R, B, L>` alias; the latter preserves typed terminal
+outcomes and graceful/forced authority without exposing any underlying seat.
+The final interface audit removed the initial behavior/system-specific wrapper
+bounds from the retirement object: `RootRetirement<R, T>` now has only the two
+independently required generic facts, while the public alias keeps downstream
+Entity associated types concise and static.
+
+Five activation inversion oracles prove init/effect/registration ordering,
+typed stage failures, rollback, separate capability shape, exact cancellation
+completion, exact-once provisional destruction after collision, registration
+release, and immediate same-address reuse. The transition-driver Entity probe now
+implements the released 0.1.0 `LocalEntityRuntime` directly with
+`RootEndpoint<EntityActor>` and `BehaviorRetirement<EntityRouters,
+EntityActor>`; its former retire-command channel and owner task were removed.
+All ten Entity conformance tests pass. Workspace tests, rustfmt, Clippy, rustdoc,
+the downstream probe, documentation/re-export synchronization, and the
+repository-wide positional/duplicate-protocol audit pass. F7 is
+`feature-complete` pending M2 and the project-wide release audit.
+
+#### F6 verification — 2026-08-13
+
+F6 uses Bombay Behavior commit
+`31f33897dbcdf8fd92da39affe125c90f59d32a2` temporarily while its 0.9.5
+release runs through CI. Bombay previously locked 0.9.4; the live crates.io
+index still ended at 0.9.4 during this verification. The selected commit is a
+clean repository object; unrelated uncommitted pool/test changes in the sibling
+checkout are not part of the contract.
+
+The feature-specific source, public API, tests, and documentation audit found:
+
+- Behavior owns `CreationKind::ReplacementIncarnation`, creation installation
+  and rejection events, worker-stop events, and the new interpreter-neutral
+  `ReplacementResolution` projection. `WorkerCreationResolved::into_replacement`
+  distinguishes an installed successor from a rejected attempt without nonce
+  arithmetic; `WorkerStopped` remains the separate dead-incarnation fact.
+  The nominal `#[behavior::behavior(...)]` macro is authoring syntax only and
+  creates no observation or runtime path.
+- Observe 0.1.0 owns retained publication for one exact outcome generation. It
+  neither knows replacement provenance nor combines terminal and creation
+  facts.
+- Timers 0.1.0 owns keyed monotonic schedule generations and has no role in
+  replacement resolution.
+- Communication 0.1.1 owns the bounded two-lane mailbox, FIFO, closure, and
+  rejected-payload recovery. It transports typed events but assigns no
+  incarnation meaning.
+- Address 0.1.1 owns exact registration identities, generation fencing, and
+  address reuse. Its opaque registration generation must not be exposed or
+  aliased with Behavior child nonces.
+
+Therefore bombay owns only the existing interpretation edges: publish the
+exact stopped-child fact and report the already-recorded creation result to the
+stable proxy. It must add no replacement registry, observation request, lease
+authority, correlation identity, or duplicate protocol. The F6 observable
+invariant is that one replacement attempt yields a Behavior-owned installed or
+rejected resolution naming its explicit predecessor, while predecessor death
+remains independently observable. An inversion test must fail if birth is
+misclassified as replacement, replacement provenance is inferred, or death and
+creation resolution are collapsed.
+
+The implementation audit found no missing bombay protocol: the existing
+typed report edge already preserves all fields required by the Behavior
+projection. Its oracle now covers both rejected and installed replacements and
+was inverted by substituting the fresh worker nonce for the stable proxy; that
+inversion failed. The existing child-stop oracle independently proves the dead
+incarnation fact. The reference application also uses the new nominal macro
+for an eligible plain behavior. Workspace tests, rustfmt, Clippy, and rustdoc
+pass. F6 is `feature-complete` pending M2 and the project-wide final audit.
+- M2 distills these operations together and must remove duplicate adapters and
+  executor seats before it can unblock FV1.
+
+### Optional libraries: L1-L7, M3
+
+- L1 worker routing is Behavior policy. Stable key affinity must survive
+  replacement or change only through explicit rebalance; extraction requires a
+  second consumer and adds no runtime pool or erased recipient.
+- L2 requires a concrete typed-group consumer and a decision separating local
+  membership from Zenoh transport/discovery ownership.
+- L3 keeps accepted intake in application state, preserves replay order, and
+  makes overflow and draining refusal typed and observable.
+- L4 keeps drain state, in-flight work, deadline, and completion accounting in
+  the behavior; it creates no mailbox mode or runtime drain controller.
+- L5 composes Behavior send products and typed `SendAlgebra::send`; it keeps
+  retry generation and backoff in application state and introduces no timer
+  adapter or handwritten product algebra.
+- L6 exposes reporting through ordinary typed messages and reply recipients,
+  without a registry or query subsystem.
+- L7 remains blocked until an invariant exists beyond Behavior timers.
+- M3 audits optional artifacts independently and does not block FV1.
+
+### Developer experience: E1-E3, M4
+
+- E1 may provide syntax only when it expands to the canonical public owners.
+  `local_system!` must expand to `System::new`; Behavior's nominal attribute is
+  preferred for eligible plain user-message behaviors. Semantic
+  wrappers and service-event behaviors remain explicit.
+- E2 keeps compile failures focused on actionable ownership and inference
+  boundaries; diagnostic aliases may not become alternate construction paths.
+- E3 keeps cookbook and public usage guidance synchronized with the locked APIs,
+  typed send paths, sole spawn path, and kernel exclusions.
+- M4 is feature-complete; FV1 performs its final cross-framework distillation.
+
+### Verification and release: Q1-Q7, S1, M5, FV1
+
+The local CI, integration, concurrency, property, fuzz, Miri, mutation,
+allocation, benchmark, doctest, panic-mode, and lifecycle-ordering gates are
+feature-complete. M5's 2026-08-13 cross-repository audit verified each locked
+dependency against its owner checkout and audited Bombay Entity, Nexus,
+`mnesis-bombay`, and CESR/KERI. M5 is feature-complete, not distilled, pending
+FV1. FV1 remains blocked by M2; optional M3 artifacts publish independently.
+
+### External handoffs: K1-K3
+
+KERI authority, Zenoh transport/discovery, and authenticated remote actors are
+ordered integration-repository handoffs, not bombay features. Local address
+identity, KERI authority, Zenoh naming, and remote protocol identity may never
+substitute for one another.
+
+## Behavior composition rules
+
+Derive effects from the exact locked Behavior API. Compose heterogeneous lanes
+with `SendProduct`, name semantic `Own`/`Inner<Path>` aliases, and emit with
+typed `SendAlgebra::send`. Application code must not traverse `.inner`/`.own`,
+mutate lanes positionally, or handwrite `SendAlgebra`, `SendInput`,
+`RouteSends`, `ObservesCreations`, or product-routing errors when recursive
+Behavior composition and bombay's generic interpreter cover them.
+Application `DeliveryRouter<A, M>` implementations remain because they select
+real endpoints.
+
+`Compose::from_fns` is suitable only while the concrete value stays locally
+inferred. Use Behavior's nominal attribute for plain `User`/`Never` behaviors
+when the locked source supplies it. Keep semantic wrappers explicit, and do
+not expand function-pointer aliases merely to name closure behavior inside
+`Births`, `Proxy`, `Supervisor`, endpoints, or routers.
+
+Audit the entire repository—including examples, benchmarks, tests, research,
+diagnostic probes, documents, and public re-exports—for obsolete positional
+composition or duplicate protocol implementations before completion. Mark
+retained old API descriptions historical.
+
+## Distilled runtime invariants
+
+- One canonical provisional/prepared typestate and `Incarnation` execution
+  machinery, exposed as ordinary `System::spawn` or the focused
+  initialize-before-register `System::activate` operation.
+- Child liveness is retained by an affine typed `ChildLease`.
+- Behavior birth mode infers child runtime without manual capabilities.
+- Spawn, child creation, and routing contain no trait-object or `Any` erasure.
+- Bombay Communication is the sole mailbox implementation.
+- Incarnation-local timers distinguish timer identity and generation.
+- Actor resources retire before executor terminal classification.
+- The exact address lease releases before completion publication, so a public
+  terminal outcome denotes a fully retired, reusable address.
+- Tokio return, panic, cancellation, and terminal-detachment laws are directly
+  tested.
+
+Future work must reopen a concrete item before widening any invariant.

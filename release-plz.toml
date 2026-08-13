@@ -1,0 +1,16 @@
+[workspace]
+release = false
+release_always = false
+publish_timeout = "10m"
+
+[[package]]
+name = "bombay-engine"
+release = true
+
+[[package]]
+name = "bombay-rs"
+release = true
+
+[[package]]
+name = "bombay-framework"
+release = true

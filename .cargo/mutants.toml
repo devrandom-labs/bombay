@@ -1,0 +1,8 @@
+# Only mutations that cannot represent an observable bombay law belong here.
+exclude_re = [
+    # The input type is Bombay Behavior's uninhabited Never.
+    'replace <impl CoordinatedChild for Never>::retire with \(\)',
+    'replace <impl ChildRuntime<A, Never, S> for NoChildren>::birth',
+    # EQUIVALENT: NoLifecycle is a unit value and its Default is itself.
+    'replace <impl LifecycleFactory<A, R> for NoLifecycle>::reporter',
+]

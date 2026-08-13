@@ -1,0 +1,43 @@
+# Rust, Nix, coverage, and mutation-test outputs
+target/
+*.crate
+*.rs.bk
+/result
+/result-*
+mutants.out*/
+coverage/
+lcov.info
+tarpaulin-report.html
+*.profraw
+*.profdata
+
+# Local development environments and editor state
+.direnv/
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+.fleet/
+.zed/
+.serena/
+.claude/
+.codex/
+.cursor/
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+*.tmp
+*.log
+*~
+
+# Local agent, research-session, and generated diagnostic state
+.auto/
+.research/
+.superpowers/
+autoresearch.sh
+*.local-preserved
+.pi-loop-log.jsonl*
+**/diagnostics/*.stderr.txt
+**/*-current.stderr.txt

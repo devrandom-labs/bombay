@@ -1,0 +1,6 @@
+[profile.mutants]
+inherits = "default"
+# A law-inverting mutant may suppress the event an oracle awaits. Terminate
+# that individual test as a failure so cargo-mutants records CaughtMutant;
+# its outer timeout remains a hard gate for harness-wide deadlock.
+slow-timeout = { period = "5s", terminate-after = 2 }

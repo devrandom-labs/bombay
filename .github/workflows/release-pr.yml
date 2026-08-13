@@ -1,0 +1,67 @@
+name: Release PR
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "release-plz.toml"
+
+permissions: {}
+
+concurrency:
+  group: release-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-pr:
+    name: Create or update release PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          app-id: ${{ secrets.RELEASE_PLZ_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
+
+      - name: Detect merged release PR
+        id: release-commit
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          if ! is_release="$(
+            gh api "repos/$REPOSITORY/commits/$COMMIT_SHA/pulls" \
+              --jq 'any(.[]; .head.ref | startswith("release-plz-"))'
+          )"; then
+            echo "::error::Unable to determine whether this is a release commit"
+            exit 1
+          fi
+          printf 'is-release=%s\n' "$is_release" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update release PR
+        if: steps.release-commit.outputs.is-release != 'true'
+        uses: release-plz/action@b11437f8c0e955c306676ceaf8ce8c54eba6004f # v0.5
+        with:
+          command: release-pr
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}

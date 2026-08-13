@@ -1,0 +1,7 @@
+# Pinned STABLE toolchain, mirroring the sibling `bombay` repo so this research
+# crate builds identically under plain rustup and under Nix. Edition 2024
+# requires >= 1.85; 1.96.0 is bombay's pin.
+[toolchain]
+channel = "1.96.0"
+components = ["rustfmt", "clippy", "llvm-tools-preview"]
+profile = "minimal"

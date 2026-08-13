@@ -1,0 +1,22 @@
+[package]
+name = "bombay-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[workspace]
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+bombay = { path = ".." }
+libfuzzer-sys = "0.4"
+tokio = { version = "1.47", default-features = false, features = ["rt", "sync", "time"] }
+
+[[bin]]
+name = "runtime_operations"
+path = "fuzz_targets/runtime_operations.rs"
+test = false
+doc = false
+bench = false

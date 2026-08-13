@@ -1,0 +1,32 @@
+[package]
+name = "bombay-rs"
+description = "A pluggable process runtime over Bombay Behavior."
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "bombay"
+
+[lints]
+workspace = true
+
+[dependencies]
+bombay-address = { workspace = true }
+behavior = { workspace = true }
+communication = { workspace = true }
+observe = { workspace = true }
+bombay-timers = { workspace = true }
+tokio = { workspace = true, features = ["rt", "sync", "time", "macros"] }
+thiserror = { workspace = true }
+bombay-engine = { workspace = true }
+[dev-dependencies]
+criterion = { workspace = true }
+proptest = { workspace = true }
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "sync", "time", "macros", "test-util"] }
+
+[[bench]]
+name = "runtime_composition"
+harness = false
