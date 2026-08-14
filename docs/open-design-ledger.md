@@ -11,15 +11,15 @@ For every feature:
 1. Inspect the exact locked source, public API, tests, and documentation for
    Bombay Behavior, Observe, Timers, Communication, and Address; also inspect
    Transition and Machine Executor when the execution path is affected.
-3. Record the feature-specific verification and ownership map here before
+2. Record the feature-specific verification and ownership map here before
    moving the item from `blocked` to `active` or changing implementation.
-4. State the observable invariant and add an inversion test that proves it.
-5. Compose existing typed primitives. Do not add `dyn`, `Any`, downcasts,
+3. State the observable invariant and add an inversion test that proves it.
+4. Compose existing typed primitives. Do not add `dyn`, `Any`, downcasts,
    parallel spawn paths, runtime policy, or a duplicate Behavior protocol.
-6. Before completion, try to remove every added type, trait, alias, field,
+5. Before completion, try to remove every added type, trait, alias, field,
    task, channel, adapter, and public export that lacks an independent
    invariant.
-7. Reconcile this ledger, run workspace tests, rustfmt, Clippy, and
+6. Reconcile this ledger, run workspace tests, rustfmt, Clippy, and
    rustdoc, then use `feature-complete`. Use `distilled` only after the final
    project-wide ownership and interface audit. Never use `done`.
 
@@ -55,15 +55,16 @@ must not be treated as a waiver of per-feature verification.
 | L5 | Retry scheduling and backoff composition | P1 | 5 | feature-complete | — | M3 |
 | L6 | Queryable application reporting | P1 | 5 | feature-complete | — | M3 |
 | L7 | Reusable scheduler-library decision | P2 | 5 | blocked | invariant beyond Behavior timers | M3 |
-| E1 | Facade builders and authoring macros | P1 | 8 | feature-complete | — | M4 |
-| E2 | Static type-inference diagnostics | P1 | 5 | feature-complete | — | M4 |
-| E3 | Cookbook and public usage guidance | P1 | 8 | feature-complete | — | M4 |
-| E4 | First-class actor definition and one-value spawn | P0 | 3 | feature-complete | — | E9 |
-| E5 | Bombay-owned application routing | P0 | 8 | active | — | E9 |
-| E6 | Concise nominal behavior authoring | P1 | 5 | unblocked | — | E9 |
-| E7 | Live-actor capability and terminal-result ergonomics | P1 | 5 | unblocked | — | E9 |
-| E8 | Facade, prelude, and system-construction coherence | P1 | 3 | unblocked | — | E9 |
-| E9 | Expressive reference-application distillation | P0 | 8 | blocked | E5, E6, E7, E8 | M4 |
+| AF0 | Comparative actor-system feature research and canonical feature table | P0 | 8 | blocked | fresh Akka, Erlang/OTP, Kameo, and complete local cross-crate verification | S1, E1, E2, E3, E4, E5, E6, E7, E8, E9 |
+| E1 | Facade builders and authoring macros | P1 | 8 | blocked | AF0 | E9 |
+| E2 | Static type-inference diagnostics | P1 | 5 | blocked | AF0 | E9 |
+| E3 | Cookbook and public usage guidance | P1 | 8 | blocked | AF0 | E9 |
+| E4 | First-class actor definition and one-value spawn | P0 | 3 | blocked | AF0 | E9 |
+| E5 | Bombay-owned application routing | P0 | 8 | blocked | AF0 | E9 |
+| E6 | Concise nominal behavior authoring | P1 | 5 | blocked | AF0 | E9 |
+| E7 | Live-actor capability and terminal-result ergonomics | P1 | 5 | blocked | AF0 | E9 |
+| E8 | Facade, prelude, and system-construction coherence | P1 | 3 | blocked | AF0 | E9 |
+| E9 | Expressive reference-application distillation | P0 | 8 | blocked | AF0, E1, E2, E3, E4, E5, E6, E7, E8 | M4 |
 | P1 | Single-threaded/no-std portability decision | P3 | 8 | blocked | C5; concrete embedded consumer | M2 |
 | Q1 | Reproducible CI and build matrix | P0 | 5 | feature-complete | — | M5 |
 | Q2 | Coverage and integration breadth | P1 | 8 | feature-complete | — | M5 |
@@ -72,27 +73,211 @@ must not be treated as a waiver of per-feature verification.
 | Q5 | Allocation and competitive benchmark gates | P0 | 13 | feature-complete | — | M5 |
 | Q6 | Doctest and panic-mode gates | P1 | 5 | feature-complete | — | M5 |
 | Q7 | Lifecycle observation ordering contract | P0 | 3 | feature-complete | — | M5 |
-| S1 | Comparative actor-model and composition synthesis | P0 | 13 | feature-complete | — | M5 |
+| S1 | Comparative actor-model and composition synthesis | P0 | 13 | blocked | AF0 | M5 |
 | M2 | Runtime-operations milestone distillation | P1 | 8 | blocked | A5, F2, F4, F5, P1 | FV1 |
 | M3 | Optional-library milestone distillation | P2 | 8 | blocked | L1, L2, L7 | optional release |
 | M4 | Developer-experience milestone distillation | P1 | 8 | blocked | E9 | FV1 |
-| M5 | Competitive-verification milestone distillation | P1 | 13 | feature-complete | — | FV1 |
-| FV1 | Competitive local-framework release audit | P1 | 13 | blocked | M2, M4 | framework release |
+| M5 | Competitive-verification milestone distillation | P1 | 13 | blocked | S1 | FV1 |
+| FV1 | Competitive local-framework release audit | P1 | 13 | blocked | M2, M4, M5 | framework release |
 | K1 | KERI identity/authority handoff | P2 | 8 | blocked | bombay/KERI integration repository and ledger | K2 |
 | K2 | Zenoh transport/discovery handoff | P2 | 13 | blocked | K1; owning integration repository and ledger | K3 |
 | K3 | Authenticated remote-actor handoff | P2 | 13 | blocked | K2; owning integration repository and ledger | remote framework |
 
-E5 is the next implementation item by priority and dependency impact. E6-E8
-are independently eligible but remain queued so the authoring campaign changes
-one seam at a time. E9 is the integrating application and documentation proof;
-it cannot begin until those four prerequisites are feature-complete. Other
-blocked items still require the external evidence shown above.
+The previous E1-E9 authoring campaign is not an adequate feature inventory for
+the public actor system. Its artifacts remain historical evidence, but all of
+those items are reopened and blocked by AF0. AF0 is the only next item and is
+eligible for research and verification only. It must study established actor
+systems and the complete local dependency/runtime implementation, then produce
+the canonical feature table, actor-role inventory, composition matrix,
+ownership boundary, and evidence-backed dependency graph. Implementation item
+IDs and ordering may be created only from that research result. No engine,
+runtime, macro, facade, example, or public-API implementation may start first.
+
+### AF0 required research deliverables
+
+AF0 is one architecture-research feature with three inseparable outputs:
+
+1. **Canonical actor-system and ecosystem feature table.** Compare Akka,
+   Erlang/OTP, Kameo, and the current Bombay repositories. Inventory every
+   feature exposed by those systems—not only Bombay's current local-runtime
+   scope—and list every actor role and reusable capability,
+   including ordinary actors, supervisors, proxies, routers, pools, hierarchy,
+   watching/linking, timers, shutdown/finalization, restart policy, stashing,
+   state machines, actor references, spawning, and terminal observation. For
+   each row record user intent, system-owned machinery, observable guarantees,
+   failure semantics, authoritative evidence, and eventual classification as
+   core runtime, ready actor template, optional library, external integration,
+   or explicitly rejected capability. Classification happens after inventory;
+   absence from today's Bombay code is not grounds for omission.
+2. **Behavior Engine black-box contract.** Audit the current Engine, Behavior,
+   Transition, Machine Executor, `Incarnation`, and `ActorEnvironment`. Record
+   exactly what one engine run consumes, returns, and owns; where the event
+   loop and executor live; where the Tokio task is launched; how cancellation,
+   panic, initialization, effect interpretation, and retirement are ordered;
+   and which currently public engine types or lifecycle phases are accidental
+   implementation surface.
+3. **Layer and ownership map.** Draw the complete dependency direction from
+   application behavior and actor templates through Behavior composition,
+   Engine execution, Bombay environment interpretation, incarnation ownership,
+   shared system services, and the final public API. Every mechanism must have
+   exactly one owner. The application layer may express domain behavior,
+   topology, and policy only; it may not implement interpreter, routing,
+   registration, executor, lifecycle-turn, or error-product machinery.
+
+AF0 must also produce a typed composition matrix showing every supported and
+rejected permutation of actor roles and capabilities. Only after these tables
+are reviewed may the ledger create implementation features for Engine repair,
+runtime layering, reusable actor templates, interpreter encapsulation, or the
+public authoring API. The public API is necessarily the final implementation
+layer.
+
+### AF0 research record — actor-system feature inventory
+
+Research is in progress; this table is the candidate inventory, not an
+implementation plan or completion claim. Authoritative inputs currently
+include Akka Typed's actor index, lifecycle, supervision, interaction,
+router, timer, dispatcher, mailbox, stash, FSM, and coordinated-shutdown
+guidance; Erlang/OTP's process, `gen_server`, supervision-tree, supervisor,
+link, and monitor contracts; Kameo's current actor, spawn, supervision, link,
+pool, pub/sub, stream, mailbox, and lifecycle documentation; and the complete
+local Bombay source and dependency graph. Every row must be verified against
+all applicable owners before AF0 becomes active.
+
+| Candidate actor-system feature | User supplies | Actor system supplies | Current Bombay evidence/status |
+|---|---|---|---|
+| Ordinary typed actor | State, message protocol, domain reaction | Mailbox loop, serialization, task, reference, stop | Behavior and Engine exist; application boundary is not yet distilled |
+| Actor definition/template | Constructor arguments and policy choices | Reusable recipe for every new incarnation | `Actor<B>` is only an inert value; no complete reusable template inventory |
+| Spawn and typed reference | Address and actor template | Allocation, initialization, registration, task launch, live reference | Exists, but public generic bounds expose interpreter wiring |
+| Mailbox and backpressure | Capacity/policy choice where relevant | Priority/control lane, bounded delivery, payload recovery | Communication-owned primitive exists and is composed by Bombay |
+| Parent/child hierarchy | Child templates and topology | Ownership, start/stop ordering, recursive retirement | Typed births and child leases exist; authoring model needs research |
+| Supervisor | Strategy, restart policy, child templates | Failure monitoring, restart decisions, budget, escalation | Behavior supplies a supervisor algebra; application composition is verbose |
+| Worker | Domain behavior and construction arguments | Placement under supervisor/pool and incarnation replacement | Worker is a contextual role, not a separate engine type |
+| Stable proxy | Worker protocol and replacement policy | Stable endpoint across replaceable worker incarnations | Behavior `Proxy` exists; topology and endpoint wiring leak into applications |
+| Router | Routee template/group and selection policy | Forwarding, routee lifecycle, routing strategy | No distilled Bombay actor template; endpoint routing traits are lower-level machinery |
+| Worker pool | Worker template, size/keying, policy | Routees/proxies, scheduling, supervision, replacement | Behavior pools exist; Bombay integration and public template remain unproven |
+| Nested supervision | Child supervisor templates | Arbitrary typed supervision trees | Algebra appears composable; full permutation matrix is not recorded |
+| Watch/monitor | Target reference and domain reaction | Exact-generation terminal notification and cancellation | Behavior/Observe/Bombay primitives exist |
+| Link/failure propagation | Linked actors and reaction policy | Bidirectional relationship and failure propagation | No general public link contract; must not be inferred from watch |
+| Timers/deadlines | Timer identity, schedule, reaction | Generation replacement, stale rejection, lifecycle cancellation | Behavior and Timers primitives exist; Bombay interprets them |
+| Receive timeout | Duration and reaction | Rearming rules tied to actor traffic and incarnation | Behavior wrapper and Bombay oracle exist |
+| Request/reply | Request protocol, reply destination, correlation policy | Typed destination and optional convenience pattern | Typed `Recipient<B>` composition exists; no runtime request registry is allowed |
+| Stash | Capacity/order and release policy | Buffered protocol handling with deterministic replay | Behavior owns stash algebra; Bombay should add no duplicate stash |
+| Finite-state behavior | States and transitions | Standard behavior/state composition | Behavior owns machine/state primitives |
+| Graceful shutdown | Domain finalization/drain policy | Priority shutdown delivery, child ordering, terminal retirement | Current wrappers/runtime exist; application ergonomics remain unresolved |
+| Coordinated system shutdown | Global phases and participants | System-wide ordered termination | Not established as a local Bombay feature; requires a concrete invariant |
+| Lifecycle hooks/signals | Domain reactions only where semantically needed | Start, restart, stop, terminal ordering | Bombay lifecycle reporting exists but is overly public |
+| Restarted incarnation | Fresh template plus restart policy | New engine, behavior, mailbox generation, timers, and observations | Supervisor/proxy path exists; exact template ownership needs audit |
+| Delivery failure | Domain decision when recoverable | Preserve payload and distinguish unknown/closed/rejected | Typed delivery errors exist; composed runtime errors leak mechanically |
+| Registration/discovery | Stable logical address where needed | Exact-generation claim, resolution, and release | Address/Bombay adapters exist; user-facing topology is unresolved |
+| Dispatcher/executor selection | Explicit policy only for a proven use case | Scheduling and serialized turns | Engine uses Machine Executor; Tokio task launch is in `Incarnation` |
+| Actor testing | Behavior or complete template under test | Synchronous behavior test and asynchronous runtime test facilities | Engine/runtime tests exist; one black-box engine API does not |
+| Stream attachment | Stream and backpressure policy | Lifecycle-bound ingestion into actor mailbox | Existing F4 remains blocked by a concrete consumer |
+| Stream processing | Sources, transforms, sinks, materialization policy | Backpressure, cancellation, supervision, fan-in/fan-out, lifecycle | Full Akka Streams/Kameo attachment comparison still required |
+| Pub/sub | Topics, membership, publication protocol | Typed subscription, fan-out, membership lifecycle, failure handling | Optional L2 candidate exists; complete actor-template contract is unresearched |
+| Event bus | Event classification and subscription policy | Local typed/untyped broadcast and lifecycle cleanup | Not inventoried in current Bombay scope |
+| Broadcast router | Routees and broadcast policy | One-to-many delivery and aggregate failure semantics | Not implemented as a ready template |
+| Round-robin/random/consistent-hash router | Routees and key/selection policy | Standard reusable selection algorithms | Behavior pools cover part of this space; comparative inventory required |
+| Scatter-gather / first-response | Request and completion policy | Fan-out, timeout, winner selection, cancellation semantics | No core contract; must be researched |
+| Tail chopping / hedged request | Request, delay, retry targets | Staggered requests and first-success selection | No core contract; must be researched |
+| Work pulling / balancing pool | Work protocol and capacity | Demand-aware worker scheduling and replacement | Pool scheduling semantics require comparison |
+| Throttling / rate limiting | Rate and overflow policy | Admission timing, buffering, refusal | No canonical Bombay template |
+| Batching / aggregation | Batch limits and flush policy | Timers, buffering, downstream delivery | Expressible in domain behavior; reusable-template decision unresearched |
+| Async result adaptation / pipe-to-self | Future and result mapping | Lifecycle-safe conversion into actor messages | No distilled public facility |
+| Receptionist / service discovery | Service key and registration intent | Dynamic typed discovery and listings | Address routing is not a receptionist; capability absent |
+| Actor selection / path lookup | Logical path and resolution policy | Hierarchical lookup and failure semantics | Bombay addresses are exact local designations, not paths |
+| Cluster membership | Node participation and failure detector policy | Membership, reachability, convergence events | External/distributed scope; inventory still mandatory |
+| Cluster-aware routing | Routee discovery and placement policy | Routing across live cluster members | Absent; transport/discovery handoff must be mapped |
+| Cluster sharding | Entity identity and allocation/passivation policy | Single logical entity placement, rebalance, buffering | Bombay Entity/Nexus boundary must be researched, not assumed |
+| Singleton | Singleton identity and failover policy | Cluster-wide unique active instance | Absent; distributed integration candidate |
+| Distributed data / CRDT | Replication and consistency choice | Convergent replicated state | Outside local runtime but mandatory ecosystem inventory |
+| Remote deployment | Placement and protocol contract | Remote spawning, serialization, lifecycle/failure mapping | Explicit external integration candidate |
+| Remote actors | Remote protocol and authority integration | Transport, discovery, serialization, failure semantics | Explicitly outside local core; K1-K3 handoff |
+| Serialization and protocol evolution | Wire schema and compatibility policy | Encoding, manifests, version negotiation, rejection | External boundary; no local-core duplication |
+| Persistence | Durable event/state policy | Recovery and durable storage integration | Outside current local runtime; Nexus boundary remains separate |
+| Event sourcing | Commands, events, state evolution | Journal, replay, snapshots, recovery lifecycle | Nexus/CQRS boundary requires explicit mapping |
+| Durable state | State model and update policy | Durable store, recovery, concurrency semantics | External persistence integration candidate |
+| Durable mailbox | Delivery durability and acknowledgment policy | Persistent queue and recovery | Communication currently owns in-memory two-lane mailbox only |
+| Delivery guarantees | Idempotency/correlation policy | At-most/at-least/exactly-once mechanisms and failure visibility | Current local delivery is not a distributed guarantee |
+| Passivation / idle entity lifecycle | Idle policy and recovery identity | Stop/reactivate buffering and ownership | Entity/sharding integration candidate |
+| Scheduled jobs | Job and schedule policy | Durable or ephemeral scheduling, cancellation, ownership | Timers cover incarnation-local scheduling only |
+| Coordinated shutdown phases | Named phases, dependencies, tasks | Ordered system termination and timeout handling | Not yet a Bombay system feature |
+| Hot code upgrade | State conversion and version policy | Upgrade callback/system-message coordination | Erlang/OTP capability; unsupported unless deliberately designed |
+| Runtime introspection | Metadata exposure policy | Actor tree, mailbox depth, status, lifecycle facts | Partial lifecycle facts exist; no coherent introspection API |
+| Metrics | Instrument names and cardinality policy | Mailbox, throughput, latency, restart, failure metrics | Kameo comparison and Bombay ownership unresearched |
+| Tracing/logging | Context and privacy policy | Actor/message/lifecycle spans and structured events | No canonical runtime integration |
+| Dead letters / unhandled messages | Domain policy for observation | Collection, diagnostics, suppression, lifecycle | Bombay exposes typed delivery failures but no dead-letter facility |
+| Dispatcher isolation | Workload class and blocking policy | Executor selection, fairness, throughput controls | Tokio is fixed today; portability item A5 remains blocked |
+| Mailbox variants | Capacity, priority, fairness, overflow policy | Standard mailbox implementations and selection | Communication owns one two-lane design; full comparison required |
+| Test probes and deterministic testkit | Protocol assertions and test policy | Spawnless behavior tests, async probes, virtual time, fishing/event filters | Existing tests are internal; no public testkit inventory |
+| Fault injection / chaos testing | Failure scenarios | Controlled crash, delay, partition, and restart observation | Verification capability not inventoried |
+| Deployment/configuration | Topology and policy configuration | Validation, defaults, runtime loading | No canonical Bombay configuration layer |
+
+Primary comparative evidence:
+
+- [Akka Typed actors and feature index](https://doc.akka.io/libraries/akka-core/current/typed/index.html)
+- [Akka Typed lifecycle and supervision](https://doc.akka.io/libraries/akka-core/current/typed/guide/tutorial_1.html)
+- [Akka Typed routers](https://doc.akka.io/libraries/akka-core/current/typed/routers.html)
+- [Akka Typed interaction patterns and lifecycle-bound timers](https://doc.akka.io/libraries/akka-core/current/typed/interaction-patterns.html)
+- [Akka Streams backpressure contract](https://doc.akka.io/libraries/akka-core/current/stream/stream-flows-and-basics.html)
+- [Akka Cluster higher-level tools](https://doc.akka.io/libraries/akka-core/current/typed/cluster.html)
+- [Akka Cluster Sharding and passivation](https://doc.akka.io/libraries/akka-core/current/typed/cluster-sharding.html)
+- [Akka Typed persistence and event sourcing](https://doc.akka.io/libraries/akka-core/current/typed/persistence.html)
+- [Erlang/OTP design principles](https://www.erlang.org/docs/27/system/design_principles.html)
+- [Erlang/OTP supervisor contract](https://www.erlang.org/doc/system/sup_princ.html)
+- [Erlang process links and monitors](https://www.erlang.org/doc/system/ref_man_processes.html)
+- [Kameo repository and feature inventory](https://github.com/tqwewe/kameo)
+- [Kameo spawn and supervised-child API](https://docs.rs/kameo/latest/kameo/actor/trait.Spawn.html)
+
+### AF0 research record — current execution and layering
+
+The current execution path is factual evidence, not the desired API:
+
+| Layer today | Takes | Does | Gives | Problem to research |
+|---|---|---|---|---|
+| `System::spawn` | `Actor<B>` plus shared router/lifecycle configuration | Prepares mailbox, observations, environment, registration, and incarnation | `Handle` or registration failure | Public bounds expose effect-routing and creation-observation machinery |
+| `PreparedIncarnation::launch` | Committed incarnation resources and launch mode | Calls `tokio::spawn`, emits lifecycle facts, retains abort/completion edges | `Handle` | Task ownership is Bombay-owned but split from Engine lifecycle ownership |
+| `Incarnation::run` | `Driver`, registration lease, observations, lifecycle reporter | Manually calls engine init, loop, and retire phases; publishes terminal result | Completion/peer observations | Bombay knows and orchestrates Engine internal phases |
+| `Driver` | `Compose<B>` and `Environment` | Initializes, stores `Active<B>`, owns serialized event loop, passes effects to environment | `RunExit` or `RunError` | `Driver`, `RuntimeEffects`, phase methods, and retirement protocol are public |
+| `ActorEnvironment` | Mailbox source and incarnation effect services | Supplies events, creates children, routes sends, retires children | Environment errors | Requires application send types to implement Bombay interpreter contracts |
+| Application send type | Domain effects | Currently implements algebra, traversal, creation probing, routing, and error composition in complex examples | Routable runtime effect product | Application is incorrectly performing Bombay's job |
+
+AF0 must answer and record, with inversion tests proposed for every answer:
+
+| Required engine/layering decision | Required evidence |
+|---|---|
+| Exact black-box Engine input and output | Current Engine tests plus Behavior/Transition/Machine Executor contracts |
+| Whether Engine owns retirement on return, error, panic, and cancellation | Current `Driver`, `Incarnation`, task-drop, and terminal-publication ordering |
+| Whether Engine exposes any stateful driver or phase methods | Independent test requirements and the sole production call site |
+| Exact boundary between the Engine loop and Bombay environment | Fake-environment tests and `ActorEnvironment` responsibilities |
+| Exact owner of `tokio::spawn` and cancellation authority | Incarnation generation, address lease, task handle, and executor portability requirements |
+| Representation passed from Behavior through Engine to Bombay | Behavior purity plus complete Bombay interpretation without application trait implementations |
+| How each actor template obtains one engine and environment | Normal, child, supervisor, proxy, router, and pool permutations |
+| Which traits must remain technically public for cross-crate compilation | Macro hygiene and Rust coherence, with ordinary docs/preludes kept clean |
+| Final public application layer | Comparative actor APIs and the reference application after all lower layers exist |
+
+The target dependency direction to validate is strictly one-way:
+
+```text
+application domain behavior and topology
+    → ready actor templates and Behavior composition
+    → one black-box Engine run per incarnation
+    → Bombay-owned environment interpretation
+    → Bombay-owned incarnation/task/registration/retirement
+    → shared mailbox, address, observation, timer, and executor primitives
+```
+
+No lower layer may require an application to implement its interpreter,
+executor, routing, registration, lifecycle-turn, wrapper-product, or composed
+error contracts. AF0 must correct this diagram if source evidence disproves
+any edge before implementation features are created.
 
 ## Current dependency snapshot
 
-The workspace locks the crates.io releases Behavior 0.10.0, Communication
-0.1.1, Address 0.1.1, Observe 0.1.0, Timers 0.1.0, Transition 0.1.0, and
-Machine Executor 0.1.0. The exact Cargo lock is authoritative. Earlier
+The workspace selects the clean local Behavior 0.10.0 checkout at
+`63045b4c60e0c652bbd024c60f5f49069683d54c` and local Address 0.2.0 checkout
+at `7df3bedc5f3177ddbdb617cefe4b6ffcd60ecda3` through Cargo patches. It locks
+Communication 0.1.1, Observe 0.1.0, Timers 0.1.0, Transition 0.1.0, and Machine
+Executor 0.1.0 from crates.io. The exact manifest and lock are authoritative. Earlier
 feature records naming Behavior commit
 `31f33897dbcdf8fd92da39affe125c90f59d32a2` are historical evidence from the
 temporary pre-release pin. The Bombay
@@ -100,17 +285,10 @@ Communication owner checkout's source matches the locked 0.1.1 package, while
 its workspace manifest still declares 0.1.0; the registry version remains
 authoritative.
 
-For the active E5 follow-up migration, the requested Behavior source is the
-clean local checkout at `63045b4c60e0c652bbd024c60f5f49069683d54c`, two
-commits after the 0.10.0 release. Until Bombay's manifest and lock select that
-path revision, the registry package above remains the exact locked dependency;
-the local revision is the verified migration target, not yet the active build
-input.
-
-The same migration now selects the clean local Bombay Address 0.2.0 checkout
-at `7df3bedc5f3177ddbdb617cefe4b6ffcd60ecda3` instead of the locked registry
-0.1.1 package. Address 0.2.0 is therefore also a verified migration target
-until the manifest and lock select its local path.
+The local Behavior revision is two commits after the 0.10.0 release. The local
+Address revision supplies the 0.2.0 opaque resolved-endpoint contract. AF0 must
+reverify these active sources feature by feature; the earlier migration audit
+does not waive that requirement.
 
 Ownership remains:
 
