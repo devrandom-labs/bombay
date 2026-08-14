@@ -6,7 +6,7 @@ neighboring implementations inside bombay.
 
 | Owner | Verified adversarial surface | Evidence boundary |
 |---|---|---|
-| Bombay Behavior (`31f33897…`, temporary 0.9.5 CI pin) | Fold/action ordering, typed recursive send selection, exact-once nested delegation, nominal and function-defined behaviors, creation and replacement resolution, supervision, FSM, stashing, receive timeout | Pure exhaustive/property/fuzz models in the Behavior testkit; no shared runtime state exists to Loom-model |
+| Bombay Behavior 0.9.5 | Fold/action ordering, typed recursive send selection, exact-once nested delegation, nominal and function-defined behaviors, creation and replacement resolution, supervision, FSM, stashing, receive timeout | Pure exhaustive/property/fuzz models in the Behavior testkit; no shared runtime state exists to Loom-model |
 | Bombay Communication 0.1.1 | Two-lane priority, bounded FIFO, backpressure wakeup, cancellation, closure, and payload fate | Communication-owned implementation Loom models plus property and teardown suites |
 | Bombay Transition 0.1.0 + Machine Executor 0.1.0 | Affine `Machine::step`, exclusive turn poison, successor installation, and rejected-input ownership | Owner tests plus bombay engine production-path and inversion oracles |
 | Bombay Observe 0.1.0 | Exact-generation publication, registration/waker races, cancellation, pooling, and panic safety | Observe-owned implementation Loom, exhaustive, stress, and fuzz suites |

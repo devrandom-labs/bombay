@@ -47,7 +47,7 @@ must not be treated as a waiver of per-feature verification.
 | F5 | Typed heterogeneous fan-in decision | P2 | 5 | blocked | concrete fan-in invariant | M2 |
 | F6 | Replacement-incarnation observation protocol | P1 | 5 | feature-complete | — | M2 |
 | F7 | Transactional root activation | P0 | 5 | feature-complete | — | M2 |
-| R1 | Supersede legacy Bombay with this runtime and publish renamed crates | P0 | 5 | active | — | M2 |
+| R1 | Supersede legacy Bombay with this runtime and publish renamed crates | P0 | 5 | feature-complete | — | M2 |
 | L1 | Worker-pool and key-persistent routing library | P2 | 8 | blocked | concrete library consumer | M3 |
 | L2 | Typed local pub/sub boundary | P2 | 8 | blocked | concrete group consumer; Zenoh boundary | M3 |
 | L3 | Intake stashing and typed admission refusal | P1 | 5 | feature-complete | — | M3 |
@@ -58,6 +58,12 @@ must not be treated as a waiver of per-feature verification.
 | E1 | Facade builders and authoring macros | P1 | 8 | feature-complete | — | M4 |
 | E2 | Static type-inference diagnostics | P1 | 5 | feature-complete | — | M4 |
 | E3 | Cookbook and public usage guidance | P1 | 8 | feature-complete | — | M4 |
+| E4 | First-class actor definition and one-value spawn | P0 | 3 | active | — | E9 |
+| E5 | Declarative typed application routing | P0 | 8 | unblocked | — | E9 |
+| E6 | Concise nominal behavior authoring | P1 | 5 | unblocked | — | E9 |
+| E7 | Live-actor capability and terminal-result ergonomics | P1 | 5 | unblocked | — | E9 |
+| E8 | Facade, prelude, and system-construction coherence | P1 | 3 | unblocked | — | E9 |
+| E9 | Expressive reference-application distillation | P0 | 8 | blocked | E4, E5, E6, E7, E8 | M4 |
 | P1 | Single-threaded/no-std portability decision | P3 | 8 | blocked | C5; concrete embedded consumer | M2 |
 | Q1 | Reproducible CI and build matrix | P0 | 5 | feature-complete | — | M5 |
 | Q2 | Coverage and integration breadth | P1 | 8 | feature-complete | — | M5 |
@@ -67,26 +73,29 @@ must not be treated as a waiver of per-feature verification.
 | Q6 | Doctest and panic-mode gates | P1 | 5 | feature-complete | — | M5 |
 | Q7 | Lifecycle observation ordering contract | P0 | 3 | feature-complete | — | M5 |
 | S1 | Comparative actor-model and composition synthesis | P0 | 13 | feature-complete | — | M5 |
-| M2 | Runtime-operations milestone distillation | P1 | 8 | blocked | A5, F2, F4, F5, P1, R1 | FV1 |
+| M2 | Runtime-operations milestone distillation | P1 | 8 | blocked | A5, F2, F4, F5, P1 | FV1 |
 | M3 | Optional-library milestone distillation | P2 | 8 | blocked | L1, L2, L7 | optional release |
-| M4 | Developer-experience milestone distillation | P1 | 8 | feature-complete | — | FV1 |
+| M4 | Developer-experience milestone distillation | P1 | 8 | blocked | E9 | FV1 |
 | M5 | Competitive-verification milestone distillation | P1 | 13 | feature-complete | — | FV1 |
-| FV1 | Competitive local-framework release audit | P1 | 13 | blocked | M2 | framework release |
+| FV1 | Competitive local-framework release audit | P1 | 13 | blocked | M2, M4 | framework release |
 | K1 | KERI identity/authority handoff | P2 | 8 | blocked | bombay/KERI integration repository and ledger | K2 |
 | K2 | Zenoh transport/discovery handoff | P2 | 13 | blocked | K1; owning integration repository and ledger | K3 |
 | K3 | Authenticated remote-actor handoff | P2 | 13 | blocked | K2; owning integration repository and ledger | remote framework |
 
-There is currently no implementation-eligible item. Feature-complete items
-await their named milestone or release audit; blocked items require the
-external evidence shown above.
+E4 is the selected implementation item. E5-E8 are independently eligible but
+remain queued so the authoring campaign changes one seam at a time. E9 is the
+integrating application and documentation proof; it cannot begin until those
+four downstream prerequisites and E4 are feature-complete. Other blocked
+items still require the external evidence shown above.
 
 ## Current dependency snapshot
 
-The workspace temporarily locks Behavior commit
-`31f33897dbcdf8fd92da39affe125c90f59d32a2` while its 0.9.5 release runs
-through CI, plus Communication 0.1.1, Address 0.1.1, Observe 0.1.0, Timers
-0.1.0, Transition 0.1.0, and Machine Executor 0.1.0. The exact Cargo lock is
-authoritative. The Bombay
+The workspace locks the crates.io releases Behavior 0.9.5, Communication
+0.1.1, Address 0.1.1, Observe 0.1.0, Timers 0.1.0, Transition 0.1.0, and
+Machine Executor 0.1.0. The exact Cargo lock is authoritative. Earlier
+feature records naming Behavior commit
+`31f33897dbcdf8fd92da39affe125c90f59d32a2` are historical evidence from the
+temporary pre-release pin. The Bombay
 Communication owner checkout's source matches the locked 0.1.1 package, while
 its workspace manifest still declares 0.1.0; the registry version remains
 authoritative.
@@ -138,6 +147,12 @@ and current document. Historical evidence may retain old commit/repository
 provenance only when explicitly labeled historical. Completion requires one
 package graph with no live `actorpass`, `actorpass-framework`, or
 `bombay-behavior-engine` package/import and all repository gates passing.
+
+The repository-wide rename audit found no live legacy package or import, and
+the renamed manifests, public re-exports, tests, examples, benchmarks, fuzz
+target, documentation, and CI/build inputs are synchronized. The repository
+gates pass. R1 is `feature-complete` pending M2 and the project-wide release
+audit.
 
 - A5 requires the same temporal conformance suite for a real second executor;
   trait conformance alone is insufficient.
@@ -302,7 +317,7 @@ pass. F6 is `feature-complete` pending M2 and the project-wide final audit.
 - L7 remains blocked until an invariant exists beyond Behavior timers.
 - M3 audits optional artifacts independently and does not block FV1.
 
-### Developer experience: E1-E3, M4
+### Developer experience: E1-E9, M4
 
 - E1 may provide syntax only when it expands to the canonical public owners.
   `local_system!` must expand to `System::new`; Behavior's nominal attribute is
@@ -312,7 +327,164 @@ pass. F6 is `feature-complete` pending M2 and the project-wide final audit.
   boundaries; diagnostic aliases may not become alternate construction paths.
 - E3 keeps cookbook and public usage guidance synchronized with the locked APIs,
   typed send paths, sole spawn path, and kernel exclusions.
-- M4 is feature-complete; FV1 performs its final cross-framework distillation.
+
+#### E4-E9 authoring-UX audit — 2026-08-14
+
+The audit inspected the complete tracked repository, including the core and
+framework public exports, `hello`, `local_runtime`, the 1,241-line `job_queue`,
+all tests, benchmarks, fuzz inputs, README, cookbook, and current architecture
+documents. It also rechecked the source, public API, tests, and relevant
+documentation of the exact locked crates.io packages Behavior 0.9.5, Observe
+0.1.0, Timers 0.1.0, Communication 0.1.1, Address 0.1.1, Transition 0.1.0,
+and Machine Executor 0.1.0. The repository currently contains 96 spawn call
+sites, 60 handwritten `Behavior` implementations, 19 `Handler`
+implementations, 12 application `EndpointRegistry` implementations, and 24
+application `DeliveryRouter` implementations. Counts are evidence for this
+audit, not permanent API targets.
+
+The minimal authoring target is not raw line-count reduction at the expense of
+types. A small application should declare its domain behavior, declare each
+real message route once, construct one system, spawn one actor value, and use
+the returned capabilities. The job queue must keep domain policy visible while
+removing duplicated endpoint type algebra, generated routing bodies, test-only
+probe actors, repeated empty initialization folds, and lifecycle pattern
+matching that adds no domain decision. Each item must measure the ceremonial
+constructs it removes and must not replace them with hidden runtime policy.
+
+##### E4 verification and contract
+
+Behavior 0.9.5 already makes one behavior value the owner of application state
+and statically maps its address, message, complete event, send algebra, birth
+mode, phase, and error types; it does not contain a concrete address value.
+Address 0.1.1 owns only exact registration generations, Communication 0.1.1
+owns only typed mailbox endpoints, Observe 0.1.0 owns completion publication,
+and Timers 0.1.0 owns schedules. Transition and Machine Executor accept the
+behavior machine but deliberately know no actor identity. Therefore bombay is
+the exact owner of the missing authoring concept: an inert `Actor<B>` pairing
+`B::Addr` with `B` before runtime resources exist.
+
+E4 adds one minimal public value with construction, borrowing, and consuming
+parts operations. `System::spawn` and `System::activate` consume that value;
+child `Create` remains Behavior-owned and distinct because it carries a
+creator-local nonce and creation provenance. `Actor` implements no behavior,
+contains no mailbox, task, handle, router, lifecycle state, or policy, and does
+not survive as a second live runtime object. The observable invariant is that
+the address value and behavior can enter preparation only as one statically
+matched `Actor<B>`. An inversion compile test must reject `Actor<B>` built with
+an address other than `B::Addr`, and runtime oracles must prove spawn and
+activation ordering and outcomes are unchanged.
+
+##### E5 verification and contract
+
+Behavior 0.9.5 already owns typed `Delivery`, `Recipient`, `SendProduct`, and
+recursive semantic send selection. Communication owns the sole typed mailbox;
+Address owns homogeneous typed address spaces; Observe and Timers add no
+delivery registry; Transition and Machine Executor add no routing. Bombay must
+retain application `DeliveryRouter<A, M>` decisions because only the
+application knows the real endpoint for `M`, but the audit found repeated
+endpoint aliases, incarnation aliases, homogeneous `AddressRouter` fields, and
+delegating `EndpointRegistry`/`DeliveryRouter` bodies that express no
+additional choice.
+
+E5 introduces declarative, statically expanded application routing syntax in
+`bombay-framework`. One declaration names each behavior/message endpoint once
+and expands only to the existing concrete `AddressRouter`,
+`IncarnationEndpoint`, `EndpointRegistry`, and `DeliveryRouter` composition.
+It adds no dynamic registry, erasure, alternate resolution path, runtime task,
+or blanket route that can overlap an application decision. Repeated message
+types, uninhabited `Never` lanes, and custom routers must remain explicitly
+representable. Compile tests must prove missing, duplicate, and mismatched
+routes fail statically; runtime inversion tests must prove generated routing
+selects the same exact endpoint and returns the same rejected payload.
+
+##### E6 verification and contract
+
+Behavior 0.9.5 already supplies `Handler`/`Pure`, `BehaviorFn`, the nominal
+`#[behavior::behavior]` macro, `Compose`, semantic wrappers, `Stash`, and both
+`WorkerPool` and `KeyedWorkerPool`; its algebra and tests make those the only
+authoritative behavior construction paths. Observe, Timers, Communication,
+Address, Transition, and Machine Executor provide no behavior-authoring
+syntax. Bombay may select and re-export Behavior facilities but may not clone
+their protocols or generate a competing `Behavior` implementation scheme.
+
+E6 rewrites every eligible plain application behavior to the existing nominal
+macro or `Handler` path, uses existing pool/stash composition where its exact
+contract matches, and records any irreducible macro or naming limitation as a
+Behavior-owned upstream prerequisite. Semantic wrappers such as the job
+queue's drain/retry coordinator remain explicit. Completion requires removing
+repeated associated-type and empty-init ceremony without function-pointer type
+aliases, positional send traversal, duplicate protocols, or a Bombay-owned
+behavior macro. Compile diagnostics must still name the user's nominal type
+and exact unsupported protocol.
+
+##### E7 verification and contract
+
+Behavior 0.9.5 owns `Exit` and `Crash`; Communication returns rejected payloads;
+Address owns registration failures; Observe retains the exact published value;
+Timers has no terminal-result role; Transition and Machine Executor expose
+poisoning without classifying actor policy. Bombay therefore remains the owner
+of `ActorRef`, affine `Handle`, `RootEndpoint`, `RootRetirement`, `RunError`,
+`RunExit`, and `TaskOutcome`. The nested result retains materially different
+return, behavior failure, environment failure, poison, panic, cancellation,
+collection, and explicit-stop facts and cannot be flattened globally.
+
+E7 audits repeated `handle.actor_ref()` access and terminal matching, then adds
+only zero-policy conveniences that preserve ownership and every exact variant.
+It must not make `Handle` cloneable, hide whether waiting consumes lifecycle
+authority, turn shutdown publication into retirement, discard rejected
+payloads, or normalize detailed root outcomes to peer outcomes. Each retained
+method or helper needs an application call-site reduction and an inversion
+test proving the original exact value remains recoverable.
+
+##### E8 verification and contract
+
+Communication 0.1.1 requires an explicit user-lane capacity and fixes the
+priority default; Address and Bombay routing require a concrete router value.
+Behavior, Observe, Timers, Transition, and Machine Executor own no system
+configuration defaults. The current `local_system!` is a named-argument spelling
+of `System::new`, while the framework prelude omits several Behavior 0.9.5
+application facilities used by the reference domain.
+
+E8 makes the facade, prelude, README, and cookbook one coherent authoring
+surface. It must decide whether `local_system!` earns its existence, export the
+selected current Behavior vocabulary, and remove stale or duplicate setup
+spelling. Mailbox capacity and the concrete router remain explicit; no default
+may silently choose backpressure, priority, topology, lifecycle, clock, or
+executor policy. Compile examples must prove the canonical setup has one path
+and retains its concrete inferred system type.
+
+##### E9 verification and contract
+
+The same dependency audit found that no neighboring crate owns application
+presentation. Behavior's pool and stash types may replace matching handwritten
+policy, but Observe probes, Timers probes, Communication stress shapes, Address
+reuse oracles, and executor classification tests belong in focused tests rather
+than the narrative application. Bombay-framework owns the reference program
+that demonstrates how those exact primitives compose.
+
+E9 rewrites `hello`, `local_runtime`, `job_queue`, README, and cookbook after
+E4-E8 settle. The executable job queue must read primarily as address/domain
+types, worker and queue policy, route declarations, actor construction, and the
+scenario. Test-only reporter/collector actors and exhaustive lifecycle
+assertions move to focused tests. The completion gate records before/after
+counts for total lines and, separately, spawn arguments, endpoint/incarnation
+aliases, manual registry/router bodies, repeated behavior associated-type
+blocks, and nested terminal-result matches. At the canonical call site, each
+actor is one value passed to one spawn operation and each real route is named
+once. Repository-wide tests and inversion oracles must retain every existing
+behavioral invariant.
+
+Some explicit inputs are not UX defects: the sender address carries Behavior
+event provenance and child-relative routing; mailbox capacity selects
+Communication backpressure; a concrete router selects real endpoints; behavior
+associated types preserve the complete static protocol; and detailed terminal
+results preserve distinct ownership failures. E4-E9 may improve spelling and
+local inference around those facts but may not erase them.
+
+M4 is reopened and blocked by E9. After E9, M4 must compare the complete
+authoring surface against the minimal target, remove helpers that merely move
+ceremony, and only then return to `feature-complete`; FV1 remains blocked by
+both M2 and M4.
 
 ### Verification and release: Q1-Q7, S1, M5, FV1
 
