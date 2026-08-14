@@ -486,6 +486,30 @@ now `active`: upgrade the exact lock to Behavior 0.10.0, migrate the complete
 runtime and repository, then remove ordinary application routing declarations
 and routing vocabulary from the framework surface before feature completion.
 
+An address-integration audit on 2026-08-14 rechecked the locked Address 0.1.1
+source, tests, benchmark, and public contract alongside Behavior 0.10.0,
+Communication 0.1.1, Observe 0.1.0, and Timers 0.1.0, then traced every Bombay
+registration, delivery, peer-observation, lifecycle, example, benchmark, and
+test adapter. `EndpointRegistry<B, D>` must remain destination-behavior indexed:
+Behavior intentionally distinguishes destinations with identical address and
+message protocols, and Bombay routers use `B` as the static topology selector.
+`AddressRouter` must also remain Bombay-owned rather than aliasing the foreign
+`AddressSpace`; it hides table maintenance operations and names the typed
+runtime topology boundary. Address registration generations remain distinct
+from Behavior nonces and Observe completion generations.
+
+Address's internal `Arc<E>` must remain hidden. A prototype opaque handle to
+the shared registered endpoint benchmarked faster for Bombay-shaped endpoints,
+but the Address adversarial cascade suite proved that it changes ownership:
+snapshots then retain affine fields of the registered endpoint and delay nested
+lease retirement. Endpoint-defined `Clone` is therefore a semantic boundary,
+not redundant work. Address instead owns one opinionated lookup result:
+`resolve` returns an opaque, read-only endpoint-defined snapshot. Bombay can
+dereference that capability but cannot obtain the storage handle, mutate the
+snapshot, choose a reclamation path, erase `B` or `D`, or reconstruct lease or
+lifecycle authority. No local path override or duplicate Bombay lookup table
+is accepted as a permanent integration.
+
 ##### E6 verification and contract
 
 Behavior 0.9.5 already supplies `Handler`/`Pure`, `BehaviorFn`, the nominal
