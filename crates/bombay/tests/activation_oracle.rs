@@ -21,7 +21,10 @@ impl Drop for Registration {
     }
 }
 
-impl<D> EndpointRegistry<MailAddr, u8, D> for ProbeRouter {
+impl<B, D> EndpointRegistry<B, D> for ProbeRouter
+where
+    B: Behavior<Addr = MailAddr, Msg = u8>,
+{
     type Error = Infallible;
     type Registration = Registration;
 
@@ -31,10 +34,10 @@ impl<D> EndpointRegistry<MailAddr, u8, D> for ProbeRouter {
     }
 }
 
-impl DeliveryRouter<MailAddr, u8> for ProbeRouter {
+impl DeliveryRouter<DropProbe> for ProbeRouter {
     type Error = Infallible;
 
-    async fn deliver(&self, _: MailAddr, _: Delivery<MailAddr, u8>) -> Result<(), Self::Error> {
+    async fn deliver(&self, _: MailAddr, _: Delivery<DropProbe>) -> Result<(), Self::Error> {
         self.0.lock().unwrap().push("init-effect");
         Ok(())
     }
@@ -46,7 +49,7 @@ impl Behavior for OrderedInit {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = User<MailAddr, u8>;
-    type Sends = Vec<Delivery<MailAddr, u8>>;
+    type Sends = Vec<Delivery<DropProbe>>;
     type Ph = Never;
     type Error = Never;
     type Birth = NoBirths;
@@ -74,7 +77,7 @@ impl Behavior for FailingInit {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = User<MailAddr, u8>;
-    type Sends = Vec<Delivery<MailAddr, u8>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = InitFailed;
     type Birth = NoBirths;
@@ -100,7 +103,7 @@ impl Behavior for DropProbe {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = User<MailAddr, u8>;
-    type Sends = Vec<Delivery<MailAddr, u8>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = NoBirths;
@@ -120,7 +123,10 @@ struct EffectFailed;
 #[derive(Clone)]
 struct FailingEffectRouter(Arc<Mutex<Vec<&'static str>>>);
 
-impl<D> EndpointRegistry<MailAddr, u8, D> for FailingEffectRouter {
+impl<B, D> EndpointRegistry<B, D> for FailingEffectRouter
+where
+    B: Behavior<Addr = MailAddr, Msg = u8>,
+{
     type Error = Infallible;
     type Registration = ();
 
@@ -130,10 +136,10 @@ impl<D> EndpointRegistry<MailAddr, u8, D> for FailingEffectRouter {
     }
 }
 
-impl DeliveryRouter<MailAddr, u8> for FailingEffectRouter {
+impl DeliveryRouter<DropProbe> for FailingEffectRouter {
     type Error = EffectFailed;
 
-    async fn deliver(&self, _: MailAddr, _: Delivery<MailAddr, u8>) -> Result<(), Self::Error> {
+    async fn deliver(&self, _: MailAddr, _: Delivery<DropProbe>) -> Result<(), Self::Error> {
         Err(EffectFailed)
     }
 }
@@ -144,7 +150,10 @@ struct RegistrationFailed;
 #[derive(Clone)]
 struct RejectingRegistrationRouter;
 
-impl<D> EndpointRegistry<MailAddr, u8, D> for RejectingRegistrationRouter {
+impl<B, D> EndpointRegistry<B, D> for RejectingRegistrationRouter
+where
+    B: Behavior<Addr = MailAddr, Msg = u8>,
+{
     type Error = RegistrationFailed;
     type Registration = ();
 
@@ -153,10 +162,10 @@ impl<D> EndpointRegistry<MailAddr, u8, D> for RejectingRegistrationRouter {
     }
 }
 
-impl DeliveryRouter<MailAddr, u8> for RejectingRegistrationRouter {
+impl DeliveryRouter<DropProbe> for RejectingRegistrationRouter {
     type Error = Infallible;
 
-    async fn deliver(&self, _: MailAddr, _: Delivery<MailAddr, u8>) -> Result<(), Self::Error> {
+    async fn deliver(&self, _: MailAddr, _: Delivery<DropProbe>) -> Result<(), Self::Error> {
         Ok(())
     }
 }

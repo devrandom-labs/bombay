@@ -171,6 +171,30 @@ mod tests {
     use crate::{ChildRuntime, DeliveryRouter, EventSender, EventSource, RuntimeEffectError};
 
     struct Echo;
+    struct Quiet;
+
+    impl Handler for Quiet {
+        type Addr = MailAddr;
+        type Msg = u8;
+
+        fn receive(
+            &mut self,
+            _from: MailAddr,
+            _message: u8,
+        ) -> behavior::Acted<
+            MailAddr,
+            behavior::Never,
+            Vec<behavior::Never>,
+            NoBirths,
+            behavior::Never,
+        > {
+            Ok(Actions::cont())
+        }
+    }
+
+    type Sink = Pure<Quiet>;
+    type EchoSends = Vec<Delivery<Sink>>;
+    type EchoBehavior = Pure<Echo, EchoSends>;
 
     /// Behavior with a string child birth mode for interpretation tests.
     struct StrBirths;
@@ -179,7 +203,7 @@ mod tests {
         type Addr = MailAddr;
         type Msg = u8;
         type Event = User<MailAddr, u8>;
-        type Sends = Vec<Delivery<MailAddr, u8>>;
+        type Sends = EchoSends;
         type Ph = behavior::Never;
         type Error = Infallible;
         type Birth = behavior::Births<&'static str>;
@@ -219,7 +243,7 @@ mod tests {
         }
     }
 
-    impl Handler<u8> for Echo {
+    impl Handler<EchoSends> for Echo {
         type Addr = MailAddr;
         type Msg = u8;
 
@@ -227,13 +251,8 @@ mod tests {
             &mut self,
             from: MailAddr,
             message: u8,
-        ) -> behavior::Acted<
-            MailAddr,
-            behavior::Never,
-            Vec<Delivery<MailAddr, u8>>,
-            NoBirths,
-            behavior::Never,
-        > {
+        ) -> behavior::Acted<MailAddr, behavior::Never, EchoSends, NoBirths, behavior::Never>
+        {
             Ok(Actions {
                 sends: vec![Delivery::new(Recipient::global(from), message + 1)],
                 creates: Vec::new(),
@@ -242,7 +261,7 @@ mod tests {
         }
     }
 
-    type RecordedDeliveries = Arc<Mutex<Vec<(MailAddr, Delivery<MailAddr, u8>)>>>;
+    type RecordedDeliveries = Arc<Mutex<Vec<(MailAddr, Delivery<Sink>)>>>;
 
     #[derive(Clone, Default)]
     struct SharedRouter(RecordedDeliveries);
@@ -309,39 +328,39 @@ mod tests {
     #[derive(Clone)]
     struct OrderingRouter(Arc<Mutex<Vec<&'static str>>>);
 
-    impl DeliveryRouter<MailAddr, u8> for OrderingRouter {
+    impl DeliveryRouter<Sink> for OrderingRouter {
         type Error = Infallible;
 
         async fn deliver(
             &self,
             _from: MailAddr,
-            _delivery: Delivery<MailAddr, u8>,
+            _delivery: Delivery<Sink>,
         ) -> Result<(), Self::Error> {
             self.0.lock().expect("order lock").push("send");
             Ok(())
         }
     }
 
-    impl DeliveryRouter<MailAddr, u8> for SharedRouter {
+    impl DeliveryRouter<Sink> for SharedRouter {
         type Error = Infallible;
 
         async fn deliver(
             &self,
             from: MailAddr,
-            delivery: Delivery<MailAddr, u8>,
+            delivery: Delivery<Sink>,
         ) -> Result<(), Self::Error> {
             self.0.lock().expect("delivery lock").push((from, delivery));
             Ok(())
         }
     }
 
-    impl DeliveryRouter<MailAddr, u8> for FailingRouter {
+    impl DeliveryRouter<Sink> for FailingRouter {
         type Error = &'static str;
 
         async fn deliver(
             &self,
             _from: MailAddr,
-            _delivery: Delivery<MailAddr, u8>,
+            _delivery: Delivery<Sink>,
         ) -> Result<(), Self::Error> {
             Err("delivery failed")
         }
@@ -352,7 +371,7 @@ mod tests {
         let (sender, source) = queue();
         let router = SharedRouter::default();
         let behavior = Pure::new(Echo);
-        let environment = ActorEnvironment::<Pure<Echo, u8>, _, _, _, _, _>::new(
+        let environment = ActorEnvironment::<EchoBehavior, _, _, _, _, _>::new(
             MailAddr(7),
             source,
             router.clone(),
@@ -373,10 +392,7 @@ mod tests {
         let deliveries = router.0.lock().expect("delivery lock");
         assert_eq!(deliveries.len(), 1);
         assert_eq!(deliveries[0].0, MailAddr(7));
-        assert_eq!(
-            deliveries[0].1.to.route(),
-            behavior::Route::Global(MailAddr(3))
-        );
+        assert_eq!(deliveries[0].1.to.resolve(MailAddr(7)), MailAddr(3));
         assert_eq!(deliveries[0].1.message, 5);
     }
 
@@ -443,11 +459,10 @@ mod tests {
             (),
             (),
         );
-        let effect: RuntimeEffects<_, Vec<Delivery<MailAddr, u8>>, behavior::Births<&'static str>> =
-            RuntimeEffects {
-                sends: Vec::new(),
-                creates: vec![Create::birth(1, "first"), Create::birth(1, "duplicate")],
-            };
+        let effect: RuntimeEffects<_, EchoSends, behavior::Births<&'static str>> = RuntimeEffects {
+            sends: Vec::new(),
+            creates: vec![Create::birth(1, "first"), Create::birth(1, "duplicate")],
+        };
 
         assert_eq!(
             Environment::interpret(&mut environment, effect).await,
@@ -459,7 +474,7 @@ mod tests {
     #[tokio::test]
     async fn delivery_failure_is_distinct_from_child_birth_failure() {
         let source = QueueSource(Arc::new(Mutex::new(VecDeque::<User<MailAddr, u8>>::new())));
-        let mut environment = ActorEnvironment::<Pure<Echo, u8>, _, _, _, _, _>::new(
+        let mut environment = ActorEnvironment::<EchoBehavior, _, _, _, _, _>::new(
             MailAddr(7),
             source,
             FailingRouter,

@@ -52,7 +52,7 @@ pub struct System<R, L = NoLifecycle> {
 ///         &mut self,
 ///         _: MailAddr,
 ///         _: (),
-///     ) -> Acted<MailAddr, Never, Vec<Delivery<MailAddr, Never>>, NoBirths, Never> {
+///     ) -> Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
 ///         Ok(Actions::cont())
 ///     }
 /// }
@@ -171,8 +171,7 @@ pub(crate) type BehaviorEnvironment<R, B, P = NoParent, L = NoLifecycle> =
 
 /// Registration ownership token claimed for one behavior incarnation.
 #[doc(hidden)]
-type BehaviorRegistration<R, B> =
-    <R as EndpointRegistry<AddrOf<B>, <B as Behavior>::Msg, AnchorEndpoint<B>>>::Registration;
+type BehaviorRegistration<R, B> = <R as EndpointRegistry<B, AnchorEndpoint<B>>>::Registration;
 
 /// Lifecycle reporter derived for one behavior incarnation.
 type BehaviorReporter<R, B, L> =
@@ -275,7 +274,7 @@ pub type BehaviorSpawnResult<R, B, L = NoLifecycle> = Result<
         BehaviorRef<B, BehaviorReporter<R, B, L>>,
         ActorResult<B, BehaviorEnvironment<R, B, NoParent, L>>,
     >,
-    <R as EndpointRegistry<AddrOf<B>, <B as Behavior>::Msg, AnchorEndpoint<B>>>::Error,
+    <R as EndpointRegistry<B, AnchorEndpoint<B>>>::Error,
 >;
 
 /// Prepared-but-unlaunched ownership state for one behavior actor.
@@ -355,7 +354,7 @@ impl<R: Clone, L: Clone> System<R, L> {
     ) -> Result<
         BehaviorActivation<R, B, L>,
         SystemBirthError<
-            <R as EndpointRegistry<AddrOf<B>, B::Msg, AnchorEndpoint<B>>>::Error,
+            <R as EndpointRegistry<B, AnchorEndpoint<B>>>::Error,
             B::Error,
             <BehaviorEnvironment<R, B, NoParent, L> as Environment>::Error,
         >,
@@ -378,7 +377,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         B::Event: ShutdownEvent + TimeEvent + Send + 'static,
         B::Msg: Send + 'static,
         B::Error: Send + Sync + 'static,
-        R: Clone + EndpointRegistry<AddrOf<B>, B::Msg, AnchorEndpoint<B>> + Send + Sync + 'static,
+        R: Clone + EndpointRegistry<B, AnchorEndpoint<B>> + Send + Sync + 'static,
         BehaviorRegistration<R, B>: Send + 'static,
         L: LifecycleFactory<AddrOf<B>, BehaviorRegistration<R, B>>,
     {
@@ -435,7 +434,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         B::Event: TimeEvent + Send + 'static,
         B::Msg: Send + 'static,
         B::Error: Send + Sync + 'static,
-        R: Clone + EndpointRegistry<AddrOf<B>, B::Msg, AnchorEndpoint<B>> + Send + Sync + 'static,
+        R: Clone + EndpointRegistry<B, AnchorEndpoint<B>> + Send + Sync + 'static,
         BehaviorRegistration<R, B>: Send + 'static,
         L: LifecycleFactory<AddrOf<B>, BehaviorRegistration<R, B>>,
     {
@@ -453,7 +452,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         parent: Parent,
     ) -> Result<
         BehaviorPreparation<R, B, Parent, L>,
-        <R as EndpointRegistry<AddrOf<B>, B::Msg, AnchorEndpoint<B>>>::Error,
+        <R as EndpointRegistry<B, AnchorEndpoint<B>>>::Error,
     >
     where
         B: Behavior<Ph = Never> + Send + 'static,
@@ -474,7 +473,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         B::Msg: Send + 'static,
         B::Error: Send + Sync + 'static,
         Parent: Send + 'static,
-        R: Clone + EndpointRegistry<AddrOf<B>, B::Msg, AnchorEndpoint<B>> + Send + Sync + 'static,
+        R: Clone + EndpointRegistry<B, AnchorEndpoint<B>> + Send + Sync + 'static,
         BehaviorRegistration<R, B>: Send + 'static,
         L: LifecycleFactory<AddrOf<B>, BehaviorRegistration<R, B>>,
     {
@@ -507,7 +506,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         B::Msg: Send + 'static,
         B::Error: Send + Sync + 'static,
         Parent: Send + 'static,
-        R: Clone + EndpointRegistry<AddrOf<B>, B::Msg, AnchorEndpoint<B>> + Send + Sync + 'static,
+        R: Clone + EndpointRegistry<B, AnchorEndpoint<B>> + Send + Sync + 'static,
         BehaviorRegistration<R, B>: Send + 'static,
         L: LifecycleFactory<AddrOf<B>, BehaviorRegistration<R, B>>,
     {
@@ -572,7 +571,7 @@ where
     B::Event: ShutdownEvent + TimeEvent + Send + 'static,
     B::Msg: Send + 'static,
     B::Error: Send + Sync + 'static,
-    R: Clone + EndpointRegistry<AddrOf<B>, B::Msg, AnchorEndpoint<B>> + Send + Sync + 'static,
+    R: Clone + EndpointRegistry<B, AnchorEndpoint<B>> + Send + Sync + 'static,
     BehaviorRegistration<R, B>: Send + 'static,
     L: Clone + LifecycleFactory<AddrOf<B>, BehaviorRegistration<R, B>> + Send + Sync + 'static,
     ParentSink: EventSender + Clone + Send + Sync + 'static,
@@ -583,7 +582,7 @@ where
         ActorResult<B, BehaviorEnvironment<R, B, ParentReporter<AddrOf<B>, ParentSink>, L>>,
     >;
     type Error = SystemBirthError<
-        <R as EndpointRegistry<AddrOf<B>, B::Msg, AnchorEndpoint<B>>>::Error,
+        <R as EndpointRegistry<B, AnchorEndpoint<B>>>::Error,
         B::Error,
         <BehaviorEnvironment<R, B, ParentReporter<AddrOf<B>, ParentSink>, L> as Environment>::Error,
     >;
@@ -621,8 +620,8 @@ mod tests {
     use std::convert::Infallible;
 
     use crate::{
-        Actor, ActorRef, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint,
-        MailboxConfig, RunExit, System, TaskOutcome,
+        Actor, ActorRef, AddressRouter, EndpointRegistry, IncarnationEndpoint, MailboxConfig,
+        RunExit, System, TaskOutcome,
     };
     use behavior::{
         Actions, Address, Behavior, Births, Create, Delivery, Handler, MailAddr, Never, NoBirths,
@@ -665,8 +664,7 @@ mod tests {
             &mut self,
             _from: MailAddr,
             _message: u8,
-        ) -> behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, Never>>, NoBirths, Never>
-        {
+        ) -> behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
             Ok(Actions::stop(behavior::Exit::Normal))
         }
     }
@@ -682,7 +680,7 @@ mod tests {
         let _ = behavior.state();
     }
 
-    impl Handler<u8> for ForwardTo {
+    impl Handler<Vec<Delivery<Pure<StopAfterReceiving>>>> for ForwardTo {
         type Addr = MailAddr;
         type Msg = u8;
 
@@ -690,8 +688,13 @@ mod tests {
             &mut self,
             _from: MailAddr,
             message: u8,
-        ) -> behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, u8>>, NoBirths, Never>
-        {
+        ) -> behavior::Acted<
+            MailAddr,
+            Never,
+            Vec<Delivery<Pure<StopAfterReceiving>>>,
+            NoBirths,
+            Never,
+        > {
             Ok(Actions {
                 sends: vec![Delivery::new(Recipient::global(self.0), message + 1)],
                 creates: Vec::new(),
@@ -710,7 +713,9 @@ mod tests {
         receiver: MailAddr,
     }
 
-    impl Handler<u8, Births<Pure<ForwardChild, u8>>> for BirthAndSend {
+    type ChildBehavior = Pure<ForwardChild, Vec<Delivery<Pure<StopAfterReceiving>>>>;
+
+    impl Handler<Vec<Delivery<ChildBehavior>>, Births<ChildBehavior>> for BirthAndSend {
         type Addr = MailAddr;
         type Msg = u8;
 
@@ -721,8 +726,8 @@ mod tests {
         ) -> behavior::Acted<
             MailAddr,
             Never,
-            Vec<Delivery<MailAddr, u8>>,
-            Births<Pure<ForwardChild, u8>>,
+            Vec<Delivery<ChildBehavior>>,
+            Births<ChildBehavior>,
             Never,
         > {
             Ok(Actions {
@@ -741,7 +746,7 @@ mod tests {
         }
     }
 
-    impl Handler<u8> for ForwardChild {
+    impl Handler<Vec<Delivery<Pure<StopAfterReceiving>>>> for ForwardChild {
         type Addr = MailAddr;
         type Msg = u8;
 
@@ -749,8 +754,13 @@ mod tests {
             &mut self,
             _from: MailAddr,
             message: u8,
-        ) -> behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, u8>>, NoBirths, Never>
-        {
+        ) -> behavior::Acted<
+            MailAddr,
+            Never,
+            Vec<Delivery<Pure<StopAfterReceiving>>>,
+            NoBirths,
+            Never,
+        > {
             Ok(Actions {
                 sends: vec![Delivery::new(Recipient::global(self.receiver), message + 1)],
                 creates: Vec::new(),
@@ -759,7 +769,7 @@ mod tests {
         }
     }
 
-    impl Handler<u8> for StopAfterReceiving {
+    impl Handler for StopAfterReceiving {
         type Addr = MailAddr;
         type Msg = u8;
 
@@ -767,8 +777,7 @@ mod tests {
             &mut self,
             _from: MailAddr,
             _message: u8,
-        ) -> behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, u8>>, NoBirths, Never>
-        {
+        ) -> behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
             Ok(Actions::stop(behavior::Exit::Normal))
         }
     }
@@ -776,20 +785,9 @@ mod tests {
     #[derive(Clone, Copy)]
     struct NoRouter;
 
-    impl DeliveryRouter<MailAddr, Never> for NoRouter {
-        type Error = Infallible;
-
-        async fn deliver(
-            &self,
-            _from: MailAddr,
-            delivery: Delivery<MailAddr, Never>,
-        ) -> Result<(), Self::Error> {
-            match delivery.message {}
-        }
-    }
-
-    impl<S> EndpointRegistry<MailAddr, u8, IncarnationEndpoint<MailAddr, ActorRef<MailAddr, S>>>
-        for NoRouter
+    impl<B, S> EndpointRegistry<B, IncarnationEndpoint<MailAddr, ActorRef<MailAddr, S>>> for NoRouter
+    where
+        B: Behavior<Addr = MailAddr, Msg = u8>,
     {
         type Error = Infallible;
         type Registration = ();

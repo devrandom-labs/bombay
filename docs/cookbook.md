@@ -27,9 +27,10 @@ Use Behavior's `SendProduct` for multiple effect lanes. Give each emitted
 protocol a semantic alias over `Own` or `Inner<Path>` and call typed
 `SendAlgebra::send`. Do not reach through `.inner`/`.own`, define an
 application send-algebra wrapper, or implement `RouteSends`/
-`ObservesCreations`; bombay already interprets the recursive product.
-Implement `DeliveryRouter<A, M>` only where application wiring must select the
-real endpoint for message `M`.
+`ObservesCreations`; bombay already interprets the recursive product. Each
+`Delivery<B>` names its destination behavior, so identical address and message
+types remain statically distinct. The remaining low-level routing adapters are
+temporary E5 compatibility infrastructure, not application architecture.
 
 ## Pure fold and typed delivery
 
@@ -46,9 +47,9 @@ once to install that actor. Retain the affine `Handle` as lifecycle authority,
 and clone its typed `ActorRef` for delivery. The inert `Actor` and its behavior
 perform no I/O and store no runtime handle.
 
-Facade applications may construct that same concrete system with
-`local_system!(mailbox = ..., routes = ...)`. The macro expands directly to
-`System::new`; it does not hide router ownership or add another spawn path.
+The facade's current `local_system!(mailbox = ..., routes = ...)` form is a
+compatibility constructor while E5 removes application-owned routing. It
+expands directly to `System::new` and adds no second spawn path.
 
 Executable recipe: [`hello.rs`](../crates/bombay/examples/hello.rs).
 
@@ -64,7 +65,7 @@ completion normalization.
 
 ## Typed reply-to and deadline
 
-Put a typed `Recipient<Addr, Reply>` in the application request. The callee
+Put a typed `Recipient<ReplyBehavior>` in the application request. The callee
 emits an ordinary `Delivery` to that recipient. If the application needs a
 deadline, compose Bombay Behavior's `Deadline`; a late reply remains an
 ordinary explicit application event.

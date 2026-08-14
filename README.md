@@ -60,9 +60,10 @@ object.
 Heterogeneous behavior effects use Bombay Behavior's `SendProduct`. Select a
 lane with semantic aliases over `Own` and `Inner<Path>`, then emit through
 `SendAlgebra::send`; application code must not traverse `.inner`/`.own` or
-implement product routing. Bombay's generic `RouteSends` recursion feeds
-each product leaf into the existing router. Applications implement only the
-`DeliveryRouter<A, M>` combinations that choose actual endpoints.
+implement product routing. Bombay's generic `RouteSends` recursion feeds each
+product leaf into the destination behavior selected by `Delivery<B>`. The
+current low-level routing adapters are compatibility infrastructure while E5
+moves that wiring behind the runtime boundary.
 
 Active architecture and cleanup work is tracked in
 [`docs/open-design-ledger.md`](docs/open-design-ledger.md). Passing feature

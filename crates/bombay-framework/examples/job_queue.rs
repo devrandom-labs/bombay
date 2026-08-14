@@ -1,7 +1,6 @@
 //! At-least-once job accounting through stable supervised workers.
 
 use std::collections::VecDeque;
-use std::convert::Infallible;
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -55,12 +54,12 @@ struct Job {
 enum QueueMessage {
     Submit {
         job: Job,
-        reply_to: Recipient<QueueAddr, Admission>,
+        reply_to: Recipient<AdmissionCollector>,
     },
     EnterMaintenance,
     Resume,
     Query {
-        reply_to: Recipient<QueueAddr, Report>,
+        reply_to: Recipient<Reporter>,
     },
     Done {
         slot: usize,
@@ -101,7 +100,7 @@ impl Behavior for Worker {
     type Addr = QueueAddr;
     type Msg = Job;
     type Event = User<QueueAddr, Job>;
-    type Sends = Vec<Delivery<QueueAddr, QueueMessage>>;
+    type Sends = Vec<Delivery<JobQueue>>;
     type Ph = Never;
     type Error = Poisoned;
     type Birth = NoBirths;
@@ -142,8 +141,8 @@ fn worker_nonce(slot: usize) -> u64 {
 }
 
 type QueueSends = SendProduct<
-    SendProduct<Vec<Delivery<QueueAddr, ProxyCommand<Worker>>>, Vec<Delivery<QueueAddr, Report>>>,
-    Vec<Delivery<QueueAddr, Admission>>,
+    SendProduct<Vec<Delivery<ProxyBehavior>>, Vec<Delivery<Reporter>>>,
+    Vec<Delivery<AdmissionCollector>>,
 >;
 
 struct QueueKernel;
@@ -255,8 +254,8 @@ impl JobQueue {
     fn accept(
         &mut self,
         job: Job,
-        reply_to: Recipient<QueueAddr, Admission>,
-    ) -> Delivery<QueueAddr, Admission> {
+        reply_to: Recipient<AdmissionCollector>,
+    ) -> Delivery<AdmissionCollector> {
         let outcome = match self.phase {
             QueuePhase::Accepting => {
                 self.accepted += 1;
@@ -349,7 +348,7 @@ impl JobQueue {
         true
     }
 
-    fn dispatch(&mut self) -> Vec<Delivery<QueueAddr, ProxyCommand<Worker>>> {
+    fn dispatch(&mut self) -> Vec<Delivery<ProxyBehavior>> {
         let mut sends = Vec::new();
         for slot in 0..self.slots.len() {
             if self.retries[slot].armed.is_none()
@@ -408,7 +407,9 @@ type JobQueueSends =
     SendProduct<<QueueSupervisor as Behavior>::Sends, ServiceSends<behavior::ScheduleAfter>>;
 
 type QueueDispatchPath = behavior::Inner<behavior::Inner<behavior::Inner<behavior::Own>>>;
+type QueueReportPath = behavior::Inner<behavior::Inner<behavior::Own>>;
 type JobQueueDispatchPath = behavior::Inner<QueueDispatchPath>;
+type JobQueueReportPath = behavior::Inner<QueueReportPath>;
 type JobQueueActions =
     Actions<QueueAddr, Never, JobQueueSends, <QueueSupervisor as Behavior>::Birth>;
 
@@ -517,14 +518,16 @@ impl JobQueue {
         }
         if !self.ready_sent && self.accepted == self.expected {
             self.ready_sent = true;
-            actions
-                .sends
-                .send(Delivery::new(Recipient::global(READY), self.report()));
+            actions.sends.send::<_, QueueReportPath>(Delivery::new(
+                Recipient::<Reporter>::global(READY),
+                self.report(),
+            ));
         }
         if self.drained() {
-            actions
-                .sends
-                .send(Delivery::new(Recipient::global(REPORTER), self.report()));
+            actions.sends.send::<_, QueueReportPath>(Delivery::new(
+                Recipient::<Reporter>::global(REPORTER),
+                self.report(),
+            ));
             actions.become_ = Step::Stop(Exit::Normal);
         }
         actions.map_sends(|behavior| SendProduct::new(behavior, ServiceSends::empty()))
@@ -541,7 +544,10 @@ impl JobQueue {
         };
         let mut sends = <JobQueueSends as behavior::SendAlgebra>::empty();
         let become_ = if self.drained() {
-            sends.send(Delivery::new(Recipient::global(REPORTER), self.report()));
+            sends.send::<_, JobQueueReportPath>(Delivery::new(
+                Recipient::<Reporter>::global(REPORTER),
+                self.report(),
+            ));
             Step::Stop(Exit::Normal)
         } else {
             sends.send(behavior::ScheduleAfter {
@@ -563,7 +569,10 @@ impl JobQueue {
         }
         self.abandon_outstanding();
         let mut sends = <JobQueueSends as behavior::SendAlgebra>::empty();
-        sends.send(Delivery::new(Recipient::global(REPORTER), self.report()));
+        sends.send::<_, JobQueueReportPath>(Delivery::new(
+            Recipient::<Reporter>::global(REPORTER),
+            self.report(),
+        ));
         Actions::new(sends, Vec::new(), Step::Stop(Exit::Normal))
     }
 
@@ -590,7 +599,7 @@ impl Behavior for DeadlineProbe {
     type Addr = QueueAddr;
     type Msg = Never;
     type Event = User<QueueAddr, Never>;
-    type Sends = Vec<Delivery<QueueAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = NoBirths;
@@ -620,7 +629,7 @@ impl Behavior for Reporter {
     type Addr = QueueAddr;
     type Msg = Report;
     type Event = User<QueueAddr, Report>;
-    type Sends = Vec<Delivery<QueueAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Report;
     type Birth = NoBirths;
@@ -643,7 +652,7 @@ impl Behavior for AdmissionCollector {
     type Addr = QueueAddr;
     type Msg = Admission;
     type Event = User<QueueAddr, Admission>;
-    type Sends = Vec<Delivery<QueueAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Vec<Admission>;
     type Birth = NoBirths;
@@ -690,12 +699,11 @@ struct Routes {
 }
 
 macro_rules! register_with {
-    ($message:ty, $endpoint:ty, $field:ident) => {
-        impl EndpointRegistry<QueueAddr, $message, $endpoint> for Routes {
+    ($behavior:ty, $endpoint:ty, $field:ident) => {
+        impl EndpointRegistry<$behavior, $endpoint> for Routes {
             type Error = AddressInUse<QueueAddr>;
             type Registration = <AddressRouter<QueueAddr, $endpoint> as EndpointRegistry<
-                QueueAddr,
-                $message,
+                $behavior,
                 $endpoint,
             >>::Registration;
 
@@ -704,33 +712,28 @@ macro_rules! register_with {
                 address: QueueAddr,
                 endpoint: $endpoint,
             ) -> Result<Self::Registration, Self::Error> {
-                <AddressRouter<QueueAddr, $endpoint> as EndpointRegistry<
-                    QueueAddr,
-                    $message,
-                    $endpoint,
-                >>::register(&self.$field, address, endpoint)
+                EndpointRegistry::<$behavior, $endpoint>::register(&self.$field, address, endpoint)
             }
         }
     };
 }
 
-register_with!(QueueMessage, QueueIncarnation, queues);
-register_with!(ProxyCommand<Worker>, ProxyIncarnation, proxies);
-register_with!(Job, WorkerIncarnation, workers);
-register_with!(Report, ReporterIncarnation, reporters);
-register_with!(Admission, AdmissionIncarnation, admissions);
-register_with!(Never, DeadlineIncarnation, deadlines);
+register_with!(JobQueue, QueueIncarnation, queues);
+register_with!(ProxyBehavior, ProxyIncarnation, proxies);
+register_with!(Worker, WorkerIncarnation, workers);
+register_with!(Reporter, ReporterIncarnation, reporters);
+register_with!(AdmissionCollector, AdmissionIncarnation, admissions);
+register_with!(Deadline<DeadlineProbe>, DeadlineIncarnation, deadlines);
 
 macro_rules! route_with {
-    ($message:ty, $endpoint:ty, $field:ident) => {
-        impl DeliveryRouter<QueueAddr, $message> for Routes {
-            type Error =
-                <AddressRouter<QueueAddr, $endpoint> as DeliveryRouter<QueueAddr, $message>>::Error;
+    ($behavior:ty, $endpoint:ty, $field:ident) => {
+        impl DeliveryRouter<$behavior> for Routes {
+            type Error = <AddressRouter<QueueAddr, $endpoint> as DeliveryRouter<$behavior>>::Error;
 
             async fn deliver(
                 &self,
                 from: QueueAddr,
-                delivery: Delivery<QueueAddr, $message>,
+                delivery: Delivery<$behavior>,
             ) -> Result<(), Self::Error> {
                 self.$field.deliver(from, delivery).await
             }
@@ -738,23 +741,11 @@ macro_rules! route_with {
     };
 }
 
-route_with!(QueueMessage, QueueIncarnation, queues);
-route_with!(ProxyCommand<Worker>, ProxyIncarnation, proxies);
-route_with!(Job, WorkerIncarnation, workers);
-route_with!(Report, ReporterIncarnation, reporters);
-route_with!(Admission, AdmissionIncarnation, admissions);
-
-impl DeliveryRouter<QueueAddr, Never> for Routes {
-    type Error = Infallible;
-
-    async fn deliver(
-        &self,
-        _from: QueueAddr,
-        delivery: Delivery<QueueAddr, Never>,
-    ) -> Result<(), Self::Error> {
-        match delivery.message {}
-    }
-}
+route_with!(JobQueue, QueueIncarnation, queues);
+route_with!(ProxyBehavior, ProxyIncarnation, proxies);
+route_with!(Worker, WorkerIncarnation, workers);
+route_with!(Reporter, ReporterIncarnation, reporters);
+route_with!(AdmissionCollector, AdmissionIncarnation, admissions);
 
 #[allow(
     clippy::too_many_lines,

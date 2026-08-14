@@ -1,6 +1,5 @@
 //! One complete local-runtime composition using only the facade prelude.
 
-use std::convert::Infallible;
 use std::sync::Arc;
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -35,14 +34,12 @@ struct Root;
 #[behavior::behavior(
     addr = AppAddr,
     message = Ping,
-    sends = Vec<Delivery<AppAddr, Never>>,
+    sends = Vec<Never>,
     births = Births<Worker>,
     error = Never,
 )]
 impl Root {
-    fn init(
-        &mut self,
-    ) -> behavior::Acted<AppAddr, Never, Vec<Delivery<AppAddr, Never>>, Births<Worker>, Never> {
+    fn init(&mut self) -> behavior::Acted<AppAddr, Never, Vec<Never>, Births<Worker>, Never> {
         Ok(Actions::cont())
     }
 
@@ -50,7 +47,7 @@ impl Root {
         &mut self,
         _from: AppAddr,
         _message: Ping,
-    ) -> behavior::Acted<AppAddr, Never, Vec<Delivery<AppAddr, Never>>, Births<Worker>, Never> {
+    ) -> behavior::Acted<AppAddr, Never, Vec<Never>, Births<Worker>, Never> {
         DELIVERED
             .get()
             .expect("delivery probe")
@@ -153,12 +150,11 @@ struct ApplicationRoutes {
 }
 
 macro_rules! register_with {
-    ($message:ty, $endpoint:ty, $field:ident) => {
-        impl EndpointRegistry<AppAddr, $message, $endpoint> for ApplicationRoutes {
+    ($behavior:ty, $endpoint:ty, $field:ident) => {
+        impl EndpointRegistry<$behavior, $endpoint> for ApplicationRoutes {
             type Error = AddressInUse<AppAddr>;
             type Registration = <AddressRouter<AppAddr, $endpoint> as EndpointRegistry<
-                AppAddr,
-                $message,
+                $behavior,
                 $endpoint,
             >>::Registration;
 
@@ -167,44 +163,33 @@ macro_rules! register_with {
                 address: AppAddr,
                 endpoint: $endpoint,
             ) -> Result<Self::Registration, Self::Error> {
-                <AddressRouter<AppAddr, $endpoint> as EndpointRegistry<
-                    AppAddr,
-                    $message,
-                    $endpoint,
-                >>::register(&self.$field, address, endpoint)
+                EndpointRegistry::<$behavior, $endpoint>::register(&self.$field, address, endpoint)
             }
         }
     };
 }
 
-register_with!(Ping, RootIncarnation, roots);
-register_with!(ProxyCommand<Worker>, ProxyIncarnation, proxies);
-register_with!(Never, WorkerIncarnation, workers);
+register_with!(Application, RootIncarnation, roots);
+register_with!(WorkerProxy, ProxyIncarnation, proxies);
+register_with!(Worker, WorkerIncarnation, workers);
 
-impl DeliveryRouter<AppAddr, ProxyCommand<Worker>> for ApplicationRoutes {
-    type Error = <AddressRouter<AppAddr, ProxyIncarnation> as DeliveryRouter<
-        AppAddr,
-        ProxyCommand<Worker>,
-    >>::Error;
+impl DeliveryRouter<WorkerProxy> for ApplicationRoutes {
+    type Error = <AddressRouter<AppAddr, ProxyIncarnation> as DeliveryRouter<WorkerProxy>>::Error;
 
     async fn deliver(
         &self,
         from: AppAddr,
-        delivery: Delivery<AppAddr, ProxyCommand<Worker>>,
+        delivery: Delivery<WorkerProxy>,
     ) -> Result<(), Self::Error> {
         self.proxies.deliver(from, delivery).await
     }
 }
 
-impl DeliveryRouter<AppAddr, Never> for ApplicationRoutes {
-    type Error = Infallible;
+impl DeliveryRouter<Worker> for ApplicationRoutes {
+    type Error = <AddressRouter<AppAddr, WorkerIncarnation> as DeliveryRouter<Worker>>::Error;
 
-    async fn deliver(
-        &self,
-        _from: AppAddr,
-        delivery: Delivery<AppAddr, Never>,
-    ) -> Result<(), Self::Error> {
-        match delivery.message {}
+    async fn deliver(&self, from: AppAddr, delivery: Delivery<Worker>) -> Result<(), Self::Error> {
+        self.workers.deliver(from, delivery).await
     }
 }
 

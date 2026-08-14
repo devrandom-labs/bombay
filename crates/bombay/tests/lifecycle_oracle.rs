@@ -9,10 +9,10 @@ use std::sync::{Arc, Mutex};
 
 use bombay::behavior::{
     Actions, Address, Behavior, Births, ChildStopped, Compose, Create, Delivery, Exit, Handler,
-    Inner, MailAddr, Never, NoBirths, ObserveChild, ObservePeer, Own, Proxy, ProxyCommand, Pure,
-    Recipient, RestartDenial, RestartPolicy, SendAlgebra, SendProduct, ServiceSends,
-    ShutdownRequested, Step, StopOnShutdown, Strategy, SupervisionEvent, SupervisionFailureReason,
-    Supervisor, UnwatchPeer, User, Watch, WatchEvent, stop_on_supervision_failure,
+    Inner, MailAddr, Never, NoBirths, ObserveChild, ObservePeer, Own, Proxy, Pure, Recipient,
+    RestartDenial, RestartPolicy, SendAlgebra, SendProduct, ServiceSends, ShutdownRequested, Step,
+    StopOnShutdown, Strategy, SupervisionEvent, SupervisionFailureReason, Supervisor, UnwatchPeer,
+    User, Watch, WatchEvent, stop_on_supervision_failure,
 };
 use bombay::{
     Actor, ActorRef, AddressRouter, DeliveryEndpoint, DeliveryRouter, EndpointRegistry,
@@ -33,7 +33,7 @@ impl Behavior for ImmediateChild {
     type Addr = MailAddr;
     type Msg = Never;
     type Event = CompletionEvent;
-    type Sends = Vec<Delivery<MailAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = NoBirths;
@@ -55,7 +55,7 @@ impl Behavior for ObserveImmediateChild {
     type Addr = MailAddr;
     type Msg = Never;
     type Event = CompletionEvent;
-    type Sends = SendProduct<Vec<Delivery<MailAddr, Never>>, ServiceSends<ObserveChild<u64>>>;
+    type Sends = SendProduct<Vec<Never>, ServiceSends<ObserveChild<u64>>>;
     type Ph = Never;
     type Error = Never;
     type Birth = Births<ImmediateChild>;
@@ -111,7 +111,7 @@ impl Behavior for WatchedPeer {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = PeerWatchEvent;
-    type Sends = Vec<Delivery<MailAddr, u8>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = NoBirths;
@@ -133,7 +133,7 @@ struct WatchState {
     observed: Arc<Mutex<Option<(MailAddr, RecordedChildOutcome)>>>,
 }
 
-impl Handler<u8> for WatchState {
+impl Handler for WatchState {
     type Addr = MailAddr;
     type Msg = u8;
 
@@ -141,7 +141,7 @@ impl Handler<u8> for WatchState {
         &mut self,
         _from: MailAddr,
         _message: u8,
-    ) -> behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, u8>>, NoBirths, Never> {
+    ) -> behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
         self.initialized.store(true, Ordering::SeqCst);
         Ok(Actions::cont())
     }
@@ -152,7 +152,7 @@ impl Handler<u8> for WatchState {
     reason = "Bombay Behavior's link-reaction function pointer returns the behavior error domain"
 )]
 fn record_peer_stop(
-    behavior: &mut Pure<WatchState, u8>,
+    behavior: &mut Pure<WatchState>,
     peer: MailAddr,
     outcome: &RecordedChildOutcome,
 ) -> Result<behavior::Become<MailAddr>, Never> {
@@ -338,7 +338,7 @@ impl Behavior for RestartWorker {
     type Addr = TreeAddr;
     type Msg = Never;
     type Event = User<TreeAddr, Never>;
-    type Sends = Vec<Delivery<TreeAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = WorkerFailure;
     type Birth = NoBirths;
@@ -365,7 +365,7 @@ impl Behavior for RestartParent {
     type Addr = TreeAddr;
     type Msg = ParentMsg;
     type Event = RestartParentEvent;
-    type Sends = Vec<Delivery<TreeAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = Births<RestartWorker>;
@@ -395,11 +395,10 @@ struct RestartRouter {
     workers: AddressRouter<TreeAddr, WorkerIncarnation>,
 }
 
-impl EndpointRegistry<TreeAddr, ParentMsg, SupervisorIncarnation> for RestartRouter {
+impl EndpointRegistry<RestartSupervisor, SupervisorIncarnation> for RestartRouter {
     type Error = bombay::AddressInUse<TreeAddr>;
     type Registration = <AddressRouter<TreeAddr, SupervisorIncarnation> as EndpointRegistry<
-        TreeAddr,
-        ParentMsg,
+        RestartSupervisor,
         SupervisorIncarnation,
     >>::Registration;
 
@@ -409,18 +408,16 @@ impl EndpointRegistry<TreeAddr, ParentMsg, SupervisorIncarnation> for RestartRou
         endpoint: SupervisorIncarnation,
     ) -> Result<Self::Registration, Self::Error> {
         <AddressRouter<TreeAddr, SupervisorIncarnation> as EndpointRegistry<
-            TreeAddr,
-            ParentMsg,
+            RestartSupervisor,
             SupervisorIncarnation,
         >>::register(&self.supervisors, address, endpoint)
     }
 }
 
-impl EndpointRegistry<TreeAddr, ProxyCommand<RestartWorker>, ProxyIncarnation> for RestartRouter {
+impl EndpointRegistry<RestartProxy, ProxyIncarnation> for RestartRouter {
     type Error = bombay::AddressInUse<TreeAddr>;
     type Registration = <AddressRouter<TreeAddr, ProxyIncarnation> as EndpointRegistry<
-        TreeAddr,
-        ProxyCommand<RestartWorker>,
+        RestartProxy,
         ProxyIncarnation,
     >>::Registration;
 
@@ -430,18 +427,16 @@ impl EndpointRegistry<TreeAddr, ProxyCommand<RestartWorker>, ProxyIncarnation> f
         endpoint: ProxyIncarnation,
     ) -> Result<Self::Registration, Self::Error> {
         <AddressRouter<TreeAddr, ProxyIncarnation> as EndpointRegistry<
-            TreeAddr,
-            ProxyCommand<RestartWorker>,
+            RestartProxy,
             ProxyIncarnation,
         >>::register(&self.proxies, address, endpoint)
     }
 }
 
-impl EndpointRegistry<TreeAddr, Never, WorkerIncarnation> for RestartRouter {
+impl EndpointRegistry<RestartWorker, WorkerIncarnation> for RestartRouter {
     type Error = bombay::AddressInUse<TreeAddr>;
     type Registration = <AddressRouter<TreeAddr, WorkerIncarnation> as EndpointRegistry<
-        TreeAddr,
-        Never,
+        RestartWorker,
         WorkerIncarnation,
     >>::Registration;
 
@@ -451,37 +446,34 @@ impl EndpointRegistry<TreeAddr, Never, WorkerIncarnation> for RestartRouter {
         endpoint: WorkerIncarnation,
     ) -> Result<Self::Registration, Self::Error> {
         <AddressRouter<TreeAddr, WorkerIncarnation> as EndpointRegistry<
-            TreeAddr,
-            Never,
+            RestartWorker,
             WorkerIncarnation,
         >>::register(&self.workers, address, endpoint)
     }
 }
 
-impl DeliveryRouter<TreeAddr, ProxyCommand<RestartWorker>> for RestartRouter {
-    type Error = <AddressRouter<TreeAddr, ProxyIncarnation> as DeliveryRouter<
-        TreeAddr,
-        ProxyCommand<RestartWorker>,
-    >>::Error;
+impl DeliveryRouter<RestartProxy> for RestartRouter {
+    type Error = <AddressRouter<TreeAddr, ProxyIncarnation> as DeliveryRouter<RestartProxy>>::Error;
 
     async fn deliver(
         &self,
         from: TreeAddr,
-        delivery: Delivery<TreeAddr, ProxyCommand<RestartWorker>>,
+        delivery: Delivery<RestartProxy>,
     ) -> Result<(), Self::Error> {
         self.proxies.deliver(from, delivery).await
     }
 }
 
-impl DeliveryRouter<TreeAddr, Never> for RestartRouter {
-    type Error = Infallible;
+impl DeliveryRouter<RestartWorker> for RestartRouter {
+    type Error =
+        <AddressRouter<TreeAddr, WorkerIncarnation> as DeliveryRouter<RestartWorker>>::Error;
 
     async fn deliver(
         &self,
-        _from: TreeAddr,
-        delivery: Delivery<TreeAddr, Never>,
+        from: TreeAddr,
+        delivery: Delivery<RestartWorker>,
     ) -> Result<(), Self::Error> {
-        match delivery.message {}
+        self.workers.deliver(from, delivery).await
     }
 }
 
@@ -551,7 +543,7 @@ struct BirthChildAndSignal {
     signal: MailAddr,
 }
 
-impl Handler<u8> for Stop {
+impl Handler for Stop {
     type Addr = MailAddr;
     type Msg = u8;
 
@@ -559,13 +551,12 @@ impl Handler<u8> for Stop {
         &mut self,
         _from: MailAddr,
         _message: u8,
-    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, u8>>, NoBirths, Never>
-    {
+    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
         Ok(Actions::stop(bombay::behavior::Exit::Normal))
     }
 }
 
-impl Handler<u8, Births<Pure<Stop, u8>>> for BirthChildAndSignal {
+impl Handler<Vec<Delivery<Pure<Stop>>>, Births<Pure<Stop>>> for BirthChildAndSignal {
     type Addr = MailAddr;
     type Msg = u8;
 
@@ -576,8 +567,8 @@ impl Handler<u8, Births<Pure<Stop, u8>>> for BirthChildAndSignal {
     ) -> bombay::behavior::Acted<
         MailAddr,
         Never,
-        Vec<Delivery<MailAddr, u8>>,
-        Births<Pure<Stop, u8>>,
+        Vec<Delivery<Pure<Stop>>>,
+        Births<Pure<Stop>>,
         Never,
     > {
         Ok(Actions {
@@ -612,7 +603,10 @@ async fn parent_retains_created_child_handle_while_parent_is_live() {
 
     let child = MailAddr(1).birth(7);
     router
-        .deliver(MailAddr(1), Delivery::new(Recipient::global(child), 99))
+        .deliver(
+            MailAddr(1),
+            Delivery::new(Recipient::<Pure<Stop>>::global(child), 99),
+        )
         .await
         .expect("a live parent must retain its created child's counting handle");
 
@@ -626,7 +620,7 @@ struct SameTurnChild {
     received: Arc<Notify>,
 }
 
-impl Handler<u8> for SameTurnChild {
+impl Handler for SameTurnChild {
     type Addr = MailAddr;
     type Msg = u8;
 
@@ -634,8 +628,7 @@ impl Handler<u8> for SameTurnChild {
         &mut self,
         _from: MailAddr,
         message: u8,
-    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, u8>>, NoBirths, Never>
-    {
+    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
         assert_eq!(message, 73);
         self.received.notify_one();
         Ok(Actions::cont())
@@ -643,17 +636,17 @@ impl Handler<u8> for SameTurnChild {
 }
 
 struct CreateAndSendSameTurn {
-    child: Option<Pure<SameTurnChild, u8>>,
+    child: Option<Pure<SameTurnChild>>,
 }
 
 impl Behavior for CreateAndSendSameTurn {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = User<MailAddr, u8>;
-    type Sends = Vec<Delivery<MailAddr, u8>>;
+    type Sends = Vec<Delivery<Pure<SameTurnChild>>>;
     type Ph = Never;
     type Error = Never;
-    type Birth = Births<Pure<SameTurnChild, u8>>;
+    type Birth = Births<Pure<SameTurnChild>>;
 
     fn init(&mut self) -> behavior::BehaviorActed<Self> {
         Ok(Actions {
@@ -775,7 +768,7 @@ impl Behavior for BlockingShutdown {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = User<MailAddr, u8>;
-    type Sends = Vec<Delivery<MailAddr, u8>>;
+    type Sends = Vec<Delivery<Pure<Stop>>>;
     type Ph = Never;
     type Error = Never;
     type Birth = NoBirths;
@@ -799,7 +792,7 @@ impl Behavior for BlockingShutdown {
 fn finalize_shutdown(
     behavior: &mut BlockingShutdown,
     _request: ShutdownRequested,
-) -> bombay::behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, u8>>, NoBirths, Never> {
+) -> bombay::behavior::Acted<MailAddr, Never, Vec<Delivery<Pure<Stop>>>, NoBirths, Never> {
     behavior.finalized.store(true, Ordering::SeqCst);
     Ok(Actions {
         sends: vec![Delivery::new(Recipient::global(behavior.signal), 42)],
@@ -922,7 +915,7 @@ impl Handler for ScopedChild {
         &mut self,
         _from: MailAddr,
         message: Never,
-    ) -> behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, Never>>, NoBirths, Never> {
+    ) -> behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
         match message {}
     }
 }
@@ -934,7 +927,7 @@ impl Handler for ScopedChild {
 fn retire_scoped_child(
     child: &mut Pure<ScopedChild>,
     _request: ShutdownRequested,
-) -> behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, Never>>, NoBirths, Never> {
+) -> behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
     child.state().retired.store(true, Ordering::SeqCst);
     Ok(Actions::cont())
 }
@@ -949,7 +942,7 @@ impl Behavior for ScopedBranch {
     type Addr = MailAddr;
     type Msg = Never;
     type Event = User<MailAddr, Never>;
-    type Sends = Vec<Delivery<MailAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = Births<ScopedChildBehavior>;
@@ -980,7 +973,7 @@ impl Behavior for ScopedRoot {
     type Addr = MailAddr;
     type Msg = Never;
     type Event = User<MailAddr, Never>;
-    type Sends = Vec<Delivery<MailAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = Births<ScopedBranchBehavior>;
@@ -1064,7 +1057,7 @@ async fn typed_behavior_timer_fires_through_the_incarnation() {
 
 struct ReceiveTimeoutProbe;
 
-impl Handler<u8> for ReceiveTimeoutProbe {
+impl Handler for ReceiveTimeoutProbe {
     type Addr = MailAddr;
     type Msg = u8;
 
@@ -1072,12 +1065,12 @@ impl Handler<u8> for ReceiveTimeoutProbe {
         &mut self,
         _from: MailAddr,
         _message: u8,
-    ) -> behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, u8>>, NoBirths, Never> {
+    ) -> behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
         Ok(Actions::cont())
     }
 }
 
-type ReceiveTimeoutInner = Pure<ReceiveTimeoutProbe, u8>;
+type ReceiveTimeoutInner = Pure<ReceiveTimeoutProbe>;
 
 #[allow(
     clippy::unnecessary_wraps,
@@ -1085,7 +1078,7 @@ type ReceiveTimeoutInner = Pure<ReceiveTimeoutProbe, u8>;
 )]
 fn stop_after_inactivity(
     _inner: &mut ReceiveTimeoutInner,
-) -> behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, u8>>, NoBirths, Never> {
+) -> behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
     Ok(Actions::stop(Exit::Normal))
 }
 
@@ -1230,11 +1223,10 @@ impl RejectOnceRouter {
     }
 }
 
-impl EndpointRegistry<MailAddr, u8, RollbackIncarnation> for RejectOnceRouter {
+impl EndpointRegistry<RollbackBehavior, RollbackIncarnation> for RejectOnceRouter {
     type Error = RejectOnceError;
     type Registration = <AddressRouter<MailAddr, RollbackIncarnation> as EndpointRegistry<
-        MailAddr,
-        u8,
+        RollbackBehavior,
         RollbackIncarnation,
     >>::Registration;
 
@@ -1248,8 +1240,7 @@ impl EndpointRegistry<MailAddr, u8, RollbackIncarnation> for RejectOnceRouter {
             Err(RejectOnceError::Injected)
         } else {
             <AddressRouter<MailAddr, RollbackIncarnation> as EndpointRegistry<
-                MailAddr,
-                u8,
+                RollbackBehavior,
                 RollbackIncarnation,
             >>::register(&self.inner, address, endpoint)
             .map_err(|_| RejectOnceError::AddressInUse)
@@ -1257,14 +1248,34 @@ impl EndpointRegistry<MailAddr, u8, RollbackIncarnation> for RejectOnceRouter {
     }
 }
 
-impl DeliveryRouter<MailAddr, u8> for RejectOnceRouter {
+impl EndpointRegistry<InitBehavior, RollbackIncarnation> for RejectOnceRouter {
+    type Error = RejectOnceError;
+    type Registration = <AddressRouter<MailAddr, RollbackIncarnation> as EndpointRegistry<
+        InitBehavior,
+        RollbackIncarnation,
+    >>::Registration;
+
+    fn register(
+        &self,
+        address: MailAddr,
+        endpoint: RollbackIncarnation,
+    ) -> Result<Self::Registration, Self::Error> {
+        <AddressRouter<MailAddr, RollbackIncarnation> as EndpointRegistry<
+            InitBehavior,
+            RollbackIncarnation,
+        >>::register(&self.inner, address, endpoint)
+        .map_err(|_| RejectOnceError::AddressInUse)
+    }
+}
+
+impl DeliveryRouter<RollbackBehavior> for RejectOnceRouter {
     type Error =
-        <AddressRouter<MailAddr, RollbackIncarnation> as DeliveryRouter<MailAddr, u8>>::Error;
+        <AddressRouter<MailAddr, RollbackIncarnation> as DeliveryRouter<RollbackBehavior>>::Error;
 
     async fn deliver(
         &self,
         from: MailAddr,
-        delivery: Delivery<MailAddr, u8>,
+        delivery: Delivery<RollbackBehavior>,
     ) -> Result<(), Self::Error> {
         self.inner.deliver(from, delivery).await
     }
@@ -1285,7 +1296,7 @@ impl Behavior for RollbackBehavior {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = User<MailAddr, u8>;
-    type Sends = Vec<Delivery<MailAddr, u8>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Infallible;
     type Birth = NoBirths;
@@ -1343,7 +1354,7 @@ impl Behavior for InitBehavior {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = User<MailAddr, u8>;
-    type Sends = Vec<Delivery<MailAddr, u8>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Infallible;
     type Birth = NoBirths;
@@ -1469,7 +1480,7 @@ impl Behavior for ImmediateReplacementChild {
     type Addr = MailAddr;
     type Msg = Never;
     type Event = User<MailAddr, Never>;
-    type Sends = Vec<Delivery<MailAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = NoBirths;
@@ -1487,7 +1498,7 @@ impl Behavior for DuplicateReplacementParent {
     type Addr = MailAddr;
     type Msg = Never;
     type Event = User<MailAddr, Never>;
-    type Sends = Vec<Delivery<MailAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = Births<ImmediateReplacementChild>;

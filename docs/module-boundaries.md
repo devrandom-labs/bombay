@@ -122,8 +122,10 @@ unknown lookup nor a closed resolved mailbox can erase the owned message.
 Application send products use Behavior's recursive `SendInput`
 selection through semantic `Own`/`Inner<Path>` aliases. They do not implement
 `RouteSends`, `ObservesCreations`, or routing-error products; bombay provides
-those generic structural interpretations once. Application
-`DeliveryRouter<A, M>` implementations remain the endpoint-selection boundary.
+those generic structural interpretations once. Behavior's `Delivery<B>`
+statically identifies the destination behavior. The remaining public
+`EndpointRegistry<B, D>` and `DeliveryRouter<B>` adapters are temporary E5
+runtime compatibility seams, not intended application concepts.
 
 `IncarnationEffects` is the compiler-nameable product of capabilities owned by
 one generation, not a service registry. It stores the timer queue, child scope,

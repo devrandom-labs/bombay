@@ -180,7 +180,7 @@ pub(crate) struct ProvisionalIncarnation<
     cancellation_requested: Arc<AtomicBool>,
 }
 
-impl<P: behavior::Behavior<Ph = Never>, E, T, A: Address, SE, SL>
+impl<P: behavior::Behavior<Ph = Never, Addr = A>, E, T, A: Address, SE, SL>
     ProvisionalIncarnation<P, E, T, A, SE, SL>
 {
     #[allow(
@@ -236,7 +236,7 @@ impl<P: behavior::Behavior<Ph = Never>, E, T, A: Address, SE, SL>
         R::Error,
     >
     where
-        R: EndpointRegistry<A, <P as Behavior>::Msg, IncarnationEndpoint<A, ActorRef<A, SE>>>,
+        R: EndpointRegistry<P, IncarnationEndpoint<A, ActorRef<A, SE>>>,
         Factory: LifecycleFactory<A, R::Registration>,
     {
         let registration = router.register(self.address, self.endpoint)?;
@@ -403,7 +403,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
     use std::task::Wake;
 
-    use behavior::{Actions, Behavior, Delivery, Exit, MailAddr, Never, NoBirths, User};
+    use behavior::{Actions, Behavior, Exit, MailAddr, Never, NoBirths, User};
     use bombay_engine::{Driver, Environment, RuntimeEffects};
 
     use super::{Incarnation, TerminalRetirement};
@@ -414,7 +414,7 @@ mod tests {
         type Addr = MailAddr;
         type Msg = Never;
         type Event = User<MailAddr, Never>;
-        type Sends = Vec<Delivery<MailAddr, Never>>;
+        type Sends = Vec<Never>;
         type Ph = Never;
         type Error = Infallible;
         type Birth = NoBirths;
@@ -450,7 +450,7 @@ mod tests {
 
     impl Environment for Source {
         type Event = User<MailAddr, Never>;
-        type Effect = RuntimeEffects<MailAddr, Vec<Delivery<MailAddr, Never>>, NoBirths>;
+        type Effect = RuntimeEffects<MailAddr, Vec<Never>, NoBirths>;
         type Error = Infallible;
 
         async fn next(&mut self) -> Option<Self::Event> {

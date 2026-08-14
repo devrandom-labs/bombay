@@ -5,8 +5,8 @@ use core::hash::Hash;
 
 use behavior::{
     Address, Behavior, Crash, DeadlineSends, Delivery, Exit, ObserveChild, ObserveCreation,
-    ObservePeer, ProxyCommand, ProxySends, ReceiveTimeoutSends, ReportWorkerCreationResolved,
-    ReportWorkerStopped, Route, SendProduct, ServiceSends, SupervisorSends, WatchSends,
+    ObservePeer, ProxySends, ReceiveTimeoutSends, ReportWorkerCreationResolved,
+    ReportWorkerStopped, SendProduct, ServiceSends, SupervisorSends, WatchSends,
 };
 pub use bombay_address::AddressInUse;
 use bombay_address::{AddressSpace, Lease};
@@ -107,7 +107,7 @@ impl<M, E> RejectedDelivery<M, E> {
 }
 
 /// Registers resolved typed endpoints for later address routing.
-pub trait EndpointRegistry<A, M, D> {
+pub trait EndpointRegistry<B: Behavior, D> {
     /// Registration failure.
     type Error;
     /// Ownership token that keeps the exact registration generation live.
@@ -118,7 +118,7 @@ pub trait EndpointRegistry<A, M, D> {
     /// # Errors
     ///
     /// Returns the registry's collision or storage failure.
-    fn register(&self, address: A, endpoint: D) -> Result<Self::Registration, Self::Error>;
+    fn register(&self, address: B::Addr, endpoint: D) -> Result<Self::Registration, Self::Error>;
 }
 
 /// Failure while resolving or invoking a registered endpoint.
@@ -163,27 +163,32 @@ impl<A, D> Default for AddressRouter<A, D> {
     }
 }
 
-impl<A: Address + Hash, M, D> EndpointRegistry<A, M, D> for AddressRouter<A, D> {
-    type Error = AddressInUse<A>;
-    type Registration = Lease<A, D>;
+impl<B, D> EndpointRegistry<B, D> for AddressRouter<B::Addr, D>
+where
+    B: Behavior,
+    B::Addr: Hash,
+{
+    type Error = AddressInUse<B::Addr>;
+    type Registration = Lease<B::Addr, D>;
 
-    fn register(&self, address: A, endpoint: D) -> Result<Self::Registration, Self::Error> {
+    fn register(&self, address: B::Addr, endpoint: D) -> Result<Self::Registration, Self::Error> {
         self.entries.claim(address, endpoint)
     }
 }
 
-impl<A, M, D> DeliveryRouter<A, M> for AddressRouter<A, D>
+impl<B, D> DeliveryRouter<B> for AddressRouter<B::Addr, D>
 where
-    A: Address + Hash + Send + Sync,
-    A::Nonce: Send,
-    M: Send,
-    D: DeliveryEndpoint<A, M> + Clone + Send + Sync,
+    B: Behavior,
+    B::Addr: Hash + Send + Sync,
+    <B::Addr as Address>::Nonce: Send,
+    B::Msg: Send,
+    D: DeliveryEndpoint<B::Addr, B::Msg> + Clone + Send + Sync,
     D::Error: Send,
 {
-    type Error = RoutingError<A, M, D::Error>;
+    type Error = RoutingError<B::Addr, B::Msg, D::Error>;
 
-    async fn deliver(&self, from: A, delivery: Delivery<A, M>) -> Result<(), Self::Error> {
-        let address = resolve_route(from, delivery.to.route());
+    async fn deliver(&self, from: B::Addr, delivery: Delivery<B>) -> Result<(), Self::Error> {
+        let address = delivery.to.resolve(from);
         let Some(endpoint) = self.entries.resolve(&address) else {
             return Err(RoutingError::UnknownAddress {
                 address,
@@ -213,26 +218,19 @@ where
     }
 }
 
-fn resolve_route<A: Address>(from: A, route: Route<A>) -> A {
-    match route {
-        Route::Global(address) => address,
-        Route::Child(nonce) => from.birth(nonce),
-    }
-}
-
 /// Shared capability that resolves and delivers one typed behavior send.
 ///
 /// Resolution of global, child-relative, and service routes is distinct from
 /// invoking the resulting [`DeliveryEndpoint`].
-pub trait DeliveryRouter<A: Address, M> {
+pub trait DeliveryRouter<B: Behavior> {
     /// Delivery failure.
     type Error;
 
     /// Deliver `delivery` on behalf of `from`.
     fn deliver(
         &self,
-        from: A,
-        delivery: Delivery<A, M>,
+        from: B::Addr,
+        delivery: Delivery<B>,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send;
 }
 
@@ -248,8 +246,14 @@ pub trait ObservesCreations<N> {
     fn observes_creation(&self, nonce: N) -> bool;
 }
 
-impl<A: Address, M> ObservesCreations<A::Nonce> for Vec<Delivery<A, M>> {
-    fn observes_creation(&self, _nonce: A::Nonce) -> bool {
+impl<B: Behavior, N> ObservesCreations<N> for Vec<Delivery<B>> {
+    fn observes_creation(&self, _nonce: N) -> bool {
+        false
+    }
+}
+
+impl<N> ObservesCreations<N> for Vec<behavior::Never> {
+    fn observes_creation(&self, _nonce: N) -> bool {
         false
     }
 }
@@ -354,19 +358,19 @@ where
 impl<A: Address, Sends, C> ObservesCreations<A::Nonce> for SupervisorSends<A, Sends, C>
 where
     Sends: ObservesCreations<A::Nonce>,
-    C: Behavior<Addr = A>,
-    A::Nonce: Copy,
+    C: Behavior<Addr = A, Ph = behavior::Never>,
+    A::Nonce: Copy + From<u64>,
 {
     fn observes_creation(&self, nonce: A::Nonce) -> bool {
         self.behavior.observes_creation(nonce)
     }
 }
 
-impl<A: Address, M> ObservesCreations<A::Nonce> for ProxySends<A, M>
+impl<C: Behavior> ObservesCreations<<C::Addr as Address>::Nonce> for ProxySends<C>
 where
-    A::Nonce: Copy + Eq,
+    <C::Addr as Address>::Nonce: Copy + Eq,
 {
-    fn observes_creation(&self, nonce: A::Nonce) -> bool {
+    fn observes_creation(&self, nonce: <C::Addr as Address>::Nonce) -> bool {
         self.creation_observations.observes_creation(nonce)
     }
 }
@@ -385,18 +389,34 @@ pub trait RouteSends<A: Address, R>: Sized {
     -> impl Future<Output = Result<(), Self::Error>> + Send;
 }
 
-impl<A, M, R> RouteSends<A, R> for Vec<Delivery<A, M>>
+impl<A, B, R> RouteSends<A, R> for Vec<Delivery<B>>
 where
     A: Address + Send,
-    M: Send,
-    R: DeliveryRouter<A, M> + Send + Sync,
-    A::Nonce: Send,
+    B: Behavior<Addr = A>,
+    B::Msg: Send,
+    R: DeliveryRouter<B> + Send + Sync,
+    A::Nonce: Send + From<u64>,
 {
     type Error = R::Error;
 
     async fn route(self, from: A, router: &mut R) -> Result<(), Self::Error> {
         for delivery in self {
-            router.deliver(from, delivery).await?;
+            <R as DeliveryRouter<B>>::deliver(router, from, delivery).await?;
+        }
+        Ok(())
+    }
+}
+
+impl<A, R> RouteSends<A, R> for Vec<behavior::Never>
+where
+    A: Address + Send,
+    R: Send,
+{
+    type Error = core::convert::Infallible;
+
+    async fn route(self, _from: A, _router: &mut R) -> Result<(), Self::Error> {
+        if let Some(never) = self.into_iter().next() {
+            match never {}
         }
         Ok(())
     }
@@ -561,17 +581,17 @@ pub enum SupervisorSendsError<B, O, C> {
 impl<A, R, Sends, C> RouteSends<A, R> for SupervisorSends<A, Sends, C>
 where
     A: Address + Send,
-    A::Nonce: Send,
+    A::Nonce: Send + From<u64>,
     Sends: RouteSends<A, R> + Send,
     ServiceSends<ObserveChild<A::Nonce>>: RouteSends<A, R> + Send,
-    Vec<Delivery<A, ProxyCommand<C>>>: RouteSends<A, R> + Send,
-    C: Behavior<Addr = A> + Send,
+    Vec<Delivery<behavior::Proxy<C>>>: RouteSends<A, R> + Send,
+    C: Behavior<Addr = A, Ph = behavior::Never> + Send,
     R: Send,
 {
     type Error = SupervisorSendsError<
         <Sends as RouteSends<A, R>>::Error,
         <ServiceSends<ObserveChild<A::Nonce>> as RouteSends<A, R>>::Error,
-        <Vec<Delivery<A, ProxyCommand<C>>> as RouteSends<A, R>>::Error,
+        <Vec<Delivery<behavior::Proxy<C>>> as RouteSends<A, R>>::Error,
     >;
 
     async fn route(self, from: A, router: &mut R) -> Result<(), Self::Error> {
@@ -611,11 +631,12 @@ pub enum ProxySendsError<D, C, CR, S, RP> {
     CreationReports(RP),
 }
 
-impl<A, M, R> RouteSends<A, R> for ProxySends<A, M>
+impl<A, C, R> RouteSends<A, R> for ProxySends<C>
 where
     A: Address + Send,
     A::Nonce: Send,
-    Vec<Delivery<A, M>>: RouteSends<A, R> + Send,
+    C: Behavior<Addr = A>,
+    Vec<Delivery<C>>: RouteSends<A, R> + Send,
     ServiceSends<ObserveChild<A::Nonce>>: RouteSends<A, R> + Send,
     ServiceSends<ObserveCreation<A::Nonce>>: RouteSends<A, R> + Send,
     ServiceSends<ReportWorkerStopped<A>>: RouteSends<A, R> + Send,
@@ -623,7 +644,7 @@ where
     R: Send,
 {
     type Error = ProxySendsError<
-        <Vec<Delivery<A, M>> as RouteSends<A, R>>::Error,
+        <Vec<Delivery<C>> as RouteSends<A, R>>::Error,
         <ServiceSends<ObserveChild<A::Nonce>> as RouteSends<A, R>>::Error,
         <ServiceSends<ObserveCreation<A::Nonce>> as RouteSends<A, R>>::Error,
         <ServiceSends<ReportWorkerStopped<A>> as RouteSends<A, R>>::Error,
@@ -682,7 +703,7 @@ mod tests {
         );
 
         assert!(
-            !Vec::<Delivery<MailAddr, u8>>::new().observes_creation(7u64),
+            !Vec::<Delivery<AssertBehavior>>::new().observes_creation(7u64),
             "plain deliveries never observe creations"
         );
         assert!(!ServiceSends::<ObserveChild<u64>>::new(Vec::new()).observes_creation(7u64));
@@ -698,13 +719,13 @@ mod tests {
         assert!(!ServiceSends::<ScheduleAfter>::new(Vec::new()).observes_creation(7u64));
 
         let product = SendProduct {
-            inner: Vec::<Delivery<MailAddr, u8>>::new(),
+            inner: Vec::<Delivery<AssertBehavior>>::new(),
             own: creations.clone(),
         };
         assert!(product.observes_creation(7));
         assert!(
             !SendProduct {
-                inner: Vec::<Delivery<MailAddr, u8>>::new(),
+                inner: Vec::<Delivery<AssertBehavior>>::new(),
                 own: ServiceSends::<ObserveChild<u64>>::new(Vec::new()),
             }
             .observes_creation(7u64),
@@ -718,7 +739,7 @@ mod tests {
         assert!(wrapped.observes_creation(7));
         assert!(!wrapped.observes_creation(9));
         let unwrapped = WatchSends {
-            behavior: Vec::<Delivery<MailAddr, u8>>::new(),
+            behavior: Vec::<Delivery<AssertBehavior>>::new(),
             observations: ServiceSends::one(ObservePeer::new(MailAddr(3))),
         };
         assert!(
@@ -732,7 +753,7 @@ mod tests {
         };
         assert!(deadline.observes_creation(7));
         let deadline_empty = behavior::DeadlineSends {
-            behavior: Vec::<Delivery<MailAddr, u8>>::new(),
+            behavior: Vec::<Delivery<AssertBehavior>>::new(),
             schedules: ServiceSends::<ScheduleAt>::new(Vec::new()),
         };
         assert!(!deadline_empty.observes_creation(7u64));
@@ -743,26 +764,25 @@ mod tests {
         };
         assert!(timeout.observes_creation(7));
         let timeout_empty = behavior::ReceiveTimeoutSends {
-            behavior: Vec::<Delivery<MailAddr, u8>>::new(),
+            behavior: Vec::<Delivery<AssertBehavior>>::new(),
             schedules: ServiceSends::<ScheduleAfter>::new(Vec::new()),
         };
         assert!(!timeout_empty.observes_creation(7u64));
 
-        let supervised = behavior::SupervisorSends::<MailAddr, _, behavior::Pure<AssertChild, u8>> {
+        let supervised = behavior::SupervisorSends::<MailAddr, _, AssertBehavior> {
             behavior: creations.clone(),
             child_observations: ServiceSends::<ObserveChild<u64>>::new(Vec::new()),
             replacement_commands: Vec::new(),
         };
         assert!(supervised.observes_creation(7));
-        let supervised_empty =
-            behavior::SupervisorSends::<MailAddr, _, behavior::Pure<AssertChild, u8>> {
-                behavior: Vec::<Delivery<MailAddr, u8>>::new(),
-                child_observations: ServiceSends::<ObserveChild<u64>>::new(Vec::new()),
-                replacement_commands: Vec::new(),
-            };
+        let supervised_empty = behavior::SupervisorSends::<MailAddr, _, AssertBehavior> {
+            behavior: Vec::<Delivery<AssertBehavior>>::new(),
+            child_observations: ServiceSends::<ObserveChild<u64>>::new(Vec::new()),
+            replacement_commands: Vec::new(),
+        };
         assert!(!supervised_empty.observes_creation(7u64));
 
-        let proxy = behavior::ProxySends::<MailAddr, u8> {
+        let proxy = behavior::ProxySends::<AssertBehavior> {
             deliveries: Vec::new(),
             child_observations: ServiceSends::<ObserveChild<u64>>::new(Vec::new()),
             creation_observations: creations,
@@ -771,7 +791,7 @@ mod tests {
         };
         assert!(proxy.observes_creation(7));
         assert!(!proxy.observes_creation(9));
-        let proxy_empty = behavior::ProxySends::<MailAddr, u8> {
+        let proxy_empty = behavior::ProxySends::<AssertBehavior> {
             deliveries: Vec::new(),
             child_observations: ServiceSends::<ObserveChild<u64>>::new(Vec::new()),
             creation_observations: ServiceSends::<ObserveCreation<u64>>::new(Vec::new()),
@@ -788,7 +808,9 @@ mod tests {
 
     struct AssertChild;
 
-    impl behavior::Handler<u8> for AssertChild {
+    type AssertBehavior = behavior::Pure<AssertChild>;
+
+    impl behavior::Handler for AssertChild {
         type Addr = MailAddr;
         type Msg = u8;
 
@@ -799,7 +821,7 @@ mod tests {
         ) -> behavior::Acted<
             MailAddr,
             behavior::Never,
-            Vec<Delivery<MailAddr, u8>>,
+            Vec<behavior::Never>,
             behavior::NoBirths,
             behavior::Never,
         > {
@@ -839,15 +861,15 @@ mod tests {
     }
 
     #[derive(Default)]
-    struct RecordingRouter(Mutex<Vec<(MailAddr, Delivery<MailAddr, u8>)>>);
+    struct RecordingRouter(Mutex<Vec<(MailAddr, Delivery<AssertBehavior>)>>);
 
-    impl DeliveryRouter<MailAddr, u8> for RecordingRouter {
+    impl DeliveryRouter<AssertBehavior> for RecordingRouter {
         type Error = &'static str;
 
         async fn deliver(
             &self,
             from: MailAddr,
-            delivery: Delivery<MailAddr, u8>,
+            delivery: Delivery<AssertBehavior>,
         ) -> Result<(), Self::Error> {
             if delivery.message == 2 {
                 return Err("delivery failed");
@@ -864,20 +886,26 @@ mod tests {
         let global = RecordingEndpoint::default();
         let child = RecordingEndpoint::default();
         let _global_lease =
-            EndpointRegistry::<MailAddr, u8, _>::register(&router, MailAddr(9), global.clone())
+            EndpointRegistry::<AssertBehavior, _>::register(&router, MailAddr(9), global.clone())
                 .unwrap();
         let _child_lease =
-            EndpointRegistry::<MailAddr, u8, _>::register(&router, from.birth(3), child.clone())
+            EndpointRegistry::<AssertBehavior, _>::register(&router, from.birth(3), child.clone())
                 .unwrap();
 
-        router
-            .deliver(from, Delivery::new(Recipient::global(MailAddr(9)), 11))
-            .await
-            .unwrap();
-        router
-            .deliver(from, Delivery::new(Recipient::child(3), 12))
-            .await
-            .unwrap();
+        <AddressRouter<MailAddr, RecordingEndpoint> as DeliveryRouter<AssertBehavior>>::deliver(
+            &router,
+            from,
+            Delivery::new(Recipient::<AssertBehavior>::global(MailAddr(9)), 11),
+        )
+        .await
+        .unwrap();
+        <AddressRouter<MailAddr, RecordingEndpoint> as DeliveryRouter<AssertBehavior>>::deliver(
+            &router,
+            from,
+            Delivery::new(Recipient::<AssertBehavior>::child(3), 12),
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
             *global.0.lock().expect("global endpoint lock"),
@@ -893,7 +921,10 @@ mod tests {
 
         assert_eq!(
             router
-                .deliver(from, Delivery::new(Recipient::global(MailAddr(8)), 1),)
+                .deliver(
+                    from,
+                    Delivery::new(Recipient::<AssertBehavior>::global(MailAddr(8)), 1),
+                )
                 .await,
             Err(RoutingError::UnknownAddress {
                 address: MailAddr(8),
@@ -902,11 +933,14 @@ mod tests {
         );
 
         let _lease =
-            EndpointRegistry::<MailAddr, u8, _>::register(&router, MailAddr(9), FailingEndpoint)
+            EndpointRegistry::<AssertBehavior, _>::register(&router, MailAddr(9), FailingEndpoint)
                 .unwrap();
         assert_eq!(
             router
-                .deliver(from, Delivery::new(Recipient::global(MailAddr(9)), 2),)
+                .deliver(
+                    from,
+                    Delivery::new(Recipient::<AssertBehavior>::global(MailAddr(9)), 2),
+                )
                 .await,
             Err(RoutingError::Endpoint {
                 address: MailAddr(9),
@@ -934,7 +968,7 @@ mod tests {
         let mut old_subject = old_space.subject(()).unwrap();
         let old_endpoint = IncarnationEndpoint::new(RecordingEndpoint::default(), old_space);
         let old_lease =
-            EndpointRegistry::<MailAddr, u8, _>::register(&router, MailAddr(9), old_endpoint)
+            EndpointRegistry::<AssertBehavior, _>::register(&router, MailAddr(9), old_endpoint)
                 .unwrap();
         let old_observation = router.observe_peer(MailAddr(9)).unwrap();
 
@@ -943,7 +977,7 @@ mod tests {
         let mut new_subject = new_space.subject(()).unwrap();
         let new_endpoint = IncarnationEndpoint::new(RecordingEndpoint::default(), new_space);
         let _new_lease =
-            EndpointRegistry::<MailAddr, u8, _>::register(&router, MailAddr(9), new_endpoint)
+            EndpointRegistry::<AssertBehavior, _>::register(&router, MailAddr(9), new_endpoint)
                 .unwrap();
         let new_observation = router.observe_peer(MailAddr(9)).unwrap();
 

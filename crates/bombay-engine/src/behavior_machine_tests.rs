@@ -14,7 +14,7 @@ mod serialized_executor {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     use behavior::{
-        Actions, Behavior, BehaviorActed, Delivery, MailAddr, Never, NoBirths, SendAlgebra, User,
+        Actions, Behavior, BehaviorActed, MailAddr, Never, NoBirths, SendAlgebra, User,
     };
     use bombay_machine_executor::{Machine, SerializedExecutor, TurnOutcome};
     use bombay_transition::{Topology, ValidatedTopology, Vertex, VertexId};
@@ -30,7 +30,7 @@ mod serialized_executor {
         type Addr = MailAddr;
         type Msg = usize;
         type Event = User<MailAddr, usize>;
-        type Sends = Vec<Delivery<MailAddr, Never>>;
+        type Sends = Vec<Never>;
         type Ph = Never;
         type Error = Never;
         type Birth = NoBirths;
@@ -101,7 +101,7 @@ mod serialized_executor {
             type Addr = MailAddr;
             type Msg = usize;
             type Event = User<MailAddr, usize>;
-            type Sends = Vec<Delivery<MailAddr, Never>>;
+            type Sends = Vec<Never>;
             type Ph = Never;
             type Error = Never;
             type Birth = NoBirths;

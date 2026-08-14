@@ -4,15 +4,14 @@
 //! the public bombay boundary and deliberately include registration,
 //! mailbox composition, task execution, terminal publication, and retirement.
 
-use std::convert::Infallible;
 use std::hint::black_box;
 use std::time::Duration;
 
 use bombay::behavior::{
     Actions, Address, Become, Behavior, Births, Crash, Delivery, Exit, Handler, MailAddr, Never,
-    NoBirths, Proxy, ProxyCommand, Pure, RestartDenial, RestartPolicy, ScheduleAfter, ServiceSends,
-    Step, StopOnShutdown, Strategy, SupervisionEvent, SupervisionFailureReason, Supervisor,
-    TimedEvent, TimerGeneration, TimerId, User, Watch, stop_on_supervision_failure,
+    NoBirths, Proxy, Pure, RestartDenial, RestartPolicy, ScheduleAfter, ServiceSends, Step,
+    StopOnShutdown, Strategy, SupervisionEvent, SupervisionFailureReason, Supervisor, TimedEvent,
+    TimerGeneration, TimerId, User, Watch, stop_on_supervision_failure,
 };
 use bombay::{
     Actor, ActorRef, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint,
@@ -24,7 +23,7 @@ const SENDS: usize = 1_024;
 
 struct StopOn(u64);
 
-impl Handler<u64> for StopOn {
+impl Handler for StopOn {
     type Addr = MailAddr;
     type Msg = u64;
 
@@ -32,8 +31,7 @@ impl Handler<u64> for StopOn {
         &mut self,
         _from: MailAddr,
         message: u64,
-    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, u64>>, NoBirths, Never>
-    {
+    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
         if message == self.0 {
             Ok(Actions::stop(Exit::Normal))
         } else {
@@ -52,8 +50,7 @@ impl Handler for Waiting {
         &mut self,
         _from: MailAddr,
         message: Never,
-    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, Never>>, NoBirths, Never>
-    {
+    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
         match message {}
     }
 }
@@ -63,7 +60,7 @@ impl Handler for Waiting {
     reason = "Bombay Behavior's peer reaction requires the behavior error domain"
 )]
 fn peer_stop(
-    _behavior: &mut Pure<StopOn, u64>,
+    _behavior: &mut Pure<StopOn>,
     _peer: MailAddr,
     _outcome: &Result<Exit<MailAddr>, Crash>,
 ) -> Result<Become<MailAddr>, Never> {
@@ -168,7 +165,7 @@ impl bombay::behavior::Behavior for RestartParent {
     type Addr = TreeAddr;
     type Msg = ParentMsg;
     type Event = SupervisionEvent<User<TreeAddr, ParentMsg>>;
-    type Sends = Vec<Delivery<TreeAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = Births<RestartWorker>;
@@ -202,12 +199,11 @@ struct RestartRouter {
 }
 
 macro_rules! register_restart {
-    ($message:ty, $endpoint:ty, $field:ident) => {
-        impl EndpointRegistry<TreeAddr, $message, $endpoint> for RestartRouter {
+    ($behavior:ty, $endpoint:ty, $field:ident) => {
+        impl EndpointRegistry<$behavior, $endpoint> for RestartRouter {
             type Error = bombay::AddressInUse<TreeAddr>;
             type Registration = <AddressRouter<TreeAddr, $endpoint> as EndpointRegistry<
-                TreeAddr,
-                $message,
+                $behavior,
                 $endpoint,
             >>::Registration;
 
@@ -216,44 +212,38 @@ macro_rules! register_restart {
                 address: TreeAddr,
                 endpoint: $endpoint,
             ) -> Result<Self::Registration, Self::Error> {
-                <AddressRouter<TreeAddr, $endpoint> as EndpointRegistry<
-                    TreeAddr,
-                    $message,
-                    $endpoint,
-                >>::register(&self.$field, address, endpoint)
+                EndpointRegistry::<$behavior, $endpoint>::register(&self.$field, address, endpoint)
             }
         }
     };
 }
 
-register_restart!(ParentMsg, SupervisorIncarnation, supervisors);
-register_restart!(ProxyCommand<RestartWorker>, ProxyIncarnation, proxies);
-register_restart!(Never, WorkerIncarnation, workers);
+register_restart!(RestartSupervisor, SupervisorIncarnation, supervisors);
+register_restart!(RestartProxy, ProxyIncarnation, proxies);
+register_restart!(RestartWorker, WorkerIncarnation, workers);
 
-impl DeliveryRouter<TreeAddr, ProxyCommand<RestartWorker>> for RestartRouter {
-    type Error = <AddressRouter<TreeAddr, ProxyIncarnation> as DeliveryRouter<
-        TreeAddr,
-        ProxyCommand<RestartWorker>,
-    >>::Error;
+impl DeliveryRouter<RestartProxy> for RestartRouter {
+    type Error = <AddressRouter<TreeAddr, ProxyIncarnation> as DeliveryRouter<RestartProxy>>::Error;
 
     async fn deliver(
         &self,
         from: TreeAddr,
-        delivery: Delivery<TreeAddr, ProxyCommand<RestartWorker>>,
+        delivery: Delivery<RestartProxy>,
     ) -> Result<(), Self::Error> {
         self.proxies.deliver(from, delivery).await
     }
 }
 
-impl DeliveryRouter<TreeAddr, Never> for RestartRouter {
-    type Error = Infallible;
+impl DeliveryRouter<RestartWorker> for RestartRouter {
+    type Error =
+        <AddressRouter<TreeAddr, WorkerIncarnation> as DeliveryRouter<RestartWorker>>::Error;
 
     async fn deliver(
         &self,
-        _from: TreeAddr,
-        delivery: Delivery<TreeAddr, Never>,
+        from: TreeAddr,
+        delivery: Delivery<RestartWorker>,
     ) -> Result<(), Self::Error> {
-        match delivery.message {}
+        self.workers.deliver(from, delivery).await
     }
 }
 

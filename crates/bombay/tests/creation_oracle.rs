@@ -8,15 +8,14 @@
 //! Every oracle here was proven to fail under a deliberate production
 //! inversion (recorded in evidence.json).
 
-use std::convert::Infallible;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use bombay::behavior::{
     Actions, Address, Behavior, Births, CreationRejection, CreationResolved, Delivery, Inner,
-    MailAddr, Never, NoBirths, ObserveChild, ObserveCreation, Own, Proxy, ProxyCommand, Recipient,
-    RestartPolicy, SendAlgebra, SendProduct, ServiceSends, Strategy, SupervisionEvent, Supervisor,
-    User, stop_on_supervision_failure,
+    MailAddr, Never, NoBirths, ObserveChild, ObserveCreation, Own, Proxy, Recipient, RestartPolicy,
+    SendAlgebra, SendProduct, ServiceSends, Strategy, SupervisionEvent, Supervisor, User,
+    stop_on_supervision_failure,
 };
 use bombay::{
     Actor, ActorRef, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint,
@@ -37,7 +36,7 @@ impl Behavior for Fragile {
     type Addr = MailAddr;
     type Msg = Never;
     type Event = User<MailAddr, Never>;
-    type Sends = Vec<Delivery<MailAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = InitFailure;
     type Birth = NoBirths;
@@ -65,7 +64,7 @@ impl Behavior for Flaky {
     type Addr = MailAddr;
     type Msg = ChildMsg;
     type Event = User<MailAddr, ChildMsg>;
-    type Sends = Vec<Delivery<MailAddr, ChildMsg>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = InitFailure;
     type Birth = NoBirths;
@@ -95,7 +94,7 @@ impl Behavior for Recorder {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = User<MailAddr, u8>;
-    type Sends = Vec<Delivery<MailAddr, u8>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = NoBirths;
@@ -114,10 +113,10 @@ impl Behavior for Recorder {
 }
 
 type ParentEvent = SupervisionEvent<User<MailAddr, u8>>;
-type ParentSends = SendProduct<Vec<Delivery<MailAddr, u8>>, ServiceSends<ObserveCreation<u64>>>;
+type ParentSends = SendProduct<Vec<Delivery<Recorder>>, ServiceSends<ObserveCreation<u64>>>;
 type ParentDeliveryPath = Inner<Own>;
 type RetrySends = SendProduct<
-    SendProduct<Vec<Delivery<MailAddr, u8>>, Vec<Delivery<MailAddr, ChildMsg>>>,
+    SendProduct<Vec<Delivery<Recorder>>, Vec<Delivery<Flaky>>>,
     ServiceSends<ObserveCreation<u64>>,
 >;
 type RetryReplyPath = Inner<Inner<Own>>;
@@ -180,7 +179,7 @@ impl Behavior for UnobservedParent {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = User<MailAddr, u8>;
-    type Sends = Vec<Delivery<MailAddr, u8>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = Births<Fragile>;
@@ -277,7 +276,7 @@ impl Behavior for ParentOfFragile {
     type Addr = MailAddr;
     type Msg = Never;
     type Event = User<MailAddr, Never>;
-    type Sends = Vec<Delivery<MailAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = Births<Fragile>;
@@ -336,7 +335,7 @@ struct PairingParent {
 }
 
 type PairingSends = SendProduct<
-    SendProduct<Vec<Delivery<MailAddr, u8>>, ServiceSends<ObserveChild<u64>>>,
+    SendProduct<Vec<Delivery<Recorder>>, ServiceSends<ObserveChild<u64>>>,
     ServiceSends<ObserveCreation<u64>>,
 >;
 type PairingDeliveryPath = Inner<Inner<Own>>;
@@ -411,8 +410,8 @@ struct CreationRouter {
 }
 
 macro_rules! registry {
-    ($router:ident, $msg:ty, $endpoint:ty) => {
-        impl EndpointRegistry<MailAddr, $msg, IncarnationEndpoint<MailAddr, $endpoint>>
+    ($router:ident, $behavior:ty, $endpoint:ty) => {
+        impl EndpointRegistry<$behavior, IncarnationEndpoint<MailAddr, $endpoint>>
             for CreationRouter
         {
             type Error = bombay::AddressInUse<MailAddr>;
@@ -420,8 +419,7 @@ macro_rules! registry {
                 MailAddr,
                 IncarnationEndpoint<MailAddr, $endpoint>,
             > as EndpointRegistry<
-                MailAddr,
-                $msg,
+                $behavior,
                 IncarnationEndpoint<MailAddr, $endpoint>,
             >>::Registration;
 
@@ -431,8 +429,7 @@ macro_rules! registry {
                 endpoint: IncarnationEndpoint<MailAddr, $endpoint>,
             ) -> Result<Self::Registration, Self::Error> {
                 <AddressRouter<MailAddr, IncarnationEndpoint<MailAddr, $endpoint>> as EndpointRegistry<
-                    MailAddr,
-                    $msg,
+                    $behavior,
                     IncarnationEndpoint<MailAddr, $endpoint>,
                 >>::register(&self.$router, address, endpoint)
             }
@@ -442,17 +439,16 @@ macro_rules! registry {
 
 type UserDeliveryError =
     <AddressRouter<MailAddr, IncarnationEndpoint<MailAddr, UserEndpoint>> as DeliveryRouter<
-        MailAddr,
-        u8,
+        Recorder,
     >>::Error;
 
-impl DeliveryRouter<MailAddr, u8> for CreationRouter {
+impl DeliveryRouter<Recorder> for CreationRouter {
     type Error = UserDeliveryError;
 
     async fn deliver(
         &self,
         from: MailAddr,
-        delivery: Delivery<MailAddr, u8>,
+        delivery: Delivery<Recorder>,
     ) -> Result<(), Self::Error> {
         self.users.deliver(from, delivery).await
     }
@@ -460,38 +456,26 @@ impl DeliveryRouter<MailAddr, u8> for CreationRouter {
 
 type ChildDeliveryError =
     <AddressRouter<MailAddr, IncarnationEndpoint<MailAddr, WorkerEndpoint>> as DeliveryRouter<
-        MailAddr,
-        ChildMsg,
+        Flaky,
     >>::Error;
 
-impl DeliveryRouter<MailAddr, ChildMsg> for CreationRouter {
+impl DeliveryRouter<Flaky> for CreationRouter {
     type Error = ChildDeliveryError;
 
-    async fn deliver(
-        &self,
-        from: MailAddr,
-        delivery: Delivery<MailAddr, ChildMsg>,
-    ) -> Result<(), Self::Error> {
+    async fn deliver(&self, from: MailAddr, delivery: Delivery<Flaky>) -> Result<(), Self::Error> {
         self.children.deliver(from, delivery).await
     }
 }
 
-registry!(supers, u8, SupervisorEventEndpoint);
-registry!(users, u8, UserEndpoint);
-registry!(children, ChildMsg, WorkerEndpoint);
-registry!(nevers, Never, NeverEndpoint);
-
-impl DeliveryRouter<MailAddr, Never> for CreationRouter {
-    type Error = Infallible;
-
-    async fn deliver(
-        &self,
-        _from: MailAddr,
-        delivery: Delivery<MailAddr, Never>,
-    ) -> Result<(), Self::Error> {
-        match delivery.message {}
-    }
-}
+registry!(supers, ObservedParent, SupervisorEventEndpoint);
+registry!(supers, RetryParent, SupervisorEventEndpoint);
+registry!(supers, ObservedGrandparent, SupervisorEventEndpoint);
+registry!(supers, PairingParent, SupervisorEventEndpoint);
+registry!(users, Recorder, UserEndpoint);
+registry!(users, UnobservedParent, UserEndpoint);
+registry!(children, Flaky, WorkerEndpoint);
+registry!(nevers, Fragile, NeverEndpoint);
+registry!(nevers, ParentOfFragile, NeverEndpoint);
 
 fn creation_system() -> System<CreationRouter> {
     System::new(MailboxConfig::bounded(8), CreationRouter::default())
@@ -706,7 +690,7 @@ impl Behavior for TreeParent {
     type Addr = MailAddr;
     type Msg = TreeMsg;
     type Event = TreeParentEvent;
-    type Sends = Vec<Delivery<MailAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = Never;
     type Birth = Births<TreeWorker>;
@@ -731,7 +715,7 @@ impl Behavior for TreeWorker {
     type Addr = MailAddr;
     type Msg = Never;
     type Event = User<MailAddr, Never>;
-    type Sends = Vec<Delivery<MailAddr, Never>>;
+    type Sends = Vec<Never>;
     type Ph = Never;
     type Error = InitFailure;
     type Birth = NoBirths;
@@ -754,8 +738,8 @@ struct TreeRouter {
 }
 
 macro_rules! tree_registry_and_delivery {
-    ($router:ident, $msg:ty, $endpoint:ty) => {
-        impl EndpointRegistry<MailAddr, $msg, IncarnationEndpoint<MailAddr, $endpoint>>
+    ($router:ident, $behavior:ty, $endpoint:ty) => {
+        impl EndpointRegistry<$behavior, IncarnationEndpoint<MailAddr, $endpoint>>
             for TreeRouter
         {
             type Error = bombay::AddressInUse<MailAddr>;
@@ -763,8 +747,7 @@ macro_rules! tree_registry_and_delivery {
                 MailAddr,
                 IncarnationEndpoint<MailAddr, $endpoint>,
             > as EndpointRegistry<
-                MailAddr,
-                $msg,
+                $behavior,
                 IncarnationEndpoint<MailAddr, $endpoint>,
             >>::Registration;
 
@@ -774,23 +757,22 @@ macro_rules! tree_registry_and_delivery {
                 endpoint: IncarnationEndpoint<MailAddr, $endpoint>,
             ) -> Result<Self::Registration, Self::Error> {
                 <AddressRouter<MailAddr, IncarnationEndpoint<MailAddr, $endpoint>> as EndpointRegistry<
-                    MailAddr,
-                    $msg,
+                    $behavior,
                     IncarnationEndpoint<MailAddr, $endpoint>,
                 >>::register(&self.$router, address, endpoint)
             }
         }
 
-        impl DeliveryRouter<MailAddr, $msg> for TreeRouter {
+        impl DeliveryRouter<$behavior> for TreeRouter {
             type Error = <AddressRouter<
                 MailAddr,
                 IncarnationEndpoint<MailAddr, $endpoint>,
-            > as DeliveryRouter<MailAddr, $msg>>::Error;
+            > as DeliveryRouter<$behavior>>::Error;
 
             async fn deliver(
                 &self,
                 from: MailAddr,
-                delivery: Delivery<MailAddr, $msg>,
+                delivery: Delivery<$behavior>,
             ) -> Result<(), Self::Error> {
                 self.$router.deliver(from, delivery).await
             }
@@ -798,44 +780,30 @@ macro_rules! tree_registry_and_delivery {
     };
 }
 
-tree_registry_and_delivery!(supervisors, TreeMsg, TreeSupervisorEndpoint);
-tree_registry_and_delivery!(proxies, ProxyCommand<TreeWorker>, TreeProxyEndpoint);
+tree_registry_and_delivery!(proxies, TreeProxy, TreeProxyEndpoint);
+tree_registry_and_delivery!(workers, TreeWorker, TreeWorkerEndpoint);
 
-impl EndpointRegistry<MailAddr, Never, IncarnationEndpoint<MailAddr, TreeWorkerEndpoint>>
+impl EndpointRegistry<TreeSupervisor, IncarnationEndpoint<MailAddr, TreeSupervisorEndpoint>>
     for TreeRouter
 {
     type Error = bombay::AddressInUse<MailAddr>;
     type Registration = <AddressRouter<
         MailAddr,
-        IncarnationEndpoint<MailAddr, TreeWorkerEndpoint>,
+        IncarnationEndpoint<MailAddr, TreeSupervisorEndpoint>,
     > as EndpointRegistry<
-        MailAddr,
-        Never,
-        IncarnationEndpoint<MailAddr, TreeWorkerEndpoint>,
+        TreeSupervisor,
+        IncarnationEndpoint<MailAddr, TreeSupervisorEndpoint>,
     >>::Registration;
 
     fn register(
         &self,
         address: MailAddr,
-        endpoint: IncarnationEndpoint<MailAddr, TreeWorkerEndpoint>,
+        endpoint: IncarnationEndpoint<MailAddr, TreeSupervisorEndpoint>,
     ) -> Result<Self::Registration, Self::Error> {
-        <AddressRouter<MailAddr, IncarnationEndpoint<MailAddr, TreeWorkerEndpoint>> as EndpointRegistry<
-            MailAddr,
-            Never,
-            IncarnationEndpoint<MailAddr, TreeWorkerEndpoint>,
-        >>::register(&self.workers, address, endpoint)
-    }
-}
-
-impl DeliveryRouter<MailAddr, Never> for TreeRouter {
-    type Error = Infallible;
-
-    async fn deliver(
-        &self,
-        _from: MailAddr,
-        delivery: Delivery<MailAddr, Never>,
-    ) -> Result<(), Self::Error> {
-        match delivery.message {}
+        <AddressRouter<MailAddr, IncarnationEndpoint<MailAddr, TreeSupervisorEndpoint>> as EndpointRegistry<
+            TreeSupervisor,
+            IncarnationEndpoint<MailAddr, TreeSupervisorEndpoint>,
+        >>::register(&self.supervisors, address, endpoint)
     }
 }
 

@@ -43,7 +43,7 @@ struct PerProducerOrder {
     received: usize,
 }
 
-impl Handler<(u8, u8), NoBirths, ProducerOrderViolation> for PerProducerOrder {
+impl Handler<Vec<Never>, NoBirths, ProducerOrderViolation> for PerProducerOrder {
     type Addr = MailAddr;
     type Msg = (u8, u8);
 
@@ -51,13 +51,8 @@ impl Handler<(u8, u8), NoBirths, ProducerOrderViolation> for PerProducerOrder {
         &mut self,
         from: MailAddr,
         (producer, sequence): (u8, u8),
-    ) -> bombay::behavior::Acted<
-        MailAddr,
-        Never,
-        Vec<bombay::behavior::Delivery<MailAddr, (u8, u8)>>,
-        NoBirths,
-        ProducerOrderViolation,
-    > {
+    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, ProducerOrderViolation>
+    {
         let Some(expected) = self.next.get_mut(usize::from(producer)) else {
             return Err(ProducerOrderViolation);
         };
@@ -130,13 +125,7 @@ impl Handler for Waiting {
         &mut self,
         _from: MailAddr,
         message: Never,
-    ) -> bombay::behavior::Acted<
-        MailAddr,
-        Never,
-        Vec<bombay::behavior::Delivery<MailAddr, Never>>,
-        NoBirths,
-        Never,
-    > {
+    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
         match message {}
     }
 }

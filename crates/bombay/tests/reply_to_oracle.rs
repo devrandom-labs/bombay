@@ -43,7 +43,7 @@ enum CalleeAction {
 
 #[derive(Debug)]
 struct Call {
-    reply_to: Recipient<TestAddr, u8>,
+    reply_to: Recipient<RequesterBehavior>,
     action: CalleeAction,
 }
 
@@ -53,7 +53,7 @@ impl Behavior for Callee {
     type Addr = TestAddr;
     type Msg = Call;
     type Event = User<TestAddr, Call>;
-    type Sends = Vec<Delivery<TestAddr, u8>>;
+    type Sends = Vec<Delivery<RequesterBehavior>>;
     type Ph = Never;
     type Error = Never;
     type Birth = NoBirths;
@@ -84,7 +84,7 @@ enum ResultFact {
     CalleeRetired,
 }
 
-type RequestSends = SendProduct<ServiceSends<ObservePeer<TestAddr>>, Vec<Delivery<TestAddr, Call>>>;
+type RequestSends = SendProduct<ServiceSends<ObservePeer<TestAddr>>, Vec<Delivery<Callee>>>;
 type ObservePeerPath = Inner<Own>;
 
 struct Requester {
@@ -165,11 +165,10 @@ struct Routes {
     callees: AddressRouter<TestAddr, CalleeIncarnation>,
 }
 
-impl EndpointRegistry<TestAddr, u8, RequesterIncarnation> for Routes {
+impl EndpointRegistry<RequesterBehavior, RequesterIncarnation> for Routes {
     type Error = AddressInUse<TestAddr>;
     type Registration = <AddressRouter<TestAddr, RequesterIncarnation> as EndpointRegistry<
-        TestAddr,
-        u8,
+        RequesterBehavior,
         RequesterIncarnation,
     >>::Registration;
 
@@ -179,18 +178,16 @@ impl EndpointRegistry<TestAddr, u8, RequesterIncarnation> for Routes {
         endpoint: RequesterIncarnation,
     ) -> Result<Self::Registration, Self::Error> {
         <AddressRouter<TestAddr, RequesterIncarnation> as EndpointRegistry<
-            TestAddr,
-            u8,
+            RequesterBehavior,
             RequesterIncarnation,
         >>::register(&self.requesters, address, endpoint)
     }
 }
 
-impl EndpointRegistry<TestAddr, Call, CalleeIncarnation> for Routes {
+impl EndpointRegistry<Callee, CalleeIncarnation> for Routes {
     type Error = AddressInUse<TestAddr>;
     type Registration = <AddressRouter<TestAddr, CalleeIncarnation> as EndpointRegistry<
-        TestAddr,
-        Call,
+        Callee,
         CalleeIncarnation,
     >>::Registration;
 
@@ -200,35 +197,29 @@ impl EndpointRegistry<TestAddr, Call, CalleeIncarnation> for Routes {
         endpoint: CalleeIncarnation,
     ) -> Result<Self::Registration, Self::Error> {
         <AddressRouter<TestAddr, CalleeIncarnation> as EndpointRegistry<
-            TestAddr,
-            Call,
+            Callee,
             CalleeIncarnation,
         >>::register(&self.callees, address, endpoint)
     }
 }
 
-impl DeliveryRouter<TestAddr, u8> for Routes {
+impl DeliveryRouter<RequesterBehavior> for Routes {
     type Error =
-        <AddressRouter<TestAddr, RequesterIncarnation> as DeliveryRouter<TestAddr, u8>>::Error;
+        <AddressRouter<TestAddr, RequesterIncarnation> as DeliveryRouter<RequesterBehavior>>::Error;
 
     async fn deliver(
         &self,
         from: TestAddr,
-        delivery: Delivery<TestAddr, u8>,
+        delivery: Delivery<RequesterBehavior>,
     ) -> Result<(), Self::Error> {
         self.requesters.deliver(from, delivery).await
     }
 }
 
-impl DeliveryRouter<TestAddr, Call> for Routes {
-    type Error =
-        <AddressRouter<TestAddr, CalleeIncarnation> as DeliveryRouter<TestAddr, Call>>::Error;
+impl DeliveryRouter<Callee> for Routes {
+    type Error = <AddressRouter<TestAddr, CalleeIncarnation> as DeliveryRouter<Callee>>::Error;
 
-    async fn deliver(
-        &self,
-        from: TestAddr,
-        delivery: Delivery<TestAddr, Call>,
-    ) -> Result<(), Self::Error> {
+    async fn deliver(&self, from: TestAddr, delivery: Delivery<Callee>) -> Result<(), Self::Error> {
         self.callees.deliver(from, delivery).await
     }
 }

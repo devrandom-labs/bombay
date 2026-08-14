@@ -12,7 +12,7 @@ struct AccountFor {
     seen: BTreeSet<u8>,
 }
 
-impl Handler<u8, NoBirths, InvalidPayload> for AccountFor {
+impl Handler<Vec<Never>, NoBirths, InvalidPayload> for AccountFor {
     type Addr = MailAddr;
     type Msg = u8;
 
@@ -20,13 +20,7 @@ impl Handler<u8, NoBirths, InvalidPayload> for AccountFor {
         &mut self,
         _from: MailAddr,
         message: u8,
-    ) -> bombay::behavior::Acted<
-        MailAddr,
-        Never,
-        Vec<bombay::behavior::Delivery<MailAddr, u8>>,
-        NoBirths,
-        InvalidPayload,
-    > {
+    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, InvalidPayload> {
         if !self.expected.contains(&message) || !self.seen.insert(message) {
             return Err(InvalidPayload);
         }

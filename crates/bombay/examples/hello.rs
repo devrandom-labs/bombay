@@ -1,9 +1,9 @@
-use bombay::behavior::{Actions, Delivery, Exit, Handler, MailAddr, Never, NoBirths, Pure};
+use bombay::behavior::{Actions, Exit, Handler, MailAddr, Never, NoBirths, Pure};
 use bombay::{Actor, AddressRouter, MailboxConfig, RunExit, System, TaskOutcome};
 
 struct StopOnMessage;
 
-impl Handler<String> for StopOnMessage {
+impl Handler for StopOnMessage {
     type Addr = MailAddr;
     type Msg = String;
 
@@ -11,13 +11,7 @@ impl Handler<String> for StopOnMessage {
         &mut self,
         from: MailAddr,
         message: String,
-    ) -> bombay::behavior::Acted<
-        Self::Addr,
-        Never,
-        Vec<Delivery<Self::Addr, String>>,
-        NoBirths,
-        Never,
-    > {
+    ) -> bombay::behavior::Acted<Self::Addr, Never, Vec<Never>, NoBirths, Never> {
         println!("{} says {message}", from.0);
         Ok(Actions::stop(Exit::Normal))
     }

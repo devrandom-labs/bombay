@@ -2,7 +2,7 @@
 
 use core::future::{Future, pending};
 
-use behavior::{Address, CreationResolved, Delivery, TimerElapsed, TimerId};
+use behavior::{Address, Behavior, CreationResolved, Delivery, TimerElapsed, TimerId};
 use bombay_timers::TimerQueue;
 use tokio::time::{Instant, sleep_until};
 
@@ -234,12 +234,13 @@ impl<R, N, L, S, P, PA> IncarnationEffects<R, N, L, S, P, PA> {
     }
 }
 
-impl<A, M, R, N, L, S, P, PA> DeliveryRouter<A, M> for IncarnationEffects<R, N, L, S, P, PA>
+impl<B, R, N, L, S, P, PA> DeliveryRouter<B> for IncarnationEffects<R, N, L, S, P, PA>
 where
-    A: Address + Send,
-    A::Nonce: Send,
-    M: Send,
-    R: DeliveryRouter<A, M> + Send + Sync,
+    B: Behavior,
+    B::Addr: Send,
+    <B::Addr as Address>::Nonce: Send,
+    B::Msg: Send,
+    R: DeliveryRouter<B> + Send + Sync,
     N: Sync,
     L: Sync,
     S: Sync,
@@ -248,8 +249,8 @@ where
 {
     type Error = R::Error;
 
-    async fn deliver(&self, from: A, delivery: Delivery<A, M>) -> Result<(), Self::Error> {
-        self.router.deliver(from, delivery).await
+    async fn deliver(&self, from: B::Addr, delivery: Delivery<B>) -> Result<(), Self::Error> {
+        <R as DeliveryRouter<B>>::deliver(&self.router, from, delivery).await
     }
 }
 #[cfg(test)]
@@ -261,9 +262,10 @@ mod tests {
     use std::task::{Context, Poll, Waker};
 
     use behavior::{
-        Crash, Exit, MailAddr, Never, ObservePeer, PeerStopped, ReportWorkerStopped, RestartDenial,
-        ScheduleAfter, ScheduleAt, ServiceSends, SupervisionEvent, SupervisionFailureReason,
-        TimerGeneration, TimerId, UnwatchPeer, User, WatchEvent, WorkerStopped,
+        Crash, Exit, Handler, MailAddr, Never, ObservePeer, PeerStopped, Pure, ReportWorkerStopped,
+        RestartDenial, ScheduleAfter, ScheduleAt, ServiceSends, SupervisionEvent,
+        SupervisionFailureReason, TimerGeneration, TimerId, UnwatchPeer, User, WatchEvent,
+        WorkerStopped,
     };
     use tokio::time::{Duration, Instant, advance};
 
@@ -274,6 +276,23 @@ mod tests {
     };
 
     type RecordedEvent = SupervisionEvent<User<MailAddr, Never>>;
+
+    struct PeerState;
+
+    impl Handler for PeerState {
+        type Addr = MailAddr;
+        type Msg = Never;
+
+        fn receive(
+            &mut self,
+            _from: MailAddr,
+            message: Never,
+        ) -> behavior::Acted<MailAddr, Never, Vec<Never>, behavior::NoBirths, Never> {
+            match message {}
+        }
+    }
+
+    type PeerBehavior = Pure<PeerState>;
 
     #[derive(Clone, Default)]
     struct RecordingEvents(Arc<Mutex<Vec<RecordedEvent>>>);
@@ -351,8 +370,7 @@ mod tests {
         let mut peer_subject = peer_space.subject(()).expect("fresh peer subject");
         let endpoint = IncarnationEndpoint::new((), peer_space);
         let _lease =
-            EndpointRegistry::<MailAddr, Never, _>::register(&router, MailAddr(9), endpoint)
-                .unwrap();
+            EndpointRegistry::<PeerBehavior, _>::register(&router, MailAddr(9), endpoint).unwrap();
         let events = RecordingPeerEvents::default();
         let mut services = super::IncarnationEffects::<_, u64, (), _, (), MailAddr>::new(
             router,
@@ -830,13 +848,13 @@ mod tests {
         let mut subject_nine = space_nine.subject(()).expect("fresh peer subject");
         let space_ten = observe::ObservationSpace::new();
         let mut subject_ten = space_ten.subject(()).expect("fresh peer subject");
-        let _lease_nine = EndpointRegistry::<MailAddr, Never, _>::register(
+        let _lease_nine = EndpointRegistry::<PeerBehavior, _>::register(
             &router,
             MailAddr(9),
             IncarnationEndpoint::new((), space_nine),
         )
         .unwrap();
-        let _lease_ten = EndpointRegistry::<MailAddr, Never, _>::register(
+        let _lease_ten = EndpointRegistry::<PeerBehavior, _>::register(
             &router,
             MailAddr(10),
             IncarnationEndpoint::new((), space_ten),
@@ -906,7 +924,7 @@ mod tests {
         let router = AddressRouter::<MailAddr, IncarnationEndpoint<MailAddr, ()>>::default();
         let space_one = observe::ObservationSpace::new();
         let mut subject_one = space_one.subject(()).expect("fresh gen-one subject");
-        let lease_one = EndpointRegistry::<MailAddr, Never, _>::register(
+        let lease_one = EndpointRegistry::<PeerBehavior, _>::register(
             &router,
             MailAddr(9),
             IncarnationEndpoint::new((), space_one),
@@ -926,7 +944,7 @@ mod tests {
         drop(lease_one);
         let space_two = observe::ObservationSpace::new();
         let mut subject_two = space_two.subject(()).expect("fresh gen-two subject");
-        let _lease_two = EndpointRegistry::<MailAddr, Never, _>::register(
+        let _lease_two = EndpointRegistry::<PeerBehavior, _>::register(
             &services.router,
             MailAddr(9),
             IncarnationEndpoint::new((), space_two),
@@ -969,8 +987,7 @@ mod tests {
         let mut peer_subject = peer_space.subject(()).expect("fresh peer subject");
         let endpoint = IncarnationEndpoint::new((), peer_space);
         let lease =
-            EndpointRegistry::<MailAddr, Never, _>::register(&router, MailAddr(9), endpoint)
-                .unwrap();
+            EndpointRegistry::<PeerBehavior, _>::register(&router, MailAddr(9), endpoint).unwrap();
         let events = RecordingPeerEvents::default();
         let mut services = super::IncarnationEffects::<_, u64, (), _, (), MailAddr>::new(
             router,

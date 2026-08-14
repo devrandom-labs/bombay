@@ -59,7 +59,7 @@ must not be treated as a waiver of per-feature verification.
 | E2 | Static type-inference diagnostics | P1 | 5 | feature-complete | — | M4 |
 | E3 | Cookbook and public usage guidance | P1 | 8 | feature-complete | — | M4 |
 | E4 | First-class actor definition and one-value spawn | P0 | 3 | feature-complete | — | E9 |
-| E5 | Declarative typed application routing | P0 | 8 | unblocked | — | E9 |
+| E5 | Bombay-owned application routing | P0 | 8 | active | — | E9 |
 | E6 | Concise nominal behavior authoring | P1 | 5 | unblocked | — | E9 |
 | E7 | Live-actor capability and terminal-result ergonomics | P1 | 5 | unblocked | — | E9 |
 | E8 | Facade, prelude, and system-construction coherence | P1 | 3 | unblocked | — | E9 |
@@ -390,26 +390,101 @@ pending E9, M4, and the project-wide release audit.
 
 ##### E5 verification and contract
 
-Behavior 0.9.5 already owns typed `Delivery`, `Recipient`, `SendProduct`, and
-recursive semantic send selection. Communication owns the sole typed mailbox;
-Address owns homogeneous typed address spaces; Observe and Timers add no
-delivery registry; Transition and Machine Executor add no routing. Bombay must
-retain application `DeliveryRouter<A, M>` decisions because only the
-application knows the real endpoint for `M`, but the audit found repeated
-endpoint aliases, incarnation aliases, homogeneous `AddressRouter` fields, and
-delegating `EndpointRegistry`/`DeliveryRouter` bodies that express no
-additional choice.
+Fresh verification on 2026-08-14 inspected the exact locked registry source,
+public API, tests, and documentation for Behavior 0.9.5, Communication 0.1.1,
+Address 0.1.1, Observe 0.1.0, Timers 0.1.0, Transition 0.1.0, and Machine
+Executor 0.1.0. It also inspected the Behaviorpass repository instructions,
+source, testkit, current documentation, every local branch, remote main
+`fcc3aedeb76cf69a034920ec84556cd886bb141b`, and the complete Actorpass routing
+implementation and guidance at `0f42fc27411944b93c8e30c68c3b44b3101274fc`.
 
-E5 introduces declarative, statically expanded application routing syntax in
-`bombay-framework`. One declaration names each behavior/message endpoint once
-and expands only to the existing concrete `AddressRouter`,
-`IncarnationEndpoint`, `EndpointRegistry`, and `DeliveryRouter` composition.
-It adds no dynamic registry, erasure, alternate resolution path, runtime task,
-or blanket route that can overlap an application decision. Repeated message
-types, uninhabited `Never` lanes, and custom routers must remain explicitly
-representable. Compile tests must prove missing, duplicate, and mismatched
-routes fail statically; runtime inversion tests must prove generated routing
-selects the same exact endpoint and returns the same rejected payload.
+The prior E5 contract was wrong to prescribe an application routing macro.
+Behavior's clean recursive routing work solves effect-lane selection:
+`SendProduct`, semantic `Own`/`Inner<Path>`, `SendInput`, and Bombay's generic
+`RouteSends` interpreter mean applications never implement or traverse effect
+routing. That does not solve endpoint selection. `Delivery<A, M>` and
+`Recipient<A, M>` contain only an address/route and message; they carry no
+destination behavior, event protocol, or endpoint type. `Behavior` associates
+its own input `Addr`, `Msg`, and `Event`, but an emitting behavior's output
+delivery does not identify which receiving behavior owns `M`. Multiple real
+behaviors in both framework examples accept the same address/message protocol,
+so associated-type projection cannot select or even prove distinct endpoint
+implementations.
+
+Communication owns typed mailbox lanes and rejected payload recovery but no
+heterogeneous endpoint space. Address owns homogeneous `AddressSpace<A, E>`
+tables, exact claims, and leases; it deliberately has no `Any`, `TypeId`,
+downcast, or runtime typemap. Observe and Timers add no delivery fact.
+Transition and Machine Executor do not participate in routing. Bombay owns
+endpoint registration, lookup, route resolution, and effect interpretation.
+Consequently ordinary actor applications must not be made to own `Routes`,
+`AddressRouter`, `EndpointRegistry`, `DeliveryRouter`, `IncarnationEndpoint`,
+or endpoint aliases; those are runtime implementation concepts.
+
+An attempted behavior-only declarative expansion was deliberately compiled and
+rejected: Rust coherence cannot distinguish implementations whose address,
+message, and event are only unrelated associated-type projections, and shared
+message protocols are genuinely ambiguous under the current `Delivery<A, M>`
+contract. Adding field names, modes, repeated message annotations, generated
+route structs, or a system type-list merely moves the same missing destination
+fact into user syntax. It is not accepted E5 work. Dynamic registries, erased
+endpoints, `Any`, `TypeId`, downcasts, global envelopes, and runtime protocol
+lookup remain prohibited.
+
+E5 was blocked on a truthful static destination/endpoint contract.
+That contract must make ordinary registration and delivery fully Bombay-owned,
+preserve pure behaviors and rejected payload ownership, support repeated
+message types without user routing declarations, and remain recursively
+composable through births and wrappers. It may require a Behavior-owned typed
+destination fact or a narrower Bombay mailbox/address composition, but must be
+designed and verified in the owning repository before Bombay consumes it.
+Until that contract lands, the existing low-level traits remain for the runtime
+and current compatibility examples; they must not be promoted as the intended
+application UX. Once it lands, E5 must remove routing vocabulary from the framework prelude, README,
+cookbook, both framework examples, and all ordinary public signatures while
+retaining focused internal adapter tests and explicit advanced extension
+documentation only where a concrete non-Bombay interpreter requires it.
+
+Behavior 0.10.0, released at
+`4c756f5a6e8bf6aacfe6435250b95fb9fdcab985` on 2026-08-14, satisfies that
+external prerequisite. Its exact release source, public API, changelog,
+README, algebra tests, protocol-destination tests, compile-fail tests, model
+tests, properties, fuzz consumers, wrapper compositions, and pool/supervision
+consumers were inspected afresh. `Recipient<B>` and `Delivery<B>` are indexed
+by the concrete destination `Behavior`; `B::Addr` and `B::Msg` determine the
+address and payload, identical address/payload pairs remain distinct across
+destination behaviors, `Recipient::resolve(parent)` is the sole public route
+resolution operation, and the value carries no endpoint or runtime handle.
+`Handler` and `Pure` now carry the complete send algebra, and an actor with no
+ordinary sends uses `Vec<Never>`. Behavior deliberately exposes no route enum,
+endpoint table, registration mechanism, or runtime topology object.
+
+The Behavior 0.10 migration is complete across the locked dependency graph,
+runtime implementation, unit and integration tests, doctests, examples,
+benchmarks, mutation metadata, public documentation, and framework facade.
+Bombay now interprets `Delivery<B>` and `Recipient<B>` exclusively, keys
+registration and delivery compatibility adapters by `B`, uses `Vec<Never>`
+for behaviors with no ordinary sends, and contains no consumer of Behavior's
+private route representation. Identical address/message protocols are covered
+by distinct destination behavior types in the request/reply and job-queue
+oracles. Workspace build/tests, rustfmt, strict Clippy, all three executable
+examples, and the repository-wide obsolete-pattern audit pass. This completes
+the dependency migration but not E5: application-owned route structs and the
+framework routing re-exports remain the next active seam and prevent a
+`feature-complete` state.
+
+The unchanged exact neighboring contracts were rechecked for this migration:
+Communication 0.1.1 still owns only typed two-lane mailbox transport and
+rejected payload recovery; Address 0.1.1 still owns homogeneous exact-generation
+tables and leases; Observe 0.1.0 and Timers 0.1.0 add no delivery topology;
+Transition 0.1.0 and Machine Executor 0.1.0 remain outside routing. Therefore
+Bombay must key delivery and registration by destination behavior, resolve
+only through `Recipient<B>::resolve`, and own every endpoint/topology object.
+No compatibility copy of Behavior's private `Route`, address/message-indexed
+delivery protocol, dynamic registry, or erased endpoint is permitted. E5 is
+now `active`: upgrade the exact lock to Behavior 0.10.0, migrate the complete
+runtime and repository, then remove ordinary application routing declarations
+and routing vocabulary from the framework surface before feature completion.
 
 ##### E6 verification and contract
 
@@ -524,8 +599,11 @@ typed `SendAlgebra::send`. Application code must not traverse `.inner`/`.own`,
 mutate lanes positionally, or handwrite `SendAlgebra`, `SendInput`,
 `RouteSends`, `ObservesCreations`, or product-routing errors when recursive
 Behavior composition and bombay's generic interpreter cover them.
-Application `DeliveryRouter<A, M>` implementations remain because they select
-real endpoints.
+Behavior 0.10's `Delivery<B>` selects the destination behavior. The current
+`EndpointRegistry<B, D>` and `DeliveryRouter<B>` implementations are temporary
+Bombay runtime compatibility adapters under E5; they are not the intended
+application authoring model and must disappear from ordinary examples and the
+framework prelude before E5 is feature-complete.
 
 `Compose::from_fns` is suitable only while the concrete value stays locally
 inferred. Use Behavior's nominal attribute for plain `User`/`Never` behaviors

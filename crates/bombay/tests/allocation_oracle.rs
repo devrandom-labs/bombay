@@ -8,7 +8,7 @@
 use std::alloc::{GlobalAlloc, Layout, System as Allocator};
 use std::sync::atomic::{AtomicIsize, Ordering};
 
-use bombay::behavior::{Actions, Delivery, Exit, Handler, MailAddr, Never, NoBirths, Pure};
+use bombay::behavior::{Actions, Exit, Handler, MailAddr, Never, NoBirths, Pure};
 use bombay::{Actor, AddressRouter, MailboxConfig, RunExit, System, TaskOutcome};
 
 struct Counting;
@@ -50,7 +50,7 @@ static ALLOCATOR: Counting = Counting;
 
 struct Stop;
 
-impl Handler<u8> for Stop {
+impl Handler for Stop {
     type Addr = MailAddr;
     type Msg = u8;
 
@@ -58,8 +58,7 @@ impl Handler<u8> for Stop {
         &mut self,
         _from: MailAddr,
         _message: u8,
-    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Delivery<MailAddr, u8>>, NoBirths, Never>
-    {
+    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
         Ok(Actions::stop(Exit::Normal))
     }
 }
