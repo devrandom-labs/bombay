@@ -1,17 +1,15 @@
-use bombay::behavior::{Actions, Exit, Handler, MailAddr, Never, NoBirths, Pure};
+use bombay::behavior::{Actions, Exit, MailAddr, Never, NoBirths};
 use bombay::{Actor, AddressRouter, MailboxConfig, RunExit, System, TaskOutcome};
 
 struct StopOnMessage;
 
-impl Handler for StopOnMessage {
-    type Addr = MailAddr;
-    type Msg = String;
-
+#[bombay::behavior::behavior(addr = MailAddr, message = String, sends = Vec<Never>, births = NoBirths, error = Never)]
+impl StopOnMessage {
     fn receive(
         &mut self,
         from: MailAddr,
         message: String,
-    ) -> bombay::behavior::Acted<Self::Addr, Never, Vec<Never>, NoBirths, Never> {
+    ) -> bombay::behavior::BehaviorActed<Self> {
         println!("{} says {message}", from.0);
         Ok(Actions::stop(Exit::Normal))
     }
@@ -25,7 +23,7 @@ async fn main() {
     // `spawn` returns the affine `Handle`; `actor_ref` is the clonable,
     // typed `ActorRef` used for delivery.
     let handle = system
-        .spawn(Actor::new(MailAddr(1), Pure::new(StopOnMessage)))
+        .spawn(Actor::new(MailAddr(1), StopOnMessage))
         .expect("the address is vacant");
     let actor_ref = handle.actor_ref().clone();
 

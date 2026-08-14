@@ -23,25 +23,21 @@ of its code.
 
 ## Typed heterogeneous effects
 
-Use Behavior's `SendProduct` for multiple effect lanes. Give each emitted
-protocol a semantic alias over `Own` or `Inner<Path>` and call typed
-`SendAlgebra::send`. Do not reach through `.inner`/`.own`, define an
-application send-algebra wrapper, or implement `RouteSends`/
-`ObservesCreations`; bombay already interprets the recursive product. Each
-`Delivery<B>` names its destination behavior, so identical address and message
-types remain statically distinct. The remaining low-level routing adapters are
-temporary E5 compatibility infrastructure, not application architecture.
+Use a named send struct for multiple effect lanes. Implement `SendAlgebra`,
+then implement `SendInput` once for each semantic lane and emit through typed
+`SendAlgebra::send`. Wrapper- and application-owned names replace positional
+product paths. Each `Delivery<B>` names its destination behavior, so identical
+address and message types remain statically distinct. `RouteSends` and
+`ObservesCreations` belong at the runtime adapter boundary, not in domain
+behavior. The job-queue example shows the complete named-lane pattern.
 
 ## Pure fold and typed delivery
 
-Use a Bombay Behavior `Handler` or `Behavior` to map an input to `Actions`.
-For explicit initialization plus one ordinary user-message fold,
-`Compose::from_fns` can produce a locally inferred `BehaviorFn` with arbitrary
-typed sends, births, and errors. When a nominal type is required by `Births`,
-`Proxy`, `Supervisor`, endpoints, or routers, use
-`#[behavior::behavior(...)]` over inherent `init` and `receive` methods instead
-of expanding closure types. Semantic wrappers coordinating wrapper-owned event
-protocols remain explicit.
+Use `#[behavior::behavior(...)]` over inherent `init` and `receive` methods for
+an ordinary user-message fold. Implement `Behavior` directly for service-event
+protocols and semantic wrappers. Build lifecycle composition with
+`Compose::new`, and pass the resulting definition to `Actor::from_definition`;
+plain unwrapped behaviors may still use `Actor::new`.
 Pair the behavior with its address using `Actor::new`, then use `System::spawn`
 once to install that actor. Retain the affine `Handle` as lifecycle authority,
 and clone its typed `ActorRef` for delivery. The inert `Actor` and its behavior

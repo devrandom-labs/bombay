@@ -54,7 +54,7 @@ impl Behavior for OrderedInit {
     type Error = Never;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         self.0.lock().unwrap().push("init");
         Ok(Actions::new(
             vec![Delivery::new(Recipient::global(MailAddr(9)), 1)],
@@ -63,7 +63,11 @@ impl Behavior for OrderedInit {
         ))
     }
 
-    fn transition(&mut self, _: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        _: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 }
@@ -82,11 +86,15 @@ impl Behavior for FailingInit {
     type Error = InitFailed;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Err(InitFailed)
     }
 
-    fn transition(&mut self, _: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        _: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         unreachable!()
     }
 }
@@ -108,11 +116,15 @@ impl Behavior for DropProbe {
     type Error = Never;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, _: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        _: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 }

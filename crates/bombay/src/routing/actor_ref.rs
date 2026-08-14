@@ -1,6 +1,6 @@
 //! Typed handles to resolved actor mailboxes.
 
-use behavior::{Address, ShutdownEvent, ShutdownRequested, UserEvent};
+use behavior::{Address, EventInput, RouteInput, ShutdownRequested, UserEvent};
 
 use crate::runtime::lifecycle::IncarnationReporter;
 use crate::{
@@ -16,9 +16,6 @@ pub struct MailboxDeliveryClosed;
 /// Failure to publish a typed graceful-shutdown request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum ShutdownRequestError {
-    /// The composed event protocol declined shutdown construction.
-    #[error("the composed event protocol declined shutdown construction")]
-    Unsupported,
     /// The actor mailbox consumer has already retired.
     #[error("the actor mailbox consumer has already retired")]
     Closed,
@@ -102,7 +99,7 @@ where
 
 impl<A, E, L> ActorRef<A, MailboxSender<E>, L>
 where
-    E: ShutdownEvent,
+    E: EventInput<ShutdownRequested>,
     L: IncarnationReporter,
 {
     /// Publish one priority graceful-shutdown request.
@@ -113,17 +110,25 @@ where
     ///
     /// # Errors
     ///
-    /// Returns [`ShutdownRequestError::Unsupported`] when the composed event
-    /// protocol declines construction, or [`ShutdownRequestError::Closed`]
-    /// after mailbox retirement.
+    /// Returns [`ShutdownRequestError::Closed`] after mailbox retirement.
     pub fn request_shutdown(&self) -> Result<(), ShutdownRequestError> {
-        let event =
-            E::shutdown_requested(ShutdownRequested).ok_or(ShutdownRequestError::Unsupported)?;
+        let event = E::inject(ShutdownRequested);
         self.sender
             .send_control(event)
             .map_err(|_| ShutdownRequestError::Closed)?;
         self.lifecycle.emit(LifecycleTransition::ShutdownRequested);
         Ok(())
+    }
+}
+
+impl<A, E, L> ActorRef<A, MailboxSender<E>, L>
+where
+    E: RouteInput<ShutdownRequested>,
+{
+    pub(crate) fn request_shutdown_if_supported(&self) {
+        if let Ok(event) = E::route(ShutdownRequested) {
+            let _ = self.sender.send_control(event);
+        }
     }
 }
 
@@ -169,7 +174,7 @@ mod tests {
     use std::convert::Infallible;
     use std::sync::{Arc, Mutex};
 
-    use behavior::{MailAddr, ShutdownEvent, ShutdownProtocol, ShutdownRequested, User, UserEvent};
+    use behavior::{MailAddr, ShutdownProtocol, ShutdownRequested, User};
 
     use super::{ActorRef, MailboxDeliveryClosed};
     use crate::{
@@ -237,36 +242,8 @@ mod tests {
         ));
     }
 
-    struct Declined;
-
-    impl ShutdownEvent for Declined {
-        fn shutdown_requested(_event: ShutdownRequested) -> Option<Self> {
-            None
-        }
-    }
-
-    impl UserEvent for Declined {
-        type Addr = MailAddr;
-        type Message = Message;
-
-        fn user(_from: MailAddr, _message: Message) -> Self {
-            Self
-        }
-
-        fn into_user(self) -> Result<User<MailAddr, Message>, Self> {
-            Err(self)
-        }
-    }
-
     #[test]
-    fn distinguishes_declined_construction_from_closed_delivery() {
-        let (declined, _source) = MailboxConfig::bounded(1).create::<Declined>();
-        let declined = ActorRef::new(MailAddr(1), declined);
-        assert_eq!(
-            declined.request_shutdown(),
-            Err(ShutdownRequestError::Unsupported)
-        );
-
+    fn reports_closed_shutdown_delivery() {
         let (closed, source) =
             MailboxConfig::bounded(1).create::<ShutdownProtocol<User<MailAddr, Message>>>();
         drop(source);

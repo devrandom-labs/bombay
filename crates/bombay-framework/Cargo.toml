@@ -15,6 +15,7 @@ bombay = { workspace = true }
 
 [dev-dependencies]
 behavior = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true, features = ["rt", "macros", "time", "sync"] }
 
 [[example]]

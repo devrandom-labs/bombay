@@ -262,12 +262,12 @@ mod tests {
     use std::task::{Context, Poll, Waker};
 
     use behavior::{
-        Crash, Exit, Handler, MailAddr, Never, ObservePeer, PeerStopped, Pure, ReportWorkerStopped,
-        RestartDenial, ScheduleAfter, ScheduleAt, ServiceSends, SupervisionEvent,
-        SupervisionFailureReason, TimerGeneration, TimerId, UnwatchPeer, User, WatchEvent,
-        WorkerStopped,
+        Crash, Exit, MailAddr, Never, ObservePeer, PeerStopped, ReportWorkerStopped, RestartDenial,
+        ScheduleAfter, ScheduleAt, ServiceSends, SupervisionEvent, SupervisionFailureReason,
+        TimerGeneration, TimerId, UnwatchPeer, User, WatchEvent, WorkerStopped,
     };
-    use tokio::time::{Duration, Instant, advance};
+    use std::time::{Duration, Instant};
+    use tokio::time::advance;
 
     use crate::runtime::classify_task;
     use crate::{
@@ -279,10 +279,8 @@ mod tests {
 
     struct PeerState;
 
-    impl Handler for PeerState {
-        type Addr = MailAddr;
-        type Msg = Never;
-
+    #[behavior::behavior(addr = MailAddr, message = Never, sends = Vec<Never>, births = behavior::NoBirths, error = Never)]
+    impl PeerState {
         fn receive(
             &mut self,
             _from: MailAddr,
@@ -292,7 +290,7 @@ mod tests {
         }
     }
 
-    type PeerBehavior = Pure<PeerState>;
+    type PeerBehavior = PeerState;
 
     #[derive(Clone, Default)]
     struct RecordingEvents(Arc<Mutex<Vec<RecordedEvent>>>);

@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::time::Duration;
 
-use bombay::behavior::{Actions, Exit, Handler, MailAddr, Never, NoBirths, Pure};
+use bombay::behavior::{Actions, Exit, MailAddr, Never, NoBirths};
 use bombay::{Actor, AddressRouter, MailboxConfig, RunExit, System, TaskOutcome};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -12,10 +12,8 @@ struct AccountFor {
     seen: BTreeSet<u8>,
 }
 
-impl Handler<Vec<Never>, NoBirths, InvalidPayload> for AccountFor {
-    type Addr = MailAddr;
-    type Msg = u8;
-
+#[bombay::behavior::behavior(addr = MailAddr, message = u8, sends = Vec<Never>, births = NoBirths, error = InvalidPayload)]
+impl AccountFor {
     fn receive(
         &mut self,
         _from: MailAddr,
@@ -54,10 +52,10 @@ pub async fn accepted_payloads_are_processed_once(order: &[u8]) {
     let actor = system
         .spawn(Actor::new(
             MailAddr(1),
-            Pure::new(AccountFor {
+            AccountFor {
                 expected,
                 seen: BTreeSet::new(),
-            }),
+            },
         ))
         .expect("fresh address must be claimable");
 
@@ -83,10 +81,10 @@ pub async fn accepted_payloads_are_processed_once(order: &[u8]) {
     let replacement = system
         .spawn(Actor::new(
             MailAddr(1),
-            Pure::new(AccountFor {
+            AccountFor {
                 expected: [0].into(),
                 seen: BTreeSet::new(),
-            }),
+            },
         ))
         .expect("terminal publication must follow registration release");
     replacement.actor_ref().send(MailAddr(0), 0).await.unwrap();

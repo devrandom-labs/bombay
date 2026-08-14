@@ -3,8 +3,8 @@
 use core::convert::Infallible;
 
 use behavior::{
-    Address, CreationEvent, ObserveCreation, ReportWorkerCreationResolved, ReportWorkerStopped,
-    ServiceSends, WorkerCreationEvent, WorkerCreationResolved, WorkerEvent, WorkerStopped,
+    Address, CreationResolved, EventInput, ObserveCreation, ReportWorkerCreationResolved,
+    ReportWorkerStopped, ServiceSends, WorkerCreationResolved, WorkerStopped,
 };
 
 use super::{IncarnationEffects, ParentReporter};
@@ -21,7 +21,7 @@ where
     L: Send,
     S: Send,
     ParentSink: EventSender + Send + Sync,
-    ParentSink::Event: WorkerEvent<Addr = A> + Send,
+    ParentSink::Event: EventInput<WorkerStopped<A>> + Send,
 {
     type Error = Infallible;
 
@@ -31,14 +31,13 @@ where
         services: &mut IncarnationEffects<R, N, L, S, ParentReporter<A, ParentSink>, A>,
     ) -> Result<(), Self::Error> {
         for report in self {
-            if let Some(event) = <ParentSink::Event as WorkerEvent>::worker_stopped(WorkerStopped {
+            let event = ParentSink::Event::inject(WorkerStopped {
                 proxy: services.parent.nonce,
                 worker: report.worker,
                 outcome: report.outcome,
                 at: report.at,
-            }) {
-                let _ = services.parent.response.send(event).await;
-            }
+            });
+            let _ = services.parent.response.send(event).await;
         }
         Ok(())
     }
@@ -52,7 +51,7 @@ where
     R: Send,
     L: Send,
     S: EventSender + Clone + Send + Sync + 'static,
-    S::Event: CreationEvent<Addr = A> + Send + 'static,
+    S::Event: EventInput<CreationResolved<A::Nonce>> + Send + 'static,
     P: Send,
 {
     type Error = crate::runtime::CreationObservationError<A::Nonce>;
@@ -64,9 +63,7 @@ where
     ) -> Result<(), Self::Error> {
         for request in self {
             let resolved = services.take_creation(request.nonce)?;
-            if let Some(event) = <S::Event as CreationEvent>::creation_resolved(resolved) {
-                let _ = services.response.send(event).await;
-            }
+            let _ = services.response.send(S::Event::inject(resolved)).await;
         }
         Ok(())
     }
@@ -83,7 +80,7 @@ where
     L: Send,
     S: Send,
     ParentSink: EventSender + Send + Sync,
-    ParentSink::Event: WorkerCreationEvent<Addr = A> + Send,
+    ParentSink::Event: EventInput<WorkerCreationResolved<A::Nonce>> + Send,
 {
     type Error = Infallible;
 
@@ -93,18 +90,13 @@ where
         services: &mut IncarnationEffects<R, N, L, S, ParentReporter<A, ParentSink>, A>,
     ) -> Result<(), Self::Error> {
         for report in self {
-            if let Some(event) =
-                <ParentSink::Event as WorkerCreationEvent>::worker_creation_resolved(
-                    WorkerCreationResolved {
-                        proxy: services.parent.nonce,
-                        worker: report.worker,
-                        kind: report.kind,
-                        result: report.result,
-                    },
-                )
-            {
-                let _ = services.parent.response.send(event).await;
-            }
+            let event = ParentSink::Event::inject(WorkerCreationResolved {
+                proxy: services.parent.nonce,
+                worker: report.worker,
+                kind: report.kind,
+                result: report.result,
+            });
+            let _ = services.parent.response.send(event).await;
         }
         Ok(())
     }

@@ -14,11 +14,11 @@ pub enum RunExit<D> {
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum RunError<B, E> {
     /// The behavior transition failed.
-    #[error("behavior transition failed: {0:?}")]
-    Behavior(B),
+    #[error("behavior transition failed")]
+    Behavior(#[source] B),
     /// The environment rejected a successful transition's effects.
-    #[error("environment rejected a successful transition's effects: {0:?}")]
-    Environment(E),
+    #[error("environment rejected a successful transition's effects")]
+    Environment(#[source] E),
     /// The machine executor was poisoned by a panicking transition and the
     /// driver was reused. The actor is terminal. The driver detects poison
     /// before polling the environment again, so it does not consume another

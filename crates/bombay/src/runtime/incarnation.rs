@@ -419,11 +419,15 @@ mod tests {
         type Error = Infallible;
         type Birth = NoBirths;
 
-        fn init(&mut self) -> behavior::BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
             Ok(Actions::stop(Exit::Normal))
         }
 
-        fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            _event: Self::Event,
+        ) -> behavior::BehaviorActed<Self> {
             unreachable!()
         }
     }

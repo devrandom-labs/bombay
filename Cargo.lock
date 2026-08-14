@@ -52,9 +52,7 @@ checksum = "b588b76d00fde79687d7646a9b5bdf3cc0f655e0bbd080335a95d7e96f3587da"
 
 [[package]]
 name = "bombay-address"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8c69607ce4bbc88a41b5592ef828c9a825305fc22f4e84f501100174cc621ee"
+version = "0.2.0"
 dependencies = [
  "loom",
  "parking_lot",
@@ -63,20 +61,14 @@ dependencies = [
 [[package]]
 name = "bombay-behavior"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56cb9afe5cea773ec62cc79b3a0ed7c46a1f2d267b156a530f696bc4e47c6883"
 dependencies = [
  "bombay-behavior-macros",
- "bombay-communication",
  "thiserror",
- "tokio",
 ]
 
 [[package]]
 name = "bombay-behavior-macros"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3131232f8603cce0251339d73a855d0acab1de7476f5ed285bab6b654d6abd2d"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -113,6 +105,7 @@ version = "0.1.0"
 dependencies = [
  "bombay-behavior",
  "bombay-rs",
+ "thiserror",
  "tokio",
 ]
 

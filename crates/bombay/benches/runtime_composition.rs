@@ -8,10 +8,10 @@ use std::hint::black_box;
 use std::time::Duration;
 
 use bombay::behavior::{
-    Actions, Address, Become, Behavior, Births, Crash, Delivery, Exit, Handler, MailAddr, Never,
-    NoBirths, Proxy, Pure, RestartDenial, RestartPolicy, ScheduleAfter, ServiceSends, Step,
-    StopOnShutdown, Strategy, SupervisionEvent, SupervisionFailureReason, Supervisor, TimedEvent,
-    TimerGeneration, TimerId, User, Watch, stop_on_supervision_failure,
+    Actions, Address, Become, Behavior, Births, Compose, Crash, Delivery, Exit, MailAddr, Never,
+    NoBirths, Proxy, RestartDenial, RestartPolicy, ScheduleAfter, ServiceSends, Step, Strategy,
+    SupervisionEvent, SupervisionFailureReason, Supervisor, TimedEvent, TimerGeneration, TimerId,
+    User, stop_on_supervision_failure,
 };
 use bombay::{
     Actor, ActorRef, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint,
@@ -23,10 +23,8 @@ const SENDS: usize = 1_024;
 
 struct StopOn(u64);
 
-impl Handler for StopOn {
-    type Addr = MailAddr;
-    type Msg = u64;
-
+#[bombay::behavior::behavior(addr = MailAddr, message = u64, sends = Vec<Never>, births = NoBirths, error = Never)]
+impl StopOn {
     fn receive(
         &mut self,
         _from: MailAddr,
@@ -42,10 +40,8 @@ impl Handler for StopOn {
 
 struct Waiting;
 
-impl Handler for Waiting {
-    type Addr = MailAddr;
-    type Msg = Never;
-
+#[bombay::behavior::behavior(addr = MailAddr, message = Never, sends = Vec<Never>, births = NoBirths, error = Never)]
+impl Waiting {
     fn receive(
         &mut self,
         _from: MailAddr,
@@ -60,7 +56,7 @@ impl Handler for Waiting {
     reason = "Bombay Behavior's peer reaction requires the behavior error domain"
 )]
 fn peer_stop(
-    _behavior: &mut Pure<StopOn>,
+    _behavior: &mut StopOn,
     _peer: MailAddr,
     _outcome: &Result<Exit<MailAddr>, Crash>,
 ) -> Result<Become<MailAddr>, Never> {
@@ -81,13 +77,17 @@ impl Behavior for ArmedTimer {
     type Error = Never;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         match event {
-            TimedEvent::Inner(_) => Ok(Actions {
+            TimedEvent::Behavior(_) => Ok(Actions {
                 sends: ServiceSends::one(ScheduleAfter {
                     id: TimerId(0),
                     generation: TimerGeneration(0),
@@ -120,8 +120,8 @@ struct WorkerFailure;
 
 struct RestartWorker;
 
-fn restart_worker(_index: usize) -> RestartWorker {
-    RestartWorker
+fn restart_worker(_index: usize) -> Option<RestartWorker> {
+    Some(RestartWorker)
 }
 
 fn restart_proxy_nonce(_index: usize) -> u64 {
@@ -137,7 +137,7 @@ impl bombay::behavior::Behavior for RestartWorker {
     type Error = WorkerFailure;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         Ok(Actions::new(
             ServiceSends::one(ScheduleAfter {
                 id: TimerId(0),
@@ -149,9 +149,13 @@ impl bombay::behavior::Behavior for RestartWorker {
         ))
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         match event {
-            TimedEvent::Inner(event) => match event.message {},
+            TimedEvent::Behavior(event) => match event.message {},
             TimedEvent::Elapsed(_) => Err(WorkerFailure),
         }
     }
@@ -170,11 +174,15 @@ impl bombay::behavior::Behavior for RestartParent {
     type Error = Never;
     type Birth = Births<RestartWorker>;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, _event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        _event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 }
@@ -258,6 +266,7 @@ fn restart_supervisor() -> RestartSupervisor {
         1,
         Duration::MAX,
     )
+    .expect("restart supervisor topology")
     .with_failure_reaction(stop_on_supervision_failure)
 }
 
@@ -285,7 +294,7 @@ fn runtime_composition(c: &mut Criterion) {
             |address| async move {
                 let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
                 let actor = system
-                    .spawn(Actor::new(MailAddr(address), Pure::new(Waiting)))
+                    .spawn(Actor::new(MailAddr(address), Waiting))
                     .expect("vacant benchmark address");
                 actor.abort();
                 black_box(actor.outcome().await);
@@ -302,9 +311,7 @@ fn runtime_composition(c: &mut Criterion) {
                 system
                     .spawn(Actor::new(
                         MailAddr(address),
-                        Pure::new(StopOn(
-                            u64::try_from(SENDS - 1).expect("send count fits u64"),
-                        )),
+                        StopOn(u64::try_from(SENDS - 1).expect("send count fits u64")),
                     ))
                     .expect("vacant benchmark address")
             },
@@ -334,7 +341,7 @@ fn runtime_composition(c: &mut Criterion) {
                 address = address.checked_add(1).expect("address counter");
                 let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
                 system
-                    .spawn(Actor::new(MailAddr(address), Pure::new(StopOn(0))))
+                    .spawn(Actor::new(MailAddr(address), StopOn(0)))
                     .expect("vacant benchmark address")
             },
             |actor| async {
@@ -390,15 +397,15 @@ fn runtime_composition(c: &mut Criterion) {
                 let peer_address = MailAddr(address - 1);
                 let watcher_address = MailAddr(address);
                 let peer = system
-                    .spawn(Actor::new(
+                    .spawn(Actor::from_definition(
                         peer_address,
-                        Watch::new(Pure::new(StopOn(0)), peer_address, peer_stop),
+                        Compose::new(StopOn(0)).watch(peer_address, peer_stop),
                     ))
                     .expect("vacant peer address");
                 let watcher = system
-                    .spawn(Actor::new(
+                    .spawn(Actor::from_definition(
                         watcher_address,
-                        Watch::new(Pure::new(StopOn(u64::MAX)), peer_address, peer_stop),
+                        Compose::new(StopOn(u64::MAX)).watch(peer_address, peer_stop),
                     ))
                     .expect("vacant watcher address");
                 (peer, watcher)
@@ -454,9 +461,9 @@ fn runtime_composition(c: &mut Criterion) {
                 address = address.checked_add(1).expect("address counter");
                 let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
                 system
-                    .spawn(Actor::new(
+                    .spawn(Actor::from_definition(
                         MailAddr(address),
-                        StopOnShutdown::new(Pure::new(Waiting)),
+                        Compose::new(Waiting).stop_on_shutdown(),
                     ))
                     .expect("vacant benchmark address")
             },

@@ -35,11 +35,15 @@ mod serialized_executor {
         type Error = Never;
         type Birth = NoBirths;
 
-        fn init(&mut self) -> BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
             Ok(Actions::cont())
         }
 
-        fn transition(&mut self, event: Self::Event) -> BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            event: Self::Event,
+        ) -> BehaviorActed<Self> {
             self.value.fetch_add(event.message, Ordering::Relaxed);
             Ok(Actions::cont())
         }
@@ -65,12 +69,13 @@ mod serialized_executor {
     #[test]
     fn behavior_machine_runs_under_serialized_executor() {
         let value = Arc::new(AtomicUsize::new(0));
-        let machine = BehaviorMachine::with_topology(
-            Counter {
-                value: Arc::clone(&value),
-            },
-            descriptive_topology(),
-        );
+        let active = behavior::Compose::new(Counter {
+            value: Arc::clone(&value),
+        })
+        .initialize()
+        .unwrap()
+        .behavior;
+        let machine = BehaviorMachine::with_topology(active, descriptive_topology());
         let executor = SerializedExecutor::new(machine);
         let handled = AtomicUsize::new(0);
 
@@ -106,11 +111,15 @@ mod serialized_executor {
             type Error = Never;
             type Birth = NoBirths;
 
-            fn init(&mut self) -> BehaviorActed<Self> {
+            fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
                 Ok(Actions::cont())
             }
 
-            fn transition(&mut self, _event: Self::Event) -> BehaviorActed<Self> {
+            fn transition(
+                &mut self,
+                _: behavior::ActiveTurn,
+                _event: Self::Event,
+            ) -> BehaviorActed<Self> {
                 self.fired = true;
                 Ok(Actions::new(
                     Self::Sends::empty(),
@@ -120,8 +129,11 @@ mod serialized_executor {
             }
         }
 
-        let machine =
-            BehaviorMachine::with_topology(StopAfterOne { fired: false }, descriptive_topology());
+        let active = behavior::Compose::new(StopAfterOne { fired: false })
+            .initialize()
+            .unwrap()
+            .behavior;
+        let machine = BehaviorMachine::with_topology(active, descriptive_topology());
         let executor = SerializedExecutor::new(machine);
 
         let stopped = AtomicUsize::new(0);
@@ -160,12 +172,13 @@ mod serialized_executor {
             fn routed(&mut self, _left: (), _right: ()) {}
         }
 
-        let machine = BehaviorMachine::with_topology(
-            Counter {
-                value: Arc::new(AtomicUsize::new(0)),
-            },
-            descriptive_topology(),
-        );
+        let active = behavior::Compose::new(Counter {
+            value: Arc::new(AtomicUsize::new(0)),
+        })
+        .initialize()
+        .unwrap()
+        .behavior;
+        let machine = BehaviorMachine::with_topology(active, descriptive_topology());
         let mut collector = NameCollector { names: Vec::new() };
         machine.describe(&mut collector);
         assert_eq!(collector.names, vec!["counter"]);

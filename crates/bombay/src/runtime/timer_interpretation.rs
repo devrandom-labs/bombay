@@ -26,7 +26,7 @@ impl<A: Address + Send, R: Send, N: Send, L: Send, S: Send, P: Send, PA: Send>
         for schedule in self {
             services.timers.schedule(
                 schedule.id,
-                schedule.at,
+                schedule.at.into(),
                 TimerElapsed {
                     id: schedule.id,
                     generation: schedule.generation,

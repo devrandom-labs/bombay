@@ -12,15 +12,16 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use bombay::behavior::{
-    Actions, Address, Behavior, Births, CreationRejection, CreationResolved, Delivery, Inner,
-    MailAddr, Never, NoBirths, ObserveChild, ObserveCreation, Own, Proxy, Recipient, RestartPolicy,
-    SendAlgebra, SendProduct, ServiceSends, Strategy, SupervisionEvent, Supervisor, User,
+    Actions, Address, Behavior, Births, CreationRejection, CreationResolved, Delivery, MailAddr,
+    Never, NoBirths, ObserveChild, ObserveCreation, Own, Proxy, Recipient, RestartPolicy,
+    SendAlgebra, SendInput, ServiceSends, Strategy, SupervisionEvent, Supervisor, User,
     stop_on_supervision_failure,
 };
 use bombay::{
     Actor, ActorRef, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint,
-    LifecycleEvent, LifecycleSink, LifecycleTransition, MailboxAnchor, MailboxConfig, RunError,
-    RuntimeEffectError, System, SystemBirthError, TaskOutcome,
+    LifecycleEvent, LifecycleSink, LifecycleTransition, MailboxAnchor, MailboxConfig,
+    ObservesCreations, RouteSends, RunError, RuntimeEffectError, System, SystemBirthError,
+    TaskOutcome,
 };
 use bombay_address::RegistrationId;
 use tokio::task::yield_now;
@@ -41,11 +42,15 @@ impl Behavior for Fragile {
     type Error = InitFailure;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         Err(InitFailure)
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         match event.message {}
     }
 }
@@ -69,14 +74,18 @@ impl Behavior for Flaky {
     type Error = InitFailure;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         if self.attempts.fetch_add(1, Ordering::SeqCst) == 0 {
             return Err(InitFailure);
         }
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         self.received
             .lock()
             .expect("child record lock")
@@ -99,11 +108,15 @@ impl Behavior for Recorder {
     type Error = Never;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         self.received
             .lock()
             .expect("recorder lock")
@@ -113,14 +126,130 @@ impl Behavior for Recorder {
 }
 
 type ParentEvent = SupervisionEvent<User<MailAddr, u8>>;
-type ParentSends = SendProduct<Vec<Delivery<Recorder>>, ServiceSends<ObserveCreation<u64>>>;
-type ParentDeliveryPath = Inner<Own>;
-type RetrySends = SendProduct<
-    SendProduct<Vec<Delivery<Recorder>>, Vec<Delivery<Flaky>>>,
-    ServiceSends<ObserveCreation<u64>>,
->;
-type RetryReplyPath = Inner<Inner<Own>>;
-type RetryChildPath = Inner<Own>;
+enum RecorderLane {}
+enum FlakyLane {}
+enum ChildObservationLane {}
+
+struct CreationSends {
+    recorder_deliveries: Vec<Delivery<Recorder>>,
+    flaky_deliveries: Vec<Delivery<Flaky>>,
+    child_observations: ServiceSends<ObserveChild<u64>>,
+    creation_observations: ServiceSends<ObserveCreation<u64>>,
+}
+
+impl SendAlgebra for CreationSends {
+    fn empty() -> Self {
+        Self {
+            recorder_deliveries: Vec::new(),
+            flaky_deliveries: Vec::new(),
+            child_observations: ServiceSends::empty(),
+            creation_observations: ServiceSends::empty(),
+        }
+    }
+
+    fn append(&mut self, other: Self) {
+        SendAlgebra::append(&mut self.recorder_deliveries, other.recorder_deliveries);
+        SendAlgebra::append(&mut self.flaky_deliveries, other.flaky_deliveries);
+        self.child_observations.append(other.child_observations);
+        self.creation_observations
+            .append(other.creation_observations);
+    }
+}
+
+impl SendInput<Delivery<Recorder>, RecorderLane> for CreationSends {
+    fn emit(&mut self, input: Delivery<Recorder>) {
+        self.recorder_deliveries.send(input);
+    }
+}
+impl SendInput<Delivery<Flaky>, FlakyLane> for CreationSends {
+    fn emit(&mut self, input: Delivery<Flaky>) {
+        self.flaky_deliveries.send(input);
+    }
+}
+impl SendInput<ObserveChild<u64>, ChildObservationLane> for CreationSends {
+    fn emit(&mut self, input: ObserveChild<u64>) {
+        self.child_observations.send(input);
+    }
+}
+impl SendInput<ObserveCreation<u64>, Own> for CreationSends {
+    fn emit(&mut self, input: ObserveCreation<u64>) {
+        self.creation_observations.send(input);
+    }
+}
+
+impl ObservesCreations<u64> for CreationSends {
+    fn observes_creation(&self, nonce: u64) -> bool {
+        self.creation_observations
+            .iter()
+            .any(|request| request.nonce == nonce)
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+enum CreationSendsError<
+    R: std::error::Error + 'static,
+    F: std::error::Error + 'static,
+    C: std::error::Error + 'static,
+    O: std::error::Error + 'static,
+> {
+    #[error("recorder delivery failed")]
+    Recorder(#[source] R),
+    #[error("child delivery failed")]
+    Flaky(#[source] F),
+    #[error("child observation failed")]
+    ChildObservation(#[source] C),
+    #[error("creation observation failed")]
+    CreationObservation(#[source] O),
+}
+
+impl<R> RouteSends<MailAddr, R> for CreationSends
+where
+    R: Send,
+    Vec<Delivery<Recorder>>: RouteSends<MailAddr, R> + Send,
+    Vec<Delivery<Flaky>>: RouteSends<MailAddr, R> + Send,
+    ServiceSends<ObserveChild<u64>>: RouteSends<MailAddr, R> + Send,
+    ServiceSends<ObserveCreation<u64>>: RouteSends<MailAddr, R> + Send,
+    <Vec<Delivery<Recorder>> as RouteSends<MailAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+    <Vec<Delivery<Flaky>> as RouteSends<MailAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+    <ServiceSends<ObserveChild<u64>> as RouteSends<MailAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+    <ServiceSends<ObserveCreation<u64>> as RouteSends<MailAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+{
+    type Error = CreationSendsError<
+        <Vec<Delivery<Recorder>> as RouteSends<MailAddr, R>>::Error,
+        <Vec<Delivery<Flaky>> as RouteSends<MailAddr, R>>::Error,
+        <ServiceSends<ObserveChild<u64>> as RouteSends<MailAddr, R>>::Error,
+        <ServiceSends<ObserveCreation<u64>> as RouteSends<MailAddr, R>>::Error,
+    >;
+
+    async fn route(self, from: MailAddr, router: &mut R) -> Result<(), Self::Error> {
+        self.recorder_deliveries
+            .route(from, router)
+            .await
+            .map_err(CreationSendsError::Recorder)?;
+        self.flaky_deliveries
+            .route(from, router)
+            .await
+            .map_err(CreationSendsError::Flaky)?;
+        self.child_observations
+            .route(from, router)
+            .await
+            .map_err(CreationSendsError::ChildObservation)?;
+        self.creation_observations
+            .route(from, router)
+            .await
+            .map_err(CreationSendsError::CreationObservation)
+    }
+}
+
+type ParentSends = CreationSends;
+type RetrySends = CreationSends;
+type ParentDeliveryPath = RecorderLane;
+type RetryReplyPath = RecorderLane;
+type RetryChildPath = FlakyLane;
 
 /// A parent that stages one fragile child and observes its creation.
 struct ObservedParent {
@@ -136,7 +265,7 @@ impl Behavior for ObservedParent {
     type Error = Never;
     type Birth = Births<Fragile>;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         let mut sends = ParentSends::empty();
         sends.send::<_, Own>(ObserveCreation::new(7));
         Ok(Actions {
@@ -146,7 +275,11 @@ impl Behavior for ObservedParent {
         })
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         match event {
             SupervisionEvent::CreationResolved(resolved) => {
                 self.resolutions
@@ -154,7 +287,7 @@ impl Behavior for ObservedParent {
                     .expect("resolution lock")
                     .push(resolved);
             }
-            SupervisionEvent::Inner(User { from, message }) => {
+            SupervisionEvent::Behavior(User { from, message }) => {
                 let mut sends = ParentSends::empty();
                 sends.send::<_, ParentDeliveryPath>(Delivery::new(
                     Recipient::global(from),
@@ -184,7 +317,7 @@ impl Behavior for UnobservedParent {
     type Error = Never;
     type Birth = Births<Fragile>;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         Ok(Actions {
             sends: Vec::new(),
             creates: vec![bombay::behavior::Create::birth(7, Fragile)],
@@ -192,7 +325,11 @@ impl Behavior for UnobservedParent {
         })
     }
 
-    fn transition(&mut self, _event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        _event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 }
@@ -212,14 +349,18 @@ impl Behavior for RetryParent {
     type Error = Never;
     type Birth = Births<Flaky>;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         Ok(Self::attempt(Flaky {
             attempts: self.flaky.attempts.clone(),
             received: self.flaky.received.clone(),
         }))
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         match event {
             SupervisionEvent::CreationResolved(resolved) => {
                 self.resolutions
@@ -241,7 +382,7 @@ impl Behavior for RetryParent {
                     become_: bombay::behavior::Step::Continue,
                 });
             }
-            SupervisionEvent::Inner(User { from, message }) => {
+            SupervisionEvent::Behavior(User { from, message }) => {
                 let mut sends = RetrySends::empty();
                 sends
                     .send::<_, RetryReplyPath>(Delivery::new(Recipient::global(from), message + 1));
@@ -281,7 +422,7 @@ impl Behavior for ParentOfFragile {
     type Error = Never;
     type Birth = Births<Fragile>;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         Ok(Actions {
             sends: Vec::new(),
             creates: vec![bombay::behavior::Create::birth(3, Fragile)],
@@ -289,7 +430,11 @@ impl Behavior for ParentOfFragile {
         })
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         match event.message {}
     }
 }
@@ -308,7 +453,7 @@ impl Behavior for ObservedGrandparent {
     type Error = Never;
     type Birth = Births<ParentOfFragile>;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         let mut sends = ParentSends::empty();
         sends.send::<_, Own>(ObserveCreation::new(7));
         Ok(Actions {
@@ -318,7 +463,11 @@ impl Behavior for ObservedGrandparent {
         })
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         if let SupervisionEvent::CreationResolved(resolved) = event {
             self.resolutions
                 .lock()
@@ -334,12 +483,9 @@ struct PairingParent {
     resolutions: Arc<Mutex<Vec<CreationResolved<u64>>>>,
 }
 
-type PairingSends = SendProduct<
-    SendProduct<Vec<Delivery<Recorder>>, ServiceSends<ObserveChild<u64>>>,
-    ServiceSends<ObserveCreation<u64>>,
->;
-type PairingDeliveryPath = Inner<Inner<Own>>;
-type PairingChildObservationPath = Inner<Own>;
+type PairingSends = CreationSends;
+type PairingDeliveryPath = RecorderLane;
+type PairingChildObservationPath = ChildObservationLane;
 
 impl Behavior for PairingParent {
     type Addr = MailAddr;
@@ -350,7 +496,7 @@ impl Behavior for PairingParent {
     type Error = Never;
     type Birth = Births<Fragile>;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         let mut sends = PairingSends::empty();
         sends.send::<_, PairingChildObservationPath>(ObserveChild::new(7));
         sends.send::<_, Own>(ObserveCreation::new(7));
@@ -361,7 +507,11 @@ impl Behavior for PairingParent {
         })
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         match event {
             SupervisionEvent::CreationResolved(resolved) => {
                 self.resolutions
@@ -369,7 +519,7 @@ impl Behavior for PairingParent {
                     .expect("resolution lock")
                     .push(resolved);
             }
-            SupervisionEvent::Inner(User { from, message }) => {
+            SupervisionEvent::Behavior(User { from, message }) => {
                 let mut sends = PairingSends::empty();
                 sends.send::<_, PairingDeliveryPath>(Delivery::new(
                     Recipient::global(from),
@@ -695,13 +845,17 @@ impl Behavior for TreeParent {
     type Error = Never;
     type Birth = Births<TreeWorker>;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         match event {
-            SupervisionEvent::Inner(user) => match user.message {},
+            SupervisionEvent::Behavior(user) => match user.message {},
             _ => Ok(Actions::cont()),
         }
     }
@@ -720,12 +874,16 @@ impl Behavior for TreeWorker {
     type Error = InitFailure;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         self.attempts.fetch_add(1, Ordering::SeqCst);
         Err(InitFailure)
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         match event.message {}
     }
 }
@@ -809,10 +967,10 @@ impl EndpointRegistry<TreeSupervisor, IncarnationEndpoint<MailAddr, TreeSupervis
 
 static TREE_ATTEMPTS: std::sync::OnceLock<Arc<AtomicUsize>> = std::sync::OnceLock::new();
 
-fn tree_worker(_index: usize) -> TreeWorker {
-    TreeWorker {
+fn tree_worker(_index: usize) -> Option<TreeWorker> {
+    Some(TreeWorker {
         attempts: TREE_ATTEMPTS.get().expect("tree counter").clone(),
-    }
+    })
 }
 
 #[tokio::test(start_paused = true)]
@@ -831,6 +989,7 @@ async fn nested_rejection_terminates_neither_proxy_nor_parent() {
         1,
         Duration::MAX,
     )
+    .expect("tree supervisor topology")
     .with_failure_reaction(stop_on_supervision_failure);
     let system = System::new(MailboxConfig::bounded(8), TreeRouter::default());
     let root = system.spawn(Actor::new(MailAddr(5), supervisor)).unwrap();

@@ -1,6 +1,6 @@
 //! Affine ownership and optional completion of one child generation.
 
-use behavior::{Never, ShutdownEvent};
+use behavior::{Never, RouteInput, ShutdownRequested};
 
 use super::Completion;
 use crate::{ActorRef, MailboxSender};
@@ -22,11 +22,11 @@ impl ChildShutdownEdge for () {
 impl<A, E, L> ChildShutdownEdge for ActorRef<A, MailboxSender<E>, L>
 where
     A: Send,
-    E: ShutdownEvent + Send,
+    E: RouteInput<ShutdownRequested> + Send,
     L: crate::runtime::lifecycle::IncarnationReporter,
 {
     fn request_shutdown(&self) {
-        let _ = ActorRef::request_shutdown(self);
+        self.request_shutdown_if_supported();
     }
 }
 

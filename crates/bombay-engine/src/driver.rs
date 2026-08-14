@@ -31,7 +31,7 @@
 //! only transition path; a runtime test cannot detect a bypass the compiler
 //! already rejects.
 
-use behavior::{Actions, Address, Behavior, BirthMode, Exit, Never, SendAlgebra, Step};
+use behavior::{Actions, Address, Behavior, BirthMode, Compose, Exit, Never, SendAlgebra, Step};
 use bombay_machine_executor::{ExclusiveExecutor, ExclusiveState};
 
 use crate::{BehaviorMachine, Environment, RunError, RunExit};
@@ -69,7 +69,7 @@ where
 
 /// Typestate for the driver lifecycle — no `Option` plus `expect`.
 enum State<B: Behavior> {
-    Uninitialized(B),
+    Definition(Compose<B>),
     Running(ExclusiveExecutor<BehaviorMachine<B>>),
     Terminated,
     Retired,
@@ -101,8 +101,13 @@ where
     B: Behavior,
 {
     pub fn new(behavior: B, environment: E) -> Self {
+        Self::from_definition(Compose::new(behavior), environment)
+    }
+
+    /// Construct a driver from a fully composed, uninitialized definition.
+    pub fn from_definition(definition: Compose<B>, environment: E) -> Self {
         Self {
-            state: State::Uninitialized(behavior),
+            state: State::Definition(definition),
             environment,
         }
     }
@@ -132,15 +137,15 @@ where
     pub async fn run_init(
         &mut self,
     ) -> Result<Option<Exit<B::Addr>>, RunError<B::Error, E::Error>> {
-        let State::Uninitialized(behavior) = std::mem::replace(&mut self.state, State::Retired)
+        let State::Definition(definition) = std::mem::replace(&mut self.state, State::Retired)
         else {
             panic!("run_init called on non-uninitialized driver");
         };
 
-        let mut machine = BehaviorMachine::for_runtime(behavior);
-        let initial = machine.behavior_mut().init().map_err(RunError::Behavior)?;
+        let initialized = definition.initialize().map_err(RunError::Behavior)?;
+        let machine = BehaviorMachine::for_runtime(initialized.behavior);
 
-        let exit = interpret(initial, &mut self.environment)
+        let exit = interpret(initialized.actions, &mut self.environment)
             .await
             .map_err(RunError::Environment)?;
 

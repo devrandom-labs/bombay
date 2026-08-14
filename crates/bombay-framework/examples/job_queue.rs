@@ -5,9 +5,12 @@ use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
+use bombay::{
+    AddressInUse, DeliveryRouter, EndpointRegistry, IncarnationEndpoint, ObservesCreations,
+    RouteSends,
+};
 use bombay_framework::prelude::behavior::SendAlgebra;
 use bombay_framework::prelude::*;
-use tokio::time::Instant;
 
 const DISPATCHER: QueueAddr = QueueAddr(1);
 const REPORTER: QueueAddr = QueueAddr(2);
@@ -92,6 +95,7 @@ struct Report {
 #[derive(Debug)]
 struct Poisoned;
 
+#[derive(Debug)]
 struct Worker {
     slot: usize,
 }
@@ -105,11 +109,15 @@ impl Behavior for Worker {
     type Error = Poisoned;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         let job = event.message;
         if matches!(job.kind, JobKind::PoisonOnce) && job.attempt == 0 {
             return Err(Poisoned);
@@ -132,18 +140,112 @@ impl Behavior for Worker {
     }
 }
 
-fn worker(slot: usize) -> Worker {
-    Worker { slot }
+fn worker(slot: usize) -> Option<Worker> {
+    Some(Worker { slot })
 }
 
 fn worker_nonce(slot: usize) -> u64 {
     u64::try_from(slot).expect("worker slot fits the address nonce")
 }
 
-type QueueSends = SendProduct<
-    SendProduct<Vec<Delivery<ProxyBehavior>>, Vec<Delivery<Reporter>>>,
-    Vec<Delivery<AdmissionCollector>>,
->;
+struct DispatchLane;
+struct ReportLane;
+struct AdmissionLane;
+
+struct QueueSends {
+    dispatches: Vec<Delivery<ProxyBehavior>>,
+    reports: Vec<Delivery<Reporter>>,
+    admissions: Vec<Delivery<AdmissionCollector>>,
+}
+
+impl SendAlgebra for QueueSends {
+    fn empty() -> Self {
+        Self {
+            dispatches: Vec::new(),
+            reports: Vec::new(),
+            admissions: Vec::new(),
+        }
+    }
+
+    fn append(&mut self, other: Self) {
+        SendAlgebra::append(&mut self.dispatches, other.dispatches);
+        SendAlgebra::append(&mut self.reports, other.reports);
+        SendAlgebra::append(&mut self.admissions, other.admissions);
+    }
+}
+
+impl behavior::SendInput<Delivery<ProxyBehavior>, DispatchLane> for QueueSends {
+    fn emit(&mut self, input: Delivery<ProxyBehavior>) {
+        self.dispatches.push(input);
+    }
+}
+
+impl behavior::SendInput<Delivery<Reporter>, ReportLane> for QueueSends {
+    fn emit(&mut self, input: Delivery<Reporter>) {
+        self.reports.push(input);
+    }
+}
+
+impl behavior::SendInput<Delivery<AdmissionCollector>, AdmissionLane> for QueueSends {
+    fn emit(&mut self, input: Delivery<AdmissionCollector>) {
+        self.admissions.push(input);
+    }
+}
+
+impl ObservesCreations<u64> for QueueSends {
+    fn observes_creation(&self, _nonce: u64) -> bool {
+        false
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+enum QueueSendsError<
+    D: std::error::Error + 'static,
+    R: std::error::Error + 'static,
+    A: std::error::Error + 'static,
+> {
+    #[error("worker dispatch failed")]
+    Dispatch(#[source] D),
+    #[error("report delivery failed")]
+    Report(#[source] R),
+    #[error("admission response failed")]
+    Admission(#[source] A),
+}
+
+impl<R> RouteSends<QueueAddr, R> for QueueSends
+where
+    R: Send,
+    Vec<Delivery<ProxyBehavior>>: RouteSends<QueueAddr, R> + Send,
+    Vec<Delivery<Reporter>>: RouteSends<QueueAddr, R> + Send,
+    Vec<Delivery<AdmissionCollector>>: RouteSends<QueueAddr, R> + Send,
+    <Vec<Delivery<ProxyBehavior>> as RouteSends<QueueAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+    <Vec<Delivery<Reporter>> as RouteSends<QueueAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+    <Vec<Delivery<AdmissionCollector>> as RouteSends<QueueAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+{
+    type Error = QueueSendsError<
+        <Vec<Delivery<ProxyBehavior>> as RouteSends<QueueAddr, R>>::Error,
+        <Vec<Delivery<Reporter>> as RouteSends<QueueAddr, R>>::Error,
+        <Vec<Delivery<AdmissionCollector>> as RouteSends<QueueAddr, R>>::Error,
+    >;
+
+    async fn route(self, from: QueueAddr, router: &mut R) -> Result<(), Self::Error> {
+        self.dispatches
+            .route(from, router)
+            .await
+            .map_err(QueueSendsError::Dispatch)?;
+        self.reports
+            .route(from, router)
+            .await
+            .map_err(QueueSendsError::Report)?;
+        self.admissions
+            .route(from, router)
+            .await
+            .map_err(QueueSendsError::Admission)
+    }
+}
 
 struct QueueKernel;
 
@@ -156,11 +258,15 @@ impl Behavior for QueueKernel {
     type Error = Never;
     type Birth = Births<Worker>;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        _event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 }
@@ -230,7 +336,8 @@ impl JobQueue {
                 RestartPolicy::Permanent,
                 8,
                 Duration::MAX,
-            ),
+            )
+            .expect("fixed worker topology"),
             expected,
             pending: VecDeque::new(),
             held: VecDeque::new(),
@@ -403,13 +510,96 @@ impl JobQueue {
 
 type JobQueueEvent =
     behavior::TimedEvent<behavior::ShutdownProtocol<<QueueSupervisor as Behavior>::Event>>;
-type JobQueueSends =
-    SendProduct<<QueueSupervisor as Behavior>::Sends, ServiceSends<behavior::ScheduleAfter>>;
+struct ScheduleLane;
 
-type QueueDispatchPath = behavior::Inner<behavior::Inner<behavior::Inner<behavior::Own>>>;
-type QueueReportPath = behavior::Inner<behavior::Inner<behavior::Own>>;
-type JobQueueDispatchPath = behavior::Inner<QueueDispatchPath>;
-type JobQueueReportPath = behavior::Inner<QueueReportPath>;
+struct JobQueueSends {
+    behavior: <QueueSupervisor as Behavior>::Sends,
+    schedules: ServiceSends<behavior::ScheduleAfter>,
+}
+
+impl SendAlgebra for JobQueueSends {
+    fn empty() -> Self {
+        Self {
+            behavior: SendAlgebra::empty(),
+            schedules: ServiceSends::empty(),
+        }
+    }
+
+    fn append(&mut self, other: Self) {
+        self.behavior.append(other.behavior);
+        self.schedules.append(other.schedules);
+    }
+}
+
+impl behavior::SendInput<Delivery<ProxyBehavior>, DispatchLane> for JobQueueSends {
+    fn emit(&mut self, input: Delivery<ProxyBehavior>) {
+        self.behavior.behavior.emit(input);
+    }
+}
+
+impl behavior::SendInput<Delivery<Reporter>, ReportLane> for JobQueueSends {
+    fn emit(&mut self, input: Delivery<Reporter>) {
+        self.behavior.behavior.emit(input);
+    }
+}
+
+impl behavior::SendInput<Delivery<AdmissionCollector>, AdmissionLane> for JobQueueSends {
+    fn emit(&mut self, input: Delivery<AdmissionCollector>) {
+        self.behavior.behavior.emit(input);
+    }
+}
+
+impl behavior::SendInput<behavior::ScheduleAfter, ScheduleLane> for JobQueueSends {
+    fn emit(&mut self, input: behavior::ScheduleAfter) {
+        self.schedules.send(input);
+    }
+}
+
+impl ObservesCreations<u64> for JobQueueSends {
+    fn observes_creation(&self, nonce: u64) -> bool {
+        self.behavior.observes_creation(nonce)
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+enum JobQueueSendsError<B: std::error::Error + 'static, T: std::error::Error + 'static> {
+    #[error("queue behavior effect failed")]
+    Behavior(#[source] B),
+    #[error("queue timer scheduling failed")]
+    Timer(#[source] T),
+}
+
+impl<R> RouteSends<QueueAddr, R> for JobQueueSends
+where
+    R: Send,
+    QueueSends: RouteSends<QueueAddr, R> + Send,
+    ServiceSends<behavior::ObserveChild<u64>>: RouteSends<QueueAddr, R> + Send,
+    Vec<Delivery<Proxy<Worker>>>: RouteSends<QueueAddr, R> + Send,
+    ServiceSends<behavior::ScheduleAfter>: RouteSends<QueueAddr, R> + Send,
+    <QueueSends as RouteSends<QueueAddr, R>>::Error: std::error::Error + Send + Sync + 'static,
+    <ServiceSends<behavior::ObserveChild<u64>> as RouteSends<QueueAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+    <Vec<Delivery<Proxy<Worker>>> as RouteSends<QueueAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+    <ServiceSends<behavior::ScheduleAfter> as RouteSends<QueueAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+{
+    type Error = JobQueueSendsError<
+        <<QueueSupervisor as Behavior>::Sends as RouteSends<QueueAddr, R>>::Error,
+        <ServiceSends<behavior::ScheduleAfter> as RouteSends<QueueAddr, R>>::Error,
+    >;
+
+    async fn route(self, from: QueueAddr, router: &mut R) -> Result<(), Self::Error> {
+        self.behavior
+            .route(from, router)
+            .await
+            .map_err(JobQueueSendsError::Behavior)?;
+        self.schedules
+            .route(from, router)
+            .await
+            .map_err(JobQueueSendsError::Timer)
+    }
+}
 type JobQueueActions =
     Actions<QueueAddr, Never, JobQueueSends, <QueueSupervisor as Behavior>::Birth>;
 
@@ -419,21 +609,28 @@ impl Behavior for JobQueue {
     type Event = JobQueueEvent;
     type Sends = JobQueueSends;
     type Ph = Never;
-    type Error = Never;
+    type Error = <QueueSupervisor as Behavior>::Error;
     type Birth = <QueueSupervisor as Behavior>::Birth;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
-        self.supervisor.init().map(|actions| {
-            actions.map_sends(|behavior| SendProduct::new(behavior, ServiceSends::empty()))
+    fn init(&mut self, turn: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
+        Behavior::init(&mut self.supervisor, turn).map(|actions| {
+            actions.map_sends(|behavior| JobQueueSends {
+                behavior,
+                schedules: ServiceSends::empty(),
+            })
         })
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        turn: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         match event {
-            behavior::TimedEvent::Inner(behavior::ShutdownProtocol::Inner(event)) => {
-                self.transition_supervision(event)
+            behavior::TimedEvent::Behavior(behavior::ShutdownProtocol::Behavior(event)) => {
+                self.transition_supervision(turn, event)
             }
-            behavior::TimedEvent::Inner(behavior::ShutdownProtocol::ShutdownRequested(_)) => {
+            behavior::TimedEvent::Behavior(behavior::ShutdownProtocol::ShutdownRequested(_)) => {
                 Ok(self.begin_drain())
             }
             behavior::TimedEvent::Elapsed(elapsed) => Ok(self.timer_elapsed(elapsed)),
@@ -444,37 +641,38 @@ impl Behavior for JobQueue {
 impl JobQueue {
     fn transition_supervision(
         &mut self,
+        turn: behavior::ActiveTurn,
         event: <QueueSupervisor as Behavior>::Event,
     ) -> behavior::BehaviorActed<Self> {
         let mut retry_schedule = None;
         match &event {
-            SupervisionEvent::Inner(User {
+            SupervisionEvent::Behavior(User {
                 message: QueueMessage::Submit { job, reply_to },
                 ..
             }) => {
                 let admission = self.accept(*job, *reply_to);
-                let mut actions = behavior::delegate_transition(&mut self.supervisor, event)?;
-                actions.sends.send(admission);
+                let mut actions = Behavior::transition(&mut self.supervisor, turn, event)?;
+                actions.sends.behavior.send::<_, AdmissionLane>(admission);
                 return Ok(self.finish_supervision(actions));
             }
-            SupervisionEvent::Inner(User {
+            SupervisionEvent::Behavior(User {
                 message: QueueMessage::EnterMaintenance,
                 ..
             }) => self.enter_maintenance(),
-            SupervisionEvent::Inner(User {
+            SupervisionEvent::Behavior(User {
                 message: QueueMessage::Resume,
                 ..
             }) => self.resume(),
-            SupervisionEvent::Inner(User {
+            SupervisionEvent::Behavior(User {
                 message: QueueMessage::Query { reply_to },
                 ..
             }) => {
                 let report = Delivery::new(*reply_to, self.report());
-                let mut actions = behavior::delegate_transition(&mut self.supervisor, event)?;
-                actions.sends.send(report);
+                let mut actions = Behavior::transition(&mut self.supervisor, turn, event)?;
+                actions.sends.behavior.send::<_, ReportLane>(report);
                 return Ok(self.finish_supervision(actions));
             }
-            SupervisionEvent::Inner(User {
+            SupervisionEvent::Behavior(User {
                 message:
                     QueueMessage::Done {
                         slot,
@@ -493,10 +691,10 @@ impl JobQueue {
             SupervisionEvent::ChildStopped(_) | SupervisionEvent::CreationResolved(_) => {}
         }
 
-        let actions = behavior::delegate_transition(&mut self.supervisor, event)?;
+        let actions = Behavior::transition(&mut self.supervisor, turn, event)?;
         let mut actions = self.finish_supervision(actions);
         if let Some(schedule) = retry_schedule {
-            actions.sends.send(schedule);
+            actions.sends.send::<_, ScheduleLane>(schedule);
         }
         Ok(actions)
     }
@@ -514,23 +712,26 @@ impl JobQueue {
         // A proxy drops forwards while its worker is installing. Dispatch only
         // after the typed worker-creation result marks that slot available.
         for delivery in dispatch {
-            actions.sends.send::<_, QueueDispatchPath>(delivery);
+            actions.sends.behavior.send::<_, DispatchLane>(delivery);
         }
         if !self.ready_sent && self.accepted == self.expected {
             self.ready_sent = true;
-            actions.sends.send::<_, QueueReportPath>(Delivery::new(
+            actions.sends.behavior.send::<_, ReportLane>(Delivery::new(
                 Recipient::<Reporter>::global(READY),
                 self.report(),
             ));
         }
         if self.drained() {
-            actions.sends.send::<_, QueueReportPath>(Delivery::new(
+            actions.sends.behavior.send::<_, ReportLane>(Delivery::new(
                 Recipient::<Reporter>::global(REPORTER),
                 self.report(),
             ));
             actions.become_ = Step::Stop(Exit::Normal);
         }
-        actions.map_sends(|behavior| SendProduct::new(behavior, ServiceSends::empty()))
+        actions.map_sends(|behavior| JobQueueSends {
+            behavior,
+            schedules: ServiceSends::empty(),
+        })
     }
 
     fn begin_drain(&mut self) -> JobQueueActions {
@@ -544,13 +745,13 @@ impl JobQueue {
         };
         let mut sends = <JobQueueSends as behavior::SendAlgebra>::empty();
         let become_ = if self.drained() {
-            sends.send::<_, JobQueueReportPath>(Delivery::new(
+            sends.send::<_, ReportLane>(Delivery::new(
                 Recipient::<Reporter>::global(REPORTER),
                 self.report(),
             ));
             Step::Stop(Exit::Normal)
         } else {
-            sends.send(behavior::ScheduleAfter {
+            sends.send::<_, ScheduleLane>(behavior::ScheduleAfter {
                 id: DRAIN_TIMER,
                 generation,
                 after: DRAIN_GRACE,
@@ -569,7 +770,7 @@ impl JobQueue {
         }
         self.abandon_outstanding();
         let mut sends = <JobQueueSends as behavior::SendAlgebra>::empty();
-        sends.send::<_, JobQueueReportPath>(Delivery::new(
+        sends.send::<_, ReportLane>(Delivery::new(
             Recipient::<Reporter>::global(REPORTER),
             self.report(),
         ));
@@ -585,7 +786,7 @@ impl JobQueue {
         }
         let mut sends = <JobQueueSends as behavior::SendAlgebra>::empty();
         for delivery in self.dispatch() {
-            sends.send::<_, JobQueueDispatchPath>(delivery);
+            sends.send::<_, DispatchLane>(delivery);
         }
         Actions::new(sends, Vec::new(), Step::Continue)
     }
@@ -604,11 +805,15 @@ impl Behavior for DeadlineProbe {
     type Error = Never;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         match event.message {}
     }
 }
@@ -634,11 +839,15 @@ impl Behavior for Reporter {
     type Error = Report;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         Err(event.message)
     }
 }
@@ -657,11 +866,15 @@ impl Behavior for AdmissionCollector {
     type Error = Vec<Admission>;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         self.outcomes.push(event.message);
         if self.outcomes.len() == self.expected {
             Err(core::mem::take(&mut self.outcomes))
@@ -755,12 +968,11 @@ async fn run_batch(system: &System<Routes>, jobs: &[Job]) -> Report {
     let deadline_marker = DEADLINE_REACHED.get_or_init(|| AtomicBool::new(false));
     deadline_marker.store(false, Ordering::SeqCst);
     let deadline = system
-        .spawn(Actor::new(
+        .spawn(Actor::from_definition(
             DEADLINE_PROBE,
-            Deadline::new(
-                DeadlineProbe,
+            Compose::new(DeadlineProbe).deadline(
                 behavior::TimerId(10_000),
-                Some(Instant::now()),
+                Some(std::time::Instant::now()),
                 deadline_reached,
             ),
         ))

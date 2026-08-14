@@ -57,13 +57,13 @@ object.
 
 ## Typed effect composition
 
-Heterogeneous behavior effects use Bombay Behavior's `SendProduct`. Select a
-lane with semantic aliases over `Own` and `Inner<Path>`, then emit through
-`SendAlgebra::send`; application code must not traverse `.inner`/`.own` or
-implement product routing. Bombay's generic `RouteSends` recursion feeds each
-product leaf into the destination behavior selected by `Delivery<B>`. The
-current low-level routing adapters are compatibility infrastructure while E5
-moves that wiring behind the runtime boundary.
+Heterogeneous behavior effects use application- or wrapper-owned named send
+structs. Each struct implements `SendAlgebra` and semantic `SendInput` lanes;
+effects are emitted through typed `SendAlgebra::send`, never positional paths.
+Bombay routes those named fields in fold order, while each `Delivery<B>`
+statically selects its destination behavior. Low-level routing adapters remain
+advanced runtime compatibility infrastructure and are not re-exported by the
+framework prelude.
 
 Active architecture and cleanup work is tracked in
 [`docs/open-design-ledger.md`](docs/open-design-ledger.md). Passing feature

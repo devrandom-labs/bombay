@@ -5,6 +5,7 @@ use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::Duration;
 
+use bombay::{AddressInUse, DeliveryRouter, EndpointRegistry, IncarnationEndpoint};
 use bombay_framework::prelude::*;
 use tokio::task::yield_now;
 use tokio::time::Instant;
@@ -67,7 +68,7 @@ impl Behavior for Worker {
     type Error = WorkerFailure;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         let start = WORKER_STARTS
             .get()
             .expect("worker probe")
@@ -87,16 +88,20 @@ impl Behavior for Worker {
         }
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         match event {
-            behavior::TimedEvent::Inner(event) => match event.message {},
+            behavior::TimedEvent::Behavior(event) => match event.message {},
             behavior::TimedEvent::Elapsed(_) => Err(WorkerFailure),
         }
     }
 }
 
-fn worker(_index: usize) -> Worker {
-    Worker
+fn worker(_index: usize) -> Option<Worker> {
+    Some(Worker)
 }
 
 fn proxy_nonce(_index: usize) -> u64 {
@@ -109,7 +114,9 @@ type RootSupervisor = Supervisor<Root, Worker>;
     clippy::unnecessary_wraps,
     reason = "Bombay Behavior's timer-reaction function pointer returns the behavior error domain"
 )]
-fn timer_fired(_supervisor: &mut RootSupervisor) -> Result<behavior::Become<AppAddr>, Never> {
+fn timer_fired(
+    _supervisor: &mut RootSupervisor,
+) -> Result<behavior::Become<AppAddr>, <RootSupervisor as Behavior>::Error> {
     TIMER_FIRED
         .get()
         .expect("timer probe")
@@ -198,16 +205,20 @@ async fn main() {
     run().await;
 }
 
-fn application() -> Application {
-    Compose::from_behavior(Root)
-        .children_with_nonces(proxy_nonce, 1, worker)
+fn application() -> Compose<Application> {
+    Compose::new(Root)
+        .children(proxy_nonce, 1, worker)
+        .expect("application supervisor topology")
         .restart(Strategy::OneForOne)
         .when(RestartPolicy::Permanent)
         .within(1, Duration::MAX)
-        .deadline(Some(Instant::now()), timer_fired)
-        .receive_timeout(Duration::from_millis(10), idle_fired)
+        .deadline(
+            behavior::TimerId(0),
+            Some(Instant::now().into_std()),
+            timer_fired,
+        )
+        .receive_timeout(behavior::TimerId(1), Duration::from_millis(10), idle_fired)
         .stop_on_shutdown()
-        .build()
 }
 
 async fn run() {
@@ -221,7 +232,7 @@ async fn run() {
         routes = ApplicationRoutes::default(),
     );
     let handle = system
-        .spawn(Actor::new(AppAddr(1), application()))
+        .spawn(Actor::from_definition(AppAddr(1), application()))
         .expect("the root address is vacant");
 
     assert!(
@@ -252,7 +263,7 @@ async fn run() {
     ));
 
     let replacement = system
-        .spawn(Actor::new(AppAddr(1), application()))
+        .spawn(Actor::from_definition(AppAddr(1), application()))
         .expect("root completion implies complete tree retirement");
     replacement
         .actor_ref()

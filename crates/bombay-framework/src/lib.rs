@@ -41,14 +41,13 @@ pub mod prelude {
     pub use crate::local_system;
     pub use bombay::behavior;
     pub use bombay::behavior::{
-        Actions, Address, Behavior, BehaviorFn, Births, Compose, Crash, Create, Deadline, Delivery,
-        Exit, Handler, MailAddr, Never, NoBirths, Proxy, ProxyCommand, Pure, ReceiveTimeout,
-        Recipient, RestartPolicy, SendProduct, ServiceSends, Step, StopOnShutdown, Strategy,
+        Actions, Address, Behavior, Births, Compose, Crash, Create, Deadline, Delivery, EventInput,
+        Exit, MailAddr, Never, NoBirths, Own, Proxy, ProxyCommand, ReceiveTimeout, Recipient,
+        RestartPolicy, SendAlgebra, SendInput, ServiceSends, Step, StopOnShutdown, Strategy,
         SupervisionEvent, Supervisor, User, Watch, WorkerStopped,
     };
     pub use bombay::{
-        Actor, ActorRef, AddressInUse, AddressRouter, DeliveryRouter, EndpointRegistry,
-        IncarnationEndpoint, MailboxAnchor, MailboxConfig, RunExit, System, TaskOutcome,
+        Actor, ActorRef, AddressRouter, MailboxAnchor, MailboxConfig, RunExit, System, TaskOutcome,
     };
 }
 

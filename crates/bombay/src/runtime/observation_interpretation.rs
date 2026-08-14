@@ -3,10 +3,10 @@
 use core::convert::Infallible;
 
 use behavior::{
-    Address, ChildEvent, ChildStopped, ObserveChild, ObservePeer, PeerEvent, PeerStopped,
-    ServiceSends, UnwatchPeer,
+    Address, ChildStopped, EventInput, ObserveChild, ObservePeer, PeerStopped, ServiceSends,
+    UnwatchPeer,
 };
-use tokio::time::Instant;
+use std::time::Instant;
 
 use super::{Completion, IncarnationEffects, IntoPeerOutcome, classify_task};
 use crate::{ChildLease, EventSender, PeerObservationError, PeerObserver, RouteSends};
@@ -21,7 +21,7 @@ where
     Edge: Send + 'static,
     T: IntoPeerOutcome<A> + Send + Sync + 'static,
     S: EventSender + Clone + Send + Sync + 'static,
-    S::Event: ChildEvent<Addr = A> + Send + 'static,
+    S::Event: EventInput<ChildStopped<A>> + Send + 'static,
     P: Send,
 {
     type Error = super::child_scope::ChildObservationError<A::Nonce>;
@@ -47,13 +47,12 @@ where
             services.monitor(async move {
                 let completion = completion.wait().await;
                 let outcome = classify_task::<A, _>(&completion);
-                if let Some(event) = <S::Event as ChildEvent>::child_stopped(ChildStopped {
+                let event = S::Event::inject(ChildStopped {
                     nonce: request.nonce,
                     outcome,
                     at: Instant::now(),
-                }) {
-                    let _ = response.send(event).await;
-                }
+                });
+                let _ = response.send(event).await;
             });
         }
         Ok(())
@@ -68,7 +67,7 @@ where
     N: Send,
     L: Send,
     S: EventSender + Clone + Send + Sync + 'static,
-    S::Event: PeerEvent<Addr = A> + Send + 'static,
+    S::Event: EventInput<PeerStopped<A>> + Send + 'static,
     P: Send,
 {
     type Error = PeerObservationError<A>;
@@ -83,12 +82,11 @@ where
             let response = services.response.clone();
             services.monitor_peer(request.peer, async move {
                 let outcome = completion.await;
-                if let Some(event) = <S::Event as PeerEvent>::peer_stopped(PeerStopped {
+                let event = S::Event::inject(PeerStopped {
                     peer: request.peer,
                     outcome,
-                }) {
-                    let _ = response.send(event).await;
-                }
+                });
+                let _ = response.send(event).await;
             });
         }
         Ok(())

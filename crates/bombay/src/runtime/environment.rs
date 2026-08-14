@@ -1,6 +1,6 @@
 //! Behavior effect interpretation for one actor.
 
-use behavior::{Address, Behavior, BirthMode, TimeEvent};
+use behavior::{Address, Behavior, BirthMode, RouteInput, TimerElapsed};
 use bombay_engine::{Environment, RuntimeEffects};
 
 use crate::{ChildRuntime, EventSource, ObservesCreations, RouteSends, RuntimeEffectError};
@@ -71,7 +71,7 @@ where
         + ObservesCreations<<B::Addr as Address>::Nonce>
         + Send,
     <B::Birth as BirthMode>::Child: Send,
-    B::Event: TimeEvent + Send,
+    B::Event: RouteInput<TimerElapsed> + Send,
     Source: EventSource<Event = B::Event> + Send,
     R: Send + Sync,
     Children: ChildRuntime<B::Addr, <B::Birth as BirthMode>::Child, Sink> + Send + Sync,
@@ -91,7 +91,7 @@ where
             tokio::select! {
                 event = self.source.next() => return event,
                 reached = self.effects.next_timer() => {
-                    if let Some(event) = B::Event::time_reached(reached) {
+                    if let Ok(event) = B::Event::route(reached) {
                         return Some(event);
                     }
                 }
@@ -161,9 +161,7 @@ mod tests {
     use std::convert::Infallible;
     use std::sync::{Arc, Mutex};
 
-    use behavior::{
-        Actions, Behavior, Create, Delivery, Handler, MailAddr, NoBirths, Pure, Recipient, User,
-    };
+    use behavior::{Actions, Behavior, Create, Delivery, MailAddr, NoBirths, Recipient, User};
     use bombay_engine::{Environment, RunExit, RuntimeEffects};
 
     use super::ActorEnvironment;
@@ -173,10 +171,8 @@ mod tests {
     struct Echo;
     struct Quiet;
 
-    impl Handler for Quiet {
-        type Addr = MailAddr;
-        type Msg = u8;
-
+    #[behavior::behavior(addr = MailAddr, message = u8, sends = Vec<behavior::Never>, births = NoBirths, error = behavior::Never)]
+    impl Quiet {
         fn receive(
             &mut self,
             _from: MailAddr,
@@ -192,9 +188,9 @@ mod tests {
         }
     }
 
-    type Sink = Pure<Quiet>;
+    type Sink = Quiet;
     type EchoSends = Vec<Delivery<Sink>>;
-    type EchoBehavior = Pure<Echo, EchoSends>;
+    type EchoBehavior = Echo;
 
     /// Behavior with a string child birth mode for interpretation tests.
     struct StrBirths;
@@ -208,11 +204,15 @@ mod tests {
         type Error = Infallible;
         type Birth = behavior::Births<&'static str>;
 
-        fn init(&mut self) -> behavior::BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
             unreachable!("interpret tests never run the behavior")
         }
 
-        fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            _event: Self::Event,
+        ) -> behavior::BehaviorActed<Self> {
             unreachable!("interpret tests never run the behavior")
         }
     }
@@ -243,10 +243,8 @@ mod tests {
         }
     }
 
-    impl Handler<EchoSends> for Echo {
-        type Addr = MailAddr;
-        type Msg = u8;
-
+    #[behavior::behavior(addr = MailAddr, message = u8, sends = EchoSends, births = NoBirths, error = behavior::Never)]
+    impl Echo {
         fn receive(
             &mut self,
             from: MailAddr,
@@ -370,7 +368,7 @@ mod tests {
     async fn actor_retains_a_handle_to_shared_delivery_routing() {
         let (sender, source) = queue();
         let router = SharedRouter::default();
-        let behavior = Pure::new(Echo);
+        let behavior = Echo;
         let environment = ActorEnvironment::<EchoBehavior, _, _, _, _, _>::new(
             MailAddr(7),
             source,

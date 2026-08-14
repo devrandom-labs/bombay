@@ -90,7 +90,7 @@ blocked items still require the external evidence shown above.
 
 ## Current dependency snapshot
 
-The workspace locks the crates.io releases Behavior 0.9.5, Communication
+The workspace locks the crates.io releases Behavior 0.10.0, Communication
 0.1.1, Address 0.1.1, Observe 0.1.0, Timers 0.1.0, Transition 0.1.0, and
 Machine Executor 0.1.0. The exact Cargo lock is authoritative. Earlier
 feature records naming Behavior commit
@@ -99,6 +99,18 @@ temporary pre-release pin. The Bombay
 Communication owner checkout's source matches the locked 0.1.1 package, while
 its workspace manifest still declares 0.1.0; the registry version remains
 authoritative.
+
+For the active E5 follow-up migration, the requested Behavior source is the
+clean local checkout at `63045b4c60e0c652bbd024c60f5f49069683d54c`, two
+commits after the 0.10.0 release. Until Bombay's manifest and lock select that
+path revision, the registry package above remains the exact locked dependency;
+the local revision is the verified migration target, not yet the active build
+input.
+
+The same migration now selects the clean local Bombay Address 0.2.0 checkout
+at `7df3bedc5f3177ddbdb617cefe4b6ffcd60ecda3` instead of the locked registry
+0.1.1 package. Address 0.2.0 is therefore also a verified migration target
+until the manifest and lock select its local path.
 
 Ownership remains:
 
@@ -330,6 +342,10 @@ pass. F6 is `feature-complete` pending M2 and the project-wide final audit.
 
 #### E4-E9 authoring-UX audit — 2026-08-14
 
+Historical snapshot: the API counts and Behavior 0.9.5/0.10.0 descriptions in
+this audit record the pre-E5 baseline. The later E5 local lifecycle migration
+section and the current composition rules are normative.
+
 The audit inspected the complete tracked repository, including the core and
 framework public exports, `hello`, `local_runtime`, the 1,241-line `job_queue`,
 all tests, benchmarks, fuzz inputs, README, cookbook, and current architecture
@@ -389,6 +405,10 @@ and the repository-wide old-call-shape audit pass. E4 is `feature-complete`
 pending E9, M4, and the project-wide release audit.
 
 ##### E5 verification and contract
+
+Historical contract record, superseded by “E5 local Behavior lifecycle
+migration — 2026-08-14” below. Older public API names remain here only as
+evidence for the migration decision.
 
 Fresh verification on 2026-08-14 inspected the exact locked registry source,
 public API, tests, and documentation for Behavior 0.9.5, Communication 0.1.1,
@@ -486,6 +506,82 @@ now `active`: upgrade the exact lock to Behavior 0.10.0, migrate the complete
 runtime and repository, then remove ordinary application routing declarations
 and routing vocabulary from the framework surface before feature completion.
 
+##### E5 local Behavior lifecycle migration — 2026-08-14
+
+Fresh verification for this follow-up inspected the exact locked registry
+source, public API, tests, and packaged documentation for Behavior 0.10.0,
+Communication 0.1.1, Address 0.1.1, Observe 0.1.0, and Timers 0.1.0. It also
+inspected the source, public exports, algebra tests, compile-fail tests,
+property/model/fuzz consumers, examples, README, domain-boundary guidance, and
+wart audit in the clean local Behavior checkout at
+`63045b4c60e0c652bbd024c60f5f49069683d54c`. The local Address checkout is at
+`7df3bedc5f3177ddbdb617cefe4b6ffcd60ecda3`; the local Observe checkout is at
+`43016e5f781e006e072e77af996c4da64466dee8`; the local Timers checkout is at
+`4e515ed176f503bf6a5bd0d736ffa0394cb7f1f2`; and the Communication owner
+workspace is at `e2e8f3995154dcc420a85b04e5f658e8af0f862f`. Untracked local
+research/editor files in those neighboring checkouts are not dependency
+contracts and were not modified. The registry packages remain authoritative
+for every neighbor other than the explicitly requested local Behavior target.
+
+The target Behavior revision removes `Handler`, `Pure`, `BehaviorFn`,
+`SendProduct`, `Inner`, `Transcript`, `run`, `Compose::from_fns`,
+`Compose::from_behavior`, `Compose::build`, and direct public initialization or
+transition on a definition. `Compose<B>` now owns an uninitialized definition;
+its consuming `initialize` returns initialization actions and `Active<B>`.
+Only `Active<B>` exposes `transition`, `receive`, and typed `on`; direct
+`Behavior` implementations receive crate-minted `InitializationTurn` and
+`ActiveTurn` capabilities. `BehaviorBase` and `Compose::base`/`Active::base`
+replace positional wrapper inspection, and `StashStatus` exposes only the
+semantic stashed-message count. Heterogeneous send products are now named
+semantic wrapper/application structs that implement `SendAlgebra` and
+`SendInput`; there is no public positional product or path language to copy.
+The nominal `#[behavior::behavior]` attribute is the ordinary user-message
+authoring path, while explicit `Behavior` remains for service-event protocols
+and semantic wrappers.
+
+The exact ownership map remains unchanged: Behavior owns pure definitions,
+the consuming initialization/active typestate boundary, event and effect
+algebra, semantic wrappers, births, supervision, and typed destinations;
+Communication owns only the two-lane mailbox and rejected-payload recovery;
+Address owns exact-generation registration and endpoint snapshots; Observe
+owns exact-generation terminal publication; Timers owns keyed generation-safe
+scheduling. Bombay Engine must consume `Compose<B>`, interpret the returned
+initial actions, and store only `Active<B>` in its transition machine. Bombay
+owns runtime preparation, task execution, effect interpretation, endpoint
+selection, and retirement, but must not recreate Behavior initialization state
+or expose a second way to mint lifecycle turns. This migration changes no
+Communication, Address, Observe, or Timers protocol and introduces no registry,
+request/reply mechanism, lifecycle framework, or supervision policy.
+
+The local Address 0.2.0 follow-up was reverified from its complete public
+source, semantics/reclamation/Loom tests, benchmark, guide, changelog, and
+adversarial research suite. Its only contract change from 0.1.1 is that
+`AddressSpace::resolve` returns `Resolved<E>`, an opaque read-only endpoint
+snapshot. `Resolved<E>` dereferences and implements `AsRef<E>` but cannot be
+constructed, destructured, mutated through the wrapper, moved out, or used as
+registration authority. Resolution clones the endpoint outside the table lock;
+the snapshot remains valid after release or address reuse. `Lease` remains the
+sole exact-generation release authority and `RegistrationId` remains only an
+opaque process-local correlation identity. Bombay must consume the resolved
+capability through shared access, must not expose Address's internal `Arc`, and
+must not add a second snapshot, reclamation, or registration mechanism.
+
+The local lifecycle/address migration is `feature-complete`: the workspace now
+selects the audited local Behavior revision and Address 0.2.0; Engine consumes
+`Compose<B>` exactly once and stores only `Active<B>`; Bombay interprets named
+semantic sends and typed optional event routing; obsolete Behavior exports and
+call shapes are absent from current code, examples, benchmarks, mutation
+metadata, and normative documentation. `cargo check --workspace --all-targets`,
+`cargo test --workspace`, formatting, and workspace Clippy pass. Historical
+records retain old names only in sections explicitly marked historical.
+
+E5 itself remains `active` because its older, separate application-routing
+objective still has advanced `EndpointRegistry`/`DeliveryRouter` adapters in
+the framework examples. Those traits were removed from the ordinary framework
+prelude in this migration, but eliminating the concrete endpoint-selection
+adapters requires the remaining E5 design work; lifecycle migration does not
+silently claim that separate outcome.
+
 An address-integration audit on 2026-08-14 rechecked the locked Address 0.1.1
 source, tests, benchmark, and public contract alongside Behavior 0.10.0,
 Communication 0.1.1, Observe 0.1.0, and Timers 0.1.0, then traced every Bombay
@@ -511,6 +607,9 @@ lifecycle authority. No local path override or duplicate Bombay lookup table
 is accepted as a permanent integration.
 
 ##### E6 verification and contract
+
+Historical baseline: its Behavior 0.9.5 authoring inventory is superseded by
+the local lifecycle migration contract above.
 
 Behavior 0.9.5 already supplies `Handler`/`Pure`, `BehaviorFn`, the nominal
 `#[behavior::behavior]` macro, `Compose`, semantic wrappers, `Stash`, and both
@@ -618,22 +717,19 @@ substitute for one another.
 ## Behavior composition rules
 
 Derive effects from the exact locked Behavior API. Compose heterogeneous lanes
-with `SendProduct`, name semantic `Own`/`Inner<Path>` aliases, and emit with
-typed `SendAlgebra::send`. Application code must not traverse `.inner`/`.own`,
-mutate lanes positionally, or handwrite `SendAlgebra`, `SendInput`,
-`RouteSends`, `ObservesCreations`, or product-routing errors when recursive
-Behavior composition and bombay's generic interpreter cover them.
+as named semantic send structs, implement `SendAlgebra` plus one `SendInput`
+per semantic lane, and emit with typed `SendAlgebra::send`. Positional product
+paths no longer exist. Keep `RouteSends`, `ObservesCreations`, and composed
+routing errors at the runtime-adapter boundary rather than in domain behavior.
 Behavior 0.10's `Delivery<B>` selects the destination behavior. The current
 `EndpointRegistry<B, D>` and `DeliveryRouter<B>` implementations are temporary
 Bombay runtime compatibility adapters under E5; they are not the intended
 application authoring model and must disappear from ordinary examples and the
 framework prelude before E5 is feature-complete.
 
-`Compose::from_fns` is suitable only while the concrete value stays locally
-inferred. Use Behavior's nominal attribute for plain `User`/`Never` behaviors
-when the locked source supplies it. Keep semantic wrappers explicit, and do
-not expand function-pointer aliases merely to name closure behavior inside
-`Births`, `Proxy`, `Supervisor`, endpoints, or routers.
+Use Behavior's nominal attribute for plain `User`/`Never` behaviors. Keep
+semantic wrappers explicit, and construct wrapper stacks through `Compose` so
+only the runtime can cross from definitions into active behaviors.
 
 Audit the entire repository—including examples, benchmarks, tests, research,
 diagnostic probes, documents, and public re-exports—for obsolete positional

@@ -19,7 +19,7 @@
 //! execution is needed (no topology). Use [`BehaviorMachine::with_topology`]
 //! when model checking or topology validation is desired.
 
-use behavior::Behavior;
+use behavior::{Active, Behavior};
 use bombay_transition::{Machine, Structure, ValidatedTopology};
 
 /// Wraps a [`Behavior`] as a [`bombay_transition::Machine`].
@@ -29,18 +29,18 @@ use bombay_transition::{Machine, Structure, ValidatedTopology};
 /// [`Behavior::transition`], making this the single point where Behavior
 /// enters the Transition composition.
 ///
-pub(crate) struct BehaviorMachine<B> {
-    behavior: B,
+pub(crate) struct BehaviorMachine<B: Behavior> {
+    behavior: Active<B>,
     topology: Option<ValidatedTopology>,
 }
 
-impl<B> BehaviorMachine<B> {
+impl<B: Behavior> BehaviorMachine<B> {
     /// Wrap a behavior for runtime execution (no topology).
     ///
     /// Use this constructor when the machine will only be stepped — not
     /// described or model-checked. For topology validation, use
     /// `BehaviorMachine::with_topology` (test-only) instead.
-    pub(crate) const fn for_runtime(behavior: B) -> Self {
+    pub(crate) const fn for_runtime(behavior: Active<B>) -> Self {
         Self {
             behavior,
             topology: None,
@@ -52,16 +52,11 @@ impl<B> BehaviorMachine<B> {
     /// The topology must be pre-validated via
     /// [`Topology::validated`](bombay_transition::Topology::validated).
     #[cfg(test)]
-    pub(crate) const fn with_topology(behavior: B, topology: ValidatedTopology) -> Self {
+    pub(crate) const fn with_topology(behavior: Active<B>, topology: ValidatedTopology) -> Self {
         Self {
             behavior,
             topology: Some(topology),
         }
-    }
-
-    /// Mutably access the inner behavior.
-    pub(crate) fn behavior_mut(&mut self) -> &mut B {
-        &mut self.behavior
     }
 }
 

@@ -26,7 +26,7 @@ pub struct LifecycleEvent<A, I = RegistrationId> {
     pub address: A,
     /// Exact process-local registration identity.
     pub incarnation: I,
-    /// Handler transition that has completed.
+    /// Behavior transition that has completed.
     pub transition: LifecycleTransition,
 }
 

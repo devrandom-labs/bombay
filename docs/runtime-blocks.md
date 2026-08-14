@@ -24,10 +24,9 @@ invariant proves a helper is necessary.
 | KERI | Controller identity, authority, and provenance | Local actor designation |
 
 Behavior effect composition crosses this boundary in one direction: pure
-`SendProduct` values are populated with typed `SendAlgebra::send` paths, then
-bombay's generic interpreter recursively passes their leaves to runtime
-services or `DeliveryRouter`. Positional product mutation and
-application-owned product interpreters are outside the supported composition.
+named send algebras are populated through semantic `SendInput` implementations,
+then bombay passes their fields to runtime services or `DeliveryRouter` in fold
+order. Positional product mutation is outside the supported composition.
 
 ## Names at the distributed boundary
 

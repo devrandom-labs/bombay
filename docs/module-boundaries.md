@@ -119,11 +119,11 @@ routes an outbound message, `PeerObserver` captures a generation-specific
 completion, and `RouteSends` interprets Behavior's statically composed send
 algebra. A rejected endpoint returns `RejectedDelivery<M, E>` so neither an
 unknown lookup nor a closed resolved mailbox can erase the owned message.
-Application send products use Behavior's recursive `SendInput`
-selection through semantic `Own`/`Inner<Path>` aliases. They do not implement
-`RouteSends`, `ObservesCreations`, or routing-error products; bombay provides
-those generic structural interpretations once. Behavior's `Delivery<B>`
-statically identifies the destination behavior. The remaining public
+Application and semantic-wrapper send algebras use named fields with semantic
+`SendInput` implementations rather than positional products. Their runtime
+adapters implement `RouteSends` and `ObservesCreations` at the boundary while
+domain behavior remains pure. Behavior's `Delivery<B>` statically identifies
+the destination behavior. The remaining public
 `EndpointRegistry<B, D>` and `DeliveryRouter<B>` adapters are temporary E5
 runtime compatibility seams, not intended application concepts.
 

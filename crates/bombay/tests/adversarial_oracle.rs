@@ -3,7 +3,7 @@ mod support;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use bombay::behavior::{Actions, Exit, Handler, MailAddr, Never, NoBirths, Pure, StopOnShutdown};
+use bombay::behavior::{Actions, Compose, Exit, MailAddr, Never, NoBirths};
 use bombay::{
     Actor, AddressRouter, LifecycleEvent, LifecycleSink, LifecycleTransition, MailboxConfig,
     RunExit, System, TaskOutcome,
@@ -43,10 +43,8 @@ struct PerProducerOrder {
     received: usize,
 }
 
-impl Handler<Vec<Never>, NoBirths, ProducerOrderViolation> for PerProducerOrder {
-    type Addr = MailAddr;
-    type Msg = (u8, u8);
-
+#[bombay::behavior::behavior(addr = MailAddr, message = (u8, u8), sends = Vec<Never>, births = NoBirths, error = ProducerOrderViolation)]
+impl PerProducerOrder {
     fn receive(
         &mut self,
         from: MailAddr,
@@ -75,10 +73,10 @@ async fn concurrent_producers_preserve_local_order_without_assuming_interleaving
     let actor = system
         .spawn(Actor::new(
             MailAddr(1),
-            Pure::new(PerProducerOrder {
+            PerProducerOrder {
                 next: [0; 2],
                 received: 0,
-            }),
+            },
         ))
         .unwrap();
 
@@ -117,10 +115,8 @@ impl LifecycleSink<MailAddr, bombay_address::RegistrationId> for Events {
 
 struct Waiting;
 
-impl Handler for Waiting {
-    type Addr = MailAddr;
-    type Msg = Never;
-
+#[bombay::behavior::behavior(addr = MailAddr, message = Never, sends = Vec<Never>, births = NoBirths, error = Never)]
+impl Waiting {
     fn receive(
         &mut self,
         _from: MailAddr,
@@ -140,9 +136,9 @@ async fn abort_and_shutdown_races_publish_one_terminal_generation_before_reuse()
             events.clone(),
         );
         let actor = system
-            .spawn(Actor::new(
+            .spawn(Actor::from_definition(
                 MailAddr(7),
-                StopOnShutdown::new(Pure::new(Waiting)),
+                Compose::new(Waiting).stop_on_shutdown(),
             ))
             .unwrap();
         let actor_ref = actor.actor_ref().clone();
@@ -162,9 +158,9 @@ async fn abort_and_shutdown_races_publish_one_terminal_generation_before_reuse()
         ));
 
         let replacement = system
-            .spawn(Actor::new(
+            .spawn(Actor::from_definition(
                 MailAddr(7),
-                StopOnShutdown::new(Pure::new(Waiting)),
+                Compose::new(Waiting).stop_on_shutdown(),
             ))
             .unwrap();
         replacement.abort();

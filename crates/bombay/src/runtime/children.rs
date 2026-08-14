@@ -114,14 +114,14 @@ where
 #[doc(hidden)]
 pub enum RuntimeEffectError<C, D> {
     /// Child birth failed.
-    #[error("child birth failed: {0:?}")]
-    Birth(C),
+    #[error("child birth failed")]
+    Birth(#[source] C),
     /// A behavior reused a child identity within one parent incarnation.
     #[error("a behavior reused a child identity within one parent incarnation")]
     DuplicateChild,
     /// Outbound delivery failed.
-    #[error("outbound delivery failed: {0:?}")]
-    Delivery(D),
+    #[error("outbound delivery failed")]
+    Delivery(#[source] D),
 }
 
 /// Classifies a child-creation failure for same-action rejection delivery.

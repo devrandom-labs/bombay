@@ -7,14 +7,14 @@
 use std::time::Duration;
 
 use bombay::behavior::{
-    Actions, Address, Behavior, Crash, Deadline, Delivery, Exit, Inner, Never, NoBirths,
-    ObservePeer, Own, PeerStopped, Recipient, SendAlgebra, SendProduct, ServiceSends, Step, User,
+    Actions, Address, Behavior, Compose, Crash, Deadline, Delivery, Exit, Never, NoBirths,
+    ObservePeer, Own, PeerStopped, Recipient, SendAlgebra, SendInput, ServiceSends, Step, User,
     WatchEvent,
 };
 use bombay::{
     Actor, ActorRef, AddressInUse, AddressRouter, DeliveryRouter, EndpointRegistry,
-    IncarnationEndpoint, MailboxAnchor, MailboxConfig, PeerObservationError, PeerObserver, System,
-    TaskOutcome,
+    IncarnationEndpoint, MailboxAnchor, MailboxConfig, ObservesCreations, PeerObservationError,
+    PeerObserver, RouteSends, System, TaskOutcome,
 };
 use observe::Observation;
 use tokio::task::yield_now;
@@ -58,11 +58,15 @@ impl Behavior for Callee {
     type Error = Never;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         let Call { reply_to, action } = event.message;
         Ok(match action {
             CalleeAction::Reply(reply) => Actions::new(
@@ -84,8 +88,79 @@ enum ResultFact {
     CalleeRetired,
 }
 
-type RequestSends = SendProduct<ServiceSends<ObservePeer<TestAddr>>, Vec<Delivery<Callee>>>;
-type ObservePeerPath = Inner<Own>;
+struct ObservePeerLane;
+
+struct RequestSends {
+    observations: ServiceSends<ObservePeer<TestAddr>>,
+    deliveries: Vec<Delivery<Callee>>,
+}
+
+impl SendAlgebra for RequestSends {
+    fn empty() -> Self {
+        Self {
+            observations: ServiceSends::empty(),
+            deliveries: Vec::new(),
+        }
+    }
+
+    fn append(&mut self, other: Self) {
+        self.observations.append(other.observations);
+        SendAlgebra::append(&mut self.deliveries, other.deliveries);
+    }
+}
+
+impl SendInput<ObservePeer<TestAddr>, ObservePeerLane> for RequestSends {
+    fn emit(&mut self, input: ObservePeer<TestAddr>) {
+        self.observations.send(input);
+    }
+}
+
+impl SendInput<Delivery<Callee>, Own> for RequestSends {
+    fn emit(&mut self, input: Delivery<Callee>) {
+        self.deliveries.send(input);
+    }
+}
+
+impl ObservesCreations<u64> for RequestSends {
+    fn observes_creation(&self, _nonce: u64) -> bool {
+        false
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+enum RequestSendsError<O: std::error::Error + 'static, D: std::error::Error + 'static> {
+    #[error("peer observation failed")]
+    Observation(#[source] O),
+    #[error("request delivery failed")]
+    Delivery(#[source] D),
+}
+
+impl<R> RouteSends<TestAddr, R> for RequestSends
+where
+    R: Send,
+    ServiceSends<ObservePeer<TestAddr>>: RouteSends<TestAddr, R> + Send,
+    Vec<Delivery<Callee>>: RouteSends<TestAddr, R> + Send,
+    <ServiceSends<ObservePeer<TestAddr>> as RouteSends<TestAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+    <Vec<Delivery<Callee>> as RouteSends<TestAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+{
+    type Error = RequestSendsError<
+        <ServiceSends<ObservePeer<TestAddr>> as RouteSends<TestAddr, R>>::Error,
+        <Vec<Delivery<Callee>> as RouteSends<TestAddr, R>>::Error,
+    >;
+
+    async fn route(self, from: TestAddr, router: &mut R) -> Result<(), Self::Error> {
+        self.observations
+            .route(from, router)
+            .await
+            .map_err(RequestSendsError::Observation)?;
+        self.deliveries
+            .route(from, router)
+            .await
+            .map_err(RequestSendsError::Delivery)
+    }
+}
 
 struct Requester {
     action: CalleeAction,
@@ -110,9 +185,9 @@ impl Behavior for Requester {
     type Error = ResultFact;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> bombay::behavior::BehaviorActed<Self> {
         let mut sends = RequestSends::empty();
-        sends.send::<_, ObservePeerPath>(ObservePeer::new(CALLEE));
+        sends.send::<_, ObservePeerLane>(ObservePeer::new(CALLEE));
         sends.send::<_, Own>(Delivery::new(
             Recipient::global(CALLEE),
             Call {
@@ -123,12 +198,16 @@ impl Behavior for Requester {
         Ok(Actions::new(sends, Vec::new(), Step::Continue))
     }
 
-    fn transition(&mut self, event: Self::Event) -> bombay::behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> bombay::behavior::BehaviorActed<Self> {
         match event {
-            WatchEvent::Inner(User { message, .. }) if self.deadline_elapsed => {
+            WatchEvent::Behavior(User { message, .. }) if self.deadline_elapsed => {
                 Err(ResultFact::LateReply(message))
             }
-            WatchEvent::Inner(User { message, .. }) => Err(ResultFact::Reply(message)),
+            WatchEvent::Behavior(User { message, .. }) => Err(ResultFact::Reply(message)),
             WatchEvent::PeerStopped(PeerStopped { peer, .. }) if peer == CALLEE => {
                 Err(ResultFact::CalleeRetired)
             }
@@ -247,12 +326,11 @@ async fn typed_reply_is_ordinary_delivery_to_the_user_supplied_recipient() {
     let system = System::new(MailboxConfig::bounded(4), Routes::default());
     let callee = system.spawn(Actor::new(CALLEE, Callee)).unwrap();
     let requester = system
-        .spawn(Actor::new(
+        .spawn(Actor::from_definition(
             REQUESTER,
-            Deadline::new(
-                Requester::new(CalleeAction::Reply(7)),
+            Compose::new(Requester::new(CalleeAction::Reply(7))).deadline(
                 bombay::behavior::TimerId(0),
-                Some(Instant::now() + Duration::from_secs(5)),
+                Some((Instant::now() + Duration::from_secs(5)).into_std()),
                 timeout,
             ),
         ))
@@ -271,12 +349,11 @@ async fn deadline_is_the_timeout_and_a_late_reply_is_an_explicit_user_message() 
     let system = System::new(MailboxConfig::bounded(4), Routes::default());
     let callee = system.spawn(Actor::new(CALLEE, Callee)).unwrap();
     let requester = system
-        .spawn(Actor::new(
+        .spawn(Actor::from_definition(
             REQUESTER,
-            Deadline::new(
-                Requester::new(CalleeAction::Ignore),
+            Compose::new(Requester::new(CalleeAction::Ignore)).deadline(
                 bombay::behavior::TimerId(0),
-                Some(Instant::now() + Duration::from_secs(1)),
+                Some((Instant::now() + Duration::from_secs(1)).into_std()),
                 remember_timeout,
             ),
         ))
@@ -311,12 +388,11 @@ async fn observation_installed_before_delivery_reports_exact_callee_retirement()
     let system = System::new(MailboxConfig::bounded(4), Routes::default());
     let _callee = system.spawn(Actor::new(CALLEE, Callee)).unwrap();
     let requester = system
-        .spawn(Actor::new(
+        .spawn(Actor::from_definition(
             REQUESTER,
-            Deadline::new(
-                Requester::new(CalleeAction::Retire),
+            Compose::new(Requester::new(CalleeAction::Retire)).deadline(
                 bombay::behavior::TimerId(0),
-                Some(Instant::now() + Duration::from_secs(5)),
+                Some((Instant::now() + Duration::from_secs(5)).into_std()),
                 timeout,
             ),
         ))
@@ -333,12 +409,11 @@ async fn retired_reply_target_is_an_existing_delivery_failure() {
     let system = System::new(MailboxConfig::bounded(4), Routes::default());
     let callee = system.spawn(Actor::new(CALLEE, Callee)).unwrap();
     let requester = system
-        .spawn(Actor::new(
+        .spawn(Actor::from_definition(
             REQUESTER,
-            Deadline::new(
-                Requester::new(CalleeAction::Ignore),
+            Compose::new(Requester::new(CalleeAction::Ignore)).deadline(
                 bombay::behavior::TimerId(0),
-                Some(Instant::now()),
+                Some(Instant::now().into_std()),
                 timeout,
             ),
         ))

@@ -6,7 +6,7 @@ use core::hash::Hash;
 use behavior::{
     Address, Behavior, Crash, DeadlineSends, Delivery, Exit, ObserveChild, ObserveCreation,
     ObservePeer, ProxySends, ReceiveTimeoutSends, ReportWorkerCreationResolved,
-    ReportWorkerStopped, SendProduct, ServiceSends, SupervisorSends, WatchSends,
+    ReportWorkerStopped, ServiceSends, SupervisorSends, WatchSends,
 };
 pub use bombay_address::AddressInUse;
 use bombay_address::{AddressSpace, Lease};
@@ -314,17 +314,6 @@ impl<M, N> ObservesCreations<N> for ServiceSends<ReportWorkerCreationResolved<M>
     }
 }
 
-impl<L, R, N> ObservesCreations<N> for SendProduct<L, R>
-where
-    L: ObservesCreations<N>,
-    R: ObservesCreations<N>,
-    N: Copy,
-{
-    fn observes_creation(&self, nonce: N) -> bool {
-        self.inner.observes_creation(nonce) || self.own.observes_creation(nonce)
-    }
-}
-
 impl<A: Address, Sends> ObservesCreations<A::Nonce> for WatchSends<A, Sends>
 where
     Sends: ObservesCreations<A::Nonce>,
@@ -422,49 +411,16 @@ where
     }
 }
 
-/// Failure from one statically selected leg of a composed send algebra.
-#[doc(hidden)]
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-pub enum SendProductError<L, R> {
-    /// The inner protocol leg failed.
-    #[error("inner protocol leg failed: {0:?}")]
-    Inner(L),
-    /// The wrapper-owned protocol leg failed.
-    #[error("wrapper-owned protocol leg failed: {0:?}")]
-    Own(R),
-}
-
-impl<A, R, L, Own> RouteSends<A, R> for SendProduct<L, Own>
-where
-    A: Address + Send,
-    L: RouteSends<A, R> + Send,
-    Own: RouteSends<A, R> + Send,
-    R: Send,
-{
-    type Error = SendProductError<L::Error, Own::Error>;
-
-    async fn route(self, from: A, router: &mut R) -> Result<(), Self::Error> {
-        self.inner
-            .route(from, router)
-            .await
-            .map_err(SendProductError::Inner)?;
-        self.own
-            .route(from, router)
-            .await
-            .map_err(SendProductError::Own)
-    }
-}
-
 /// Failure from one named lane of a [`WatchSends`] composition.
 #[doc(hidden)]
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum WatchSendsError<B, O> {
     /// The wrapped behavior's own sends failed.
-    #[error("watch behavior sends failed: {0:?}")]
-    Behavior(B),
+    #[error("watch behavior sends failed")]
+    Behavior(#[source] B),
     /// The watch observation lane failed.
-    #[error("watch observation lane failed: {0:?}")]
-    Observations(O),
+    #[error("watch observation lane failed")]
+    Observations(#[source] O),
 }
 
 impl<A, R, Sends> RouteSends<A, R> for WatchSends<A, Sends>
@@ -496,11 +452,11 @@ where
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum DeadlineSendsError<B, S> {
     /// The wrapped behavior's own sends failed.
-    #[error("deadline behavior sends failed: {0:?}")]
-    Behavior(B),
+    #[error("deadline behavior sends failed")]
+    Behavior(#[source] B),
     /// The absolute-schedule lane failed.
-    #[error("deadline schedule lane failed: {0:?}")]
-    Schedules(S),
+    #[error("deadline schedule lane failed")]
+    Schedules(#[source] S),
 }
 
 impl<A, R, Sends> RouteSends<A, R> for DeadlineSends<Sends>
@@ -532,11 +488,11 @@ where
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ReceiveTimeoutSendsError<B, S> {
     /// The wrapped behavior's own sends failed.
-    #[error("receive-timeout behavior sends failed: {0:?}")]
-    Behavior(B),
+    #[error("receive-timeout behavior sends failed")]
+    Behavior(#[source] B),
     /// The relative-schedule lane failed.
-    #[error("receive-timeout schedule lane failed: {0:?}")]
-    Schedules(S),
+    #[error("receive-timeout schedule lane failed")]
+    Schedules(#[source] S),
 }
 
 impl<A, R, Sends> RouteSends<A, R> for ReceiveTimeoutSends<Sends>
@@ -568,14 +524,14 @@ where
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum SupervisorSendsError<B, O, C> {
     /// The supervised behavior's own sends failed.
-    #[error("supervised behavior sends failed: {0:?}")]
-    Behavior(B),
+    #[error("supervised behavior sends failed")]
+    Behavior(#[source] B),
     /// The child-observation lane failed.
-    #[error("supervisor child-observation lane failed: {0:?}")]
-    ChildObservations(O),
+    #[error("supervisor child-observation lane failed")]
+    ChildObservations(#[source] O),
     /// The replacement-command lane failed.
-    #[error("supervisor replacement-command lane failed: {0:?}")]
-    ReplacementCommands(C),
+    #[error("supervisor replacement-command lane failed")]
+    ReplacementCommands(#[source] C),
 }
 
 impl<A, R, Sends, C> RouteSends<A, R> for SupervisorSends<A, Sends, C>
@@ -615,20 +571,20 @@ where
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ProxySendsError<D, C, CR, S, RP> {
     /// The proxied user-delivery lane failed.
-    #[error("proxy delivery lane failed: {0:?}")]
-    Deliveries(D),
+    #[error("proxy delivery lane failed")]
+    Deliveries(#[source] D),
     /// The child-observation lane failed.
-    #[error("proxy child-observation lane failed: {0:?}")]
-    ChildObservations(C),
+    #[error("proxy child-observation lane failed")]
+    ChildObservations(#[source] C),
     /// The creation-observation lane failed.
-    #[error("proxy creation-observation lane failed: {0:?}")]
-    CreationObservations(CR),
+    #[error("proxy creation-observation lane failed")]
+    CreationObservations(#[source] CR),
     /// The worker-stopped report lane failed.
-    #[error("proxy worker-stopped report lane failed: {0:?}")]
-    StoppedReports(S),
+    #[error("proxy worker-stopped report lane failed")]
+    StoppedReports(#[source] S),
     /// The worker-creation report lane failed.
-    #[error("proxy worker-creation report lane failed: {0:?}")]
-    CreationReports(RP),
+    #[error("proxy worker-creation report lane failed")]
+    CreationReports(#[source] RP),
 }
 
 impl<A, C, R> RouteSends<A, R> for ProxySends<C>
@@ -682,15 +638,14 @@ mod tests {
 
     use behavior::{
         Address, Delivery, Exit, MailAddr, ObserveChild, ObserveCreation, ObservePeer, Recipient,
-        ReportWorkerCreationResolved, ReportWorkerStopped, ScheduleAfter, ScheduleAt, SendProduct,
-        ServiceSends, UnwatchPeer, WatchSends,
+        ReportWorkerCreationResolved, ReportWorkerStopped, ScheduleAfter, ScheduleAt, ServiceSends,
+        UnwatchPeer, WatchSends,
     };
     use observe::ObservationSpace;
 
     use super::{
         AddressRouter, DeliveryEndpoint, DeliveryRouter, EndpointRegistry, IncarnationEndpoint,
         ObservesCreations, PeerObserver, RejectedDelivery, RouteSends, RoutingError,
-        SendProductError,
     };
 
     #[test]
@@ -717,20 +672,6 @@ mod tests {
         );
         assert!(!ServiceSends::<ScheduleAt>::new(Vec::new()).observes_creation(7u64));
         assert!(!ServiceSends::<ScheduleAfter>::new(Vec::new()).observes_creation(7u64));
-
-        let product = SendProduct {
-            inner: Vec::<Delivery<AssertBehavior>>::new(),
-            own: creations.clone(),
-        };
-        assert!(product.observes_creation(7));
-        assert!(
-            !SendProduct {
-                inner: Vec::<Delivery<AssertBehavior>>::new(),
-                own: ServiceSends::<ObserveChild<u64>>::new(Vec::new()),
-            }
-            .observes_creation(7u64),
-            "a product observes only through a real creation lane"
-        );
 
         let wrapped = WatchSends {
             behavior: creations.clone(),
@@ -808,12 +749,10 @@ mod tests {
 
     struct AssertChild;
 
-    type AssertBehavior = behavior::Pure<AssertChild>;
+    type AssertBehavior = AssertChild;
 
-    impl behavior::Handler for AssertChild {
-        type Addr = MailAddr;
-        type Msg = u8;
-
+    #[behavior::behavior(addr = MailAddr, message = u8, sends = Vec<behavior::Never>, births = behavior::NoBirths, error = behavior::Never)]
+    impl AssertChild {
         fn receive(
             &mut self,
             _from: MailAddr,
@@ -988,29 +927,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn routes_composed_products_in_algebra_order() {
-        let recipient = Recipient::global(MailAddr(9));
-        let sends = SendProduct {
-            inner: vec![Delivery::new(recipient, 3), Delivery::new(recipient, 4)],
-            own: vec![Delivery::new(recipient, 5)],
-        };
-        let mut router = RecordingRouter::default();
-
-        sends.route(MailAddr(7), &mut router).await.unwrap();
-
-        assert_eq!(
-            router
-                .0
-                .lock()
-                .expect("delivery lock")
-                .iter()
-                .map(|entry| entry.1.message)
-                .collect::<Vec<_>>(),
-            [3, 4, 5]
-        );
-    }
-
-    #[tokio::test]
     async fn stops_at_the_first_delivery_failure() {
         let recipient = Recipient::global(MailAddr(9));
         let sends = vec![
@@ -1033,29 +949,6 @@ mod tests {
                 .map(|entry| entry.1.message)
                 .collect::<Vec<_>>(),
             [1]
-        );
-    }
-
-    #[tokio::test]
-    async fn product_failure_preserves_the_exact_interpreter_leg() {
-        let recipient = Recipient::global(MailAddr(9));
-        let mut router = RecordingRouter::default();
-        let inner_failure = SendProduct {
-            inner: vec![Delivery::new(recipient, 2)],
-            own: vec![Delivery::new(recipient, 3)],
-        };
-        assert_eq!(
-            inner_failure.route(MailAddr(7), &mut router).await,
-            Err(SendProductError::Inner("delivery failed"))
-        );
-
-        let own_failure = SendProduct {
-            inner: vec![Delivery::new(recipient, 1)],
-            own: vec![Delivery::new(recipient, 2)],
-        };
-        assert_eq!(
-            own_failure.route(MailAddr(7), &mut router).await,
-            Err(SendProductError::Own("delivery failed"))
         );
     }
 }

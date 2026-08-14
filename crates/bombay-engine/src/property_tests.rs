@@ -52,11 +52,15 @@ mod run_to_completion {
         type Error = std::convert::Infallible;
         type Birth = NoBirths;
 
-        fn init(&mut self) -> BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
             Ok(Actions::cont())
         }
 
-        fn transition(&mut self, event: Self::Event) -> BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            event: Self::Event,
+        ) -> BehaviorActed<Self> {
             self.value = event.message;
             Ok(Actions {
                 sends: vec![event.message],

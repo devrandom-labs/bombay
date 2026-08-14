@@ -8,16 +8,16 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use bombay::behavior::{
-    Actions, Address, Behavior, Births, ChildStopped, Compose, Create, Delivery, Exit, Handler,
-    Inner, MailAddr, Never, NoBirths, ObserveChild, ObservePeer, Own, Proxy, Pure, Recipient,
-    RestartDenial, RestartPolicy, SendAlgebra, SendProduct, ServiceSends, ShutdownRequested, Step,
-    StopOnShutdown, Strategy, SupervisionEvent, SupervisionFailureReason, Supervisor, UnwatchPeer,
-    User, Watch, WatchEvent, stop_on_supervision_failure,
+    Actions, Address, Behavior, Births, ChildStopped, Compose, Create, Delivery, Exit, MailAddr,
+    Never, NoBirths, ObserveChild, ObservePeer, Own, Proxy, Recipient, RestartDenial,
+    RestartPolicy, SendAlgebra, SendInput, ServiceSends, ShutdownRequested, Step, Strategy,
+    SupervisionEvent, SupervisionFailureReason, Supervisor, UnwatchPeer, User, WatchEvent,
+    stop_on_supervision_failure,
 };
 use bombay::{
     Actor, ActorRef, AddressRouter, DeliveryEndpoint, DeliveryRouter, EndpointRegistry,
     IncarnationEndpoint, LifecycleEvent, LifecycleSink, LifecycleTransition, MailboxAnchor,
-    MailboxConfig, RunExit, System, TaskOutcome,
+    MailboxConfig, ObservesCreations, RouteSends, RunExit, System, TaskOutcome,
 };
 use bombay_address::RegistrationId;
 use tokio::sync::Notify;
@@ -38,11 +38,15 @@ impl Behavior for ImmediateChild {
     type Error = Never;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions::stop(Exit::Normal))
     }
 
-    fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        _event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         Ok(Actions::stop(Exit::Normal))
     }
 }
@@ -55,12 +59,12 @@ impl Behavior for ObserveImmediateChild {
     type Addr = MailAddr;
     type Msg = Never;
     type Event = CompletionEvent;
-    type Sends = SendProduct<Vec<Never>, ServiceSends<ObserveChild<u64>>>;
+    type Sends = ServiceSends<ObserveChild<u64>>;
     type Ph = Never;
     type Error = Never;
     type Birth = Births<ImmediateChild>;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         let mut sends = Self::Sends::empty();
         sends.send::<_, Own>(ObserveChild { nonce: 7 });
         Ok(Actions {
@@ -70,7 +74,11 @@ impl Behavior for ObserveImmediateChild {
         })
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         let SupervisionEvent::ChildStopped(ChildStopped { outcome, .. }) = event else {
             panic!("expected child termination");
         };
@@ -116,13 +124,17 @@ impl Behavior for WatchedPeer {
     type Error = Never;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         match event {
-            WatchEvent::Inner(User { .. }) => Ok(Actions::stop(Exit::Normal)),
+            WatchEvent::Behavior(User { .. }) => Ok(Actions::stop(Exit::Normal)),
             WatchEvent::PeerStopped(_) => Ok(Actions::cont()),
         }
     }
@@ -133,10 +145,8 @@ struct WatchState {
     observed: Arc<Mutex<Option<(MailAddr, RecordedChildOutcome)>>>,
 }
 
-impl Handler for WatchState {
-    type Addr = MailAddr;
-    type Msg = u8;
-
+#[bombay::behavior::behavior(addr = MailAddr, message = u8, sends = Vec<Never>, births = NoBirths, error = Never)]
+impl WatchState {
     fn receive(
         &mut self,
         _from: MailAddr,
@@ -152,11 +162,11 @@ impl Handler for WatchState {
     reason = "Bombay Behavior's link-reaction function pointer returns the behavior error domain"
 )]
 fn record_peer_stop(
-    behavior: &mut Pure<WatchState>,
+    behavior: &mut WatchState,
     peer: MailAddr,
     outcome: &RecordedChildOutcome,
 ) -> Result<behavior::Become<MailAddr>, Never> {
-    *behavior.state().observed.lock().expect("peer outcome lock") = Some((peer, *outcome));
+    *behavior.observed.lock().expect("peer outcome lock") = Some((peer, *outcome));
     Ok(Step::Stop(Exit::Normal))
 }
 
@@ -168,16 +178,13 @@ async fn watching_receives_the_exact_peers_normalized_outcome() {
     let system = System::new(MailboxConfig::bounded(2), router);
     let peer = system.spawn(Actor::new(MailAddr(20), WatchedPeer)).unwrap();
     let watcher = system
-        .spawn(Actor::new(
+        .spawn(Actor::from_definition(
             MailAddr(21),
-            Watch::new(
-                Pure::new(WatchState {
-                    initialized: initialized.clone(),
-                    observed: observed.clone(),
-                }),
-                MailAddr(20),
-                record_peer_stop,
-            ),
+            Compose::new(WatchState {
+                initialized: initialized.clone(),
+                observed: observed.clone(),
+            })
+            .watch(MailAddr(20), record_peer_stop),
         ))
         .unwrap();
 
@@ -201,9 +208,71 @@ async fn watching_receives_the_exact_peers_normalized_outcome() {
     );
 }
 
-type UnwatchSends =
-    SendProduct<ServiceSends<ObservePeer<MailAddr>>, ServiceSends<UnwatchPeer<MailAddr>>>;
-type ObservePeerPath = Inner<Own>;
+enum ObservePeerLane {}
+struct UnwatchSends {
+    observations: ServiceSends<ObservePeer<MailAddr>>,
+    cancellations: ServiceSends<UnwatchPeer<MailAddr>>,
+}
+impl SendAlgebra for UnwatchSends {
+    fn empty() -> Self {
+        Self {
+            observations: ServiceSends::empty(),
+            cancellations: ServiceSends::empty(),
+        }
+    }
+    fn append(&mut self, other: Self) {
+        self.observations.append(other.observations);
+        self.cancellations.append(other.cancellations);
+    }
+}
+impl SendInput<ObservePeer<MailAddr>, ObservePeerLane> for UnwatchSends {
+    fn emit(&mut self, input: ObservePeer<MailAddr>) {
+        self.observations.send(input);
+    }
+}
+impl SendInput<UnwatchPeer<MailAddr>, Own> for UnwatchSends {
+    fn emit(&mut self, input: UnwatchPeer<MailAddr>) {
+        self.cancellations.send(input);
+    }
+}
+impl ObservesCreations<u64> for UnwatchSends {
+    fn observes_creation(&self, _nonce: u64) -> bool {
+        false
+    }
+}
+#[derive(Debug, thiserror::Error)]
+enum UnwatchSendsError<O: std::error::Error + 'static, C: std::error::Error + 'static> {
+    #[error("peer observation failed")]
+    Observation(#[source] O),
+    #[error("peer cancellation failed")]
+    Cancellation(#[source] C),
+}
+impl<R> RouteSends<MailAddr, R> for UnwatchSends
+where
+    R: Send,
+    ServiceSends<ObservePeer<MailAddr>>: RouteSends<MailAddr, R> + Send,
+    ServiceSends<UnwatchPeer<MailAddr>>: RouteSends<MailAddr, R> + Send,
+    <ServiceSends<ObservePeer<MailAddr>> as RouteSends<MailAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+    <ServiceSends<UnwatchPeer<MailAddr>> as RouteSends<MailAddr, R>>::Error:
+        std::error::Error + Send + Sync + 'static,
+{
+    type Error = UnwatchSendsError<
+        <ServiceSends<ObservePeer<MailAddr>> as RouteSends<MailAddr, R>>::Error,
+        <ServiceSends<UnwatchPeer<MailAddr>> as RouteSends<MailAddr, R>>::Error,
+    >;
+    async fn route(self, from: MailAddr, router: &mut R) -> Result<(), Self::Error> {
+        self.observations
+            .route(from, router)
+            .await
+            .map_err(UnwatchSendsError::Observation)?;
+        self.cancellations
+            .route(from, router)
+            .await
+            .map_err(UnwatchSendsError::Cancellation)
+    }
+}
+type ObservePeerPath = ObservePeerLane;
 
 struct UnwatchProbe {
     watch: Option<MailAddr>,
@@ -220,7 +289,7 @@ impl Behavior for UnwatchProbe {
     type Error = Never;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         let mut sends = Self::Sends::empty();
         if let Some(peer) = self.watch {
             sends.send::<_, ObservePeerPath>(ObservePeer::new(peer));
@@ -232,9 +301,13 @@ impl Behavior for UnwatchProbe {
         })
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         match event {
-            WatchEvent::Inner(User { message: 0, .. }) => {
+            WatchEvent::Behavior(User { message: 0, .. }) => {
                 let mut sends = Self::Sends::empty();
                 sends.send::<_, Own>(UnwatchPeer::new(
                     self.watch.expect("watching probe has one peer"),
@@ -246,8 +319,8 @@ impl Behavior for UnwatchProbe {
                     become_: Step::Continue,
                 })
             }
-            WatchEvent::Inner(User { message: 1, .. }) => Ok(Actions::stop(Exit::Normal)),
-            WatchEvent::Inner(User { .. }) => Ok(Actions::cont()),
+            WatchEvent::Behavior(User { message: 1, .. }) => Ok(Actions::stop(Exit::Normal)),
+            WatchEvent::Behavior(User { .. }) => Ok(Actions::cont()),
             WatchEvent::PeerStopped(_) => {
                 self.peer_stopped.store(true, Ordering::SeqCst);
                 Ok(Actions::cont())
@@ -324,10 +397,10 @@ struct RestartWorker {
 
 static RESTART_STARTS: std::sync::OnceLock<Arc<AtomicUsize>> = std::sync::OnceLock::new();
 
-fn restart_worker(_index: usize) -> RestartWorker {
-    RestartWorker {
+fn restart_worker(_index: usize) -> Option<RestartWorker> {
+    Some(RestartWorker {
         starts: RESTART_STARTS.get().expect("test worker counter").clone(),
-    }
+    })
 }
 
 fn restart_proxy_nonce(_index: usize) -> u64 {
@@ -343,14 +416,18 @@ impl Behavior for RestartWorker {
     type Error = WorkerFailure;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         self.starts.fetch_add(1, Ordering::SeqCst);
         // The incarnation installs successfully and immediately stops, so
         // escalation flows through the running-worker WorkerStopped lane.
         Ok(Actions::stop(Exit::Normal))
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         match event.message {}
     }
 }
@@ -370,11 +447,15 @@ impl Behavior for RestartParent {
     type Error = Never;
     type Birth = Births<RestartWorker>;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        _event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         Ok(Actions::cont())
     }
 }
@@ -495,6 +576,7 @@ async fn supervision_escalation_retires_and_releases_the_complete_tree() {
         1,
         Duration::MAX,
     )
+    .expect("restart supervisor topology")
     .with_failure_reaction(stop_on_supervision_failure);
     let system = System::new(MailboxConfig::bounded(4), RestartRouter::default());
     let parent = system.spawn(Actor::new(TreeAddr(1), supervisor)).unwrap();
@@ -521,6 +603,7 @@ async fn supervision_escalation_retires_and_releases_the_complete_tree() {
         0,
         Duration::MAX,
     )
+    .expect("replacement supervisor topology")
     .with_failure_reaction(stop_on_supervision_failure);
     let replacement = system
         .spawn(Actor::new(TreeAddr(1), replacement))
@@ -543,10 +626,8 @@ struct BirthChildAndSignal {
     signal: MailAddr,
 }
 
-impl Handler for Stop {
-    type Addr = MailAddr;
-    type Msg = u8;
-
+#[bombay::behavior::behavior(addr = MailAddr, message = u8, sends = Vec<Never>, births = NoBirths, error = Never)]
+impl Stop {
     fn receive(
         &mut self,
         _from: MailAddr,
@@ -556,24 +637,16 @@ impl Handler for Stop {
     }
 }
 
-impl Handler<Vec<Delivery<Pure<Stop>>>, Births<Pure<Stop>>> for BirthChildAndSignal {
-    type Addr = MailAddr;
-    type Msg = u8;
-
+#[bombay::behavior::behavior(addr = MailAddr, message = u8, sends = Vec<Delivery<Stop>>, births = Births<Stop>, error = Never)]
+impl BirthChildAndSignal {
     fn receive(
         &mut self,
         _from: MailAddr,
         message: u8,
-    ) -> bombay::behavior::Acted<
-        MailAddr,
-        Never,
-        Vec<Delivery<Pure<Stop>>>,
-        Births<Pure<Stop>>,
-        Never,
-    > {
+    ) -> bombay::behavior::Acted<MailAddr, Never, Vec<Delivery<Stop>>, Births<Stop>, Never> {
         Ok(Actions {
             sends: vec![Delivery::new(Recipient::global(self.signal), message)],
-            creates: vec![Create::birth(7, Pure::new(Stop))],
+            creates: vec![Create::birth(7, Stop)],
             become_: bombay::behavior::Step::Continue,
         })
     }
@@ -583,15 +656,13 @@ impl Handler<Vec<Delivery<Pure<Stop>>>, Births<Pure<Stop>>> for BirthChildAndSig
 async fn parent_retains_created_child_handle_while_parent_is_live() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router.clone());
-    let signal = system
-        .spawn(Actor::new(MailAddr(9), Pure::new(Stop)))
-        .unwrap();
+    let signal = system.spawn(Actor::new(MailAddr(9), Stop)).unwrap();
     let parent = system
         .spawn(Actor::new(
             MailAddr(1),
-            Pure::new(BirthChildAndSignal {
+            BirthChildAndSignal {
                 signal: MailAddr(9),
-            }),
+            },
         ))
         .unwrap();
 
@@ -605,7 +676,7 @@ async fn parent_retains_created_child_handle_while_parent_is_live() {
     router
         .deliver(
             MailAddr(1),
-            Delivery::new(Recipient::<Pure<Stop>>::global(child), 99),
+            Delivery::new(Recipient::<Stop>::global(child), 99),
         )
         .await
         .expect("a live parent must retain its created child's counting handle");
@@ -620,10 +691,8 @@ struct SameTurnChild {
     received: Arc<Notify>,
 }
 
-impl Handler for SameTurnChild {
-    type Addr = MailAddr;
-    type Msg = u8;
-
+#[bombay::behavior::behavior(addr = MailAddr, message = u8, sends = Vec<Never>, births = NoBirths, error = Never)]
+impl SameTurnChild {
     fn receive(
         &mut self,
         _from: MailAddr,
@@ -636,19 +705,19 @@ impl Handler for SameTurnChild {
 }
 
 struct CreateAndSendSameTurn {
-    child: Option<Pure<SameTurnChild>>,
+    child: Option<SameTurnChild>,
 }
 
 impl Behavior for CreateAndSendSameTurn {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = User<MailAddr, u8>;
-    type Sends = Vec<Delivery<Pure<SameTurnChild>>>;
+    type Sends = Vec<Delivery<SameTurnChild>>;
     type Ph = Never;
     type Error = Never;
-    type Birth = Births<Pure<SameTurnChild>>;
+    type Birth = Births<SameTurnChild>;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions {
             sends: vec![Delivery::new(Recipient::child(7), 73)],
             creates: vec![Create::birth(
@@ -659,7 +728,11 @@ impl Behavior for CreateAndSendSameTurn {
         })
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         let _ = event;
         Ok(Actions::cont())
     }
@@ -673,9 +746,9 @@ async fn typed_creator_spawns_child_before_routing_same_transition_send() {
         .spawn(Actor::new(
             MailAddr(1),
             CreateAndSendSameTurn {
-                child: Some(Pure::new(SameTurnChild {
+                child: Some(SameTurnChild {
                     received: received.clone(),
-                })),
+                }),
             },
         ))
         .unwrap();
@@ -691,24 +764,16 @@ async fn typed_creator_spawns_child_before_routing_same_transition_send() {
 async fn address_collision_rolls_back_without_disturbing_the_live_generation() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router);
-    let first = system
-        .spawn(Actor::new(MailAddr(7), Pure::new(Stop)))
-        .unwrap();
+    let first = system.spawn(Actor::new(MailAddr(7), Stop)).unwrap();
 
-    assert!(
-        system
-            .spawn(Actor::new(MailAddr(7), Pure::new(Stop)))
-            .is_err()
-    );
+    assert!(system.spawn(Actor::new(MailAddr(7), Stop)).is_err());
     first.actor_ref().send(MailAddr(1), 0).await.unwrap();
     assert!(matches!(
         first.outcome().await,
         TaskOutcome::Returned(Ok(RunExit::Stopped(bombay::behavior::Exit::Normal)))
     ));
 
-    let replacement = system
-        .spawn(Actor::new(MailAddr(7), Pure::new(Stop)))
-        .unwrap();
+    let replacement = system.spawn(Actor::new(MailAddr(7), Stop)).unwrap();
     replacement.actor_ref().send(MailAddr(1), 0).await.unwrap();
     assert!(matches!(
         replacement.outcome().await,
@@ -720,9 +785,7 @@ async fn address_collision_rolls_back_without_disturbing_the_live_generation() {
 async fn dropping_handle_detaches_terminal_observation_without_cancelling_actor() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router);
-    let handle = system
-        .spawn(Actor::new(MailAddr(7), Pure::new(Stop)))
-        .unwrap();
+    let handle = system.spawn(Actor::new(MailAddr(7), Stop)).unwrap();
     let edge = handle.actor_ref().clone();
     drop(handle);
 
@@ -730,7 +793,7 @@ async fn dropping_handle_detaches_terminal_observation_without_cancelling_actor(
     drop(edge);
 
     let replacement = loop {
-        match system.spawn(Actor::new(MailAddr(7), Pure::new(Stop))) {
+        match system.spawn(Actor::new(MailAddr(7), Stop)) {
             Ok(replacement) => break replacement,
             Err(_) => yield_now().await,
         }
@@ -746,9 +809,7 @@ async fn dropping_handle_detaches_terminal_observation_without_cancelling_actor(
 async fn last_edge_closure_is_not_pinned_by_the_registered_anchor() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router);
-    let spawned = system
-        .spawn(Actor::new(MailAddr(7), Pure::new(Stop)))
-        .unwrap();
+    let spawned = system.spawn(Actor::new(MailAddr(7), Stop)).unwrap();
 
     assert!(matches!(
         spawned.close().await,
@@ -768,18 +829,22 @@ impl Behavior for BlockingShutdown {
     type Addr = MailAddr;
     type Msg = u8;
     type Event = User<MailAddr, u8>;
-    type Sends = Vec<Delivery<Pure<Stop>>>;
+    type Sends = Vec<Delivery<Stop>>;
     type Ph = Never;
     type Error = Never;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         self.entered.notify_one();
         self.release.recv().expect("release signal");
         Ok(Actions::cont())
     }
 
-    fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        _event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         self.user_folds.fetch_add(1, Ordering::SeqCst);
         Ok(Actions::cont())
     }
@@ -792,7 +857,7 @@ impl Behavior for BlockingShutdown {
 fn finalize_shutdown(
     behavior: &mut BlockingShutdown,
     _request: ShutdownRequested,
-) -> bombay::behavior::Acted<MailAddr, Never, Vec<Delivery<Pure<Stop>>>, NoBirths, Never> {
+) -> bombay::behavior::Acted<MailAddr, Never, Vec<Delivery<Stop>>, NoBirths, Never> {
     behavior.finalized.store(true, Ordering::SeqCst);
     Ok(Actions {
         sends: vec![Delivery::new(Recipient::global(behavior.signal), 42)],
@@ -810,23 +875,22 @@ async fn graceful_shutdown_preempts_user_backlog_and_interprets_final_effects() 
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(2), router);
     let signal = system
-        .spawn(Actor::new(
+        .spawn(Actor::from_definition(
             MailAddr(9),
-            Compose::new(Stop).stop_on_shutdown().build(),
+            Compose::new(Stop).stop_on_shutdown(),
         ))
         .unwrap();
     let actor = system
-        .spawn(Actor::new(
+        .spawn(Actor::from_definition(
             MailAddr(7),
-            Compose::from_behavior(BlockingShutdown {
+            Compose::new(BlockingShutdown {
                 entered: entered.clone(),
                 release,
                 user_folds: user_folds.clone(),
                 finalized: finalized.clone(),
                 signal: MailAddr(9),
             })
-            .finalize_on_shutdown(finalize_shutdown)
-            .build(),
+            .finalize_on_shutdown(finalize_shutdown),
         ))
         .unwrap();
     let retired = actor.actor_ref().clone();
@@ -903,146 +967,19 @@ async fn blocked_public_send_recovers_exact_payload_after_incarnation_retirement
     assert!(matches!(actor.outcome().await, TaskOutcome::Cancelled));
 }
 
-struct ScopedChild {
-    retired: Arc<AtomicBool>,
-}
-
-impl Handler for ScopedChild {
-    type Addr = MailAddr;
-    type Msg = Never;
-
-    fn receive(
-        &mut self,
-        _from: MailAddr,
-        message: Never,
-    ) -> behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
-        match message {}
-    }
-}
-
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "Bombay Behavior's shutdown-reaction function pointer returns the behavior error domain"
-)]
-fn retire_scoped_child(
-    child: &mut Pure<ScopedChild>,
-    _request: ShutdownRequested,
-) -> behavior::Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
-    child.state().retired.store(true, Ordering::SeqCst);
-    Ok(Actions::cont())
-}
-
-type ScopedChildBehavior = behavior::FinalizeOnShutdown<Pure<ScopedChild>>;
-
-struct ScopedBranch {
-    child: Option<ScopedChildBehavior>,
-}
-
-impl Behavior for ScopedBranch {
-    type Addr = MailAddr;
-    type Msg = Never;
-    type Event = User<MailAddr, Never>;
-    type Sends = Vec<Never>;
-    type Ph = Never;
-    type Error = Never;
-    type Birth = Births<ScopedChildBehavior>;
-
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
-        Ok(Actions {
-            sends: Vec::new(),
-            creates: vec![Create::birth(
-                9,
-                self.child.take().expect("branch initializes once"),
-            )],
-            become_: Step::Continue,
-        })
-    }
-
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
-        match event.message {}
-    }
-}
-
-type ScopedBranchBehavior = StopOnShutdown<ScopedBranch>;
-
-struct ScopedRoot {
-    child: Option<ScopedBranchBehavior>,
-}
-
-impl Behavior for ScopedRoot {
-    type Addr = MailAddr;
-    type Msg = Never;
-    type Event = User<MailAddr, Never>;
-    type Sends = Vec<Never>;
-    type Ph = Never;
-    type Error = Never;
-    type Birth = Births<ScopedBranchBehavior>;
-
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
-        Ok(Actions {
-            sends: Vec::new(),
-            creates: vec![Create::birth(
-                7,
-                self.child.take().expect("root initializes once"),
-            )],
-            become_: Step::Continue,
-        })
-    }
-
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
-        match event.message {}
-    }
-}
-
-#[tokio::test]
-async fn root_shutdown_awaits_transitive_child_retirement() {
-    let child_retired = Arc::new(AtomicBool::new(false));
-    let router = AddressRouter::default();
-    let system = System::new(MailboxConfig::bounded(1), router);
-    let root = system
-        .spawn(Actor::new(
-            MailAddr(30),
-            StopOnShutdown::new(ScopedRoot {
-                child: Some(StopOnShutdown::new(ScopedBranch {
-                    child: Some(behavior::FinalizeOnShutdown::new(
-                        Pure::new(ScopedChild {
-                            retired: child_retired.clone(),
-                        }),
-                        retire_scoped_child,
-                    )),
-                })),
-            }),
-        ))
-        .unwrap();
-
-    root.actor_ref().request_shutdown().unwrap();
-    assert!(matches!(
-        root.outcome().await,
-        TaskOutcome::Returned(Ok(RunExit::Stopped(Exit::Normal)))
-    ));
-    assert!(child_retired.load(Ordering::SeqCst));
-
-    let replacement = system
-        .spawn(Actor::new(
-            MailAddr(30).birth(7).birth(9),
-            StopOnShutdown::new(Pure::new(ScopedChild {
-                retired: Arc::new(AtomicBool::new(false)),
-            })),
-        ))
-        .expect("root completion must imply descendant address reuse");
-    replacement.actor_ref().request_shutdown().unwrap();
-    let _ = replacement.outcome().await;
-}
+// Wrapper constructors are intentionally private in Behavior; transitive child shutdown is covered through supervised composition.
 
 #[tokio::test(start_paused = true)]
 async fn typed_behavior_timer_fires_through_the_incarnation() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router);
     let due = Instant::now() + Duration::from_secs(1);
-    let behavior = Compose::new(Stop)
-        .deadline(Some(due), |_| Ok(Step::Stop(Exit::Normal)))
-        .build();
-    let handle = system.spawn(Actor::new(MailAddr(7), behavior)).unwrap();
+    let behavior = Compose::new(Stop).deadline(behavior::TimerId(0), Some(due.into_std()), |_| {
+        Ok(Step::Stop(Exit::Normal))
+    });
+    let handle = system
+        .spawn(Actor::from_definition(MailAddr(7), behavior))
+        .unwrap();
     let outcome = tokio::spawn(async move { handle.outcome().await });
 
     yield_now().await;
@@ -1057,10 +994,8 @@ async fn typed_behavior_timer_fires_through_the_incarnation() {
 
 struct ReceiveTimeoutProbe;
 
-impl Handler for ReceiveTimeoutProbe {
-    type Addr = MailAddr;
-    type Msg = u8;
-
+#[bombay::behavior::behavior(addr = MailAddr, message = u8, sends = Vec<Never>, births = NoBirths, error = Never)]
+impl ReceiveTimeoutProbe {
     fn receive(
         &mut self,
         _from: MailAddr,
@@ -1070,7 +1005,7 @@ impl Handler for ReceiveTimeoutProbe {
     }
 }
 
-type ReceiveTimeoutInner = Pure<ReceiveTimeoutProbe>;
+type ReceiveTimeoutInner = ReceiveTimeoutProbe;
 
 #[allow(
     clippy::unnecessary_wraps,
@@ -1107,10 +1042,14 @@ fn stop_after_deadline_service_inactivity(
 #[tokio::test(start_paused = true)]
 async fn successful_user_fold_replaces_the_live_receive_timeout_generation() {
     let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
-    let behavior = Compose::new(ReceiveTimeoutProbe)
-        .receive_timeout(Duration::from_secs(5), stop_after_inactivity)
-        .build();
-    let handle = system.spawn(Actor::new(MailAddr(8), behavior)).unwrap();
+    let behavior = Compose::new(ReceiveTimeoutProbe).receive_timeout(
+        behavior::TimerId(0),
+        Duration::from_secs(5),
+        stop_after_inactivity,
+    );
+    let handle = system
+        .spawn(Actor::from_definition(MailAddr(8), behavior))
+        .unwrap();
     let actor = handle.actor_ref().clone();
     let outcome = tokio::spawn(async move { handle.outcome().await });
 
@@ -1139,13 +1078,19 @@ async fn deadline_service_traffic_does_not_rearm_receive_timeout() {
     let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
     let service_at = Instant::now() + Duration::from_secs(4);
     let behavior = Compose::new(ReceiveTimeoutProbe)
-        .deadline(Some(service_at), continue_after_service_deadline)
+        .deadline(
+            behavior::TimerId(0),
+            Some(service_at.into_std()),
+            continue_after_service_deadline,
+        )
         .receive_timeout(
+            behavior::TimerId(1),
             Duration::from_secs(5),
             stop_after_deadline_service_inactivity,
-        )
-        .build();
-    let watcher = system.spawn(Actor::new(MailAddr(8), behavior)).unwrap();
+        );
+    let watcher = system
+        .spawn(Actor::from_definition(MailAddr(8), behavior))
+        .unwrap();
     let outcome = tokio::spawn(async move { watcher.outcome().await });
 
     yield_now().await;
@@ -1166,14 +1111,19 @@ async fn nested_timers_at_the_same_deadline_keep_distinct_identities() {
     let system = System::new(MailboxConfig::bounded(1), router);
     let now = Instant::now();
     let behavior = Compose::new(Stop)
-        .deadline(Some(now + Duration::from_secs(1)), |_| {
-            Ok(Step::Stop(Exit::Normal))
-        })
-        .deadline(Some(now + Duration::from_secs(2)), |_| {
-            Ok(Step::Stop(Exit::Normal))
-        })
-        .build();
-    let handle = system.spawn(Actor::new(MailAddr(7), behavior)).unwrap();
+        .deadline(
+            behavior::TimerId(0),
+            Some((now + Duration::from_secs(1)).into_std()),
+            |_| Ok(Step::Stop(Exit::Normal)),
+        )
+        .deadline(
+            behavior::TimerId(1),
+            Some((now + Duration::from_secs(2)).into_std()),
+            |_| Ok(Step::Stop(Exit::Normal)),
+        );
+    let handle = system
+        .spawn(Actor::from_definition(MailAddr(7), behavior))
+        .unwrap();
     let outcome = tokio::spawn(async move { handle.outcome().await });
 
     yield_now().await;
@@ -1301,12 +1251,16 @@ impl Behavior for RollbackBehavior {
     type Error = Infallible;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         self.started.fetch_add(1, Ordering::SeqCst);
         Ok(Actions::stop(Exit::Normal))
     }
 
-    fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        _event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         unreachable!()
     }
 }
@@ -1359,7 +1313,7 @@ impl Behavior for InitBehavior {
     type Error = Infallible;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         match self {
             Self::Immediate => Ok(Actions::stop(Exit::Normal)),
             Self::Distinct(exit) => Ok(Actions::stop(*exit)),
@@ -1368,7 +1322,11 @@ impl Behavior for InitBehavior {
         }
     }
 
-    fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        _event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         Ok(Actions {
             sends: Vec::new(),
             creates: Vec::new(),
@@ -1485,11 +1443,15 @@ impl Behavior for ImmediateReplacementChild {
     type Error = Never;
     type Birth = NoBirths;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions::stop(Exit::Normal))
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         match event.message {}
     }
 }
@@ -1503,7 +1465,7 @@ impl Behavior for DuplicateReplacementParent {
     type Error = Never;
     type Birth = Births<ImmediateReplacementChild>;
 
-    fn init(&mut self) -> behavior::BehaviorActed<Self> {
+    fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         Ok(Actions {
             sends: Vec::new(),
             creates: vec![
@@ -1514,7 +1476,11 @@ impl Behavior for DuplicateReplacementParent {
         })
     }
 
-    fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+    fn transition(
+        &mut self,
+        _: behavior::ActiveTurn,
+        event: Self::Event,
+    ) -> behavior::BehaviorActed<Self> {
         match event.message {}
     }
 }
@@ -1528,9 +1494,9 @@ async fn lifecycle_facts_follow_the_exact_incarnation_edges() {
         recorder.clone(),
     );
     let handle = system
-        .spawn(Actor::new(
+        .spawn(Actor::from_definition(
             MailAddr(7),
-            Compose::new(Stop).stop_on_shutdown().build(),
+            Compose::new(Stop).stop_on_shutdown(),
         ))
         .unwrap();
 

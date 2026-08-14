@@ -36,7 +36,7 @@ mod init_order {
         type Error = std::convert::Infallible;
         type Birth = NoBirths;
 
-        fn init(&mut self) -> behavior::BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
             Ok(Actions {
                 sends: vec![self.init_value],
                 creates: Vec::new(),
@@ -44,7 +44,11 @@ mod init_order {
             })
         }
 
-        fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            event: Self::Event,
+        ) -> behavior::BehaviorActed<Self> {
             self.init_value = event.message;
             Ok(Actions {
                 sends: vec![event.message],
@@ -142,11 +146,15 @@ mod explicit_stop {
         type Error = std::convert::Infallible;
         type Birth = NoBirths;
 
-        fn init(&mut self) -> behavior::BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
             Ok(Actions::cont())
         }
 
-        fn transition(&mut self, event: Self::Event) -> behavior::BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            event: Self::Event,
+        ) -> behavior::BehaviorActed<Self> {
             self.count += 1;
             if self.count >= self.limit {
                 Ok(Actions {
@@ -249,11 +257,15 @@ mod error_propagation {
         type Error = &'static str;
         type Birth = NoBirths;
 
-        fn init(&mut self) -> behavior::BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
             Err("init failure")
         }
 
-        fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            _event: Self::Event,
+        ) -> behavior::BehaviorActed<Self> {
             unreachable!()
         }
     }
@@ -269,11 +281,15 @@ mod error_propagation {
         type Error = &'static str;
         type Birth = NoBirths;
 
-        fn init(&mut self) -> behavior::BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
             Ok(Actions::cont())
         }
 
-        fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            _event: Self::Event,
+        ) -> behavior::BehaviorActed<Self> {
             Err("transition failure")
         }
     }
@@ -383,11 +399,15 @@ mod error_propagation {
         type Error = std::convert::Infallible;
         type Birth = NoBirths;
 
-        fn init(&mut self) -> behavior::BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
             Ok(Actions::cont())
         }
 
-        fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            _event: Self::Event,
+        ) -> behavior::BehaviorActed<Self> {
             Ok(Actions::cont())
         }
     }
@@ -470,7 +490,7 @@ mod retirement_guarantee {
         type Error = std::convert::Infallible;
         type Birth = NoBirths;
 
-        fn init(&mut self) -> behavior::BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
             Ok(Actions {
                 sends: Vec::new(),
                 creates: Vec::new(),
@@ -478,7 +498,11 @@ mod retirement_guarantee {
             })
         }
 
-        fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            _event: Self::Event,
+        ) -> behavior::BehaviorActed<Self> {
             unreachable!()
         }
     }
@@ -518,10 +542,14 @@ mod retirement_guarantee {
             type Ph = Never;
             type Error = std::convert::Infallible;
             type Birth = NoBirths;
-            fn init(&mut self) -> behavior::BehaviorActed<Self> {
+            fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
                 Ok(Actions::cont())
             }
-            fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+            fn transition(
+                &mut self,
+                _: behavior::ActiveTurn,
+                _event: Self::Event,
+            ) -> behavior::BehaviorActed<Self> {
                 Ok(Actions::cont())
             }
         }
@@ -553,10 +581,14 @@ mod retirement_guarantee {
             type Ph = Never;
             type Error = &'static str;
             type Birth = NoBirths;
-            fn init(&mut self) -> behavior::BehaviorActed<Self> {
+            fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
                 Err("fail")
             }
-            fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+            fn transition(
+                &mut self,
+                _: behavior::ActiveTurn,
+                _event: Self::Event,
+            ) -> behavior::BehaviorActed<Self> {
                 unreachable!()
             }
         }

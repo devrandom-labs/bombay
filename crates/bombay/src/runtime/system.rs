@@ -1,6 +1,8 @@
 //! Actor execution ownership.
 
-use behavior::{Address, Behavior, BirthMode, Never, ShutdownEvent, TimeEvent};
+use behavior::{
+    Address, Behavior, BirthMode, EventInput, Never, RouteInput, ShutdownRequested, TimerElapsed,
+};
 use bombay_engine::{Driver, Environment, RunError, RunExit};
 use observe::ObservationSpace;
 use std::sync::Arc;
@@ -42,33 +44,47 @@ pub struct System<R, L = NoLifecycle> {
 /// An address from another behavior namespace cannot form the actor:
 ///
 /// ```compile_fail
-/// use bombay::{Actor, behavior::{Acted, Actions, Delivery, Handler, MailAddr, Never, NoBirths, Pure}};
+/// use bombay::{Actor, behavior::{Actions, MailAddr, Never, NoBirths}};
 ///
 /// struct State;
-/// impl Handler for State {
-///     type Addr = MailAddr;
-///     type Msg = ();
+/// #[bombay::behavior::behavior(
+///     addr = MailAddr,
+///     message = (),
+///     sends = Vec<Never>,
+///     births = NoBirths,
+///     error = Never,
+/// )]
+/// impl State {
 ///     fn receive(
 ///         &mut self,
 ///         _: MailAddr,
 ///         _: (),
-///     ) -> Acted<MailAddr, Never, Vec<Never>, NoBirths, Never> {
+///     ) -> bombay::behavior::BehaviorActed<Self> {
 ///         Ok(Actions::cont())
 ///     }
 /// }
 ///
-/// let _ = Actor::new(7_u8, Pure::new(State));
+/// let _ = Actor::new(7_u8, State);
 /// ```
 pub struct Actor<B: Behavior> {
     address: B::Addr,
-    behavior: B,
+    definition: behavior::Compose<B>,
 }
 
 impl<B: Behavior> Actor<B> {
     /// Pair one behavior with an address from its declared namespace.
     #[must_use]
     pub const fn new(address: B::Addr, behavior: B) -> Self {
-        Self { address, behavior }
+        Self::from_definition(address, behavior::Compose::new(behavior))
+    }
+
+    /// Pair one composed behavior definition with its address.
+    #[must_use]
+    pub const fn from_definition(address: B::Addr, definition: behavior::Compose<B>) -> Self {
+        Self {
+            address,
+            definition,
+        }
     }
 
     /// Borrow this actor's address.
@@ -79,14 +95,14 @@ impl<B: Behavior> Actor<B> {
 
     /// Borrow this actor's behavior and application state.
     #[must_use]
-    pub const fn behavior(&self) -> &B {
-        &self.behavior
+    pub fn behavior(&self) -> &B {
+        self.definition.definition()
     }
 
     /// Recover the inert definition without allocating runtime resources.
     #[must_use]
-    pub fn into_parts(self) -> (B::Addr, B) {
-        (self.address, self.behavior)
+    pub fn into_parts(self) -> (B::Addr, behavior::Compose<B>) {
+        (self.address, self.definition)
     }
 }
 
@@ -237,7 +253,7 @@ impl<R, T> RootRetirement<R, T> {
 
 impl<A, E, L, T> RootRetirement<ActorRef<A, MailboxSender<E>, L>, T>
 where
-    E: ShutdownEvent,
+    E: EventInput<ShutdownRequested>,
     L: IncarnationReporter,
 {
     /// Publish one typed graceful-shutdown request.
@@ -309,14 +325,14 @@ type BehaviorProvisional<R, B, P, L> = ProvisionalIncarnation<
 #[derive(Debug, thiserror::Error)]
 pub enum SystemBirthError<R, I, F> {
     /// The address generation could not be claimed at commit.
-    #[error("child address registration failed: {0:?}")]
-    Registration(R),
+    #[error("child address registration failed")]
+    Registration(#[source] R),
     /// The synchronous initialization fold failed.
-    #[error("child initialization failed: {0:?}")]
-    Initialization(I),
+    #[error("child initialization failed")]
+    Initialization(#[source] I),
     /// An initialization effect failed during interpretation.
-    #[error("child initialization effect failed: {0:?}")]
-    Effects(F),
+    #[error("child initialization effect failed")]
+    Effects(#[source] F),
 }
 
 impl<R, I, F> From<RunError<I, F>> for SystemBirthError<R, I, F> {
@@ -374,7 +390,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         RuntimeOf<B, Self>: Send + Sync + 'static,
         <RuntimeOf<B, Self> as ChildRuntime<AddrOf<B>, ChildOf<B>, AnchorOf<B>>>::Error:
             CreationFailure + Send + Sync + 'static,
-        B::Event: ShutdownEvent + TimeEvent + Send + 'static,
+        B::Event: RouteInput<TimerElapsed> + Send + 'static,
         B::Msg: Send + 'static,
         B::Error: Send + Sync + 'static,
         R: Clone + EndpointRegistry<B, AnchorEndpoint<B>> + Send + Sync + 'static,
@@ -431,7 +447,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         RuntimeOf<B, Self>: Send + Sync + 'static,
         <RuntimeOf<B, Self> as ChildRuntime<AddrOf<B>, ChildOf<B>, AnchorOf<B>>>::Error:
             CreationFailure + Send + Sync + 'static,
-        B::Event: TimeEvent + Send + 'static,
+        B::Event: RouteInput<TimerElapsed> + Send + 'static,
         B::Msg: Send + 'static,
         B::Error: Send + Sync + 'static,
         R: Clone + EndpointRegistry<B, AnchorEndpoint<B>> + Send + Sync + 'static,
@@ -469,7 +485,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         RuntimeOf<B, Self>: Send + Sync + 'static,
         <RuntimeOf<B, Self> as ChildRuntime<AddrOf<B>, ChildOf<B>, AnchorOf<B>>>::Error:
             CreationFailure + Send + Sync + 'static,
-        B::Event: TimeEvent + Send + 'static,
+        B::Event: RouteInput<TimerElapsed> + Send + 'static,
         B::Msg: Send + 'static,
         B::Error: Send + Sync + 'static,
         Parent: Send + 'static,
@@ -502,7 +518,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         RuntimeOf<B, Self>: Send + Sync + 'static,
         <RuntimeOf<B, Self> as ChildRuntime<AddrOf<B>, ChildOf<B>, AnchorOf<B>>>::Error:
             CreationFailure + Send + Sync + 'static,
-        B::Event: TimeEvent + Send + 'static,
+        B::Event: RouteInput<TimerElapsed> + Send + 'static,
         B::Msg: Send + 'static,
         B::Error: Send + Sync + 'static,
         Parent: Send + 'static,
@@ -510,7 +526,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         BehaviorRegistration<R, B>: Send + 'static,
         L: LifecycleFactory<AddrOf<B>, BehaviorRegistration<R, B>>,
     {
-        let (address, behavior) = actor.into_parts();
+        let (address, definition) = actor.into_parts();
         let observation_space = ObservationSpace::new();
         let subject = observation_space
             .subject(())
@@ -538,7 +554,7 @@ impl<R: Clone, L: Clone> System<R, L> {
             parent,
         );
         ProvisionalIncarnation::new(
-            Driver::new(behavior, environment),
+            Driver::from_definition(definition, environment),
             address,
             endpoint,
             sender,
@@ -568,7 +584,7 @@ where
     RuntimeOf<B, System<R, L>>: Send + Sync + 'static,
     <RuntimeOf<B, System<R, L>> as ChildRuntime<AddrOf<B>, ChildOf<B>, AnchorOf<B>>>::Error:
         CreationFailure + Send + Sync + 'static,
-    B::Event: ShutdownEvent + TimeEvent + Send + 'static,
+    B::Event: RouteInput<ShutdownRequested> + RouteInput<TimerElapsed> + Send + 'static,
     B::Msg: Send + 'static,
     B::Error: Send + Sync + 'static,
     R: Clone + EndpointRegistry<B, AnchorEndpoint<B>> + Send + Sync + 'static,
@@ -624,8 +640,8 @@ mod tests {
         RunExit, System, TaskOutcome,
     };
     use behavior::{
-        Actions, Address, Behavior, Births, Create, Delivery, Handler, MailAddr, Never, NoBirths,
-        Pure, Recipient, ServiceSends, UnwatchPeer, User, WatchEvent,
+        Actions, Address, Behavior, Births, Create, Delivery, MailAddr, Never, NoBirths, Recipient,
+        ServiceSends, UnwatchPeer, User, WatchEvent,
     };
 
     struct StopWithMessage;
@@ -641,7 +657,7 @@ mod tests {
         type Error = Never;
         type Birth = NoBirths;
 
-        fn init(&mut self) -> behavior::BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
             Ok(Actions::new(
                 ServiceSends::one(UnwatchPeer::new(MailAddr(8))),
                 Vec::new(),
@@ -649,17 +665,19 @@ mod tests {
             ))
         }
 
-        fn transition(&mut self, _event: Self::Event) -> behavior::BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            _event: Self::Event,
+        ) -> behavior::BehaviorActed<Self> {
             unreachable!("the initialization fold stops")
         }
     }
 
     struct ForwardTo(MailAddr);
 
-    impl Handler for StopWithMessage {
-        type Addr = MailAddr;
-        type Msg = u8;
-
+    #[behavior::behavior(addr = MailAddr, message = u8, sends = Vec<Never>, births = NoBirths, error = Never)]
+    impl StopWithMessage {
         fn receive(
             &mut self,
             _from: MailAddr,
@@ -671,30 +689,23 @@ mod tests {
 
     #[test]
     fn actor_definition_round_trips_only_address_and_behavior() {
-        let actor = Actor::new(MailAddr(9), Pure::new(StopWithMessage));
+        let actor = Actor::new(MailAddr(9), StopWithMessage);
 
         assert_eq!(*actor.address(), MailAddr(9));
-        let _ = actor.behavior().state();
+        let _ = actor.behavior();
         let (address, behavior) = actor.into_parts();
         assert_eq!(address, MailAddr(9));
-        let _ = behavior.state();
+        let _ = behavior;
     }
 
-    impl Handler<Vec<Delivery<Pure<StopAfterReceiving>>>> for ForwardTo {
-        type Addr = MailAddr;
-        type Msg = u8;
-
+    #[behavior::behavior(addr = MailAddr, message = u8, sends = Vec<Delivery<StopAfterReceiving>>, births = NoBirths, error = Never)]
+    impl ForwardTo {
         fn receive(
             &mut self,
             _from: MailAddr,
             message: u8,
-        ) -> behavior::Acted<
-            MailAddr,
-            Never,
-            Vec<Delivery<Pure<StopAfterReceiving>>>,
-            NoBirths,
-            Never,
-        > {
+        ) -> behavior::Acted<MailAddr, Never, Vec<Delivery<StopAfterReceiving>>, NoBirths, Never>
+        {
             Ok(Actions {
                 sends: vec![Delivery::new(Recipient::global(self.0), message + 1)],
                 creates: Vec::new(),
@@ -713,12 +724,10 @@ mod tests {
         receiver: MailAddr,
     }
 
-    type ChildBehavior = Pure<ForwardChild, Vec<Delivery<Pure<StopAfterReceiving>>>>;
+    type ChildBehavior = ForwardChild;
 
-    impl Handler<Vec<Delivery<ChildBehavior>>, Births<ChildBehavior>> for BirthAndSend {
-        type Addr = MailAddr;
-        type Msg = u8;
-
+    #[behavior::behavior(addr = MailAddr, message = u8, sends = Vec<Delivery<ChildBehavior>>, births = Births<ChildBehavior>, error = Never)]
+    impl BirthAndSend {
         fn receive(
             &mut self,
             _from: MailAddr,
@@ -737,30 +746,23 @@ mod tests {
                 )],
                 creates: vec![Create::birth(
                     7,
-                    Pure::new(ForwardChild {
+                    ForwardChild {
                         receiver: self.receiver,
-                    }),
+                    },
                 )],
                 become_: behavior::Step::Stop(behavior::Exit::Normal),
             })
         }
     }
 
-    impl Handler<Vec<Delivery<Pure<StopAfterReceiving>>>> for ForwardChild {
-        type Addr = MailAddr;
-        type Msg = u8;
-
+    #[behavior::behavior(addr = MailAddr, message = u8, sends = Vec<Delivery<StopAfterReceiving>>, births = NoBirths, error = Never)]
+    impl ForwardChild {
         fn receive(
             &mut self,
             _from: MailAddr,
             message: u8,
-        ) -> behavior::Acted<
-            MailAddr,
-            Never,
-            Vec<Delivery<Pure<StopAfterReceiving>>>,
-            NoBirths,
-            Never,
-        > {
+        ) -> behavior::Acted<MailAddr, Never, Vec<Delivery<StopAfterReceiving>>, NoBirths, Never>
+        {
             Ok(Actions {
                 sends: vec![Delivery::new(Recipient::global(self.receiver), message + 1)],
                 creates: Vec::new(),
@@ -769,10 +771,8 @@ mod tests {
         }
     }
 
-    impl Handler for StopAfterReceiving {
-        type Addr = MailAddr;
-        type Msg = u8;
-
+    #[behavior::behavior(addr = MailAddr, message = u8, sends = Vec<Never>, births = NoBirths, error = Never)]
+    impl StopAfterReceiving {
         fn receive(
             &mut self,
             _from: MailAddr,
@@ -806,7 +806,7 @@ mod tests {
         let system = System::new(MailboxConfig::bounded(4), NoRouter);
 
         let spawned = system
-            .spawn(Actor::new(MailAddr(9), Pure::new(StopWithMessage)))
+            .spawn(Actor::new(MailAddr(9), StopWithMessage))
             .unwrap();
         spawned.actor_ref().send(MailAddr(7), 1).await.unwrap();
 
@@ -835,11 +835,11 @@ mod tests {
         let system = System::new(MailboxConfig::bounded(4), router);
 
         let first = system
-            .spawn(Actor::new(MailAddr(9), Pure::new(ForwardTo(MailAddr(88)))))
+            .spawn(Actor::new(MailAddr(9), ForwardTo(MailAddr(88))))
             .unwrap();
         assert!(
             system
-                .spawn(Actor::new(MailAddr(9), Pure::new(ForwardTo(MailAddr(88)))))
+                .spawn(Actor::new(MailAddr(9), ForwardTo(MailAddr(88))))
                 .is_err(),
             "a running actor owns its address generation"
         );
@@ -851,7 +851,7 @@ mod tests {
         ));
 
         let replacement = system
-            .spawn(Actor::new(MailAddr(9), Pure::new(ForwardTo(MailAddr(88)))))
+            .spawn(Actor::new(MailAddr(9), ForwardTo(MailAddr(88))))
             .expect("task exit releases the old address generation");
         replacement.actor_ref().send(MailAddr(7), 1).await.unwrap();
         assert!(matches!(
@@ -865,10 +865,10 @@ mod tests {
         let router = AddressRouter::default();
         let system = System::new(MailboxConfig::bounded(4), router);
         let receiver = system
-            .spawn(Actor::new(MailAddr(2), Pure::new(StopAfterReceiving)))
+            .spawn(Actor::new(MailAddr(2), StopAfterReceiving))
             .unwrap();
         let sender = system
-            .spawn(Actor::new(MailAddr(1), Pure::new(ForwardTo(MailAddr(2)))))
+            .spawn(Actor::new(MailAddr(1), ForwardTo(MailAddr(2))))
             .unwrap();
 
         sender.actor_ref().send(MailAddr(0), 40).await.unwrap();
@@ -888,10 +888,10 @@ mod tests {
         let router = AddressRouter::default();
         let system = System::new(MailboxConfig::bounded(4), router);
         let receiver = system
-            .spawn(Actor::new(MailAddr(2), Pure::new(StopAfterReceiving)))
+            .spawn(Actor::new(MailAddr(2), StopAfterReceiving))
             .unwrap();
         let sender = system
-            .spawn(Actor::new(MailAddr(1), Pure::new(ForwardTo(MailAddr(2)))))
+            .spawn(Actor::new(MailAddr(1), ForwardTo(MailAddr(2))))
             .unwrap();
 
         sender.actor_ref().send(MailAddr(0), 40).await.unwrap();
@@ -905,7 +905,7 @@ mod tests {
         ));
 
         let parked = system
-            .spawn(Actor::new(MailAddr(3), Pure::new(StopAfterReceiving)))
+            .spawn(Actor::new(MailAddr(3), StopAfterReceiving))
             .unwrap();
         assert!(matches!(
             parked.close().await,
@@ -913,7 +913,7 @@ mod tests {
         ));
         assert!(
             system
-                .spawn(Actor::new(MailAddr(3), Pure::new(StopAfterReceiving)))
+                .spawn(Actor::new(MailAddr(3), StopAfterReceiving))
                 .is_ok(),
             "environment closure releases the address generation"
         );
@@ -924,14 +924,14 @@ mod tests {
         let router = AddressRouter::default();
         let system = System::new(MailboxConfig::bounded(4), router);
         let receiver = system
-            .spawn(Actor::new(MailAddr(9), Pure::new(StopAfterReceiving)))
+            .spawn(Actor::new(MailAddr(9), StopAfterReceiving))
             .unwrap();
         let parent = system
             .spawn(Actor::new(
                 MailAddr(1),
-                Pure::new(BirthAndSend {
+                BirthAndSend {
                     receiver: MailAddr(9),
-                }),
+                },
             ))
             .unwrap();
 

@@ -53,11 +53,15 @@ mod oracles {
         type Error = std::convert::Infallible;
         type Birth = NoBirths;
 
-        fn init(&mut self) -> BehaviorActed<Self> {
+        fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
             Ok(Actions::cont())
         }
 
-        fn transition(&mut self, event: Self::Event) -> BehaviorActed<Self> {
+        fn transition(
+            &mut self,
+            _: behavior::ActiveTurn,
+            event: Self::Event,
+        ) -> BehaviorActed<Self> {
             self.value += event.message;
             Ok(Actions {
                 sends: vec![event.message],
@@ -133,7 +137,7 @@ mod oracles {
             type Error = std::convert::Infallible;
             type Birth = NoBirths;
 
-            fn init(&mut self) -> BehaviorActed<Self> {
+            fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
                 Ok(Actions {
                     sends: Vec::new(),
                     creates: Vec::new(),
@@ -141,7 +145,11 @@ mod oracles {
                 })
             }
 
-            fn transition(&mut self, _event: Self::Event) -> BehaviorActed<Self> {
+            fn transition(
+                &mut self,
+                _: behavior::ActiveTurn,
+                _event: Self::Event,
+            ) -> BehaviorActed<Self> {
                 panic!("terminal initialization must prevent transition")
             }
         }
@@ -390,7 +398,7 @@ mod oracles {
             type Error = std::convert::Infallible;
             type Birth = NoBirths;
 
-            fn init(&mut self) -> BehaviorActed<Self> {
+            fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
                 Ok(Actions {
                     sends: vec![7],
                     creates: Vec::new(),
@@ -398,7 +406,11 @@ mod oracles {
                 })
             }
 
-            fn transition(&mut self, _event: Self::Event) -> BehaviorActed<Self> {
+            fn transition(
+                &mut self,
+                _: behavior::ActiveTurn,
+                _event: Self::Event,
+            ) -> BehaviorActed<Self> {
                 Ok(Actions::cont())
             }
         }
@@ -458,7 +470,7 @@ mod oracles {
             type Error = std::convert::Infallible;
             type Birth = NoBirths;
 
-            fn init(&mut self) -> BehaviorActed<Self> {
+            fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
                 Ok(Actions {
                     sends: vec![7],
                     creates: Vec::new(),
@@ -466,7 +478,11 @@ mod oracles {
                 })
             }
 
-            fn transition(&mut self, _event: Self::Event) -> BehaviorActed<Self> {
+            fn transition(
+                &mut self,
+                _: behavior::ActiveTurn,
+                _event: Self::Event,
+            ) -> BehaviorActed<Self> {
                 Ok(Actions::cont())
             }
         }
@@ -564,11 +580,15 @@ mod oracles {
             type Error = &'static str;
             type Birth = NoBirths;
 
-            fn init(&mut self) -> BehaviorActed<Self> {
+            fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
                 Err("init failed")
             }
 
-            fn transition(&mut self, _event: Self::Event) -> BehaviorActed<Self> {
+            fn transition(
+                &mut self,
+                _: behavior::ActiveTurn,
+                _event: Self::Event,
+            ) -> BehaviorActed<Self> {
                 unreachable!("transition must not be called after init failure")
             }
         }
@@ -611,11 +631,15 @@ mod oracles {
             type Error = &'static str;
             type Birth = NoBirths;
 
-            fn init(&mut self) -> BehaviorActed<Self> {
+            fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
                 Err("init failed")
             }
 
-            fn transition(&mut self, _event: Self::Event) -> BehaviorActed<Self> {
+            fn transition(
+                &mut self,
+                _: behavior::ActiveTurn,
+                _event: Self::Event,
+            ) -> BehaviorActed<Self> {
                 unreachable!()
             }
         }
@@ -652,11 +676,15 @@ mod oracles {
             type Error = std::convert::Infallible;
             type Birth = NoBirths;
 
-            fn init(&mut self) -> BehaviorActed<Self> {
+            fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
                 Ok(Actions::cont())
             }
 
-            fn transition(&mut self, event: Self::Event) -> BehaviorActed<Self> {
+            fn transition(
+                &mut self,
+                _: behavior::ActiveTurn,
+                event: Self::Event,
+            ) -> BehaviorActed<Self> {
                 self.transitions.fetch_add(1, Ordering::SeqCst);
                 Ok(Actions {
                     sends: vec![event.message],
@@ -732,11 +760,15 @@ mod oracles {
             type Error = std::convert::Infallible;
             type Birth = NoBirths;
 
-            fn init(&mut self) -> BehaviorActed<Self> {
+            fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
                 Ok(Actions::cont())
             }
 
-            fn transition(&mut self, _event: Self::Event) -> BehaviorActed<Self> {
+            fn transition(
+                &mut self,
+                _: behavior::ActiveTurn,
+                _event: Self::Event,
+            ) -> BehaviorActed<Self> {
                 panic!("injected transition panic");
             }
         }
