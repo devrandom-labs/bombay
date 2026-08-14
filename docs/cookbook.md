@@ -41,9 +41,10 @@ typed sends, births, and errors. When a nominal type is required by `Births`,
 `#[behavior::behavior(...)]` over inherent `init` and `receive` methods instead
 of expanding closure types. Semantic wrappers coordinating wrapper-owned event
 protocols remain explicit.
-Use `System::spawn` once to install it, retain the affine `Handle` as lifecycle
-authority, and clone its typed `ActorRef` for delivery. The behavior performs
-no I/O and stores no runtime handle.
+Pair the behavior with its address using `Actor::new`, then use `System::spawn`
+once to install that actor. Retain the affine `Handle` as lifecycle authority,
+and clone its typed `ActorRef` for delivery. The inert `Actor` and its behavior
+perform no I/O and store no runtime handle.
 
 Facade applications may construct that same concrete system with
 `local_system!(mailbox = ..., routes = ...)`. The macro expands directly to

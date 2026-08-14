@@ -19,9 +19,9 @@ use bombay::behavior::{
     User, stop_on_supervision_failure,
 };
 use bombay::{
-    ActorRef, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint, LifecycleEvent,
-    LifecycleSink, LifecycleTransition, MailboxAnchor, MailboxConfig, RunError, RuntimeEffectError,
-    System, SystemBirthError, TaskOutcome,
+    Actor, ActorRef, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint,
+    LifecycleEvent, LifecycleSink, LifecycleTransition, MailboxAnchor, MailboxConfig, RunError,
+    RuntimeEffectError, System, SystemBirthError, TaskOutcome,
 };
 use bombay_address::RegistrationId;
 use tokio::task::yield_now;
@@ -503,20 +503,20 @@ async fn observed_creation_rejection_is_recoverable_behavior_input() {
     let pongs = Arc::new(Mutex::new(Vec::new()));
     let system = creation_system();
     let recorder = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(99),
             Recorder {
                 received: pongs.clone(),
             },
-        )
+        ))
         .unwrap();
     let parent = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(1),
             ObservedParent {
                 resolutions: resolutions.clone(),
             },
-        )
+        ))
         .unwrap();
 
     wait_for(|| resolutions.lock().expect("resolution lock").len() == 1).await;
@@ -544,7 +544,9 @@ async fn observed_creation_rejection_is_recoverable_behavior_input() {
 #[tokio::test]
 async fn unobserved_creation_failure_keeps_the_exact_runtime_error() {
     let system = creation_system();
-    let parent = system.spawn(MailAddr(1), UnobservedParent).unwrap();
+    let parent = system
+        .spawn(Actor::new(MailAddr(1), UnobservedParent))
+        .unwrap();
 
     let outcome = parent.outcome().await;
     assert!(
@@ -565,7 +567,7 @@ async fn rejected_nonce_is_reused_after_rollback_and_becomes_routable() {
     let attempts = Arc::new(AtomicUsize::new(0));
     let system = creation_system();
     let parent = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(1),
             RetryParent {
                 flaky: Flaky {
@@ -574,7 +576,7 @@ async fn rejected_nonce_is_reused_after_rollback_and_becomes_routable() {
                 },
                 resolutions: resolutions.clone(),
             },
-        )
+        ))
         .unwrap();
 
     wait_for(|| received.lock().expect("child record lock").contains(&42)).await;
@@ -604,12 +606,12 @@ async fn child_binding_commits_only_after_all_initialization_effects_succeed() {
         lifecycles.clone(),
     );
     let parent = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(1),
             ObservedGrandparent {
                 resolutions: resolutions.clone(),
             },
-        )
+        ))
         .unwrap();
 
     wait_for(|| resolutions.lock().expect("resolution lock").len() == 1).await;
@@ -656,20 +658,20 @@ async fn paired_observe_child_does_not_turn_rejection_fatal() {
     let pongs = Arc::new(Mutex::new(Vec::new()));
     let system = creation_system();
     let recorder = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(99),
             Recorder {
                 received: pongs.clone(),
             },
-        )
+        ))
         .unwrap();
     let parent = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(1),
             PairingParent {
                 resolutions: resolutions.clone(),
             },
-        )
+        ))
         .unwrap();
 
     wait_for(|| resolutions.lock().expect("resolution lock").len() == 1).await;
@@ -863,7 +865,7 @@ async fn nested_rejection_terminates_neither_proxy_nor_parent() {
     )
     .with_failure_reaction(stop_on_supervision_failure);
     let system = System::new(MailboxConfig::bounded(8), TreeRouter::default());
-    let root = system.spawn(MailAddr(5), supervisor).unwrap();
+    let root = system.spawn(Actor::new(MailAddr(5), supervisor)).unwrap();
 
     for _ in 0..32 {
         yield_now().await;

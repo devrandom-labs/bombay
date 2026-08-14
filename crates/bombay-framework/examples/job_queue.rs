@@ -764,7 +764,7 @@ async fn run_batch(system: &System<Routes>, jobs: &[Job]) -> Report {
     let deadline_marker = DEADLINE_REACHED.get_or_init(|| AtomicBool::new(false));
     deadline_marker.store(false, Ordering::SeqCst);
     let deadline = system
-        .spawn(
+        .spawn(Actor::new(
             DEADLINE_PROBE,
             Deadline::new(
                 DeadlineProbe,
@@ -772,7 +772,7 @@ async fn run_batch(system: &System<Routes>, jobs: &[Job]) -> Report {
                 Some(Instant::now()),
                 deadline_reached,
             ),
-        )
+        ))
         .expect("the deadline probe address is vacant");
     assert!(matches!(
         tokio::time::timeout(Duration::from_secs(1), deadline.outcome())
@@ -786,25 +786,25 @@ async fn run_batch(system: &System<Routes>, jobs: &[Job]) -> Report {
     );
 
     let reporter = system
-        .spawn(REPORTER, Reporter)
+        .spawn(Actor::new(REPORTER, Reporter))
         .expect("the reporter address is vacant");
     let ready = system
-        .spawn(READY, Reporter)
+        .spawn(Actor::new(READY, Reporter))
         .expect("the readiness address is vacant");
     let query_reporter = system
-        .spawn(QUERY_REPORTER, Reporter)
+        .spawn(Actor::new(QUERY_REPORTER, Reporter))
         .expect("the query reporter address is vacant");
     let admissions = system
-        .spawn(
+        .spawn(Actor::new(
             ADMISSIONS,
             AdmissionCollector {
                 expected: jobs.len(),
                 outcomes: Vec::new(),
             },
-        )
+        ))
         .expect("the admission collector address is vacant");
     let queue = system
-        .spawn(DISPATCHER, JobQueue::new(jobs.len() as u64))
+        .spawn(Actor::new(DISPATCHER, JobQueue::new(jobs.len() as u64)))
         .expect("the dispatcher address is vacant");
 
     assert!(

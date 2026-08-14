@@ -5,8 +5,8 @@ use std::time::Duration;
 
 use bombay::behavior::{Actions, Exit, Handler, MailAddr, Never, NoBirths, Pure, StopOnShutdown};
 use bombay::{
-    AddressRouter, LifecycleEvent, LifecycleSink, LifecycleTransition, MailboxConfig, RunExit,
-    System, TaskOutcome,
+    Actor, AddressRouter, LifecycleEvent, LifecycleSink, LifecycleTransition, MailboxConfig,
+    RunExit, System, TaskOutcome,
 };
 use proptest::prelude::*;
 
@@ -78,13 +78,13 @@ impl Handler<(u8, u8), NoBirths, ProducerOrderViolation> for PerProducerOrder {
 async fn concurrent_producers_preserve_local_order_without_assuming_interleaving() {
     let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
     let actor = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(1),
             Pure::new(PerProducerOrder {
                 next: [0; 2],
                 received: 0,
             }),
-        )
+        ))
         .unwrap();
 
     let mut producers = tokio::task::JoinSet::new();
@@ -151,7 +151,10 @@ async fn abort_and_shutdown_races_publish_one_terminal_generation_before_reuse()
             events.clone(),
         );
         let actor = system
-            .spawn(MailAddr(7), StopOnShutdown::new(Pure::new(Waiting)))
+            .spawn(Actor::new(
+                MailAddr(7),
+                StopOnShutdown::new(Pure::new(Waiting)),
+            ))
             .unwrap();
         let actor_ref = actor.actor_ref().clone();
         let shutdown = tokio::spawn(async move { actor_ref.request_shutdown() });
@@ -170,7 +173,10 @@ async fn abort_and_shutdown_races_publish_one_terminal_generation_before_reuse()
         ));
 
         let replacement = system
-            .spawn(MailAddr(7), StopOnShutdown::new(Pure::new(Waiting)))
+            .spawn(Actor::new(
+                MailAddr(7),
+                StopOnShutdown::new(Pure::new(Waiting)),
+            ))
             .unwrap();
         replacement.abort();
         assert!(matches!(

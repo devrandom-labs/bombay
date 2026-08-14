@@ -43,7 +43,7 @@ pub use lifecycle::{
 pub use outcome::TaskOutcome;
 pub(crate) use outcome::{IntoPeerOutcome, classify_task};
 pub use system::{
-    BehaviorActivation, BehaviorRetirement, RootActivation, RootEndpoint, RootOutcome,
+    Actor, BehaviorActivation, BehaviorRetirement, RootActivation, RootEndpoint, RootOutcome,
     RootRetirement, System, SystemBirthError,
 };
 pub use timer_interpretation::ScheduleAfterError;

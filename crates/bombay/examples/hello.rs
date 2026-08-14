@@ -1,5 +1,5 @@
 use bombay::behavior::{Actions, Delivery, Exit, Handler, MailAddr, Never, NoBirths, Pure};
-use bombay::{AddressRouter, MailboxConfig, RunExit, System, TaskOutcome};
+use bombay::{Actor, AddressRouter, MailboxConfig, RunExit, System, TaskOutcome};
 
 struct StopOnMessage;
 
@@ -31,7 +31,7 @@ async fn main() {
     // `spawn` returns the affine `Handle`; `actor_ref` is the clonable,
     // typed `ActorRef` used for delivery.
     let handle = system
-        .spawn(MailAddr(1), Pure::new(StopOnMessage))
+        .spawn(Actor::new(MailAddr(1), Pure::new(StopOnMessage)))
         .expect("the address is vacant");
     let actor_ref = handle.actor_ref().clone();
 

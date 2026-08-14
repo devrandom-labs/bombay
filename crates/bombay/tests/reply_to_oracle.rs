@@ -12,8 +12,9 @@ use bombay::behavior::{
     WatchEvent,
 };
 use bombay::{
-    ActorRef, AddressInUse, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint,
-    MailboxAnchor, MailboxConfig, PeerObservationError, PeerObserver, System, TaskOutcome,
+    Actor, ActorRef, AddressInUse, AddressRouter, DeliveryRouter, EndpointRegistry,
+    IncarnationEndpoint, MailboxAnchor, MailboxConfig, PeerObservationError, PeerObserver, System,
+    TaskOutcome,
 };
 use observe::Observation;
 use tokio::task::yield_now;
@@ -253,9 +254,9 @@ macro_rules! result_fact {
 #[tokio::test(start_paused = true)]
 async fn typed_reply_is_ordinary_delivery_to_the_user_supplied_recipient() {
     let system = System::new(MailboxConfig::bounded(4), Routes::default());
-    let callee = system.spawn(CALLEE, Callee).unwrap();
+    let callee = system.spawn(Actor::new(CALLEE, Callee)).unwrap();
     let requester = system
-        .spawn(
+        .spawn(Actor::new(
             REQUESTER,
             Deadline::new(
                 Requester::new(CalleeAction::Reply(7)),
@@ -263,7 +264,7 @@ async fn typed_reply_is_ordinary_delivery_to_the_user_supplied_recipient() {
                 Some(Instant::now() + Duration::from_secs(5)),
                 timeout,
             ),
-        )
+        ))
         .unwrap();
 
     assert_eq!(
@@ -277,9 +278,9 @@ async fn typed_reply_is_ordinary_delivery_to_the_user_supplied_recipient() {
 #[tokio::test(start_paused = true)]
 async fn deadline_is_the_timeout_and_a_late_reply_is_an_explicit_user_message() {
     let system = System::new(MailboxConfig::bounded(4), Routes::default());
-    let callee = system.spawn(CALLEE, Callee).unwrap();
+    let callee = system.spawn(Actor::new(CALLEE, Callee)).unwrap();
     let requester = system
-        .spawn(
+        .spawn(Actor::new(
             REQUESTER,
             Deadline::new(
                 Requester::new(CalleeAction::Ignore),
@@ -287,7 +288,7 @@ async fn deadline_is_the_timeout_and_a_late_reply_is_an_explicit_user_message() 
                 Some(Instant::now() + Duration::from_secs(1)),
                 remember_timeout,
             ),
-        )
+        ))
         .unwrap();
     let outcome = tokio::spawn(async move { requester.outcome().await });
 
@@ -317,9 +318,9 @@ async fn deadline_is_the_timeout_and_a_late_reply_is_an_explicit_user_message() 
 #[tokio::test]
 async fn observation_installed_before_delivery_reports_exact_callee_retirement() {
     let system = System::new(MailboxConfig::bounded(4), Routes::default());
-    let _callee = system.spawn(CALLEE, Callee).unwrap();
+    let _callee = system.spawn(Actor::new(CALLEE, Callee)).unwrap();
     let requester = system
-        .spawn(
+        .spawn(Actor::new(
             REQUESTER,
             Deadline::new(
                 Requester::new(CalleeAction::Retire),
@@ -327,7 +328,7 @@ async fn observation_installed_before_delivery_reports_exact_callee_retirement()
                 Some(Instant::now() + Duration::from_secs(5)),
                 timeout,
             ),
-        )
+        ))
         .unwrap();
 
     assert_eq!(
@@ -339,9 +340,9 @@ async fn observation_installed_before_delivery_reports_exact_callee_retirement()
 #[tokio::test]
 async fn retired_reply_target_is_an_existing_delivery_failure() {
     let system = System::new(MailboxConfig::bounded(4), Routes::default());
-    let callee = system.spawn(CALLEE, Callee).unwrap();
+    let callee = system.spawn(Actor::new(CALLEE, Callee)).unwrap();
     let requester = system
-        .spawn(
+        .spawn(Actor::new(
             REQUESTER,
             Deadline::new(
                 Requester::new(CalleeAction::Ignore),
@@ -349,7 +350,7 @@ async fn retired_reply_target_is_an_existing_delivery_failure() {
                 Some(Instant::now()),
                 timeout,
             ),
-        )
+        ))
         .unwrap();
     assert_eq!(result_fact!(requester.outcome().await), ResultFact::Timeout);
 

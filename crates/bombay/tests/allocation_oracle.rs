@@ -9,7 +9,7 @@ use std::alloc::{GlobalAlloc, Layout, System as Allocator};
 use std::sync::atomic::{AtomicIsize, Ordering};
 
 use bombay::behavior::{Actions, Delivery, Exit, Handler, MailAddr, Never, NoBirths, Pure};
-use bombay::{AddressRouter, MailboxConfig, RunExit, System, TaskOutcome};
+use bombay::{Actor, AddressRouter, MailboxConfig, RunExit, System, TaskOutcome};
 
 struct Counting;
 
@@ -67,7 +67,7 @@ impl Handler<u8> for Stop {
 async fn cycle(address: u64) {
     let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
     let actor = system
-        .spawn(MailAddr(address), Pure::new(Stop))
+        .spawn(Actor::new(MailAddr(address), Pure::new(Stop)))
         .expect("vacant allocation-oracle address");
     actor
         .actor_ref()

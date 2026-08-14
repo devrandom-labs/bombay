@@ -236,7 +236,7 @@ async fn run() {
         routes = ApplicationRoutes::default(),
     );
     let handle = system
-        .spawn(AppAddr(1), application())
+        .spawn(Actor::new(AppAddr(1), application()))
         .expect("the root address is vacant");
 
     assert!(
@@ -267,7 +267,7 @@ async fn run() {
     ));
 
     let replacement = system
-        .spawn(AppAddr(1), application())
+        .spawn(Actor::new(AppAddr(1), application()))
         .expect("root completion implies complete tree retirement");
     replacement
         .actor_ref()

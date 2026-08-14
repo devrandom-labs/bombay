@@ -15,8 +15,8 @@ use bombay::behavior::{
     TimedEvent, TimerGeneration, TimerId, User, Watch, stop_on_supervision_failure,
 };
 use bombay::{
-    ActorRef, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint, MailboxAnchor,
-    MailboxConfig, RunExit, System, TaskOutcome,
+    Actor, ActorRef, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint,
+    MailboxAnchor, MailboxConfig, RunExit, System, TaskOutcome,
 };
 use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 
@@ -295,7 +295,7 @@ fn runtime_composition(c: &mut Criterion) {
             |address| async move {
                 let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
                 let actor = system
-                    .spawn(MailAddr(address), Pure::new(Waiting))
+                    .spawn(Actor::new(MailAddr(address), Pure::new(Waiting)))
                     .expect("vacant benchmark address");
                 actor.abort();
                 black_box(actor.outcome().await);
@@ -310,12 +310,12 @@ fn runtime_composition(c: &mut Criterion) {
                 address = address.checked_add(1).expect("address counter");
                 let system = System::new(MailboxConfig::bounded(SENDS), AddressRouter::default());
                 system
-                    .spawn(
+                    .spawn(Actor::new(
                         MailAddr(address),
                         Pure::new(StopOn(
                             u64::try_from(SENDS - 1).expect("send count fits u64"),
                         )),
-                    )
+                    ))
                     .expect("vacant benchmark address")
             },
             |actor| async {
@@ -344,7 +344,7 @@ fn runtime_composition(c: &mut Criterion) {
                 address = address.checked_add(1).expect("address counter");
                 let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
                 system
-                    .spawn(MailAddr(address), Pure::new(StopOn(0)))
+                    .spawn(Actor::new(MailAddr(address), Pure::new(StopOn(0))))
                     .expect("vacant benchmark address")
             },
             |actor| async {
@@ -368,7 +368,7 @@ fn runtime_composition(c: &mut Criterion) {
                 address = address.checked_add(1).expect("address counter");
                 let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
                 system
-                    .spawn(MailAddr(address), ArmedTimer)
+                    .spawn(Actor::new(MailAddr(address), ArmedTimer))
                     .expect("vacant benchmark address")
             },
             |actor| async move {
@@ -400,16 +400,16 @@ fn runtime_composition(c: &mut Criterion) {
                 let peer_address = MailAddr(address - 1);
                 let watcher_address = MailAddr(address);
                 let peer = system
-                    .spawn(
+                    .spawn(Actor::new(
                         peer_address,
                         Watch::new(Pure::new(StopOn(0)), peer_address, peer_stop),
-                    )
+                    ))
                     .expect("vacant peer address");
                 let watcher = system
-                    .spawn(
+                    .spawn(Actor::new(
                         watcher_address,
                         Watch::new(Pure::new(StopOn(u64::MAX)), peer_address, peer_stop),
-                    )
+                    ))
                     .expect("vacant watcher address");
                 (peer, watcher)
             },
@@ -437,7 +437,7 @@ fn runtime_composition(c: &mut Criterion) {
             || {
                 let system = System::new(MailboxConfig::bounded(4), RestartRouter::default());
                 system
-                    .spawn(TreeAddr(1), restart_supervisor())
+                    .spawn(Actor::new(TreeAddr(1), restart_supervisor()))
                     .expect("vacant supervisor address")
             },
             |supervisor| async move {
@@ -464,7 +464,10 @@ fn runtime_composition(c: &mut Criterion) {
                 address = address.checked_add(1).expect("address counter");
                 let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
                 system
-                    .spawn(MailAddr(address), StopOnShutdown::new(Pure::new(Waiting)))
+                    .spawn(Actor::new(
+                        MailAddr(address),
+                        StopOnShutdown::new(Pure::new(Waiting)),
+                    ))
                     .expect("vacant benchmark address")
             },
             |actor| async {

@@ -58,12 +58,12 @@ must not be treated as a waiver of per-feature verification.
 | E1 | Facade builders and authoring macros | P1 | 8 | feature-complete | — | M4 |
 | E2 | Static type-inference diagnostics | P1 | 5 | feature-complete | — | M4 |
 | E3 | Cookbook and public usage guidance | P1 | 8 | feature-complete | — | M4 |
-| E4 | First-class actor definition and one-value spawn | P0 | 3 | active | — | E9 |
+| E4 | First-class actor definition and one-value spawn | P0 | 3 | feature-complete | — | E9 |
 | E5 | Declarative typed application routing | P0 | 8 | unblocked | — | E9 |
 | E6 | Concise nominal behavior authoring | P1 | 5 | unblocked | — | E9 |
 | E7 | Live-actor capability and terminal-result ergonomics | P1 | 5 | unblocked | — | E9 |
 | E8 | Facade, prelude, and system-construction coherence | P1 | 3 | unblocked | — | E9 |
-| E9 | Expressive reference-application distillation | P0 | 8 | blocked | E4, E5, E6, E7, E8 | M4 |
+| E9 | Expressive reference-application distillation | P0 | 8 | blocked | E5, E6, E7, E8 | M4 |
 | P1 | Single-threaded/no-std portability decision | P3 | 8 | blocked | C5; concrete embedded consumer | M2 |
 | Q1 | Reproducible CI and build matrix | P0 | 5 | feature-complete | — | M5 |
 | Q2 | Coverage and integration breadth | P1 | 8 | feature-complete | — | M5 |
@@ -82,11 +82,11 @@ must not be treated as a waiver of per-feature verification.
 | K2 | Zenoh transport/discovery handoff | P2 | 13 | blocked | K1; owning integration repository and ledger | K3 |
 | K3 | Authenticated remote-actor handoff | P2 | 13 | blocked | K2; owning integration repository and ledger | remote framework |
 
-E4 is the selected implementation item. E5-E8 are independently eligible but
-remain queued so the authoring campaign changes one seam at a time. E9 is the
-integrating application and documentation proof; it cannot begin until those
-four downstream prerequisites and E4 are feature-complete. Other blocked
-items still require the external evidence shown above.
+E5 is the next implementation item by priority and dependency impact. E6-E8
+are independently eligible but remain queued so the authoring campaign changes
+one seam at a time. E9 is the integrating application and documentation proof;
+it cannot begin until those four prerequisites are feature-complete. Other
+blocked items still require the external evidence shown above.
 
 ## Current dependency snapshot
 
@@ -373,6 +373,20 @@ the address value and behavior can enter preparation only as one statically
 matched `Actor<B>`. An inversion compile test must reject `Actor<B>` built with
 an address other than `B::Addr`, and runtime oracles must prove spawn and
 activation ordering and outcomes are unchanged.
+
+The implementation adds only the two-field inert `Actor<B>` and routes root
+spawn, transactional activation, ordinary preparation, provisional
+preparation, and the child-runtime handoff through it. Behavior's `Create`
+remains unchanged. All 89 root spawn call sites and all six direct
+transactional activation call sites now pass one actor value; the framework
+prelude, public exports, examples, tests, benchmarks, README, cookbook, and
+module-boundary documentation use the same concept. A compile-fail doctest
+rejects an address outside `B::Addr`; a focused unit test round-trips exactly
+the address and behavior; the process allocation oracle and every existing
+spawn, activation, creation, lifecycle, panic, cancellation, routing, and
+retirement oracle pass unchanged. Workspace tests, rustfmt, Clippy, rustdoc,
+and the repository-wide old-call-shape audit pass. E4 is `feature-complete`
+pending E9, M4, and the project-wide release audit.
 
 ##### E5 verification and contract
 

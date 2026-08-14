@@ -33,6 +33,63 @@ pub struct System<R, L = NoLifecycle> {
     lifecycle: L,
 }
 
+/// One inert actor definition, before Bombay allocates runtime resources.
+///
+/// The behavior owns application state and statically selects its complete
+/// protocol; the address value selects this actor's identity. Constructing an
+/// actor creates no mailbox, task, registration, lifecycle state, or handle.
+///
+/// An address from another behavior namespace cannot form the actor:
+///
+/// ```compile_fail
+/// use bombay::{Actor, behavior::{Acted, Actions, Delivery, Handler, MailAddr, Never, NoBirths, Pure}};
+///
+/// struct State;
+/// impl Handler for State {
+///     type Addr = MailAddr;
+///     type Msg = ();
+///     fn receive(
+///         &mut self,
+///         _: MailAddr,
+///         _: (),
+///     ) -> Acted<MailAddr, Never, Vec<Delivery<MailAddr, Never>>, NoBirths, Never> {
+///         Ok(Actions::cont())
+///     }
+/// }
+///
+/// let _ = Actor::new(7_u8, Pure::new(State));
+/// ```
+pub struct Actor<B: Behavior> {
+    address: B::Addr,
+    behavior: B,
+}
+
+impl<B: Behavior> Actor<B> {
+    /// Pair one behavior with an address from its declared namespace.
+    #[must_use]
+    pub const fn new(address: B::Addr, behavior: B) -> Self {
+        Self { address, behavior }
+    }
+
+    /// Borrow this actor's address.
+    #[must_use]
+    pub const fn address(&self) -> &B::Addr {
+        &self.address
+    }
+
+    /// Borrow this actor's behavior and application state.
+    #[must_use]
+    pub const fn behavior(&self) -> &B {
+        &self.behavior
+    }
+
+    /// Recover the inert definition without allocating runtime resources.
+    #[must_use]
+    pub fn into_parts(self) -> (B::Addr, B) {
+        (self.address, self.behavior)
+    }
+}
+
 impl<R: Clone, L: Clone> Clone for System<R, L> {
     fn clone(&self) -> Self {
         Self {
@@ -285,7 +342,7 @@ impl<R, I, F> CreationFailure for SystemBirthError<R, I, F> {
 }
 
 impl<R: Clone, L: Clone> System<R, L> {
-    /// Initialize, register, and launch one exact root incarnation transactionally.
+    /// Initialize, register, and launch one exact root actor transactionally.
     ///
     /// # Errors
     ///
@@ -294,8 +351,7 @@ impl<R: Clone, L: Clone> System<R, L> {
     /// initialization stage fails.
     pub async fn activate<B>(
         &self,
-        address: AddrOf<B>,
-        behavior: B,
+        actor: Actor<B>,
     ) -> Result<
         BehaviorActivation<R, B, L>,
         SystemBirthError<
@@ -326,7 +382,8 @@ impl<R: Clone, L: Clone> System<R, L> {
         BehaviorRegistration<R, B>: Send + 'static,
         L: LifecycleFactory<AddrOf<B>, BehaviorRegistration<R, B>>,
     {
-        let mut provisional = self.prepare_provisional(address, behavior, NoParent);
+        let address = *actor.address();
+        let mut provisional = self.prepare_provisional(actor, NoParent);
         let pending_exit = match provisional.driver().run_init().await {
             Ok(exit) => exit,
             Err(error) => {
@@ -348,7 +405,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         })
     }
 
-    /// Construct and spawn one behavior actor.
+    /// Consume one inert actor definition and spawn its runtime incarnation.
     ///
     /// # Errors
     ///
@@ -359,7 +416,7 @@ impl<R: Clone, L: Clone> System<R, L> {
     /// Panics if called outside a Tokio runtime, or if a freshly allocated
     /// private Bombay Observe namespace cannot resolve the subject registered
     /// immediately beforehand.
-    pub fn spawn<B>(&self, address: AddrOf<B>, behavior: B) -> BehaviorSpawnResult<R, B, L>
+    pub fn spawn<B>(&self, actor: Actor<B>) -> BehaviorSpawnResult<R, B, L>
     where
         B: Behavior<Ph = Never> + Send + 'static,
         AddrOf<B>: Send + Sync + 'static,
@@ -382,7 +439,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         BehaviorRegistration<R, B>: Send + 'static,
         L: LifecycleFactory<AddrOf<B>, BehaviorRegistration<R, B>>,
     {
-        let prepared = self.prepare(address, behavior, NoParent)?;
+        let prepared = self.prepare(actor, NoParent)?;
         Ok(prepared.launch(LaunchMode::Uninitialized, false))
     }
 
@@ -392,8 +449,7 @@ impl<R: Clone, L: Clone> System<R, L> {
     )]
     fn prepare<B, Parent>(
         &self,
-        address: AddrOf<B>,
-        behavior: B,
+        actor: Actor<B>,
         parent: Parent,
     ) -> Result<
         BehaviorPreparation<R, B, Parent, L>,
@@ -422,15 +478,14 @@ impl<R: Clone, L: Clone> System<R, L> {
         BehaviorRegistration<R, B>: Send + 'static,
         L: LifecycleFactory<AddrOf<B>, BehaviorRegistration<R, B>>,
     {
-        self.prepare_provisional(address, behavior, parent)
+        self.prepare_provisional(actor, parent)
             .commit(&self.router, &self.lifecycle)
     }
 
     /// Prepare every actor resource without claiming the address generation.
     fn prepare_provisional<B, Parent>(
         &self,
-        address: AddrOf<B>,
-        behavior: B,
+        actor: Actor<B>,
         parent: Parent,
     ) -> BehaviorProvisional<R, B, Parent, L>
     where
@@ -456,6 +511,7 @@ impl<R: Clone, L: Clone> System<R, L> {
         BehaviorRegistration<R, B>: Send + 'static,
         L: LifecycleFactory<AddrOf<B>, BehaviorRegistration<R, B>>,
     {
+        let (address, behavior) = actor.into_parts();
         let observation_space = ObservationSpace::new();
         let subject = observation_space
             .subject(())
@@ -543,7 +599,7 @@ where
         let reporter = ParentReporter::new(child.nonce, response);
         let mut provisional = self
             .system
-            .prepare_provisional(address, child.child, reporter);
+            .prepare_provisional(Actor::new(address, child.child), reporter);
         let pending_exit = match provisional.driver().run_init().await {
             Ok(exit) => exit,
             Err(error) => {
@@ -565,7 +621,7 @@ mod tests {
     use std::convert::Infallible;
 
     use crate::{
-        ActorRef, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint,
+        Actor, ActorRef, AddressRouter, DeliveryRouter, EndpointRegistry, IncarnationEndpoint,
         MailboxConfig, RunExit, System, TaskOutcome,
     };
     use behavior::{
@@ -613,6 +669,17 @@ mod tests {
         {
             Ok(Actions::stop(behavior::Exit::Normal))
         }
+    }
+
+    #[test]
+    fn actor_definition_round_trips_only_address_and_behavior() {
+        let actor = Actor::new(MailAddr(9), Pure::new(StopWithMessage));
+
+        assert_eq!(*actor.address(), MailAddr(9));
+        let _ = actor.behavior().state();
+        let (address, behavior) = actor.into_parts();
+        assert_eq!(address, MailAddr(9));
+        let _ = behavior.state();
     }
 
     impl Handler<u8> for ForwardTo {
@@ -741,7 +808,7 @@ mod tests {
         let system = System::new(MailboxConfig::bounded(4), NoRouter);
 
         let spawned = system
-            .spawn(MailAddr(9), Pure::new(StopWithMessage))
+            .spawn(Actor::new(MailAddr(9), Pure::new(StopWithMessage)))
             .unwrap();
         spawned.actor_ref().send(MailAddr(7), 1).await.unwrap();
 
@@ -754,7 +821,9 @@ mod tests {
     #[tokio::test]
     async fn unwatch_service_composes_through_system_without_a_creation_lane() {
         let system = System::new(MailboxConfig::bounded(1), NoRouter);
-        let spawned = system.spawn(MailAddr(9), CancelUnknownPeer).unwrap();
+        let spawned = system
+            .spawn(Actor::new(MailAddr(9), CancelUnknownPeer))
+            .unwrap();
 
         assert_eq!(
             spawned.outcome().await,
@@ -768,11 +837,11 @@ mod tests {
         let system = System::new(MailboxConfig::bounded(4), router);
 
         let first = system
-            .spawn(MailAddr(9), Pure::new(ForwardTo(MailAddr(88))))
+            .spawn(Actor::new(MailAddr(9), Pure::new(ForwardTo(MailAddr(88)))))
             .unwrap();
         assert!(
             system
-                .spawn(MailAddr(9), Pure::new(ForwardTo(MailAddr(88))))
+                .spawn(Actor::new(MailAddr(9), Pure::new(ForwardTo(MailAddr(88)))))
                 .is_err(),
             "a running actor owns its address generation"
         );
@@ -784,7 +853,7 @@ mod tests {
         ));
 
         let replacement = system
-            .spawn(MailAddr(9), Pure::new(ForwardTo(MailAddr(88))))
+            .spawn(Actor::new(MailAddr(9), Pure::new(ForwardTo(MailAddr(88)))))
             .expect("task exit releases the old address generation");
         replacement.actor_ref().send(MailAddr(7), 1).await.unwrap();
         assert!(matches!(
@@ -798,10 +867,10 @@ mod tests {
         let router = AddressRouter::default();
         let system = System::new(MailboxConfig::bounded(4), router);
         let receiver = system
-            .spawn(MailAddr(2), Pure::new(StopAfterReceiving))
+            .spawn(Actor::new(MailAddr(2), Pure::new(StopAfterReceiving)))
             .unwrap();
         let sender = system
-            .spawn(MailAddr(1), Pure::new(ForwardTo(MailAddr(2))))
+            .spawn(Actor::new(MailAddr(1), Pure::new(ForwardTo(MailAddr(2)))))
             .unwrap();
 
         sender.actor_ref().send(MailAddr(0), 40).await.unwrap();
@@ -821,10 +890,10 @@ mod tests {
         let router = AddressRouter::default();
         let system = System::new(MailboxConfig::bounded(4), router);
         let receiver = system
-            .spawn(MailAddr(2), Pure::new(StopAfterReceiving))
+            .spawn(Actor::new(MailAddr(2), Pure::new(StopAfterReceiving)))
             .unwrap();
         let sender = system
-            .spawn(MailAddr(1), Pure::new(ForwardTo(MailAddr(2))))
+            .spawn(Actor::new(MailAddr(1), Pure::new(ForwardTo(MailAddr(2)))))
             .unwrap();
 
         sender.actor_ref().send(MailAddr(0), 40).await.unwrap();
@@ -838,7 +907,7 @@ mod tests {
         ));
 
         let parked = system
-            .spawn(MailAddr(3), Pure::new(StopAfterReceiving))
+            .spawn(Actor::new(MailAddr(3), Pure::new(StopAfterReceiving)))
             .unwrap();
         assert!(matches!(
             parked.close().await,
@@ -846,7 +915,7 @@ mod tests {
         ));
         assert!(
             system
-                .spawn(MailAddr(3), Pure::new(StopAfterReceiving))
+                .spawn(Actor::new(MailAddr(3), Pure::new(StopAfterReceiving)))
                 .is_ok(),
             "environment closure releases the address generation"
         );
@@ -857,15 +926,15 @@ mod tests {
         let router = AddressRouter::default();
         let system = System::new(MailboxConfig::bounded(4), router);
         let receiver = system
-            .spawn(MailAddr(9), Pure::new(StopAfterReceiving))
+            .spawn(Actor::new(MailAddr(9), Pure::new(StopAfterReceiving)))
             .unwrap();
         let parent = system
-            .spawn(
+            .spawn(Actor::new(
                 MailAddr(1),
                 Pure::new(BirthAndSend {
                     receiver: MailAddr(9),
                 }),
-            )
+            ))
             .unwrap();
 
         parent.actor_ref().send(MailAddr(0), 40).await.unwrap();

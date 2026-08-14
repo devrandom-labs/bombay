@@ -42,6 +42,7 @@ generation.
 | Role | Concrete items | Law |
 |---|---|---|
 | Domain algebra | Bombay `Behavior`, typed events/actions | Pure initialization and folds; no I/O, clock, channel, or runtime handle |
+| Inert actor definition | `Actor<B>` | Pair exactly one `B::Addr` value with `B`; own no runtime resource or policy |
 | Engine core | `bombay_engine::{Driver, RunExit, RunError, RuntimeEffects}` | One fold at a time; interpret its complete effect before the next event; retire the port before returning |
 | Primary/secondary ports | `bombay_engine::Environment`, bombay `EventSource`, `EventSender`, routing and lifecycle traits | Describe capabilities bombay needs; contain no Tokio or Bombay implementation policy |
 | Runtime adapter | `ActorEnvironment`, Bombay Communication mailbox wrappers, `AddressRouter`, `IncarnationEffects` | Give the ports their one local Tokio/Bombay meaning without changing Behavior policy |
@@ -152,7 +153,7 @@ They add no lifecycle state machine or policy.
 ## Preparation and terminal order
 
 ```text
-System::prepare(spec)
+System::prepare(Actor)
   -> allocate completion generations and mailbox
   -> construct ActorEnvironment
   -> claim the exact address generation
@@ -160,12 +161,12 @@ System::prepare(spec)
   -> construct Driver
   -> return PreparedIncarnation
 
-System::spawn(spec)
+System::spawn(Actor)
   -> split prepared ownership into Incarnation, ActorRef, and observation
   -> spawn Incarnation once
   -> return Handle { ActorRef, Completion }
 
-System::activate(spec)
+System::activate(Actor)
   -> construct the private provisional ownership state
   -> run initialization and interpret all initialization effects
   -> claim the exact address generation

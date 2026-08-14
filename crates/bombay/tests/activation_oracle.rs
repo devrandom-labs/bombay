@@ -6,8 +6,8 @@ use std::sync::{Arc, Mutex};
 
 use behavior::{Actions, Behavior, Delivery, MailAddr, Never, NoBirths, Recipient, Step, User};
 use bombay::{
-    AddressRouter, DeliveryEndpoint, DeliveryRouter, EndpointRegistry, MailboxConfig, RootEndpoint,
-    System, SystemBirthError, TaskOutcome,
+    Actor, AddressRouter, DeliveryEndpoint, DeliveryRouter, EndpointRegistry, MailboxConfig,
+    RootEndpoint, System, SystemBirthError, TaskOutcome,
 };
 
 #[derive(Clone)]
@@ -169,7 +169,7 @@ async fn activation_completes_init_effects_before_registration_and_returns_separ
     let system = System::new(MailboxConfig::bounded(1), ProbeRouter(events.clone()));
 
     let activated = system
-        .activate(MailAddr(1), OrderedInit(events.clone()))
+        .activate(Actor::new(MailAddr(1), OrderedInit(events.clone())))
         .await
         .unwrap();
 
@@ -196,7 +196,7 @@ async fn failed_initialization_never_registers_or_returns_an_endpoint() {
     let events = Arc::new(Mutex::new(Vec::new()));
     let system = System::new(MailboxConfig::bounded(1), ProbeRouter(events.clone()));
 
-    let failure = system.activate(MailAddr(1), FailingInit).await;
+    let failure = system.activate(Actor::new(MailAddr(1), FailingInit)).await;
 
     assert!(matches!(
         failure,
@@ -214,7 +214,7 @@ async fn failed_initialization_effect_never_reaches_registration() {
     );
 
     let failure = system
-        .activate(MailAddr(1), OrderedInit(events.clone()))
+        .activate(Actor::new(MailAddr(1), OrderedInit(events.clone())))
         .await;
 
     assert!(matches!(failure, Err(SystemBirthError::Effects(_))));
@@ -227,7 +227,7 @@ async fn registration_failure_stays_typed_after_successful_initialization() {
     let system = System::new(MailboxConfig::bounded(1), RejectingRegistrationRouter);
 
     let failure = system
-        .activate(MailAddr(1), OrderedInit(events.clone()))
+        .activate(Actor::new(MailAddr(1), OrderedInit(events.clone())))
         .await;
 
     assert!(matches!(
@@ -243,12 +243,12 @@ async fn registration_collision_drops_provisional_resources_once_and_address_reu
     let system = System::new(MailboxConfig::bounded(1), router);
     let live_drops = Arc::new(AtomicUsize::new(0));
     let live = system
-        .spawn(MailAddr(1), DropProbe(live_drops.clone()))
+        .spawn(Actor::new(MailAddr(1), DropProbe(live_drops.clone())))
         .unwrap();
     let failed_drops = Arc::new(AtomicUsize::new(0));
 
     let collision = system
-        .activate(MailAddr(1), DropProbe(failed_drops.clone()))
+        .activate(Actor::new(MailAddr(1), DropProbe(failed_drops.clone())))
         .await;
 
     assert!(matches!(collision, Err(SystemBirthError::Registration(_))));
@@ -259,7 +259,10 @@ async fn registration_collision_drops_provisional_resources_once_and_address_reu
 
     let replacement_drops = Arc::new(AtomicUsize::new(0));
     let replacement = system
-        .activate(MailAddr(1), DropProbe(replacement_drops.clone()))
+        .activate(Actor::new(
+            MailAddr(1),
+            DropProbe(replacement_drops.clone()),
+        ))
         .await
         .unwrap();
     replacement.retirement.abort();

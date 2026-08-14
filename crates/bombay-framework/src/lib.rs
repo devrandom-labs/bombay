@@ -47,7 +47,7 @@ pub mod prelude {
         SupervisionEvent, Supervisor, User, Watch, WorkerStopped,
     };
     pub use bombay::{
-        ActorRef, AddressInUse, AddressRouter, DeliveryRouter, EndpointRegistry,
+        Actor, ActorRef, AddressInUse, AddressRouter, DeliveryRouter, EndpointRegistry,
         IncarnationEndpoint, MailboxAnchor, MailboxConfig, RunExit, System, TaskOutcome,
     };
 }

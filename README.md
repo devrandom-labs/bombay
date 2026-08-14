@@ -21,7 +21,8 @@ use bombay_framework::prelude::*;
 
 let system = System::new(MailboxConfig::bounded(32), router);
 let behavior = Spec::new(state).stop_on_shutdown();
-let handle = system.spawn(address, behavior)?;
+let actor = Actor::new(address, behavior);
+let handle = system.spawn(actor)?;
 handle.actor_ref().send(from, message).await?;
 handle.actor_ref().request_shutdown()?;
 let outcome = handle.outcome().await;

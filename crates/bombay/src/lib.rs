@@ -3,8 +3,9 @@
 //! The behavior half is [`behavior`]'s pure algebra (depended on, never
 //! copied). Bombay Communication supplies the sole mailbox implementation. A
 //! behavior is driven sequentially while its environment supplies events and
-//! interprets effects. Runtime construction remains centralized in
-//! [`System::spawn`]. Consumers that may publish an endpoint only after
+//! interprets effects. An inert [`Actor`] pairs one behavior with its address,
+//! and runtime construction remains centralized in [`System::spawn`].
+//! Consumers that may publish an endpoint only after
 //! initialization and its effects succeed use [`System::activate`].
 //!
 //! # Panic strategy
@@ -36,12 +37,12 @@ pub use routing::{
     IncarnationEndpoint, MailboxDeliveryClosed, ObservesCreations, PeerObservationError,
     PeerObserver, RejectedDelivery, RouteSends, RoutingError, ShutdownRequestError,
 };
+pub use runtime::{
+    Actor, BehaviorActivation, BehaviorRetirement, CreationFailure, Handle, LifecycleEvent,
+    LifecycleSink, LifecycleTransition, NoLifecycle, RegistrationIdentity, RootActivation,
+    RootEndpoint, RootOutcome, RootRetirement, RuntimeEffectError, ScheduleAfterError, System,
+    SystemBirthError, TaskOutcome,
+};
 pub(crate) use runtime::{
     ActorEnvironment, ChildLease, ChildRuntime, RuntimeBirthMode, SystemChildren,
-};
-pub use runtime::{
-    BehaviorActivation, BehaviorRetirement, CreationFailure, Handle, LifecycleEvent, LifecycleSink,
-    LifecycleTransition, NoLifecycle, RegistrationIdentity, RootActivation, RootEndpoint,
-    RootOutcome, RootRetirement, RuntimeEffectError, ScheduleAfterError, System, SystemBirthError,
-    TaskOutcome,
 };

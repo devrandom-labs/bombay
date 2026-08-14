@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 use std::time::Duration;
 
 use bombay::behavior::{Actions, Exit, Handler, MailAddr, Never, NoBirths, Pure};
-use bombay::{AddressRouter, MailboxConfig, RunExit, System, TaskOutcome};
+use bombay::{Actor, AddressRouter, MailboxConfig, RunExit, System, TaskOutcome};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct InvalidPayload;
@@ -58,13 +58,13 @@ pub async fn accepted_payloads_are_processed_once(order: &[u8]) {
 
     let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
     let actor = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(1),
             Pure::new(AccountFor {
                 expected,
                 seen: BTreeSet::new(),
             }),
-        )
+        ))
         .expect("fresh address must be claimable");
 
     let mut sends = tokio::task::JoinSet::new();
@@ -87,13 +87,13 @@ pub async fn accepted_payloads_are_processed_once(order: &[u8]) {
     ));
 
     let replacement = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(1),
             Pure::new(AccountFor {
                 expected: [0].into(),
                 seen: BTreeSet::new(),
             }),
-        )
+        ))
         .expect("terminal publication must follow registration release");
     replacement.actor_ref().send(MailAddr(0), 0).await.unwrap();
     assert!(matches!(

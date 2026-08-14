@@ -15,7 +15,7 @@ use bombay::behavior::{
     Supervisor, UnwatchPeer, User, Watch, WatchEvent, stop_on_supervision_failure,
 };
 use bombay::{
-    ActorRef, AddressRouter, DeliveryEndpoint, DeliveryRouter, EndpointRegistry,
+    Actor, ActorRef, AddressRouter, DeliveryEndpoint, DeliveryRouter, EndpointRegistry,
     IncarnationEndpoint, LifecycleEvent, LifecycleSink, LifecycleTransition, MailboxAnchor,
     MailboxConfig, RunExit, System, TaskOutcome,
 };
@@ -85,12 +85,12 @@ async fn child_observation_reports_the_exact_spawned_generation() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router);
     let parent = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(100),
             ObserveImmediateChild {
                 observed: observed.clone(),
             },
-        )
+        ))
         .unwrap();
 
     assert!(matches!(
@@ -166,9 +166,9 @@ async fn watching_receives_the_exact_peers_normalized_outcome() {
     let observed = Arc::new(Mutex::new(None));
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(2), router);
-    let peer = system.spawn(MailAddr(20), WatchedPeer).unwrap();
+    let peer = system.spawn(Actor::new(MailAddr(20), WatchedPeer)).unwrap();
     let watcher = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(21),
             Watch::new(
                 Pure::new(WatchState {
@@ -178,7 +178,7 @@ async fn watching_receives_the_exact_peers_normalized_outcome() {
                 MailAddr(20),
                 record_peer_stop,
             ),
-        )
+        ))
         .unwrap();
 
     watcher.actor_ref().send(MailAddr(0), 1).await.unwrap();
@@ -262,24 +262,24 @@ async fn typed_unwatch_cancels_the_matching_production_monitor() {
     let cancel_folded = Arc::new(Notify::new());
     let peer_stopped = Arc::new(AtomicBool::new(false));
     let peer = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(9),
             UnwatchProbe {
                 watch: None,
                 cancel_folded: cancel_folded.clone(),
                 peer_stopped: peer_stopped.clone(),
             },
-        )
+        ))
         .unwrap();
     let watcher = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(8),
             UnwatchProbe {
                 watch: Some(MailAddr(9)),
                 cancel_folded: cancel_folded.clone(),
                 peer_stopped: peer_stopped.clone(),
             },
-        )
+        ))
         .unwrap();
 
     watcher.actor_ref().send(MailAddr(1), 0).await.unwrap();
@@ -505,7 +505,7 @@ async fn supervision_escalation_retires_and_releases_the_complete_tree() {
     )
     .with_failure_reaction(stop_on_supervision_failure);
     let system = System::new(MailboxConfig::bounded(4), RestartRouter::default());
-    let parent = system.spawn(TreeAddr(1), supervisor).unwrap();
+    let parent = system.spawn(Actor::new(TreeAddr(1), supervisor)).unwrap();
 
     assert!(matches!(
         parent.outcome().await,
@@ -531,7 +531,7 @@ async fn supervision_escalation_retires_and_releases_the_complete_tree() {
     )
     .with_failure_reaction(stop_on_supervision_failure);
     let replacement = system
-        .spawn(TreeAddr(1), replacement)
+        .spawn(Actor::new(TreeAddr(1), replacement))
         .expect("supervisor completion must release its proxy and worker tree");
     assert!(matches!(
         replacement.outcome().await,
@@ -592,14 +592,16 @@ impl Handler<u8, Births<Pure<Stop, u8>>> for BirthChildAndSignal {
 async fn parent_retains_created_child_handle_while_parent_is_live() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router.clone());
-    let signal = system.spawn(MailAddr(9), Pure::new(Stop)).unwrap();
+    let signal = system
+        .spawn(Actor::new(MailAddr(9), Pure::new(Stop)))
+        .unwrap();
     let parent = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(1),
             Pure::new(BirthChildAndSignal {
                 signal: MailAddr(9),
             }),
-        )
+        ))
         .unwrap();
 
     parent.actor_ref().send(MailAddr(0), 42).await.unwrap();
@@ -675,14 +677,14 @@ async fn typed_creator_spawns_child_before_routing_same_transition_send() {
     let received = Arc::new(Notify::new());
     let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
     let parent = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(1),
             CreateAndSendSameTurn {
                 child: Some(Pure::new(SameTurnChild {
                     received: received.clone(),
                 })),
             },
-        )
+        ))
         .unwrap();
 
     received.notified().await;
@@ -696,16 +698,24 @@ async fn typed_creator_spawns_child_before_routing_same_transition_send() {
 async fn address_collision_rolls_back_without_disturbing_the_live_generation() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router);
-    let first = system.spawn(MailAddr(7), Pure::new(Stop)).unwrap();
+    let first = system
+        .spawn(Actor::new(MailAddr(7), Pure::new(Stop)))
+        .unwrap();
 
-    assert!(system.spawn(MailAddr(7), Pure::new(Stop)).is_err());
+    assert!(
+        system
+            .spawn(Actor::new(MailAddr(7), Pure::new(Stop)))
+            .is_err()
+    );
     first.actor_ref().send(MailAddr(1), 0).await.unwrap();
     assert!(matches!(
         first.outcome().await,
         TaskOutcome::Returned(Ok(RunExit::Stopped(bombay::behavior::Exit::Normal)))
     ));
 
-    let replacement = system.spawn(MailAddr(7), Pure::new(Stop)).unwrap();
+    let replacement = system
+        .spawn(Actor::new(MailAddr(7), Pure::new(Stop)))
+        .unwrap();
     replacement.actor_ref().send(MailAddr(1), 0).await.unwrap();
     assert!(matches!(
         replacement.outcome().await,
@@ -717,7 +727,9 @@ async fn address_collision_rolls_back_without_disturbing_the_live_generation() {
 async fn dropping_handle_detaches_terminal_observation_without_cancelling_actor() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router);
-    let handle = system.spawn(MailAddr(7), Pure::new(Stop)).unwrap();
+    let handle = system
+        .spawn(Actor::new(MailAddr(7), Pure::new(Stop)))
+        .unwrap();
     let edge = handle.actor_ref().clone();
     drop(handle);
 
@@ -725,7 +737,7 @@ async fn dropping_handle_detaches_terminal_observation_without_cancelling_actor(
     drop(edge);
 
     let replacement = loop {
-        match system.spawn(MailAddr(7), Pure::new(Stop)) {
+        match system.spawn(Actor::new(MailAddr(7), Pure::new(Stop))) {
             Ok(replacement) => break replacement,
             Err(_) => yield_now().await,
         }
@@ -741,7 +753,9 @@ async fn dropping_handle_detaches_terminal_observation_without_cancelling_actor(
 async fn last_edge_closure_is_not_pinned_by_the_registered_anchor() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router);
-    let spawned = system.spawn(MailAddr(7), Pure::new(Stop)).unwrap();
+    let spawned = system
+        .spawn(Actor::new(MailAddr(7), Pure::new(Stop)))
+        .unwrap();
 
     assert!(matches!(
         spawned.close().await,
@@ -803,10 +817,13 @@ async fn graceful_shutdown_preempts_user_backlog_and_interprets_final_effects() 
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(2), router);
     let signal = system
-        .spawn(MailAddr(9), Compose::new(Stop).stop_on_shutdown().build())
+        .spawn(Actor::new(
+            MailAddr(9),
+            Compose::new(Stop).stop_on_shutdown().build(),
+        ))
         .unwrap();
     let actor = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(7),
             Compose::from_behavior(BlockingShutdown {
                 entered: entered.clone(),
@@ -817,7 +834,7 @@ async fn graceful_shutdown_preempts_user_backlog_and_interprets_final_effects() 
             })
             .finalize_on_shutdown(finalize_shutdown)
             .build(),
-        )
+        ))
         .unwrap();
     let retired = actor.actor_ref().clone();
 
@@ -854,7 +871,7 @@ async fn blocked_public_send_recovers_exact_payload_after_incarnation_retirement
     let (release_tx, release) = std::sync::mpsc::channel();
     let system = System::new(MailboxConfig::bounded(1), AddressRouter::default());
     let actor = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(7),
             BlockingShutdown {
                 entered: entered.clone(),
@@ -863,7 +880,7 @@ async fn blocked_public_send_recovers_exact_payload_after_incarnation_retirement
                 finalized: Arc::new(AtomicBool::new(false)),
                 signal: MailAddr(9),
             },
-        )
+        ))
         .unwrap();
     let actor_ref = actor.actor_ref().clone();
 
@@ -990,7 +1007,7 @@ async fn root_shutdown_awaits_transitive_child_retirement() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router);
     let root = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(30),
             StopOnShutdown::new(ScopedRoot {
                 child: Some(StopOnShutdown::new(ScopedBranch {
@@ -1002,7 +1019,7 @@ async fn root_shutdown_awaits_transitive_child_retirement() {
                     )),
                 })),
             }),
-        )
+        ))
         .unwrap();
 
     root.actor_ref().request_shutdown().unwrap();
@@ -1013,12 +1030,12 @@ async fn root_shutdown_awaits_transitive_child_retirement() {
     assert!(child_retired.load(Ordering::SeqCst));
 
     let replacement = system
-        .spawn(
+        .spawn(Actor::new(
             MailAddr(30).birth(7).birth(9),
             StopOnShutdown::new(Pure::new(ScopedChild {
                 retired: Arc::new(AtomicBool::new(false)),
             })),
-        )
+        ))
         .expect("root completion must imply descendant address reuse");
     replacement.actor_ref().request_shutdown().unwrap();
     let _ = replacement.outcome().await;
@@ -1032,7 +1049,7 @@ async fn typed_behavior_timer_fires_through_the_incarnation() {
     let behavior = Compose::new(Stop)
         .deadline(Some(due), |_| Ok(Step::Stop(Exit::Normal)))
         .build();
-    let handle = system.spawn(MailAddr(7), behavior).unwrap();
+    let handle = system.spawn(Actor::new(MailAddr(7), behavior)).unwrap();
     let outcome = tokio::spawn(async move { handle.outcome().await });
 
     yield_now().await;
@@ -1100,7 +1117,7 @@ async fn successful_user_fold_replaces_the_live_receive_timeout_generation() {
     let behavior = Compose::new(ReceiveTimeoutProbe)
         .receive_timeout(Duration::from_secs(5), stop_after_inactivity)
         .build();
-    let handle = system.spawn(MailAddr(8), behavior).unwrap();
+    let handle = system.spawn(Actor::new(MailAddr(8), behavior)).unwrap();
     let actor = handle.actor_ref().clone();
     let outcome = tokio::spawn(async move { handle.outcome().await });
 
@@ -1135,7 +1152,7 @@ async fn deadline_service_traffic_does_not_rearm_receive_timeout() {
             stop_after_deadline_service_inactivity,
         )
         .build();
-    let watcher = system.spawn(MailAddr(8), behavior).unwrap();
+    let watcher = system.spawn(Actor::new(MailAddr(8), behavior)).unwrap();
     let outcome = tokio::spawn(async move { watcher.outcome().await });
 
     yield_now().await;
@@ -1163,7 +1180,7 @@ async fn nested_timers_at_the_same_deadline_keep_distinct_identities() {
             Ok(Step::Stop(Exit::Normal))
         })
         .build();
-    let handle = system.spawn(MailAddr(7), behavior).unwrap();
+    let handle = system.spawn(Actor::new(MailAddr(7), behavior)).unwrap();
     let outcome = tokio::spawn(async move { handle.outcome().await });
 
     yield_now().await;
@@ -1292,13 +1309,13 @@ async fn registration_failure_rolls_back_real_preparation_before_task_start() {
 
     assert!(
         system
-            .spawn(
+            .spawn(Actor::new(
                 MailAddr(7),
                 RollbackBehavior {
                     started: started.clone(),
                     dropped: dropped.clone(),
                 },
-            )
+            ))
             .is_err()
     );
     yield_now().await;
@@ -1314,7 +1331,7 @@ async fn registration_failure_rolls_back_real_preparation_before_task_start() {
     assert!(rejected.deliver(MailAddr(0), 1).await.is_err());
 
     let replacement = system
-        .spawn(MailAddr(7), InitBehavior::Immediate)
+        .spawn(Actor::new(MailAddr(7), InitBehavior::Immediate))
         .expect("rollback must leave the address available");
     assert!(matches!(
         replacement.outcome().await,
@@ -1353,14 +1370,18 @@ impl Behavior for InitBehavior {
 async fn immediate_completion_is_published_once_before_it_can_be_missed() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router);
-    let task = system.spawn(MailAddr(1), InitBehavior::Immediate).unwrap();
+    let task = system
+        .spawn(Actor::new(MailAddr(1), InitBehavior::Immediate))
+        .unwrap();
     let retired = task.actor_ref().clone();
     assert!(matches!(
         task.outcome().await,
         TaskOutcome::Returned(Ok(RunExit::Stopped(Exit::Normal)))
     ));
     assert!(retired.send(MailAddr(0), 1).await.is_err());
-    let replacement = system.spawn(MailAddr(1), InitBehavior::Immediate).unwrap();
+    let replacement = system
+        .spawn(Actor::new(MailAddr(1), InitBehavior::Immediate))
+        .unwrap();
     assert!(matches!(
         replacement.outcome().await,
         TaskOutcome::Returned(Ok(RunExit::Stopped(Exit::Normal)))
@@ -1371,22 +1392,30 @@ async fn immediate_completion_is_published_once_before_it_can_be_missed() {
 async fn panic_and_cancellation_are_distinct_terminal_publications() {
     let router = AddressRouter::default();
     let system = System::new(MailboxConfig::bounded(1), router);
-    let panicked = system.spawn(MailAddr(1), InitBehavior::Panic).unwrap();
+    let panicked = system
+        .spawn(Actor::new(MailAddr(1), InitBehavior::Panic))
+        .unwrap();
     let panicked_ref = panicked.actor_ref().clone();
     assert!(matches!(panicked.outcome().await, TaskOutcome::Panicked));
     assert!(panicked_ref.send(MailAddr(0), 1).await.is_err());
-    let after_panic = system.spawn(MailAddr(1), InitBehavior::Immediate).unwrap();
+    let after_panic = system
+        .spawn(Actor::new(MailAddr(1), InitBehavior::Immediate))
+        .unwrap();
     assert!(matches!(
         after_panic.outcome().await,
         TaskOutcome::Returned(Ok(RunExit::Stopped(Exit::Normal)))
     ));
 
-    let cancelled = system.spawn(MailAddr(2), InitBehavior::Pending).unwrap();
+    let cancelled = system
+        .spawn(Actor::new(MailAddr(2), InitBehavior::Pending))
+        .unwrap();
     let cancelled_ref = cancelled.actor_ref().clone();
     cancelled.abort();
     assert!(matches!(cancelled.outcome().await, TaskOutcome::Cancelled));
     assert!(cancelled_ref.send(MailAddr(0), 1).await.is_err());
-    let after_cancel = system.spawn(MailAddr(2), InitBehavior::Immediate).unwrap();
+    let after_cancel = system
+        .spawn(Actor::new(MailAddr(2), InitBehavior::Immediate))
+        .unwrap();
     assert!(matches!(
         after_cancel.outcome().await,
         TaskOutcome::Returned(Ok(RunExit::Stopped(Exit::Normal)))
@@ -1400,11 +1429,14 @@ async fn retained_completion_cannot_alias_a_replacement_incarnation() {
     let old_exit = Exit::LinkDied(MailAddr(10));
     let replacement_exit = Exit::LinkDied(MailAddr(20));
     let old = system
-        .spawn(MailAddr(7), InitBehavior::Distinct(old_exit))
+        .spawn(Actor::new(MailAddr(7), InitBehavior::Distinct(old_exit)))
         .unwrap();
 
     let replacement = loop {
-        match system.spawn(MailAddr(7), InitBehavior::Distinct(replacement_exit)) {
+        match system.spawn(Actor::new(
+            MailAddr(7),
+            InitBehavior::Distinct(replacement_exit),
+        )) {
             Ok(replacement) => break replacement,
             Err(_) => yield_now().await,
         }
@@ -1485,7 +1517,10 @@ async fn lifecycle_facts_follow_the_exact_incarnation_edges() {
         recorder.clone(),
     );
     let handle = system
-        .spawn(MailAddr(7), Compose::new(Stop).stop_on_shutdown().build())
+        .spawn(Actor::new(
+            MailAddr(7),
+            Compose::new(Stop).stop_on_shutdown().build(),
+        ))
         .unwrap();
 
     yield_now().await;
@@ -1528,7 +1563,9 @@ async fn reused_logical_address_gets_a_distinct_lifecycle_identity() {
     );
 
     for _ in 0..2 {
-        let handle = system.spawn(MailAddr(7), InitBehavior::Immediate).unwrap();
+        let handle = system
+            .spawn(Actor::new(MailAddr(7), InitBehavior::Immediate))
+            .unwrap();
         assert!(matches!(
             handle.outcome().await,
             TaskOutcome::Returned(Ok(RunExit::Stopped(Exit::Normal)))
@@ -1562,7 +1599,7 @@ async fn panicking_lifecycle_sink_cannot_disrupt_actor_retirement() {
         PanickingLifecycleSink,
     );
     let handle = system
-        .spawn(MailAddr(7), InitBehavior::Immediate)
+        .spawn(Actor::new(MailAddr(7), InitBehavior::Immediate))
         .expect("instrumentation failure must not fail preparation");
 
     assert!(matches!(
@@ -1570,7 +1607,7 @@ async fn panicking_lifecycle_sink_cannot_disrupt_actor_retirement() {
         TaskOutcome::Returned(Ok(RunExit::Stopped(Exit::Normal)))
     ));
     let replacement = system
-        .spawn(MailAddr(7), InitBehavior::Immediate)
+        .spawn(Actor::new(MailAddr(7), InitBehavior::Immediate))
         .expect("instrumentation failure must not strand the registration");
     assert!(matches!(
         replacement.outcome().await,
@@ -1587,7 +1624,7 @@ async fn failed_marked_creation_emits_no_restart_for_the_rejected_installation()
         recorder.clone(),
     );
     let root = system
-        .spawn(MailAddr(1), DuplicateReplacementParent)
+        .spawn(Actor::new(MailAddr(1), DuplicateReplacementParent))
         .unwrap();
 
     assert!(matches!(
