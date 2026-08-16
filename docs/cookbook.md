@@ -1,209 +1,66 @@
-# Bombay composition cookbook
+# Driver integration guide
 
-This cookbook targets the packages currently named `bombay` and
-`bombay-framework`. The project intends to adopt the Bombay name; package
-names in commands and source links below describe the current workspace, while
-the ownership and outcome recipes are rename-independent.
+This guide describes the accepted direct-Behavior boundary. Earlier Bombay
+facade recipes using `Compose::new`, `RunExit`, `RunError`, `RuntimeEffects`, or
+split Driver lifecycle phases are superseded and have been removed.
 
-Every recipe points to an executable example or focused test. The referenced
-program is the recipe: this document does not maintain a second, drifting copy
-of its code.
+## Behavior authors
 
-## Ownership at a glance
+Construct a Behavior normally and pass the inferred final value to a future
+typed construction layer:
 
-| Desired outcome | Owner |
-|---|---|
-| Turn an event into typed effects and a next state | Bombay Behavior |
-| Preserve priority/control and bounded/user mailbox laws | Bombay Communication |
-| Resolve a logical address to the live typed endpoint | Bombay Address |
-| Publish and await one exact incarnation's terminal result | Bombay Observe |
-| Schedule, replace, cancel, and reject stale keyed timers | Bombay Timers |
-| Spawn, interpret effects, retain resources, and retire an incarnation | bombay runtime composition |
-| Choose request correlation, retry, admission, or reporting policy | application or optional library |
+```rust,ignore
+let behavior = machine
+    .stash(route)
+    .deadline(timer_id, deadline, on_elapsed);
 
-## Typed heterogeneous effects
-
-Use a named send struct for multiple effect lanes. Implement `SendAlgebra`,
-then implement `SendInput` once for each semantic lane and emit through typed
-`SendAlgebra::send`. Wrapper- and application-owned names replace positional
-product paths. Each `Delivery<B>` names its destination behavior, so identical
-address and message types remain statically distinct. `RouteSends` and
-`ObservesCreations` belong at the runtime adapter boundary, not in domain
-behavior. The job-queue example shows the complete named-lane pattern.
-
-## Pure fold and typed delivery
-
-Use `#[behavior::behavior(...)]` over inherent `init` and `receive` methods for
-an ordinary user-message fold. Implement `Behavior` directly for service-event
-protocols and semantic wrappers. Build lifecycle composition with
-`Compose::new`, and pass the resulting definition to `Actor::from_definition`;
-plain unwrapped behaviors may still use `Actor::new`.
-Pair the behavior with its address using `Actor::new`, then use `System::spawn`
-once to install that actor. Retain the affine `Handle` as lifecycle authority,
-and clone its typed `ActorRef` for delivery. The inert `Actor` and its behavior
-perform no I/O and store no runtime handle.
-
-The facade's current `local_system!(mailbox = ..., routes = ...)` form is a
-compatibility constructor while E5 removes application-owned routing. It
-expands directly to `System::new` and adds no second spawn path.
-
-Executable recipe: [`hello.rs`](../crates/bombay/examples/hello.rs).
-
-```text
-nix develop -c cargo run -p bombay-rs --example hello
+spawn(behavior)?;
 ```
 
-The observable outcome is a typed message fold followed by
-`TaskOutcome::Returned(Ok(RunExit::Stopped(Exit::Normal)))`. Behavior owns the
-fold and stop decision; Communication owns mailbox admission; Address and
-bombay jointly route to the live incarnation; bombay owns execution and
-completion normalization.
+Users do not name nested wrapper types, construct a Driver environment, inspect
+action-product nesting, or implement routing algebra. Supervision, pools,
+timers, observation, shutdown, and other templates remain Behavior-owned typed
+composition.
 
-## Typed reply-to and deadline
+## Adapter authors
 
-Put a typed `Recipient<ReplyBehavior>` in the application request. The callee
-emits an ordinary `Delivery` to that recipient. If the application needs a
-deadline, compose Bombay Behavior's `Deadline`; a late reply remains an
-ordinary explicit application event.
+One generic adapter constructs a concrete `Environment<B>` and passes the
+inferred Behavior directly to `Driver::new`. The Driver then:
 
-Executable recipe: [`reply_to_oracle.rs`](../crates/bombay/tests/reply_to_oracle.rs).
+1. consumes `B` through `Activate::initialize()` exactly once;
+2. applies the complete initialization `ActionsOf<B>` before acquiring input;
+3. acquires one `B::Event`, folds `Active<B>` once, and applies the complete
+   successful `ActionsOf<B>` once;
+4. waits only for that local application before acquiring another event;
+5. stops after final actions or reports permanent input exhaustion; and
+6. waits for the environment retirement barrier before ordinary return.
 
-```text
-nix develop -c cargo test -p bombay-rs --test reply_to_oracle
-```
+The environment statically owns event conversion and action interpretation.
+Unsupported capability combinations fail through trait bounds. It may preserve
+factual partial commits in its typed error, but the Driver performs no retry or
+rollback.
 
-The four oracles cover a successful typed reply, deadline followed by a late
-reply, observation installed before request delivery, and delivery failure to
-a retired reply target. They deliberately define no framework request ID,
-correlation ID, call registry, or late-reply policy. Applications that need
-correlation put their chosen domain value in their own message, or plug in a
-separate adapter above bombay.
+## Outcome vocabulary
 
-## Children and transactional creation
+- `Ok(Completion::Stopped)` means the Behavior explicitly stopped and its final
+  actions were successfully applied.
+- `Ok(Completion::Exhausted)` means the environment permanently exhausted its
+  event source without synthesizing another Behavior event.
+- `Err(DriverError::Behavior(error))` preserves the controlled Behavior error.
+- `Err(DriverError::Environment(error))` preserves the action-application
+  error, including any environment-defined committed-prefix facts.
+- Panic and cancellation are not converted into Driver results. The future
+  incarnation owner classifies them after Driver-owned values are dropped.
 
-Emit Bombay Behavior `Create` values from the behavior's birth lane. bombay
-prepares the child, interprets initialization effects, registers the endpoint,
-and commits the affine child lease only when all preceding work succeeds.
+## Ownership boundary
 
-Executable recipes:
+The Driver owns only the universal causal turn boundary. A concrete environment
+owns heterogeneous capability interpretation. A future Bombay incarnation owns
+address generation, task lifetime, cancellation classification, and terminal
+publication. A later layer will own transactional construction and
+publication; the current core deliberately does not prescribe its object
+model.
 
-```text
-nix develop -c cargo test -p bombay-rs --test creation_oracle
-nix develop -c cargo test -p bombay-rs --test lifecycle_oracle parent_retains_created_child_handle_while_parent_is_live
-```
-
-The outcomes distinguish recoverable observed rejection from fatal unobserved
-failure, prove rollback and nonce reuse, and prove that parent ownership—not an
-address-table reference count—keeps the child alive.
-
-## Timers and receive timeout
-
-Compose `Deadline` for an absolute application deadline or `ReceiveTimeout`
-for inactivity. Behavior owns the typed timer protocol and rearming decision;
-Timers owns the keyed queue; bombay drives the queue and injects the event
-into the exact live incarnation.
-
-Executable recipes:
-
-```text
-nix develop -c cargo test -p bombay-rs --test lifecycle_oracle typed_behavior_timer_fires_through_the_incarnation
-nix develop -c cargo test -p bombay-rs --test lifecycle_oracle successful_user_fold_replaces_the_live_receive_timeout_generation
-nix develop -c cargo test -p bombay-rs --test lifecycle_oracle nested_timers_at_the_same_deadline_keep_distinct_identities
-```
-
-A receive timeout is rearmed only by a successful continuing user fold.
-Service traffic is not receive activity, and stale timer generations are inert.
-
-## Observation
-
-Use Behavior's typed observation intent and let bombay connect it to
-Observe's exact-generation terminal publication. Installing observation
-before a delivery when causality matters is an application-level ordering
-choice expressed by the ordered send algebra.
-
-Executable recipes:
-
-```text
-nix develop -c cargo test -p bombay-rs --test lifecycle_oracle child_observation_reports_the_exact_spawned_generation
-nix develop -c cargo test -p bombay-rs --test lifecycle_oracle watching_receives_the_exact_peers_normalized_outcome
-nix develop -c cargo test -p bombay-rs --test lifecycle_oracle retained_completion_cannot_alias_a_replacement_incarnation
-```
-
-Observation does not retain peer liveness. A reused logical address cannot
-alias the retained completion of an older registration generation.
-
-## Supervision and restart
-
-Compose Bombay Behavior's `Supervisor` and `Proxy`. Behavior owns restart
-strategy, policy, budget, and stable topology. bombay executes the emitted
-create, observe, route, and retirement effects without adding supervision
-policy.
-
-Executable recipes:
-
-```text
-nix develop -c cargo test -p bombay-framework --example local_runtime
-nix develop -c cargo test -p bombay-rs --test lifecycle_oracle supervision_escalation_retires_and_releases_the_complete_tree
-```
-
-The reference application proves a failed worker is replaced while typed
-delivery, timers, observation, and shutdown continue to compose. The focused
-oracle proves escalation retires and releases the whole tree.
-
-## Coordinated shutdown
-
-Wrap the root behavior with `StopOnShutdown` or a finalizing shutdown behavior.
-The root `Handle` retains shutdown authority. bombay sends the typed priority
-request, preserves final effects, requests descendant shutdown, awaits
-transitive retirement, and publishes root completion last.
-
-Executable recipes:
-
-```text
-nix develop -c cargo test -p bombay-rs --test lifecycle_oracle graceful_shutdown_preempts_user_backlog_and_interprets_final_effects
-nix develop -c cargo test -p bombay-rs --test lifecycle_oracle root_shutdown_awaits_transitive_child_retirement
-```
-
-Dropping ordinary actor references is not shutdown policy.
-
-## At-least-once job retry
-
-Keep pending and outstanding jobs in application behavior state. On a typed
-`WorkerStopped` event, return the outstanding job to the queue and mark its
-slot unavailable. Dispatch the retry only after the corresponding typed
-`WorkerCreationResolved` confirms that the proxy has installed a routable
-replacement; forwards during installation are deliberately inert.
-
-Executable recipe: [`job_queue.rs`](../crates/bombay-framework/examples/job_queue.rs).
-
-The same executable also drives one immediate Behavior deadline through the
-production timer interpreter and awaits its normal retirement. Typed routing,
-children, supervision observation, timers, retry/backoff, admission refusal,
-graceful draining, reply-to/reporting, deadline behavior, and coordinated
-shutdown are therefore exercised in one application.
-
-```text
-nix develop -c cargo run -p bombay-framework --example job_queue
-```
-
-The example proves no-loss accounting across normal completion, terminal
-failure, and a worker that fails once. Retry ownership stays in the
-application; bombay has no retry manager or job domain.
-
-The same executable now demonstrates graceful draining. The queue composes
-Behavior's existing typed shutdown and timer event lanes around its existing
-supervision protocol. Once draining begins, accepted pending and outstanding
-jobs retain their ordinary accounting, later submissions are returned in the
-final report as refused, and grace expiry moves each remaining accepted job to
-the abandoned set exactly once. Completed and abandoned sets are disjoint;
-bombay adds no drain state, command, task, or timer mechanism.
-
-## Deliberate exclusions
-
-The local runtime does not own registries beyond typed local endpoint
-resolution, request/reply policy, correlation identity, dynamic message
-erasure, persistence, streams, pub/sub, pools, retry/backoff, remote transport,
-durable identity, or authentication. Add one above the runtime only when a
-concrete consumer supplies its invariant and lifecycle owner. Do not place
-runtime handles, channels, I/O, or clocks inside a pure Behavior merely to
-imitate an API from another actor system.
+See [`driver-law.md`](driver-law.md) for the normative laws and
+[`driver-test-strategy.md`](driver-test-strategy.md) for executable evidence
+requirements.

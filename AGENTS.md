@@ -17,13 +17,13 @@ Record the cross-crate findings and exact ownership mapping in `docs/open-design
 ### Behavior Effect Composition
 
 Before modifying behavior effects, derive the implementation from the exact
-locked Bombay Behavior API and its current tests. Do not preserve or introduce
-positional `SendProduct` traversal such as `.inner`, `.own`, or nested direct
+locked Bombay Behavior and Behavior Actors APIs and their current tests. Do
+not preserve or introduce positional effect-product traversal or nested direct
 lane mutation in application behavior. Compose heterogeneous lanes with
-Behavior's existing `SendProduct`, define semantic `Own`/`Inner<Path>` aliases,
-and emit effects through typed `SendAlgebra::send`. Do not handwrite
+Behavior Actors' named semantic send structs and emit effects through typed
+`SendAlgebra::send`. Do not handwrite
 application `SendAlgebra`, `SendInput`, `RouteSends`, `ObservesCreations`, or
-product-routing error implementations when Behavior's recursive product and
+product-routing error implementations when Behavior Actors' named products and
 bombay's generic interpreter cover the leaves. Keep application
 `DeliveryRouter<A, M>` implementations because those select real endpoints.
 Audit the entire repository—not merely the touched file—for obsolete

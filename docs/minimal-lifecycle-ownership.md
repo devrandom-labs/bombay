@@ -1,111 +1,91 @@
-# Minimal actor lifecycle and ownership
+# Minimal lifecycle ownership
 
-This is the ownership oracle for bombay's composed runtime. It describes
-resources, not a public lifecycle framework or supervision policy.
+This document describes the implemented layers only. General observation and
+external lifecycle-handle layers are deliberately not designed here.
 
-## Smallest state machine
+## Current stack
 
 ```text
-Absent --prepare--> Prepared --publish and start--> Live --terminal--> Absent
-   ^                    |                               |
-   |                    +-----------rollback-----------+
-   +--------------------------cleanup------------------+
+Behavior
+  -> bombay-engine::Driver
+  -> crate-private LocalEnvironment
+  -> crate-private ActiveLocalEnvironment
+  -> bombay::core::Incarnation
+  -> LocalActors::spawn on Tokio -> ActorRef
 ```
 
-`Prepared` remains transaction-local and carries no external capability. An
-optional sink can observe completed transition facts, but those facts confer no
-state access or authority. Completion publication and address release
-are ordered terminal actions, not durable states: no operation may interleave
-between them on behalf of the retired generation. `Claimed`, `Running`,
-`Closing`, `Completed`, and `Released` remain decorative as runtime states
-because no ownership transfer or operation exists at those boundaries.
+The Driver consumes one Behavior and one coherent typed environment. Its only
+lifecycle operation is consuming `Driver::run`: initialize once, consume the
+prepared environment to activate with the complete initialization actions,
+then acquire one event, fold once, and commit once per turn through the active
+environment.
 
-Each spawned incarnation executes the same transaction. A later incarnation at
-the same address is a new transaction and cannot inherit the old mailbox,
-timer, task, endpoint, or completion generation.
+The Incarnation consumes one already-constructed Driver and one affine
+`Retirement` capability. Its only operation is consuming `Incarnation::run`.
+It preserves the Driver result, classifies panic and cancellation, drops all
+Driver-owned values, and then invokes retirement exactly once with the exact
+`IncarnationOutcome`.
+
+LocalEnvironment is prepared. It commits initialization, claims the exact
+Address endpoint, and returns the only active value that permits ingress.
+
+```text
+owned Driver + Retirement
+          |
+          v
+   Incarnation::run
+          |
+          +-- Completed(Stopped | Exhausted)
+          +-- BehaviorFailed(error)
+          +-- ActivationFailed(error)
+          +-- EnvironmentFailed(error)
+          +-- Panicked
+          `-- Cancelled
+          |
+          v
+ Driver values dropped -> Retirement::retire(outcome)
+```
+
+Cancellation means dropping the running Incarnation future. A private affine
+terminal guard distinguishes that path from panic unwind. There is no public
+prepare, initialize, loop, finish, reset, poison-recovery, or retirement phase.
 
 ## Ownership table
 
-| Resource | Absent | Prepared (not externally visible) | Live | Terminal transition |
-|---|---|---|---|---|
-| bombay-address lease | none | spawn transaction | actor-task retirement guard | exact lease drops before terminal publication |
-| bombay-communication counting user handle | none | prospective edge `Handle` | every cloned edge `Handle`; parent child capability when applicable | all are dropped/rejected; last edge closes user lane |
-| bombay-communication non-owning user anchor | none | prospective lease endpoint | bombay-address entry | removed by exact lease; never keeps user lane open |
-| bombay-communication consumer and queued items | none | spawn transaction | actor task | actor task drops consumer; queued items and blocked producers are released |
-| bombay-timers queue | none | empty incarnation-local queue | actor environment | dropped with the environment before terminal publication |
-| application driver | none | prospective `Driver { Behavior, Environment }` | `Incarnation` | retires the environment on ordinary return; drops with the incarnation on unwind/cancellation |
-| Tokio actor task | none | future not started | Tokio runtime; represented by abort authority and private `Completion` | task termination proves all future-owned values have dropped; it does not classify actor semantics |
-| abort authority | none | prospective runtime `Handle` | runtime `Handle` | remains useful until Tokio reports terminal outcome |
-| bombay-observe subject | none | spawn transaction | actor-task retirement guard | completed exactly once, then subject releases its generation |
-| bombay-observe observation | none | prospective runtime `Handle` | private seat inside `Completion` | retains only the captured outcome generation, never runtime resources |
-| child lease | none | prospective parent-owned runtime lease | parent actor environment; observation transfers only its completion seat | dropped after observed completion or with the parent; failed child birth adds no lease and leaves its nonce reservation |
-| lifecycle reporter | none | optional value derived after exact registration | actor reference, task entry, and retirement guard | emits completed facts only; owns no lifecycle resource |
+| Resource | Owner |
+|---|---|
+| pure state transition and typed actions | Behavior |
+| one causal execution and ordinary completion/error classification | Driver |
+| initialize-before-address-claim ordering | LocalEnvironment activation |
+| panic/cancellation classification and post-drop retirement notification | Incarnation |
+| concrete capability interpretation and resources | the Driver's environment |
+| one selected local address, typed user endpoint, and two-lane mailbox | LocalEnvironment -> ActiveLocalEnvironment |
+| one Tokio task and post-activation typed reference handoff | LocalActors::spawn |
+| outward lifecycle handles, general routing, timers, and observation input | no implemented layer yet |
 
-## Transaction and terminal order
-
-Spawn prepares the observation subject, mailbox, generation-bound endpoint,
-empty timer queue, and child capability before exposing an edge or starting
-user code. Claiming the address is the publication point. `Prepared` is emitted
-only after that claim and reporter derivation. Any failure before task
-start drops the prepared resources in reverse ownership order and starts no
-task. Once claimed, task start cannot fail under Tokio's synchronous spawn API.
-
-Terminal cleanup is composed inside one actor task from two independently
-tested, declaration-ordered fields:
-
-1. the `Driver` retires its environment on ordinary return; cancellation or
-   panic drops the driver and its mailbox consumer, timer queue, and child capabilities;
-2. its `TerminalRetirement` guard classifies an explicit return, panic unwind,
-   or ordinary cancellation drop;
-3. the guard releases the exact Bombay Address lease;
-4. it emits `Retired`;
-5. the guard publishes both fully retired outcomes through Bombay Observe;
-6. it emits `Completed`;
-7. only then can Tokio task termination release `Completion::wait`; the actor
-   outcome itself comes from the already completed Observe generation.
-
-Abort authority may remain privately owned by a `Handle`, but it is exposed
-only through the `abort` operation, is powerless after executor termination,
-and is not part of incarnation cleanup.
-
-The externally important edge is `release address -> publish completion`, as
-required by `docs/runtime-blocks.md`. Cleanup and release before publication
-ensure every observation denotes a fully retired incarnation: stale timers and
-blocked deliveries can no longer mutate it, and its address is already
-available for a replacement.
+Incarnation does not own an address, generation value, mailbox, scheduler,
+task handle, abort authority, observation subject, timer queue, child policy,
+or capability registry. A later layer may close the remaining generation and
+transaction laws by supplying a concrete `Retirement` implementation and by
+constructing an Incarnation, but it must not split or duplicate Driver or
+Incarnation lifecycle control.
 
 ## Current invariants
 
-- A collision or injected preparation failure starts no task and restores the
-  pre-spawn resource counts.
-- Immediate return and panic cannot outrun mailbox, address, or observation
-  preparation.
-- Return, panic, and abort publish exactly once and retire only their captured
-  generations.
-- The registry anchor cannot prevent last-edge closure.
-- Consumer retirement wakes blocked sends and returns/rejects their payloads.
-- Bombay retains Communication's control sender only to publish the
-  Behavior-owned typed shutdown event; it defines no control event itself.
-- Replacing a keyed schedule invalidates its older generation; dropping the
-  incarnation prevents every pending expiration from being observed.
-- No mailbox, timer, task, endpoint, completion, or child resource is
-  transferred between address incarnations.
-- Child preparation failure removes only transaction-local child resources.
-- Observing a child takes only its exact completion seat. Its liveness lease
-  remains in the parent scope for coordinated shutdown and retirement.
-- Every child receives only its creating parent's non-owning event edge and
-  its fresh nonce beneath that parent. A worker report stamps that nonce and
-  preserves the Behavior-provided outcome and timestamp; parent closure makes
-  the report inert.
-- A child nonce leaves a tombstone for the full parent incarnation. Address
-  retirement never makes that actor identity fresh again.
-- Reusing a logical address produces a distinct Address-owned registration
-  identity; all facts for one incarnation carry that exact identity.
-- Instrumentation failure cannot alter preparation, execution, retirement, or
-  completion.
-- After the last observation is dropped, all mailbox, timer, task, endpoint,
-  completion, and child resources can return to baseline.
+- one Incarnation can execute only its one consumed Driver;
+- successful stop and source exhaustion remain distinct;
+- Behavior and environment failures remain distinct and preserve their values;
+- panic and cancellation remain distinct;
+- Driver-owned values drop before retirement is called;
+- retirement is invoked exactly once on every terminal path;
+- no current public API exposes a second execution or lifecycle path; and
+- a complete Incarnation run adds no allocation of its own.
+- activation hands launch the exact published reference without resolving the
+  address a second time; and
+- the local environment forwards every Behavior-owned birth product unchanged.
 
-Supervision strategy and restart budgets remain pure Behavior policy. Remote
-discovery, persistence, distributed transport, lifecycle hooks, fact storage,
-formatting, and export are deliberately outside this state machine.
+Replacement, terminal observation, cancellation control, and heterogeneous
+construction remain later-layer obligations. The launch slice proves one
+selected generation's mailbox admission, address publication, Tokio launch,
+and typed-reference handoff; it is not evidence for handle, hierarchy, or
+System laws.

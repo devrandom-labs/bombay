@@ -1,0 +1,53 @@
+error[E0599]: no method named `prepare` found for struct `Driver<B, E>` in the current scope
+ --> tests/compile/fail/no_lifecycle_controls.rs:5:24
+  |
+5 |         let _ = driver.prepare();
+  |                        ^^^^^^^ method not found in `Driver<B, E>`
+
+error[E0599]: no method named `run_init` found for struct `Driver<B, E>` in the current scope
+ --> tests/compile/fail/no_lifecycle_controls.rs:6:24
+  |
+6 |         let _ = driver.run_init();
+  |                        ^^^^^^^^ method not found in `Driver<B, E>`
+
+error[E0599]: no method named `run_loop` found for struct `Driver<B, E>` in the current scope
+ --> tests/compile/fail/no_lifecycle_controls.rs:7:24
+  |
+7 |         let _ = driver.run_loop();
+  |                        ^^^^^^^^ method not found in `Driver<B, E>`
+
+error[E0599]: no method named `retire` found for struct `Driver<B, E>` in the current scope
+ --> tests/compile/fail/no_lifecycle_controls.rs:8:24
+  |
+8 |         let _ = driver.retire();
+  |                        ^^^^^^ method not found in `Driver<B, E>`
+
+error[E0599]: no method named `recover` found for struct `Driver<B, E>` in the current scope
+ --> tests/compile/fail/no_lifecycle_controls.rs:9:24
+  |
+9 |         let _ = driver.recover();
+  |                        ^^^^^^^ method not found in `Driver<B, E>`
+
+error[E0599]: no method named `reset` found for struct `Driver<B, E>` in the current scope
+  --> tests/compile/fail/no_lifecycle_controls.rs:10:24
+   |
+10 |         let _ = driver.reset();
+   |                        ^^^^^ method not found in `Driver<B, E>`
+
+error[E0599]: no method named `restart` found for struct `Driver<B, E>` in the current scope
+  --> tests/compile/fail/no_lifecycle_controls.rs:11:24
+   |
+11 |         let _ = driver.restart();
+   |                        ^^^^^^^ method not found in `Driver<B, E>`
+
+error[E0599]: no method named `reuse` found for struct `Driver<B, E>` in the current scope
+  --> tests/compile/fail/no_lifecycle_controls.rs:12:24
+   |
+12 |         let _ = driver.reuse();
+   |                        ^^^^^ method not found in `Driver<B, E>`
+
+error[E0599]: no method named `clear_poison` found for struct `Driver<B, E>` in the current scope
+  --> tests/compile/fail/no_lifecycle_controls.rs:13:24
+   |
+13 |         let _ = driver.clear_poison();
+   |                        ^^^^^^^^^^^^ method not found in `Driver<B, E>`

@@ -1,6 +1,8 @@
 # Bombay runtime blocks
 
-Bombay is the live composition kernel. It does not reimplement the generic
+Bombay is the intended composition kernel around the direct Driver. Its current
+adapter predates that Driver and is awaiting overhaul; it is not authoritative
+for Engine design. The target composition does not reimplement the generic
 correctness mechanisms on which actor execution relies.
 
 This is a kernel boundary, not a claim that every useful framework capability
@@ -18,15 +20,16 @@ invariant proves a helper is necessary.
 | bombay-address | Local live address ownership and resolution | Remote discovery |
 | bombay-observe | Generation-safe completion publication and observation | Supervision policy |
 | bombay-timers | Keyed generation-safe scheduling | Deadline policy |
-| bombay | Task ownership, effect interpretation, and typed composition | The algorithms above |
+| bombay::core | One local mailbox/address incarnation, Tokio launch, and typed live reference | System policy, generic scheduling, hierarchy, or remote routing |
 | Nexus | CQRS durability and aggregate reconstruction | Live actor presence |
 | Zenoh | Distributed routing, query, and liveliness | Aggregate ordering |
 | KERI | Controller identity, authority, and provenance | Local actor designation |
 
 Behavior effect composition crosses this boundary in one direction: pure
 named send algebras are populated through semantic `SendInput` implementations,
-then bombay passes their fields to runtime services or `DeliveryRouter` in fold
-order. Positional product mutation is outside the supported composition.
+then a concrete environment interprets the complete Behavior-owned action
+value. The Driver neither traverses products nor implements routing algebra.
+Positional product mutation is outside the supported composition.
 
 ## Names at the distributed boundary
 
@@ -54,6 +57,7 @@ termination: release address -> publish completion
 deadline:    schedule -> expire -> enqueue event -> fold next turn
 ```
 
-Integration uses narrow typed capability seats rather than a universal dynamic
-plugin registry. Standard constructors may hide the composed concrete types,
-but bombay must not use `Any` or trait-object message routing to do so.
+Future integration must use narrow typed capability seats rather than a
+universal dynamic plugin registry. `LocalActors<B>` is only a typed local
+namespace, not a universal construction object. Later composition must not use
+`Any` or trait-object message routing.

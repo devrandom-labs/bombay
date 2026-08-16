@@ -1,76 +1,94 @@
 # bombay
 
-Bombay is a statically typed runtime composition for pure actor behaviors.
-It connects five independently owned primitives:
+Bombay is being rebuilt around a universal direct-Behavior Driver, one runtime
+ownership layer at a time. The old facade, System, mailbox/routing adapters,
+examples, benchmarks, fuzz target, and integration tests have been removed.
 
-- `behavior` supplies the deterministic Agha-style behavior algebra;
-- Bombay Communication supplies the bounded, two-lane mailbox;
-- Bombay Address supplies exact-generation address ownership and routing;
-- Bombay Observe and Bombay Timers supply completion and deadline primitives.
+The Driver accepts an inferred, closed Bombay Behavior value and one concrete
+typed environment:
 
-Bombay owns the composition: `System::spawn`, transactional
-`System::activate`, actor execution, effect interpretation, child liveness,
-delivery, cancellation, and ordered incarnation retirement. It does not own supervision policy, discovery registries,
-request/reply, persistence, or remote transport.
+```text
+Behavior definition
+  -> Activate::initialize exactly once
+  -> Environment::activate with complete initialization ActionsOf<B>
+  -> receive one affine ActiveEnvironment
+  -> acquire one B::Event
+  -> Active<B>::transition exactly once
+  -> ActiveEnvironment::apply complete ActionsOf<B> exactly once
+  -> repeat, stop, or exhaust input
+  -> consume ActiveEnvironment::retire before ordinary return
+```
 
-The `bombay-framework` prelude is the application-facing entry point. The
-canonical ceremony is:
+Its technical integration surface is deliberately limited to
+`Driver<B, E>`, `Environment<B>`, `ActiveEnvironment<B>`, `ActionsOf<B>`,
+`Completion`, and `DriverError`. It owns no address, mailbox policy, routing,
+capability registry, template semantics, incarnation identity, or terminal
+publication.
+
+The first Bombay-owned layer is one incarnation:
 
 ```rust,ignore
-use bombay_framework::prelude::*;
-
-let system = System::new(MailboxConfig::bounded(32), router);
-let behavior = Spec::new(state).stop_on_shutdown();
-let actor = Actor::new(address, behavior);
-let handle = system.spawn(actor)?;
-handle.actor_ref().send(from, message).await?;
-handle.actor_ref().request_shutdown()?;
-let outcome = handle.outcome().await;
+let driver = Driver::new(behavior, environment);
+let incarnation = Incarnation::new(driver, retirement);
+incarnation.run().await;
 ```
 
-Run the complete typed example with:
+`Incarnation` owns exactly one Driver and one `Retirement` capability. It
+classifies successful completion, exact Behavior/activation/active-environment
+failure, panic, and cancellation, and invokes retirement only after
+Driver-owned values have been dropped. It owns no identity, construction,
+executor, handle, routing, timer, observation, or child policy.
+
+The crate-private local environment is the one concrete preparation path over
+Bombay Communication and Address. It commits initialization actions and claims
+the exact typed endpoint before yielding `ActiveLocalEnvironment`, the only
+value with ingress and the Address lease. It injects user messages through the
+behavior's complete `UserEvent` and treats user-lane closure separately from
+complete mailbox exhaustion. There is no generic activation/publication
+decorator.
+
+The next concrete layer launches that incarnation on Tokio and returns a typed
+reference only after activation succeeds:
+
+```rust,ignore
+let actors = LocalActors::<Tasks>::new(32);
+let tasks = actors
+    .spawn(address, Tasks::new(), |actions| interpret(actions))
+    .await?;
+tasks.send(origin, TaskMessage::Add(task)).await?;
+```
+
+`LocalActors<B>` is only one behavior-indexed address namespace and mailbox
+configuration. `ActorRef<B>` can send the destination behavior's exact message
+protocol but owns no task, receive authority, cancellation, or observation.
+There is still no `System`, public executor abstraction, or lifecycle handle.
+Activation transfers that exact already-published reference directly; it does
+not resolve the address again. The local environment accepts every Behavior
+birth mode and passes the complete action product to the inferred interpreter.
+
+The normative contracts are:
+
+- [`docs/driver-law.md`](docs/driver-law.md)
+- [`docs/driver-test-strategy.md`](docs/driver-test-strategy.md)
+- [`docs/module-boundaries.md`](docs/module-boundaries.md)
+- [`docs/open-design-ledger.md`](docs/open-design-ledger.md)
+
+Focused standalone verification currently runs with:
 
 ```console
-nix develop -c cargo run -p bombay-framework --example local_runtime
+nix develop --command cargo test -p bombay-engine
+nix develop --command cargo test -p bombay-rs --all-targets
+nix develop --command cargo clippy -p bombay-engine --all-targets -- -D warnings
+nix develop --command cargo clippy -p bombay-rs --all-targets -- -D warnings
+nix develop --command cargo fmt --all -- --check
 ```
 
-The reference application is
-[`crates/bombay-framework/examples/local_runtime.rs`](crates/bombay-framework/examples/local_runtime.rs).
-It composes typed delivery, child observation, an absolute timer, a
-receive-timeout inactivity watchdog, stable-proxy restart, coordinated
-shutdown, transitive retirement, and immediate root-tree address reuse in one
-runnable program.
-
-The bombay-native port of Bombay's at-least-once job queue is also runnable:
+The explicit complete law-manifest gate intentionally remains red until the
+later construction/publication and template-runtime layers supply real evidence
+for the deferred rows:
 
 ```console
-nix develop -c cargo run -p bombay-framework --example job_queue
+nix develop --command cargo test -p bombay-engine --test law_manifest -- --ignored
 ```
 
-Its pure queue policy requeues an outstanding poison job from Behavior's
-existing worker-stop event, then lets `Supervising` replace the worker behind
-the same stable proxy. A typed priority shutdown enters a queue-level drain
-phase: accepted work finishes, later work is returned as refused, and the
-existing timer algebra returns work still outstanding at grace expiry as
-abandoned. It uses no registry, framework request/reply API, or runtime drain
-object.
-
-## Typed effect composition
-
-Heterogeneous behavior effects use application- or wrapper-owned named send
-structs. Each struct implements `SendAlgebra` and semantic `SendInput` lanes;
-effects are emitted through typed `SendAlgebra::send`, never positional paths.
-Bombay routes those named fields in fold order, while each `Delivery<B>`
-statically selects its destination behavior. Low-level routing adapters remain
-advanced runtime compatibility infrastructure and are not re-exported by the
-framework prelude.
-
-Active architecture and cleanup work is tracked in
-[`docs/open-design-ledger.md`](docs/open-design-ledger.md). Passing feature
-tests means `feature-complete`, not done. The local-runtime V1 release audit
-has now minimized its types, objects, interfaces, and ownership seams; later
-roadmap slices retain their own feature and milestone distillation gates.
-
-Current runtime boundaries and examples live in `docs/`; historical campaign
-logs and the superseded Bombay implementation are intentionally not carried in
-this repository.
+Those rows are not simulated inside Engine or the incarnation layer.
