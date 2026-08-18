@@ -1,8 +1,8 @@
 use bombay::prelude::*;
 
-struct Basic;
+struct Root;
 
-impl Behavior for Basic {
+impl Behavior for Root {
     type Protocol = behavior::MessageProtocol<MailAddr, Never>;
     type Event = User<MailAddr, Never>;
     type Sends = Vec<Never>;
@@ -20,12 +20,12 @@ impl Behavior for Basic {
 }
 
 application! {
-    topology BasicTopology for Basic {
+    topology RootTopology for Root {
         hosted {}
     }
 }
 
 #[bombay::main]
 fn main() {
-    Basic
+    Root
 }

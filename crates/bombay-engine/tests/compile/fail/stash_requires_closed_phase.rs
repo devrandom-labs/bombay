@@ -1,13 +1,11 @@
 use behavior::{
-    Actions, Behavior, BehaviorActed, Compose, InitializationTurn, MailAddr, Never, NoBirths,
-    User,
+    Actions, Behavior, BehaviorActed, InitializationTurn, MailAddr, Never, NoBirths, Stash, User,
 };
 
 struct OpenPhase;
 
 impl Behavior for OpenPhase {
-    type Addr = MailAddr;
-    type Msg = ();
+    type Protocol = behavior::MessageProtocol<MailAddr, ()>;
     type Event = User<MailAddr, ()>;
     type Sends = Vec<Never>;
     type Ph = u8;
@@ -24,5 +22,5 @@ impl Behavior for OpenPhase {
 }
 
 fn main() {
-    let _ = OpenPhase.stash(|_| behavior::StashRoute::Deliver);
+    let _ = Stash::new(OpenPhase, |_| behavior::StashRoute::Deliver);
 }

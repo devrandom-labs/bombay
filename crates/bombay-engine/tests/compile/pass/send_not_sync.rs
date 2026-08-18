@@ -8,8 +8,7 @@ use bombay_engine::{ActionsOf, ActiveEnvironment, Driver, Environment};
 struct SendNotSync(Cell<u8>);
 
 impl Behavior for SendNotSync {
-    type Addr = MailAddr;
-    type Msg = Box<u8>;
+    type Protocol = behavior::MessageProtocol<MailAddr, Box<u8>>;
     type Event = User<MailAddr, Box<u8>>;
     type Sends = Vec<Never>;
     type Ph = Never;

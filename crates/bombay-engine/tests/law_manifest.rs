@@ -2,62 +2,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Deserialize;
 
-#[allow(unused_imports)]
-use behavior::{
-    Acknowledgements, Barrier, Broadcast, Buffer, Cache, CircuitBreaker, Compose, Configuration,
-    ConsistentHash, Correlator, Deadline, Deduplicator, Features, FinalizeOnShutdown, Health,
-    KeyedWorkerPool, Latch, Lease, LeastLoaded, Machine, OneShot, OrderGate, Periodic, Presence,
-    PriorityQueue, Proxy, PubSub, RateLimiter, Readiness, ReceiveTimeout, Registry, RendezvousHash,
-    Resolver, RoundRobin, Router, Sequencer, Stash, StopOnShutdown, Supervisor, Task, Topic, Watch,
-    WorkQueue, WorkerPool, Workflow,
-};
-
-const ACTORS_EXPORTS: &[&str] = &[
-    "Machine",
-    "Stash",
-    "Task",
-    "Watch",
-    "FinalizeOnShutdown",
-    "StopOnShutdown",
-    "Proxy",
-    "Supervisor",
-    "WorkerPool",
-    "KeyedWorkerPool",
-    "Router<RoundRobin>",
-    "Router<Broadcast>",
-    "Router<LeastLoaded>",
-    "Router<ConsistentHash>",
-    "Router<RendezvousHash>",
-    "WorkQueue",
-    "PriorityQueue",
-    "Buffer",
-    "CircuitBreaker",
-    "RateLimiter",
-    "Correlator",
-    "Acknowledgements",
-    "Sequencer",
-    "OrderGate",
-    "Deduplicator",
-    "Registry",
-    "Resolver",
-    "Presence",
-    "Topic",
-    "PubSub",
-    "Deadline",
-    "ReceiveTimeout",
-    "OneShot",
-    "Periodic",
-    "Lease",
-    "Workflow",
-    "Barrier",
-    "Latch",
-    "Cache",
-    "Health",
-    "Readiness",
-    "Configuration",
-    "Features",
-];
-
 #[derive(Deserialize)]
 struct Manifest {
     schema: u8,
@@ -171,7 +115,6 @@ fn repository_artifacts_are_closed(files: &[(String, String)]) -> bool {
         "System::spawn",
         "PreparedDriver",
         "RunExit",
-        "RunError",
         "RuntimeEffects",
         "runtime_composition",
         "runtime_operations",
@@ -179,11 +122,11 @@ fn repository_artifacts_are_closed(files: &[(String, String)]) -> bool {
     ];
     files.iter().all(|(path, source)| {
         if path == "docs/open-design-ledger.md"
-            || path == "docs/cookbook.md"
+            || path == "docs/historical-design-decisions.md"
             || path == "docs/driver-law.md"
             || path == "crates/bombay-engine/tests/law_manifest.rs"
             || path.starts_with("crates/bombay-engine/tests/compile/")
-            || path == "crates/bombay/src/core/incarnation.rs"
+            || path == "crates/bombay/src/incarnation.rs"
         {
             return true;
         }
@@ -207,9 +150,6 @@ fn manifest() -> Manifest {
 }
 
 fn evidence_source(suite: &str) -> Option<std::path::PathBuf> {
-    if suite == "behavior_actors" {
-        return Some(root().join("tests/behavior_actors_scenarios.rs"));
-    }
     let file = match suite {
         "driver_law" => "driver_law.rs",
         "driver_inversions" => "driver_inversions.rs",
@@ -217,13 +157,13 @@ fn evidence_source(suite: &str) -> Option<std::path::PathBuf> {
         "compile" => "compile.rs",
         "law_manifest" => "law_manifest.rs",
         "incarnation" => {
-            return Some(root().join("crates/bombay/src/core").join("incarnation.rs"));
+            return Some(root().join("crates/bombay/src").join("incarnation.rs"));
         }
         "local" => {
-            return Some(root().join("crates/bombay/src/core").join("local.rs"));
+            return Some(root().join("crates/bombay/src").join("local.rs"));
         }
         "generation" => {
-            return Some(root().join("crates/bombay/src/core").join("generation.rs"));
+            return Some(root().join("crates/bombay/src").join("generation.rs"));
         }
         _ => return None,
     };
@@ -238,46 +178,6 @@ fn test_reference_exists(reference: &str) -> bool {
         return false;
     };
     std::fs::read_to_string(path).is_ok_and(|source| source.contains(&format!("fn {test}(")))
-}
-
-fn attributed_actor_tests(rows: &[serde_json::Value]) -> BTreeSet<String> {
-    let mut attributed = BTreeSet::new();
-    for reference in rows.iter().flat_map(|row| {
-        row["positive"]
-            .as_str()
-            .expect("positive evidence")
-            .split(" + ")
-    }) {
-        assert!(
-            attributed.insert(reference.to_owned()),
-            "Behavior Actors Driver test attributed more than once: {reference}"
-        );
-    }
-    attributed
-}
-
-fn executable_actor_tests() -> BTreeSet<String> {
-    let source = std::fs::read_to_string(
-        evidence_source("behavior_actors").expect("Behavior Actors evidence source"),
-    )
-    .expect("read Behavior Actors evidence");
-    let mut tests = BTreeSet::new();
-    let mut test_attribute = false;
-    for line in source.lines() {
-        let line = line.trim();
-        if line.starts_with("#[tokio::test") {
-            test_attribute = true;
-        } else if test_attribute && line.starts_with("async fn ") {
-            let name = line
-                .trim_start_matches("async fn ")
-                .split('(')
-                .next()
-                .expect("test function name");
-            assert!(tests.insert(format!("behavior_actors::{name}")));
-            test_attribute = false;
-        }
-    }
-    tests
 }
 
 fn assert_test_reference_exists(law: &str, reference: &str) {
@@ -323,60 +223,7 @@ fn every_law_executed(statuses: &[String]) -> bool {
     statuses.iter().all(|status| status == "passing")
 }
 
-fn exact_template_rows(rows: &[&str]) -> bool {
-    rows == ACTORS_EXPORTS && rows.iter().collect::<BTreeSet<_>>().len() == rows.len()
-}
-
 fn validate_shared_evidence(row: &Law) {
-    if matches!(
-        row.law.as_str(),
-        "D-INC-1" | "D-INC-2" | "D-INC-3" | "D-INC-6"
-    ) {
-        assert_eq!(
-            row.negative,
-            "generation::address_collision_rejects_activation_without_replacing_the_live_generation"
-        );
-        assert_eq!(
-            row.boundaries,
-            "local::rejected_initial_commit_exposes_no_endpoint_and_closes_anchor"
-        );
-        assert_eq!(
-            row.adversarial,
-            "generation::panic_and_cancellation_release_address_before_exact_terminal_publication + observer_failure_cannot_change_or_prevent_terminal_publication"
-        );
-        assert_eq!(
-            row.templates,
-            "generation::root_and_child_generations_use_the_same_transactional_activation_path"
-        );
-        assert_eq!(
-            row.command,
-            "cargo test -p bombay-rs --lib core::generation::tests"
-        );
-        return;
-    }
-    if matches!(row.law.as_str(), "D-INC-4" | "D-INC-5") {
-        assert_eq!(
-            row.negative,
-            "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions"
-        );
-        assert_eq!(
-            row.boundaries,
-            "incarnation::source_exhaustion_preserves_its_exact_successful_cause"
-        );
-        assert_eq!(
-            row.adversarial,
-            "incarnation::panic_drops_driver_before_exactly_one_terminal_classification + cancellation_drops_driver_before_exactly_one_terminal_classification"
-        );
-        assert_eq!(
-            row.templates,
-            "law_manifest::template_manifest_matches_selected_actors_exports"
-        );
-        assert_eq!(
-            row.command,
-            "cargo test -p bombay-rs --lib core::incarnation::tests"
-        );
-        return;
-    }
     assert_eq!(
         row.negative,
         "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions"
@@ -391,7 +238,7 @@ fn validate_shared_evidence(row: &Law) {
     );
     assert_eq!(
         row.templates,
-        "law_manifest::template_manifest_matches_selected_actors_exports"
+        "law_manifest::engine_does_not_mirror_actor_template_laws"
     );
     assert_eq!(row.command, "cargo test -p bombay-engine");
 }
@@ -588,7 +435,7 @@ fn manifest_exactly_matches_canonical_law_index() {
     let canonical = canonical_ids();
     assert_eq!(
         canonical.len(),
-        74,
+        68,
         "law-count changes require explicit review"
     );
     let rows: Vec<_> = manifest.laws.iter().map(|row| row.law.clone()).collect();
@@ -662,121 +509,31 @@ fn executes_all_manifest_evidence() {
 }
 
 #[test]
-fn template_manifest_matches_selected_actors_exports() {
+fn engine_does_not_mirror_actor_template_laws() {
     let path = root().join("docs/driver-template-manifest.json");
-    let manifest: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(path).expect("read template manifest"))
-            .expect("parse template manifest");
-    assert_eq!(manifest["schema"], 1);
-    assert_eq!(manifest["crate"], "bombay-behavior-actors");
-    assert_eq!(manifest["version"], "0.12.0");
-
-    let rows = manifest["templates"].as_array().expect("template rows");
-    let row_names: Vec<_> = rows
-        .iter()
-        .map(|row| row["template"].as_str().expect("template name"))
-        .collect();
-    assert!(
-        exact_template_rows(&row_names),
-        "template inventory changed"
-    );
-    let mut names = BTreeSet::new();
-    for row in rows {
-        let template = row["template"].as_str().expect("template name");
-        assert!(names.insert(template), "duplicate template {template}");
-        assert_eq!(
-            row["revision"], "40b39b2605416e3b88427e3289c4dac4568c78e0",
-            "{template} has stale owner revision"
-        );
-        for field in [
-            "family",
-            "revision",
-            "domain",
-            "events",
-            "actions",
-            "composition",
-            "positive",
-            "inversion",
-            "killer",
-            "command",
-            "status",
-        ] {
-            assert!(
-                row[field].as_str().is_some_and(|value| !value.is_empty()),
-                "{template} has empty {field}"
-            );
-        }
-        assert!(matches!(
-            row["status"].as_str(),
-            Some("planned" | "blocked" | "passing")
-        ));
-        let positive = row["positive"].as_str().expect("positive evidence");
-        assert!(
-            positive.starts_with("behavior_actors::"),
-            "{template} must name concrete Driver execution evidence, not an owner-suite placeholder"
-        );
-        for reference in positive.split(" + ") {
-            assert_test_reference_exists(template, reference);
-        }
-
-        assert_eq!(
-            row["killer"], "template_manifest_matches_selected_actors_exports",
-            "{template} must use the canonical inventory killer"
-        );
-        assert_test_reference_exists(
-            template,
-            "law_manifest::template_manifest_matches_selected_actors_exports",
-        );
-    }
+    let manifest: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(path).expect("read template boundary manifest"),
+    )
+    .expect("parse template boundary manifest");
+    assert_eq!(manifest["schema"], 2);
+    assert_eq!(manifest["owner"], "bombay-behavior-actors");
     assert_eq!(
-        attributed_actor_tests(rows),
-        executable_actor_tests(),
-        "every executable Behavior Actors Driver test must be attributed to exactly one manifest inventory"
+        manifest["engine_contract"],
+        "universal Behavior execution only"
     );
-}
-
-#[test]
-fn template_gate_kills_missing_duplicate_renamed_reordered_and_unknown_exports() {
-    assert!(exact_template_rows(ACTORS_EXPORTS));
-
-    let mut missing = ACTORS_EXPORTS.to_vec();
-    missing.pop();
-    assert!(!exact_template_rows(&missing));
-
-    let mut duplicate = ACTORS_EXPORTS.to_vec();
-    duplicate.push(ACTORS_EXPORTS[0]);
-    assert!(!exact_template_rows(&duplicate));
-
-    let mut renamed = ACTORS_EXPORTS.to_vec();
-    renamed[0] = "RenamedCompose";
-    assert!(!exact_template_rows(&renamed));
-
-    let mut reordered = ACTORS_EXPORTS.to_vec();
-    reordered.swap(0, 1);
-    assert!(!exact_template_rows(&reordered));
-
-    let mut unknown = ACTORS_EXPORTS.to_vec();
-    unknown.push("UnknownTemplate");
-    assert!(!exact_template_rows(&unknown));
-}
-
-#[test]
-#[ignore = "explicit completion gate; run with --ignored"]
-fn executes_all_template_evidence() {
-    let path = root().join("docs/driver-template-manifest.json");
-    let manifest: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(path).expect("read template manifest"))
-            .expect("parse template manifest");
-    let incomplete: Vec<_> = manifest["templates"]
-        .as_array()
-        .expect("template rows")
-        .iter()
-        .filter(|row| row["status"] != "passing")
-        .map(|row| row["template"].as_str().expect("template name"))
-        .collect();
+    assert_eq!(
+        manifest["mirrored_templates"].as_array().map(Vec::len),
+        Some(0)
+    );
     assert!(
-        incomplete.is_empty(),
-        "every exported template requires executed Driver evidence: {incomplete:?}"
+        !root()
+            .join("crates/bombay-engine/tests/behavior_actors.rs")
+            .exists()
+    );
+    assert!(
+        !root()
+            .join("crates/bombay-engine/tests/support/behavior_actors_scenarios.rs")
+            .exists()
     );
 }
 
@@ -795,7 +552,9 @@ fn repository_has_one_direct_driver_path_and_no_obsolete_product_api() {
 
     let driver = std::fs::read_to_string(root.join("crates/bombay-engine/src/driver.rs")).unwrap();
     assert_eq!(
-        driver.matches("behavior.transition(event)").count(),
+        driver
+            .matches("behavior::delegate_transition(&mut behavior, event)")
+            .count(),
         1,
         "the production Driver must contain exactly one direct fold site"
     );
@@ -818,7 +577,7 @@ fn repository_has_one_direct_driver_path_and_no_obsolete_product_api() {
         "dyn Any",
         "downcast",
         "type_id",
-        "transition(event).await",
+        "behavior::delegate_transition(&mut behavior, event).await",
         "spawn(",
         "yield_now",
         "    registry:",
@@ -941,7 +700,10 @@ fn observation_oracle_kills_control_surface_inversions() {
 }
 
 fn structural_driver_oracle(source: &str) -> bool {
-    source.matches("behavior.transition(event)").count() == 1
+    source
+        .matches("behavior::delegate_transition(&mut behavior, event)")
+        .count()
+        == 1
         && source.matches("\n    environment: E,").count() == 1
         && [
             "ExclusiveExecutor",
@@ -962,7 +724,7 @@ fn structural_driver_oracle(source: &str) -> bool {
             "dyn Any",
             "downcast",
             "type_id",
-            "transition(event).await",
+            "behavior::delegate_transition(&mut behavior, event).await",
             "spawn(",
             "yield_now",
             "    registry:",
@@ -1026,15 +788,15 @@ fn structural_oracle_kills_surface_and_authority_inversions() {
     }
 
     let bypass = source.replacen(
-        "behavior.transition(event)",
-        "behavior.transition(event); behavior.transition(event)",
+        "behavior::delegate_transition(&mut behavior, event)",
+        "behavior::delegate_transition(&mut behavior, event); behavior::delegate_transition(&mut behavior, event)",
         1,
     );
     assert!(!structural_driver_oracle(&bypass));
 
     let asynchronous_fold = source.replacen(
-        "behavior.transition(event)",
-        "behavior.transition(event).await",
+        "behavior::delegate_transition(&mut behavior, event)",
+        "behavior::delegate_transition(&mut behavior, event).await",
         1,
     );
     assert!(!structural_driver_oracle(&asynchronous_fold));

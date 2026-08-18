@@ -141,8 +141,8 @@ contradict these laws.
 ### Identity and scheduling laws
 
 - **D-ID-1 — No address value.** The Driver stores and requires no actor
-  address value. `B::Addr` remains only a type-level part of events, actions,
-  creations, and exits.
+  address value. `BehaviorAddr<B>` remains only a type-level part of events,
+  actions, creations, and exits.
 - **D-ID-2 — No incarnation authority.** The Driver owns no registration lease,
   mailbox generation, observation subject, task handle, abort authority, or
   terminal publisher.
@@ -190,30 +190,6 @@ contradict these laws.
   owns their classification.
 - **D-TERM-8 — Terminal means fused.** Once any terminal path begins, the Driver
   never polls the event source, folds Behavior, or starts another action commit.
-
-### Incarnation-integration laws
-
-- **D-INC-1 — Transactional initialization.** Root activation and child birth
-  complete Driver initialization and initialization-action commitment before
-  publishing the new address generation.
-- **D-INC-2 — One execution per generation.** One incarnation owns exactly one
-  Driver execution; a replacement receives fresh Driver and environment
-  values.
-- **D-INC-3 — Drop before publication.** On return, failure, panic, or
-  cancellation, Driver-owned resources are retired or dropped before address
-  release and terminal outcome publication.
-- **D-INC-4 — Terminal classification ownership.** Driver reports exact
-  Behavior/environment failures and the factual successful `Completion` cause.
-  The incarnation classifies task panic/cancellation and publishes actor death.
-- **D-INC-5 — No split Driver lifecycle.** Transactional activation is
-  coordinated by a later construction/publication owner and the concrete
-  environment around the first local action commitment. The Driver exposes
-  only consuming `run`; no caller can invoke initialization, looping, or
-  retirement independently.
-- **D-INC-6 — Publication is the narrow transaction.** Address-generation
-  publication is transactional: failed preparation releases reservations and
-  publishes no live generation. This does not turn ordinary action commitment
-  into a transaction or erase a factual committed prefix.
 
 ### Surface and dependency laws
 
@@ -368,7 +344,7 @@ handle into the Driver.
 application domain and topology
     -> Behavior templates and static composition
     -> bombay-engine Driver
-    -> bombay::core::Incarnation
+    -> bombay private Incarnation
     -> future concrete composition layers
 ```
 
@@ -408,10 +384,11 @@ One Driver execution consumes:
 2. one concrete actor environment statically sufficient for that Behavior's
    complete event and action types.
 
-`B::Addr` remains part of the Behavior algebra. The Driver does not receive,
-store, allocate, register, resolve, or release an address value. The concrete
-Bombay environment and incarnation may own the address value required to give
-deliveries, creations, observations, and exits their runtime meaning.
+`BehaviorAddr<B>` is projected through `B::Protocol`, separate from the
+executable Behavior algebra. The Driver does not receive, store, allocate,
+register, resolve, or release an address value. The concrete Bombay environment
+and incarnation may own the address value required to give deliveries,
+creations, observations, and exits their runtime meaning.
 
 The Behavior never receives an environment, runtime context, actor handle,
 channel, clock, registry, router, or ambient capability interface.

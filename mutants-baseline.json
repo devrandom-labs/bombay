@@ -1,11 +1,11 @@
 {
   "floors": {
-    "crates/bombay/src/core/incarnation.rs::Incarnation<B, E, R>::run": 1,
-    "crates/bombay/src/core/incarnation.rs::Terminal<R, B, E>::complete": 1,
-    "crates/bombay/src/core/incarnation.rs::<impl Drop for Terminal<R, B, E>>::drop": 1,
-    "crates/bombay/src/core/retirement.rs::<impl Retirement<B, E> for F>::retire": 1
+    "crates/bombay/src/incarnation.rs::Incarnation<B, E, R>::run": 1,
+    "crates/bombay/src/incarnation.rs::Terminal<R, B, E>::complete": 1,
+    "crates/bombay/src/incarnation.rs::<impl Drop for Terminal<R, B, E>>::drop": 1,
+    "crates/bombay/src/retirement.rs::<impl Retirement<B, E> for F>::retire": 1
   },
   "known_zero_viable": [
-    "crates/bombay/src/core/outcome.rs::<impl From<Result<Completion, DriverError<B, E>>> for IncarnationOutcome<B, E>>::from"
+    "crates/bombay/src/outcome.rs::<impl From<Result<Completion, DriverError<B, E>>> for IncarnationOutcome<B, E>>::from"
   ]
 }

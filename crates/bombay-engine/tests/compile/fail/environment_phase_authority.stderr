@@ -1,10 +1,10 @@
 error[E0599]: no method named `next` found for struct `Prepared` in the current scope
-  --> tests/compile/fail/environment_phase_authority.rs:54:22
+  --> tests/compile/fail/environment_phase_authority.rs:53:22
    |
-27 | struct Prepared;
+26 | struct Prepared;
    | --------------- method `next` not found for this struct
 ...
-54 |     let _ = prepared.next();
+53 |     let _ = prepared.next();
    |                      ^^^^ method not found in `Prepared`
    |
    = help: items from traits can only be used if the trait is implemented and in scope
@@ -13,12 +13,12 @@ error[E0599]: no method named `next` found for struct `Prepared` in the current 
            candidate #2: `Iterator`
 
 error[E0599]: no method named `activate` found for struct `Active` in the current scope
-  --> tests/compile/fail/environment_phase_authority.rs:57:20
+  --> tests/compile/fail/environment_phase_authority.rs:56:20
    |
-26 | struct Active;
+25 | struct Active;
    | ------------- method `activate` not found for this struct
 ...
-57 |     let _ = active.activate(Actions::stop());
+56 |     let _ = active.activate(Actions::stop());
    |                    ^^^^^^^^ method not found in `Active`
    |
    = help: items from traits can only be used if the trait is implemented and in scope

@@ -1,147 +1,242 @@
-//! Application authoring macros for Bombay.
+//! Transitional static local-hosting declarations for Bombay.
+
+use std::collections::HashSet;
 
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::{Error, FnArg, GenericArgument, ImplItem, ItemImpl, PathArguments, ReturnType, Type};
+use proc_macro2::Span;
+use quote::{format_ident, quote};
+use syn::parse::{Parse, ParseStream};
+use syn::spanned::Spanned;
+use syn::{
+    Error, Ident, ItemFn, Result, ReturnType, Token, Type, Visibility, braced, parse_macro_input,
+    parse_quote,
+};
 
-/// Define an ordinary no-birth, no-phase actor from its `receive` method.
-#[allow(
-    clippy::too_many_lines,
-    reason = "the parser validates one indivisible actor declaration before emitting any code"
-)]
+mod keyword {
+    syn::custom_keyword!(topology);
+    syn::custom_keyword!(hosted);
+}
+
+struct Declaration {
+    visibility: Visibility,
+    topology: Ident,
+    root: Type,
+    hosted: Vec<Type>,
+}
+
+fn parse_types(input: ParseStream<'_>) -> Result<Vec<Type>> {
+    let content;
+    braced!(content in input);
+    let mut entries = Vec::new();
+    while !content.is_empty() {
+        entries.push(content.parse()?);
+        if content.peek(Token![,]) {
+            content.parse::<Token![,]>()?;
+        }
+    }
+    Ok(entries)
+}
+
+impl Parse for Declaration {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
+        let visibility = input.parse()?;
+        input.parse::<keyword::topology>()?;
+        let topology = input.parse()?;
+        input.parse::<Token![for]>()?;
+        let root = input.parse()?;
+        let body;
+        braced!(body in input);
+
+        body.parse::<keyword::hosted>()?;
+        let hosted = parse_types(&body)?;
+        if !body.is_empty() {
+            return Err(body.error("unexpected tokens after `hosted` section"));
+        }
+
+        Ok(Self {
+            visibility,
+            topology,
+            root,
+            hosted,
+        })
+    }
+}
+
+fn require_unique_types(types: &[Type]) -> Result<()> {
+    let mut seen = HashSet::new();
+    for ty in types {
+        let spelling = quote!(#ty).to_string();
+        if !seen.insert(spelling.clone()) {
+            return Err(Error::new(
+                ty.span(),
+                format!("hosted protocol `{spelling}` is listed more than once"),
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Declare closed, pure local-hosting evidence.
+///
+/// This macro does not implement Behavior or construct a runtime. Each hosted
+/// entry is a stable [`bombay::behavior::Protocol`] type, not a behavior
+/// wrapper. Duplicate hosted protocol types are compile-time errors.
+#[proc_macro]
+pub fn application(input: TokenStream) -> TokenStream {
+    let declaration = parse_macro_input!(input as Declaration);
+    match expand(declaration) {
+        Ok(tokens) => tokens.into(),
+        Err(error) => error.to_compile_error().into(),
+    }
+}
+
+/// Run the root application value returned by a synchronous `fn main()`.
+///
+/// This is syntax over `bombay::run`; it does not construct a separate
+/// runtime path or infer the application's local-hosting topology.
 #[proc_macro_attribute]
-pub fn actor(arguments: TokenStream, item: TokenStream) -> TokenStream {
+pub fn main(arguments: TokenStream, input: TokenStream) -> TokenStream {
     if !arguments.is_empty() {
-        return Error::new(
-            proc_macro2::Span::call_site(),
-            "#[actor] accepts no arguments",
-        )
-        .to_compile_error()
-        .into();
-    }
-
-    let implementation = syn::parse_macro_input!(item as ItemImpl);
-    if implementation.trait_.is_some() {
-        return Error::new_spanned(&implementation, "#[actor] applies to an inherent impl")
+        return Error::new(Span::call_site(), "`#[bombay::main]` accepts no arguments")
             .to_compile_error()
             .into();
     }
-    let Some(receive) = implementation.items.iter().find_map(|item| match item {
-        ImplItem::Fn(method) if method.sig.ident == "receive" => Some(method),
-        _ => None,
-    }) else {
-        return Error::new_spanned(
-            &implementation.self_ty,
-            "#[actor] requires receive(&mut self, from, message)",
-        )
-        .to_compile_error()
-        .into();
-    };
-    if receive.sig.asyncness.is_some() || receive.sig.inputs.len() != 3 {
-        return Error::new_spanned(
-            &receive.sig,
-            "receive must be synchronous and accept exactly &mut self, from, and message",
-        )
-        .to_compile_error()
-        .into();
+
+    let mut function = parse_macro_input!(input as ItemFn);
+    if let Err(error) = validate_main(&function) {
+        return error.to_compile_error().into();
     }
 
-    let Some(FnArg::Receiver(receiver)) = receive.sig.inputs.first() else {
-        return Error::new_spanned(&receive.sig, "receive must begin with &mut self")
-            .to_compile_error()
-            .into();
-    };
-    if receiver.reference.is_none() || receiver.mutability.is_none() {
-        return Error::new_spanned(receiver, "receive must begin with &mut self")
-            .to_compile_error()
-            .into();
+    let body = function.block;
+    function.sig.output = parse_quote!(-> ::core::result::Result<(), ::bombay::RunError>);
+    function.block = Box::new(parse_quote!({ ::bombay::run({ #body }) }));
+    quote!(#function).into()
+}
+
+fn validate_main(function: &ItemFn) -> Result<()> {
+    if function.sig.ident != "main" {
+        return Err(Error::new_spanned(
+            &function.sig.ident,
+            "`#[bombay::main]` must annotate `fn main`",
+        ));
     }
-    let mut parameters = receive.sig.inputs.iter().skip(1);
-    let Some(FnArg::Typed(from)) = parameters.next() else {
-        return Error::new_spanned(&receive.sig, "from requires an explicit address type")
-            .to_compile_error()
-            .into();
-    };
-    let Some(FnArg::Typed(message)) = parameters.next() else {
-        return Error::new_spanned(&receive.sig, "message requires an explicit type")
-            .to_compile_error()
-            .into();
-    };
-    let ReturnType::Type(_, result) = &receive.sig.output else {
-        return Error::new_spanned(&receive.sig, "receive must return Effect<T>")
-            .to_compile_error()
-            .into();
-    };
-    let Type::Path(result) = result.as_ref() else {
-        return Error::new_spanned(result, "receive must return Effect<T>")
-            .to_compile_error()
-            .into();
-    };
-    let Some(effect) = result.path.segments.last() else {
-        return Error::new_spanned(result, "receive must return Effect<T>")
-            .to_compile_error()
-            .into();
-    };
-    if effect.ident != "Effect" {
-        return Error::new_spanned(result, "receive must return Effect<T>")
-            .to_compile_error()
-            .into();
+    if function.sig.asyncness.is_some() {
+        return Err(Error::new_spanned(
+            function.sig.asyncness,
+            "Bombay owns asynchronous execution; remove `async` from `fn main`",
+        ));
     }
-    let PathArguments::AngleBracketed(arguments) = &effect.arguments else {
-        return Error::new_spanned(result, "Effect requires its emitted value type")
-            .to_compile_error()
-            .into();
-    };
-    let Some(GenericArgument::Type(emitted)) = arguments.args.first() else {
-        return Error::new_spanned(result, "Effect requires its emitted value type")
-            .to_compile_error()
-            .into();
-    };
+    if !function.sig.inputs.is_empty() {
+        return Err(Error::new_spanned(
+            &function.sig.inputs,
+            "`#[bombay::main]` requires an argument-free `fn main`",
+        ));
+    }
+    if !function.sig.generics.params.is_empty() || function.sig.generics.where_clause.is_some() {
+        return Err(Error::new_spanned(
+            &function.sig.generics,
+            "`#[bombay::main]` does not accept generics",
+        ));
+    }
+    if !matches!(function.sig.output, ReturnType::Default) {
+        return Err(Error::new_spanned(
+            &function.sig.output,
+            "the body of `#[bombay::main] fn main()` returns the root application value; remove the explicit return type",
+        ));
+    }
+    if function.sig.constness.is_some()
+        || function.sig.unsafety.is_some()
+        || function.sig.abi.is_some()
+        || function.sig.variadic.is_some()
+    {
+        return Err(Error::new_spanned(
+            &function.sig,
+            "`#[bombay::main]` requires an ordinary safe Rust function",
+        ));
+    }
+    Ok(())
+}
 
-    let actor = &implementation.self_ty;
-    let address = &from.ty;
-    let message = &message.ty;
-    let (impl_generics, _, where_clause) = implementation.generics.split_for_impl();
+fn expand(declaration: Declaration) -> Result<proc_macro2::TokenStream> {
+    require_unique_types(&declaration.hosted)?;
+    let visibility = declaration.visibility;
+    let topology = declaration.topology;
+    let root = declaration.root;
+    let module = format_ident!("__bombay_topology_{}", topology.to_string().to_lowercase());
+    let namespaces = Ident::new("Namespaces", Span::call_site());
+    let namespace_fields: Vec<_> = declaration
+        .hosted
+        .iter()
+        .enumerate()
+        .map(|(index, _)| format_ident!("hosted_{index}"))
+        .collect();
+    let namespace_declarations = declaration
+        .hosted
+        .iter()
+        .zip(&namespace_fields)
+        .map(|(entry, field)| quote!(#field: ::bombay::__private::LocalAddresses<#entry>));
+    let namespace_initializers =
+        declaration.hosted.iter().zip(&namespace_fields).map(
+            |(entry, field)| quote!(#field: ::bombay::__private::LocalAddresses::<#entry>::new()),
+        );
+    let namespace_impls = declaration
+        .hosted
+        .iter()
+        .zip(&namespace_fields)
+        .map(|(entry, field)| {
+            quote! {
+                impl ::bombay::__private::Namespace<#entry> for #namespaces {
+                    fn namespace(&self) -> ::bombay::__private::LocalAddresses<#entry> {
+                        self.#field.clone()
+                    }
+                }
+            }
+        });
 
-    quote! {
-        #implementation
+    Ok(quote! {
+        #[doc(hidden)]
+        #[allow(dead_code)]
+        #visibility mod #module {
+            use super::*;
 
-        impl #impl_generics ::bombay::behavior::Behavior for #actor #where_clause {
-            type Addr = #address;
-            type Msg = #message;
-            type Event = ::bombay::behavior::User<#address, #message>;
-            type Sends = ::std::vec::Vec<#emitted>;
-            type Ph = ::bombay::behavior::Never;
-            type Error = ::bombay::behavior::Never;
-            type Birth = ::bombay::behavior::NoBirths;
-
-            fn init(
-                &mut self,
-                _: ::bombay::behavior::InitializationTurn,
-            ) -> ::bombay::behavior::BehaviorActed<Self> {
-                ::core::result::Result::Ok(::bombay::behavior::Actions::cont())
+            pub struct #namespaces {
+                root: ::bombay::__private::LocalAddresses<<#root as ::bombay::behavior::Behavior>::Protocol>,
+                #(#namespace_declarations,)*
             }
 
-            fn transition(
-                &mut self,
-                _: ::bombay::behavior::ActiveTurn,
-                event: Self::Event,
-            ) -> ::bombay::behavior::BehaviorActed<Self> {
-                ::core::result::Result::Ok(
-                    ::core::convert::Into::into(
-                        <#actor>::receive(self, event.from, event.message)
-                    )
-                )
+            impl ::bombay::__private::BuildNamespaces for #namespaces {
+                fn build() -> Self {
+                    Self {
+                        root: ::bombay::__private::LocalAddresses::<
+                            <#root as ::bombay::behavior::Behavior>::Protocol
+                        >::new(),
+                        #(#namespace_initializers,)*
+                    }
+                }
             }
+
+            impl ::bombay::__private::Namespace<<#root as ::bombay::behavior::Behavior>::Protocol>
+                for #namespaces
+            {
+                fn namespace(
+                    &self,
+                ) -> ::bombay::__private::LocalAddresses<<#root as ::bombay::behavior::Behavior>::Protocol> {
+                    self.root.clone()
+                }
+            }
+
+            #(#namespace_impls)*
         }
 
-        impl #impl_generics ::bombay::behavior::BehaviorBase for #actor #where_clause {
-            type Base = Self;
+        #visibility struct #topology;
 
-            fn base(&self) -> &Self {
-                self
-            }
+        impl ::bombay::__private::Topology for #topology {
+            type Root = #root;
+            type Namespaces = #module::#namespaces;
         }
-    }
-    .into()
+
+        impl ::bombay::Application for #root {
+            type Topology = #topology;
+        }
+    })
 }

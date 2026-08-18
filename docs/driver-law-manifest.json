@@ -11,7 +11,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -24,7 +24,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -37,7 +37,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -50,7 +50,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -63,7 +63,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -76,7 +76,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -89,7 +89,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -102,7 +102,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -115,7 +115,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -128,7 +128,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -141,7 +141,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -154,7 +154,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -167,7 +167,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -180,7 +180,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -193,7 +193,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -206,7 +206,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -219,7 +219,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -232,7 +232,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -245,7 +245,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -258,7 +258,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -271,7 +271,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -284,7 +284,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -297,7 +297,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -310,7 +310,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -323,7 +323,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -336,7 +336,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -349,7 +349,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -362,7 +362,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -375,7 +375,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -388,7 +388,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -401,7 +401,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -414,7 +414,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -427,7 +427,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -440,7 +440,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -453,7 +453,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -466,7 +466,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -479,7 +479,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -492,7 +492,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -505,7 +505,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -518,7 +518,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -531,7 +531,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -544,7 +544,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -557,7 +557,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -570,7 +570,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -583,7 +583,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -596,7 +596,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -609,7 +609,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -622,7 +622,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -635,7 +635,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -648,7 +648,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -661,7 +661,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -674,7 +674,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -687,7 +687,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -700,86 +700,8 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
-      "status": "passing"
-    },
-    {
-      "law": "D-INC-1",
-      "owner": "bombay::incarnation",
-      "positive": "generation::root_and_child_generations_use_the_same_transactional_activation_path",
-      "inversion": "generation::generation_inversions_are_deliberate_semantic_mutations",
-      "killer": "generation::generation_ordering_oracle_kills_release_and_identity_inversions",
-      "negative": "generation::address_collision_rejects_activation_without_replacing_the_live_generation",
-      "boundaries": "local::rejected_initial_commit_exposes_no_endpoint_and_closes_anchor",
-      "adversarial": "generation::panic_and_cancellation_release_address_before_exact_terminal_publication + observer_failure_cannot_change_or_prevent_terminal_publication",
-      "templates": "generation::root_and_child_generations_use_the_same_transactional_activation_path",
-      "command": "cargo test -p bombay-rs --lib core::generation::tests",
-      "status": "passing"
-    },
-    {
-      "law": "D-INC-2",
-      "owner": "bombay::incarnation",
-      "positive": "generation::replacement_uses_fresh_driver_environment_address_and_observation_generations",
-      "inversion": "generation::generation_inversions_are_deliberate_semantic_mutations",
-      "killer": "generation::generation_ordering_oracle_kills_release_and_identity_inversions",
-      "negative": "generation::address_collision_rejects_activation_without_replacing_the_live_generation",
-      "boundaries": "local::rejected_initial_commit_exposes_no_endpoint_and_closes_anchor",
-      "adversarial": "generation::panic_and_cancellation_release_address_before_exact_terminal_publication + observer_failure_cannot_change_or_prevent_terminal_publication",
-      "templates": "generation::root_and_child_generations_use_the_same_transactional_activation_path",
-      "command": "cargo test -p bombay-rs --lib core::generation::tests",
-      "status": "passing"
-    },
-    {
-      "law": "D-INC-3",
-      "owner": "bombay::incarnation",
-      "positive": "generation::panic_and_cancellation_release_address_before_exact_terminal_publication",
-      "inversion": "generation::generation_inversions_are_deliberate_semantic_mutations",
-      "killer": "generation::generation_ordering_oracle_kills_release_and_identity_inversions",
-      "negative": "generation::address_collision_rejects_activation_without_replacing_the_live_generation",
-      "boundaries": "local::rejected_initial_commit_exposes_no_endpoint_and_closes_anchor",
-      "adversarial": "generation::panic_and_cancellation_release_address_before_exact_terminal_publication + observer_failure_cannot_change_or_prevent_terminal_publication",
-      "templates": "generation::root_and_child_generations_use_the_same_transactional_activation_path",
-      "command": "cargo test -p bombay-rs --lib core::generation::tests",
-      "status": "passing"
-    },
-    {
-      "law": "D-INC-4",
-      "owner": "bombay::incarnation",
-      "positive": "incarnation::exact_driver_failures_remain_distinct",
-      "inversion": "incarnation::incarnation_terminal_mutations_are_deliberate_semantic_inversions",
-      "killer": "incarnation::incarnation_oracles_kill_order_count_and_classification_inversions",
-      "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
-      "boundaries": "incarnation::source_exhaustion_preserves_its_exact_successful_cause",
-      "adversarial": "incarnation::panic_drops_driver_before_exactly_one_terminal_classification + cancellation_drops_driver_before_exactly_one_terminal_classification",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
-      "command": "cargo test -p bombay-rs --lib core::incarnation::tests",
-      "status": "passing"
-    },
-    {
-      "law": "D-INC-5",
-      "owner": "bombay::incarnation",
-      "positive": "incarnation::core_surface_has_one_driver_run_and_no_split_lifecycle",
-      "inversion": "incarnation::incarnation_terminal_mutations_are_deliberate_semantic_inversions",
-      "killer": "incarnation::incarnation_oracles_kill_order_count_and_classification_inversions",
-      "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
-      "boundaries": "incarnation::source_exhaustion_preserves_its_exact_successful_cause",
-      "adversarial": "incarnation::panic_drops_driver_before_exactly_one_terminal_classification + cancellation_drops_driver_before_exactly_one_terminal_classification",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
-      "command": "cargo test -p bombay-rs --lib core::incarnation::tests",
-      "status": "passing"
-    },
-    {
-      "law": "D-INC-6",
-      "owner": "bombay::incarnation",
-      "positive": "generation::address_collision_rejects_activation_without_replacing_the_live_generation",
-      "inversion": "generation::generation_inversions_are_deliberate_semantic_mutations",
-      "killer": "generation::generation_ordering_oracle_kills_release_and_identity_inversions",
-      "negative": "generation::address_collision_rejects_activation_without_replacing_the_live_generation",
-      "boundaries": "local::rejected_initial_commit_exposes_no_endpoint_and_closes_anchor",
-      "adversarial": "generation::panic_and_cancellation_release_address_before_exact_terminal_publication + observer_failure_cannot_change_or_prevent_terminal_publication",
-      "templates": "generation::root_and_child_generations_use_the_same_transactional_activation_path",
-      "command": "cargo test -p bombay-rs --lib core::generation::tests",
       "status": "passing"
     },
     {
@@ -791,7 +713,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -804,7 +726,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -817,7 +739,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -830,7 +752,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -843,7 +765,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -856,7 +778,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -869,7 +791,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -882,7 +804,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -895,7 +817,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -908,7 +830,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -921,7 +843,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -934,7 +856,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -947,7 +869,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     },
@@ -960,7 +882,7 @@
       "negative": "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
       "boundaries": "driver_property::zero_singleton_limit_and_post_stop_boundaries",
       "adversarial": "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix",
-      "templates": "law_manifest::template_manifest_matches_selected_actors_exports",
+      "templates": "law_manifest::engine_does_not_mirror_actor_template_laws",
       "command": "cargo test -p bombay-engine",
       "status": "passing"
     }

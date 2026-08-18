@@ -17,8 +17,7 @@ enum Fact {
 struct ModelBehavior(Arc<Mutex<Vec<Fact>>>);
 
 impl Behavior for ModelBehavior {
-    type Addr = MailAddr;
-    type Msg = u8;
+    type Protocol = behavior::MessageProtocol<MailAddr, u8>;
     type Event = User<MailAddr, u8>;
     type Sends = Vec<u8>;
     type Ph = Never;

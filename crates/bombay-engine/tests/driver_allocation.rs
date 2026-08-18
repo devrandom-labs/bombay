@@ -47,8 +47,7 @@ static ALLOCATOR: CountingAllocator = CountingAllocator;
 struct StopOnOne;
 
 impl Behavior for StopOnOne {
-    type Addr = MailAddr;
-    type Msg = u8;
+    type Protocol = behavior::MessageProtocol<MailAddr, u8>;
     type Event = User<MailAddr, u8>;
     type Sends = Vec<Never>;
     type Ph = Never;

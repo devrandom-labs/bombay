@@ -6,8 +6,7 @@ use bombay_engine::Driver;
 struct Example;
 
 impl Behavior for Example {
-    type Addr = MailAddr;
-    type Msg = Never;
+    type Protocol = behavior::MessageProtocol<MailAddr, Never>;
     type Event = User<MailAddr, Never>;
     type Sends = Vec<Never>;
     type Ph = Never;

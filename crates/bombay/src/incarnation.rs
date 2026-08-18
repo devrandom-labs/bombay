@@ -178,8 +178,7 @@ mod tests {
     }
 
     impl Behavior for ProbeBehavior {
-        type Addr = MailAddr;
-        type Msg = ();
+        type Protocol = behavior::MessageProtocol<MailAddr, ()>;
         type Event = User<MailAddr, ()>;
         type Sends = Vec<Infallible>;
         type Ph = Never;

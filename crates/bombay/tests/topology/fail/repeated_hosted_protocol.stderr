@@ -1,0 +1,5 @@
+error: hosted protocol `behavior :: MessageProtocol < MailAddr, () >` is listed more than once
+  --> tests/topology/fail/repeated_hosted_protocol.rs:38:13
+   |
+38 |             behavior::MessageProtocol<MailAddr, ()>,
+   |             ^^^^^^^^

@@ -6,8 +6,7 @@ use bombay_engine::{ActionsOf, ActiveEnvironment, Environment};
 struct Definition;
 
 impl Behavior for Definition {
-    type Addr = MailAddr;
-    type Msg = Never;
+    type Protocol = behavior::MessageProtocol<MailAddr, Never>;
     type Event = User<MailAddr, Never>;
     type Sends = Vec<Never>;
     type Ph = Never;

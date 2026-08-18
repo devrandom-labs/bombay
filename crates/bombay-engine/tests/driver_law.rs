@@ -27,8 +27,7 @@ struct Probe {
 }
 
 impl Behavior for Probe {
-    type Addr = MailAddr;
-    type Msg = u64;
+    type Protocol = behavior::MessageProtocol<MailAddr, u64>;
     type Event = User<MailAddr, u64>;
     type Sends = Vec<u64>;
     type Ph = Never;
@@ -203,8 +202,7 @@ impl Drop for StatefulDecision {
 }
 
 impl Behavior for StatefulDecision {
-    type Addr = MailAddr;
-    type Msg = usize;
+    type Protocol = behavior::MessageProtocol<MailAddr, usize>;
     type Event = User<MailAddr, usize>;
     type Sends = Vec<usize>;
     type Ph = Never;
@@ -366,8 +364,7 @@ impl UserEvent for ClosedEvent {
 struct ClosedInputBehavior;
 
 impl Behavior for ClosedInputBehavior {
-    type Addr = MailAddr;
-    type Msg = Box<usize>;
+    type Protocol = behavior::MessageProtocol<MailAddr, Box<usize>>;
     type Event = ClosedEvent;
     type Sends = Vec<usize>;
     type Ph = Never;
@@ -437,8 +434,7 @@ struct ExclusiveFold {
 }
 
 impl Behavior for ExclusiveFold {
-    type Addr = MailAddr;
-    type Msg = usize;
+    type Protocol = behavior::MessageProtocol<MailAddr, usize>;
     type Event = User<MailAddr, usize>;
     type Sends = Vec<Never>;
     type Ph = Never;
@@ -660,8 +656,7 @@ async fn completion_preserves_stop_and_input_exhaustion_as_success() {
 struct InitFailure;
 
 impl Behavior for InitFailure {
-    type Addr = MailAddr;
-    type Msg = Never;
+    type Protocol = behavior::MessageProtocol<MailAddr, Never>;
     type Event = User<MailAddr, Never>;
     type Sends = Vec<Never>;
     type Ph = Never;
@@ -772,8 +767,7 @@ async fn every_ordinary_terminal_edge_is_fused_against_later_work() {
 struct SendNotSync(Cell<u64>);
 
 impl Behavior for SendNotSync {
-    type Addr = MailAddr;
-    type Msg = Box<u64>;
+    type Protocol = behavior::MessageProtocol<MailAddr, Box<u64>>;
     type Event = User<MailAddr, Box<u64>>;
     type Sends = Vec<Never>;
     type Ph = Never;
@@ -1038,8 +1032,7 @@ struct PanicBehavior {
 }
 
 impl Behavior for PanicBehavior {
-    type Addr = MailAddr;
-    type Msg = u64;
+    type Protocol = behavior::MessageProtocol<MailAddr, u64>;
     type Event = User<MailAddr, u64>;
     type Sends = Vec<Never>;
     type Ph = Never;
@@ -1145,8 +1138,7 @@ impl ActiveEnvironment<SelfSender> for SelfSendEnv {
 struct SelfSender(Arc<Mutex<Vec<&'static str>>>);
 
 impl Behavior for SelfSender {
-    type Addr = MailAddr;
-    type Msg = u64;
+    type Protocol = behavior::MessageProtocol<MailAddr, u64>;
     type Event = User<MailAddr, u64>;
     type Sends = Vec<u64>;
     type Ph = Never;
@@ -1192,8 +1184,7 @@ async fn self_send_reenters_only_as_a_later_ordinary_event() {
 struct CompleteActions;
 
 impl Behavior for CompleteActions {
-    type Addr = MailAddr;
-    type Msg = Never;
+    type Protocol = behavior::MessageProtocol<MailAddr, Never>;
     type Event = User<MailAddr, Never>;
     type Sends = Vec<Box<u64>>;
     type Ph = Never;
@@ -1281,8 +1272,7 @@ impl UserEvent for CreationResultEvent {
 struct CreationScopeBehavior;
 
 impl Behavior for CreationScopeBehavior {
-    type Addr = MailAddr;
-    type Msg = Never;
+    type Protocol = behavior::MessageProtocol<MailAddr, Never>;
     type Event = CreationResultEvent;
     type Sends = Vec<usize>;
     type Ph = Never;

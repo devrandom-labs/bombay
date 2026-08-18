@@ -1,6 +1,6 @@
 [package]
 name = "bombay-macros"
-description = "Application authoring macros for Bombay."
+description = "Static application topology declarations for Bombay."
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true

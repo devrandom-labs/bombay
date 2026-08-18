@@ -1,94 +1,84 @@
-# bombay
+# Bombay
 
-Bombay is being rebuilt around a universal direct-Behavior Driver, one runtime
-ownership layer at a time. The old facade, System, mailbox/routing adapters,
-examples, benchmarks, fuzz target, and integration tests have been removed.
+Bombay is a runtime for closed, deterministic Bombay Behaviors. Applications
+describe actors, topology, routing, supervision, timers, and shutdown through
+Behavior and Behavior Actors values. Bombay supplies the local execution
+mechanism.
 
-The Driver accepts an inferred, closed Bombay Behavior value and one concrete
-typed environment:
+The intended functional boundary is:
+
+```rust,ignore
+use bombay::prelude::*;
+
+fn main() -> Result<(), RunError> {
+    bombay::run(IoTSystem::new())
+}
+```
+
+Or use the thin entry attribute over exactly the same path:
+
+```rust,ignore
+#[bombay::main]
+fn main() {
+    IoTSystem::new()
+}
+```
+
+The functional path remains independently usable and authoritative.
+
+## Architecture
 
 ```text
-Behavior definition
-  -> Activate::initialize exactly once
-  -> Environment::activate with complete initialization ActionsOf<B>
-  -> receive one affine ActiveEnvironment
-  -> acquire one B::Event
-  -> Active<B>::transition exactly once
-  -> ActiveEnvironment::apply complete ActionsOf<B> exactly once
-  -> repeat, stop, or exhaust input
-  -> consume ActiveEnvironment::retire before ordinary return
+Behavior + bombay-engine::Driver
+  inside Environment / ActiveEnvironment
+    + Bombay Communication mailbox
+    + Bombay Address lease
+    + Bombay Observe activation and termination facts
+    + actor-owned Bombay Timers queue
+    + typed capability-lane interpreters
+    + Bombay-owned task hierarchy
 ```
 
-Its technical integration surface is deliberately limited to
-`Driver<B, E>`, `Environment<B>`, `ActiveEnvironment<B>`, `ActionsOf<B>`,
-`Completion`, and `DriverError`. It owns no address, mailbox policy, routing,
-capability registry, template semantics, incarnation identity, or terminal
-publication.
+Behavior decides; runtime capabilities perform; capability results return as
+later typed events. Users do not construct a runtime, guardian, Driver,
+mailbox, address space, timer queue, observation subject, incarnation, task,
+or interpreter.
 
-The first Bombay-owned layer is one incarnation:
+The standard local runtime uses Address, Communication, Observe, and Timers
+directly. Bombay does not wrap them in a second registry, namespace, mailbox,
+or timer service. Extension adapters plug into typed effect lanes. The Engine
+`Environment<B>` boundary permits complete alternative hosts for testing,
+embedded execution, or another executor.
 
-```rust,ignore
-let driver = Driver::new(behavior, environment);
-let incarnation = Incarnation::new(driver, retirement);
-incarnation.run().await;
-```
+## Current status
 
-`Incarnation` owns exactly one Driver and one `Retirement` capability. It
-classifies successful completion, exact Behavior/activation/active-environment
-failure, panic, and cancellation, and invokes retirement only after
-Driver-owned values have been dropped. It owns no identity, construction,
-executor, handle, routing, timer, observation, or child policy.
+The direct Driver and lower lifecycle layers exist. Communication 0.1.2's
+affine mailbox admission owner, Observe 0.1.1 pairs, and actor-owned TimerQueue
+are integrated. The redundant runtime-stop channel, activation channels,
+keyed termination cell, timer task, and timer command channel are gone.
 
-The crate-private local environment is the one concrete preparation path over
-Bombay Communication and Address. It commits initialization actions and claims
-the exact typed endpoint before yielding `ActiveLocalEnvironment`, the only
-value with ingress and the Address lease. It injects user messages through the
-behavior's complete `UserEvent` and treats user-lane closure separately from
-complete mailbox exhaustion. There is no generic activation/publication
-decorator.
+The exact blockers, versions, and implementation order are recorded in
+[`docs/open-design-ledger.md`](docs/open-design-ledger.md). Do not treat the
+current partially migrated application runtime as a stable public API.
 
-The next concrete layer launches that incarnation on Tokio and returns a typed
-reference only after activation succeeds:
+## Documentation
 
-```rust,ignore
-let actors = LocalActors::<Tasks>::new(32);
-let tasks = actors
-    .spawn(address, Tasks::new(), |actions| interpret(actions))
-    .await?;
-tasks.send(origin, TaskMessage::Add(task)).await?;
-```
+- [User-facing API](docs/user-facing-api.md)
+- [Runtime capability interfaces](docs/runtime-capability-interfaces.md)
+- [Module boundaries](docs/module-boundaries.md)
+- [Driver law](docs/driver-law.md)
+- [Driver verification strategy](docs/driver-test-strategy.md)
+- [Open design ledger](docs/open-design-ledger.md)
+- [Historical decisions](docs/historical-design-decisions.md)
 
-`LocalActors<B>` is only one behavior-indexed address namespace and mailbox
-configuration. `ActorRef<B>` can send the destination behavior's exact message
-protocol but owns no task, receive authority, cancellation, or observation.
-There is still no `System`, public executor abstraction, or lifecycle handle.
-Activation transfers that exact already-published reference directly; it does
-not resolve the address again. The local environment accepts every Behavior
-birth mode and passes the complete action product to the inferred interpreter.
-
-The normative contracts are:
-
-- [`docs/driver-law.md`](docs/driver-law.md)
-- [`docs/driver-test-strategy.md`](docs/driver-test-strategy.md)
-- [`docs/module-boundaries.md`](docs/module-boundaries.md)
-- [`docs/open-design-ledger.md`](docs/open-design-ledger.md)
-
-Focused standalone verification currently runs with:
+## Development
 
 ```console
-nix develop --command cargo test -p bombay-engine
-nix develop --command cargo test -p bombay-rs --all-targets
-nix develop --command cargo clippy -p bombay-engine --all-targets -- -D warnings
-nix develop --command cargo clippy -p bombay-rs --all-targets -- -D warnings
-nix develop --command cargo fmt --all -- --check
+cargo build --workspace
+cargo test --workspace
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-The explicit complete law-manifest gate intentionally remains red until the
-later construction/publication and template-runtime layers supply real evidence
-for the deferred rows:
-
-```console
-nix develop --command cargo test -p bombay-engine --test law_manifest -- --ignored
-```
-
-Those rows are not simulated inside Engine or the incarnation layer.
+The toolchain is pinned in `rust-toolchain.toml`; `nix develop` provides the
+repository development shell.

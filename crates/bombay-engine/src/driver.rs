@@ -7,13 +7,13 @@
 //! once, and only then requests another event. It contains no template,
 //! routing, mailbox, scheduling, identity, retry, or machine-topology policy.
 
-use behavior::{Actions, Activate, Behavior, Never, Step};
+use behavior::{Actions, Behavior, Never, Step};
 
 use crate::{ActiveEnvironment, Environment};
 
 /// The complete action value emitted by one closed Behavior decision.
 pub type ActionsOf<B> = Actions<
-    <B as Behavior>::Addr,
+    behavior::BehaviorAddr<B>,
     <B as Behavior>::Ph,
     <B as Behavior>::Sends,
     <B as Behavior>::Birth,
@@ -88,26 +88,26 @@ where
             behavior,
             environment,
         } = self;
-        let initialized = match behavior.initialize() {
+        let mut behavior = behavior;
+        let initialized = match behavior::initialize(&mut behavior) {
             Ok(initialized) => initialized,
             Err(error) => {
                 return Err(DriverError::Behavior(error));
             }
         };
-        let stopped = matches!(&initialized.actions.become_, Step::Stop(_));
+        let stopped = matches!(&initialized.become_, Step::Stop(_));
         let mut environment = environment
-            .activate(initialized.actions)
+            .activate(initialized)
             .await
             .map_err(DriverError::Activation)?;
         let result = if stopped {
             Ok(Completion::Stopped)
         } else {
-            let mut behavior = initialized.behavior;
             loop {
                 let Some(event) = environment.next().await else {
                     break Ok(Completion::Exhausted);
                 };
-                let actions = match behavior.transition(event) {
+                let actions = match behavior::delegate_transition(&mut behavior, event) {
                     Ok(actions) => actions,
                     Err(error) => break Err(DriverError::Behavior(error)),
                 };

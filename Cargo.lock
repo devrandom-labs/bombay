@@ -86,9 +86,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-communication"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2cadfc4173d780a22e05bd5abdbc4d6e96480f620120f6f6de7feb8acf49a83"
+checksum = "fc3d06aaf88ef9fe5392506d13e208c2141e6978563e1b802b97b489b1a071e2"
 dependencies = [
  "loom",
  "thiserror",
@@ -120,9 +120,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-observe"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3f88706f2ca473d2de465bded4a1df68af49b2ba1e837359a62ce91ec60ccf3"
+checksum = "7017c773ae142628b6a244cddad0db987cfba22df4c93730844a7d43cc657304"
 dependencies = [
  "loom",
  "parking_lot",
@@ -143,6 +143,7 @@ dependencies = [
  "bombay-timers",
  "thiserror",
  "tokio",
+ "trybuild",
 ]
 
 [[package]]

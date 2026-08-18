@@ -8,16 +8,21 @@ tests prove each deterministic fold; these tests prove that the universal
 Driver can execute every closed template/domain composition without learning
 template semantics or violating runtime ordering.
 
-## Fresh dependency and ownership record
+## Derivation record
 
-This strategy was derived after rechecking the current local Behavior/Actors
+This strategy was originally derived after checking Behavior/Actors
 source at `5d8c8e0b0294f92bd7ce90beb18646acd46393af`, Address at
 `7df3bedc5f3177ddbdb617cefe4b6ffcd60ecda3`, Observe at
 `43016e5f781e006e072e77af996c4da64466dee8`, Timers at
 `4e515ed176f503bf6a5bd0d736ffa0394cb7f1f2`, and the locked Communication
-0.1.1, Observe 0.1.0, Timers 0.1.0, Address 0.2.0, Transition 0.1.0, and Machine
+0.1.2, Observe 0.1.1, Timers 0.1.0, Address 0.2.0, Transition 0.1.0, and Machine
 Executor 0.1.0 APIs and tests. Transition and Machine Executor were inspected
 only to verify their removal from Engine; they are not Driver dependencies.
+
+Those revisions are historical provenance, not the current Bombay dependency
+contract. Every implementation feature must use the exact versions recorded by
+its fresh verification in `open-design-ledger.md`. The strategy's causal laws
+remain applicable unless a new owning contract explicitly changes them.
 
 The Behavior mismatch is deliberately resolved. The workspace and lock now
 select `bombay-behavior-actors` 0.12.0 as the complete reusable actor layer and
@@ -302,8 +307,8 @@ invented, lost, duplicated, or reordered.
 
 The model also represents `CommitAccepted(lane, item)` prefixes. A later failure
 or cancellation preserves that factual prefix, performs no implicit retry, and
-never claims rollback. Creation publication is modeled separately as the narrow
-transaction defined by D-INC-6.
+never claims rollback. Creation publication is modeled separately as a Bombay
+runtime integration contract; it is outside Engine's Driver law manifest.
 
 ### 3. Differential migration oracle
 
@@ -525,8 +530,8 @@ red completion signal.
 The Driver test strategy is ready for implementation only after:
 
 1. the Driver law is explicitly accepted;
-2. the Behavior dependency is aligned and the exact template manifest is
-   regenerated;
+2. the Behavior dependency is aligned and the template-boundary manifest
+   confirms that Engine mirrors no Behavior Actors template laws;
 3. every supported/rejected composition edge is reviewed;
 4. owners agree which runtime-backed templates can run end to end and which
    remain blocked by absent interpreters;
@@ -536,5 +541,8 @@ The Driver test strategy is ready for implementation only after:
    performance, documentation, and repository-audit gates have explicit
    commands, budgets, and failure-retention rules.
 
-Passing template unit tests, Driver unit tests, or workspace tests alone is
-never sufficient.
+Behavior Actors owns its template-specific semantic proofs. Engine proves the
+universal `Behavior` execution contract once, parametrically, rather than
+recreating an application scenario for every upstream template. Passing
+template unit tests, Driver unit tests, or workspace tests alone is never
+sufficient.

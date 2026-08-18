@@ -1,0 +1,14 @@
+error[E0119]: conflicting implementations of trait `bombay::__private::Namespace<MessageProtocol<MailAddr, ()>>` for type `Namespaces`
+  --> tests/topology/fail/duplicate_hosted_protocol.rs:47:1
+   |
+47 | / application! {
+48 | |     topology BadTopology for Root {
+49 | |         hosted { ChildProtocol, ChildAlias }
+50 | |     }
+51 | | }
+   | | ^
+   | | |
+   | |_first implementation here
+   |   conflicting implementation for `Namespaces`
+   |
+   = note: this error originates in the macro `application` (in Nightly builds, run with -Z macro-backtrace for more info)
