@@ -736,6 +736,48 @@ per-nonce observation-task slot so an earlier explicit `ObserveChild` cannot
 create a second terminal fact. This generic completion law unblocks phased
 coordinator, dynamic-supervisor, proxy, and pool draining together.
 
+### Dependency refresh — 2026-08-19 (backoff acceptance layer)
+
+The next E9 layer was freshly verified against Behavior / Behavior Actors
+commit `175b0774115088ca6911b82dfd80ca31ab749f07` and the same exact selected
+Address 0.2.0, Communication 0.1.2, Observe 0.1.1, and Timers 0.1.0 artifacts
+and tests listed above.
+
+`BackoffSupervisor<B, C>` is already the complete policy composition. It wraps
+the fixed `Supervisor<B, C>`, retains accepted replacement commands until a
+matching `TimerId` plus `TimerGeneration` arrives, treats stale generations as
+inert, advances checked constant/linear/exponential delay attempts, rejects
+timer collisions and arithmetic exhaustion as typed errors, clears pending
+restarts on shutdown, and lets the inner supervisor drain its stable proxies.
+Its public tests prove delayed release, stale rejection, repeated generations,
+collision, and shutdown cancellation. The runtime-contract manifest proves
+its `ScheduleAfter`/`TimerElapsed` lane structurally.
+
+Bombay therefore needs no backoff object, retry loop, timer generation, or
+special interpreter. The acceptance application may directly construct
+`Supervisor`, `RestartConfiguration`, `Backoff`, and `BackoffSupervisor`; its
+typed effects must pass through the existing generic runtime capabilities.
+
+The public composition disproved the final eligibility sentence above.
+`BackoffSupervisor::Event` is
+`TimedEvent<SupervisionEvent<B::Event>>`: `TimerElapsed` owns `Here`, while the
+inner supervisor's `ShutdownRequested` is reachable only at `Inside<Here>`.
+`ShutdownChild<BackoffSupervisor<...>>` truthfully requires the concrete child
+event to accept `ShutdownRequested` at `Here`, so the heterogeneous shutdown
+selection and Bombay's recursive creation proof both reject the application.
+The upstream shutdown unit test calls the inner path directly and therefore
+does not prove the public child-shutdown boundary.
+
+Bombay must not fabricate a wrapper that stops the backoff supervisor without
+draining it, nor special-case event injection. Behavior Actors needs a
+concrete backoff-supervisor event algebra that accepts timer facts and direct
+shutdown at their correct owned lanes, while preserving the inner supervisor's
+worker, creation, child-stop, rejection, and user facts. Add a public runtime
+contract proving `ShutdownChild<BackoffSupervisor<...>>` capability before E9
+composes this layer. E9 remains active but this acceptance edge is externally
+blocked; the already-completed dynamic-supervisor, pool, and coordinated
+shutdown slice remains valid.
+
 ### Fresh verification — 2026-08-17
 
 All neighboring contracts were re-read again for the representative complex
