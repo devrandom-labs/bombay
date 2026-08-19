@@ -1,81 +1,138 @@
-# Repository Guidelines
+# Repository guidelines
 
-## Project Structure & Module Organization
+## Scope and sources of truth
 
-This is a Rust 2024 workspace for the `bombay` runtime. The root `Cargo.toml` defines shared dependencies and lints; implementation code lives in `crates/bombay/src/`. Keep crate-level exports and documentation in `lib.rs`, and add focused runtime modules beside it as the implementation grows. Use `docs/open-design-ledger.md` as the canonical backlog, `docs/module-boundaries.md` for ownership boundaries, `docs/minimal-lifecycle-ownership.md` for lifecycle ordering, and `docs/runtime-blocks.md` for crate scope.
+This is a Rust 2024 workspace for the Bombay Behavior runtime. Production code
+lives in `crates/bombay/src/`; the actor-independent Driver lives in
+`crates/bombay-engine/src/`; root `examples/` contains public-API examples.
+Keep internal mechanism tests in their owning crate.
 
-## Architecture & Scope
+Read these documents before changing architecture:
 
-Preserve the repository boundaries: `behavior` owns the pure behavior algebra, Bombay Communication owns the two-lane mailbox, and `bombay` owns runtime composition such as addresses, `System`, `Handle`, spawning, delivery, and incarnation retirement. Do not add registries, request/reply APIs, lifecycle frameworks, or supervision policy. Behaviors must remain deterministic and free of I/O, channels, and runtime handles. Prefer composition from existing primitives over introducing new machinery.
+- `docs/open-design-ledger.md`: live backlog, blockers, and current feature
+  verification;
+- `docs/runtime-capability-interfaces.md`: capability ownership and the target
+  Environment spine;
+- `docs/module-boundaries.md`: current source ownership;
+- `docs/driver-law.md`: normative Driver semantics;
+- `docs/driver-test-strategy.md`: Driver verification requirements.
 
-## Mandatory Cross-Crate Verification
+`docs/historical-design-decisions.md` is historical context, not current API
+guidance. Existing Bombay code and earlier conversation are not architectural
+authority.
 
-Never assume what any Bombay crate supports, owns, guarantees, or lacks. Before designing, implementing, unblocking, or auditing **every** bombay feature, inspect the current source, public algebra/API, tests, and relevant documentation for all neighboring primitives: Bombay Behavior, Bombay Observe, Bombay Timers, Bombay Communication, and Bombay Address. Check the exact dependency version used by bombay as well as any local checkout; do not treat an bombay adapter, an earlier conversation, the design ledger, memory, or a differently versioned checkout as authoritative evidence about another crate.
+## Architecture
 
-Record the cross-crate findings and exact ownership mapping in `docs/open-design-ledger.md` before changing implementation. Keep the feature blocked when any dependency contract, version relationship, protocol consumer, or ownership boundary has not been verified. If the existing Bombay algebra already expresses a capability, compose or interpret it instead of introducing a duplicate bombay protocol. Repeat this verification for every feature even when a previous feature audited the same crates: never assume the prior result still applies.
+There is one executable composition:
 
-### Behavior Effect Composition
+```text
+Behavior + Driver
+  inside Environment / ActiveEnvironment
+    + Communication mailbox
+    + Address lease and AddressSpace
+    + Observe activation/termination facts
+    + actor-owned TimerQueue
+    + typed effect-lane interpreters
+    + Bombay-owned task hierarchy
+```
 
-Before modifying behavior effects, derive the implementation from the exact
-locked Bombay Behavior API and its current tests. Do not preserve or introduce
-positional `SendProduct` traversal such as `.inner`, `.own`, or nested direct
-lane mutation in application behavior. Compose heterogeneous lanes with
-Behavior's existing `SendProduct`, define semantic `Own`/`Inner<Path>` aliases,
-and emit effects through typed `SendAlgebra::send`. Do not handwrite
-application `SendAlgebra`, `SendInput`, `RouteSends`, `ObservesCreations`, or
-product-routing error implementations when Behavior's recursive product and
-bombay's generic interpreter cover the leaves. Keep application
-`DeliveryRouter<A, M>` implementations because those select real endpoints.
-Audit the entire repository—not merely the touched file—for obsolete
-positional patterns and duplicate Behavior protocol implementations before
-completion; existing bombay code is not authoritative evidence that an
-older Behavior composition style remains acceptable.
+Ownership is strict:
 
-Behavior's `Compose::from_fns`/`BehaviorFn` may replace a simple handwritten
-behavior only when the concrete value remains locally inferred. Do not replace
-a clear nominal behavior with function-pointer helpers or expanded generic
-aliases merely to name it inside `Births`, `Proxy`, `Supervisor`, endpoints, or
-routers. Wait for a Behavior-owned naming macro for those positions. Semantic
-wrappers coordinating wrapper-owned event protocols remain explicit.
+- Behavior and Behavior Actors own deterministic algebra, actor templates,
+  topology policy, supervision policy, and named capability requests.
+- Communication owns the two-lane mailbox, delivery, backpressure, closure,
+  and exact rejected-payload recovery.
+- Address owns endpoint claim, opaque resolution, and exact lease retirement.
+- Observe owns completion publication and waiting.
+- Timers owns generation-safe scheduling state.
+- Engine owns only the universal causal Driver and affine Environment port.
+- Bombay owns concrete local composition, incarnation tasks, capability
+  interpretation, activation order, and retirement order.
 
-### Documentation Synchronization
+Behaviors contain no I/O, channels, runtime handles, address spaces, clocks, or
+executor tasks. Do not add a second actor trait, effect algebra, mailbox,
+registry, lifecycle framework, supervision policy, timer service, observation
+cell, runtime object, or dynamic capability map. Prefer static composition of
+the owning primitives.
 
-When a dependency contract or composition rule changes, audit every tracked
-document, example, benchmark, test, research workspace, diagnostic probe, and
-public re-export. Update all current guidance in the same change. Mark
-historical ledgers, experiments, and captured diagnostics explicitly as
-historical when their older API descriptions remain evidence; never leave them
-looking normative. Do not claim repository-wide completion from a `crates/`
-scan alone.
+The standard local runtime includes Address, Communication, Observe, and
+Timers. Ordinary users do not choose those adapters. Pluggability belongs at
+typed effect-lane interpreters; whole-Environment replacement is an advanced
+extension and test-host boundary.
 
-## Backlog and Completion States
+## Mandatory feature verification
 
-Treat `docs/open-design-ledger.md` as persistent context across sessions. Before starting work, update the selected item's priority, state, blockers, and the items it unblocks. Record newly exposed seams immediately instead of relying on conversation history.
+Before designing, implementing, unblocking, or auditing every Bombay feature:
 
-Choose the next item from the dependency graph, never from its row position in the restart table. Treat both directions as normative: every ID that lists an item under `Unblocks` must also appear in that item's `Blocked by` cell until the prerequisite is complete. If the two columns disagree, stop and repair the ledger before selecting work. First discard completed items and any item with an unresolved ledger-ID or external prerequisite. An item whose only blocker is its own mandatory cross-crate verification is eligible for that verification work; it is not eligible for implementation until that verification is recorded and the blocker is cleared. Among eligible items, use priority and the dependencies they unblock to choose the next item. Never describe an item as unblocked while its `Blocked by` cell contains an unresolved prerequisite, and update downstream blocker cells immediately when a prerequisite becomes `feature-complete` or `distilled`.
+1. Inspect the exact dependency version selected by `Cargo.lock` and any
+   `[patch]` entry.
+2. Inspect current source, public API/algebra, relevant tests, and relevant
+   documentation for Behavior, Behavior Actors, Address, Communication,
+   Observe, and Timers. Inspect Entity or other neighbors when touched.
+3. Record the feature-specific versions, ownership map, blockers, and
+   dependency edges in `docs/open-design-ledger.md` before implementation.
+4. Keep implementation blocked while any dependency contract, protocol
+   consumer, version relationship, or ownership boundary is unverified.
 
-An item may move from `blocked` to `active` only after its own mandatory cross-crate verification is recorded in the ledger. A global audit does not waive the per-feature verification requirement.
+A previous audit does not waive this requirement. A local checkout at a
+different revision is evidence only, never the selected build contract.
 
-Never mark implementation work `done` merely because it builds or its feature tests pass. Use `feature-complete` while it awaits the project-wide final audit. That final audit must attempt to decompose it further, minimize types and objects, narrow public interfaces, compartmentalize ownership, and prove each remaining primitive independently testable and statically composable. Only then may an item be marked `distilled`; do not use a `done` state.
+## Behavior effect composition
 
-## Build, Test, and Development Commands
+Derive effect handling from the exact locked Behavior and Behavior Actors APIs
+and tests.
 
-- `nix develop` enters the pinned development shell with Rust and helper tools.
-- `cargo build --workspace` builds every workspace crate.
-- `cargo test --workspace` runs all unit, integration, and documentation tests.
-- `cargo fmt --all -- --check` verifies standard Rust formatting.
-- `cargo clippy --workspace --all-targets` applies the workspace's strict Clippy configuration.
+- Use named semantic send structs and typed `SendAlgebra::send`.
+- Use Behavior's existing `InstallBirth`/`DispatchBirth` and closed child
+  products for creation.
+- Do not add positional effect traversal or mutate nested lanes directly.
+- Do not handwrite application `SendAlgebra`, `SendInput`, `RouteSends`,
+  `ObservesCreations`, or product-routing errors when generic interpretation
+  covers the leaves.
+- Keep only application delivery routers that select genuine external
+  endpoints.
+- Use explicit nominal `Behavior` implementations until an owning Behavior
+  API supplies and proves another authoring form. Bombay owns no actor macro or
+  reduced `Effect` language.
 
-The pinned toolchain is declared in `rust-toolchain.toml`, so plain Cargo commands also use Rust 1.96.0 through rustup.
+Audit the entire repository for obsolete composition patterns before claiming
+completion.
 
-## Coding Style & Naming Conventions
+## Ledger states
 
-Use rustfmt defaults (four-space indentation) and idiomatic Rust naming: `snake_case` for modules/functions, `CamelCase` for types/traits, and `SCREAMING_SNAKE_CASE` for constants. Choose explicit behavioral names such as `stop_on_abnormal_death`; keep literature citations in documentation, not identifiers. Avoid `unsafe` unless a measured reason is documented.
+Select work from the reciprocal dependency graph in
+`docs/open-design-ledger.md`. Every unresolved ID in `Blocked by` must name the
+dependent item in `Unblocks`. Repair inconsistent edges before selecting work.
 
-## Testing Guidelines
+- `blocked`: an unresolved prerequisite exists;
+- `active`: feature-local verification is recorded and implementation is
+  eligible;
+- `feature-complete`: feature gates pass but final minimization is pending;
+- `distilled`: project-wide audit proved the remaining types, objects, public
+  interfaces, and ownership boundaries minimal.
 
-Place unit tests in the module they exercise and integration tests under `crates/bombay/tests/`. Name tests after observable behavior, for example `created_child_stays_live`. Add assertions for every new invariant and verify they fail when the corresponding production behavior is deliberately inverted.
+Never use `done`. Building or passing focused tests is not distillation.
 
-## Commit & Pull Request Guidelines
+## Documentation
 
-Recent commits use short, imperative subjects with a scope-like prefix, such as `docs:` or `scaffold:`. Follow that pattern and keep each commit focused. Pull requests should explain the runtime or algebra change, link the relevant issue/design decision, identify affected invariants, and report the test, formatting, and Clippy results. Include screenshots only for rendered documentation changes where they clarify the result.
+When a contract changes, audit every tracked document, example, benchmark,
+test, research probe, diagnostic fixture, and public re-export. Update current
+guidance in the same change. Move useful superseded decisions to the historical
+record or delete them; never leave contradictory documents appearing current.
+
+## Development
+
+- `nix develop` enters the pinned shell.
+- `cargo build --workspace` builds the workspace.
+- `cargo test --workspace` runs unit, integration, and documentation tests.
+- `cargo fmt --all -- --check` checks formatting.
+- `cargo clippy --workspace --all-targets -- -D warnings` runs strict Clippy.
+
+Use Rust 2024 idioms and rustfmt defaults. Prefer explicit behavioral names.
+Avoid `unsafe` unless a measured need and safety proof are documented. Add an
+observable invariant and an inversion test for every new law. Preserve exact
+payloads in typed errors and use flat semantic `thiserror` variants instead of
+nested positional product errors.
+
+Use short imperative commit subjects with a scope-like prefix. Keep commits
+focused and report the exact verification commands and results.

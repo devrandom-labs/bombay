@@ -1,6 +1,6 @@
 [package]
 name = "bombay-engine"
-description = "Actor-independent runtime engine composing Bombay Behavior, Transition, and Machine Executor."
+description = "Universal direct-Behavior Driver for Bombay actor incarnations."
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
@@ -12,10 +12,16 @@ workspace = true
 
 [dependencies]
 behavior = { workspace = true }
-bombay-transition = { workspace = true }
-bombay-machine-executor = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["rt", "macros"] }
+tokio = { workspace = true, features = ["rt", "macros", "time"] }
 proptest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+trybuild = "1"
+criterion = { workspace = true }
+
+[[bench]]
+name = "driver"
+harness = false

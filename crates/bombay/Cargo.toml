@@ -10,23 +10,26 @@ repository.workspace = true
 [lib]
 name = "bombay"
 
+[[example]]
+name = "basic"
+path = "../../examples/basic.rs"
+
+[[example]]
+name = "supervision"
+path = "../../examples/supervision.rs"
+
 [lints]
 workspace = true
 
 [dependencies]
-bombay-address = { workspace = true }
 behavior = { workspace = true }
-communication = { workspace = true }
-observe = { workspace = true }
-bombay-timers = { workspace = true }
-tokio = { workspace = true, features = ["rt", "sync", "time", "macros"] }
-thiserror = { workspace = true }
 bombay-engine = { workspace = true }
-[dev-dependencies]
-criterion = { workspace = true }
-proptest = { workspace = true }
-tokio = { workspace = true, features = ["rt", "rt-multi-thread", "sync", "time", "macros", "test-util"] }
+bombay-address = { workspace = true }
+observe = { workspace = true }
+communication = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
+timers = { workspace = true }
 
-[[bench]]
-name = "runtime_composition"
-harness = false
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros"] }

@@ -1,108 +1,61 @@
-//! Production Driver using Machine Executor's `ExclusiveExecutor`.
+//! Universal direct-Behavior Driver.
 //!
-//! The [`Driver`] stores an [`ExclusiveExecutor`]`<BehaviorMachine<B>>` and
-//! delegates every production event through [`ExclusiveExecutor::turn`], which
-//! calls [`Machine::step`] (Transition) → [`Behavior::transition`] (Behavior)
-//! and returns the [`BehaviorActed`] output directly. Effect interpretation is
-//! async and happens after the turn, outside the poison boundary.
-//!
-//! # Execution flow
-//!
-//! ```text
-//! init: Behavior::init → BehaviorMachine → ExclusiveExecutor::new
-//! loop: env.next() → executor.turn(event) → BehaviorActed
-//!       → await Environment::interpret → loop
-//! ```
-//!
-//! # Poison boundary
-//!
-//! [`ExclusiveExecutor::turn`] installs a poisoned seat before calling
-//! [`Machine::step`]. A transition panic unwinds through the turn, leaves the
-//! seat poisoned, and the driver propagates the unwind (bombay classifies it
-//! as `TaskOutcome::Panicked`). If an outer caller catches that unwind and
-//! reuses the public Driver, `run_loop` detects poison before polling the
-//! environment, retires it, and returns [`RunError::Poisoned`].
-//!
-//! # Inversion guarantee (type-level, not runtime)
-//!
-//! `Machine::step` consumes `self` (affine). The machine is owned by
-//! [`ExclusiveExecutor`], which exposes no way to step it other than
-//! [`ExclusiveExecutor::turn`]. The type system therefore makes `turn` the
-//! only transition path; a runtime test cannot detect a bypass the compiler
-//! already rejects.
+//! One closed Behavior and one coherent typed environment cross this boundary.
+//! Behavior's own [`Activate`] transition initializes the definition once and
+//! yields its [`behavior::Active`] value. The Driver then obtains one event,
+//! folds that active Behavior directly once, applies the complete action value
+//! once, and only then requests another event. It contains no template,
+//! routing, mailbox, scheduling, identity, retry, or machine-topology policy.
 
-use behavior::{Actions, Address, Behavior, BirthMode, Exit, Never, SendAlgebra, Step};
-use bombay_machine_executor::{ExclusiveExecutor, ExclusiveState};
+use behavior::{Actions, Behavior, Never, Step};
 
-use crate::{BehaviorMachine, Environment, RunError, RunExit};
+use crate::{ActiveEnvironment, Environment};
 
-/// One behavior transition with `become` removed.
-pub struct RuntimeEffects<A: Address, Sends, Birth: BirthMode> {
-    pub sends: Sends,
-    pub creates: Vec<behavior::Create<A, Birth::Child>>,
+/// The complete action value emitted by one closed Behavior decision.
+pub type ActionsOf<B> = Actions<
+    behavior::BehaviorAddr<B>,
+    <B as Behavior>::Ph,
+    <B as Behavior>::Sends,
+    <B as Behavior>::Birth,
+>;
+
+/// The factual reason one Driver execution completed successfully.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Completion {
+    /// The Behavior explicitly selected [`Step::Stop`].
+    Stopped,
+    /// The environment permanently exhausted its event source.
+    Exhausted,
 }
 
-async fn interpret<A, Sends, Birth, E>(
-    actions: Actions<A, Never, Sends, Birth>,
-    environment: &mut E,
-) -> Result<Option<Exit<A>>, E::Error>
-where
-    A: Address,
-    Sends: SendAlgebra,
-    Birth: BirthMode,
-    E: Environment<Effect = RuntimeEffects<A, Sends, Birth>>,
-{
-    let Actions {
-        sends,
-        creates,
-        become_,
-    } = actions;
-    environment
-        .interpret(RuntimeEffects { sends, creates })
-        .await?;
-    Ok(match become_ {
-        Step::Continue => None,
-        Step::Goto(never) => match never {},
-        Step::Stop(exit) => Some(exit),
-    })
+/// A failure on either side of the Behavior/environment boundary.
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+pub enum DriverError<B, A, E = A> {
+    /// The Behavior rejected initialization or an event.
+    #[error("behavior transition failed")]
+    Behavior(#[source] B),
+    /// The prepared environment rejected initialization commitment or publication.
+    #[error("environment activation failed")]
+    Activation(#[source] A),
+    /// The active environment failed while applying a successful decision's actions.
+    #[error("environment failed while applying behavior actions")]
+    Environment(#[source] E),
 }
 
-/// Typestate for the driver lifecycle — no `Option` plus `expect`.
-enum State<B: Behavior> {
-    Uninitialized(B),
-    Running(ExclusiveExecutor<BehaviorMachine<B>>),
-    Terminated,
-    Retired,
-}
-
-/// Application core driving one behavior through one runtime port.
+/// An uninitialized, affine Driver execution.
 ///
-/// Uses [`ExclusiveExecutor`] for allocation-free exclusive turns. Every event
-/// goes through `turn`; effect interpretation is async, outside the executor.
-///
-/// # Compile-time bound
-///
-/// The `B: Behavior` bound rejects a payload type that does not implement
-/// [`Behavior`]. This is a narrow static bound, not a proof that every
-/// invalid composition is unrepresentable:
-///
-/// ```compile_fail
-/// use bombay_engine::Driver;
-/// // `u32` does not implement `Behavior`; this must not compile.
-/// let _: Driver<u32, ()> = Driver::new(42u32, ());
-/// ```
+/// Construction relies on inference: callers pass the final composed Behavior
+/// value directly and never need to name its nested wrapper type.
 pub struct Driver<B: Behavior, E> {
-    state: State<B>,
+    behavior: B,
     environment: E,
 }
 
-impl<B, E> Driver<B, E>
-where
-    B: Behavior,
-{
+impl<B: Behavior, E> Driver<B, E> {
+    #[must_use]
     pub fn new(behavior: B, environment: E) -> Self {
         Self {
-            state: State::Uninitialized(behavior),
+            behavior,
             environment,
         }
     }
@@ -110,143 +63,64 @@ where
 
 impl<B, E> Driver<B, E>
 where
-    B: Behavior<Ph = Never> + Send,
-    B::Event: Send,
-    E: Environment<Event = B::Event, Effect = RuntimeEffects<B::Addr, B::Sends, B::Birth>>,
+    B: Behavior<Ph = Never>,
+    E: Environment<B>,
 {
-    /// Run initialization, construct the executor, interpret init effects.
+    /// Consume and run one complete execution.
     ///
-    /// Transitions `Uninitialized → Running` for a continuing behavior or
-    /// `Uninitialized → Terminated` for terminal initialization.
-    /// Returns the terminal exit in the latter case.
+    /// Initialization and every event fold happen exactly once. Each complete
+    /// action value crosses the environment boundary exactly once before the
+    /// Driver requests another event. Every ordinary return retires the
+    /// environment; cancellation only drops owned values and does not claim an
+    /// asynchronous retirement completed.
     ///
     /// # Errors
     ///
-    /// Returns [`RunError::Behavior`] when [`Behavior::init`] fails.
-    /// Returns [`RunError::Environment`] when the environment rejects
-    /// an initialization effect.
-    ///
-    /// # Panics
-    ///
-    /// Panics if called on a driver that is not in the `Uninitialized` state.
-    pub async fn run_init(
-        &mut self,
-    ) -> Result<Option<Exit<B::Addr>>, RunError<B::Error, E::Error>> {
-        let State::Uninitialized(behavior) = std::mem::replace(&mut self.state, State::Retired)
-        else {
-            panic!("run_init called on non-uninitialized driver");
+    /// Returns the exact Behavior error when initialization or a turn fails,
+    /// or the exact environment error when local action commitment fails.
+    pub async fn run(
+        self,
+    ) -> Result<
+        Completion,
+        DriverError<B::Error, E::Error, <E::Active as ActiveEnvironment<B>>::Error>,
+    > {
+        let Self {
+            behavior,
+            environment,
+        } = self;
+        let mut behavior = behavior;
+        let initialized = match behavior::initialize(&mut behavior) {
+            Ok(initialized) => initialized,
+            Err(error) => {
+                return Err(DriverError::Behavior(error));
+            }
         };
-
-        let mut machine = BehaviorMachine::for_runtime(behavior);
-        let initial = machine.behavior_mut().init().map_err(RunError::Behavior)?;
-
-        let exit = interpret(initial, &mut self.environment)
+        let stopped = matches!(&initialized.become_, Step::Stop(_));
+        let mut environment = environment
+            .activate(initialized)
             .await
-            .map_err(RunError::Environment)?;
-
-        self.state = if exit.is_some() {
-            State::Terminated
+            .map_err(DriverError::Activation)?;
+        let result = if stopped {
+            Ok(Completion::Stopped)
         } else {
-            State::Running(ExclusiveExecutor::new(machine))
+            loop {
+                let Some(event) = environment.next().await else {
+                    break Ok(Completion::Exhausted);
+                };
+                let actions = match behavior::delegate_transition(&mut behavior, event) {
+                    Ok(actions) => actions,
+                    Err(error) => break Err(DriverError::Behavior(error)),
+                };
+                let stopped = matches!(&actions.become_, Step::Stop(_));
+                match environment.apply(actions).await {
+                    Ok(()) if stopped => break Ok(Completion::Stopped),
+                    Ok(()) => {}
+                    Err(error) => break Err(DriverError::Environment(error)),
+                }
+            }
         };
-        Ok(exit)
-    }
 
-    /// Run the event loop. Every event goes through
-    /// [`ExclusiveExecutor::turn`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`RunError::Behavior`] when a [`Behavior::transition`] fails.
-    /// Returns [`RunError::Environment`] when the environment rejects an
-    /// effect.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the driver is not in the `Running` state. A transition panic
-    /// unwinds through this method (leaving the executor poisoned).
-    pub async fn run_loop(
-        &mut self,
-    ) -> Result<RunExit<Exit<B::Addr>>, RunError<B::Error, E::Error>> {
-        loop {
-            // A caller can retain and reuse the Driver after catching a panic
-            // from a previously-polled run_loop future. Detect that terminal
-            // executor state before pulling another event from the environment;
-            // otherwise the intact PoisonedInput returned by turn would merely
-            // be consumed and discarded by this adapter.
-            let poisoned = match &self.state {
-                State::Running(executor) => executor.state() == ExclusiveState::Poisoned,
-                _ => panic!("run_loop on non-running driver"),
-            };
-            if poisoned {
-                self.environment.retire().await;
-                self.state = State::Retired;
-                return Err(RunError::Poisoned);
-            }
-
-            let Some(event) = self.environment.next().await else {
-                self.state = State::Terminated;
-                return Ok(RunExit::EnvironmentClosed);
-            };
-
-            let output = match &mut self.state {
-                State::Running(executor) => executor.turn(event),
-                _ => panic!("run_loop on non-running driver"),
-            };
-
-            // The pre-check above handles retained poison. This arm remains a
-            // defensive boundary in case the executor contract grows another
-            // safe way for turn to reject an input.
-            let actions = match output {
-                Ok(Ok(actions)) => actions,
-                Ok(Err(error)) => {
-                    self.state = State::Terminated;
-                    return Err(RunError::Behavior(error));
-                }
-                Err(_poisoned) => {
-                    self.environment.retire().await;
-                    self.state = State::Retired;
-                    return Err(RunError::Poisoned);
-                }
-            };
-
-            match interpret(actions, &mut self.environment).await {
-                Ok(Some(exit)) => {
-                    self.state = State::Terminated;
-                    return Ok(RunExit::Stopped(exit));
-                }
-                Ok(None) => {}
-                Err(error) => {
-                    self.state = State::Terminated;
-                    return Err(RunError::Environment(error));
-                }
-            }
-        }
-    }
-
-    /// Retire the environment.
-    pub async fn retire(&mut self) {
-        self.environment.retire().await;
-        self.state = State::Retired;
-    }
-
-    /// Run init, then event loop, then retire.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`RunError::Behavior`] when the behavior fails during
-    /// initialization or a transition. Returns [`RunError::Environment`]
-    /// when the environment rejects an effect.
-    pub async fn run(&mut self) -> Result<RunExit<Exit<B::Addr>>, RunError<B::Error, E::Error>> {
-        let result = async {
-            if let Some(exit) = self.run_init().await? {
-                return Ok(RunExit::Stopped(exit));
-            }
-            self.run_loop().await
-        }
-        .await;
-        self.environment.retire().await;
-        self.state = State::Retired;
+        environment.retire().await;
         result
     }
 }

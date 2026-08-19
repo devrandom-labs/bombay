@@ -1,26 +1,17 @@
-//! Actor-independent runtime engine composing Bombay Behavior, Transition,
-//! and Machine Executor.
+//! Actor-independent universal Driver over one closed Behavior.
 //!
 //! # Architecture
 //!
 //! This crate provides the orchestration layer:
 //!
-//! - `BehaviorMachine` (internal) — adapts a `Behavior` to [`bombay_transition::Machine`]
-//! - [`Driver`] — production async executor using
-//!   [`bombay_machine_executor::ExclusiveExecutor`] for machine stepping
+//! - [`Driver`] — the single direct-Behavior causal turn loop
 //! - [`Environment`] — actor-independent I/O abstraction
-//! - [`RuntimeEffects`], [`RunError`], [`RunExit`] — effect and terminal types
+//! - [`Completion`] and [`DriverError`] — exact success and failure vocabulary
 
-mod behavior_machine;
-mod behavior_machine_tests;
 mod driver;
-mod driver_tests;
 mod environment;
-mod inversion_tests;
-mod property_tests;
-mod run;
 
-pub(crate) use behavior_machine::BehaviorMachine;
-pub use driver::{Driver, RuntimeEffects};
-pub use environment::Environment;
-pub use run::{RunError, RunExit};
+#[doc(hidden)]
+pub use driver::{ActionsOf, Completion, Driver, DriverError};
+#[doc(hidden)]
+pub use environment::{ActiveEnvironment, Environment};

@@ -1,0 +1,27 @@
+[package]
+name = "bombay-engine-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+behavior = { package = "bombay-behavior-actors", path = "../../../../bombay-behavior/crates/actors" }
+bombay-engine = { path = ".." }
+
+[[bin]]
+name = "causal_turns"
+path = "fuzz_targets/causal_turns.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
+
+[patch.crates-io]
+bombay-behavior = { path = "../../../../bombay-behavior/crates/behavior" }
+bombay-behavior-macros = { path = "../../../../bombay-behavior/crates/behavior-macros" }
+bombay-behavior-actors = { path = "../../../../bombay-behavior/crates/actors" }

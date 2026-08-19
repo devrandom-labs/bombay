@@ -1,0 +1,21 @@
+error[E0271]: type mismatch resolving `<OpenPhase as Behavior>::Ph == Never`
+  --> tests/compile/fail/stash_requires_closed_phase.rs:25:24
+   |
+25 |     let _ = Stash::new(OpenPhase, |_| behavior::StashRoute::Deliver);
+   |             ---------- ^^^^^^^^^ type mismatch resolving `<OpenPhase as Behavior>::Ph == Never`
+   |             |
+   |             required by a bound introduced by this call
+   |
+note: expected this to be `Never`
+  --> tests/compile/fail/stash_requires_closed_phase.rs:11:15
+   |
+11 |     type Ph = u8;
+   |               ^^
+note: required by a bound in `behavior_actors::Stash::<B>::new`
+  --> /Users/joel/Code/devrandom/bombay-behavior/crates/actors/src/stash.rs:27:18
+   |
+27 | impl<B: Behavior<Ph = Never>> Stash<B> {
+   |                  ^^^^^^^^^^ required by this bound in `Stash::<B>::new`
+...
+34 |     pub fn new(inner: B, route: fn(&crate::BehaviorMessage<B>) -> StashRoute) -> Self {
+   |            --- required by a bound in this associated function

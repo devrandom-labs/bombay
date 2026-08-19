@@ -1,47 +1,46 @@
-//! bombay — a typed behavior runtime.
+//! Bombay runtime core, built one ownership layer at a time.
 //!
-//! The behavior half is [`behavior`]'s pure algebra (depended on, never
-//! copied). Bombay Communication supplies the sole mailbox implementation. A
-//! behavior is driven sequentially while its environment supplies events and
-//! interprets effects. Runtime construction remains centralized in
-//! [`System::spawn`]. Consumers that may publish an endpoint only after
-//! initialization and its effects succeed use [`System::activate`].
+//! [`bombay_engine::Driver`] owns universal Behavior execution. Bombay keeps
+//! lifecycle and local-launch plumbing private while exposing typed actor
+//! references.
 //!
 //! # Panic strategy
 //!
-//! Actor task panics are normalized as [`TaskOutcome::Panicked`], and terminal
-//! retirement completes during unwinding. The runtime therefore requires
-//! `panic = "unwind"`; abort-mode programs cannot preserve these public
-//! lifecycle outcomes.
+//! Driver panics are normalized internally, and terminal retirement completes
+//! during unwinding. The runtime therefore requires `panic = "unwind"`;
+//! abort-mode programs cannot preserve these lifecycle guarantees.
+
+extern crate self as bombay;
 
 #[cfg(panic = "abort")]
 compile_error!(
     "bombay requires panic=unwind to classify actor panics and complete terminal retirement"
 );
 
-// The behavior algebra, re-exported so actor users depend on one crate.
+pub use application_runtime::{App, RunError};
 pub use behavior;
+mod application_runtime;
+mod generation;
+mod incarnation;
+mod interpret;
+mod launch;
+mod local;
+mod observation;
+mod outcome;
+mod reports;
+mod retirement;
+mod time;
+mod topology;
 
-mod mailbox;
-mod routing;
-mod runtime;
+pub(crate) use incarnation::Incarnation;
+pub use launch::ActorSpace;
+pub use local::{ActorRef, SendError};
+pub(crate) use outcome::IncarnationOutcome;
+pub(crate) use retirement::Retirement;
+pub use topology::Hosts;
 
-// Terminal results are part of System's observable API; their implementation
-// and all execution authority remain owned by Bombay Behavior Engine.
-pub use bombay_engine::{RunError, RunExit};
-pub(crate) use mailbox::{EventSender, EventSource, MailboxReceiver};
-pub use mailbox::{MailboxAnchor, MailboxConfig, MailboxSender};
-pub use routing::{
-    ActorRef, AddressInUse, AddressRouter, DeliveryEndpoint, DeliveryRouter, EndpointRegistry,
-    IncarnationEndpoint, MailboxDeliveryClosed, ObservesCreations, PeerObservationError,
-    PeerObserver, RejectedDelivery, RouteSends, RoutingError, ShutdownRequestError,
-};
-pub(crate) use runtime::{
-    ActorEnvironment, ChildLease, ChildRuntime, RuntimeBirthMode, SystemChildren,
-};
-pub use runtime::{
-    BehaviorActivation, BehaviorRetirement, CreationFailure, Handle, LifecycleEvent, LifecycleSink,
-    LifecycleTransition, NoLifecycle, RegistrationIdentity, RootActivation, RootEndpoint,
-    RootOutcome, RootRetirement, RuntimeEffectError, ScheduleAfterError, System, SystemBirthError,
-    TaskOutcome,
-};
+/// Conventional imports for Bombay applications.
+pub mod prelude {
+    pub use crate::behavior::*;
+    pub use crate::{ActorSpace, App, Hosts, RunError};
+}
