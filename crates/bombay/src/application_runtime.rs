@@ -50,7 +50,7 @@ pub enum RunError {
     label = "incomplete local actor system",
     note = "inspect the required `Hosts<Protocol>` bound and add that protocol's `ActorSpace`"
 )]
-pub trait LaunchSystem<A: Behavior<Protocol: Protocol<Addr = MailAddr>>> {
+pub(crate) trait LaunchSystem<A: Behavior<Protocol: Protocol<Addr = MailAddr>>> {
     fn launch(self, root: A) -> impl Future<Output = Result<(), RunError>> + Send;
 }
 
@@ -71,8 +71,8 @@ where
     >>::Error: Send + 'static,
 {
     async fn launch(self, root: A) -> Result<(), RunError> {
-        let namespaces = Arc::new(self);
-        let roots = <N as Hosts<A::Protocol>>::space(&namespaces).clone();
+        let actor_spaces = Arc::new(self);
+        let roots = <N as Hosts<A::Protocol>>::space(&actor_spaces).clone();
         let address = MailAddr(0);
         let actor = crate::launch::spawn_with(
             roots,
@@ -80,13 +80,13 @@ where
             address,
             Guardian::new(root),
             {
-                let namespaces = namespaces.clone();
+                let actor_spaces = actor_spaces.clone();
                 move |control, termination, timers, facts| {
                     ActionInterpreter::new(
                         address,
                         ApplicationCapabilities::<Guardian<A>, N>::new(
                             address,
-                            namespaces,
+                            actor_spaces,
                             control,
                             termination,
                             timers,
@@ -123,6 +123,10 @@ impl<R, A> App<R, A> {
     }
 }
 
+#[allow(
+    private_bounds,
+    reason = "LaunchSystem is Bombay's sealed implementation proof, not application API"
+)]
 impl<R, A> App<R, A>
 where
     R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
@@ -149,7 +153,7 @@ where
     BehaviorAddr<C>: core::hash::Hash,
     <BehaviorAddr<C> as Address>::Nonce: core::hash::Hash,
 {
-    namespaces: Arc<N>,
+    actor_spaces: Arc<N>,
     address: BehaviorAddr<C>,
     control: ControlSender<C::Event>,
     creations: CreationResults<BehaviorAddr<C>>,
@@ -231,7 +235,7 @@ where
     async fn interpret_delivery(&mut self, delivery: Delivery<Target>) -> Result<(), Self::Error> {
         let address = delivery.to.resolve(self.address);
         let actor = self
-            .namespaces
+            .actor_spaces
             .space()
             .resolve(&address)
             .ok_or(InterpretationFailure::Unknown(address))?;
@@ -279,7 +283,7 @@ where
     ) -> Result<(), Self::Error> {
         self.peers
             .get_or_insert_with(|| {
-                LocalPeerObservations::new(self.namespaces.space().clone(), self.facts.clone())
+                LocalPeerObservations::new(self.actor_spaces.space().clone(), self.facts.clone())
             })
             .observe::<Path>(request)
             .map_err(|crate::observation::ObservationError::Unknown(address)| {
@@ -361,7 +365,7 @@ where
             Some(ChildShutdownRejection::AlreadyStopping)
         } else if self.owned_children.contains(&request.nonce) {
             let child = self
-                .namespaces
+                .actor_spaces
                 .space()
                 .resolve(&self.address.birth(request.nonce));
             if child.is_some_and(|child| child.request_shutdown()) {
@@ -453,7 +457,7 @@ where
 {
     pub(crate) fn new(
         address: BehaviorAddr<C>,
-        namespaces: Arc<N>,
+        actor_spaces: Arc<N>,
         control: ControlSender<C::Event>,
         termination: Arc<TerminalOverride<BehaviorAddr<C>>>,
         timers: LocalTimers<C::Event>,
@@ -474,7 +478,7 @@ where
             parent_reports: NoParent,
             control,
             creations,
-            namespaces,
+            actor_spaces,
         }
     }
 }
@@ -487,7 +491,7 @@ where
 {
     fn with_parent(
         address: BehaviorAddr<C>,
-        namespaces: Arc<N>,
+        actor_spaces: Arc<N>,
         control: ControlSender<C::Event>,
         termination: Arc<TerminalOverride<BehaviorAddr<C>>>,
         timers: LocalTimers<C::Event>,
@@ -509,7 +513,7 @@ where
             parent_reports,
             control,
             creations,
-            namespaces,
+            actor_spaces,
         }
     }
 }
@@ -597,8 +601,8 @@ where
     ) -> Result<(), Never> {
         let nonce = creation.nonce;
         let kind = creation.kind;
-        let namespaces = self.namespaces.clone();
-        let actors = self.namespaces.space().clone();
+        let actor_spaces = self.actor_spaces.clone();
+        let actors = self.actor_spaces.space().clone();
         let parent = self.control.clone();
         let result = crate::launch::spawn_owned_with(
             actors,
@@ -614,7 +618,7 @@ where
                         LocalParentReports<BehaviorAddr<C>, C::Event>,
                     >::with_parent(
                         address,
-                        namespaces,
+                        actor_spaces,
                         control,
                         termination,
                         timers,

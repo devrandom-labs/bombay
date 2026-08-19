@@ -44,8 +44,3 @@ pub mod prelude {
     pub use crate::behavior::*;
     pub use crate::{ActorSpace, App, Hosts, RunError};
 }
-
-#[doc(hidden)]
-pub mod __private {
-    pub use crate::application_runtime::LaunchSystem;
-}

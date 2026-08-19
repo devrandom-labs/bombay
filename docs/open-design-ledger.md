@@ -495,6 +495,51 @@ ordinary Rust rejects duplicate trait implementations through coherence.
 
 ## Selected item: E9
 
+### Fresh verification — 2026-08-19 (complete application intersection)
+
+E9 was re-verified independently against the exact dependency selection used
+by this workspace:
+
+| Dependency | Exact source | E9 ownership finding |
+|---|---|---|
+| Behavior / Behavior Actors | patched checkout commit `643b9f14e4dac5ecd4fd545126c2807097a2c338`, package `bombay-behavior-actors 0.12.0` | owns `Protocol`, `Behavior`, structural effect interpretation, `Children`, Guardian policy, supervision, pools, watches, shutdown coordination, and every actor-template protocol; Bombay must only interpret those effects |
+| Address | patched checkout commit `7df3bedc5f3177ddbdb617cefe4b6ffcd60ecda3`, package `bombay-address 0.2.0` | owns typed address-to-endpoint registration, resolution snapshots, lease-exact retirement, and address-reuse isolation; `ActorSpace<P>` is only Bombay's protocol-indexed specialization of this primitive |
+| Communication | locked registry package `bombay-communication 0.1.2`, checksum `fc3d06aaf88ef9fe5392506d13e208c2141e6978563e1b802b97b489b1a071e2` | owns the bounded two-lane mailbox, affine user admission, closure, payload recovery, fairness, and wakeup; it owns no actor topology or policy |
+| Observe | locked registry package `bombay-observe 0.1.1`, checksum `7017c773ae142628b6a244cddad0db987cfba22df4c93730844a7d43cc657304` | owns retained keyed generations and the unkeyed consuming publisher pair used for exact lifecycle outcomes; it owns no actor protocol routing |
+| Timers | locked registry package `bombay-timers 0.1.0`, checksum `5b3fc2dab4a030fd1838d0492a1c62d3c43ece1355125e3fc628da3ca436352d` | owns branded generation-safe scheduling, replacement, cancellation, due ordering, and compaction; timer-backed policy remains in Behavior Actors |
+
+The current public sources, crate documentation, semantic tests, concurrency
+tests, runtime-contract manifest, recursive protocol proofs, and relevant
+compile-fail contracts were inspected. No neighboring primitive supplies or
+requires another Bombay registry, mailbox, lifecycle abstraction, or actor
+policy wrapper.
+
+This fresh application-level audit exposes two distinct template-composition
+limits which the existing green examples do not cover:
+
+- `WorkerPool` and `KeyedWorkerPool` always create `Proxy<C>` and therefore
+  fix both proxy-to-parent report ingresses at `Here`. Unlike
+  `DynamicSupervisorWithParent`, neither pool has a parent-path parameter.
+  Wrapping a pool in `StopOnShutdown`, `ShutdownCoordinator`, or another
+  event-extending template moves the pool-owned `WorkerStopped` and
+  `WorkerCreationResolved` lanes under `Inside<Here>`, while its proxies still
+  report to `Here`. Bombay cannot recover that parent path from the runtime
+  request and must not add a pool-specific positional exception.
+- `ShutdownCoordinator<B, C>` deliberately coordinates one homogeneous child
+  protocol `C`. The reference root owns heterogeneous supervisor and pool
+  children, so this template cannot by itself express the required ordered
+  root shutdown. `Guardian` direct shutdown stops the root and Bombay then
+  cancels remaining owned tasks; that is a safe ownership fallback, not the
+  documented graceful tree traversal.
+
+E9 remains `active`, but its Bombay interpreter layer is not the source of
+either gap. The next valid implementation step requires Behavior Actors to
+provide path-aware pool parent ingress and a composition for heterogeneous
+coordinated child shutdown (or prove an existing template composition that
+does so). Bombay must not duplicate either policy. Once those contracts
+exist, E9 should need only a public acceptance example and existing generic
+interpreters.
+
 ### Fresh verification — 2026-08-17
 
 All neighboring contracts were re-read again for the representative complex
@@ -943,9 +988,9 @@ manifest. Address publication, generation replacement, and incarnation terminal
 classification are Bombay runtime integration contracts; keeping them in the
 Engine manifest falsely coupled the universal executor to deleted runtime test
 modules. Bombay's runtime tests remain responsible for those invariants.
-The full workspace test suite, Engine's explicit ignored law-completion gate,
+At that historical implementation slice, the full workspace test suite,
+Engine's explicit ignored law-completion gate,
 workspace Clippy over all targets, formatting check, and `git diff --check` all
-pass. E9 is therefore `feature-complete`. It is not `distilled` until the
-project-wide final audit attempts the required further decomposition and public
-surface minimization. E9 no longer blocks M4; M4 remains blocked only on its own
-fresh mandatory cross-crate verification.
+passed, so E9 temporarily reached `feature-complete`. The later complete
+application-intersection audit above supersedes that state: E9 is `active`
+again and blocks M4 until the documented reference topology is executable.
