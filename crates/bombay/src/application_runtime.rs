@@ -348,10 +348,12 @@ impl<Owner, N, P, Child, Path> behavior::InterpretRequest<ShutdownChild<Child>, 
     for ApplicationCapabilities<Owner, N, P>
 where
     Owner: Behavior,
-    BehaviorAddr<Owner>: core::hash::Hash + Send,
-    <BehaviorAddr<Owner> as Address>::Nonce: core::hash::Hash + Send,
-    Owner::Event:
-        InjectEvent<ChildShutdownRejected<<BehaviorAddr<Owner> as Address>::Nonce>, Path> + Send,
+    BehaviorAddr<Owner>: core::hash::Hash + Send + Sync + 'static,
+    <BehaviorAddr<Owner> as Address>::Nonce: core::hash::Hash + Send + Sync + 'static,
+    Owner::Event: InjectEvent<ChildStopped<BehaviorAddr<Owner>>, Path>
+        + InjectEvent<ChildShutdownRejected<<BehaviorAddr<Owner> as Address>::Nonce>, Path>
+        + Send
+        + 'static,
     Child: Behavior<Protocol: behavior::Protocol<Addr = BehaviorAddr<Owner>>>,
     Child::Event: InjectEvent<ShutdownRequested, behavior::Here> + Send,
     N: Hosts<Child::Protocol>,
@@ -370,6 +372,22 @@ where
                 .resolve(&self.address.birth(request.nonce));
             if child.is_some_and(|child| child.request_shutdown()) {
                 self.stopping_children.insert(request.nonce);
+                let observation = self
+                    .child_terminations
+                    .get(&request.nonce)
+                    .expect("owned established children retain termination observations")
+                    .clone();
+                let nonce = request.nonce;
+                let task = self.facts.insert(async move {
+                    Owner::Event::inject_at(ChildStopped::new(
+                        nonce,
+                        observation.await,
+                        Instant::now(),
+                    ))
+                });
+                if let Some(previous) = self.child_observations.insert(nonce, task) {
+                    self.facts.remove(previous);
+                }
                 None
             } else {
                 Some(ChildShutdownRejection::NotEstablished)

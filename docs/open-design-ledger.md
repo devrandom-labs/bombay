@@ -73,7 +73,7 @@ this workspace, not against earlier ledger entries:
 
 | Dependency | Exact source | M4 ownership finding |
 |---|---|---|
-| Behavior / Behavior Actors | patched checkout commit `643b9f14e4dac5ecd4fd545126c2807097a2c338`, package `bombay-behavior-actors 0.12.0` | owns `Protocol`, `Behavior`, `Actions`, typed sends and births, `Children`, the actor-authoring macros, and the complete template catalogue; templates are directly constructed values and do not expose an application-local hosting closure |
+| Behavior / Behavior Actors | patched checkout commit `175b0774115088ca6911b82dfd80ca31ab749f07`, package `bombay-behavior-actors 0.12.0` | owns `Protocol`, `Behavior`, `Actions`, typed sends and births, `Children`, proxy-owner shutdown, and the complete template catalogue; templates are directly constructed values and do not expose an application-local hosting closure |
 | Address | patched checkout commit `7df3bedc5f3177ddbdb617cefe4b6ffcd60ecda3`, package `bombay-address 0.2.0` | owns typed generation-safe endpoint storage and leases; it does not choose which protocol spaces an application hosts |
 | Communication | locked registry package `bombay-communication 0.1.2`, checksum `fc3d06aaf88ef9fe5392506d13e208c2141e6978563e1b802b97b489b1a071e2` | owns the two-lane mailbox and affine user-admission lifecycle; no application-facing topology or actor policy belongs here |
 | Observe | locked registry package `bombay-observe 0.1.1`, checksum `7017c773ae142628b6a244cddad0db987cfba22df4c93730844a7d43cc657304` | owns retained keyed observations and the unkeyed affine publisher pair; it contributes no user-visible actor-system configuration |
@@ -150,12 +150,11 @@ deleted. The basic and supervision examples contain ordinary structs and
 ordinary trait implementations only. No `TypeId`, `Any`, endpoint enum, HList,
 positional witness, or dynamic dispatch was introduced.
 
-The previously unfinished worker-pool extension in `supervision.rs` was
-removed while establishing this baseline because it did not satisfy recursive
-creation dispatch before this change. The committed supervision scenario still
-proves heterogeneous recursive creation and multiple hosted protocols through
-the new `Hosts<P>` path; worker-pool acceptance remains E9 work rather than
-being hidden inside the composition migration.
+The worker-pool extension in `supervision.rs` was initially withheld because
+its then-current event/effect paths did not satisfy recursive creation
+dispatch. Behavior Actors commit `175b077` repaired that contract with one
+named, path-coherent product. The example now includes the pool openly through
+the same generic `Hosts<P>` and interpretation path as every other actor.
 
 `cargo test --workspace`, workspace all-target Clippy with warnings denied,
 format checking, both runnable examples, and `git diff --check` pass.
@@ -626,6 +625,116 @@ according to their existing policies, and stop only after the owned set is
 empty. The templates already own those membership sets and proxy protocols;
 Bombay must not inspect or duplicate them. E9 remains active until that
 composition exists and is proven under the generalized root coordinator.
+
+### Dependency refresh — 2026-08-19 (owned-proxy draining)
+
+Behavior / Behavior Actors commit
+`b5b461302d0359d35f85db5701a90899836ec4cc`, package 0.12.0, adds typed
+shutdown directly to `DynamicSupervisor` and `WorkerPool`:
+
+- `DynamicSupervisor` enters `Draining`, rejects later start/replace/stop
+  commands as `ShuttingDown`, requests shutdown for every established proxy,
+  requests it when an in-flight proxy installation resolves, awaits every
+  non-retired nonce, and reports a typed terminal error if shutdown is
+  rejected.
+- `WorkerPool` returns every assigned and queued payload as
+  `PoolInterruption::PoolShutdown`, rejects later submissions without taking
+  ownership, drains established proxies, handles installations that resolve
+  during the drain, awaits the complete non-rejected set, and reports typed
+  child-shutdown rejection.
+
+The upstream state-machine and model tests cover established and installing
+children, retained job ownership, late admission, exact stop ordering, and
+rejection paths. The template event and named send products carry ordinary
+`ShutdownRequested`, `ShutdownChild`, `ChildStopped`, and
+`ChildShutdownRejected` lanes already supported by Bombay's generic
+interpreter.
+
+The exact Address, Communication, Observe, and Timers sources and tests were
+rechecked again. Their ownership and selected versions remain unchanged; no
+runtime primitive or template-specific Bombay adapter is required. E9 is
+implementation-eligible for the generalized root plus dynamic-supervisor and
+FIFO-worker-pool acceptance topology. `KeyedWorkerPool` remains outside this
+specific reference topology and must not be described as drain-capable unless
+its own current contract proves that separately.
+
+The first public runtime composition disproved the worker-pool eligibility
+claim above. `WorkerPoolEvent` implements the pool's existing creation and
+child lifecycle facts at `Here`, while `WorkerPoolSends` is encoded as
+`SendLayer<shutdowns, PoolSends>`. Structural interpretation therefore moves
+every request inside `PoolSends` to `Inside<Here>`. The final event has no
+matching injection at that path, and the complete application's recursive
+`DispatchBirth` proof correctly fails. The upstream unit/model tests exercise
+the fold directly but do not interpret the complete sends product against the
+final event algebra, so they did not prove this boundary.
+
+Bombay must not flatten or special-case the product. Behavior Actors can
+resolve the mismatch either by making `WorkerPoolSends` a named product whose
+shutdown and existing pool lanes are both interpreted at the same owner path,
+or by structurally nesting and routing every corresponding pool fact through
+the matching `Inside` event path. The former preserves the current event
+ownership and is the smaller representation. A public runtime-contract test
+must interpret a complete path-aware `WorkerPool` sends value against
+`WorkerPoolEvent` before E9 resumes. Dynamic-supervisor draining composes and
+runs through Bombay; this blocker is specific to the worker-pool product.
+
+### Dependency refresh — 2026-08-19 (proxy-owner shutdown contract)
+
+Behavior / Behavior Actors commit
+`175b0774115088ca6911b82dfd80ca31ab749f07`, package 0.12.0, resolves the
+worker-pool structural blocker without a Bombay adapter. `WorkerPoolEvent` is
+again the concrete `PoolEvent`, while `WorkerPoolSends` is the named
+`PoolSends = SendLayer<SupervisorSends, PoolBehaviorSends>` product. The
+supervisor-owned observation, creation, replacement, failure, and shutdown
+requests and the pool-owned response and assignment deliveries are therefore
+interpreted at the same caller-selected path.
+
+The public `runtime_contracts` proof interprets a complete
+`WorkerPoolSends` value at `Inside<Here>` and statically requires every
+corresponding fact in the final root event: child stop, creation resolution,
+worker stop, worker creation resolution, shutdown request, and child shutdown
+rejection. It also records the expected semantic interpretation order. The
+proxy-parent ingress remains explicitly path-aware, so wrapper nesting does
+not use payload search or runtime type discovery.
+
+The exact selected neighboring contracts were re-read for this feature:
+
+- Address commit `7df3bedc5f3177ddbdb617cefe4b6ffcd60ecda3`, package
+  0.2.0, remains the typed address-to-endpoint ownership table with exact
+  registration identities and lease-controlled retirement.
+- Communication 0.1.2, checksum
+  `fc3d06aaf88ef9fe5392506d13e208c2141e6978563e1b802b97b489b1a071e2`,
+  remains the two-lane mailbox and bounded send/receive contract.
+- Observe 0.1.1, checksum
+  `7017c773ae142628b6a244cddad0db987cfba22df4c93730844a7d43cc657304`,
+  remains the exact retained-outcome pair and keyed observation facility.
+- Timers 0.1.0, checksum
+  `5b3fc2dab4a030fd1838d0492a1c62d3c43ece1355125e3fc628da3ca436352d`,
+  remains the generation-safe timer queue; behavior templates continue to own
+  timer policy and stale-generation decisions.
+
+None supplies or requires a worker-pool-specific runtime primitive. E9 may
+resume with Bombay's existing generic creation, delivery, observation,
+shutdown, and timer interpreters; adding a special pool interpreter would
+duplicate the verified algebra.
+
+Running the unchanged generalized application then exposed one Bombay-owned
+lifecycle omission. `InterpretRequest<ShutdownChild<C>>` closes admission and
+injects `ShutdownRequested` into the exact resolved incarnation, but it does
+not arrange publication of that incarnation's already-retained termination as
+the request's typed `ChildStopped` completion fact. A shutdown coordinator can
+therefore issue a valid request and wait forever even though the child stops.
+This is not an Observe or Behavior gap: Observe already retains the exact
+incarnation outcome, `SpawnChild` stores that observation by creator-local
+nonce, and `ShutdownChild` already selects the response path statically.
+
+Bombay must make successful `ShutdownChild<C>` interpretation observe the
+same stored incarnation and inject exactly one `ChildStopped` at the request's
+selected path. Rejection remains immediate when the nonce is unowned,
+unestablished, or already stopping. The implementation must share the existing
+per-nonce observation-task slot so an earlier explicit `ObserveChild` cannot
+create a second terminal fact. This generic completion law unblocks phased
+coordinator, dynamic-supervisor, proxy, and pool draining together.
 
 ### Fresh verification — 2026-08-17
 
