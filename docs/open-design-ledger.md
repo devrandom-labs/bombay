@@ -588,6 +588,45 @@ It must not encode a fixed catalogue of actor roles. Once that exists, E9 is
 implementation-eligible and Bombay should exercise it entirely through the
 existing generic interpreters.
 
+### Dependency refresh — 2026-08-19 (closed shutdown choice)
+
+Behavior / Behavior Actors commit
+`e2febd53a4e3048dd9ebf21ff5855c01945d2eb2`, package 0.12.0, replaces the
+fixed two-role shutdown enum with the arbitrary recursive
+`ShutdownChoice<C, Tail>` / `NoShutdownTargets<A>` sum. Its validated
+`HeterogeneousShutdownPlan<T>` rejects duplicate creator-local nonces across
+the complete product. `HeterogeneousShutdownSends<T>` interprets each exact
+`ShutdownChild<C>` in declaration order, without erasure or role discovery,
+and the coordinator awaits the union of `ChildStopped` facts phase by phase.
+Public integration and compile-fail tests prove arbitrary public actor types,
+cross-protocol order, exact-once interpretation, and rejection of a child
+without a direct shutdown ingress. This resolves the root-product blocker.
+
+Address `7df3bed`, Communication 0.1.2, Observe 0.1.1, and Timers 0.1.0 were
+rechecked from the exact sources and tests recorded above. Their contracts are
+unchanged and Bombay's generic `ShutdownChild<C>` interpreter already accepts
+every leaf produced by the new product. No Bombay adapter is needed.
+
+Composing the now-general root plan exposed the next lifecycle boundary.
+`StopOnShutdown<DynamicSupervisor<...>>` and
+`StopOnShutdown<WorkerPool<...>>` consume shutdown by stopping only the
+coordinator actor. Their established proxy children remain live until Bombay's
+owner-retirement fallback cancels them. That fallback prevents leaks and
+deadlock, but it is not the orderly recursive shutdown required by the
+acceptance application. A static `ShutdownCoordinator` can duplicate a fixed
+pool's worker nonce plan around the pool, but it cannot track runtime-changing
+`DynamicSupervisor` membership, and duplicating template-owned topology is not
+the target API.
+
+The remaining Behavior-owned requirement is therefore subtree-local drain:
+`DynamicSupervisor` and `WorkerPool` must accept typed shutdown, stop accepting
+new work/membership changes, emit `ShutdownChild` for every currently owned
+proxy, await their exact terminal facts, resolve or reject retained work
+according to their existing policies, and stop only after the owned set is
+empty. The templates already own those membership sets and proxy protocols;
+Bombay must not inspect or duplicate them. E9 remains active until that
+composition exists and is proven under the generalized root coordinator.
+
 ### Fresh verification — 2026-08-17
 
 All neighboring contracts were re-read again for the representative complex
