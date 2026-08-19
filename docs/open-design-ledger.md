@@ -540,6 +540,54 @@ does so). Bombay must not duplicate either policy. Once those contracts
 exist, E9 should need only a public acceptance example and existing generic
 interpreters.
 
+### Dependency refresh — 2026-08-19 (path-aware pools and heterogeneous shutdown)
+
+E9 was resumed against Behavior / Behavior Actors commit
+`d9233beffe7e2511dacc2e7bc7ce3fa8411afc70`, package
+`bombay-behavior-actors 0.12.0`. The pool contract resolves its blocker, but
+the shutdown contract does not yet express the required general application
+topology:
+
+- `WorkerPoolWithParent<A, D, J, R, C, ParentPath>` retains a
+  `ProxyParentIngress<A, ParentPath>`, builds
+  `ProxyWithParent<C, ParentPath>`, and preserves the stable
+  `WorkerPoolProtocol<A, D, J, R>` destination identity. `WorkerPool` remains
+  the direct-`Here` alias. The template tests prove nested report delivery and
+  the pool continues to own scheduling, completion, interruption, restart,
+  and capacity policy.
+- `HeterogeneousShutdownCoordinator<B, S, P>` correctly rejects nonce
+  collisions, emits its declared children once, and awaits their exact
+  `ChildStopped` facts. However, its public algebra hard-codes exactly two
+  semantic variants, `Supervisor` and `WorkerPool`, and exactly two send
+  fields. A real root also owns distinct protocols for `MessageAdapter`
+  children used by supervisor and pool replies, and arbitrary applications
+  may own routers, registries, workflows, or further templates. Those actors
+  cannot be represented by this plan and would still be cancelled by Bombay
+  after the coordinator stops. Renaming two concrete roles “heterogeneous”
+  therefore does not prove general recursive shutdown.
+
+The mandatory neighboring audit was repeated against Address commit
+`7df3bedc5f3177ddbdb617cefe4b6ffcd60ecda3`, Communication 0.1.2 checksum
+`fc3d06aaf88ef9fe5392506d13e208c2141e6978563e1b802b97b489b1a071e2`,
+Observe 0.1.1 checksum
+`7017c773ae142628b6a244cddad0db987cfba22df4c93730844a7d43cc657304`,
+and Timers 0.1.0 checksum
+`5b3fc2dab4a030fd1838d0492a1c62d3c43ece1355125e3fc628da3ca436352d`.
+Their current public sources, documentation, semantic tests, and concurrency
+tests retain the same ownership: typed endpoint storage, two-lane mailbox,
+retained lifecycle publication, and generation-safe timer queue respectively.
+None needs a new adapter for these Behavior-owned compositions.
+
+The remaining Behavior-owned requirement is a closed, arbitrarily
+heterogeneous shutdown product constructed from ordinary actor values or
+protocol types, analogous to `Children` / `ChildChoice`. Its builder must
+retain declaration order and nonces, validate duplicates across the complete
+product, emit one typed `ShutdownChild<C>` per declared actor, and let one
+generic coordinator await their shared creator-local `ChildStopped` facts.
+It must not encode a fixed catalogue of actor roles. Once that exists, E9 is
+implementation-eligible and Bombay should exercise it entirely through the
+existing generic interpreters.
+
 ### Fresh verification — 2026-08-17
 
 All neighboring contracts were re-read again for the representative complex
