@@ -20,7 +20,7 @@ that actor roles are Behavior values and all effects remain typed algebra.
 | Capability family | User intent and supplied data | System machinery and guarantee | Failure boundary | Bombay owner/decision |
 |---|---|---|---|---|
 | ordinary actor, state machine, stash | Define protocol, state, transition, capacity/release policy | Serialized initialization and turns; complete typed effects | Controlled behavior failure or explicit stop | Behavior/Actors policy; Engine executes; Bombay supplies environment |
-| root/guardian/application | Supply one root behavior | Exactly one application lifecycle root; stopping it ends the local system | Root terminal result reaches process boundary | Actors `Guardian`; Bombay private root runner; `#[bombay::main]` generates entry |
+| root/guardian/application | Supply one `App` value | Exactly one application lifecycle root; stopping it ends the local system | Root terminal result reaches process boundary | Actors `Guardian`; Bombay `App` separation and private root runner |
 | spawn, reference, hierarchy | Supply template, child identity and initial topology | Initialize before publication; child cannot outlive owner; exact typed endpoint | Typed creation rejection; no fabricated live reference | Behavior birth algebra plus Bombay Address/Communication composition |
 | static and dynamic supervision | Select child template, strategy, restart class, budget and backoff | Observe exact incarnation; decide replacement; preserve logical policy state | Exhausted budget/escalation remains a typed terminal fact | Actors `Supervisor`, `DynamicSupervisor`, `BackoffSupervisor`; no Bombay policy |
 | proxy, router, pool, work queue | Select routees/workers, selection, capacity, overflow and affinity | Deterministic selection/scheduling and typed forwarding | Owned rejection, unavailable routee, or supervised worker failure | Actors templates; Bombay interprets ordinary creation/delivery/timer leaves |
@@ -38,7 +38,7 @@ that actor roles are Behavior values and all effects remain typed algebra.
 | cluster, remote deployment, singleton, CRDT | Supply membership, authority, placement and consistency choices | Reachability, convergence, placement and serialization | Partition and protocol-version failure are first-class | Future authenticated Zenoh layer; explicitly absent locally |
 | serialization/protocol evolution/delivery guarantee | Supply schema, version and idempotency policy | Wire compatibility and selected at-most/at-least-once semantics | Decode, duplicate, loss and retry are transport facts | External transport boundary; local delivery claims only one admission attempt |
 | operations: health, readiness, config, metrics, tracing | Supply domain reports and cardinality/privacy policy | Typed operational state; runtime instruments its own mechanisms | Observation must not alter actor semantics | Actors policies plus optional instrumentation integration; no universal service locator |
-| testing, probes, virtual time, fault injection | Supply scenario and expected protocol facts | Pure synchronous policy tests and full runtime tests | Test facility must not change production semantics | Behavior test helpers plus `#[bombay::test]`; virtual clock only with a real second clock owner |
+| testing, probes, virtual time, fault injection | Supply scenario and expected protocol facts | Pure synchronous policy tests and full runtime tests | Test facility must not change production semantics | Ordinary Behavior tests and runtime tests; virtual clock only with a real second clock owner |
 | hot upgrade, release handling, deployment config | Supply version conversion and deployment policy | OTP/host-specific coordinated replacement | Upgrade incompatibility is operational failure | Explicitly outside current local runtime; do not imply support |
 
 ## Comparative conclusions and negative evidence
@@ -118,7 +118,7 @@ AF0 decisions
           -> RI4c private run_root(Guardian<Root>)
               -> E4/E5 one-value actor creation and generated routing
               -> E1/E2/E6 explicit Behavior authoring and diagnostics
-              -> E8 #[bombay::main], #[bombay::test], prelude
+              -> E8 ordinary run boundary and prelude
                   -> E3 public examples and guidance
                   -> E7 boundary ActorRef/run-result ergonomics
                       -> E9 Akka-IoT-sized acceptance application

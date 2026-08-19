@@ -11,20 +11,12 @@ The intended functional boundary is:
 use bombay::prelude::*;
 
 fn main() -> Result<(), RunError> {
-    bombay::run(IoTSystem::new())
+    App::new(root(), AppActors::default()).run()
 }
 ```
 
-Or use the thin entry attribute over exactly the same path:
-
-```rust,ignore
-#[bombay::main]
-fn main() {
-    IoTSystem::new()
-}
-```
-
-The functional path remains independently usable and authoritative.
+Bombay's `App` joins the pure root behavior with a named product of typed local
+actor spaces and owns execution. Bombay has no entry or topology macros.
 
 ## Architecture
 

@@ -17,9 +17,8 @@ compile_error!(
     "bombay requires panic=unwind to classify actor panics and complete terminal retirement"
 );
 
-pub use application_runtime::{RunError, run};
+pub use application_runtime::{App, RunError};
 pub use behavior;
-pub use bombay_macros::{application, main};
 mod application_runtime;
 mod generation;
 mod incarnation;
@@ -34,20 +33,19 @@ mod time;
 mod topology;
 
 pub(crate) use incarnation::Incarnation;
+pub use launch::ActorSpace;
 pub use local::{ActorRef, SendError};
 pub(crate) use outcome::IncarnationOutcome;
 pub(crate) use retirement::Retirement;
-pub use topology::Application;
+pub use topology::Hosts;
 
 /// Conventional imports for Bombay applications.
 pub mod prelude {
     pub use crate::behavior::*;
-    pub use crate::{Application, RunError, application, main, run};
+    pub use crate::{ActorSpace, App, Hosts, RunError};
 }
 
 #[doc(hidden)]
 pub mod __private {
-    pub use crate::application_runtime::LaunchApplication;
-    pub use crate::launch::LocalAddresses;
-    pub use crate::topology::{BuildNamespaces, Namespace, Topology};
+    pub use crate::application_runtime::LaunchSystem;
 }

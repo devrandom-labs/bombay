@@ -50,14 +50,14 @@ The functional path is authoritative:
 
 ```rust,ignore
 fn main() -> Result<(), bombay::RunError> {
-    bombay::run(IoTSystem::new())
+    App::new(root(), AppActors::default()).run()
 }
 ```
 
 Users construct application Behaviors and Behavior Actors templates as normal
-Rust values. The root value states topology and policy. A future
-`#[bombay::main]` may remove only entry-point boilerplate after the functional
-path is proven; it must not invent behavior, topology, or protocols.
+Rust values. The `App` value contains the root and typed local actor spaces.
+The previously considered entry macro was removed; ordinary Rust construction
+is the complete public path.
 
 ## Verification history
 

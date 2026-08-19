@@ -22,8 +22,7 @@ use crate::interpret::{
 use crate::observation::LocalPeerObservations;
 use crate::reports::{LocalParentReports, LocalSupervisionReports};
 use crate::time::LocalTimers;
-use crate::topology::Namespace;
-use crate::topology::{Application, BuildNamespaces, Topology};
+use crate::topology::Hosts;
 
 const DEFAULT_USER_CAPACITY: usize = 1_024;
 
@@ -44,21 +43,21 @@ pub enum RunError {
     AbnormalExit(Exit<MailAddr>),
 }
 
-/// Private generated-application launch capability.
+/// Private actor-system launch capability.
 #[doc(hidden)]
 #[diagnostic::on_unimplemented(
-    message = "the declared local topology cannot execute application root `{A}`",
-    label = "incomplete local application topology",
-    note = "inspect the required `Namespace<Protocol>` below and add that protocol to this root's `hosted {{ ... }}` list"
+    message = "the local actor spaces cannot execute root behavior `{A}`",
+    label = "incomplete local actor system",
+    note = "inspect the required `Hosts<Protocol>` bound and add that protocol's `ActorSpace`"
 )]
-pub trait LaunchApplication<A: Application<Protocol: Protocol<Addr = MailAddr>>> {
-    fn launch(root: A) -> impl Future<Output = Result<(), RunError>> + Send;
+pub trait LaunchSystem<A: Behavior<Protocol: Protocol<Addr = MailAddr>>> {
+    fn launch(self, root: A) -> impl Future<Output = Result<(), RunError>> + Send;
 }
 
-impl<A, N> LaunchApplication<A> for N
+impl<A, N> LaunchSystem<A> for N
 where
-    A: Application<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    N: BuildNamespaces + Namespace<A::Protocol> + Send + Sync + 'static,
+    A: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    N: Hosts<A::Protocol> + Send + Sync + 'static,
     Guardian<A>: Behavior<Protocol = A::Protocol, Ph = Never> + Send + 'static,
     <Guardian<A> as Behavior>::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
     BehaviorMessage<A>: Send + 'static,
@@ -71,9 +70,9 @@ where
         Guardian<A>,
     >>::Error: Send + 'static,
 {
-    async fn launch(root: A) -> Result<(), RunError> {
-        let namespaces = Arc::new(N::build());
-        let roots = <N as Namespace<A::Protocol>>::namespace(&namespaces);
+    async fn launch(self, root: A) -> Result<(), RunError> {
+        let namespaces = Arc::new(self);
+        let roots = <N as Hosts<A::Protocol>>::space(&namespaces).clone();
         let address = MailAddr(0);
         let actor = crate::launch::spawn_with(
             roots,
@@ -108,22 +107,40 @@ where
     }
 }
 
-/// Execute one generated application on Bombay's owned Tokio runtime.
-#[doc(hidden)]
-pub fn run<A>(root: A) -> Result<(), RunError>
+/// One complete actor application.
+///
+/// `R` is the pure root Behavior. `A` is the named product of runtime-owned
+/// local actor spaces. Bombay separates them before execution begins.
+pub struct App<R, A> {
+    root: R,
+    actors: A,
+}
+
+impl<R, A> App<R, A> {
+    #[must_use]
+    pub const fn new(root: R, actors: A) -> Self {
+        Self { root, actors }
+    }
+}
+
+impl<R, A> App<R, A>
 where
-    A: Application<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    <<A as Application>::Topology as Topology>::Namespaces: LaunchApplication<A>,
+    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    A: LaunchSystem<R>,
 {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .map_err(RunError::Runtime)?
-        .block_on(
-            <<<A as Application>::Topology as Topology>::Namespaces as LaunchApplication<A>>::launch(
-                root,
-            ),
-        )
+    /// Run this application to root termination on Bombay's owned executor.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`RunError`] when executor construction, root activation, or
+    /// root termination fails.
+    pub fn run(self) -> Result<(), RunError> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(RunError::Runtime)?
+            .block_on(<A as LaunchSystem<R>>::launch(self.actors, self.root))
+    }
 }
 
 pub(crate) struct ApplicationCapabilities<C, N, P = NoParent>
@@ -208,14 +225,14 @@ where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Target: Protocol<Addr = MailAddr>,
     Target::Msg: Send,
-    N: Namespace<Target> + Send + Sync,
+    N: Hosts<Target> + Send + Sync,
     Self: Send,
 {
     async fn interpret_delivery(&mut self, delivery: Delivery<Target>) -> Result<(), Self::Error> {
         let address = delivery.to.resolve(self.address);
         let actor = self
             .namespaces
-            .namespace()
+            .space()
             .resolve(&address)
             .ok_or(InterpretationFailure::Unknown(address))?;
         actor
@@ -253,7 +270,7 @@ where
     <BehaviorAddr<C> as Address>::Nonce: core::hash::Hash + Send,
     C::Event: InjectEvent<behavior::PeerStopped<BehaviorAddr<C>>, Path> + Send + 'static,
     BehaviorMessage<C>: Send,
-    N: Namespace<C::Protocol>,
+    N: Hosts<C::Protocol>,
     Self: Send,
 {
     async fn interpret_request(
@@ -262,7 +279,7 @@ where
     ) -> Result<(), Self::Error> {
         self.peers
             .get_or_insert_with(|| {
-                LocalPeerObservations::new(self.namespaces.namespace(), self.facts.clone())
+                LocalPeerObservations::new(self.namespaces.space().clone(), self.facts.clone())
             })
             .observe::<Path>(request)
             .map_err(|crate::observation::ObservationError::Unknown(address)| {
@@ -333,7 +350,7 @@ where
         InjectEvent<ChildShutdownRejected<<BehaviorAddr<Owner> as Address>::Nonce>, Path> + Send,
     Child: Behavior<Protocol: behavior::Protocol<Addr = BehaviorAddr<Owner>>>,
     Child::Event: InjectEvent<ShutdownRequested, behavior::Here> + Send,
-    N: Namespace<Child::Protocol>,
+    N: Hosts<Child::Protocol>,
     Self: Send,
 {
     async fn interpret_request(
@@ -345,7 +362,7 @@ where
         } else if self.owned_children.contains(&request.nonce) {
             let child = self
                 .namespaces
-                .namespace()
+                .space()
                 .resolve(&self.address.birth(request.nonce));
             if child.is_some_and(|child| child.request_shutdown()) {
                 self.stopping_children.insert(request.nonce);
@@ -553,7 +570,7 @@ where
     Child::Sends: Send + 'static,
     Child::Error: Send + 'static,
     <Child::Birth as BirthMode>::Child: Send + 'static,
-    N: Namespace<Child::Protocol> + Send + Sync + 'static,
+    N: Hosts<Child::Protocol> + Send + Sync + 'static,
     ApplicationCapabilities<Child, N, LocalParentReports<BehaviorAddr<C>, C::Event>>:
         behavior::SendInterpreter + Send + 'static,
     <ApplicationCapabilities<Child, N, LocalParentReports<BehaviorAddr<C>, C::Event>> as behavior::SendInterpreter>::Error:
@@ -581,7 +598,7 @@ where
         let nonce = creation.nonce;
         let kind = creation.kind;
         let namespaces = self.namespaces.clone();
-        let actors = self.namespaces.namespace();
+        let actors = self.namespaces.space().clone();
         let parent = self.control.clone();
         let result = crate::launch::spawn_owned_with(
             actors,

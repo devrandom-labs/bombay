@@ -81,18 +81,16 @@ the closed application topology.
 ### Interface conclusion
 
 No Bombay actor abstraction is required. Users compose concrete Behavior
-values directly. `#[bombay::main]` generates only the Rust entry point around
-the root value returned by its body; it does not generate behavior policy,
-topology registries, effect products, or hidden application protocols.
+values directly and package the root with a named product of typed local actor
+spaces. Bombay's generic `App` owns that separation and execution.
 
 The remaining topology evidence cannot truthfully be inferred merely from all
 types appearing in a Behavior. A send may target a remote or externally
 provided endpoint, recursive behavior graphs are open, and mentioning a
-protocol does not prove local hosting. The application root therefore needs a
-closed, statically checked statement of locally hosted endpoint types until a
-Behavior-owned hierarchy value can provide that evidence directly. Bombay's
-current `application!` syntax is transitional and must not grow routing or
-provider concepts.
+protocol does not prove local hosting. The actor system therefore supplies a
+named, statically checked product of locally hosted `ActorSpace<P>` values.
+Concrete `Hosts<P>` implementations map each local protocol to its field
+without erasure or positional traversal.
 
 ## Address
 
@@ -553,27 +551,16 @@ The functional entry remains intentionally small and value-oriented:
 use bombay::prelude::*;
 
 fn main() -> Result<(), RunError> {
-    bombay::run(IoTSystem::new())
+    App::new(root(), AppActors::default()).run()
 }
 ```
 
-`IoTSystem::new()` returns a concrete composition of ordinary Behavior Actors
-templates and application Behaviors. Users configure supervision, routing,
-worker capacity, restart policy, and shutdown policy on those template values,
-where the policy belongs. They never construct a runtime, guardian, mailbox,
-address space, observation space, timer queue, Driver, or topology registry.
-
-The entry macro reduces only the entry boilerplate:
-
-```rust,ignore
-#[bombay::main]
-fn main() {
-    IoTSystem::new()
-}
-```
-
-It is last-layer sugar over the same `run(root)` path. The functional path is
-the reference implementation and must remain independently usable and tested.
+`App::new()` returns one ordinary actor-system value containing a concrete
+composition of Behavior Actors templates and its typed local actor spaces.
+Users configure supervision, routing, worker capacity, restart policy, and
+shutdown policy on those template values, where the policy belongs. They never
+construct a runtime, guardian, mailbox, observation space, timer queue, Driver,
+or interpreter. Bombay provides no entry or topology macros.
 
 ## Required changes by repository
 
@@ -610,7 +597,7 @@ the reference implementation and must remain independently usable and tested.
   select real external endpoints; do not handwrite product routing;
 - keep topology evidence private/transitional and delete unused
   `outbound`/`provided` declarations;
-- prove the functional `run(root)` path before adding the entry macro.
+- prove the ordinary `App::new(root, actors).run()` path directly.
 
 ## Acceptance gate
 

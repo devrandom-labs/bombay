@@ -52,7 +52,9 @@ impl OwnedTask {
 
 /// The exact Address-owned endpoint table for one concrete Behavior protocol.
 #[doc(hidden)]
-pub type LocalAddresses<P> = AddressSpace<<P as Protocol>::Addr, ActorRef<P>>;
+pub type ActorSpace<P> = AddressSpace<<P as Protocol>::Addr, ActorRef<P>>;
+
+pub(crate) type LocalAddresses<P> = ActorSpace<P>;
 
 pub(crate) async fn spawn_with<B, I>(
     addresses: LocalAddresses<B::Protocol>,

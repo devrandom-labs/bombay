@@ -23,7 +23,6 @@ workspace = true
 
 [dependencies]
 behavior = { workspace = true }
-bombay-macros = { workspace = true }
 bombay-engine = { workspace = true }
 bombay-address = { workspace = true }
 observe = { workspace = true }
@@ -34,4 +33,3 @@ timers = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros"] }
-trybuild = "1"

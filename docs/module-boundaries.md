@@ -47,7 +47,7 @@ Bombay owns:
 - static interpretation of named creation, delivery, observation, timer,
   report, and shutdown effect lanes;
 - recursive child-task retirement;
-- the functional `run(root)` boundary and later entry macros over it.
+- the ordinary `App::new(root, actors).run()` boundary.
 
 Bombay does not own actor policy, a second effect algebra, a registry, a
 service locator, a public namespace, or a general lifecycle framework.
@@ -61,8 +61,8 @@ scheduled for removal:
 | Module | Intended responsibility | Transitional content to remove |
 |---|---|---|
 | `lib.rs` | minimal façade and curated re-exports | implementation details exposed for incomplete bounds |
-| `application_runtime.rs` | functional root runner and concrete application capability product | manifest namespace terminology |
-| `topology.rs` | closed static storage of locally hosted Address spaces | `Namespace` naming and wrapper products without independent laws |
+| `application_runtime.rs` | actor-system runner and concrete runtime capability product | final naming minimization |
+| `topology.rs` | static `Hosts<P>` selection | final public-surface minimization |
 | `local.rs` | prepared/live local Environment and public boundary reference | final ownership minimization only |
 | `launch.rs` | construct one incarnation and place it on Tokio | final activation-publication minimization only |
 | `interpret.rs` | statically dispatch complete named action lanes | redundant helper traits exposed by final distillation |

@@ -6,30 +6,19 @@ templates.
 
 ## Entry boundary
 
-A complete application supplies one inferred root Behavior value:
+A complete application supplies one ordinary actor-system value:
 
 ```rust,ignore
 use bombay::prelude::*;
 
 fn main() -> Result<(), RunError> {
-    bombay::run(IoTSystem::new())
+    App::new(root(), AppActors::default()).run()
 }
 ```
 
 `run` owns asynchronous execution. Users do not write an auxiliary `async fn`,
-construct a Tokio runtime, or construct a Guardian. The entry macro expands to
-the same functional boundary:
-
-```rust,ignore
-#[bombay::main]
-fn main() {
-    IoTSystem::new()
-}
-```
-
-The macro is convenience, not an alternative runtime path. It accepts a
-synchronous, argument-free `fn main()` whose body evaluates to the root
-application value.
+construct a Tokio runtime, or construct a Guardian. Bombay provides no entry
+or topology macros; the ordinary function is the only execution path.
 
 ## Application composition
 
@@ -46,6 +35,31 @@ let root = IoTSystem::new(devices, queries);
 This snippet is illustrative because exact template constructors continue to
 belong to the Behavior Actors repository. Bombay must consume those concrete
 values; it must not copy them into façade builders or macros.
+
+The actor-system value packages the pure root separately from the named
+product of runtime-owned local actor spaces:
+
+```rust,ignore
+#[derive(Default)]
+struct AppActors {
+    system: ActorSpace<SystemProtocol>,
+    groups: ActorSpace<GroupProtocol>,
+    devices: ActorSpace<DeviceProtocol>,
+    queries: ActorSpace<QueryProtocol>,
+}
+
+impl Hosts<DeviceProtocol> for AppActors {
+    fn space(&self) -> &ActorSpace<DeviceProtocol> {
+        &self.devices
+    }
+}
+```
+
+Every locally hosted protocol has one ordinary `Hosts<P>` implementation of
+the same form. These implementations are the static protocol-to-space mapping;
+they are not generated, erased, or discovered at runtime. Bombay's generic
+`App<Root, Actors>` retains the spaces while giving only the root to the
+Behavior Driver.
 
 The hierarchy remains explicit:
 
@@ -69,7 +83,24 @@ is selected explicitly at the subtree whose failures and membership it owns.
 
 ## Behavior authoring
 
-An ordinary actor is deterministic state plus the exact Behavior algebra:
+Applications first select and compose existing Behavior Actors templates. The
+basic executable example uses `Machine` for state transitions and `OneShot`
+for timed termination; application code implements no `Behavior`:
+
+```rust,ignore
+let root = OneShot::new(
+    Machine::new(state, phase, transition),
+    TimerId(1),
+    Duration::from_secs(1),
+    stop,
+);
+
+App::new(root, AppActors::default()).run()
+```
+
+Handwritten `Behavior` is the last resort for genuinely application-specific
+state machines that the template catalogue cannot express. Such an actor is
+deterministic state plus the exact Behavior algebra:
 
 ```rust,ignore
 struct Device {
@@ -118,14 +149,13 @@ runtime task ownership, or cancellation.
 
 The intended ordinary public surface is:
 
-- `bombay::run(root)` and typed `RunError`;
+- `App::new(root, actors).run()` and typed `RunError`;
+- `ActorSpace<P>` and `Hosts<P>` for static local composition;
 - a focused prelude for public Behavior and Behavior Actors vocabulary;
 - pure `Recipient<P>` values in actor messages;
 - non-owning `ActorRef<P>` values at external boundaries;
 - retained terminal facts through `ActorRef::termination`;
 - concrete Behavior Actors templates and their policy types;
-- `#[bombay::main]` over the functional path; a test wrapper remains later
-  convenience only if its independent value is proven.
 
 Users never manually construct or implement:
 
@@ -138,17 +168,17 @@ Users never manually construct or implement:
 - `SendEffects`, `SendInput`, creation dispatch, or product-routing
   implementations already supplied generically.
 
-## Topology evidence
+## Local actor spaces
 
 Behavior cannot infer whether every mentioned protocol is locally hosted,
-remote, or externally supplied. Until Behavior Actors supplies a closed
-hierarchy value that proves local hosting, Bombay may require transitional
-closed topology evidence. That evidence is private/static and names only
-locally hosted endpoint types. It is not a runtime registry, route table,
-service locator, or public “namespace” abstraction.
+remote, or externally supplied. The named `AppActors` product therefore owns
+one exact `ActorSpace<P>` for each locally hosted protocol. `Hosts<P>` selects
+that field statically. There is no manifest, namespace, runtime registry,
+`TypeId`, `Any`, endpoint enum, HList, or positional witness in the public API.
 
-The abandoned `outbound` and `provided` manifest sections are not part of the
-target API.
+`InterpretDelivery<P>` remains the broader routing capability: an interpreter
+may route locally, remotely, or through a composition of both. `Hosts<P>` says
+only that this actor system can install and resolve local incarnations of `P`.
 
 Established destinations use absolute `Recipient<P>` values, while
 creator-local delivery uses `ChildRecipient<P>` and cannot escape as a stable

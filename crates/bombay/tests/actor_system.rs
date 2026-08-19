@@ -5,11 +5,26 @@ use std::sync::{
 
 use bombay::prelude::*;
 
-#[test]
-fn application_manifest_contract() {
-    let cases = trybuild::TestCases::new();
-    cases.pass("tests/topology/pass/*.rs");
-    cases.compile_fail("tests/topology/fail/*.rs");
+struct SingleProtocolActors<P: Protocol>(ActorSpace<P>);
+
+impl<P> Default for SingleProtocolActors<P>
+where
+    P: Protocol,
+    P::Addr: core::hash::Hash,
+{
+    fn default() -> Self {
+        Self(ActorSpace::new())
+    }
+}
+
+impl<P> Hosts<P> for SingleProtocolActors<P>
+where
+    P: Protocol,
+    P::Addr: core::hash::Hash,
+{
+    fn space(&self) -> &ActorSpace<P> {
+        &self.0
+    }
 }
 
 struct Child {
@@ -69,19 +84,17 @@ impl Behavior for Root {
     }
 }
 
-application! {
-    topology OneChildTopology for Root {
-        hosted {}
-    }
-}
-
 #[test]
-fn public_run_creates_one_child_value_and_waits_for_its_retirement() {
+fn actor_system_creates_one_child_value_and_waits_for_its_retirement() {
     let retired = Arc::new(AtomicBool::new(false));
 
-    run(Root {
-        retired: retired.clone(),
-    })
+    App::new(
+        Root {
+            retired: retired.clone(),
+        },
+        SingleProtocolActors::default(),
+    )
+    .run()
     .unwrap();
 
     assert!(retired.load(Ordering::SeqCst));
@@ -122,13 +135,9 @@ impl Behavior for TimerRoot {
     }
 }
 
-application! {
-    topology TimerTopology for TimerRoot {
-        hosted {}
-    }
-}
-
 #[test]
-fn public_run_drives_actor_local_timers_without_an_auxiliary_task() {
-    run(TimerRoot).unwrap();
+fn actor_system_drives_actor_local_timers_without_an_auxiliary_task() {
+    App::new(TimerRoot, SingleProtocolActors::default())
+        .run()
+        .unwrap();
 }

@@ -45,8 +45,8 @@ blocked item in its `Unblocks` cell. Select work from this graph, not row order.
 | E6 | Concise functional Behavior authoring | P1 | deferred | optional Behavior-owned authoring convenience; explicit `Behavior` remains canonical | — |
 | E7 | Live reference and terminal-result ergonomics | P1 | feature-complete | — | E9 |
 | E8 | Facade, prelude, and system-construction coherence | P1 | feature-complete | — | E9 |
-| E9 | Akka-IoT-sized reference application distillation | P0 | feature-complete | — | M4 |
-| M4 | Developer-experience milestone distillation | P1 | blocked | fresh M4 cross-crate verification | FV1 |
+| E9 | Akka-IoT-sized reference application distillation | P0 | active | — | M4 |
+| M4 | Developer-experience milestone distillation | P1 | blocked | E9 | FV1 |
 | S1 | Comparative actor-model and composition synthesis | P1 | blocked | fresh S1 verification and synthesis | M5 |
 | M2 | Runtime-operations milestone | P2 | deferred | external executor, stream, portability, and operations consumers | FV1 |
 | M5 | Competitive-verification milestone | P1 | blocked | S1 | FV1 |
@@ -64,6 +64,114 @@ and optional-library projects are intentionally absent from the active local
 framework graph. Add them only when an owning repository and concrete consumer
 exist.
 
+## Selected item: M4
+
+### Fresh verification — 2026-08-19
+
+M4 was re-verified independently against the exact dependency graph used by
+this workspace, not against earlier ledger entries:
+
+| Dependency | Exact source | M4 ownership finding |
+|---|---|---|
+| Behavior / Behavior Actors | patched checkout commit `643b9f14e4dac5ecd4fd545126c2807097a2c338`, package `bombay-behavior-actors 0.12.0` | owns `Protocol`, `Behavior`, `Actions`, typed sends and births, `Children`, the actor-authoring macros, and the complete template catalogue; templates are directly constructed values and do not expose an application-local hosting closure |
+| Address | patched checkout commit `7df3bedc5f3177ddbdb617cefe4b6ffcd60ecda3`, package `bombay-address 0.2.0` | owns typed generation-safe endpoint storage and leases; it does not choose which protocol spaces an application hosts |
+| Communication | locked registry package `bombay-communication 0.1.2`, checksum `fc3d06aaf88ef9fe5392506d13e208c2141e6978563e1b802b97b489b1a071e2` | owns the two-lane mailbox and affine user-admission lifecycle; no application-facing topology or actor policy belongs here |
+| Observe | locked registry package `bombay-observe 0.1.1`, checksum `7017c773ae142628b6a244cddad0db987cfba22df4c93730844a7d43cc657304` | owns retained keyed observations and the unkeyed affine publisher pair; it contributes no user-visible actor-system configuration |
+| Timers | locked registry package `bombay-timers 0.1.0`, checksum `5b3fc2dab4a030fd1838d0492a1c62d3c43ece1355125e3fc628da3ca436352d` | owns one generation-safe timer queue; timer-backed actor policy remains in Behavior Actors and queue operation remains private to Bombay |
+
+The current public sources, semantic/runtime-contract tests, recursive protocol
+proofs, compile-fail contracts, concurrency suites, and relevant crate-level
+documentation were inspected again. Behavior Actors now supplies Guardian,
+static and dynamic supervision, backoff supervision, worker pools, routing,
+observation-driven lifecycle templates, shutdown coordination, timers,
+discovery, workflows, persistence, and operations actors. Bombay must not wrap
+those values in duplicate façade actors or policy builders.
+
+The verification clears M4 for implementation. The user surface is ordinary
+Rust only: Bombay's generic `App` separates a pure root Behavior from a named
+product of typed local `ActorSpace<P>` values. Concrete `Hosts<P>`
+implementations provide the static protocol-to-space mapping. Bombay has no
+entry or topology macros, erased registry, endpoint enum, or positional public
+API. Address, Communication, Observe, Timers, Engine, Incarnation, and all
+interpreter types remain absent from Behavior values.
+
+### Functional construction target — 2026-08-19
+
+The authoritative entry is an ordinary Rust function returning
+`App::new(root, actors).run()`, with actor
+policy expressed by directly constructed Behavior Actors values and Bombay's
+application boundary expressed by ordinary newtypes and consuming builders.
+The desired shape is:
+
+```rust,ignore
+fn main() -> Result<(), RunError> {
+    App::new(root(), AppActors::default()).run()
+}
+```
+
+There is no `Bombay::new()` runtime object and no `System::new()` description
+wrapper. Neither value would own an independent law: Bombay constructs its
+executor internally, and the root Behavior value already is the application
+composition. A wrapper introduced solely to hold host declarations would move
+the transitional manifest without removing it.
+
+### Typed Address-space composition decision — 2026-08-19
+
+The protocol on a typed destination already identifies the exact endpoint
+type. Bombay therefore keeps one `AddressSpace<P::Addr, ActorRef<P>>` for each
+locally hosted protocol. The address selects an incarnation inside that typed
+space; no runtime actor-type discovery is required.
+
+Bombay must compose those typed spaces and provide each concrete delivery or
+creation interpreter with the space selected by its protocol. It must not
+collapse actor references into an enum, introduce an Address-owned erased
+collection, use `TypeId`/`Any`, or add another namespace/addressing primitive.
+The named product and handwritten `Hosts<P>` implementations are the complete
+ordinary-Rust construction surface.
+
+The remaining work is narrowly an ordinary Rust composition problem: retain
+the protocol-indexed `AddressSpace` values as runtime-owned state and expose
+the appropriate typed value to each monomorphized interpreter. Any proposed
+functional construction API must preserve that static selection and shared
+space identity without changing Address's ownership boundary.
+
+### Macro-free actor-system implementation — 2026-08-19
+
+The ordinary construction path is implemented. Bombay's generic `App` owns one
+pure root Behavior and its named actor-space product. `ActorSpace<P>` is the exact typed Address space for live
+local `ActorRef<P>` incarnations, and handwritten `Hosts<P>` implementations
+select concrete fields. `App::run` constructs the executor and Guardian,
+then shares the supplied actor-space product through all creation, delivery,
+observation, and shutdown interpreters.
+
+The Bombay macro crate, both Bombay macros, their exports and dependency, the
+manifest traits, namespace terminology, and macro-specific compile tests were
+deleted. The basic and supervision examples contain ordinary structs and
+ordinary trait implementations only. No `TypeId`, `Any`, endpoint enum, HList,
+positional witness, or dynamic dispatch was introduced.
+
+The previously unfinished worker-pool extension in `supervision.rs` was
+removed while establishing this baseline because it did not satisfy recursive
+creation dispatch before this change. The committed supervision scenario still
+proves heterogeneous recursive creation and multiple hosted protocols through
+the new `Hosts<P>` path; worker-pool acceptance remains E9 work rather than
+being hidden inside the composition migration.
+
+`cargo test --workspace`, workspace all-target Clippy with warnings denied,
+format checking, both runnable examples, and `git diff --check` pass.
+
+The first M4 acceptance audit reopened E9. The existing public supervision
+example proves recursive heterogeneous creation, typed local delivery, dynamic
+membership, and an actor-owned timer, but it is not the acceptance application
+specified by `docs/user-facing-api.md`. It does not exercise a configured
+restart policy with backoff, worker-pool scheduling, exact-incarnation watch
+cleanup, coordinated recursive shutdown, and exact terminal failure reporting
+as one complex public composition. Unit tests for those isolated runtime lanes
+are necessary but do not prove that ordinary application composition remains
+usable at their intersection. E9 therefore returns to `active`, and M4 is
+again blocked by E9. The M4 cross-crate verification remains current evidence,
+but implementation cannot be selected ahead of the missing acceptance proof.
+
 ## Selected item: E5
 
 ### Objective
@@ -71,7 +179,7 @@ exist.
 Construct the minimum standard local environment that executes a closed
 Behavior application using the existing Engine spine and primitive
 capabilities. Delete duplicated legacy plumbing. Preserve a functional
-`run(root)` path; entry macros remain later sugar.
+`App::run` path; Bombay defines no entry macros.
 
 ### Fresh verification — 2026-08-17
 
@@ -201,7 +309,7 @@ law.
 6. Remove every duplicate wrapper/channel/task listed above.
 7. Prove activation ordering, message delivery, creation, observation, timer
    delivery, recursive shutdown, and terminal ordering through public
-   `run(root)`.
+   `App::run`.
 8. Synchronize all repository artifacts and run the complete workspace and
    owning-repository gates.
 
@@ -233,7 +341,7 @@ activation, and timer command channels; the timer task; keyed
 `TerminationCell`; and the redundant external primitive-reconstruction test
 are removed. The updated Behavior Actors proxy shutdown lane is interpreted,
 the real DynamicSupervisor -> Proxy -> Worker subtree test passes, and public
-`run(root)` proves timer delivery without an auxiliary task.
+`App::run` proves timer delivery without an auxiliary task.
 Peer and child Observe futures are now polled by the same active Environment
 spine through a typed fact queue; per-observation Tokio tasks, control-lane
 reinjection, aborts, joins, and child-observation `JoinHandle` maps are removed.
@@ -330,23 +438,16 @@ neighbor were re-read again specifically for the application-entry boundary:
 
 ### E8 ownership decision
 
-The functional `run(root)` function is the sole runtime path. A
-`#[bombay::main]` attribute may only validate a synchronous, argument-free
-`fn main()` whose body evaluates to the root application value, and rewrite it
-to return `Result<(), RunError>` by calling `bombay::run`. It must not create a
-second runtime path, infer topology, implement Behavior, expose Tokio, or
-construct a user-visible Guardian. The existing closed `application!`
-declaration remains separate static local-hosting evidence until Behavior can
-provide that evidence directly.
+`App::new(root, actors).run()` is the sole runtime path. `App`
+separates the pure root from its named local actor-space product. Bombay owns
+no entry or topology macros and must not infer hosting, implement Behavior,
+expose Tokio, or construct a user-visible Guardian.
 
 ### E8 current state
 
-E8 is feature-complete. `#[bombay::main] fn main() { root }` validates the
-minimal synchronous entry shape and expands only to `bombay::run(root)`. The
-functional path remains public and independently tested. The prelude, root
-basic example, README, user API, and runtime-capability documentation now show
-one coherent entry model. Workspace tests, compile tests, documentation tests,
-formatting, and strict Clippy pass.
+E8's earlier macro result was superseded by the ordinary actor-system
+construction. The prelude, root basic example, README, user API, and
+runtime-capability documentation now show one coherent macro-free entry model.
 
 ## Selected item: E2
 
@@ -377,29 +478,20 @@ primitive were re-read specifically for static application diagnostics:
 
 ### E2 ownership decision
 
-The closed local-hosting declaration is explicit evidence, not inferred
+The named local actor-space product is explicit evidence, not inferred
 topology. Diagnostics must therefore enforce only facts it can know:
 
 - every listed entry is a Behavior protocol;
 - each concrete protocol has exactly one shared Address-space field;
-- duplicate syntactically identical types are rejected at the declaration;
-- alias-equivalent duplicates remain rejected by Rust coherence;
 - a protocol required by creation, delivery, observation, reporting, or
-  shutdown but absent from the manifest reports a focused missing-local-host
+  shutdown but lacking `Hosts<P>` reports a focused missing-local-host
   capability error rather than suggesting a runtime registry.
-
-Manifest labels do not participate in any law or generated runtime behavior.
-They must be removed; the closed list consists only of protocol types.
 
 ### E2 current state
 
-E2 is feature-complete. The manifest now accepts only protocol types, deleting
-unused labels. Syntactically repeated types produce a focused macro diagnostic;
-alias-equivalent duplicates produce one coherence error instead of two; and a
-missing locally hosted child reports an incomplete-topology diagnostic naming
-the absent `Namespace<Child>` capability. Pass and compile-fail snapshots cover
-the closed manifest, tiny main, exact duplicates, alias duplicates, and missing
-hosts.
+E2's manifest-specific diagnostics were removed with the manifest. The
+remaining useful diagnostic names the absent `Hosts<ChildProtocol>` capability;
+ordinary Rust rejects duplicate trait implementations through coherence.
 
 ## Selected item: E9
 
@@ -494,7 +586,7 @@ not add a duplicate protocol trait or change primitive runtime ownership.
 The reference application must use exact concrete Behavior Actors templates,
 explicit Behavior implementations only for application-domain actors,
 `Children`, named send products, pure
-Recipients, the closed local-host list, and `#[bombay::main]`. It must not
+Recipients, the named local actor-space product, and ordinary `run`. It must not
 handwrite runtime protocol interpreters, product routing, mailboxes, tasks,
 addresses, observations, timer queues, guardians, or executor setup. Each
 successive example layer must execute through public API before adding the

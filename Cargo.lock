@@ -110,15 +110,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bombay-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
 name = "bombay-observe"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -138,12 +129,10 @@ dependencies = [
  "bombay-behavior-actors",
  "bombay-communication",
  "bombay-engine",
- "bombay-macros",
  "bombay-observe",
  "bombay-timers",
  "thiserror",
  "tokio",
- "trybuild",
 ]
 
 [[package]]

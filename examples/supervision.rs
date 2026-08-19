@@ -23,7 +23,6 @@ type ManagedWorkers = StopOnShutdown<Workers>;
 type SystemProtocol = MessageProtocol<MailAddr, SystemMessage>;
 type SupervisorReply =
     MessageAdapter<DynamicSupervisorOutcome<MailAddr, ManagedWorker>, SystemProtocol>;
-
 struct ShutdownTimer;
 
 impl Behavior for ShutdownTimer {
@@ -123,18 +122,45 @@ impl Behavior for System {
     }
 }
 
-application! {
-    topology SupervisionTopology for System {
-        hosted {
-            Workers,
-            SupervisorReply,
-            DynamicProxy<ManagedWorker>,
-            MessageProtocol<MailAddr, Never>,
-        }
+#[derive(Default)]
+struct AppActors {
+    system: ActorSpace<SystemProtocol>,
+    workers: ActorSpace<Workers>,
+    supervisor_reply: ActorSpace<SupervisorReply>,
+    worker_proxy: ActorSpace<DynamicProxy<ManagedWorker>>,
+    quiet: ActorSpace<MessageProtocol<MailAddr, Never>>,
+}
+
+impl Hosts<SystemProtocol> for AppActors {
+    fn space(&self) -> &ActorSpace<SystemProtocol> {
+        &self.system
     }
 }
 
-#[bombay::main]
-fn main() {
-    System
+impl Hosts<Workers> for AppActors {
+    fn space(&self) -> &ActorSpace<Workers> {
+        &self.workers
+    }
+}
+
+impl Hosts<SupervisorReply> for AppActors {
+    fn space(&self) -> &ActorSpace<SupervisorReply> {
+        &self.supervisor_reply
+    }
+}
+
+impl Hosts<DynamicProxy<ManagedWorker>> for AppActors {
+    fn space(&self) -> &ActorSpace<DynamicProxy<ManagedWorker>> {
+        &self.worker_proxy
+    }
+}
+
+impl Hosts<MessageProtocol<MailAddr, Never>> for AppActors {
+    fn space(&self) -> &ActorSpace<MessageProtocol<MailAddr, Never>> {
+        &self.quiet
+    }
+}
+
+fn main() -> Result<(), RunError> {
+    App::new(System, AppActors::default()).run()
 }

@@ -4,7 +4,6 @@ resolver = "3"
 members = [
     "crates/bombay",
     "crates/bombay-engine",
-    "crates/bombay-macros",
     "crates/mutants-gate",
 ]
 exclude = ["crates/bombay/fuzz", "crates/bombay-engine/fuzz"]
@@ -20,7 +19,6 @@ tokio = { version = "1.47", default-features = false }
 # depended on, never copied.
 behavior = { package = "bombay-behavior-actors", version = "0.12.0" }
 bombay-engine = { version = "0.1.0", path = "crates/bombay-engine" }
-bombay-macros = { version = "0.1.0", path = "crates/bombay-macros" }
 bombay-address = "0.2.0"
 observe = { package = "bombay-observe", version = "0.1.1" }
 communication = { package = "bombay-communication", version = "0.1.2" }
