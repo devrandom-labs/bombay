@@ -33,7 +33,7 @@ tokio = { version = "1.47", default-features = false }
 # The pure Behavior algebra (Actions/Envelope/Create/the capability stack) —
 # depended on, never copied.
 behavior = { package = "bombay-behavior-actors", version = "0.14.0" }
-bombay-engine = { version = "0.1.0", path = "crates/bombay-engine" }
+bombay-engine = { version = "0.2.0", path = "crates/bombay-engine" }
 bombay-address = "0.2.0"
 bombay-machine = { path = "crates/bombay-machine" }
 communication = { package = "bombay-communication", version = "0.1.2" }
