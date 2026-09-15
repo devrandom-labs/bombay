@@ -1,0 +1,5 @@
+error: duplicate actor argument
+ --> tests/compile/fail/actor_duplicate_argument.rs:7:32
+  |
+7 | #[bombay::actor(error = Never, error = Never)]
+  |                                ^^^^^

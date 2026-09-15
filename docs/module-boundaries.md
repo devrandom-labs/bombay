@@ -1,198 +1,141 @@
 # Bombay module boundaries
 
-This document defines the ports, adapters, composition boundary, and ownership
-seats of the local runtime. The active queue remains in
-`docs/open-design-ledger.md`.
+This document maps source ownership. Semantic capability laws are in
+[`runtime-capability-interfaces.md`](runtime-capability-interfaces.md); current
+implementation blockers are in
+[`open-design-ledger.md`](open-design-ledger.md).
 
-## Hexagonal runtime
+## Workspace boundary
 
 ```text
-Bombay Behavior (domain algebra)
-             |
-             v
-       Driver<B, E> (application core)
-             |
-       Environment port
-             |
-             v
- ActorEnvironment (Tokio/Bombay adapter)
-   | mailbox  | routing  | timers  | children/observation
-
-System (composition root)
-  -> PreparedIncarnation (unpublished launch transaction)
-  -> Incarnation { Driver, TerminalRetirement } (one live generation)
-  -> Completion (detachable Tokio termination + published actor outcome)
-  -> Handle (external capability)
+bombay-behavior
+    deterministic Behavior algebra
+                |
+                v
+crates/bombay-engine
+    Driver<B, E>
+    Environment<B> -> ActiveEnvironment<B>
+                |
+                v
+crates/bombay
+    actor API, templates, local capability composition, and incarnation ownership
 ```
 
-The `Driver` is process-like execution without actor identity. It owns a pure
-behavior and an `Environment`, initializes the behavior, folds events in
-sequence, interprets every successful transition before receiving another
-event, and retires the environment on every ordinary return. It owns no
-address, Tokio task, lifecycle reporter, or terminal publication.
+### `bombay-engine`
 
-An `Incarnation` is the identity-bearing runtime process. It adds the exact
-address-generation lease and terminal publication order around a `Driver`.
-This distinction prevents behavior execution from depending on runtime
-identity while giving one concrete object responsibility for a live actor
-generation.
+Engine owns only:
 
-## Roles and laws
+- the universal causal sequence from initialization through retirement;
+- the affine prepared/live Environment port;
+- complete action handoff;
+- exact Driver completion and failure vocabulary.
 
-| Role | Concrete items | Law |
+Engine owns no executor, address, mailbox, observation, timer, task,
+incarnation, topology, actor template, or runtime adapter. Its semantics and
+verification are defined by `driver-law.md` and `driver-test-strategy.md`.
+
+### `bombay`
+
+Bombay owns:
+
+- the public application façade over Behavior and Behavior Actors;
+- Entity lifecycle and application-level composition over reusable Behavior
+  Actors templates;
+- one concrete standard local Environment composition;
+- actor incarnation task ownership and terminal classification;
+- Address-space retention and exact lease ordering;
+- Communication mailbox construction and event acquisition;
+- Observe activation and termination publication;
+- actor-local TimerQueue integration with the executor clock;
+- static interpretation of named creation, delivery, observation, timer,
+  report, and shutdown effect lanes;
+- recursive child-task retirement;
+- the ordinary `Application::new(root).run()` single-root boundary and the
+  deliberate advanced `App::new(root, actors).run()` boundary;
+- the opt-in Axum boundary that gives a router the typed application handle
+  and coordinates HTTP/root termination.
+
+Bombay does not own Behavior's pure algebra, a second effect algebra, a
+registry, a service locator, a public namespace, or a competing lifecycle
+framework.
+
+Bombay does own conservation of authoritative typed facts at the runtime
+boundary. Once an exact fact is obtained from Address, Communication, Observe,
+Timers, or Driver completion, no reusable Bombay layer may erase or
+misclassify it accidentally. Independent typed consumers of the same exact
+fact must coexist. Preservation, transformation, and discharge remain explicit
+typed Behavior policies; this runtime obligation does not create a global
+“failures bubble upward” rule.
+
+## Source disposition
+
+The runtime is one concrete local composition. Removed transitional creation,
+delivery, and positional-product modules are not part of the current source
+tree:
+
+| Module | Current responsibility | Public disposition |
 |---|---|---|
-| Domain algebra | Bombay `Behavior`, typed events/actions | Pure initialization and folds; no I/O, clock, channel, or runtime handle |
-| Engine core | `bombay_engine::{Driver, RunExit, RunError, RuntimeEffects}` | One fold at a time; interpret its complete effect before the next event; retire the port before returning |
-| Primary/secondary ports | `bombay_engine::Environment`, bombay `EventSource`, `EventSender`, routing and lifecycle traits | Describe capabilities bombay needs; contain no Tokio or Bombay implementation policy |
-| Runtime adapter | `ActorEnvironment`, Bombay Communication mailbox wrappers, `AddressRouter`, `IncarnationEffects` | Give the ports their one local Tokio/Bombay meaning without changing Behavior policy |
-| Composition root | `System` | Select concrete adapters, prepare all resources transactionally, then launch exactly once |
-| Pre-launch transaction | `PreparedIncarnation` | Can exist only after exact registration; dropping it starts no behavior and rolls back prospective resources |
-| Canonical launch | `PreparedIncarnation::launch` | Construct the sole Tokio task/control/completion ceremony for ordinary roots, initialized roots, and children |
-| Running aggregate | `Incarnation` | Own exactly one `Driver` and one `TerminalRetirement` for one address generation |
-| Terminal guard | `TerminalRetirement` | Drop actor resources, release exact registration, emit retired, publish outcomes once, emit completed |
-| Outward completion seat | `Completion` | Tokio join proves task-owned values were dropped; Bombay Observe supplies the actor outcome |
-| External edge | `ActorRef`, `Handle`, `RootEndpoint`, `RootRetirement`, `ChildLease` | Expose only delivery/shutdown, abort/wait, or child capability—not internal consumers, subjects, or registries |
+| `lib.rs` | minimal façade and semantic-level re-exports | curated application prelude, template-family modules, `Application`, `App`, `RunError`, typed boundaries, transitional hosting evidence, and deliberate `behavior` power surface |
+| `application.rs` | pure ownership of one root and its semantic-role child declarations before execution | `Application` and its root-first `child` method are public; it owns values and roles, never runtime capabilities, addresses, or a second birth algebra |
+| `application_runtime.rs` | actor-system runner and concrete runtime capability product | `ApplicationHandle`, `ApplicationLifecycle`, `App`, and `RunError`; opt-in `AxumRunError` and Axum execution |
+| `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |
+| `topology.rs` | transitional static `Hosts<P>` runtime selection | public until `Application` materialization internalizes the closed actor-space product |
+| `local.rs` | prepared/live Environment and external typed reference | only `ActorRef` and exact-payload `SendError` escape the private module |
+| `launch.rs` | construct one incarnation and place it on Tokio | only the `ActorSpace<P>` alias is public |
+| `observe/` | actor-independent exact publication and shared/affine waiting | private, non-publishable, and verified through isolated normal/Loom/fuzz/performance harnesses |
+| `interpret.rs` | statically dispatch complete named action lanes and classify concrete runtime interpretation failure | only the flat `EffectInterpretationError` sum is public; traversal and interpreters remain private |
+| `observation.rs` | multiplex retained peer and child termination facts into typed Behavior events | private; unsupported duplicate observation and cancellation adapters remain removed |
+| `time.rs` | adapt the actor-owned `TimerQueue` into typed events | private |
+| `reports.rs` | preserve exact typed parent reports | private |
+| `termination.rs` | publish the coarse external termination observation | private |
+| `incarnation.rs` | one Driver execution plus terminal classification | private |
+| `outcome.rs` | exact terminal vocabulary | private |
+| `retirement.rs` | affine terminal handoff | private |
 
-`RuntimeEffects` is the DTO across the application-core/output-port joint. It
-contains only sends and child creations because the `Driver` consumes the
-Behavior verdict itself. `ActorEnvironment` interprets that DTO structurally;
-it does not reinterpret the verdict or behavior policy.
+`crates/bombay-macros` owns three syntax-only projections: the narrow
+`#[bombay::actor]` facade delegates to Behavior's owning actor expansion,
+`TerminalProjection` lifts exact actor retirements into an application-owned
+sum, and transitional `ActorSpaces` derives static protocol-host proofs. None
+owns actor semantics, an effect algebra, lifecycle policy, or runtime behavior.
+Bombay has no protocol macro.
 
-`Environment` includes `retire` because input, effect interpretation, and the
-resources supporting both form one adapter lifetime. A separate retirement
-trait allowed invalid combinations and split one lifecycle obligation across
-two ports.
+Communication UC1, Observe UO1, actor-owned timers, exact report preservation,
+and recursive task retirement are integrated. Any later simplification must
+preserve the same ownership and observable inversion proofs rather than
+reintroducing a parallel runtime mechanism.
 
-## Source ownership
+## Static adapter boundary
 
-```text
-crates/
-  bombay-engine/src/
-    driver.rs        actor-independent Driver and RuntimeEffects
-    environment.rs   Environment port
-    run.rs           terminal execution vocabulary
-    behavior_machine.rs Behavior-to-Machine adaptation
+The Engine Environment pair is the one behavior spine. The concrete local
+Environment contains real primitive values, not Bombay wrappers around them.
+Named effect leaves implement focused static traits such as send
+interpretation and Behavior's existing birth installation. Products delegate
+to leaves at compile time.
 
-  bombay/src/mailbox/
-    protocol.rs      EventSource/EventSender ports
-    communication.rs Bombay Communication adapter
+Do not introduce:
 
-  bombay/src/routing/
-    actor_ref.rs     external typed delivery edge
-    delivery.rs      registration, resolution, routing, and send-algebra ports/adapters
+- `dyn Any`, downcasts, or erased effect envelopes;
+- a dynamic capability registry;
+- one giant trait with a method for every runtime facility;
+- user-authored traversal of Bombay's capability products;
+- a second Tokio-specific Driver loop.
 
-  runtime/
-    system.rs        composition root
-    environment.rs   concrete actor environment adapter
-    incarnation_effects.rs       generation-owned capability state
-    timer_interpretation.rs      absolute/relative timer request interpretation
-    observation_interpretation.rs child/peer monitor installation and unwatch
-    child_publication.rs         creation and worker-terminal event publication
-    incarnation.rs   prepared/live ownership and terminal publication
-    completion.rs    Tokio termination + Observe outcome seat
-    handle.rs        external control/completion capability
-    outcome.rs       task outcome normalization
-    children.rs      Behavior birth-mode to runtime-child adapter selection
-    child_lease.rs   affine child capability
-    child_scope.rs   parent-owned live child set
-    lifecycle.rs     optional fact-reporting port and adapter
-```
+## Public boundary
 
-The folder boundary follows dependency direction: `core` knows only Behavior
-and its own port; concrete adapters depend inward on `core`; `System` composes
-the adapters. There is no generic `integration` layer because the concrete
-environment is a runtime adapter, and no executor abstraction because every
-local adapter currently requires Tokio. Embassy work may extract a runtime
-adapter boundary once a second implementation provides concrete laws.
+Ordinary users should name only Bombay actors, templates and policy values,
+pure logical `Recipient<P>` or exact `EstablishedRecipient<P>` values,
+external boundary `ActorRef<P>` values, stable `EntityRef<F>` values, `run`,
+and deliberate run errors. Driver, Environment,
+incarnation, primitive capability construction, topology storage, task
+ownership, and effect interpreters remain internal or advanced extension
+surface.
 
-## Adapter seams that remain intentional
-
-`EventSource` is narrower than `Environment`: it isolates mailbox ingress and
-allows the concrete environment algorithm to be tested with an in-memory
-source. `Environment` additionally owns output interpretation and retirement.
-
-The routing traits describe different authority directions and therefore do
-not collapse into a registry object: `EndpointRegistry` claims/releases exact
-generations, `DeliveryEndpoint` accepts resolved delivery, `DeliveryRouter`
-routes an outbound message, `PeerObserver` captures a generation-specific
-completion, and `RouteSends` interprets Behavior's statically composed send
-algebra. A rejected endpoint returns `RejectedDelivery<M, E>` so neither an
-unknown lookup nor a closed resolved mailbox can erase the owned message.
-Application send products use Behavior's recursive `SendInput`
-selection through semantic `Own`/`Inner<Path>` aliases. They do not implement
-`RouteSends`, `ObservesCreations`, or routing-error products; bombay provides
-those generic structural interpretations once. Application
-`DeliveryRouter<A, M>` implementations remain the endpoint-selection boundary.
-
-`IncarnationEffects` is the compiler-nameable product of capabilities owned by
-one generation, not a service registry. It stores the timer queue, child scope,
-observation monitor tasks, parent reporter, response edge, and router required
-by the concrete environment. Interpretation authority is separated:
-`timer_interpretation` handles only typed schedules,
-`observation_interpretation` handles monitor installation/cancellation, and
-`child_publication` handles same-action creation results and worker terminal
-facts. None are dynamically looked up or exposed to a behavior.
-
-`Handle::abort` and the exact `Incarnation` share one private cancellation
-request fact. It is not a second lifecycle protocol: Tokio still owns task
-cancellation, while the fact supplies the bombay runtime checkpoint between
-synchronous initialization and first mailbox ingress. Healthy actors do not
-yield at that boundary.
-
-`ChildRuntime` and `RuntimeBirthMode` bridge Behavior's type-level birth mode
-to either `NoChildren` or `SystemChildren`. The sealed bridge prevents an
-erased child registry while keeping `System::spawn` the only construction
-path. `ChildLease` retains liveness; consuming its completion seat for
-observation does not remove it from the parent's retirement scope.
-
-Lifecycle traits form an optional outbound reporting port. Reporters publish
-completed facts and cannot influence preparation, execution, or retirement.
-They add no lifecycle state machine or policy.
-
-## Preparation and terminal order
-
-```text
-System::prepare(spec)
-  -> allocate completion generations and mailbox
-  -> construct ActorEnvironment
-  -> claim the exact address generation
-  -> derive reporter and external edge
-  -> construct Driver
-  -> return PreparedIncarnation
-
-System::spawn(spec)
-  -> split prepared ownership into Incarnation, ActorRef, and observation
-  -> spawn Incarnation once
-  -> return Handle { ActorRef, Completion }
-
-System::activate(spec)
-  -> construct the private provisional ownership state
-  -> run initialization and interpret all initialization effects
-  -> claim the exact address generation
-  -> launch the initialized Incarnation once
-  -> return RootActivation { RootEndpoint, RootRetirement }
-
-return, error, panic, or cancellation
-  -> Driver/Incarnation drops behavior and retires environment resources
-  -> TerminalRetirement releases the exact address lease
-  -> publish detailed and peer-normalized outcomes exactly once
-  -> Tokio task termination makes Completion::wait resolvable
-```
-
-Tokio's `JoinHandle<()>` is only a temporal proof that the future and its
-owned resources have dropped. It is not a second actor-outcome channel;
-`TaskOutcome` comes solely from the Observe generation completed by
-`TerminalRetirement`. Dropping `Completion` detaches rather than cancels;
-abort authority remains an explicit operation on `Handle`.
-
-## Deliberate scope
-
-Bombay owns local runtime composition: addresses, spawning, delivery,
-timers, child capability retention, observation wiring, and exact incarnation
-retirement. Bombay Behavior owns actor policy, Communication owns the two-lane
-mailbox, Timers owns deadline ordering/replacement, Observe owns outcome
-generations, and Address owns registration identity and reclamation.
-
-This architecture does not add supervision strategy, restart budgets,
-request/reply, remote discovery, persistence, lifecycle hooks, a dynamic
-service registry, or an erased timer/child/message envelope.
+Behavior's application-authoring profile generates nominal effect and birth
+products. Bombay re-exports `ActorExt` and owning Behavior Actors constructors
+such as `Machine`, `Supervisor`, `DynamicSupervisor`, `WorkerPool`, and
+`KeyedWorkerPool`; Bombay does not wrap them in compatibility recipes. Every
+policy and domain capability input remains explicit. Behavior owns the
+deterministic algebra, Behavior Actors owns reusable actor policy, and Bombay
+owns concrete application composition, activation, and runtime interpretation.
+The result remains inspectable concrete composition, never a dynamic context,
+erased graph, alternate actor trait, or second runtime path.

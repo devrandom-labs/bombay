@@ -1,0 +1,5 @@
+error: terminal variants require exactly named `origin` and `terminal` fields
+ --> tests/compile/fail/terminal_projection_incomplete_variant.rs:7:12
+  |
+7 |     Worker { origin: WorkerOrigin },
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^

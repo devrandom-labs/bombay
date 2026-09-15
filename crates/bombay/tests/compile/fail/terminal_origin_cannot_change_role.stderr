@@ -1,0 +1,28 @@
+error[E0271]: type mismatch resolving `<ParentChildrenReplica as ChildRole<Parent>>::Position == ChildTail<ChildHead>`
+  --> tests/compile/fail/terminal_origin_cannot_change_role.rs:25:12
+   |
+25 |     origin.into_declared_child::<ParentChildrenReplica>()
+   |            ^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<ParentChildrenReplica as ChildRole<Parent>>::Position == ChildTail<ChildHead>`
+   |
+note: expected this to be `ChildTail<ChildHead>`
+  --> tests/compile/fail/terminal_origin_cannot_change_role.rs:11:1
+   |
+11 | / #[bombay::actor(
+12 | |     message = Never,
+13 | |     births = {
+14 | |         primary: Worker,
+15 | |         replica: Worker,
+16 | |     },
+17 | | )]
+   | |__^
+   = note: expected struct `ChildTail<ChildHead>`
+              found struct `ChildHead`
+note: required by a bound in `ActorOrigin::<Owner, Position>::into_declared_child`
+  --> src/terminal.rs
+   |
+   |     pub const fn into_declared_child<Role>(self) -> ActorOrigin<Owner, Role>
+   |                  ------------------- required by a bound in this associated function
+   |     where
+   |         Role: ChildRole<Owner, Position = Position>,
+   |                                ^^^^^^^^^^^^^^^^^^^ required by this bound in `ActorOrigin::<Owner, Position>::into_declared_child`
+   = note: this error originates in the attribute macro `::bombay::behavior::behavior` (in Nightly builds, run with -Z macro-backtrace for more info)

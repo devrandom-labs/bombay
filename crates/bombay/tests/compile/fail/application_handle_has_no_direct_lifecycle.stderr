@@ -1,0 +1,5 @@
+error[E0599]: no method named `request_shutdown` found for struct `bombay::ApplicationHandle<P, Families>` in the current scope
+  --> tests/compile/fail/application_handle_has_no_direct_lifecycle.rs:11:33
+   |
+11 |     let _accepted = application.request_shutdown();
+   |                                 ^^^^^^^^^^^^^^^^ method not found in `bombay::ApplicationHandle<RootProtocol>`

@@ -1,0 +1,20 @@
+error[E0277]: the actor system does not host actor protocol `Payments` locally
+  --> tests/compile/fail/actor_spaces_missing_host.rs:29:31
+   |
+29 |     require_hosts::<Payments, _>(&actors);
+   |                               ^ missing local actor protocol
+   |
+   = note: add an `ActorSpace<Payments>` and implement `Hosts<Payments>` for the actor-space product
+help: the trait `Hosts<Payments>` is not implemented for `Actors`
+      but trait `Hosts<Orders>` is implemented for it
+  --> tests/compile/fail/actor_spaces_missing_host.rs:18:10
+   |
+18 | #[derive(ActorSpaces)]
+   |          ^^^^^^^^^^^
+   = help: for that trait implementation, expected `Orders`, found `Payments`
+note: required by a bound in `require_hosts`
+  --> tests/compile/fail/actor_spaces_missing_host.rs:23:51
+   |
+23 | fn require_hosts<P: Protocol<Addr = MailAddr>, A: Hosts<P>>(_: &A) {}
+   |                                                   ^^^^^^^^ required by this bound in `require_hosts`
+   = note: this error originates in the derive macro `ActorSpaces` (in Nightly builds, run with -Z macro-backtrace for more info)

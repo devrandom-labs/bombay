@@ -1,0 +1,5 @@
+error[E0405]: cannot find trait `SendInput` in this scope
+ --> tests/compile/fail/prelude_hides_send_input.rs:7:8
+  |
+7 |     T: SendInput<Input, Path>,
+  |        ^^^^^^^^^ not found in this scope

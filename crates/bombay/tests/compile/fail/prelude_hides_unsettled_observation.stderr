@@ -1,0 +1,22 @@
+error[E0432]: unresolved imports `bombay::prelude::CancelObservation`, `bombay::prelude::EstablishedObservation`, `bombay::prelude::ObservationId`, `bombay::prelude::ObserveEstablished`, `bombay::prelude::ObserveEstablishedCreation`
+ --> tests/compile/fail/prelude_hides_unsettled_observation.rs:2:5
+  |
+2 |     CancelObservation, EstablishedObservation, ObservationId, ObserveEstablished,
+  |     ^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^ no `ObserveEstablished` in `prelude`
+  |     |                  |                       |
+  |     |                  |                       no `ObservationId` in `prelude`
+  |     |                  no `EstablishedObservation` in `prelude`
+  |     no `CancelObservation` in `prelude`
+3 |     ObserveEstablishedCreation,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ no `ObserveEstablishedCreation` in `prelude`
+  |
+help: a similar name exists in the module
+  |
+2 -     CancelObservation, EstablishedObservation, ObservationId, ObserveEstablished,
+2 +     CancelObservation, EstablishedCreation, ObservationId, ObserveEstablished,
+  |
+help: a similar name exists in the module
+  |
+3 -     ObserveEstablishedCreation,
+3 +     EstablishedCreation,
+  |

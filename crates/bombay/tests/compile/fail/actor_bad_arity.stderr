@@ -1,0 +1,5 @@
+error: receive must accept &mut self and message, with an optional sender
+ --> tests/compile/fail/actor_bad_arity.rs:9:5
+  |
+9 |     fn receive(&mut self) -> BehaviorActed<Self> {
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

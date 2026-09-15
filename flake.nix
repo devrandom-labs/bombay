@@ -31,15 +31,40 @@
           sha256 = "sha256-mvUGEOHYJpn3ikC5hckneuGixaC+yGrkMM/liDIDgoU=";
         };
         craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
-        src = pkgs.lib.fileset.toSource {
-          root = ./.;
-          fileset = pkgs.lib.fileset.unions [
-            (craneLib.fileset.commonCargoSources ./.)
-            ./.cargo/mutants.toml
-            ./.config/nextest.toml
-            (pkgs.lib.fileset.maybeMissing ./mutants-baseline.json)
-          ];
-        };
+        src =
+          let
+            withoutCargoTargets = pkgs.lib.fileset.fromSource (
+              pkgs.lib.cleanSourceWith {
+                name = "bombay-source-without-cargo-targets";
+                src = ./.;
+                filter = path: type: type != "directory" || baseNameOf path != "target";
+              }
+            );
+            sourceFiles = pkgs.lib.fileset.unions [
+              (craneLib.fileset.commonCargoSources ./.)
+              (pkgs.lib.fileset.fileFilter (
+                file:
+                file.hasExt "stderr"
+                || file.hasExt "md"
+                || file.hasExt "json"
+                || file.hasExt "yml"
+                || file.hasExt "yaml"
+              ) ./.)
+              ./.cargo/mutants.toml
+              ./.config/nextest.toml
+              (pkgs.lib.fileset.maybeMissing ./mutants-baseline.json)
+            ];
+            buildOutputs = pkgs.lib.fileset.unions [
+              (pkgs.lib.fileset.maybeMissing ./.direnv)
+              (pkgs.lib.fileset.maybeMissing ./.serena)
+              (pkgs.lib.fileset.maybeMissing ./mutants.out)
+              (pkgs.lib.fileset.maybeMissing ./mutants.out.old)
+            ];
+          in
+          pkgs.lib.fileset.toSource {
+            root = ./.;
+            fileset = pkgs.lib.fileset.difference (pkgs.lib.fileset.intersection sourceFiles withoutCargoTargets) buildOutputs;
+          };
         commonArgs = {
           inherit src;
           pname = "bombay-workspace";
@@ -102,12 +127,37 @@
               buildPhaseCargoCommand = "cargo test --locked --workspace --doc";
             }
           );
+          bombay-machine-loom = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              RUSTFLAGS = "--cfg loom";
+              buildPhaseCargoCommand = "cargo test --locked -p bombay-machine --lib --release";
+            }
+          );
+          bombay-entity-loom = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              RUSTFLAGS = "--cfg bombay_entity_loom";
+              buildPhaseCargoCommand = "cargo test --locked -p bombay-rs --test entity_loom_local --release";
+            }
+          );
+          bombay-observe-loom = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              RUSTFLAGS = "--cfg loom";
+              LOOM_MAX_PREEMPTIONS = "3";
+              buildPhaseCargoCommand = "cargo test --locked -p observe-tests --lib --release";
+            }
+          );
           bombay-panic-unwind = craneLib.mkCargoDerivation (
             commonArgs
             // {
               inherit cargoArtifacts;
               RUSTFLAGS = "-C panic=unwind";
-              buildPhaseCargoCommand = "cargo test --locked -p bombay-rs panic_and_cancellation_are_distinct_terminal_publications";
+              buildPhaseCargoCommand = "cargo test --locked -p bombay-rs drops_driver_before_exactly_one_terminal_classification";
             }
           );
           bombay-panic-abort-rejected = craneLib.mkCargoDerivation (
@@ -124,25 +174,63 @@
               '';
             }
           );
-          bombay-example-hello = craneLib.mkCargoDerivation (
+          bombay-example-counter = craneLib.mkCargoDerivation (
             commonArgs
             // {
               inherit cargoArtifacts;
-              buildPhaseCargoCommand = "cargo run --locked -p bombay-rs --example hello";
+              buildPhaseCargoCommand = ''
+                cargo test --locked -p bombay-example-counter
+                cargo run --locked -p bombay-example-counter
+              '';
             }
           );
-          bombay-example-local-runtime = craneLib.mkCargoDerivation (
+          bombay-example-actor-templates = craneLib.mkCargoDerivation (
             commonArgs
             // {
               inherit cargoArtifacts;
-              buildPhaseCargoCommand = "cargo run --locked -p bombay-framework --example local_runtime";
+              buildPhaseCargoCommand = ''
+                cargo test --locked -p bombay-example-actor-templates
+                cargo run --locked -p bombay-example-actor-templates
+              '';
             }
           );
-          bombay-example-job-queue = craneLib.mkCargoDerivation (
+          bombay-example-application-topology = craneLib.mkCargoDerivation (
             commonArgs
             // {
               inherit cargoArtifacts;
-              buildPhaseCargoCommand = "cargo run --locked -p bombay-framework --example job_queue";
+              buildPhaseCargoCommand = ''
+                cargo test --locked -p bombay-example-application-topology
+                cargo run --locked -p bombay-example-application-topology
+              '';
+            }
+          );
+          bombay-example-supervision = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              buildPhaseCargoCommand = ''
+                cargo test --locked -p bombay-example-supervision
+                cargo run --locked -p bombay-example-supervision
+              '';
+            }
+          );
+          bombay-example-worker-pool = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              buildPhaseCargoCommand = ''
+                cargo test --locked -p bombay-example-worker-pool
+                cargo run --locked -p bombay-example-worker-pool
+              '';
+            }
+          );
+          bombay-example-axum = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              # The executable is a long-running HTTP server; its deterministic
+              # router and Behavior boundary are exercised by package tests.
+              buildPhaseCargoCommand = "cargo test --locked -p bombay-example-axum";
             }
           );
         };
@@ -171,7 +259,7 @@
               buildPhaseCargoCommand = ''
                 set -o pipefail
                 PROPTEST_CASES=64 cargo mutants \
-                  --package bombay-rs --package bombay-framework \
+                  --package bombay-rs \
                   --test-tool nextest --no-shuffle --colors never \
                   --minimum-test-timeout 180 \
                   --output "$out" -- --profile mutants || true
@@ -196,7 +284,7 @@
               ];
               buildPhaseCargoCommand = ''
                 PROPTEST_CASES=64 cargo mutants \
-                  --package bombay-rs --package bombay-framework \
+                  --package bombay-rs --package bombay-engine --package bombay-machine \
                   --test-tool nextest --no-shuffle --colors never \
                   --minimum-test-timeout 180 \
                   --output "$out" -- --profile mutants || true
@@ -216,19 +304,9 @@
               inherit cargoArtifacts;
               pnameSuffix = "-performance";
               buildPhaseCargoCommand = ''
-                cargo test --locked -p bombay-rs --test allocation_oracle
-                cargo bench --locked -p bombay-rs --bench runtime_composition
-                for workload in \
-                  spawn_abort_retire \
-                  send_1024_then_stop \
-                  stop_and_retire \
-                  arm_due_timer_and_retire \
-                  watch_peer_and_retire \
-                  restart_once_and_retire_tree \
-                  coordinated_shutdown
-                do
-                  test -f "target/criterion/bombay_$workload/new/estimates.json"
-                done
+                cargo bench --locked -p bombay-rs --bench entity_directory
+                cargo bench --locked -p bombay-rs --bench entity_lifecycle
+                cargo bench --locked -p bombay-rs --bench machine_executor
                 mkdir -p "$out"
                 cp -R target/criterion "$out/criterion"
                 {
@@ -284,8 +362,7 @@
           '';
         };
 
-        # `nix develop .#fuzz` — coverage-guided operation sequences using
-        # the same public-runtime oracle as the deterministic property suite.
+        # `nix develop .#fuzz` — coverage-guided Engine and Observe operations.
         devShells.fuzz = pkgs.mkShell {
           packages = [
             miriToolchain
@@ -293,8 +370,8 @@
           ];
           shellHook = ''
             echo "bombay fuzz shell — nightly, on-demand only."
-            echo "  cd crates/bombay/fuzz"
-            echo "  cargo fuzz run runtime_operations"
+            echo "  cd crates/bombay-engine/fuzz && cargo fuzz run causal_turns"
+            echo "  cd crates/observe-fuzz && cargo fuzz run ops"
           '';
         };
       }

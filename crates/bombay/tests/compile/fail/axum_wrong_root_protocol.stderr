@@ -1,0 +1,26 @@
+error[E0631]: type mismatch in function arguments
+  --> tests/compile/fail/axum_wrong_root_protocol.rs:27:9
+   |
+20 | fn wrong_router(_: ApplicationHandle<Other>) -> Router {
+   | ------------------------------------------------------ found signature defined here
+...
+25 |     let _ = Application::new(Root.stop_on_shutdown()).run_axum(
+   |                                                       -------- required by a bound introduced by this call
+26 |         "127.0.0.1:0".parse().unwrap(),
+27 |         wrong_router,
+   |         ^^^^^^^^^^^^ expected due to this
+   |
+   = note: expected function signature `fn(bombay::ApplicationHandle<Root>) -> _`
+              found function signature `fn(bombay::ApplicationHandle<Other>) -> _`
+note: required by a bound in `bombay::application_runtime::<impl bombay::Application<Root, Members>>::run_axum`
+  --> src/application_runtime.rs
+   |
+   |     pub fn run_axum<Terminal>(
+   |            -------- required by a bound in this associated function
+...
+   |         router: impl FnOnce(ApplicationHandle<Root::Protocol>) -> axum::Router + Send,
+   |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application_runtime::<impl Application<Root, Members>>::run_axum`
+help: consider wrapping the function in a closure
+   |
+27 |         |arg0: bombay::ApplicationHandle<Root>| wrong_router(/* bombay::ApplicationHandle<Other> */),
+   |         +++++++++++++++++++++++++++++++++++++++             ++++++++++++++++++++++++++++++++++++++++

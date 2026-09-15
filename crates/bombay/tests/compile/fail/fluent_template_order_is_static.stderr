@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/compile/fail/fluent_template_order_is_static.rs:36:33
+   |
+36 |     expects_timer_then_shutdown(shutdown_then_timer);
+   |     --------------------------- ^^^^^^^^^^^^^^^^^^^ expected `StopOnShutdown<OneShot<Root>>`, found `OneShot<StopOnShutdown<Root>>`
+   |     |
+   |     arguments to this function are incorrect
+   |
+   = note: expected struct `StopOnShutdown<OneShot<Root>>`
+              found struct `OneShot<StopOnShutdown<Root>>`
+note: function defined here
+  --> tests/compile/fail/fluent_template_order_is_static.rs:29:4
+   |
+29 | fn expects_timer_then_shutdown(_: StopOnShutdown<OneShot<Root>>) {}
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^ --------------------------------

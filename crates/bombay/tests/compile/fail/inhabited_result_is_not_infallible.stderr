@@ -1,0 +1,5 @@
+error[E0599]: no method named `infallible` found for enum `Result<T, E>` in the current scope
+ --> tests/compile/fail/inhabited_result_is_not_infallible.rs:7:20
+  |
+7 |     let _ = result.infallible();
+  |                    ^^^^^^^^^^ method not found in `Result<u64, DomainError>`

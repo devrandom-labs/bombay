@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/compile/fail/entity_id_family_mismatch.rs:9:36
+  |
+9 |     dispatch_account(EntityId::new(OrderId(7)));
+  |                      ------------- ^^^^^^^^^^ expected `AccountId`, found `OrderId`
+  |                      |
+  |                      arguments to this function are incorrect
+  |
+note: associated function defined here
+ --> src/entity/mod.rs
+  |
+  |     pub const fn new(value: T) -> Self {
+  |                  ^^^

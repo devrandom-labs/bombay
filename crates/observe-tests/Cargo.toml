@@ -1,0 +1,25 @@
+[package]
+name = "observe-tests"
+description = "Private verification harness for Bombay's observe module"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+name = "observe"
+
+[lints]
+workspace = true
+
+[dependencies]
+parking_lot = { workspace = true }
+thiserror = { workspace = true }
+triomphe = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+
+[target.'cfg(loom)'.dependencies]
+loom = { version = "0.7.2", features = ["futures"] }

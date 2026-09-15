@@ -1,0 +1,19 @@
+error[E0308]: mismatched types
+ --> tests/compile/fail/behavior_owner_bad_receiver.rs:5:1
+  |
+5 | #[bombay::behavior::behavior(addr = MailAddr, message = u8)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  | |
+  | expected `u16`, found `u8`
+  | arguments to this function are incorrect
+  |
+note: method defined here
+ --> tests/compile/fail/behavior_owner_bad_receiver.rs:7:8
+  |
+7 |     fn receive(&mut self, _: MailAddr, _: u16) -> BehaviorActed<Self> {
+  |        ^^^^^^^                         ------
+  = note: this error originates in the attribute macro `bombay::behavior::behavior` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: you can convert a `u8` to a `u16`
+  |
+5 | #[bombay::behavior::behavior(addr = MailAddr, message = u8)].into()
+  |                                                             +++++++
