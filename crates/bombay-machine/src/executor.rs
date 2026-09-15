@@ -533,7 +533,8 @@ impl<M, O, E> Drop for DispatchOwnership<'_, M, O, E> {
 #[cfg(all(test, not(loom)))]
 mod tests {
     use std::panic::{AssertUnwindSafe, catch_unwind};
-    use std::sync::{Arc, Mutex, Weak};
+    use std::sync::{Arc, Condvar, Mutex, Weak};
+    use std::thread;
 
     use crate::{Base, Topology, Vertex, VertexId};
 
@@ -938,9 +939,6 @@ mod tests {
 
     #[test]
     fn dispatch_guard_drop_recovers_during_poison_unwind() {
-        use std::sync::Condvar;
-        use std::thread;
-
         let machine = Base::new(0_usize, TOPOLOGY.validated().unwrap(), |state, input| {
             assert_ne!(input, 9, "transition failure");
             (input, state + input)

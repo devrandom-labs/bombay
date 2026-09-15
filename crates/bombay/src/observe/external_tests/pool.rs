@@ -2,7 +2,9 @@
 //! recycling, stale waiter/state bits surviving `reset`, and exactly-once
 //! outcome destruction across churn well beyond the pool capacity (128).
 
+use std::sync::Barrier;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::thread;
 use std::time::Duration;
 
 use crate::observe::ObservationSpace;
@@ -240,9 +242,6 @@ fn pool_overflow_with_live_observers_drops_exactly_once() {
 /// way — by the mover or by the slot's final drop.
 #[test]
 fn into_outcome_racing_handle_drop_moves_at_most_once() {
-    use std::sync::Barrier;
-    use std::thread;
-
     for round in 0..2_000_u64 {
         let space = ObservationSpace::<u8, DropProbe>::new();
         let (probe, counter) = DropProbe::new(round);

@@ -4,12 +4,15 @@
 //! wait mechanism needs its own stress coverage, which loom cannot schedule
 //! at the OS level.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::future::IntoFuture;
+use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Barrier};
-use std::task::Wake;
+use std::task::{Context, Poll, RawWaker, RawWakerVTable, Wake, Waker};
 use std::time::{Duration, Instant};
+use triomphe::Arc as SlotArc;
 
-use super::ObservationSpace;
+use super::{ObservationSpace, Slot, SlotEntry, Waiter, Waiters, lock, write_lock};
 
 /// A waker that raises a flag when woken.
 struct FlagWake(AtomicBool);
@@ -207,9 +210,6 @@ fn wait_timeout_returns_outcome_when_completed() {
 /// under Miri, which would make `will_wake` spuriously false.
 #[test]
 fn register_waker_is_idempotent_per_task() {
-    use super::{Waiter, Waiters, lock};
-    use std::task::{RawWaker, RawWakerVTable, Waker};
-
     struct RawFlagWaker(AtomicBool);
 
     unsafe fn raw_clone(data: *const ()) -> RawWaker {
@@ -266,10 +266,6 @@ fn register_waker_is_idempotent_per_task() {
 /// The observation's `IntoFuture` resolves to the outcome on completion.
 #[test]
 fn observation_future_resolves_on_completion() {
-    use std::future::IntoFuture;
-    use std::pin::Pin;
-    use std::task::{Context, Poll, Waker};
-
     let space = ObservationSpace::new();
     let mut subject = space.subject(7_u64).unwrap();
     let mut future = space.observe(&7_u64).unwrap().into_future();
@@ -286,10 +282,6 @@ fn observation_future_resolves_on_completion() {
 /// future does not fire it, and the slot's outcome stays readable.
 #[test]
 fn dropping_observation_future_deregisters_waker() {
-    use std::future::IntoFuture;
-    use std::pin::Pin;
-    use std::task::Context;
-
     let space = ObservationSpace::new();
     let mut subject = space.subject(7_u64).unwrap();
     let observation = space.observe(&7_u64).unwrap();
@@ -303,11 +295,6 @@ fn dropping_observation_future_deregisters_waker() {
     assert!(!flag.0.load(Ordering::Relaxed));
     assert_eq!(space.observe(&7_u64).unwrap().try_get(), Some(9_u64));
 }
-
-use std::sync::atomic::AtomicUsize;
-use triomphe::Arc as SlotArc;
-
-use super::{Slot, SlotEntry, lock, write_lock};
 
 /// Migration replaces waker A with B, and cancellation then deregisters B.
 /// Neither may remain registered to be fired by a later completion.

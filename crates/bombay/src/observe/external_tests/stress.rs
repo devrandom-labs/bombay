@@ -7,6 +7,7 @@
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Barrier};
+use std::task::Wake;
 use std::thread;
 use std::time::Duration;
 
@@ -258,8 +259,6 @@ fn stress_zero_timeout_boundary() {
 /// drain) must not deadlock or corrupt the drain.
 #[test]
 fn stress_reentrant_wake_drops_observation() {
-    use std::task::Wake;
-
     struct Reentrant {
         victim: std::sync::Mutex<Option<crate::observe::Observation<u64>>>,
         fires: AtomicUsize,
@@ -351,8 +350,6 @@ fn stress_spurious_unpark_injection() {
 /// re-registration sees COMPLETED and returns immediately.
 #[test]
 fn stress_reentrant_wake_reregistration_no_loop() {
-    use std::task::Wake;
-
     struct ReRegister {
         obs: std::sync::Mutex<Option<crate::observe::Observation<u64>>>,
         fires: AtomicUsize,
@@ -828,8 +825,6 @@ fn stress_duplicate_waiter_entry_stale_token_self_heals() {
 /// the drain finishes, and every waiter resolves exactly once.
 #[test]
 fn stress_wait_inside_wake_during_drain() {
-    use std::task::Wake;
-
     struct WaitInWake {
         obs: std::sync::Mutex<Option<crate::observe::Observation<u64>>>,
         fires: AtomicUsize,
@@ -896,8 +891,6 @@ fn stress_wait_inside_wake_during_drain() {
 /// resolves every other waiter exactly once.
 #[test]
 fn stress_wait_timeout_inside_wake_during_drain() {
-    use std::task::Wake;
-
     struct TimeoutInWake {
         obs: std::sync::Mutex<Option<crate::observe::Observation<u64>>>,
         fires: AtomicUsize,
@@ -946,8 +939,6 @@ fn stress_wait_timeout_inside_wake_during_drain() {
 /// must return None and leave the outcome readable.
 #[test]
 fn stress_into_outcome_inside_wake_during_drain_refused() {
-    use std::task::Wake;
-
     struct TakeInWake {
         obs: std::sync::Mutex<Option<crate::observe::Observation<u64>>>,
         fires: AtomicUsize,

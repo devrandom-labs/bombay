@@ -9,7 +9,7 @@ use std::task::Wake;
 use std::time::Duration;
 
 use crate::observe::ObservationSpace;
-use crate::observe::test_support::CountWake;
+use crate::observe::test_support::{CountWake, DropProbe};
 
 /// A waker that panics when woken.
 struct PanicWake;
@@ -145,8 +145,6 @@ fn wait_timeout_waiter_self_heals_after_panicking_drain() {
 /// (drop counts stay exactly-once).
 #[test]
 fn state_after_panicking_drain_stays_consistent() {
-    use crate::observe::test_support::DropProbe;
-
     let space = ObservationSpace::<u8, DropProbe>::new();
     let (probe, counter) = DropProbe::new(1);
     let mut subject = space.subject(3).expect("first registration succeeds");

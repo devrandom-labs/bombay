@@ -31,6 +31,8 @@ DX53 atomic Behavior migration (distilled)
        -> MNE1 durable Mnesis execution (downstream, blocked externally)
 
 DX54 Triomphe feature minimization (feature-complete, independent)
+
+DX55 module-scoped test imports (feature-complete, independent)
 ```
 
 There is no unresolved Bombay prerequisite. MNE1 requires Mnesis-Bombay to
@@ -172,6 +174,41 @@ admission as durable completion.
   `+0 / -0 / net 0`; tests `+0 / -0 / net 0`; public API
   `+0 / -0` types; manifests `+1 / -11 / net -10`; documentation
   `+45 / -0 / net +45`.
+
+## DX55 — module-scoped test imports
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: the complete owner graph recorded above, including the
+  exact locked Behavior and Timers revisions, was rechecked before this
+  repository-wide structural audit.
+- Requirement: imports belong to their owning module scope. Test functions and
+  generated bodies receive no exception.
+- Ownership: each affected test module owns the names needed by its tests; no
+  runtime owner, Behavior lane, or production interface changes.
+- Exact blocker and regression: an AST query finds 12 functions containing 19
+  block-local `use` declarations across Machine executor tests, Observe tests,
+  and Entity error tests. The same query must find zero after the change while
+  the complete affected behavior remains unchanged.
+- Dependency edges: independent of DX53, DX49, and DX54.
+- Blocked by: none.
+- Unblocks: none.
+- Change ledger: expected tracked files are this ledger and six test-bearing
+  Rust files. Expected production source delta is `+0 / -0 / net 0`; test code
+  is expected to be net-negative by moving and merging imports; expected public
+  API is `+0 / -0` types. Existing modules and names are reused; no wrapper,
+  trait, owner, interpreter, or dependency is added. Any cfg-scope change,
+  ambiguity, production/API edit, or verification failure falsifies the
+  experiment.
+- Result: all 19 imports moved into their six owning test modules and repeated
+  declarations were merged. The repository-wide AST query now finds zero
+  function-local imports in crates or examples.
+- Verification: affected Machine, Observe, and Entity error tests, the complete
+  locked workspace suite, formatting, and strict all-target workspace Clippy
+  pass through the pinned Nix shell.
+- Actual checkpoint: tracked files `7`; production source
+  `+0 / -0 / net 0`; tests `+14 / -41 / net -27`; public API
+  `+0 / -0` types; documentation `+37 / -0 / net +37`; complete tracked delta
+  `+51 / -41 / net +10`.
 
 ## Public examples
 
