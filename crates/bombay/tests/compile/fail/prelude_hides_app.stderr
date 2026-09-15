@@ -1,0 +1,13 @@
+error[E0425]: cannot find type `App` in this scope
+ --> tests/compile/fail/prelude_hides_app.rs:4:19
+  |
+4 |     let _: Option<App<(), ()>> = None;
+  |                   ^^^ not found in this scope
+
+warning: unused import: `bombay::prelude::*`
+ --> tests/compile/fail/prelude_hides_app.rs:1:5
+  |
+1 | use bombay::prelude::*;
+  |     ^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default

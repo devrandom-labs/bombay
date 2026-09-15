@@ -1,0 +1,5 @@
+error[E0599]: no method named `clone` found for struct `ExternalActor<P>` in the current scope
+ --> tests/compile/fail/external_actor_receiver_is_affine.rs:7:28
+  |
+7 |     let _duplicate = actor.clone();
+  |                            ^^^^^ method not found in `ExternalActor<MessageProtocol<bombay::MailAddr, u64>>`

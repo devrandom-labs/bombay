@@ -1,0 +1,7 @@
+error: `message` is inferred from `receive`; remove the actor argument
+  --> tests/compile/fail/actor_message_is_inferred.rs:9:5
+   |
+ 9 | /     fn receive(&mut self, _: u8) -> BehaviorActed<Self> {
+10 | |         Ok(Actions::cont())
+11 | |     }
+   | |_____^

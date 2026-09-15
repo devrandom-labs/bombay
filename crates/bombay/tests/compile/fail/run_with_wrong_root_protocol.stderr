@@ -1,0 +1,25 @@
+error[E0631]: type mismatch in function arguments
+  --> tests/compile/fail/run_with_wrong_root_protocol.rs:26:64
+   |
+21 | fn wrong_boundary(_: ApplicationHandle<Other>) -> Ready<()> {
+   | ----------------------------------------------------------- found signature defined here
+...
+26 |     let _ = Application::new(Root.stop_on_shutdown()).run_with(wrong_boundary);
+   |                                                       -------- ^^^^^^^^^^^^^^ expected due to this
+   |                                                       |
+   |                                                       required by a bound introduced by this call
+   |
+   = note: expected function signature `fn(bombay::ApplicationHandle<Root>) -> _`
+              found function signature `fn(bombay::ApplicationHandle<Other>) -> _`
+note: required by a bound in `bombay::application_runtime::<impl bombay::Application<Root, Members>>::run_with`
+  --> src/application_runtime.rs
+   |
+   |     pub fn run_with<Terminal, Boundary, BoundaryFuture, Output>(
+   |            -------- required by a bound in this associated function
+...
+   |         Boundary: FnOnce(ApplicationHandle<Root::Protocol>) -> BoundaryFuture + Send,
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application_runtime::<impl Application<Root, Members>>::run_with`
+help: consider wrapping the function in a closure
+   |
+26 |     let _ = Application::new(Root.stop_on_shutdown()).run_with(|arg0: bombay::ApplicationHandle<Root>| wrong_boundary(/* bombay::ApplicationHandle<Other> */));
+   |                                                                +++++++++++++++++++++++++++++++++++++++               ++++++++++++++++++++++++++++++++++++++++

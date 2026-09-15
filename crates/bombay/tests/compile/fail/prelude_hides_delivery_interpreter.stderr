@@ -1,0 +1,5 @@
+error[E0405]: cannot find trait `InterpretDelivery` in this scope
+ --> tests/compile/fail/prelude_hides_delivery_interpreter.rs:6:8
+  |
+6 |     I: InterpretDelivery<P>,
+  |        ^^^^^^^^^^^^^^^^^ not found in this scope

@@ -1,0 +1,38 @@
+[package]
+name = "observe-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+observe = { package = "observe-tests", path = "../observe-tests" }
+
+[[bin]]
+name = "ops"
+path = "fuzz_targets/ops.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "future_ops"
+path = "fuzz_targets/future_ops.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "promotion_ops"
+path = "fuzz_targets/promotion_ops.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "waker_ops"
+path = "fuzz_targets/waker_ops.rs"
+test = false
+doc = false

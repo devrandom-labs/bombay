@@ -1,0 +1,27 @@
+[package]
+name = "bombay-engine-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+behavior = { package = "bombay-behavior-actors", version = "0.14.0" }
+bombay-engine = { path = ".." }
+
+[[bin]]
+name = "causal_turns"
+path = "fuzz_targets/causal_turns.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
+
+[patch.crates-io]
+bombay-behavior = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "a272adf8d2cbb6a2784d565f47c74adff3e7d01b" }
+bombay-behavior-actors = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "a272adf8d2cbb6a2784d565f47c74adff3e7d01b" }
+bombay-behavior-macros = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "a272adf8d2cbb6a2784d565f47c74adff3e7d01b" }

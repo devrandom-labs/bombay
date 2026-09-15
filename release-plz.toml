@@ -12,5 +12,9 @@ name = "bombay-rs"
 release = true
 
 [[package]]
-name = "bombay-framework"
+name = "bombay-machine"
+release = true
+
+[[package]]
+name = "bombay-macros"
 release = true

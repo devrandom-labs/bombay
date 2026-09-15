@@ -1,0 +1,5 @@
+error: unknown actor argument
+ --> tests/compile/fail/actor_unknown_argument.rs:7:17
+  |
+7 | #[bombay::actor(policy = Never)]
+  |                 ^^^^^^

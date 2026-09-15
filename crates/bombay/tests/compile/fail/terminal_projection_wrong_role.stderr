@@ -1,0 +1,26 @@
+error[E0277]: the trait bound `ApplicationTerminal: ProjectTerminal<ActorOrigin<Parent, ChildTail<ChildHead>>, ActorRetirement<Worker, ApplicationTerminal>>` is not satisfied
+  --> tests/compile/fail/terminal_projection_wrong_role.rs:40:26
+   |
+40 |     require_wrong_role::<ApplicationTerminal>();
+   |                          ^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `ProjectTerminal<ActorOrigin<Parent, ChildTail<ChildHead>>, ActorRetirement<Worker, ApplicationTerminal>>` is not implemented for `ApplicationTerminal`
+      but trait `ProjectTerminal<ActorOrigin<Parent, ChildHead>, ActorRetirement<Worker, ApplicationTerminal>>` is implemented for it
+  --> tests/compile/fail/terminal_projection_wrong_role.rs:20:10
+   |
+20 | #[derive(TerminalProjection)]
+   |          ^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `ChildHead`, found `ChildTail<ChildHead>`
+note: required by a bound in `require_wrong_role`
+  --> tests/compile/fail/terminal_projection_wrong_role.rs:32:8
+   |
+30 |   fn require_wrong_role<T>()
+   |      ------------------ required by a bound in this function
+31 |   where
+32 |       T: ProjectTerminal<
+   |  ________^
+33 | |             ActorOrigin<Parent, PrimaryPosition>,
+34 | |             ActorRetirement<Worker, ApplicationTerminal>,
+35 | |         >,
+   | |_________^ required by this bound in `require_wrong_role`
+   = note: this error originates in the derive macro `TerminalProjection` (in Nightly builds, run with -Z macro-backtrace for more info)

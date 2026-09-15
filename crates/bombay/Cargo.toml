@@ -13,20 +13,46 @@ name = "bombay"
 [lints]
 workspace = true
 
+[features]
+default = []
+axum = ["dep:axum", "tokio/net"]
+
 [dependencies]
-bombay-address = { workspace = true }
 behavior = { workspace = true }
-communication = { workspace = true }
-observe = { workspace = true }
-bombay-timers = { workspace = true }
-tokio = { workspace = true, features = ["rt", "sync", "time", "macros"] }
-thiserror = { workspace = true }
 bombay-engine = { workspace = true }
+bombay-macros = { path = "../bombay-macros" }
+bombay-address = { workspace = true }
+bombay-machine = { workspace = true }
+communication = { workspace = true }
+parking_lot = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
+timers = { workspace = true }
+triomphe = { workspace = true }
+axum = { workspace = true, optional = true }
+
 [dev-dependencies]
-criterion = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+trybuild = "1"
+bombay-machine = { workspace = true }
+dhat = "0.3"
+loom = "0.7.2"
 proptest = { workspace = true }
-tokio = { workspace = true, features = ["rt", "rt-multi-thread", "sync", "time", "macros", "test-util"] }
+
+[target.'cfg(bombay_entity_loom)'.dependencies]
+loom = "0.7.2"
+
+[target.'cfg(loom)'.dependencies]
+loom = "0.7.2"
 
 [[bench]]
-name = "runtime_composition"
+name = "entity_directory"
+harness = false
+
+[[bench]]
+name = "entity_lifecycle"
+harness = false
+
+[[bench]]
+name = "machine_executor"
 harness = false

@@ -1,0 +1,20 @@
+[package]
+name = "bombay-example-axum"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+axum.workspace = true
+bombay-rs = { path = "../../crates/bombay", features = ["axum"] }
+serde.workspace = true
+
+[dev-dependencies]
+http-body-util = "0.1.5"
+serde_json.workspace = true
+tower = { version = "0.5.3", features = ["util"] }
+tokio = { workspace = true, features = ["rt"] }

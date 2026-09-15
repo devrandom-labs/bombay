@@ -1,0 +1,19 @@
+error[E0271]: type mismatch resolving `<Phased as Behavior>::Ph == Never`
+  --> tests/compile/fail/stash_requires_closed_phase.rs:31:20
+   |
+31 |     let _ = Phased.with_stash(deliver);
+   |                    ^^^^^^^^^^ type mismatch resolving `<Phased as Behavior>::Ph == Never`
+   |
+note: expected this to be `Never`
+  --> tests/compile/fail/stash_requires_closed_phase.rs:17:15
+   |
+17 |     type Ph = u8;
+   |               ^^
+note: required by a bound in `with_stash`
+  --> src/actors/actor_ext.rs
+   |
+   |     fn with_stash(self, route: fn(&BehaviorMessage<Self>) -> StashRoute) -> Stash<Self>
+   |        ---------- required by a bound in this associated function
+   |     where
+   |         Self: Behavior<Ph = Never>,
+   |                        ^^^^^^^^^^ required by this bound in `ActorExt::with_stash`

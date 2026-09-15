@@ -1,0 +1,12 @@
+error[E0277]: the trait bound `Lifecycle: ChildRole<StopOnShutdown<Root>>` is not satisfied
+  --> tests/compile/fail/application_actor_projection_requires_attribute.rs:18:10
+   |
+18 | #[derive(TerminalProjection)]
+   |          ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `ChildRole<StopOnShutdown<Root>>` is not implemented for `Lifecycle`
+  --> tests/compile/fail/application_actor_projection_requires_attribute.rs:16:1
+   |
+16 | struct Lifecycle;
+   | ^^^^^^^^^^^^^^^^
+   = note: this error originates in the derive macro `TerminalProjection` (in Nightly builds, run with -Z macro-backtrace for more info)

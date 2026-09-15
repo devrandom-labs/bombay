@@ -1,0 +1,5 @@
+error[E0599]: no method named `request_shutdown` found for struct `ActorInterface<Api>` in the current scope
+ --> tests/compile/fail/actor_interface_has_no_lifecycle.rs:4:15
+  |
+4 |     interface.request_shutdown();
+  |               ^^^^^^^^^^^^^^^^ method not found in `ActorInterface<()>`

@@ -1,0 +1,5 @@
+error: ActorSpaces requires named fields
+  --> tests/compile/fail/actor_spaces_tuple.rs:12:8
+   |
+12 | struct Actors(ActorSpace<Orders>);
+   |        ^^^^^^

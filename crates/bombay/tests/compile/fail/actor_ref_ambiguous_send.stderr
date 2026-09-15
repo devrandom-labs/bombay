@@ -1,0 +1,5 @@
+error[E0599]: no method named `send` found for reference `&bombay::ActorRef<P>` in the current scope
+ --> tests/compile/fail/actor_ref_ambiguous_send.rs:7:19
+  |
+7 |     let _ = actor.send(from, message);
+  |                   ^^^^ method not found in `&bombay::ActorRef<P>`

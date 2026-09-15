@@ -1,0 +1,10 @@
+error[E0119]: conflicting implementations of trait `ProjectTerminal<ActorOrigin<StopOnShutdown<Root>, Here>, ActorRetirement<StopOnShutdown<Root>, ApplicationTerminal>>` for type `ApplicationTerminal`
+  --> tests/compile/fail/terminal_projection_duplicate_pair.rs:10:10
+   |
+10 | #[derive(TerminalProjection)]
+   |          ^^^^^^^^^^^^^^^^^^
+   |          |
+   |          first implementation here
+   |          conflicting implementation for `ApplicationTerminal`
+   |
+   = note: this error originates in the derive macro `TerminalProjection` (in Nightly builds, run with -Z macro-backtrace for more info)

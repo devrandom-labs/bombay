@@ -1,0 +1,13 @@
+[package]
+name = "bombay-example-entity"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bombay-rs = { path = "../../crates/bombay" }
+tokio = { workspace = true, features = ["sync"] }
