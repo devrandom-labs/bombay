@@ -29,6 +29,7 @@ evidence only and never overrides the selected build contract.
 DX53 atomic Behavior migration (distilled)
   -> DX49 application-native Entity (distilled)
        -> MNE1 durable Mnesis execution (downstream, blocked externally)
+  -> DX58 Behavior 0.15 crates.io adoption (active)
 
 DX54 Triomphe feature minimization (feature-complete, independent)
 
@@ -37,6 +38,7 @@ DX55 module-scoped test imports (feature-complete, independent)
 DX56 Observe retained-key naming (feature-complete, independent)
 
 DX57 Machine output consumer (feature-complete, independent)
+
 ```
 
 There is no unresolved Bombay prerequisite. MNE1 requires Mnesis-Bombay to
@@ -310,6 +312,77 @@ admission as durable completion.
   `+0 / -1` types; manifests and lockfile `+2 / -0 / net +2`;
   documentation `+60 / -0 / net +60`; complete tracked delta
   `+199 / -68 / net +131`.
+
+## DX58 — Behavior 0.15 crates.io adoption
+
+- State: `active`; the immutable upstream releases are published and the
+  feature-local contract audit is complete.
+- Selected release candidates: `bombay-behavior` 0.15.0,
+  `bombay-behavior-actors` 0.15.0, and `bombay-behavior-macros` 0.11.5. All
+  three crates identify source commit
+  `ba0dcb5549dcb4e79ddc32b827905f1a4244d414`; their release tags resolve to
+  that commit. Its complete `AGENTS.md` has blob
+  `4996c149c5762d8057e6d207517459284b3cb9ed` and is byte-identical to the
+  audited pre-release owner contract.
+- Neighbor verification: Address 0.2.0, Communication 0.1.2, Timers 0.1.0 at
+  `13e884da7ab41781f52337b0038060e375b00ee0`, and Bombay-private Observe were
+  rechecked at their selected source. Their ownership and protocols do not
+  change in this feature; only their Bombay interpreters may adapt to the
+  owner's total-settlement interface.
+- Requirement: replace the mutable Behavior Git patch with the immutable
+  crates.io releases and consume the exact published algebra directly. Bombay
+  must not retain the superseded two-leg commit API, re-create catalogue
+  ownership in core, or add a compatibility runtime.
+- Ownership: Behavior Core owns `ActionItem`, `ItemSettlement`,
+  `SettledItem`, `Interpretation`, source-result custody, creation ordering,
+  and total `Actions::interpret`; Behavior Actors owns catalogue protocols,
+  templates, and the unified `TimedEvent`/`TimedReaction`; Bombay owns only
+  concrete local interpretation, application activation and retirement, and
+  exact terminal custody. Engine remains actor-independent.
+- Governing invariants: creation preparation and settlement precede dependent
+  sends; every accepted, rejected, blocked, corrupt, and unattempted action
+  retains its exact typed source item; closed control retains the exact source
+  action; initialization and activation settle through the same contract; the
+  final Behavior and affine Environment residual remain recoverable at every
+  terminal edge.
+- Exact regression: an isolated worktree changed only dependency selection to
+  the published releases and ran `nix develop -c cargo check --workspace`.
+  The prior representation failed with 31 compile errors in two coherent
+  groups: catalogue names still imported from Core, and Bombay's superseded
+  `SendInterpreter`/`CreationResults`/two-leg commit machinery. Those failures
+  locate the obsolete representation but do not determine the replacement
+  architecture. Existing complete settlement, source-custody, closed-control,
+  creation-order, initialization, activation, and Driver-retirement tests are
+  the caller-visible behavioral regressions.
+- Dependency edges: depends on the distilled DX53 ownership model and the
+  published upstream contracts; independent of DX54 through DX57.
+- Blocked by: none.
+- Unblocks: immutable downstream graph alignment, including the version
+  prerequisite of MNE1.
+- Change ledger: expected tracked files are the root manifest and lockfile,
+  Engine's fuzz manifest and lockfile, Bombay's manifest, `lib.rs`,
+  `actor_interface.rs`, `actors/actor_ext.rs`, `interpret.rs`,
+  `application_runtime.rs`, `child_bindings.rs`, `local.rs`, `launch.rs`,
+  `reports.rs`, `observation.rs`, `time.rs`, `termination.rs`,
+  `entity/bombay.rs`, `entity/family.rs`, affected caller-visible regression
+  fixtures, and this ledger. Up to 24 tracked files are expected. Production
+  must remain at or below net `+500` lines and public API at or below `+3`
+  types; crossing either limit requires another explicit checkpoint. Existing
+  Behavior settlements, actor catalogue products, Driver, Environment,
+  capability owners, actor tasks, and terminal trees must be reused; obsolete
+  Bombay interpreter and raw creation-result machinery must be deleted rather
+  than wrapped.
+- Authorized scope: adopting the coherent Orders 1–6 custody contract
+  necessarily crosses the 15-file threshold. After that checkpoint was
+  reported, the user explicitly supplied the published versions and directed
+  Bombay to use the crates.io versions directly. That authorizes the expanded
+  file count for this release migration only; it does not authorize a broader
+  redesign or relax the production-line and public-type limits.
+- Falsification: reject the migration if it needs a second effect algebra,
+  catalogue copy, erased action or result, dynamic capability map, hidden
+  callback, inferred provenance, compatibility layer, or weaker terminal
+  custody. Role-first application assembly remains separate from this release
+  adoption.
 
 ## Public examples
 
