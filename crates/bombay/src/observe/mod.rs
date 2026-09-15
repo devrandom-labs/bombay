@@ -19,24 +19,25 @@ use std::time::Duration;
 #[cfg(not(loom))]
 use std::time::Instant;
 
-/// Fixed-seed 64-bit multiply-xor-rotate hasher (rustc's `FxHash`, as in the
-/// `rustc-hash` crate). Deterministic across runs and fast for small keys;
-/// not collision-hardened, so it is only used for the internal key table,
-/// whose keys come from the embedding application rather than an adversary.
+/// Fixed 64-bit multiply-xor-rotate hasher for retained observation keys.
+/// It is deterministic and fast for small keys but not collision-hardened, so
+/// it is restricted to the internal table whose keys come from the embedding
+/// application rather than an adversary. The optimized contention matrix
+/// rejects a general-purpose replacement that regresses high-thread throughput.
 #[derive(Default)]
-struct FxHasher {
+struct RetainedKeyHasher {
     hash: u64,
 }
 
-const FX_SEED: u64 = 0x51_7c_c1_b7_27_22_0a_95;
+const RETAINED_KEY_HASH_MULTIPLIER: u64 = 0x51_7c_c1_b7_27_22_0a_95;
 
-impl FxHasher {
+impl RetainedKeyHasher {
     fn add(&mut self, word: u64) {
-        self.hash = (self.hash.rotate_left(5) ^ word).wrapping_mul(FX_SEED);
+        self.hash = (self.hash.rotate_left(5) ^ word).wrapping_mul(RETAINED_KEY_HASH_MULTIPLIER);
     }
 }
 
-impl Hasher for FxHasher {
+impl Hasher for RetainedKeyHasher {
     fn write(&mut self, bytes: &[u8]) {
         let mut chunks = bytes.chunks_exact(8);
         for chunk in &mut chunks {
@@ -65,7 +66,7 @@ impl Hasher for FxHasher {
     }
 }
 
-type BuildFx = BuildHasherDefault<FxHasher>;
+type BuildRetainedKeyHasher = BuildHasherDefault<RetainedKeyHasher>;
 
 #[cfg(loom)]
 use loom::cell::UnsafeCell;
@@ -623,7 +624,7 @@ const INLINE_CAP: usize = 4;
 /// O(1). The inline path avoids hashing and probing entirely.
 enum SmallMap<K, O> {
     Inline(Vec<(K, SlotEntry<O>)>),
-    Hash(HashMap<K, SlotEntry<O>, BuildFx>),
+    Hash(HashMap<K, SlotEntry<O>, BuildRetainedKeyHasher>),
 }
 
 impl<K, O> Default for SmallMap<K, O> {
@@ -655,8 +656,10 @@ impl<K: Eq + Hash, O> SmallMap<K, O> {
                 if entries.len() >= INLINE_CAP {
                     // At most INLINE_CAP entries are promoted, so the hash
                     // table never needs more than INLINE_CAP * 2 capacity.
-                    let mut map =
-                        HashMap::with_capacity_and_hasher(INLINE_CAP * 2, BuildFx::default());
+                    let mut map = HashMap::with_capacity_and_hasher(
+                        INLINE_CAP * 2,
+                        BuildRetainedKeyHasher::default(),
+                    );
                     map.extend(entries.drain(..));
                     map.insert(key, entry);
                     *self = Self::Hash(map);

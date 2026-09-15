@@ -33,6 +33,8 @@ DX53 atomic Behavior migration (distilled)
 DX54 Triomphe feature minimization (feature-complete, independent)
 
 DX55 module-scoped test imports (feature-complete, independent)
+
+DX56 Observe retained-key naming (feature-complete, independent)
 ```
 
 There is no unresolved Bombay prerequisite. MNE1 requires Mnesis-Bombay to
@@ -209,6 +211,45 @@ admission as durable completion.
   `+0 / -0 / net 0`; tests `+14 / -41 / net -27`; public API
   `+0 / -0` types; documentation `+37 / -0 / net +37`; complete tracked delta
   `+51 / -41 / net +10`.
+
+## DX56 — Observe retained-key naming
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: the exact locked owner graph remains unchanged.
+- Requirement: private names must state the responsibility they own and must
+  not claim false provenance. Observe's measured retained-key hashing policy is
+  distinct from current rustc-hash and belongs only to its non-adversarial
+  internal key table.
+- Ownership: Observe owns its retained-key table and the measured hashing
+  policy selected for that table; no public caller selects or observes the
+  implementation.
+- Governing invariant and regression: only private identifiers, formatting,
+  and adjacent prose may change. The arithmetic operations and multiplier
+  value remain identical; distribution, dependencies, behavior, and
+  performance may not change. Existing promotion, model, allocation, and Loom
+  tests remain the caller-visible regression.
+- Dependency comparison: a separate `rustc-hash` 2.1.3 experiment passed all
+  semantic gates but regressed five-run 8- and 16-thread medians by roughly
+  9.5% and 9.9%, so it was reverted rather than retained as a nominal cleanup.
+- Dependency edges: independent of DX53, DX49, DX54, and DX55.
+- Blocked by: none.
+- Unblocks: none.
+- Change ledger: expected tracked files are `observe/mod.rs` and this ledger.
+  Expected production source is approximately line-neutral; tests remain
+  unchanged; expected public API is `+0 / -0` types. No wrapper, dependency,
+  owner, branch, or algorithm may be added.
+- Result: `RetainedKeyHasher`, `RETAINED_KEY_HASH_MULTIPLIER`, and
+  `BuildRetainedKeyHasher` now name the private responsibility and the
+  constant's actual role. The obsolete Fx/rustc-hash provenance claim is gone;
+  arithmetic operations and the multiplier value are unchanged.
+- Verification: both normal Observe suites (122 and 121 tests), formatting,
+  and strict all-target workspace Clippy pass through pinned Nix. The preceding
+  replacement comparison also passed all 28 isolated Loom models before the
+  exact algorithm was restored.
+- Actual checkpoint: tracked files `2`; production source
+  `+16 / -13 / net +3`; tests `+0 / -0 / net 0`; public API
+  `+0 / -0` types; documentation `+41 / -0 / net +41`; complete tracked delta
+  `+57 / -13 / net +44`.
 
 ## Public examples
 
