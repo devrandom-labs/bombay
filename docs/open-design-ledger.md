@@ -29,7 +29,7 @@ evidence only and never overrides the selected build contract.
 DX53 atomic Behavior migration (distilled)
   -> DX49 application-native Entity (distilled)
        -> MNE1 durable Mnesis execution (downstream, blocked externally)
-  -> DX58 Behavior 0.15 crates.io adoption (active)
+  -> DX58 Behavior 0.15 crates.io adoption (blocked upstream)
 
 DX54 Triomphe feature minimization (feature-complete, independent)
 
@@ -41,10 +41,11 @@ DX57 Machine output consumer (feature-complete, independent)
 
 ```
 
-There is no unresolved Bombay prerequisite. MNE1 requires Mnesis-Bombay to
-select the current Bombay and Behavior graph and implement its own durable
-command execution contract. Bombay deliberately does not classify mailbox
-admission as durable completion.
+DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
+contract is incomplete as recorded below. MNE1 requires Mnesis-Bombay to select
+the current Bombay and Behavior graph and implement its own durable command
+execution contract. Bombay deliberately does not classify mailbox admission as
+durable completion.
 
 ## Ownership map
 
@@ -315,8 +316,9 @@ admission as durable completion.
 
 ## DX58 — Behavior 0.15 crates.io adoption
 
-- State: `active`; the immutable upstream releases are published and the
-  feature-local contract audit is complete.
+- State: `blocked`; the immutable upstream releases are published, but the
+  caller-side contract audit found an upstream ownership gap that Bombay cannot
+  repair.
 - Selected release candidates: `bombay-behavior` 0.15.0,
   `bombay-behavior-actors` 0.15.0, and `bombay-behavior-macros` 0.11.5. All
   three crates identify source commit
@@ -354,9 +356,24 @@ admission as durable completion.
   architecture. Existing complete settlement, source-custody, closed-control,
   creation-order, initialization, activation, and Driver-retirement tests are
   the caller-visible behavioral regressions.
+- Upstream blocker: `bombay-behavior-actors` 0.15.0 declares
+  `ReportTerminalOutcome`, `ObserveEstablished`, `CancelObservation`, and
+  `ObserveEstablishedCreation` as `InterpreterRequest` values but supplies no
+  `ActionItem` implementation for any of them. `InterpreterRequests<Request>`
+  implements `SendSettlements` and `InterpretSends` only when
+  `Request: ActionItem`, so ordinary termination propagation and exact
+  observation cannot participate in the published total-settlement algebra.
+  The isolated caller probe at
+  `.research/probes/behavior-0.15-action-items` fails on all four bounds under
+  the pinned Nix shell. Both the trait and request types are upstream-owned, so
+  Rust's coherence rules prohibit a Bombay implementation; a wrapper would
+  duplicate the owning request contract and is rejected by the falsification
+  rule.
 - Dependency edges: depends on the distilled DX53 ownership model and the
   published upstream contracts; independent of DX54 through DX57.
-- Blocked by: none.
+- Blocked by: a published Behavior Actors revision that gives every
+  `InterpreterRequest` used by its catalogue an owner-defined `ActionItem`
+  settlement contract.
 - Unblocks: immutable downstream graph alignment, including the version
   prerequisite of MNE1.
 - Change ledger: expected tracked files are the root manifest and lockfile,
