@@ -39,7 +39,7 @@ bombay-machine = { path = "crates/bombay-machine" }
 communication = { package = "bombay-communication", version = "0.1.2" }
 timers = { package = "bombay-timers", version = "0.1.0" }
 parking_lot = "0.12"
-triomphe = "0.1"
+triomphe = { version = "0.1", default-features = false, features = ["std"] }
 proptest = "1.11"
 criterion = { version = "0.7", default-features = false, features = ["async_tokio", "cargo_bench_support"] }
 serde = { version = "1", features = ["derive"] }

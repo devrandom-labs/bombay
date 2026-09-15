@@ -29,6 +29,8 @@ evidence only and never overrides the selected build contract.
 DX53 atomic Behavior migration (distilled)
   -> DX49 application-native Entity (distilled)
        -> MNE1 durable Mnesis execution (downstream, blocked externally)
+
+DX54 Triomphe feature minimization (feature-complete, independent)
 ```
 
 There is no unresolved Bombay prerequisite. MNE1 requires Mnesis-Bombay to
@@ -127,6 +129,49 @@ admission as durable completion.
   the contract.
 - Blocked by: none.
 - Unblocks: downstream Mnesis-Bombay adoption.
+
+## DX54 — Triomphe feature minimization
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: Behavior Core 0.14.0, Behavior Actors 0.14.0, and
+  Behavior Macros 0.11.4 at
+  `a272adf8d2cbb6a2784d565f47c74adff3e7d01b`; Address 0.2.0;
+  Communication 0.1.2; Timers 0.1.0 at
+  `13e884da7ab41781f52337b0038060e375b00ee0`; and Bombay-private Observe.
+- Requirement: retain Triomphe's weak-free `Arc` ownership in Observe without
+  selecting unrelated optional integration contracts.
+- Ownership: Observe owns completion synchronization and uses only
+  `triomphe::Arc`. Triomphe owns that allocation and reference-counting
+  primitive. No Bombay production or test consumer uses Triomphe's Serde or
+  `StableDeref` integrations.
+- Exact blocker and regression: Triomphe 0.1.16 enables `serde` and
+  `stable_deref_trait` by default, so the locked normal dependency graph
+  contains unused edges. The smallest end-to-end regression is the normal
+  `cargo tree` graph: before the change both edges originate at Triomphe;
+  afterward neither may do so, and Observe's public behavior must remain
+  unchanged.
+- Dependency edges: independent of DX53 and DX49. No downstream contract
+  depends on either optional integration.
+- Blocked by: none.
+- Unblocks: none.
+- Change ledger: expected tracked files are the root `Cargo.toml`,
+  `Cargo.lock`, and this ledger. Expected production source delta is
+  `+0 / -0 / net 0`; expected test delta is `+0 / -0 / net 0`; expected public
+  API is `+0 / -0` types. The experiment reuses the existing
+  `triomphe::Arc`, adds no owner or interpreter, and deletes only unused
+  dependency feature edges. Any required source change or verification failure
+  falsifies the experiment.
+- Result: Triomphe remains at the exact locked 0.1.16 release with only its
+  `std` feature. Its unused `serde` and `stable_deref_trait` edges are absent
+  from Bombay's normal graph, and `stable_deref_trait` is absent from the
+  lockfile. No Rust source or public contract changed.
+- Verification: the dependency-tree regression, 122 focused Observe tests,
+  the complete locked workspace test suite, formatting, and strict all-target
+  workspace Clippy pass through the pinned Nix shell.
+- Actual checkpoint: tracked files `3`; production source
+  `+0 / -0 / net 0`; tests `+0 / -0 / net 0`; public API
+  `+0 / -0` types; manifests `+1 / -11 / net -10`; documentation
+  `+45 / -0 / net +45`.
 
 ## Public examples
 
