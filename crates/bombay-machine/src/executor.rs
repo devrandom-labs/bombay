@@ -3,7 +3,7 @@
 //! [`ExclusiveExecutor`] directly returns outputs to a caller that serializes
 //! turns through exclusive access. [`SerializedExecutor`] provides
 //! run-to-completion turns: it queues inputs
-//! and does not advance the next transition until the preceding output handler
+//! and does not advance the next transition until the preceding output consumer
 //! returns. [`LinearizedExecutor`] advances inputs immediately under its lock,
 //! then dispatches already-ordered outputs. The latter policy is appropriate
 //! only when transition linearization may precede completion of earlier work.
@@ -110,21 +110,6 @@ impl<M: Machine> ExclusiveExecutor<M> {
     }
 }
 
-/// Handles one machine output synchronously.
-pub trait OutputHandler<O> {
-    /// Handle the complete output of one transition.
-    fn handle(&self, output: O);
-}
-
-impl<O, F> OutputHandler<O> for F
-where
-    F: Fn(O),
-{
-    fn handle(&self, output: O) {
-        self(output);
-    }
-}
-
 /// Extracts small copyable evidence before an output is queued for dispatch.
 pub trait OutputEvidence {
     /// Evidence returned to the submitting caller.
@@ -139,7 +124,7 @@ pub trait OutputEvidence {
 pub enum TurnOutcome {
     /// The transition and its complete synchronous output handling finished.
     Completed,
-    /// The executor was poisoned by a transition or output-handler panic.
+    /// The executor was poisoned by a transition or output-consumer panic.
     Poisoned,
 }
 
@@ -217,7 +202,7 @@ enum TurnState {
     Idle,
     /// One caller owns the drain loop.
     Running,
-    /// A transition or handler panic poisoned the executor.
+    /// A transition or output-consumer panic poisoned the executor.
     Poisoned,
 }
 
@@ -237,29 +222,26 @@ impl<M: Machine> SerializedExecutor<M> {
     /// Queue one input and, when this caller acquires ownership, drain turns.
     ///
     /// Reentrant and concurrent calls enqueue their input and return a receipt;
-    /// they never advance a transition while an earlier output is being handled.
-    /// Only the drain owner's `handler` processes outputs: a caller that loses
-    /// ownership has its input handled by the owner's handler, while its
+    /// they never advance a transition while an earlier output is being consumed.
+    /// Only the drain owner's `consume` closure processes outputs: a caller that
+    /// loses ownership has its input consumed by the owner's closure, while its
     /// receipt still reports completion of its own turn. Waiting on a receipt
-    /// from inside `handler` would deadlock and must be deferred until the
+    /// from inside the consumer would deadlock and must be deferred until the
     /// outer turn returns.
     ///
     /// # Errors
     ///
-    /// Returns input ownership when a previous transition or handler panicked.
+    /// Returns input ownership when a previous transition or consumer panicked.
     ///
     /// # Panics
     ///
-    /// Propagates a machine transition or output-handler panic after poisoning
+    /// Propagates a machine transition or output-consumer panic after poisoning
     /// this executor and resolving every outstanding receipt.
-    pub fn submit<H>(
+    pub fn submit(
         &self,
         input: M::Input,
-        handler: &H,
-    ) -> Result<TurnReceipt, PoisonedInput<M::Input>>
-    where
-        H: OutputHandler<M::Output>,
-    {
+        consume: &impl Fn(M::Output),
+    ) -> Result<TurnReceipt, PoisonedInput<M::Input>> {
         let completion = Arc::new(TurnCompletion {
             outcome: Mutex::new(None),
             ready: Condvar::new(),
@@ -280,15 +262,12 @@ impl<M: Machine> SerializedExecutor<M> {
             }
         };
         if owns {
-            self.drain(handler);
+            self.drain(consume);
         }
         Ok(TurnReceipt(completion))
     }
 
-    fn drain<H>(&self, handler: &H)
-    where
-        H: OutputHandler<M::Output>,
-    {
+    fn drain(&self, consume: &impl Fn(M::Output)) {
         let mut ownership = SerializedOwnership::new(&self.execution);
         loop {
             let Some((machine, input, completion)) = ownership.take_turn() else {
@@ -296,7 +275,7 @@ impl<M: Machine> SerializedExecutor<M> {
             };
             let (output, successor) = machine.step(input);
             ownership.install(successor, &completion);
-            handler.handle(output);
+            consume(output);
             complete(&completion, TurnOutcome::Completed);
             ownership.turn_completed();
         }
@@ -454,22 +433,19 @@ where
     ///
     /// [`DispatchOutcome::OwnedElsewhere`] means another caller owns dispatch
     /// and this call is fire-and-forget; it does not mean the caller's output
-    /// completed. If a handler panics, its owned output is dropped exactly once
+    /// completed. If a consumer panics, its owned output is dropped exactly once
     /// and a later call resumes with the remaining queue.
     ///
     /// # Panics
     ///
     /// Panics if executor synchronization was poisoned by a transition panic
     /// in [`LinearizedExecutor::submit`].
-    pub fn dispatch_pending<H>(&self, handler: &H) -> DispatchOutcome
-    where
-        H: OutputHandler<M::Output>,
-    {
+    pub fn dispatch_pending(&self, consume: &impl Fn(M::Output)) -> DispatchOutcome {
         let Some(mut ownership) = DispatchOwnership::acquire(&self.execution) else {
             return DispatchOutcome::OwnedElsewhere;
         };
         while let Some(output) = ownership.next() {
-            handler.handle(output);
+            consume(output);
         }
         DispatchOutcome::Drained
     }
@@ -540,7 +516,7 @@ mod tests {
 
     use super::{
         ExclusiveExecutor, ExclusiveState, LinearizedExecutor, Machine, OutputEvidence,
-        OutputHandler, SerializedExecutor, TurnOutcome, TurnReceipt,
+        SerializedExecutor, TurnOutcome, TurnReceipt,
     };
 
     const VERTICES: &[Vertex] = &[Vertex {
@@ -817,24 +793,24 @@ mod tests {
 
     type TestMachine = Base<u8, fn(u8, u8) -> (Output, u8), u8, Output>;
 
-    struct ReentrantHandler {
+    struct ReentrantConsumer {
         executor: Weak<SerializedExecutor<TestMachine>>,
         trace: Arc<Mutex<Vec<u8>>>,
     }
 
-    impl OutputHandler<Output> for ReentrantHandler {
-        fn handle(&self, output: Output) {
-            self.trace.lock().unwrap().push(output.0);
-            if output.0 == 1 {
+    impl ReentrantConsumer {
+        fn consume(&self, Output(value): Output) {
+            self.trace.lock().unwrap().push(value);
+            if value == 1 {
                 let executor = self.executor.upgrade().unwrap();
-                let receipt = executor.submit(2, self).unwrap();
+                let receipt = executor.submit(2, &|output| self.consume(output)).unwrap();
                 assert_eq!(receipt.outcome(), None);
             }
         }
     }
 
     #[test]
-    fn reentrant_serialized_submission_waits_for_current_handler() {
+    fn reentrant_serialized_submission_waits_for_current_consumer() {
         fn transition(state: u8, input: u8) -> (Output, u8) {
             (Output(input), state + input)
         }
@@ -844,25 +820,28 @@ mod tests {
             transition as fn(u8, u8) -> (Output, u8),
         )));
         let trace = Arc::new(Mutex::new(Vec::new()));
-        let handler = ReentrantHandler {
+        let consumer = ReentrantConsumer {
             executor: Arc::downgrade(&executor),
             trace: Arc::clone(&trace),
         };
         assert_eq!(
-            executor.submit(1, &handler).unwrap().wait(),
+            executor
+                .submit(1, &|output| consumer.consume(output))
+                .unwrap()
+                .wait(),
             TurnOutcome::Completed
         );
         assert_eq!(*trace.lock().unwrap(), [1, 2]);
     }
 
     #[test]
-    fn linearized_dispatch_resumes_after_handler_panic() {
+    fn linearized_dispatch_resumes_after_consumer_panic() {
         let executor = LinearizedExecutor::new(machine());
         assert_eq!(executor.submit(1), 1);
         assert_eq!(executor.submit(2), 2);
         assert!(
             catch_unwind(AssertUnwindSafe(|| {
-                executor.dispatch_pending(&|_: Output| panic!("handler"));
+                executor.dispatch_pending(&|_: Output| panic!("consumer"));
             }))
             .is_err()
         );
@@ -875,11 +854,11 @@ mod tests {
     }
 
     #[test]
-    fn serialized_handler_panic_poisons_future_submissions() {
+    fn serialized_consumer_panic_poisons_future_submissions() {
         let executor = SerializedExecutor::new(machine());
         assert!(
             catch_unwind(AssertUnwindSafe(|| {
-                let _ = executor.submit(1, &|_: Output| panic!("handler"));
+                let _ = executor.submit(1, &|_: Output| panic!("consumer"));
             }))
             .is_err()
         );
@@ -889,23 +868,28 @@ mod tests {
         assert_eq!(rejected.0, 2);
     }
 
-    struct ReentrantPoisonHandler {
+    struct ReentrantPoisonConsumer {
         executor: Weak<SerializedExecutor<TestMachine>>,
         queued: Mutex<Option<TurnReceipt>>,
     }
 
-    impl OutputHandler<Output> for ReentrantPoisonHandler {
-        fn handle(&self, output: Output) {
-            if output.0 == 1 {
-                let receipt = self.executor.upgrade().unwrap().submit(2, self).unwrap();
+    impl ReentrantPoisonConsumer {
+        fn consume(&self, Output(value): Output) {
+            if value == 1 {
+                let receipt = self
+                    .executor
+                    .upgrade()
+                    .unwrap()
+                    .submit(2, &|output| self.consume(output))
+                    .unwrap();
                 *self.queued.lock().unwrap() = Some(receipt);
-                panic!("handler");
+                panic!("consumer");
             }
         }
     }
 
     #[test]
-    fn serialized_handler_panic_resolves_queued_receipt_as_poisoned() {
+    fn serialized_consumer_panic_resolves_queued_receipt_as_poisoned() {
         fn transition(state: u8, input: u8) -> (Output, u8) {
             (Output(input), state + input)
         }
@@ -914,17 +898,22 @@ mod tests {
             TOPOLOGY.validated().unwrap(),
             transition as fn(u8, u8) -> (Output, u8),
         )));
-        let handler = ReentrantPoisonHandler {
+        let consumer = ReentrantPoisonConsumer {
             executor: Arc::downgrade(&executor),
             queued: Mutex::new(None),
         };
 
-        assert!(catch_unwind(AssertUnwindSafe(|| executor.submit(1, &handler))).is_err());
-        let queued = handler.queued.lock().unwrap().take().unwrap();
+        assert!(
+            catch_unwind(AssertUnwindSafe(|| {
+                executor.submit(1, &|output| consumer.consume(output))
+            }))
+            .is_err()
+        );
+        let queued = consumer.queued.lock().unwrap().take().unwrap();
         assert_eq!(queued.outcome(), Some(TurnOutcome::Poisoned));
         assert_eq!(queued.wait(), TurnOutcome::Poisoned);
         assert!(matches!(
-            executor.submit(3, &handler),
+            executor.submit(3, &|output| consumer.consume(output)),
             Err(super::PoisonedInput(3))
         ));
     }
@@ -974,7 +963,7 @@ mod tests {
                 phase = ready.wait(phase).unwrap();
             }
         }
-        // The dispatcher holds dispatch ownership inside the handler; this
+        // The dispatcher holds dispatch ownership inside the consumer; this
         // transition panic poisons the executor underneath it.
         let _ = catch_unwind(AssertUnwindSafe(|| {
             executor.submit(9);

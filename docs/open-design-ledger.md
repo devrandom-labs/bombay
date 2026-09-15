@@ -35,6 +35,8 @@ DX54 Triomphe feature minimization (feature-complete, independent)
 DX55 module-scoped test imports (feature-complete, independent)
 
 DX56 Observe retained-key naming (feature-complete, independent)
+
+DX57 Machine output consumer (feature-complete, independent)
 ```
 
 There is no unresolved Bombay prerequisite. MNE1 requires Mnesis-Bombay to
@@ -250,6 +252,64 @@ admission as durable completion.
   `+16 / -13 / net +3`; tests `+0 / -0 / net 0`; public API
   `+0 / -0` types; documentation `+41 / -0 / net +41`; complete tracked delta
   `+57 / -13 / net +44`.
+
+## DX57 — Machine output consumer
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: the exact locked owner graph remains unchanged. Machine
+  is actor-independent and this change does not enter the Behavior fold or
+  capability stack.
+- Requirement: serialized and linearized execution need one synchronous
+  `Fn(Output)` consumer, not a Bombay trait that merely forwards to `Fn`.
+- Ownership: the standard `Fn` contract owns invocation syntax; each caller
+  owns its concrete output consumption. Machine owns only ordering, poisoning,
+  receipts, and dispatch custody.
+- Exact blocker and regression: public `OutputHandler` adds a nominal extension
+  port with no production implementation other than its blanket closure
+  adapter. All real repository consumers are closures; two private test-only
+  implementations model reentrancy. A compile-pass fixture preserves closure
+  syntax, while a compile-fail fixture must reject the obsolete trait port.
+  Runtime reentrancy, panic, ordering, and exact-drop tests remain independent
+  behavior regressions.
+- Dependency edges: independent of DX53, DX49, DX54, DX55, and DX56.
+- Blocked by: none.
+- Unblocks: none.
+- Change ledger: expected tracked files are Machine's manifest and lock entry,
+  `executor.rs`, four compile-fixture files, and this ledger (`8` files).
+  Expected production source is net-negative; tests are net-positive for the
+  public syntax fixtures; expected public API is `+0 / -1` types. Existing
+  closures, executors, receipts, and output evidence are reused. No replacement
+  trait, wrapper, callback registry, owner, or policy may be added. Any caller
+  syntax regression, weaker static denial, runtime failure, or performance
+  regression falsifies the experiment.
+- Result: `OutputHandler` and its blanket implementation are gone. Serialized
+  submission and linearized dispatch now accept the exact borrowed
+  `Fn(Output)` contract already used by every production caller. Reentrancy and
+  poisoning probes retain exact owned-output consumption through closures; no
+  replacement trait, wrapper, bound, state, or branch was added.
+- Verification: the closure compile-pass fixture and obsolete-port compile-fail
+  fixture pass; all 17 normal Machine tests and both optimized Loom models pass;
+  the complete locked workspace suite, 502-test Nextest suite, formatting, and
+  strict all-target Clippy pass through pinned Nix. Against the retained parent
+  revision, serialized output consumption measured 111.300 ns versus 109.817 ns
+  per turn and linearized dispatch measured 25.053 ns versus 25.051 ns; the
+  removed forwarding trait has no measured performance value.
+- Aggregate-drift checkpoint: executor control sums remain
+  `Idle | Running | Poisoned` and the existing dispatch/turn outcomes; no
+  subordinate state or result alternative changed. Production control-flow
+  branches remain `26`, modules remain `1`, and public executor spellings fall
+  from `11` to `10`. The production portion of `executor.rs` falls from 532 to
+  508 lines (`+18 / -42 / net -24`). Every surviving state still owns the same
+  current execution, queue, poison, receipt, or dispatch value. The residue
+  scan found no arrival history, repeated cause, false cardinality, nested
+  transition authority, semantic boolean, or structural caller syntax added.
+  Cross-check against Driver law, Machine runtime tests, and the
+  actor-independent ownership boundary: `pass`.
+- Actual checkpoint: tracked files `8`; production source
+  `+18 / -42 / net -24`; tests `+119 / -26 / net +93`; public API
+  `+0 / -1` types; manifests and lockfile `+2 / -0 / net +2`;
+  documentation `+60 / -0 / net +60`; complete tracked delta
+  `+199 / -68 / net +131`.
 
 ## Public examples
 
