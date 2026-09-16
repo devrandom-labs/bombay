@@ -1054,8 +1054,13 @@ fn cancellation_at_every_await_drops_ownership_without_false_completion_or_retir
     assert_eq!(cancellation_at(StallAt::Retirement), (2, true, true));
 }
 
+enum PanicStage {
+    Initialization,
+    Turn,
+}
+
 struct PanicBehavior {
-    panic_in_init: bool,
+    panic_stage: PanicStage,
 }
 
 impl Behavior for PanicBehavior {
@@ -1067,8 +1072,10 @@ impl Behavior for PanicBehavior {
     type Birth = NoBirths;
 
     fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
-        assert!(!self.panic_in_init, "injected initialization panic");
-        Ok(Actions::cont())
+        match &self.panic_stage {
+            PanicStage::Initialization => panic!("injected initialization panic"),
+            PanicStage::Turn => Ok(Actions::cont()),
+        }
     }
     fn transition(&mut self, _: behavior::ActiveTurn, _: Self::Event) -> BehaviorActed<Self> {
         panic!("injected fold panic")
@@ -1103,11 +1110,11 @@ impl ActiveEnvironment<PanicBehavior> for PanicEnv {
     async fn retire(self) {}
 }
 
-fn panic_case(panic_in_init: bool) -> (bool, usize, bool) {
+fn panic_case(panic_stage: PanicStage) -> (bool, usize, bool) {
     let next = Arc::new(AtomicUsize::new(0));
     let dropped = Arc::new(AtomicBool::new(false));
     let driver = direct(
-        PanicBehavior { panic_in_init },
+        PanicBehavior { panic_stage },
         PanicEnv {
             next: next.clone(),
             dropped: dropped.clone(),
@@ -1128,13 +1135,13 @@ fn panic_case(panic_in_init: bool) -> (bool, usize, bool) {
 
 #[test]
 fn initialization_and_turn_panics_consume_the_only_execution_and_cannot_poll_again() {
-    assert_eq!(panic_case(true), (true, 0, true));
-    assert_eq!(panic_case(false), (true, 1, true));
+    assert_eq!(panic_case(PanicStage::Initialization), (true, 0, true));
+    assert_eq!(panic_case(PanicStage::Turn), (true, 1, true));
 }
 
 #[test]
 fn panic_consumes_the_only_execution_and_cannot_poll_again() {
-    assert_eq!(panic_case(false), (true, 1, true));
+    assert_eq!(panic_case(PanicStage::Turn), (true, 1, true));
 }
 
 struct SelfSendEnv {

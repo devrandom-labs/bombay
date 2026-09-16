@@ -51,6 +51,8 @@ DX63 Observe exhaustive model state (feature-complete, independent)
 
 DX64 Driver allocation fixture input ownership (feature-complete, independent)
 
+DX65 Driver panic injection policy (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -689,6 +691,50 @@ durable completion.
 - Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
   `+6 / -3 / net +3`; public API `+0 / -0` types; documentation
   `+47 / -0 / net +47`.
+
+## DX65 — Driver panic injection policy
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: the exact owner graph recorded in DX64 was rechecked at
+  its locked revisions. This stage touches only Engine's D-TERM-4 test fixture;
+  no Behavior, Behavior Actors, Address, Communication, Observe, Timers,
+  runtime, interpreter, or public contract changes.
+- Ownership and law: Engine's Driver owns panic terminality under D-TERM-4.
+  Its private fixture selects one of two mutually exclusive injection stages:
+  Behavior initialization or an ordinary turn. The existing combined test is
+  D-TERM-4's positive manifest witness; the turn-only test is deliberate
+  adversarial evidence reused by the complete manifest and is not redundant.
+- Exact blocker and regression: `PanicBehavior::panic_in_init` and
+  `panic_case(bool)` erase the selected injection stage behind a truth value;
+  three call sites use unexplained literals. The pre-edit structural oracle
+  finds the boolean field, parameter, and literals. The two manifest-accounted
+  panic tests are the behavioral regressions.
+- Proposed representation: a private `PanicStage::{Initialization, Turn}` sum
+  owns the policy. Initialization selects its behavior exhaustively; ordinary
+  turn injection remains the fixture's transition law. No production or public
+  type is added.
+- Dependency edges: independent of DX53 through DX64.
+- Blocked by: none.
+- Unblocks: the remaining Driver fixture-state scan.
+- Change ledger: expected tracked files are this ledger and
+  `crates/bombay-engine/tests/driver_law.rs` (`2` files). Production is
+  `+0 / -0`; tests are no more than `+15 / -8 / net +7`; public API is
+  `+0 / -0` types. Existing Driver, Behavior, Environment, panic capture,
+  ownership probes, test names, and manifest references remain exact. Any
+  changed panic point, event-source poll count, drop fact, evidence name,
+  production item, dependency, or public API falsifies the correction.
+- Result: `PanicStage::{Initialization, Turn}` replaces the boolean field,
+  parameter, and three literal selections. Initialization selection is
+  exhaustive; the established turn injection remains unchanged. Both test
+  names and their distinct positive/adversarial manifest roles remain exact.
+- Verification: both panic witnesses pass in debug and optimized profiles with
+  their exact source-poll and ownership-drop facts; the complete Engine suite,
+  compile fixtures, laws, inversions, properties, custody tests, docs, and the
+  explicit ignored manifest-closure gate pass; formatting and strict all-target
+  Engine Clippy pass through the pinned Nix shell.
+- Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
+  `+15 / -8 / net +7`; public API `+0 / -0` types; documentation
+  `+46 / -0 / net +46`.
 
 ## Public examples
 
