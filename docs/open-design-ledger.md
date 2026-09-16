@@ -43,6 +43,8 @@ DX59 Machine topology identity rendering (feature-complete, independent)
 
 DX60 normative runtime contract alignment (feature-complete, independent)
 
+DX61 Machine test transition policy (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -505,6 +507,47 @@ durable completion.
 - Actual checkpoint: tracked files `2`; production and tests
   `+0 / -0`; public API `+0 / -0` types; documentation
   `+56 / -12 / net +44`.
+
+## DX61 — Machine test transition policy
+
+- State: `feature-complete`; final fixed-point audit remains pending.
+- Selected contracts: the exact owner graph remains unchanged. This stage
+  touches only Machine's private executor tests; no Behavior or runtime
+  capability consumes the representation.
+- Exact blocker and regression: `ExclusiveTestMachine` and `OwnershipMachine`
+  each encode the mutually exclusive “return normally or panic” transition
+  policy in a field named `panic: bool`, with successor construction resetting
+  that policy through an unlabelled `false`. The pre-edit structural oracle
+  finds two semantic boolean fields and six boolean policy literals in the
+  owning test module. The existing success, panic poisoning, exact input
+  rejection, and drop-accounting tests are the observable regression suite.
+- Governing invariant: a test machine's transition disposition is a closed sum
+  with named alternatives. The successor explicitly selects ordinary return;
+  no boolean may erase whether a transition returns or panics.
+- Dependency edges: independent of DX53 through DX60.
+- Blocked by: none.
+- Unblocks: truthful fixed-point review of Machine's test-only state model.
+- Change ledger: expected tracked files are this ledger and
+  `crates/bombay-machine/src/executor.rs` (`2` files). Production is
+  `+0 / -0`; tests are no more than `+16 / -10 / net +6`; public API is
+  `+0 / -0` types. One private enum replaces both boolean fields and all six
+  policy literals. Any runtime trace, assertion, production item, public
+  syntax, or dependency change falsifies the cleanup.
+- Result: both private machines now store one shared
+  `TestTransition::{Return, Panic}` value. Each transition exhaustively matches
+  the disposition, and every successor explicitly selects `Return`. The two
+  semantic boolean fields and all six policy literals are gone; no production
+  item, dependency, or public interface changed.
+- Verification: the pre-edit scan found two `bool` fields and six policy
+  literals; the post-edit oracle finds none. All 18 Machine tests, compile
+  fixtures, and documentation tests pass in debug and optimized builds, and
+  formatting plus strict all-target Machine Clippy pass through pinned Nix.
+- Actual checkpoint: tracked files `2`; production source
+  `+0 / -0`; tests `+22 / -10 / net +12`; public API `+0 / -0` types;
+  documentation `+43 / -0 / net +43`; complete tracked delta
+  `+65 / -10 / net +55`. The test delta exceeds the six-line forecast because
+  both owning transitions retain explicit exhaustive matches; no automatic
+  containment threshold is approached.
 
 ## Public examples
 

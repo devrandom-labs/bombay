@@ -546,11 +546,17 @@ mod tests {
         })
     }
 
+    #[derive(Debug, Clone, Copy)]
+    enum TestTransition {
+        Return,
+        Panic,
+    }
+
     #[derive(Debug)]
     struct ExclusiveTestMachine {
         state: usize,
         steps: Arc<std::sync::atomic::AtomicUsize>,
-        panic: bool,
+        transition: TestTransition,
     }
 
     #[derive(Debug, PartialEq, Eq)]
@@ -562,11 +568,14 @@ mod tests {
 
         fn step(self, input: Self::Input) -> (Self::Output, Self) {
             self.steps.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            assert!(!self.panic, "transition failure");
+            match self.transition {
+                TestTransition::Return => {}
+                TestTransition::Panic => panic!("transition failure"),
+            }
             let successor = Self {
                 state: self.state + input,
                 steps: self.steps,
-                panic: false,
+                transition: TestTransition::Return,
             };
             (OwnedOutput(format!("output-{input}")), successor)
         }
@@ -582,7 +591,7 @@ mod tests {
         let mut executor = ExclusiveExecutor::new(ExclusiveTestMachine {
             state: 1,
             steps: Arc::clone(&steps),
-            panic: false,
+            transition: TestTransition::Return,
         });
 
         assert_eq!(executor.state(), ExclusiveState::Ready);
@@ -600,7 +609,7 @@ mod tests {
         let mut executor = ExclusiveExecutor::new(ExclusiveTestMachine {
             state: 0,
             steps: Arc::clone(&steps),
-            panic: true,
+            transition: TestTransition::Panic,
         });
 
         assert!(
@@ -651,7 +660,7 @@ mod tests {
 
     #[derive(Debug)]
     struct OwnershipMachine {
-        panic: bool,
+        transition: TestTransition,
         steps: Arc<std::sync::atomic::AtomicUsize>,
         _machine_drop: DropSentinel,
         successor_drops: Arc<std::sync::atomic::AtomicUsize>,
@@ -664,14 +673,17 @@ mod tests {
 
         fn step(self, input: Self::Input) -> (Self::Output, Self) {
             self.steps.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            assert!(!self.panic, "transition failure");
+            match self.transition {
+                TestTransition::Return => {}
+                TestTransition::Panic => panic!("transition failure"),
+            }
             let output = TrackedOutput {
                 id: input.id,
                 _drop: DropSentinel(Arc::clone(&self.output_drops)),
             };
             drop(input);
             let successor = Self {
-                panic: false,
+                transition: TestTransition::Return,
                 steps: Arc::clone(&self.steps),
                 _machine_drop: DropSentinel(Arc::clone(&self.successor_drops)),
                 successor_drops: self.successor_drops,
@@ -693,7 +705,7 @@ mod tests {
         let output_drops = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let steps = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let mut executor = ExclusiveExecutor::new(OwnershipMachine {
-            panic: false,
+            transition: TestTransition::Return,
             steps: Arc::clone(&steps),
             _machine_drop: DropSentinel(Arc::clone(&original_machine_drops)),
             successor_drops: Arc::clone(&successor_drops),
@@ -729,7 +741,7 @@ mod tests {
         let rejected_input_drops = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let steps = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let mut executor = ExclusiveExecutor::new(OwnershipMachine {
-            panic: true,
+            transition: TestTransition::Panic,
             steps: Arc::clone(&steps),
             _machine_drop: DropSentinel(Arc::clone(&machine_drops)),
             successor_drops: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
