@@ -55,6 +55,8 @@ DX65 Driver panic injection policy (feature-complete, independent)
 
 DX66 Driver custody failure ownership (feature-complete, independent)
 
+DX67 Entity Loom admission algebra (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -785,6 +787,56 @@ durable completion.
   `+50 / -0 / net +50`. The gross test replacement exceeded the `30`-line
   estimate by three because each failure site now carries its exact error at
   setup; the stage remains line-neutral with no added machinery.
+
+## DX67 — Entity Loom admission algebra
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: the exact owner graph remains unchanged and was
+  rechecked against the locked Behavior/Actors/Macros, Address, Communication,
+  Observe, and Timers sources. Entity's current lifecycle algebra,
+  runtime-capability contract, DX49 ownership record, unit tests, runtime tests,
+  and Loom fixture were inspected for this stage.
+- Ownership and law: Entity lifecycle owns admission closure, outstanding
+  delivery reservations, and ordered-fence progress. The independent Loom model
+  must represent exactly open admission with a count, draining with a non-zero
+  count, or the fence-enqueued terminal state. A successful reservation grants
+  the sole capability to submit one resolution.
+- Exact blocker and regression: the Loom `Admission` product independently
+  stores `closed`, `reservations`, and `fence_enqueued`, admitting closed-zero
+  without a fence, open-with-fence, and fenced-with-outstanding-reservations.
+  Delivery admission is also reduced to a boolean. The pre-edit structural
+  oracle finds those fields and return type. The two exhaustive Loom tests over
+  delivery/drain races are the behavioral regressions.
+- Proposed representation: replace the coordinated product with
+  `Admission::{Open(usize), Draining(NonZeroUsize), Fenced}` and return an opaque
+  private `Reservation` only from successful admission. Closing and resolving
+  commit one complete valid state; no production type is shared with the
+  independent oracle.
+- Dependency edges: independent of DX53 through DX66.
+- Blocked by: none.
+- Unblocks: the remaining Entity concurrency-fixture scan.
+- Change ledger: expected tracked files are this ledger and
+  `crates/bombay/tests/entity_loom.rs` (`2` files). Production is `+0 / -0`;
+  tests are no more than `+65 / -50 / net +15`; public API is `+0 / -0` types.
+  The existing mutex linearization, Loom schedules, two delivery contenders,
+  drain thread, test names, joins, and terminal assertions remain. The private
+  reservation capability deletes the admitted boolean and proves which path may
+  resolve. Any reduced schedule space, copied production transition, changed
+  terminal law, dependency, production item, or public API falsifies the model.
+- Result: the independent model now has only `Open(count)`,
+  `Draining(nonzero)`, and `Fenced` states. Successful admission yields one
+  private `Reservation`, and only that capability can resolve the count. The
+  coordinated booleans and admitted-return boolean are gone; the test model is
+  one line smaller and shares no production transition implementation.
+- Verification: both admission/fence Loom regressions pass in debug and
+  optimized profiles; the complete five-test Entity Loom target and complete
+  `bombay-rs` unit, integration, compile-contract, and documentation suites
+  pass; formatting and strict all-target `bombay-rs` Clippy pass through the
+  pinned Nix shell. The initial malformed two-filter Cargo invocation was
+  rejected before compilation and was rerun with the exact shared filter.
+- Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
+  `+62 / -63 / net -1`; public API `+0 / -0` types; documentation
+  `+52 / -0 / net +52`.
 
 ## Public examples
 
