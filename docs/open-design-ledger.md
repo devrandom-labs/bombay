@@ -39,6 +39,8 @@ DX56 Observe retained-key naming (feature-complete, independent)
 
 DX57 Machine output consumer (feature-complete, independent)
 
+DX59 Machine topology identity rendering (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -401,6 +403,65 @@ durable completion.
   custody. Role-first application assembly remains separate from this release
   adoption.
 
+## DX59 — Machine topology identity rendering
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: the workspace remains on Behavior Core and Actors
+  0.14.0 and Macros 0.11.4 at
+  `a272adf8d2cbb6a2784d565f47c74adff3e7d01b`, Address 0.2.0,
+  Communication 0.1.2, Timers 0.1.0 at
+  `13e884da7ab41781f52337b0038060e375b00ee0`, and Bombay-private Observe.
+  Their source and public contracts were rechecked; none owns or consumes
+  Machine's renderer. `bombay-machine` owns `Topology`, `VertexId`, display
+  labels, validation, and Mermaid rendering. Bombay lifecycle metadata is the
+  only downstream renderer regression.
+- Exact blocker and regression: `Topology::write_mermaid` discards each
+  `VertexId` and uses its human-readable label as Mermaid identity. Two
+  distinct vertices with the same label therefore collapse into one rendered
+  state even though execution and validation distinguish them. The smallest
+  failing regression declares two reachable vertices with one shared display
+  label and requires two state declarations plus start and transition edges
+  that reference their distinct generated IDs.
+- Governing invariant: `VertexId` remains the identity in every structural
+  interpreter. A Mermaid state description presents `Vertex::label` but never
+  substitutes for identity. Every declared vertex is emitted exactly once,
+  and start and transition edges refer only to the generated ID derived from
+  `VertexId`. Existing unknown-reference formatting failure remains unchanged.
+- Syntax evidence: Mermaid's official state-diagram grammar explicitly
+  separates a state ID from its description and requires later transitions to
+  reference the ID. The renderer will use that ordinary grammar directly; no
+  escaping abstraction, syntax framework, allocation, or dependency is
+  justified by this identity defect.
+- Dependency edges: independent of DX53 through DX58; no downstream feature is
+  blocked on this correction.
+- Blocked by: none.
+- Unblocks: truthful diagrams for any structural consumer whose distinct
+  vertices intentionally share presentation text.
+- Change ledger: expected tracked files are this ledger,
+  `crates/bombay-machine/src/machine.rs`, and
+  `crates/bombay/src/entity/lifecycle/machine.rs` (`3` files). Expected
+  production source is no more than `+14 / -12 / net +2`; tests are no more
+  than `+34 / -12 / net +22`; public API is `+0 / -0` types. Existing
+  `Topology`, `VertexId`, `Vertex`, and `Transition` remain the sole owners;
+  the obsolete label-to-identity lookup is deleted. Any change to validation,
+  execution, topology construction, or public Rust syntax falsifies the stage.
+- Result: every declared vertex now has one Mermaid declaration whose stable
+  `vertex_<id>` identity is derived from `VertexId` and whose description is
+  the existing human label. Start and transition edges use only those stable
+  identities. Unknown references retain the same checked lookup and formatting
+  error; no topology, validation, execution, allocation, or public Rust
+  contract changed.
+- Verification: the new duplicate-label regression failed against the prior
+  renderer by producing `ready --> ready`, then passed in debug and optimized
+  builds after the correction. Bombay's exact lifecycle rendering regression,
+  all 18 Machine tests and compile fixtures, the complete locked workspace
+  suite, 503-test Nextest suite, formatting, and strict all-target workspace
+  Clippy pass through pinned Nix.
+- Actual checkpoint: tracked files `3`; production source
+  `+10 / -10 / net 0`; tests `+34 / -2 / net +32`; public API
+  `+0 / -0` types; documentation `+62 / -1 / net +61`; complete tracked delta
+  `+106 / -13 / net +93`.
+
 ## Public examples
 
 Seven public packages exercise caller-visible behavior:
@@ -439,7 +500,7 @@ nix flake check path:.
 git diff --check
 ```
 
-Nextest passed 501 tests across 48 binaries. All 17 declared flake checks
+Nextest passed 503 tests across 49 binaries. All 17 declared flake checks
 passed. The four private-Observe fuzz targets each passed 10,000 bounded runs
 through the pinned fuzz shell. Entity, Machine, and Observe concurrency laws
 also pass their optimized Loom gates.
