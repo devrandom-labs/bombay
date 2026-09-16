@@ -41,6 +41,8 @@ DX57 Machine output consumer (feature-complete, independent)
 
 DX59 Machine topology identity rendering (feature-complete, independent)
 
+DX60 normative runtime contract alignment (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -461,6 +463,48 @@ durable completion.
   `+10 / -10 / net 0`; tests `+34 / -2 / net +32`; public API
   `+0 / -0` types; documentation `+62 / -1 / net +61`; complete tracked delta
   `+106 / -13 / net +93`.
+
+## DX60 — normative runtime contract alignment
+
+- State: `feature-complete`; final fixed-point audit remains pending.
+- Selected contracts: the exact owner graph is unchanged from the table above.
+  In particular, Timers is selected from Git revision
+  `13e884da7ab41781f52337b0038060e375b00ee0`; the obsolete registry checksum
+  and checkout `4e515ed176f503bf6a5bd0d736ffa0394cb7f1f2` are historical provenance only.
+- Exact blocker and regression: `runtime-capability-interfaces.md` calls itself
+  the current normative runtime contract but identifies the obsolete Timers
+  artifact as selected and twice describes exact-capability work as pending
+  DX37 slices. `Cargo.lock`, the selected-contract table, current source, and
+  caller documentation instead show the Git Timers revision, exact established
+  delivery/observation, and deliberate logical `ActorSpace` hosting. The
+  smallest regression is a repository scan that finds those three stale
+  current-contract claims in the normative document.
+- Governing invariant: a normative document names the exact selected artifact
+  and describes current ownership without presenting historical probes or
+  retired ledger IDs as live architecture. Historical provenance in the
+  explicitly historical Driver test derivation remains unchanged.
+- Dependency edges: independent of DX53 through DX59.
+- Blocked by: none.
+- Unblocks: reliable version and ownership review for the next fixed-point
+  audit and eventual Behavior release adoption.
+- Change ledger: expected tracked files are this ledger and
+  `docs/runtime-capability-interfaces.md` (`2` files). Production and tests are
+  `+0 / -0`; public API is `+0 / -0` types. No code, Cargo selection, owner,
+  interface, or future feature is changed. Any statement not directly proved
+  by the selected graph and existing implementation falsifies the repair.
+- Result: the normative contract now names the exact locked Timers Git
+  revision, describes actor spaces as the deliberate host for logical
+  recipients and advanced multi-protocol composition, and describes exact
+  established delivery and observation as current behavior. The retired DX37
+  roadmap wording and obsolete current-version claim are gone; the explicitly
+  historical Driver-strategy provenance remains intact.
+- Verification: the pre-edit oracle found all three stale claims. The same
+  document now contains none of the obsolete revision or DX37 references, and
+  its replacement revision matches `Cargo.toml`, `Cargo.lock`, and every
+  current selected-contract table. Complete diff and whitespace checks pass.
+- Actual checkpoint: tracked files `2`; production and tests
+  `+0 / -0`; public API `+0 / -0` types; documentation
+  `+56 / -12 / net +44`.
 
 ## Public examples
 

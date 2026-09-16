@@ -58,12 +58,11 @@ lockfile, not against adapters or remembered APIs.
 | Address | crates.io `bombay-address 0.2.0`, checksum `3e1516fea69ddb6d885c69e1e2f41d889f0a9b176cc1927fb6348b0646cb2cb1` | typed address claim, exact registration lease, opaque resolution |
 | Communication | crates.io checksum `fc3d06aaf88ef9fe5392506d13e208c2141e6978563e1b802b97b489b1a071e2`, package `bombay-communication 0.1.2` | two-lane mailbox, delivery, backpressure, affine user-admission retirement |
 | Observe | Bombay-private import of semantic commit `b3b5f36a3b514713012086dfc72f5327d15fe2b2` plus exact Loom-bound fix `ef2ea13e65889aa3bf713822041e032020e98d73` from `feat/affine-observation` | keyed exact-generation facts plus shared and affine unkeyed publication pairs; no separately published actor API |
-| Timers | crates.io checksum `5b3fc2dab4a030fd1838d0492a1c62d3c43ece1355125e3fc628da3ca436352d`; matching checkout `4e515ed176f503bf6a5bd0d736ffa0394cb7f1f2` | single-owner generation-safe timer queue |
+| Timers | Git `bombay-timers 0.1.0` at exact revision `13e884da7ab41781f52337b0038060e375b00ee0` | single-owner generation-safe timer queue |
 
 Observe's complete selected implementation and verification corpus are now
-owned privately by this workspace. Timers remains selected from the locked
-registry artifact; its matching checkout was inspected for source, tests, and
-documentation.
+owned privately by this workspace. Timers remains selected from the locked Git
+revision; that exact source, its tests, and its documentation were inspected.
 
 ## Ownership table
 
@@ -147,21 +146,22 @@ Bombay's generic `App` owns execution.
 The selected Behavior algebra now carries exact live endpoints through
 `EstablishedRecipient<P>`, exact delivery, occurrence-preserving creation
 facts, structural child delivery, observation, and shutdown. Sends still do
-not imply local hosting. `ActorSpaces` and `Hosts<P>` remain a transitional
-Bombay implementation while DX37 migrates every established internal path;
-they must not leak into ordinary authoring or be replaced by dynamic
-normalization.
+not imply local hosting. `ActorSpaces` and `Hosts<P>` remain the deliberate
+advanced Bombay implementation for logical recipients and multi-protocol
+application composition; they must not leak into ordinary authoring or be
+replaced by dynamic normalization. Exact established delivery bypasses that
+logical resolution path.
 
-Bombay now implements the first exact-capability slice: `MailAddr` selects
+Bombay's current exact-capability implementation has `MailAddr` select
 `ActorRef<P>` as its established endpoint, every activated reference can issue
 an opaque `EstablishedRecipient<P>`, and exact delivery uses that reference
 directly without destination `Hosts<P>` evidence or Address lookup. Logical
 delivery remains unchanged. Exact observation and cancellation also use the
 endpoint's retained Bombay-private termination observation through the existing
 actor-local fact queue; observer IDs, immediate resolution, cancellation, and
-terminal consumption share one authoritative queue state. Creation-result
-issuance, shutdown, Entity adoption, and resolver minimization remain later
-DX37 slices.
+terminal consumption share one authoritative queue state. Same-action creation
+results, child shutdown, and Entity lifecycle integration remain owned by their
+existing concrete Bombay interpreters and bindings.
 
 ## Address
 
