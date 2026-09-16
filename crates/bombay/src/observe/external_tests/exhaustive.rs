@@ -3,11 +3,29 @@
 //! sampling, no seed. Covers single-key generation cycling, handle drop
 //! orders, and the inline->hash promotion boundary.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::observe::test_support::{CountWake, DropProbe};
 use crate::observe::{Observation, ObservationSpace, Subject};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum GenerationPhase {
+    Pending,
+    Completed,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum CompletionOrder {
+    BeforePolls,
+    AfterPolls,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum FutureDisposition {
+    Cancel,
+    Resolve,
+}
 
 /// Every op sequence of `depth` over `alphabet`, applied to a fresh space
 /// per sequence.
@@ -32,13 +50,12 @@ fn enumerate_histories(alphabet: &[char], depth: usize, mut check: impl FnMut(&[
     go(alphabet, depth, 0, &mut history, &mut check);
 }
 
-/// A minimal single-key model: vacant, or live with a completion state;
-/// retirement forgets the generation but remembers its outcome for the
-/// observations that pinned it.
+/// A single-key model retains the live phase and remembers completed retired
+/// generations while observations pin them.
 struct SingleKey {
-    live: Option<bool>, // Some(completed) while a generation is retained
+    live: Option<GenerationPhase>,
     epoch: u64,
-    retired_outcomes: HashMap<u64, bool>,
+    completed_retired: HashSet<u64>,
 }
 
 impl SingleKey {
@@ -46,7 +63,7 @@ impl SingleKey {
         Self {
             live: None,
             epoch: 0,
-            retired_outcomes: HashMap::new(),
+            completed_retired: HashSet::new(),
         }
     }
 }
@@ -69,18 +86,18 @@ fn check_single_key_history(history: &[char]) {
                         "{history:?}: register while live succeeded"
                     );
                 } else {
-                    model.live = Some(false);
+                    model.live = Some(GenerationPhase::Pending);
                     model.epoch += 1;
                     subject = Some(result.expect("{history:?}: register while vacant failed"));
                 }
             }
             'C' => {
-                if model.live == Some(false) {
+                if model.live == Some(GenerationPhase::Pending) {
                     subject
                         .as_mut()
                         .expect("live subject")
                         .complete(model.epoch);
-                    model.live = Some(true);
+                    model.live = Some(GenerationPhase::Completed);
                 }
             }
             'O' => {
@@ -97,8 +114,10 @@ fn check_single_key_history(history: &[char]) {
                 }
             }
             'X' => {
-                if let Some(completed) = model.live.take() {
-                    model.retired_outcomes.insert(model.epoch, completed);
+                if let Some(phase) = model.live.take() {
+                    if phase == GenerationPhase::Completed {
+                        model.completed_retired.insert(model.epoch);
+                    }
                     subject = None;
                 }
             }
@@ -111,14 +130,9 @@ fn check_single_key_history(history: &[char]) {
         // outcome the model records for its captured epoch.
         for (epoch, obs) in &observations {
             let expected = if model.live.is_some() && *epoch == model.epoch {
-                (model.live == Some(true)).then_some(*epoch)
+                (model.live == Some(GenerationPhase::Completed)).then_some(*epoch)
             } else {
-                model
-                    .retired_outcomes
-                    .get(epoch)
-                    .copied()
-                    .unwrap_or(false)
-                    .then_some(*epoch)
+                model.completed_retired.contains(epoch).then_some(*epoch)
             };
             assert_eq!(
                 obs.try_get(),
@@ -152,7 +166,7 @@ fn exhaustive_handle_drop_orders() {
         [2, 0, 1],
         [2, 1, 0],
     ];
-    for completed in [false, true] {
+    for phase in [GenerationPhase::Pending, GenerationPhase::Completed] {
         for (order, permutation) in permutations.iter().enumerate() {
             let space = ObservationSpace::<u8, DropProbe>::new();
             let (probe, counter) = DropProbe::new(order as u64);
@@ -163,7 +177,7 @@ fn exhaustive_handle_drop_orders() {
                 space.observe(&1).expect("subject retained").into_future(),
             ));
 
-            if completed {
+            if phase == GenerationPhase::Completed {
                 subject.as_mut().expect("subject live").complete(probe);
             } else {
                 assert!(
@@ -185,7 +199,7 @@ fn exhaustive_handle_drop_orders() {
             }
             drop(space);
 
-            if completed {
+            if phase == GenerationPhase::Completed {
                 assert_eq!(
                     counter.load(std::sync::atomic::Ordering::SeqCst),
                     1,
@@ -278,26 +292,26 @@ fn exhaustive_promotion_boundary() {
 #[test]
 fn exhaustive_future_poll_cancel_orders() {
     for polls in 0..=2_u8 {
-        for complete_after_poll in [false, true] {
-            for cancel in [false, true] {
+        for completion_order in [CompletionOrder::BeforePolls, CompletionOrder::AfterPolls] {
+            for disposition in [FutureDisposition::Cancel, FutureDisposition::Resolve] {
                 let space = ObservationSpace::<u8, u64>::new();
                 let mut subject = space.subject(9).expect("first registration succeeds");
                 let obs = space.observe(&9).expect("subject retained");
                 let (waker, probe) = CountWake::waker();
                 let mut future = Box::pin(obs.into_future());
 
-                if !complete_after_poll {
+                if matches!(completion_order, CompletionOrder::BeforePolls) {
                     subject.complete(7);
                 }
                 for _ in 0..polls {
                     let poll = crate::observe::test_support::poll_once(future.as_mut(), &waker);
                     assert_eq!(
                         poll.is_ready(),
-                        !complete_after_poll,
-                        "polls={polls} complete_after={complete_after_poll} cancel={cancel}"
+                        matches!(completion_order, CompletionOrder::BeforePolls),
+                        "polls={polls} order={completion_order:?} disposition={disposition:?}"
                     );
                 }
-                if complete_after_poll {
+                if matches!(completion_order, CompletionOrder::AfterPolls) {
                     subject.complete(7);
                     let registered = polls > 0;
                     assert_eq!(
@@ -306,18 +320,21 @@ fn exhaustive_future_poll_cancel_orders() {
                         "polls={polls}: waker fired != once"
                     );
                 }
-                if cancel {
-                    drop(future);
-                } else {
-                    let poll = crate::observe::test_support::poll_once(future.as_mut(), &waker);
-                    assert_eq!(poll, std::task::Poll::Ready(7));
+                match disposition {
+                    FutureDisposition::Cancel => drop(future),
+                    FutureDisposition::Resolve => {
+                        let poll = crate::observe::test_support::poll_once(future.as_mut(), &waker);
+                        assert_eq!(poll, std::task::Poll::Ready(7));
+                    }
                 }
                 drop(subject);
                 drop(space);
-                if cancel {
+                if matches!(disposition, FutureDisposition::Cancel) {
                     assert_eq!(
                         probe.count(),
-                        usize::from(complete_after_poll && polls > 0),
+                        usize::from(
+                            matches!(completion_order, CompletionOrder::AfterPolls) && polls > 0
+                        ),
                         "cancelled future woken after drop"
                     );
                 }
@@ -374,10 +391,9 @@ fn check_waker_history(history: &[char]) {
     let space = ObservationSpace::<u8, u64>::new();
     let mut subject: Option<Subject<u8, u64>> = None;
     let mut epoch: u64 = 0;
-    let mut live: Option<bool> = None; // Some(completed)
-    // epoch -> completed (completed generations keep their outcome; the
-    // drain fires exactly the wakers registered at completion time).
-    let mut completed: HashMap<u64, bool> = HashMap::new();
+    let mut live: Option<GenerationPhase> = None;
+    // Completed generations retain outcomes and fire registered wakers.
+    let mut completed: HashSet<u64> = HashSet::new();
     let mut observations: Vec<(u64, Observation<u64>)> = Vec::new();
     // (epoch, probe) of every successfully registered waker.
     let mut registered: Vec<(u64, std::sync::Arc<CountWake>)> = Vec::new();
@@ -392,17 +408,17 @@ fn check_waker_history(history: &[char]) {
                             .expect("{history:?}: vacant register failed"),
                     );
                     epoch += 1;
-                    live = Some(false);
+                    live = Some(GenerationPhase::Pending);
                 }
             }
             'C' => {
-                if live == Some(false) {
+                if live == Some(GenerationPhase::Pending) {
                     subject
                         .as_mut()
                         .expect("{history:?}: live subject")
                         .complete(epoch);
-                    live = Some(true);
-                    completed.insert(epoch, true);
+                    live = Some(GenerationPhase::Completed);
+                    completed.insert(epoch);
                 }
             }
             'O' => {
@@ -413,7 +429,7 @@ fn check_waker_history(history: &[char]) {
             'W' => {
                 if let Some((e, obs)) = observations.last() {
                     let (waker, probe) = CountWake::waker();
-                    let is_pending = !completed.get(e).copied().unwrap_or(false);
+                    let is_pending = !completed.contains(e);
                     assert_eq!(
                         !obs.register_waker(&waker),
                         is_pending,
@@ -425,8 +441,10 @@ fn check_waker_history(history: &[char]) {
                 }
             }
             'X' => {
-                if let Some(completed_now) = live.take() {
-                    completed.entry(epoch).or_insert(completed_now);
+                if let Some(phase) = live.take() {
+                    if phase == GenerationPhase::Completed {
+                        completed.insert(epoch);
+                    }
                     subject = None;
                 }
             }
@@ -438,7 +456,7 @@ fn check_waker_history(history: &[char]) {
         // After every op: every observation resolves to its epoch's
         // completion, exactly.
         for (e, obs) in &observations {
-            let expected = completed.get(e).copied().unwrap_or(false).then_some(*e);
+            let expected = completed.contains(e).then_some(*e);
             assert_eq!(
                 obs.try_get(),
                 expected,
@@ -452,7 +470,7 @@ fn check_waker_history(history: &[char]) {
     for (e, probe) in &registered {
         assert_eq!(
             probe.count(),
-            usize::from(completed.get(e).copied().unwrap_or(false)),
+            usize::from(completed.contains(e)),
             "{history:?}: waker of epoch {e} fired {} times",
             probe.count()
         );

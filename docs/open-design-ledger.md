@@ -47,6 +47,8 @@ DX61 Machine test transition policy (feature-complete, independent)
 
 DX62 Observe sequential model state (feature-complete, independent)
 
+DX63 Observe exhaustive model state (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -598,6 +600,48 @@ durable completion.
   `+72 / -12 / net +60`. The test delta exceeds the four-line forecast because
   the named sum and exhaustive local selection remain visible rather than
   being hidden behind a boolean conversion.
+
+## DX63 — Observe exhaustive model state
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: the exact owner graph remains unchanged. This stage
+  touches only Observe's deterministic exhaustive reference model; it shares no
+  state representation with the proptest oracle or production implementation.
+- Exact blocker and regression: `exhaustive.rs` stores live generation phase
+  in two `Option<bool>` values, stores retired/completed generation membership
+  in two `HashMap<_, bool>` values, and enumerates completion ordering and
+  future cancellation as boolean policies. Those encodings conflate absence,
+  phase, ordering, and terminal choice with truth values. The pre-edit oracle
+  finds those representations. The exhaustive single-key, drop-order,
+  future-order, and waker-drain history tests are the behavioral regressions.
+- Governing invariants: absence remains `None`; a retained generation has one
+  named pending/completed phase; historical completion is set membership; and
+  completion order plus future disposition remain named exhaustive dimensions.
+  Local predicates may compare these values but may not replace them.
+- Dependency edges: independent of DX53 through DX62.
+- Blocked by: none.
+- Unblocks: a truthful semantic-state scan of the remaining Observe stress and
+  allocator test controls.
+- Change ledger: expected tracked files are this ledger and
+  `crates/bombay/src/observe/external_tests/exhaustive.rs` (`2` files).
+  Production is `+0 / -0`; tests are no more than `+52 / -34 / net +18`;
+  public API is `+0 / -0` types. Existing exhaustive alphabets, history depths,
+  handle permutations, observations, subjects, and wake probes remain exact.
+  Any reduced history space, changed oracle, production item, shared model
+  abstraction, dependency, or public interface falsifies the correction.
+- Result: `GenerationPhase::{Pending, Completed}` replaces both live-generation
+  booleans, and completed retired generations are represented only by
+  `HashSet` membership. `CompletionOrder::{BeforePolls, AfterPolls}` and
+  `FutureDisposition::{Cancel, Resolve}` preserve the names of the two
+  exhaustive policy dimensions. No alphabet, depth, permutation, timing
+  combination, oracle, production item, dependency, or public API changed.
+- Verification: all seven exhaustive tests pass through both crate embeddings;
+  the focused `observe-tests` suite also passes optimized; the complete 121-test
+  private Observe suite and its docs pass; formatting and strict all-target
+  Clippy pass for `observe-tests` and `bombay-rs` through the pinned Nix shell.
+- Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
+  `+66 / -48 / net +18`; public API `+0 / -0` types; documentation
+  `+44 / -0 / net +44`.
 
 ## Public examples
 
