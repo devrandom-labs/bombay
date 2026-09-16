@@ -57,6 +57,8 @@ DX66 Driver custody failure ownership (feature-complete, independent)
 
 DX67 Entity Loom admission algebra (feature-complete, independent)
 
+DX68 Entity Loom activation claim (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -837,6 +839,46 @@ durable completion.
 - Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
   `+62 / -63 / net -1`; public API `+0 / -0` types; documentation
   `+52 / -0 / net +52`.
+
+## DX68 — Entity Loom activation claim
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: the exact locked owner graph and Entity lifecycle/runtime
+  sources rechecked for DX67 remain unchanged. This stage touches only the
+  adjacent independent Loom activation-claim oracle; no production owner,
+  dependency, or public contract changes.
+- Ownership and law: an inactive logical entity admits exactly one activation
+  claim. The model's mutex owns one `ActivationClaim` or its absence, while the
+  atomic counter independently observes how many activation starts occurred.
+- Exact blocker and regression: `Mutex<bool>` stores the claim phase and the two
+  contenders interpret `false`/`true` as unclaimed/claimed. The pre-edit
+  structural oracle finds that representation. The exhaustive
+  `concurrent_claims_start_exactly_one_activation` Loom test is the behavioral
+  regression and must still observe a claimed phase plus exactly one start.
+- Proposed representation: `Option<ActivationClaim>` is exactly one private
+  claim capability or absence. No enum, shared production model, or additional
+  synchronization is introduced.
+- Dependency edges: independent of DX53 through DX67.
+- Blocked by: none.
+- Unblocks: the remaining Entity runtime-fixture scan.
+- Change ledger: expected tracked files are this ledger and
+  `crates/bombay/tests/entity_loom.rs` (`2` files). Production is `+0 / -0`;
+  tests are no more than `+10 / -7 / net +3`; public API is `+0 / -0` types.
+  The same mutex, two contenders, start counter, Loom schedules, joins, and
+  assertions remain. Any changed schedule, start count, synchronization,
+  production item, dependency, or public API falsifies the correction.
+- Result: the mutex now contains `Option<ActivationClaim>`, so availability is
+  absence and the winning contender installs the one claim capability. The
+  boolean phase and truth-value assertion are gone; mutex and counter operations
+  remain at the same linearization points.
+- Verification: the focused claim race passes in debug and optimized profiles
+  with exactly one activation start; the complete five-test Entity Loom target,
+  formatting, and strict all-target `bombay-rs` Clippy pass through the pinned
+  Nix shell. The complete `bombay-rs` suite passed immediately before this
+  adjacent isolated stage in DX67.
+- Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
+  `+8 / -6 / net +2`; public API `+0 / -0` types; documentation
+  `+42 / -0 / net +42`.
 
 ## Public examples
 

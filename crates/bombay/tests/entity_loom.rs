@@ -6,19 +6,21 @@ use loom::sync::atomic::{AtomicUsize, Ordering};
 use loom::sync::{Arc, Mutex};
 use loom::thread;
 
+struct ActivationClaim;
+
 #[test]
 fn concurrent_claims_start_exactly_one_activation() {
     loom::model(|| {
-        let phase = Arc::new(Mutex::new(false));
+        let claim = Arc::new(Mutex::new(None));
         let starts = Arc::new(AtomicUsize::new(0));
         let callers: Vec<_> = (0..2)
             .map(|_| {
-                let phase = Arc::clone(&phase);
+                let claim = Arc::clone(&claim);
                 let starts = Arc::clone(&starts);
                 thread::spawn(move || {
-                    let mut activating = phase.lock().unwrap();
-                    if !*activating {
-                        *activating = true;
+                    let mut claim = claim.lock().unwrap();
+                    if claim.is_none() {
+                        *claim = Some(ActivationClaim);
                         starts.fetch_add(1, Ordering::Relaxed);
                     }
                 })
@@ -27,7 +29,7 @@ fn concurrent_claims_start_exactly_one_activation() {
         for caller in callers {
             caller.join().unwrap();
         }
-        assert!(*phase.lock().unwrap());
+        assert!(claim.lock().unwrap().is_some());
         assert_eq!(starts.load(Ordering::Relaxed), 1);
     });
 }
