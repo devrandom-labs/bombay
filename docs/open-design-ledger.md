@@ -59,6 +59,8 @@ DX67 Entity Loom admission algebra (feature-complete, independent)
 
 DX68 Entity Loom activation claim (feature-complete, independent)
 
+DX69 Entity hash-gate phase (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -879,6 +881,52 @@ durable completion.
 - Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
   `+8 / -6 / net +2`; public API `+0 / -0` types; documentation
   `+42 / -0 / net +42`.
+
+## DX69 — Entity hash-gate phase
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: the exact locked owner graph and Entity runtime/lifecycle
+  contracts rechecked for DX67 and DX68 remain unchanged. This stage touches
+  only the real-thread superseded-passivation fixture; no production owner,
+  dependency, or public contract changes.
+- Ownership and law: `HashGate` owns a deterministic test synchronization
+  protocol. It counts selected hash calls, publishes that the third call is
+  blocked, and later releases that exact call. Its phase is one of counting,
+  blocked, or released; the selected thread identity and call count coexist
+  independently with that phase.
+- Exact blocker and regression: `HashGateState` coordinates `blocked` and
+  `released` booleans, representing blocked-and-released, neither after release,
+  and release-before-block combinations. The pre-edit structural oracle finds
+  both fields and their wait loops. The caller-visible
+  `passivation_reports_superseded_after_incarnation_replacement` race is the
+  behavioral regression.
+- Proposed representation: one private
+  `HashGatePhase::{Counting, Blocked, Released}` sum, selected exhaustively by
+  the gate methods and hash implementation. The mutex and condition-variable
+  synchronization remain at the same boundaries.
+- Dependency edges: independent of DX53 through DX68.
+- Blocked by: none.
+- Unblocks: the remaining Entity runtime-fixture scan.
+- Change ledger: expected tracked files are this ledger and
+  `crates/bombay/tests/entity_runtime.rs` (`2` files). Production is `+0 / -0`;
+  tests are no more than `+16 / -8 / net +8`; public API is `+0 / -0` types.
+  Existing selected thread, third-hash threshold, condition variable,
+  passivation/replacement race, test name, and complete outcome assertions
+  remain exact. Any changed blocking point, schedule, result, production item,
+  dependency, or public API falsifies the correction.
+- Result: `HashGateState` now stores exactly one
+  `HashGatePhase::{Counting, Blocked, Released}` alongside the independently
+  coexisting selected thread and call count. Both coordinated boolean fields
+  are gone. The same selected thread blocks on its third hash call and resumes
+  only after the test releases that call; no synchronization primitive,
+  threshold, or observable assertion changed.
+- Verification: the superseded-passivation race passes in debug and optimized
+  profiles; all eleven Entity runtime tests pass; formatting and strict
+  all-target `bombay-rs` Clippy pass through the pinned Nix shell. The complete
+  `bombay-rs` suite passed immediately before this adjacent fixture-only stage.
+- Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
+  `+16 / -8 / net +8`; public API `+0 / -0` types; documentation
+  `+48 / -0 / net +48`.
 
 ## Public examples
 

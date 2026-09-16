@@ -210,18 +210,26 @@ struct HashGate {
     changed: Condvar,
 }
 
-#[derive(Default)]
+enum HashGatePhase {
+    Counting,
+    Blocked,
+    Released,
+}
+
 struct HashGateState {
     blocked_thread: Option<thread::ThreadId>,
     calls: usize,
-    blocked: bool,
-    released: bool,
+    phase: HashGatePhase,
 }
 
 impl HashGate {
     fn new() -> Arc<Self> {
         Arc::new(Self {
-            state: Mutex::new(HashGateState::default()),
+            state: Mutex::new(HashGateState {
+                blocked_thread: None,
+                calls: 0,
+                phase: HashGatePhase::Counting,
+            }),
             changed: Condvar::new(),
         })
     }
@@ -232,14 +240,14 @@ impl HashGate {
 
     fn wait_until_blocked(&self) {
         let mut state = self.state.lock().unwrap();
-        while !state.blocked {
+        while matches!(state.phase, HashGatePhase::Counting) {
             state = self.changed.wait(state).unwrap();
         }
     }
 
     fn release(&self) {
         let mut state = self.state.lock().unwrap();
-        state.released = true;
+        state.phase = HashGatePhase::Released;
         self.changed.notify_all();
     }
 }
@@ -265,9 +273,9 @@ impl Hash for GatedId {
         if gate.blocked_thread == Some(thread::current().id()) {
             gate.calls += 1;
             if gate.calls == 3 {
-                gate.blocked = true;
+                gate.phase = HashGatePhase::Blocked;
                 self.gate.changed.notify_all();
-                while !gate.released {
+                while matches!(gate.phase, HashGatePhase::Blocked) {
                     gate = self.gate.changed.wait(gate).unwrap();
                 }
             }
