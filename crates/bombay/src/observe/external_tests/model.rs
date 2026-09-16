@@ -14,7 +14,7 @@
 //! because it deterministically hits shared-waker cancellation regression, which is preserved
 //! separately in `future_cancel.rs`.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::Poll;
@@ -39,6 +39,12 @@ enum Op {
     PollFuture(usize),
     MigrateFuture(usize),
     CancelFuture(usize),
+}
+
+#[derive(Debug, Clone, Copy)]
+enum FuturePoll {
+    Repoll,
+    Migrate,
 }
 
 fn op_strategy() -> impl Strategy<Value = Op> {
@@ -379,20 +385,24 @@ fn apply(campaign: &mut Campaign, op: Op) {
                 },
             );
         }
-        Op::PollFuture(id) => poll_future(campaign, id, false),
-        Op::MigrateFuture(id) => poll_future(campaign, id, true),
+        Op::PollFuture(id) => poll_future(campaign, id, FuturePoll::Repoll),
+        Op::MigrateFuture(id) => poll_future(campaign, id, FuturePoll::Migrate),
         Op::CancelFuture(id) => {
             campaign.harness.futures.remove(&id);
         }
     }
 }
 
-fn poll_future(campaign: &mut Campaign, id: usize, migrate: bool) {
+fn poll_future(campaign: &mut Campaign, id: usize, poll: FuturePoll) {
     let Some(handle) = campaign.harness.futures.get_mut(&id) else {
         return;
     };
     let expected = campaign.model.outcome_of(handle.key, handle.epoch);
-    let (waker, probe) = if migrate || handle.wakers.is_empty() {
+    let installs_waker = match poll {
+        FuturePoll::Repoll => handle.wakers.is_empty(),
+        FuturePoll::Migrate => true,
+    };
+    let (waker, probe) = if installs_waker {
         CountWake::waker()
     } else {
         // Re-poll with the same waker: idempotent re-registration.
@@ -414,7 +424,7 @@ fn poll_future(campaign: &mut Campaign, id: usize, migrate: bool) {
                 handle.key,
                 handle.epoch
             );
-            if migrate || handle.wakers.is_empty() {
+            if installs_waker {
                 handle.wakers.push((waker, probe));
             }
         }
@@ -482,7 +492,7 @@ proptest! {
         let mut created = 0usize;
         let mut subjects: HashMap<u8, Subject<u8, DropProbe>> = HashMap::new();
         let mut epochs: HashMap<u8, u64> = HashMap::new();
-        let mut completed: HashMap<(u8, u64), bool> = HashMap::new();
+        let mut completed: HashSet<(u8, u64)> = HashSet::new();
         let mut observations: Vec<(u8, u64, Observation<DropProbe>)> = Vec::new();
 
         let tag = |key: u8, epoch: u64| (epoch << 8) | u64::from(key);
@@ -499,7 +509,7 @@ proptest! {
                 ChurnOp::Complete(key) => {
                     if let Some(subject) = subjects.get_mut(&key) {
                         let epoch = epochs[&key];
-                        if completed.insert((key, epoch), true).is_none() {
+                        if completed.insert((key, epoch)) {
                             subject.complete(DropProbe::with_counter(tag(key, epoch), &counter));
                             created += 1;
                         }
@@ -512,7 +522,7 @@ proptest! {
                 }
                 ChurnOp::TryGet(idx) => {
                     if let Some((k, e, obs)) = observations.get(idx % observations.len().max(1)) {
-                        let expected = completed.get(&(*k, *e)).copied().unwrap_or(false);
+                        let expected = completed.contains(&(*k, *e));
                         match obs.try_get() {
                             Some(value) => {
                                 assert_eq!(value.tag, tag(*k, *e), "try_get cross-generation leak");
@@ -538,14 +548,14 @@ proptest! {
                         continue;
                     }
                     let (k, e, obs) = observations.swap_remove(idx % observations.len());
-                    let subject_gone = !subjects.contains_key(&k) || epochs[&k] != e;
-                    let done = completed.get(&(k, e)).copied().unwrap_or(false);
+                    let generation_retired = !subjects.contains_key(&k) || epochs[&k] != e;
+                    let generation_completed = completed.contains(&(k, e));
                     let refs = observations
                         .iter()
                         .filter(|(k2, e2, _)| k2 == &k && e2 == &e)
                         .count();
                     let result = obs.into_outcome();
-                    if subject_gone && done && refs == 0 {
+                    if generation_retired && generation_completed && refs == 0 {
                         let value = result.expect("into_outcome must move the last outcome");
                         assert_eq!(value.tag, tag(k, e), "into_outcome wrong generation");
                         drop(value);

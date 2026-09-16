@@ -45,6 +45,8 @@ DX60 normative runtime contract alignment (feature-complete, independent)
 
 DX61 Machine test transition policy (feature-complete, independent)
 
+DX62 Observe sequential model state (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -548,6 +550,54 @@ durable completion.
   `+65 / -10 / net +55`. The test delta exceeds the six-line forecast because
   both owning transitions retain explicit exhaustive matches; no automatic
   containment threshold is approached.
+
+## DX62 — Observe sequential model state
+
+- State: `feature-complete`; final fixed-point audit remains pending.
+- Selected contracts: the exact owner graph remains unchanged. This stage
+  touches only Observe's independent proptest reference model; the production
+  completion representation and public API are unchanged.
+- Exact blocker and regression: the model passes `migrate: bool` to select
+  whether a future reuses its latest waker or installs a new one, and stores
+  completed `(key, epoch)` identities in `HashMap<_, bool>`. The first erases a
+  mutually exclusive test operation; the second stores a set-membership fact
+  as a value and admits meaningless `false` entries. The pre-edit structural
+  oracle finds exactly that boolean parameter and completion map. Existing
+  sequential-model and churn drop-accounting properties are the behavioral
+  regressions.
+- Governing invariants: future polling receives a closed named waker policy;
+  completion history contains exactly the identities known completed. A local
+  predicate may decide whether the selected policy installs a registration,
+  but it may not replace the policy value or persist completion state.
+- Dependency edges: independent of DX53 through DX61.
+- Blocked by: none.
+- Unblocks: an independent audit of the exhaustive Observe model rather than a
+  mechanically shared testing framework.
+- Change ledger: expected tracked files are this ledger and
+  `crates/bombay/src/observe/external_tests/model.rs` (`2` files). Production
+  is `+0 / -0`; tests are no more than `+14 / -10 / net +4`; public API is
+  `+0 / -0` types. Existing `HashMap` state, proptest operations, observations,
+  and wake probes remain; standard `HashSet` owns completion membership. Any
+  property, generated operation distribution, outcome, wake count, drop count,
+  production item, or dependency change falsifies the correction.
+- Result: `FuturePoll::{Repoll, Migrate}` now preserves the generated poll
+  operation through waker selection, while a local predicate answers only
+  whether that selected operation installs a registration. Completed
+  generations are a `HashSet`; false-valued membership is no longer
+  representable. The generated operation distribution, independent oracle,
+  production code, dependencies, and public interface are unchanged.
+- Verification: the pre-edit scan found the boolean policy parameter and
+  boolean-valued completion map; the post-edit oracle finds neither. All three
+  model properties pass through both the private Observe crate and Bombay,
+  focused model properties pass optimized, and all 121 private Observe tests
+  plus documentation tests, formatting, and strict affected-package Clippy
+  pass through pinned Nix.
+- Actual checkpoint: tracked files `2`; production source
+  `+0 / -0`; tests `+22 / -12 / net +10`; public API `+0 / -0` types;
+  documentation `+50 / -0 / net +50`; complete tracked delta
+  `+72 / -12 / net +60`. The test delta exceeds the four-line forecast because
+  the named sum and exhaustive local selection remain visible rather than
+  being hidden behind a boolean conversion.
 
 ## Public examples
 
