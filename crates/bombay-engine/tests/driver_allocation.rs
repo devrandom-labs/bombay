@@ -64,14 +64,14 @@ impl Behavior for StopOnOne {
     }
 }
 
-struct ImmediateEnvironment(bool);
+struct ImmediateEnvironment(Option<User<MailAddr, u8>>);
 
 impl ActiveEnvironment<StopOnOne> for ImmediateEnvironment {
     type Error = Infallible;
     type Residual = ();
 
     async fn next(&mut self) -> Option<<StopOnOne as Behavior>::Event> {
-        (!std::mem::replace(&mut self.0, true)).then(|| User::new(MailAddr(1), 1))
+        self.0.take()
     }
 
     async fn apply(&mut self, _: ActionsOf<StopOnOne>) -> Result<(), Self::Error> {
@@ -93,7 +93,10 @@ fn block_on<T>(future: impl Future<Output = T>) -> T {
 
 #[test]
 fn one_complete_driver_execution_allocates_nothing() {
-    let driver = direct(StopOnOne, ImmediateEnvironment(false));
+    let driver = direct(
+        StopOnOne,
+        ImmediateEnvironment(Some(User::new(MailAddr(1), 1))),
+    );
     let before = ALLOCATIONS.load(Ordering::Relaxed);
     assert_eq!(block_on(driver.run()).disposition, Ok(Completion::Stopped));
     let allocations = ALLOCATIONS.load(Ordering::Relaxed) - before;

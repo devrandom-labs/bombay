@@ -49,6 +49,8 @@ DX62 Observe sequential model state (feature-complete, independent)
 
 DX63 Observe exhaustive model state (feature-complete, independent)
 
+DX64 Driver allocation fixture input ownership (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -642,6 +644,51 @@ durable completion.
 - Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
   `+66 / -48 / net +18`; public API `+0 / -0` types; documentation
   `+44 / -0 / net +44`.
+
+## DX64 — Driver allocation fixture input ownership
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: Behavior Core 0.14.0, Behavior Actors 0.14.0, and
+  Behavior Macros 0.11.4 remain selected at
+  `a272adf8d2cbb6a2784d565f47c74adff3e7d01b`; Address 0.2.0,
+  Communication 0.1.2, Bombay-private Observe, and Timers 0.1.0 at
+  `13e884da7ab41781f52337b0038060e375b00ee0` remain unchanged. Their source,
+  public contracts, relevant tests, and current documentation were rechecked;
+  none owns this actor-independent fixture state.
+- Ownership and law: Engine owns the universal Driver and affine Environment
+  port. Under D-TERM-2, an active Environment yields one exact `B::Event` or
+  `None` for permanent exhaustion. The allocation regression's private
+  Environment therefore owns one queued event or its absence.
+- Exact blocker and regression: `ImmediateEnvironment(bool)` stores the
+  mutually exclusive available/exhausted input state as an unnamed truth value,
+  then uses `mem::replace` and negation to recover the transition. The pre-edit
+  structural oracle finds that tuple boolean. The existing zero-allocation
+  end-to-end Driver execution is the behavioral and cost regression.
+- Proposed representation: store `Option<User<MailAddr, u8>>` and consume it
+  with `Option::take`. This is the exact one-value-or-absence algebra; it adds no
+  phase type, wrapper, policy, branch, allocation, or public surface.
+- Dependency edges: independent of DX53 through DX63.
+- Blocked by: none.
+- Unblocks: the remaining Engine test-policy scan.
+- Change ledger: expected tracked files are this ledger and
+  `crates/bombay-engine/tests/driver_allocation.rs` (`2` files). Production is
+  `+0 / -0`; tests are no more than `+6 / -3 / net +3`; public API is
+  `+0 / -0` types. The existing `ImmediateEnvironment`, Driver, Behavior,
+  allocation counter, one-event execution, and zero-allocation assertion are
+  reused. Any production, dependency, public API, allocation count, event,
+  terminal disposition, or additional state type falsifies the correction.
+- Result: `ImmediateEnvironment` now owns the exact optional `User` event and
+  yields it with `Option::take`. The boolean phase, negation, and
+  `mem::replace` protocol are gone. The same event produces the same stopped
+  Driver retirement without allocation; production, dependencies, public API,
+  and test count are unchanged.
+- Verification: the allocation regression passes with zero allocations in
+  debug and optimized profiles; the complete Engine suite, compile fixtures,
+  Driver laws, inversions, properties, custody tests, and docs pass; formatting
+  and strict all-target Engine Clippy pass through the pinned Nix shell.
+- Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
+  `+6 / -3 / net +3`; public API `+0 / -0` types; documentation
+  `+47 / -0 / net +47`.
 
 ## Public examples
 
