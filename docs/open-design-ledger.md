@@ -61,6 +61,8 @@ DX68 Entity Loom activation claim (feature-complete, independent)
 
 DX69 Entity hash-gate phase (feature-complete, independent)
 
+DX70 Observe fuzz state ownership (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -927,6 +929,73 @@ durable completion.
 - Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
   `+16 / -8 / net +8`; public API `+0 / -0` types; documentation
   `+48 / -0 / net +48`.
+
+## DX70 — Observe fuzz state ownership
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: the locked Behavior 0.14.0, Behavior Actors 0.14.0, and
+  Macros 0.11.4 revision remains
+  `a272adf8d2cbb6a2784d565f47c74adff3e7d01b`; Address 0.2.0,
+  Communication 0.1.2, and Timers 0.1.0 at
+  `13e884da7ab41781f52337b0038060e375b00ee0` remain unchanged. Their public
+  algebras have no edge to this private Observe oracle. Observe's subject,
+  completion, observation, future, waker, and exact-outcome APIs and their
+  owning tests were rechecked with all four fuzz targets and the pinned fuzz
+  shell declaration.
+- Ownership and law: one `(key, epoch)` generation either belongs to the set of
+  generations that completed or it does not. Completion membership governs
+  readiness, exact waker firing, and whether the last retired observation may
+  take its outcome. Active and retired generations obey the identical law.
+- Exact blocker and regression: `waker_ops` and `promotion_ops` store completion
+  in `HashMap<(u8, u64), bool>` values that are only ever inserted as `true`;
+  `future_ops` splits the same fact between a current boolean array and a
+  retired-generation boolean map. Its `Fut.cancelled` flag is also initialized
+  false for every live vector member, written true only after `pop`, and then
+  destroyed without another read; vector membership already owns liveness.
+  The pre-edit structural oracle finds all three boolean maps, the flag array,
+  the active/retired branch, and the redundant cancellation field. The four
+  existing coverage-guided operation alphabets and their exact readiness,
+  wake-count, generation-tag, cancellation, move, and drop-accounting
+  assertions are the behavioral regressions.
+- Proposed representation: use `HashSet<(u8, u64)>` membership directly in
+  each independent fuzz target. `future_ops` retains one set across active and
+  retired generations because retirement does not change the historical fact;
+  presence in its live-future vector represents liveness, while the popped
+  owned future supplies the cancellation probes before destruction. No shared
+  model, production transition, wrapper, or new fuzz operation is introduced.
+- Dependency edges: independent of DX53 through DX69.
+- Blocked by: none.
+- Unblocks: the remaining Observe fuzz-model scan.
+- Change ledger: expected tracked files are this ledger plus
+  `future_ops.rs`, `promotion_ops.rs`, and `waker_ops.rs` (`4` files).
+  Production is `+0 / -0`; tests must be net-negative and remain within
+  `+15 / -35`; public API is `+0 / -0` types. The exact key and epoch domains,
+  operation alphabets, iteration bounds, subject/observation/future ownership,
+  waker migration and cancellation probes, outcome tags, drop accounting, and
+  all oracle messages remain. Any changed fuzz input interpretation, weakened
+  assertion, retained semantic boolean, production item, dependency, public
+  API, or net-positive test delta falsifies the correction.
+- Result: all three independent models now store completed generations as set
+  membership. `future_ops` uses the same set before and after retirement, and
+  live-vector membership plus ownership of the popped future replaces the
+  unread cancellation flag. The boolean maps, current flag array, retired map,
+  active/retired lookup branch, field, writes, and guards are gone. Test code
+  is twenty lines smaller with no shared model or production machinery.
+- Verification: all four fuzz binaries build in the pinned nightly fuzz shell;
+  `ops`, `future_ops`, `promotion_ops`, and `waker_ops` each completed 10,000
+  bounded runs without an artifact, with the final three affected targets
+  replayed after their last edits. All 121 private Observe tests and docs pass;
+  strict Clippy passes for the complete Observe library and the three affected
+  fuzz bins; root formatting and exact formatting of the affected fuzz files
+  pass. The independent workspace's whole-format and whole-Clippy probes also
+  exposed pre-existing drift and two `ops.rs` lints outside this stage; no
+  unrelated source was absorbed.
+- Actual checkpoint: tracked files `4`; production `+0 / -0 / net 0`; tests
+  `+59 / -79 / net -20`; public API `+0 / -0` types; documentation
+  `+69 / -0 / net +69`. Gross test churn exceeded the forecast because the
+  strict lint correction flattened the three completion branches and removed
+  the independently proven cancellation guards; the required net-negative
+  boundary and all stop thresholds remain satisfied.
 
 ## Public examples
 

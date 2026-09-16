@@ -15,13 +15,13 @@
 
 #![no_main]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use libfuzzer_sys::fuzz_target;
-use observe::{Observation, ObservationSpace, Subject};
 use observe::probe::{CountWake, DropProbe};
+use observe::{Observation, ObservationSpace, Subject};
 
 const KEYS: u8 = 3;
 
@@ -35,7 +35,7 @@ fuzz_target!(|data: &[u8]| {
     let mut created = 0usize;
     let mut subjects: HashMap<u8, Subject<u8, DropProbe>> = HashMap::new();
     let mut epochs: HashMap<u8, u64> = HashMap::new();
-    let mut completed: HashMap<(u8, u64), bool> = HashMap::new();
+    let mut completed = HashSet::new();
     let mut observations: Vec<(u8, u64, Observation<DropProbe>)> = Vec::new();
     // (key, epoch, probe) of every successfully registered waker.
     let mut wakers: Vec<(u8, u64, Arc<CountWake>)> = Vec::new();
@@ -51,12 +51,12 @@ fuzz_target!(|data: &[u8]| {
                 }
             }
             1 => {
-                if let Some(subject) = subjects.get_mut(&key) {
+                if let Some(subject) = subjects.get_mut(&key)
+                    && completed.insert((key, epochs[&key]))
+                {
                     let epoch = epochs[&key];
-                    if completed.insert((key, epoch), true).is_none() {
-                        subject.complete(DropProbe::with_counter(encode(epoch, key), &counter));
-                        created += 1;
-                    }
+                    subject.complete(DropProbe::with_counter(encode(epoch, key), &counter));
+                    created += 1;
                 }
             }
             2 => {
@@ -66,7 +66,7 @@ fuzz_target!(|data: &[u8]| {
             }
             3 => {
                 if let Some((k, e, obs)) = observations.last() {
-                    let expected = completed.get(&(*k, *e)).copied().unwrap_or(false);
+                    let expected = completed.contains(&(*k, *e));
                     match obs.try_get() {
                         Some(value) => {
                             assert!(expected, "try_get resolved a never-completed generation");
@@ -84,7 +84,7 @@ fuzz_target!(|data: &[u8]| {
             }
             5 => {
                 if let Some((k, e, obs)) = observations.last() {
-                    let is_pending = !completed.get(&(*k, *e)).copied().unwrap_or(false);
+                    let is_pending = !completed.contains(&(*k, *e));
                     let (waker, probe) = CountWake::waker();
                     assert_eq!(
                         !obs.register_waker(&waker),
@@ -99,7 +99,7 @@ fuzz_target!(|data: &[u8]| {
             6 => {
                 if let Some((k, e, obs)) = observations.pop() {
                     let subject_gone = !subjects.contains_key(&k) || epochs[&k] != e;
-                    let done = completed.get(&(k, e)).copied().unwrap_or(false);
+                    let done = completed.contains(&(k, e));
                     let refs = observations
                         .iter()
                         .filter(|(k2, e2, _)| k2 == &k && e2 == &e)
@@ -110,7 +110,10 @@ fuzz_target!(|data: &[u8]| {
                         assert_eq!(value.tag, encode(e, k), "into_outcome wrong generation");
                         drop(value);
                     } else {
-                        assert!(result.is_none(), "into_outcome must refuse while shared/pending");
+                        assert!(
+                            result.is_none(),
+                            "into_outcome must refuse while shared/pending"
+                        );
                     }
                 }
             }
@@ -124,7 +127,7 @@ fuzz_target!(|data: &[u8]| {
     // completed. (Wakers of never-completed generations were destroyed
     // with their slots: pooled reset or consumed take.)
     for (k, e, probe) in &wakers {
-        let expected = usize::from(completed.get(&(*k, *e)).copied().unwrap_or(false));
+        let expected = usize::from(completed.contains(&(*k, *e)));
         assert_eq!(
             probe.count(),
             expected,

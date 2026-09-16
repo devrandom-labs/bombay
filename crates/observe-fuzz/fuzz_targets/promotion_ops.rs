@@ -18,13 +18,13 @@
 
 #![no_main]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use libfuzzer_sys::fuzz_target;
-use observe::{Observation, ObservationSpace, Subject};
 use observe::probe::DropProbe;
+use observe::{Observation, ObservationSpace, Subject};
 
 const KEYS: u8 = 6;
 
@@ -39,10 +39,10 @@ fuzz_target!(|data: &[u8]| {
     let mut created = 0usize;
     let mut subjects: HashMap<u8, Subject<u8, DropProbe>> = HashMap::new();
     let mut epochs: HashMap<u8, u64> = HashMap::new();
-    // (key, epoch) -> completed?  The slot keeps its outcome after retire,
-    // so an observation of a retired generation still resolves iff that
-    // generation completed.
-    let mut completed: HashMap<(u8, u64), bool> = HashMap::new();
+    // Completed generations retain their outcomes after retirement, so an
+    // observation of a retired generation still resolves exactly when its
+    // generation belongs to this set.
+    let mut completed = HashSet::new();
     let mut observations: Vec<(u8, u64, Observation<DropProbe>)> = Vec::new();
 
     for pair in data.chunks_exact(2).take(256) {
@@ -56,12 +56,12 @@ fuzz_target!(|data: &[u8]| {
                 }
             }
             1 => {
-                if let Some(subject) = subjects.get_mut(&key) {
+                if let Some(subject) = subjects.get_mut(&key)
+                    && completed.insert((key, epochs[&key]))
+                {
                     let epoch = epochs[&key];
-                    if completed.insert((key, epoch), true).is_none() {
-                        subject.complete(DropProbe::with_counter(encode(epoch, key), &counter));
-                        created += 1;
-                    }
+                    subject.complete(DropProbe::with_counter(encode(epoch, key), &counter));
+                    created += 1;
                 }
             }
             2 => {
@@ -71,11 +71,7 @@ fuzz_target!(|data: &[u8]| {
             }
             3 => {
                 if let Some((k, e, obs)) = observations.last() {
-                    let expected = completed
-                        .get(&(*k, *e))
-                        .copied()
-                        .unwrap_or(false)
-                        .then(|| encode(*e, *k));
+                    let expected = completed.contains(&(*k, *e)).then(|| encode(*e, *k));
                     match obs.try_get() {
                         Some(value) => {
                             assert_eq!(
@@ -97,11 +93,7 @@ fuzz_target!(|data: &[u8]| {
             5 => {
                 if let Some((k, e, obs)) = observations.pop() {
                     let subject_gone = !subjects.contains_key(&k) || epochs[&k] != e;
-                    let done = completed
-                        .get(&(k, e))
-                        .copied()
-                        .unwrap_or(false)
-                        .then(|| encode(e, k));
+                    let done = completed.contains(&(k, e)).then(|| encode(e, k));
                     let refs = observations
                         .iter()
                         .filter(|(k2, e2, _)| k2 == &k && e2 == &e)
@@ -110,7 +102,8 @@ fuzz_target!(|data: &[u8]| {
                     if subject_gone && done.is_some() && refs == 0 {
                         let value = result.expect("into_outcome must move the last outcome");
                         assert_eq!(
-                            value.tag, done.unwrap(),
+                            value.tag,
+                            done.unwrap(),
                             "into_outcome moved a wrong-generation value"
                         );
                         drop(value);

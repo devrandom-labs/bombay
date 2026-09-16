@@ -7,13 +7,14 @@
 
 #![no_main]
 
+use std::collections::HashSet;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::Poll;
 
 use libfuzzer_sys::fuzz_target;
-use observe::{ObservationFuture, ObservationSpace, Subject};
 use observe::probe::{CountWake, poll_once};
+use observe::{ObservationFuture, ObservationSpace, Subject};
 
 const KEYS: u8 = 2;
 
@@ -22,19 +23,14 @@ struct Fut {
     key: u8,
     epoch: u64,
     wakers: Vec<Arc<CountWake>>,
-    cancelled: bool,
 }
 
 fuzz_target!(|data: &[u8]| {
     let space = ObservationSpace::<u8, u64>::new();
-    let mut subjects: Vec<Option<Subject<u8, u64>>> =
-        (0..KEYS).map(|_| None).collect();
-    let mut completed = [false; KEYS as usize];
+    let mut subjects: Vec<Option<Subject<u8, u64>>> = (0..KEYS).map(|_| None).collect();
+    let mut completed = HashSet::new();
     let mut epochs = [0_u64; KEYS as usize];
     let mut futures: Vec<Fut> = Vec::new();
-    // (key, epoch) -> whether that retired epoch completed.
-    let mut retired_completed: std::collections::HashMap<(u8, u64), bool> =
-        std::collections::HashMap::new();
     // Wakers of cancelled futures with their fire count at cancellation:
     // nothing may fire them afterwards (checked at teardown).
     let mut cancelled_probes: Vec<(Arc<CountWake>, usize)> = Vec::new();
@@ -46,28 +42,26 @@ fuzz_target!(|data: &[u8]| {
             0 => {
                 if let Ok(subject) = space.subject(key) {
                     epochs[k] += 1;
-                    completed[k] = false;
                     subjects[k] = Some(subject);
                 }
             }
             1 => {
-                if let Some(subject) = subjects[k].as_mut() {
-                    if !completed[k] {
-                        let value = (epochs[k] << 8) | u64::from(key);
-                        subject.complete(value);
-                        completed[k] = true;
-                        // Every live future of this generation: only its
-                        // latest registered waker fires exactly once.
-                        for f in &futures {
-                            if f.key == key && f.epoch == epochs[k] && !f.cancelled {
-                                for (i, probe) in f.wakers.iter().enumerate() {
-                                    let expected = usize::from(i + 1 == f.wakers.len());
-                                    assert_eq!(
-                                        probe.count(),
-                                        expected,
-                                        "migrated/current waker count mismatch"
-                                    );
-                                }
+                if let Some(subject) = subjects[k].as_mut()
+                    && completed.insert((key, epochs[k]))
+                {
+                    let value = (epochs[k] << 8) | u64::from(key);
+                    subject.complete(value);
+                    // Every live future of this generation: only its
+                    // latest registered waker fires exactly once.
+                    for f in &futures {
+                        if f.key == key && f.epoch == epochs[k] {
+                            for (i, probe) in f.wakers.iter().enumerate() {
+                                let expected = usize::from(i + 1 == f.wakers.len());
+                                assert_eq!(
+                                    probe.count(),
+                                    expected,
+                                    "migrated/current waker count mismatch"
+                                );
                             }
                         }
                     }
@@ -80,39 +74,29 @@ fuzz_target!(|data: &[u8]| {
                         key,
                         epoch: epochs[k],
                         wakers: Vec::new(),
-                        cancelled: false,
                     });
                 }
             }
             3 => {
                 if let Some(f) = futures.last_mut() {
-                    if !f.cancelled {
-                        let (waker, probe) = CountWake::waker();
-                        let k2 = usize::from(f.key);
-                        let expected = if epochs[k2] == f.epoch {
-                            completed[k2]
-                        } else {
-                            retired_completed.get(&(f.key, f.epoch)) == Some(&true)
-                        };
-                        match poll_once(Pin::new(&mut f.future), &waker) {
-                            Poll::Ready(value) => assert!(expected, "ready while pending: {value}"),
-                            Poll::Pending => {
-                                assert!(!expected, "pending while completed");
-                                f.wakers.push(probe);
-                            }
+                    let (waker, probe) = CountWake::waker();
+                    let expected = completed.contains(&(f.key, f.epoch));
+                    match poll_once(Pin::new(&mut f.future), &waker) {
+                        Poll::Ready(value) => assert!(expected, "ready while pending: {value}"),
+                        Poll::Pending => {
+                            assert!(!expected, "pending while completed");
+                            f.wakers.push(probe);
                         }
                     }
                 }
             }
             4 => {
                 if let Some(subject) = subjects[k].take() {
-                    retired_completed.insert((key, epochs[k]), completed[k]);
                     drop(subject); // retire
                 }
             }
             _ => {
-                if let Some(mut f) = futures.pop() {
-                    f.cancelled = true;
+                if let Some(f) = futures.pop() {
                     for probe in &f.wakers {
                         cancelled_probes.push((Arc::clone(probe), probe.count()));
                     }
