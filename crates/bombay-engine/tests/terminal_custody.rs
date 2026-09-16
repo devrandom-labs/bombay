@@ -9,7 +9,7 @@ use bombay_engine::{
 #[derive(Debug, PartialEq, Eq)]
 struct CustodyBehavior {
     value: u64,
-    reject_initialization: bool,
+    initialization_failure: Option<&'static str>,
 }
 
 impl Behavior for CustodyBehavior {
@@ -22,8 +22,8 @@ impl Behavior for CustodyBehavior {
 
     fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
         self.value += 1;
-        if self.reject_initialization {
-            Err("initialization")
+        if let Some(error) = self.initialization_failure {
+            Err(error)
         } else {
             Ok(Actions::send(vec![self.value]))
         }
@@ -58,14 +58,14 @@ struct Residual {
 struct PreparedEnvironment {
     events: VecDeque<u64>,
     committed: Vec<u64>,
-    reject_activation: bool,
-    reject_apply: bool,
+    activation_failure: Option<&'static str>,
+    apply_failure: Option<&'static str>,
 }
 
 struct ActiveCustodyEnvironment {
     events: VecDeque<u64>,
     committed: Vec<u64>,
-    reject_apply: bool,
+    apply_failure: Option<&'static str>,
 }
 
 impl Environment<CustodyBehavior> for PreparedEnvironment {
@@ -78,9 +78,9 @@ impl Environment<CustodyBehavior> for PreparedEnvironment {
         actions: ActionsOf<CustodyBehavior>,
     ) -> Result<Self::Active, (Self::Error, Self::Residual)> {
         self.committed.extend(actions.sends);
-        if self.reject_activation {
+        if let Some(error) = self.activation_failure {
             return Err((
-                "activation",
+                error,
                 Residual {
                     phase: ResidualPhase::Prepared,
                     committed: self.committed,
@@ -90,7 +90,7 @@ impl Environment<CustodyBehavior> for PreparedEnvironment {
         Ok(ActiveCustodyEnvironment {
             events: self.events,
             committed: self.committed,
-            reject_apply: self.reject_apply,
+            apply_failure: self.apply_failure,
         })
     }
 
@@ -114,8 +114,8 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
 
     async fn apply(&mut self, actions: ActionsOf<CustodyBehavior>) -> Result<(), Self::Error> {
         self.committed.extend(actions.sends);
-        if self.reject_apply {
-            Err("apply")
+        if let Some(error) = self.apply_failure {
+            Err(error)
         } else {
             Ok(())
         }
@@ -132,16 +132,16 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
 fn driver(
     behavior: CustodyBehavior,
     events: impl IntoIterator<Item = u64>,
-    reject_activation: bool,
-    reject_apply: bool,
+    activation_failure: Option<&'static str>,
+    apply_failure: Option<&'static str>,
 ) -> Driver<CustodyBehavior, PreparedEnvironment> {
     Driver::new(
         behavior,
         PreparedEnvironment {
             events: events.into_iter().collect(),
             committed: Vec::new(),
-            reject_activation,
-            reject_apply,
+            activation_failure,
+            apply_failure,
         },
     )
 }
@@ -176,11 +176,11 @@ async fn stop_returns_final_behavior_and_active_residual() {
     let retirement = driver(
         CustodyBehavior {
             value: 4,
-            reject_initialization: false,
+            initialization_failure: None,
         },
         [3, 0, 99],
-        false,
-        false,
+        None,
+        None,
     )
     .run()
     .await;
@@ -199,11 +199,11 @@ async fn exhaustion_returns_final_behavior_and_active_residual() {
     let retirement = driver(
         CustodyBehavior {
             value: 1,
-            reject_initialization: false,
+            initialization_failure: None,
         },
         [2],
-        false,
-        false,
+        None,
+        None,
     )
     .run()
     .await;
@@ -222,11 +222,11 @@ async fn behavior_failure_returns_mutated_behavior_and_active_residual() {
     let retirement = driver(
         CustodyBehavior {
             value: 5,
-            reject_initialization: false,
+            initialization_failure: None,
         },
         [13],
-        false,
-        false,
+        None,
+        None,
     )
     .run()
     .await;
@@ -245,11 +245,11 @@ async fn initialization_failure_returns_mutated_behavior_and_prepared_residual()
     let retirement = driver(
         CustodyBehavior {
             value: 8,
-            reject_initialization: true,
+            initialization_failure: Some("initialization"),
         },
         [],
-        false,
-        false,
+        None,
+        None,
     )
     .run()
     .await;
@@ -268,11 +268,11 @@ async fn activation_failure_returns_behavior_and_prepared_residual() {
     let retirement = driver(
         CustodyBehavior {
             value: 2,
-            reject_initialization: false,
+            initialization_failure: None,
         },
         [],
-        true,
-        false,
+        Some("activation"),
+        None,
     )
     .run()
     .await;
@@ -291,11 +291,11 @@ async fn apply_failure_returns_mutated_behavior_and_active_residual() {
     let retirement = driver(
         CustodyBehavior {
             value: 10,
-            reject_initialization: false,
+            initialization_failure: None,
         },
         [4],
-        false,
-        true,
+        None,
+        Some("apply"),
     )
     .run()
     .await;

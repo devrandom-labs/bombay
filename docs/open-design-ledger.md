@@ -53,6 +53,8 @@ DX64 Driver allocation fixture input ownership (feature-complete, independent)
 
 DX65 Driver panic injection policy (feature-complete, independent)
 
+DX66 Driver custody failure ownership (feature-complete, independent)
+
 ```
 
 DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
@@ -735,6 +737,54 @@ durable completion.
 - Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
   `+15 / -8 / net +7`; public API `+0 / -0` types; documentation
   `+46 / -0 / net +46`.
+
+## DX66 — Driver custody failure ownership
+
+- State: `feature-complete`; final fixed-point minimization remains pending.
+- Selected contracts: the exact locked owner graph and complete Driver law
+  evidence remain as rechecked for DX64 and DX65. This stage touches only the
+  terminal-custody fixture for D-CAP-7 and D-TERM-7; no owning dependency,
+  runtime, interpreter, production, or public contract changes.
+- Ownership and law: the fixture Behavior owns its optional initialization
+  failure; the prepared Environment owns its optional activation failure; the
+  active Environment owns its optional action-application failure. Each error
+  is an exact fact that the Driver must retain in its distinct `DriverError`
+  variant beside final custody.
+- Exact blocker and regression: five fields/parameters encode failure presence
+  as booleans while the transition bodies reconstruct three hard-coded errors;
+  six scenarios use thirteen unexplained truth literals. The pre-edit
+  structural oracle finds those boolean policies. The complete six-test custody
+  matrix is the behavioral regression, including exact state, residual phase,
+  committed prefix, completion, and failure assertions.
+- Proposed representation: each owner stores `Option<&'static str>`, exactly one
+  error or absence, and returns the stored error without reconstruction. This
+  adds no wrapper, enum, public type, or new behavior.
+- Dependency edges: independent of DX53 through DX65.
+- Blocked by: none.
+- Unblocks: the remaining Engine semantic-boolean scan.
+- Change ledger: expected tracked files are this ledger and
+  `crates/bombay-engine/tests/terminal_custody.rs` (`2` files). Production is
+  `+0 / -0`; tests are expected to be line-neutral and no more than
+  `+30 / -30 / net +2`; public API is `+0 / -0` types. Existing Behavior,
+  Environment phases, events, committed prefixes, error strings, retirement
+  assertions, and all six scenario names remain exact. Any changed trace,
+  failure provenance, production item, dependency, public API, or aggregate
+  failure policy falsifies the correction.
+- Result: initialization, activation, and application failure owners now retain
+  their exact optional error and return that same value. All five boolean
+  fields/parameters, thirteen truth literals, and three internal error
+  reconstructions are gone. The complete custody traces and test names remain
+  unchanged; no aggregate policy or new type was introduced.
+- Verification: all six custody tests pass in debug and optimized profiles with
+  complete state/residual/disposition assertions; the complete Engine suite,
+  compile fixtures, laws, inversions, properties, docs, and explicit manifest
+  closure pass; formatting and strict all-target Engine Clippy pass through the
+  pinned Nix shell.
+- Actual checkpoint: tracked files `2`; production `+0 / -0 / net 0`; tests
+  `+33 / -33 / net 0`; public API `+0 / -0` types; documentation
+  `+50 / -0 / net +50`. The gross test replacement exceeded the `30`-line
+  estimate by three because each failure site now carries its exact error at
+  setup; the stage remains line-neutral with no added machinery.
 
 ## Public examples
 
