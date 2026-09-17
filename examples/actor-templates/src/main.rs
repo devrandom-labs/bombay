@@ -5,7 +5,7 @@ mod processor;
 
 use core::time::Duration;
 
-use bombay::behavior::{Behavior, MachineError};
+use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
 use processor::{ProcessorError, ProcessorMessage, ProcessorPhase, ProcessorState, transition};
 
@@ -21,7 +21,7 @@ impl Protocol for BoundaryReplies {
 #[derive(TerminalProjection)]
 enum ApplicationTerminal<R>
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     Root {
         origin: ActorOrigin<R>,
@@ -85,13 +85,15 @@ fn run_shutdown() -> Result<(), ProcessorRunError> {
 
 fn assert_application_stopped<R>(terminal: ApplicationTerminal<R>)
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R::Settlements: ClassifySettlement,
 {
     let ApplicationTerminal::Root {
         origin,
         terminal:
             ActorRetirement::Completed {
                 behavior,
+                settlements,
                 control,
                 user,
                 descendants,
@@ -104,6 +106,8 @@ where
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(origin.nonce(), None);
     drop(behavior);
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());

@@ -2,8 +2,10 @@ use std::collections::VecDeque;
 use std::convert::Infallible;
 use std::sync::{Arc, Mutex};
 
-use behavior::{Actions, Behavior, BehaviorActed, MailAddr, Never, NoBirths, Step, User};
-use bombay_engine::{ActionsOf, ActiveEnvironment, Completion};
+use behavior::{
+    Actions, Behavior, BehaviorActed, Creations, MailAddr, Never, NoBirths, Step, User,
+};
+use bombay_engine::{ActionsOf, Completion};
 use proptest::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,7 +35,7 @@ impl Behavior for ModelBehavior {
         self.0.lock().unwrap().push(Fact::Fold(value));
         Ok(Actions::new(
             vec![value],
-            Vec::new(),
+            Creations::empty(),
             if value == u8::MAX {
                 Step::Stop(behavior::Stopped)
             } else {
@@ -48,7 +50,7 @@ struct ModelEnvironment {
     facts: Arc<Mutex<Vec<Fact>>>,
 }
 
-impl ActiveEnvironment<ModelBehavior> for ModelEnvironment {
+impl TestActions<ModelBehavior> for ModelEnvironment {
     type Error = Infallible;
     type Residual = ();
 
@@ -122,4 +124,4 @@ fn zero_singleton_limit_and_post_stop_boundaries() {
 }
 mod support;
 
-use support::direct;
+use support::{TestActions, direct};

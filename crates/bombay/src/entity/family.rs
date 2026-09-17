@@ -12,10 +12,11 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use behavior::{
-    Behavior, BehaviorBase, BehaviorMessage, BirthMode, Here, InjectEvent, Inside,
-    InterpreterRequest, LogicalHostRequirements, Never, NoReturnToEmitter, Protocol,
-    ShutdownRequested,
+    ActionItem, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
+    ClassifySettlement, Here, InjectEvent, Inside, InterpreterRequest, LogicalHostRequirements,
+    Never, NoReturnToEmitter, Protocol,
 };
+use behavior_actors::ShutdownRequested;
 
 use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
@@ -37,12 +38,13 @@ pub trait EntityDefinition: Send + Sync + 'static {
     /// Stable domain identity stored by one Entity reference.
     type Id: Clone + Eq + Hash + Send + Sync + 'static;
     /// Complete authored actor stack for one live incarnation.
-    type Behavior: Behavior<
+    type Behavior: BehaviorSettlements<
             Protocol: Protocol<Addr = MailAddr, Msg: Send + 'static>,
             Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
             Sends: Send + 'static,
             Error: Send + 'static,
             Birth: BirthMode<Child: Send + 'static>,
+            Settlements: ClassifySettlement + Send + 'static,
             Ph = Never,
         > + BehaviorBase
         + LogicalHostRequirements
@@ -122,7 +124,7 @@ impl EntityCapacity {
 /// Exact phase and fact that prevented native activation.
 pub enum EntityActivationError<Hydration, B, Terminal>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     /// The explicit active-or-activating family bound was full.
     ResidentCapacity,
@@ -339,6 +341,15 @@ where
     D: EntityDefinition,
 {
     type ReturnToEmitter = NoReturnToEmitter;
+}
+
+impl<D> ActionItem for EntityAdmission<D>
+where
+    D: EntityDefinition,
+{
+    type Accepted = ();
+    type Rejection = Never;
+    type Prerequisite = Never;
 }
 
 impl<D> EntityAdmission<D>

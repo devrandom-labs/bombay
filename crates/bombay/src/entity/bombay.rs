@@ -4,9 +4,10 @@ use core::future::Future;
 use std::sync::{Arc, Mutex, PoisonError, Weak};
 
 use behavior::{
-    Behavior, BehaviorBase, BehaviorMessage, BirthMode, FoldBirthNode, Here, InjectEvent, Never,
-    Protocol, ShutdownRejection, ShutdownRequested,
+    Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
+    ChildOccurrenceProduct, ClassifySettlement, Here, InjectEvent, Never, Protocol,
 };
+use behavior_actors::{ShutdownRejection, ShutdownRequested};
 use communication::Config;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
@@ -16,7 +17,7 @@ use crate::application_runtime::{ApplicationCapabilities, NoParent, StructuralOr
 use crate::child_bindings::{
     OccurrenceBindings, RetireChildTasks, RuntimeChildBindings, RuntimeChildSpaces,
 };
-use crate::interpret::{ActionInterpreter, EffectInterpretationError};
+use crate::interpret::{ActionInterpreter, ActionSettlementOf};
 use crate::launch::{OwnedActor, SpawnError, spawn_owned_entity_with};
 use crate::local::{ActorRef, CommitActions};
 use crate::topology::{HostedActorSpaces, Hosts};
@@ -38,7 +39,7 @@ type NativeEntityCapabilities<B, N, Terminal> = ApplicationCapabilities<
 >;
 type NativeEntityInterpreter<B, N, Terminal> =
     ActionInterpreter<NativeEntityCapabilities<B, N, Terminal>>;
-type NativeEntityActor<B, Terminal> = OwnedActor<B, Vec<Terminal>, EffectInterpretationError>;
+type NativeEntityActor<B, Terminal> = OwnedActor<B, Vec<Terminal>>;
 
 #[diagnostic::on_unimplemented(
     message = "the application host product cannot execute Entity behavior `{B}`",
@@ -46,7 +47,7 @@ type NativeEntityActor<B, Terminal> = OwnedActor<B, Vec<Terminal>, EffectInterpr
 )]
 pub(crate) trait NativeEntityHost<B, Terminal>: Send + Sync + Sized
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
 {
     fn launch_entity(
         self: Arc<Self>,
@@ -58,20 +59,23 @@ where
 
 impl<B, N, Terminal> NativeEntityHost<B, Terminal> for N
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase + Send + 'static,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>
+        + BehaviorBase
+        + Send
+        + 'static,
     B::Error: Send + 'static,
     B::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
     B::Sends: Send + 'static,
     BehaviorMessage<B>: Send + 'static,
-    <B::Birth as BirthMode>::Child: FoldBirthNode<RuntimeChildBindings<Terminal>>
-        + FoldBirthNode<RuntimeChildSpaces>
+    <B::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal>>
+        + ChildOccurrenceProduct<RuntimeChildSpaces>
         + Send
         + 'static,
     N: Hosts<B::Protocol> + Send + Sync + 'static,
     OccurrenceBindings<B, Terminal>: Default + RetireChildTasks<Root = Terminal> + Send + 'static,
-    NativeEntityInterpreter<B, N, Terminal>: CommitActions<B, Error = EffectInterpretationError, Retired = Vec<Terminal>>
-        + Send
-        + 'static,
+    NativeEntityInterpreter<B, N, Terminal>:
+        CommitActions<B, Retired = Vec<Terminal>> + Send + 'static,
+    ActionSettlementOf<B>: ClassifySettlement + Send + 'static,
     Terminal: Send + 'static,
 {
     async fn launch_entity(
@@ -263,11 +267,7 @@ where
             Ok(address) => address,
             Err(reason) => {
                 self.metrics.launch_failed();
-                let failure = SpawnError::<
-                    D::Behavior,
-                    EffectInterpretationError,
-                    Vec<D::Terminal>,
-                >::AllocationRejected {
+                let failure = SpawnError::<D::Behavior, Vec<D::Terminal>>::AllocationRejected {
                     behavior,
                     reason,
                 };

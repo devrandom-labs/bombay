@@ -11,17 +11,18 @@ The workspace and every retained independent lock select these exact owners:
 | Owner | Selected contract |
 |---|---|
 | Rust | 1.96.0, edition 2024 |
-| Behavior Core | 0.14.0 at `a272adf8d2cbb6a2784d565f47c74adff3e7d01b` |
-| Behavior Actors | 0.14.0 at `a272adf8d2cbb6a2784d565f47c74adff3e7d01b` |
-| Behavior Macros | 0.11.4 at `a272adf8d2cbb6a2784d565f47c74adff3e7d01b` |
+| Behavior Core | 0.16.0 at `b9642e84e5719c4e2018f752822a392d3c23e164` |
+| Behavior Actors | 0.16.0 at `b9642e84e5719c4e2018f752822a392d3c23e164` |
+| Behavior Macros | 0.11.6 at `b9642e84e5719c4e2018f752822a392d3c23e164` |
 | Address | 0.2.0 |
 | Communication | 0.1.2 |
 | Timers | 0.1.0 at `13e884da7ab41781f52337b0038060e375b00ee0` |
 | Observe | Bombay-private implementation |
 
-The exact Git selections are pinned in `Cargo.lock`, the root patch table, and
-the Engine fuzz lock. A sibling checkout or a previously released crate is
-evidence only and never overrides the selected build contract.
+The exact immutable registry selections and checksums are pinned in
+`Cargo.lock` and the Engine fuzz lock. The root patch table selects only the
+unreleased Timers correction. A sibling checkout or a previously released
+crate is evidence only and never overrides the selected build contract.
 
 ## Current dependency graph
 
@@ -29,7 +30,8 @@ evidence only and never overrides the selected build contract.
 DX53 atomic Behavior migration (distilled)
   -> DX49 application-native Entity (distilled)
        -> MNE1 durable Mnesis execution (downstream, blocked externally)
-  -> DX58 Behavior 0.15 crates.io adoption (blocked upstream)
+  -> BEH1 creation-settlement disposition (upstream, blocked externally)
+       -> DX58 Behavior 0.16 crates.io adoption (blocked)
 
 DX54 Triomphe feature minimization (feature-complete, independent)
 
@@ -65,11 +67,13 @@ DX70 Observe fuzz state ownership (feature-complete, independent)
 
 ```
 
-DX58 has no unresolved Bombay prerequisite, but the published Behavior Actors
-contract is incomplete as recorded below. MNE1 requires Mnesis-Bombay to select
-the current Bombay and Behavior graph and implement its own durable command
-execution contract. Bombay deliberately does not classify mailbox admission as
-durable completion.
+DX58 is blocked by BEH1. Behavior 0.16.0 supplies the exact behavior-settlement
+projection and one-at-a-time source custody required by Bombay's lifecycle
+host, but its `Births<C>` custody contract requires a creation-result ingress
+that ordinary generated birth declarations cannot express. MNE1 requires
+Mnesis-Bombay to select the current Bombay and Behavior graph and implement its
+own durable command execution contract. Bombay deliberately does not classify
+mailbox admission as durable completion.
 
 ## Ownership map
 
@@ -338,18 +342,75 @@ durable completion.
   documentation `+60 / -0 / net +60`; complete tracked delta
   `+199 / -68 / net +131`.
 
-## DX58 — Behavior 0.15 crates.io adoption
+## BEH1 — creation-settlement disposition
 
-- State: `blocked`; the immutable upstream releases are published, but the
-  caller-side contract audit found an upstream ownership gap that Bombay cannot
-  repair.
-- Selected release candidates: `bombay-behavior` 0.15.0,
-  `bombay-behavior-actors` 0.15.0, and `bombay-behavior-macros` 0.11.5. All
-  three crates identify source commit
-  `ba0dcb5549dcb4e79ddc32b827905f1a4244d414`; their release tags resolve to
-  that commit. Its complete `AGENTS.md` has blob
-  `4996c149c5762d8057e6d207517459284b3cb9ed` and is byte-identical to the
-  audited pre-release owner contract.
+- State: `blocked`; the selected immutable Behavior 0.16.0 contracts do not
+  provide an ordinary generated actor a way to satisfy creation-result source
+  custody.
+- Exact blocker: `SourceSettlementCustody` for every `Births<C>` settlement
+  requires the root event to implement
+  `EventIngress<Births<C>, CreationsSettled<A, C>>`. A
+  `#[behavior(..., births = { ... })]` declaration generates the closed birth
+  product but does not generate that event lane, request an owning receiver,
+  or expose a typed disposition that proves the result is intentionally
+  retained without return. Bombay's `#[actor]` delegates to that exact macro
+  and therefore cannot supply the missing owner contract.
+- Regression: the caller-visible `application_terminal_custody` fixture has a
+  generated actor that creates one declared child and stops. Under 0.16.0 its
+  application fails to compile because its generated
+  `EventLayer<ShutdownRequested, User<MailAddr, Never>>` cannot admit the
+  required `CreationsSettled` input. A second inversion with application-owned
+  children fails on the same law for the appended closed birth product.
+- Required owner decision: Behavior must expose one explicit typed policy for
+  creation settlement—either generate/name the matching ingress and receiver,
+  or represent an intentional no-return disposition in the birth algebra.
+  Bombay must not silently discard the authoritative settlement or invent a
+  parallel event/effect contract.
+- Neighbor finding: `BehaviorSettlements::Settlements` also has no declared
+  equality or classification contract tying it to `Actions<B>` in a generic
+  interpreter. Bombay can localize the concrete equality at its single
+  `ActionInterpreter` seam, so this is friction rather than a separate blocker.
+- Blocked by: a newer immutable Behavior Core contract and regression.
+- Unblocks: DX58.
+
+## BEH2 — pool-worker facade resolution
+
+- State: `blocked`; `bombay-behavior-macros` 0.11.6 resolves its Actors path
+  through a `bombay-rs`-only dependency as `bombay::behavior`, then expands
+  `#[pool_worker]` with `bombay::behavior::atomic::Completion`. Foundational
+  Behavior deliberately has no `atomic` module; Bombay correctly exposes the
+  owning catalogue as `bombay::atomic`.
+- Regression: the worker-pool example imports the re-exported
+  `bombay::atomic::pool_worker` with no direct Actors dependency and fails at
+  the attribute expansion because `atomic` cannot be found in Behavior. The
+  same source compiles when the owner crate is an explicit dependency and the
+  macro resolves `behavior_actors::atomic`.
+- Required owner correction: Macros must make `actors_crate()` resolve the
+  Bombay facade's Actors path (`bombay::atomic` for this expansion) rather than
+  reuse its foundational Behavior path. Bombay must not introduce a second
+  procedural macro or fake an `atomic` module under Core.
+- Current downstream disposition: the public worker-pool example declares the
+  exact Actors owner dependency for `pool_worker`; all other runtime and
+  foundational imports continue through Bombay. This is an explicit owner
+  import, not a compatibility layer.
+- Blocked by: a newer immutable Behavior Macros contract and regression.
+- Unblocks: facade-only use of the owner `pool_worker` macro.
+
+## DX58 — Behavior 0.16 crates.io adoption
+
+- State: `blocked`; upstream 0.16.0 resolves the recorded terminal-custody,
+  source-order, and observation-settlement prerequisites, but BEH1 prevents
+  every birth-owning generated actor from satisfying the new custody law.
+  Independent downstream migration and regressions remain active.
+- Target releases: `bombay-behavior` 0.16.0 and
+  `bombay-behavior-actors` 0.16.0 resolve to source commit
+  `b9642e84e5719c4e2018f752822a392d3c23e164`; the
+  `bombay-behavior-macros` 0.11.6 tag resolves to the same commit. The release
+  tags and Cargo registry search were independently resolved before dependency
+  selection. The target revision's full
+  760-line `AGENTS.md` has blob
+  `4996c149dc7600c75972e2c041e1cee4a79352a0` and was re-read before this
+  migration.
 - Neighbor verification: Address 0.2.0, Communication 0.1.2, Timers 0.1.0 at
   `13e884da7ab41781f52337b0038060e375b00ee0`, and Bombay-private Observe were
   rechecked at their selected source. Their ownership and protocols do not
@@ -380,7 +441,7 @@ durable completion.
   architecture. Existing complete settlement, source-custody, closed-control,
   creation-order, initialization, activation, and Driver-retirement tests are
   the caller-visible behavioral regressions.
-- Upstream blocker: `bombay-behavior-actors` 0.15.0 declares
+- Resolved upstream blocker: `bombay-behavior-actors` 0.15.0 declares
   `ReportTerminalOutcome`, `ObserveEstablished`, `CancelObservation`, and
   `ObserveEstablishedCreation` as `InterpreterRequest` values but supplies no
   `ActionItem` implementation for any of them. `InterpreterRequests<Request>`
@@ -389,15 +450,42 @@ durable completion.
   observation cannot participate in the published total-settlement algebra.
   The isolated caller probe at
   `.research/probes/behavior-0.15-action-items` fails on all four bounds under
-  the pinned Nix shell. Both the trait and request types are upstream-owned, so
-  Rust's coherence rules prohibit a Bombay implementation; a wrapper would
-  duplicate the owning request contract and is rejected by the falsification
-  rule.
-- Dependency edges: depends on the distilled DX53 ownership model and the
-  published upstream contracts; independent of DX54 through DX57.
-- Blocked by: a published Behavior Actors revision that gives every
-  `InterpreterRequest` used by its catalogue an owner-defined `ActionItem`
-  settlement contract.
+  0.15.0. Both the trait and request types are upstream-owned, so Rust's
+  coherence rules prohibit a Bombay implementation. Actors 0.15.1 now owns the
+  four exact `ActionItem` contracts and its
+  `interpreter_request_settlement` regression proves accepted, unattempted, and
+  creation-prerequisite settlement. The unchanged caller probe is selected for
+  0.15.1 as the downstream eligibility gate.
+- Falsified blocker candidate: a stopping initialization is not an
+  unrepresented pre-publication child result. The Driver records the stop
+  verdict, but the local Environment commits initialization and publishes the
+  endpoint synchronously before the Driver retires the active incarnation.
+  `spawn_owned_with` therefore returns the established capability, after which
+  ordinary termination custody applies. The remaining pre-publication
+  `Panicked`/`Cancelled` cases and interpreter corruption are outside ordinary
+  returned settlement under Bombay's existing unwind/cancellation law; no
+  Behavior change is required for this candidate.
+- Resolved terminal-contract blocker: Core 0.16.0 adds the blanket
+  `BehaviorSettlements` projection. A lifecycle owner can retain the exact
+  settlement as `<B as BehaviorSettlements>::Settlements` without repeating
+  `SendSettlements` or creation-product bounds through actor tasks, Entity
+  leases, terminal projections, or application types. The value remains
+  concrete; Bombay must neither erase it nor reconstruct its product shape.
+- Resolved source-order blocker: Core 0.16.0 replaces bulk source admission
+  with `SourceSettlementCustody::offer_next_to_source`. `SourceCustody`
+  distinguishes `Exhausted`, exactly one `Admitted` input, and `Closed` while
+  retaining the exact residual. Creation precedes sends, generated named
+  products and `SendLayer` preserve their declared order, and each admitted
+  result returns control to the Driver so its complete transitive chain can
+  become quiescent before the next older result is offered.
+- Resolved Actors inconsistency: Actors 0.16.0 adds direct `settle` operations
+  for `ObserveEstablished` and `CancelObservation`, matching
+  `ShutdownEstablished`. Bombay's one-line `InterpretItem` implementations are
+  required static-dispatch leaves and now delegate the settlement law to each
+  request owner instead of repeating `ItemSettlement::Accepted(())`.
+- Dependency edges: depends on the distilled DX53 ownership model, BEH1, and
+  the published upstream contracts; independent of DX54 through DX57.
+- Blocked by: BEH1.
 - Unblocks: immutable downstream graph alignment, including the version
   prerequisite of MNE1.
 - Change ledger: expected tracked files are the root manifest and lockfile,
@@ -419,6 +507,174 @@ durable completion.
   Bombay to use the crates.io versions directly. That authorizes the expanded
   file count for this release migration only; it does not authorize a broader
   redesign or relax the production-line and public-type limits.
+- 0.16 checkpoint: both retained locks now select the immutable registry
+  releases and checksums, and the independent action-item and terminal-custody
+  probes pass in debug and optimized builds. The Engine fuzz target also
+  compiles against Core 0.16.0 after adopting the owner-provided `Creations`
+  product. The workspace check now fails in Bombay's obsolete commit wrapper:
+  `CreationCustody` and bulk source offering no longer exist, while the current
+  Engine `apply -> Result<(), E>` boundary cannot return a complete settlement
+  to the Driver. Adding bounds at the 38 diagnostics would merely leak product
+  structure through Entity and application APIs; the 0.16
+  `BehaviorSettlements` projection is the selected correction.
+- Scope checkpoint: the complete working tree currently spans 22 tracked and
+  untracked files. Production is `+859 / -658 / net +201`; tests are
+  `+124 / -2 / net +122`;
+  manifests and locks are `+24 / -32 / net -8`; documentation is
+  `+63 / -32 / net +31`; no new public type has been added. The smallest
+  coherent Driver settlement stage must additionally revise Engine's
+  environment and Driver ports, their shared law fixtures, allocation,
+  property, terminal-custody, compile-pass, benchmark, and fuzz witnesses,
+  Bombay's terminal projection, and the three current Driver contract
+  documents. That end-to-end surface is expected to reach at most 40 tracked
+  files while retaining the existing net-production `+500` and new-public-type
+  `+3` ceilings. Crossing the previously authorized 24-file limit requires a
+  new explicit authorization before those production edits begin.
+- Expanded scope authorized: the user explicitly authorized the requested
+  DX58 expansion to at most 40 tracked files. The cumulative migration retains
+  the existing net-production `+500` and new-public-type `+3` ceilings. This
+  authorization covers only the coherent Engine settlement, Bombay custody,
+  regression, and contract-document surface described above; it does not
+  authorize unrelated redesign.
+- Selected Driver model: `CommitActions` performs exactly one total
+  `Actions::interpret` and returns its `Interpretation<B::Settlements>`; it
+  owns no source loop and no public error vocabulary. The active Environment
+  supplies three concrete ports only: offer at most one settlement result to
+  its source, obtain the next admitted source-control event without opening
+  ordinary ingress, and publish the installed endpoint after initialization
+  custody is resolved. Its retirement value receives every still-owned
+  settlement. The actor-independent Driver owns a `VecDeque` of private
+  `Offer | AwaitSource` turns. New transitive settlements enter at the front;
+  the older residual remains behind them. `Exhausted` discharges a product
+  only after Core proves that it contains no further source input, `Admitted`
+  changes the front turn to `AwaitSource`, and `Closed` transfers the current
+  input and untouched suffix into retirement. No recursion, callback, second
+  mailbox, erased value, or interpreter-specific traversal is introduced.
+- Initialization law: after address installation, accepted initialization
+  effects and every admitted transitive source-result turn become quiescent
+  before publication and ordinary ingress. Pure initialization rejection
+  remains the only pre-installation Behavior error. A post-installation
+  rejected or corrupt settlement, source closure, or stop transfers the exact
+  pending deque, publishes the installed endpoint so the fact cannot be
+  misclassified as `CreationRejection`, and then crosses the normal retirement
+  barrier. A stopping actor never admits its final settlements back into
+  itself. Active expected rejection remains settlement data and is returned to
+  its declared source; only corruption or closed source custody is terminal.
+- Required regressions: observe initialization settlement before publication;
+  prove `new transitive -> older residual -> ordinary input` ordering; close
+  source admission with two untouched results and recover both; inject a
+  corrupt interpretation and recover the entire product; stop with a source
+  result and prove no self-reopening; replay each terminal case in optimized
+  mode; and drive a long generated source chain to prove the loop is iterative
+  rather than recursive. Each test must assert the complete ordered transcript
+  and retirement product, with a corresponding order/retention inversion.
+- Prior-representation proof: the focused pinned-Nix
+  `source_settlement_order` regression compiles against the old Engine port and
+  fails on its complete transcript for the intended causal inversion. Actual
+  execution is `Committed(1) -> RequestedOrdinary -> FoldedOrdinary ->
+  Retired`; the governing law requires `Committed(1) -> Returned(1) ->
+  Committed(2) -> Returned(2) -> Ordinary -> Retired`. The current Driver has
+  no settlement value or source-only acquisition operation with which it could
+  select the lawful transcript.
+- 40-path implementation checkpoint: the working tree has reached the exact
+  authorized ceiling. Production is `+1555 / -1463 / net +92`; tests are
+  `+525 / -255 / net +270`, including the untracked 169-line source-order
+  regression; manifests and locks are `+15 / -11 / net +4`; documentation is
+  `+196 / -34 / net +162`; public API is `+3 / -2` types. The retained Driver
+  runtime suites pass in debug and optimized builds: 30 causal laws, three
+  generated properties, six terminal-custody cases, the allocation witness,
+  and the source-order regression. Bombay's 166 library tests pass in debug
+  and optimized builds; strict library Clippy passes; and the `run_with`,
+  actor-interface, and semantic-send suites pass. The root-only application now runs the exact root
+  Behavior; declared members alone use the typed application composition, so
+  no forwarding wrapper remains solely to normalize `NoBirths`.
+- Containment checkpoint: the all-target gates expose seven known files outside
+  the authorized set. Engine's `send_not_sync` and
+  `environment_phase_authority` sources still implement the superseded
+  two-leg Environment port, and three compile-fail `.stderr` witnesses retain
+  pre-0.16 diagnostic spelling. Bombay's `template_application` and
+  `external_customer_templates` fixtures still import actor-catalogue types
+  from Behavior Core. Updating those seven witnesses requires explicit scope
+  expansion; no production abstraction is implicated. A ceiling of 50 paths
+  would cover them and three further verification-only discoveries without
+  relaxing the production or public-API budgets.
+- Second scope expansion authorized: the user explicitly directed work to
+  continue after the 40-path checkpoint, authorizing DX58 up to 50 tracked and
+  untracked paths. The unchanged ceilings remain net `+500` production lines
+  and `+3` new public types. This expansion covers only the seven identified
+  verification witnesses and up to three additional all-target discoveries;
+  it does not authorize new production architecture or bypass BEH1.
+- 47-path checkpoint: Engine's complete compile-pass and compile-fail suite now
+  passes under 0.16.0, including the non-`Sync` environment and prepared/active
+  authority denials. The two Bombay actor-catalogue fixtures now import their
+  owning Actors API directly. The complete delta is production
+  `+1555 / -1463 / net +92`; tests and examples are
+  `+612 / -305 / net +307`, including the untracked source-order regression;
+  manifests and locks are `+15 / -11 / net +4`; documentation is
+  `+221 / -34 / net +187`; public API remains `+3 / -2` types.
+- Additional all-target discovery: four public examples—`counter`, `entity`,
+  `application-topology`, and `supervision`—still name pre-0.16 terminal bounds,
+  actor-catalogue imports, creation syntax, or retirement fields. All four must
+  move together because examples are current public guidance. Editing them
+  would reach 51 paths, beyond the authorized 50-path ceiling. No example was
+  partially migrated. A 60-path ceiling would cover these four examples and
+  reserve nine verification-only paths for diagnostics exposed after they
+  compile, without relaxing either code-growth ceiling.
+- Registry recheck: `cargo search` inside the pinned Nix shell still reports
+  Core 0.16.0, Actors 0.16.0, and Macros 0.11.6 as the latest immutable
+  releases. BEH1 therefore remains an external selected-contract blocker.
+- Third scope expansion authorized: the user explicitly authorized continued
+  work after the 47-path checkpoint, raising the DX58 ceiling to 60 tracked and
+  untracked paths. The expansion covers the four public examples as one current
+  guidance stage and up to nine verification-only discoveries. Net production
+  remains capped at `+500` and new public types at `+3`.
+- Supervision-example ownership correction: Actors 0.14 removed the former
+  `Supervise`, `ChildTopology`, `Proxy`, and restart-wrapper family and replaced
+  it with the clean-room `atomic::FixedSupervisor` construction. Bombay's
+  catalogue facade exported every other Actors domain module but omitted
+  `atomic`, leaving an application unable to name the owning replacement
+  without adding a second direct dependency. The smallest correction touches
+  the already-counted `crates/bombay/src/lib.rs` with one module re-export and
+  rewrites the already-counted supervision example against `fixed`; it adds no
+  public Bombay type and is expected to reduce example lines. The executable
+  example will exercise construction and deterministic initialization only.
+  Runtime recovery remains ineligible until a separately verified Bombay
+  capability owns `PrepareWorkers`; the example must not fabricate that
+  interpreter or preserve the removed compatibility stack.
+- 51-path all-target checkpoint: the three migrated unblocked examples pass
+  debug and optimized tests, strict all-target Clippy, and formatting. The
+  topology example now fails only on BEH1. The next workspace check exposed
+  five stale guidance files: actor templates still import `Machine` vocabulary
+  from Core, Axum omits retained settlements, and the worker-pool pair names
+  the Actors 0.13 pool family removed by 0.14. The authorized verification
+  reserve covers those exact five files, reaching at most 56 paths. The pool
+  example will use the owning `atomic::fifo` and `pool_worker` APIs and stop at
+  deterministic initialization for the same unimplemented `PrepareWorkers`
+  runtime-capability reason as fixed supervision; no compatibility pool,
+  callback, or discarded settlement will be added.
+- 57-path containment checkpoint: every stale public example outside BEH1 now
+  compiles against the owning 0.16 API. Counter, Entity, fixed supervision,
+  actor templates, Axum, and FIFO pool pass their focused debug and optimized
+  tests; both example batches pass strict all-target Clippy. Bombay's complete
+  all-feature library suite passes in debug and optimized builds (`166 passed`,
+  `1 ignored`), and strict all-feature library Clippy passes. Formatting and
+  whitespace checks pass. The complete all-target workspace check now reaches
+  only the preserved BEH1 failures in `application_terminal_custody` and the
+  application-topology example; the independently checked Entity application
+  fails on the same generated-birth contract. No obsolete import, terminal
+  shape, pool, or supervision diagnostic remains ahead of that blocker.
+  Production is `+1560 / -1461 / net +99`; tests and examples, including the
+  untracked source-order regression, are `+849 / -803 / net +46`; manifests
+  and locks are `+26 / -34 / net -8`; documentation is
+  `+290 / -34 / net +256`; public API remains `+3 / -2` types. The additional
+  catalogue-module and `Machine` vocabulary re-exports expose existing Actors
+  owners and add no Bombay type.
+- Remaining external failure: after the in-scope library-test migration, the
+  only semantic Bombay test failures are the two
+  `application_terminal_custody` inversions and Entity's Profile child, all
+  failing on BEH1's missing generated creation-settlement disposition. These
+  are retained as the caller-visible upstream regression rather than bypassed
+  by discarded settlements.
 - Falsification: reject the migration if it needs a second effect algebra,
   catalogue copy, erased action or result, dynamic capability map, hidden
   callback, inferred provenance, compatibility layer, or weaker terminal

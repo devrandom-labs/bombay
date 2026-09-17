@@ -1,11 +1,14 @@
 use core::time::Duration;
 use std::time::Instant;
 
+use behavior_actors::{
+    Activate, Machine, Move, Stash, StashRoute, StopOnShutdown, TimerElapsed, TimerGeneration,
+    TimerId,
+};
 use bombay::actors::ActorExt;
 use bombay::behavior::{
-    Actions, Activate, ActiveTurn, Become, Behavior, BehaviorActed, BehaviorBase, Machine, Move,
-    Never, NoBirths, Protocol, Stash, StashRoute, Step, StopOnShutdown, Stopped, TimerElapsed,
-    TimerGeneration, TimerId, User,
+    Actions, ActiveTurn, Become, Behavior, BehaviorActed, BehaviorBase, Never, NoBirths, Protocol,
+    Step, Stopped, User,
 };
 use bombay::timing::{Deadline, OneShot, Periodic, ReceiveTimeout};
 use bombay::{Application, MailAddr};

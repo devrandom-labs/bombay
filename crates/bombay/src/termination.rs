@@ -2,7 +2,7 @@
 
 use std::sync::{Arc, Mutex, PoisonError};
 
-use behavior::{Crash, Exit};
+use behavior_actors::{Crash, Exit};
 use bombay_engine::Completion;
 
 use crate::local::Termination;
@@ -70,9 +70,9 @@ impl<A: behavior::Address> TerminationPublication<A> {
         }
     }
 
-    pub(crate) fn publish<B, Residual, BehaviorError, Activation, Environment>(
+    pub(crate) fn publish<B, Residual, BehaviorError, Activation>(
         self,
-        outcome: &IncarnationOutcome<B, Residual, BehaviorError, Activation, Environment>,
+        outcome: &IncarnationOutcome<B, Residual, BehaviorError, Activation>,
     ) {
         let termination = match outcome {
             IncarnationOutcome::Completed {
@@ -85,7 +85,7 @@ impl<A: behavior::Address> TerminationPublication<A> {
             } => Ok(Exit::Collected),
             IncarnationOutcome::BehaviorFailed { .. } => Err(Crash::Failed),
             IncarnationOutcome::ActivationFailed { .. }
-            | IncarnationOutcome::EnvironmentFailed { .. } => Err(Crash::EnvironmentFailed),
+            | IncarnationOutcome::SettlementFailed { .. } => Err(Crash::EnvironmentFailed),
             IncarnationOutcome::Panicked => Err(Crash::Panicked),
             IncarnationOutcome::Cancelled => Err(Crash::Cancelled),
         };
@@ -100,7 +100,7 @@ impl<A: behavior::Address> TerminationPublication<A> {
             }
             | IncarnationOutcome::BehaviorFailed { .. }
             | IncarnationOutcome::ActivationFailed { .. }
-            | IncarnationOutcome::EnvironmentFailed { .. }
+            | IncarnationOutcome::SettlementFailed { .. }
             | IncarnationOutcome::Panicked
             | IncarnationOutcome::Cancelled => termination,
         };
@@ -113,17 +113,14 @@ impl<A: behavior::Address> TerminationPublication<A> {
     }
 }
 
-impl<A, B, Residual, BehaviorError, Activation, Environment>
-    Retirement<B, Residual, BehaviorError, Activation, Environment> for TerminationPublication<A>
+impl<A, B, Residual, BehaviorError, Activation> Retirement<B, Residual, BehaviorError, Activation>
+    for TerminationPublication<A>
 where
     A: behavior::Address,
 {
     type Output = ();
 
-    fn retire(
-        self,
-        outcome: IncarnationOutcome<B, Residual, BehaviorError, Activation, Environment>,
-    ) {
+    fn retire(self, outcome: IncarnationOutcome<B, Residual, BehaviorError, Activation>) {
         self.publish(&outcome);
     }
 }

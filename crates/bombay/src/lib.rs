@@ -18,8 +18,9 @@ compile_error!(
 );
 
 pub use ::behavior;
-pub use ::behavior::{
-    composition, discovery, lifecycle, operations, persistence, routing, time as timing, workflow,
+pub use ::behavior_actors::{
+    atomic, composition, discovery, lifecycle, operations, persistence, routing, time as timing,
+    workflow,
 };
 pub use address::MailAddr;
 mod actor_interface;
@@ -28,10 +29,11 @@ pub mod actors;
 pub use application::Application;
 #[cfg(feature = "axum")]
 pub use application_runtime::AxumRunError;
-pub use application_runtime::{App, ApplicationHandle, ApplicationLifecycle, RunError};
-pub use bombay_engine::Completion;
+pub use application_runtime::{
+    App, ApplicationBehavior, ApplicationHandle, ApplicationLifecycle, RunError,
+};
+pub use bombay_engine::{Completion, SettlementFailure};
 pub use bombay_macros::{ActorSpaces, TerminalProjection, actor};
-pub use interpret::EffectInterpretationError;
 mod address;
 mod application;
 mod application_runtime;
@@ -70,18 +72,21 @@ pub mod prelude {
     pub use crate::AxumRunError;
     pub use crate::actors::ActorExt;
     pub use crate::behavior::{
-        Actions, Activate, BehaviorActed, ChildDelivery, ChildRole, Children, Crash,
-        CreationRejection, Delivery, EstablishedCreation, EstablishedDelivery,
-        EstablishedRecipient, Exit, Machine, Never, Protocol, Recipient, ShutdownRejection, Step,
-        StopOnShutdown, TimerId,
+        Actions, BehaviorActed, ChildDelivery, ChildRole, Children, CreationRejection, Delivery,
+        EstablishedCreation, EstablishedDelivery, EstablishedRecipient, Never, Protocol, Recipient,
+        Step,
     };
     pub use crate::entity::{
         Entities, EntityActivationError, EntityAdmission, EntityCapacity, EntityDefinition,
         EntityMetrics, EntityRef,
     };
     pub use crate::{
-        ActorInterface, ActorOrigin, ActorRef, ActorRetirement, Application, ApplicationHandle,
-        ApplicationLifecycle, Completion, EffectInterpretationError, ExternalActor,
-        ExternalActorError, ExternalTarget, MailAddr, RunError, TerminalProjection,
+        ActorInterface, ActorOrigin, ActorRef, ActorRetirement, Application, ApplicationBehavior,
+        ApplicationHandle, ApplicationLifecycle, Completion, ExternalActor, ExternalActorError,
+        ExternalTarget, MailAddr, RunError, SettlementFailure, TerminalProjection,
+    };
+    pub use behavior_actors::{
+        Activate, Crash, Exit, Machine, MachineError, Move, ShutdownRejection, StopOnShutdown,
+        TimerId,
     };
 }

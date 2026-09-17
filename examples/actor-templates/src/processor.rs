@@ -1,4 +1,4 @@
-use bombay::behavior::Move;
+use bombay::prelude::Move;
 
 #[derive(Clone)]
 pub(crate) enum ProcessorMessage {

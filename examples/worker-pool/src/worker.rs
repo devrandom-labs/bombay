@@ -1,91 +1,35 @@
-use bombay::behavior::{
-    BehaviorActed, InterpreterRequests, PoolAssignment, PoolCompletion, ReportToParent,
-    StopOnShutdown,
-};
-use bombay::prelude::Actions;
+use behavior_actors::atomic::pool_worker;
+use bombay::atomic::Assignment;
+use bombay::behavior::Actions;
+use bombay::prelude::MailAddr;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SearchJob {
-    pub document: String,
-    pub needle: char,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct SearchJob {
+    document: String,
+    needle: char,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct SearchResult {
-    pub matches: usize,
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) struct SearchResult {
+    matches: usize,
 }
 
-pub struct SearchWorker;
+pub(crate) struct SearchWorker;
 
-#[bombay::actor(
-    sends = {
-        completion: InterpreterRequests<ReportToParent<PoolCompletion<SearchResult>>>,
-    },
+#[pool_worker(addr = MailAddr, result = SearchResult)]
+#[allow(
+    clippy::unused_self,
+    clippy::unnecessary_wraps,
+    reason = "the pool-worker contract is a state-capable, fallible Behavior fold"
 )]
 impl SearchWorker {
-    fn receive(&mut self, assignment: PoolAssignment<SearchJob>) -> BehaviorActed<Self> {
-        let matches = assignment
-            .payload
+    fn transition(&mut self, assignment: Assignment<SearchJob>) -> WorkerActed<Self> {
+        let job = assignment.payload();
+        let matches = job
             .document
             .chars()
-            .filter(|character| *character == assignment.payload.needle)
+            .filter(|character| *character == job.needle)
             .count();
-        Ok(
-            Actions::cont().send_completion(ReportToParent::new(PoolCompletion {
-                assignment: assignment.assignment,
-                result: SearchResult { matches },
-            })),
-        )
-    }
-}
-
-pub type ManagedSearchWorker = StopOnShutdown<SearchWorker>;
-
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "ChildTopology's owner contract models a potentially vacant worker slot"
-)]
-pub fn managed_search_worker(_: usize) -> Option<ManagedSearchWorker> {
-    Some(StopOnShutdown::new(SearchWorker))
-}
-
-#[cfg(test)]
-mod tests {
-    use bombay::behavior::{Activate as _, AssignmentId, JobId, Step};
-    use bombay::prelude::MailAddr;
-
-    use super::*;
-
-    #[test]
-    fn one_assignment_returns_its_exact_completion_through_actions() {
-        let initialized = SearchWorker
-            .initialize()
-            .expect("the worker initialization is infallible");
-        assert!(initialized.actions.sends.completion.is_empty());
-        assert!(initialized.actions.creates.is_empty());
-        assert_eq!(initialized.actions.become_, Step::Continue);
-
-        let mut worker = initialized.behavior;
-        let assignment = PoolAssignment {
-            assignment: AssignmentId(13),
-            job: JobId(41),
-            payload: SearchJob {
-                document: "three e characters".to_owned(),
-                needle: 'e',
-            },
-        };
-        let actions = worker
-            .receive(MailAddr(9), assignment)
-            .expect("the worker transition is infallible");
-
-        assert_eq!(
-            actions.sends.completion.as_slice(),
-            [ReportToParent::new(PoolCompletion {
-                assignment: AssignmentId(13),
-                result: SearchResult { matches: 4 },
-            })]
-        );
-        assert!(actions.creates.is_empty());
-        assert_eq!(actions.become_, Step::Continue);
+        Ok(Actions::cont().with_send(assignment.complete(SearchResult { matches })))
     }
 }

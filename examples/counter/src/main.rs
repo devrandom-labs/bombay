@@ -4,7 +4,7 @@
 
 mod counter;
 
-use bombay::behavior::Behavior;
+use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
 
 use crate::counter::{Counter, CounterError, CounterMessage, CounterValue};
@@ -18,7 +18,7 @@ struct Api {
 #[derive(TerminalProjection)]
 enum ApplicationTerminal<R>
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     Root {
         origin: ActorOrigin<R>,
@@ -61,13 +61,15 @@ fn main() -> Result<(), CounterRunError> {
 
 fn assert_application_stopped<R>(terminal: ApplicationTerminal<R>)
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R::Settlements: ClassifySettlement,
 {
     let ApplicationTerminal::Root {
         origin,
         terminal:
             ActorRetirement::Completed {
                 behavior,
+                settlements,
                 control,
                 user,
                 descendants,
@@ -80,6 +82,8 @@ where
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(origin.nonce(), None);
     drop(behavior);
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());

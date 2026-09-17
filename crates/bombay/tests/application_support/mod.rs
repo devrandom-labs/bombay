@@ -1,12 +1,12 @@
 use core::fmt;
 
-use bombay::behavior::{Behavior, Never, Protocol};
+use bombay::behavior::{BehaviorSettlements, Never, Protocol};
 use bombay::prelude::{ActorOrigin, ActorRetirement, Completion, MailAddr, TerminalProjection};
 
 #[derive(TerminalProjection)]
 pub(crate) enum RootTerminal<R>
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     Root {
         origin: ActorOrigin<R>,
@@ -16,7 +16,7 @@ where
 
 impl<R> fmt::Debug for RootTerminal<R>
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("RootTerminal")
@@ -27,7 +27,7 @@ pub(crate) fn into_root<R>(
     terminal: RootTerminal<R>,
 ) -> (ActorOrigin<R>, ActorRetirement<R, RootTerminal<R>>)
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let RootTerminal::Root { origin, terminal } = terminal;
     (origin, terminal)
@@ -35,12 +35,13 @@ where
 
 pub(crate) fn assert_completed<R>(terminal: RootTerminal<R>)
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let (
         origin,
         ActorRetirement::Completed {
             behavior,
+            settlements,
             control,
             user,
             descendants,
@@ -53,6 +54,7 @@ where
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(origin.nonce(), None);
     drop(behavior);
+    assert_eq!(settlements.len(), 1);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());

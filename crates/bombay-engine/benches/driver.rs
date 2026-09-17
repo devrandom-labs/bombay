@@ -3,7 +3,10 @@ use std::future::Future;
 use std::pin::pin;
 use std::task::{Context, Poll, Waker};
 
-use behavior::{Actions, Behavior, BehaviorActed, MailAddr, Never, NoBirths, User};
+use behavior::{
+    Actions, Behavior, BehaviorActed, Interpretation, MailAddr, Never, NoBirths, SourceCustody,
+    User,
+};
 use bombay_engine::{ActionsOf, ActiveEnvironment, Completion, Driver, Environment};
 use criterion::{Criterion, criterion_group, criterion_main};
 
@@ -29,31 +32,48 @@ impl Behavior for OneTurn {
 struct Immediate(bool);
 
 impl ActiveEnvironment<OneTurn> for Immediate {
-    type Error = Infallible;
+    type Settlement = Vec<Never>;
     type Residual = ();
 
     async fn next(&mut self) -> Option<<OneTurn as Behavior>::Event> {
         (!std::mem::replace(&mut self.0, true)).then(|| User::new(MailAddr(1), 1))
     }
 
-    async fn apply(&mut self, _: ActionsOf<OneTurn>) -> Result<(), Self::Error> {
-        Ok(())
+    async fn next_source(&mut self) -> Option<<OneTurn as Behavior>::Event> {
+        unreachable!("the benchmark has no source-returning actions")
     }
 
-    async fn retire(self) {}
+    async fn apply(&mut self, _: ActionsOf<OneTurn>) -> Interpretation<Self::Settlement> {
+        Interpretation::Complete(Vec::new())
+    }
+
+    async fn offer_next(
+        &mut self,
+        settlement: Self::Settlement,
+    ) -> SourceCustody<Self::Settlement> {
+        SourceCustody::Exhausted(settlement)
+    }
+
+    fn publish(&mut self) {}
+
+    async fn retire(self, settlements: Vec<Self::Settlement>) {
+        let settlements_are_empty = settlements.is_empty();
+        assert!(settlements_are_empty);
+    }
 }
 
 impl Environment<OneTurn> for Immediate {
     type Active = Self;
+    type Settlement = Vec<Never>;
     type Error = Infallible;
     type Residual = ();
 
     async fn activate(
         mut self,
         actions: ActionsOf<OneTurn>,
-    ) -> Result<Self, (Self::Error, Self::Residual)> {
-        self.apply(actions).await.map_err(|error| (error, ()))?;
-        Ok(self)
+    ) -> Result<(Self, Interpretation<Self::Settlement>), (Self::Error, Self::Residual)> {
+        let interpretation = self.apply(actions).await;
+        Ok((self, interpretation))
     }
 
     async fn retire(self) {}

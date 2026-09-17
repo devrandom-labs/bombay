@@ -1,10 +1,10 @@
 use core::time::Duration;
 use std::time::Instant;
 
-use behavior::{
-    Behavior, BehaviorMessage, Deadline, DeadlineReaction, Never, OneShot, OneShotReaction,
-    Periodic, PeriodicReaction, ReceiveTimeout, ReceiveTimeoutReaction, Stash, StashRoute,
-    StopOnShutdown, TimerId,
+use behavior::{Behavior, BehaviorMessage, Never};
+use behavior_actors::{
+    Deadline, DeadlineReaction, OneShot, Periodic, ReceiveTimeout, Stash, StashRoute,
+    StopOnShutdown, TimedReaction, TimerId,
 };
 
 /// Discover and compose reusable wrappers from any concrete actor behavior.
@@ -27,7 +27,7 @@ pub trait ActorExt: Behavior + Sized {
         self,
         id: TimerId,
         after: Duration,
-        on_elapsed: OneShotReaction<Self>,
+        on_elapsed: TimedReaction<Self>,
     ) -> OneShot<Self> {
         OneShot::new(self, id, after, on_elapsed)
     }
@@ -37,7 +37,7 @@ pub trait ActorExt: Behavior + Sized {
         self,
         id: TimerId,
         every: Duration,
-        on_elapsed: PeriodicReaction<Self>,
+        on_elapsed: TimedReaction<Self>,
     ) -> Periodic<Self> {
         Periodic::new(self, id, every, on_elapsed)
     }
@@ -57,7 +57,7 @@ pub trait ActorExt: Behavior + Sized {
         self,
         id: TimerId,
         after: Duration,
-        on_elapsed: ReceiveTimeoutReaction<Self>,
+        on_elapsed: TimedReaction<Self>,
     ) -> ReceiveTimeout<Self> {
         ReceiveTimeout::new(self, id, after, on_elapsed)
     }

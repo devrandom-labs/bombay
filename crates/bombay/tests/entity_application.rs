@@ -2,10 +2,11 @@ use core::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
+use behavior_actors::StopOnShutdown;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
-    Actions, BehaviorActed, BehaviorBase, Children, InterpreterRequests, Never, Protocol,
-    StopOnShutdown,
+    Actions, BehaviorActed, BehaviorBase, CreateChild, CreationSequence, Creations,
+    InterpreterRequests, Never, Protocol,
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DirectoryError, DrainFailure, DrainStage,
@@ -28,7 +29,7 @@ const HYDRATION_REFUSAL: u64 = 13;
 const LAUNCH_REFUSAL: u64 = 14;
 const FORCED_RETIREMENT: u64 = 23;
 const STOP_ACCOUNT: u64 = 67;
-const PROFILE_CHILD_NONCE: u64 = 5;
+const PROFILE_CHILD_NONCE: u64 = 1;
 
 enum RootCommand {
     Admit(EntityRef<Profiles>, u64),
@@ -107,12 +108,14 @@ struct Profile {
 )]
 impl Profile {
     fn init(&mut self) -> BehaviorActed<Self> {
-        let routes = ProfileChildrenRoutes::new(PROFILE_CHILD_NONCE);
-        let children = Children::new()
-            .child_at(routes.worker, ProfileWorker.stop_on_shutdown())
-            .into_creates()
-            .expect("the profile declares one unique child nonce");
-        Ok(Actions::create(children))
+        let mut creations = CreationSequence::new();
+        let worker = creations.issue().expect("the first creation ID exists");
+        let worker_nonce = worker.get();
+        assert_eq!(worker_nonce, PROFILE_CHILD_NONCE);
+        Ok(Actions::create(Creations::one(CreateChild::birth(
+            worker,
+            ProfileWorker.stop_on_shutdown(),
+        ))))
     }
 
     fn receive(&mut self, _: u64) -> BehaviorActed<Self> {

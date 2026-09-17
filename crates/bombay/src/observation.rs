@@ -4,7 +4,8 @@ use std::hash::Hash;
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Instant;
 
-use behavior::{Address, ChildStopped, InjectEvent, ObservePeer, PeerStopped, Protocol};
+use behavior::{Address, CreationId, InjectEvent, Protocol};
+use behavior_actors::{ChildStopped, ObservePeer, PeerStopped};
 use core::future::{Future, IntoFuture, poll_fn};
 use core::pin::Pin;
 use core::task::Poll;
@@ -16,7 +17,7 @@ use crate::observe::{Observation, ObservationFuture};
 #[derive(Clone, Copy)]
 enum FactSource<A: Address> {
     Peer(A),
-    Child(A::Nonce),
+    Child(CreationId),
 }
 
 type InjectFact<A, E> = fn(FactSource<A>, Termination<A>) -> E;
@@ -69,14 +70,14 @@ where
 
     pub(crate) fn insert_child<Path>(
         &self,
-        nonce: A::Nonce,
+        creation: CreationId,
         observation: Observation<Termination<A>>,
     ) where
         E: InjectEvent<ChildStopped<A>, Path>,
     {
         self.insert(
             observation,
-            FactSource::Child(nonce),
+            FactSource::Child(creation),
             inject_child::<A, E, Path>,
         );
     }
@@ -128,10 +129,10 @@ where
     A: Address,
     E: InjectEvent<ChildStopped<A>, Path>,
 {
-    let FactSource::Child(nonce) = source else {
+    let FactSource::Child(creation) = source else {
         unreachable!("child fact mapper receives only child sources");
     };
-    E::inject_at(ChildStopped::new(nonce, outcome, Instant::now()))
+    E::inject_at(ChildStopped::new(creation, outcome, Instant::now()))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
@@ -183,6 +184,7 @@ mod tests {
     use std::convert::Infallible;
 
     use behavior::{Actions, Behavior, BehaviorActed, InitializationTurn, Never, NoBirths, User};
+    use behavior_actors::{Exit, StopOnShutdown};
     use communication::Config;
 
     use super::*;
@@ -243,7 +245,7 @@ mod tests {
             peers.clone(),
             Config::new(2),
             MailAddr(2),
-            behavior::StopOnShutdown::new(Peer),
+            StopOnShutdown::new(Peer),
             |_| {},
         )
         .await
@@ -258,7 +260,7 @@ mod tests {
 
         assert_eq!(
             facts.next().await,
-            ObserverEvent::Stopped(PeerStopped::new(MailAddr(2), Ok(behavior::Exit::Normal),))
+            ObserverEvent::Stopped(PeerStopped::new(MailAddr(2), Ok(Exit::Normal),))
         );
         drop(observations);
     }
@@ -282,7 +284,7 @@ mod tests {
             peers.clone(),
             Config::new(2),
             MailAddr(2),
-            behavior::StopOnShutdown::new(Peer),
+            StopOnShutdown::new(Peer),
             |_| {},
         )
         .await
@@ -304,20 +306,20 @@ mod tests {
             (&first, &second),
             (
                 LayeredObserverEvent::Outer(PeerStopped {
-                    outcome: Ok(behavior::Exit::Normal),
+                    outcome: Ok(Exit::Normal),
                     ..
                 }),
                 LayeredObserverEvent::Inner(PeerStopped {
-                    outcome: Ok(behavior::Exit::Normal),
+                    outcome: Ok(Exit::Normal),
                     ..
                 })
             ) | (
                 LayeredObserverEvent::Inner(PeerStopped {
-                    outcome: Ok(behavior::Exit::Normal),
+                    outcome: Ok(Exit::Normal),
                     ..
                 }),
                 LayeredObserverEvent::Outer(PeerStopped {
-                    outcome: Ok(behavior::Exit::Normal),
+                    outcome: Ok(Exit::Normal),
                     ..
                 })
             )

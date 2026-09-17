@@ -1,7 +1,6 @@
 //! One concrete task-launch boundary for local actors.
 
 use core::fmt;
-use std::convert::Infallible;
 use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::address::MailAddr;
@@ -10,27 +9,36 @@ use crate::observe::{self, Publisher};
 use crate::terminal::{ActorOrigin, ActorRetirement, LocalOutcome, ProjectTerminal};
 use crate::time::LocalTimers;
 use crate::{IncarnationOutcome, Retirement};
-use behavior::{Behavior, BehaviorMessage, BirthMode, CreationRejection, Never, Protocol, User};
+use behavior::{
+    Behavior, BehaviorMessage, BehaviorSettlements, BirthMode, ClassifySettlement, Never, Protocol,
+    User,
+};
 #[cfg(test)]
-use behavior::{Here, InterpretSends, NoBirths, SendInterpreter};
+use behavior::{
+    Here, InterpretSends, Interpretation, NoBirths, SourceCustody, SourceSettlementCustody,
+};
+use behavior_actors::ShutdownRequested;
 use bombay_address::{AddressSpace, ClaimError};
 use bombay_engine::ActionsOf;
 use bombay_engine::Driver;
 use communication::Config;
 use tokio::sync::oneshot;
 
+#[cfg(test)]
+use crate::interpret::{ActionSettlementOf, InterpretedActionSettlement};
+
 use super::Incarnation;
 #[cfg(test)]
 use super::local::CapabilityRetirement;
 use super::local::{
-    ActorRef, CommitActions, EntityIngress, IngressMode, LocalActivationError, LocalEnvironment,
-    LocalResidual, OwnerCancellation, StandardIngress,
+    ActorRef, CommitActions, EntityIngress, IngressMode, LocalEnvironment, LocalResidual,
+    OwnerCancellation, StandardIngress,
 };
 use super::reports::LocalTerminalReports;
 use super::termination::{TerminationPublication, TerminationSelection};
 
 /// Failure before a launched actor publishes its live reference.
-pub(crate) enum SpawnError<B, CommitError = Infallible, Descendants = ()>
+pub(crate) enum SpawnError<B, Descendants = ()>
 where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
@@ -53,19 +61,12 @@ where
         user: Vec<User<MailAddr, BehaviorMessage<B>>>,
         descendants: Descendants,
     },
-    EffectsRejected {
-        behavior: B,
-        error: CommitError,
-        control: Vec<B::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<B>>>,
-        descendants: Descendants,
-    },
     Panicked,
     Cancelled,
     Ended(bombay_engine::Completion),
 }
 
-impl<B, CommitError, Descendants> fmt::Debug for SpawnError<B, CommitError, Descendants>
+impl<B, Descendants> fmt::Debug for SpawnError<B, Descendants>
 where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
@@ -74,7 +75,6 @@ where
             Self::AllocationRejected { .. } => "AllocationRejected",
             Self::InitializationRejected { .. } => "InitializationRejected",
             Self::HostRejected { .. } => "HostRejected",
-            Self::EffectsRejected { .. } => "EffectsRejected",
             Self::Panicked => "Panicked",
             Self::Cancelled => "Cancelled",
             Self::Ended(_) => "Ended",
@@ -82,7 +82,7 @@ where
     }
 }
 
-impl<B, CommitError, Descendants> fmt::Display for SpawnError<B, CommitError, Descendants>
+impl<B, Descendants> fmt::Display for SpawnError<B, Descendants>
 where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
@@ -97,9 +97,6 @@ where
             Self::HostRejected { .. } => {
                 formatter.write_str("the actor host rejected initialization")
             }
-            Self::EffectsRejected { .. } => {
-                formatter.write_str("the actor host rejected initialization effects")
-            }
             Self::Panicked => formatter.write_str("actor initialization panicked"),
             Self::Cancelled => formatter.write_str("actor initialization was cancelled"),
             Self::Ended(completion) => {
@@ -112,37 +109,19 @@ where
     }
 }
 
-impl<B, CommitError, Descendants> std::error::Error for SpawnError<B, CommitError, Descendants> where
+impl<B, Descendants> std::error::Error for SpawnError<B, Descendants> where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>>
 {
 }
 
-impl<B, CommitError, Descendants> SpawnError<B, CommitError, Descendants>
+impl<B, Descendants> SpawnError<B, Descendants>
 where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
-    pub(crate) const fn rejection(&self) -> CreationRejection {
-        match self {
-            Self::AllocationRejected { reason, .. } => CreationRejection::Allocation(*reason),
-            Self::InitializationRejected { .. } => CreationRejection::InitializationFailed,
-            Self::HostRejected {
-                error: ClaimError::AddressInUse(_),
-                ..
-            } => {
-                CreationRejection::Allocation(behavior::AllocationRejection::AddressAlreadyClaimed)
-            }
-            Self::EffectsRejected { .. }
-            | Self::HostRejected {
-                error: ClaimError::RegistrationIdsExhausted(_),
-                ..
-            }
-            | Self::Panicked
-            | Self::Cancelled
-            | Self::Ended(_) => CreationRejection::EnvironmentFailed,
-        }
-    }
-
-    fn from_local(outcome: LocalOutcome<B, Descendants, CommitError>) -> Self {
+    fn from_local(outcome: LocalOutcome<B, Descendants>) -> Self
+    where
+        B: BehaviorSettlements,
+    {
         match outcome {
             IncarnationOutcome::BehaviorFailed {
                 behavior,
@@ -169,26 +148,10 @@ where
                         descendants,
                         ..
                     },
-                error: LocalActivationError::Address(error),
+                error,
             } => Self::HostRejected {
                 behavior,
                 initialization,
-                error,
-                control: ingress.control,
-                user: ingress.user,
-                descendants,
-            },
-            IncarnationOutcome::ActivationFailed {
-                behavior,
-                residual:
-                    LocalResidual::Retired {
-                        ingress,
-                        descendants,
-                        ..
-                    },
-                error: LocalActivationError::Commit(error),
-            } => Self::EffectsRejected {
-                behavior,
                 error,
                 control: ingress.control,
                 user: ingress.user,
@@ -202,27 +165,21 @@ where
                 ..
             }
             | IncarnationOutcome::ActivationFailed {
-                residual: LocalResidual::Uncommitted { .. },
-                error: LocalActivationError::Commit(_),
-                ..
-            }
-            | IncarnationOutcome::ActivationFailed {
                 residual: LocalResidual::Retired { .. },
-                error: LocalActivationError::Address(_),
                 ..
             }
-            | IncarnationOutcome::EnvironmentFailed { .. } => {
+            | IncarnationOutcome::SettlementFailed { .. } => {
                 unreachable!("the active environment cannot fail before activation publication")
             }
         }
     }
 }
 
-impl<B, CommitError, Root> SpawnError<B, CommitError, Vec<Root>>
+impl<B, Root> SpawnError<B, Vec<Root>>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
-    pub(crate) fn into_retirement(self) -> ActorRetirement<B, Root, CommitError> {
+    pub(crate) fn into_retirement(self) -> ActorRetirement<B, Root> {
         match self {
             Self::AllocationRejected { behavior, reason } => {
                 ActorRetirement::AllocationRejected { behavior, reason }
@@ -255,19 +212,6 @@ where
                 user,
                 descendants,
             },
-            Self::EffectsRejected {
-                behavior,
-                error,
-                control,
-                user,
-                descendants,
-            } => ActorRetirement::InitializationEffectsFailed {
-                behavior,
-                error,
-                control,
-                user,
-                descendants,
-            },
             Self::Panicked => ActorRetirement::Panicked,
             Self::Cancelled => ActorRetirement::Cancelled,
             Self::Ended(completion) => ActorRetirement::EndedBeforeActivation { completion },
@@ -275,20 +219,20 @@ where
     }
 }
 
-pub(crate) struct OwnedActor<B, Descendants, CommitError>
+pub(crate) struct OwnedActor<B, Descendants>
 where
-    B: Behavior,
+    B: BehaviorSettlements,
 {
     pub(crate) actor: ActorRef<B::Protocol>,
     pub(crate) control: communication::ControlSender<B::Event>,
-    pub(crate) task: OwnedTask<B, Descendants, CommitError>,
+    pub(crate) task: OwnedTask<B, Descendants>,
 }
 
-pub(crate) struct OwnedTask<B, Descendants, CommitError>
+pub(crate) struct OwnedTask<B, Descendants>
 where
-    B: Behavior,
+    B: BehaviorSettlements,
 {
-    task: tokio::task::JoinHandle<LocalOutcome<B, Descendants, CommitError>>,
+    task: tokio::task::JoinHandle<LocalOutcome<B, Descendants>>,
     cancellation: oneshot::Sender<OwnerCancellation>,
 }
 
@@ -301,12 +245,12 @@ where
     behavior: core::marker::PhantomData<fn() -> B>,
 }
 
-pub(crate) struct RootActor<B, Descendants, CommitError>
+pub(crate) struct RootActor<B, Descendants>
 where
-    B: Behavior,
+    B: BehaviorSettlements,
 {
     pub(crate) actor: ActorRef<B::Protocol>,
-    pub(crate) task: OwnedTask<B, Descendants, CommitError>,
+    pub(crate) task: OwnedTask<B, Descendants>,
 }
 
 #[derive(Clone, Copy)]
@@ -316,29 +260,29 @@ enum ActivationRejection {
 
 type Activation<B> = Result<ActorRef<<B as Behavior>::Protocol>, ActivationRejection>;
 type ActivationPublisher<B> = Arc<Mutex<Option<Publisher<Activation<B>>>>>;
-impl<B, Descendants, CommitError> OwnedTask<B, Descendants, CommitError>
+impl<B, Descendants> OwnedTask<B, Descendants>
 where
-    B: Behavior,
+    B: BehaviorSettlements,
     B::Event: Send + 'static,
 {
-    pub(crate) async fn retire(self) -> LocalOutcome<B, Descendants, CommitError> {
+    pub(crate) async fn retire(self) -> LocalOutcome<B, Descendants> {
         let Self { task, cancellation } = self;
         drop(cancellation.send(OwnerCancellation));
         finish_owned_task(task).await
     }
 
-    pub(crate) async fn finish(self) -> LocalOutcome<B, Descendants, CommitError> {
+    pub(crate) async fn finish(self) -> LocalOutcome<B, Descendants> {
         let Self { task, cancellation } = self;
         drop(cancellation);
         finish_owned_task(task).await
     }
 }
 
-async fn finish_owned_task<B, Descendants, CommitError>(
-    task: tokio::task::JoinHandle<LocalOutcome<B, Descendants, CommitError>>,
-) -> LocalOutcome<B, Descendants, CommitError>
+async fn finish_owned_task<B, Descendants>(
+    task: tokio::task::JoinHandle<LocalOutcome<B, Descendants>>,
+) -> LocalOutcome<B, Descendants>
 where
-    B: Behavior,
+    B: BehaviorSettlements,
     B::Event: Send + 'static,
 {
     let outcome = match task.await {
@@ -349,11 +293,11 @@ where
     settle_local_outcome(outcome).await
 }
 
-async fn settle_local_outcome<B, Descendants, CommitError>(
-    outcome: LocalOutcome<B, Descendants, CommitError>,
-) -> LocalOutcome<B, Descendants, CommitError>
+async fn settle_local_outcome<B, Descendants>(
+    outcome: LocalOutcome<B, Descendants>,
+) -> LocalOutcome<B, Descendants>
 where
-    B: Behavior,
+    B: BehaviorSettlements,
     B::Event: Send + 'static,
 {
     match outcome {
@@ -384,11 +328,11 @@ where
             residual: residual.settle_activation_tasks().await,
             error,
         },
-        IncarnationOutcome::EnvironmentFailed {
+        IncarnationOutcome::SettlementFailed {
             behavior,
             residual,
             error,
-        } => IncarnationOutcome::EnvironmentFailed {
+        } => IncarnationOutcome::SettlementFailed {
             behavior,
             residual: residual.settle_activation_tasks().await,
             error,
@@ -398,11 +342,11 @@ where
     }
 }
 
-async fn startup_failure<B, Descendants, CommitError>(
-    task: tokio::task::JoinHandle<LocalOutcome<B, Descendants, CommitError>>,
-) -> SpawnError<B, CommitError, Descendants>
+async fn startup_failure<B, Descendants>(
+    task: tokio::task::JoinHandle<LocalOutcome<B, Descendants>>,
+) -> SpawnError<B, Descendants>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     B::Event: Send + 'static,
 {
     match task.await {
@@ -414,23 +358,23 @@ where
 
 impl<B, Root> ProjectedTask<B, Root>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
     B::Event: Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     <B::Birth as BirthMode>::Child: Send,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
+    crate::interpret::ActionSettlementOf<B>: Send + 'static,
     Root: Send + 'static,
 {
-    pub(crate) fn project<Owner, Role, CommitError>(
-        task: OwnedTask<B, Vec<Root>, CommitError>,
+    pub(crate) fn project<Owner, Role>(
+        task: OwnedTask<B, Vec<Root>>,
         origin: ActorOrigin<Owner, Role>,
     ) -> Self
     where
         Owner: 'static,
         Role: 'static,
-        CommitError: Send + 'static,
-        Root: ProjectTerminal<ActorOrigin<Owner, Role>, ActorRetirement<B, Root, CommitError>>,
+        Root: ProjectTerminal<ActorOrigin<Owner, Role>, ActorRetirement<B, Root>>,
     {
         let OwnedTask {
             task: actor_task,
@@ -496,16 +440,16 @@ pub(crate) async fn spawn_with<B, I>(
         LocalTimers<B::Event>,
         FactQueue<MailAddr, B::Event>,
     ) -> I,
-) -> Result<ActorRef<B::Protocol>, SpawnError<B, I::Error, I::Retired>>
+) -> Result<ActorRef<B::Protocol>, SpawnError<B, I::Retired>>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    B::Event: behavior::InjectEvent<behavior::ShutdownRequested, behavior::Here> + Send + 'static,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
-    I::Error: Send + 'static,
+    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
     spawn_owned_with(addresses, config, address, behavior, make_interpreter)
@@ -524,16 +468,16 @@ pub(crate) async fn spawn_owned_with<B, I>(
         LocalTimers<B::Event>,
         FactQueue<MailAddr, B::Event>,
     ) -> I,
-) -> Result<OwnedActor<B, I::Retired, I::Error>, SpawnError<B, I::Error, I::Retired>>
+) -> Result<OwnedActor<B, I::Retired>, SpawnError<B, I::Retired>>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    B::Event: behavior::InjectEvent<behavior::ShutdownRequested, behavior::Here> + Send + 'static,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
-    I::Error: Send + 'static,
+    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
     spawn_owned_with_mode::<B, I, StandardIngress>(
@@ -557,16 +501,16 @@ pub(crate) async fn spawn_root_with<B, I>(
         LocalTimers<B::Event>,
         FactQueue<MailAddr, B::Event>,
     ) -> I,
-) -> Result<RootActor<B, I::Retired, I::Error>, SpawnError<B, I::Error, I::Retired>>
+) -> Result<RootActor<B, I::Retired>, SpawnError<B, I::Retired>>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    B::Event: behavior::InjectEvent<behavior::ShutdownRequested, behavior::Here> + Send + 'static,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
-    I::Error: Send + 'static,
+    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
     let (activation_publisher, activation) = observe::affine_pair();
@@ -624,16 +568,16 @@ pub(crate) async fn spawn_owned_entity_with<B, I>(
         LocalTimers<B::Event>,
         FactQueue<MailAddr, B::Event>,
     ) -> I,
-) -> Result<OwnedActor<B, I::Retired, I::Error>, SpawnError<B, I::Error, I::Retired>>
+) -> Result<OwnedActor<B, I::Retired>, SpawnError<B, I::Retired>>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    B::Event: behavior::InjectEvent<behavior::ShutdownRequested, behavior::Here> + Send + 'static,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
-    I::Error: Send + 'static,
+    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
     spawn_owned_with_mode::<B, I, EntityIngress>(
@@ -657,17 +601,17 @@ async fn spawn_owned_with_mode<B, I, M>(
         LocalTimers<B::Event>,
         FactQueue<MailAddr, B::Event>,
     ) -> I,
-) -> Result<OwnedActor<B, I::Retired, I::Error>, SpawnError<B, I::Error, I::Retired>>
+) -> Result<OwnedActor<B, I::Retired>, SpawnError<B, I::Retired>>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
     M: IngressMode<B, Retired = User<MailAddr, BehaviorMessage<B>>> + 'static,
-    B::Event: behavior::InjectEvent<behavior::ShutdownRequested, behavior::Here> + Send + 'static,
+    B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
-    I::Error: Send + 'static,
+    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
     let (activation_publisher, activation) = observe::affine_pair();
@@ -727,12 +671,13 @@ pub(crate) async fn launch_inert<B, F>(
 ) -> Result<ActorRef<B::Protocol>, SpawnError<B>>
 where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never, Birth = NoBirths> + Send + 'static,
-    B::Event: behavior::InjectEvent<behavior::ShutdownRequested, behavior::Here> + Send + 'static,
+    B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     B::Sends: InterpretSends<InertCapabilities, B::Event, Here>,
+    ActionSettlementOf<B>: SourceSettlementCustody<InertCapabilities, B::Event> + Send,
     F: FnMut(&ActionsOf<B>) + Send + 'static,
 {
     spawn_with(addresses, config, address, behavior, move |_, _, _, _| {
@@ -752,12 +697,13 @@ pub(crate) async fn launch_inert_entity<B, F>(
 ) -> Result<ActorRef<B::Protocol>, SpawnError<B>>
 where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never, Birth = NoBirths> + Send + 'static,
-    B::Event: behavior::InjectEvent<behavior::ShutdownRequested, behavior::Here> + Send + 'static,
+    B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     B::Sends: InterpretSends<InertCapabilities, B::Event, Here>,
+    ActionSettlementOf<B>: SourceSettlementCustody<InertCapabilities, B::Event> + Send,
     F: FnMut(&ActionsOf<B>) + Send + 'static,
 {
     spawn_owned_entity_with(addresses, config, address, behavior, move |_, _, _, _| {
@@ -805,20 +751,25 @@ fn complete_activation<B>(
     }
 }
 
-impl<B, CommitError, Descendants>
+impl<B, Descendants>
     Retirement<
         B,
-        LocalResidual<ActionsOf<B>, B::Event, User<MailAddr, BehaviorMessage<B>>, Descendants>,
+        LocalResidual<
+            ActionsOf<B>,
+            crate::interpret::ActionSettlementOf<B>,
+            B::Event,
+            User<MailAddr, BehaviorMessage<B>>,
+            Descendants,
+        >,
         B::Error,
-        LocalActivationError<CommitError, ClaimError<MailAddr>>,
-        CommitError,
+        ClaimError<MailAddr>,
     > for LocalRetirement<B>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
-    type Output = LocalOutcome<B, Descendants, CommitError>;
+    type Output = LocalOutcome<B, Descendants>;
 
-    fn retire(self, outcome: LocalOutcome<B, Descendants, CommitError>) -> Self::Output {
+    fn retire(self, outcome: LocalOutcome<B, Descendants>) -> Self::Output {
         let publisher = self
             .activation
             .lock()
@@ -850,11 +801,6 @@ pub(crate) struct ObserveInertActions<F>(F);
 pub(crate) struct InertCapabilities;
 
 #[cfg(test)]
-impl SendInterpreter for InertCapabilities {
-    type Error = Infallible;
-}
-
-#[cfg(test)]
 struct ObserveActionsWithRetirement<F, R> {
     observe: F,
     retirement: R,
@@ -863,22 +809,32 @@ struct ObserveActionsWithRetirement<F, R> {
 #[cfg(test)]
 impl<B, F> CommitActions<B> for ObserveInertActions<F>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never, Birth = NoBirths>,
+    B: BehaviorSettlements<
+            Protocol: Protocol<Addr = MailAddr>,
+            Ph = Never,
+            Birth = NoBirths,
+            Settlements = InterpretedActionSettlement<B>,
+        >,
     B::Sends: InterpretSends<InertCapabilities, B::Event, Here> + Send,
+    ActionSettlementOf<B>: SourceSettlementCustody<InertCapabilities, B::Event> + Send,
     F: FnMut(&ActionsOf<B>) + Send,
 {
-    type Error = Infallible;
     type Retired = ();
 
-    async fn commit(&mut self, actions: ActionsOf<B>) -> Result<(), Self::Error> {
+    async fn commit(&mut self, actions: ActionsOf<B>) -> Interpretation<ActionSettlementOf<B>> {
         (self.0)(&actions);
-        let behavior::Actions {
-            sends,
-            creates,
-            become_: _,
-        } = actions;
-        drop(creates);
-        sends.interpret(&mut InertCapabilities).await
+        actions
+            .interpret::<_, B::Event, Here>(&mut InertCapabilities)
+            .await
+    }
+
+    async fn offer_next(
+        &mut self,
+        settlement: ActionSettlementOf<B>,
+    ) -> SourceCustody<ActionSettlementOf<B>> {
+        settlement
+            .offer_next_to_source(&mut InertCapabilities)
+            .await
     }
 
     async fn retire(self) -> CapabilityRetirement<B::Event, Self::Retired> {
@@ -889,23 +845,33 @@ where
 #[cfg(test)]
 impl<B, F, R> CommitActions<B> for ObserveActionsWithRetirement<F, R>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never, Birth = NoBirths>,
+    B: BehaviorSettlements<
+            Protocol: Protocol<Addr = MailAddr>,
+            Ph = Never,
+            Birth = NoBirths,
+            Settlements = InterpretedActionSettlement<B>,
+        >,
     B::Sends: InterpretSends<InertCapabilities, B::Event, Here> + Send,
+    ActionSettlementOf<B>: SourceSettlementCustody<InertCapabilities, B::Event> + Send,
     F: FnMut(&ActionsOf<B>) + Send,
     R: Send,
 {
-    type Error = Infallible;
     type Retired = R;
 
-    async fn commit(&mut self, actions: ActionsOf<B>) -> Result<(), Self::Error> {
+    async fn commit(&mut self, actions: ActionsOf<B>) -> Interpretation<ActionSettlementOf<B>> {
         (self.observe)(&actions);
-        let behavior::Actions {
-            sends,
-            creates,
-            become_: _,
-        } = actions;
-        drop(creates);
-        sends.interpret(&mut InertCapabilities).await
+        actions
+            .interpret::<_, B::Event, Here>(&mut InertCapabilities)
+            .await
+    }
+
+    async fn offer_next(
+        &mut self,
+        settlement: ActionSettlementOf<B>,
+    ) -> SourceCustody<ActionSettlementOf<B>> {
+        settlement
+            .offer_next_to_source(&mut InertCapabilities)
+            .await
     }
 
     async fn retire(self) -> CapabilityRetirement<B::Event, Self::Retired> {
@@ -919,8 +885,9 @@ mod tests {
 
     use behavior::{
         Actions, BehaviorActed, EventLayer, InitializationTurn, MessageProtocol, Never, NoBirths,
-        NoSends, ShutdownRequested, User,
+        NoSends, SettlementStatus, User,
     };
+    use behavior_actors::ShutdownRequested;
     use bombay_engine::Completion;
     use communication::Config;
 
@@ -935,7 +902,7 @@ mod tests {
     enum ProbeTerminal {
         Probe {
             origin: ActorOrigin<RootProbe>,
-            terminal: ActorRetirement<RootProbe, Self, Infallible>,
+            terminal: ActorRetirement<RootProbe, Self>,
         },
     }
 
@@ -987,6 +954,7 @@ mod tests {
             behavior,
             residual:
                 LocalResidual::Retired {
+                    settlements,
                     ingress,
                     activation_tasks,
                     descendants,
@@ -999,6 +967,8 @@ mod tests {
         };
 
         assert_eq!(behavior.terminal_marker, 19);
+        let settlement_status = settlements.settlement_status();
+        assert_eq!(settlement_status, SettlementStatus::Accepted);
         assert!(ingress.control.is_empty());
         assert!(ingress.user.is_empty());
         assert!(activation_tasks.is_empty());
@@ -1024,6 +994,7 @@ mod tests {
             behavior,
             residual:
                 LocalResidual::Retired {
+                    settlements,
                     ingress,
                     activation_tasks,
                     descendants,
@@ -1036,6 +1007,8 @@ mod tests {
         };
 
         assert_eq!(behavior.terminal_marker, 19);
+        let settlement_status = settlements.settlement_status();
+        assert_eq!(settlement_status, SettlementStatus::Accepted);
         assert!(ingress.control.is_empty());
         assert!(ingress.user.is_empty());
         assert!(activation_tasks.is_empty());
@@ -1073,6 +1046,7 @@ mod tests {
         let ProbeTerminal::Probe { origin, terminal } = rejected;
         let ActorRetirement::Completed {
             behavior,
+            settlements,
             control,
             user,
             descendants,
@@ -1084,6 +1058,8 @@ mod tests {
 
         assert_eq!(origin, child_origin.into_declared_root());
         assert_eq!(behavior.terminal_marker, 19);
+        let settlement_status = settlements.settlement_status();
+        assert_eq!(settlement_status, SettlementStatus::Accepted);
         assert!(control.is_empty());
         assert!(user.is_empty());
         assert_eq!(descendants.len(), 1);

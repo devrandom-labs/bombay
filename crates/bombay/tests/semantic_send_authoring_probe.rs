@@ -5,7 +5,7 @@
 //! every action verdict keeps its original creation and next-behavior legs
 //! while appending only to the declared send lane.
 
-use bombay::behavior::{Births, NoBirths, SendEffects, Stopped};
+use bombay::behavior::{Births, Creations, NoBirths, SendEffects, Stopped};
 use bombay::prelude::*;
 
 struct CounterValue;
@@ -71,9 +71,10 @@ fn semantic_method_preserves_every_action_verdict() {
         Actions::stop().send_values(delivery(3));
     assert_eq!(stopped.become_, Step::Stop(Stopped));
 
-    let created: Actions<MailAddr, Never, CounterSends, Births<()>> = Actions::create(Vec::new())
-        .send_values(delivery(4))
-        .send_values(delivery(5));
+    let created: Actions<MailAddr, Never, CounterSends, Births<()>> =
+        Actions::create(Creations::empty())
+            .send_values(delivery(4))
+            .send_values(delivery(5));
     assert!(created.creates.is_empty());
     assert_eq!(created.sends.values.len(), 2);
     assert_eq!(created.become_, Step::Continue);

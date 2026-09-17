@@ -6,10 +6,12 @@ use std::sync::{
 };
 use std::task::{Context, Poll, Waker};
 
+use behavior_actors::{
+    FinalizeOnShutdown, ReportTerminalOutcome, RestartDenial, ShutdownRequested,
+    SupervisionFailureReason,
+};
 use bombay::behavior::{
-    ActiveTurn, Behavior, BehaviorBase, ChildRoute, Crash, FinalizeOnShutdown, InitializationTurn,
-    InterpreterRequests, NoBirths, ReportSupervisionFailure, ReportTerminalOutcome, RestartDenial,
-    ShutdownRequested, SupervisionFailure, SupervisionFailureReason, User,
+    ActiveTurn, Behavior, BehaviorBase, InitializationTurn, InterpreterRequests, NoBirths, User,
 };
 use bombay::prelude::*;
 use bombay::{ActorSpace, App};
@@ -94,8 +96,10 @@ impl ReportsTerminalOutcome {
         reason = "the generated foundational fold fixes the controlled-error boundary"
     )]
     fn init(&mut self) -> BehaviorActed<Self> {
-        Ok(Actions::stop()
-            .send_terminal_outcome(ReportTerminalOutcome::new(Ok(Exit::LinkDied(MailAddr(19))))))
+        Ok(ReportsTerminalOutcomeActions::send_terminal_outcome(
+            Actions::stop(),
+            ReportTerminalOutcome::new(Ok(Exit::LinkDied(MailAddr(19)))),
+        ))
     }
 }
 
@@ -104,15 +108,15 @@ enum ReportCommitment {
     Continue,
 }
 
-struct ReportsSupervisionFailure {
+struct ReportsSupervisionOutcome {
     commitment: ReportCommitment,
 }
 
 #[bombay::actor(
     message = Never,
-    sends = { supervision_failure: InterpreterRequests<ReportSupervisionFailure<MailAddr>> },
+    sends = { terminal_outcome: InterpreterRequests<ReportTerminalOutcome<MailAddr>> },
 )]
-impl ReportsSupervisionFailure {
+impl ReportsSupervisionOutcome {
     #[allow(
         clippy::unnecessary_wraps,
         reason = "the generated foundational fold fixes the controlled-error boundary"
@@ -127,11 +131,12 @@ impl ReportsSupervisionFailure {
             ReportCommitment::Stop => Actions::stop(),
             ReportCommitment::Continue => Actions::cont(),
         };
-        Ok(
-            actions.send_supervision_failure(ReportSupervisionFailure::new(
-                SupervisionFailure::restart_denied(7, Err(Crash::Failed), denial),
-            )),
-        )
+        Ok(ReportsSupervisionOutcomeActions::send_terminal_outcome(
+            actions,
+            ReportTerminalOutcome::new(Ok(Exit::SupervisionFailed(
+                SupervisionFailureReason::RestartDenied(denial),
+            ))),
+        ))
     }
 }
 
@@ -228,51 +233,6 @@ impl BehaviorBase for FailsAfterActivation {
     fn base(&self) -> &Self::Base {
         self
     }
-}
-
-const MISSING_CHILD_NONCE: u64 = 91;
-
-struct EffectWorker;
-
-#[bombay::actor]
-impl EffectWorker {
-    fn receive(&mut self, _: u8) -> BehaviorActed<Self> {
-        Ok(Actions::cont())
-    }
-}
-
-enum EffectCommand {
-    DeliverToMissingChild,
-}
-
-struct FailsEffects;
-
-#[bombay::actor(
-    sends = { workers: Vec<ChildDelivery<EffectWorker, FailsEffectsChildrenWorkers>> },
-    births = { workers: StopOnShutdown<EffectWorker> },
-)]
-impl FailsEffects {
-    fn receive(&mut self, command: EffectCommand) -> BehaviorActed<Self> {
-        match command {
-            EffectCommand::DeliverToMissingChild => {
-                let route: ChildRoute<StopOnShutdown<EffectWorker>, FailsEffectsChildrenWorkers> =
-                    ChildRoute::new(MISSING_CHILD_NONCE);
-                Ok(Actions::cont().send_workers(ChildDelivery::at(route, 73)))
-            }
-        }
-    }
-}
-
-#[derive(TerminalProjection)]
-enum EffectTerminal {
-    Root {
-        origin: ActorOrigin<StopOnShutdown<FailsEffects>>,
-        terminal: ActorRetirement<StopOnShutdown<FailsEffects>, Self>,
-    },
-    Worker {
-        origin: ActorOrigin<FailsEffects, FailsEffectsChildrenWorkers>,
-        terminal: ActorRetirement<StopOnShutdown<EffectWorker>, Self>,
-    },
 }
 
 impl Behavior for RejectsInitialization {
@@ -413,7 +373,7 @@ fn supervision_report_selects_the_typed_failure_publication_before_stop() {
         maximum_restarts: 2,
     };
     let (termination, terminal): (_, ApplicationTerminal<_>) = Application::new(
-        ReportsSupervisionFailure {
+        ReportsSupervisionOutcome {
             commitment: ReportCommitment::Stop,
         }
         .stop_on_shutdown(),
@@ -433,7 +393,7 @@ fn supervision_report_selects_the_typed_failure_publication_before_stop() {
 #[test]
 fn supervision_report_from_a_continuing_action_cannot_override_later_shutdown() {
     let (termination, terminal): (_, ApplicationTerminal<_>) = Application::new(
-        ReportsSupervisionFailure {
+        ReportsSupervisionOutcome {
             commitment: ReportCommitment::Continue,
         }
         .stop_on_shutdown(),
@@ -515,6 +475,7 @@ fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
         origin,
         ActorRetirement::BehaviorFailed {
             behavior: _behavior,
+            settlements,
             control,
             user,
             descendants,
@@ -526,46 +487,7 @@ fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(origin.nonce(), None);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
-    assert!(descendants.is_empty());
-}
-
-#[test]
-fn effect_failure_returns_the_exact_interpretation_error() {
-    let ((), terminal): (_, EffectTerminal) = Application::new(FailsEffects.stop_on_shutdown())
-        .run_with(|application| async move {
-            application
-                .root()
-                .send_from(TEST_BOUNDARY, EffectCommand::DeliverToMissingChild)
-                .await
-                .expect("the live root admits the effect-producing command");
-        })
-        .expect("an effect failure is an exact root terminal after activation");
-
-    let (origin, retirement) = match terminal {
-        EffectTerminal::Root { origin, terminal } => (origin, terminal),
-        EffectTerminal::Worker { origin, terminal } => {
-            drop((origin, terminal));
-            panic!("the root effect failure cannot become a child terminal")
-        }
-    };
-    let ActorRetirement::EffectsFailed {
-        behavior: _behavior,
-        control,
-        user,
-        descendants,
-        error,
-    } = retirement
-    else {
-        panic!("the runtime must retain an effect-failure terminal")
-    };
-    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), None);
-    assert_eq!(
-        error,
-        EffectInterpretationError::UnknownChild(MISSING_CHILD_NONCE)
-    );
+    assert!(settlements.is_empty());
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());

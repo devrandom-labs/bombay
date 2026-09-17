@@ -2,7 +2,10 @@ use std::cell::Cell;
 use std::convert::Infallible;
 use std::rc::Rc;
 
-use behavior::{Actions, Behavior, BehaviorActed, MailAddr, Never, NoBirths, User};
+use behavior::{
+    Actions, Behavior, BehaviorActed, ClassifySettlement, Interpretation, MailAddr, Never,
+    NoBirths, SettlementStatus, SourceCustody, User,
+};
 use bombay_engine::{ActionsOf, ActiveEnvironment, Driver, Environment};
 
 struct SendNotSync(Cell<u8>);
@@ -30,8 +33,16 @@ struct Env {
     local: Rc<Cell<u8>>,
 }
 
+struct Settlement;
+
+impl ClassifySettlement for Settlement {
+    fn settlement_status(&self) -> SettlementStatus {
+        SettlementStatus::Accepted
+    }
+}
+
 impl ActiveEnvironment<SendNotSync> for Env {
-    type Error = Infallible;
+    type Settlement = Settlement;
     type Residual = ();
 
     async fn next(&mut self) -> Option<<SendNotSync as Behavior>::Event> {
@@ -41,24 +52,40 @@ impl ActiveEnvironment<SendNotSync> for Env {
             .map(|value| User::new(MailAddr(1), value))
     }
 
-    async fn apply(&mut self, _: ActionsOf<SendNotSync>) -> Result<(), Self::Error> {
-        Ok(())
+    async fn next_source(&mut self) -> Option<<SendNotSync as Behavior>::Event> {
+        None
     }
 
-    async fn retire(self) {}
+    async fn apply(&mut self, _: ActionsOf<SendNotSync>) -> Interpretation<Self::Settlement> {
+        Interpretation::Complete(Settlement)
+    }
+
+    async fn offer_next(
+        &mut self,
+        settlement: Self::Settlement,
+    ) -> SourceCustody<Self::Settlement> {
+        SourceCustody::Exhausted(settlement)
+    }
+
+    fn publish(&mut self) {}
+
+    async fn retire(self, _: Vec<Self::Settlement>) {}
 }
 
 impl Environment<SendNotSync> for Env {
     type Active = Self;
+    type Settlement = Settlement;
     type Error = Infallible;
     type Residual = ();
 
     async fn activate(
-        mut self,
-        actions: ActionsOf<SendNotSync>,
-    ) -> Result<Self, (Self::Error, Self::Residual)> {
-        self.apply(actions).await.map_err(|error| (error, ()))?;
-        Ok(self)
+        self,
+        _: ActionsOf<SendNotSync>,
+    ) -> Result<
+        (Self::Active, Interpretation<Self::Settlement>),
+        (Self::Error, Self::Residual),
+    > {
+        Ok((self, Interpretation::Complete(Settlement)))
     }
 
     async fn retire(self) {}

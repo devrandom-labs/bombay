@@ -3,11 +3,15 @@
 //! shutdown. Behavior owns the closed roles and routes, Behavior Actors owns
 //! the shutdown plan, and Bombay only interprets and retains the result.
 
-use bombay::behavior::{Behavior, BehaviorBase, Children, Never, shutdown_after_children};
+use bombay::behavior::{
+    BehaviorBase, BehaviorSettlements, Children, ClassifySettlement, CreationSequence, Never,
+    SettlementStatus,
+};
+use bombay::lifecycle::shutdown_after_children;
 use bombay::prelude::*;
 
-const INDEXER_NONCE: u64 = 11;
-const JOURNAL_NONCE: u64 = 12;
+const INDEXER_NONCE: u64 = 0;
+const JOURNAL_NONCE: u64 = 1;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum IndexCommand {
@@ -70,19 +74,24 @@ impl DocumentSystem {
         reason = "the generated foundational fold fixes the controlled-error boundary"
     )]
     fn init(&mut self) -> BehaviorActed<Self> {
-        let routes = DocumentSystemChildrenRoutes::new(INDEXER_NONCE, JOURNAL_NONCE);
-        let children = Children::new()
-            .child_at(routes.indexer, Indexer::default().stop_on_shutdown())
-            .child_at(routes.journal, Journal::default().stop_on_shutdown())
-            .into_creates()
-            .expect("the document-system child nonces are distinct");
+        let mut creations = CreationSequence::new();
+        let indexer = creations
+            .issue()
+            .expect("the indexer creation ID is available");
+        let journal = creations
+            .issue()
+            .expect("the journal creation ID is available");
+        let children = Children::<MailAddr>::new()
+            .child(indexer, Indexer::default().stop_on_shutdown())
+            .child(journal, Journal::default().stop_on_shutdown())
+            .into_creates();
         Ok(Actions::create(children)
-            .send_indexing(ChildDelivery::at(
-                routes.indexer,
+            .send_indexing(ChildDelivery::after(
+                indexer,
                 IndexCommand::Index(vec!["contract".to_owned(), "ledger".to_owned()]),
             ))
-            .send_journaling(ChildDelivery::at(
-                routes.journal,
+            .send_journaling(ChildDelivery::after(
+                journal,
                 JournalCommand::Record("topology initialized".to_owned()),
             )))
     }
@@ -91,7 +100,7 @@ impl DocumentSystem {
 #[derive(TerminalProjection)]
 enum ApplicationTerminal<R>
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     Root {
         origin: ActorOrigin<R>,
@@ -126,12 +135,14 @@ fn main() {
 
 fn assert_terminal_tree<R>(terminal: ApplicationTerminal<R>)
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R::Settlements: ClassifySettlement,
 {
     let ApplicationTerminal::Root {
         origin,
         terminal:
             ActorRetirement::Completed {
+                settlements,
                 control,
                 user,
                 descendants,
@@ -144,6 +155,8 @@ where
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(origin.nonce(), None);
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert_eq!(completion, Completion::Stopped);
@@ -172,10 +185,11 @@ where
 
 fn assert_indexer<R>(terminal: ActorRetirement<ManagedIndexer, ApplicationTerminal<R>>) -> usize
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
         behavior,
+        settlements,
         control,
         user,
         descendants,
@@ -184,6 +198,8 @@ where
     else {
         panic!("the indexer must complete its explicit shutdown")
     };
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());
@@ -193,10 +209,11 @@ where
 
 fn assert_journal<R>(terminal: ActorRetirement<ManagedJournal, ApplicationTerminal<R>>) -> String
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
         behavior,
+        settlements,
         control,
         user,
         descendants,
@@ -205,6 +222,8 @@ where
     else {
         panic!("the journal must complete its explicit shutdown")
     };
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());
@@ -219,7 +238,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use bombay::behavior::{Activate as _, Step};
+    use bombay::behavior::Step;
+    use bombay::prelude::Activate as _;
 
     use super::*;
 
@@ -230,10 +250,19 @@ mod tests {
             .expect("document-system initialization is infallible");
 
         assert_eq!(initialized.actions.creates.len(), 2);
-        assert_eq!(initialized.actions.creates[0].nonce, INDEXER_NONCE);
-        assert_eq!(initialized.actions.creates[1].nonce, JOURNAL_NONCE);
+        let creation_ids = initialized
+            .actions
+            .creates
+            .iter()
+            .map(|creation| creation.id().get())
+            .collect::<Vec<_>>();
+        assert_eq!(creation_ids, [1, 2]);
         assert_eq!(initialized.actions.sends.indexing.len(), 1);
         assert_eq!(initialized.actions.sends.journaling.len(), 1);
+        let indexing_creation = initialized.actions.sends.indexing[0].creation.get();
+        let journaling_creation = initialized.actions.sends.journaling[0].creation.get();
+        assert_eq!(indexing_creation, 1);
+        assert_eq!(journaling_creation, 2);
         assert!(matches!(
             initialized.actions.sends.indexing[0].message,
             IndexCommand::Index(ref documents) if documents == &["contract", "ledger"]

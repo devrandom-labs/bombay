@@ -3,7 +3,7 @@
 use core::fmt;
 use core::future::Future;
 use core::marker::PhantomData;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::io;
 #[cfg(feature = "axum")]
 use std::net::SocketAddr;
@@ -11,39 +11,44 @@ use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Instant;
 
 use behavior::{
-    Actions, Behavior, BehaviorBase, BehaviorMessage, BirthMode, BirthNodeAppend, BirthNodeMapper,
-    Births, CancelObservation, ChildCons, ChildDelivery, ChildHead, ChildInput, ChildInputIngress,
-    ChildProduct, ChildShutdownRejected, ChildShutdownRejection, ChildTail, Children,
-    ChildrenError, CreationRejection, CreationResolved, Delivery, EstablishedCreation,
-    EstablishedObservation, EstablishedShutdownResolved, EventIngress, FoldBirthNode,
-    FoldedBirthNode, Here, InjectEvent, InterpretChildDelivery, InterpretChildInput,
-    InterpretDelivery, InterpretEstablishedDelivery, InterpretEstablishedObservation,
-    InterpretEstablishedShutdown, InterpretRequest, Never, NoChildren, ObservationId,
-    ObservationOperation, ObservationRejection, ObserveChild, ObserveCreation, ObserveEstablished,
-    ObserveEstablishedCreation, ObservePeer, Protocol, ReportShutdownPlan,
-    ReportSupervisionFailure, ReportTerminalOutcome, ReportToParent, ResolveChildOccurrence,
-    ResolvedChild, ResolvedChildPosition, ScheduleAfter, ScheduleAt, SendInterpreter,
-    ShutdownChild, ShutdownEstablished, ShutdownRejection, ShutdownRequested,
+    Actions, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
+    BirthNodeAppend, Births, ChildCons, ChildCreationOutcome, ChildDelivery, ChildDeliveryReason,
+    ChildHead, ChildInput, ChildInputIngress, ChildInputReason, ChildNamespaceExhausted,
+    ChildOccurrenceProduct, ChildOccurrenceShape, ChildOccurrences, ChildProduct, ChildTail,
+    Children, ClassifySettlement, CreateChild, CreationCorrelation, CreationId, CreationKind,
+    CreationRejection, CreationSequence, Creations, Delivery, EstablishChild, EstablishedCreation,
+    EventIngress, ExactDeliveryReason, Here, InjectEvent, InterpretItem, InterpreterFault,
+    ItemSettlement, LogicalDeliveryReason, Never, NoChildren, ParentReportReason, Protocol,
+    ReportToParent, ResolveChildOccurrence, ResolvedChild, ResolvedChildPosition, RoutedCreation,
+    SourceAdmission,
+};
+use behavior_actors::{
+    CancelObservation, ChildShutdownRejection, ChildStopped, CreationResolved,
+    EstablishedObservation, InstallShutdownPlan, InterpretEstablishedObservation,
+    InterpretEstablishedShutdown, ObservationId, ObservationOperation, ObservationRejection,
+    ObserveChild, ObserveCreation, ObserveEstablished, ObserveEstablishedCreation, ObservePeer,
+    PeerObservationRejection, PeerStopped, ReportShutdownPlan, ReportTerminalOutcome,
+    ScheduleAfter, ScheduleAfterRejection, ScheduleAt, ScheduleAtRejection, ShutdownChild,
+    ShutdownEstablished, ShutdownId, ShutdownRejection, ShutdownRequested, TimerElapsed,
+    TimerScheduled,
 };
 use bombay_address::ClaimError;
 use communication::{ControlClosed, ControlSender};
 use tokio::sync::oneshot;
 
-use crate::actor_interface::ActorInterface;
+use crate::actor_interface::{ActorInterface, ExtractLocalEndpoint};
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::Application;
 use crate::child_bindings::{
-    ChildBindingAt, HostChildAt, NestedBindings, NestedChildBindings, NoChildBindings,
-    OccurrenceBindings, RetireChildTasks, RuntimeChildBindings, RuntimeChildSpaces,
+    ChildBindingAt, CreationBinding, CreationBindingAt, HostChildAt, NestedBindings,
+    NestedChildBindings, NoChildBindings, OccurrenceBindings, RetireChildTasks,
+    RuntimeChildBindings, RuntimeChildSpaces,
 };
 use crate::entity::{
     EntityAdmission, EntityApplicationFamilies, EntityDefinition, EntityFamilyAt,
     InstallEntityFamilies, InstalledEntityFamilies, NativeEntityHost, Passivation,
 };
-use crate::interpret::{
-    ActionInterpreter, BirthInstaller, CreationResults, CreationTransaction,
-    EffectInterpretationError, RetireCapabilities, SpawnChild,
-};
+use crate::interpret::{ActionInterpreter, RetireCapabilities};
 use crate::launch::{
     ActorSpace, OwnedTask, ProjectedTask, SpawnError, spawn_owned_with, spawn_root_with,
 };
@@ -59,14 +64,25 @@ use crate::topology::{HostedActorSpaces, Hosts, ResolveLogical};
 
 const DEFAULT_USER_CAPACITY: usize = 1_024;
 
+fn routed_creation<Child>(
+    id: CreationId,
+    kind: CreationKind,
+    route: u64,
+    child: Child,
+) -> RoutedCreation<MailAddr, Child> {
+    let creation = match kind {
+        CreationKind::Birth => CreateChild::birth(id, child),
+        CreationKind::Replacement { previous } => CreateChild::replacement(id, previous, child),
+    };
+    RoutedCreation::new(creation, route)
+}
+
 type RootBirthNode<Root> = <<Root as Behavior>::Birth as BirthMode>::Child;
 type ApplicationProduct<Members> = <Members as StageApplicationChildren>::Product;
 type ApplicationBirthNode<Members> =
     <ApplicationProduct<Members> as ChildProduct<MailAddr>>::Choice;
-type RunningBirthNode<Root, Members> =
-    <RootBirthNode<Root> as BirthNodeAppend<ApplicationBirthNode<Members>>>::Output;
 type BindingTerminal<Bindings> = <Bindings as RetireChildTasks>::Root;
-type RootOriginProduct<Root> = FoldedBirthNode<RootBirthNode<Root>, RootTerminalOriginMapper>;
+type RootOriginProduct<Root> = ChildOccurrences<RootBirthNode<Root>, RootTerminalOriginMapper>;
 
 type RootCapabilities<Actor, Spaces, Terminal, Origins> = ApplicationCapabilities<
     Actor,
@@ -101,8 +117,6 @@ pub enum RunError<RootError = Never> {
     InitializationRejected(RootError),
     /// The runtime could not commit the root's address claim.
     HostRejected(ClaimError<MailAddr>),
-    /// The runtime could not interpret the root's initialization effects.
-    EffectsRejected(EffectInterpretationError),
     /// The root task panicked before activation.
     Panicked,
     /// The executor cancelled the root task before activation.
@@ -113,8 +127,6 @@ pub enum RunError<RootError = Never> {
     InitializedTwice,
     /// No collision-free creator-local nonce remained for an application actor.
     NonceExhausted,
-    /// Application actor staging produced a duplicate creator-local nonce.
-    DuplicateNonce(u64),
 }
 
 impl<RootError> fmt::Debug for RunError<RootError> {
@@ -124,13 +136,11 @@ impl<RootError> fmt::Debug for RunError<RootError> {
             Self::AllocationRejected(_) => "AllocationRejected",
             Self::InitializationRejected(_) => "InitializationRejected",
             Self::HostRejected(_) => "HostRejected",
-            Self::EffectsRejected(_) => "EffectsRejected",
             Self::Panicked => "Panicked",
             Self::Cancelled => "Cancelled",
             Self::Ended(_) => "Ended",
             Self::InitializedTwice => "InitializedTwice",
             Self::NonceExhausted => "NonceExhausted",
-            Self::DuplicateNonce(_) => "DuplicateNonce",
         })
     }
 }
@@ -142,13 +152,11 @@ impl<RootError> fmt::Display for RunError<RootError> {
             Self::AllocationRejected(_) => "the root address source rejected allocation",
             Self::InitializationRejected(_) => "the root rejected initialization",
             Self::HostRejected(_) => "the actor host rejected root initialization",
-            Self::EffectsRejected(_) => "the actor host rejected root initialization effects",
             Self::Panicked => "root initialization panicked",
             Self::Cancelled => "root initialization was cancelled",
             Self::Ended(_) => "the root ended before publishing activation",
             Self::InitializedTwice => "the running application was initialized more than once",
             Self::NonceExhausted => "application actor nonce allocation was exhausted",
-            Self::DuplicateNonce(_) => "application actor staging produced a duplicate nonce",
         })
     }
 }
@@ -157,7 +165,6 @@ impl<RootError> std::error::Error for RunError<RootError> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Runtime(error) => Some(error),
-            Self::EffectsRejected(error) => Some(error),
             _ => None,
         }
     }
@@ -361,50 +368,38 @@ struct DeclaredRoot;
 pub(crate) struct StructuralOrigins<Owner>(PhantomData<fn() -> Owner>);
 struct ApplicationOrigins<Root, Members>(PhantomData<fn() -> (Root, Members)>);
 
-trait RootProjection<Actor, Terminal, CommitError>
+trait RootProjection<Actor, Terminal>
 where
-    Actor: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    Actor: behavior::BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     type Error;
 
-    fn project(
-        address: MailAddr,
-        outcome: LocalOutcome<Actor, Vec<Terminal>, CommitError>,
-    ) -> Terminal;
+    fn project(address: MailAddr, outcome: LocalOutcome<Actor, Vec<Terminal>>) -> Terminal;
 
-    fn startup_error(error: SpawnError<Actor, CommitError, Vec<Terminal>>)
-    -> RunError<Self::Error>;
+    fn startup_error(error: SpawnError<Actor, Vec<Terminal>>) -> RunError<Self::Error>;
 }
 
-impl<Actor, Terminal, CommitError> RootProjection<Actor, Terminal, CommitError> for DirectRoot
+impl<Actor, Terminal> RootProjection<Actor, Terminal> for DirectRoot
 where
-    Actor: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    CommitError: Into<EffectInterpretationError>,
-    Terminal:
-        ProjectTerminal<ActorOrigin<Actor, Here>, ActorRetirement<Actor, Terminal, CommitError>>,
+    Actor: behavior::BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    Terminal: ProjectTerminal<ActorOrigin<Actor, Here>, ActorRetirement<Actor, Terminal>>,
 {
     type Error = Actor::Error;
 
-    fn project(
-        address: MailAddr,
-        outcome: LocalOutcome<Actor, Vec<Terminal>, CommitError>,
-    ) -> Terminal {
+    fn project(address: MailAddr, outcome: LocalOutcome<Actor, Vec<Terminal>>) -> Terminal {
         Terminal::project(
             ActorOrigin::<Actor, Here>::root(address),
             ActorRetirement::from_local(outcome),
         )
     }
 
-    fn startup_error(
-        error: SpawnError<Actor, CommitError, Vec<Terminal>>,
-    ) -> RunError<Self::Error> {
+    fn startup_error(error: SpawnError<Actor, Vec<Terminal>>) -> RunError<Self::Error> {
         match error {
             SpawnError::AllocationRejected { reason, .. } => RunError::AllocationRejected(reason),
             SpawnError::InitializationRejected { error, .. } => {
                 RunError::InitializationRejected(error)
             }
             SpawnError::HostRejected { error, .. } => RunError::HostRejected(error),
-            SpawnError::EffectsRejected { error, .. } => RunError::EffectsRejected(error.into()),
             SpawnError::Panicked => RunError::Panicked,
             SpawnError::Cancelled => RunError::Cancelled,
             SpawnError::Ended(completion) => RunError::Ended(completion),
@@ -450,13 +445,13 @@ where
 impl<Actor, Spaces, Terminal, Origins, Projection>
     LaunchSystem<Actor, Terminal, Origins, Projection> for Spaces
 where
-    Actor: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    Actor: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
     Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
     BehaviorMessage<Actor>: Send + 'static,
     Actor::Sends: Send + 'static,
     Actor::Error: Send + 'static,
-    <Actor::Birth as BirthMode>::Child: FoldBirthNode<RuntimeChildBindings<Terminal>>
-        + FoldBirthNode<RuntimeChildSpaces>
+    <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal>>
+        + ChildOccurrenceProduct<RuntimeChildSpaces>
         + Send
         + 'static,
     Spaces: Hosts<Actor::Protocol> + Send + Sync + 'static,
@@ -464,20 +459,11 @@ where
         Default + RetireChildTasks<Root = Terminal> + Send + 'static,
     RootInterpreter<Actor, Spaces, Terminal, Origins>:
         CommitActions<Actor, Retired = Vec<Terminal>> + Send + 'static,
-    <RootInterpreter<Actor, Spaces, Terminal, Origins> as CommitActions<Actor>>::Error:
-        Send + 'static,
+    <Actor as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
     Terminal: Send + 'static,
-    Projection: RootProjection<
-            Actor,
-            Terminal,
-            <RootInterpreter<Actor, Spaces, Terminal, Origins> as CommitActions<Actor>>::Error,
-        >,
+    Projection: RootProjection<Actor, Terminal>,
 {
-    type RootError = <Projection as RootProjection<
-        Actor,
-        Terminal,
-        <RootInterpreter<Actor, Spaces, Terminal, Origins> as CommitActions<Actor>>::Error,
-    >>::Error;
+    type RootError = <Projection as RootProjection<Actor, Terminal>>::Error;
 
     async fn launch(self, root: Actor) -> Result<Terminal, RunError<Self::RootError>> {
         <Spaces as LaunchSystem<Actor, Terminal, Origins, Projection>>::launch_with(
@@ -788,9 +774,17 @@ trait StageApplicationChildren: Sized {
 
     fn stage(
         self,
-        reserved: &mut HashSet<u64>,
-        next: &mut u64,
+        creations: &mut CreationSequence,
     ) -> Result<Children<MailAddr, Self::Product>, ApplicationStagingError>;
+}
+
+trait DeclaredApplicationChildren: StageApplicationChildren {}
+
+impl<Role, Actor, Tail> DeclaredApplicationChildren for (Role, Actor, Tail)
+where
+    Actor: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Tail: StageApplicationChildren,
+{
 }
 
 impl StageApplicationChildren for () {
@@ -798,8 +792,7 @@ impl StageApplicationChildren for () {
 
     fn stage(
         self,
-        _: &mut HashSet<u64>,
-        _: &mut u64,
+        _: &mut CreationSequence,
     ) -> Result<Children<MailAddr, Self::Product>, ApplicationStagingError> {
         Ok(Children::new())
     }
@@ -814,94 +807,89 @@ where
 
     fn stage(
         self,
-        reserved: &mut HashSet<u64>,
-        next: &mut u64,
+        creations: &mut CreationSequence,
     ) -> Result<Children<MailAddr, Self::Product>, ApplicationStagingError> {
         let (role, actor, tail) = self;
-        let children = tail.stage(reserved, next)?;
-        let nonce =
-            next_child_nonce(reserved, next).ok_or(ApplicationStagingError::NonceExhausted)?;
+        let children = tail.stage(creations)?;
+        let id = creations
+            .issue()
+            .ok_or(ApplicationStagingError::NonceExhausted)?;
         drop(role);
-        Ok(children.child(nonce, actor))
+        Ok(children.child(id, actor))
     }
 }
 
-fn next_child_nonce(reserved: &mut HashSet<u64>, next: &mut u64) -> Option<u64> {
-    let first = *next;
-    loop {
-        let candidate = *next;
-        *next = next.wrapping_add(1);
-        if reserved.insert(candidate) {
-            return Some(candidate);
-        }
-        if *next == first {
-            return None;
-        }
-    }
-}
-
-enum ApplicationDefinitionError<RootError> {
+/// Failure while initializing the exact composed application behavior.
+pub enum ApplicationDefinitionError<RootError> {
     Root(RootError),
     InitializedTwice,
-    NonceExhausted,
-    DuplicateNonce(u64),
 }
 
 enum ApplicationStagingError {
     NonceExhausted,
 }
 
-struct RunningApplication<Root, Members> {
+fn stage_application<Root, Members>(
     root: Root,
-    members: Option<Members>,
+    members: Members,
+) -> Result<ApplicationBehavior<Root, ApplicationProduct<Members>>, RunError<Root::Error>>
+where
+    Root: Behavior,
+    Members: StageApplicationChildren,
+{
+    let mut creations = CreationSequence::new();
+    let application = members
+        .stage(&mut creations)
+        .map_err(|ApplicationStagingError::NonceExhausted| RunError::NonceExhausted)?;
+    Ok(ApplicationBehavior::new(root, application))
 }
 
-impl<Root, Members> RunningApplication<Root, Members> {
-    const fn new(root: Root, members: Members) -> Self {
+/// Exact behavior produced by composing an application root with its declared actors.
+///
+/// This type is public because terminal custody retains the final concrete
+/// behavior and its complete action settlements. Applications normally create
+/// it through [`Application`] and only name it in terminal projections.
+pub struct ApplicationBehavior<Root, Product>
+where
+    Product: ChildProduct<MailAddr>,
+{
+    root: Root,
+    application: Option<Children<MailAddr, Product>>,
+}
+
+impl<Root, Product> ApplicationBehavior<Root, Product>
+where
+    Product: ChildProduct<MailAddr>,
+{
+    const fn new(root: Root, application: Children<MailAddr, Product>) -> Self {
         Self {
             root,
-            members: Some(members),
+            application: Some(application),
         }
     }
 }
 
-impl<Root, Members> Behavior for RunningApplication<Root, Members>
+impl<Root, Product> Behavior for ApplicationBehavior<Root, Product>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    Members: StageApplicationChildren,
-    RootBirthNode<Root>: BirthNodeAppend<ApplicationBirthNode<Members>>,
+    Product: ChildProduct<MailAddr>,
+    RootBirthNode<Root>: BirthNodeAppend<Product::Choice>,
 {
     type Protocol = Root::Protocol;
     type Event = Root::Event;
     type Sends = Root::Sends;
     type Ph = Never;
     type Error = ApplicationDefinitionError<Root::Error>;
-    type Birth = Births<RunningBirthNode<Root, Members>>;
+    type Birth = Births<<RootBirthNode<Root> as BirthNodeAppend<Product::Choice>>::Output>;
 
     fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         let actions =
             behavior::initialize(&mut self.root).map_err(ApplicationDefinitionError::Root)?;
-        let members = self
-            .members
+        let application = self
+            .application
             .take()
             .ok_or(ApplicationDefinitionError::InitializedTwice)?;
-        let mut reserved = actions
-            .creates
-            .iter()
-            .map(|creation| creation.nonce)
-            .collect::<HashSet<_>>();
-        let mut next = 0;
-        let application = members
-            .stage(&mut reserved, &mut next)
-            .map_err(|ApplicationStagingError::NonceExhausted| {
-                ApplicationDefinitionError::NonceExhausted
-            })?
-            .into_creates()
-            .map_err(|error| match error {
-                ChildrenError::DuplicateNonce { nonce } => {
-                    ApplicationDefinitionError::DuplicateNonce(nonce)
-                }
-            })?;
+        let application = application.into_creates();
         Ok(Actions {
             sends: actions.sends,
             creates: RootBirthNode::<Root>::append_creations(actions.creates, application),
@@ -918,15 +906,16 @@ where
             .map_err(ApplicationDefinitionError::Root)?;
         Ok(Actions {
             sends: actions.sends,
-            creates: RootBirthNode::<Root>::append_creations(actions.creates, Vec::new()),
+            creates: RootBirthNode::<Root>::append_creations(actions.creates, Creations::empty()),
             become_: actions.become_,
         })
     }
 }
 
-impl<Root, Members> BehaviorBase for RunningApplication<Root, Members>
+impl<Root, Product> BehaviorBase for ApplicationBehavior<Root, Product>
 where
     Root: BehaviorBase,
+    Product: ChildProduct<MailAddr>,
 {
     type Base = Root::Base;
 
@@ -935,107 +924,91 @@ where
     }
 }
 
-impl<Root, Members, Terminal, CommitError>
-    RootProjection<RunningApplication<Root, Members>, Terminal, CommitError> for DeclaredRoot
+impl<Root, Product, Terminal> RootProjection<ApplicationBehavior<Root, Product>, Terminal>
+    for DeclaredRoot
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    Members: StageApplicationChildren,
-    RootBirthNode<Root>: BirthNodeAppend<ApplicationBirthNode<Members>>,
-    CommitError: Into<EffectInterpretationError>,
-    Terminal:
-        ProjectTerminal<ActorOrigin<Root, Here>, ActorRetirement<Root, Terminal, CommitError>>,
+    Product: ChildProduct<MailAddr>,
+    RootBirthNode<Root>: BirthNodeAppend<Product::Choice>,
+    ApplicationBehavior<Root, Product>: BehaviorSettlements<
+            Protocol = Root::Protocol,
+            Event = Root::Event,
+            Sends = Root::Sends,
+            Ph = Never,
+            Error = ApplicationDefinitionError<Root::Error>,
+            Birth = Births<<RootBirthNode<Root> as BirthNodeAppend<Product::Choice>>::Output>,
+            Settlements: ClassifySettlement + Send + 'static,
+        >,
+    Terminal: ProjectTerminal<
+            ActorOrigin<Root, Here>,
+            ActorRetirement<ApplicationBehavior<Root, Product>, Terminal>,
+        >,
 {
     type Error = Root::Error;
 
     fn project(
         address: MailAddr,
-        outcome: LocalOutcome<RunningApplication<Root, Members>, Vec<Terminal>, CommitError>,
+        outcome: LocalOutcome<ApplicationBehavior<Root, Product>, Vec<Terminal>>,
     ) -> Terminal {
-        let retirement = ActorRetirement::from_local(outcome);
-        let retirement = match retirement {
-            ActorRetirement::Completed {
-                behavior,
-                control,
-                user,
-                descendants,
-                completion,
-            } => ActorRetirement::Completed {
-                behavior: behavior.root,
-                control,
-                user,
-                descendants,
-                completion,
-            },
-            ActorRetirement::BehaviorFailed {
-                behavior,
-                control,
-                user,
-                descendants,
-                error: ApplicationDefinitionError::Root(error),
-            } => ActorRetirement::BehaviorFailed {
-                behavior: behavior.root,
-                control,
-                user,
-                descendants,
-                error,
-            },
-            ActorRetirement::EffectsFailed {
-                behavior,
-                error,
-                control,
-                user,
-                descendants,
-            } => ActorRetirement::EffectsFailed {
-                behavior: behavior.root,
-                error,
-                control,
-                user,
-                descendants,
-            },
-            ActorRetirement::OwnerCancelled {
-                behavior,
-                control,
-                user,
-                descendants,
-            } => ActorRetirement::OwnerCancelled {
-                behavior: behavior.root,
-                control,
-                user,
-                descendants,
-            },
-            ActorRetirement::Panicked => ActorRetirement::Panicked,
-            ActorRetirement::Cancelled => ActorRetirement::Cancelled,
-            ActorRetirement::AllocationRejected { .. }
-            | ActorRetirement::InitializationRejected { .. }
-            | ActorRetirement::HostRejected { .. }
-            | ActorRetirement::InitializationEffectsFailed { .. }
-            | ActorRetirement::EndedBeforeActivation { .. }
-            | ActorRetirement::BehaviorFailed { .. } => {
-                unreachable!("a published application root cannot return a startup disposition")
-            }
-        };
-        Terminal::project(ActorOrigin::<Root, Here>::root(address), retirement)
+        Terminal::project(
+            ActorOrigin::<Root, Here>::root(address),
+            ActorRetirement::from_local(outcome),
+        )
     }
 
     fn startup_error(
-        error: SpawnError<RunningApplication<Root, Members>, CommitError, Vec<Terminal>>,
+        error: SpawnError<ApplicationBehavior<Root, Product>, Vec<Terminal>>,
     ) -> RunError<Self::Error> {
         match error {
             SpawnError::AllocationRejected { reason, .. } => RunError::AllocationRejected(reason),
             SpawnError::InitializationRejected { error, .. } => match error {
                 ApplicationDefinitionError::Root(error) => RunError::InitializationRejected(error),
                 ApplicationDefinitionError::InitializedTwice => RunError::InitializedTwice,
-                ApplicationDefinitionError::NonceExhausted => RunError::NonceExhausted,
-                ApplicationDefinitionError::DuplicateNonce(nonce) => {
-                    RunError::DuplicateNonce(nonce)
-                }
             },
             SpawnError::HostRejected { error, .. } => RunError::HostRejected(error),
-            SpawnError::EffectsRejected { error, .. } => RunError::EffectsRejected(error.into()),
             SpawnError::Panicked => RunError::Panicked,
             SpawnError::Cancelled => RunError::Cancelled,
             SpawnError::Ended(completion) => RunError::Ended(completion),
         }
+    }
+}
+
+trait ComposeApplication<Root>
+where
+    Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
+{
+    type Actor: Behavior<Protocol = Root::Protocol, Ph = Never>;
+    type Origins;
+    type Projection;
+
+    fn compose(self, root: Root) -> Result<Self::Actor, RunError<Root::Error>>;
+}
+
+impl<Root> ComposeApplication<Root> for ()
+where
+    Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
+{
+    type Actor = Root;
+    type Origins = StructuralOrigins<Root::Base>;
+    type Projection = DirectRoot;
+
+    fn compose(self, root: Root) -> Result<Self::Actor, RunError<Root::Error>> {
+        Ok(root)
+    }
+}
+
+impl<Root, Role, Actor, Tail> ComposeApplication<Root> for (Role, Actor, Tail)
+where
+    Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
+    (Role, Actor, Tail): DeclaredApplicationChildren,
+    RootBirthNode<Root>: BirthNodeAppend<ApplicationBirthNode<(Role, Actor, Tail)>>,
+{
+    type Actor = ApplicationBehavior<Root, ApplicationProduct<(Role, Actor, Tail)>>;
+    type Origins = ApplicationOrigins<Root, (Role, Actor, Tail)>;
+    type Projection = DeclaredRoot;
+
+    fn compose(self, root: Root) -> Result<Self::Actor, RunError<Root::Error>> {
+        stage_application(root, self)
     }
 }
 
@@ -1046,71 +1019,54 @@ where
 impl<Root, Members> Application<Root, Members>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
-    Members: StageApplicationChildren,
-    RootBirthNode<Root>: BirthNodeAppend<ApplicationBirthNode<Members>>,
+    Members: ComposeApplication<Root>,
 {
-    /// Run the declared application to exact root termination.
-    ///
-    /// The terminal sum must cover the declared root's exact retirement:
-    ///
-    /// ```compile_fail,E0277
-    /// use bombay::actors::ActorExt;
-    /// use bombay::prelude::{Never, RunError};
-    ///
-    /// struct Root;
-    ///
-    /// #[bombay::actor(message = Never)]
-    /// impl Root {}
-    ///
-    /// struct MissingRootTerminal;
-    ///
-    /// fn run() -> Result<MissingRootTerminal, RunError> {
-    ///     bombay::Application::new(Root.stop_on_shutdown()).run()
-    /// }
-    /// ```
+    /// Run the application to exact root termination.
     ///
     /// # Errors
     ///
-    /// Returns the exact runtime-construction or application-startup failure.
+    /// Returns the exact root initialization or local runtime failure that
+    /// prevented the application from reaching its retirement boundary.
     pub fn run<Terminal>(self) -> Result<Terminal, RunError<Root::Error>>
     where
         ActorSpace<Root::Protocol>: LaunchSystem<
-                RunningApplication<Root, Members>,
+                Members::Actor,
                 Terminal,
-                ApplicationOrigins<Root, Members>,
-                DeclaredRoot,
+                Members::Origins,
+                Members::Projection,
                 RootError = Root::Error,
             >,
     {
         let (root, members) = self.into_parts();
-        let running = RunningApplication::new(root, members);
+        let actor = members.compose(root)?;
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .map_err(RunError::Runtime)?
             .block_on(<ActorSpace<Root::Protocol> as LaunchSystem<
-                RunningApplication<Root, Members>,
+                Members::Actor,
                 Terminal,
-                ApplicationOrigins<Root, Members>,
-                DeclaredRoot,
-            >>::launch(ActorSpace::new(), running))
+                Members::Origins,
+                Members::Projection,
+            >>::launch(ActorSpace::new(), actor))
     }
 
-    /// Run the declared application with one live external boundary.
+    /// Run the application with one live external boundary.
     ///
     /// # Errors
     ///
-    /// Returns the exact runtime-construction or application-startup failure.
+    /// Returns the exact root initialization or local runtime failure that
+    /// prevented the application from reaching its retirement boundary.
     pub fn run_with<Terminal, Boundary, BoundaryFuture, Output>(
         self,
         boundary: Boundary,
     ) -> Result<(Output, Terminal), RunError<Root::Error>>
     where
         ActorSpace<Root::Protocol>: LaunchSystem<
-                RunningApplication<Root, Members>,
+                Members::Actor,
                 Terminal,
-                ApplicationOrigins<Root, Members>,
-                DeclaredRoot,
+                Members::Origins,
+                Members::Projection,
                 RootError = Root::Error,
             >,
         Boundary: FnOnce(ApplicationHandle<Root::Protocol>) -> BoundaryFuture + Send,
@@ -1118,19 +1074,19 @@ where
         Output: Send,
     {
         let (root, members) = self.into_parts();
-        let running = RunningApplication::new(root, members);
+        let actor = members.compose(root)?;
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .map_err(RunError::Runtime)?
             .block_on(<ActorSpace<Root::Protocol> as LaunchSystem<
-                RunningApplication<Root, Members>,
+                Members::Actor,
                 Terminal,
-                ApplicationOrigins<Root, Members>,
-                DeclaredRoot,
+                Members::Origins,
+                Members::Projection,
             >>::launch_with(
                 ActorSpace::new(),
-                running,
+                actor,
                 ApplicationAddresses::new(),
                 (),
                 boundary,
@@ -1138,11 +1094,12 @@ where
     }
 
     #[cfg(feature = "axum")]
-    /// Run the declared application behind an Axum HTTP boundary.
+    /// Run the application behind an Axum HTTP boundary.
     ///
     /// # Errors
     ///
-    /// Returns the exact application startup, listener bind, or server error.
+    /// Returns the exact application construction, runtime, server, or terminal
+    /// failure while preserving terminal custody when it is available.
     pub fn run_axum<Terminal>(
         self,
         address: SocketAddr,
@@ -1150,80 +1107,63 @@ where
     ) -> Result<Terminal, AxumRunError<Terminal, Root::Error>>
     where
         ActorSpace<Root::Protocol>: LaunchSystem<
-                RunningApplication<Root, Members>,
+                Members::Actor,
                 Terminal,
-                ApplicationOrigins<Root, Members>,
-                DeclaredRoot,
+                Members::Origins,
+                Members::Projection,
                 RootError = Root::Error,
             >,
     {
         let (root, members) = self.into_parts();
-        let running = RunningApplication::new(root, members);
+        let actor = members.compose(root).map_err(AxumRunError::Application)?;
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .map_err(RunError::Runtime)?
             .block_on(<ActorSpace<Root::Protocol> as LaunchSystem<
-                RunningApplication<Root, Members>,
+                Members::Actor,
                 Terminal,
-                ApplicationOrigins<Root, Members>,
-                DeclaredRoot,
+                Members::Origins,
+                Members::Projection,
             >>::launch_axum(
-                ActorSpace::new(), running, address, router
+                ActorSpace::new(), actor, address, router
             ))
     }
 }
 
-trait ProjectChildTerminal<Position, Child, Terminal, CommitError>
+trait ProjectChildTerminal<Position, Child, Terminal>
 where
-    Child: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     fn task(
-        task: OwnedTask<Child, Vec<Terminal>, CommitError>,
+        task: OwnedTask<Child, Vec<Terminal>>,
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<Child, Terminal>;
-
-    fn failure(
-        error: SpawnError<Child, CommitError, Vec<Terminal>>,
-        address: MailAddr,
-        nonce: u64,
-    ) -> Terminal;
 }
 
-impl<Owner, Position, Child, Terminal, CommitError>
-    ProjectChildTerminal<Position, Child, Terminal, CommitError> for StructuralOrigins<Owner>
+impl<Owner, Position, Child, Terminal> ProjectChildTerminal<Position, Child, Terminal>
+    for StructuralOrigins<Owner>
 where
     Owner: 'static,
     Position: 'static,
-    Child: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
     Child::Event: Send + 'static,
     BehaviorMessage<Child>: Send + 'static,
     Child::Sends: Send + 'static,
     Child::Error: Send + 'static,
     <Child::Birth as BirthMode>::Child: Send + 'static,
-    CommitError: Send + 'static,
-    Terminal: ProjectTerminal<ActorOrigin<Owner, Position>, ActorRetirement<Child, Terminal, CommitError>>
+    <Child as BehaviorSettlements>::Settlements: Send + 'static,
+    Terminal: ProjectTerminal<ActorOrigin<Owner, Position>, ActorRetirement<Child, Terminal>>
         + Send
         + 'static,
 {
     fn task(
-        task: OwnedTask<Child, Vec<Terminal>, CommitError>,
+        task: OwnedTask<Child, Vec<Terminal>>,
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<Child, Terminal> {
         ProjectedTask::project(task, ActorOrigin::<Owner, Position>::child(address, nonce))
-    }
-
-    fn failure(
-        error: SpawnError<Child, CommitError, Vec<Terminal>>,
-        address: MailAddr,
-        nonce: u64,
-    ) -> Terminal {
-        Terminal::project(
-            ActorOrigin::<Owner, Position>::child(address, nonce),
-            error.into_retirement(),
-        )
     }
 }
 
@@ -1232,91 +1172,70 @@ struct NoRootTerminalOrigins;
 struct RootTerminalOrigin<Child, Tail>(PhantomData<fn() -> (Child, Tail)>);
 struct AppendedOrigins<RootOrigins, Members>(PhantomData<fn() -> (RootOrigins, Members)>);
 
-impl BirthNodeMapper for RootTerminalOriginMapper {
+impl ChildOccurrenceShape for RootTerminalOriginMapper {
     type Empty = NoRootTerminalOrigins;
-    type Mapped<Position, Child: Behavior, Tail> = RootTerminalOrigin<Child, Tail>;
+    type Member<Position, Child: Behavior, Tail> = RootTerminalOrigin<Child, Tail>;
 }
 
-trait ProjectAppendedChild<Target, Absolute, Root, Child, Terminal, CommitError>
+trait ProjectAppendedChild<Target, Absolute, Root, Child, Terminal>
 where
-    Child: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     fn task(
-        task: OwnedTask<Child, Vec<Terminal>, CommitError>,
+        task: OwnedTask<Child, Vec<Terminal>>,
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<Child, Terminal>;
-
-    fn failure(
-        error: SpawnError<Child, CommitError, Vec<Terminal>>,
-        address: MailAddr,
-        nonce: u64,
-    ) -> Terminal;
 }
 
-trait ProjectDeclaredChild<Target, Root, Child, Terminal, CommitError>
+trait ProjectDeclaredChild<Target, Root, Child, Terminal>
 where
-    Child: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     fn task(
-        task: OwnedTask<Child, Vec<Terminal>, CommitError>,
+        task: OwnedTask<Child, Vec<Terminal>>,
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<Child, Terminal>;
-
-    fn failure(
-        error: SpawnError<Child, CommitError, Vec<Terminal>>,
-        address: MailAddr,
-        nonce: u64,
-    ) -> Terminal;
 }
 
-impl<Members, Target, Absolute, Root, Child, Terminal, CommitError>
-    ProjectAppendedChild<Target, Absolute, Root, Child, Terminal, CommitError>
+impl<Members, Target, Absolute, Root, Child, Terminal>
+    ProjectAppendedChild<Target, Absolute, Root, Child, Terminal>
     for AppendedOrigins<NoRootTerminalOrigins, Members>
 where
-    Child: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    Members: ProjectDeclaredChild<Target, Root, Child, Terminal, CommitError>,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    Members: ProjectDeclaredChild<Target, Root, Child, Terminal>,
 {
     fn task(
-        task: OwnedTask<Child, Vec<Terminal>, CommitError>,
+        task: OwnedTask<Child, Vec<Terminal>>,
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<Child, Terminal> {
         Members::task(task, address, nonce)
     }
-
-    fn failure(
-        error: SpawnError<Child, CommitError, Vec<Terminal>>,
-        address: MailAddr,
-        nonce: u64,
-    ) -> Terminal {
-        Members::failure(error, address, nonce)
-    }
 }
 
-impl<RootChild, Rest, Members, Absolute, Root, Terminal, CommitError>
-    ProjectAppendedChild<ChildHead, Absolute, Root, RootChild, Terminal, CommitError>
+impl<RootChild, Rest, Members, Absolute, Root, Terminal>
+    ProjectAppendedChild<ChildHead, Absolute, Root, RootChild, Terminal>
     for AppendedOrigins<RootTerminalOrigin<RootChild, Rest>, Members>
 where
     Root: BehaviorBase,
     Root::Base: 'static,
     Absolute: 'static,
-    RootChild: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    RootChild:
+        BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
     RootChild::Event: Send + 'static,
     BehaviorMessage<RootChild>: Send + 'static,
     RootChild::Sends: Send + 'static,
     RootChild::Error: Send + 'static,
     <RootChild::Birth as BirthMode>::Child: Send + 'static,
-    CommitError: Send + 'static,
-    Terminal: ProjectTerminal<
-            ActorOrigin<Root::Base, Absolute>,
-            ActorRetirement<RootChild, Terminal, CommitError>,
-        > + Send
+    <RootChild as BehaviorSettlements>::Settlements: Send + 'static,
+    Terminal: ProjectTerminal<ActorOrigin<Root::Base, Absolute>, ActorRetirement<RootChild, Terminal>>
+        + Send
         + 'static,
 {
     fn task(
-        task: OwnedTask<RootChild, Vec<Terminal>, CommitError>,
+        task: OwnedTask<RootChild, Vec<Terminal>>,
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<RootChild, Terminal> {
@@ -1325,30 +1244,18 @@ where
             ActorOrigin::<Root::Base, Absolute>::child(address, nonce),
         )
     }
-
-    fn failure(
-        error: SpawnError<RootChild, CommitError, Vec<Terminal>>,
-        address: MailAddr,
-        nonce: u64,
-    ) -> Terminal {
-        Terminal::project(
-            ActorOrigin::<Root::Base, Absolute>::child(address, nonce),
-            error.into_retirement(),
-        )
-    }
 }
 
-impl<RootChild, Rest, Members, Relative, Absolute, Root, Child, Terminal, CommitError>
-    ProjectAppendedChild<ChildTail<Relative>, Absolute, Root, Child, Terminal, CommitError>
+impl<RootChild, Rest, Members, Relative, Absolute, Root, Child, Terminal>
+    ProjectAppendedChild<ChildTail<Relative>, Absolute, Root, Child, Terminal>
     for AppendedOrigins<RootTerminalOrigin<RootChild, Rest>, Members>
 where
     RootChild: Behavior,
-    Child: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    AppendedOrigins<Rest, Members>:
-        ProjectAppendedChild<Relative, Absolute, Root, Child, Terminal, CommitError>,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    AppendedOrigins<Rest, Members>: ProjectAppendedChild<Relative, Absolute, Root, Child, Terminal>,
 {
     fn task(
-        task: OwnedTask<Child, Vec<Terminal>, CommitError>,
+        task: OwnedTask<Child, Vec<Terminal>>,
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<Child, Terminal> {
@@ -1358,99 +1265,61 @@ where
             Root,
             Child,
             Terminal,
-            CommitError,
         >>::task(task, address, nonce)
-    }
-
-    fn failure(
-        error: SpawnError<Child, CommitError, Vec<Terminal>>,
-        address: MailAddr,
-        nonce: u64,
-    ) -> Terminal {
-        <AppendedOrigins<Rest, Members> as ProjectAppendedChild<
-            Relative,
-            Absolute,
-            Root,
-            Child,
-            Terminal,
-            CommitError,
-        >>::failure(error, address, nonce)
     }
 }
 
-impl<Role, Child, Tail, Root, Terminal, CommitError>
-    ProjectDeclaredChild<ChildHead, Root, Child, Terminal, CommitError> for (Role, Child, Tail)
+impl<Role, Child, Tail, Root, Terminal> ProjectDeclaredChild<ChildHead, Root, Child, Terminal>
+    for (Role, Child, Tail)
 where
     Root: 'static,
     Role: 'static,
-    Child: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
     Child::Event: Send + 'static,
     BehaviorMessage<Child>: Send + 'static,
     Child::Sends: Send + 'static,
     Child::Error: Send + 'static,
     <Child::Birth as BirthMode>::Child: Send + 'static,
-    CommitError: Send + 'static,
-    Terminal: ProjectTerminal<ActorOrigin<Root, Role>, ActorRetirement<Child, Terminal, CommitError>>
-        + Send
-        + 'static,
+    <Child as BehaviorSettlements>::Settlements: Send + 'static,
+    Terminal:
+        ProjectTerminal<ActorOrigin<Root, Role>, ActorRetirement<Child, Terminal>> + Send + 'static,
 {
     fn task(
-        task: OwnedTask<Child, Vec<Terminal>, CommitError>,
+        task: OwnedTask<Child, Vec<Terminal>>,
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<Child, Terminal> {
         ProjectedTask::project(task, ActorOrigin::<Root, Role>::child(address, nonce))
     }
-
-    fn failure(
-        error: SpawnError<Child, CommitError, Vec<Terminal>>,
-        address: MailAddr,
-        nonce: u64,
-    ) -> Terminal {
-        Terminal::project(
-            ActorOrigin::<Root, Role>::child(address, nonce),
-            error.into_retirement(),
-        )
-    }
 }
 
-impl<Role, Declared, Tail, Relative, Root, Child, Terminal, CommitError>
-    ProjectDeclaredChild<ChildTail<Relative>, Root, Child, Terminal, CommitError>
-    for (Role, Declared, Tail)
+impl<Role, Declared, Tail, Relative, Root, Child, Terminal>
+    ProjectDeclaredChild<ChildTail<Relative>, Root, Child, Terminal> for (Role, Declared, Tail)
 where
     Declared: Behavior,
-    Child: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    Tail: ProjectDeclaredChild<Relative, Root, Child, Terminal, CommitError>,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    Tail: ProjectDeclaredChild<Relative, Root, Child, Terminal>,
 {
     fn task(
-        task: OwnedTask<Child, Vec<Terminal>, CommitError>,
+        task: OwnedTask<Child, Vec<Terminal>>,
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<Child, Terminal> {
         Tail::task(task, address, nonce)
     }
-
-    fn failure(
-        error: SpawnError<Child, CommitError, Vec<Terminal>>,
-        address: MailAddr,
-        nonce: u64,
-    ) -> Terminal {
-        Tail::failure(error, address, nonce)
-    }
 }
 
-impl<Root, Members, Position, Child, Terminal, CommitError>
-    ProjectChildTerminal<Position, Child, Terminal, CommitError>
+impl<Root, Members, Position, Child, Terminal> ProjectChildTerminal<Position, Child, Terminal>
     for ApplicationOrigins<Root, Members>
 where
     Root: Behavior + BehaviorBase,
-    Child: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    RootBirthNode<Root>: FoldBirthNode<RootTerminalOriginMapper>,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    RootBirthNode<Root>: ChildOccurrenceProduct<RootTerminalOriginMapper>,
     AppendedOrigins<RootOriginProduct<Root>, Members>:
-        ProjectAppendedChild<Position, Position, Root, Child, Terminal, CommitError>,
+        ProjectAppendedChild<Position, Position, Root, Child, Terminal>,
 {
     fn task(
-        task: OwnedTask<Child, Vec<Terminal>, CommitError>,
+        task: OwnedTask<Child, Vec<Terminal>>,
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<Child, Terminal> {
@@ -1460,23 +1329,7 @@ where
             Root,
             Child,
             Terminal,
-            CommitError,
         >>::task(task, address, nonce)
-    }
-
-    fn failure(
-        error: SpawnError<Child, CommitError, Vec<Terminal>>,
-        address: MailAddr,
-        nonce: u64,
-    ) -> Terminal {
-        <AppendedOrigins<RootOriginProduct<Root>, Members> as ProjectAppendedChild<
-            Position,
-            Position,
-            Root,
-            Child,
-            Terminal,
-            CommitError,
-        >>::failure(error, address, nonce)
     }
 }
 
@@ -1496,7 +1349,7 @@ pub(crate) struct ApplicationCapabilities<
     timers: LocalTimers<C::Event>,
     facts: FactQueue<MailAddr, C::Event>,
     peers: Option<LocalPeerObservations<C::Protocol, C::Event>>,
-    creations: CreationResults<MailAddr>,
+    next_child_route: u64,
     child_bindings: Bindings,
     activation_tasks: ActivationTasks<C::Event>,
     exact_observations: Arc<Mutex<HashMap<ObservationId, oneshot::Sender<()>>>>,
@@ -1523,7 +1376,7 @@ where
             timers: inputs.timers,
             facts: inputs.facts,
             peers: None,
-            creations: CreationResults::new(),
+            next_child_route: 0,
             child_bindings,
             activation_tasks: ActivationTasks::new(),
             exact_observations: Arc::new(Mutex::new(HashMap::new())),
@@ -1550,7 +1403,7 @@ where
             timers: self.timers,
             facts: self.facts,
             peers: self.peers,
-            creations: self.creations,
+            next_child_route: self.next_child_route,
             child_bindings: self.child_bindings,
             activation_tasks: self.activation_tasks,
             exact_observations: self.exact_observations,
@@ -1572,24 +1425,6 @@ where
             }
         }
     }
-
-    fn current_creation(
-        &self,
-        nonce: u64,
-    ) -> Result<CreationResolved<MailAddr>, EffectInterpretationError> {
-        self.creations
-            .resolve(&nonce)
-            .ok_or(EffectInterpretationError::UnknownCreation(nonce))
-    }
-}
-
-impl<C, N, P, Bindings, Origins> SendInterpreter
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
-where
-    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    Self: Send,
-{
-    type Error = EffectInterpretationError;
 }
 
 impl<C, N, P, Bindings, Origins> TerminalReportTransaction
@@ -1606,26 +1441,66 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins> BirthInstaller<MailAddr>
+impl<C, N, P, Bindings, Origins, New, RootEvent, Path>
+    InterpretItem<Creations<CreateChild<MailAddr, New>>, RootEvent, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    New: Send,
+    Bindings: Send,
+    Self: Send,
 {
-    type Error = EffectInterpretationError;
-}
-
-impl<C, N, P, Bindings, Origins> CreationTransaction
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
-where
-    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-{
-    fn begin_creations(&mut self) {
-        self.creations.begin();
+    async fn interpret_item(
+        &mut self,
+        creations: Creations<CreateChild<MailAddr, New>>,
+    ) -> ItemSettlement<
+        Creations<CreateChild<MailAddr, New>>,
+        Creations<RoutedCreation<MailAddr, New>>,
+        ChildNamespaceExhausted,
+        Never,
+    > {
+        let Ok(count) = u64::try_from(creations.len()) else {
+            return ItemSettlement::Rejected {
+                item: creations,
+                reason: ChildNamespaceExhausted,
+            };
+        };
+        let Some(next) = self.next_child_route.checked_add(count) else {
+            return ItemSettlement::Rejected {
+                item: creations,
+                reason: ChildNamespaceExhausted,
+            };
+        };
+        let mut route = self.next_child_route;
+        self.next_child_route = next;
+        ItemSettlement::Accepted(creations.map(|creation| {
+            let routed = RoutedCreation::new(creation, route);
+            route += 1;
+            routed
+        }))
     }
 }
 
-impl<C, N, P, Bindings, Origins, Position, Child>
-    SpawnChild<MailAddr, Position, Child, EffectInterpretationError>
+impl<C, N, P, Bindings, Origins, Source, Input> SourceAdmission<C::Event, Source, Input>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    C::Event: EventIngress<Source, Input>,
+    Input: Send,
+    Self: Send,
+{
+    async fn admit_source(&mut self, input: Input) -> Result<(), Input> {
+        let event = C::Event::ingress(input);
+        match self.control.send(event) {
+            Ok(()) => Ok(()),
+            Err(ControlClosed(_)) => {
+                unreachable!("the actor control lane remains live while its effects commit")
+            }
+        }
+    }
+}
+
+impl<C, N, P, Bindings, Origins, Position, Child> EstablishChild<Position, Child>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>> + BehaviorBase,
@@ -1635,12 +1510,16 @@ where
     P: Send,
     Position: 'static,
     Bindings: ChildBindingAt<Position, Child = Child, Root = BindingTerminal<Bindings>>
+        + CreationBindingAt<Position>
         + HostChildAt<Position, Child>
         + NestedChildBindings<Child>
         + RetireChildTasks
         + Send,
-    Child:
-        Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase + Send + 'static,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>
+        + BehaviorBase
+        + Send
+        + 'static,
+    <Child as BehaviorSettlements>::Settlements: ClassifySettlement + Send + 'static,
     Child::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
     BehaviorMessage<Child>: Send + 'static,
     Child::Sends: Send + 'static,
@@ -1658,52 +1537,35 @@ where
             StructuralOrigins<Child::Base>,
         >,
     >: CommitActions<Child, Retired = Vec<BindingTerminal<Bindings>>> + Send + 'static,
-    <ActionInterpreter<
-        ApplicationCapabilities<
-            Child,
-            N,
-            LocalParentReports<C::Event, Child, Position>,
-            NestedBindings<Bindings, Child>,
-            StructuralOrigins<Child::Base>,
-        >,
-    > as CommitActions<Child>>::Error: Send + 'static,
-    Origins: ProjectChildTerminal<
-            Position,
-            Child,
-            BindingTerminal<Bindings>,
-            <ActionInterpreter<
-                ApplicationCapabilities<
-                    Child,
-                    N,
-                    LocalParentReports<C::Event, Child, Position>,
-                    NestedBindings<Bindings, Child>,
-                    StructuralOrigins<Child::Base>,
-                >,
-            > as CommitActions<Child>>::Error,
-        >,
+    Origins: ProjectChildTerminal<Position, Child, BindingTerminal<Bindings>>,
 {
-    async fn spawn_child(
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one exhaustive child-establishment transition owns allocation, launch, binding, and every exact settlement"
+    )]
+    async fn establish_child(
         &mut self,
-        creation: behavior::Create<MailAddr, Child>,
-    ) -> Result<(), EffectInterpretationError> {
-        let behavior::Create { nonce, child, kind } = creation;
-        if self.child_bindings.endpoint(nonce).is_some() {
-            self.creations.record(CreationResolved::rejected(
-                nonce,
-                kind,
-                CreationRejection::NonceAlreadyBound,
-            ));
-            return Ok(());
-        }
+        creation: RoutedCreation<MailAddr, Child>,
+    ) -> ItemSettlement<
+        RoutedCreation<MailAddr, Child>,
+        ChildCreationOutcome<Child, Position>,
+        CreationRejection,
+        Never,
+    > {
+        let id = creation.id();
+        let kind = creation.kind();
+        let route = creation.route();
+        let (request, _) = creation.into_parts();
+        let (_, child, _) = request.into_parts();
         let address = match self.allocations.allocate() {
             Ok(address) => address,
             Err(reason) => {
-                self.creations.record(CreationResolved::rejected(
-                    nonce,
-                    kind,
-                    CreationRejection::Allocation(reason),
-                ));
-                return Ok(());
+                self.child_bindings
+                    .record_creation(id, CreationBinding::Rejected);
+                return ItemSettlement::Rejected {
+                    item: routed_creation(id, kind, route, child),
+                    reason: CreationRejection::Allocation(reason),
+                };
             }
         };
         let actors = self.child_bindings.child_actors();
@@ -1736,7 +1598,7 @@ where
                         NestedBindings::<Bindings, Child>::default(),
                     )
                     .with_parent(
-                        LocalParentReports::<C::Event, Child, Position>::new(nonce, parent),
+                        LocalParentReports::<C::Event, Child, Position>::new(id, parent),
                     ),
                 )
             },
@@ -1745,29 +1607,84 @@ where
         match installed {
             Ok(installed) => {
                 let endpoint = installed.actor.clone();
-                let previous = self.child_bindings.bind(nonce, endpoint, installed.control);
+                let previous = self
+                    .child_bindings
+                    .bind(route, endpoint.clone(), installed.control);
                 assert!(
                     previous.is_none(),
-                    "one serialized creation transaction binds each nonce once"
+                    "one routed creation binds each child route once"
                 );
-                let task = Origins::task(installed.task, address, nonce);
+                let task = Origins::task(installed.task, address, route);
                 self.child_bindings.retain_task(task);
-                self.creations
-                    .record(CreationResolved::installed(nonce, kind, address));
+                self.child_bindings
+                    .record_creation(id, CreationBinding::Established { route, kind });
+                ItemSettlement::Accepted(ChildCreationOutcome::Established {
+                    established: EstablishedCreation::installed(
+                        id,
+                        kind,
+                        endpoint.established_recipient(),
+                    ),
+                })
             }
-            Err(error) => {
-                let reason = error.rejection();
-                let terminal = Origins::failure(error, address, nonce);
-                self.child_bindings.retain_terminal(terminal);
-                self.creations
-                    .record(CreationResolved::rejected(nonce, kind, reason));
+            Err(SpawnError::AllocationRejected { behavior, reason }) => {
+                self.child_bindings
+                    .record_creation(id, CreationBinding::Rejected);
+                ItemSettlement::Rejected {
+                    item: routed_creation(id, kind, route, behavior),
+                    reason: CreationRejection::Allocation(reason),
+                }
+            }
+            Err(SpawnError::InitializationRejected {
+                behavior,
+                error,
+                control,
+                user,
+                descendants,
+            }) => {
+                assert!(control.is_empty());
+                assert!(user.is_empty());
+                assert!(descendants.is_empty());
+                self.child_bindings
+                    .record_creation(id, CreationBinding::Rejected);
+                ItemSettlement::Accepted(ChildCreationOutcome::InitializationRejected {
+                    creation: routed_creation(id, kind, route, behavior),
+                    error,
+                })
+            }
+            Err(SpawnError::HostRejected {
+                behavior,
+                initialization,
+                error,
+                control,
+                user,
+                descendants,
+            }) => {
+                assert!(control.is_empty());
+                assert!(user.is_empty());
+                assert!(descendants.is_empty());
+                let reason = match error {
+                    ClaimError::AddressInUse(_) => CreationRejection::Allocation(
+                        behavior::AllocationRejection::AddressAlreadyClaimed,
+                    ),
+                    ClaimError::RegistrationIdsExhausted(_) => CreationRejection::EnvironmentFailed,
+                };
+                self.child_bindings
+                    .record_creation(id, CreationBinding::Rejected);
+                ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
+                    creation: routed_creation(id, kind, route, behavior),
+                    initialization,
+                    reason,
+                })
+            }
+            Err(SpawnError::Panicked | SpawnError::Cancelled | SpawnError::Ended(_)) => {
+                panic!("child establishment failed outside its recoverable settlement boundary")
             }
         }
-        Ok(())
     }
 }
 
-impl<C, N, P, Bindings, Origins, Target> InterpretDelivery<Target>
+impl<C, N, P, Bindings, Origins, Target, RootEvent, Path>
+    InterpretItem<Delivery<Target>, RootEvent, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
@@ -1776,20 +1693,30 @@ where
     N: ResolveLogical<Target> + Send + Sync,
     Self: Send,
 {
-    async fn interpret_delivery(&mut self, delivery: Delivery<Target>) -> Result<(), Self::Error> {
+    async fn interpret_item(
+        &mut self,
+        delivery: Delivery<Target>,
+    ) -> ItemSettlement<Delivery<Target>, (), LogicalDeliveryReason, Never> {
         let address = delivery.to.address();
-        let actor = self
-            .actor_spaces
-            .resolve_logical(address)
-            .ok_or(EffectInterpretationError::UnknownRecipient(address))?;
-        actor
-            .send_from(self.address, delivery.message)
-            .await
-            .map_err(|_| EffectInterpretationError::ClosedRecipient(address))
+        let Some(actor) = self.actor_spaces.resolve_logical(address) else {
+            return ItemSettlement::Rejected {
+                item: delivery,
+                reason: LogicalDeliveryReason::UnknownAddress,
+            };
+        };
+        let Delivery { to, message } = delivery;
+        match actor.send_from(self.address, message).await {
+            Ok(()) => ItemSettlement::Accepted(()),
+            Err(error) => ItemSettlement::Rejected {
+                item: Delivery::new(to, error.into_message()),
+                reason: LogicalDeliveryReason::ClosedRecipient,
+            },
+        }
     }
 }
 
-impl<C, N, P, Bindings, Origins, Target> InterpretEstablishedDelivery<Target>
+impl<C, N, P, Bindings, Origins, Target, RootEvent, Path>
+    InterpretItem<behavior::EstablishedDelivery<Target>, RootEvent, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
@@ -1797,53 +1724,80 @@ where
     Target::Msg: Send,
     Self: Send,
 {
-    async fn interpret_established_delivery(
+    async fn interpret_item(
         &mut self,
-        endpoint: ActorRef<Target>,
-        message: Target::Msg,
-    ) -> Result<(), Self::Error> {
-        let address = endpoint.address();
-        endpoint
-            .send_from(self.address, message)
-            .await
-            .map_err(|_| EffectInterpretationError::ClosedEstablishedRecipient(address))
+        delivery: behavior::EstablishedDelivery<Target>,
+    ) -> ItemSettlement<behavior::EstablishedDelivery<Target>, (), ExactDeliveryReason, Never> {
+        let behavior::EstablishedDelivery { to, message } = delivery;
+        let endpoint = to.clone().interpret(&mut ExtractLocalEndpoint);
+        match endpoint.send_from(self.address, message).await {
+            Ok(()) => ItemSettlement::Accepted(()),
+            Err(error) => ItemSettlement::Rejected {
+                item: behavior::EstablishedDelivery::new(to, error.into_message()),
+                reason: ExactDeliveryReason::ClosedRecipient,
+            },
+        }
     }
 }
 
-impl<C, N, P, Bindings, Origins, Target, Occurrence> InterpretChildDelivery<Target, Occurrence>
+impl<C, N, P, Bindings, Origins, Target, Occurrence, RootEvent, Path>
+    InterpretItem<ChildDelivery<Target, Occurrence>, RootEvent, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>> + ResolveChildOccurrence<Occurrence>,
     Target: Protocol<Addr = MailAddr>,
     Target::Msg: Send,
     ResolvedChild<C, Occurrence>: Behavior<Protocol = Target>,
-    Bindings:
-        ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>,
+    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>
+        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>,
     Self: Send,
 {
-    async fn interpret_child_delivery(
+    async fn interpret_item(
         &mut self,
         delivery: ChildDelivery<Target, Occurrence>,
-    ) -> Result<(), Self::Error> {
-        if matches!(
-            self.creations.resolve(&delivery.nonce),
-            Some(CreationResolved { result: Err(_), .. })
-        ) {
-            return Err(EffectInterpretationError::RejectedCreation(delivery.nonce));
+    ) -> ItemSettlement<
+        ChildDelivery<Target, Occurrence>,
+        (),
+        ChildDeliveryReason,
+        CreationCorrelation<Target, Occurrence>,
+    > {
+        let route = match self.child_bindings.creation(delivery.creation) {
+            Some(CreationBinding::Established { route, .. }) => route,
+            Some(CreationBinding::Rejected) => {
+                let prerequisite = CreationCorrelation::new(delivery.creation);
+                return ItemSettlement::Blocked {
+                    item: delivery,
+                    prerequisite,
+                };
+            }
+            None => {
+                return ItemSettlement::Rejected {
+                    item: delivery,
+                    reason: ChildDeliveryReason::MissingBinding,
+                };
+            }
+        };
+        let Some(actor) = self.child_bindings.endpoint(route) else {
+            return ItemSettlement::Rejected {
+                item: delivery,
+                reason: ChildDeliveryReason::MissingBinding,
+            };
+        };
+        let ChildDelivery {
+            creation, message, ..
+        } = delivery;
+        match actor.send_from(self.address, message).await {
+            Ok(()) => ItemSettlement::Accepted(()),
+            Err(error) => ItemSettlement::Rejected {
+                item: ChildDelivery::after(creation, error.into_message()),
+                reason: ChildDeliveryReason::ClosedRecipient,
+            },
         }
-        let actor = self
-            .child_bindings
-            .endpoint(delivery.nonce)
-            .ok_or(EffectInterpretationError::UnknownChild(delivery.nonce))?;
-        actor
-            .send_from(self.address, delivery.message)
-            .await
-            .map_err(|_| EffectInterpretationError::ClosedChild(delivery.nonce))
     }
 }
 
-impl<C, N, P, Bindings, Origins, Child, Source, Input, Occurrence>
-    InterpretChildInput<Child, Source, Input, Occurrence>
+impl<C, N, P, Bindings, Origins, Child, Source, Input, Occurrence, RootEvent, Path>
+    InterpretItem<ChildInput<Child, Source, Input, Occurrence>, RootEvent, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>
@@ -1851,43 +1805,84 @@ where
     Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Child::Event: ChildInputIngress<Source, Input> + Send,
     Input: Send,
-    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = Child> + Send,
+    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = Child>
+        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>
+        + Send,
     Self: Send,
 {
-    async fn interpret_child_input(
+    async fn interpret_item(
         &mut self,
         input: ChildInput<Child, Source, Input, Occurrence>,
-    ) -> Result<(), Self::Error> {
-        if matches!(
-            self.creations.resolve(&input.nonce),
-            Some(CreationResolved { result: Err(_), .. })
-        ) {
-            return Err(EffectInterpretationError::RejectedCreation(input.nonce));
-        }
-        let control = self
-            .child_bindings
-            .control(input.nonce)
-            .ok_or(EffectInterpretationError::UnknownChild(input.nonce))?;
+    ) -> ItemSettlement<
+        ChildInput<Child, Source, Input, Occurrence>,
+        (),
+        ChildInputReason,
+        CreationCorrelation<Child::Protocol, Occurrence>,
+    > {
+        let route = match self.child_bindings.creation(input.creation) {
+            Some(CreationBinding::Established { route, .. }) => route,
+            Some(CreationBinding::Rejected) => {
+                let prerequisite = CreationCorrelation::new(input.creation);
+                return ItemSettlement::Blocked {
+                    item: input,
+                    prerequisite,
+                };
+            }
+            None => {
+                return ItemSettlement::Rejected {
+                    item: input,
+                    reason: ChildInputReason::MissingBinding,
+                };
+            }
+        };
+        let Some(control) = self.child_bindings.control(route) else {
+            return ItemSettlement::Rejected {
+                item: input,
+                reason: ChildInputReason::MissingBinding,
+            };
+        };
         let event = Child::Event::child_input(input.input);
-        control
-            .send(event)
-            .map_err(|_| EffectInterpretationError::ClosedChildControl(input.nonce))
+        match control.send(event) {
+            Ok(()) => ItemSettlement::Accepted(()),
+            Err(ControlClosed(_)) => {
+                unreachable!("an owned child control lane outlives its parent binding")
+            }
+        }
     }
 }
 
-impl<C, N, P, Bindings, Origins, Path> InterpretRequest<ScheduleAt, C::Event, Path>
+impl<C, N, P, Bindings, Origins, Path> InterpretItem<ScheduleAt, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    C::Event: InjectEvent<behavior::TimerElapsed, Path>,
+    C::Event: InjectEvent<TimerElapsed, Path>,
     Self: Send,
 {
-    async fn interpret_request(&mut self, request: ScheduleAt) -> Result<(), Self::Error> {
-        self.timers.schedule_at::<Path>(request).map_err(Into::into)
+    async fn interpret_item(
+        &mut self,
+        request: ScheduleAt,
+    ) -> ItemSettlement<ScheduleAt, TimerScheduled, ScheduleAtRejection, Never> {
+        match self.timers.schedule_at::<Path>(request) {
+            Ok(()) => ItemSettlement::Accepted(TimerScheduled {
+                id: request.id,
+                generation: request.generation,
+            }),
+            Err(crate::time::TimerError::GenerationExhausted) => ItemSettlement::Rejected {
+                item: request,
+                reason: ScheduleAtRejection::QueueGenerationExhausted,
+            },
+            Err(crate::time::TimerError::SequenceExhausted) => ItemSettlement::Rejected {
+                item: request,
+                reason: ScheduleAtRejection::QueueSequenceExhausted,
+            },
+            Err(crate::time::TimerError::DeadlineOverflow) => {
+                unreachable!("absolute scheduling does not add a relative deadline")
+            }
+        }
     }
 }
 
-impl<C, N, P, Bindings, Origins, D, Path> InterpretRequest<EntityAdmission<D>, C::Event, Path>
+impl<C, N, P, Bindings, Origins, D, Path> InterpretItem<EntityAdmission<D>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
@@ -1895,192 +1890,281 @@ where
     D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     Self: Send,
 {
-    async fn interpret_request(&mut self, request: EntityAdmission<D>) -> Result<(), Self::Error> {
-        request.interpret(self.address).await;
-        Ok(())
-    }
-}
-
-impl<C, N, P, Bindings, Origins, Path> InterpretRequest<ScheduleAfter, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
-where
-    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    C::Event: InjectEvent<behavior::TimerElapsed, Path>,
-    Self: Send,
-{
-    async fn interpret_request(&mut self, request: ScheduleAfter) -> Result<(), Self::Error> {
-        self.timers
-            .schedule_after::<Path>(request)
-            .map_err(Into::into)
-    }
-}
-
-impl<C, N, P, Bindings, Origins, Occurrence, Path>
-    InterpretRequest<ObserveCreation<MailAddr, Occurrence>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
-where
-    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    C::Event: InjectEvent<CreationResolved<MailAddr>, Path>,
-    Self: Send,
-{
-    async fn interpret_request(
+    async fn interpret_item(
         &mut self,
-        request: ObserveCreation<MailAddr, Occurrence>,
-    ) -> Result<(), Self::Error> {
-        let result = self.current_creation(request.nonce)?;
-        self.return_fact::<_, Path>(result);
-        Ok(())
+        request: EntityAdmission<D>,
+    ) -> ItemSettlement<EntityAdmission<D>, (), Never, Never> {
+        request.interpret(self.address).await;
+        ItemSettlement::Accepted(())
+    }
+}
+
+impl<C, N, P, Bindings, Origins, Path> InterpretItem<ScheduleAfter, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    C::Event: InjectEvent<TimerElapsed, Path>,
+    Self: Send,
+{
+    async fn interpret_item(
+        &mut self,
+        request: ScheduleAfter,
+    ) -> ItemSettlement<ScheduleAfter, TimerScheduled, ScheduleAfterRejection, Never> {
+        match self.timers.schedule_after::<Path>(request) {
+            Ok(()) => ItemSettlement::Accepted(TimerScheduled {
+                id: request.id,
+                generation: request.generation,
+            }),
+            Err(crate::time::TimerError::DeadlineOverflow) => ItemSettlement::Rejected {
+                item: request,
+                reason: ScheduleAfterRejection::DeadlineOverflow,
+            },
+            Err(crate::time::TimerError::GenerationExhausted) => ItemSettlement::Rejected {
+                item: request,
+                reason: ScheduleAfterRejection::QueueGenerationExhausted,
+            },
+            Err(crate::time::TimerError::SequenceExhausted) => ItemSettlement::Rejected {
+                item: request,
+                reason: ScheduleAfterRejection::QueueSequenceExhausted,
+            },
+        }
     }
 }
 
 impl<C, N, P, Bindings, Origins, ChildProtocol, Occurrence, Path>
-    InterpretRequest<ObserveEstablishedCreation<ChildProtocol, Occurrence>, C::Event, Path>
+    InterpretItem<ObserveCreation<ChildProtocol, Occurrence>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>> + ResolveChildOccurrence<Occurrence>,
     ChildProtocol: Protocol<Addr = MailAddr>,
     ResolvedChild<C, Occurrence>: Behavior<Protocol = ChildProtocol>,
-    Bindings:
-        ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>,
-    C::Event: InjectEvent<EstablishedCreation<ChildProtocol, Occurrence>, Path>,
+    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>
+        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>,
+    C::Event: InjectEvent<CreationResolved<MailAddr>, Path>,
     Self: Send,
 {
-    async fn interpret_request(
+    async fn interpret_item(
         &mut self,
-        request: ObserveEstablishedCreation<ChildProtocol, Occurrence>,
-    ) -> Result<(), Self::Error> {
-        let result = self.current_creation(request.nonce)?;
-        let fact = match result.result {
-            Ok(_) => {
-                let actor = self
-                    .child_bindings
-                    .endpoint(result.nonce)
-                    .ok_or(EffectInterpretationError::UnknownChild(result.nonce))?;
-                EstablishedCreation::installed(
-                    result.nonce,
-                    result.kind,
-                    actor.established_recipient(),
-                )
+        request: ObserveCreation<ChildProtocol, Occurrence>,
+    ) -> ItemSettlement<
+        ObserveCreation<ChildProtocol, Occurrence>,
+        (),
+        Never,
+        CreationCorrelation<ChildProtocol, Occurrence>,
+    > {
+        match self.child_bindings.creation(request.creation) {
+            Some(CreationBinding::Established { route, kind }) => {
+                let Some(actor) = self.child_bindings.endpoint(route) else {
+                    return ItemSettlement::Corrupt {
+                        item: request,
+                        fault: InterpreterFault::MissingCapability,
+                    };
+                };
+                self.return_fact::<_, Path>(CreationResolved::installed(
+                    request.creation,
+                    kind,
+                    actor.address(),
+                ));
+                ItemSettlement::Accepted(())
             }
-            Err(reason) => EstablishedCreation::rejected(result.nonce, result.kind, reason),
-        };
-        self.return_fact::<_, Path>(fact);
-        Ok(())
+            Some(CreationBinding::Rejected) => ItemSettlement::Blocked {
+                prerequisite: CreationCorrelation::new(request.creation),
+                item: request,
+            },
+            None => ItemSettlement::Corrupt {
+                item: request,
+                fault: InterpreterFault::MissingCapability,
+            },
+        }
     }
 }
 
-impl<C, N, P, Bindings, Origins, Path> InterpretRequest<ObservePeer<MailAddr>, C::Event, Path>
+impl<C, N, P, Bindings, Origins, ChildProtocol, Occurrence, Path>
+    InterpretItem<ObserveEstablishedCreation<ChildProtocol, Occurrence>, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>> + ResolveChildOccurrence<Occurrence>,
+    ChildProtocol: Protocol<Addr = MailAddr>,
+    ResolvedChild<C, Occurrence>: Behavior<Protocol = ChildProtocol>,
+    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>
+        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>,
+    C::Event: InjectEvent<EstablishedCreation<ChildProtocol, Occurrence>, Path>,
+    Self: Send,
+{
+    async fn interpret_item(
+        &mut self,
+        request: ObserveEstablishedCreation<ChildProtocol, Occurrence>,
+    ) -> ItemSettlement<
+        ObserveEstablishedCreation<ChildProtocol, Occurrence>,
+        (),
+        Never,
+        CreationCorrelation<ChildProtocol, Occurrence>,
+    > {
+        match self.child_bindings.creation(request.creation) {
+            Some(CreationBinding::Established { route, kind }) => {
+                let Some(actor) = self.child_bindings.endpoint(route) else {
+                    return ItemSettlement::Corrupt {
+                        item: request,
+                        fault: InterpreterFault::MissingCapability,
+                    };
+                };
+                self.return_fact::<_, Path>(EstablishedCreation::installed(
+                    request.creation,
+                    kind,
+                    actor.established_recipient(),
+                ));
+                ItemSettlement::Accepted(())
+            }
+            Some(CreationBinding::Rejected) => ItemSettlement::Blocked {
+                prerequisite: CreationCorrelation::new(request.creation),
+                item: request,
+            },
+            None => ItemSettlement::Corrupt {
+                item: request,
+                fault: InterpreterFault::MissingCapability,
+            },
+        }
+    }
+}
+
+impl<C, N, P, Bindings, Origins, Path> InterpretItem<ObservePeer<MailAddr>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    C::Event: InjectEvent<behavior::PeerStopped<MailAddr>, Path> + Send + 'static,
+    C::Event: InjectEvent<PeerStopped<MailAddr>, Path> + Send + 'static,
     BehaviorMessage<C>: Send,
     N: Hosts<C::Protocol>,
     Self: Send,
 {
-    async fn interpret_request(
+    async fn interpret_item(
         &mut self,
         request: ObservePeer<MailAddr>,
-    ) -> Result<(), Self::Error> {
-        self.peers
+    ) -> ItemSettlement<ObservePeer<MailAddr>, (), PeerObservationRejection, Never> {
+        let result = self
+            .peers
             .get_or_insert_with(|| {
                 LocalPeerObservations::new(self.actor_spaces.space().clone(), self.facts.clone())
             })
-            .observe::<Path>(request)
-            .map_err(Into::into)
+            .observe::<Path>(request);
+        match result {
+            Ok(()) => ItemSettlement::Accepted(()),
+            Err(_) => ItemSettlement::Rejected {
+                item: request,
+                reason: PeerObservationRejection::UnknownAddress,
+            },
+        }
     }
 }
 
-impl<C, N, P, Bindings, Origins, Occurrence, Path>
-    InterpretRequest<ObserveChild<MailAddr, Occurrence>, C::Event, Path>
+impl<C, N, P, Bindings, Origins, ChildProtocol, Occurrence, Path>
+    InterpretItem<ObserveChild<ChildProtocol, Occurrence>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>> + ResolveChildOccurrence<Occurrence>,
-    C::Event: InjectEvent<behavior::ChildStopped<MailAddr>, Path> + Send + 'static,
-    ResolvedChild<C, Occurrence>: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    Bindings:
-        ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>,
+    ChildProtocol: Protocol<Addr = MailAddr>,
+    C::Event: InjectEvent<ChildStopped<MailAddr>, Path> + Send + 'static,
+    ResolvedChild<C, Occurrence>: Behavior<Protocol = ChildProtocol>,
+    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>
+        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>,
     Self: Send,
 {
-    async fn interpret_request(
+    async fn interpret_item(
         &mut self,
-        request: ObserveChild<MailAddr, Occurrence>,
-    ) -> Result<(), Self::Error> {
-        if matches!(
-            self.creations.resolve(&request.nonce),
-            Some(CreationResolved { result: Err(_), .. })
-        ) {
-            return Ok(());
-        }
-        let child = self
-            .child_bindings
-            .endpoint(request.nonce)
-            .ok_or(EffectInterpretationError::UnknownChild(request.nonce))?;
+        request: ObserveChild<ChildProtocol, Occurrence>,
+    ) -> ItemSettlement<
+        ObserveChild<ChildProtocol, Occurrence>,
+        (),
+        Never,
+        CreationCorrelation<ChildProtocol, Occurrence>,
+    > {
+        let route = match self.child_bindings.creation(request.child) {
+            Some(CreationBinding::Established { route, .. }) => route,
+            Some(CreationBinding::Rejected) => {
+                return ItemSettlement::Blocked {
+                    prerequisite: CreationCorrelation::new(request.child),
+                    item: request,
+                };
+            }
+            None => {
+                return ItemSettlement::Corrupt {
+                    item: request,
+                    fault: InterpreterFault::MissingCapability,
+                };
+            }
+        };
+        let Some(child) = self.child_bindings.endpoint(route) else {
+            return ItemSettlement::Corrupt {
+                item: request,
+                fault: InterpreterFault::MissingCapability,
+            };
+        };
         self.facts
-            .insert_child::<Path>(request.nonce, child.termination_observation());
-        Ok(())
+            .insert_child::<Path>(request.child, child.termination_observation());
+        ItemSettlement::Accepted(())
     }
 }
 
 impl<C, N, P, Bindings, Origins, Child, Occurrence, Path>
-    InterpretRequest<ShutdownChild<Child, Occurrence>, C::Event, Path>
+    InterpretItem<ShutdownChild<Child, Occurrence>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>
         + ResolveChildOccurrence<Occurrence, Child = Child>,
-    C::Event: InjectEvent<ChildShutdownRejected<u64>, Path>
-        + InjectEvent<behavior::ChildStopped<MailAddr>, Path>
-        + Send
-        + 'static,
+    C::Event: InjectEvent<ChildStopped<MailAddr>, Path> + Send + 'static,
     Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = Child>,
+    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = Child>
+        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>,
     Self: Send,
 {
-    async fn interpret_request(
+    async fn interpret_item(
         &mut self,
         request: ShutdownChild<Child, Occurrence>,
-    ) -> Result<(), Self::Error> {
-        if matches!(
-            self.creations.resolve(&request.nonce),
-            Some(CreationResolved { result: Err(_), .. })
-        ) {
-            self.return_fact::<_, Path>(ChildShutdownRejected::new(
-                request.nonce,
-                ChildShutdownRejection::NotEstablished,
-            ));
-            return Ok(());
-        }
-        let Some(child) = self.child_bindings.endpoint(request.nonce) else {
-            self.return_fact::<_, Path>(ChildShutdownRejected::new(
-                request.nonce,
-                ChildShutdownRejection::NotEstablished,
-            ));
-            return Ok(());
+    ) -> ItemSettlement<
+        ShutdownChild<Child, Occurrence>,
+        (),
+        ChildShutdownRejection,
+        CreationCorrelation<Child::Protocol, Occurrence>,
+    > {
+        let route = match self.child_bindings.creation(request.child) {
+            Some(CreationBinding::Established { route, .. }) => route,
+            Some(CreationBinding::Rejected) => {
+                return ItemSettlement::Blocked {
+                    prerequisite: CreationCorrelation::new(request.child),
+                    item: request,
+                };
+            }
+            None => {
+                return ItemSettlement::Corrupt {
+                    item: request,
+                    fault: InterpreterFault::MissingCapability,
+                };
+            }
+        };
+        let Some(child) = self.child_bindings.endpoint(route) else {
+            return ItemSettlement::Corrupt {
+                item: request,
+                fault: InterpreterFault::MissingCapability,
+            };
         };
         match child.request_shutdown() {
             Ok(()) => {
                 self.facts
-                    .insert_child::<Path>(request.nonce, child.termination_observation());
+                    .insert_child::<Path>(request.child, child.termination_observation());
+                ItemSettlement::Accepted(())
             }
-            Err(ShutdownRejection::AlreadyStopping) => {
-                self.return_fact::<_, Path>(ChildShutdownRejected::new(
-                    request.nonce,
-                    ChildShutdownRejection::AlreadyStopping,
-                ));
-            }
-            Err(ShutdownRejection::AlreadyStopped) => {
-                self.return_fact::<_, Path>(ChildShutdownRejected::new(
-                    request.nonce,
-                    ChildShutdownRejection::NotEstablished,
-                ));
-            }
+            Err(ShutdownRejection::AlreadyStopping) => ItemSettlement::Rejected {
+                item: request,
+                reason: ChildShutdownRejection::AlreadyStopping,
+            },
+            Err(ShutdownRejection::AlreadyStopped) => ItemSettlement::Rejected {
+                item: request,
+                reason: ChildShutdownRejection::NotEstablished,
+            },
         }
-        Ok(())
     }
 }
 
-impl<C, N, P, Bindings, Origins, Report, Path>
-    InterpretRequest<ReportToParent<Report>, C::Event, Path>
+impl<C, N, P, Bindings, Origins, Report, Path> InterpretItem<ReportToParent<Report>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
@@ -2088,62 +2172,45 @@ where
     Report: Send,
     Self: Send,
 {
-    async fn interpret_request(
+    async fn interpret_item(
         &mut self,
         request: ReportToParent<Report>,
-    ) -> Result<(), Self::Error> {
+    ) -> ItemSettlement<ReportToParent<Report>, (), ParentReportReason, Never> {
         self.parent_reports.report(request.into_inner());
-        Ok(())
+        ItemSettlement::Accepted(())
     }
 }
 
 impl<C, N, P, Bindings, Origins, Path>
-    InterpretRequest<ReportTerminalOutcome<MailAddr>, C::Event, Path>
+    InterpretItem<ReportTerminalOutcome<MailAddr>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Self: Send,
 {
-    async fn interpret_request(
+    async fn interpret_item(
         &mut self,
         request: ReportTerminalOutcome<MailAddr>,
-    ) -> Result<(), Self::Error> {
+    ) -> ItemSettlement<ReportTerminalOutcome<MailAddr>, (), Never, Never> {
         self.terminal_reports.report_outcome(request);
-        Ok(())
+        ItemSettlement::Accepted(())
     }
 }
 
-impl<C, N, P, Bindings, Origins, Path>
-    InterpretRequest<ReportSupervisionFailure<MailAddr>, C::Event, Path>
+impl<C, N, P, Bindings, Origins, Plan, Path> InterpretItem<ReportShutdownPlan<Plan>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    Self: Send,
-{
-    async fn interpret_request(
-        &mut self,
-        request: ReportSupervisionFailure<MailAddr>,
-    ) -> Result<(), Self::Error> {
-        self.terminal_reports.report_supervision(request);
-        Ok(())
-    }
-}
-
-impl<C, N, P, Bindings, Origins, Plan, Path>
-    InterpretRequest<ReportShutdownPlan<Plan>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
-where
-    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    C::Event: EventIngress<Here, behavior::InstallShutdownPlan<Plan>>,
+    C::Event: EventIngress<Here, InstallShutdownPlan<Plan>>,
     Plan: Send,
     Self: Send,
 {
-    async fn interpret_request(
+    async fn interpret_item(
         &mut self,
         request: ReportShutdownPlan<Plan>,
-    ) -> Result<(), Self::Error> {
+    ) -> ItemSettlement<ReportShutdownPlan<Plan>, (), Never, Never> {
         match self.control.send(request.into_event()) {
-            Ok(()) => Ok(()),
+            Ok(()) => ItemSettlement::Accepted(()),
             Err(ControlClosed(_)) => {
                 unreachable!("the actor control lane remains live while its effects commit")
             }
@@ -2151,12 +2218,12 @@ where
     }
 }
 
-struct ObservationAt<'a, Capabilities, Path> {
+struct EstablishedObservationInterpreter<'a, Capabilities, Path> {
     capabilities: &'a mut Capabilities,
     path: PhantomData<fn() -> Path>,
 }
 
-impl<'a, Capabilities, Path> ObservationAt<'a, Capabilities, Path> {
+impl<'a, Capabilities, Path> EstablishedObservationInterpreter<'a, Capabilities, Path> {
     fn new(capabilities: &'a mut Capabilities) -> Self {
         Self {
             capabilities,
@@ -2166,7 +2233,11 @@ impl<'a, Capabilities, Path> ObservationAt<'a, Capabilities, Path> {
 }
 
 impl<C, N, Parent, Bindings, Origins, Target, Path> InterpretEstablishedObservation<Target>
-    for ObservationAt<'_, ApplicationCapabilities<C, N, Parent, Bindings, Origins>, Path>
+    for EstablishedObservationInterpreter<
+        '_,
+        ApplicationCapabilities<C, N, Parent, Bindings, Origins>,
+        Path,
+    >
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Target: Protocol<Addr = MailAddr> + Send + 'static,
@@ -2243,7 +2314,7 @@ where
 }
 
 impl<C, N, P, Bindings, Origins, Target, Path>
-    InterpretRequest<ObserveEstablished<Target>, C::Event, Path>
+    InterpretItem<ObserveEstablished<Target>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
@@ -2252,17 +2323,17 @@ where
     C::Event: InjectEvent<EstablishedObservation<Target>, Path> + Send + 'static,
     Self: Send,
 {
-    async fn interpret_request(
+    async fn interpret_item(
         &mut self,
         request: ObserveEstablished<Target>,
-    ) -> Result<(), Self::Error> {
-        request.interpret(&mut ObservationAt::<_, Path>::new(self));
-        Ok(())
+    ) -> ItemSettlement<ObserveEstablished<Target>, (), Never, Never> {
+        request.interpret(&mut EstablishedObservationInterpreter::<_, Path>::new(self));
+        ItemSettlement::Accepted(())
     }
 }
 
 impl<C, N, P, Bindings, Origins, Target, Path>
-    InterpretRequest<CancelObservation<Target>, C::Event, Path>
+    InterpretItem<CancelObservation<Target>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
@@ -2271,70 +2342,48 @@ where
     C::Event: InjectEvent<EstablishedObservation<Target>, Path> + Send + 'static,
     Self: Send,
 {
-    async fn interpret_request(
+    async fn interpret_item(
         &mut self,
         request: CancelObservation<Target>,
-    ) -> Result<(), Self::Error> {
-        request.interpret(&mut ObservationAt::<_, Path>::new(self));
-        Ok(())
+    ) -> ItemSettlement<CancelObservation<Target>, (), Never, Never> {
+        request.interpret(&mut EstablishedObservationInterpreter::<_, Path>::new(self));
+        ItemSettlement::Accepted(())
     }
 }
 
-struct ShutdownAt<'a, Capabilities, Path> {
-    capabilities: &'a Capabilities,
-    path: PhantomData<fn() -> Path>,
-}
-
-impl<'a, Capabilities, Path> ShutdownAt<'a, Capabilities, Path> {
-    fn new(capabilities: &'a Capabilities) -> Self {
-        Self {
-            capabilities,
-            path: PhantomData,
-        }
-    }
-}
-
-impl<C, N, Parent, Bindings, Origins, Child, Path> InterpretEstablishedShutdown<Child, Here>
-    for ShutdownAt<'_, ApplicationCapabilities<C, N, Parent, Bindings, Origins>, Path>
+impl<C, N, Parent, Bindings, Origins, Child> InterpretEstablishedShutdown<Child, Here>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    C::Event: InjectEvent<EstablishedShutdownResolved<Child::Protocol>, Path>,
     Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Child::Event: InjectEvent<ShutdownRequested, Here>,
 {
-    type Output = ();
-
     fn shutdown(
         &mut self,
-        id: behavior::ShutdownId,
+        _id: ShutdownId,
         endpoint: ActorRef<Child::Protocol>,
         _ingress: behavior::Ingress<ShutdownRequested, Here>,
-    ) {
-        let fact = match endpoint.request_shutdown() {
-            Ok(()) => EstablishedShutdownResolved::accepted(id),
-            Err(reason) => EstablishedShutdownResolved::rejected(id, reason),
-        };
-        self.capabilities.return_fact::<_, Path>(fact);
+    ) -> Result<(), ShutdownRejection> {
+        endpoint.request_shutdown()
     }
 }
 
 impl<C, N, P, Bindings, Origins, Child, Path>
-    InterpretRequest<ShutdownEstablished<Child, Here>, C::Event, Path>
+    InterpretItem<ShutdownEstablished<Child, Here>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    C::Event: InjectEvent<EstablishedShutdownResolved<Child::Protocol>, Path>,
     Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Child::Event: InjectEvent<ShutdownRequested, Here>,
     BehaviorMessage<Child>: Send,
     Self: Send,
 {
-    async fn interpret_request(
+    async fn interpret_item(
         &mut self,
         request: ShutdownEstablished<Child, Here>,
-    ) -> Result<(), Self::Error> {
-        request.interpret(&mut ShutdownAt::<_, Path>::new(self));
-        Ok(())
+    ) -> ItemSettlement<ShutdownEstablished<Child, Here>, ShutdownId, ShutdownRejection, Never>
+    {
+        request.settle(self)
     }
 }
 

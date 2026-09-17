@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::task::{Context, Poll, Waker};
 
 use behavior::{Actions, Behavior, BehaviorActed, MailAddr, Never, NoBirths, User};
-use bombay_engine::{ActionsOf, ActiveEnvironment, Completion};
+use bombay_engine::{ActionsOf, Completion};
 
 struct CountingAllocator;
 
@@ -66,7 +66,7 @@ impl Behavior for StopOnOne {
 
 struct ImmediateEnvironment(Option<User<MailAddr, u8>>);
 
-impl ActiveEnvironment<StopOnOne> for ImmediateEnvironment {
+impl TestActions<StopOnOne> for ImmediateEnvironment {
     type Error = Infallible;
     type Residual = ();
 
@@ -92,7 +92,7 @@ fn block_on<T>(future: impl Future<Output = T>) -> T {
 }
 
 #[test]
-fn one_complete_driver_execution_allocates_nothing() {
+fn one_complete_driver_execution_allocates_one_settlement_queue() {
     let driver = direct(
         StopOnOne,
         ImmediateEnvironment(Some(User::new(MailAddr(1), 1))),
@@ -100,8 +100,8 @@ fn one_complete_driver_execution_allocates_nothing() {
     let before = ALLOCATIONS.load(Ordering::Relaxed);
     assert_eq!(block_on(driver.run()).disposition, Ok(Completion::Stopped));
     let allocations = ALLOCATIONS.load(Ordering::Relaxed) - before;
-    assert_eq!(allocations, 0, "Driver allocated {allocations} times");
+    assert_eq!(allocations, 1, "Driver allocated {allocations} times");
 }
 mod support;
 
-use support::direct;
+use support::{TestActions, direct};

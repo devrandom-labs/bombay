@@ -4,8 +4,9 @@ use std::future::Future;
 use std::sync::Arc;
 
 use behavior::{
-    AllocationRejection, EstablishedRecipient, Exit, InterpretEstablished, Never, Protocol, User,
+    AllocationRejection, EstablishedRecipient, InterpretEstablished, Never, Protocol, User,
 };
+use behavior_actors::Exit;
 use bombay_address::{AddressSpace, ClaimError, Lease};
 use communication::{Consumer, ControlSender, Received, mailbox_channel};
 
@@ -263,7 +264,7 @@ where
     }
 }
 
-struct ExtractLocalEndpoint;
+pub(crate) struct ExtractLocalEndpoint;
 
 impl<P> InterpretEstablished<P> for ExtractLocalEndpoint
 where

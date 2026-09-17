@@ -19,6 +19,7 @@ axum = ["dep:axum", "tokio/net"]
 
 [dependencies]
 behavior = { workspace = true }
+behavior-actors = { workspace = true }
 bombay-engine = { workspace = true }
 bombay-macros = { path = "../bombay-macros" }
 bombay-address = { workspace = true }

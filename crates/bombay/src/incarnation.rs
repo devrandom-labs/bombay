@@ -4,7 +4,7 @@ use core::marker::PhantomData;
 use std::thread;
 
 use behavior::{Behavior, Never};
-use bombay_engine::{ActiveEnvironment, Driver, Environment};
+use bombay_engine::{Driver, Environment};
 
 use super::{IncarnationOutcome, Retirement};
 
@@ -29,7 +29,7 @@ impl<B, E, R> Incarnation<B, E, R>
 where
     B: Behavior<Ph = Never>,
     E: Environment<B>,
-    R: Retirement<B, E::Residual, B::Error, E::Error, <E::Active as ActiveEnvironment<B>>::Error>,
+    R: Retirement<B, E::Residual, B::Error, E::Error>,
 {
     /// Consume and execute this incarnation exactly once.
     ///
@@ -38,32 +38,25 @@ where
     /// before the terminal guard publishes their classification.
     pub async fn run(self) -> R::Output {
         let Self { driver, retirement } = self;
-        let terminal = Terminal::<
-            _,
-            B,
-            E::Residual,
-            B::Error,
-            E::Error,
-            <E::Active as ActiveEnvironment<B>>::Error,
-        >::new(retirement);
+        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error>::new(retirement);
         let outcome = driver.run().await.into();
         terminal.complete(outcome)
     }
 }
 
-struct Terminal<R, B, Residual, BehaviorError, ActivationError, EnvironmentError>
+struct Terminal<R, B, Residual, BehaviorError, ActivationError>
 where
-    R: Retirement<B, Residual, BehaviorError, ActivationError, EnvironmentError>,
+    R: Retirement<B, Residual, BehaviorError, ActivationError>,
 {
     retirement: Option<R>,
     driver_state: PhantomData<fn(B, Residual)>,
-    failure_types: PhantomData<fn(BehaviorError, ActivationError, EnvironmentError)>,
+    failure_types: PhantomData<fn(BehaviorError, ActivationError)>,
 }
 
-impl<R, B, Residual, BehaviorError, ActivationError, EnvironmentError>
-    Terminal<R, B, Residual, BehaviorError, ActivationError, EnvironmentError>
+impl<R, B, Residual, BehaviorError, ActivationError>
+    Terminal<R, B, Residual, BehaviorError, ActivationError>
 where
-    R: Retirement<B, Residual, BehaviorError, ActivationError, EnvironmentError>,
+    R: Retirement<B, Residual, BehaviorError, ActivationError>,
 {
     const fn new(retirement: R) -> Self {
         Self {
@@ -75,7 +68,7 @@ where
 
     fn complete(
         mut self,
-        outcome: IncarnationOutcome<B, Residual, BehaviorError, ActivationError, EnvironmentError>,
+        outcome: IncarnationOutcome<B, Residual, BehaviorError, ActivationError>,
     ) -> R::Output {
         self.retirement
             .take()
@@ -84,10 +77,10 @@ where
     }
 }
 
-impl<R, B, Residual, BehaviorError, ActivationError, EnvironmentError> Drop
-    for Terminal<R, B, Residual, BehaviorError, ActivationError, EnvironmentError>
+impl<R, B, Residual, BehaviorError, ActivationError> Drop
+    for Terminal<R, B, Residual, BehaviorError, ActivationError>
 where
-    R: Retirement<B, Residual, BehaviorError, ActivationError, EnvironmentError>,
+    R: Retirement<B, Residual, BehaviorError, ActivationError>,
 {
     fn drop(&mut self) {
         let Some(retirement) = self.retirement.take() else {
@@ -106,18 +99,21 @@ where
 pub(crate) mod tests {
     use std::alloc::{GlobalAlloc, Layout, System};
     use std::cell::Cell;
-    use std::convert::Infallible;
     use std::future::{Future, pending};
     use std::pin::pin;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex};
     use std::task::{Context, Poll, Waker};
 
-    use behavior::{Actions, BehaviorActed, InitializationTurn, NoBirths, User};
-    use bombay_engine::{ActionsOf, Completion};
+    use behavior::{
+        Actions, BehaviorActed, BehaviorSettlements, Here, InitializationTurn, Interpretation,
+        NoBirths, NoSends, SourceCustody, SourceSettlementCustody, User,
+    };
+    use bombay_engine::{ActionsOf, ActiveEnvironment, Completion};
 
     use super::*;
     use crate::MailAddr;
+    use crate::interpret::ActionSettlementOf;
 
     struct CountingAllocator;
 
@@ -203,7 +199,7 @@ pub(crate) mod tests {
     impl Behavior for ProbeBehavior {
         type Protocol = behavior::MessageProtocol<MailAddr, ()>;
         type Event = User<MailAddr, ()>;
-        type Sends = Vec<Infallible>;
+        type Sends = NoSends;
         type Ph = Never;
         type Error = BehaviorFailure;
         type Birth = NoBirths;
@@ -242,7 +238,7 @@ pub(crate) mod tests {
     }
 
     impl ActiveEnvironment<ProbeBehavior> for ProbeEnvironment {
-        type Error = EnvironmentFailure;
+        type Settlement = ActionSettlementOf<ProbeBehavior>;
         type Residual = ();
 
         fn next(&mut self) -> impl Future<Output = Option<<ProbeBehavior as Behavior>::Event>> {
@@ -255,34 +251,57 @@ pub(crate) mod tests {
             }
         }
 
-        async fn apply(&mut self, _: ActionsOf<ProbeBehavior>) -> Result<(), Self::Error> {
-            match self.response {
-                EnvironmentResponse::RejectActivation => Err(EnvironmentFailure),
-                EnvironmentResponse::Exhaust | EnvironmentResponse::Wait => Ok(()),
-            }
+        async fn next_source(&mut self) -> Option<<ProbeBehavior as Behavior>::Event> {
+            None
         }
 
-        async fn retire(self) -> Self::Residual {
+        async fn apply(
+            &mut self,
+            actions: ActionsOf<ProbeBehavior>,
+        ) -> Interpretation<Self::Settlement> {
+            actions
+                .interpret::<_, <ProbeBehavior as Behavior>::Event, Here>(&mut ())
+                .await
+        }
+
+        async fn offer_next(
+            &mut self,
+            settlement: Self::Settlement,
+        ) -> SourceCustody<Self::Settlement> {
+            <Self::Settlement as SourceSettlementCustody<
+                (),
+                <ProbeBehavior as Behavior>::Event,
+            >>::offer_next_to_source(settlement, &mut ())
+            .await
+        }
+
+        fn publish(&mut self) {}
+
+        async fn retire(self, settlements: Vec<Self::Settlement>) -> Self::Residual {
+            drop(settlements);
             self.active_retirements.fetch_add(1, Ordering::SeqCst);
         }
     }
 
     impl Environment<ProbeBehavior> for ProbeEnvironment {
         type Active = Self;
+        type Settlement = <ProbeBehavior as BehaviorSettlements>::Settlements;
         type Error = EnvironmentFailure;
         type Residual = ();
 
         async fn activate(
-            mut self,
+            self,
             actions: ActionsOf<ProbeBehavior>,
-        ) -> Result<Self, (Self::Error, Self::Residual)> {
-            match ActiveEnvironment::apply(&mut self, actions).await {
-                Ok(()) => Ok(self),
-                Err(error) => {
-                    let residual = ActiveEnvironment::retire(self).await;
-                    Err((error, residual))
-                }
+        ) -> Result<(Self::Active, Interpretation<Self::Settlement>), (Self::Error, Self::Residual)>
+        {
+            if matches!(self.response, EnvironmentResponse::RejectActivation) {
+                self.active_retirements.fetch_add(1, Ordering::SeqCst);
+                return Err((EnvironmentFailure, ()));
             }
+            let interpretation = actions
+                .interpret::<_, <ProbeBehavior as Behavior>::Event, Here>(&mut ())
+                .await;
+            Ok((self, interpretation))
         }
 
         async fn retire(self) -> Self::Residual {}
@@ -344,7 +363,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn one_complete_incarnation_adds_no_allocation() {
+    fn one_complete_incarnation_allocates_only_its_exact_settlement_custody() {
         let active_retirements = Arc::new(AtomicUsize::new(0));
         let environment_drops = Arc::new(AtomicUsize::new(0));
         let incarnation = Incarnation::new(
@@ -376,7 +395,7 @@ pub(crate) mod tests {
         });
 
         assert!(matches!(poll, Some(Poll::Ready(()))));
-        assert_eq!(allocations, 0, "Incarnation allocated");
+        assert_eq!(allocations, 1, "Incarnation allocated {allocations} times");
     }
 
     #[tokio::test]

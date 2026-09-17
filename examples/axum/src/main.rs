@@ -9,6 +9,7 @@ mod order_book;
 use std::fmt;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
+use bombay::behavior::{ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
 
 type OrderBookRoot = StopOnShutdown<order_book::OrderBook>;
@@ -52,6 +53,7 @@ pub(crate) fn assert_application_stopped(terminal: OrderBookTerminal) {
         terminal:
             ActorRetirement::Completed {
                 behavior,
+                settlements,
                 control,
                 user,
                 descendants,
@@ -64,6 +66,8 @@ pub(crate) fn assert_application_stopped(terminal: OrderBookTerminal) {
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(origin.nonce(), None);
     drop(behavior);
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());
