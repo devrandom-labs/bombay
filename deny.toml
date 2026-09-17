@@ -1,0 +1,35 @@
+# cargo-deny configuration. The full CI gate runs `cargo deny check advisories
+# licenses` (see .github/workflows/deny.yml): RustSec advisories for the locked
+# dependency tree, and a license allowlist for everything we ship.
+
+[advisories]
+# Ignored advisories go here, each with a reason. Keep this list empty unless a
+# vulnerable version is genuinely unavoidable — an unexplained ignore defeats
+# the gate.
+ignore = []
+
+[licenses]
+# Standard permissive allowlist. Anything outside this set fails the license
+# check and must be either added deliberately (with a note in the PR) or
+# replaced.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "CDLA-Permissive-2.0",
+    "MPL-2.0",
+    "Zlib",
+    "CC0-1.0",
+]
+confidence-threshold = 0.8
+
+[licenses.private]
+# The bombay-example-* crates under examples/ are workspace-local demo binaries
+# with `publish = false` — they never ship to crates.io, so the license gate
+# (which exists for what we publish) skips them. Published crates keep full
+# checks.
+ignore = true

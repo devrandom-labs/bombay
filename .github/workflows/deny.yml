@@ -1,0 +1,36 @@
+# Dependency security and license gate: cargo-deny checks RustSec advisories
+# and license allowlist compliance. This is the piece the nix/crane gate does
+# NOT cover (it exercises our code, not the crates we pull in).
+name: cargo-deny
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  schedule:
+    # Weekly, so newly-published advisories flag the locked dependency tree
+    # even when nothing changes. (Fixed time; Mondays 05:37 UTC.)
+    - cron: "37 5 * * 1"
+
+concurrency:
+  group: deny-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deny:
+    name: Deny check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Check advisories and licenses
+        uses: EmbarkStudios/cargo-deny-action@b66acf5e9fe20f8aba065be86778a8a4c846f902 # v2
+        with:
+          command: check
