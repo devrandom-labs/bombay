@@ -23,14 +23,14 @@ use behavior::{
     SourceAdmission,
 };
 use behavior_actors::{
-    CancelObservation, ChildShutdownRejection, ChildStopped, CreationResolved,
+    ActivationPlan, CancelObservation, ChildShutdownRejection, ChildStopped, CreationResolved,
     EstablishedObservation, InstallShutdownPlan, InterpretEstablishedObservation,
     InterpretEstablishedShutdown, ObservationId, ObservationOperation, ObservationRejection,
     ObserveChild, ObserveCreation, ObserveEstablished, ObserveEstablishedCreation, ObservePeer,
-    PeerObservationRejection, PeerStopped, ReportShutdownPlan, ReportTerminalOutcome,
-    ScheduleAfter, ScheduleAfterRejection, ScheduleAt, ScheduleAtRejection, ShutdownChild,
-    ShutdownEstablished, ShutdownId, ShutdownRejection, ShutdownRequested, TimerElapsed,
-    TimerScheduled,
+    PeerObservationRejection, PeerStopped, PrepareWorkers, ReportShutdownPlan,
+    ReportTerminalOutcome, ScheduleAfter, ScheduleAfterRejection, ScheduleAt, ScheduleAtRejection,
+    ShutdownChild, ShutdownEstablished, ShutdownId, ShutdownRejection, ShutdownRequested,
+    TimerElapsed, TimerScheduled, WorkerPreparation, WorkerSource,
 };
 use bombay_address::ClaimError;
 use communication::{ControlClosed, ControlSender};
@@ -2053,6 +2053,31 @@ where
                 reason: PeerObservationRejection::UnknownAddress,
             },
         }
+    }
+}
+
+impl<C, N, P, Bindings, Origins, Source, Role, Worker, Plan, Path>
+    InterpretItem<PrepareWorkers<Source, Role, Worker, Plan>, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Source: WorkerSource<Role, Worker, Plan> + PreparesWorkers<Role, Worker, Plan>,
+    Role: Send + Sync + 'static,
+    Worker: Behavior + Send + 'static,
+    Plan: ActivationPlan,
+    Path: 'static,
+    Self: Send,
+{
+    async fn interpret_item(
+        &mut self,
+        request: PrepareWorkers<Source, Role, Worker, Plan>,
+    ) -> ItemSettlement<
+        PrepareWorkers<Source, Role, Worker, Plan>,
+        WorkerPreparation<Source, Role, Worker, Plan>,
+        Source::SourceRejection,
+        Never,
+    > {
+        ItemSettlement::Accepted(crate::prepare_workers::drive_preparation(request))
     }
 }
 

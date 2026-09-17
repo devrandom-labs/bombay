@@ -50,6 +50,7 @@ mod observation;
 )]
 mod observe;
 mod outcome;
+mod prepare_workers;
 mod reports;
 mod retirement;
 mod terminal;
@@ -62,6 +63,7 @@ pub(crate) use incarnation::Incarnation;
 pub use launch::ActorSpace;
 pub use local::{ActorRef, SendError};
 pub(crate) use outcome::IncarnationOutcome;
+pub use prepare_workers::PreparesWorkers;
 pub(crate) use retirement::Retirement;
 pub use terminal::{ActorOrigin, ActorRetirement, ProjectTerminal};
 pub use topology::Hosts;

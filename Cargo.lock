@@ -257,6 +257,7 @@ dependencies = [
 name = "bombay-example-worker-pool"
 version = "0.1.0"
 dependencies = [
+ "bombay-behavior-actors",
  "bombay-rs",
 ]
 

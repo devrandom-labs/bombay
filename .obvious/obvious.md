@@ -67,7 +67,7 @@ See `.obvious/codebase-map.md`.
 - **Scoped typecheck:** `nix develop -c cargo check -p bombay-machine`
 - **Scoped lint:** `nix develop -c cargo clippy -p bombay-engine --all-targets -- -D warnings`
 - **Scoped test:** `nix develop -c cargo test -p bombay-rs --test entity_runtime -- --test-threads=1`
-- **Full-repo check safe:** yes — build 21s, clippy ~1 min, sequential tests ~2 min on 8 cores
+- **Full-repo check safe:** yes — build 21s, clippy ~1 min, sequential tests ~2 min on 8 cores. **Exception since the Behavior pin (`8bca837c`):** any lane that pulls `behavior-actors` metadata (workspace build/check/test/clippy, `nix flake check`, everything under `-p bombay-rs` and the examples) OOM-kills rustc on 8 GB sandboxes (host global-oom at ~7.4 GB rustc RSS, confirmed via `dmesg`); those lanes need CI's 16 GB runners or a larger host. Locally verifiable: scoped `-p bombay-machine`, `-p bombay-engine`, `-p bombay-address` lanes.
 - **Scoped alternatives discovered:** yes — cargo supports `-p <package>` for every lane (pattern used by this repo's own CI)
 <!-- /local-verification-summary -->
 
