@@ -107,9 +107,12 @@ verified today against what must wait:
   8bca837c, plus entity-fold residue); the repair is owned by the
   worker-preparation task. No minimization claim is truthful before a green
   workspace gate.
-- Deferred until the wave closes: audit of DX37 resolver retirement (W2 in
-  flight), benchmark-coverage minimization (W5's pending rows are blocked on
-  the same compile repair), and the fixed-point check of the Entity fold
+- Deferred until the wave closes: audit of DX37 resolver retirement (W2's
+  production refactor is open as PR #322 — LocalAddresses/HostedAddresses
+  vocabulary, topology.rs deleted, zero production resolver references;
+  its merged groundwork #320 is merged, verification pending base repair),
+  benchmark-coverage minimization (W5's pending rows are blocked on the
+  same compile repair), and the fixed-point check of the Entity fold
   residue (part of the same repair).
 
 ## Ownership map
