@@ -1253,6 +1253,51 @@ mailbox admission as durable completion.
   the independently proven cancellation guards; the required net-negative
   boundary and all stop thresholds remain satisfied.
 
+## DX71 — Observe consumer narrowing
+
+- State: `landed` (PR #315, merged 2026-09-17).
+- Selected contracts: the locked Behavior 0.16.0 revision and the private
+  Observe implementation are unchanged. The keyed `ObservationSpace`/
+  `Subject` enumeration surface is deleted because no production consumer
+  exists: no Bombay actor, runtime, or example subscribes by
+  `(key, epoch)`; the only caller of the keyed APIs was the observe test
+  corpus itself. A future enumeration-API need belongs in an upstream
+  bombay-address request, not in dead Bombay surface.
+- Ownership and law: one publication is one fresh unkeyed pair — the
+  publisher is the unique (non-cloneable) publication authority, every
+  observation clone stays attached to the exact completion slot, and the
+  slot is reclaimed only when every handle (publisher and all
+  observations) is gone. Waker registration fires exactly once iff the
+  generation completes; `into_outcome` still requires exclusive slot
+  ownership. These laws are unchanged; only the keyed namespace over
+  them is gone.
+- Exact blocker and regression: `lib.rs:38-42` suppressed `dead_code`
+  for the whole private module; the keyed-only external suites
+  (`contract`, `exhaustive`, `model`, `pool`) were the sole consumers of
+  the deleted surface.
+- Result: the keyed surface, pool/map machinery, keyed lock helpers,
+  and slot-reset path are deleted; the retained pair/affine corpus
+  (blocking/timed waits, waker registration and dedup, future
+  cancellation and migration, exactly-once destruction, panic
+  propagation, stress, Loom) is restated on pairs; the perf and fuzz
+  campaigns are converted (promotion_ops became volume_ops).
+  `#[allow(dead_code)]` is removed from `lib.rs` and not replaced.
+- Change ledger: expected tracked files are this ledger, `lib.rs`,
+  `observe/mod.rs` and its tests, `observe-perf/src/main.rs`, the fuzz
+  targets, and `docs/runtime-capability-interfaces.md` (keyed contract
+  paragraph rewritten to the pair reality). The generic 15-file stop
+  threshold is exceeded by the explicitly scoped corpus shrink; the
+  threshold's intent (unreviewed sprawl) does not apply to deletion
+  plus one-for-one restatement, and no new public type is added.
+- Verification: `cargo check -p observe-tests -j 1` (plain and
+  `--all-targets`) exit 0; `cargo check -p observe-perf -j 1` exit 0;
+  all four fuzz bins compile and 2,000 libFuzzer runs each found no
+  law violation; the full `observe-tests` suite passes 80/80 under
+  `--test-threads=1`; strict Clippy and `cargo fmt --check` pass. The
+  full-workspace check remains blocked in this sandbox by the pinned
+  `bombay-behavior-actors` rustc OOM (environment, not a diagnostic)
+  and runs in CI.
+
 ## B4 — typed `PrepareWorkers` capability interpreter
 
 - State: `in-progress` on `feat/prepare-workers-capability` (stacked on the

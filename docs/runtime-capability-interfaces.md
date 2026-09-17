@@ -247,17 +247,22 @@ Observe. Timer state is not communication and remains in Timers.
 
 ### Current contract retained
 
-`ObservationSpace<K, O>` creates exact subject generations. `Subject<K, O>`
-is the single publisher and retention owner. `Observation<O>` captures one
-generation and supports synchronous waiting, timeout, waker registration, and
-async `IntoFuture`; completed outcomes remain visible to captured observers.
-`Observation<O>` is cloneable without an `O` bound. Outcome retrieval by
-`try_get`, `wait`, or `IntoFuture` still requires `O: Clone`; `into_outcome`
-supports a move-only outcome only when the observation owns the final slot
-reference and is therefore not a fan-out mechanism.
-Dropping the subject retires only its exact generation and permits safe slot
-reuse. Tests cover stale-generation isolation, cancellation, waiter races,
-waker behavior, panics, reclamation, exhaustive/model schedules, and Loom.
+Bombay's private Observe module exposes affine publication pairs over a
+proven completion-slot protocol. `pair<O>()` returns one non-cloneable
+`Publisher<O>` (the single publication authority) and one cloneable
+`Observation<O>`. `Observation<O>` supports synchronous waiting, timeout,
+waker registration, and async `IntoFuture`; completed outcomes remain
+visible to captured observers. `Observation<O>` is cloneable without an
+`O` bound. Outcome retrieval by `try_get`, `wait`, or `IntoFuture` still
+requires `O: Clone`; `into_outcome` supports a move-only outcome only when
+the observation owns the final slot reference and is therefore not a
+fan-out mechanism. `affine_pair<O>()` transfers move-only outcomes through
+a non-cloneable `AffineObservation<O>`.
+Every publication is one fresh slot: there is no key table, no generation
+number, no pooling, and no slot reuse. Dropping all publisher/observation
+handles destroys the exact slot. Tests cover publication races,
+stale-registration isolation, cancellation, waiter races, waker behavior,
+panics, reclamation, drop accounting, and Loom.
 
 ### Unkeyed one-publication pair
 
@@ -310,13 +315,15 @@ migration replaces stale registration. This is private runtime machinery;
 ordinary actor APIs expose the semantic activation, termination, fence, or
 dispatch result rather than Observe types.
 
-The existing keyed API remains correct for discoverable and replaceable keyed
-subjects. A direct pair represents one already-identified, non-replaceable
+A direct pair represents one already-identified, non-replaceable
 fact; its fresh allocation is its identity and needs no generation number.
-Bombay now uses this directly. Retirement owns the termination publisher;
-`ActorRef` carries the observation. Activation uses a separate pair whose
-outcome is the exact live reference or typed activation rejection. The keyed
-`TerminationCell`, activation MPSC, and test oneshot have been deleted.
+Bombay uses this directly for every observation consumer. Retirement owns
+the termination publisher; `ActorRef` carries the observation. Activation
+uses a separate pair whose outcome is the exact live reference or typed
+activation rejection. The keyed `TerminationCell`, activation MPSC, test
+oneshot, and the keyed `ObservationSpace`/`Subject` enumeration surface
+have been deleted; a future keyed need would be an upstream
+bombay-address request, not dead Bombay surface.
 
 ## Entity
 
