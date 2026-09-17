@@ -1,10 +1,8 @@
 //! Generation-safe completion publication and observation.
 
-use core::hash::{BuildHasherDefault, Hash, Hasher};
 use core::num::NonZeroUsize;
 #[cfg(loom)]
 use loom::sync::atomic::AtomicUsize;
-use std::collections::HashMap;
 use std::future::{Future, IntoFuture};
 use std::mem::{self, MaybeUninit};
 use std::ops::{Deref, DerefMut};
@@ -19,55 +17,6 @@ use std::time::Duration;
 #[cfg(not(loom))]
 use std::time::Instant;
 
-/// Fixed 64-bit multiply-xor-rotate hasher for retained observation keys.
-/// It is deterministic and fast for small keys but not collision-hardened, so
-/// it is restricted to the internal table whose keys come from the embedding
-/// application rather than an adversary. The optimized contention matrix
-/// rejects a general-purpose replacement that regresses high-thread throughput.
-#[derive(Default)]
-struct RetainedKeyHasher {
-    hash: u64,
-}
-
-const RETAINED_KEY_HASH_MULTIPLIER: u64 = 0x51_7c_c1_b7_27_22_0a_95;
-
-impl RetainedKeyHasher {
-    fn add(&mut self, word: u64) {
-        self.hash = (self.hash.rotate_left(5) ^ word).wrapping_mul(RETAINED_KEY_HASH_MULTIPLIER);
-    }
-}
-
-impl Hasher for RetainedKeyHasher {
-    fn write(&mut self, bytes: &[u8]) {
-        let mut chunks = bytes.chunks_exact(8);
-        for chunk in &mut chunks {
-            self.add(u64::from_le_bytes(
-                chunk.try_into().expect("chunk is 8 bytes"),
-            ));
-        }
-        let tail = chunks.remainder();
-        if !tail.is_empty() {
-            let mut padded = [0_u8; 8];
-            padded[..tail.len()].copy_from_slice(tail);
-            self.add(u64::from_le_bytes(padded));
-        }
-    }
-
-    fn write_u64(&mut self, value: u64) {
-        self.add(value);
-    }
-
-    fn write_usize(&mut self, value: usize) {
-        self.add(value as u64);
-    }
-
-    fn finish(&self) -> u64 {
-        self.hash
-    }
-}
-
-type BuildRetainedKeyHasher = BuildHasherDefault<RetainedKeyHasher>;
-
 #[cfg(loom)]
 use loom::cell::UnsafeCell;
 #[cfg(loom)]
@@ -75,13 +24,9 @@ use loom::sync::Arc;
 #[cfg(loom)]
 use loom::sync::Mutex;
 #[cfg(loom)]
-use loom::sync::RwLock;
-#[cfg(loom)]
 use loom::thread::{Thread, current, park};
 #[cfg(not(loom))]
 use parking_lot::Mutex;
-#[cfg(not(loom))]
-use parking_lot::RwLock;
 #[cfg(not(loom))]
 use std::cell::UnsafeCell;
 #[cfg(not(loom))]
@@ -98,31 +43,9 @@ fn lock<T>(mutex: &loom::sync::Mutex<T>) -> loom::sync::MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(recover)
 }
 
-#[cfg(loom)]
-fn read_lock<T>(lock: &loom::sync::RwLock<T>) -> loom::sync::RwLockReadGuard<'_, T> {
-    lock.read().unwrap_or_else(recover)
-}
-
-#[cfg(loom)]
-fn write_lock<T>(lock: &loom::sync::RwLock<T>) -> loom::sync::RwLockWriteGuard<'_, T> {
-    lock.write().unwrap_or_else(recover)
-}
-
 #[cfg(not(loom))]
 fn lock<T>(mutex: &parking_lot::Mutex<T>) -> parking_lot::MutexGuard<'_, T> {
     mutex.lock()
-}
-
-/// Acquire the entries lock for reading (observe).
-#[cfg(not(loom))]
-fn read_lock<T>(lock: &parking_lot::RwLock<T>) -> parking_lot::RwLockReadGuard<'_, T> {
-    lock.read()
-}
-
-/// Acquire the entries lock for writing (subject/retire).
-#[cfg(not(loom))]
-fn write_lock<T>(lock: &parking_lot::RwLock<T>) -> parking_lot::RwLockWriteGuard<'_, T> {
-    lock.write()
 }
 
 #[cfg(loom)]
@@ -154,7 +77,7 @@ fn park_until() -> bool {
 const COMPLETED: usize = 1 << 0;
 const HAS_WAITER: usize = 1 << 1;
 /// Set exactly while the outcome cell holds a live value. Rides the state
-/// word (set by `complete`'s RMW, cleared by `reset`'s recycle and
+/// word (set by `complete`'s RMW, cleared by
 /// an ownership-transferring take) so the outcome cell needs no separate tag:
 /// the validity gate is `COMPLETED` for readers, `OUTCOME_VALID` for droppers.
 const OUTCOME_VALID: usize = 1 << 2;
@@ -270,7 +193,7 @@ impl DerefMut for Waiters {
     }
 }
 
-/// Per-subject completion cell: a lock-free outcome publication point plus a
+/// One completion cell: a lock-free outcome publication point plus a
 /// mutex-protected waiter registry.
 ///
 /// Summary of the safety invariants:
@@ -280,9 +203,9 @@ impl DerefMut for Waiters {
 /// - The outcome cell is read only after observing COMPLETED via an
 ///   Acquire-or-stronger load of `state`, which synchronizes-with that
 ///   Release RMW.
-/// - The outcome cell is dropped exactly once: by `reset` (a pooled slot has
-///   no observers), by the slot's final drop, or transferred by a unique take
-///   (which clears `OUTCOME_VALID`, so the slot's final drop skips it).
+/// - The outcome cell is dropped exactly once: by the slot's final drop, or
+///   transferred by a unique take (which clears `OUTCOME_VALID`, so the
+///   slot's final drop skips it).
 /// - The `HAS_WAITER` bit and the `COMPLETED` bit share one word, so the two
 ///   RMWs are totally ordered by the modification order: a waiter that
 ///   completes its registration never parks without either seeing `COMPLETED`
@@ -569,28 +492,6 @@ impl<O> Slot<O> {
             }
         }
     }
-
-    /// Return a pooled slot to the pristine pending state for reuse by a new
-    /// generation.
-    fn reset(&self) {
-        let state = self.state.load(Ordering::Relaxed);
-        if state & OUTCOME_VALID != 0 {
-            // SAFETY: pooled slots have no observers (see `Subject::drop`),
-            // so the cell is unobservable; the Release store below publishes
-            // the drop. OUTCOME_VALID is then cleared by the same store, so
-            // the slot's final drop will not double-drop.
-            unsafe { self.drop_outcome() };
-        }
-        if state & HAS_WAITER != 0 {
-            // A stale registration can survive (a waker whose caller dropped
-            // its observation before completion). Drain it so no dead waiter
-            // is retained in the pool or fired across generations. No waiter
-            // can be in flight: a live waiter holds an observation Arc, and
-            // pooled slots have none.
-            *lock(self.waiters()) = Waiters::Empty;
-        }
-        self.state.store(0, Ordering::Release);
-    }
 }
 
 impl<O> Drop for Slot<O> {
@@ -598,253 +499,12 @@ impl<O> Drop for Slot<O> {
         // SAFETY: the last Arc reference is being dropped (reclamation is
         // entirely Arc-based), so no other thread can access the slot.
         // OUTCOME_VALID is set exactly while the cell holds a live value:
-        // written by complete, cleared by reset's recycle or a unique take,
+        // written by complete, cleared by a unique take,
         // so the drop fires exactly once.
         if self.state.load(Ordering::Relaxed) & OUTCOME_VALID != 0 {
             // SAFETY: see above.
             unsafe { self.drop_outcome() };
         }
-    }
-}
-
-struct SlotEntry<O> {
-    generation: usize,
-    slot: Arc<Slot<O>>,
-}
-
-/// Upper bound on recycled slots retained per space.
-const SLOT_POOL_CAP: usize = 128;
-
-/// Number of inline key entries before promoting to a hash map.
-const INLINE_CAP: usize = 4;
-
-/// Key-table storage: an inline vector of `(key, entry)` pairs for the
-/// common transient case (few live generations at once), promoting to a
-/// hash map at [`INLINE_CAP`] entries so retention-scale workloads stay
-/// O(1). The inline path avoids hashing and probing entirely.
-enum SmallMap<K, O> {
-    Inline(Vec<(K, SlotEntry<O>)>),
-    Hash(HashMap<K, SlotEntry<O>, BuildRetainedKeyHasher>),
-}
-
-impl<K, O> Default for SmallMap<K, O> {
-    fn default() -> Self {
-        Self::Inline(Vec::new())
-    }
-}
-
-impl<K: Eq + Hash, O> SmallMap<K, O> {
-    fn get(&self, key: &K) -> Option<&SlotEntry<O>> {
-        match self {
-            Self::Inline(entries) => entries.iter().find(|(k, _)| k == key).map(|(_, e)| e),
-            Self::Hash(map) => map.get(key),
-        }
-    }
-
-    /// Whether `key` has no entry.
-    fn is_vacant(&self, key: &K) -> bool {
-        match self {
-            Self::Inline(entries) => !entries.iter().any(|(k, _)| k == key),
-            Self::Hash(map) => !map.contains_key(key),
-        }
-    }
-
-    /// Insert at `key`; the caller guarantees the key is vacant.
-    fn insert_vacant(&mut self, key: K, entry: SlotEntry<O>) {
-        match self {
-            Self::Inline(entries) => {
-                if entries.len() >= INLINE_CAP {
-                    // At most INLINE_CAP entries are promoted, so the hash
-                    // table never needs more than INLINE_CAP * 2 capacity.
-                    let mut map = HashMap::with_capacity_and_hasher(
-                        INLINE_CAP * 2,
-                        BuildRetainedKeyHasher::default(),
-                    );
-                    map.extend(entries.drain(..));
-                    map.insert(key, entry);
-                    *self = Self::Hash(map);
-                } else {
-                    entries.push((key, entry));
-                }
-            }
-            Self::Hash(map) => {
-                map.insert(key, entry);
-            }
-        }
-    }
-
-    /// Remove the entry at `key` iff it is exactly `generation`.
-    fn remove_if(&mut self, key: &K, generation: usize) -> bool {
-        match self {
-            Self::Inline(entries) => {
-                if let Some(index) = entries.iter().position(|(k, _)| k == key)
-                    && entries[index].1.generation == generation
-                {
-                    entries.swap_remove(index);
-                    return true;
-                }
-                false
-            }
-            Self::Hash(map) => {
-                if map
-                    .get(key)
-                    .is_some_and(|entry| entry.generation == generation)
-                {
-                    map.remove(key);
-                    true
-                } else {
-                    false
-                }
-            }
-        }
-    }
-}
-
-/// The key table plus the recycled-slot pool, guarded by one mutex so the
-/// pool needs no lock of its own (a single `&mut` through the guard).
-struct Entries<K, O> {
-    map: SmallMap<K, O>,
-    // Recycled slots that no observer can still read, cap-bounded so
-    // retention stays explicitly bounded. A pooled slot's strong count is
-    // exactly the pool's own reference (see `Subject::drop`).
-    pool: Vec<Arc<Slot<O>>>,
-}
-
-struct Inner<K, O> {
-    // Monotonic generation source. `fetch_add` is a read-modify-write, so
-    // every call observes a distinct value regardless of ordering; the value
-    // is only compared under the `entries` mutex, whose acquire/release
-    // orders the entry's publication. Relaxed is therefore sufficient.
-    next_generation: AtomicUsize,
-    entries: RwLock<Entries<K, O>>,
-}
-
-/// Shared completion namespace.
-pub struct ObservationSpace<K, O> {
-    inner: Arc<Inner<K, O>>,
-}
-
-impl<K, O> Clone for ObservationSpace<K, O> {
-    fn clone(&self) -> Self {
-        Self {
-            inner: self.inner.clone(),
-        }
-    }
-}
-
-impl<K, O> Default for ObservationSpace<K, O> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<K, O> ObservationSpace<K, O> {
-    /// Construct an empty observation namespace.
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            inner: Arc::new(Inner {
-                next_generation: AtomicUsize::new(1),
-                entries: RwLock::new(Entries {
-                    map: SmallMap::default(),
-                    pool: Vec::new(),
-                }),
-            }),
-        }
-    }
-}
-
-/// A live subject already exists at this key.
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[error("a subject already exists for key {0:?}")]
-pub struct SubjectExists<K>(pub K);
-
-/// No retained subject exists at this key.
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[error("no subject retained for key {0:?}")]
-pub struct UnknownSubject<K>(pub K);
-
-impl<K, O> ObservationSpace<K, O>
-where
-    K: Eq + Hash + Clone,
-{
-    /// Register one new subject generation.
-    ///
-    /// # Errors
-    /// Returns [`SubjectExists`] while the current generation remains retained.
-    ///
-    /// # Panics
-    /// Panics if the process exhausts all generations.
-    pub fn subject(&self, key: K) -> Result<Subject<K, O>, SubjectExists<K>> {
-        let mut entries = write_lock(&self.inner.entries);
-        let pooled = entries.pool.pop();
-        if !entries.map.is_vacant(&key) {
-            // Restore the unused pooled slot.
-            if let Some(slot) = pooled {
-                entries.pool.push(slot);
-            }
-            return Err(SubjectExists(key));
-        }
-        let generation = self.inner.next_generation.fetch_add(1, Ordering::Relaxed);
-        assert_ne!(generation, usize::MAX, "observation generation exhausted");
-        let slot = match pooled {
-            Some(slot) => {
-                slot.reset();
-                slot
-            }
-            None => Arc::new(Slot::new()),
-        };
-        entries.map.insert_vacant(
-            key.clone(),
-            SlotEntry {
-                generation,
-                slot: slot.clone(),
-            },
-        );
-        Ok(Subject {
-            inner: self.inner.clone(),
-            key,
-            generation,
-            slot,
-        })
-    }
-
-    /// Observe the current generation, including an already completed one.
-    ///
-    /// # Errors
-    /// Returns [`UnknownSubject`] when no generation is currently retained.
-    pub fn observe(&self, key: &K) -> Result<Observation<O>, UnknownSubject<K>> {
-        let entries = read_lock(&self.inner.entries);
-        let slot = entries
-            .map
-            .get(key)
-            .map(|entry| entry.slot.clone())
-            .ok_or_else(|| UnknownSubject(key.clone()))?;
-        Ok(Observation { slot })
-    }
-}
-
-/// Publisher and retention owner for one exact generation.
-pub struct Subject<K, O>
-where
-    K: Eq + Hash,
-{
-    inner: Arc<Inner<K, O>>,
-    key: K,
-    generation: usize,
-    slot: Arc<Slot<O>>,
-}
-
-impl<K, O> Subject<K, O>
-where
-    K: Eq + Hash,
-{
-    /// Publish the terminal outcome exactly once.
-    ///
-    /// # Panics
-    /// Panics when the same subject publishes completion more than once.
-    pub fn complete(&mut self, outcome: O) {
-        self.slot.complete(outcome);
     }
 }
 
@@ -928,26 +588,7 @@ pub fn affine_pair<O>() -> (Publisher<O>, AffineObservation<O>) {
     )
 }
 
-impl<K, O> Drop for Subject<K, O>
-where
-    K: Eq + Hash,
-{
-    fn drop(&mut self) {
-        let mut entries = write_lock(&self.inner.entries);
-        if entries.map.remove_if(&self.key, self.generation) {
-            // With the entry gone and the entries lock held, no new observer
-            // can reference this slot (`observe` needs both), so the strong
-            // count can only decrease from here: it is exactly 1 (our own
-            // handle) exactly when no observer still holds it, making the
-            // slot safe to recycle.
-            if Arc::strong_count(&self.slot) == 1 && entries.pool.len() < SLOT_POOL_CAP {
-                entries.pool.push(self.slot.clone());
-            }
-        }
-    }
-}
-
-/// A cancellable observation of one captured subject generation.
+/// A cancellable observation of one completion slot.
 pub struct Observation<O> {
     slot: Arc<Slot<O>>,
 }
@@ -1080,7 +721,7 @@ impl<O: Clone> Observation<O> {
 impl<O> Observation<O> {
     /// Consume this observation and return the outcome by value, if the
     /// outcome is published and this handle is the last reference to the
-    /// slot (no other observation, waiter, or the subject still holds it).
+    /// slot (no other observation, waiter, or the publisher still holds it).
     ///
     /// Unlike [`Observation::try_get`], this supports outcomes that are not
     /// `Clone`: the value moves out of the slot. It returns `None` while the

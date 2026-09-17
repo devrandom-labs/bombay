@@ -44,10 +44,6 @@ mod interpret;
 mod launch;
 mod local;
 mod observation;
-#[allow(
-    dead_code,
-    reason = "the complete imported Observe algebra remains verified while Bombay narrows its private production consumers"
-)]
 mod observe;
 mod outcome;
 mod prepare_workers;
