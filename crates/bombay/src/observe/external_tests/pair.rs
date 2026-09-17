@@ -1,7 +1,7 @@
 //! Direct-pair contract: affine publication, retained fan-out, cancellation,
 //! panic safety, destruction, and isolation without a keyed namespace.
 
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Barrier};
 use std::task::{Poll, Wake};
 use std::time::Duration;
@@ -173,6 +173,33 @@ fn completed_pair_outcome_is_destroyed_exactly_once() {
     assert_eq!(drops.load(Ordering::SeqCst), 0);
     drop(clone);
     assert_eq!(drops.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn shared_counter_accounts_destruction_across_independent_pairs() {
+    // One shared counter spans a campaign of pairs: completions, clones,
+    // and dropped observations each contribute exactly one destruction;
+    // cancelled pending pairs contribute nothing.
+    let counter = Arc::new(AtomicUsize::new(0));
+    let mut created = 0usize;
+    let mut observations = Vec::new();
+    for tag in 0..4_u64 {
+        let (publisher, observation) = pair::<DropProbe>();
+        publisher.complete(DropProbe::with_counter(tag, &counter));
+        created += 1;
+        let retained = observation.clone();
+        observations.push(retained);
+        observations.push(observation);
+    }
+    let (pending_publisher, pending_observation) = pair::<DropProbe>();
+    drop(pending_publisher);
+    drop(pending_observation);
+    drop(observations);
+    assert_eq!(
+        counter.load(Ordering::SeqCst),
+        created,
+        "every published probe is destroyed exactly once"
+    );
 }
 
 #[test]
