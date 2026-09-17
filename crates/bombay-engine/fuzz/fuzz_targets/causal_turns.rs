@@ -7,7 +7,7 @@ use std::pin::pin;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
 
-use behavior::{Actions, Behavior, BehaviorActed, MailAddr, Never, NoBirths, Step, User};
+use behavior::{Actions, Behavior, BehaviorActed, Creations, MailAddr, Never, NoBirths, Step, User};
 use bombay_engine::{ActionsOf, ActiveEnvironment, Completion, Driver, Environment};
 use libfuzzer_sys::fuzz_target;
 
@@ -38,7 +38,7 @@ impl Behavior for FuzzBehavior {
         self.0.lock().unwrap().push(Fact::Fold(value));
         Ok(Actions::new(
             vec![value],
-            Vec::new(),
+            Creations::empty(),
             if value == u8::MAX {
                 Step::Stop(behavior::Stopped)
             } else {

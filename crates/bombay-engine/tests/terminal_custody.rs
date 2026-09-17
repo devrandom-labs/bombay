@@ -1,15 +1,19 @@
 use std::collections::VecDeque;
 use std::future::Future;
 
-use behavior::{Actions, Behavior, BehaviorActed, MailAddr, Never, NoBirths, Step, User};
+use behavior::{
+    Actions, Behavior, BehaviorActed, ClassifySettlement, Creations, Interpretation, MailAddr,
+    Never, NoBirths, SettlementStatus, SourceCustody, Step, User,
+};
 use bombay_engine::{
     ActionsOf, ActiveEnvironment, Completion, Driver, DriverError, DriverRetirement, Environment,
+    SettlementFailure,
 };
 
 #[derive(Debug, PartialEq, Eq)]
 struct CustodyBehavior {
     value: u64,
-    reject_initialization: bool,
+    initialization_failure: Option<&'static str>,
 }
 
 impl Behavior for CustodyBehavior {
@@ -22,8 +26,8 @@ impl Behavior for CustodyBehavior {
 
     fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
         self.value += 1;
-        if self.reject_initialization {
-            Err("initialization")
+        if let Some(error) = self.initialization_failure {
+            Err(error)
         } else {
             Ok(Actions::send(vec![self.value]))
         }
@@ -35,7 +39,7 @@ impl Behavior for CustodyBehavior {
             13 => Err("transition"),
             0 => Ok(Actions::new(
                 vec![self.value],
-                Vec::new(),
+                Creations::empty(),
                 Step::Stop(behavior::Stopped),
             )),
             _ => Ok(Actions::send(vec![self.value])),
@@ -53,57 +57,84 @@ enum ResidualPhase {
 struct Residual {
     phase: ResidualPhase,
     committed: Vec<u64>,
+    settlements: Vec<ActionSettlement>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum ActionSettlement {
+    Applied(Vec<u64>),
+    Failed {
+        committed: Vec<u64>,
+        error: &'static str,
+    },
+}
+
+impl ClassifySettlement for ActionSettlement {
+    fn settlement_status(&self) -> SettlementStatus {
+        match self {
+            Self::Applied(_) => SettlementStatus::Accepted,
+            Self::Failed { .. } => SettlementStatus::Corrupt,
+        }
+    }
 }
 
 struct PreparedEnvironment {
     events: VecDeque<u64>,
     committed: Vec<u64>,
-    reject_activation: bool,
-    reject_apply: bool,
+    activation_failure: Option<&'static str>,
+    apply_failure: Option<&'static str>,
 }
 
 struct ActiveCustodyEnvironment {
     events: VecDeque<u64>,
     committed: Vec<u64>,
-    reject_apply: bool,
+    apply_failure: Option<&'static str>,
 }
 
 impl Environment<CustodyBehavior> for PreparedEnvironment {
     type Active = ActiveCustodyEnvironment;
+    type Settlement = ActionSettlement;
     type Error = &'static str;
     type Residual = Residual;
 
     async fn activate(
         mut self,
         actions: ActionsOf<CustodyBehavior>,
-    ) -> Result<Self::Active, (Self::Error, Self::Residual)> {
-        self.committed.extend(actions.sends);
-        if self.reject_activation {
+    ) -> Result<(Self::Active, Interpretation<Self::Settlement>), (Self::Error, Self::Residual)>
+    {
+        let committed = actions.sends;
+        self.committed.extend(committed.iter().copied());
+        if let Some(error) = self.activation_failure {
             return Err((
-                "activation",
+                error,
                 Residual {
                     phase: ResidualPhase::Prepared,
                     committed: self.committed,
+                    settlements: Vec::new(),
                 },
             ));
         }
-        Ok(ActiveCustodyEnvironment {
-            events: self.events,
-            committed: self.committed,
-            reject_apply: self.reject_apply,
-        })
+        Ok((
+            ActiveCustodyEnvironment {
+                events: self.events,
+                committed: self.committed,
+                apply_failure: self.apply_failure,
+            },
+            Interpretation::Complete(ActionSettlement::Applied(committed)),
+        ))
     }
 
     fn retire(self) -> impl Future<Output = Self::Residual> {
         std::future::ready(Residual {
             phase: ResidualPhase::Prepared,
             committed: self.committed,
+            settlements: Vec::new(),
         })
     }
 }
 
 impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
-    type Error = &'static str;
+    type Settlement = ActionSettlement;
     type Residual = Residual;
 
     async fn next(&mut self) -> Option<<CustodyBehavior as Behavior>::Event> {
@@ -112,19 +143,37 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
             .map(|event| User::new(MailAddr(7), event))
     }
 
-    async fn apply(&mut self, actions: ActionsOf<CustodyBehavior>) -> Result<(), Self::Error> {
-        self.committed.extend(actions.sends);
-        if self.reject_apply {
-            Err("apply")
+    async fn next_source(&mut self) -> Option<<CustodyBehavior as Behavior>::Event> {
+        unreachable!("this environment has no source-returning actions")
+    }
+
+    async fn apply(
+        &mut self,
+        actions: ActionsOf<CustodyBehavior>,
+    ) -> Interpretation<Self::Settlement> {
+        let committed = actions.sends;
+        self.committed.extend(committed.iter().copied());
+        if let Some(error) = self.apply_failure {
+            Interpretation::Corrupt(ActionSettlement::Failed { committed, error })
         } else {
-            Ok(())
+            Interpretation::Complete(ActionSettlement::Applied(committed))
         }
     }
 
-    fn retire(self) -> impl Future<Output = Self::Residual> {
+    async fn offer_next(
+        &mut self,
+        settlement: Self::Settlement,
+    ) -> SourceCustody<Self::Settlement> {
+        SourceCustody::Exhausted(settlement)
+    }
+
+    fn publish(&mut self) {}
+
+    fn retire(self, settlements: Vec<Self::Settlement>) -> impl Future<Output = Self::Residual> {
         std::future::ready(Residual {
             phase: ResidualPhase::Active,
             committed: self.committed,
+            settlements,
         })
     }
 }
@@ -132,16 +181,16 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
 fn driver(
     behavior: CustodyBehavior,
     events: impl IntoIterator<Item = u64>,
-    reject_activation: bool,
-    reject_apply: bool,
+    activation_failure: Option<&'static str>,
+    apply_failure: Option<&'static str>,
 ) -> Driver<CustodyBehavior, PreparedEnvironment> {
     Driver::new(
         behavior,
         PreparedEnvironment {
             events: events.into_iter().collect(),
             committed: Vec::new(),
-            reject_activation,
-            reject_apply,
+            activation_failure,
+            apply_failure,
         },
     )
 }
@@ -150,15 +199,13 @@ fn assert_retirement(
     retirement: DriverRetirement<
         CustodyBehavior,
         Residual,
-        DriverError<&'static str, &'static str, &'static str>,
+        DriverError<&'static str, &'static str>,
     >,
     value: u64,
     phase: ResidualPhase,
     committed: &[u64],
-    expected_disposition: &Result<
-        Completion,
-        DriverError<&'static str, &'static str, &'static str>,
-    >,
+    settlements: &[ActionSettlement],
+    expected_disposition: &Result<Completion, DriverError<&'static str, &'static str>>,
 ) {
     let DriverRetirement {
         behavior,
@@ -168,6 +215,7 @@ fn assert_retirement(
     assert_eq!(behavior.value, value);
     assert_eq!(residual.phase, phase);
     assert_eq!(residual.committed, committed);
+    assert_eq!(residual.settlements, settlements);
     assert_eq!(&disposition, expected_disposition);
 }
 
@@ -176,11 +224,11 @@ async fn stop_returns_final_behavior_and_active_residual() {
     let retirement = driver(
         CustodyBehavior {
             value: 4,
-            reject_initialization: false,
+            initialization_failure: None,
         },
         [3, 0, 99],
-        false,
-        false,
+        None,
+        None,
     )
     .run()
     .await;
@@ -190,6 +238,7 @@ async fn stop_returns_final_behavior_and_active_residual() {
         8,
         ResidualPhase::Active,
         &[5, 8, 8],
+        &[ActionSettlement::Applied(vec![8])],
         &Ok(Completion::Stopped),
     );
 }
@@ -199,11 +248,11 @@ async fn exhaustion_returns_final_behavior_and_active_residual() {
     let retirement = driver(
         CustodyBehavior {
             value: 1,
-            reject_initialization: false,
+            initialization_failure: None,
         },
         [2],
-        false,
-        false,
+        None,
+        None,
     )
     .run()
     .await;
@@ -213,6 +262,7 @@ async fn exhaustion_returns_final_behavior_and_active_residual() {
         4,
         ResidualPhase::Active,
         &[2, 4],
+        &[],
         &Ok(Completion::Exhausted),
     );
 }
@@ -222,11 +272,11 @@ async fn behavior_failure_returns_mutated_behavior_and_active_residual() {
     let retirement = driver(
         CustodyBehavior {
             value: 5,
-            reject_initialization: false,
+            initialization_failure: None,
         },
         [13],
-        false,
-        false,
+        None,
+        None,
     )
     .run()
     .await;
@@ -236,6 +286,7 @@ async fn behavior_failure_returns_mutated_behavior_and_active_residual() {
         19,
         ResidualPhase::Active,
         &[6],
+        &[],
         &Err(DriverError::Behavior("transition")),
     );
 }
@@ -245,11 +296,11 @@ async fn initialization_failure_returns_mutated_behavior_and_prepared_residual()
     let retirement = driver(
         CustodyBehavior {
             value: 8,
-            reject_initialization: true,
+            initialization_failure: Some("initialization"),
         },
         [],
-        false,
-        false,
+        None,
+        None,
     )
     .run()
     .await;
@@ -258,6 +309,7 @@ async fn initialization_failure_returns_mutated_behavior_and_prepared_residual()
         retirement,
         9,
         ResidualPhase::Prepared,
+        &[],
         &[],
         &Err(DriverError::Behavior("initialization")),
     );
@@ -268,11 +320,11 @@ async fn activation_failure_returns_behavior_and_prepared_residual() {
     let retirement = driver(
         CustodyBehavior {
             value: 2,
-            reject_initialization: false,
+            initialization_failure: None,
         },
         [],
-        true,
-        false,
+        Some("activation"),
+        None,
     )
     .run()
     .await;
@@ -282,6 +334,7 @@ async fn activation_failure_returns_behavior_and_prepared_residual() {
         3,
         ResidualPhase::Prepared,
         &[3],
+        &[],
         &Err(DriverError::Activation("activation")),
     );
 }
@@ -291,11 +344,11 @@ async fn apply_failure_returns_mutated_behavior_and_active_residual() {
     let retirement = driver(
         CustodyBehavior {
             value: 10,
-            reject_initialization: false,
+            initialization_failure: None,
         },
         [4],
-        false,
-        true,
+        None,
+        Some("apply"),
     )
     .run()
     .await;
@@ -305,6 +358,10 @@ async fn apply_failure_returns_mutated_behavior_and_active_residual() {
         15,
         ResidualPhase::Active,
         &[11, 15],
-        &Err(DriverError::Environment("apply")),
+        &[ActionSettlement::Failed {
+            committed: vec![15],
+            error: "apply",
+        }],
+        &Err(DriverError::Settlement(SettlementFailure::Corrupt)),
     );
 }

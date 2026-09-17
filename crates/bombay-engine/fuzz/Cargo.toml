@@ -9,7 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-behavior = { package = "bombay-behavior-actors", version = "0.14.0" }
+behavior = { package = "bombay-behavior", version = "0.16.0" }
 bombay-engine = { path = ".." }
 
 [[bin]]
@@ -19,9 +19,12 @@ test = false
 doc = false
 bench = false
 
-[workspace]
-
 [patch.crates-io]
-bombay-behavior = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "a272adf8d2cbb6a2784d565f47c74adff3e7d01b" }
-bombay-behavior-actors = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "a272adf8d2cbb6a2784d565f47c74adff3e7d01b" }
-bombay-behavior-macros = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "a272adf8d2cbb6a2784d565f47c74adff3e7d01b" }
+# Exact-revision exception (user-authorized): mirrors the root patch table so
+# this independent lock selects the same PR #68 head revision. See the root
+# Cargo.toml and the B5 pin-retirement task.
+bombay-behavior = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6" }
+bombay-behavior-actors = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6" }
+bombay-behavior-macros = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6" }
+
+[workspace]

@@ -1,5 +1,7 @@
 //! Error types expose stable diagnostics and std error integration.
 
+use std::error::Error;
+
 use bombay::entity::{
     AdmissionFailure, DirectoryError, FenceFailure, LifecycleTopologyError, Refusal,
 };
@@ -52,8 +54,6 @@ fn fence_failure_reports_the_failed_stage() {
 
 #[test]
 fn lifecycle_topology_error_chains_the_structural_source() {
-    use std::error::Error;
-
     let error = LifecycleTopologyError::from(TopologyError::UnknownInitial(VertexId(7)));
 
     assert_eq!(error.to_string(), "generic topology validation failed");

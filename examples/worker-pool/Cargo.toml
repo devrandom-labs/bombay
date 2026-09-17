@@ -9,5 +9,5 @@ publish = false
 workspace = true
 
 [dependencies]
+behavior-actors.workspace = true
 bombay-rs = { path = "../../crates/bombay" }
-tokio = { workspace = true, features = ["time"] }

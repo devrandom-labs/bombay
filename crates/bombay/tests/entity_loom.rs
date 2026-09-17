@@ -1,22 +1,26 @@
 //! Exhaustive small models of the directory's synchronization protocols.
 
+use std::num::NonZeroUsize;
+
 use loom::sync::atomic::{AtomicUsize, Ordering};
 use loom::sync::{Arc, Mutex};
 use loom::thread;
 
+struct ActivationClaim;
+
 #[test]
 fn concurrent_claims_start_exactly_one_activation() {
     loom::model(|| {
-        let phase = Arc::new(Mutex::new(false));
+        let claim = Arc::new(Mutex::new(None));
         let starts = Arc::new(AtomicUsize::new(0));
         let callers: Vec<_> = (0..2)
             .map(|_| {
-                let phase = Arc::clone(&phase);
+                let claim = Arc::clone(&claim);
                 let starts = Arc::clone(&starts);
                 thread::spawn(move || {
-                    let mut activating = phase.lock().unwrap();
-                    if !*activating {
-                        *activating = true;
+                    let mut claim = claim.lock().unwrap();
+                    if claim.is_none() {
+                        *claim = Some(ActivationClaim);
                         starts.fetch_add(1, Ordering::Relaxed);
                     }
                 })
@@ -25,60 +29,78 @@ fn concurrent_claims_start_exactly_one_activation() {
         for caller in callers {
             caller.join().unwrap();
         }
-        assert!(*phase.lock().unwrap());
+        assert!(claim.lock().unwrap().is_some());
         assert_eq!(starts.load(Ordering::Relaxed), 1);
     });
 }
 
-#[derive(Default)]
-struct Admission {
-    closed: bool,
-    reservations: usize,
-    fence_enqueued: bool,
+#[derive(Clone, Copy)]
+enum Admission {
+    Open(usize),
+    Draining(NonZeroUsize),
+    Fenced,
+}
+
+struct Reservation;
+
+impl Admission {
+    fn reserve(&mut self) -> Option<Reservation> {
+        match *self {
+            Self::Open(reservations) => {
+                *self = Self::Open(
+                    reservations
+                        .checked_add(1)
+                        .expect("live delivery reservations fit in usize"),
+                );
+                Some(Reservation)
+            }
+            Self::Draining(_) | Self::Fenced => None,
+        }
+    }
+
+    fn close(&mut self) {
+        *self = match *self {
+            Self::Open(reservations) => match NonZeroUsize::new(reservations) {
+                Some(reservations) => Self::Draining(reservations),
+                None => Self::Fenced,
+            },
+            Self::Draining(reservations) => Self::Draining(reservations),
+            Self::Fenced => Self::Fenced,
+        };
+    }
+
+    fn resolve(&mut self, _: Reservation) {
+        *self = match *self {
+            Self::Open(reservations) => Self::Open(
+                reservations
+                    .checked_sub(1)
+                    .expect("only reserved deliveries may resolve"),
+            ),
+            Self::Draining(reservations) => match NonZeroUsize::new(reservations.get() - 1) {
+                Some(reservations) => Self::Draining(reservations),
+                None => Self::Fenced,
+            },
+            Self::Fenced => panic!("fenced admission has no live reservation"),
+        };
+    }
 }
 
 #[test]
 fn fence_follows_every_admitted_delivery_resolution() {
     loom::model(|| {
-        let admission = Arc::new(Mutex::new(Admission::default()));
+        let admission = Arc::new(Mutex::new(Admission::Open(0)));
         let delivery = {
             let admission = Arc::clone(&admission);
-            thread::spawn(move || {
-                let admitted = {
-                    let mut state = admission.lock().unwrap();
-                    if state.closed {
-                        false
-                    } else {
-                        state.reservations += 1;
-                        true
-                    }
-                };
-                if admitted {
-                    thread::yield_now();
-                    let mut state = admission.lock().unwrap();
-                    state.reservations -= 1;
-                    if state.closed && state.reservations == 0 {
-                        state.fence_enqueued = true;
-                    }
-                }
-            })
+            thread::spawn(move || try_deliver(&admission))
         };
         let drain = {
             let admission = Arc::clone(&admission);
-            thread::spawn(move || {
-                let mut state = admission.lock().unwrap();
-                state.closed = true;
-                if state.reservations == 0 {
-                    state.fence_enqueued = true;
-                }
-            })
+            thread::spawn(move || admission.lock().unwrap().close())
         };
         delivery.join().unwrap();
         drain.join().unwrap();
         let state = admission.lock().unwrap();
-        assert!(state.closed);
-        assert_eq!(state.reservations, 0);
-        assert!(state.fence_enqueued);
+        assert!(matches!(*state, Admission::Fenced));
     });
 }
 
@@ -137,31 +159,18 @@ fn canceled_waiter_and_activation_completion_drop_command_once() {
     });
 }
 
-fn try_deliver(admission: &Arc<Mutex<Admission>>) -> bool {
-    let admitted = {
-        let mut state = admission.lock().unwrap();
-        if state.closed {
-            false
-        } else {
-            state.reservations += 1;
-            true
-        }
-    };
-    if admitted {
+fn try_deliver(admission: &Arc<Mutex<Admission>>) {
+    let reservation = admission.lock().unwrap().reserve();
+    if let Some(reservation) = reservation {
         thread::yield_now();
-        let mut state = admission.lock().unwrap();
-        state.reservations -= 1;
-        if state.closed && state.reservations == 0 {
-            state.fence_enqueued = true;
-        }
+        admission.lock().unwrap().resolve(reservation);
     }
-    admitted
 }
 
 #[test]
 fn reservations_racing_drain_close_resolve_before_the_fence() {
     loom::model(|| {
-        let admission = Arc::new(Mutex::new(Admission::default()));
+        let admission = Arc::new(Mutex::new(Admission::Open(0)));
         let first = {
             let admission = Arc::clone(&admission);
             thread::spawn(move || try_deliver(&admission))
@@ -172,20 +181,12 @@ fn reservations_racing_drain_close_resolve_before_the_fence() {
         };
         let drain = {
             let admission = Arc::clone(&admission);
-            thread::spawn(move || {
-                let mut state = admission.lock().unwrap();
-                state.closed = true;
-                if state.reservations == 0 {
-                    state.fence_enqueued = true;
-                }
-            })
+            thread::spawn(move || admission.lock().unwrap().close())
         };
         first.join().unwrap();
         second.join().unwrap();
         drain.join().unwrap();
         let state = admission.lock().unwrap();
-        assert!(state.closed);
-        assert_eq!(state.reservations, 0);
-        assert!(state.fence_enqueued);
+        assert!(matches!(*state, Admission::Fenced));
     });
 }

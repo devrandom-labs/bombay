@@ -10,26 +10,17 @@ checksum = "c3d036a3c4ab069c7b410a2ce876bd74808d2d0888a82667669f8e783a898bf1"
 
 [[package]]
 name = "bombay-behavior"
-version = "0.14.0"
-source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=a272adf8d2cbb6a2784d565f47c74adff3e7d01b#a272adf8d2cbb6a2784d565f47c74adff3e7d01b"
+version = "0.16.0"
+source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6#8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6"
 dependencies = [
  "bombay-behavior-macros",
  "thiserror",
 ]
 
 [[package]]
-name = "bombay-behavior-actors"
-version = "0.14.0"
-source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=a272adf8d2cbb6a2784d565f47c74adff3e7d01b#a272adf8d2cbb6a2784d565f47c74adff3e7d01b"
-dependencies = [
- "bombay-behavior",
- "thiserror",
-]
-
-[[package]]
 name = "bombay-behavior-macros"
-version = "0.11.4"
-source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=a272adf8d2cbb6a2784d565f47c74adff3e7d01b#a272adf8d2cbb6a2784d565f47c74adff3e7d01b"
+version = "0.11.6"
+source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6#8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -41,7 +32,7 @@ dependencies = [
 name = "bombay-engine"
 version = "0.1.0"
 dependencies = [
- "bombay-behavior-actors",
+ "bombay-behavior",
  "thiserror",
 ]
 
@@ -49,7 +40,7 @@ dependencies = [
 name = "bombay-engine-fuzz"
 version = "0.0.0"
 dependencies = [
- "bombay-behavior-actors",
+ "bombay-behavior",
  "bombay-engine",
  "libfuzzer-sys",
 ]
@@ -277,3 +268,8 @@ checksum = "23b97319f7b8343df12cc98938e5c3eb436064524c8d2b4e30a1d3a36eecdf81"
 dependencies = [
  "memchr",
 ]
+
+[[patch.unused]]
+name = "bombay-behavior-actors"
+version = "0.16.0"
+source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6#8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6"

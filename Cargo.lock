@@ -150,8 +150,8 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior"
-version = "0.14.0"
-source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=a272adf8d2cbb6a2784d565f47c74adff3e7d01b#a272adf8d2cbb6a2784d565f47c74adff3e7d01b"
+version = "0.16.0"
+source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6#8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6"
 dependencies = [
  "bombay-behavior-macros",
  "thiserror",
@@ -159,17 +159,18 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-actors"
-version = "0.14.0"
-source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=a272adf8d2cbb6a2784d565f47c74adff3e7d01b#a272adf8d2cbb6a2784d565f47c74adff3e7d01b"
+version = "0.16.0"
+source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6#8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6"
 dependencies = [
  "bombay-behavior",
+ "bombay-behavior-macros",
  "thiserror",
 ]
 
 [[package]]
 name = "bombay-behavior-macros"
-version = "0.11.4"
-source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=a272adf8d2cbb6a2784d565f47c74adff3e7d01b#a272adf8d2cbb6a2784d565f47c74adff3e7d01b"
+version = "0.11.6"
+source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6#8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -192,7 +193,7 @@ dependencies = [
 name = "bombay-engine"
 version = "0.2.0"
 dependencies = [
- "bombay-behavior-actors",
+ "bombay-behavior",
  "criterion",
  "proptest",
  "serde",
@@ -256,8 +257,8 @@ dependencies = [
 name = "bombay-example-worker-pool"
 version = "0.1.0"
 dependencies = [
+ "bombay-behavior-actors",
  "bombay-rs",
- "tokio",
 ]
 
 [[package]]
@@ -266,6 +267,7 @@ version = "0.1.0"
 dependencies = [
  "loom",
  "thiserror",
+ "trybuild",
 ]
 
 [[package]]
@@ -284,6 +286,7 @@ version = "0.1.1"
 dependencies = [
  "axum",
  "bombay-address",
+ "bombay-behavior",
  "bombay-behavior-actors",
  "bombay-communication",
  "bombay-engine",
@@ -1241,12 +1244,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "stable_deref_trait"
-version = "1.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
-
-[[package]]
 name = "syn"
 version = "2.0.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1506,10 +1503,6 @@ name = "triomphe"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b40688ea6389c8171614b25491f71d4a27946e0c7ce2da1c6de27e25abf1a0ae"
-dependencies = [
- "serde",
- "stable_deref_trait",
-]
 
 [[package]]
 name = "trybuild"

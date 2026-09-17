@@ -4,7 +4,8 @@ use core::marker::PhantomData;
 use std::collections::HashMap;
 
 use behavior::{
-    Behavior, BirthMode, BirthNodeMapper, ChildHead, ChildTail, FoldBirthNode, FoldedBirthNode,
+    Behavior, BirthMode, ChildHead, ChildOccurrenceProduct, ChildOccurrenceShape, ChildOccurrences,
+    ChildTail, CreationId, CreationKind,
 };
 use communication::ControlSender;
 
@@ -31,25 +32,25 @@ impl<Child: Behavior> Clone for BoundChild<Child> {
 /// Bombay's runtime binding representation for one direct-child birth node.
 pub(crate) struct RuntimeChildBindings<Root>(PhantomData<fn() -> Root>);
 
-impl<Root> BirthNodeMapper for RuntimeChildBindings<Root> {
+impl<Root> ChildOccurrenceShape for RuntimeChildBindings<Root> {
     type Empty = NoChildBindings<Root>;
-    type Mapped<Position, Child: Behavior, Tail> = ChildBinding<Position, Child, Root, Tail>;
+    type Member<Position, Child: Behavior, Tail> = ChildBinding<Position, Child, Root, Tail>;
 }
 
 /// Bombay's protocol-space representation for one direct-child birth node.
 pub(crate) struct RuntimeChildSpaces;
 
-impl BirthNodeMapper for RuntimeChildSpaces {
+impl ChildOccurrenceShape for RuntimeChildSpaces {
     type Empty = NoChildSpaces;
-    type Mapped<Position, Child: Behavior, Tail> = ChildSpace<Position, Child, Tail>;
+    type Member<Position, Child: Behavior, Tail> = ChildSpace<Position, Child, Tail>;
 }
 
 /// Exact binding product for the direct children of `Owner`.
 pub(crate) type ChildBindings<Owner, Root> =
-    FoldedBirthNode<ChildNode<Owner>, RuntimeChildBindings<Root>>;
+    ChildOccurrences<ChildNode<Owner>, RuntimeChildBindings<Root>>;
 
 /// Occurrence-local protocol spaces for one behavior's direct children.
-pub(crate) type ChildSpaces<Owner> = FoldedBirthNode<ChildNode<Owner>, RuntimeChildSpaces>;
+pub(crate) type ChildSpaces<Owner> = ChildOccurrences<ChildNode<Owner>, RuntimeChildSpaces>;
 
 /// End of one creator's direct-child binding product.
 pub(crate) struct NoChildBindings<Root = behavior::Never>(PhantomData<fn() -> Root>);
@@ -117,6 +118,7 @@ pub(crate) struct ChildBinding<Position, Child, Root, Tail>
 where
     Child: Behavior,
 {
+    creations: HashMap<CreationId, CreationBinding>,
     endpoints: HashMap<u64, BoundChild<Child>>,
     tasks: Vec<ProjectedTask<Child, Root>>,
     retired: Vec<Root>,
@@ -131,12 +133,85 @@ where
 {
     fn default() -> Self {
         Self {
+            creations: HashMap::new(),
             endpoints: HashMap::new(),
             tasks: Vec::new(),
             retired: Vec::new(),
             tail: Tail::default(),
             position: PhantomData,
         }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum CreationBinding {
+    Established { route: u64, kind: CreationKind },
+    Rejected,
+}
+
+pub(crate) trait CreationBindingAt<Position> {
+    fn creation(&self, id: CreationId) -> Option<CreationBinding>;
+    fn record_creation(&mut self, id: CreationId, binding: CreationBinding);
+}
+
+impl<Bindings, Position> CreationBindingAt<Position> for Bindings
+where
+    Bindings: CreationBindingAtCursor<Position, Position>,
+{
+    fn creation(&self, id: CreationId) -> Option<CreationBinding> {
+        self.creation_at(id)
+    }
+
+    fn record_creation(&mut self, id: CreationId, binding: CreationBinding) {
+        self.record_creation_at(id, binding);
+    }
+}
+
+pub(crate) trait CreationBindingAtCursor<Target, Cursor> {
+    fn creation_at(&self, id: CreationId) -> Option<CreationBinding>;
+    fn record_creation_at(&mut self, id: CreationId, binding: CreationBinding);
+}
+
+impl<Target, Child, Root, Tail> CreationBindingAtCursor<Target, ChildHead>
+    for ChildBinding<Target, Child, Root, Tail>
+where
+    Child: Behavior,
+{
+    fn creation_at(&self, id: CreationId) -> Option<CreationBinding> {
+        self.creations.get(&id).copied()
+    }
+
+    fn record_creation_at(&mut self, id: CreationId, binding: CreationBinding) {
+        self.creations.insert(id, binding);
+    }
+}
+
+impl<Target, Cursor, Position, Head, Root, Tail> CreationBindingAtCursor<Target, ChildTail<Cursor>>
+    for ChildBinding<Position, Head, Root, Tail>
+where
+    Head: Behavior,
+    Tail: CreationBindingAtCursor<Target, Cursor>,
+{
+    fn creation_at(&self, id: CreationId) -> Option<CreationBinding> {
+        self.tail.creation_at(id)
+    }
+
+    fn record_creation_at(&mut self, id: CreationId, binding: CreationBinding) {
+        self.tail.record_creation_at(id, binding);
+    }
+}
+
+impl<Target, Cursor, Bindings, Spaces> CreationBindingAtCursor<Target, Cursor>
+    for OccurrenceChildBindings<Bindings, Spaces>
+where
+    Bindings: CreationBindingAtCursor<Target, Cursor>,
+{
+    fn creation_at(&self, id: CreationId) -> Option<CreationBinding> {
+        self.bindings.creation_at(id)
+    }
+
+    fn record_creation_at(&mut self, id: CreationId, binding: CreationBinding) {
+        self.bindings.record_creation_at(id, binding);
     }
 }
 
@@ -154,7 +229,6 @@ pub(crate) trait ChildBindingAt<Position> {
         control: ControlSender<<Self::Child as Behavior>::Event>,
     ) -> Option<ActorRef<<Self::Child as Behavior>::Protocol>>;
     fn retain_task(&mut self, task: ProjectedTask<Self::Child, Self::Root>);
-    fn retain_terminal(&mut self, terminal: Self::Root);
 }
 
 impl<Bindings, Position> ChildBindingAt<Position> for Bindings
@@ -184,10 +258,6 @@ where
     fn retain_task(&mut self, task: ProjectedTask<Self::Child, Self::Root>) {
         self.retain_task_at(task);
     }
-
-    fn retain_terminal(&mut self, terminal: Self::Root) {
-        self.retain_terminal_at(terminal);
-    }
 }
 
 pub(crate) trait ChildBindingAtCursor<Target, Cursor> {
@@ -203,7 +273,6 @@ pub(crate) trait ChildBindingAtCursor<Target, Cursor> {
         control: ControlSender<<Self::Child as Behavior>::Event>,
     ) -> Option<ActorRef<<Self::Child as Behavior>::Protocol>>;
     fn retain_task_at(&mut self, task: ProjectedTask<Self::Child, Self::Root>);
-    fn retain_terminal_at(&mut self, terminal: Self::Root);
 }
 
 impl<Target, Child, Root, Tail> ChildBindingAtCursor<Target, ChildHead>
@@ -240,10 +309,6 @@ where
     fn retain_task_at(&mut self, task: ProjectedTask<Child, Root>) {
         self.tasks.push(task);
     }
-
-    fn retain_terminal_at(&mut self, terminal: Root) {
-        self.retired.push(terminal);
-    }
 }
 
 impl<Target, Cursor, Position, Head, Root, Tail> ChildBindingAtCursor<Target, ChildTail<Cursor>>
@@ -275,10 +340,6 @@ where
     fn retain_task_at(&mut self, task: ProjectedTask<Self::Child, Self::Root>) {
         self.tail.retain_task_at(task);
     }
-
-    fn retain_terminal_at(&mut self, terminal: Self::Root) {
-        self.tail.retain_terminal_at(terminal);
-    }
 }
 
 impl<Target, Cursor, Bindings, Spaces> ChildBindingAtCursor<Target, Cursor>
@@ -308,10 +369,6 @@ where
 
     fn retain_task_at(&mut self, task: ProjectedTask<Self::Child, Self::Root>) {
         self.bindings.retain_task_at(task);
-    }
-
-    fn retain_terminal_at(&mut self, terminal: Self::Root) {
-        self.bindings.retain_terminal_at(terminal);
     }
 }
 
@@ -393,8 +450,8 @@ impl<Child, Bindings, Spaces> NestedChildBindings<Child>
 where
     Child: Behavior,
     Bindings: RetireChildTasks,
-    ChildNode<Child>:
-        FoldBirthNode<RuntimeChildBindings<Bindings::Root>> + FoldBirthNode<RuntimeChildSpaces>,
+    ChildNode<Child>: ChildOccurrenceProduct<RuntimeChildBindings<Bindings::Root>>
+        + ChildOccurrenceProduct<RuntimeChildSpaces>,
     ChildBindings<Child, Bindings::Root>: Default,
     ChildSpaces<Child>: Default,
 {
@@ -432,6 +489,7 @@ where
 
     async fn retire_child_tasks(self) -> Vec<Self::Root> {
         let Self {
+            creations: _,
             endpoints,
             tasks,
             mut retired,

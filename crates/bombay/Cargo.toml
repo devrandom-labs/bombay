@@ -19,6 +19,7 @@ axum = ["dep:axum", "tokio/net"]
 
 [dependencies]
 behavior = { workspace = true }
+behavior-actors = { workspace = true }
 bombay-engine = { workspace = true }
 bombay-macros = { path = "../bombay-macros" }
 bombay-address = { workspace = true }
@@ -44,6 +45,14 @@ loom = "0.7.2"
 
 [target.'cfg(loom)'.dependencies]
 loom = "0.7.2"
+
+[[bench]]
+name = "application_spine"
+harness = false
+
+[[bench]]
+name = "mailbox_lanes"
+harness = false
 
 [[bench]]
 name = "entity_directory"

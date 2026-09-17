@@ -145,20 +145,20 @@ impl Topology {
     /// unknown vertex. [`Self::validate`] diagnoses the latter precisely.
     pub fn write_mermaid(self, output: &mut impl core::fmt::Write) -> core::fmt::Result {
         writeln!(output, "stateDiagram-v2")?;
-        let initial = self.label(self.initial).ok_or(core::fmt::Error)?;
-        writeln!(output, "    [*] --> {initial}")?;
+        let initial = self.vertex(self.initial).ok_or(core::fmt::Error)?;
+        self.vertices.iter().try_for_each(|vertex| {
+            writeln!(output, "    vertex_{}: {}", vertex.id.0, vertex.label)
+        })?;
+        writeln!(output, "    [*] --> vertex_{}", initial.id.0)?;
         self.transitions.iter().try_for_each(|edge| {
-            let from = self.label(edge.from).ok_or(core::fmt::Error)?;
-            let to = self.label(edge.to).ok_or(core::fmt::Error)?;
-            writeln!(output, "    {from} --> {to}: {}", edge.label)
+            let from = self.vertex(edge.from).ok_or(core::fmt::Error)?.id.0;
+            let to = self.vertex(edge.to).ok_or(core::fmt::Error)?.id.0;
+            writeln!(output, "    vertex_{from} --> vertex_{to}: {}", edge.label)
         })
     }
 
-    fn label(self, id: VertexId) -> Option<&'static str> {
-        self.vertices
-            .iter()
-            .find(|vertex| vertex.id == id)
-            .map(|vertex| vertex.label)
+    fn vertex(self, id: VertexId) -> Option<&'static Vertex> {
+        self.vertices.iter().find(|vertex| vertex.id == id)
     }
 }
 
@@ -367,7 +367,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use alloc::string::ToString;
+    use alloc::string::{String, ToString};
 
     use super::{
         Base, Compose, Machine, Structure, Topology, TopologyError, Transition, TriggerId, Vertex,
@@ -435,6 +435,38 @@ mod tests {
             label: "different presentation",
         },
     ];
+
+    #[test]
+    fn mermaid_preserves_vertex_identity_when_labels_match() {
+        const WAITING: VertexId = VertexId(1);
+        const SHARED_LABEL_VERTICES: &[Vertex] = &[
+            VERTICES[0],
+            Vertex {
+                id: WAITING,
+                label: "ready",
+            },
+        ];
+        const SHARED_LABEL_EDGE: &[Transition] = &[Transition {
+            from: READY,
+            trigger: TriggerId(1),
+            to: WAITING,
+            label: "advance",
+        }];
+        let topology = Topology {
+            name: "shared-labels",
+            initial: READY,
+            vertices: SHARED_LABEL_VERTICES,
+            transitions: SHARED_LABEL_EDGE,
+        };
+        topology.validate().unwrap();
+        let mut mermaid = String::new();
+        topology.write_mermaid(&mut mermaid).unwrap();
+
+        assert_eq!(
+            mermaid,
+            "stateDiagram-v2\n    vertex_0: ready\n    vertex_1: ready\n    [*] --> vertex_0\n    vertex_0 --> vertex_1: advance\n"
+        );
+    }
 
     fn topology(name: &'static str) -> Topology {
         Topology {

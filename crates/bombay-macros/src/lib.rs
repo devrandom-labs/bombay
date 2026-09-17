@@ -68,6 +68,10 @@ impl Parse for ActorArgs {
                     let ty: Type = input.parse()?;
                     forwarded.push(quote!(error = #ty));
                 }
+                "creation_settlements" => {
+                    let disposition: Type = input.parse()?;
+                    forwarded.push(quote!(creation_settlements = #disposition));
+                }
                 "sends" | "births" => {
                     if input.peek(syn::token::Brace) {
                         let content;

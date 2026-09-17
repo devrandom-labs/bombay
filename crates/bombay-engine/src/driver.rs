@@ -7,7 +7,11 @@
 //! once, and only then requests another event. It contains no template,
 //! routing, mailbox, scheduling, identity, retry, or machine-topology policy.
 
-use behavior::{Actions, Behavior, Never, Step};
+use std::collections::VecDeque;
+
+use behavior::{
+    Actions, Behavior, ClassifySettlement, Never, SettlementStatus, SourceCustody, Step, Stopped,
+};
 
 use crate::{ActiveEnvironment, Environment};
 
@@ -28,18 +32,134 @@ pub enum Completion {
     Exhausted,
 }
 
+/// Why the Driver could not finish custody of a complete action settlement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum SettlementFailure {
+    /// Installed initialization effects were lawfully rejected.
+    #[error("installed behavior initialization effects were rejected")]
+    Rejected,
+    /// Action interpretation corrupted the complete retained settlement.
+    #[error("action interpretation corrupted its complete settlement")]
+    Corrupt,
+    /// Source admission closed while a complete settlement remained in custody.
+    #[error("source admission closed with a retained settlement")]
+    SourceClosed,
+}
+
 /// A failure on either side of the Behavior/environment boundary.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
-pub enum DriverError<B, A, E = A> {
+pub enum DriverError<B, A> {
     /// The Behavior rejected initialization or an event.
     #[error("behavior transition failed")]
     Behavior(#[source] B),
     /// The prepared environment rejected initialization commitment or publication.
     #[error("environment activation failed")]
     Activation(#[source] A),
-    /// The active environment failed while applying a successful decision's actions.
-    #[error("environment failed while applying behavior actions")]
-    Environment(#[source] E),
+    /// Complete action-settlement custody could not lawfully continue.
+    #[error("action settlement failed")]
+    Settlement(#[source] SettlementFailure),
+}
+
+enum SettlementTurn<S> {
+    Offer(S),
+    AwaitSource(S),
+}
+
+impl<S> SettlementTurn<S> {
+    fn into_settlement(self) -> S {
+        match self {
+            Self::Offer(settlement) | Self::AwaitSource(settlement) => settlement,
+        }
+    }
+}
+
+enum ExecutionPhase {
+    Initializing,
+    Active,
+}
+
+enum ActionDecision {
+    Continue,
+    Stop,
+}
+
+impl ActionDecision {
+    fn from_step(step: Step<Never, Stopped>) -> Self {
+        match step {
+            Step::Continue => Self::Continue,
+            Step::Goto(phase) => match phase {},
+            Step::Stop(_) => Self::Stop,
+        }
+    }
+}
+
+async fn drive_active<B, E, ActivationError>(
+    behavior: &mut B,
+    environment: &mut E,
+    settlements: &mut VecDeque<SettlementTurn<E::Settlement>>,
+    retained: &mut Vec<E::Settlement>,
+) -> Result<Completion, DriverError<B::Error, ActivationError>>
+where
+    B: Behavior<Ph = Never>,
+    E: ActiveEnvironment<B>,
+{
+    let mut phase = ExecutionPhase::Initializing;
+    loop {
+        let event = match settlements.pop_front() {
+            Some(SettlementTurn::Offer(settlement)) => {
+                match environment.offer_next(settlement).await {
+                    SourceCustody::Exhausted(_) => {}
+                    SourceCustody::Admitted(settlement) => {
+                        settlements.push_front(SettlementTurn::AwaitSource(settlement));
+                    }
+                    SourceCustody::Retained(settlement) => {
+                        // No live-source input remains, but the residual must
+                        // survive to the retirement barrier: park it instead
+                        // of re-offering it and resume ordinary events.
+                        retained.push(settlement);
+                        continue;
+                    }
+                    SourceCustody::Closed(settlement) => {
+                        settlements.push_front(SettlementTurn::Offer(settlement));
+                        return Err(DriverError::Settlement(SettlementFailure::SourceClosed));
+                    }
+                }
+                continue;
+            }
+            Some(SettlementTurn::AwaitSource(residual)) => {
+                settlements.push_front(SettlementTurn::Offer(residual));
+                environment
+                    .next_source()
+                    .await
+                    .ok_or(DriverError::Settlement(SettlementFailure::SourceClosed))?
+            }
+            None => match phase {
+                ExecutionPhase::Initializing => {
+                    environment.publish();
+                    phase = ExecutionPhase::Active;
+                    continue;
+                }
+                ExecutionPhase::Active => match environment.next().await {
+                    Some(event) => event,
+                    None => return Ok(Completion::Exhausted),
+                },
+            },
+        };
+
+        let actions =
+            behavior::delegate_transition(behavior, event).map_err(DriverError::Behavior)?;
+        let decision = ActionDecision::from_step(actions.become_);
+        let interpretation = environment.apply(actions).await;
+        let status = interpretation.settlement_status();
+        settlements.push_front(SettlementTurn::Offer(interpretation.into_settlement()));
+        match decision {
+            ActionDecision::Stop => return Ok(Completion::Stopped),
+            ActionDecision::Continue => {}
+        }
+        if status == SettlementStatus::Corrupt {
+            return Err(DriverError::Settlement(SettlementFailure::Corrupt));
+        }
+    }
 }
 
 /// Exact ownership returned after the Driver's one retirement barrier.
@@ -93,13 +213,7 @@ where
     /// The returned disposition preserves the exact Behavior error when
     /// initialization or a turn fails, or the exact environment error when
     /// local action commitment fails.
-    pub async fn run(
-        self,
-    ) -> DriverRetirement<
-        B,
-        E::Residual,
-        DriverError<B::Error, E::Error, <E::Active as ActiveEnvironment<B>>::Error>,
-    > {
+    pub async fn run(self) -> DriverRetirement<B, E::Residual, DriverError<B::Error, E::Error>> {
         let Self {
             behavior,
             environment,
@@ -116,9 +230,9 @@ where
                 };
             }
         };
-        let stopped = matches!(&initialized.become_, Step::Stop(_));
-        let mut environment = match environment.activate(initialized).await {
-            Ok(environment) => environment,
+        let initialization_decision = ActionDecision::from_step(initialized.become_);
+        let (mut environment, interpretation) = match environment.activate(initialized).await {
+            Ok(activated) => activated,
             Err((error, residual)) => {
                 return DriverRetirement {
                     behavior,
@@ -127,27 +241,46 @@ where
                 };
             }
         };
-        let disposition = if stopped {
-            Ok(Completion::Stopped)
-        } else {
-            loop {
-                let Some(event) = environment.next().await else {
-                    break Ok(Completion::Exhausted);
-                };
-                let actions = match behavior::delegate_transition(&mut behavior, event) {
-                    Ok(actions) => actions,
-                    Err(error) => break Err(DriverError::Behavior(error)),
-                };
-                let stopped = matches!(&actions.become_, Step::Stop(_));
-                match environment.apply(actions).await {
-                    Ok(()) if stopped => break Ok(Completion::Stopped),
-                    Ok(()) => {}
-                    Err(error) => break Err(DriverError::Environment(error)),
-                }
+        let initialization_status = interpretation.settlement_status();
+        let initialization = interpretation.into_settlement();
+        let (disposition, settlements) = match initialization_decision {
+            ActionDecision::Stop => {
+                environment.publish();
+                (Ok(Completion::Stopped), vec![initialization])
             }
+            ActionDecision::Continue => match initialization_status {
+                SettlementStatus::Rejected => {
+                    environment.publish();
+                    (
+                        Err(DriverError::Settlement(SettlementFailure::Rejected)),
+                        vec![initialization],
+                    )
+                }
+                SettlementStatus::Corrupt => {
+                    environment.publish();
+                    (
+                        Err(DriverError::Settlement(SettlementFailure::Corrupt)),
+                        vec![initialization],
+                    )
+                }
+                SettlementStatus::Accepted => {
+                    let mut pending = VecDeque::from([SettlementTurn::Offer(initialization)]);
+                    let mut retained = Vec::new();
+                    let disposition =
+                        drive_active(&mut behavior, &mut environment, &mut pending, &mut retained)
+                            .await;
+                    let mut settlements = pending
+                        .into_iter()
+                        .map(SettlementTurn::into_settlement)
+                        .collect::<Vec<_>>();
+                    // Retained residuals are the oldest custody: they stopped
+                    // progressing first, so they close the retirement order.
+                    settlements.extend(retained.into_iter().rev());
+                    (disposition, settlements)
+                }
+            },
         };
-
-        let residual = environment.retire().await;
+        let residual = environment.retire(settlements).await;
         DriverRetirement {
             behavior,
             residual,

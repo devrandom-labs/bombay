@@ -1,6 +1,6 @@
 //! Exact terminal classification for one Driver execution.
 
-use bombay_engine::{Completion, DriverError, DriverRetirement};
+use bombay_engine::{Completion, DriverError, DriverRetirement, SettlementFailure};
 
 /// Every factual way one incarnation can terminate.
 ///
@@ -8,13 +8,7 @@ use bombay_engine::{Completion, DriverError, DriverRetirement};
 /// Panic and cancellation are classified by the incarnation because they are
 /// properties of executing the Driver future, not Behavior decisions.
 #[derive(Debug, PartialEq, Eq)]
-pub enum IncarnationOutcome<
-    B,
-    R,
-    BehaviorError,
-    ActivationError,
-    EnvironmentError = ActivationError,
-> {
+pub enum IncarnationOutcome<B, R, BehaviorError, ActivationError> {
     /// The Driver returned successfully for the stated reason.
     Completed {
         behavior: B,
@@ -33,11 +27,11 @@ pub enum IncarnationOutcome<
         residual: R,
         error: ActivationError,
     },
-    /// The environment rejected one complete action commitment.
-    EnvironmentFailed {
+    /// Complete action-settlement custody could not lawfully continue.
+    SettlementFailed {
         behavior: B,
         residual: R,
-        error: EnvironmentError,
+        error: SettlementFailure,
     },
     /// Driver execution unwound through a panic.
     Panicked,
@@ -45,16 +39,12 @@ pub enum IncarnationOutcome<
     Cancelled,
 }
 
-impl<B, R, BehaviorError, ActivationError, EnvironmentError>
-    From<DriverRetirement<B, R, DriverError<BehaviorError, ActivationError, EnvironmentError>>>
-    for IncarnationOutcome<B, R, BehaviorError, ActivationError, EnvironmentError>
+impl<B, R, BehaviorError, ActivationError>
+    From<DriverRetirement<B, R, DriverError<BehaviorError, ActivationError>>>
+    for IncarnationOutcome<B, R, BehaviorError, ActivationError>
 {
     fn from(
-        retirement: DriverRetirement<
-            B,
-            R,
-            DriverError<BehaviorError, ActivationError, EnvironmentError>,
-        >,
+        retirement: DriverRetirement<B, R, DriverError<BehaviorError, ActivationError>>,
     ) -> Self {
         let DriverRetirement {
             behavior,
@@ -77,7 +67,7 @@ impl<B, R, BehaviorError, ActivationError, EnvironmentError>
                 residual,
                 error,
             },
-            Err(DriverError::Environment(error)) => Self::EnvironmentFailed {
+            Err(DriverError::Settlement(error)) => Self::SettlementFailed {
                 behavior,
                 residual,
                 error,

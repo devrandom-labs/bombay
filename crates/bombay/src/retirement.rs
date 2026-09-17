@@ -7,27 +7,23 @@ use super::IncarnationOutcome;
 /// Implementations may release an identity lease and publish the supplied
 /// outcome. They cannot affect Driver execution because invocation occurs only
 /// after the Driver future and all values it owns have been dropped.
-pub trait Retirement<B, R, BehaviorError, ActivationError, EnvironmentError = ActivationError> {
+pub trait Retirement<B, R, BehaviorError, ActivationError> {
     type Output;
 
     /// Retire the incarnation with its exact terminal classification.
     fn retire(
         self,
-        outcome: IncarnationOutcome<B, R, BehaviorError, ActivationError, EnvironmentError>,
+        outcome: IncarnationOutcome<B, R, BehaviorError, ActivationError>,
     ) -> Self::Output;
 }
 
-impl<B, R, BehaviorError, ActivationError, EnvironmentError, F>
-    Retirement<B, R, BehaviorError, ActivationError, EnvironmentError> for F
+impl<B, R, BehaviorError, ActivationError, F> Retirement<B, R, BehaviorError, ActivationError> for F
 where
-    F: FnOnce(IncarnationOutcome<B, R, BehaviorError, ActivationError, EnvironmentError>),
+    F: FnOnce(IncarnationOutcome<B, R, BehaviorError, ActivationError>),
 {
     type Output = ();
 
-    fn retire(
-        self,
-        outcome: IncarnationOutcome<B, R, BehaviorError, ActivationError, EnvironmentError>,
-    ) {
+    fn retire(self, outcome: IncarnationOutcome<B, R, BehaviorError, ActivationError>) {
         self(outcome);
     }
 }

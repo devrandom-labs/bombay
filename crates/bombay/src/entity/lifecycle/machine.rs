@@ -370,7 +370,7 @@ mod tests {
         assert_eq!(LIFECYCLE_TOPOLOGY.transitions.len(), 7);
         assert_eq!(
             mermaid,
-            "stateDiagram-v2\n    [*] --> inactive\n    inactive --> activating: claim_activation\n    activating --> active: activation_succeeded\n    activating --> inactive: activation_failed\n    active --> draining: begin_drain\n    draining --> retiring: fence_acknowledged\n    draining --> retiring: force_drain\n    retiring --> inactive: terminated\n"
+            "stateDiagram-v2\n    vertex_0: inactive\n    vertex_1: activating\n    vertex_2: active\n    vertex_3: draining\n    vertex_4: retiring\n    [*] --> vertex_0\n    vertex_0 --> vertex_1: claim_activation\n    vertex_1 --> vertex_2: activation_succeeded\n    vertex_1 --> vertex_0: activation_failed\n    vertex_2 --> vertex_3: begin_drain\n    vertex_3 --> vertex_4: fence_acknowledged\n    vertex_3 --> vertex_4: force_drain\n    vertex_4 --> vertex_0: terminated\n"
         );
     }
 

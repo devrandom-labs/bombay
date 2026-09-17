@@ -3,7 +3,8 @@
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Instant;
 
-use behavior::{InjectEvent, ScheduleAfter, ScheduleAt, TimerElapsed};
+use behavior::InjectEvent;
+use behavior_actors::{ScheduleAfter, ScheduleAt, TimerElapsed, TimerId};
 use timers::{ScheduleError, TimerQueue};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
@@ -22,7 +23,7 @@ pub(crate) enum TimerError {
 /// replacements. Both uses remain serialized by the Driver; the mutex permits
 /// those two statically separate capability views to share one queue.
 pub(crate) struct LocalTimers<Event> {
-    queue: Arc<Mutex<TimerQueue<Instant, behavior::TimerId, Event>>>,
+    queue: Arc<Mutex<TimerQueue<Instant, TimerId, Event>>>,
 }
 
 impl<Event> Clone for LocalTimers<Event> {
@@ -95,7 +96,8 @@ impl<Event> LocalTimers<Event> {
 mod tests {
     use std::time::Duration;
 
-    use behavior::{InjectEvent, TimerGeneration, TimerId};
+    use behavior::InjectEvent;
+    use behavior_actors::{TimerGeneration, TimerId};
 
     use super::*;
 

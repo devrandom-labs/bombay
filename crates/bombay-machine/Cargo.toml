@@ -14,6 +14,7 @@ thiserror.workspace = true
 
 [dev-dependencies]
 loom = "0.7.2"
+trybuild = "1"
 
 [target.'cfg(loom)'.dependencies]
 loom = "0.7.2"

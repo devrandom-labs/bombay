@@ -2,10 +2,8 @@
 
 use std::sync::Arc;
 
-use behavior::{
-    Behavior, ChildReport, ChildRoute, EventIngress, Exit, ReportSupervisionFailure,
-    ReportTerminalOutcome,
-};
+use behavior::{Behavior, ChildReport, CreationId, EventIngress};
+use behavior_actors::ReportTerminalOutcome;
 use communication::{ControlClosed, ControlSender};
 
 use crate::address::MailAddr;
@@ -34,11 +32,6 @@ impl LocalTerminalReports {
         self.selection.finish(disposition);
     }
 
-    pub(crate) fn report_supervision(&self, report: ReportSupervisionFailure<MailAddr>) {
-        self.selection
-            .select(Ok(Exit::SupervisionFailed(report.failure.reason())));
-    }
-
     pub(crate) fn report_outcome(&self, report: ReportTerminalOutcome<MailAddr>) {
         let outcome: Termination<MailAddr> = report.outcome;
         self.selection.select(outcome);
@@ -46,7 +39,7 @@ impl LocalTerminalReports {
 }
 
 pub(crate) struct LocalParentReports<Event, Child, Position> {
-    nonce: u64,
+    child: CreationId,
     parent: ControlSender<Event>,
     occurrence: core::marker::PhantomData<fn() -> (Child, Position)>,
 }
@@ -56,9 +49,9 @@ pub(crate) trait ParentReporting<Report> {
 }
 
 impl<Event, Child, Position> LocalParentReports<Event, Child, Position> {
-    pub(crate) const fn new(nonce: u64, parent: ControlSender<Event>) -> Self {
+    pub(crate) const fn new(child: CreationId, parent: ControlSender<Event>) -> Self {
         Self {
-            nonce,
+            child,
             parent,
             occurrence: core::marker::PhantomData,
         }
@@ -67,9 +60,9 @@ impl<Event, Child, Position> LocalParentReports<Event, Child, Position> {
     pub(crate) fn report<Report>(&self, report: Report)
     where
         Child: Behavior,
-        Event: EventIngress<ChildRoute<Child, Position>, ChildReport<MailAddr, Report>>,
+        Event: EventIngress<Position, ChildReport<Report>>,
     {
-        let event = Event::ingress(ChildReport::new(self.nonce, report));
+        let event = Event::ingress(ChildReport::new(self.child, report));
         match self.parent.send(event) {
             Ok(()) => {}
             Err(ControlClosed(_event)) => {
@@ -83,7 +76,7 @@ impl<Event, Child, Position, Report> ParentReporting<Report>
     for LocalParentReports<Event, Child, Position>
 where
     Child: Behavior,
-    Event: EventIngress<ChildRoute<Child, Position>, ChildReport<MailAddr, Report>>,
+    Event: EventIngress<Position, ChildReport<Report>>,
 {
     fn report(&self, report: Report) {
         LocalParentReports::report(self, report);

@@ -1,7 +1,9 @@
-use bombay::behavior::{ChildChoice, Create, Never, NoSends, Step, Stopped};
+use bombay::behavior::{
+    ChildCons, CreateChild, CreationSequence, Creations, Never, NoChildren, NoSends, Step, Stopped,
+};
 use bombay::prelude::*;
 
-const WORKER_NONCE: u64 = 7;
+const WORKER_NONCE: u64 = 1;
 
 struct Worker;
 
@@ -13,6 +15,7 @@ struct Root;
 #[bombay::actor(
     message = Never,
     births = { worker: StopOnShutdown<Worker> },
+    creation_settlements = retain_for_retirement,
 )]
 impl Root {
     #[allow(
@@ -21,12 +24,11 @@ impl Root {
         reason = "the generated foundational fold fixes the controlled-error boundary"
     )]
     fn init(&mut self) -> BehaviorActed<Self> {
+        let mut creations = CreationSequence::new();
+        let worker = creations.issue().expect("the first creation ID exists");
         Ok(Actions::new(
             NoSends,
-            vec![Create::birth(
-                WORKER_NONCE,
-                ChildChoice::Head(Worker.stop_on_shutdown()),
-            )],
+            Creations::one(CreateChild::birth(worker, Worker.stop_on_shutdown())),
             Step::Stop(Stopped),
         ))
     }
@@ -67,11 +69,18 @@ impl Auditor {}
 
 struct AuditWorker;
 
+type DeclaredChildren = ChildCons<
+    MailAddr,
+    StopOnShutdown<Auditor>,
+    ChildCons<MailAddr, StopOnShutdown<Worker>, NoChildren>,
+>;
+type DeclaredApplication = ApplicationBehavior<StopOnShutdown<ApplicationRoot>, DeclaredChildren>;
+
 #[derive(TerminalProjection)]
 enum DeclaredApplicationTerminal {
     Root {
         origin: ActorOrigin<StopOnShutdown<ApplicationRoot>>,
-        terminal: ActorRetirement<StopOnShutdown<ApplicationRoot>, Self>,
+        terminal: ActorRetirement<DeclaredApplication, Self>,
     },
     #[application_actor]
     BackgroundWorker {
@@ -96,6 +105,7 @@ fn root_returns_only_after_owning_the_exact_direct_child_terminal() {
         terminal:
             ActorRetirement::Completed {
                 behavior: _,
+                settlements,
                 control,
                 user,
                 mut descendants,
@@ -109,6 +119,7 @@ fn root_returns_only_after_owning_the_exact_direct_child_terminal() {
     assert_eq!(origin.nonce(), None);
     assert!(control.is_empty());
     assert!(user.is_empty());
+    assert_eq!(settlements.len(), 1);
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
 
@@ -117,6 +128,7 @@ fn root_returns_only_after_owning_the_exact_direct_child_terminal() {
         terminal:
             ActorRetirement::OwnerCancelled {
                 behavior: _,
+                settlements,
                 control,
                 user,
                 descendants,
@@ -129,6 +141,7 @@ fn root_returns_only_after_owning_the_exact_direct_child_terminal() {
     };
     assert!(control.is_empty());
     assert!(user.is_empty());
+    assert_eq!(settlements.len(), 1);
     assert!(descendants.is_empty());
     assert_eq!(origin.address(), MailAddr(1));
     assert_eq!(origin.nonce(), Some(WORKER_NONCE));
@@ -148,6 +161,7 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
         terminal:
             ActorRetirement::Completed {
                 behavior: _,
+                settlements,
                 control,
                 user,
                 descendants,
@@ -161,6 +175,7 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
     assert_eq!(origin.nonce(), None);
     assert!(control.is_empty());
     assert!(user.is_empty());
+    assert_eq!(settlements.len(), 1);
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 2);
 
@@ -173,6 +188,7 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
                 terminal:
                     ActorRetirement::OwnerCancelled {
                         behavior: _,
+                        settlements,
                         control,
                         user,
                         descendants,
@@ -180,6 +196,7 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
             } => {
                 assert!(control.is_empty());
                 assert!(user.is_empty());
+                assert_eq!(settlements.len(), 1);
                 assert!(descendants.is_empty());
                 assert_eq!(background.replace(origin), None);
             }
@@ -188,6 +205,7 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
                 terminal:
                     ActorRetirement::OwnerCancelled {
                         behavior: _,
+                        settlements,
                         control,
                         user,
                         descendants,
@@ -195,6 +213,7 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
             } => {
                 assert!(control.is_empty());
                 assert!(user.is_empty());
+                assert_eq!(settlements.len(), 1);
                 assert!(descendants.is_empty());
                 assert_eq!(audit.replace(origin), None);
             }

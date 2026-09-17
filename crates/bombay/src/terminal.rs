@@ -2,26 +2,28 @@
 
 use core::marker::PhantomData;
 
-use behavior::{Behavior, BehaviorAddr, BehaviorMessage, ChildRole, Here, Protocol, User};
+use behavior::{
+    Behavior, BehaviorAddr, BehaviorMessage, BehaviorSettlements, ChildRole, Here, Protocol, User,
+};
 use bombay_address::ClaimError;
-use bombay_engine::{ActionsOf, Completion};
+use bombay_engine::{ActionsOf, Completion, SettlementFailure};
 
 use crate::IncarnationOutcome;
 use crate::address::MailAddr;
-use crate::interpret::EffectInterpretationError;
-use crate::local::{LocalActivationError, LocalResidual};
+use crate::interpret::ActionSettlementOf;
+use crate::local::LocalResidual;
 
-pub(crate) type LocalOutcome<B, Descendants, CommitError> = IncarnationOutcome<
+pub(crate) type LocalOutcome<B, Descendants> = IncarnationOutcome<
     B,
     LocalResidual<
         ActionsOf<B>,
+        ActionSettlementOf<B>,
         <B as Behavior>::Event,
         User<BehaviorAddr<B>, BehaviorMessage<B>>,
         Descendants,
     >,
     <B as Behavior>::Error,
-    LocalActivationError<CommitError, ClaimError<BehaviorAddr<B>>>,
-    CommitError,
+    ClaimError<BehaviorAddr<B>>,
 >;
 
 /// Exact runtime identity of one actor retirement owned by a semantic role.
@@ -133,9 +135,9 @@ pub trait ProjectTerminal<Origin, Terminal> {
 ///
 /// Every variant either retains final owned state or names the executor event
 /// that made such custody unavailable.
-pub enum ActorRetirement<BehaviorState, Root, EffectError = EffectInterpretationError>
+pub enum ActorRetirement<BehaviorState, Root>
 where
-    BehaviorState: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = behavior::Never>,
+    BehaviorState: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = behavior::Never>,
 {
     AllocationRejected {
         behavior: BehaviorState,
@@ -156,18 +158,12 @@ where
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
     },
-    InitializationEffectsFailed {
-        behavior: BehaviorState,
-        error: EffectError,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-    },
     EndedBeforeActivation {
         completion: Completion,
     },
     Completed {
         behavior: BehaviorState,
+        settlements: Vec<ActionSettlementOf<BehaviorState>>,
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
@@ -175,6 +171,7 @@ where
     },
     BehaviorFailed {
         behavior: BehaviorState,
+        settlements: Vec<ActionSettlementOf<BehaviorState>>,
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
@@ -182,13 +179,15 @@ where
     },
     EffectsFailed {
         behavior: BehaviorState,
-        error: EffectError,
+        settlements: Vec<ActionSettlementOf<BehaviorState>>,
+        error: SettlementFailure,
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
     },
     OwnerCancelled {
         behavior: BehaviorState,
+        settlements: Vec<ActionSettlementOf<BehaviorState>>,
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
@@ -197,11 +196,11 @@ where
     Cancelled,
 }
 
-impl<BehaviorState, Root, EffectError> ActorRetirement<BehaviorState, Root, EffectError>
+impl<BehaviorState, Root> ActorRetirement<BehaviorState, Root>
 where
-    BehaviorState: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = behavior::Never>,
+    BehaviorState: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = behavior::Never>,
 {
-    fn from_completed(outcome: LocalOutcome<BehaviorState, Vec<Root>, EffectError>) -> Self {
+    fn from_completed(outcome: LocalOutcome<BehaviorState, Vec<Root>>) -> Self {
         let IncarnationOutcome::Completed {
             behavior,
             residual,
@@ -211,6 +210,7 @@ where
             unreachable!("the completed terminal projection received another outcome")
         };
         let LocalResidual::Retired {
+            settlements,
             ingress,
             activation_tasks,
             descendants,
@@ -232,6 +232,7 @@ where
                 );
                 Self::OwnerCancelled {
                     behavior,
+                    settlements,
                     control: ingress.control,
                     user: ingress.user,
                     descendants,
@@ -239,6 +240,7 @@ where
             }
             None => Self::Completed {
                 behavior,
+                settlements,
                 control: ingress.control,
                 user: ingress.user,
                 descendants,
@@ -247,13 +249,14 @@ where
         }
     }
 
-    pub(crate) fn from_local(outcome: LocalOutcome<BehaviorState, Vec<Root>, EffectError>) -> Self {
+    pub(crate) fn from_local(outcome: LocalOutcome<BehaviorState, Vec<Root>>) -> Self {
         match outcome {
             completed @ IncarnationOutcome::Completed { .. } => Self::from_completed(completed),
             IncarnationOutcome::BehaviorFailed {
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        settlements,
                         ingress,
                         descendants,
                         ..
@@ -261,6 +264,7 @@ where
                 error,
             } => Self::BehaviorFailed {
                 behavior,
+                settlements,
                 control: ingress.control,
                 user: ingress.user,
                 descendants,
@@ -275,7 +279,7 @@ where
                         descendants,
                         ..
                     },
-                error: LocalActivationError::Address(error),
+                error,
             } => Self::HostRejected {
                 behavior,
                 initialization,
@@ -284,26 +288,11 @@ where
                 user: ingress.user,
                 descendants,
             },
-            IncarnationOutcome::ActivationFailed {
+            IncarnationOutcome::SettlementFailed {
                 behavior,
                 residual:
                     LocalResidual::Retired {
-                        ingress,
-                        descendants,
-                        ..
-                    },
-                error: LocalActivationError::Commit(error),
-            } => Self::InitializationEffectsFailed {
-                behavior,
-                error,
-                control: ingress.control,
-                user: ingress.user,
-                descendants,
-            },
-            IncarnationOutcome::EnvironmentFailed {
-                behavior,
-                residual:
-                    LocalResidual::Retired {
+                        settlements,
                         ingress,
                         descendants,
                         ..
@@ -311,6 +300,7 @@ where
                 error,
             } => Self::EffectsFailed {
                 behavior,
+                settlements,
                 error,
                 control: ingress.control,
                 user: ingress.user,
@@ -323,16 +313,10 @@ where
                 ..
             }
             | IncarnationOutcome::ActivationFailed {
-                residual: LocalResidual::Uncommitted { .. },
-                error: LocalActivationError::Commit(_),
-                ..
-            }
-            | IncarnationOutcome::ActivationFailed {
                 residual: LocalResidual::Retired { .. },
-                error: LocalActivationError::Address(_),
                 ..
             }
-            | IncarnationOutcome::EnvironmentFailed {
+            | IncarnationOutcome::SettlementFailed {
                 residual: LocalResidual::Uncommitted { .. },
                 ..
             } => unreachable!("the local Environment returned an impossible residual phase"),

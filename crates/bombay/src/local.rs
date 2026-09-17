@@ -10,13 +10,16 @@ use std::sync::{Arc, Mutex, PoisonError, Weak};
 use std::time::Instant;
 
 use crate::address::MailAddr;
+use crate::interpret::ActionSettlementOf;
 use crate::observation::FactQueue;
 use crate::observe::{Observation, Publisher, affine_pair};
 use crate::time::LocalTimers;
 use behavior::{
-    Behavior, BehaviorAddr, BehaviorMessage, EstablishedRecipient, InjectEvent, Never, Protocol,
-    ShutdownRejection, ShutdownRequested, User, UserEvent,
+    Behavior, BehaviorAddr, BehaviorMessage, BehaviorSettlements, ClassifySettlement,
+    EstablishedRecipient, InjectEvent, Interpretation, Never, Protocol, SourceCustody, User,
+    UserEvent,
 };
+use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested};
 use bombay_address::{AddressSpace, ClaimError, Lease};
 use bombay_engine::{ActionsOf, ActiveEnvironment, Environment};
 use communication::{
@@ -26,7 +29,7 @@ use communication::{
 use tokio::sync::oneshot;
 use tokio::task::JoinSet;
 
-pub(crate) type Termination<A> = Result<behavior::Exit<A>, behavior::Crash>;
+pub(crate) type Termination<A> = Result<Exit<A>, behavior_actors::Crash>;
 
 /// Actor-owned external activation work with exact closed-lane recovery.
 pub(crate) struct ActivationTasks<E> {
@@ -93,14 +96,18 @@ impl<E, Descendants> CapabilityRetirement<E, Descendants> {
 ///
 /// Product traversal and concrete runtime services remain behind this private
 /// seam. It is not an application extension API.
-pub(crate) trait CommitActions<B: Behavior<Ph = Never>> {
-    type Error;
+pub(crate) trait CommitActions<B: BehaviorSettlements<Ph = Never>> {
     type Retired;
 
     fn commit(
         &mut self,
         actions: ActionsOf<B>,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send;
+    ) -> impl Future<Output = Interpretation<ActionSettlementOf<B>>> + Send;
+
+    fn offer_next(
+        &mut self,
+        settlement: ActionSettlementOf<B>,
+    ) -> impl Future<Output = SourceCustody<ActionSettlementOf<B>>> + Send;
 
     fn retire(self) -> impl Future<Output = CapabilityRetirement<B::Event, Self::Retired>> + Send
     where
@@ -290,6 +297,14 @@ where
             .as_mut()
             .expect("active local inbox retains its consumer")
             .recv()
+            .await
+    }
+
+    async fn recv_source(&mut self) -> Option<B::Event> {
+        self.consumer
+            .as_mut()
+            .expect("active local inbox retains its consumer")
+            .recv_control()
             .await
     }
 
@@ -551,16 +566,7 @@ impl<M> SendError<M> {
     }
 }
 
-/// Failure while interpreting initialization or claiming the exact address.
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
-pub enum LocalActivationError<CommitError, AddressError> {
-    #[error("initial behavior actions could not be committed")]
-    Commit(#[source] CommitError),
-    #[error("actor address generation could not be claimed")]
-    Address(#[source] AddressError),
-}
-
-pub(crate) enum LocalResidual<A, E, U, Descendants = ()> {
+pub(crate) enum LocalResidual<A, S, E, U, Descendants = ()> {
     Uncommitted {
         initialization: A,
         ingress: Drained<E, U>,
@@ -568,6 +574,7 @@ pub(crate) enum LocalResidual<A, E, U, Descendants = ()> {
         descendants: Descendants,
     },
     Retired {
+        settlements: Vec<S>,
         ingress: Drained<E, U>,
         activation_tasks: ActivationTasks<E>,
         descendants: Descendants,
@@ -575,7 +582,7 @@ pub(crate) enum LocalResidual<A, E, U, Descendants = ()> {
     },
 }
 
-impl<A, E, U, Descendants> LocalResidual<A, E, U, Descendants>
+impl<A, S, E, U, Descendants> LocalResidual<A, S, E, U, Descendants>
 where
     E: Send + 'static,
 {
@@ -597,6 +604,7 @@ where
                 }
             }
             Self::Retired {
+                settlements,
                 mut ingress,
                 activation_tasks,
                 descendants,
@@ -605,6 +613,7 @@ where
                 let mut completed = activation_tasks.settle().await;
                 ingress.control.append(&mut completed);
                 Self::Retired {
+                    settlements,
                     ingress,
                     activation_tasks: ActivationTasks::new(),
                     descendants,
@@ -722,9 +731,18 @@ where
     }
 }
 
+enum Publication<P, Endpoint> {
+    Pending { publish: P, endpoint: Endpoint },
+    Published,
+}
+
 /// The only local value with mailbox ingress and address ownership.
-pub(crate) struct ActiveLocalEnvironment<B: Behavior, I, M = StandardIngress>
-where
+pub(crate) struct ActiveLocalEnvironment<
+    B: Behavior,
+    I,
+    M = StandardIngress,
+    P = fn(ActorRef<<B as Behavior>::Protocol>),
+> where
     BehaviorAddr<B>: Hash,
     BehaviorMessage<B>: Send,
     M: IngressMode<B>,
@@ -738,6 +756,7 @@ where
     interpreter: I,
     owner_cancellation: Option<oneshot::Receiver<OwnerCancellation>>,
     cancellation: Option<OwnerCancellation>,
+    publication: Publication<P, ActorRef<B::Protocol>>,
     _lease: Lease<BehaviorAddr<B>, ActorRef<B::Protocol>>,
 }
 
@@ -747,7 +766,7 @@ where
 )]
 impl<B, I, M, P> Environment<B> for LocalEnvironment<B, I, M, P>
 where
-    B: Behavior<Ph = Never> + Send,
+    B: BehaviorSettlements<Ph = Never> + Send,
     M: IngressMode<B>,
     M::Retired: Send,
     BehaviorAddr<B>: Hash + Clone + Send + Sync,
@@ -758,18 +777,21 @@ where
     <BehaviorAddr<B> as behavior::Address>::Nonce: Send,
     BehaviorMessage<B>: Send,
     I: CommitActions<B> + Send,
-    I::Error: Send,
     I::Retired: Send,
     P: FnOnce(ActorRef<B::Protocol>) + Send,
+    ActionSettlementOf<B>: ClassifySettlement + Send,
 {
-    type Active = ActiveLocalEnvironment<B, I, M>;
-    type Error = LocalActivationError<I::Error, ClaimError<BehaviorAddr<B>>>;
-    type Residual = LocalResidual<ActionsOf<B>, B::Event, M::Retired, I::Retired>;
+    type Active = ActiveLocalEnvironment<B, I, M, P>;
+    type Settlement = ActionSettlementOf<B>;
+    type Error = ClaimError<BehaviorAddr<B>>;
+    type Residual =
+        LocalResidual<ActionsOf<B>, ActionSettlementOf<B>, B::Event, M::Retired, I::Retired>;
 
     async fn activate(
         mut self,
         actions: ActionsOf<B>,
-    ) -> Result<Self::Active, (Self::Error, Self::Residual)> {
+    ) -> Result<(Self::Active, Interpretation<Self::Settlement>), (Self::Error, Self::Residual)>
+    {
         let published = self.endpoint.clone();
         let lease = match self.addresses.try_claim(self.address, self.endpoint) {
             Ok(lease) => lease,
@@ -780,7 +802,7 @@ where
                 } = self.interpreter.retire().await;
                 let ingress = collect_retired_ingress::<B, M>(self.consumer);
                 return Err((
-                    LocalActivationError::Address(error),
+                    error,
                     LocalResidual::Uncommitted {
                         initialization: actions,
                         ingress,
@@ -790,37 +812,9 @@ where
                 ));
             }
         };
-        if let Err(error) = self.interpreter.commit(actions).await {
-            match self.admission.close() {
-                Some(()) | None => {}
-            }
-            let CapabilityRetirement {
-                activation_tasks,
-                descendants,
-            } = self.interpreter.retire().await;
-            let ingress = collect_retired_ingress::<B, M>(self.consumer);
-            drop((
-                self.admission,
-                self.control_liveness,
-                self.shutdown_liveness,
-                self.timers,
-                self.facts,
-                self.owner_cancellation,
-                lease,
-            ));
-            return Err((
-                LocalActivationError::Commit(error),
-                LocalResidual::Retired {
-                    ingress,
-                    activation_tasks,
-                    descendants,
-                    owner_cancellation: None,
-                },
-            ));
-        }
-        (self.publish)(published);
+        let interpretation = self.interpreter.commit(actions).await;
         let control_liveness = Some(self.control_liveness);
-        Ok(ActiveLocalEnvironment {
+        let active = ActiveLocalEnvironment {
             inbox: LocalInbox::new(self.consumer),
             admission: self.admission,
             control_liveness,
@@ -830,8 +824,13 @@ where
             interpreter: self.interpreter,
             owner_cancellation: Some(self.owner_cancellation),
             cancellation: None,
+            publication: Publication::Pending {
+                publish: self.publish,
+                endpoint: published,
+            },
             _lease: lease,
-        })
+        };
+        Ok((active, interpretation))
     }
 
     async fn retire(self) -> Self::Residual {
@@ -852,6 +851,7 @@ where
             self.owner_cancellation,
         ));
         LocalResidual::Retired {
+            settlements: Vec::new(),
             ingress,
             activation_tasks,
             descendants,
@@ -864,9 +864,9 @@ where
     refining_impl_trait,
     reason = "Bombay's concrete Tokio environment refines executor-neutral Engine futures"
 )]
-impl<B, I, M> ActiveEnvironment<B> for ActiveLocalEnvironment<B, I, M>
+impl<B, I, M, P> ActiveEnvironment<B> for ActiveLocalEnvironment<B, I, M, P>
 where
-    B: Behavior<Ph = Never> + Send,
+    B: BehaviorSettlements<Ph = Never> + Send,
     M: IngressMode<B>,
     M::Retired: Send,
     BehaviorAddr<B>: Hash + Send + Sync,
@@ -876,11 +876,13 @@ where
     <BehaviorAddr<B> as behavior::Address>::Nonce: Send,
     BehaviorMessage<B>: Send,
     I: CommitActions<B> + Send,
-    I::Error: Send,
     I::Retired: Send,
+    P: FnOnce(ActorRef<B::Protocol>) + Send,
+    ActionSettlementOf<B>: ClassifySettlement + Send,
 {
-    type Error = I::Error;
-    type Residual = LocalResidual<ActionsOf<B>, B::Event, M::Retired, I::Retired>;
+    type Settlement = ActionSettlementOf<B>;
+    type Residual =
+        LocalResidual<ActionsOf<B>, ActionSettlementOf<B>, B::Event, M::Retired, I::Retired>;
 
     async fn next(&mut self) -> Option<B::Event> {
         enum Acquired<E, U> {
@@ -947,11 +949,32 @@ where
         }
     }
 
-    async fn apply(&mut self, actions: ActionsOf<B>) -> Result<(), Self::Error> {
+    async fn next_source(&mut self) -> Option<B::Event> {
+        self.inbox.recv_source().await
+    }
+
+    async fn apply(&mut self, actions: ActionsOf<B>) -> Interpretation<Self::Settlement> {
         self.interpreter.commit(actions).await
     }
 
-    async fn retire(self) -> Self::Residual {
+    async fn offer_next(
+        &mut self,
+        settlement: Self::Settlement,
+    ) -> SourceCustody<Self::Settlement> {
+        self.interpreter.offer_next(settlement).await
+    }
+
+    fn publish(&mut self) {
+        let publication = core::mem::replace(&mut self.publication, Publication::Published);
+        match publication {
+            Publication::Pending { publish, endpoint } => publish(endpoint),
+            Publication::Published => {
+                unreachable!("the Driver publishes one installed incarnation exactly once")
+            }
+        }
+    }
+
+    async fn retire(self, settlements: Vec<Self::Settlement>) -> Self::Residual {
         let Self {
             mut inbox,
             admission,
@@ -962,6 +985,7 @@ where
             interpreter,
             owner_cancellation,
             cancellation,
+            publication,
             _lease: lease,
         } = self;
         drop(owner_cancellation);
@@ -982,9 +1006,11 @@ where
             shutdown_liveness,
             timers,
             facts,
+            publication,
             lease,
         ));
         LocalResidual::Retired {
+            settlements,
             ingress,
             activation_tasks,
             descendants,
@@ -1003,6 +1029,7 @@ mod tests {
     use behavior::{
         Actions, BehaviorActed, InitializationTurn, MessageProtocol, Never, NoBirths, User,
     };
+    use behavior_actors::{Crash, Exit, StopOnShutdown};
     use communication::{Config, mailbox_channel};
 
     use crate::MailAddr;
@@ -1068,7 +1095,7 @@ mod tests {
 
     #[test]
     fn ordinary_ingress_retains_the_exact_user_item_layout() {
-        type Hosted = behavior::StopOnShutdown<FenceProbe>;
+        type Hosted = StopOnShutdown<FenceProbe>;
         type StandardItem = <StandardIngress as IngressMode<Hosted>>::Item;
 
         assert_eq!(size_of::<StandardItem>(), size_of::<User<MailAddr, ()>>());
@@ -1132,7 +1159,7 @@ mod tests {
         );
         assert_eq!(shutdown.0.load(Ordering::SeqCst), 1);
 
-        termination_publisher.complete(Ok(behavior::Exit::Normal));
+        termination_publisher.complete(Ok(Exit::Normal));
         assert_eq!(
             actor.request_shutdown(),
             Err(ShutdownRejection::AlreadyStopped)
@@ -1147,7 +1174,7 @@ mod tests {
             crate::ActorSpace::new(),
             Config::new(2),
             MailAddr(37),
-            behavior::StopOnShutdown::new(FenceProbe),
+            StopOnShutdown::new(FenceProbe),
             |_| {},
         )
         .await
@@ -1159,7 +1186,7 @@ mod tests {
         );
         actor.send_from(actor.address(), ()).await.unwrap();
         assert_eq!(actor.request_shutdown(), Ok(()));
-        assert_eq!(actor.termination().await, Ok(behavior::Exit::Normal));
+        assert_eq!(actor.termination().await, Ok(Exit::Normal));
     }
 
     #[tokio::test]
@@ -1169,7 +1196,7 @@ mod tests {
             actors.clone(),
             Config::new(2),
             MailAddr(40),
-            behavior::StopOnShutdown::new(FenceProbe),
+            StopOnShutdown::new(FenceProbe),
             |_| {},
         )
         .await
@@ -1178,7 +1205,7 @@ mod tests {
             actors,
             Config::new(2),
             MailAddr(40),
-            behavior::StopOnShutdown::new(FenceProbe),
+            StopOnShutdown::new(FenceProbe),
             |_| {},
         )
         .await;
@@ -1194,7 +1221,7 @@ mod tests {
             Ok(_) => panic!("duplicate address was accepted"),
         }
         assert_eq!(first.request_shutdown(), Ok(()));
-        assert_eq!(first.termination().await, Ok(behavior::Exit::Normal));
+        assert_eq!(first.termination().await, Ok(Exit::Normal));
     }
 
     #[tokio::test]
@@ -1205,7 +1232,7 @@ mod tests {
             crate::ActorSpace::new(),
             Config::new(4),
             MailAddr(41),
-            behavior::StopOnShutdown::new(FenceProbe),
+            StopOnShutdown::new(FenceProbe),
             move |_| {
                 observed.fetch_add(1, Ordering::SeqCst);
             },
@@ -1218,7 +1245,7 @@ mod tests {
 
         assert_eq!(committed.load(Ordering::SeqCst), 2);
         assert_eq!(actor.request_shutdown(), Ok(()));
-        assert_eq!(actor.termination().await, Ok(behavior::Exit::Normal));
+        assert_eq!(actor.termination().await, Ok(Exit::Normal));
     }
 
     #[tokio::test]
@@ -1227,13 +1254,13 @@ mod tests {
             crate::ActorSpace::new(),
             Config::new(2),
             MailAddr(43),
-            behavior::StopOnShutdown::new(FenceProbe),
+            StopOnShutdown::new(FenceProbe),
             |_| {},
         )
         .await
         .unwrap();
         assert_eq!(actor.request_shutdown(), Ok(()));
-        assert_eq!(actor.termination().await, Ok(behavior::Exit::Normal));
+        assert_eq!(actor.termination().await, Ok(Exit::Normal));
 
         assert_eq!(
             actor.fence().await,
@@ -1247,7 +1274,7 @@ mod tests {
             crate::ActorSpace::new(),
             Config::new(2),
             MailAddr(47),
-            behavior::StopOnShutdown::new(PanickingFenceProbe),
+            StopOnShutdown::new(PanickingFenceProbe),
             |_| {},
         )
         .await
@@ -1258,7 +1285,7 @@ mod tests {
             actor.fence().await,
             Err(crate::entity::FenceFailure::Acknowledgement)
         );
-        assert_eq!(actor.termination().await, Err(behavior::Crash::Panicked));
+        assert_eq!(actor.termination().await, Err(Crash::Panicked));
     }
 
     async fn direct_ingress_time(iterations: u64) -> Duration {

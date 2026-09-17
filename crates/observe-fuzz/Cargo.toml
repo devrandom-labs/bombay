@@ -26,8 +26,8 @@ test = false
 doc = false
 
 [[bin]]
-name = "promotion_ops"
-path = "fuzz_targets/promotion_ops.rs"
+name = "volume_ops"
+path = "fuzz_targets/volume_ops.rs"
 test = false
 doc = false
 

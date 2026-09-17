@@ -8,7 +8,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use bombay::actors::ActorExt;
-use bombay::behavior::{Actions, Behavior, BehaviorActed, BehaviorBase, Never, Protocol};
+use bombay::behavior::{
+    Actions, BehaviorActed, BehaviorBase, BehaviorSettlements, ClassifySettlement, Never, Protocol,
+    SettlementStatus,
+};
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
     EntityCapacity, EntityDefinition, EntityId, Passivation,
@@ -115,7 +118,7 @@ struct Spaces {
 #[derive(TerminalProjection)]
 enum ApplicationTerminal<R>
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     Root {
         origin: ActorOrigin<R>,
@@ -190,12 +193,14 @@ fn main() {
 
 fn assert_application_stopped<R>(terminal: ApplicationTerminal<R>)
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R::Settlements: ClassifySettlement,
 {
     let ApplicationTerminal::Root {
         origin,
         terminal:
             ActorRetirement::Completed {
+                settlements,
                 control,
                 user,
                 descendants,
@@ -207,6 +212,8 @@ where
         panic!("the application root must stop normally")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());
@@ -219,9 +226,16 @@ fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
     let balances = retirements
         .iter()
         .map(|retirement| {
-            let ActorRetirement::Completed { behavior, .. } = retirement else {
+            let ActorRetirement::Completed {
+                behavior,
+                settlements,
+                ..
+            } = retirement
+            else {
                 panic!("each account incarnation must retire normally")
             };
+            let settlement_status = settlements.settlement_status();
+            assert_eq!(settlement_status, SettlementStatus::Accepted);
             behavior.base().balance
         })
         .collect::<Vec<_>>();

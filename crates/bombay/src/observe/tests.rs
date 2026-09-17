@@ -1,15 +1,17 @@
 //! Real-thread tests for the blocking wait path and cancellation.
 //!
-//! The frozen integration tests cover `try_get` semantics; the park/unpark
-//! wait mechanism needs its own stress coverage, which loom cannot schedule
-//! at the OS level.
+//! The frozen pair and affine suites cover the future-facing surface; the
+//! park/unpark wait mechanism needs its own stress coverage, which loom
+//! cannot schedule at the OS level.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::future::IntoFuture;
+use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Barrier};
-use std::task::Wake;
+use std::task::{Context, Poll, RawWaker, RawWakerVTable, Wake, Waker};
 use std::time::{Duration, Instant};
 
-use super::ObservationSpace;
+use super::{Waiter, Waiters, lock, pair};
 
 /// A waker that raises a flag when woken.
 struct FlagWake(AtomicBool);
@@ -27,22 +29,18 @@ impl Wake for FlagWake {
 /// A waiter registered before completion receives the published outcome.
 #[test]
 fn waiter_receives_published_outcome() {
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
     let waiter = std::thread::spawn(move || observation.wait());
     std::thread::yield_now();
-    subject.complete(9_u64);
+    publisher.complete(9_u64);
     assert_eq!(waiter.join().unwrap(), 9_u64);
 }
 
 /// Completion before wait returns immediately with the retained outcome.
 #[test]
 fn completion_before_wait_returns_immediately() {
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    subject.complete(3_u64);
-    let observation = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
+    publisher.complete(3_u64);
     assert_eq!(observation.wait(), 3_u64);
 }
 
@@ -50,12 +48,11 @@ fn completion_before_wait_returns_immediately() {
 #[test]
 fn multiple_waiters_all_receive_the_outcome() {
     const WAITERS: usize = 8;
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
     let barrier = Arc::new(Barrier::new(WAITERS + 1));
     let mut handles = Vec::with_capacity(WAITERS);
     for _ in 0..WAITERS {
-        let observation = space.observe(&7_u64).unwrap();
+        let observation = observation.clone();
         let barrier = barrier.clone();
         handles.push(std::thread::spawn(move || {
             barrier.wait();
@@ -63,7 +60,7 @@ fn multiple_waiters_all_receive_the_outcome() {
         }));
     }
     barrier.wait();
-    subject.complete(9_u64);
+    publisher.complete(9_u64);
     for handle in handles {
         assert_eq!(handle.join().unwrap(), 9_u64);
     }
@@ -73,11 +70,9 @@ fn multiple_waiters_all_receive_the_outcome() {
 #[test]
 fn wait_racing_complete_never_loses_outcome() {
     for _ in 0..100 {
-        let space = ObservationSpace::new();
-        let mut subject = space.subject(7_u64).unwrap();
-        let observation = space.observe(&7_u64).unwrap();
+        let (publisher, observation) = pair::<u64>();
         let waiter = std::thread::spawn(move || observation.wait());
-        subject.complete(9_u64);
+        publisher.complete(9_u64);
         assert_eq!(waiter.join().unwrap(), 9_u64);
     }
 }
@@ -85,12 +80,10 @@ fn wait_racing_complete_never_loses_outcome() {
 /// Dropping an observer (cancellation) cannot obstruct completion.
 #[test]
 fn cancelled_observer_does_not_block_completion() {
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let cancelled = space.observe(&7_u64).unwrap();
-    drop(cancelled);
-    let observer = space.observe(&7_u64).unwrap();
-    subject.complete(5_u64);
+    let (publisher, observation) = pair::<u64>();
+    drop(observation.clone());
+    let observer = observation;
+    publisher.complete(5_u64);
     assert_eq!(observer.try_get(), Some(5_u64));
 }
 
@@ -100,40 +93,37 @@ fn cancelled_observer_does_not_block_completion() {
 fn into_outcome_moves_non_clone_outcome() {
     #[derive(Debug, PartialEq, Eq)]
     struct Handle(u64);
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
-    subject.complete(Handle(5));
-    drop(subject);
+    let (publisher, observation) = pair::<Handle>();
+    publisher.complete(Handle(5));
     assert_eq!(observation.into_outcome(), Some(Handle(5)));
 }
 
 /// `into_outcome` returns `None` while the outcome is pending or the slot is
-/// still shared, and succeeds for the last reference after retirement.
+/// still shared, and succeeds for the last reference after the publisher is
+/// gone. Every refused call consumes its handle: the final take must come
+/// from a handle that outlived all the others.
 #[test]
 fn into_outcome_none_while_shared_or_pending() {
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let pending = space.observe(&7_u64).unwrap();
-    assert_eq!(pending.into_outcome(), None);
-    subject.complete(9_u64);
-    let shared = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
+    let pending = observation.clone();
+    let last = observation.clone();
+    assert_eq!(observation.clone().into_outcome(), None);
+    publisher.complete(9_u64);
+    let shared = observation.clone();
     assert_eq!(shared.into_outcome(), None);
-    let last = space.observe(&7_u64).unwrap();
-    drop(subject);
+    drop(observation);
+    drop(pending);
     assert_eq!(last.into_outcome(), Some(9_u64));
 }
 
 /// A registered waker fires when the outcome is published.
 #[test]
 fn register_waker_wakes_on_completion() {
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
     let flag = Arc::new(FlagWake(AtomicBool::new(false)));
     let waker = std::task::Waker::from(Arc::clone(&flag));
     assert!(!observation.register_waker(&waker));
-    subject.complete(9_u64);
+    publisher.complete(9_u64);
     assert!(flag.0.load(Ordering::Relaxed));
     assert_eq!(observation.try_get(), Some(9_u64));
 }
@@ -141,10 +131,8 @@ fn register_waker_wakes_on_completion() {
 /// Registration after publication reports the outcome as already available.
 #[test]
 fn register_waker_after_completion_returns_true() {
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    subject.complete(3_u64);
-    let observation = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
+    publisher.complete(3_u64);
     assert!(observation.register_waker(std::task::Waker::noop()));
 }
 
@@ -154,12 +142,10 @@ fn register_waker_after_completion_returns_true() {
 #[test]
 fn register_waker_racing_complete_never_loses_outcome() {
     for _ in 0..100 {
-        let space = ObservationSpace::new();
-        let mut subject = space.subject(7_u64).unwrap();
-        let observation = space.observe(&7_u64).unwrap();
+        let (publisher, observation) = pair::<u64>();
         let flag = Arc::new(FlagWake(AtomicBool::new(false)));
         let waker = std::task::Waker::from(Arc::clone(&flag));
-        let completer = std::thread::spawn(move || subject.complete(9_u64));
+        let completer = std::thread::spawn(move || publisher.complete(9_u64));
         let registered = observation.register_waker(&waker);
         completer.join().unwrap();
         assert_eq!(observation.try_get(), Some(9_u64));
@@ -169,28 +155,24 @@ fn register_waker_racing_complete_never_loses_outcome() {
     }
 }
 
-/// A pending subject times out without returning a fabricated outcome.
+/// A pending observation times out without returning a fabricated outcome.
 #[test]
 fn wait_timeout_returns_none_when_pending() {
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
     let started = Instant::now();
     assert_eq!(observation.wait_timeout(Duration::from_millis(10)), None);
     assert!(started.elapsed() >= Duration::from_millis(9));
-    subject.complete(9_u64);
+    publisher.complete(9_u64);
     assert_eq!(observation.try_get(), Some(9_u64));
 }
 
 /// A completion during the wait is delivered before the deadline.
 #[test]
 fn wait_timeout_returns_outcome_when_completed() {
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
     let completer = std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(5));
-        subject.complete(9_u64);
+        publisher.complete(9_u64);
     });
     assert_eq!(
         observation.wait_timeout(Duration::from_secs(5)),
@@ -207,9 +189,6 @@ fn wait_timeout_returns_outcome_when_completed() {
 /// under Miri, which would make `will_wake` spuriously false.
 #[test]
 fn register_waker_is_idempotent_per_task() {
-    use super::{Waiter, Waiters, lock};
-    use std::task::{RawWaker, RawWakerVTable, Waker};
-
     struct RawFlagWaker(AtomicBool);
 
     unsafe fn raw_clone(data: *const ()) -> RawWaker {
@@ -242,9 +221,7 @@ fn register_waker_is_idempotent_per_task() {
             &RAW_VTABLE,
         ))
     };
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
     assert!(!observation.register_waker(&waker));
     assert!(!observation.register_waker(&waker));
     let waiters = lock(observation.slot.waiters());
@@ -258,7 +235,7 @@ fn register_waker_is_idempotent_per_task() {
         Waiter::Waker { waker: registered, .. } if registered.will_wake(&waker)
     ));
     drop(waiters);
-    subject.complete(9_u64);
+    publisher.complete(9_u64);
     assert!(flag.0.load(Ordering::Relaxed));
     assert_eq!(observation.try_get(), Some(9_u64));
 }
@@ -266,16 +243,11 @@ fn register_waker_is_idempotent_per_task() {
 /// The observation's `IntoFuture` resolves to the outcome on completion.
 #[test]
 fn observation_future_resolves_on_completion() {
-    use std::future::IntoFuture;
-    use std::pin::Pin;
-    use std::task::{Context, Poll, Waker};
-
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let mut future = space.observe(&7_u64).unwrap().into_future();
+    let (publisher, observation) = pair::<u64>();
+    let mut future = observation.into_future();
     let mut cx = Context::from_waker(Waker::noop());
     assert!(Pin::new(&mut future).poll(&mut cx).is_pending());
-    subject.complete(9_u64);
+    publisher.complete(9_u64);
     assert!(matches!(
         Pin::new(&mut future).poll(&mut cx),
         Poll::Ready(9_u64)
@@ -286,36 +258,25 @@ fn observation_future_resolves_on_completion() {
 /// future does not fire it, and the slot's outcome stays readable.
 #[test]
 fn dropping_observation_future_deregisters_waker() {
-    use std::future::IntoFuture;
-    use std::pin::Pin;
-    use std::task::Context;
-
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
+    let retained = observation.clone();
     let flag = Arc::new(FlagWake(AtomicBool::new(false)));
     let waker = std::task::Waker::from(Arc::clone(&flag));
     let mut cx = Context::from_waker(&waker);
     let mut future = observation.into_future();
     assert!(Pin::new(&mut future).poll(&mut cx).is_pending());
     drop(future);
-    subject.complete(9_u64);
+    publisher.complete(9_u64);
     assert!(!flag.0.load(Ordering::Relaxed));
-    assert_eq!(space.observe(&7_u64).unwrap().try_get(), Some(9_u64));
+    assert_eq!(retained.try_get(), Some(9_u64));
 }
-
-use std::sync::atomic::AtomicUsize;
-use triomphe::Arc as SlotArc;
-
-use super::{Slot, SlotEntry, lock, write_lock};
 
 /// Migration replaces waker A with B, and cancellation then deregisters B.
 /// Neither may remain registered to be fired by a later completion.
 #[test]
 fn future_drop_deregisters_migrated_waker() {
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
+    let retained = observation.clone();
     let flag_a = Arc::new(FlagWake(AtomicBool::new(false)));
     let flag_b = Arc::new(FlagWake(AtomicBool::new(false)));
     let waker_a = std::task::Waker::from(Arc::clone(&flag_a));
@@ -333,7 +294,7 @@ fn future_drop_deregisters_migrated_waker() {
     // handle and would defer the value's drop to the end of the scope).
     drop(future); // cancellation
 
-    subject.complete(9_u64);
+    publisher.complete(9_u64);
     assert!(
         !flag_a.0.load(Ordering::Relaxed),
         "migrated-away waker A was woken after cancellation"
@@ -344,9 +305,7 @@ fn future_drop_deregisters_migrated_waker() {
     );
 
     // No waiter remains retained: the slot's registry is empty.
-    let entries = write_lock(&space.inner.entries);
-    let entry = entries.map.get(&7_u64).expect("subject retained");
-    let waiters = lock(entry.slot.waiters());
+    let waiters = lock(retained.slot.waiters());
     assert!(
         waiters.is_empty(),
         "waiter remains retained after cancellation"
@@ -358,12 +317,10 @@ fn future_drop_deregisters_migrated_waker() {
 /// waiter must be deregistered whichever side wins.
 #[test]
 fn wait_timeout_at_completion_boundary() {
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
     let completer = std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(5));
-        subject.complete(9_u64);
+        publisher.complete(9_u64);
     });
     let result = observation.wait_timeout(Duration::from_millis(5));
     match result {
@@ -375,46 +332,11 @@ fn wait_timeout_at_completion_boundary() {
 
     // Whichever side won, the waiter registry is empty (the timeout path
     // deregisters; the completion path drains). The observation outlives the
-    // subject's retirement, so its slot is still reachable here.
+    // publisher, so its slot is still reachable here.
     let waiters = lock(observation.slot.waiters());
     assert!(
         waiters.is_empty(),
         "boundary wait left a registration behind"
-    );
-}
-
-/// A genuinely stale owner: a subject whose generation no longer matches the
-/// retained entry (only reachable internally - the public API forbids
-/// concurrent ownership via `SubjectExists`). Its retirement must not remove
-/// the replacement.
-#[test]
-fn stale_retirement_cannot_remove_replacement() {
-    let space: ObservationSpace<u64, u64> = ObservationSpace::new();
-    let subject = space.subject(7_u64).unwrap();
-    let old_generation = subject.generation;
-
-    // Manually retire the table entry WITHOUT dropping its owner, then install
-    // a newer generation at the same key. The retained `subject` is now a
-    // genuinely stale owner: unlike inserting a duplicate inline-map key,
-    // this forces its later Drop through the generation-mismatch branch.
-    {
-        let mut entries = write_lock(&space.inner.entries);
-        assert!(entries.map.remove_if(&7_u64, old_generation));
-        let replacement = SlotArc::new(Slot::new());
-        entries.map.insert_vacant(
-            7_u64,
-            SlotEntry {
-                generation: old_generation + 1,
-                slot: replacement,
-            },
-        );
-    }
-
-    // The stale owner retires: the generation check must reject the removal.
-    drop(subject);
-    assert!(
-        space.observe(&7_u64).is_ok(),
-        "stale retirement removed the replacement entry"
     );
 }
 
@@ -423,9 +345,7 @@ fn stale_retirement_cannot_remove_replacement() {
 /// behind - the exact edge the racing boundary test cannot pin down.
 #[test]
 fn wait_timeout_zero_times_out_immediately() {
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
+    let (publisher, observation) = pair::<u64>();
     let started = Instant::now();
     assert_eq!(observation.wait_timeout(Duration::ZERO), None);
     assert!(
@@ -441,7 +361,7 @@ fn wait_timeout_zero_times_out_immediately() {
             "zero-timeout wait left a registration behind"
         );
     }
-    subject.complete(9_u64);
+    publisher.complete(9_u64);
     assert_eq!(observation.try_get(), Some(9_u64));
 }
 
@@ -459,33 +379,10 @@ impl Drop for DropProbe {
 #[test]
 fn completed_outcome_is_dropped_exactly_once() {
     let drops = Arc::new(AtomicUsize::new(0));
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
-    subject.complete(DropProbe(drops.clone()));
-    drop(subject);
+    let (publisher, observation) = pair::<DropProbe>();
+    publisher.complete(DropProbe(drops.clone()));
     assert_eq!(drops.load(Ordering::SeqCst), 0);
     drop(observation);
-    assert_eq!(drops.load(Ordering::SeqCst), 1);
-    drop(space);
-    assert_eq!(drops.load(Ordering::SeqCst), 1);
-}
-
-/// Reusing a pooled slot destroys its previous completed outcome once before
-/// making the storage visible to the replacement generation.
-#[test]
-fn pooled_slot_reset_drops_previous_outcome_exactly_once() {
-    let drops = Arc::new(AtomicUsize::new(0));
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    subject.complete(DropProbe(drops.clone()));
-    drop(subject);
-    assert_eq!(drops.load(Ordering::SeqCst), 0, "pool retains the outcome");
-
-    let replacement = space.subject(8_u64).unwrap();
-    assert_eq!(drops.load(Ordering::SeqCst), 1, "reset drops old outcome");
-    drop(replacement);
-    drop(space);
     assert_eq!(drops.load(Ordering::SeqCst), 1);
 }
 
@@ -494,17 +391,12 @@ fn pooled_slot_reset_drops_previous_outcome_exactly_once() {
 #[test]
 fn into_outcome_transfers_drop_ownership_exactly_once() {
     let drops = Arc::new(AtomicUsize::new(0));
-    let space = ObservationSpace::new();
-    let mut subject = space.subject(7_u64).unwrap();
-    let observation = space.observe(&7_u64).unwrap();
-    subject.complete(DropProbe(drops.clone()));
-    drop(subject);
+    let (publisher, observation) = pair::<DropProbe>();
+    publisher.complete(DropProbe(drops.clone()));
     let outcome = observation
         .into_outcome()
         .expect("last observer moves outcome");
     assert_eq!(drops.load(Ordering::SeqCst), 0);
     drop(outcome);
-    assert_eq!(drops.load(Ordering::SeqCst), 1);
-    drop(space);
     assert_eq!(drops.load(Ordering::SeqCst), 1);
 }

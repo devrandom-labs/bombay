@@ -32,14 +32,15 @@ repository = "https://github.com/devrandom-labs/bombay"
 tokio = { version = "1.47", default-features = false }
 # The pure Behavior algebra (Actions/Envelope/Create/the capability stack) —
 # depended on, never copied.
-behavior = { package = "bombay-behavior-actors", version = "0.14.0" }
+behavior = { package = "bombay-behavior", version = "0.16.0" }
+behavior-actors = { package = "bombay-behavior-actors", version = "0.16.0" }
 bombay-engine = { version = "0.2.0", path = "crates/bombay-engine" }
 bombay-address = "0.2.0"
 bombay-machine = { path = "crates/bombay-machine" }
 communication = { package = "bombay-communication", version = "0.1.2" }
 timers = { package = "bombay-timers", version = "0.1.0" }
 parking_lot = "0.12"
-triomphe = "0.1"
+triomphe = { version = "0.1", default-features = false, features = ["std"] }
 proptest = "1.11"
 criterion = { version = "0.7", default-features = false, features = ["async_tokio", "cargo_bench_support"] }
 serde = { version = "1", features = ["derive"] }
@@ -52,9 +53,12 @@ proc-macro-crate = "3"
 axum = "0.8.9"
 
 [patch.crates-io]
-bombay-behavior = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "a272adf8d2cbb6a2784d565f47c74adff3e7d01b" }
-bombay-behavior-actors = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "a272adf8d2cbb6a2784d565f47c74adff3e7d01b" }
-bombay-behavior-macros = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "a272adf8d2cbb6a2784d565f47c74adff3e7d01b" }
+# Exact-revision exception (user-authorized): PR #68 head — creation-settlement
+# preservation, facade-first Actors resolution, and the Bombay stop-shape proof,
+# before the release line publishes. Tracked for retirement by the B5 task.
+bombay-behavior = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6" }
+bombay-behavior-actors = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6" }
+bombay-behavior-macros = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6" }
 bombay-timers = { git = "https://github.com/devrandom-labs/bombay-timers.git", rev = "13e884da7ab41781f52337b0038060e375b00ee0" }
 
 [workspace.lints.clippy]

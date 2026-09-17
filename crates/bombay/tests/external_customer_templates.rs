@@ -1,8 +1,8 @@
-use bombay::behavior::{
+use behavior_actors::{
     Barrier, BarrierGeneration, BarrierMembership, BarrierMessage, BarrierReleased, Cache,
     CacheConfiguration, CacheMessage, CacheResult, Latch, LatchMessage, LatchReleased,
-    MessageProtocol,
 };
+use bombay::behavior::MessageProtocol;
 use bombay::prelude::*;
 
 mod application_support;
