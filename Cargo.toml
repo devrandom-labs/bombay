@@ -53,6 +53,12 @@ proc-macro-crate = "3"
 axum = "0.8.9"
 
 [patch.crates-io]
+# Exact-revision exception (user-authorized): PR #68 head — creation-settlement
+# preservation, facade-first Actors resolution, and the Bombay stop-shape proof,
+# before the release line publishes. Tracked for retirement by the B5 task.
+bombay-behavior = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6" }
+bombay-behavior-actors = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6" }
+bombay-behavior-macros = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6" }
 bombay-timers = { git = "https://github.com/devrandom-labs/bombay-timers.git", rev = "13e884da7ab41781f52337b0038060e375b00ee0" }
 
 [workspace.lints.clippy]

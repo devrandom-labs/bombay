@@ -151,8 +151,7 @@ dependencies = [
 [[package]]
 name = "bombay-behavior"
 version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e5233e9c39f7cd2e1429c54c4f3e2feb9e96fdc17a5cdac6758c83d47f04ed5"
+source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6#8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6"
 dependencies = [
  "bombay-behavior-macros",
  "thiserror",
@@ -161,8 +160,7 @@ dependencies = [
 [[package]]
 name = "bombay-behavior-actors"
 version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c12bd73d6db4eeba6d43f9964337df75120e5243d294a681fb733330c2c6118"
+source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6#8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6"
 dependencies = [
  "bombay-behavior",
  "bombay-behavior-macros",
@@ -172,8 +170,7 @@ dependencies = [
 [[package]]
 name = "bombay-behavior-macros"
 version = "0.11.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71fc97fe76dda9bbfba12f60f93165618770beff4a23c7a91ac9935da192ec03"
+source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6#8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -260,7 +257,6 @@ dependencies = [
 name = "bombay-example-worker-pool"
 version = "0.1.0"
 dependencies = [
- "bombay-behavior-actors",
  "bombay-rs",
 ]
 
