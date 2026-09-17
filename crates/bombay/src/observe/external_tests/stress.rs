@@ -64,18 +64,22 @@ fn stress_publishers_observers_value_integrity() {
     // trick).
     let pairs: Vec<_> = (0..PAIRS).map(|_| pair::<u64>()).collect();
     let observations: Arc<Vec<Observation<u64>>> = Arc::new(
-        pairs.iter().map(|(_, observation)| observation.clone()).collect(),
+        pairs
+            .iter()
+            .map(|(_, observation)| observation.clone())
+            .collect(),
     );
-    let mut publisher_slots: Vec<Option<_>> =
-        pairs.into_iter().map(|(publisher, _)| Some(publisher)).collect();
+    let mut publisher_slots: Vec<Option<_>> = pairs
+        .into_iter()
+        .map(|(publisher, _)| Some(publisher))
+        .collect();
     publisher_slots[0]
         .take()
         .expect("seed publisher")
         .complete(u64::MAX); // distinctive: publishers never emit 0xFF_..
     // Each publisher thread owns the pairs whose index it parity-matches;
     // the Vec<Option<_>> split hands each one its own handles.
-    let mut by_publisher: Vec<Vec<(u64, _)>> =
-        (0..PUBLISHERS).map(|_| Vec::new()).collect();
+    let mut by_publisher: Vec<Vec<(u64, _)>> = (0..PUBLISHERS).map(|_| Vec::new()).collect();
     for (index, publisher) in publisher_slots.into_iter().enumerate() {
         if let Some(publisher) = publisher {
             by_publisher[index % PUBLISHERS as usize].push((index as u64, publisher));
@@ -84,6 +88,8 @@ fn stress_publishers_observers_value_integrity() {
     // Set once every publisher finishes: bounds the observers' loop.
     let done = Arc::new(AtomicBool::new(false));
 
+    // PUBLISHERS + OBSERVERS worker threads synchronize here; the main
+    // thread only joins them and must not join the barrier.
     let barrier = Arc::new(Barrier::new((PUBLISHERS + OBSERVERS) as usize));
     let publishers: Vec<_> = (0..PUBLISHERS)
         .map(|id| {
@@ -168,8 +174,11 @@ fn stress_publishers_observers_value_integrity() {
                                 pair_index as u64,
                                 "wait leaked across pairs"
                             );
-                            assert_eq!(publisher_of(outcome) % 2, pair_index as u64 % 2,
-                                "outcome publisher does not own the pair");
+                            assert_eq!(
+                                publisher_of(outcome) % 2,
+                                pair_index as u64 % 2,
+                                "outcome publisher does not own the pair"
+                            );
                             reads += 1;
                         }
                     }
@@ -179,7 +188,6 @@ fn stress_publishers_observers_value_integrity() {
         })
         .collect();
 
-    barrier.wait();
     for publisher in publishers {
         publisher.join().expect("publisher panicked");
     }
@@ -600,7 +608,9 @@ fn stress_duplicate_waiter_entry_stale_token_self_heals() {
                 let first_outcome = first.wait_timeout(Duration::from_secs(5));
                 // The stale token (if any) is queued for the NEXT park on
                 // this thread: the second wait must still resolve exactly.
-                let second_outcome = second.wait_timeout(Duration::from_secs(5));
+                // 100 ms is ample to prove the second pair stays pending
+                // without burning five seconds per round.
+                let second_outcome = second.wait_timeout(Duration::from_millis(100));
                 (first_outcome, second_outcome)
             })
         };
@@ -787,7 +797,11 @@ fn stress_into_outcome_inside_wake_during_drain_refused() {
             Some(None),
             "the in-drain take must be refused while the slot is shared (round {round})"
         );
-        assert_eq!(taker_observer.try_get(), Some(round), "outcome stays readable");
+        assert_eq!(
+            taker_observer.try_get(),
+            Some(round),
+            "outcome stays readable"
+        );
     }
 }
 
