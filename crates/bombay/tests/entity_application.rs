@@ -14,7 +14,8 @@ use bombay::entity::{
     Passivation, Refusal,
 };
 use bombay::{
-    ActorOrigin, ActorRetirement, ActorSpace, ActorSpaces, App, MailAddr, TerminalProjection,
+    ActorOrigin, ActorRetirement, App, HostedAddresses, LocalAddresses, MailAddr,
+    TerminalProjection,
 };
 use tokio::sync::Semaphore;
 
@@ -172,7 +173,7 @@ impl Accounts {
 impl EntityDefinition for Accounts {
     type Id = u64;
     type Behavior = StopOnShutdown<Account>;
-    type Hosts = Spaces;
+    type HostedAddresses = Spaces;
     type HydrationError = HydrationFailure;
     type Terminal = Never;
 
@@ -268,7 +269,7 @@ impl Profiles {
 impl EntityDefinition for Profiles {
     type Id = u64;
     type Behavior = StopOnShutdown<Profile>;
-    type Hosts = Spaces;
+    type HostedAddresses = Spaces;
     type HydrationError = Never;
     type Terminal = ProfileTerminal;
 
@@ -314,12 +315,12 @@ impl Protocol for Replies {
     type Msg = Never;
 }
 
-#[derive(ActorSpaces)]
+#[derive(HostedAddresses)]
 struct Spaces {
-    root: ActorSpace<Root>,
-    accounts: ActorSpace<Account>,
-    profiles: ActorSpace<Profile>,
-    profile_workers: ActorSpace<ProfileWorker>,
+    root: LocalAddresses<Root>,
+    accounts: LocalAddresses<Account>,
+    profiles: LocalAddresses<Profile>,
+    profile_workers: LocalAddresses<ProfileWorker>,
 }
 
 #[test]
@@ -329,10 +330,10 @@ struct Spaces {
 )]
 fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u64>> {
     let spaces = Spaces {
-        root: ActorSpace::new(),
-        accounts: ActorSpace::new(),
-        profiles: ActorSpace::new(),
-        profile_workers: ActorSpace::new(),
+        root: LocalAddresses::new(),
+        accounts: LocalAddresses::new(),
+        profiles: LocalAddresses::new(),
+        profile_workers: LocalAddresses::new(),
     };
     let account_capacity = EntityCapacity::new(
         NonZeroUsize::new(1).expect("one is non-zero"),

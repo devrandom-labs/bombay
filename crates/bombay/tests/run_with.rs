@@ -14,7 +14,7 @@ use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, InitializationTurn, InterpreterRequests, NoBirths, User,
 };
 use bombay::prelude::*;
-use bombay::{ActorSpace, App};
+use bombay::{App, LocalAddresses};
 
 mod application_support;
 
@@ -514,7 +514,7 @@ fn application_delegates_to_the_explicit_single_space_app() {
             .expect("the ordinary application terminates normally");
 
     let (explicit, explicit_terminal): (_, ApplicationTerminal<_>) =
-        App::new(Root.stop_on_shutdown(), ActorSpace::new())
+        App::new(Root.stop_on_shutdown(), LocalAddresses::new())
             .run_with(|application| async move {
                 application
                     .root()

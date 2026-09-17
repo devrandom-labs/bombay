@@ -1,5 +1,5 @@
 use bombay::prelude::{MailAddr, Protocol};
-use bombay::{ActorSpace, ActorSpaces, App, Hosts};
+use bombay::{LocalAddresses, HostedAddresses, App, HostedAddresses};
 
 struct Orders;
 
@@ -8,16 +8,16 @@ impl Protocol for Orders {
     type Msg = ();
 }
 
-#[derive(ActorSpaces)]
+#[derive(HostedAddresses)]
 struct LocalActors {
-    orders: ActorSpace<Orders>,
+    orders: LocalAddresses<Orders>,
 }
 
-fn require_host<T: Hosts<Orders>>(_: &T) {}
+fn require_host<T: HostedAddresses<Orders>>(_: &T) {}
 
 fn main() {
     let actors = LocalActors {
-        orders: ActorSpace::new(),
+        orders: LocalAddresses::new(),
     };
     require_host(&actors);
     let _ = App::new((), actors);

@@ -1,0 +1,20 @@
+error[E0277]: the actor system does not host actor protocol `Payments` locally
+  --> tests/compile/fail/hosted_addresses_missing_host.rs:29:32
+   |
+29 |     require_hosted::<Payments, _>(&actors);
+   |                                ^ missing local actor protocol
+   |
+   = note: add a `LocalAddresses<Payments>` and implement `HostedAddresses<Payments>` for the hosting product
+help: the trait `HostedAddresses<Payments>` is not implemented for `Actors`
+      but trait `HostedAddresses<Orders>` is implemented for it
+  --> tests/compile/fail/hosted_addresses_missing_host.rs:18:10
+   |
+18 | #[derive(HostedAddresses)]
+   |          ^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `Orders`, found `Payments`
+note: required by a bound in `require_hosted`
+  --> tests/compile/fail/hosted_addresses_missing_host.rs:23:52
+   |
+23 | fn require_hosted<P: Protocol<Addr = MailAddr>, A: HostedAddresses<P>>(_: &A) {}
+   |                                                    ^^^^^^^^^^^^^^^^^^ required by this bound in `require_hosted`
+   = note: this error originates in the derive macro `HostedAddresses` (in Nightly builds, run with -Z macro-backtrace for more info)

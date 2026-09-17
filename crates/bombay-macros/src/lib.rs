@@ -228,20 +228,20 @@ fn actor_signature(
     }
 }
 
-fn actor_space_protocol(field: &syn::Field) -> syn::Result<Option<&Type>> {
+fn hosted_addresses_protocol(field: &syn::Field) -> syn::Result<Option<&Type>> {
     let Type::Path(field_type) = &field.ty else {
         return Ok(None);
     };
     let Some(segment) = field_type.path.segments.last() else {
         return Ok(None);
     };
-    if segment.ident != "ActorSpace" {
+    if segment.ident != "LocalAddresses" {
         return Ok(None);
     }
     let PathArguments::AngleBracketed(arguments) = &segment.arguments else {
         return Err(Error::new_spanned(
             &field.ty,
-            "ActorSpace must name exactly one hosted protocol",
+            "LocalAddresses must name exactly one hosted protocol",
         ));
     };
     let mut types = arguments.args.iter().filter_map(|argument| match argument {
@@ -251,24 +251,24 @@ fn actor_space_protocol(field: &syn::Field) -> syn::Result<Option<&Type>> {
     let Some(protocol) = types.next() else {
         return Err(Error::new_spanned(
             &field.ty,
-            "ActorSpace must name exactly one hosted protocol",
+            "LocalAddresses must name exactly one hosted protocol",
         ));
     };
     if types.next().is_some() || arguments.args.len() != 1 {
         return Err(Error::new_spanned(
             &field.ty,
-            "ActorSpace must name exactly one hosted protocol",
+            "LocalAddresses must name exactly one hosted protocol",
         ));
     }
     Ok(Some(protocol))
 }
 
-/// Derive the exact `Hosts<P>` implementation for every named
-/// `ActorSpace<P>` field in an application-owned product.
-#[proc_macro_derive(ActorSpaces)]
-pub fn actor_spaces(input: TokenStream) -> TokenStream {
+/// Derive the exact `HostedAddresses<P>` implementation for every named
+/// `LocalAddresses<P>` field in an application-owned product.
+#[proc_macro_derive(HostedAddresses)]
+pub fn hosted_addresses(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_actor_spaces(&input)
+    expand_hosted_addresses(&input)
         .unwrap_or_else(Error::into_compile_error)
         .into()
 }
@@ -471,17 +471,17 @@ fn terminal_projection_fields(fields: &Fields) -> syn::Result<(&Type, &Type)> {
     }
 }
 
-fn expand_actor_spaces(input: &DeriveInput) -> syn::Result<TokenStream2> {
+fn expand_hosted_addresses(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let Data::Struct(data) = &input.data else {
         return Err(Error::new_spanned(
             &input.ident,
-            "ActorSpaces can be derived only for a struct with named fields",
+            "HostedAddresses can be derived only for a struct with named fields",
         ));
     };
     let Fields::Named(fields) = &data.fields else {
         return Err(Error::new_spanned(
             &input.ident,
-            "ActorSpaces requires named fields",
+            "HostedAddresses requires named fields",
         ));
     };
     let bombay = bombay_crate()?;
@@ -491,7 +491,7 @@ fn expand_actor_spaces(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let mut implementations = Vec::new();
 
     for field in &fields.named {
-        let Some(protocol) = actor_space_protocol(field)? else {
+        let Some(protocol) = hosted_addresses_protocol(field)? else {
             continue;
         };
         let field_name = field.ident.as_ref().expect("named fields have identifiers");
@@ -503,8 +503,8 @@ fn expand_actor_spaces(input: &DeriveInput) -> syn::Result<TokenStream2> {
             ));
         }
         implementations.push(quote! {
-            impl #impl_generics #bombay::Hosts<#protocol> for #name #type_generics #where_clause {
-                fn space(&self) -> &#bombay::ActorSpace<#protocol> {
+            impl #impl_generics #bombay::HostedAddresses<#protocol> for #name #type_generics #where_clause {
+                fn addresses(&self) -> &#bombay::LocalAddresses<#protocol> {
                     &self.#field_name
                 }
             }

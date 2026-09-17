@@ -9,7 +9,7 @@ use behavior::{
 };
 use communication::ControlSender;
 
-use crate::ActorSpace;
+use crate::launch::LocalAddresses;
 use crate::launch::ProjectedTask;
 use crate::local::ActorRef;
 
@@ -70,7 +70,7 @@ pub(crate) struct ChildSpace<Position, Child, Tail>
 where
     Child: Behavior,
 {
-    actors: ActorSpace<Child::Protocol>,
+    actors: LocalAddresses<Child::Protocol>,
     tail: Tail,
     position: PhantomData<fn() -> Position>,
 }
@@ -96,7 +96,7 @@ where
 {
     fn default() -> Self {
         Self {
-            actors: ActorSpace::new(),
+            actors: LocalAddresses::new(),
             tail: Tail::default(),
             position: PhantomData,
         }
@@ -375,7 +375,7 @@ where
 trait ChildSpaceAt<Position> {
     type Child: Behavior;
 
-    fn actors(&self) -> &ActorSpace<<Self::Child as Behavior>::Protocol>;
+    fn actors(&self) -> &LocalAddresses<<Self::Child as Behavior>::Protocol>;
 }
 
 impl<Spaces, Position> ChildSpaceAt<Position> for Spaces
@@ -384,7 +384,7 @@ where
 {
     type Child = Spaces::Child;
 
-    fn actors(&self) -> &ActorSpace<<Self::Child as Behavior>::Protocol> {
+    fn actors(&self) -> &LocalAddresses<<Self::Child as Behavior>::Protocol> {
         self.actors_at()
     }
 }
@@ -392,7 +392,7 @@ where
 trait ChildSpaceAtCursor<Target, Cursor> {
     type Child: Behavior;
 
-    fn actors_at(&self) -> &ActorSpace<<Self::Child as Behavior>::Protocol>;
+    fn actors_at(&self) -> &LocalAddresses<<Self::Child as Behavior>::Protocol>;
 }
 
 impl<Target, Child, Tail> ChildSpaceAtCursor<Target, ChildHead> for ChildSpace<Target, Child, Tail>
@@ -401,7 +401,7 @@ where
 {
     type Child = Child;
 
-    fn actors_at(&self) -> &ActorSpace<Child::Protocol> {
+    fn actors_at(&self) -> &LocalAddresses<Child::Protocol> {
         &self.actors
     }
 }
@@ -414,7 +414,7 @@ where
 {
     type Child = Tail::Child;
 
-    fn actors_at(&self) -> &ActorSpace<<Self::Child as Behavior>::Protocol> {
+    fn actors_at(&self) -> &LocalAddresses<<Self::Child as Behavior>::Protocol> {
         self.tail.actors_at()
     }
 }
@@ -423,7 +423,7 @@ pub(crate) trait HostChildAt<Position, Child>
 where
     Child: Behavior,
 {
-    fn child_actors(&self) -> ActorSpace<Child::Protocol>;
+    fn child_actors(&self) -> LocalAddresses<Child::Protocol>;
 }
 
 impl<Position, Child, Bindings, Spaces> HostChildAt<Position, Child>
@@ -432,7 +432,7 @@ where
     Child: Behavior,
     Spaces: ChildSpaceAt<Position, Child = Child>,
 {
-    fn child_actors(&self) -> ActorSpace<Child::Protocol> {
+    fn child_actors(&self) -> LocalAddresses<Child::Protocol> {
         self.spaces.actors().clone()
     }
 }

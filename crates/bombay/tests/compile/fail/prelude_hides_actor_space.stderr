@@ -1,5 +1,0 @@
-error[E0425]: cannot find type `ActorSpace` in this scope
-  --> tests/compile/fail/prelude_hides_actor_space.rs:11:19
-   |
-11 |     let _: Option<ActorSpace<Orders>> = None;
-   |                   ^^^^^^^^^^ not found in this scope

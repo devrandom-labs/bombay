@@ -1,4 +1,5 @@
 use bombay::prelude::*;
+use bombay::{LocalAddresses, HostedAddresses};
 
 struct Orders;
 
@@ -7,6 +8,7 @@ impl Protocol for Orders {
     type Msg = ();
 }
 
-fn require_host<T: Hosts<Orders>>() {}
+#[derive(HostedAddresses)]
+struct Actors(LocalAddresses<Orders>);
 
 fn main() {}
