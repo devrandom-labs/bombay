@@ -1,7 +1,8 @@
 //! Full-matrix performance harness for observe.
 //!
 //! One invocation measures the complete workload matrix and emits
-//! `METRIC name=value` lines consumed by the performance harness:
+//! `METRIC name=value` lines recorded by the maintained results table
+//! (`docs/benchmarks.md`):
 //!
 //! - primary observations/s (the frozen sequential workload);
 //! - uncompleted pair-creation throughput;
