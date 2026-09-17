@@ -1,6 +1,7 @@
 //! One concrete task-launch boundary for local actors.
 
 use core::fmt;
+use core::hash::Hash;
 use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::address::MailAddr;
@@ -423,10 +424,53 @@ where
 }
 
 /// The exact Address-owned endpoint table for one concrete Behavior protocol.
+///
+/// The alias is deliberately `#[doc(hidden)]`: applications never name it.
+/// Hosting is claimed through [`HostedAddresses`], and the application runtime
+/// owns the table this alias names.
 #[doc(hidden)]
-pub type ActorSpace<P> = AddressSpace<<P as Protocol>::Addr, ActorRef<P>>;
+pub type LocalAddresses<P> = AddressSpace<<P as Protocol>::Addr, ActorRef<P>>;
 
-pub(crate) type LocalAddresses<P> = ActorSpace<P>;
+/// Proof that an application-owned product hosts one concrete protocol's
+/// Address-owned endpoint table.
+///
+/// This is the only hosting vocabulary: the proof carries the exact table
+/// (`LocalAddresses<P>`) rather than naming a resolver, so hosting stays an
+/// Address-ownership fact. The [`crate::HostedAddresses`] derive implements it
+/// for every named `LocalAddresses<P>` field of an application-owned product.
+#[diagnostic::on_unimplemented(
+    message = "the actor system does not host actor protocol `{P}` locally",
+    label = "missing local actor protocol",
+    note = "add a `LocalAddresses<{P}>` and implement `HostedAddresses<{P}>` for the hosting product"
+)]
+pub trait HostedAddresses<P>
+where
+    P: Protocol,
+    P::Addr: Hash,
+{
+    fn addresses(&self) -> &LocalAddresses<P>;
+}
+
+impl<P> HostedAddresses<P> for LocalAddresses<P>
+where
+    P: Protocol,
+    P::Addr: Hash,
+{
+    fn addresses(&self) -> &LocalAddresses<P> {
+        self
+    }
+}
+
+impl<P, N> HostedAddresses<P> for Arc<N>
+where
+    P: Protocol,
+    P::Addr: Hash,
+    N: HostedAddresses<P>,
+{
+    fn addresses(&self) -> &LocalAddresses<P> {
+        self.as_ref().addresses()
+    }
+}
 
 #[cfg(test)]
 pub(crate) async fn spawn_with<B, I>(
@@ -940,7 +984,7 @@ mod tests {
     #[tokio::test]
     async fn owned_root_task_returns_final_behavior_and_complete_residual() {
         let root = spawn_root_with(
-            ActorSpace::new(),
+            LocalAddresses::new(),
             Config::new(2),
             MailAddr::APPLICATION_ROOT,
             RootProbe { terminal_marker: 0 },
@@ -980,7 +1024,7 @@ mod tests {
     #[tokio::test]
     async fn owned_child_task_returns_final_behavior_and_complete_residual() {
         let child = spawn_owned_with(
-            ActorSpace::new(),
+            LocalAddresses::new(),
             Config::new(2),
             MailAddr(1),
             RootProbe { terminal_marker: 0 },
@@ -1025,7 +1069,7 @@ mod tests {
             terminal: ActorRetirement::Cancelled,
         };
         let child = spawn_owned_with(
-            ActorSpace::new(),
+            LocalAddresses::new(),
             Config::new(2),
             MailAddr(1),
             RootProbe { terminal_marker: 0 },

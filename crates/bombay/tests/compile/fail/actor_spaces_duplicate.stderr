@@ -1,5 +1,0 @@
-error: duplicate hosted protocol; it is already hosted by field `primary`
-  --> tests/compile/fail/actor_spaces_duplicate.rs:14:5
-   |
-14 |     duplicate: ActorSpace<Orders>,
-   |     ^^^^^^^^^

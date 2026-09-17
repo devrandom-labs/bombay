@@ -69,7 +69,7 @@ impl<D> target_sealed::Sealed for EntityRef<D> where D: EntityDefinition {}
 impl<D> ExternalTarget for EntityRef<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
 {
     type Message = behavior::BehaviorMessage<D::Behavior>;
     type Error = AdmissionFailure<Self::Message>;
@@ -85,8 +85,8 @@ where
 
 /// A transport-neutral product of explicitly exported actor capabilities.
 ///
-/// `Api` is application-defined. Bombay neither infers exports from topology
-/// nor grants lifecycle authority through this value.
+/// `Api` is application-defined. Bombay neither infers exports from hosting
+/// topology nor grants lifecycle authority through this value.
 pub struct ActorInterface<Api> {
     api: Api,
     allocations: ApplicationAddresses,

@@ -1,5 +1,4 @@
 use bombay::prelude::*;
-use bombay::{ActorSpace, ActorSpaces};
 
 struct Orders;
 
@@ -8,7 +7,6 @@ impl Protocol for Orders {
     type Msg = ();
 }
 
-#[derive(ActorSpaces)]
-struct Actors(ActorSpace<Orders>);
-
-fn main() {}
+fn main() {
+    let _: Option<LocalAddresses<Orders>> = None;
+}

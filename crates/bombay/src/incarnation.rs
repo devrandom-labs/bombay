@@ -642,6 +642,15 @@ pub(crate) mod tests {
             "System",
             "tokio::spawn",
             "AbortHandle",
+            // DX37 retirement: the transitional resolver vocabulary must never
+            // return to the core surface; hosting is the Address-owned
+            // `HostedAddresses` proof, and internal delivery keeps exact
+            // established-recipient paths only.
+            "ActorSpace",
+            "HostedActorSpaces",
+            "ResolveLogical",
+            "resolve_logical",
+            "topology",
         ] {
             assert!(!production.contains(obsolete));
         }

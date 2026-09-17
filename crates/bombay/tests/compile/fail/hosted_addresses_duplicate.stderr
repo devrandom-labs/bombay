@@ -1,0 +1,5 @@
+error: duplicate hosted protocol; it is already hosted by field `primary`
+  --> tests/compile/fail/hosted_addresses_duplicate.rs:14:5
+   |
+14 |     duplicate: LocalAddresses<Orders>,
+   |     ^^^^^^^^^

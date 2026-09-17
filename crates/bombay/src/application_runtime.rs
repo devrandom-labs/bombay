@@ -16,11 +16,10 @@ use behavior::{
     ChildHead, ChildInput, ChildInputIngress, ChildInputReason, ChildNamespaceExhausted,
     ChildOccurrenceProduct, ChildOccurrenceShape, ChildOccurrences, ChildProduct, ChildTail,
     Children, ClassifySettlement, CreateChild, CreationCorrelation, CreationId, CreationKind,
-    CreationRejection, CreationSequence, Creations, Delivery, EstablishChild, EstablishedCreation,
+    CreationRejection, CreationSequence, Creations, EstablishChild, EstablishedCreation,
     EventIngress, ExactDeliveryReason, Here, InjectEvent, InterpretItem, InterpreterFault,
-    ItemSettlement, LogicalDeliveryReason, Never, NoChildren, ParentReportReason, Protocol,
-    ReportToParent, ResolveChildOccurrence, ResolvedChild, ResolvedChildPosition, RoutedCreation,
-    SourceAdmission,
+    ItemSettlement, Never, NoChildren, ParentReportReason, Protocol, ReportToParent,
+    ResolveChildOccurrence, ResolvedChild, ResolvedChildPosition, RoutedCreation, SourceAdmission,
 };
 use behavior_actors::{
     ActivationPlan, CancelObservation, ChildShutdownRejection, ChildStopped, CreationResolved,
@@ -50,7 +49,8 @@ use crate::entity::{
 };
 use crate::interpret::{ActionInterpreter, RetireCapabilities};
 use crate::launch::{
-    ActorSpace, OwnedTask, ProjectedTask, SpawnError, spawn_owned_with, spawn_root_with,
+    HostedAddresses, LocalAddresses, OwnedTask, ProjectedTask, SpawnError, spawn_owned_with,
+    spawn_root_with,
 };
 use crate::local::{ActivationTasks, ActorRef, CapabilityRetirement, CommitActions, Termination};
 use crate::observation::{FactQueue, LocalPeerObservations};
@@ -60,7 +60,6 @@ use crate::reports::{
 use crate::terminal::{ActorOrigin, ActorRetirement, LocalOutcome, ProjectTerminal};
 use crate::termination::TerminalReportDisposition;
 use crate::time::LocalTimers;
-use crate::topology::{HostedActorSpaces, Hosts, ResolveLogical};
 
 const DEFAULT_USER_CAPACITY: usize = 1_024;
 
@@ -86,7 +85,7 @@ type RootOriginProduct<Root> = ChildOccurrences<RootBirthNode<Root>, RootTermina
 
 type RootCapabilities<Actor, Spaces, Terminal, Origins> = ApplicationCapabilities<
     Actor,
-    HostedActorSpaces<Spaces>,
+    Spaces,
     NoParent,
     OccurrenceBindings<Actor, Terminal>,
     Origins,
@@ -240,7 +239,7 @@ impl<P: Protocol, Families> ApplicationHandle<P, Families> {
     ) -> Passivation
     where
         Families: EntityFamilyAt<Role, Position>,
-        <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Hosts:
+        <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Hosting:
             NativeEntityHost<
                 <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Behavior,
                 <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Terminal,
@@ -350,7 +349,7 @@ impl<Root, Spaces, Families> App<Root, Spaces, Families> {
         crate::entity::DirectoryError<BehaviorMessage<D::Behavior>>,
     >
     where
-        D: EntityDefinition<Hosts = Spaces>,
+        D: EntityDefinition<Hosting = Spaces>,
     {
         if !directory.shards.get().is_power_of_two() {
             return Err(crate::entity::DirectoryError::InvalidShardCount);
@@ -454,7 +453,7 @@ where
         + ChildOccurrenceProduct<RuntimeChildSpaces>
         + Send
         + 'static,
-    Spaces: Hosts<Actor::Protocol> + Send + Sync + 'static,
+    Spaces: HostedAddresses<Actor::Protocol> + Send + Sync + 'static,
     OccurrenceBindings<Actor, Terminal>:
         Default + RetireChildTasks<Root = Terminal> + Send + 'static,
     RootInterpreter<Actor, Spaces, Terminal, Origins>:
@@ -490,8 +489,8 @@ where
         BoundaryFuture: Future<Output = Output> + Send,
         Output: Send,
     {
-        let roots = <Spaces as Hosts<Actor::Protocol>>::space(&self).clone();
-        let actor_spaces = Arc::new(HostedActorSpaces(self));
+        let roots = <Spaces as HostedAddresses<Actor::Protocol>>::addresses(&self).clone();
+        let actor_spaces = Arc::new(self);
         let interface_allocations = allocations.clone();
         let address = MailAddr::APPLICATION_ROOT;
         let root = spawn_root_with(
@@ -504,7 +503,7 @@ where
                 move |control, terminal_reports, timers, facts| {
                     ActionInterpreter::new(ApplicationCapabilities::<
                         Actor,
-                        HostedActorSpaces<Spaces>,
+                        Spaces,
                         NoParent,
                         OccurrenceBindings<Actor, Terminal>,
                         Origins,
@@ -545,8 +544,8 @@ where
         let listener = tokio::net::TcpListener::bind(address)
             .await
             .map_err(|source| AxumRunError::Bind { address, source })?;
-        let roots = <Spaces as Hosts<Actor::Protocol>>::space(&self).clone();
-        let actor_spaces = Arc::new(HostedActorSpaces(self));
+        let roots = <Spaces as HostedAddresses<Actor::Protocol>>::addresses(&self).clone();
+        let actor_spaces = Arc::new(self);
         let allocations = ApplicationAddresses::new();
         let interface_allocations = allocations.clone();
         let root_address = MailAddr::APPLICATION_ROOT;
@@ -560,7 +559,7 @@ where
                 move |control, terminal_reports, timers, facts| {
                     ActionInterpreter::new(ApplicationCapabilities::<
                         Actor,
-                        HostedActorSpaces<Spaces>,
+                        Spaces,
                         NoParent,
                         OccurrenceBindings<Actor, Terminal>,
                         Origins,
@@ -1029,7 +1028,7 @@ where
     /// prevented the application from reaching its retirement boundary.
     pub fn run<Terminal>(self) -> Result<Terminal, RunError<Root::Error>>
     where
-        ActorSpace<Root::Protocol>: LaunchSystem<
+        LocalAddresses<Root::Protocol>: LaunchSystem<
                 Members::Actor,
                 Terminal,
                 Members::Origins,
@@ -1043,12 +1042,12 @@ where
             .enable_all()
             .build()
             .map_err(RunError::Runtime)?
-            .block_on(<ActorSpace<Root::Protocol> as LaunchSystem<
+            .block_on(<LocalAddresses<Root::Protocol> as LaunchSystem<
                 Members::Actor,
                 Terminal,
                 Members::Origins,
                 Members::Projection,
-            >>::launch(ActorSpace::new(), actor))
+            >>::launch(LocalAddresses::new(), actor))
     }
 
     /// Run the application with one live external boundary.
@@ -1062,7 +1061,7 @@ where
         boundary: Boundary,
     ) -> Result<(Output, Terminal), RunError<Root::Error>>
     where
-        ActorSpace<Root::Protocol>: LaunchSystem<
+        LocalAddresses<Root::Protocol>: LaunchSystem<
                 Members::Actor,
                 Terminal,
                 Members::Origins,
@@ -1079,13 +1078,13 @@ where
             .enable_all()
             .build()
             .map_err(RunError::Runtime)?
-            .block_on(<ActorSpace<Root::Protocol> as LaunchSystem<
+            .block_on(<LocalAddresses<Root::Protocol> as LaunchSystem<
                 Members::Actor,
                 Terminal,
                 Members::Origins,
                 Members::Projection,
             >>::launch_with(
-                ActorSpace::new(),
+                LocalAddresses::new(),
                 actor,
                 ApplicationAddresses::new(),
                 (),
@@ -1106,7 +1105,7 @@ where
         router: impl FnOnce(ApplicationHandle<Root::Protocol>) -> axum::Router + Send,
     ) -> Result<Terminal, AxumRunError<Terminal, Root::Error>>
     where
-        ActorSpace<Root::Protocol>: LaunchSystem<
+        LocalAddresses<Root::Protocol>: LaunchSystem<
                 Members::Actor,
                 Terminal,
                 Members::Origins,
@@ -1120,13 +1119,13 @@ where
             .enable_all()
             .build()
             .map_err(RunError::Runtime)?
-            .block_on(<ActorSpace<Root::Protocol> as LaunchSystem<
+            .block_on(<LocalAddresses<Root::Protocol> as LaunchSystem<
                 Members::Actor,
                 Terminal,
                 Members::Origins,
                 Members::Projection,
             >>::launch_axum(
-                ActorSpace::new(), actor, address, router
+                LocalAddresses::new(), actor, address, router
             ))
     }
 }
@@ -1684,38 +1683,6 @@ where
 }
 
 impl<C, N, P, Bindings, Origins, Target, RootEvent, Path>
-    InterpretItem<Delivery<Target>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
-where
-    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    Target: Protocol<Addr = MailAddr>,
-    Target::Msg: Send,
-    N: ResolveLogical<Target> + Send + Sync,
-    Self: Send,
-{
-    async fn interpret_item(
-        &mut self,
-        delivery: Delivery<Target>,
-    ) -> ItemSettlement<Delivery<Target>, (), LogicalDeliveryReason, Never> {
-        let address = delivery.to.address();
-        let Some(actor) = self.actor_spaces.resolve_logical(address) else {
-            return ItemSettlement::Rejected {
-                item: delivery,
-                reason: LogicalDeliveryReason::UnknownAddress,
-            };
-        };
-        let Delivery { to, message } = delivery;
-        match actor.send_from(self.address, message).await {
-            Ok(()) => ItemSettlement::Accepted(()),
-            Err(error) => ItemSettlement::Rejected {
-                item: Delivery::new(to, error.into_message()),
-                reason: LogicalDeliveryReason::ClosedRecipient,
-            },
-        }
-    }
-}
-
-impl<C, N, P, Bindings, Origins, Target, RootEvent, Path>
     InterpretItem<behavior::EstablishedDelivery<Target>, RootEvent, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
@@ -1887,7 +1854,7 @@ impl<C, N, P, Bindings, Origins, D, Path> InterpretItem<EntityAdmission<D>, C::E
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
     Self: Send,
 {
     async fn interpret_item(
@@ -2033,7 +2000,7 @@ where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: InjectEvent<PeerStopped<MailAddr>, Path> + Send + 'static,
     BehaviorMessage<C>: Send,
-    N: Hosts<C::Protocol>,
+    N: HostedAddresses<C::Protocol>,
     Self: Send,
 {
     async fn interpret_item(
@@ -2043,7 +2010,10 @@ where
         let result = self
             .peers
             .get_or_insert_with(|| {
-                LocalPeerObservations::new(self.actor_spaces.space().clone(), self.facts.clone())
+                LocalPeerObservations::new(
+                    <N as HostedAddresses<C::Protocol>>::addresses(&self.actor_spaces).clone(),
+                    self.facts.clone(),
+                )
             })
             .observe::<Path>(request);
         match result {

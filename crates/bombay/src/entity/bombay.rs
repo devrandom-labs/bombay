@@ -18,21 +18,21 @@ use crate::child_bindings::{
     OccurrenceBindings, RetireChildTasks, RuntimeChildBindings, RuntimeChildSpaces,
 };
 use crate::interpret::{ActionInterpreter, ActionSettlementOf};
+use crate::launch::HostedAddresses;
 use crate::launch::{OwnedActor, SpawnError, spawn_owned_entity_with};
 use crate::local::{ActorRef, CommitActions};
-use crate::topology::{HostedActorSpaces, Hosts};
 
 use super::family::{EntityCapacity, EntityDefinition, EntityMetricState};
 use super::{
-    ActivationId, AdmissionFailure, DrainStage, EffectInterpreter, EntityActivationError,
-    EntityId, EntityTaskGroup, LocalDirectory, PendingCommand, RetirementMode,
+    ActivationId, AdmissionFailure, DrainStage, EffectInterpreter, EntityActivationError, EntityId,
+    EntityTaskGroup, LocalDirectory, PendingCommand, RetirementMode,
 };
 
 const USER_CAPACITY: usize = 1_024;
 
 type NativeEntityCapabilities<B, N, Terminal> = ApplicationCapabilities<
     B,
-    HostedActorSpaces<Arc<N>>,
+    Arc<N>,
     NoParent,
     OccurrenceBindings<B, Terminal>,
     StructuralOrigins<<B as BehaviorBase>::Base>,
@@ -71,7 +71,7 @@ where
         + ChildOccurrenceProduct<RuntimeChildSpaces>
         + Send
         + 'static,
-    N: Hosts<B::Protocol> + Send + Sync + 'static,
+    N: HostedAddresses<B::Protocol> + Send + Sync + 'static,
     OccurrenceBindings<B, Terminal>: Default + RetireChildTasks<Root = Terminal> + Send + 'static,
     NativeEntityInterpreter<B, N, Terminal>:
         CommitActions<B, Retired = Vec<Terminal>> + Send + 'static,
@@ -84,7 +84,7 @@ where
         allocations: ApplicationAddresses,
         behavior: B,
     ) -> Result<NativeEntityActor<B, Terminal>, ActorRetirement<B, Terminal>> {
-        let addresses = <N as Hosts<B::Protocol>>::space(&self).clone();
+        let addresses = <N as HostedAddresses<B::Protocol>>::addresses(&self).clone();
         spawn_owned_entity_with(
             addresses,
             Config::new(USER_CAPACITY),
@@ -94,7 +94,7 @@ where
                 ActionInterpreter::new(ApplicationCapabilities::new_with_bindings(
                     crate::application_runtime::ApplicationCapabilityInputs {
                         address,
-                        actor_spaces: Arc::new(HostedActorSpaces(self)),
+                        actor_spaces: Arc::clone(&self),
                         allocations,
                         control,
                         timers,
@@ -196,7 +196,7 @@ where
     D: EntityDefinition,
 {
     definition: Arc<D>,
-    actors: Arc<D::Hosts>,
+    actors: Arc<D::Hosting>,
     allocations: ApplicationAddresses,
     hydrations: Arc<Semaphore>,
     residents: Arc<Semaphore>,
@@ -227,7 +227,7 @@ where
 
 pub(crate) fn bombay_entity_runtime<D>(
     definition: Arc<D>,
-    actors: Arc<D::Hosts>,
+    actors: Arc<D::Hosting>,
     allocations: ApplicationAddresses,
     capacity: EntityCapacity,
     metrics: Arc<EntityMetricState>,
@@ -261,7 +261,7 @@ impl<D>
     > for BombayEntityRuntime<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
 {
     fn start_activation(
         &self,
@@ -386,7 +386,7 @@ where
 impl<D> BombayEntityRuntime<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
 {
     /// Schedule one lifecycle task under a settlement guard and the owned
     /// application task registry.

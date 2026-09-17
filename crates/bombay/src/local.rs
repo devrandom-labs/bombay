@@ -1171,7 +1171,7 @@ mod tests {
     #[tokio::test]
     async fn ordinary_actor_does_not_admit_entity_fences() {
         let actor = crate::launch::launch_inert(
-            crate::ActorSpace::new(),
+            crate::launch::LocalAddresses::new(),
             Config::new(2),
             MailAddr(37),
             StopOnShutdown::new(FenceProbe),
@@ -1191,7 +1191,7 @@ mod tests {
 
     #[tokio::test]
     async fn entity_launch_preserves_the_exact_conflicting_address() {
-        let actors = crate::ActorSpace::new();
+        let actors = crate::launch::LocalAddresses::new();
         let first = crate::launch::launch_inert_entity(
             actors.clone(),
             Config::new(2),
@@ -1229,7 +1229,7 @@ mod tests {
         let committed = Arc::new(AtomicUsize::new(0));
         let observed = Arc::clone(&committed);
         let actor = crate::launch::launch_inert_entity(
-            crate::ActorSpace::new(),
+            crate::launch::LocalAddresses::new(),
             Config::new(4),
             MailAddr(41),
             StopOnShutdown::new(FenceProbe),
@@ -1251,7 +1251,7 @@ mod tests {
     #[tokio::test]
     async fn fence_rejected_before_enqueue_reports_the_exact_stage() {
         let actor = crate::launch::launch_inert_entity(
-            crate::ActorSpace::new(),
+            crate::launch::LocalAddresses::new(),
             Config::new(2),
             MailAddr(43),
             StopOnShutdown::new(FenceProbe),
@@ -1271,7 +1271,7 @@ mod tests {
     #[tokio::test]
     async fn accepted_fence_collected_during_failure_reports_acknowledgement() {
         let actor = crate::launch::launch_inert_entity(
-            crate::ActorSpace::new(),
+            crate::launch::LocalAddresses::new(),
             Config::new(2),
             MailAddr(47),
             StopOnShutdown::new(PanickingFenceProbe),
