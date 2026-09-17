@@ -99,6 +99,7 @@ struct Profile {
 
 #[bombay::actor(
     births = { worker: StopOnShutdown<ProfileWorker> },
+    creation_settlements = retain_for_retirement,
 )]
 #[allow(
     clippy::needless_pass_by_value,
