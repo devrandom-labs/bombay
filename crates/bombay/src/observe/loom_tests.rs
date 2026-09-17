@@ -107,7 +107,8 @@ fn into_outcome_racing_complete() {
         let observer = thread::spawn(move || last.into_outcome());
         publisher.complete(Handle(9));
         drop(observation);
-        drop(publisher);
+        // `complete` consumed the publisher; dropping every observation
+        // handle reclaims the slot and the outcome.
         let result = observer.join().unwrap();
         assert!(result.is_none() || result == Some(Handle(9)));
     });

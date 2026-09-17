@@ -18,7 +18,7 @@ use loom::thread;
 use std::future::IntoFuture;
 use std::pin::Pin;
 use std::sync::Arc as StdArc;
-use std::task::{Context, Future, Poll, Wake, Waker};
+use std::task::{Context, Poll, Wake, Waker};
 
 use crate::observe::{affine_pair, pair};
 
@@ -176,9 +176,8 @@ fn loom_wait_timeout_completed_path() {
     builder().check(|| {
         let (publisher, observation) = pair::<u64>();
 
-        let waiter = thread::spawn(move || {
-            observation.wait_timeout(core::time::Duration::from_secs(1))
-        });
+        let waiter =
+            thread::spawn(move || observation.wait_timeout(core::time::Duration::from_secs(1)));
         publisher.complete(11);
         assert_eq!(waiter.join().expect("waiter panicked"), Some(11));
     });

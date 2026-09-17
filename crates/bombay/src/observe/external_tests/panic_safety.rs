@@ -93,12 +93,13 @@ fn waiters_before_the_panicking_one_are_woken() {
     );
 }
 
-/// The documented wait_timeout self-healing after a stranded drain: a
-/// `wait_timeout` waiter registered AFTER the panicking waker is skipped
-/// by the aborted drain attempt (never unparked), but its deadline elapse
-/// wakes it (`park_until` returns true on a timed-out park) and the loop's
-/// COMPLETED recheck then resolves it to the published outcome — documented
-/// in Batch 10, now pinned by a test.
+/// The wait_timeout self-healing around a panicking drain: a
+/// `wait_timeout` waiter registered AFTER the panicking waker is still
+/// unparked by the drain (the drain catches each waker panic, attempts
+/// every waiter, and only then resumes the panic), but the test pins the
+/// weaker guarantee too: even if the waiter were skipped, its deadline
+/// elapse wakes it (`park_until` returns true on a timed-out park) and
+/// the loop's COMPLETED recheck resolves it to the published outcome.
 #[test]
 fn wait_timeout_waiter_self_heals_after_panicking_drain() {
     for round in 0..20_u64 {
@@ -159,6 +160,10 @@ fn state_after_panicking_drain_stays_consistent() {
         observation.register_waker(&completion_waker),
         "outcome must be published even if the drain panicked"
     );
+    // A pair has no subject to retire: the slot is reclaimed only when
+    // EVERY observation handle is gone, including the clone whose waker
+    // panicked during the drain.
+    drop(panicking);
     drop(observation);
     assert_eq!(
         counter.load(Ordering::SeqCst),
