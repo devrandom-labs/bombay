@@ -66,9 +66,7 @@ fn owner_tell<T: Debug>(payload: fn(u64) -> T) -> Duration {
     for _ in 0..BATCHES {
         let (_control, sender, mut consumer) = channel::<Never, T>(Config::new(CAPACITY));
         for index in 0..COMMANDS_PER_BATCH {
-            sender
-                .try_send(payload(index))
-                .expect("capacity available");
+            sender.try_send(payload(index)).expect("capacity available");
         }
         black_box(&sender);
         black_box(&mut consumer);

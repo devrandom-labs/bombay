@@ -631,6 +631,13 @@ impl<O: Clone> Observation<O> {
     /// Panics only if the completed-bit protocol is violated (a programmer
     /// bug); a slot that reports completion always holds an outcome.
     #[must_use]
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "exercised via the observe-tests mirror and the cfg(test) external harness"
+        )
+    )]
     pub fn wait(&self) -> O {
         loop {
             if self.slot.state.load(Ordering::Acquire) & COMPLETED != 0 {
@@ -670,6 +677,13 @@ impl<O: Clone> Observation<O> {
     /// slot that reports completion always holds an outcome), or if `timeout`
     /// overflows the [`Instant`] deadline.
     #[must_use]
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "exercised via the observe-tests mirror and the cfg(test) external harness"
+        )
+    )]
     pub fn wait_timeout(&self, timeout: Duration) -> Option<O> {
         #[cfg(not(loom))]
         let deadline = Instant::now()
@@ -727,6 +741,13 @@ impl<O> Observation<O> {
     /// `Clone`: the value moves out of the slot. It returns `None` while the
     /// slot is still shared or the outcome is not yet published.
     #[must_use]
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "exercised via the observe-tests mirror and the cfg(test) external harness"
+        )
+    )]
     pub fn into_outcome(self) -> Option<O> {
         let slot = Arc::try_unwrap(self.slot).ok()?;
         // Exclusive ownership via the move; no access can race it.
@@ -744,6 +765,13 @@ impl<O> Observation<O> {
     /// re-read the outcome (via [`Observation::try_get`] or
     /// [`Observation::into_outcome`]) after a wake.
     #[must_use]
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "exercised via the observe-tests mirror and the cfg(test) external harness"
+        )
+    )]
     pub fn register_waker(&self, waker: &Waker) -> bool {
         if self.slot.state.load(Ordering::Acquire) & COMPLETED != 0 {
             return true;

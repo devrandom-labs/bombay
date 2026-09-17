@@ -1407,6 +1407,33 @@ verified today against what must wait:
   FIFO assignment lane cannot be interpreted without erasing custody. This
   supersedes the earlier "no Actors change is needed" assumption for the
   assignment lane only.
+- 2026-09-17 compile repair (worker-preparation compile-repair task, branch
+  `fix/bombay-rs-pin-compile-repair`): `cargo check -p bombay-rs` failed at the
+  pin with 14 errors. Verified against the pinned checkout: the preparation
+  surface IS re-exported by `behavior_actors::atomic` — `WorkerSource` publicly
+  and `PrepareWorkers`/`WorkerPreparation`/`PendingWorkerPreparation` as
+  doc-hidden integration surface (atomic/mod.rs lines 79 and 83-85) — so the
+  earlier "no public path" diagnosis pointed at the wrong re-export group
+  (lines 113-121 re-export the activation/initialization/submission types).
+  No B4 feature was narrowed; the exact deferred surface is: none. The
+  defects were: (1) `application_runtime.rs` imported `ActivationPlan`,
+  `PrepareWorkers`, `WorkerPreparation`, and `WorkerSource` from the Actors
+  crate root, where `ActivationPlan` is only `pub(crate)` and the other three
+  are absent — they now import through `behavior_actors::atomic`;
+  (2) `prepare_workers.rs` omitted the bounds the pinned types require
+  (`Worker: Behavior + Send` on `PreparesWorkers`, `PreparationStage`, and
+  `drive_preparation`; `Source: WorkerSource<Role, Worker, Plan>` on
+  `PreparationStage`); (3) the `PrepareWorkers` interpretation arm lacked a
+  `PreparesWorkers` import; and (4) PR #316 residue — `entity/mod.rs` had no
+  crate-internal re-exports for `directory::{EntityLifecycle, EntityTaskGroup,
+  PendingCommand}` although `entity/bombay.rs` and `entity/family.rs` import
+  them through `super`, `entity/bombay.rs` missed `DispatchId`, `DrainFailure`,
+  and `Refusal` from its import list, and `entity/directory.rs` carried an
+  unused `DrainStage` import. Change ledger: expected tracked files are
+  `application_runtime.rs`, `prepare_workers.rs`, `entity/mod.rs`,
+  `entity/bombay.rs`, `entity/directory.rs`, and this ledger (6);
+  production delta is import paths, bounds, and crate-internal re-exports
+  only; public API is `+0 / -0` types.
 - Unblocks: real recovery (replacements under stable proxies, FIFO restart
   with backlog retention) in the supervision and worker-pool examples.
 ## W5 — integration benchmark and memory evidence

@@ -50,7 +50,11 @@ pub trait EntityDefinition: Send + Sync + 'static {
         + Send
         + 'static;
     /// Concrete application host product used by this native definition.
-    type Hosts: LocalHosts<<Self::Behavior as Behavior>::Protocol> + Send + Sync + 'static;
+    type Hosts: LocalHosts<<Self::Behavior as Behavior>::Protocol>
+        + NativeEntityHost<Self::Behavior, Self::Terminal>
+        + Send
+        + Sync
+        + 'static;
     /// Exact failure returned while reconstructing domain state.
     type HydrationError: Send + 'static;
     /// Application terminal sum used by children of the incarnation.
@@ -243,7 +247,10 @@ where
     where
         D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     {
-        Self { lifecycle, definition }
+        Self {
+            lifecycle,
+            definition,
+        }
     }
 
     /// Bind one domain identity into a stable family-specific reference.

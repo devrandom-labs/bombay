@@ -60,7 +60,7 @@ struct TestState {
     retirement_modes: Mutex<Vec<RetirementMode>>,
 }
 
-impl<I: Send + Sync + 'static> TestInterpreter<I> {
+impl<I: Clone + Eq + Hash + Send + Sync + 'static> TestInterpreter<I> {
     fn new(
         directory: Arc<LocalDirectory<I, PendingCommand<(), u64>, u64, u64>>,
         settlement: Arc<EntityTaskGroup>,
@@ -81,13 +81,16 @@ impl<I: Send + Sync + 'static> TestInterpreter<I> {
     }
 }
 
-impl<I: Send + Sync + 'static> EffectInterpreter<I, PendingCommand<(), u64>, u64, u64>
-    for TestInterpreter<I>
+impl<I: Clone + Eq + Hash + Send + Sync + 'static>
+    EffectInterpreter<I, PendingCommand<(), u64>, u64, u64> for TestInterpreter<I>
 {
     fn start_activation(&self, entity_id: EntityId<I>, activation_id: ActivationId) {
         let interpreter = self.clone();
         self.spawn(async move {
-            interpreter.state.activations.fetch_add(1, Ordering::Relaxed);
+            interpreter
+                .state
+                .activations
+                .fetch_add(1, Ordering::Relaxed);
             let gate = interpreter.state.activation_gate.lock().unwrap().clone();
             if let Some(gate) = gate {
                 gate.wait().await;
@@ -208,14 +211,17 @@ impl<I: Send + Sync + 'static> EffectInterpreter<I, PendingCommand<(), u64>, u64
                 .lock()
                 .unwrap()
                 .push(retirement);
-            interpreter.state.retirements.fetch_add(1, Ordering::Release);
+            interpreter
+                .state
+                .retirements
+                .fetch_add(1, Ordering::Release);
             let output = interpreter.directory.terminated(&entity_id, activation_id);
             interpreter.directory.interpret(output, &interpreter);
         });
     }
 }
 
-fn composition<I: Send + Sync + 'static>() -> (
+fn composition<I: Clone + Eq + Hash + Send + Sync + 'static>() -> (
     Arc<EntityLifecycle<I, (), u64, u64, u64, TestInterpreter<I>>>,
     Arc<TestInterpreter<I>>,
 ) {
@@ -236,6 +242,7 @@ fn composition<I: Send + Sync + 'static>() -> (
     (lifecycle, interpreter)
 }
 
+#[derive(Debug)]
 struct MoveOnlyCommand {
     value: String,
     drops: Arc<AtomicUsize>,
@@ -269,9 +276,10 @@ impl EffectInterpreter<u64, PendingCommand<(), MoveOnlyCommand>, (), ()>
     fn start_activation(&self, entity_id: EntityId<u64>, activation_id: ActivationId) {
         let interpreter = self.clone();
         self.spawn(async move {
-            let output = interpreter
-                .directory
-                .activation_succeeded(&entity_id, activation_id, (), ());
+            let output =
+                interpreter
+                    .directory
+                    .activation_succeeded(&entity_id, activation_id, (), ());
             interpreter.directory.interpret(output, &interpreter);
         });
     }
@@ -299,9 +307,10 @@ impl EffectInterpreter<u64, PendingCommand<(), MoveOnlyCommand>, (), ()>
                     publisher,
                 },
             ));
-            let output = interpreter
-                .directory
-                .delivery_resolved(&entity_id, activation_id, failure);
+            let output =
+                interpreter
+                    .directory
+                    .delivery_resolved(&entity_id, activation_id, failure);
             interpreter.directory.interpret(output, &interpreter);
         });
     }
@@ -412,7 +421,10 @@ impl EffectInterpreter<u64, PendingCommand<(), u64>, u64, u64> for RecordingInte
                 .state
                 .activations_started
                 .fetch_add(1, Ordering::Release);
-            interpreter.state.activations.fetch_add(1, Ordering::Release);
+            interpreter
+                .state
+                .activations
+                .fetch_add(1, Ordering::Release);
             let incarnation = activation_id.get().get();
             let output = interpreter.directory.activation_succeeded(
                 &entity_id,
@@ -439,17 +451,11 @@ impl EffectInterpreter<u64, PendingCommand<(), u64>, u64, u64> for RecordingInte
                 command,
                 publisher,
             } = pending;
-            interpreter
-                .state
-                .deliveries
-                .lock()
-                .unwrap()
-                .push(command);
+            interpreter.state.deliveries.lock().unwrap().push(command);
             publisher.complete(Ok(()));
-            let output =
-                interpreter
-                    .directory
-                    .delivery_resolved(&entity_id, activation_id, None);
+            let output = interpreter
+                .directory
+                .delivery_resolved(&entity_id, activation_id, None);
             interpreter.directory.interpret(output, &interpreter);
         });
     }
@@ -481,7 +487,10 @@ impl EffectInterpreter<u64, PendingCommand<(), u64>, u64, u64> for RecordingInte
     ) {
         let interpreter = self.clone();
         self.spawn(async move {
-            interpreter.state.retirements.fetch_add(1, Ordering::Release);
+            interpreter
+                .state
+                .retirements
+                .fetch_add(1, Ordering::Release);
             let output = interpreter.directory.terminated(&entity_id, activation_id);
             interpreter.directory.interpret(output, &interpreter);
         });
@@ -526,7 +535,10 @@ impl EffectInterpreter<u64, PendingCommand<(), u64>, u64, u64> for GatedInterpre
                 .activations_started
                 .fetch_add(1, Ordering::Release);
             gate.wait().await;
-            interpreter.state.activations.fetch_add(1, Ordering::Release);
+            interpreter
+                .state
+                .activations
+                .fetch_add(1, Ordering::Release);
             let incarnation = activation_id.get().get();
             let output = interpreter.directory.activation_succeeded(
                 &entity_id,
@@ -565,7 +577,8 @@ impl EffectInterpreter<u64, PendingCommand<(), u64>, u64, u64> for GatedInterpre
         lease: u64,
         retirement: RetirementMode,
     ) {
-        self.inner.retire(entity_id, activation_id, lease, retirement);
+        self.inner
+            .retire(entity_id, activation_id, lease, retirement);
     }
 }
 
@@ -1052,7 +1065,13 @@ fn shutdown_settles_an_installed_activation_before_draining_and_joining() {
         thread::spawn(move || block_on(lifecycle.admit((), EntityId::new(41), 7)))
     };
     for _ in 0..1_000 {
-        if interpreter.inner.state.activations_started.load(Ordering::Acquire) != 0 {
+        if interpreter
+            .inner
+            .state
+            .activations_started
+            .load(Ordering::Acquire)
+            != 0
+        {
             break;
         }
         thread::sleep(Duration::from_millis(1));
@@ -1062,12 +1081,16 @@ fn shutdown_settles_an_installed_activation_before_draining_and_joining() {
         let lifecycle = Arc::clone(&lifecycle);
         thread::spawn(move || block_on(lifecycle.shutdown()))
     };
-    for _ in 0..100 {
-        if !shutdown.is_finished() {
+    for _ in 0..1_000 {
+        if lifecycle.admission_is_closed() {
             break;
         }
         thread::sleep(Duration::from_millis(1));
     }
+    assert!(
+        lifecycle.admission_is_closed(),
+        "shutdown must close admission before the refusal attempt"
+    );
 
     assert!(matches!(
         block_on(lifecycle.admit((), EntityId::new(73), 11)),

@@ -1,5 +1,6 @@
 //! Concurrent storage for local entity lifecycle machines.
 
+use core::fmt::{self, Formatter};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -19,7 +20,7 @@ use std::sync::{PoisonError, Weak};
 use crate::observe::{AffineObservation, Observation, Publisher, affine_pair, pair};
 
 use super::{
-    ActivationId, DispatchId, DrainFailure, DrainStage, EntityId, LifecycleMachine, LifecycleOutput,
+    ActivationId, DispatchId, DrainFailure, EntityId, LifecycleMachine, LifecycleOutput,
     LifecyclePhase, Refusal, RetirementMode, SlotEffect, SlotEvent, TransitionEvidence,
     lifecycle_machine,
 };
@@ -651,6 +652,22 @@ pub(crate) struct PendingCommand<O, C> {
     pub(crate) publisher: Publisher<Result<(), AdmissionFailure<C>>>,
 }
 
+// Diagnostics report custody (origin and command) but deliberately omit the
+// publication authority: `Publisher` is unique and reading it is consuming,
+// so its state is not part of a passive debug rendering.
+impl<O, C> fmt::Debug for PendingCommand<O, C>
+where
+    O: fmt::Debug,
+    C: fmt::Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PendingCommand")
+            .field("origin", &self.origin)
+            .field("command", &self.command)
+            .finish_non_exhaustive()
+    }
+}
+
 /// Exact summary of one completed family shutdown transaction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EntityShutdown {
@@ -927,6 +944,22 @@ where
         EntityShutdown { represented }
     }
 
+    /// Whether shutdown has closed admission.
+    ///
+    /// Mechanism-test seam: a test asserting the shutdown refusal must first
+    /// observe that the shutdown task ran its first statement, instead of
+    /// racing it.
+    #[cfg(test)]
+    pub(super) fn admission_is_closed(&self) -> bool {
+        matches!(
+            *self
+                .admission
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner),
+            EntityAdmission::Closed
+        )
+    }
+
     /// Begin graceful passivation if the entity currently has an active incarnation.
     ///
     /// Admission closes at this call's lifecycle linearization point. Fence and
@@ -1013,9 +1046,10 @@ where
         if let Some(lifecycle) = self.lifecycle.upgrade()
             && let Some(activation_id) = self.activation_id.take()
         {
-            let output = lifecycle
-                .directory
-                .cancel_waiter(&self.entity_id, activation_id, self.dispatch_id);
+            let output =
+                lifecycle
+                    .directory
+                    .cancel_waiter(&self.entity_id, activation_id, self.dispatch_id);
             lifecycle
                 .directory
                 .interpret(output, lifecycle.interpreter.as_ref());

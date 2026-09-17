@@ -23,6 +23,7 @@ pub use directory::{
     AdmissionFailure, DirectoryConfig, DirectoryError, DirectoryOutput, DispatchOutput,
     EffectInterpreter, EntityShutdown, LocalDirectory, Passivation,
 };
+pub(crate) use directory::{EntityLifecycle, EntityTaskGroup, PendingCommand};
 pub use family::{
     Entities, EntityActivationError, EntityAdmission, EntityApplicationFamilies, EntityCapacity,
     EntityDefinition, EntityFamilyAt, EntityMetrics, EntityRef,

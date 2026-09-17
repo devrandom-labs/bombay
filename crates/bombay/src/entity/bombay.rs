@@ -24,8 +24,9 @@ use crate::topology::{HostedActorSpaces, Hosts};
 
 use super::family::{EntityCapacity, EntityDefinition, EntityMetricState};
 use super::{
-    ActivationId, AdmissionFailure, DrainStage, EffectInterpreter, EntityActivationError,
-    EntityId, EntityTaskGroup, LocalDirectory, PendingCommand, RetirementMode,
+    ActivationId, AdmissionFailure, DispatchId, DrainFailure, DrainStage, EffectInterpreter,
+    EntityActivationError, EntityId, EntityTaskGroup, LocalDirectory, PendingCommand, Refusal,
+    RetirementMode,
 };
 
 const USER_CAPACITY: usize = 1_024;
@@ -263,11 +264,7 @@ where
     D: EntityDefinition,
     D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
 {
-    fn start_activation(
-        &self,
-        entity_id: EntityId<D::Id>,
-        activation_id: ActivationId,
-    ) {
+    fn start_activation(&self, entity_id: EntityId<D::Id>, activation_id: ActivationId) {
         let runtime = self.clone();
         self.spawn_settled(async move {
             let activation = runtime.activate(entity_id.clone(), activation_id).await;
@@ -472,7 +469,10 @@ where
             .map_err(crate::SendError::into_message)
     }
 
-    async fn fence(&self, endpoint: ActorRef<<D::Behavior as Behavior>::Protocol>) -> Result<(), FenceFailure> {
+    async fn fence(
+        &self,
+        endpoint: ActorRef<<D::Behavior as Behavior>::Protocol>,
+    ) -> Result<(), FenceFailure> {
         endpoint.fence().await
     }
 
