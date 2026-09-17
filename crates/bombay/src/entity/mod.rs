@@ -9,21 +9,19 @@
 use core::fmt;
 use core::hash::Hash;
 
-#[allow(
-    dead_code,
-    reason = "the native adapter remains private until typed application topology can materialize its requirements"
-)]
 mod bombay;
 mod directory;
 mod family;
 mod lifecycle;
-mod runtime;
 
-pub(crate) use bombay::NativeEntityHost;
+#[cfg(test)]
+mod lifecycle_tests;
+
+pub(crate) use bombay::{FenceFailure, NativeEntityHost};
 pub use bombay_machine::{Decision, Reducer};
 pub use directory::{
-    DirectoryConfig, DirectoryError, DirectoryOutput, DispatchOutput, EffectInterpreter,
-    LocalDirectory,
+    AdmissionFailure, DirectoryConfig, DirectoryError, DirectoryOutput, DispatchOutput,
+    EffectInterpreter, EntityShutdown, LocalDirectory, Passivation,
 };
 pub use family::{
     Entities, EntityActivationError, EntityAdmission, EntityApplicationFamilies, EntityCapacity,
@@ -36,10 +34,6 @@ pub use lifecycle::{
     LifecyclePhase, LifecycleTopologyError, LifecycleTrigger, Refusal, RetirementMode,
     SlotDecision, SlotEffect, SlotEffectBatch, SlotEvent, SlotReducer, TransitionEvidence,
     lifecycle_machine, validate_lifecycle_topology,
-};
-pub use runtime::{
-    Activated, AdmissionFailure, EntityRuntime, EntityShutdown, FenceFailure, LocalEntityRuntime,
-    Passivation,
 };
 
 /// A stable, typed identifier for a logical entity.

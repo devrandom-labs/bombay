@@ -1348,3 +1348,34 @@ also pass their optimized Loom gates.
   commit. Bombay will not add a second persistence abstraction, erased command
   registry, or compatibility actor to conceal version skew.
 - Unblocks: a future Mnesis-Bombay release using the current Bombay contract.
+
+## DX71 — one Entity spelling
+
+- State: `active`.
+- Unblocks: DX49; retires the last second-spelling Entity surface.
+- Driver: the generic `EntityRuntime` facade and its `LocalEntityRuntime` port
+  duplicate the one ordinary Entity path behind a second vocabulary —
+  activate/deliver/fence/retire callbacks plus a spawn port — that every
+  production command crosses twice. No behavioral blocker exists; the smallest
+  regression guard is the existing entity lifecycle suite, which must preserve
+  every law after the fold, including the two bounded-spin determinism tests.
+- Locked default (Phase 0 open question 2): the native application Entity path
+  (`EntityDefinition` → `Entities`/`EntityRef` over the Bombay runtime) is the
+  one ordinary spelling. `LocalDirectory` and its `EffectInterpreter` seam
+  remain the advanced test-host boundary; the folded admission, settlement, and
+  shutdown composition stays crate-internal.
+- Dependency verification: Behavior core, actors, and macros remain the exact
+  patch revision `8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6` selected by the
+  documented exact-revision exception. The fold adds no dependency, no macro
+  generation, and no second Driver or event loop.
+- Expected shape: delete `entity/runtime.rs` (~700 lines); absorb admission
+  custody, waiter cancellation, settle-before-drain, passivation
+  classification, and family shutdown into the directory composition; rehome
+  the lifecycle and family mechanism tests inside the owning crate with both
+  spin-budget-sensitive tests intact; implement the `EffectInterpreter` lanes
+  natively in the Bombay runtime; record the retained advanced seam in the
+  module boundaries and capability documents.
+- Expected containment: about eight production files, a net production-line
+  deletion far below the 500-line stop threshold, zero new public types, and
+  three removed public types (`Activated`, `EntityRuntime`,
+  `LocalEntityRuntime`).
