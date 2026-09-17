@@ -15,6 +15,7 @@ struct Root;
 #[bombay::actor(
     message = Never,
     births = { worker: StopOnShutdown<Worker> },
+    creation_settlements = retain_for_retirement,
 )]
 impl Root {
     #[allow(

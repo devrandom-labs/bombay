@@ -14,6 +14,7 @@ struct Parent;
         primary: Worker,
         replica: Worker,
     },
+    creation_settlements = retain_for_retirement,
 )]
 impl Parent {}
 
