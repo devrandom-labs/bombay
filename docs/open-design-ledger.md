@@ -1314,7 +1314,13 @@ mailbox admission as durable completion.
   with backlog retention) in the supervision and worker-pool examples.
 ## W5 — integration benchmark and memory evidence
 
-- State: `active`; feature-local verification recorded before implementation.
+- State: `active`; implementation committed on this branch (bench suite,
+  allocation test, observe-perf consumer fix, `docs/benchmarks.md`). The
+  Observe allocation/retention table is measured and recorded; the
+  application-spine, mailbox-lane, and dhat-application rows remain pending
+  the distillation base's compile repair (14 `bombay-rs` errors at `ebd79cb`
+  verified on the tip), so those rows record no numbers and
+  make no claims.
 - Selected contracts: Behavior Core 0.16.0, Behavior Actors 0.16.0, and
   Behavior Macros 0.11.6 are selected from
   `8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6` through the user-authorized
