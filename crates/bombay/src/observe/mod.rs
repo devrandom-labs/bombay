@@ -633,7 +633,7 @@ impl<O: Clone> Observation<O> {
     #[must_use]
     #[cfg_attr(
         not(test),
-        expect(
+        allow(
             dead_code,
             reason = "exercised via the observe-tests mirror and the cfg(test) external harness"
         )
@@ -679,7 +679,7 @@ impl<O: Clone> Observation<O> {
     #[must_use]
     #[cfg_attr(
         not(test),
-        expect(
+        allow(
             dead_code,
             reason = "exercised via the observe-tests mirror and the cfg(test) external harness"
         )
@@ -743,7 +743,7 @@ impl<O> Observation<O> {
     #[must_use]
     #[cfg_attr(
         not(test),
-        expect(
+        allow(
             dead_code,
             reason = "exercised via the observe-tests mirror and the cfg(test) external harness"
         )
@@ -767,7 +767,7 @@ impl<O> Observation<O> {
     #[must_use]
     #[cfg_attr(
         not(test),
-        expect(
+        allow(
             dead_code,
             reason = "exercised via the observe-tests mirror and the cfg(test) external harness"
         )
