@@ -1286,6 +1286,66 @@ mailbox admission as durable completion.
   settlement custody, no relaxation of preparation tickets or ordered roles.
 - Unblocks: real recovery (replacements under stable proxies, FIFO restart
   with backlog retention) in the supervision and worker-pool examples.
+## W5 — integration benchmark and memory evidence
+
+- State: `active`; feature-local verification recorded before implementation.
+- Selected contracts: Behavior Core 0.16.0, Behavior Actors 0.16.0, and
+  Behavior Macros 0.11.6 are selected from
+  `8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6` through the user-authorized
+  exact-revision exception (`[patch.crates-io]`, commit `bb5b3e9`); Address
+  0.2.0, Communication 0.1.2, Bombay-private Observe, and Timers 0.1.0 at
+  `13e884da7ab41781f52337b0038060e375b00ee0`; dev-only dhat 0.3.3 and
+  Criterion 0.7.0 from the registry. The public Application surface
+  (`Application::run_with`, `ApplicationHandle`, `ApplicationLifecycle`,
+  terminal projection), the two-lane `mailbox_channel` admission contract,
+  and the Observe publication contract were rechecked against this exact
+  selection. No owner owns integration-benchmark evidence: the three
+  maintained benches cover only Entity directory, Entity lifecycle, and
+  Machine executor micro-paths, plus the Engine Driver turn.
+- Ownership: benches own measurement only. Bombay owns the composed local
+  Environment the end-to-end suite exercises (spawn, tell-shaped send, turn,
+  shutdown, retirement through `run_with`). Communication owns the two-lane
+  mailbox scenarios' transport. Observe owns the watcher-fanout mechanism,
+  already measured by the maintained `observe-perf` harness; registry claims
+  are already measured by the maintained `entity_directory` bench. No second
+  runtime, mailbox, registry, or observation mechanism is introduced.
+- Requirement: the Phase 0 exit gate needs integration evidence that the
+  maintained benches do not provide — an end-to-end benchmark over the real
+  local Environment and semantic equivalents of the retired old-runtime bench
+  (mailbox tell/reply, watcher fanout, registry, channels) — plus recorded
+  allocation/retention memory results and a recorded results table whose
+  every number names environment, revision, feature set, and method.
+- Exact blocker and regression: the old-runtime oracle
+  (`benches/mailbox.rs`, realistic ~40 B command, Criterion, recorded in the
+  `b0c212a` history) measured `tell` ≈ 5.7 ns and send+recv ≈ 18.4 ns. That
+  figure is recovered as a labeled oracle baseline only; no current claim
+  borrows its number. The stale `.auto/measure.sh` consumer reference in the
+  `observe-perf` module doc names a consumer that no longer exists in the
+  repository.
+- Dependency edges: stacked on `research/bombay-distillation-2026-09-15` at
+  `bb5b3e9`; sibling wave work merges into that branch concurrently, so the
+  branch rebases on its live tip immediately before final verification.
+  Independent of DX53 through DX70 semantics; touches no runtime code.
+- Blocked by: none.
+- Unblocks: the Phase 0 exit gate's performance and memory evidence; the
+  `observe-perf` harness doc no longer claims a dead consumer.
+- Change ledger: expected tracked files are this ledger,
+  `crates/bombay/benches/application_spine.rs`,
+  `crates/bombay/benches/mailbox_lanes.rs`,
+  `crates/bombay/tests/application_allocations.rs`,
+  `crates/bombay/Cargo.toml`, `flake.nix`,
+  `crates/observe-perf/src/main.rs`, and `docs/benchmarks.md` (`8` files).
+  Production is `+0 / -1 / net -1` (the dead consumer reference); tests and
+  benches stay within `+500`; public API is `+0 / -0` types. The existing
+  `Application` boundary, `mailbox_channel`, `ObservationSpace`, the
+  directory bench conventions, and the flake `performance` lane are reused.
+  Any new public type, second transport, or production logic change
+  falsifies this feature.
+- Verification: scoped `cargo check`, focused bench runs, and the dhat
+  allocation test pass through the pinned Nix shell; `cargo fmt --all
+  -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
+  and `nix flake check -L` pass before the final push; the results table
+  records the exact commands, environment, revision, and numbers.
 
 ## Public examples
 
