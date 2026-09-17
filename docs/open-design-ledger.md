@@ -1253,6 +1253,40 @@ mailbox admission as durable completion.
   the independently proven cancellation guards; the required net-negative
   boundary and all stop thresholds remain satisfied.
 
+## B4 — typed `PrepareWorkers` capability interpreter
+
+- State: `in-progress` on `feat/prepare-workers-capability` (stacked on the
+  distillation branch at `bb5b3e9`; Behavior pinned at `8bca837c`).
+- Selected contracts (verified this session against the pinned checkout):
+  `PrepareWorkers<Source, Role, Worker, Plan>` is a `SourceAction` owned by
+  Actors whose `WorkerSource` trait deliberately declares types only; the
+  affine attempt protocol (`source_and_role` → prepare → `accept`/`reject`)
+  must be driven by Bombay. The supervisor and FIFO pool send products also
+  require `ProxyOperation`, `InitializeWorker`, `BeginActivation`,
+  `AssignWorker`, and `DiagnosticAction` interpretations before either
+  aggregate can commit actions in the Bombay runtime; `ObserveChild`,
+  `ScheduleAfter`, `ShutdownEstablished`, `EstablishedDelivery`, and
+  `ReportToParent` are already interpreted. Actors templates carry their own
+  `EventIngress`/`InjectEvent` impls for every settled return, so no Actors
+  change is needed.
+- Ownership: Bombay owns (1) the worker-source preparation port — a
+  Bombay-published trait with one method producing a `WorkerSubmission` per
+  role, mirroring the existing verb-capability grammar (`CompletesAssignments`)
+  and invoked only by the runtime interpreter outside every fold, like
+  `ActivationPlan::activate` and `DiagnosticRoute`; (2) a pure ordered-role
+  driver over the affine attempt protocol; (3) the missing `InterpretItem`
+  implementations on the existing application capabilities. The driver returns
+  complete settlements only: Bombay never fabricates an application
+  `SourceRejection` value, so accepted preparations carry the exhaustive
+  `WorkerPreparation` sum (all roles prepared, or prepared prefix + failed
+  role + exact reason + untouched suffix) back to the emitter through the
+  existing `SourceAdmission`/`EventIngress` custody path.
+- Rejected shortcuts: no runtime callback invoked by supervisor folds, no
+  erased submission registry, no second effect framework, no discarded
+  settlement custody, no relaxation of preparation tickets or ordered roles.
+- Unblocks: real recovery (replacements under stable proxies, FIFO restart
+  with backlog retention) in the supervision and worker-pool examples.
+
 ## Public examples
 
 Seven public packages exercise caller-visible behavior:

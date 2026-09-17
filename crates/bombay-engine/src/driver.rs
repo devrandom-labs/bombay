@@ -97,6 +97,7 @@ async fn drive_active<B, E, ActivationError>(
     behavior: &mut B,
     environment: &mut E,
     settlements: &mut VecDeque<SettlementTurn<E::Settlement>>,
+    retained: &mut Vec<E::Settlement>,
 ) -> Result<Completion, DriverError<B::Error, ActivationError>>
 where
     B: Behavior<Ph = Never>,
@@ -110,6 +111,13 @@ where
                     SourceCustody::Exhausted(_) => {}
                     SourceCustody::Admitted(settlement) => {
                         settlements.push_front(SettlementTurn::AwaitSource(settlement));
+                    }
+                    SourceCustody::Retained(settlement) => {
+                        // No live-source input remains, but the residual must
+                        // survive to the retirement barrier: park it instead
+                        // of re-offering it and resume ordinary events.
+                        retained.push(settlement);
+                        continue;
                     }
                     SourceCustody::Closed(settlement) => {
                         settlements.push_front(SettlementTurn::Offer(settlement));
@@ -257,12 +265,17 @@ where
                 }
                 SettlementStatus::Accepted => {
                     let mut pending = VecDeque::from([SettlementTurn::Offer(initialization)]);
+                    let mut retained = Vec::new();
                     let disposition =
-                        drive_active(&mut behavior, &mut environment, &mut pending).await;
-                    let settlements = pending
+                        drive_active(&mut behavior, &mut environment, &mut pending, &mut retained)
+                            .await;
+                    let mut settlements = pending
                         .into_iter()
                         .map(SettlementTurn::into_settlement)
-                        .collect();
+                        .collect::<Vec<_>>();
+                    // Retained residuals are the oldest custody: they stopped
+                    // progressing first, so they close the retirement order.
+                    settlements.extend(retained.into_iter().rev());
                     (disposition, settlements)
                 }
             },
