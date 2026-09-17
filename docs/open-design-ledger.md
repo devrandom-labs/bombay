@@ -1284,6 +1284,32 @@ mailbox admission as durable completion.
 - Rejected shortcuts: no runtime callback invoked by supervisor folds, no
   erased submission registry, no second effect framework, no discarded
   settlement custody, no relaxation of preparation tickets or ordered roles.
+- Follow-up findings (against `8bca837c`): (1) `InitializeWorker` is emitted
+  only after the creation settles `Installed`, and Bombay hosting settles
+  initialization inside `spawn_owned_with` before activation publication — an
+  established creation binding is exact proof of settled initialization, so
+  `WorkerInitializationOutcome::ReadyForActivation` is the only truthful
+  post-establishment report; initialization rejection fails the creation
+  settlement instead, and a post-establishment stop race is detectable through
+  the child's retained termination observation (`try_get`) mapping to
+  `Stopped(ChildStopped<BehaviorAddr<W>>)`. (2) `BeginActivation` returns
+  `started()` to the emitter, polls the plan with `activate().await`, and
+  returns the `WorkerActivation` outcome; the emitter's control lane stays live
+  during interpretation, so `ActivationStartRejection::OwnerStopped` is
+  unreachable for a conforming self-interpreter and binding failure maps to
+  `Corrupt`. (3) `AssignWorker` is blocked on an Actors-side seam: every
+  non-accepted `ItemSettlement` variant must retain the complete original
+  item, but the only post-consumption reconstruction path,
+  `AssignWorker::returned`, is `pub(in crate::atomic)`; a non-consuming
+  liveness probe (termination `try_get` before consuming) lawfully settles the
+  common closed-recipient case exactly like the Actors test flow, but a
+  recipient closing between probe and enqueue leaves no lawful settlement.
+  Landing `AssignWorker` requires the pinned Actors revision to make
+  `AssignWorker::returned` public (one-line visibility change in
+  bombay-behavior) or an equivalent public construction seam; until then the
+  FIFO assignment lane cannot be interpreted without erasing custody. This
+  supersedes the earlier "no Actors change is needed" assumption for the
+  assignment lane only.
 - Unblocks: real recovery (replacements under stable proxies, FIFO restart
   with backlog retention) in the supervision and worker-pool examples.
 
