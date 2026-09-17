@@ -307,6 +307,8 @@
                 cargo bench --locked -p bombay-rs --bench entity_directory
                 cargo bench --locked -p bombay-rs --bench entity_lifecycle
                 cargo bench --locked -p bombay-rs --bench machine_executor
+                cargo bench --locked -p bombay-rs --bench application_spine
+                cargo bench --locked -p bombay-rs --bench mailbox_lanes
                 mkdir -p "$out"
                 cp -R target/criterion "$out/criterion"
                 {

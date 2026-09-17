@@ -47,6 +47,14 @@ loom = "0.7.2"
 loom = "0.7.2"
 
 [[bench]]
+name = "application_spine"
+harness = false
+
+[[bench]]
+name = "mailbox_lanes"
+harness = false
+
+[[bench]]
 name = "entity_directory"
 harness = false
 
