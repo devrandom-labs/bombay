@@ -190,7 +190,7 @@ dependencies = [
 
 [[package]]
 name = "bombay-engine"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bombay-behavior-actors",
  "criterion",
@@ -280,7 +280,7 @@ dependencies = [
 
 [[package]]
 name = "bombay-rs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "axum",
  "bombay-address",
