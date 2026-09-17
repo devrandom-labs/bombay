@@ -37,6 +37,10 @@ where
 {
     /// Prepare one submission for the exact ordered role, or return the
     /// typed per-role rejection.
+    ///
+    /// # Errors
+    /// Returns the typed rejection carried by `Self::WorkerRejection` when
+    /// the source cannot prepare the requested role's submission.
     fn prepare_worker(
         &mut self,
         role: &Role,

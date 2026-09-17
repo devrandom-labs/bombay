@@ -125,7 +125,7 @@ impl<I: Clone + Eq + Hash + Send + Sync + 'static>
         entity_id: EntityId<I>,
         activation_id: ActivationId,
         dispatch_id: DispatchId,
-        endpoint: u64,
+        _endpoint: u64,
         pending: PendingCommand<(), u64>,
     ) {
         let interpreter = self.clone();
@@ -168,7 +168,7 @@ impl<I: Clone + Eq + Hash + Send + Sync + 'static>
         }));
     }
 
-    fn enqueue_fence(&self, entity_id: EntityId<I>, activation_id: ActivationId, endpoint: u64) {
+    fn enqueue_fence(&self, entity_id: EntityId<I>, activation_id: ActivationId, _endpoint: u64) {
         let interpreter = self.clone();
         self.spawn(async move {
             let gate = interpreter.state.fence_gate.lock().unwrap().clone();
@@ -200,7 +200,7 @@ impl<I: Clone + Eq + Hash + Send + Sync + 'static>
         &self,
         entity_id: EntityId<I>,
         activation_id: ActivationId,
-        lease: u64,
+        _lease: u64,
         retirement: RetirementMode,
     ) {
         let interpreter = self.clone();
@@ -221,10 +221,12 @@ impl<I: Clone + Eq + Hash + Send + Sync + 'static>
     }
 }
 
-fn composition<I: Clone + Eq + Hash + Send + Sync + 'static>() -> (
+type TestComposition<I> = (
     Arc<EntityLifecycle<I, (), u64, u64, u64, TestInterpreter<I>>>,
     Arc<TestInterpreter<I>>,
-) {
+);
+
+fn composition<I: Clone + Eq + Hash + Send + Sync + 'static>() -> TestComposition<I> {
     let directory = Arc::new(
         LocalDirectory::<I, PendingCommand<(), u64>, u64, u64>::new(DirectoryConfig::default())
             .expect("valid directory configuration must construct"),
@@ -289,7 +291,7 @@ impl EffectInterpreter<u64, PendingCommand<(), MoveOnlyCommand>, (), ()>
         entity_id: EntityId<u64>,
         activation_id: ActivationId,
         dispatch_id: DispatchId,
-        endpoint: (),
+        _endpoint: (),
         pending: PendingCommand<(), MoveOnlyCommand>,
     ) {
         let interpreter = self.clone();
@@ -322,7 +324,7 @@ impl EffectInterpreter<u64, PendingCommand<(), MoveOnlyCommand>, (), ()>
         }));
     }
 
-    fn enqueue_fence(&self, entity_id: EntityId<u64>, activation_id: ActivationId, endpoint: ()) {
+    fn enqueue_fence(&self, entity_id: EntityId<u64>, activation_id: ActivationId, _endpoint: ()) {
         let interpreter = self.clone();
         self.spawn(async move {
             let output = interpreter
@@ -336,8 +338,8 @@ impl EffectInterpreter<u64, PendingCommand<(), MoveOnlyCommand>, (), ()>
         &self,
         entity_id: EntityId<u64>,
         activation_id: ActivationId,
-        lease: (),
-        retirement: RetirementMode,
+        _lease: (),
+        _retirement: RetirementMode,
     ) {
         let interpreter = self.clone();
         self.spawn(async move {
@@ -347,10 +349,12 @@ impl EffectInterpreter<u64, PendingCommand<(), MoveOnlyCommand>, (), ()>
     }
 }
 
-fn move_only_composition() -> (
+type MoveOnlyComposition = (
     Arc<EntityLifecycle<u64, (), MoveOnlyCommand, (), (), RejectingMoveOnlyInterpreter>>,
     Arc<RejectingMoveOnlyInterpreter>,
-) {
+);
+
+fn move_only_composition() -> MoveOnlyComposition {
     let directory = Arc::new(
         LocalDirectory::<u64, PendingCommand<(), MoveOnlyCommand>, (), ()>::new(
             DirectoryConfig::default(),
@@ -440,14 +444,14 @@ impl EffectInterpreter<u64, PendingCommand<(), u64>, u64, u64> for RecordingInte
         &self,
         entity_id: EntityId<u64>,
         activation_id: ActivationId,
-        dispatch_id: DispatchId,
-        endpoint: u64,
+        _dispatch_id: DispatchId,
+        _endpoint: u64,
         pending: PendingCommand<(), u64>,
     ) {
         let interpreter = self.clone();
         self.spawn(async move {
             let PendingCommand {
-                origin: _,
+                origin: (),
                 command,
                 publisher,
             } = pending;
@@ -467,7 +471,7 @@ impl EffectInterpreter<u64, PendingCommand<(), u64>, u64, u64> for RecordingInte
         }));
     }
 
-    fn enqueue_fence(&self, entity_id: EntityId<u64>, activation_id: ActivationId, endpoint: u64) {
+    fn enqueue_fence(&self, entity_id: EntityId<u64>, activation_id: ActivationId, _endpoint: u64) {
         let interpreter = self.clone();
         self.spawn(async move {
             interpreter.state.fences.fetch_add(1, Ordering::Release);
@@ -482,8 +486,8 @@ impl EffectInterpreter<u64, PendingCommand<(), u64>, u64, u64> for RecordingInte
         &self,
         entity_id: EntityId<u64>,
         activation_id: ActivationId,
-        lease: u64,
-        retirement: RetirementMode,
+        _lease: u64,
+        _retirement: RetirementMode,
     ) {
         let interpreter = self.clone();
         self.spawn(async move {
@@ -497,10 +501,12 @@ impl EffectInterpreter<u64, PendingCommand<(), u64>, u64, u64> for RecordingInte
     }
 }
 
-fn recording_composition() -> (
+type RecordingComposition = (
     Arc<EntityLifecycle<u64, (), u64, u64, u64, RecordingInterpreter>>,
     Arc<RecordingInterpreter>,
-) {
+);
+
+fn recording_composition() -> RecordingComposition {
     let directory = Arc::new(
         LocalDirectory::<u64, PendingCommand<(), u64>, u64, u64>::new(DirectoryConfig::default())
             .expect("valid directory configuration must construct"),
@@ -582,12 +588,12 @@ impl EffectInterpreter<u64, PendingCommand<(), u64>, u64, u64> for GatedInterpre
     }
 }
 
-fn gated_composition(
-    gate: Arc<ActivationGate>,
-) -> (
+type GatedComposition = (
     Arc<EntityLifecycle<u64, (), u64, u64, u64, GatedInterpreter>>,
     Arc<GatedInterpreter>,
-) {
+);
+
+fn gated_composition(gate: Arc<ActivationGate>) -> GatedComposition {
     let directory = Arc::new(
         LocalDirectory::<u64, PendingCommand<(), u64>, u64, u64>::new(DirectoryConfig::default())
             .expect("valid directory configuration must construct"),
@@ -794,7 +800,7 @@ fn failed_activation_returns_the_command_and_eventually_allows_retry() {
     let entity_id = EntityId::new(11);
 
     assert!(matches!(
-        block_on(lifecycle.admit((), entity_id.clone(), 81)),
+        block_on(lifecycle.admit((), entity_id, 81)),
         Err(AdmissionFailure::Refused {
             command: 81,
             reason: Refusal::Unavailable,
@@ -806,7 +812,7 @@ fn failed_activation_returns_the_command_and_eventually_allows_retry() {
         .store(false, Ordering::Relaxed);
     let mut command = 82;
     for _ in 0..1_000 {
-        match block_on(lifecycle.admit((), entity_id.clone(), command)) {
+        match block_on(lifecycle.admit((), entity_id, command)) {
             Ok(()) => break,
             Err(AdmissionFailure::Refused {
                 command: returned,
@@ -863,7 +869,7 @@ fn canceling_admission_does_not_cancel_shared_activation_or_deliver_command() {
 fn dropping_active_admission_does_not_retract_owned_delivery() {
     let (lifecycle, interpreter) = composition();
     let entity_id = EntityId::new(8);
-    block_on(lifecycle.admit((), entity_id.clone(), 1)).unwrap();
+    block_on(lifecycle.admit((), entity_id, 1)).unwrap();
 
     let gate = ActivationGate::closed();
     *interpreter.state.delivery_gate.lock().unwrap() = Some(Arc::clone(&gate));

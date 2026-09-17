@@ -183,7 +183,7 @@ pub(crate) type NativeEntityDirectory<D> = LocalDirectory<
 
 /// Stage at which an ordered fence operation failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-pub(crate) enum FenceFailure {
+pub enum FenceFailure {
     /// The fence was not enqueued.
     #[error("fence was not enqueued")]
     Enqueue,
@@ -301,7 +301,7 @@ where
                 command,
                 publisher,
             } = pending;
-            let failure = match runtime.deliver(endpoint, origin.clone(), command).await {
+            let failure = match runtime.deliver(endpoint, origin, command).await {
                 Ok(()) => {
                     publisher.complete(Ok(()));
                     None

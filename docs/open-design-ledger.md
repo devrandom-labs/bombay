@@ -1415,8 +1415,8 @@ verified today against what must wait:
   doc-hidden integration surface (atomic/mod.rs lines 79 and 83-85) — so the
   earlier "no public path" diagnosis pointed at the wrong re-export group
   (lines 113-121 re-export the activation/initialization/submission types).
-  No B4 feature was narrowed; the exact deferred surface is: none. The
-  defects were: (1) `application_runtime.rs` imported `ActivationPlan`,
+  No worker-preparation feature was narrowed; one integration-test surface was
+  deferred (recorded below). The defects were: (1) `application_runtime.rs` imported `ActivationPlan`,
   `PrepareWorkers`, `WorkerPreparation`, and `WorkerSource` from the Actors
   crate root, where `ActivationPlan` is only `pub(crate)` and the other three
   are absent — they now import through `behavior_actors::atomic`;
@@ -1433,7 +1433,46 @@ verified today against what must wait:
   `application_runtime.rs`, `prepare_workers.rs`, `entity/mod.rs`,
   `entity/bombay.rs`, `entity/directory.rs`, and this ledger (6);
   production delta is import paths, bounds, and crate-internal re-exports
-  only; public API is `+0 / -0` types.
+  only; public API is `+1` type (`FenceFailure` published through `entity`,
+  see below).
+- 2026-09-17 compile repair, second phase (gates `--all-targets` clippy and
+  the sequential lib suite): once the crate type-checked, the previously
+  unreachable gate targets surfaced their own residue. (1) `observe/mod.rs`:
+  the four synchronous-wait/outcome methods are dead in Bombay's ordinary
+  library target but live in the `observe-tests` mirror compilation of the
+  same file; `expect(dead_code)` is fulfilled only in the first context and
+  errored under the mirror's clippy lane, so the allowance is
+  `cfg_attr(not(test), allow(dead_code, reason = ...))` — silent and truthful
+  in both contexts. (2) `entity/lifecycle_tests.rs`: aligned the test generic
+  `I` with the production `Clone + Eq + Hash + Send + Sync` contract, added a
+  crate-internal manual `Debug` for `PendingCommand` (reports origin and
+  command, omits the publication authority), factored the four composition
+  return types into named aliases, underscore-prefixed unused trait-method
+  parameters, removed three redundant `EntityId` clones (Copy), and fixed
+  `shutdown_settles_an_installed_activation_before_draining_and_joining` —
+  it raced the shutdown task's first statement (admission closure) against a
+  third admission and could park the main thread behind the closed gate
+  forever; it now waits on the new `#[cfg(test)] pub(super)
+  EntityLifecycle::admission_is_closed` seam before asserting the refusal.
+  (3) `benches/mailbox_lanes.rs`: imported `std::fmt::Debug` (the bare `Debug`
+  bounds resolved only to the prelude derive macro — PR #317 residue that had
+  never compiled) and renamed `received` → `command` (similar-names).
+  (4) `tests/entity_errors.rs`: `FenceFailure` is an error-diagnostic type
+  whose stable Display strings the test asserts; it became `pub enum` and is
+  re-exported `pub` through `entity` (the +1 public type above, within the
+  three-new-public-types threshold). (5) `tests/application_terminal_custody.rs`:
+  the heterogeneous builder-path test
+  (`Application::new(root).child(role, behavior).run()`) required
+  `User<MailAddr, Never>: EventIngress<Births<StopOnShutdown<W>>,
+  CreationsSettled<...>>`, which the pin implements only for the single-worker
+  `ProxyEvent<W, P>` composite; a `message = Never` root's bare `User` event
+  enum cannot satisfy it. Deferred EXACTLY: the Application builder path's
+  run-composition for declared children and its heterogeneous child-ownership
+  custody assertion (the builder's build-only surface stays compiled and
+  trybuild-verified via `tests/compile/pass/application_children.rs`; the
+  macro-births run path stays covered by the file's first test). Recorded for
+  W5/B1: heterogeneous multi-child coverage through macro-declared births is
+  the recommended restoration once the proxy composition surface allows it.
 - Unblocks: real recovery (replacements under stable proxies, FIFO restart
   with backlog retention) in the supervision and worker-pool examples.
 ## W5 — integration benchmark and memory evidence

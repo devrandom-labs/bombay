@@ -17,7 +17,8 @@ mod lifecycle;
 #[cfg(test)]
 mod lifecycle_tests;
 
-pub(crate) use bombay::{FenceFailure, NativeEntityHost};
+pub use bombay::FenceFailure;
+pub(crate) use bombay::NativeEntityHost;
 pub use bombay_machine::{Decision, Reducer};
 pub use directory::{
     AdmissionFailure, DirectoryConfig, DirectoryError, DirectoryOutput, DispatchOutput,
