@@ -30,8 +30,12 @@ crate is evidence only and never overrides the selected build contract.
 DX53 atomic Behavior migration (distilled)
   -> DX49 application-native Entity (distilled)
        -> MNE1 durable Mnesis execution (downstream, blocked externally)
-  -> BEH1 creation-settlement disposition (upstream, blocked externally)
-       -> DX58 Behavior 0.16 crates.io adoption (blocked)
+  -> BEH1 creation-settlement disposition (upstream resolution selected:
+     Behavior pin 8bca837c = PR #68 head; Bombay-side verification pending
+     compile repair and gates)
+       -> DX58 Behavior 0.16 adoption (adopted at pin 8bca837c under the
+          exact-revision exception; crates.io retirement pending B1
+          publication via B5)
 
 DX54 Triomphe feature minimization (feature-complete, independent)
 
@@ -74,6 +78,39 @@ that ordinary generated birth declarations cannot express. MNE1 requires
 Mnesis-Bombay to select the current Bombay and Behavior graph and implement its
 own durable command execution contract. Bombay deliberately does not classify
 mailbox admission as durable completion.
+
+2026-09-17 update (exact-revision exception, user-authorized): the workspace
+now selects Behavior at commit `8bca837c` — the head of upstream PR #68 —
+instead of the published 0.16.0 line. That revision carries the upstream
+settlement-policy fix (preserve generated creation settlements, `2987feb`)
+and the facade-first Actors resolution, which are precisely the BEH1 and BEH2
+owner decisions recorded below. The selected contracts therefore no longer
+block the algebra. What remains pending is Bombay-side verification against
+the pin — the `application_terminal_custody`, `entity_application`, and
+application-topology regressions — and a compiling workspace: the merged
+runtime currently fails `cargo check -p bombay-rs` at the pin, and the
+repair is owned by the worker-preparation task. crates.io adoption (retiring
+the git pin) follows B1's merge and publication of PR #68 and is owned by B5.
+The BEH1, BEH2, and DX58 sections below keep their original analysis; their
+State lines record the updated disposition.
+
+2026-09-17 fixed-point minimization audit — scope, split by what can be
+verified today against what must wait:
+
+- Auditable now (and done in this update): ledger statuses match selected
+  evidence; lockfile consistency at the selected pin (`cargo metadata
+  --locked` passes on the merge of `origin/main`); PR #313's main-conflict
+  state cleared by that merge.
+- Deferred until the workspace compiles at the pin: all source-level
+  minimization claims. The merged runtime currently fails `cargo check -p
+  bombay-rs` at the pin (PrepareWorkers imports without a public path at
+  8bca837c, plus entity-fold residue); the repair is owned by the
+  worker-preparation task. No minimization claim is truthful before a green
+  workspace gate.
+- Deferred until the wave closes: audit of DX37 resolver retirement (W2 in
+  flight), benchmark-coverage minimization (W5's pending rows are blocked on
+  the same compile repair), and the fixed-point check of the Entity fold
+  residue (part of the same repair).
 
 ## Ownership map
 
@@ -344,9 +381,14 @@ mailbox admission as durable completion.
 
 ## BEH1 — creation-settlement disposition
 
-- State: `blocked`; the selected immutable Behavior 0.16.0 contracts do not
-  provide an ordinary generated actor a way to satisfy creation-result source
-  custody.
+- State: `blocked` → `resolution selected upstream, verification pending`;
+  the selected pin 8bca837c (PR #68 head) carries the upstream creation-
+  settlement policy that answers the blocker below, but the Bombay-side
+  regression set (`application_terminal_custody`, `entity_application`,
+  application-topology) has not yet been run green against it because the
+  workspace does not currently compile at the pin (repair owned by the
+  worker-preparation task). Deferred to B1 publication for the crates.io
+  form.
 - Exact blocker: `SourceSettlementCustody` for every `Births<C>` settlement
   requires the root event to implement
   `EventIngress<Births<C>, CreationsSettled<A, C>>`. A
@@ -375,7 +417,14 @@ mailbox admission as durable completion.
 
 ## BEH2 — pool-worker facade resolution
 
-- State: `blocked`; `bombay-behavior-macros` 0.11.6 resolves its Actors path
+- State: `blocked` → `resolution selected upstream, verification pending`;
+  the selected pin 8bca837c (PR #68 head) carries the facade-first Actors
+  resolution that answers the blocker below, but the workspace does not yet
+  compile at the pin, so the regression proof for the facade path
+  (`bombay::atomic` resolution) is still outstanding. Retiring the
+  worker-pool example's explicit Actors owner dependency is part of that
+  verification, not something to do before it.
+- Mechanism: `bombay-behavior-macros` 0.11.6 resolves its Actors path
   through a `bombay-rs`-only dependency as `bombay::behavior`, then expands
   `#[pool_worker]` with `bombay::behavior::atomic::Completion`. Foundational
   Behavior deliberately has no `atomic` module; Bombay correctly exposes the
@@ -398,10 +447,13 @@ mailbox admission as durable completion.
 
 ## DX58 — Behavior 0.16 crates.io adoption
 
-- State: `blocked`; upstream 0.16.0 resolves the recorded terminal-custody,
-  source-order, and observation-settlement prerequisites, but BEH1 prevents
-  every birth-owning generated actor from satisfying the new custody law.
-  Independent downstream migration and regressions remain active.
+- State: `blocked` → `adopted at pin 8bca837c, crates.io retirement pending`;
+  the workspace selects Behavior under the user-authorized exact-revision
+  exception (root `[patch.crates-io]` git pin, both lockfiles), which carries
+  the BEH1 and BEH2 upstream resolutions. The recorded blocker below applied
+  to the published 0.16.0 line; it no longer applies to the selected
+  revision. Full crates.io adoption (retiring the pin) waits on B1 merging
+  and publishing PR #68 — owned by B5 — and on a green workspace gate.
 - Target releases: `bombay-behavior` 0.16.0 and
   `bombay-behavior-actors` 0.16.0 resolve to source commit
   `b9642e84e5719c4e2018f752822a392d3c23e164`; the
