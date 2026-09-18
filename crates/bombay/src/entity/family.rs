@@ -483,7 +483,11 @@ pub(crate) trait InstallEntityFamilies<Hosts>: EntityApplicationFamilies<Hosts> 
     type Installed: InstalledEntityFamilies<Receptionists = Self::Receptionists, Shutdowns = Self::Shutdowns>
         + Send;
 
-    fn install(self, hosts: std::sync::Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed;
+    fn install(
+        self,
+        hosts: std::sync::Arc<Hosts>,
+        allocations: ApplicationAddresses,
+    ) -> Self::Installed;
 }
 
 impl<Hosts> InstallEntityFamilies<Hosts> for ()
@@ -506,7 +510,11 @@ where
 {
     type Installed = (Role, InstalledEntityFamily<D>, Tail::Installed);
 
-    fn install(self, hosts: std::sync::Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed {
+    fn install(
+        self,
+        hosts: std::sync::Arc<Hosts>,
+        allocations: ApplicationAddresses,
+    ) -> Self::Installed {
         let (role, definition, directory, capacity, tail) = self;
         let definition = Arc::new(definition);
         let metrics = Arc::new(EntityMetricState::default());
