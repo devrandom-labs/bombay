@@ -39,7 +39,7 @@ const USER_CAPACITY: usize = 1_024;
 
 type NativeEntityCapabilities<B, N, Terminal> = ApplicationCapabilities<
     B,
-    HostedActorSpaces<Arc<N>>,
+    HostedActorSpaces<std::sync::Arc<N>>,
     NoParent,
     OccurrenceBindings<B, Terminal>,
     StructuralOrigins<<B as BehaviorBase>::Base>,
@@ -57,7 +57,7 @@ where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
 {
     fn launch_entity(
-        self: Arc<Self>,
+        self: std::sync::Arc<Self>,
         address: MailAddr,
         allocations: ApplicationAddresses,
         behavior: B,
@@ -86,7 +86,7 @@ where
     Terminal: Send + 'static,
 {
     async fn launch_entity(
-        self: Arc<Self>,
+        self: std::sync::Arc<Self>,
         address: MailAddr,
         allocations: ApplicationAddresses,
         behavior: B,
@@ -101,7 +101,7 @@ where
                 ActionInterpreter::new(ApplicationCapabilities::new_with_bindings(
                     crate::application_runtime::ApplicationCapabilityInputs {
                         address,
-                        actor_spaces: Arc::new(HostedActorSpaces(self)),
+                        actor_spaces: std::sync::Arc::new(HostedActorSpaces(self)),
                         allocations,
                         control,
                         timers,
@@ -203,10 +203,10 @@ where
     D: EntityDefinition,
 {
     definition: Arc<D>,
-    actors: Arc<D::Hosts>,
+    actors: std::sync::Arc<D::Hosts>,
     allocations: ApplicationAddresses,
-    hydrations: Arc<Semaphore>,
-    residents: Arc<Semaphore>,
+    hydrations: std::sync::Arc<Semaphore>,
+    residents: std::sync::Arc<Semaphore>,
     metrics: Arc<EntityMetricState>,
     // `loom::sync::Arc` offers no downgrade and loom defines no `Weak`, so the
     // model-check compilation holds a strong handle instead; the loom
@@ -227,10 +227,10 @@ where
     fn clone(&self) -> Self {
         Self {
             definition: Arc::clone(&self.definition),
-            actors: Arc::clone(&self.actors),
+            actors: std::sync::Arc::clone(&self.actors),
             allocations: self.allocations.clone(),
-            hydrations: Arc::clone(&self.hydrations),
-            residents: Arc::clone(&self.residents),
+            hydrations: std::sync::Arc::clone(&self.hydrations),
+            residents: std::sync::Arc::clone(&self.residents),
             metrics: Arc::clone(&self.metrics),
             tasks: self.tasks.clone(),
             directory: Arc::clone(&self.directory),
@@ -241,7 +241,7 @@ where
 
 pub(crate) fn bombay_entity_runtime<D>(
     definition: Arc<D>,
-    actors: Arc<D::Hosts>,
+    actors: std::sync::Arc<D::Hosts>,
     allocations: ApplicationAddresses,
     capacity: EntityCapacity,
     metrics: Arc<EntityMetricState>,
@@ -260,8 +260,8 @@ where
         definition,
         actors,
         allocations,
-        hydrations: Arc::new(Semaphore::new(capacity.concurrent_hydrations().get())),
-        residents: Arc::new(Semaphore::new(capacity.residents().get())),
+        hydrations: std::sync::Arc::new(Semaphore::new(capacity.concurrent_hydrations().get())),
+        residents: std::sync::Arc::new(Semaphore::new(capacity.residents().get())),
         metrics,
         tasks: task_reference,
         directory,
@@ -430,13 +430,13 @@ where
         ),
         EntityActivationError<D::HydrationError, D::Behavior, D::Terminal>,
     > {
-        let resident = Arc::clone(&self.residents)
+        let resident = std::sync::Arc::clone(&self.residents)
             .try_acquire_owned()
             .map_err(|_| {
                 self.metrics.capacity_refused();
                 EntityActivationError::ResidentCapacity
             })?;
-        let hydration = Arc::clone(&self.hydrations)
+        let hydration = std::sync::Arc::clone(&self.hydrations)
             .acquire_owned()
             .await
             .expect("the application-owned hydration semaphore remains open");
@@ -457,7 +457,7 @@ where
                 return Err(EntityActivationError::Launch(failure.into_retirement()));
             }
         };
-        let actor = Arc::clone(&self.actors)
+        let actor = std::sync::Arc::clone(&self.actors)
             .launch_entity(address, self.allocations.clone(), behavior)
             .await
             .map_err(|retirement| {

@@ -483,7 +483,7 @@ pub(crate) trait InstallEntityFamilies<Hosts>: EntityApplicationFamilies<Hosts> 
     type Installed: InstalledEntityFamilies<Receptionists = Self::Receptionists, Shutdowns = Self::Shutdowns>
         + Send;
 
-    fn install(self, hosts: Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed;
+    fn install(self, hosts: std::sync::Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed;
 }
 
 impl<Hosts> InstallEntityFamilies<Hosts> for ()
@@ -492,7 +492,7 @@ where
 {
     type Installed = ();
 
-    fn install(self, _: Arc<Hosts>, _: ApplicationAddresses) -> Self::Installed {}
+    fn install(self, _: std::sync::Arc<Hosts>, _: ApplicationAddresses) -> Self::Installed {}
 }
 
 impl<Hosts, Role, D, Tail> InstallEntityFamilies<Hosts>
@@ -506,7 +506,7 @@ where
 {
     type Installed = (Role, InstalledEntityFamily<D>, Tail::Installed);
 
-    fn install(self, hosts: Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed {
+    fn install(self, hosts: std::sync::Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed {
         let (role, definition, directory, capacity, tail) = self;
         let definition = Arc::new(definition);
         let metrics = Arc::new(EntityMetricState::default());
@@ -517,7 +517,7 @@ where
         let settlement = Arc::new(EntityTaskGroup::new());
         let (runtime, tasks) = bombay_entity_runtime(
             Arc::clone(&definition),
-            Arc::clone(&hosts),
+            std::sync::Arc::clone(&hosts),
             allocations.clone(),
             capacity,
             Arc::clone(&metrics),
