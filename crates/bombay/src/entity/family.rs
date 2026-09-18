@@ -8,7 +8,13 @@
 use core::future::Future;
 use core::hash::Hash;
 use core::num::NonZeroUsize;
+#[cfg(bombay_entity_loom)]
+use loom::sync::Arc;
+#[cfg(bombay_entity_loom)]
+use loom::sync::atomic::{AtomicUsize, Ordering};
+#[cfg(not(bombay_entity_loom))]
 use std::sync::Arc;
+#[cfg(not(bombay_entity_loom))]
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use behavior::{
@@ -309,10 +315,7 @@ where
     where
         D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     {
-        self.entities
-            .lifecycle
-            .admit(origin, self.id.clone(), command)
-            .await
+        EntityLifecycle::admit(&self.entities.lifecycle, origin, self.id.clone(), command).await
     }
 
     /// Form one typed request for the emitting actor's interpreter.

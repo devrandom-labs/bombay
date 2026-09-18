@@ -11,11 +11,13 @@ use loom::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use std::hash::{BuildHasher, Hash, RandomState};
 use std::num::{NonZeroU64, NonZeroUsize};
+use std::sync::PoisonError;
+#[cfg(not(bombay_entity_loom))]
+use std::sync::Weak;
 #[cfg(not(bombay_entity_loom))]
 use std::sync::atomic::{AtomicU64, Ordering};
 #[cfg(not(bombay_entity_loom))]
 use std::sync::{Arc, Mutex};
-use std::sync::{PoisonError, Weak};
 
 use crate::observe::{AffineObservation, Observation, Publisher, affine_pair, pair};
 
@@ -728,8 +730,14 @@ impl EntityTaskGroup {
         }
     }
 
-    pub(crate) fn begin(self: &Arc<Self>) -> EntityTaskGuard {
-        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+    /// Open one task on the shared settlement group.
+    ///
+    /// Takes the group by shared `Arc` parameter rather than an `Arc`
+    /// receiver: `loom::sync::Arc` implements no `Receiver`, so the guard's
+    /// clone must read the shared handle directly in both compilation
+    /// contexts.
+    pub(crate) fn begin(group: &Arc<Self>) -> EntityTaskGuard {
+        let mut state = group.state.lock().unwrap_or_else(PoisonError::into_inner);
         let EntityTaskState::Open { active, idle_epoch } = &mut *state else {
             panic!("entity lifecycle task scheduled after family shutdown");
         };
@@ -740,7 +748,7 @@ impl EntityTaskGroup {
             .checked_add(1)
             .expect("entity lifecycle task count exhausted");
         EntityTaskGuard {
-            group: Arc::clone(self),
+            group: Arc::clone(group),
         }
     }
 
@@ -843,6 +851,11 @@ where
 
     /// Deliver a command through stable entity routing.
     ///
+    /// Takes the lifecycle by shared `Arc` parameter rather than an `Arc`
+    /// receiver: `loom::sync::Arc` implements no `Receiver`, so the waiter's
+    /// lifecycle reference must be built from the shared handle directly in
+    /// both compilation contexts.
+    ///
     /// Dropping this future cancels its command only while it remains a bounded
     /// activation waiter. The shared activation task remains directory-owned,
     /// and a command already moved into active delivery is not retracted.
@@ -857,13 +870,13 @@ where
     /// Panics after synchronization poison or violation of an internal
     /// directory identity invariant.
     pub(crate) async fn admit(
-        self: &Arc<Self>,
+        lifecycle: &Arc<Self>,
         origin: O,
         entity_id: EntityId<I>,
         command: C,
     ) -> Result<(), AdmissionFailure<C>> {
         let (observation, activation_id, dispatch_id) = {
-            let admission = self
+            let admission = lifecycle
                 .admission
                 .lock()
                 .unwrap_or_else(PoisonError::into_inner);
@@ -882,7 +895,7 @@ where
                 command,
                 publisher,
             };
-            let dispatched = self
+            let dispatched = lifecycle
                 .directory
                 .dispatch(entity_id.clone(), pending)
                 .map_err(|error| match error {
@@ -898,16 +911,25 @@ where
                 })?;
             let dispatch_id = dispatched.dispatch_id;
             let activation_id = dispatched.output.activation_id;
-            self.directory
-                .interpret(dispatched.output, self.interpreter.as_ref());
+            lifecycle
+                .directory
+                .interpret(dispatched.output, lifecycle.interpreter.as_ref());
             (observation, activation_id, dispatch_id)
         };
+        // `loom::sync::Arc` offers no downgrade and loom defines no `Weak`, so
+        // the model-check compilation holds a strong handle instead; the loom
+        // scenarios never construct a waiter, and the ordinary compilation
+        // keeps the exact non-owning reference.
+        #[cfg(not(bombay_entity_loom))]
+        let lifecycle_reference = Arc::downgrade(lifecycle);
+        #[cfg(bombay_entity_loom)]
+        let lifecycle_reference = Arc::clone(lifecycle);
         DispatchWait {
             observation,
             entity_id,
             activation_id,
             dispatch_id,
-            lifecycle: Arc::downgrade(self),
+            lifecycle: lifecycle_reference,
         }
         .await
     }
@@ -1002,7 +1024,10 @@ where
     entity_id: EntityId<I>,
     activation_id: Option<ActivationId>,
     dispatch_id: DispatchId,
+    #[cfg(not(bombay_entity_loom))]
     lifecycle: Weak<EntityLifecycle<I, O, C, E, L, R>>,
+    #[cfg(bombay_entity_loom)]
+    lifecycle: Arc<EntityLifecycle<I, O, C, E, L, R>>,
 }
 
 impl<I, O, C, E, L, R> Future for DispatchWait<I, O, C, E, L, R>
@@ -1043,7 +1068,11 @@ where
     R: EffectInterpreter<I, PendingCommand<O, C>, E, L> + Send + Sync + 'static,
 {
     fn drop(&mut self) {
-        if let Some(lifecycle) = self.lifecycle.upgrade()
+        #[cfg(not(bombay_entity_loom))]
+        let lifecycle = self.lifecycle.upgrade();
+        #[cfg(bombay_entity_loom)]
+        let lifecycle = Some(Arc::clone(&self.lifecycle));
+        if let Some(lifecycle) = lifecycle
             && let Some(activation_id) = self.activation_id.take()
         {
             let output =

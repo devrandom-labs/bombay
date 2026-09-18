@@ -73,7 +73,7 @@ impl<I: Clone + Eq + Hash + Send + Sync + 'static> TestInterpreter<I> {
     }
 
     fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) {
-        let guard = self.settlement.begin();
+        let guard = EntityTaskGroup::begin(&self.settlement);
         thread::spawn(move || {
             let _guard = guard;
             block_on(task);
@@ -264,7 +264,7 @@ struct RejectingMoveOnlyInterpreter {
 
 impl RejectingMoveOnlyInterpreter {
     fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) {
-        let guard = self.settlement.begin();
+        let guard = EntityTaskGroup::begin(&self.settlement);
         thread::spawn(move || {
             let _guard = guard;
             block_on(task);
@@ -409,7 +409,7 @@ impl RecordingInterpreter {
     }
 
     fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) {
-        let guard = self.settlement.begin();
+        let guard = EntityTaskGroup::begin(&self.settlement);
         thread::spawn(move || {
             let _guard = guard;
             block_on(task);
@@ -742,7 +742,7 @@ impl Future for GateFuture {
 fn application_admission_is_one_asynchronous_operation() {
     let (lifecycle, interpreter) = composition();
 
-    block_on(lifecycle.admit((), EntityId::new(42), 7)).unwrap();
+    block_on(EntityLifecycle::admit(&lifecycle, (), EntityId::new(42), 7)).unwrap();
 
     assert_eq!(interpreter.state.activations.load(Ordering::Relaxed), 1);
     assert_eq!(*interpreter.state.delivered.lock().unwrap(), [7]);
@@ -756,7 +756,8 @@ fn failed_delivery_returns_the_original_command() {
         .fail_delivery
         .store(true, Ordering::Relaxed);
 
-    let failure = block_on(lifecycle.admit((), EntityId::new(9), 77)).unwrap_err();
+    let failure =
+        block_on(EntityLifecycle::admit(&lifecycle, (), EntityId::new(9), 77)).unwrap_err();
 
     assert!(matches!(
         failure,
@@ -777,7 +778,13 @@ fn failed_delivery_returns_one_exact_move_only_command() {
     let allocation = command.value.as_ptr();
     let (lifecycle, _) = move_only_composition();
 
-    let failure = block_on(lifecycle.admit((), EntityId::new(9), command)).unwrap_err();
+    let failure = block_on(EntityLifecycle::admit(
+        &lifecycle,
+        (),
+        EntityId::new(9),
+        command,
+    ))
+    .unwrap_err();
     let AdmissionFailure::Refused { command, reason } = failure else {
         panic!("delivery must preserve the rejected command");
     };
@@ -800,7 +807,7 @@ fn failed_activation_returns_the_command_and_eventually_allows_retry() {
     let entity_id = EntityId::new(11);
 
     assert!(matches!(
-        block_on(lifecycle.admit((), entity_id, 81)),
+        block_on(EntityLifecycle::admit(&lifecycle, (), entity_id, 81)),
         Err(AdmissionFailure::Refused {
             command: 81,
             reason: Refusal::Unavailable,
@@ -812,7 +819,7 @@ fn failed_activation_returns_the_command_and_eventually_allows_retry() {
         .store(false, Ordering::Relaxed);
     let mut command = 82;
     for _ in 0..1_000 {
-        match block_on(lifecycle.admit((), entity_id, command)) {
+        match block_on(EntityLifecycle::admit(&lifecycle, (), entity_id, command)) {
             Ok(()) => break,
             Err(AdmissionFailure::Refused {
                 command: returned,
@@ -834,7 +841,7 @@ fn canceling_admission_does_not_cancel_shared_activation_or_deliver_command() {
     let (lifecycle, interpreter) = composition();
     let gate = ActivationGate::closed();
     *interpreter.state.activation_gate.lock().unwrap() = Some(Arc::clone(&gate));
-    let mut admission = Box::pin(lifecycle.admit((), EntityId::new(5), 91));
+    let mut admission = Box::pin(EntityLifecycle::admit(&lifecycle, (), EntityId::new(5), 91));
     let waker = Waker::from(Arc::new(ThreadWake(thread::current())));
     let mut context = Context::from_waker(&waker);
 
@@ -861,7 +868,7 @@ fn canceling_admission_does_not_cancel_shared_activation_or_deliver_command() {
             .load(Ordering::Acquire),
         1
     );
-    block_on(lifecycle.admit((), EntityId::new(5), 92)).unwrap();
+    block_on(EntityLifecycle::admit(&lifecycle, (), EntityId::new(5), 92)).unwrap();
     assert_eq!(*interpreter.state.delivered.lock().unwrap(), [92]);
 }
 
@@ -869,11 +876,11 @@ fn canceling_admission_does_not_cancel_shared_activation_or_deliver_command() {
 fn dropping_active_admission_does_not_retract_owned_delivery() {
     let (lifecycle, interpreter) = composition();
     let entity_id = EntityId::new(8);
-    block_on(lifecycle.admit((), entity_id, 1)).unwrap();
+    block_on(EntityLifecycle::admit(&lifecycle, (), entity_id, 1)).unwrap();
 
     let gate = ActivationGate::closed();
     *interpreter.state.delivery_gate.lock().unwrap() = Some(Arc::clone(&gate));
-    let mut admission = Box::pin(lifecycle.admit((), entity_id, 2));
+    let mut admission = Box::pin(EntityLifecycle::admit(&lifecycle, (), entity_id, 2));
     let waker = Waker::from(Arc::new(ThreadWake(thread::current())));
     let mut context = Context::from_waker(&waker);
     assert!(admission.as_mut().poll(&mut context).is_pending());
@@ -906,7 +913,7 @@ fn repeated_passivation_reports_already_passivating() {
     let fence_gate = ActivationGate::closed();
     *interpreter.state.fence_gate.lock().unwrap() = Some(Arc::clone(&fence_gate));
     let entity_id = EntityId::new(7);
-    block_on(lifecycle.admit((), entity_id, 1)).unwrap();
+    block_on(EntityLifecycle::admit(&lifecycle, (), entity_id, 1)).unwrap();
 
     assert_eq!(lifecycle.passivate(&entity_id), Passivation::Begun);
     assert_eq!(
@@ -933,7 +940,7 @@ fn passivation_reports_superseded_after_incarnation_replacement() {
         gate: Arc::clone(&gate),
     });
     let (lifecycle, interpreter) = composition();
-    block_on(lifecycle.admit((), entity_id.clone(), 1)).unwrap();
+    block_on(EntityLifecycle::admit(&lifecycle, (), entity_id.clone(), 1)).unwrap();
 
     let racing_lifecycle = Arc::clone(&lifecycle);
     let racing_id = entity_id.clone();
@@ -955,7 +962,12 @@ fn passivation_reports_superseded_after_incarnation_replacement() {
     let mut command = 2;
     let mut replacement_activated = false;
     for _ in 0..1_000 {
-        match block_on(lifecycle.admit((), entity_id.clone(), command)) {
+        match block_on(EntityLifecycle::admit(
+            &lifecycle,
+            (),
+            entity_id.clone(),
+            command,
+        )) {
             Ok(()) => {
                 replacement_activated = true;
                 break;
@@ -983,7 +995,7 @@ fn passivation_reports_superseded_after_incarnation_replacement() {
 fn passivation_fences_and_retires_the_exact_incarnation() {
     let (lifecycle, interpreter) = composition();
     let entity_id = EntityId::new(6);
-    block_on(lifecycle.admit((), entity_id, 1)).unwrap();
+    block_on(EntityLifecycle::admit(&lifecycle, (), entity_id, 1)).unwrap();
 
     assert_eq!(lifecycle.passivate(&entity_id), Passivation::Begun);
     for _ in 0..100 {
@@ -1009,7 +1021,7 @@ fn fence_failures_preserve_the_forced_retirement_stage() {
         let (lifecycle, interpreter) = composition();
         *interpreter.state.fence_failure.lock().unwrap() = Some(failure);
         let entity_id = EntityId::new(10);
-        block_on(lifecycle.admit((), entity_id, 1)).unwrap();
+        block_on(EntityLifecycle::admit(&lifecycle, (), entity_id, 1)).unwrap();
 
         assert_eq!(lifecycle.passivate(&entity_id), Passivation::Begun);
         for _ in 0..1_000 {
@@ -1038,8 +1050,14 @@ fn fence_failures_preserve_the_forced_retirement_stage() {
 fn family_shutdown_closes_admission_drains_every_slot_and_joins_tasks() {
     let (lifecycle, interpreter) = recording_composition();
 
-    block_on(lifecycle.admit((), EntityId::new(41), 7)).unwrap();
-    block_on(lifecycle.admit((), EntityId::new(73), 11)).unwrap();
+    block_on(EntityLifecycle::admit(&lifecycle, (), EntityId::new(41), 7)).unwrap();
+    block_on(EntityLifecycle::admit(
+        &lifecycle,
+        (),
+        EntityId::new(73),
+        11,
+    ))
+    .unwrap();
 
     let shutdown = block_on(lifecycle.shutdown());
 
@@ -1054,7 +1072,12 @@ fn family_shutdown_closes_admission_drains_every_slot_and_joins_tasks() {
         }
     );
     assert!(matches!(
-        block_on(lifecycle.admit((), EntityId::new(89), 13)),
+        block_on(EntityLifecycle::admit(
+            &lifecycle,
+            (),
+            EntityId::new(89),
+            13
+        )),
         Err(AdmissionFailure::Refused {
             command: 13,
             reason: Refusal::Shutdown,
@@ -1068,7 +1091,9 @@ fn shutdown_settles_an_installed_activation_before_draining_and_joining() {
     let (lifecycle, interpreter) = gated_composition(Arc::clone(&gate));
     let admission = {
         let lifecycle = Arc::clone(&lifecycle);
-        thread::spawn(move || block_on(lifecycle.admit((), EntityId::new(41), 7)))
+        thread::spawn(move || {
+            block_on(EntityLifecycle::admit(&lifecycle, (), EntityId::new(41), 7))
+        })
     };
     for _ in 0..1_000 {
         if interpreter
@@ -1099,7 +1124,12 @@ fn shutdown_settles_an_installed_activation_before_draining_and_joining() {
     );
 
     assert!(matches!(
-        block_on(lifecycle.admit((), EntityId::new(73), 11)),
+        block_on(EntityLifecycle::admit(
+            &lifecycle,
+            (),
+            EntityId::new(73),
+            11
+        )),
         Err(AdmissionFailure::Refused {
             command: 11,
             reason: Refusal::Shutdown,
@@ -1122,7 +1152,13 @@ fn runtime_admission_returns_the_exact_move_only_command() {
     let allocation = command.value.as_ptr();
     let (lifecycle, _) = move_only_composition();
 
-    let failure = block_on(lifecycle.admit((), EntityId::new(9), command)).unwrap_err();
+    let failure = block_on(EntityLifecycle::admit(
+        &lifecycle,
+        (),
+        EntityId::new(9),
+        command,
+    ))
+    .unwrap_err();
     let AdmissionFailure::Refused { command, reason } = failure else {
         panic!("delivery must preserve the rejected command");
     };

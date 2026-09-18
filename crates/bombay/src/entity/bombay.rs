@@ -1,7 +1,13 @@
 //! Native binding from Entity lifecycle effects to Bombay incarnations.
 
 use core::future::Future;
-use std::sync::{Arc, Mutex, PoisonError, Weak};
+#[cfg(bombay_entity_loom)]
+use loom::sync::{Arc, Mutex};
+use std::sync::PoisonError;
+#[cfg(not(bombay_entity_loom))]
+use std::sync::Weak;
+#[cfg(not(bombay_entity_loom))]
+use std::sync::{Arc, Mutex};
 
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -202,7 +208,14 @@ where
     hydrations: Arc<Semaphore>,
     residents: Arc<Semaphore>,
     metrics: Arc<EntityMetricState>,
+    // `loom::sync::Arc` offers no downgrade and loom defines no `Weak`, so the
+    // model-check compilation holds a strong handle instead; the loom
+    // scenarios never construct a runtime, and the ordinary compilation keeps
+    // the exact non-owning reference.
+    #[cfg(not(bombay_entity_loom))]
     tasks: Weak<EntityTaskOwner>,
+    #[cfg(bombay_entity_loom)]
+    tasks: Arc<EntityTaskOwner>,
     directory: Arc<NativeEntityDirectory<D>>,
     settlement: Arc<EntityTaskGroup>,
 }
@@ -239,6 +252,10 @@ where
     D: EntityDefinition,
 {
     let tasks = Arc::new(EntityTaskOwner::new());
+    #[cfg(not(bombay_entity_loom))]
+    let task_reference = Arc::downgrade(&tasks);
+    #[cfg(bombay_entity_loom)]
+    let task_reference = Arc::clone(&tasks);
     let runtime = BombayEntityRuntime {
         definition,
         actors,
@@ -246,7 +263,7 @@ where
         hydrations: Arc::new(Semaphore::new(capacity.concurrent_hydrations().get())),
         residents: Arc::new(Semaphore::new(capacity.residents().get())),
         metrics,
-        tasks: Arc::downgrade(&tasks),
+        tasks: task_reference,
         directory,
         settlement,
     };
@@ -388,8 +405,12 @@ where
     /// Schedule one lifecycle task under a settlement guard and the owned
     /// application task registry.
     fn spawn_settled(&self, task: impl Future<Output = ()> + Send + 'static) {
-        let guard = self.settlement.begin();
-        let Some(owner) = self.tasks.upgrade() else {
+        let guard = EntityTaskGroup::begin(&self.settlement);
+        #[cfg(not(bombay_entity_loom))]
+        let owner = self.tasks.upgrade();
+        #[cfg(bombay_entity_loom)]
+        let owner = Some(Arc::clone(&self.tasks));
+        let Some(owner) = owner else {
             return;
         };
         owner.track(tokio::spawn(async move {

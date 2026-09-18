@@ -1475,6 +1475,29 @@ verified today against what must wait:
   the recommended restoration once the proxy composition surface allows it.
 - Unblocks: real recovery (replacements under stable proxies, FIFO restart
   with backlog retention) in the supervision and worker-pool examples.
+- 2026-09-18 compile repair, third phase (the `bombay-entity-loom` lane): the
+  authoritative `nix flake check -L` run failed in that lane alone with six
+  `bombay-rs` errors under `--cfg bombay_entity_loom`. Root cause: `loom::sync::Arc`
+  implements no `core::ops::Receiver` (the trait is unstable, so loom cannot
+  implement it), so `EntityTaskGroup::begin` and `EntityLifecycle::admit` used
+  `self: &Arc<Self>` receivers that are invalid for the loom `Arc`; loom 0.7.2
+  defines no `Weak` at all, so `Arc::downgrade` is inexpressible under the
+  lane; and `entity/family.rs` and `entity/bombay.rs` imported
+  `std::sync::Arc` unconditionally, mixing std and loom `Arc` across the
+  shared Entity structs. Repair: both methods now take the shared `Arc<Self>`
+  as an explicit parameter (valid under both compilation contexts; the std
+  receiver form was pure sugar); `DispatchWait`'s lifecycle reference and
+  `BombayEntityRuntime`'s task-owner reference are cfg-split — the ordinary
+  compilation keeps the exact non-owning `Weak` custody semantics byte-for-byte,
+  while the model-check compilation holds a strong loom `Arc` (a
+  compilation-only arm: the lane's scenarios exercise the `LocalDirectory`
+  synchronization machinery and never construct a waiter or runtime). The two
+  composing files moved to the cfg'd `Arc`/atomic aliases already used by
+  `directory.rs`, and the 23 test call sites adopted the parameter style.
+  Deferred upstream surface: none new — the lane required no semantic
+  narrowing. Restoration note for B1/B5: when the upstream pin exposes loom
+  `Weak` (or the pinned revision moves), the cfg arms collapse to the single
+  non-owning spelling.
 ## W5 — integration benchmark and memory evidence
 
 - State: `active`; implementation committed on this branch (bench suite,
