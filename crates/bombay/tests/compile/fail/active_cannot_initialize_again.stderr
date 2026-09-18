@@ -1,20 +1,20 @@
-error[E0277]: the trait bound `bombay::behavior_actors::Active<Subject>: bombay::behavior_actors::Behavior` is not satisfied
+error[E0277]: the trait bound `bombay::composition::Active<Subject>: behavior::Behavior` is not satisfied
   --> tests/compile/fail/active_cannot_initialize_again.rs:21:22
    |
 21 |     require_behavior(active);
-   |     ---------------- ^^^^^^ the trait `bombay::behavior_actors::Behavior` is not implemented for `bombay::behavior_actors::Active<Subject>`
+   |     ---------------- ^^^^^^ the trait `behavior::Behavior` is not implemented for `bombay::composition::Active<Subject>`
    |     |
    |     required by a bound introduced by this call
    |
-   = help: the following other types implement trait `bombay::behavior_actors::Behavior`:
+   = help: the following other types implement trait `behavior::Behavior`:
              Acknowledgements<A, K, P, Route>
+             ApplicationBehavior<Root, Product>
              Buffer<A, T, TargetRoute, ReplyRoute>
              Cache<A, K, V, Route>
              CircuitBreaker<A, Route>
              Configuration<A, C, Route>
              Correlator<A, K, V, Route>
              Deadline<B>
-             Deduplicator<A, K, T, TargetRoute, ReplyRoute>
            and $N others
 note: required by a bound in `require_behavior`
   --> tests/compile/fail/active_cannot_initialize_again.rs:6:24

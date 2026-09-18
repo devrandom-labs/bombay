@@ -12,6 +12,7 @@
 //! figures are a labeled oracle baseline only and are never compared as
 //! current numbers.
 
+use std::fmt::Debug;
 use std::hint::black_box;
 use std::time::{Duration, Instant};
 
@@ -66,9 +67,7 @@ fn owner_tell<T: Debug>(payload: fn(u64) -> T) -> Duration {
     for _ in 0..BATCHES {
         let (_control, sender, mut consumer) = channel::<Never, T>(Config::new(CAPACITY));
         for index in 0..COMMANDS_PER_BATCH {
-            sender
-                .try_send(payload(index))
-                .expect("capacity available");
+            sender.try_send(payload(index)).expect("capacity available");
         }
         black_box(&sender);
         black_box(&mut consumer);
@@ -168,8 +167,8 @@ fn tokio_roundtrip<T: Debug + Send + 'static>(payload: fn(u64) -> T) -> Duration
                 }
             });
             for _ in 0..COMMANDS_PER_BATCH {
-                let received = receiver.recv().await;
-                black_box(received);
+                let command = receiver.recv().await;
+                black_box(command);
             }
             producer.await.expect("the producer completes");
         }

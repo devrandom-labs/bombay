@@ -32,11 +32,15 @@ use behavior_actors::atomic::{
 /// ordered roles, the concrete worker behavior, and its activation plan.
 pub trait PreparesWorkers<Role, Worker, Plan>: WorkerSource<Role, Worker, Plan>
 where
-    Worker: Behavior,
+    Worker: Behavior + Send,
     Plan: ActivationPlan,
 {
     /// Prepare one submission for the exact ordered role, or return the
     /// typed per-role rejection.
+    ///
+    /// # Errors
+    /// Returns the typed rejection carried by `Self::WorkerRejection` when
+    /// the source cannot prepare the requested role's submission.
     fn prepare_worker(
         &mut self,
         role: &Role,
@@ -51,7 +55,8 @@ where
 /// this closed sum rather than recursion.
 enum PreparationStage<Source, Role, Worker, Plan>
 where
-    Worker: Behavior,
+    Source: WorkerSource<Role, Worker, Plan>,
+    Worker: Behavior + Send,
     Plan: ActivationPlan,
 {
     Opening(PrepareWorkers<Source, Role, Worker, Plan>),
@@ -70,13 +75,13 @@ pub(crate) fn drive_preparation<Source, Role, Worker, Plan>(
 ) -> WorkerPreparation<Source, Role, Worker, Plan>
 where
     Source: PreparesWorkers<Role, Worker, Plan>,
-    Worker: Behavior,
+    Worker: Behavior + Send,
     Plan: ActivationPlan,
 {
     let mut stage = PreparationStage::Opening(request);
     loop {
         match stage {
-            PreparationStage::Opening(request) => {
+            PreparationStage::Opening(mut request) => {
                 let (source, role) = request.source_and_role();
                 match source.prepare_worker(role) {
                     Ok(submission) => match request.accept(submission) {
@@ -88,7 +93,7 @@ where
                     Err(reason) => return request.reject(reason),
                 }
             }
-            PreparationStage::Pending(pending) => {
+            PreparationStage::Pending(mut pending) => {
                 let (source, role) = pending.source_and_role();
                 match source.prepare_worker(role) {
                     Ok(submission) => match pending.accept(submission) {

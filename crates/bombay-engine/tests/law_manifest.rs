@@ -554,7 +554,7 @@ fn repository_has_one_direct_driver_path_and_no_obsolete_product_api() {
     let driver = std::fs::read_to_string(root.join("crates/bombay-engine/src/driver.rs")).unwrap();
     assert_eq!(
         driver
-            .matches("behavior::delegate_transition(&mut behavior, event)")
+            .matches("behavior::delegate_transition(behavior, event)")
             .count(),
         1,
         "the production Driver must contain exactly one direct fold site"
@@ -578,7 +578,7 @@ fn repository_has_one_direct_driver_path_and_no_obsolete_product_api() {
         "dyn Any",
         "downcast",
         "type_id",
-        "behavior::delegate_transition(&mut behavior, event).await",
+        "behavior::delegate_transition(behavior, event).await",
         "spawn(",
         "yield_now",
         "    registry:",
@@ -610,7 +610,7 @@ fn repository_has_one_direct_driver_path_and_no_obsolete_product_api() {
 
     let exports = std::fs::read_to_string(root.join("crates/bombay-engine/src/lib.rs")).unwrap();
     assert!(exports.contains(
-        "pub use driver::{ActionsOf, Completion, Driver, DriverError, DriverRetirement};"
+        "pub use driver::{ActionsOf, Completion, Driver, DriverError, DriverRetirement, SettlementFailure};"
     ));
     assert!(exports.contains("ActiveEnvironment"));
     assert!(exports.contains("Environment"));
@@ -706,7 +706,7 @@ fn observation_oracle_kills_control_surface_inversions() {
 
 fn structural_driver_oracle(source: &str) -> bool {
     source
-        .matches("behavior::delegate_transition(&mut behavior, event)")
+        .matches("behavior::delegate_transition(behavior, event)")
         .count()
         == 1
         && source.matches("\n    environment: E,").count() == 1
@@ -729,7 +729,7 @@ fn structural_driver_oracle(source: &str) -> bool {
             "dyn Any",
             "downcast",
             "type_id",
-            "behavior::delegate_transition(&mut behavior, event).await",
+            "behavior::delegate_transition(behavior, event).await",
             "spawn(",
             "yield_now",
             "    registry:",
@@ -793,15 +793,15 @@ fn structural_oracle_kills_surface_and_authority_inversions() {
     }
 
     let bypass = source.replacen(
-        "behavior::delegate_transition(&mut behavior, event)",
-        "behavior::delegate_transition(&mut behavior, event); behavior::delegate_transition(&mut behavior, event)",
+        "behavior::delegate_transition(behavior, event)",
+        "behavior::delegate_transition(behavior, event); behavior::delegate_transition(behavior, event)",
         1,
     );
     assert!(!structural_driver_oracle(&bypass));
 
     let asynchronous_fold = source.replacen(
-        "behavior::delegate_transition(&mut behavior, event)",
-        "behavior::delegate_transition(&mut behavior, event).await",
+        "behavior::delegate_transition(behavior, event)",
+        "behavior::delegate_transition(behavior, event).await",
         1,
     );
     assert!(!structural_driver_oracle(&asynchronous_fold));

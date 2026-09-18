@@ -8,7 +8,13 @@
 use core::future::Future;
 use core::hash::Hash;
 use core::num::NonZeroUsize;
+#[cfg(bombay_entity_loom)]
+use loom::sync::Arc;
+#[cfg(bombay_entity_loom)]
+use loom::sync::atomic::{AtomicUsize, Ordering};
+#[cfg(not(bombay_entity_loom))]
 use std::sync::Arc;
+#[cfg(not(bombay_entity_loom))]
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use behavior::{
@@ -50,7 +56,11 @@ pub trait EntityDefinition: Send + Sync + 'static {
         + Send
         + 'static;
     /// Concrete application host product used by this native definition.
-    type Hosts: LocalHosts<<Self::Behavior as Behavior>::Protocol> + Send + Sync + 'static;
+    type Hosts: LocalHosts<<Self::Behavior as Behavior>::Protocol>
+        + NativeEntityHost<Self::Behavior, Self::Terminal>
+        + Send
+        + Sync
+        + 'static;
     /// Exact failure returned while reconstructing domain state.
     type HydrationError: Send + 'static;
     /// Application terminal sum used by children of the incarnation.
@@ -243,7 +253,10 @@ where
     where
         D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     {
-        Self { lifecycle, definition }
+        Self {
+            lifecycle,
+            definition,
+        }
     }
 
     /// Bind one domain identity into a stable family-specific reference.
@@ -302,10 +315,7 @@ where
     where
         D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     {
-        self.entities
-            .lifecycle
-            .admit(origin, self.id.clone(), command)
-            .await
+        EntityLifecycle::admit(&self.entities.lifecycle, origin, self.id.clone(), command).await
     }
 
     /// Form one typed request for the emitting actor's interpreter.
@@ -473,7 +483,11 @@ pub(crate) trait InstallEntityFamilies<Hosts>: EntityApplicationFamilies<Hosts> 
     type Installed: InstalledEntityFamilies<Receptionists = Self::Receptionists, Shutdowns = Self::Shutdowns>
         + Send;
 
-    fn install(self, hosts: Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed;
+    fn install(
+        self,
+        hosts: std::sync::Arc<Hosts>,
+        allocations: ApplicationAddresses,
+    ) -> Self::Installed;
 }
 
 impl<Hosts> InstallEntityFamilies<Hosts> for ()
@@ -482,7 +496,7 @@ where
 {
     type Installed = ();
 
-    fn install(self, _: Arc<Hosts>, _: ApplicationAddresses) -> Self::Installed {}
+    fn install(self, _: std::sync::Arc<Hosts>, _: ApplicationAddresses) -> Self::Installed {}
 }
 
 impl<Hosts, Role, D, Tail> InstallEntityFamilies<Hosts>
@@ -496,7 +510,11 @@ where
 {
     type Installed = (Role, InstalledEntityFamily<D>, Tail::Installed);
 
-    fn install(self, hosts: Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed {
+    fn install(
+        self,
+        hosts: std::sync::Arc<Hosts>,
+        allocations: ApplicationAddresses,
+    ) -> Self::Installed {
         let (role, definition, directory, capacity, tail) = self;
         let definition = Arc::new(definition);
         let metrics = Arc::new(EntityMetricState::default());
@@ -507,7 +525,7 @@ where
         let settlement = Arc::new(EntityTaskGroup::new());
         let (runtime, tasks) = bombay_entity_runtime(
             Arc::clone(&definition),
-            Arc::clone(&hosts),
+            std::sync::Arc::clone(&hosts),
             allocations.clone(),
             capacity,
             Arc::clone(&metrics),

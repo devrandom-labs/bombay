@@ -22,20 +22,22 @@ use behavior::{
     ReportToParent, ResolveChildOccurrence, ResolvedChild, ResolvedChildPosition, RoutedCreation,
     SourceAdmission,
 };
+use behavior_actors::atomic::{ActivationPlan, PrepareWorkers, WorkerPreparation, WorkerSource};
 use behavior_actors::{
-    ActivationPlan, CancelObservation, ChildShutdownRejection, ChildStopped, CreationResolved,
+    CancelObservation, ChildShutdownRejection, ChildStopped, CreationResolved,
     EstablishedObservation, InstallShutdownPlan, InterpretEstablishedObservation,
     InterpretEstablishedShutdown, ObservationId, ObservationOperation, ObservationRejection,
     ObserveChild, ObserveCreation, ObserveEstablished, ObserveEstablishedCreation, ObservePeer,
-    PeerObservationRejection, PeerStopped, PrepareWorkers, ReportShutdownPlan,
-    ReportTerminalOutcome, ScheduleAfter, ScheduleAfterRejection, ScheduleAt, ScheduleAtRejection,
-    ShutdownChild, ShutdownEstablished, ShutdownId, ShutdownRejection, ShutdownRequested,
-    TimerElapsed, TimerScheduled, WorkerPreparation, WorkerSource,
+    PeerObservationRejection, PeerStopped, ReportShutdownPlan, ReportTerminalOutcome,
+    ScheduleAfter, ScheduleAfterRejection, ScheduleAt, ScheduleAtRejection, ShutdownChild,
+    ShutdownEstablished, ShutdownId, ShutdownRejection, ShutdownRequested, TimerElapsed,
+    TimerScheduled,
 };
 use bombay_address::ClaimError;
 use communication::{ControlClosed, ControlSender};
 use tokio::sync::oneshot;
 
+use crate::PreparesWorkers;
 use crate::actor_interface::{ActorInterface, ExtractLocalEndpoint};
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::Application;

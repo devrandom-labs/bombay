@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `NotBehavior: bombay::behavior_actors::Behavior` is not satisfied
+error[E0277]: the trait bound `NotBehavior: behavior::Behavior` is not satisfied
   --> tests/compile/fail/application_child_must_be_behavior_feature_unified.rs:12:59
    |
 12 |     let _ = bombay::Application::new(Root).child(Workers, NotBehavior);
@@ -6,20 +6,20 @@ error[E0277]: the trait bound `NotBehavior: bombay::behavior_actors::Behavior` i
    |                                            |
    |                                            required by a bound introduced by this call
    |
-help: the trait `bombay::behavior_actors::Behavior` is not implemented for `NotBehavior`
+help: the trait `behavior::Behavior` is not implemented for `NotBehavior`
   --> tests/compile/fail/application_child_must_be_behavior_feature_unified.rs:9:1
    |
  9 | struct NotBehavior;
    | ^^^^^^^^^^^^^^^^^^
-   = help: the following other types implement trait `bombay::behavior_actors::Behavior`:
+   = help: the following other types implement trait `behavior::Behavior`:
              Acknowledgements<A, K, P, Route>
+             ApplicationBehavior<Root, Product>
              Buffer<A, T, TargetRoute, ReplyRoute>
              Cache<A, K, V, Route>
              CircuitBreaker<A, Route>
              Configuration<A, C, Route>
              Correlator<A, K, V, Route>
              Deadline<B>
-             Deduplicator<A, K, T, TargetRoute, ReplyRoute>
            and $N others
 note: required by a bound in `bombay::Application::<Root, Members>::child`
   --> src/application.rs

@@ -98,9 +98,9 @@ impl Tally {
                 self.value = self.value.checked_add(1).ok_or(TallyError::Overflow)?;
                 Ok(Actions::cont())
             }
-            TallyMessage::Read(reply_to) => Ok(
-                Actions::cont().send_values(EstablishedDelivery::new(reply_to, self.value))
-            ),
+            TallyMessage::Read(reply_to) => {
+                Ok(Actions::cont().send_values(EstablishedDelivery::new(reply_to, self.value)))
+            }
         }
     }
 }
