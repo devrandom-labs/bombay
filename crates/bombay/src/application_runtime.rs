@@ -22,6 +22,7 @@ use behavior::{
     ReportToParent, ResolveChildOccurrence, ResolvedChild, ResolvedChildPosition, RoutedCreation,
     SourceAdmission,
 };
+use behavior_actors::atomic::{ActivationPlan, PrepareWorkers, WorkerPreparation, WorkerSource};
 use behavior_actors::{
     CancelObservation, ChildShutdownRejection, ChildStopped, CreationResolved,
     EstablishedObservation, InstallShutdownPlan, InterpretEstablishedObservation,
@@ -36,6 +37,7 @@ use bombay_address::ClaimError;
 use communication::{ControlClosed, ControlSender};
 use tokio::sync::oneshot;
 
+use crate::PreparesWorkers;
 use crate::actor_interface::{ActorInterface, ExtractLocalEndpoint};
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::Application;
@@ -2053,6 +2055,31 @@ where
                 reason: PeerObservationRejection::UnknownAddress,
             },
         }
+    }
+}
+
+impl<C, N, P, Bindings, Origins, Source, Role, Worker, Plan, Path>
+    InterpretItem<PrepareWorkers<Source, Role, Worker, Plan>, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Source: WorkerSource<Role, Worker, Plan> + PreparesWorkers<Role, Worker, Plan>,
+    Role: Send + Sync + 'static,
+    Worker: Behavior + Send + 'static,
+    Plan: ActivationPlan,
+    Path: 'static,
+    Self: Send,
+{
+    async fn interpret_item(
+        &mut self,
+        request: PrepareWorkers<Source, Role, Worker, Plan>,
+    ) -> ItemSettlement<
+        PrepareWorkers<Source, Role, Worker, Plan>,
+        WorkerPreparation<Source, Role, Worker, Plan>,
+        Source::SourceRejection,
+        Never,
+    > {
+        ItemSettlement::Accepted(crate::prepare_workers::drive_preparation(request))
     }
 }
 

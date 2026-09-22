@@ -66,6 +66,7 @@ struct DocumentSystem;
         indexer: ManagedIndexer,
         journal: ManagedJournal,
     },
+    creation_settlements = retain_for_retirement,
 )]
 impl DocumentSystem {
     #[allow(

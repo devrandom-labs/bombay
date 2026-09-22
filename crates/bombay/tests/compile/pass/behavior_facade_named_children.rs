@@ -16,6 +16,7 @@ struct System;
     addr = MailAddr,
     message = Never,
     births = { workers: Worker },
+    creation_settlements = retain_for_retirement,
 )]
 impl System {
     fn receive(&mut self, _: MailAddr, message: Never) -> BehaviorActed<Self> {

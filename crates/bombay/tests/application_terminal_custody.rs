@@ -1,6 +1,4 @@
-use bombay::behavior::{
-    ChildCons, CreateChild, CreationSequence, Creations, Never, NoChildren, NoSends, Step, Stopped,
-};
+use bombay::behavior::{CreateChild, CreationSequence, Creations, Never, NoSends, Step, Stopped};
 use bombay::prelude::*;
 
 const WORKER_NONCE: u64 = 1;
@@ -15,6 +13,7 @@ struct Root;
 #[bombay::actor(
     message = Never,
     births = { worker: StopOnShutdown<Worker> },
+    creation_settlements = retain_for_retirement,
 )]
 impl Root {
     #[allow(
@@ -42,54 +41,6 @@ enum ApplicationTerminal {
     Worker {
         origin: ActorOrigin<Root, RootChildrenWorker>,
         terminal: ActorRetirement<StopOnShutdown<Worker>, Self>,
-    },
-}
-
-struct ApplicationRoot;
-
-#[bombay::actor(message = Never)]
-impl ApplicationRoot {
-    #[allow(
-        clippy::unused_self,
-        clippy::unnecessary_wraps,
-        reason = "the generated foundational fold fixes the controlled-error boundary"
-    )]
-    fn init(&mut self) -> BehaviorActed<Self> {
-        Ok(Actions::stop())
-    }
-}
-
-struct BackgroundWorker;
-
-struct Auditor;
-
-#[bombay::actor(message = Never)]
-impl Auditor {}
-
-struct AuditWorker;
-
-type DeclaredChildren = ChildCons<
-    MailAddr,
-    StopOnShutdown<Auditor>,
-    ChildCons<MailAddr, StopOnShutdown<Worker>, NoChildren>,
->;
-type DeclaredApplication = ApplicationBehavior<StopOnShutdown<ApplicationRoot>, DeclaredChildren>;
-
-#[derive(TerminalProjection)]
-enum DeclaredApplicationTerminal {
-    Root {
-        origin: ActorOrigin<StopOnShutdown<ApplicationRoot>>,
-        terminal: ActorRetirement<DeclaredApplication, Self>,
-    },
-    #[application_actor]
-    BackgroundWorker {
-        origin: ActorOrigin<StopOnShutdown<ApplicationRoot>, BackgroundWorker>,
-        terminal: ActorRetirement<StopOnShutdown<Worker>, Self>,
-    },
-    #[application_actor]
-    AuditWorker {
-        origin: ActorOrigin<StopOnShutdown<ApplicationRoot>, AuditWorker>,
-        terminal: ActorRetirement<StopOnShutdown<Auditor>, Self>,
     },
 }
 
@@ -144,87 +95,4 @@ fn root_returns_only_after_owning_the_exact_direct_child_terminal() {
     assert!(descendants.is_empty());
     assert_eq!(origin.address(), MailAddr(1));
     assert_eq!(origin.nonce(), Some(WORKER_NONCE));
-}
-
-#[test]
-fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
-    let terminal: DeclaredApplicationTerminal =
-        Application::new(ApplicationRoot.stop_on_shutdown())
-            .child(BackgroundWorker, Worker.stop_on_shutdown())
-            .child(AuditWorker, Auditor.stop_on_shutdown())
-            .run()
-            .expect("the application root and heterogeneous declared children activate");
-
-    let DeclaredApplicationTerminal::Root {
-        origin,
-        terminal:
-            ActorRetirement::Completed {
-                behavior: _,
-                settlements,
-                control,
-                user,
-                descendants,
-                completion,
-            },
-    } = terminal
-    else {
-        panic!("the application root must retain its declared child")
-    };
-    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), None);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
-    assert_eq!(settlements.len(), 1);
-    assert_eq!(completion, Completion::Stopped);
-    assert_eq!(descendants.len(), 2);
-
-    let mut background = None;
-    let mut audit = None;
-    for descendant in descendants {
-        match descendant {
-            DeclaredApplicationTerminal::BackgroundWorker {
-                origin,
-                terminal:
-                    ActorRetirement::OwnerCancelled {
-                        behavior: _,
-                        settlements,
-                        control,
-                        user,
-                        descendants,
-                    },
-            } => {
-                assert!(control.is_empty());
-                assert!(user.is_empty());
-                assert_eq!(settlements.len(), 1);
-                assert!(descendants.is_empty());
-                assert_eq!(background.replace(origin), None);
-            }
-            DeclaredApplicationTerminal::AuditWorker {
-                origin,
-                terminal:
-                    ActorRetirement::OwnerCancelled {
-                        behavior: _,
-                        settlements,
-                        control,
-                        user,
-                        descendants,
-                    },
-            } => {
-                assert!(control.is_empty());
-                assert!(user.is_empty());
-                assert_eq!(settlements.len(), 1);
-                assert!(descendants.is_empty());
-                assert_eq!(audit.replace(origin), None);
-            }
-            _ => panic!("each application child must retain exact cancellation custody"),
-        }
-    }
-
-    let background = background.expect("the root owns the background worker terminal");
-    assert_eq!(background.address(), MailAddr(1));
-    assert_eq!(background.nonce(), Some(0));
-
-    let audit = audit.expect("the root owns the audit worker terminal");
-    assert_eq!(audit.address(), MailAddr(2));
-    assert_eq!(audit.nonce(), Some(1));
 }

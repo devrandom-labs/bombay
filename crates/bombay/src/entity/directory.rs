@@ -1,5 +1,9 @@
 //! Concurrent storage for local entity lifecycle machines.
 
+use core::fmt::{self, Formatter};
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 #[cfg(bombay_entity_loom)]
 use loom::sync::atomic::{AtomicU64, Ordering};
 #[cfg(bombay_entity_loom)]
@@ -7,14 +11,20 @@ use loom::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use std::hash::{BuildHasher, Hash, RandomState};
 use std::num::{NonZeroU64, NonZeroUsize};
+use std::sync::PoisonError;
+#[cfg(not(bombay_entity_loom))]
+use std::sync::Weak;
 #[cfg(not(bombay_entity_loom))]
 use std::sync::atomic::{AtomicU64, Ordering};
 #[cfg(not(bombay_entity_loom))]
 use std::sync::{Arc, Mutex};
 
+use crate::observe::{AffineObservation, Observation, Publisher, affine_pair, pair};
+
 use super::{
-    ActivationId, DispatchId, DrainFailure, EntityId, LifecycleMachine, LifecycleOutput, Refusal,
-    RetirementMode, SlotEffect, SlotEvent, TransitionEvidence, lifecycle_machine,
+    ActivationId, DispatchId, DrainFailure, EntityId, LifecycleMachine, LifecycleOutput,
+    LifecyclePhase, Refusal, RetirementMode, SlotEffect, SlotEvent, TransitionEvidence,
+    lifecycle_machine,
 };
 use bombay_machine::Machine;
 use bombay_machine::executor::{LinearizedExecutor, OutputEvidence};
@@ -400,7 +410,7 @@ where
 
     /// Install a drain request for every currently represented incarnation.
     ///
-    /// The owning [`super::EntityRuntime`] closes family admission and settles
+    /// The owning [`EntityLifecycle`] closes family admission and settles
     /// activation and delivery tasks before calling this operation. Snapshot
     /// entries are addressed by their exact activation identity, so a stale
     /// output cannot drain a replacement incarnation.
@@ -611,5 +621,467 @@ fn directory_output<I, C, E, L>(
         activation_id,
         entity_id,
         target,
+    }
+}
+
+/// Failure from one admitted command with command ownership preserved.
+#[derive(Debug, thiserror::Error)]
+pub enum AdmissionFailure<C> {
+    /// Lifecycle admission or delivery refused the command.
+    #[error("lifecycle admission or delivery refused the command")]
+    Refused {
+        /// Original command.
+        command: C,
+        /// Exact refusal classification.
+        reason: Refusal,
+    },
+    /// The non-reusable activation identity namespace is exhausted.
+    #[error("activation identity namespace is exhausted")]
+    ActivationIdsExhausted(C),
+    /// The non-reusable dispatch identity namespace is exhausted.
+    #[error("dispatch identity namespace is exhausted")]
+    DispatchIdsExhausted(C),
+}
+
+/// Exact caller provenance and command custody for one admitted delivery.
+///
+/// The publisher completes the bounded admission future with the exact
+/// delivery outcome; failed custody re-enters the lifecycle machine so the
+/// rejection returns the original command to its owner.
+pub(crate) struct PendingCommand<O, C> {
+    pub(crate) origin: O,
+    pub(crate) command: C,
+    pub(crate) publisher: Publisher<Result<(), AdmissionFailure<C>>>,
+}
+
+// Diagnostics report custody (origin and command) but deliberately omit the
+// publication authority: `Publisher` is unique and reading it is consuming,
+// so its state is not part of a passive debug rendering.
+impl<O, C> fmt::Debug for PendingCommand<O, C>
+where
+    O: fmt::Debug,
+    C: fmt::Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PendingCommand")
+            .field("origin", &self.origin)
+            .field("command", &self.command)
+            .finish_non_exhaustive()
+    }
+}
+
+/// Exact summary of one completed family shutdown transaction.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EntityShutdown {
+    /// Number of represented incarnation slots observed at the drain boundary.
+    pub represented: usize,
+}
+
+/// Outcome of one graceful passivation call.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Passivation {
+    /// Admission was closed at this call's lifecycle linearization point.
+    Begun,
+    /// No active incarnation exists to passivate.
+    NotActive,
+    /// A passivation was already in progress for the exact incarnation.
+    AlreadyPassivating,
+    /// The observed incarnation was superseded before the drain linearized.
+    Superseded,
+}
+
+enum EntityAdmission {
+    Open,
+    Closed,
+}
+
+/// Coordination cell counting scheduled lifecycle tasks between idle epochs.
+///
+/// Every scheduled task holds a settlement guard for its whole lifetime, so
+/// family shutdown cannot observe an idle composition while a completion fact
+/// still owes cascaded directory effects.
+pub(crate) struct EntityTaskGroup {
+    state: Mutex<EntityTaskState>,
+}
+
+enum EntityTaskState {
+    Open {
+        active: usize,
+        idle_epoch: Option<(Publisher<()>, Observation<()>)>,
+    },
+    Closed,
+}
+
+/// Registration of one scheduled lifecycle task.
+///
+/// Dropping the guard settles the task; the last settled task of an epoch
+/// completes that epoch's idle observation.
+pub(crate) struct EntityTaskGuard {
+    group: Arc<EntityTaskGroup>,
+}
+
+impl EntityTaskGroup {
+    pub(crate) fn new() -> Self {
+        Self {
+            state: Mutex::new(EntityTaskState::Open {
+                active: 0,
+                idle_epoch: None,
+            }),
+        }
+    }
+
+    /// Open one task on the shared settlement group.
+    ///
+    /// Takes the group by shared `Arc` parameter rather than an `Arc`
+    /// receiver: `loom::sync::Arc` implements no `Receiver`, so the guard's
+    /// clone must read the shared handle directly in both compilation
+    /// contexts.
+    pub(crate) fn begin(group: &Arc<Self>) -> EntityTaskGuard {
+        let mut state = group.state.lock().unwrap_or_else(PoisonError::into_inner);
+        let EntityTaskState::Open { active, idle_epoch } = &mut *state else {
+            panic!("entity lifecycle task scheduled after family shutdown");
+        };
+        if *active == 0 {
+            *idle_epoch = Some(pair());
+        }
+        *active = active
+            .checked_add(1)
+            .expect("entity lifecycle task count exhausted");
+        EntityTaskGuard {
+            group: Arc::clone(group),
+        }
+    }
+
+    async fn wait_idle(&self) {
+        loop {
+            let observation = {
+                let state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+                match &*state {
+                    EntityTaskState::Open { idle_epoch, .. } => idle_epoch
+                        .as_ref()
+                        .map(|(_, observation)| observation.clone()),
+                    EntityTaskState::Closed => None,
+                }
+            };
+            let Some(observation) = observation else {
+                return;
+            };
+            observation.await;
+        }
+    }
+
+    fn finish(&self) {
+        let publisher = {
+            let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+            let EntityTaskState::Open { active, idle_epoch } = &mut *state else {
+                panic!("entity lifecycle task completed after family shutdown");
+            };
+            *active = active
+                .checked_sub(1)
+                .expect("entity lifecycle task completed without registration");
+            (*active == 0)
+                .then(|| idle_epoch.take().map(|(publisher, _)| publisher))
+                .flatten()
+        };
+        if let Some(publisher) = publisher {
+            publisher.complete(());
+        }
+    }
+
+    fn close(&self) {
+        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        let EntityTaskState::Open { active, idle_epoch } = &*state else {
+            return;
+        };
+        assert_eq!(*active, 0, "entity lifecycle tasks remain at shutdown");
+        assert!(idle_epoch.is_none(), "idle entity epoch was not discharged");
+        *state = EntityTaskState::Closed;
+    }
+}
+
+impl Drop for EntityTaskGuard {
+    fn drop(&mut self) {
+        self.group.finish();
+    }
+}
+
+/// One local entity lifecycle composition over a local directory and its
+/// effect interpreter.
+///
+/// This is the crate-internal admission, custody, passivation, and settled
+/// family shutdown composition behind the native application Entity path.
+pub(crate) struct EntityLifecycle<I, O, C, E, L, R>
+where
+    I: Clone + Eq + Hash + Send + Sync + 'static,
+    O: Clone + Send + 'static,
+    C: Send + 'static,
+    E: Clone + Send + Sync + 'static,
+    L: Send + 'static,
+    R: EffectInterpreter<I, PendingCommand<O, C>, E, L> + Send + Sync + 'static,
+{
+    directory: Arc<LocalDirectory<I, PendingCommand<O, C>, E, L>>,
+    admission: Mutex<EntityAdmission>,
+    tasks: Arc<EntityTaskGroup>,
+    interpreter: Arc<R>,
+}
+
+impl<I, O, C, E, L, R> EntityLifecycle<I, O, C, E, L, R>
+where
+    I: Clone + Eq + Hash + Send + Sync + 'static,
+    O: Clone + Send + 'static,
+    C: Send + 'static,
+    E: Clone + Send + Sync + 'static,
+    L: Send + 'static,
+    R: EffectInterpreter<I, PendingCommand<O, C>, E, L> + Send + Sync + 'static,
+{
+    /// Compose a lifecycle over an owned directory, its settlement group, and
+    /// the interpreter that materializes scheduled lifecycle effects.
+    pub(crate) fn from_parts(
+        directory: Arc<LocalDirectory<I, PendingCommand<O, C>, E, L>>,
+        tasks: Arc<EntityTaskGroup>,
+        interpreter: Arc<R>,
+    ) -> Self {
+        Self {
+            directory,
+            admission: Mutex::new(EntityAdmission::Open),
+            tasks,
+            interpreter,
+        }
+    }
+
+    /// Deliver a command through stable entity routing.
+    ///
+    /// Takes the lifecycle by shared `Arc` parameter rather than an `Arc`
+    /// receiver: `loom::sync::Arc` implements no `Receiver`, so the waiter's
+    /// lifecycle reference must be built from the shared handle directly in
+    /// both compilation contexts.
+    ///
+    /// Dropping this future cancels its command only while it remains a bounded
+    /// activation waiter. The shared activation task remains directory-owned,
+    /// and a command already moved into active delivery is not retracted.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed refusal or exhausted identity namespace with the
+    /// original command.
+    ///
+    /// # Panics
+    ///
+    /// Panics after synchronization poison or violation of an internal
+    /// directory identity invariant.
+    pub(crate) async fn admit(
+        lifecycle: &Arc<Self>,
+        origin: O,
+        entity_id: EntityId<I>,
+        command: C,
+    ) -> Result<(), AdmissionFailure<C>> {
+        let (observation, activation_id, dispatch_id) = {
+            let admission = lifecycle
+                .admission
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            match *admission {
+                EntityAdmission::Open => {}
+                EntityAdmission::Closed => {
+                    return Err(AdmissionFailure::Refused {
+                        command,
+                        reason: Refusal::Shutdown,
+                    });
+                }
+            }
+            let (publisher, observation) = affine_pair();
+            let pending = PendingCommand {
+                origin,
+                command,
+                publisher,
+            };
+            let dispatched = lifecycle
+                .directory
+                .dispatch(entity_id.clone(), pending)
+                .map_err(|error| match error {
+                    DirectoryError::InvalidShardCount => {
+                        unreachable!("configuration was validated")
+                    }
+                    DirectoryError::ActivationIdsExhausted(pending) => {
+                        AdmissionFailure::ActivationIdsExhausted(pending.command)
+                    }
+                    DirectoryError::DispatchIdsExhausted(pending) => {
+                        AdmissionFailure::DispatchIdsExhausted(pending.command)
+                    }
+                })?;
+            let dispatch_id = dispatched.dispatch_id;
+            let activation_id = dispatched.output.activation_id;
+            lifecycle
+                .directory
+                .interpret(dispatched.output, lifecycle.interpreter.as_ref());
+            (observation, activation_id, dispatch_id)
+        };
+        // `loom::sync::Arc` offers no downgrade and loom defines no `Weak`, so
+        // the model-check compilation holds a strong handle instead; the loom
+        // scenarios never construct a waiter, and the ordinary compilation
+        // keeps the exact non-owning reference.
+        #[cfg(not(bombay_entity_loom))]
+        let lifecycle_reference = Arc::downgrade(lifecycle);
+        #[cfg(bombay_entity_loom)]
+        let lifecycle_reference = Arc::clone(lifecycle);
+        DispatchWait {
+            observation,
+            entity_id,
+            activation_id,
+            dispatch_id,
+            lifecycle: lifecycle_reference,
+        }
+        .await
+    }
+
+    /// Close admission, settle installed work, drain every represented exact
+    /// incarnation, and close the lifecycle task group.
+    ///
+    /// # Panics
+    ///
+    /// Panics after synchronization poison or if an internal lifecycle law is
+    /// violated by late task scheduling, an unmatched task completion, or a
+    /// represented slot that survives the settled drain transaction.
+    pub(crate) async fn shutdown(&self) -> EntityShutdown {
+        {
+            let mut admission = self
+                .admission
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            *admission = EntityAdmission::Closed;
+        }
+
+        self.tasks.wait_idle().await;
+        let drains = self.directory.begin_family_drain();
+        let represented = drains.len();
+        for output in drains {
+            self.directory.interpret(output, self.interpreter.as_ref());
+        }
+        self.tasks.wait_idle().await;
+        assert!(
+            self.directory.is_empty(),
+            "settled entity family retained a lifecycle slot"
+        );
+        self.tasks.close();
+        EntityShutdown { represented }
+    }
+
+    /// Whether shutdown has closed admission.
+    ///
+    /// Mechanism-test seam: a test asserting the shutdown refusal must first
+    /// observe that the shutdown task ran its first statement, instead of
+    /// racing it.
+    #[cfg(test)]
+    pub(super) fn admission_is_closed(&self) -> bool {
+        matches!(
+            *self
+                .admission
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner),
+            EntityAdmission::Closed
+        )
+    }
+
+    /// Begin graceful passivation if the entity currently has an active incarnation.
+    ///
+    /// Admission closes at this call's lifecycle linearization point. Fence and
+    /// retirement work continues in directory-owned tasks.
+    ///
+    /// # Panics
+    ///
+    /// Panics if directory synchronization was poisoned.
+    pub(crate) fn passivate(&self, entity_id: &EntityId<I>) -> Passivation {
+        let Some(activation_id) = self.directory.current_activation(entity_id) else {
+            return Passivation::NotActive;
+        };
+        let output = self.directory.begin_drain(entity_id, activation_id);
+        let passivation = match output.evidence {
+            TransitionEvidence::Traversed(_) => Passivation::Begun,
+            TransitionEvidence::SelfLoop { phase, .. }
+            | TransitionEvidence::Ignored { phase, .. } => match phase {
+                LifecyclePhase::Active => Passivation::Superseded,
+                LifecyclePhase::Draining | LifecyclePhase::Retiring => {
+                    Passivation::AlreadyPassivating
+                }
+                LifecyclePhase::Inactive | LifecyclePhase::Activating => Passivation::NotActive,
+            },
+        };
+        self.directory.interpret(output, self.interpreter.as_ref());
+        passivation
+    }
+}
+
+struct DispatchWait<I, O, C, E, L, R>
+where
+    I: Clone + Eq + Hash + Send + Sync + 'static,
+    O: Clone + Send + 'static,
+    C: Send + 'static,
+    E: Clone + Send + Sync + 'static,
+    L: Send + 'static,
+    R: EffectInterpreter<I, PendingCommand<O, C>, E, L> + Send + Sync + 'static,
+{
+    observation: AffineObservation<Result<(), AdmissionFailure<C>>>,
+    entity_id: EntityId<I>,
+    activation_id: Option<ActivationId>,
+    dispatch_id: DispatchId,
+    #[cfg(not(bombay_entity_loom))]
+    lifecycle: Weak<EntityLifecycle<I, O, C, E, L, R>>,
+    #[cfg(bombay_entity_loom)]
+    lifecycle: Arc<EntityLifecycle<I, O, C, E, L, R>>,
+}
+
+impl<I, O, C, E, L, R> Future for DispatchWait<I, O, C, E, L, R>
+where
+    I: Clone + Eq + Hash + Send + Sync + 'static,
+    O: Clone + Send + 'static,
+    C: Send + 'static,
+    E: Clone + Send + Sync + 'static,
+    L: Send + 'static,
+    R: EffectInterpreter<I, PendingCommand<O, C>, E, L> + Send + Sync + 'static,
+{
+    type Output = Result<(), AdmissionFailure<C>>;
+
+    fn poll(self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Self::Output> {
+        // SAFETY: `DispatchWait` never moves `observation` after it has been
+        // pinned. The remaining fields are ordinary cancellation-authority
+        // metadata and are only mutated in place after polling the future.
+        let this = unsafe { self.get_unchecked_mut() };
+        // SAFETY: `observation` is structurally pinned with `DispatchWait`.
+        let observation = unsafe { Pin::new_unchecked(&mut this.observation) };
+        match observation.poll(context) {
+            Poll::Ready(result) => {
+                this.activation_id.take();
+                Poll::Ready(result)
+            }
+            Poll::Pending => Poll::Pending,
+        }
+    }
+}
+
+impl<I, O, C, E, L, R> Drop for DispatchWait<I, O, C, E, L, R>
+where
+    I: Clone + Eq + Hash + Send + Sync + 'static,
+    O: Clone + Send + 'static,
+    C: Send + 'static,
+    E: Clone + Send + Sync + 'static,
+    L: Send + 'static,
+    R: EffectInterpreter<I, PendingCommand<O, C>, E, L> + Send + Sync + 'static,
+{
+    fn drop(&mut self) {
+        #[cfg(not(bombay_entity_loom))]
+        let lifecycle = self.lifecycle.upgrade();
+        #[cfg(bombay_entity_loom)]
+        let lifecycle = Some(Arc::clone(&self.lifecycle));
+        if let Some(lifecycle) = lifecycle
+            && let Some(activation_id) = self.activation_id.take()
+        {
+            let output =
+                lifecycle
+                    .directory
+                    .cancel_waiter(&self.entity_id, activation_id, self.dispatch_id);
+            lifecycle
+                .directory
+                .interpret(output, lifecycle.interpreter.as_ref());
+        }
     }
 }

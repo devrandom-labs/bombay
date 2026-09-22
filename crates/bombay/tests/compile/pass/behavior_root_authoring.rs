@@ -66,6 +66,7 @@ struct Parent;
     addr = MailAddr,
     message = Never,
     births = { child: Child },
+    creation_settlements = retain_for_retirement,
 )]
 #[allow(
     clippy::needless_pass_by_value,

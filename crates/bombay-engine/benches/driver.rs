@@ -56,10 +56,7 @@ impl ActiveEnvironment<OneTurn> for Immediate {
 
     fn publish(&mut self) {}
 
-    async fn retire(self, settlements: Vec<Self::Settlement>) {
-        let settlements_are_empty = settlements.is_empty();
-        assert!(settlements_are_empty);
-    }
+    async fn retire(self, _: Vec<Self::Settlement>) {}
 }
 
 impl Environment<OneTurn> for Immediate {

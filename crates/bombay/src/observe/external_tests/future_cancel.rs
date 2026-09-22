@@ -1,4 +1,4 @@
-//! Adversarial cancellation: futures observing the same generation with
+//! Adversarial cancellation: futures observing the same slot with
 //! shared or migrated wakers. The frozen semantics require cancellation to
 //! be safe — dropping one future must never disarm a distinct live future's
 //! wakeup, and a cancelled future's waker must never fire after the drop.
@@ -6,19 +6,18 @@
 use std::pin::Pin;
 use std::task::Poll;
 
-use crate::observe::ObservationSpace;
+use crate::observe::pair;
 use crate::observe::test_support::{CountWake, poll_once};
 
 #[test]
 fn pending_shared_observation_future_can_move_between_polls() {
-    let space = ObservationSpace::<u32, u64>::new();
-    let mut subject = space.subject(5).expect("first registration succeeds");
-    let mut future = space.observe(&5).expect("subject retained").into_future();
+    let (publisher, observation) = pair::<u64>();
+    let mut future = observation.into_future();
     let (waker, probe) = CountWake::waker();
     assert!(poll_once(Pin::new(&mut future), &waker).is_pending());
 
     let mut moved = future;
-    subject.complete(8);
+    publisher.complete(8);
 
     assert_eq!(probe.count(), 1);
     assert_eq!(poll_once(Pin::new(&mut moved), &waker), Poll::Ready(8));
@@ -26,18 +25,16 @@ fn pending_shared_observation_future_can_move_between_polls() {
 
 /// shared-waker cancellation regression — minimal reproducer. Regression coverage.
 ///
-/// Two futures on two observations of the SAME generation are polled with
+/// Two futures on two observations of the SAME slot are polled with
 /// the same task waker (the `select!`/`join!` pattern: one task driving two
 /// observation futures). Cancelling one must leave the other wakeable:
 /// completion has to wake the shared waker so the surviving future is
-/// re-polled. Today the cancellation deregisters the shared registration
-/// and the survivor is never woken (lost wake -> hang in a real executor).
+/// re-polled.
 #[test]
 fn cancelled_sibling_future_keeps_survivor_wakeable() {
-    let space = ObservationSpace::<u32, u64>::new();
-    let mut subject = space.subject(7).expect("first registration succeeds");
-    let obs1 = space.observe(&7).expect("subject retained");
-    let obs2 = space.observe(&7).expect("subject retained");
+    let (publisher, observation) = pair::<u64>();
+    let obs1 = observation.clone();
+    let obs2 = observation.clone();
     let (waker, probe) = CountWake::waker();
 
     let mut f1 = Box::pin(obs1.into_future());
@@ -46,7 +43,7 @@ fn cancelled_sibling_future_keeps_survivor_wakeable() {
     assert!(poll_once(f2.as_mut(), &waker).is_pending());
 
     drop(f1); // cancel the sibling before completion
-    subject.complete(42);
+    publisher.complete(42);
 
     assert!(
         probe.count() >= 1,
@@ -61,13 +58,12 @@ fn cancelled_sibling_future_keeps_survivor_wakeable() {
 /// counted).
 #[test]
 fn cancelled_siblings_leave_last_survivor_wakeable() {
-    let space = ObservationSpace::<u32, u64>::new();
-    let mut subject = space.subject(3).expect("first registration succeeds");
+    let (publisher, observation) = pair::<u64>();
     let (waker, probe) = CountWake::waker();
 
     let mut futures: Vec<_> = (0..3)
         .map(|_| {
-            let obs = space.observe(&3).expect("subject retained");
+            let obs = observation.clone();
             Box::pin(obs.into_future())
         })
         .collect();
@@ -77,7 +73,7 @@ fn cancelled_siblings_leave_last_survivor_wakeable() {
     drop(futures.remove(0));
     drop(futures.remove(0));
 
-    subject.complete(9);
+    publisher.complete(9);
     assert!(
         probe.count() >= 1,
         "completion must wake the surviving future's waker; got {} wakes",
@@ -91,17 +87,16 @@ fn cancelled_siblings_leave_last_survivor_wakeable() {
 /// find no registration for it.
 #[test]
 fn cancelled_future_waker_never_fires() {
-    let space = ObservationSpace::<u32, u64>::new();
-    let mut subject = space.subject(11).expect("first registration succeeds");
+    let (publisher, observation) = pair::<u64>();
     let (waker, probe) = CountWake::waker();
 
     {
-        let obs = space.observe(&11).expect("subject retained");
+        let obs = observation.clone();
         let mut f = Box::pin(obs.into_future());
         assert!(poll_once(f.as_mut(), &waker).is_pending());
     } // cancel
 
-    subject.complete(1);
+    publisher.complete(1);
     assert_eq!(
         probe.count(),
         0,
@@ -113,42 +108,40 @@ fn cancelled_future_waker_never_fires() {
 /// a different waker B) and is then cancelled must never fire either waker.
 #[test]
 fn cancelled_migrated_future_fires_neither_waker() {
-    let space = ObservationSpace::<u32, u64>::new();
-    let mut subject = space.subject(13).expect("first registration succeeds");
+    let (publisher, observation) = pair::<u64>();
     let (waker_a, probe_a) = CountWake::waker();
     let (waker_b, probe_b) = CountWake::waker();
 
     {
-        let obs = space.observe(&13).expect("subject retained");
+        let obs = observation.clone();
         let mut f = Box::pin(obs.into_future());
         assert!(poll_once(f.as_mut(), &waker_a).is_pending());
         assert!(poll_once(f.as_mut(), &waker_b).is_pending());
     } // cancel after migration
 
-    subject.complete(5);
+    publisher.complete(5);
     assert_eq!(probe_a.count(), 0, "pre-migration waker must not fire");
     assert_eq!(probe_b.count(), 0, "post-migration waker must not fire");
 }
 
-/// Two INDEPENDENT futures (different wakers) on the same generation:
+/// Two INDEPENDENT futures (different wakers) on the same slot:
 /// cancelling one must leave the other's registration intact; completion
 /// wakes exactly the survivor's waker.
 #[test]
 fn cancel_one_of_two_independent_futures_wakes_only_survivor() {
-    let space = ObservationSpace::<u32, u64>::new();
-    let mut subject = space.subject(17).expect("first registration succeeds");
+    let (publisher, observation) = pair::<u64>();
     let (waker_a, probe_a) = CountWake::waker();
     let (waker_b, probe_b) = CountWake::waker();
 
-    let obs_a = space.observe(&17).expect("subject retained");
-    let obs_b = space.observe(&17).expect("subject retained");
+    let obs_a = observation.clone();
+    let obs_b = observation.clone();
     let mut fa = Box::pin(obs_a.into_future());
     let mut fb = Box::pin(obs_b.into_future());
     assert!(poll_once(fa.as_mut(), &waker_a).is_pending());
     assert!(poll_once(fb.as_mut(), &waker_b).is_pending());
 
     drop(fa);
-    subject.complete(77);
+    publisher.complete(77);
 
     assert_eq!(probe_a.count(), 0, "cancelled future's waker must not fire");
     assert!(
@@ -162,29 +155,26 @@ fn cancel_one_of_two_independent_futures_wakes_only_survivor() {
 /// resolves normally and its waker count is irrelevant.
 #[test]
 fn cancel_after_completion_is_unobservable() {
-    let space = ObservationSpace::<u32, u64>::new();
-    let mut subject = space.subject(19).expect("first registration succeeds");
+    let (publisher, observation) = pair::<u64>();
     let (waker, _probe) = CountWake::waker();
 
-    let obs = space.observe(&19).expect("subject retained");
-    let mut f = Box::pin(obs.into_future());
+    let mut f = Box::pin(observation.into_future());
     assert!(poll_once(f.as_mut(), &waker).is_pending());
-    subject.complete(23);
+    publisher.complete(23);
     assert_eq!(poll_once(f.as_mut(), &waker), Poll::Ready(23));
     drop(f);
 }
 
 /// The same waker registered TWICE — via two observations of one
-/// generation (which share the slot and its registry) — must be
+/// slot (which share the registry) — must be
 /// deduplicated by `will_wake` identity: one entry, exactly one fire at
 /// completion, and both observations resolve.
 #[test]
 fn same_waker_registered_twice_fires_once() {
     for round in 0..50_u64 {
-        let space = ObservationSpace::<u32, u64>::new();
-        let mut subject = space.subject(37).expect("first registration succeeds");
-        let obs_a = space.observe(&37).expect("subject retained");
-        let obs_b = space.observe(&37).expect("subject retained");
+        let (publisher, observation) = pair::<u64>();
+        let obs_a = observation.clone();
+        let obs_b = observation.clone();
         let (waker, probe) = CountWake::waker();
 
         assert!(
@@ -195,7 +185,7 @@ fn same_waker_registered_twice_fires_once() {
             !obs_b.register_waker(&waker),
             "deduped re-registration still reports pending (round {round})"
         );
-        subject.complete(round);
+        publisher.complete(round);
 
         assert_eq!(
             probe.count(),
@@ -213,18 +203,16 @@ fn same_waker_registered_twice_fires_once() {
 #[test]
 fn many_distinct_wakers_leave_only_latest_registered() {
     const POLLS: usize = 50;
-    let space = ObservationSpace::<u32, u64>::new();
-    let mut subject = space.subject(31).expect("first registration succeeds");
+    let (publisher, observation) = pair::<u64>();
 
-    let obs = space.observe(&31).expect("subject retained");
-    let mut f = Box::pin(obs.into_future());
+    let mut f = Box::pin(observation.into_future());
     let mut probes = Vec::new();
     for _ in 0..POLLS {
         let (waker, probe) = CountWake::waker();
         assert!(poll_once(f.as_mut(), &waker).is_pending());
         probes.push(probe);
     }
-    subject.complete(99);
+    publisher.complete(99);
     for (i, probe) in probes[..POLLS - 1].iter().enumerate() {
         assert_eq!(probe.count(), 0, "migrated-away waker {i} fired");
     }
@@ -245,10 +233,9 @@ fn many_distinct_wakers_leave_only_latest_registered() {
 /// waker removes it on drop. The direct registrant is never woken.
 #[test]
 fn cancelled_future_steals_direct_waker_registration() {
-    let space = ObservationSpace::<u32, u64>::new();
-    let mut subject = space.subject(41).expect("first registration succeeds");
-    let obs1 = space.observe(&41).expect("subject retained");
-    let obs2 = space.observe(&41).expect("subject retained");
+    let (publisher, observation) = pair::<u64>();
+    let obs1 = observation.clone();
+    let obs2 = observation.clone();
     let (waker, probe) = CountWake::waker();
 
     assert!(!obs1.register_waker(&waker), "pending: registration stored");
@@ -256,7 +243,7 @@ fn cancelled_future_steals_direct_waker_registration() {
     assert!(poll_once(f2.as_mut(), &waker).is_pending());
     drop(f2);
 
-    subject.complete(43);
+    publisher.complete(43);
     assert!(
         probe.count() >= 1,
         "the direct registration must fire at completion; got {} wakes",
@@ -269,12 +256,11 @@ fn cancelled_future_steals_direct_waker_registration() {
 /// registration must be restored and completion must wake it.
 #[test]
 fn repolled_survivor_heals_registration() {
-    let space = ObservationSpace::<u32, u64>::new();
-    let mut subject = space.subject(29).expect("first registration succeeds");
+    let (publisher, observation) = pair::<u64>();
     let (waker, probe) = CountWake::waker();
 
-    let obs1 = space.observe(&29).expect("subject retained");
-    let obs2 = space.observe(&29).expect("subject retained");
+    let obs1 = observation.clone();
+    let obs2 = observation.clone();
     let mut f1 = Box::pin(obs1.into_future());
     let mut f2 = Box::pin(obs2.into_future());
     assert!(poll_once(f1.as_mut(), &waker).is_pending());
@@ -283,48 +269,45 @@ fn repolled_survivor_heals_registration() {
 
     // Executor re-polls the survivor for an unrelated reason.
     assert!(poll_once(f2.as_mut(), &waker).is_pending());
-    subject.complete(31);
+    publisher.complete(31);
     assert!(
         probe.count() >= 1,
         "re-polled survivor must be woken at completion"
     );
 }
 
-/// The same task waker on two futures over TWO DIFFERENT generations (a
-/// `join!` over two subjects). Each generation owns its own slot and its
+/// The same task waker on two futures over TWO DIFFERENT pairs (a
+/// `join!` over two publishers). Each pair owns its own slot and its
 /// own waiter registry, so shared-waker cancellation regression's shared-entry mechanism (one
 /// observation, N futures, one deduped registration) cannot apply here:
 /// cancelling either future must leave the other's registry entry intact,
-/// and completing the survivor's generation fires the shared waker exactly
-/// once. Note two observations of the SAME generation share one slot, so
+/// and completing the survivor's slot fires the shared waker exactly
+/// once. Note two observations of the SAME slot share one registry, so
 /// that variant is shared-waker cancellation regression (covered by its own reproducers).
 #[test]
-fn same_waker_across_two_generations_survivor_resolves() {
+fn same_waker_across_two_pairs_survivor_resolves() {
     for round in 0..50_u64 {
-        let space = ObservationSpace::<u32, u64>::new();
-        let mut subject_a = space.subject(23).expect("first registration succeeds");
-        let mut subject_b = space.subject(29).expect("second registration succeeds");
-        let obs_a = space.observe(&23).expect("subject retained");
-        let obs_b = space.observe(&29).expect("subject retained");
+        let (publisher_a, observation_a) = pair::<u64>();
+        let (publisher_b, observation_b) = pair::<u64>();
         let (waker, probe) = CountWake::waker();
 
-        let mut fa = Box::pin(obs_a.into_future());
-        let mut fb = Box::pin(obs_b.into_future());
+        let mut fa = Box::pin(observation_a.into_future());
+        let mut fb = Box::pin(observation_b.into_future());
         assert!(poll_once(fa.as_mut(), &waker).is_pending());
         assert!(poll_once(fb.as_mut(), &waker).is_pending());
 
         drop(fa); // cancel one arm of the join
-        subject_b.complete(round);
+        publisher_b.complete(round);
 
         assert_eq!(
             probe.count(),
             1,
-            "shared waker fired != once (round {round}): per-generation entries must drain exactly once"
+            "shared waker fired != once (round {round}): per-slot entries must drain exactly once"
         );
         assert_eq!(poll_once(fb.as_mut(), &waker), Poll::Ready(round));
 
-        // Retire both generations cleanly. Completing A fires nothing:
+        // Retire both pairs cleanly. Completing A fires nothing:
         // fa's registration was deregistered on drop.
-        subject_a.complete(round);
+        publisher_a.complete(round);
     }
 }

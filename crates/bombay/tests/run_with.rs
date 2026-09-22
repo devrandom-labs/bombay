@@ -543,4 +543,5 @@ fn run_with_protocol_is_compile_checked() {
     cases.compile_fail("tests/compile/fail/actor_ref_has_no_shutdown.rs");
     cases.compile_fail("tests/compile/fail/application_handle_has_no_direct_lifecycle.rs");
     cases.compile_fail("tests/compile/fail/app_local_is_not_an_ordinary_path.rs");
+    cases.compile_fail("tests/compile/fail/application_rejects_logical_delivery.rs");
 }
