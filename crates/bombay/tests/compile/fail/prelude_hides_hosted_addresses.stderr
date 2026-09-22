@@ -1,0 +1,5 @@
+error[E0405]: cannot find trait `HostedAddresses` in this scope
+  --> tests/compile/fail/prelude_hides_hosted_addresses.rs:10:20
+   |
+10 | fn require_host<T: HostedAddresses<Orders>>() {}
+   |                    ^^^^^^^^^^^^^^^ not found in this scope

@@ -1,0 +1,5 @@
+error: HostedAddresses requires named fields
+  --> tests/compile/fail/hosted_addresses_tuple.rs:12:8
+   |
+12 | struct Actors(LocalAddresses<Orders>);
+   |        ^^^^^^

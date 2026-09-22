@@ -14,7 +14,7 @@ use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, InitializationTurn, InterpreterRequests, NoBirths, User,
 };
 use bombay::prelude::*;
-use bombay::{ActorSpace, App};
+use bombay::{App, LocalAddresses};
 
 mod application_support;
 
@@ -514,7 +514,7 @@ fn application_delegates_to_the_explicit_single_space_app() {
             .expect("the ordinary application terminates normally");
 
     let (explicit, explicit_terminal): (_, ApplicationTerminal<_>) =
-        App::new(Root.stop_on_shutdown(), ActorSpace::new())
+        App::new(Root.stop_on_shutdown(), LocalAddresses::new())
             .run_with(|application| async move {
                 application
                     .root()
@@ -543,4 +543,5 @@ fn run_with_protocol_is_compile_checked() {
     cases.compile_fail("tests/compile/fail/actor_ref_has_no_shutdown.rs");
     cases.compile_fail("tests/compile/fail/application_handle_has_no_direct_lifecycle.rs");
     cases.compile_fail("tests/compile/fail/app_local_is_not_an_ordinary_path.rs");
+    cases.compile_fail("tests/compile/fail/application_rejects_logical_delivery.rs");
 }

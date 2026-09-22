@@ -30,8 +30,12 @@ crate is evidence only and never overrides the selected build contract.
 DX53 atomic Behavior migration (distilled)
   -> DX49 application-native Entity (distilled)
        -> MNE1 durable Mnesis execution (downstream, blocked externally)
-  -> BEH1 creation-settlement disposition (upstream, blocked externally)
-       -> DX58 Behavior 0.16 crates.io adoption (blocked)
+  -> BEH1 creation-settlement disposition (upstream resolution selected:
+     Behavior pin 8bca837c = PR #68 head; Bombay-side verification pending
+     compile repair and gates)
+       -> DX58 Behavior 0.16 adoption (adopted at pin 8bca837c under the
+          exact-revision exception; crates.io retirement pending B1
+          publication via B5)
 
 DX54 Triomphe feature minimization (feature-complete, independent)
 
@@ -74,6 +78,42 @@ that ordinary generated birth declarations cannot express. MNE1 requires
 Mnesis-Bombay to select the current Bombay and Behavior graph and implement its
 own durable command execution contract. Bombay deliberately does not classify
 mailbox admission as durable completion.
+
+2026-09-17 update (exact-revision exception, user-authorized): the workspace
+now selects Behavior at commit `8bca837c` — the head of upstream PR #68 —
+instead of the published 0.16.0 line. That revision carries the upstream
+settlement-policy fix (preserve generated creation settlements, `2987feb`)
+and the facade-first Actors resolution, which are precisely the BEH1 and BEH2
+owner decisions recorded below. The selected contracts therefore no longer
+block the algebra. What remains pending is Bombay-side verification against
+the pin — the `application_terminal_custody`, `entity_application`, and
+application-topology regressions — and a compiling workspace: the merged
+runtime currently fails `cargo check -p bombay-rs` at the pin, and the
+repair is owned by the worker-preparation task. crates.io adoption (retiring
+the git pin) follows B1's merge and publication of PR #68 and is owned by B5.
+The BEH1, BEH2, and DX58 sections below keep their original analysis; their
+State lines record the updated disposition.
+
+2026-09-17 fixed-point minimization audit — scope, split by what can be
+verified today against what must wait:
+
+- Auditable now (and done in this update): ledger statuses match selected
+  evidence; lockfile consistency at the selected pin (`cargo metadata
+  --locked` passes on the merge of `origin/main`); PR #313's main-conflict
+  state cleared by that merge.
+- Deferred until the workspace compiles at the pin: all source-level
+  minimization claims. The merged runtime currently fails `cargo check -p
+  bombay-rs` at the pin (PrepareWorkers imports without a public path at
+  8bca837c, plus entity-fold residue); the repair is owned by the
+  worker-preparation task. No minimization claim is truthful before a green
+  workspace gate.
+- Deferred until the wave closes: audit of DX37 resolver retirement (W2's
+  production refactor is open as PR #322 — LocalAddresses/HostedAddresses
+  vocabulary, topology.rs deleted, zero production resolver references;
+  its merged groundwork #320 is merged, verification pending base repair),
+  benchmark-coverage minimization (W5's pending rows are blocked on the
+  same compile repair), and the fixed-point check of the Entity fold
+  residue (part of the same repair).
 
 ## Ownership map
 
@@ -344,9 +384,14 @@ mailbox admission as durable completion.
 
 ## BEH1 — creation-settlement disposition
 
-- State: `blocked`; the selected immutable Behavior 0.16.0 contracts do not
-  provide an ordinary generated actor a way to satisfy creation-result source
-  custody.
+- State: `blocked` → `resolution selected upstream, verification pending`;
+  the selected pin 8bca837c (PR #68 head) carries the upstream creation-
+  settlement policy that answers the blocker below, but the Bombay-side
+  regression set (`application_terminal_custody`, `entity_application`,
+  application-topology) has not yet been run green against it because the
+  workspace does not currently compile at the pin (repair owned by the
+  worker-preparation task). Deferred to B1 publication for the crates.io
+  form.
 - Exact blocker: `SourceSettlementCustody` for every `Births<C>` settlement
   requires the root event to implement
   `EventIngress<Births<C>, CreationsSettled<A, C>>`. A
@@ -375,7 +420,14 @@ mailbox admission as durable completion.
 
 ## BEH2 — pool-worker facade resolution
 
-- State: `blocked`; `bombay-behavior-macros` 0.11.6 resolves its Actors path
+- State: `blocked` → `resolution selected upstream, verification pending`;
+  the selected pin 8bca837c (PR #68 head) carries the facade-first Actors
+  resolution that answers the blocker below, but the workspace does not yet
+  compile at the pin, so the regression proof for the facade path
+  (`bombay::atomic` resolution) is still outstanding. Retiring the
+  worker-pool example's explicit Actors owner dependency is part of that
+  verification, not something to do before it.
+- Mechanism: `bombay-behavior-macros` 0.11.6 resolves its Actors path
   through a `bombay-rs`-only dependency as `bombay::behavior`, then expands
   `#[pool_worker]` with `bombay::behavior::atomic::Completion`. Foundational
   Behavior deliberately has no `atomic` module; Bombay correctly exposes the
@@ -398,10 +450,13 @@ mailbox admission as durable completion.
 
 ## DX58 — Behavior 0.16 crates.io adoption
 
-- State: `blocked`; upstream 0.16.0 resolves the recorded terminal-custody,
-  source-order, and observation-settlement prerequisites, but BEH1 prevents
-  every birth-owning generated actor from satisfying the new custody law.
-  Independent downstream migration and regressions remain active.
+- State: `blocked` → `adopted at pin 8bca837c, crates.io retirement pending`;
+  the workspace selects Behavior under the user-authorized exact-revision
+  exception (root `[patch.crates-io]` git pin, both lockfiles), which carries
+  the BEH1 and BEH2 upstream resolutions. The recorded blocker below applied
+  to the published 0.16.0 line; it no longer applies to the selected
+  revision. Full crates.io adoption (retiring the pin) waits on B1 merging
+  and publishing PR #68 — owned by B5 — and on a green workspace gate.
 - Target releases: `bombay-behavior` 0.16.0 and
   `bombay-behavior-actors` 0.16.0 resolve to source commit
   `b9642e84e5719c4e2018f752822a392d3c23e164`; the
@@ -1253,6 +1308,177 @@ mailbox admission as durable completion.
   the independently proven cancellation guards; the required net-negative
   boundary and all stop thresholds remain satisfied.
 
+## DX71 — Observe consumer narrowing
+
+- State: `landed` (PR #315, merged 2026-09-17).
+- Selected contracts: the locked Behavior 0.16.0 revision and the private
+  Observe implementation are unchanged. The keyed `ObservationSpace`/
+  `Subject` enumeration surface is deleted because no production consumer
+  exists: no Bombay actor, runtime, or example subscribes by
+  `(key, epoch)`; the only caller of the keyed APIs was the observe test
+  corpus itself. A future enumeration-API need belongs in an upstream
+  bombay-address request, not in dead Bombay surface.
+- Ownership and law: one publication is one fresh unkeyed pair — the
+  publisher is the unique (non-cloneable) publication authority, every
+  observation clone stays attached to the exact completion slot, and the
+  slot is reclaimed only when every handle (publisher and all
+  observations) is gone. Waker registration fires exactly once iff the
+  generation completes; `into_outcome` still requires exclusive slot
+  ownership. These laws are unchanged; only the keyed namespace over
+  them is gone.
+- Exact blocker and regression: `lib.rs:38-42` suppressed `dead_code`
+  for the whole private module; the keyed-only external suites
+  (`contract`, `exhaustive`, `model`, `pool`) were the sole consumers of
+  the deleted surface.
+- Result: the keyed surface, pool/map machinery, keyed lock helpers,
+  and slot-reset path are deleted; the retained pair/affine corpus
+  (blocking/timed waits, waker registration and dedup, future
+  cancellation and migration, exactly-once destruction, panic
+  propagation, stress, Loom) is restated on pairs; the perf and fuzz
+  campaigns are converted (promotion_ops became volume_ops).
+  `#[allow(dead_code)]` is removed from `lib.rs` and not replaced.
+- Change ledger: expected tracked files are this ledger, `lib.rs`,
+  `observe/mod.rs` and its tests, `observe-perf/src/main.rs`, the fuzz
+  targets, and `docs/runtime-capability-interfaces.md` (keyed contract
+  paragraph rewritten to the pair reality). The generic 15-file stop
+  threshold is exceeded by the explicitly scoped corpus shrink; the
+  threshold's intent (unreviewed sprawl) does not apply to deletion
+  plus one-for-one restatement, and no new public type is added.
+- Verification: `cargo check -p observe-tests -j 1` (plain and
+  `--all-targets`) exit 0; `cargo check -p observe-perf -j 1` exit 0;
+  all four fuzz bins compile and 2,000 libFuzzer runs each found no
+  law violation; the full `observe-tests` suite passes 80/80 under
+  `--test-threads=1`; strict Clippy and `cargo fmt --check` pass. The
+  full-workspace check remains blocked in this sandbox by the pinned
+  `bombay-behavior-actors` rustc OOM (environment, not a diagnostic)
+  and runs in CI.
+
+## B4 — typed `PrepareWorkers` capability interpreter
+
+- State: `in-progress` on `feat/prepare-workers-capability` (stacked on the
+  distillation branch at `bb5b3e9`; Behavior pinned at `8bca837c`).
+- Selected contracts (verified this session against the pinned checkout):
+  `PrepareWorkers<Source, Role, Worker, Plan>` is a `SourceAction` owned by
+  Actors whose `WorkerSource` trait deliberately declares types only; the
+  affine attempt protocol (`source_and_role` → prepare → `accept`/`reject`)
+  must be driven by Bombay. The supervisor and FIFO pool send products also
+  require `ProxyOperation`, `InitializeWorker`, `BeginActivation`,
+  `AssignWorker`, and `DiagnosticAction` interpretations before either
+  aggregate can commit actions in the Bombay runtime; `ObserveChild`,
+  `ScheduleAfter`, `ShutdownEstablished`, `EstablishedDelivery`, and
+  `ReportToParent` are already interpreted. Actors templates carry their own
+  `EventIngress`/`InjectEvent` impls for every settled return, so no Actors
+  change is needed.
+- Ownership: Bombay owns (1) the worker-source preparation port — a
+  Bombay-published trait with one method producing a `WorkerSubmission` per
+  role, mirroring the existing verb-capability grammar (`CompletesAssignments`)
+  and invoked only by the runtime interpreter outside every fold, like
+  `ActivationPlan::activate` and `DiagnosticRoute`; (2) a pure ordered-role
+  driver over the affine attempt protocol; (3) the missing `InterpretItem`
+  implementations on the existing application capabilities. The driver returns
+  complete settlements only: Bombay never fabricates an application
+  `SourceRejection` value, so accepted preparations carry the exhaustive
+  `WorkerPreparation` sum (all roles prepared, or prepared prefix + failed
+  role + exact reason + untouched suffix) back to the emitter through the
+  existing `SourceAdmission`/`EventIngress` custody path.
+- Rejected shortcuts: no runtime callback invoked by supervisor folds, no
+  erased submission registry, no second effect framework, no discarded
+  settlement custody, no relaxation of preparation tickets or ordered roles.
+- Follow-up findings (against `8bca837c`): (1) `InitializeWorker` is emitted
+  only after the creation settles `Installed`, and Bombay hosting settles
+  initialization inside `spawn_owned_with` before activation publication — an
+  established creation binding is exact proof of settled initialization, so
+  `WorkerInitializationOutcome::ReadyForActivation` is the only truthful
+  post-establishment report; initialization rejection fails the creation
+  settlement instead, and a post-establishment stop race is detectable through
+  the child's retained termination observation (`try_get`) mapping to
+  `Stopped(ChildStopped<BehaviorAddr<W>>)`. (2) `BeginActivation` returns
+  `started()` to the emitter, polls the plan with `activate().await`, and
+  returns the `WorkerActivation` outcome; the emitter's control lane stays live
+  during interpretation, so `ActivationStartRejection::OwnerStopped` is
+  unreachable for a conforming self-interpreter and binding failure maps to
+  `Corrupt`. (3) `AssignWorker` is blocked on an Actors-side seam: every
+  non-accepted `ItemSettlement` variant must retain the complete original
+  item, but the only post-consumption reconstruction path,
+  `AssignWorker::returned`, is `pub(in crate::atomic)`; a non-consuming
+  liveness probe (termination `try_get` before consuming) lawfully settles the
+  common closed-recipient case exactly like the Actors test flow, but a
+  recipient closing between probe and enqueue leaves no lawful settlement.
+  Landing `AssignWorker` requires the pinned Actors revision to make
+  `AssignWorker::returned` public (one-line visibility change in
+  bombay-behavior) or an equivalent public construction seam; until then the
+  FIFO assignment lane cannot be interpreted without erasing custody. This
+  supersedes the earlier "no Actors change is needed" assumption for the
+  assignment lane only.
+- Unblocks: real recovery (replacements under stable proxies, FIFO restart
+  with backlog retention) in the supervision and worker-pool examples.
+## W5 — integration benchmark and memory evidence
+
+- State: `active`; implementation committed on this branch (bench suite,
+  allocation test, observe-perf consumer fix, `docs/benchmarks.md`). The
+  Observe allocation/retention table is measured and recorded; the
+  application-spine, mailbox-lane, and dhat-application rows remain pending
+  the distillation base's compile repair (14 `bombay-rs` errors at `ebd79cb`
+  verified on the tip), so those rows record no numbers and
+  make no claims.
+- Selected contracts: Behavior Core 0.16.0, Behavior Actors 0.16.0, and
+  Behavior Macros 0.11.6 are selected from
+  `8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6` through the user-authorized
+  exact-revision exception (`[patch.crates-io]`, commit `bb5b3e9`); Address
+  0.2.0, Communication 0.1.2, Bombay-private Observe, and Timers 0.1.0 at
+  `13e884da7ab41781f52337b0038060e375b00ee0`; dev-only dhat 0.3.3 and
+  Criterion 0.7.0 from the registry. The public Application surface
+  (`Application::run_with`, `ApplicationHandle`, `ApplicationLifecycle`,
+  terminal projection), the two-lane `mailbox_channel` admission contract,
+  and the Observe publication contract were rechecked against this exact
+  selection. No owner owns integration-benchmark evidence: the three
+  maintained benches cover only Entity directory, Entity lifecycle, and
+  Machine executor micro-paths, plus the Engine Driver turn.
+- Ownership: benches own measurement only. Bombay owns the composed local
+  Environment the end-to-end suite exercises (spawn, tell-shaped send, turn,
+  shutdown, retirement through `run_with`). Communication owns the two-lane
+  mailbox scenarios' transport. Observe owns the watcher-fanout mechanism,
+  already measured by the maintained `observe-perf` harness; registry claims
+  are already measured by the maintained `entity_directory` bench. No second
+  runtime, mailbox, registry, or observation mechanism is introduced.
+- Requirement: the Phase 0 exit gate needs integration evidence that the
+  maintained benches do not provide — an end-to-end benchmark over the real
+  local Environment and semantic equivalents of the retired old-runtime bench
+  (mailbox tell/reply, watcher fanout, registry, channels) — plus recorded
+  allocation/retention memory results and a recorded results table whose
+  every number names environment, revision, feature set, and method.
+- Exact blocker and regression: the old-runtime oracle
+  (`benches/mailbox.rs`, realistic ~40 B command, Criterion, recorded in the
+  `b0c212a` history) measured `tell` ≈ 5.7 ns and send+recv ≈ 18.4 ns. That
+  figure is recovered as a labeled oracle baseline only; no current claim
+  borrows its number. The stale `.auto/measure.sh` consumer reference in the
+  `observe-perf` module doc names a consumer that no longer exists in the
+  repository.
+- Dependency edges: stacked on `research/bombay-distillation-2026-09-15` at
+  `bb5b3e9`; sibling wave work merges into that branch concurrently, so the
+  branch rebases on its live tip immediately before final verification.
+  Independent of DX53 through DX70 semantics; touches no runtime code.
+- Blocked by: none.
+- Unblocks: the Phase 0 exit gate's performance and memory evidence; the
+  `observe-perf` harness doc no longer claims a dead consumer.
+- Change ledger: expected tracked files are this ledger,
+  `crates/bombay/benches/application_spine.rs`,
+  `crates/bombay/benches/mailbox_lanes.rs`,
+  `crates/bombay/tests/application_allocations.rs`,
+  `crates/bombay/Cargo.toml`, `flake.nix`,
+  `crates/observe-perf/src/main.rs`, and `docs/benchmarks.md` (`8` files).
+  Production is `+0 / -1 / net -1` (the dead consumer reference); tests and
+  benches stay within `+500`; public API is `+0 / -0` types. The existing
+  `Application` boundary, `mailbox_channel`, `ObservationSpace`, the
+  directory bench conventions, and the flake `performance` lane are reused.
+  Any new public type, second transport, or production logic change
+  falsifies this feature.
+- Verification: scoped `cargo check`, focused bench runs, and the dhat
+  allocation test pass through the pinned Nix shell; `cargo fmt --all
+  -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
+  and `nix flake check -L` pass before the final push; the results table
+  records the exact commands, environment, revision, and numbers.
+
 ## Public examples
 
 Seven public packages exercise caller-visible behavior:
@@ -1314,3 +1540,34 @@ also pass their optimized Loom gates.
   commit. Bombay will not add a second persistence abstraction, erased command
   registry, or compatibility actor to conceal version skew.
 - Unblocks: a future Mnesis-Bombay release using the current Bombay contract.
+
+## DX71 — one Entity spelling
+
+- State: `active`.
+- Unblocks: DX49; retires the last second-spelling Entity surface.
+- Driver: the generic `EntityRuntime` facade and its `LocalEntityRuntime` port
+  duplicate the one ordinary Entity path behind a second vocabulary —
+  activate/deliver/fence/retire callbacks plus a spawn port — that every
+  production command crosses twice. No behavioral blocker exists; the smallest
+  regression guard is the existing entity lifecycle suite, which must preserve
+  every law after the fold, including the two bounded-spin determinism tests.
+- Locked default (Phase 0 open question 2): the native application Entity path
+  (`EntityDefinition` → `Entities`/`EntityRef` over the Bombay runtime) is the
+  one ordinary spelling. `LocalDirectory` and its `EffectInterpreter` seam
+  remain the advanced test-host boundary; the folded admission, settlement, and
+  shutdown composition stays crate-internal.
+- Dependency verification: Behavior core, actors, and macros remain the exact
+  patch revision `8bca837ca5d913bcdfaefbe0dec33d58bfc9ace6` selected by the
+  documented exact-revision exception. The fold adds no dependency, no macro
+  generation, and no second Driver or event loop.
+- Expected shape: delete `entity/runtime.rs` (~700 lines); absorb admission
+  custody, waiter cancellation, settle-before-drain, passivation
+  classification, and family shutdown into the directory composition; rehome
+  the lifecycle and family mechanism tests inside the owning crate with both
+  spin-budget-sensitive tests intact; implement the `EffectInterpreter` lanes
+  natively in the Bombay runtime; record the retained advanced seam in the
+  module boundaries and capability documents.
+- Expected containment: about eight production files, a net production-line
+  deletion far below the 500-line stop threshold, zero new public types, and
+  three removed public types (`Activated`, `EntityRuntime`,
+  `LocalEntityRuntime`).

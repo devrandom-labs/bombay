@@ -20,17 +20,16 @@ use behavior_actors::ShutdownRequested;
 
 use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
+use crate::launch::HostedAddresses;
 use crate::local::ActorRef;
-use crate::topology::Hosts as LocalHosts;
 
 use super::bombay::{
-    BombayEntityRuntime, EntityTaskOwner, NativeEntityHost, NativeEntityLease,
-    bombay_entity_runtime,
+    BombayEntityRuntime, EntityTaskOwner, NativeEntityDirectory, NativeEntityHost,
+    NativeEntityLease, bombay_entity_runtime,
 };
-use super::runtime::EntityReceptionist;
 use super::{
-    ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityId, EntityRuntime,
-    EntityShutdown, Passivation,
+    ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityId, EntityLifecycle,
+    EntityShutdown, EntityTaskGroup, Passivation,
 };
 
 /// One nominal, asynchronously hydrated native Entity family.
@@ -51,7 +50,7 @@ pub trait EntityDefinition: Send + Sync + 'static {
         + Send
         + 'static;
     /// Concrete application host product used by this native definition.
-    type Hosts: LocalHosts<<Self::Behavior as Behavior>::Protocol> + Send + Sync + 'static;
+    type Hosting: HostedAddresses<<Self::Behavior as Behavior>::Protocol> + Send + Sync + 'static;
     /// Exact failure returned while reconstructing domain state.
     type HydrationError: Send + 'static;
     /// Application terminal sum used by children of the incarnation.
@@ -206,26 +205,21 @@ impl EntityMetricState {
     }
 }
 
-type InstalledRuntimeFor<D> = EntityRuntime<
+type NativeLifecycleFor<D> = EntityLifecycle<
     <D as EntityDefinition>::Id,
-    BehaviorMessage<<D as EntityDefinition>::Behavior>,
-    BombayEntityRuntime<D>,
->;
-type ReceptionistFor<D> = EntityReceptionist<
-    <D as EntityDefinition>::Id,
-    BehaviorMessage<<D as EntityDefinition>::Behavior>,
-    BombayEntityRuntime<D>,
     MailAddr,
+    BehaviorMessage<<D as EntityDefinition>::Behavior>,
     ActorRef<<<D as EntityDefinition>::Behavior as Behavior>::Protocol>,
     NativeEntityLease<D>,
+    BombayEntityRuntime<D>,
 >;
 
-/// Cloneable receptionist for one application-installed native family.
+/// Cloneable admission handle for one application-installed native family.
 pub struct Entities<D>
 where
     D: EntityDefinition,
 {
-    receptionist: ReceptionistFor<D>,
+    lifecycle: Arc<NativeLifecycleFor<D>>,
     definition: Arc<D>,
 }
 
@@ -235,7 +229,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            receptionist: self.receptionist.clone(),
+            lifecycle: Arc::clone(&self.lifecycle),
             definition: Arc::clone(&self.definition),
         }
     }
@@ -245,14 +239,11 @@ impl<D> Entities<D>
 where
     D: EntityDefinition,
 {
-    fn from_runtime(runtime: &InstalledRuntimeFor<D>, definition: Arc<D>) -> Self
+    fn from_parts(lifecycle: Arc<NativeLifecycleFor<D>>, definition: Arc<D>) -> Self
     where
-        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+        D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
     {
-        Self {
-            receptionist: runtime.receptionist(),
-            definition,
-        }
+        Self { lifecycle, definition }
     }
 
     /// Bind one domain identity into a stable family-specific reference.
@@ -266,9 +257,9 @@ where
 
     pub(crate) fn passivate(&self, id: &D::Id) -> Passivation
     where
-        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+        D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
     {
-        self.receptionist.passivate(&EntityId::new(id.clone()))
+        self.lifecycle.passivate(&EntityId::new(id.clone()))
     }
 }
 
@@ -309,10 +300,10 @@ where
         command: BehaviorMessage<D::Behavior>,
     ) -> Result<(), AdmissionFailure<BehaviorMessage<D::Behavior>>>
     where
-        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+        D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
     {
         self.entities
-            .receptionist
+            .lifecycle
             .admit(origin, self.id.clone(), command)
             .await
     }
@@ -355,7 +346,7 @@ where
 impl<D> EntityAdmission<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
 {
     pub(crate) async fn interpret(self, origin: MailAddr) {
         let Self { entity, command } = self;
@@ -371,16 +362,16 @@ mod application_families_sealed {
 }
 
 /// Static application family product and its live/shutdown projections.
-pub trait EntityApplicationFamilies<Hosts>: application_families_sealed::Sealed {
+pub trait EntityApplicationFamilies<Hosting>: application_families_sealed::Sealed {
     type Receptionists: Clone + Send + 'static;
     type Shutdowns: Send + 'static;
 }
 
 impl application_families_sealed::Sealed for () {}
 
-impl<Hosts> EntityApplicationFamilies<Hosts> for ()
+impl<Hosting> EntityApplicationFamilies<Hosting> for ()
 where
-    Hosts: Send + Sync + 'static,
+    Hosting: Send + Sync + 'static,
 {
     type Receptionists = ();
     type Shutdowns = ();
@@ -393,14 +384,14 @@ where
 {
 }
 
-impl<Hosts, Role, D, Tail> EntityApplicationFamilies<Hosts>
+impl<Hosting, Role, D, Tail> EntityApplicationFamilies<Hosting>
     for (Role, D, DirectoryConfig, EntityCapacity, Tail)
 where
-    Hosts: Send + Sync + 'static,
+    Hosting: Send + Sync + 'static,
     Role: Clone + Send + 'static,
-    D: EntityDefinition<Hosts = Hosts>,
-    Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
-    Tail: EntityApplicationFamilies<Hosts>,
+    D: EntityDefinition<Hosting = Hosting>,
+    Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
+    Tail: EntityApplicationFamilies<Hosting>,
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
     type Shutdowns = (Role, (EntityShutdown, EntityMetrics), Tail::Shutdowns);
@@ -458,9 +449,9 @@ where
 pub(crate) struct InstalledEntityFamily<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
 {
-    runtime: InstalledRuntimeFor<D>,
+    lifecycle: Arc<NativeLifecycleFor<D>>,
     entities: Entities<D>,
     tasks: Arc<EntityTaskOwner>,
     metrics: Arc<EntityMetricState>,
@@ -469,59 +460,69 @@ where
 impl<D> InstalledEntityFamily<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
 {
     async fn shutdown(self) -> (EntityShutdown, EntityMetrics) {
-        let directory = self.runtime.shutdown().await;
+        let directory = self.lifecycle.shutdown().await;
         self.tasks.join().await;
         (directory, self.metrics.snapshot())
     }
 }
 
-pub(crate) trait InstallEntityFamilies<Hosts>: EntityApplicationFamilies<Hosts> {
+pub(crate) trait InstallEntityFamilies<Hosting>: EntityApplicationFamilies<Hosting> {
     type Installed: InstalledEntityFamilies<Receptionists = Self::Receptionists, Shutdowns = Self::Shutdowns>
         + Send;
 
-    fn install(self, hosts: Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed;
+    fn install(self, hosts: Arc<Hosting>, allocations: ApplicationAddresses) -> Self::Installed;
 }
 
-impl<Hosts> InstallEntityFamilies<Hosts> for ()
+impl<Hosting> InstallEntityFamilies<Hosting> for ()
 where
-    Hosts: Send + Sync + 'static,
+    Hosting: Send + Sync + 'static,
 {
     type Installed = ();
 
-    fn install(self, _: Arc<Hosts>, _: ApplicationAddresses) -> Self::Installed {}
+    fn install(self, _: Arc<Hosting>, _: ApplicationAddresses) -> Self::Installed {}
 }
 
-impl<Hosts, Role, D, Tail> InstallEntityFamilies<Hosts>
+impl<Hosting, Role, D, Tail> InstallEntityFamilies<Hosting>
     for (Role, D, DirectoryConfig, EntityCapacity, Tail)
 where
-    Hosts: Send + Sync + 'static,
+    Hosting: Send + Sync + 'static,
     Role: Clone + Send + 'static,
-    D: EntityDefinition<Hosts = Hosts>,
-    Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
-    Tail: InstallEntityFamilies<Hosts>,
+    D: EntityDefinition<Hosting = Hosting>,
+    Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
+    Tail: InstallEntityFamilies<Hosting>,
 {
     type Installed = (Role, InstalledEntityFamily<D>, Tail::Installed);
 
-    fn install(self, hosts: Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed {
+    fn install(self, hosts: Arc<Hosting>, allocations: ApplicationAddresses) -> Self::Installed {
         let (role, definition, directory, capacity, tail) = self;
         let definition = Arc::new(definition);
         let metrics = Arc::new(EntityMetricState::default());
+        let Ok(directory) = NativeEntityDirectory::<D>::new(directory) else {
+            unreachable!("EntityCapacity retains a validated directory configuration")
+        };
+        let directory = Arc::new(directory);
+        let settlement = Arc::new(EntityTaskGroup::new());
         let (runtime, tasks) = bombay_entity_runtime(
             Arc::clone(&definition),
             Arc::clone(&hosts),
             allocations.clone(),
             capacity,
             Arc::clone(&metrics),
+            Arc::clone(&directory),
+            Arc::clone(&settlement),
         );
-        let Ok(runtime) = EntityRuntime::new(directory, runtime) else {
-            unreachable!("EntityCapacity retains a validated directory configuration")
-        };
-        let entities = Entities::from_runtime(&runtime, definition);
+        let runtime = Arc::new(runtime);
+        let lifecycle = Arc::new(EntityLifecycle::from_parts(
+            directory,
+            settlement,
+            Arc::clone(&runtime),
+        ));
+        let entities = Entities::from_parts(Arc::clone(&lifecycle), definition);
         let family = InstalledEntityFamily {
-            runtime,
+            lifecycle,
             entities,
             tasks,
             metrics,
@@ -553,7 +554,7 @@ impl<Role, D, Tail> InstalledEntityFamilies for (Role, InstalledEntityFamily<D>,
 where
     Role: Clone + Send + 'static,
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
     Tail: InstalledEntityFamilies + Send,
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);

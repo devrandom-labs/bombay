@@ -4,7 +4,7 @@ use bombay::entity::{
     ActivationId, AdmissionFailure, DrainFailure, Entities, EntityActivationError,
     EntityDefinition, EntityId,
 };
-use bombay::{ActorRetirement, ActorSpace, ActorSpaces, ApplicationHandle};
+use bombay::{ActorRetirement, LocalAddresses, HostedAddresses, ApplicationHandle};
 
 struct Root;
 
@@ -29,11 +29,11 @@ impl Profile {
     }
 }
 
-#[derive(ActorSpaces)]
+#[derive(HostedAddresses)]
 struct Spaces {
-    root: ActorSpace<Root>,
-    accounts: ActorSpace<Account>,
-    profiles: ActorSpace<Profile>,
+    root: LocalAddresses<Root>,
+    accounts: LocalAddresses<Account>,
+    profiles: LocalAddresses<Profile>,
 }
 
 struct Accounts;
@@ -44,7 +44,7 @@ struct ProfilesRole;
 impl EntityDefinition for Accounts {
     type Id = u64;
     type Behavior = StopOnShutdown<Account>;
-    type Hosts = Spaces;
+    type HostedAddresses = Spaces;
     type HydrationError = Never;
     type Terminal = Never;
 
@@ -79,7 +79,7 @@ impl EntityDefinition for Accounts {
 impl EntityDefinition for Profiles {
     type Id = u64;
     type Behavior = StopOnShutdown<Profile>;
-    type Hosts = Spaces;
+    type HostedAddresses = Spaces;
     type HydrationError = Never;
     type Terminal = Never;
 

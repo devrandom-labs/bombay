@@ -18,21 +18,21 @@ use crate::child_bindings::{
     OccurrenceBindings, RetireChildTasks, RuntimeChildBindings, RuntimeChildSpaces,
 };
 use crate::interpret::{ActionInterpreter, ActionSettlementOf};
+use crate::launch::HostedAddresses;
 use crate::launch::{OwnedActor, SpawnError, spawn_owned_entity_with};
 use crate::local::{ActorRef, CommitActions};
-use crate::topology::{HostedActorSpaces, Hosts};
 
 use super::family::{EntityCapacity, EntityDefinition, EntityMetricState};
 use super::{
-    Activated, ActivationId, EntityActivationError, EntityId, FenceFailure, LocalEntityRuntime,
-    RetirementMode,
+    ActivationId, AdmissionFailure, DrainStage, EffectInterpreter, EntityActivationError, EntityId,
+    EntityTaskGroup, LocalDirectory, PendingCommand, RetirementMode,
 };
 
 const USER_CAPACITY: usize = 1_024;
 
 type NativeEntityCapabilities<B, N, Terminal> = ApplicationCapabilities<
     B,
-    HostedActorSpaces<Arc<N>>,
+    Arc<N>,
     NoParent,
     OccurrenceBindings<B, Terminal>,
     StructuralOrigins<<B as BehaviorBase>::Base>,
@@ -71,7 +71,7 @@ where
         + ChildOccurrenceProduct<RuntimeChildSpaces>
         + Send
         + 'static,
-    N: Hosts<B::Protocol> + Send + Sync + 'static,
+    N: HostedAddresses<B::Protocol> + Send + Sync + 'static,
     OccurrenceBindings<B, Terminal>: Default + RetireChildTasks<Root = Terminal> + Send + 'static,
     NativeEntityInterpreter<B, N, Terminal>:
         CommitActions<B, Retired = Vec<Terminal>> + Send + 'static,
@@ -84,7 +84,7 @@ where
         allocations: ApplicationAddresses,
         behavior: B,
     ) -> Result<NativeEntityActor<B, Terminal>, ActorRetirement<B, Terminal>> {
-        let addresses = <N as Hosts<B::Protocol>>::space(&self).clone();
+        let addresses = <N as HostedAddresses<B::Protocol>>::addresses(&self).clone();
         spawn_owned_entity_with(
             addresses,
             Config::new(USER_CAPACITY),
@@ -94,7 +94,7 @@ where
                 ActionInterpreter::new(ApplicationCapabilities::new_with_bindings(
                     crate::application_runtime::ApplicationCapabilityInputs {
                         address,
-                        actor_spaces: Arc::new(HostedActorSpaces(self)),
+                        actor_spaces: Arc::clone(&self),
                         allocations,
                         control,
                         timers,
@@ -172,17 +172,38 @@ where
     resident: OwnedSemaphorePermit,
 }
 
+/// Directory instantiation for the native Entity binding.
+pub(crate) type NativeEntityDirectory<D> = LocalDirectory<
+    <D as EntityDefinition>::Id,
+    PendingCommand<MailAddr, BehaviorMessage<<D as EntityDefinition>::Behavior>>,
+    ActorRef<<<D as EntityDefinition>::Behavior as Behavior>::Protocol>,
+    NativeEntityLease<D>,
+>;
+
+/// Stage at which an ordered fence operation failed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub(crate) enum FenceFailure {
+    /// The fence was not enqueued.
+    #[error("fence was not enqueued")]
+    Enqueue,
+    /// The fence was enqueued but not acknowledged.
+    #[error("fence was enqueued but not acknowledged")]
+    Acknowledgement,
+}
+
 pub(crate) struct BombayEntityRuntime<D>
 where
     D: EntityDefinition,
 {
     definition: Arc<D>,
-    actors: Arc<D::Hosts>,
+    actors: Arc<D::Hosting>,
     allocations: ApplicationAddresses,
     hydrations: Arc<Semaphore>,
     residents: Arc<Semaphore>,
     metrics: Arc<EntityMetricState>,
     tasks: Weak<EntityTaskOwner>,
+    directory: Arc<NativeEntityDirectory<D>>,
+    settlement: Arc<EntityTaskGroup>,
 }
 
 impl<D> Clone for BombayEntityRuntime<D>
@@ -198,16 +219,20 @@ where
             residents: Arc::clone(&self.residents),
             metrics: Arc::clone(&self.metrics),
             tasks: self.tasks.clone(),
+            directory: Arc::clone(&self.directory),
+            settlement: Arc::clone(&self.settlement),
         }
     }
 }
 
 pub(crate) fn bombay_entity_runtime<D>(
     definition: Arc<D>,
-    actors: Arc<D::Hosts>,
+    actors: Arc<D::Hosting>,
     allocations: ApplicationAddresses,
     capacity: EntityCapacity,
     metrics: Arc<EntityMetricState>,
+    directory: Arc<NativeEntityDirectory<D>>,
+    settlement: Arc<EntityTaskGroup>,
 ) -> (BombayEntityRuntime<D>, Arc<EntityTaskOwner>)
 where
     D: EntityDefinition,
@@ -221,32 +246,172 @@ where
         residents: Arc::new(Semaphore::new(capacity.residents().get())),
         metrics,
         tasks: Arc::downgrade(&tasks),
+        directory,
+        settlement,
     };
     (runtime, tasks)
 }
 
-impl<D> LocalEntityRuntime<D::Id, BehaviorMessage<D::Behavior>> for BombayEntityRuntime<D>
+impl<D>
+    EffectInterpreter<
+        <D as EntityDefinition>::Id,
+        PendingCommand<MailAddr, BehaviorMessage<<D as EntityDefinition>::Behavior>>,
+        ActorRef<<<D as EntityDefinition>::Behavior as Behavior>::Protocol>,
+        NativeEntityLease<D>,
+    > for BombayEntityRuntime<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
 {
-    type Origin = MailAddr;
-    type Endpoint = ActorRef<<D::Behavior as Behavior>::Protocol>;
-    type Lease = NativeEntityLease<D>;
-    type ActivationError = EntityActivationError<D::HydrationError, D::Behavior, D::Terminal>;
+    fn start_activation(
+        &self,
+        entity_id: EntityId<D::Id>,
+        activation_id: ActivationId,
+    ) {
+        let runtime = self.clone();
+        self.spawn_settled(async move {
+            let activation = runtime.activate(entity_id.clone(), activation_id).await;
+            let output = match activation {
+                Ok((endpoint, lease)) => runtime.directory.activation_succeeded(
+                    &entity_id,
+                    activation_id,
+                    endpoint,
+                    lease,
+                ),
+                Err(error) => {
+                    runtime.activation_failed(entity_id.clone(), activation_id, error);
+                    runtime
+                        .directory
+                        .activation_failed(&entity_id, activation_id)
+                }
+            };
+            runtime.directory.interpret(output, &runtime);
+        });
+    }
 
-    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) {
+    fn deliver(
+        &self,
+        entity_id: EntityId<D::Id>,
+        activation_id: ActivationId,
+        dispatch_id: DispatchId,
+        endpoint: ActorRef<<<D as EntityDefinition>::Behavior as Behavior>::Protocol>,
+        pending: PendingCommand<MailAddr, BehaviorMessage<<D as EntityDefinition>::Behavior>>,
+    ) {
+        let runtime = self.clone();
+        self.spawn_settled(async move {
+            let PendingCommand {
+                origin,
+                command,
+                publisher,
+            } = pending;
+            let failure = match runtime.deliver(endpoint, origin.clone(), command).await {
+                Ok(()) => {
+                    publisher.complete(Ok(()));
+                    None
+                }
+                Err(command) => Some((
+                    dispatch_id,
+                    PendingCommand {
+                        origin,
+                        command,
+                        publisher,
+                    },
+                )),
+            };
+            let output = runtime
+                .directory
+                .delivery_resolved(&entity_id, activation_id, failure);
+            runtime.directory.interpret(output, &runtime);
+        });
+    }
+
+    fn reject(
+        &self,
+        _: DispatchId,
+        pending: PendingCommand<MailAddr, BehaviorMessage<<D as EntityDefinition>::Behavior>>,
+        reason: Refusal,
+    ) {
+        pending.publisher.complete(Err(AdmissionFailure::Refused {
+            command: pending.command,
+            reason,
+        }));
+    }
+
+    fn enqueue_fence(
+        &self,
+        entity_id: EntityId<D::Id>,
+        activation_id: ActivationId,
+        endpoint: ActorRef<<<D as EntityDefinition>::Behavior as Behavior>::Protocol>,
+    ) {
+        let runtime = self.clone();
+        self.spawn_settled(async move {
+            let output = match runtime.fence(endpoint).await {
+                Ok(()) => runtime
+                    .directory
+                    .fence_acknowledged(&entity_id, activation_id),
+                Err(failure) => runtime.directory.force_drain(
+                    &entity_id,
+                    activation_id,
+                    DrainFailure {
+                        stage: match failure {
+                            FenceFailure::Enqueue => DrainStage::FenceEnqueue,
+                            FenceFailure::Acknowledgement => DrainStage::FenceAcknowledgement,
+                        },
+                        outstanding_reservations: 0,
+                    },
+                ),
+            };
+            runtime.directory.interpret(output, &runtime);
+        });
+    }
+
+    fn retire(
+        &self,
+        entity_id: EntityId<D::Id>,
+        activation_id: ActivationId,
+        lease: NativeEntityLease<D>,
+        retirement: RetirementMode,
+    ) {
+        let runtime = self.clone();
+        self.spawn_settled(async move {
+            runtime
+                .retire(entity_id.clone(), activation_id, lease, retirement)
+                .await;
+            let output = runtime.directory.terminated(&entity_id, activation_id);
+            runtime.directory.interpret(output, &runtime);
+        });
+    }
+}
+
+impl<D> BombayEntityRuntime<D>
+where
+    D: EntityDefinition,
+    D::Hosting: NativeEntityHost<D::Behavior, D::Terminal>,
+{
+    /// Schedule one lifecycle task under a settlement guard and the owned
+    /// application task registry.
+    fn spawn_settled(&self, task: impl Future<Output = ()> + Send + 'static) {
+        let guard = self.settlement.begin();
         let Some(owner) = self.tasks.upgrade() else {
             return;
         };
-        owner.track(tokio::spawn(task));
+        owner.track(tokio::spawn(async move {
+            let _guard = guard;
+            task.await;
+        }));
     }
 
     async fn activate(
         &self,
         entity_id: EntityId<D::Id>,
         _: ActivationId,
-    ) -> Result<Activated<Self::Endpoint, Self::Lease>, Self::ActivationError> {
+    ) -> Result<
+        (
+            ActorRef<<D::Behavior as Behavior>::Protocol>,
+            NativeEntityLease<D>,
+        ),
+        EntityActivationError<D::HydrationError, D::Behavior, D::Terminal>,
+    > {
         let resident = Arc::clone(&self.residents)
             .try_acquire_owned()
             .map_err(|_| {
@@ -282,17 +447,14 @@ where
                 EntityActivationError::Launch(retirement)
             })?;
         self.metrics.activation_succeeded();
-        Ok(Activated {
-            endpoint: actor.actor.clone(),
-            lease: NativeEntityLease { actor, resident },
-        })
+        Ok((actor.actor.clone(), NativeEntityLease { actor, resident }))
     }
 
     fn activation_failed(
         &self,
         entity_id: EntityId<D::Id>,
         activation_id: ActivationId,
-        error: Self::ActivationError,
+        error: EntityActivationError<D::HydrationError, D::Behavior, D::Terminal>,
     ) {
         self.definition
             .activation_failed(entity_id, activation_id, error);
@@ -300,8 +462,8 @@ where
 
     async fn deliver(
         &self,
-        endpoint: Self::Endpoint,
-        origin: Self::Origin,
+        endpoint: ActorRef<<D::Behavior as Behavior>::Protocol>,
+        origin: MailAddr,
         command: BehaviorMessage<D::Behavior>,
     ) -> Result<(), BehaviorMessage<D::Behavior>> {
         endpoint
@@ -310,7 +472,7 @@ where
             .map_err(crate::SendError::into_message)
     }
 
-    async fn fence(&self, endpoint: Self::Endpoint) -> Result<(), FenceFailure> {
+    async fn fence(&self, endpoint: ActorRef<<D::Behavior as Behavior>::Protocol>) -> Result<(), FenceFailure> {
         endpoint.fence().await
     }
 
@@ -318,7 +480,7 @@ where
         &self,
         entity_id: EntityId<D::Id>,
         activation_id: ActivationId,
-        lease: Self::Lease,
+        lease: NativeEntityLease<D>,
         retirement: RetirementMode,
     ) {
         if let RetirementMode::Forced(failure) = retirement {

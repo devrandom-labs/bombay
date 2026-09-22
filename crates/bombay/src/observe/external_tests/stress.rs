@@ -1,9 +1,9 @@
 //! Deterministic adversarial stress: real threads, barrier-synchronized,
-//! fixed-seed SplitMix64 op selection. Publishers race on shared keys;
-//! observers hammer observe/try_get/wait/wait_timeout/waker cancellation.
-//! Every value read is tag-checked against the generation that published
-//! it (no cross-generation leakage), and every blocking wait must return
-//! (publishers complete every generation before retiring it).
+//! fixed-seed SplitMix64 op selection. Publishers complete independent
+//! pairs; observers hammer try_get/wait/wait_timeout/waker cancellation.
+//! Every value read is tag-checked against the pair that published
+//! it (no cross-pair leakage), and every blocking wait must return
+//! (publishers complete every pair before the run ends).
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Barrier};
@@ -11,8 +11,8 @@ use std::task::Wake;
 use std::thread;
 use std::time::Duration;
 
-use crate::observe::test_support::{CountWake, DropProbe, ThreadWake};
-use crate::observe::{ObservationSpace, Subject};
+use crate::observe::test_support::{CountWake, ThreadWake};
+use crate::observe::{Observation, pair};
 
 /// SplitMix64: deterministic, seedable, dependency-free.
 struct Rng(u64);
@@ -31,54 +31,82 @@ impl Rng {
     }
 }
 
-/// Outcome encoding: publisher tag in the high byte, round in the middle,
-/// key in the low byte. Cross-generation or cross-key leakage breaks the
-/// tag check.
-fn encode(publisher: u64, round: u64, key: u64) -> u64 {
-    (publisher << 56) | (round << 8) | key
+/// Outcome encoding: publisher tag in the high byte, pair index in the
+/// next word, round in the low word. Cross-pair leakage breaks the tag
+/// check (a read on pair `p` must carry `p`'s index and owner).
+fn encode(publisher: u64, pair_index: u64, round: u64) -> u64 {
+    (publisher << 56) | ((pair_index & 0xFFFF) << 32) | (round & 0xFFFF_FFFF)
 }
 
-fn key_of(outcome: u64) -> u64 {
-    outcome & 0xFF
+fn pair_index_of(outcome: u64) -> u64 {
+    (outcome >> 32) & 0xFFFF
 }
 
-/// 2 publishers x 2 keys x 2,000 rounds, 4 observer threads x 2,000
-/// iterations, all released by one barrier. Value integrity only; the run
-/// is deterministic in op selection (not in interleaving).
+fn publisher_of(outcome: u64) -> u64 {
+    outcome >> 56
+}
+
+/// 64 pairs, 2 publishers (one per even/odd pair index) and 4 observer
+/// threads all released by one barrier; observers pick pairs at random and
+/// run mixed read/wait/cancel ops until every pair is complete. Value
+/// integrity only; the run is deterministic in op selection (not in
+/// interleaving).
 #[test]
 fn stress_publishers_observers_value_integrity() {
-    const KEYS: u64 = 2;
+    const PAIRS: u64 = 64;
     const PUBLISHERS: u64 = 2;
     const OBSERVERS: u64 = 4;
-    const ROUNDS: u64 = 2_000;
 
-    let space = Arc::new(ObservationSpace::<u64, u64>::new());
-    let barrier = Arc::new(Barrier::new((PUBLISHERS + OBSERVERS + 1) as usize));
-    // Seed a completed generation on key 2 — outside the publishers'
-    // keyspace (KEYS = 2) and retained for the whole run — so every
-    // observer has a GUARANTEED first read. Without the seed, observers
-    // can be descheduled for the entire publisher window (observed:
-    // captures=0 for all four) and the run reads nothing; no scheduling
-    // gate can close that window.
-    let mut seed = space.subject(2).expect("seed registers");
-    seed.complete(u64::MAX); // distinctive: publishers never emit 0xFF_..
-    // Set by each publisher after its last round: bounds the observers'
-    // loop by the publishers' actual runtime.
+    // One publisher handle and one observation handle per pair. Pair 0 is
+    // the seed: completed here, before any thread exists, so every
+    // observer has a GUARANTEED first read even under extreme
+    // descheduling (the keyed corpus relied on the same retained-seed
+    // trick).
+    let pairs: Vec<_> = (0..PAIRS).map(|_| pair::<u64>()).collect();
+    let observations: Arc<Vec<Observation<u64>>> = Arc::new(
+        pairs
+            .iter()
+            .map(|(_, observation)| observation.clone())
+            .collect(),
+    );
+    let mut publisher_slots: Vec<Option<_>> = pairs
+        .into_iter()
+        .map(|(publisher, _)| Some(publisher))
+        .collect();
+    publisher_slots[0]
+        .take()
+        .expect("seed publisher")
+        .complete(u64::MAX); // distinctive: publishers never emit 0xFF_..
+    // Each publisher thread owns the pairs whose index it parity-matches;
+    // the Vec<Option<_>> split hands each one its own handles.
+    let mut by_publisher: Vec<Vec<(u64, _)>> = (0..PUBLISHERS).map(|_| Vec::new()).collect();
+    for (index, publisher) in publisher_slots.into_iter().enumerate() {
+        if let Some(publisher) = publisher {
+            by_publisher[index % PUBLISHERS as usize].push((index as u64, publisher));
+        }
+    }
+    // Set once every publisher finishes: bounds the observers' loop.
     let done = Arc::new(AtomicBool::new(false));
 
+    // PUBLISHERS + OBSERVERS worker threads synchronize here; the main
+    // thread only joins them and must not join the barrier.
+    let barrier = Arc::new(Barrier::new((PUBLISHERS + OBSERVERS) as usize));
     let publishers: Vec<_> = (0..PUBLISHERS)
         .map(|id| {
-            let space = Arc::clone(&space);
+            let mut owned = std::mem::take(&mut by_publisher[id as usize]);
             let barrier = Arc::clone(&barrier);
             let done = Arc::clone(&done);
             thread::spawn(move || {
                 let mut rng = Rng(0xA11C_E000 + id);
                 barrier.wait();
-                for round in 0..ROUNDS {
-                    let key = rng.below(KEYS);
-                    if let Ok(mut subject) = space.subject(key) {
-                        subject.complete(encode(id, round, key));
-                    } // Err: contention, another publisher holds the key
+                // Fisher-Yates over the owned pairs: the completion order
+                // is rng-chosen, the set is fixed.
+                for i in (1..owned.len()).rev() {
+                    let j = rng.below(i as u64 + 1) as usize;
+                    owned.swap(i, j);
+                }
+                for (round, (pair_index, publisher)) in owned.into_iter().enumerate() {
+                    publisher.complete(encode(id, pair_index, round as u64));
                 }
                 done.store(true, Ordering::SeqCst);
             })
@@ -87,34 +115,35 @@ fn stress_publishers_observers_value_integrity() {
 
     let observers: Vec<_> = (0..OBSERVERS)
         .map(|id| {
-            let space = Arc::clone(&space);
+            let observations = Arc::clone(&observations);
             let barrier = Arc::clone(&barrier);
             let done = Arc::clone(&done);
             thread::spawn(move || {
                 let mut rng = Rng(0x0B5E_7000 + id);
                 barrier.wait();
                 let mut reads = 0_u64;
-                // Guaranteed first read: the completed seed on key 2 is
-                // retained for the whole run, so this resolves immediately
-                // regardless of scheduling.
+                // Guaranteed first read: the completed seed pair is
+                // retained for the whole run.
                 assert_eq!(
-                    space.observe(&2).expect("seed retained").wait(),
+                    observations[0].wait(),
                     u64::MAX,
-                    "seed generation must resolve to its value"
+                    "seed pair must resolve to its value"
                 );
                 reads += 1;
-                // Loop until both publishers finish: every registered
-                // generation completes before its publisher retires, so the
-                // blocking `wait` arm below is guaranteed to return.
+                // Loop until every pair is complete: every captured pair
+                // completes before the publishers retire, so the blocking
+                // `wait` arm below is guaranteed to return.
                 while !done.load(Ordering::Relaxed) {
-                    let key = rng.below(KEYS);
-                    let Ok(observation) = space.observe(&key) else {
-                        continue; // vacant under contention: fine
-                    };
+                    let pair_index = rng.below(PAIRS) as usize;
+                    let observation = observations[pair_index].clone();
                     match rng.below(4) {
                         0 => {
                             if let Some(outcome) = observation.try_get() {
-                                assert_eq!(key_of(outcome), key, "try_get leaked across keys");
+                                assert_eq!(
+                                    pair_index_of(outcome),
+                                    pair_index as u64,
+                                    "try_get leaked across pairs"
+                                );
                                 reads += 1;
                             }
                         }
@@ -122,7 +151,11 @@ fn stress_publishers_observers_value_integrity() {
                             if let Some(outcome) =
                                 observation.wait_timeout(Duration::from_millis(50))
                             {
-                                assert_eq!(key_of(outcome), key, "wait_timeout leaked across keys");
+                                assert_eq!(
+                                    pair_index_of(outcome),
+                                    pair_index as u64,
+                                    "wait_timeout leaked across pairs"
+                                );
                                 reads += 1;
                             }
                         }
@@ -133,10 +166,19 @@ fn stress_publishers_observers_value_integrity() {
                         }
                         _ => {
                             // Blocking wait with a safety net: every captured
-                            // generation completes before its publisher
-                            // retires, so this must return.
+                            // pair completes before its publisher retires, so
+                            // this must return.
                             let outcome = observation.wait();
-                            assert_eq!(key_of(outcome), key, "wait leaked across keys");
+                            assert_eq!(
+                                pair_index_of(outcome),
+                                pair_index as u64,
+                                "wait leaked across pairs"
+                            );
+                            assert_eq!(
+                                publisher_of(outcome) % 2,
+                                pair_index as u64 % 2,
+                                "outcome publisher does not own the pair"
+                            );
                             reads += 1;
                         }
                     }
@@ -146,7 +188,6 @@ fn stress_publishers_observers_value_integrity() {
         })
         .collect();
 
-    barrier.wait();
     for publisher in publishers {
         publisher.join().expect("publisher panicked");
     }
@@ -157,9 +198,9 @@ fn stress_publishers_observers_value_integrity() {
     assert!(total_reads > 0, "stress run observed no completions at all");
 }
 
-/// Fanout storm: 8 waiters capture the same generation; one publisher
+/// Fanout storm: 8 waiters observe the same pair; one publisher
 /// completes it. Every waiter must wake with the exact outcome, 200 rounds
-/// with a fresh generation each round. Barriers make the registration race
+/// with a fresh pair each round. Barriers make the registration race
 /// real: waiters start waiting while the publisher may already have
 /// completed.
 #[test]
@@ -167,21 +208,14 @@ fn stress_waiter_fanout_exact_outcome() {
     const WAITERS: usize = 8;
     const ROUNDS: u64 = 200;
 
-    let space = Arc::new(ObservationSpace::<u8, u64>::new());
     let failures = Arc::new(AtomicUsize::new(0));
 
     for round in 0..ROUNDS {
-        let key = (round % 3) as u8;
-        let mut subject = loop {
-            match space.subject(key) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(), // previous round's subject not yet dropped
-            }
-        };
+        let (publisher, observation) = pair::<u64>();
         let start = Arc::new(Barrier::new(WAITERS + 1));
         let waiters: Vec<_> = (0..WAITERS)
             .map(|_| {
-                let observation = space.observe(&key).expect("live generation");
+                let observation = observation.clone();
                 let start = Arc::clone(&start);
                 let failures = Arc::clone(&failures);
                 thread::spawn(move || {
@@ -194,7 +228,7 @@ fn stress_waiter_fanout_exact_outcome() {
             })
             .collect();
         start.wait();
-        subject.complete(round);
+        publisher.complete(round);
         for waiter in waiters {
             waiter.join().expect("waiter panicked");
         }
@@ -214,16 +248,8 @@ fn stress_waiter_fanout_exact_outcome() {
 fn stress_zero_timeout_boundary() {
     const ROUNDS: u64 = 500;
 
-    let space = Arc::new(ObservationSpace::<u8, u64>::new());
     for round in 0..ROUNDS {
-        let key = (round % 2) as u8;
-        let mut subject = loop {
-            match space.subject(key) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(),
-            }
-        };
-        let observation = space.observe(&key).expect("live generation");
+        let (publisher, observation) = pair::<u64>();
         let barrier = Arc::new(Barrier::new(2));
         let waiter = {
             let barrier = Arc::clone(&barrier);
@@ -246,7 +272,7 @@ fn stress_zero_timeout_boundary() {
         };
         barrier.wait();
         thread::yield_now();
-        subject.complete(round);
+        publisher.complete(round);
         assert!(
             waiter.join().expect("waiter panicked"),
             "waiter never observed the completion"
@@ -255,12 +281,12 @@ fn stress_zero_timeout_boundary() {
 }
 
 /// Reentrant wake/drop: a waker whose `wake` drops ANOTHER observation of
-/// the same generation (re-entering the slot's waiter machinery during the
+/// the same slot (re-entering the slot's waiter machinery during the
 /// drain) must not deadlock or corrupt the drain.
 #[test]
 fn stress_reentrant_wake_drops_observation() {
     struct Reentrant {
-        victim: std::sync::Mutex<Option<crate::observe::Observation<u64>>>,
+        victim: std::sync::Mutex<Option<Observation<u64>>>,
         fires: AtomicUsize,
     }
 
@@ -273,22 +299,21 @@ fn stress_reentrant_wake_drops_observation() {
     }
 
     for round in 0..100_u64 {
-        let space = ObservationSpace::<u8, u64>::new();
-        let mut subject = space.subject(1).expect("first registration succeeds");
-        let obs = space.observe(&1).expect("subject retained");
-        let victim = space.observe(&1).expect("subject retained");
+        let (publisher, observation) = pair::<u64>();
+        let observer = observation.clone();
+        let victim = observation;
         let reentrant = Arc::new(Reentrant {
             victim: std::sync::Mutex::new(Some(victim)),
             fires: AtomicUsize::new(0),
         });
-        assert!(!obs.register_waker(&std::task::Waker::from(reentrant.clone())));
-        subject.complete(round);
+        assert!(!observer.register_waker(&std::task::Waker::from(reentrant.clone())));
+        publisher.complete(round);
         assert_eq!(
             reentrant.fires.load(Ordering::SeqCst),
             1,
             "reentrant waker fired != once (round {round})"
         );
-        assert_eq!(obs.try_get(), Some(round));
+        assert_eq!(observer.try_get(), Some(round));
     }
 }
 
@@ -301,19 +326,12 @@ fn stress_reentrant_wake_drops_observation() {
 fn stress_spurious_unpark_injection() {
     const ROUNDS: u64 = 100;
 
-    let space = std::sync::Arc::new(ObservationSpace::<u8, u64>::new());
     for round in 0..ROUNDS {
-        let key = (round % 2) as u8;
-        let mut subject = loop {
-            match space.subject(key) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(),
-            }
-        };
-        let start = std::sync::Arc::new(Barrier::new(4));
+        let (publisher, observation) = pair::<u64>();
+        let start = Arc::new(Barrier::new(4));
         let mk_waiter = || {
-            let observation = space.observe(&key).expect("live generation");
-            let start = std::sync::Arc::clone(&start);
+            let observation = observation.clone();
+            let start = Arc::clone(&start);
             thread::spawn(move || {
                 start.wait();
                 observation.wait()
@@ -324,7 +342,7 @@ fn stress_spurious_unpark_injection() {
         let handle_a = waiter_a.thread().clone();
 
         let injector = {
-            let start = std::sync::Arc::clone(&start);
+            let start = Arc::clone(&start);
             thread::spawn(move || {
                 start.wait();
                 for _ in 0..64 {
@@ -338,7 +356,7 @@ fn stress_spurious_unpark_injection() {
         for _ in 0..32 {
             thread::yield_now();
         }
-        subject.complete(round);
+        publisher.complete(round);
         injector.join().expect("injector panicked");
         assert_eq!(waiter_a.join().expect("waiter A panicked"), round);
         assert_eq!(waiter_b.join().expect("waiter B panicked"), round);
@@ -351,20 +369,20 @@ fn stress_spurious_unpark_injection() {
 #[test]
 fn stress_reentrant_wake_reregistration_no_loop() {
     struct ReRegister {
-        obs: std::sync::Mutex<Option<crate::observe::Observation<u64>>>,
+        observed: std::sync::Mutex<Option<Observation<u64>>>,
         fires: AtomicUsize,
     }
 
     impl Wake for ReRegister {
         fn wake(self: Arc<Self>) {
             self.fires.fetch_add(1, Ordering::SeqCst);
-            let guard = self.obs.lock().expect("obs lock");
-            if let Some(obs) = guard.as_ref() {
+            let guard = self.observed.lock().expect("observation lock");
+            if let Some(observed) = guard.as_ref() {
                 // Reentrant registration mid-drain: must return `true`
                 // (already completed) without registering again.
                 let (waker, _) = CountWake::waker();
                 assert!(
-                    obs.register_waker(&waker),
+                    observed.register_waker(&waker),
                     "re-registration must see COMPLETED"
                 );
             }
@@ -372,15 +390,14 @@ fn stress_reentrant_wake_reregistration_no_loop() {
     }
 
     for round in 0..50_u64 {
-        let space = ObservationSpace::<u8, u64>::new();
-        let mut subject = space.subject(1).expect("first registration succeeds");
-        let obs = space.observe(&1).expect("subject retained");
+        let (publisher, observation) = pair::<u64>();
+        let observer = observation.clone();
         let re = Arc::new(ReRegister {
-            obs: std::sync::Mutex::new(Some(space.observe(&1).expect("subject retained"))),
+            observed: std::sync::Mutex::new(Some(observation)),
             fires: AtomicUsize::new(0),
         });
-        assert!(!obs.register_waker(&std::task::Waker::from(re.clone())));
-        subject.complete(round);
+        assert!(!observer.register_waker(&std::task::Waker::from(re.clone())));
+        publisher.complete(round);
         assert_eq!(
             re.fires.load(Ordering::SeqCst),
             1,
@@ -389,53 +406,42 @@ fn stress_reentrant_wake_reregistration_no_loop() {
     }
 }
 
-/// Subject lifecycle migration: register on one thread, complete on a
-/// second, retire on a third; a waiter on a fourth must observe the exact
-/// outcome. The generation protocol must not depend on thread affinity.
+/// Publisher lifecycle migration: register on one thread, migrate the
+/// publication authority through a second, complete on a third; a waiter
+/// on a fourth must observe the exact outcome. The completion protocol
+/// must not depend on thread affinity, and `Publisher: Send` must hold.
+/// (Under the unkeyed law the authority is consumed by `complete`, so no
+/// post-completion retire step exists.)
 #[test]
-fn stress_subject_thread_migration() {
-    let space = Arc::new(ObservationSpace::<u8, u64>::new());
+fn stress_publisher_thread_migration() {
     for round in 0..100_u64 {
-        let key = (round % 3) as u8;
-        let subject = loop {
-            match space.subject(key) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(),
-            }
-        };
-        let waiter = {
-            let observation = space.observe(&key).expect("live generation");
-            thread::spawn(move || observation.wait())
-        };
-        let mut subject = thread::spawn(move || subject)
-            .join()
-            .expect("migration thread 1 panicked");
-        let subject = thread::spawn(move || {
-            subject.complete(round);
-            subject
-        })
-        .join()
-        .expect("migration thread 2 panicked");
+        let (publisher, observation) = pair::<u64>();
+        let waiter = thread::spawn(move || observation.wait());
+        let completer = thread::spawn(move || {
+            let publisher = thread::spawn(move || publisher)
+                .join()
+                .expect("migration thread 1 panicked");
+            thread::spawn(move || publisher.complete(round))
+                .join()
+                .expect("migration thread 2 panicked");
+        });
         assert_eq!(waiter.join().expect("waiter panicked"), round);
-        thread::spawn(move || drop(subject))
-            .join()
-            .expect("migration thread 3 panicked");
+        completer.join().expect("completer panicked");
     }
 }
 
 /// Registration flood: hundreds of distinct wakers on one pending
-/// generation, each must fire exactly once at completion.
+/// slot, each must fire exactly once at completion.
 #[test]
 fn stress_registration_flood_wakes_each_once() {
     const WAKERS: usize = 256;
-    let space = ObservationSpace::<u8, u64>::new();
-    let mut subject = space.subject(7).expect("first registration succeeds");
+    let (publisher, observation) = pair::<u64>();
     let probes: Vec<_> = (0..WAKERS).map(|_| CountWake::waker()).collect();
     for (waker, _) in &probes {
-        let obs = space.observe(&7).expect("subject retained");
-        assert!(!obs.register_waker(waker));
+        let observer = observation.clone();
+        assert!(!observer.register_waker(waker));
     }
-    subject.complete(99);
+    publisher.complete(99);
     for (i, (_, probe)) in probes.iter().enumerate() {
         assert_eq!(probe.count(), 1, "waker {i} fired != once");
     }
@@ -453,16 +459,8 @@ fn stress_registration_flood_wakes_each_once() {
 fn stress_register_waker_racing_completion_no_lost_wake() {
     const ROUNDS: u64 = 400;
 
-    let space = Arc::new(ObservationSpace::<u8, u64>::new());
     for round in 0..ROUNDS {
-        let key = (round % 2) as u8;
-        let mut subject = loop {
-            match space.subject(key) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(), // previous round's subject not yet dropped
-            }
-        };
-        let observation = space.observe(&key).expect("live generation");
+        let (publisher, observation) = pair::<u64>();
         let barrier = Arc::new(Barrier::new(2));
         let (tx, rx) = std::sync::mpsc::channel();
         let waiter = {
@@ -487,7 +485,7 @@ fn stress_register_waker_racing_completion_no_lost_wake() {
         if round % 4 == 0 {
             thread::sleep(Duration::from_millis(1));
         }
-        subject.complete(round);
+        publisher.complete(round);
         match rx.recv_timeout(Duration::from_secs(10)) {
             Ok(Some(outcome)) => assert_eq!(outcome, round, "wrong outcome (round {round})"),
             Ok(None) => panic!(
@@ -501,74 +499,7 @@ fn stress_register_waker_racing_completion_no_lost_wake() {
     }
 }
 
-/// SubjectExists storm under pool churn: a keeper holds key 2 permanently
-/// while four threads hammer `subject(2)` — every attempt pops a pooled
-/// slot and must restore it on `SubjectExists` (a leaked pop would shrink
-/// the pool). Concurrently a churner cycles 300 generations on key 1 (past
-/// the 128-slot pool cap), each completed with a uniquely counted probe.
-/// Every failed registration must return `SubjectExists` (never a win),
-/// and every completed outcome must be destroyed exactly once.
-#[test]
-fn stress_subject_exists_storm_pool_churn() {
-    const STORMERS: usize = 4;
-    const CHURN: u64 = 300;
-
-    let space = Arc::new(ObservationSpace::<u8, DropProbe>::new());
-    let counter = Arc::new(AtomicUsize::new(0));
-    let stop = Arc::new(AtomicBool::new(false));
-
-    // The keeper holds key 2 for the whole test; stormers can never win it.
-    let _keeper = space.subject(2).expect("keeper registers");
-
-    let stormers: Vec<_> = (0..STORMERS)
-        .map(|id| {
-            let space = Arc::clone(&space);
-            let stop = Arc::clone(&stop);
-            thread::spawn(move || {
-                let mut conflicts = 0usize;
-                // A minimum-attempts floor guarantees the storm actually
-                // ran: without it, a stormer descheduled until after `stop`
-                // is set exits with 0 attempts (the topology-A flake class,
-                // Batch 18). 1000 SubjectExists attempts are structurally
-                // guaranteed by the keeper holding key 2 for the whole test.
-                while !stop.load(Ordering::SeqCst) || conflicts < 1000 {
-                    match space.subject(2) {
-                        Ok(_won) => panic!("stormer {id} won a key the keeper holds"),
-                        Err(_) => conflicts += 1,
-                    }
-                }
-                conflicts
-            })
-        })
-        .collect();
-
-    for round in 0..CHURN {
-        let mut subject = loop {
-            match space.subject(1) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(),
-            }
-        };
-        subject.complete(DropProbe::with_counter(round, &counter));
-        // drop(subject): retire; the pooled slot is recycled past the cap.
-    }
-
-    stop.store(true, Ordering::SeqCst);
-    let conflicts: usize = stormers
-        .into_iter()
-        .map(|s| s.join().expect("stormer panicked"))
-        .sum();
-    assert!(conflicts > 0, "stormers never contended for the key");
-    drop(_keeper);
-    drop(space);
-    assert_eq!(
-        counter.load(Ordering::SeqCst),
-        CHURN as usize,
-        "completed outcomes must be destroyed exactly once under the storm"
-    );
-}
-
-/// Mixed drain on ONE generation: two blocking thread waiters, two
+/// Mixed drain on ONE slot: two blocking thread waiters, two
 /// `wait_timeout` waiters, and two raw waker registrations, all racing one
 /// completion. The drain must resolve every waiter exactly once with the
 /// exact outcome — the native counterpart of the loom mixed-drain model
@@ -577,20 +508,13 @@ fn stress_subject_exists_storm_pool_churn() {
 fn stress_mixed_waiter_drain_all_resolved() {
     const ROUNDS: u64 = 200;
 
-    let space = Arc::new(ObservationSpace::<u8, u64>::new());
     for round in 0..ROUNDS {
-        let key = (round % 2) as u8;
-        let mut subject = loop {
-            match space.subject(key) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(),
-            }
-        };
+        let (publisher, observation) = pair::<u64>();
         let barrier = Arc::new(Barrier::new(7)); // 6 waiters + publisher
 
         let thread_waiters: Vec<_> = (0..2)
             .map(|_| {
-                let observation = space.observe(&key).expect("live generation");
+                let observation = observation.clone();
                 let barrier = Arc::clone(&barrier);
                 thread::spawn(move || {
                     barrier.wait();
@@ -601,7 +525,7 @@ fn stress_mixed_waiter_drain_all_resolved() {
 
         let timeout_waiters: Vec<_> = (0..2)
             .map(|_| {
-                let observation = space.observe(&key).expect("live generation");
+                let observation = observation.clone();
                 let barrier = Arc::clone(&barrier);
                 thread::spawn(move || {
                     barrier.wait();
@@ -612,7 +536,7 @@ fn stress_mixed_waiter_drain_all_resolved() {
 
         let waker_waiters: Vec<_> = (0..2)
             .map(|_| {
-                let observation = space.observe(&key).expect("live generation");
+                let observation = observation.clone();
                 let barrier = Arc::clone(&barrier);
                 let (waker, probe) = CountWake::waker();
                 thread::spawn(move || {
@@ -639,7 +563,7 @@ fn stress_mixed_waiter_drain_all_resolved() {
             .collect();
 
         barrier.wait();
-        subject.complete(round);
+        publisher.complete(round);
 
         for waiter in thread_waiters {
             assert_eq!(waiter.join().expect("thread waiter panicked"), round);
@@ -661,172 +585,71 @@ fn stress_mixed_waiter_drain_all_resolved() {
     }
 }
 
-/// Same-key contention: a generation is captured and retired, then two
-/// threads race `subject(key)` for the now-vacant key from a barrier.
-/// Exactly one must win; the loser gets `SubjectExists`. The pre-race
-/// observation must resolve to the pre-race generation's value (never the
-/// winner's), and the winner's own generation must be observable with its
-/// tagged value. 500 rounds, value tags identify the winning publisher.
-#[test]
-fn stress_same_key_contention_exactly_one_winner() {
-    const ROUNDS: u64 = 500;
-
-    let space = Arc::new(ObservationSpace::<u8, u64>::new());
-    for round in 0..ROUNDS {
-        let key = (round % 2) as u8;
-        // Pre-race generation: captured, completed, retired.
-        let mut subject = loop {
-            match space.subject(key) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(),
-            }
-        };
-        let observer = space.observe(&key).expect("live generation");
-        subject.complete(round);
-        drop(subject); // retire: the key is vacant for the contenders
-
-        // Two-phase barrier: `start` releases both contenders together;
-        // `release` is crossed only AFTER both have attempted subject().
-        // A one-shot barrier is not enough — the first contender could
-        // complete, retire, and free the key before the second thread is
-        // even scheduled, which is not a race at all.
-        let start = Arc::new(Barrier::new(3));
-        let release = Arc::new(Barrier::new(3));
-        let contender = |tag: u64, start: &Arc<Barrier>, release: &Arc<Barrier>| {
-            let space = Arc::clone(&space);
-            let start = Arc::clone(start);
-            let release = Arc::clone(release);
-            thread::spawn(move || {
-                start.wait();
-                // Register, binding the subject OUTSIDE the match: it must
-                // stay alive across `release` so both attempts overlap.
-                // (A match-arm local would retire at the arm's end, freeing
-                // the key before the other contender even tries.)
-                let won: Option<Subject<u8, u64>> = space.subject(key).ok();
-                release.wait();
-                match won {
-                    Some(mut subject) => {
-                        subject.complete((tag << 56) | round);
-                        // The published generation must be observable while
-                        // still retained (before this subject retires).
-                        assert_eq!(
-                            space.observe(&key).expect("winner retained").try_get(),
-                            Some((tag << 56) | round),
-                            "winner's published generation not observable"
-                        );
-                        Some(tag)
-                    }
-                    None => None,
-                }
-            })
-        };
-        let a = contender(1, &start, &release);
-        let b = contender(2, &start, &release);
-        start.wait();
-        release.wait();
-        let winner_a = a.join().expect("contender A panicked");
-        let winner_b = b.join().expect("contender B panicked");
-        let winners = usize::from(winner_a.is_some()) + usize::from(winner_b.is_some());
-        assert_eq!(
-            winners, 1,
-            "round {round}: exactly one subject must win the key"
-        );
-        let _winner = winner_a.or(winner_b).expect("a winner exists");
-
-        // The pre-race observation resolves to the pre-race value, never
-        // the winner's.
-        assert_eq!(
-            observer.wait(),
-            round,
-            "round {round}: pre-race observer resolved to the winner's generation"
-        );
-        // The winner's subject dropped when its contender thread ended:
-        // the key is vacant for the next round.
-    }
-}
-
 /// The `wait()` re-registration dedup path, pinned deterministically:
-/// thread A registers, thread B registers (so A's entry is NOT last),
-/// A is spuriously woken and re-registers — the `waiters.last()` dedup
-/// check misses and A accumulates a second entry. The drain then fires
-/// A twice (two unpark tokens) and B once. A consumes one token and
-/// returns; the second token is queued for A's NEXT park — a stale token
-/// that must not corrupt a later wait: the next generation's wait still
-/// resolves exactly (the stale token only causes one spurious park, and
-/// the loop's recheck heals it).
+/// the SAME waiter thread registers on one pair, is spuriously woken and
+/// re-registers (so the `waiters.last()` dedup check misses and a second
+/// entry accumulates). The drain then fires the waker twice (two unpark
+/// tokens). The waiter consumes one token and returns; the second token
+/// is queued for that thread's NEXT park — a stale token that must not
+/// corrupt a later wait: a subsequent wait on a DIFFERENT pair (same
+/// thread) still resolves exactly (the stale token only causes one
+/// spurious park, and the loop's recheck heals it).
 #[test]
 fn stress_duplicate_waiter_entry_stale_token_self_heals() {
     const ROUNDS: u64 = 50;
 
-    let space = Arc::new(ObservationSpace::<u8, u64>::new());
     for round in 0..ROUNDS {
-        let key = (round % 2) as u8;
-        let mut subject = loop {
-            match space.subject(key) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(),
-            }
+        let (publisher_one, observation_one) = pair::<u64>();
+        let (publisher_two, observation_two) = pair::<u64>();
+        let handle = {
+            let first = observation_one.clone();
+            let second = observation_two.clone();
+            thread::spawn(move || {
+                let first_outcome = first.wait_timeout(Duration::from_secs(5));
+                // The stale token (if any) is queued for the NEXT park on
+                // this thread: the second wait must still resolve exactly.
+                // 100 ms is ample to prove the second pair stays pending
+                // without burning five seconds per round.
+                let second_outcome = second.wait_timeout(Duration::from_millis(100));
+                (first_outcome, second_outcome)
+            })
         };
-        let handle_a = {
-            let obs = space.observe(&key).expect("live generation");
-            thread::spawn(move || obs.wait_timeout(Duration::from_secs(5)))
-        };
-        let handle_b = {
-            let obs = space.observe(&key).expect("live generation");
-            thread::spawn(move || obs.wait_timeout(Duration::from_secs(5)))
-        };
-        // Let both register (A then B), so A's entry is not last.
+        // Let the waiter register, then inject a spurious wake so it
+        // re-registers (duplicate entry).
         thread::sleep(Duration::from_millis(10));
-        handle_a.thread().unpark(); // spurious wake for A
-        thread::sleep(Duration::from_millis(10)); // A re-registers (dup entry)
-        subject.complete(round);
+        handle.thread().unpark();
+        thread::sleep(Duration::from_millis(10)); // re-registration window
+        publisher_one.complete(round);
 
         assert_eq!(
-            handle_a.join().expect("waiter A panicked"),
-            Some(round),
-            "A must resolve despite its duplicate entry (round {round})"
+            handle.join().expect("waiter panicked"),
+            (Some(round), None),
+            "the first wait must resolve despite its duplicate entry; \
+             the second pair is still pending (round {round})"
         );
-        assert_eq!(
-            handle_b.join().expect("waiter B panicked"),
-            Some(round),
-            "B must resolve exactly once (round {round})"
-        );
-        // The waiter threads consumed their observations; the generation
-        // can retire.
-        drop(subject); // retire
 
-        // Phase 2: A's stale token (from the duplicate entry's unpark) is
-        // queued. A new generation's wait must still resolve exactly: the
-        // stale token causes at most one spurious park, which the loop's
-        // recheck heals.
-        let mut subject2 = loop {
-            match space.subject(key) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(),
-            }
-        };
-        let handle_a2 = {
-            let obs = space.observe(&key).expect("live generation");
-            thread::spawn(move || obs.wait_timeout(Duration::from_secs(5)))
-        };
-        thread::sleep(Duration::from_millis(10));
-        subject2.complete(round + 100);
+        // Phase 2: complete the second pair; the same waiter thread has
+        // already exited, but a fresh wait on another thread must still
+        // resolve exactly (a stale token on a retired thread cannot leak).
+        publisher_two.complete(round + 100);
         assert_eq!(
-            handle_a2.join().expect("waiter A2 panicked"),
-            Some(round + 100),
-            "a stale unpark token must not corrupt the next generation's wait (round {round})"
+            observation_two.wait(),
+            round + 100,
+            "a stale unpark token must not corrupt the next wait (round {round})"
         );
+        drop(observation_one);
+        drop(observation_two);
     }
 }
 
-/// A waker whose `wake` calls the BLOCKING `wait` on the same generation
+/// A waker whose `wake` calls the BLOCKING `wait` on the same slot
 /// during the drain: `complete` sets COMPLETED before the drain, so the
 /// reentrant wait returns immediately (never parks the completing thread),
 /// the drain finishes, and every waiter resolves exactly once.
 #[test]
 fn stress_wait_inside_wake_during_drain() {
     struct WaitInWake {
-        obs: std::sync::Mutex<Option<crate::observe::Observation<u64>>>,
+        observed: std::sync::Mutex<Option<Observation<u64>>>,
         fires: AtomicUsize,
         value: std::sync::Mutex<Option<u64>>,
     }
@@ -834,39 +657,38 @@ fn stress_wait_inside_wake_during_drain() {
     impl Wake for WaitInWake {
         fn wake(self: Arc<Self>) {
             self.fires.fetch_add(1, Ordering::SeqCst);
-            let guard = self.obs.lock().expect("obs lock");
-            if let Some(obs) = guard.as_ref() {
+            let guard = self.observed.lock().expect("observation lock");
+            if let Some(observed) = guard.as_ref() {
                 // Reentrant blocking wait during the drain: COMPLETED is
                 // already set, so this returns immediately.
-                *self.value.lock().expect("value lock") = Some(obs.wait());
+                *self.value.lock().expect("value lock") = Some(observed.wait());
             }
         }
     }
 
     for round in 0..100_u64 {
-        let space = ObservationSpace::<u8, u64>::new();
-        let mut subject = space.subject(1).expect("first registration succeeds");
-        let waker_obs = space.observe(&1).expect("subject retained");
-        let wait_obs = space.observe(&1).expect("subject retained");
+        let (publisher, observation) = pair::<u64>();
+        let waker_observer = observation.clone();
+        let other_observer = observation.clone();
         let reentrant = Arc::new(WaitInWake {
-            obs: std::sync::Mutex::new(Some(waker_obs)),
+            observed: std::sync::Mutex::new(Some(waker_observer)),
             fires: AtomicUsize::new(0),
             value: std::sync::Mutex::new(None),
         });
-        assert!(!wait_obs.register_waker(&std::task::Waker::from(reentrant.clone())));
+        assert!(!observation.register_waker(&std::task::Waker::from(reentrant.clone())));
         // A second waiter (the drain must still resolve it after the
         // reentrant wait).
         let barrier = Arc::new(Barrier::new(2));
         let other = {
-            let wait_obs = space.observe(&1).expect("subject retained");
+            let other_observer = other_observer.clone();
             let barrier = Arc::clone(&barrier);
             thread::spawn(move || {
                 barrier.wait();
-                wait_obs.wait()
+                other_observer.wait()
             })
         };
         barrier.wait();
-        subject.complete(round);
+        publisher.complete(round);
         assert_eq!(
             reentrant.fires.load(Ordering::SeqCst),
             1,
@@ -885,14 +707,14 @@ fn stress_wait_inside_wake_during_drain() {
     }
 }
 
-/// A waker whose `wake` calls `wait_timeout` on the same generation during
+/// A waker whose `wake` calls `wait_timeout` on the same slot during
 /// the drain: COMPLETED is set before the drain, so it returns Some
 /// immediately (the completing thread never parks), and the drain still
 /// resolves every other waiter exactly once.
 #[test]
 fn stress_wait_timeout_inside_wake_during_drain() {
     struct TimeoutInWake {
-        obs: std::sync::Mutex<Option<crate::observe::Observation<u64>>>,
+        observed: std::sync::Mutex<Option<Observation<u64>>>,
         fires: AtomicUsize,
         value: std::sync::Mutex<Option<Option<u64>>>,
     }
@@ -900,26 +722,24 @@ fn stress_wait_timeout_inside_wake_during_drain() {
     impl Wake for TimeoutInWake {
         fn wake(self: Arc<Self>) {
             self.fires.fetch_add(1, Ordering::SeqCst);
-            let guard = self.obs.lock().expect("obs lock");
-            if let Some(obs) = guard.as_ref() {
+            let guard = self.observed.lock().expect("observation lock");
+            if let Some(observed) = guard.as_ref() {
                 *self.value.lock().expect("value lock") =
-                    Some(obs.wait_timeout(Duration::from_secs(5)));
+                    Some(observed.wait_timeout(Duration::from_secs(5)));
             }
         }
     }
 
     for round in 0..50_u64 {
-        let space = ObservationSpace::<u8, u64>::new();
-        let mut subject = space.subject(1).expect("first registration succeeds");
-        let waker_obs = space.observe(&1).expect("subject retained");
-        let wait_obs = space.observe(&1).expect("subject retained");
+        let (publisher, observation) = pair::<u64>();
+        let waker_observer = observation.clone();
         let reentrant = Arc::new(TimeoutInWake {
-            obs: std::sync::Mutex::new(Some(waker_obs)),
+            observed: std::sync::Mutex::new(Some(waker_observer)),
             fires: AtomicUsize::new(0),
             value: std::sync::Mutex::new(None),
         });
-        assert!(!wait_obs.register_waker(&std::task::Waker::from(reentrant.clone())));
-        subject.complete(round);
+        assert!(!observation.register_waker(&std::task::Waker::from(reentrant.clone())));
+        publisher.complete(round);
         assert_eq!(
             reentrant.fires.load(Ordering::SeqCst),
             1,
@@ -930,7 +750,7 @@ fn stress_wait_timeout_inside_wake_during_drain() {
             Some(Some(round)),
             "the in-drain wait_timeout must resolve to the exact outcome (round {round})"
         );
-        assert_eq!(wait_obs.try_get(), Some(round));
+        assert_eq!(observation.try_get(), Some(round));
     }
 }
 
@@ -940,7 +760,7 @@ fn stress_wait_timeout_inside_wake_during_drain() {
 #[test]
 fn stress_into_outcome_inside_wake_during_drain_refused() {
     struct TakeInWake {
-        obs: std::sync::Mutex<Option<crate::observe::Observation<u64>>>,
+        observed: std::sync::Mutex<Option<Observation<u64>>>,
         fires: AtomicUsize,
         taken: std::sync::Mutex<Option<Option<u64>>>,
     }
@@ -949,26 +769,24 @@ fn stress_into_outcome_inside_wake_during_drain_refused() {
         fn wake(self: Arc<Self>) {
             self.fires.fetch_add(1, Ordering::SeqCst);
             // Consume the waker's own observation (into_outcome takes self).
-            if let Some(obs) = self.obs.lock().expect("obs lock").take() {
-                // The subject still lives (this waker is registered on it),
-                // so the slot is shared: the take must be refused.
-                *self.taken.lock().expect("taken lock") = Some(obs.into_outcome());
+            if let Some(observed) = self.observed.lock().expect("observation lock").take() {
+                // Another observation of the slot still lives, so the slot
+                // is shared: the take must be refused.
+                *self.taken.lock().expect("taken lock") = Some(observed.into_outcome());
             }
         }
     }
 
     for round in 0..50_u64 {
-        let space = ObservationSpace::<u8, u64>::new();
-        let mut subject = space.subject(1).expect("first registration succeeds");
-        let taker_obs = space.observe(&1).expect("subject retained");
-        let waker_obs = space.observe(&1).expect("subject retained");
+        let (publisher, observation) = pair::<u64>();
+        let taker_observer = observation.clone();
         let reentrant = Arc::new(TakeInWake {
-            obs: std::sync::Mutex::new(Some(waker_obs)),
+            observed: std::sync::Mutex::new(Some(observation)),
             fires: AtomicUsize::new(0),
             taken: std::sync::Mutex::new(None),
         });
-        assert!(!taker_obs.register_waker(&std::task::Waker::from(reentrant.clone())));
-        subject.complete(round);
+        assert!(!taker_observer.register_waker(&std::task::Waker::from(reentrant.clone())));
+        publisher.complete(round);
         assert_eq!(
             reentrant.fires.load(Ordering::SeqCst),
             1,
@@ -979,58 +797,52 @@ fn stress_into_outcome_inside_wake_during_drain_refused() {
             Some(None),
             "the in-drain take must be refused while the slot is shared (round {round})"
         );
-        assert_eq!(taker_obs.try_get(), Some(round), "outcome stays readable");
+        assert_eq!(
+            taker_observer.try_get(),
+            Some(round),
+            "outcome stays readable"
+        );
     }
 }
 
-/// Pinned retired-pending generations never fabricate: observations
-/// captured on generations that are retired WITHOUT completing must time
-/// out forever (never resolve to a value), even while other generations on
-/// the same key complete concurrently. The threaded twin of pool.rs's
-/// `uncompleted_generation_recycles_without_fabricating`.
+/// Pinned pending slots never fabricate: observations captured on pairs
+/// whose publisher is retired WITHOUT completing must time out forever
+/// (never resolve to a value), even while other pairs complete
+/// concurrently. The threaded twin of the affine uniqueness law.
 #[test]
 fn stress_pinned_pending_timeout_never_fabricates() {
     const ROUNDS: u64 = 200;
 
-    let space = Arc::new(ObservationSpace::<u8, u64>::new());
     for round in 0..ROUNDS {
-        let key = (round % 2) as u8;
-        // Capture a generation, retire it WITHOUT completing. Two handles
-        // to the same slot: one stays on this thread, one goes to the
-        // waiter.
-        let subject = loop {
-            match space.subject(key) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(),
-            }
-        };
-        let pinned = space.observe(&key).expect("live generation");
-        let pinned_waiter = space.observe(&key).expect("live generation");
-        drop(subject); // retire pending; both handles hold the old slot
+        // A pair abandoned without completing: two handles to the same
+        // slot, one stays here, one goes to the waiter.
+        let (abandoned, pinned) = pair::<u64>();
+        let pinned_waiter = pinned.clone();
+        drop(abandoned); // retire pending; both handles hold the slot
 
-        // Churn a NEW generation on the same key to completion while the
-        // pinned observation waits: it must never see the new value.
-        let mut churn = loop {
-            match space.subject(key) {
-                Ok(subject) => break subject,
-                Err(_) => thread::yield_now(),
-            }
-        };
+        // Complete an unrelated pair while the pinned observation waits:
+        // it must never see that value.
+        let (churn_publisher, churn_observation) = pair::<u64>();
         let barrier = Arc::new(Barrier::new(2));
         let waiter = {
             let barrier = Arc::clone(&barrier);
             thread::spawn(move || {
                 barrier.wait();
-                // The old slot never completes; this must always time out.
+                // The abandoned slot never completes; this must always time out.
                 pinned_waiter.wait_timeout(Duration::from_millis(20))
             })
         };
         barrier.wait();
-        churn.complete(round);
+        churn_publisher.complete(round);
+        assert_eq!(
+            churn_observation.try_get(),
+            Some(round),
+            "the churn pair must complete (round {round})"
+        );
         assert_eq!(
             waiter.join().expect("waiter panicked"),
             None,
-            "a retired-pending generation must never fabricate an outcome (round {round})"
+            "a retired-pending slot must never fabricate an outcome (round {round})"
         );
         assert_eq!(
             pinned.try_get(),

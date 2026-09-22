@@ -1,0 +1,5 @@
+error[E0425]: cannot find type `LocalAddresses` in this scope
+  --> tests/compile/fail/prelude_hides_local_addresses.rs:11:19
+   |
+11 |     let _: Option<LocalAddresses<Orders>> = None;
+   |                   ^^^^^^^^^^^^^^ not found in this scope

@@ -19,7 +19,7 @@ use bombay::entity::{
 use bombay::prelude::{
     ActorOrigin, ActorRetirement, Completion, MailAddr, StopOnShutdown, TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App};
+use bombay::{App, HostedAddresses, LocalAddresses};
 use tokio::sync::Semaphore;
 
 const ACCOUNT_ID: u64 = 7;
@@ -65,7 +65,7 @@ struct Accounts {
 impl EntityDefinition for Accounts {
     type Id = u64;
     type Behavior = StopOnShutdown<Account>;
-    type Hosts = Spaces;
+    type HostedAddresses = Spaces;
     type HydrationError = Never;
     type Terminal = Never;
 
@@ -109,10 +109,10 @@ impl Protocol for Replies {
     type Msg = Never;
 }
 
-#[derive(ActorSpaces)]
+#[derive(HostedAddresses)]
 struct Spaces {
-    root: ActorSpace<Root>,
-    accounts: ActorSpace<Account>,
+    root: LocalAddresses<Root>,
+    accounts: LocalAddresses<Account>,
 }
 
 #[derive(TerminalProjection)]
@@ -136,8 +136,8 @@ fn main() {
         unexpected_facts: Arc::clone(&unexpected_facts),
     };
     let spaces = Spaces {
-        root: ActorSpace::new(),
-        accounts: ActorSpace::new(),
+        root: LocalAddresses::new(),
+        accounts: LocalAddresses::new(),
     };
     let capacity = EntityCapacity::new(
         NonZeroUsize::new(2).expect("two is non-zero"),

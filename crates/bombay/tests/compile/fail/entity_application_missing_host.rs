@@ -4,7 +4,7 @@ use bombay::entity::{
     ActivationId, AdmissionFailure, DrainFailure, EntityActivationError, EntityDefinition,
     EntityId,
 };
-use bombay::{ActorRetirement, ActorSpace, ActorSpaces};
+use bombay::{ActorRetirement, LocalAddresses, HostedAddresses};
 
 struct Account;
 
@@ -15,9 +15,9 @@ impl Account {
     }
 }
 
-#[derive(ActorSpaces)]
+#[derive(HostedAddresses)]
 struct MissingAccountSpace {
-    root: ActorSpace<Root>,
+    root: LocalAddresses<Root>,
 }
 
 struct Root;
@@ -30,7 +30,7 @@ struct Accounts;
 impl EntityDefinition for Accounts {
     type Id = u64;
     type Behavior = StopOnShutdown<Account>;
-    type Hosts = MissingAccountSpace;
+    type HostedAddresses = MissingAccountSpace;
     type HydrationError = Never;
     type Terminal = Never;
 

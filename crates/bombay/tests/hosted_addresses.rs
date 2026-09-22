@@ -1,5 +1,5 @@
 use bombay::prelude::*;
-use bombay::{ActorSpace, ActorSpaces, Hosts};
+use bombay::{HostedAddresses, LocalAddresses};
 
 struct Orders;
 
@@ -15,23 +15,23 @@ impl Protocol for Payments {
     type Msg = u64;
 }
 
-#[derive(Default, ActorSpaces)]
+#[derive(Default, HostedAddresses)]
 struct LocalActors {
-    orders: ActorSpace<Orders>,
+    orders: LocalAddresses<Orders>,
     label: &'static str,
-    payments: ActorSpace<Payments>,
+    payments: LocalAddresses<Payments>,
 }
 
-fn hosted<P>(actors: &LocalActors) -> &ActorSpace<P>
+fn hosted<P>(actors: &LocalActors) -> &LocalAddresses<P>
 where
     P: Protocol<Addr = MailAddr>,
-    LocalActors: Hosts<P>,
+    LocalActors: HostedAddresses<P>,
 {
-    actors.space()
+    actors.addresses()
 }
 
 #[test]
-fn derive_selects_each_protocols_exact_named_space() {
+fn derive_selects_each_protocols_exact_named_table() {
     let actors = LocalActors::default();
 
     assert!(core::ptr::eq(
@@ -46,22 +46,22 @@ fn derive_selects_each_protocols_exact_named_space() {
 }
 
 #[test]
-fn one_actor_space_is_its_own_exact_hosting_proof() {
-    let space = ActorSpace::<Orders>::new();
+fn one_address_table_is_its_own_exact_hosting_proof() {
+    let space = LocalAddresses::<Orders>::new();
 
     assert!(core::ptr::eq(
         core::ptr::from_ref(&space),
-        <ActorSpace<Orders> as Hosts<Orders>>::space(&space),
+        <LocalAddresses<Orders> as HostedAddresses<Orders>>::addresses(&space),
     ));
 }
 
 #[test]
-fn actor_spaces_compile_contract() {
+fn hosted_addresses_compile_contract() {
     let cases = trybuild::TestCases::new();
-    cases.pass("tests/compile/pass/actor_spaces_named.rs");
+    cases.pass("tests/compile/pass/hosted_addresses_named.rs");
     cases.pass("tests/compile/pass/behavior_facade_named_children.rs");
     cases.pass("tests/compile/pass/behavior_root_authoring.rs");
-    cases.compile_fail("tests/compile/fail/actor_spaces_duplicate.rs");
-    cases.compile_fail("tests/compile/fail/actor_spaces_tuple.rs");
-    cases.compile_fail("tests/compile/fail/actor_spaces_missing_host.rs");
+    cases.compile_fail("tests/compile/fail/hosted_addresses_duplicate.rs");
+    cases.compile_fail("tests/compile/fail/hosted_addresses_tuple.rs");
+    cases.compile_fail("tests/compile/fail/hosted_addresses_missing_host.rs");
 }

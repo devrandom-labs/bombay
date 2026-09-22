@@ -56,6 +56,7 @@ struct Parent;
         primary: Child,
         fallback: Child,
     },
+    creation_settlements = retain_for_retirement,
 )]
 impl Parent {}
 

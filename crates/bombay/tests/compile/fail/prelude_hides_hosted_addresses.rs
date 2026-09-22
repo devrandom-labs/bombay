@@ -7,6 +7,6 @@ impl Protocol for Orders {
     type Msg = ();
 }
 
-fn main() {
-    let _: Option<ActorSpace<Orders>> = None;
-}
+fn require_host<T: HostedAddresses<Orders>>() {}
+
+fn main() {}
