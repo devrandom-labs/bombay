@@ -825,3 +825,30 @@ complete tests +426 / -0; extension from the preceding frozen comparison
 source-retirement patch 770d2979, not current 0.1.3 integration acceptance.
 Native family cleanup, pending-work Drop and actual public execution remain
 unproved. A named public execution or receiver wrapper is not justified here.
+
+## Joint-ready cancellation and capability failure (2026-10-02)
+
+The isolated actual Environment witness in
+`bombay-joint-retirement-custody-pv1_15m9` completes a real capability panic
+before accepting owner cancellation. Both are ready at the next source poll;
+the existing owner-first port acquires cancellation first. Retirement retains
+the actual JoinError, joined exactly once, beside that affine request and the
+complete initialization settlement. Acquisition order is not physical failure
+chronology. No actor completion or observer cause is asserted by this witness.
+
+Receipt SHA-256:
+`d9c4c65034f8ce650e5d560598c58f1e17531ad88d519343c3ff18fe4320cf5d`;
+patch `bff9ba3d57fe0417ef38f86712f957bda725f71c0660f13702143a45e048bac7`.
+Debug/release each pass three tests; formatting and strict Clippy pass.
+Omitting owner acquisition compiles and fails one intended test in each profile;
+restoring it passes again. `/root/contract_inventory` authenticated fourteen
+artifacts and the complete trace, signing this bounded characterization only.
+One existing local.rs test module, +109 / -31, production/public types zero.
+Its old Communication 0.1.2/source770d baseline is not fresh integration proof.
+
+The primary observer cause when both requests are ready remains a user decision.
+Keeping existing cancellation priority needs no readiness probe; the full result
+must still retain the failure. Preferring ready failures requires consuming
+completed task results and retaining any ordinary events encountered, since
+JoinSet has no nonconsuming failure peek. Such a probe cannot claim a globally
+earliest failure or atomic readiness snapshot. Neither policy is selected here.

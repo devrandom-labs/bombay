@@ -134,3 +134,31 @@ tree contains unrelated concurrent changes, so the coordinator must measure
 the complete tree and the task-local delta at the next checkpoint. The gate
 is open until these witnesses are recorded and the frozen symbol/file map in
 DG-MODULES selects exact destinations.
+
+## Current-source reconciliation (2026-10-02)
+
+The tables above are historical hypotheses, not instructions to recreate
+removed code. Fresh inspection at canonical Bombay 4e009b9 selects Core/Actors
+0.20.0 and Communication 0.1.3. `OccurrenceBindings` and `LocalAddresses` are
+already absent. `TerminationObservations` directly owns its pending Vec; the
+old FactState/FactQueue and shared observation mutex are absent. `LocalTimers`
+directly owns one TimerQueue, with no Arc or mutex. Their old deletion/borrowing
+experiments therefore have no current subject. Preserve these completed fixes
+and their regressions rather than claiming new EXEC reduction.
+
+Current `LocalTerminalReports` owns the selected report transaction and its
+affine sender; its old forwarding-only removal proposal is superseded.
+`HostedActorSpaces` and `ResolveLogical` still exist and need the prescribed
+direct-Hosts comparison for application and native Entity consumers.
+ActivationTasks has three production spawn sites: worker activation, worker
+preparation and established observation. Moving observations alone would not
+remove its remaining producers. Current task/failure laws must cover all three.
+No wrapper gate is accepted
+from this source reconciliation.
+
+Current source SHA-256 values: topology.rs
+`7e5d9181a53d34995e5cfbc9b44e0562bd154afe0812a23589d898199db90ead`;
+time.rs `62251d2c58943d353ca02d075af0d593783226ada219bc734c23a6e3661c72b0`;
+reports.rs `9cd827bcb64bfa2ab217ef4da7d4158447b8b752086e8ff3fc1ce1aca44c55bf`.
+Other current source anchors are in verification.md. This is read-only evidence;
+production, tests and public types remain unchanged.
