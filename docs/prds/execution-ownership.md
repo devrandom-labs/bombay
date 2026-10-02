@@ -977,7 +977,15 @@ interpretation, transitive source progression, or post-Driver capability
 settlement. Current `next_source -> None` still means source closure and cannot
 silently mean owner cancellation. No Engine port change is selected or presumed
 necessary. The user asked for further research rather than selecting that
-initially framed alternative.
+initially framed alternative. Subsequent actual standard-chain research shows
+owner cancellation is not polled even when each finite source receipt yields.
+The user then selected a **typed retirement boundary preserving exact actor
+state, admitted receipts and unoffered settlement remainder**. Cancellation
+need not wait for an endless transitive chain. An already running
+noncooperative operation may still require completion; its receipt must remain
+distinct from cancellation. This selects no particular Engine/Behavior port
+or representation. Existing Retained cannot silently relabel live source
+inputs. Owning contract comparisons and independent review remain required.
 
 Caller disappearance also needs a researched ownership equation: arbitrary work
 future disposition, receiverless exact values, and who progresses root/child and
@@ -988,7 +996,11 @@ returning. Noncooperative work may keep the join pending indefinitely; values
 destroyed inside a panicking task cannot be recovered. The ordinary-Rust
 comparison and original loss are recorded in task-custody.md. Representation,
 live acquisition, projection and public interfaces remain independently gated.
-This decision does not select caller-drop or receiverless-value disposition.
+The later receipt discussion selected separate wait and result custody:
+cancelling a wait preserves the retained receipt; surrendering the last
+receipt relinquishes custody, with explicit exactly-once release after
+cleanup joins. No implicit global store is selected. Application callback
+and Entity integration still need their complete ownership witnesses.
 
 DG-OBSERVATION product-law amendment: after the comparative explanation, the
 user selected **exact observation-relationship cancellation authority, with its
@@ -1011,3 +1023,123 @@ Dependent production work remains blocked; independent EXEC research continues.
 Fresh command results and this stage's complete delta are recorded in
 [verification](execution-ownership/verification.md). This stage changes
 only documentation, adds no public type and authorizes no production edit.
+
+
+## 17. Source-retirement surface checkpoint (2026-10-02)
+
+Status: **authorization pending; expanded source editing stopped**. All design
+gates remain open. This checkpoint requests surface authorization, not approval
+of a representation or waiver of independent review. No retained production
+code changed. The user-selected typed source-retirement law requires a factual
+Engine disposition and exact Bombay cancellation/residual custody; it cannot
+be represented by source closure or terminal-only Retained.
+
+Before this checkpoint record, the complete retained delta against
+2fccedf6eb636ac22143e7e01de7e784f96e2b4e is seven documentation paths,
+documentation +828 / -8 / net +820; production +0 / -0 / net 0; tests
++0 / -0 / net 0; public API +0 types / -0 types. The current complete count,
+including this record, is maintained in verification.md.
+
+The isolated partial owning comparison changes nine production paths and one
+test-only source path. Production +82 / -60 / net +22; tests +533 / -6 / net
++527, including earlier capability/receipt comparisons; public types +0 / -0.
+Public signatures change: Environment/ActiveEnvironment gain an exact request
+type, next_source uses standard ControlFlow, and existing Completion and
+DriverRetirement retain that type. No new wrapper, trait or runtime is added.
+This is a comparison, not accepted API. Partial patch SHA-256:
+`5254b3c6611365f5257407a0d4f959abd893001765f0310f5a94124f09b31f04`;
+receipt SHA-256:
+`7fb30c866f67146b105c530756d9a2a147602543231ba0a1f6a12e9cf68bd60d`,
+in the capability-retention-ftl9frah directory recorded above. Its one debug
+source-retirement witness passes with exact cancellation request, state,
+admitted receipt and unoffered accepted suffix. A private_interfaces warning
+exposes private OwnerCancellation through public ActorRetirement and remains
+unresolved. Optimized, inversion and full consumer verification are pending.
+This is not a green gate, a completed fix or a retained production delta.
+
+The proposed nine production paths plus seven existing documentation paths
+reach 16, crossing AGENTS.md's 15-file checkpoint before required consumers.
+All further expanded source edits stopped. The concrete proposed authorization
+is **up to 36 cumulative paths for this source-retirement stage**, under the
+following inventory, **at most 150 net new production lines and no new public
+types**. Existing public interface changes remain independently reviewed.
+Any additional path, public type or larger production allowance requires a
+new checkpoint; this does not authorize later observation-owning contracts,
+application redesign or module extraction. The inventory includes potential
+diagnostic/manifest adjustments; unused allowances are not editing targets.
+
+Production (nine paths):
+
+- `crates/bombay-engine/src/environment.rs`
+- `crates/bombay-engine/src/driver.rs`
+- `crates/bombay/src/local.rs`
+- `crates/bombay/src/actor_outcome.rs`
+- `crates/bombay/src/actor_execution.rs`
+- `crates/bombay/src/retirement.rs`
+- `crates/bombay/src/terminal.rs`
+- `crates/bombay/src/termination.rs`
+- `crates/bombay/src/launch.rs`
+
+Owning tests, advanced hosts, benchmark/fuzz and diagnostics (13 paths):
+
+- `crates/bombay/src/application_runtime.rs`
+- `crates/bombay-engine/tests/support/mod.rs`
+- `crates/bombay-engine/tests/driver_property.rs`
+- `crates/bombay-engine/tests/terminal_custody.rs`
+- `crates/bombay-engine/tests/source_settlement_order.rs`
+- `crates/bombay-engine/tests/compile/pass/send_not_sync.rs`
+- `crates/bombay-engine/tests/compile/fail/environment_phase_authority.rs`
+- `crates/bombay-engine/tests/compile/fail/environment_phase_authority.stderr`
+- `crates/bombay-engine/benches/driver.rs`
+- `crates/bombay-engine/fuzz/fuzz_targets/causal_turns.rs`
+- `crates/bombay-engine/tests/law_manifest.rs`
+- `crates/bombay-engine/tests/driver_law.rs`
+- `crates/bombay-engine/tests/driver-law-evidence.sh`
+
+Current and affected normative documentation (13 paths):
+
+- `docs/prd-backlog/status.md`
+- `docs/prds/execution-ownership.md`
+- `docs/prds/execution-ownership/application-api.md`
+- `docs/prds/execution-ownership/external-work.md`
+- `docs/prds/execution-ownership/observation.md`
+- `docs/prds/execution-ownership/task-custody.md`
+- `docs/prds/execution-ownership/verification.md`
+- `docs/driver-law.md`
+- `docs/runtime-capability-interfaces.md`
+- `docs/public-api-audit.md`
+- `docs/module-boundaries.md`
+- `docs/driver-law-manifest.json`
+- `docs/driver-test-strategy.md`
+
+Affected mutation baseline (one path):
+
+- `mutants-baseline.json`
+
+Independent scope reviewer `/root/contract_inventory` corrected the initial
+34-path proposal to 36: the Driver evidence script must execute the new law's
+inversion, and the mutation baseline records the deleted private adapter.
+The corrected request supersedes the earlier 34-path question. No expanded
+source editing resumed. The same reviewer confirms the partial patch's exact
+hashes, real private-interface warning and missing optimized/inversion checks.
+The tested request is a Copy unit cancellation fact; move-only request custody
+and necessity over a unit disposition plus residual still need comparison.
+Generic defaults are not accepted merely because they compile.
+
+The smallest blocker is the actual recurring typed ScheduleAfter source chain:
+owner cancellation remains pending despite guaranteed yields; the selected
+retirement must retain its exact admitted receipt and unoffered accepted suffix.
+Existing Driver, LocalResidual, owner request/oneshot authority, SourceCustody,
+ActorRetirement and affine Observe primitives are reused. The unused private
+generic TerminationPublication Retirement adapter is a deletion candidate only
+if the accepted local classification proves its replacement. A public
+Completed result should not expose private cancellation machinery; compare
+extraction of non-retirement Completion<Never> with the existing OwnerCancelled
+projection while conserving every payload. No generic coarse policy may be
+invented to make the match compile.
+
+Required before retention: independently reviewed DG-TASK/affected projection
+contract, corrected public interface, original failure and repaired positive
+oracles in debug/optimized builds, all relevant typed causal/source invariants
+and inversions, advanced-host/diagnostic migration and current-document audit.
+All full EXEC gates remain required afterward.

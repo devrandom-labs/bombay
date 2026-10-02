@@ -417,3 +417,107 @@ unoffered live source suffix cannot silently be relabelled terminal-only
 custody. The variant's storage capacity is not authority for that semantic
 change. No such implementation or new Engine port is selected. A typed owning
 cancellation disposition would need independent contract evidence.
+
+
+### Compiled transitive-source cancellation characterization
+
+At the same isolated capability-retention directory, a separate 182-line test
+module appended to baseline application_runtime.rs uses the actual Driver,
+LocalEnvironment, ActionInterpreter, ApplicationCapabilities and ScheduleAfter
+source action. Patch SHA-256:
+`7190ab385846c8c816aab889c628a5db6556c736e38fcb5bf2f2216a3e0e3ca1`.
+A test-only wrapper inserts barriers and yields after every admission; it does
+not replace interpretation or the Driver. The first exact receipt is admitted,
+then the owner sends cancellation before source acquisition. Sixteen finite
+receipt folds continue to admit replacement schedules despite explicit yields.
+Initial activation is not published and the address is never resolvable.
+An independently enqueued typed ShutdownRequested then ends the recurrence.
+The actual result is Stopped with Retired residual, not OwnerCancelled or
+SourceClosed: one exact accepted timer receipt remains in control ingress,
+The observed 18 complete Accepted settlements have empty source/creation lanes;
+that count is reported in both logs rather than asserted as a law. User
+ingress, descendants and capability tasks are empty.
+
+From that directory, both commands pass one characterization test:
+
+```sh
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked -p bombay-rs --lib transitive_source_cancellation -- --nocapture --test-threads=1
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked --release -p bombay-rs --lib transitive_source_cancellation -- --nocapture --test-threads=1
+```
+
+Logs: source-debug.log and source-release.log. This demonstrates cancellation
+not being polled during a standard transitive chain even when executor fairness
+is supplied. It is not a failing regression against an accepted bounded
+cancellation law: no arbitrary 16-fold deadline is selected. A proper original
+noncompletion oracle and repaired witness remain required once the typed
+retirement boundary is selected. Retained repository delta: zero.
+
+
+After this characterization, the user selected the source-cancellation law:
+**require typed retirement with exact remaining custody**. Preserve actor
+state, admitted receipts and unoffered settlement remainder rather than
+waiting for an endless transitive chain. An already running noncooperative
+operation may still need completion; its receipt must remain distinct from
+owner cancellation. This is law selection, not acceptance of an owning
+contract change, port, public type or gate. The original noncompletion
+regression and concrete ordinary-Rust ownership comparison remain required.
+
+
+### Selected receipt law and layer ownership
+
+After further ownership discussion, the user selected explicit receipt custody:
+waiting and receipt ownership are separate; cancelling a wait preserves the
+retained exact-result receipt. Surrendering the final receipt relinquishes
+result custody; retained cleanup still joins, then explicitly releases exact
+undeliverable results once. There is no implicit global result store. This
+selects no public wrapper or interface; the callback and Entity integration
+proofs remain required.
+
+The actual-launch comparison was strengthened to three passing tests in both
+profiles, including final-receiver surrender while execution still joins before
+result release. selected-complete-receipt-law.patch SHA-256:
+`3b38c53c503350dcad206b93828c39c6d3318bbcffa2c348f6c670027ab01111`;
+launch source SHA-256:
+`36ef89c0c72b9b975c63064b80565f8a723d96db467c6fde9fa2737dafc7d170`.
+Commands use the same pinned-Nix root, package and complete_result_receiver_comparison
+filter recorded in the artifact directory. This appends 118 test lines to
+baseline launch.rs; earlier two-test receipt evidence is superseded. Current
+owning_outcome panic can still prevent result publication until the selected
+capability-failure conservation law is integrated. Universal receipt delivery,
+arbitrary callback work, descendants and Entity families are not proved here.
+
+Original source noncompletion now compiles and fails its intended assertion
+in debug and release; source-original-fail-{debug,release}.log and patch
+`cc7e8cfc085fd31f318ab65efe8b66f82f99f0936c2702487a1634e413345bb6`
+record a 250ms watchdog observing noncompletion, not a domain deadline.
+Test cleanup aborts the task; no production timeout or abort policy is selected.
+The original-only setup waits for continued progress. A repaired regression
+must instead observe retirement versus progress, preserving exact custody, so
+early correct retirement is accepted rather than rejected by that setup.
+Independent reviewer `/root/contract_inventory` confirms the compiled
+original failure and this positive-oracle limitation.
+
+A separate actual two-request characterization retains the exact unoffered
+second accepted schedule in the oldest settlement suffix, in addition to
+actor state and the admitted first receipt. Both profiles pass one test. Patch
+SHA-256: `fda950ce82c58b4f34a7bef1cbd6a85e8933a787c15fccc10974125955e93b5d`.
+It appends 193 test lines to baseline application_runtime.rs; it is not a
+selected-retirement fix. Current isolated overlay is local.rs +204 test lines,
+application_runtime.rs +193 and launch.rs +118: 515 test lines, production/new
+public types zero. Manifest selected-custody-research-receipt.json SHA-256:
+`2b3463d1a46864c4be06a247bf25f3674827b8a14df2cb8ee8b262ad57e5f7eb`.
+Retained repository production/test/public-type delta remains zero.
+
+Ownership audit: source acquisition and its exact Driver disposition belong
+to Engine; source normalization/admission remain Behavior/Communication laws.
+Concrete cancellation facts, actor task joins and application receipts belong
+to Bombay. Observation protocol and reusable monitor policy belong to Behavior
+Actors, while Bombay owns queue execution. ActorExecution, its outcome,
+Retirement and TerminationPublication are crate-private despite pub declarations
+inside private modules. The generic TerminationPublication Retirement adapter
+has one direct unit-test consumer and no production consumer. Removing that
+adapter cannot by itself supply a lawful source-neutral Engine retirement
+classification. Existing LocalRetirement publishes Crash::Cancelled only from
+actual typed OwnerCancelled custody; all representable new completion/residual
+combinations need a truthful disposition. No generic cancellation policy or
+new port is accepted from this audit.

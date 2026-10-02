@@ -380,3 +380,83 @@ Started receipt and validate subsequent reports. A protocol-file-only
 upstream proposal would omit required consumers and is rejected as incomplete.
 Full ordinary-Rust alternatives, interface/ownership review and concrete
 upstream scope remain required. DG-OBSERVATION remains open.
+
+
+### Cross-crate comparison and frozen owning candidate
+
+The actual cross-crate comparison tests two new opaque public types against
+one authority type plus the existing RecoverEvent port. A manually authored
+nominal observer implements lawful InjectEvent for two protocol paths and an
+independent acknowledgement path. The two-type comparison compiles and passes
+one test in each profile without a new observer bound. The single-type
+comparison retains the entire root event to recover authority and additionally
+requires RecoverEvent; the same InjectEvent-only observer fails with E0277
+for that missing bound in both profiles. Private Arc extraction works in a
+single-module probe but cannot cross the actual Actors/Bombay crate boundary.
+Exposing raw allocation identity is an unaccepted public interface choice.
+These comparisons establish interface costs, not an accepted production model.
+The standalone probes cover different amounts of behavior and their line
+counts are not an apples-to-apples reduction claim.
+
+Artifacts reside at the authority-j8_mkbis directory above; exact ten commands
+are crosscrate-authority-commands.txt. The two-type nominal consumer is
+nominal_two_type_consumer.rs; the one-type nominal denial is
+nominal_single_type_recovery_denied.rs. The earlier revised one-type recovery
+comparison preserves the original event, exact termination outcome and
+timestamp in an ordinary tuple on recovery rejection. Independent review
+required that correction; its passing pure tests do not establish consumer
+or runtime integration.
+
+An isolated actual Actors library candidate at
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-observation-owning-api-q16eql88`
+was frozen after library compilation. The actual artifact directory suffix is
+owning-api-q16eql88; its owning-api-frozen.patch SHA-256 is
+`03c42b323334047408eb5281ebe30e16848b16e657b98c9d7093c9fc941a2942`.
+Four owning production paths change: protocol/established.rs, protocol/mod.rs,
+lib.rs and lifecycle/termination_monitor.rs; scratch manifest/lock bring the
+count to six. Raw unformatted research production delta is +99 / -191 / net
+-92, tests zero, two new public types. Compressed research syntax is not
+distillation or credible evidence of production reduction. No retained
+repository or owning-checkout production changed.
+
+The candidate mints request identity in ObserveEstablished::new, issues
+protocol authority through the existing interpretation transfer, and makes
+the monitor retain the original request identity. Library compilation succeeds
+against the selected Core; owning consumer tests remain untouched and broken
+API migration/integration is not claimed. The candidate is blocked because
+new request identity has observable pointer equality. The locked Core requires
+pure deterministic folds and provides checked, state-owned CreationSequence
+correlation, distinct from fresh runtime actor allocation. Heap allocation is
+allowed; no rule authorizes treating semantically fresh request names modulo
+alpha-renaming. Moving creation into a monitor constructor does not solve it: a
+parent may construct that monitor inside a pure birth fold.
+
+Reviewer `/root/contract_inventory` independently confirms this unresolved
+owning-law issue against established.rs SHA-256
+`f351de778f9b2ec27474ba366b324bb244e4d3c8bd6b89a09daa2b79d90a66de`
+and monitor SHA-256
+`6a256eaf03522ebf95e07662ff11670e13f2bfa5845aad6f7e5b2d260e5fa87f`.
+No gate or candidate is approved. The user was asked whether exact preaccept
+request correlation is itself required, or verified runtime emitter routing
+is the request authority until Started returns fresh accepted-relationship
+authority. The earlier exact cancellation law remains selected in either
+case. Determinism will not be silently weakened to satisfy a stronger law
+introduced during research. Dependent owning edits remain blocked.
+
+
+The exact static-route research confirms ReturnToEmitterFor proves
+InjectEvent<Input,Path>, and Bombay injects into the emitting actor's original
+path. It does not brand actor/request provenance. A pure composition forwarding
+a genuine report through EventLayer::Owned to another same-protocol monitor
+compiles in both profiles: forwarded_observation_report.rs SHA-256
+`ed26595e57b2662f714c253b72823a46728b2e88cc68b8502d57123fe56a47ea`;
+commands SHA-256
+`20d0c9715c1c0fd45c734d217d79c6100a640114a610748d42b7156b1bf80eed`.
+This does not assert that Bombay itself misroutes reports. A deterministic
+local ordinal alone collides across observers; static roles do not distinguish
+runtime instances. An opaque namespace supplied as explicit initial state or
+input plus a checked ordinal could conserve purity, but current initialization
+turns contain only phase authority and interpreter capability inputs do not
+enter Behavior state. A general stronger preaccept law therefore needs a
+verified owning input/continuation contract. That product decision is pending;
+no new scope input, service or effect has been invented.

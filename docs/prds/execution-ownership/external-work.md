@@ -112,3 +112,56 @@ A custom pure Behavior emitting the actual request can exercise the typed
 port without claiming complete pool/supervisor policy coverage.
 The gate remains **open** until an independent reviewer signs the exact
 source hash and all rows above pass.
+
+
+## Fresh selected-port verification (2026-10-02)
+
+Current 0.20.0 interpretation differs from the frozen equation above.
+PrepareWorkers starts a capability task and immediately returns Accepted with
+WorkerPreparationStarted; saturation inside the later source operation is
+WorkerPreparation::SourceRejected with exact source and typed reason, not an
+ItemSettlement rejection returning the outer PrepareWorkers request. The
+owning fixed supervisor explicitly carries source and rejection separately
+through its recovery and diagnostic policies. Lawful FIFO restoration returns
+the source to Available and retains the rejection in its diagnostic; a corrupt
+source-state path substitutes SourceStateCorrupt and must not be described as
+preserving the original reason. This source distinction is recorded, not
+resolved by rewriting the current interpreter to the old narrative.
+
+An isolated comparison at
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-index-admission-p35qpmzx`
+implements the actual WorkerPreparationSource port with bounded direct async
+indexing and a synchronous operation. Three tests pass in both profiles:
+saturation returns the exact move-only Vec allocation without starting work,
+closed admission returns exact input, accepted work returns the complete
+WorkerSubmission, and a started synchronous operation retains its permit
+through admission closure until actually joined. Dropping the direct async
+preparation future releases its permit but returns no input or submission;
+the source no longer owns that moved input. That unresolved custody is an
+observed limitation, not an accepted cancellation law.
+
+The candidate rejection type owns the exact operation input; the source then
+has no operation input. The full pool/supervisor consumer, recovery and external
+caller extraction have not been exercised. Current FIFO public diagnostics
+do not expose extraction of that input. This comparison cannot satisfy EV-24
+or DG-WORK without integrated owning-consumer and retirement evidence.
+
+From the isolated directory:
+
+```sh
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked -p bombay-rs --lib index_admission -- --nocapture
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked --release -p bombay-rs --lib index_admission -- --nocapture
+```
+
+Each passes three tests. Changing capacity from one to two causes the intended
+saturation-variant assertion to fail in debug and release with exit 101 using
+the bounded_index_admission_returns_exact_input_and_submission filter. This
+is a bound inversion, not an original Bombay defect. Positive patch SHA-256:
+`30f4aa4c9b4750cec7f1e27dd60d1c1c1ce2b21fa1afb871b97e05769fd17d4c`;
+inversion patch SHA-256:
+`853c915fdef1d4e619a5ef74f0f69ca7b002c57c0b6fb117e661ed921b734bb1`.
+Receipt.json records unchanged baseline/lock and profile log hashes; commands.txt
+SHA-256 is `d9e8e7b9be4c61e44c558d8218dc701eb99f067046032e230f64c71fd044c41e`.
+Scratch: one path, tests +235 / -0, production/public types zero. Retained
+repository delta from experiments: zero. Two dead-code warnings remain in
+research error payloads; no strict-lint or integrated acceptance is claimed.
