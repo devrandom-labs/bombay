@@ -643,3 +643,133 @@ close/drain race, surviving receiver ownership, complete typed result equation
 and final-receiver discharge before retention. No public type, field or wrapper
 is selected by this law decision. The current zero-new-public-type source and
 mailbox checkpoint does not authorize an unseen result-interface expansion.
+
+## Distinct live capability failure observation (2026-10-02)
+
+The user selected a distinct background-operation failure cause for ordinary
+termination observers when a capability task fails while its actor is live.
+Do not label this owner cancellation, a Behavior-requested stop or Driver panic.
+The complete result must also preserve the exact actor state and all available
+actual task failures while joining remaining work, under the already selected
+unbounded cooperative limit. A task failure discovered after an actual completed
+actor outcome is a coexisting result fact; it must not retroactively rewrite that
+outcome or an already published termination.
+
+Bombay owns concrete task acquisition, retirement and result custody. Behavior
+Actors owns the shared terminal vocabulary and template consumers. Selected
+0.20.0 `termination.rs` (SHA-256 `bb74a3f6b9344008a1f3d4dbc0f494249e494454994daa7be33592c1eddbc1b7`) provides only
+Failed, EnvironmentFailed, Panicked and Cancelled; its documented terminal law
+preserves provenance rather than reconstructing it from an adjacent diagnostic.
+The new distinct cause therefore requires owning-contract verification and an
+independently reviewed Behavior Actors change before dependent integration.
+Foundational Behavior's deterministic fold does not own this executor policy.
+
+The user additionally selected immediate retirement of only the owning actor
+when its capability task fails while it is live. Preserve the first failure
+at the typed retirement boundary, then join remaining tasks and keep any later
+failures. Do not wait for the actor to stop naturally after the operation that
+could supply its next event has failed. Parent and peer reactions retain their
+existing explicit policies; this is not automatic global propagation.
+
+This is a selected law, not a selected representation or an accepted gate.
+The current 52-path, zero-new-public-type source/mailbox allowance does not
+include this upstream contract expansion. Compare live acquisition and completed
+retirement separately, audit owning consumers and record a measured expansion
+before any additional production edit. Keep the backlog prerequisite current.
+
+## Pre-start completion custody (2026-10-02)
+
+The user selected returning untouched application inputs to the independent
+result receiver when execution is dropped before it starts. No actor exists
+at that boundary: do not fabricate an ActorCancelled terminal or actor origin.
+Preserve the unstarted declaration (root, declared actors and family definitions)
+and the uninvoked work input once. The final-receiver surrender law still applies
+if no receiver remains. Original inputs and a started complete result are
+alternatives, not duplicated fields beside an actor outcome.
+
+Compare ordinary `ControlFlow<OriginalInputs, FinishedResult>` with a named
+closed completion sum; `(application, work)` can group existing exact inputs
+without a new input wrapper. An actual application seam and pre-first-poll Drop
+witness are still required. Existing work callback/future/output bounds allow
+borrowed, non-'static values; spawning the entire application or its combined
+publisher cannot silently strengthen those bounds. Separate static actor cleanup
+from caller-owned input/work/result custody using existing affine handoffs.
+No public execution product, extra runner or final representation is selected.
+
+## Actual capability-source custody comparison (2026-10-02)
+
+The isolated comparison at
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-capability-source-custody-i613dlhm`
+uses actual interpreted observation tasks and the actual LocalEnvironment/Driver,
+on the final source-retirement candidate. Two of four capability tasks panic
+during terminal-event conversion outside the Behavior fold. After the first
+failure is joined, the other targets are released; two exact termination events
+remain recoverable despite Communication control closure. An ordinary join-all
+comparison retains both actual JoinErrors and the complete already-stopped actor
+outcome: state, accepted user input, nonempty descendant custody and the admitted
+timer receipt plus exact rejected timer remainder. Required operations occur
+outside assertions.
+
+The original live acquisition path instead unwinds the incarnation task and
+destroys its still-recoverable state. Its preservation oracle fails for that
+specific law in both profiles. A separate inversion of the join-all comparison
+returns early after the first failure and loses later events; it also fails in
+both profiles. These are distinct failures, not a claim that the live path has
+been repaired. The positive fixture characterizes the original live failure and
+proves only the stopped-outcome joining comparison.
+
+A separate actual cleanup witness borrows the existing affine result future,
+polls Pending and drops that borrowed wait. Dropping the owning execution wait
+then requests cleanup. Reawaiting the same retained receiver yields the exact
+actor result after cleanup; the actor value drops once when that result drops.
+An opaque `Future + Unpin + Send` therefore suffices for this narrow receiving
+seam; a new public receiver wrapper has not been justified.
+
+Patch SHA-256:
+`ad2f5e14da403169ead3a1362fab10b6d8d06a0a21eccd9c3310374f1f21eba1`;
+final receipt:
+`88acb61f76d91b6bcdb9f1ace02b19ed683bdd8daf0ac91e14eb73184565ec5e`;
+final two-law inversion patch:
+`34bc70329b2a028dfc3d51b6979b52e1b317ded75253506b90baba93964fa421`.
+The receipt records exact commands, eleven logs, source hashes and limitations.
+All commands use the pinned Bombay Nix shell and `cargo test --locked`,
+`-p bombay-rs --lib`, with debug and `--release` variants. Filters are
+`capability_failure_custody`, `borrowed_completion_wait`,
+`actual_registered_capabilities` and `original_live_capability`; each run executes
+the intended one or two tests. Both final positive profile runs pass two tests;
+the borrowed receiver passes one each. Both combined inversions fail two each;
+the restored final fixture passes again. No zero-test run is evidence.
+
+Independent reviewer `/root` read the complete patch and authenticated all three
+source hashes, both final patches and eleven logs. This accepts the bounded
+source-failure, join-all and borrowed-receiving evidence, not DG-TASK. The
+descendant fixture is exact opaque custody, not actual child registration; only
+the Completed outcome is compared. The actor failure/error alternatives, real
+child projections, all sibling joins, pre-start inputs, application lifetime
+bounds, family cleanup and implementation of the selected live failure policy remain required. Available
+incarnation, capability and projection failures must retain their distinct
+provenance. The first failure's task cannot yield values it already destroyed.
+
+Isolated test-only delta: three already authorized paths, production +0 / -0;
+tests +637 / -0; public types +0 / -0. These lines are research evidence and
+are not a retained test design or a grant to expand the production surface.
+
+## Read-only task and application consumer forecast (2026-10-02)
+
+`full-task-consumer-inventory.json` in the same scratch directory (SHA-256
+`e47d47d50ef71b06a05001d4cdf2427da82fe69a665155d1fde4ef8942e5030a`)
+records the exact 52 authorized paths and a prospective task/application
+migration. Their union is 123 paths: 71 additional paths, including the owning
+Behavior Actors terminal vocabulary/consumers, Bombay result consumers and macro
+expansion, paired diagnostic fixtures, current guidance and executable examples.
+This is a forecast, not authorization to edit those paths.
+
+The recorded estimate is Bombay production +230 / -100 / net +130 and Behavior
+Actors +5 / -0. With independently measured source retirement +64, shutdown +1
+and Communication +49, the cumulative forecast is +249, exceeding the approved
++150 ceiling. Currently private OwnerCancellation may need to become publicly
+nameable with private construction; a named application execution or failure
+product remains unproved. Do not select additional public products to fill an
+allowance. Complete the actual ordinary-Rust lifetime/result comparison, then
+show a concrete bounded expansion and obtain user approval before production
+edits. Observation authority and later module extraction are separate scopes.
