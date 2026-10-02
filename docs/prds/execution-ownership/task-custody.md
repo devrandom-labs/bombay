@@ -581,8 +581,15 @@ adds an observational `Step::Continue` assertion to the already checked complete
 nonempty source settlement. Its focused source-retirement test passes once in
 each profile, and strict workspace/all-target Clippy passes after that addition.
 The preceding candidate passed all 228 Bombay library tests in both profiles
-and formatting. Earlier full-workspace results belong to a superseded candidate,
-not this final freeze; integrated workspace verification remains required.
+and formatting. The coordinator then verified the final unchanged 18-source
+freeze in the clean stage with `cargo test --locked --workspace --all-features`
+and its `--release` counterpart, each through the pinned Nix shell with separate
+external targets. Both exit 0: 61 result summaries, 418 passed tests per profile.
+Log hashes: debug `e77e04d7146e9057eb42e097bc1af0f9644bdf4fd3cd2fdcb6bb9c0c05d8c170`;
+optimized `31fbfeb884cdcb375aa0d10389e694f72181202854948f5ad61829e8649e482d`.
+Logs reside beside the source-retirement-clean-30jnh_oa directory, suffixed
+`-final-debug.log` and `-final-release.log`. This validates the isolated source
+correction, not later capability, receiver or Communication integration.
 
 The witnesses exercise ordinary acquisition, a real ScheduleAfter source with
 an admitted receipt and unoffered remainder, jointly ready mailbox/local facts,

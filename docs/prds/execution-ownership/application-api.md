@@ -269,3 +269,47 @@ one experimental public free function. Repository production/test delta zero.
 Complete task custody, executor convenience/defaults/features, truthful error
 ownership, HTTP consolidation, runtime traces, migration and independent
 review remain required. DG-API stays open.
+
+## Startup projection conservation (2026-10-02)
+
+Current `DirectRoot::startup_error` returns only the reason/error for allocation,
+initialization and host rejection, discarding the remaining recoverable actor
+custody. `DeclaredRoot` has corresponding projections. This is a Bombay
+application-boundary issue: the existing local `SpawnError` and `ActorRetirement`
+already retain the exact values; Behavior needs no new contract for this law.
+
+An isolated initialization-rejection witness calls the actual DirectRoot
+projection with move-only actor/error/descendant Vec allocations and a queued
+control event. The original exits 101 in debug and optimized builds at the
+intended lost-custody assertion, one executed test per command. A plain comparison
+uses the existing `into_retirement` and terminal projection instead of destructuring
+with `..`; the complete trace and original allocation addresses then pass once
+in each profile. This proves the narrow loss and an existing ownership-preserving
+conversion, not all startup paths or a final error API.
+
+Scratch: `/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-startup-custody-iatm4s5j`.
+Baseline and lock are unchanged. Original witness patch SHA-256:
+`38f6ba15fb0da6afded54e79af6bbf1c278b4df6550cdfa4e1326895d35079d5`;
+comparison patch:
+`0218f38fc18f571c9a70183132028cd2a24c6956e9de701ae929a6c97e7c8da4`;
+receipt:
+`045bc0f108dafaa6bf67b043e06c27af31dacea74eff8c7f63b5f55fc5df41c9`.
+The receipt contains all four exact log hashes and profile-specific target paths.
+
+Each profile uses the pinned shell and the same filter:
+
+```sh
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked -p bombay-rs --lib startup_projection_preserves_exact_failure_and_remaining_custody --target-dir /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-startup-custody-iatm4s5j-target
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked --release -p bombay-rs --lib startup_projection_preserves_exact_failure_and_remaining_custody --target-dir /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-startup-custody-iatm4s5j-release-target
+```
+
+Isolated delta: one already authorized application-runtime path;
+production +3 / -3 / net 0; tests +72 / -1 / net +71;
+public types +0 / -0. Repository production/test delta remains zero.
+The comparison uses `RunError::Unpublished` only to test existing representation;
+its current committed-root wording does not cover every startup rejection.
+Independent reviewer `/root/observation_research` authenticated every source,
+patch and log hash and accepted the bounded failure/feasibility claim. Its review
+rejects treating the probe variant spelling as the required law. Truthful final
+names, staging/allocation/host/declared-root custody, coexistence with family
+outcomes and independent design-gate acceptance remain required.
