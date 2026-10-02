@@ -875,3 +875,28 @@ This accepts only the primitive comparison. Every actor outcome still needs
 integration retaining unread accepted requests; no arbitration rule is selected.
 One local.rs test module, +66 / -2; production/public types zero. The historical
 source770d/Communication 0.1.2 baseline does not prove current-lock integration.
+
+## Completed output retention and compiler constraint (2026-10-02)
+
+The successor `bombay-completed-output-retention-8nndu4__` keeps the original
+completed output in a caller-owned tuple while both receipts drop, joins the
+same actual static root cleanup, then releases the output once. Its original
+move-only allocation and caller-borrowed slice remain intact. That remaining
+caller owner is essential: this is not genuine last-owner surrender.
+Moving the same output into independent Tokio cleanup fails E0597 at the
+original borrowed slice because spawn requires a `'static` future. This is an
+architecture constraint, not a runtime regression. The public API currently
+permits non-`'static` work and output; do not silently strengthen those bounds.
+
+Receipt SHA-256:
+`25c204648449fe6698255837cbd3635f02a2a6fa646f4cb9eb3b71e1e28d65d9`;
+extension patch:
+`cfa548c0c2f20dbcf287c5f5a28fc6719a4b000a0aea12b839093888873edeef`.
+Two tests pass per profile; formatting and strict Clippy pass; the static
+denial compiles to E0597 and restored positives pass. Independent reviewer
+`/root/contract_inventory` authenticated all artifacts and inspected the exact
+ownership/denial, accepting only those bounded claims. Extension +27 / -8
+test lines in application_runtime.rs; production/public types zero. The
+historical 426/source770d/Communication 0.1.2 baseline remains explicit.
+The user must resolve borrowed-result discharge timing before its dependent
+public execution design; this comparison does not choose that policy.
