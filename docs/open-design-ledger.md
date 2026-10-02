@@ -6,6 +6,41 @@ removed packages are historical evidence, not current API guidance.
 
 ## Final audit closure (2026-10-02)
 
+The PR CodeQL fixture alert temporarily reopened TEST-014, ARC-020, and
+TEST-020 after this first closure. The recheck below is active; restore this
+closure only after focused and full gates pass on the corrected test source.
+
+### TEST-014 CI nonce fixture recheck
+
+The pushed PR's CodeQL analysis succeeded, but its security gate reported two
+`rust/hard-coded-cryptographic-value` alerts at the fixed child nonces in
+`crates/bombay/src/launch.rs`'s projected-child retirement test. The test
+currently constructs both `ChildOrigin` values with literal zero. Behavior
+0.20.0 owns `CreationSequence::issue` for creator-local correlation IDs;
+Bombay's `ChildOrigin` only records that typed provenance and does not use a
+cryptographic nonce. The exact failing CI check is the original regression.
+
+Before test-source edit: reopen TEST-014 as ready, with ARC-020 and TEST-020
+blocked by its required verification. Expected paths are `launch.rs`, this
+ledger, and `docs/todo.md`; production behavior `+0/-0`, embedded test code
+about `+8/-2`, external tests `+0/-0`, public types `+0/-0`. Reuse the
+selected `CreationSequence` to issue the test's two creator-local IDs. The
+test must still assert the complete projected terminal and descendant trace;
+the CodeQL gate must no longer classify an invented fixed nonce as a secret.
+Run the focused test in debug and optimized builds through pinned Nix, then
+the full merged-tree gates before restoring terminal queue states.
+
+The revised test obtains one child ID from each creator-local
+`CreationSequence`, preserving the same projected terminal and descendant
+assertions. After rustfmt, the source-file delta is `+15/-4` lines, all in embedded test code
+or its module-scope import; production behavior and public types remain
+unchanged. `nix develop -c cargo test --locked -p bombay-rs --lib
+projected_child_retirement_preserves_origin_state_and_descendants` and the
+same command with `--release` both passed (1/1). The original two literal
+nonce alerts are recorded in the failing PR CodeQL check; the repeated full
+flake and remote CodeQL gates are still pending. The pinned rustfmt check
+passes on the formatted test source.
+
 The 45-row [canonical queue](todo.md#canonical-execution-queue) is terminal:
 25 `TEST-*` rows are `verified`, 19 `ARC-*` rows are `distilled`, and ARC-009
 is `retained` by direct-composition evidence. No row is ready, active, blocked,

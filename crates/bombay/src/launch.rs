@@ -978,8 +978,8 @@ mod tests {
     use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
 
     use behavior::{
-        Actions, BehaviorActed, EventLayer, InitializationTurn, MessageProtocol, Never, NoBirths,
-        NoSends, SettlementStatus, User,
+        Actions, BehaviorActed, CreationSequence, EventLayer, InitializationTurn, MessageProtocol,
+        Never, NoBirths, NoSends, SettlementStatus, User,
     };
     use behavior_actors::{Crash, ShutdownRequested};
     use bombay_engine::Completion;
@@ -1280,7 +1280,13 @@ mod tests {
 
     #[tokio::test]
     async fn projected_child_retirement_preserves_origin_state_and_descendants() {
-        let descendant_origin = ChildOrigin::<RootProbe, ProbeChildRole>::new(MailAddr(2), 0);
+        let mut descendant_creations = CreationSequence::new();
+        let descendant_nonce = descendant_creations
+            .issue()
+            .expect("the descendant's first creator-local ID exists")
+            .get();
+        let descendant_origin =
+            ChildOrigin::<RootProbe, ProbeChildRole>::new(MailAddr(2), descendant_nonce);
         let descendant = ProbeTerminal::Probe {
             origin: descendant_origin,
             terminal: ActorRetirement::Cancelled,
@@ -1299,7 +1305,12 @@ mod tests {
         .expect("the child must transfer private commitment before publication");
         child.acknowledge_binding();
         assert!(child.binding.is_none());
-        let child_origin = ChildOrigin::<RootProbe, ProbeChildRole>::new(MailAddr(1), 0);
+        let mut child_creations = CreationSequence::new();
+        let child_nonce = child_creations
+            .issue()
+            .expect("the child's first creator-local ID exists")
+            .get();
+        let child_origin = ChildOrigin::<RootProbe, ProbeChildRole>::new(MailAddr(1), child_nonce);
 
         let terminal = ProjectedTask::project(child.task, child_origin)
             .finish()

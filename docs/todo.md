@@ -1,7 +1,8 @@
 # Bombay audit TODO and session handoff
 
-Status: complete audit queue; every canonical TODO is terminal and the
-project-wide distillation gate passed. The [PRD inventory](prd-backlog/README.md) and
+Status: active CI recheck of TEST-014's child-nonce fixture after the first
+terminal audit passed. ARC-020 and TEST-020 await that regression and the
+repeated final gate. The [PRD inventory](prd-backlog/README.md) and
 [evidence report](prd-backlog/evidence.md) supply additional research; the
 canonical queue below controls this goal. Historical claims in detailed
 records require re-verification against the current lock and source.
@@ -150,11 +151,11 @@ unblocked row to `ready`. A dependency is satisfied only by
 | 038 | TEST-006 | P1 | verified | TEST-001 | Expand Driver property/fuzz coverage to failure and terminal branches |
 | 039 | TEST-007 | P1 | verified | TEST-001 | Remove redundant Driver cases and complete partial assertions |
 | 040 | TEST-013 | P1 | verified | ARC-011, ARC-015, ARC-019 | Move required operations out of assertions after source layout settles |
-| 041 | TEST-014 | P1 | verified | ARC-011, ARC-015 | Eliminate discarded authoritative facts and predicted identities |
+| 041 | TEST-014 | P1 | active | ARC-011, ARC-015 | Eliminate discarded authoritative facts and predicted identities |
 | 042 | TEST-017 | P1 | verified | ARC-016, ARC-019 | Convert current ignored docs into executable/compile-fail evidence |
 | 043 | TEST-024 | P1 | verified | — | Make the mutation verdict parser fail closed for every outcome |
-| 044 | ARC-020 | P2 | distilled | TEST-002, TEST-003, TEST-005, TEST-006, TEST-007, TEST-011, TEST-013, TEST-014, TEST-017, TEST-019, TEST-022, TEST-024, TEST-025, ARC-002, ARC-005, ARC-013, ARC-015, ARC-016, ARC-019 | Audit and minimize every remaining caller-facing API |
-| 045 | TEST-020 | P2 | verified | ARC-020 | Run and enforce the final mutation, coverage, fuzz, Miri, and sanitizer obligations |
+| 044 | ARC-020 | P2 | blocked | TEST-002, TEST-003, TEST-005, TEST-006, TEST-007, TEST-011, TEST-013, TEST-014, TEST-017, TEST-019, TEST-022, TEST-024, TEST-025, ARC-002, ARC-005, ARC-013, ARC-015, ARC-016, ARC-019 | Audit and minimize every remaining caller-facing API |
+| 045 | TEST-020 | P2 | blocked | ARC-020 | Run and enforce the final mutation, coverage, fuzz, Miri, and sanitizer obligations |
 
 ### Iteration loop
 
@@ -815,7 +816,7 @@ commands are in `docs/open-design-ledger.md`.
 
 ### TEST-014 — Authoritative facts and generated values are discarded
 
-**Status:** verified. **Priority:** P1.
+**Status:** active. **Priority:** P1.
 
 `run_with.rs` discards three exact termination results. The Driver creation test
 discards a generated ID and predicts allocator values. Several authoring tests
@@ -1000,7 +1001,7 @@ remaining risk or N/A rationale: removing an unthresholded measurement leaves or
 
 ### TEST-020 — Mutation, coverage, fuzz, and Miri are mostly on-demand
 
-**Status:** verified; TEST-003/004/005/017/018/024 prerequisites are terminal.
+**Status:** blocked; TEST-003/004/005/017/018/024 prerequisites are terminal.
 **Priority:** P2.
 
 Coverage produces HTML/summary output but enforces no floor. The default mutant
@@ -2158,7 +2159,7 @@ remaining risk or N/A rationale: the allowed cfg structure still compiles one so
 
 ### ARC-020 — Complete a caller-facing Rust API audit
 
-**Status:** distilled; terminal API audit confirmed minimal remaining surface. **Priority:** P2.
+**Status:** blocked; terminal API audit confirmed minimal remaining surface. **Priority:** P2.
 **Owner:** each remaining public crate.
 
 The API audit must follow deletion, not rationalize current surface. Public
@@ -2399,7 +2400,7 @@ visibility regressions now run ordinarily. Two ignored Local cancellation
 tests remain under ARC-011; the startup-waiter test now probes the invisible
 reservation directly and fails for its task-ownership law under `--ignored`.
 
-## Final terminal audit result (2026-10-02)
+## Prior terminal audit result (2026-10-02; TEST-014 recheck active)
 
 All 45 canonical rows are terminal: 25 `TEST-*` rows are `verified`, 19
 `ARC-*` rows are `distilled`, and ARC-009 is `retained` by its direct
@@ -2480,10 +2481,10 @@ Update this block at the end of every iteration. It is a cache of the canonical
 queue, not a substitute for rescanning that queue.
 
 ```text
-goal: complete
+goal: active
 queue schema: 1
-active item: none
-next item by selector: none
+active item: TEST-014 CodeQL nonce fixture recheck
+next item by selector: TEST-014
 last terminal item: TEST-020 verified
 last architecture resolution: ARC-020 distilled
 external blockers: none for the canonical queue; crate publication has the separate Timers and coordinated version dependencies above
