@@ -1191,3 +1191,39 @@ distinct behaviors, stale-address exact authority, admitted delivery/rejected
 payload custody, and the remaining static denials must have their required
 evidence before production retention. No retained production edit is made by
 this record.
+
+## 19. Communication admission prerequisite (2026-10-02)
+
+Fresh shutdown implementation witnesses exposed a selected dependency
+contradiction. Communication 0.1.2 promises that consuming or dropping
+MailboxOwner prevents every stale MailboxRef from obtaining a new delivery
+permit, while allowing pre-close permits to finish. The actual close only
+drops its counting UserSender; UserAnchor::upgrade tests whether the remaining
+count is nonzero. An earlier in-flight operation keeps that count nonzero,
+allowing a new operation to obtain a permit after shutdown has closed admission.
+ActorRef::send_from delegates to that MailboxRef without another admission gate.
+
+The researcher reports an actual ActorRef witness failing the intended law in
+both debug and optimized builds: shutdown is accepted before the post-close
+operation is constructed; freeing capacity with the consumer still alive then
+admits that new payload. The test observes the complete delivered trace and
+original Vec allocations rather than treating a timeout as closure. Frozen
+receipts and independent review remain pending; no dependency edit is accepted.
+
+The coordinator independently inspected the selected source and its contract.
+Archive VCS revision is `6067df1cb12b4e87086f120fb3e879fd5afdbd92`, source path
+`crates/communication/src/lib.rs`. The exact release tree contains no AGENTS.md.
+Remote main at `e1017dc4da7e8d3ca014757d2e7308fa4426eb2b` differs only in agent
+configuration/security files; no source correction or newer release exists in
+the inspected comparison. Earlier primitive tests allow an operation admitted
+before closure to finish but do not cover a new admission while that permit
+remains live. These are distinct laws; pre-close work must retain its custody.
+
+Communication owns the required atomic admission-close/acquire law, distinct
+from the number of existing permits. Bombay must not introduce a second mailbox
+or silently weaken shutdown closure. Dependent local acceptance and production
+retention remain blocked until the owning correction is verified and selected.
+Independent Engine, ownership and observation implementation comparisons
+continue. Any owning source expansion requires its concrete change record,
+scope checkpoint and independent review; the 38-path authorization does not
+cover unseen Communication files. The backlog records this external prerequisite.
