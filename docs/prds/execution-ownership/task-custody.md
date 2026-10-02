@@ -552,3 +552,48 @@ candidate, stores the owner request but returns `None`; Driver then labels it
 Engine claim of permanent source exhaustion true. A direct ordinary-acquisition
 falsifier and a comparison covering both acquisition ports are required before
 retention. Any additional consumer paths must be measured against the checkpoint.
+
+## Single-owner retirement-cause review (2026-10-02)
+
+The revised isolated candidate transfers the exact non-Clone, non-Copy owner
+request once into `Completion<Request>`. It deletes the duplicate cause from
+LocalResidual. Both ordinary and source acquisition return
+`ControlFlow<Request, Option<Event>>`; a retirement request is distinct from
+permanent source exhaustion. Driver restores the unoffered settlement suffix
+to its causal position before retirement. Public ActorRetirement continues to
+separate exact OwnerCancelled from ordinary Completed with `Completion<Never>`.
+No new actor policy, capability map or coarse generic policy is introduced.
+
+Frozen patch `single-owner-retirement.patch` SHA-256
+`880d41d5855dd3be415f3d9809f7640e1a55efd54c5dfaa2b63db6bf989bdbb8`.
+Receipt SHA-256
+`3bc185a0b1eaf3dfc5c7b298bf7410f365edf60fa8836472d4907ecf5d1032ed`.
+Both reside in the previously recorded capability-retention-ftl9frah directory.
+The candidate covers 18 canonical paths within the authorized 38-path stage:
+production +224 / -174 / net +50; tests +1266 / -58 / net +1208;
+public types +0 / -0. These are isolated measurements, not retained changes.
+
+Author `/root/task_custody_research`; independent reviewer
+`/root/observation_research` verified the frozen patch, receipt and all 18 source
+hashes. Fresh private-directory debug and optimized `owner_retirement` runs
+pass two tests each. They exercise actual ordinary/source acquisition and
+preserve the exact actor state, admitted receipt, unoffered second schedule,
+remaining lanes and lease retirement. Coarse publication is Cancelled; the
+public outcome is exact OwnerCancelled. The clean canonical workspace passes
+in both profiles. An earlier closure check scanned historical research files
+inside another temporary workspace; that failure is not semantic acceptance
+evidence and does not justify weakening the repository scanner.
+
+The reviewer recommends conditional acceptance of this narrow subdecision,
+subject to module-scope Completion imports, truthful acquisition-port/current
+documentation and reproducible inversion patches/hashes. It approves no full
+DG-TASK gate. Earlier failure-conservation tests use a test-only alternate
+settler; production capability failure remains unresolved. Caller cancellation,
+Entity cleanup and unread request disposition remain separate open requirements.
+
+Source compatibility cost: the generic Never default does not infer an
+unannotated standalone `let completion = Completion::Stopped`; an actual
+compiled probe reports E0282. `let completion: Completion = Completion::Stopped`
+or a type inferred from Driver output provides the request type. This cost
+must be judged explicitly before interface retention, rather than hidden by
+the default or treated as architectural necessity from compiler output.

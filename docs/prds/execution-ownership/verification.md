@@ -97,6 +97,19 @@ The review corrected the second capability-task spawn-site description to
 worker preparation and clarified two new opaque types versus two replacement
 protocol types. All decision gates remain open.
 
+## Independent Communication failure evidence
+
+[EXEC section 19](../execution-ownership.md#19-communication-admission-prerequisite-2026-10-02)
+records the frozen actual ActorRef defect, complete trace and independently
+reproduced one-test failures in both profiles. Shared-target zero-test runs
+are excluded. This verifies the prerequisite defect, not an accepted correction.
+
+[Single-owner retirement-cause review](task-custody.md#single-owner-retirement-cause-review-2026-10-02)
+records conditional independent review of the 18-path isolated candidate,
+workspace debug/optimized preservation and its standalone generic inference
+cost. Source-stage imports, documentation and inversion receipts remain required
+before retaining it; capability-failure production and full DG-TASK remain open.
+
 ## Complete change measurement
 
 This stage changes documentation only. Production-file counts would include
@@ -109,6 +122,6 @@ inherited tracked or untracked delta. The measured stage delta follows.
 production: +0 / -0 / net 0
 tests:      +0 / -0 / net 0
 public API: +0 types / -0 types
-documentation: +1168 / -8 / net 1160
+documentation: +1257 / -8 / net 1249
 changed tracked and untracked paths: 8
 ```

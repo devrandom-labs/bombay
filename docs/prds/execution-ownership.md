@@ -1203,12 +1203,12 @@ count is nonzero. An earlier in-flight operation keeps that count nonzero,
 allowing a new operation to obtain a permit after shutdown has closed admission.
 ActorRef::send_from delegates to that MailboxRef without another admission gate.
 
-The researcher reports an actual ActorRef witness failing the intended law in
-both debug and optimized builds: shutdown is accepted before the post-close
-operation is constructed; freeing capacity with the consumer still alive then
-admits that new payload. The test observes the complete delivered trace and
-original Vec allocations rather than treating a timeout as closure. Frozen
-receipts and independent review remain pending; no dependency edit is accepted.
+An actual ActorRef witness fails the intended law in both debug and optimized
+builds: shutdown is accepted before the post-close operation is constructed;
+freeing capacity with the consumer still alive then admits that new payload.
+The test observes the complete delivered trace and original Vec allocations
+rather than treating a timeout as closure. The frozen evidence and independent
+reproduction are recorded below; no dependency edit is accepted.
 
 The coordinator independently inspected the selected source and its contract.
 Archive VCS revision is `6067df1cb12b4e87086f120fb3e879fd5afdbd92`, source path
@@ -1227,3 +1227,34 @@ Independent Engine, ownership and observation implementation comparisons
 continue. Any owning source expansion requires its concrete change record,
 scope checkpoint and independent review; the 38-path authorization does not
 cover unseen Communication files. The backlog records this external prerequisite.
+
+### Frozen defect evidence and independent reproduction
+
+Artifact directory:
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-communication-close-f03vzd78`.
+Patch SHA-256 `68c5be85b38bbc8dfedea693c5f9480aba166b194ce1bad729be626571219ef2`;
+receipt SHA-256 `d7228ee6cd3cfccecbf1fe55096b7c8a366f645e828e35b8103d19bb5a8d254c`.
+The coordinator verified both hashes and the recorded debug/release logs.
+The isolated delta is one existing test-bearing source path, tests +79 / -2 /
+net +77; production and public types zero. No retained source delta results.
+
+Author `/root/contract_inventory`; independent reviewer
+`/root/observation_research` verified source, selected lock and artifact hashes,
+then reproduced the intended failure with a private per-copy build directory:
+
+```sh
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked --target-dir <artifact>/independent-target -p bombay-rs --lib shutdown_close_denies_a_new_sender -- --nocapture
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked --release --target-dir <artifact>/independent-target -p bombay-rs --lib shutdown_close_denies_a_new_sender -- --nocapture
+```
+
+Each executes exactly one test and exits 101 for the intended assertion.
+The complete delivered trace is `17:[11,13], 43:[37,41], 61:[47,53,59],
+31:[19,23,29]`: 61 is the forbidden new post-close admission; 31 is the valid
+pre-close pending operation. Both payloads retain their original allocations.
+Pre-close admission completion must continue to work after the correction.
+
+An intervening rerun using a shared research build directory selected another
+copy's artifact and executed zero matching tests. It is excluded from evidence;
+the independent private-directory runs reproduce the actual defect. The owning
+fix, concurrency proof, performance comparison and released dependency selection
+remain pending. No Bombay-side duplicate admission mechanism is authorized.
