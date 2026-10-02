@@ -32,6 +32,13 @@ The two initially filtered compile harnesses were subsequently executed:
 | `nix develop -c cargo test --locked -p bombay-rs --test actor_ref_authoring` | One harness passed: three authoring static denials. |
 
 These focused results do not establish full workspace or EXEC acceptance.
+
+The baseline at `46f7ee8` subsequently passed
+`nix develop -c cargo test --locked --workspace` (exit 0), including workspace
+unit, integration, compile-contract and documentation tests. Production and
+the selected lock were unchanged. This is preservation evidence; it does not
+cover the isolated defect witnesses, repaired candidates, feature-specific
+optimized verification, Loom configuration, benchmarks or remaining EXEC gates.
 Historical inversion receipts for completed ARC fixes remain historical.
 [Compiled observation race failures](observation.md#compiled-original-race-failures-2026-10-02)
 now establish two original-defect failures in debug and optimized builds; no
@@ -97,6 +104,6 @@ inherited tracked or untracked delta. The measured stage delta follows.
 production: +0 / -0 / net 0
 tests:      +0 / -0 / net 0
 public API: +0 types / -0 types
-documentation: +983 / -8 / net 975
+documentation: +990 / -8 / net 982
 changed tracked and untracked paths: 7
 ```
