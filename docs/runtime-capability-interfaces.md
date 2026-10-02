@@ -278,11 +278,21 @@ The implementation has extensive unit, edge, teardown-oracle, allocation,
 leak, stress, property, and Loom coverage. Bombay must reuse these semantics,
 not wrap them in Tokio channels.
 
+The selected Communication 0.1.2 does not fully implement its affine admission
+contract: a surviving pre-close send permits a new post-close send to acquire
+admission. [EXEC's owning prerequisite](prds/execution-ownership.md#19-communication-admission-prerequisite-2026-10-02)
+records independently reproduced original failures and the bounded correction
+under review. The laws here describe the required contract; they do not claim
+that this selected defect is repaired or that EXEC is accepted.
+
 ### Affine user-admission retirement
 
-`MailboxOwner::close_admission(self)` (and owner drop) linearizes user-lane
-closure. Already accepted payloads remain drainable. Racing, blocked, and
-later user sends that did not linearize recover their exact payload. Stale
+`MailboxOwner::close_admission(self)` (and owner drop) linearizes admission
+closure, independently of ring publication. A send that acquired its temporary
+sender before closure may finish awaiting capacity and publish afterward;
+accepted payloads remain drainable before the user-lane-closed marker. A new
+acquisition after closure returns its exact payload. Consumer teardown also
+returns an in-flight payload that never published. Stale
 `MailboxRef` values cannot reopen admission. Control admission is intentionally
 separate and remains live until the final `ControlSender` drops, allowing
 shutdown and terminal facts to reach an actor after public ingress closes.
