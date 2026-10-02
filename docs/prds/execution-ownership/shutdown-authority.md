@@ -248,3 +248,91 @@ the full actor termination law. Exact rejected IDs and complete acknowledgment
 reasons do not by themselves prove every rejected target/ingress value's custody.
 Those broader witnesses, stale-address authority, same-protocol distinct
 behaviors, admission races and static denials remain required before retention.
+
+## Communication owning correction and delivery boundary (2026-10-02)
+
+The authorized owning candidate is now frozen against Communication main
+`e1017dc4da7e8d3ca014757d2e7308fa4426eb2b`; its source matches the selected
+0.1.2 source before correction. The private admission state is
+`Open(UserSender<U>) | Closed` behind a standard Mutex. A pre-close acquisition
+keeps its existing sender; owner closure forbids every new acquisition even
+while that sender survives. The displaced sender drops outside the lock, and
+the lock and promoted admission Arc are released before awaiting. Raw sender,
+ring, control, backpressure and consumer closure semantics stay with their
+existing owners. No public type or second Bombay admission gate is added.
+
+Eight mailbox-retirement tests cover exact post-close rejection, pre-close
+completion, unpolled send rejection, cancelled pending payload release,
+destructor reentry, Send/non-Sync payloads and closure races with complete
+terminal traces. A separate private law proves owner closure despite a promoted
+reference, and an allocation witness measures construction and steady sends. An actual Bombay ActorRef witness also
+fails on original source and passes with this exact owning source in both
+profiles; the temporary patch does not claim a published selection.
+
+The same-law RwLock comparison passes correctness witnesses but trades a modest
+single-producer gain for worse measured contention. Mutex single-producer
+median is 13.232 microseconds per 1024 sends, versus 12.086 for RwLock in
+the fresh same-law comparison. Its mixed 20,000-user/20,000-control contention
+run (including setup, spawn/join, closure and drain) measures 1.3779 milliseconds
+for Mutex and 1.6827 for RwLock. The earlier paired original-to-Mutex round
+measures 8.9518 to 12.847 microseconds and 1.3417 to 1.4433 milliseconds
+respectively. These separate rounds are local measurements,
+not latency/fairness guarantees. Mailbox construction adds one allocation;
+steady sends and exact rejection remain allocation-free in the owning witness.
+The separate-phase atomic comparison rejects a legitimate pre-close grant;
+this does not disprove all possible atomic designs. The user accepted this measured cost and authorized proceeding with the
+upstream PR on 2026-10-02.
+
+Frozen upstream draft:
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/communication-reviewed-owner-y9mxupb4/owner`.
+Whole patch SHA-256:
+`09f07a4eb84dc14542e718501d95c64d8d5c794f8a9836667743d2b1f912f564`;
+change record:
+`69453bfc11f30da521ed59608e6c5d91cd7376cb4d0e1b583b0b0e83137ef7fd`;
+final verification receipt:
+`37742eca7e3664da7671e6fb8a21600af8b3ec42e0d85fc5f412e567c3035d70`.
+Seven owning paths measure production +62 / -13 / net +49, tests/benchmarks
++502 / -5 / net +497, documentation +105 and public types +0 / -0.
+The alternative difflib +63 / -14 production measurement has the same net
+and source bytes; this complete owning record uses Git's diff. The approved
+owning +80 production and +500 tests/benchmarks ceilings remain in force.
+
+Pinned-shell workspace tests, strict Clippy, formatting, all seven owning
+aarch64-darwin Nix checks and the complete Loom suite pass. Loom executes one
+private law and twelve models with `LOOM_MAX_PREEMPTIONS=3`; it does not promise
+exhaustive unbounded scheduling. The receipt records all exact commands/log
+hashes. Author `/root/contract_inventory`; independent reviewer
+`/root/observation_research` authenticated the final seven paths and five logs,
+accepted the narrow correctness/minimization result and preferred Mutex subject
+to the user's performance decision. This is not full DG-SHUTDOWN acceptance.
+
+The exact seven-path proposal is committed as
+`4e54b33f23d53644681f2241d7afefceb72b4700` and delivered through
+[Communication PR #7](https://github.com/devrandom-labs/bombay-communication/pull/7).
+[Independent PR-head review](https://github.com/devrandom-labs/bombay-communication/pull/7#pullrequestreview-5397112099)
+by `/root/observation_research` verifies the fetched GitHub diff is byte-identical
+to the signed whole patch and all seven committed blobs match. It was posted
+as COMMENTED through the available author account: this is independent agent
+review evidence, not a separate GitHub account approval or external human review.
+No owning GitHub approval-count requirement applies. The user explicitly
+instructed merging; the PR merged only after all five check entries passed at
+that unchanged reviewed head.
+
+| Passing check | Evidence |
+| --- | --- |
+| Nix PR | [run 37067842494](https://github.com/devrandom-labs/bombay-communication/actions/runs/37067842494) |
+| Nix push | [run 37067828040](https://github.com/devrandom-labs/bombay-communication/actions/runs/37067828040) |
+| Advisories and Licenses | [run 37067842373](https://github.com/devrandom-labs/bombay-communication/actions/runs/37067842373) |
+| Analyze Rust | [run 37067842288](https://github.com/devrandom-labs/bombay-communication/actions/runs/37067842288) |
+| CodeQL | [check 111041029382](https://github.com/devrandom-labs/bombay-communication/runs/111041029382) |
+
+Merge commit `c9a39a325bda9ea17a92ad9e6aabc7082e502557`,
+merged at `2026-10-02T21:40:46Z`, is independently confirmed by GitHub.
+The scratch parent directory retains `owner-pr-merge-receipt.json`, SHA-256
+`7fc3c932e14bfeeadc38512039a8ed42a8579e0a9eccb1b5f03736fe7600a8da`,
+binding reviewed head, all checks, review URL and merge.
+[Release workflow](https://github.com/devrandom-labs/bombay-communication/actions/runs/37068256523)
+is running. No published version or Bombay dependency selection is yet claimed.
+Verify the generated release PR, publication and actual selected source before
+dependent integration. This owning delivery does not mark EXEC or DG-SHUTDOWN
+complete.

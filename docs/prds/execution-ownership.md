@@ -1369,5 +1369,9 @@ construction allocation and per-operation locking; it is not code reduction
 or accepted performance. Compare the phase/count atomic alternative and verify
 owning allocation/throughput contracts before retention. The independent design
 critique identifies explicit Drop closure, lock-free await boundaries and
-outside-lock sender destruction as required conditions. Exact repaired traces,
-Loom/concurrency, raw API compatibility and performance remain unproved.
+outside-lock sender destruction as required conditions. At that pre-edit checkpoint, repaired traces,
+Loom/concurrency, raw API compatibility and performance remained unproved.
+The [current owning correction record](execution-ownership/shutdown-authority.md#communication-owning-correction-and-delivery-boundary-2026-10-02)
+now records the verified candidate, complete measured delta and remaining
+delivery prerequisites; the accepted cost and upstream merge do not yet
+prove a published or selected dependency.
