@@ -40,7 +40,25 @@ jobs:
           app-id: ${{ secrets.RELEASE_PLZ_APP_ID }}
           private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
 
+      - name: Detect merged release PR
+        if: github.event_name == 'push'
+        id: release-commit
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          if ! is_release="$(
+            gh api "repos/$REPOSITORY/commits/$COMMIT_SHA/pulls" \
+              --jq 'any(.[]; .head.ref | startswith("release-plz-"))'
+          )"; then
+            echo "::error::Unable to determine whether this is a release commit"
+            exit 1
+          fi
+          printf 'is-release=%s\n' "$is_release" >> "$GITHUB_OUTPUT"
+
       - name: Publish and tag releases
+        if: github.event_name == 'workflow_dispatch' || steps.release-commit.outputs.is-release == 'true'
         uses: release-plz/action@b11437f8c0e955c306676ceaf8ce8c54eba6004f # v0.5
         with:
           command: release
