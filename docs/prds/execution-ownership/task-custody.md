@@ -852,3 +852,26 @@ must still retain the failure. Preferring ready failures requires consuming
 completed task results and retaining any ordinary events encountered, since
 JoinSet has no nonconsuming failure peek. Such a probe cannot claim a globally
 earliest failure or atomic readiness snapshot. Neither policy is selected here.
+
+## Exact final cancellation admission (2026-10-02)
+
+The actual Tokio 1.53.1 oneshot comparison closes the receiver before its final
+drain. An accepted OwnerCancellation survives repeated close and is received
+once; another receive is Closed. A later send returns the original rejected
+request. Concurrent send/close permits only accepted-and-retained or
+rejected-and-returned, without prescribing the winner. A snapshot without
+close demonstrably loses a subsequently accepted request when the reader drops.
+That compiled inversion fails in both profiles; it models the unsafe proposed
+snapshot, not an original public App defect.
+
+Frozen directory: `bombay-owner-admission-custody-p0sdutst`; receipt SHA-256
+`7e0a0cb399fdeda70812ba76d748103712af62c66df69b6b71e3f2736e3c02f2`;
+patch `42cbf3fc12b6acfe9de53638c3465bfc6764c33280f78b2288bf641fca00253c`.
+The receipt records exact pinned-Nix commands: two close/replay tests and one
+32-race test pass per profile; formatting and strict Clippy pass. Independent
+reviewer `/root` read the complete patch and selected oneshot source/tests,
+authenticated all twenty-five artifacts and both dependency source hashes.
+This accepts only the primitive comparison. Every actor outcome still needs
+integration retaining unread accepted requests; no arbitration rule is selected.
+One local.rs test module, +66 / -2; production/public types zero. The historical
+source770d/Communication 0.1.2 baseline does not prove current-lock integration.
