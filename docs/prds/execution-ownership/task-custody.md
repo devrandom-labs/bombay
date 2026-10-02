@@ -597,3 +597,12 @@ compiled probe reports E0282. `let completion: Completion = Completion::Stopped`
 or a type inferred from Driver output provides the request type. This cost
 must be judged explicitly before interface retention, rather than hidden by
 the default or treated as architectural necessity from compiler output.
+
+Coordinator review found an additional retention blocker in the isolated
+candidate: the original source acquisition selects without bias between inbox
+control and interpreter-local events. The candidate's three-way biased select
+gives inbox control strict priority over local events, beyond the selected
+owner-request priority. That changes XO-36 without an accepted policy amendment.
+Preserve the original two-source arbitration inside the owner-request boundary;
+verify ownership and cancellation safety before updating the narrowed review.
+Earlier conditional acceptance does not approve this scheduling change.
