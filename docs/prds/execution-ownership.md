@@ -1294,10 +1294,10 @@ stop for another concrete checkpoint if the required correction exceeds a bound.
 New owning Communication paths (10; repository-relative):
 
 - `crates/communication/src/lib.rs`
-- `tests/mailbox_retirement.rs`
-- `tests/loom.rs`
-- `tests/mailbox_allocation.rs` (new)
-- `benches/twolane.rs`
+- `crates/communication/tests/mailbox_retirement.rs`
+- `crates/communication/tests/loom.rs`
+- `crates/communication/tests/mailbox_allocation.rs` (new)
+- `crates/communication/benches/twolane.rs`
 - `README.md`
 - `docs/mailbox-admission.md` (new)
 - `crates/communication/CHANGELOG.md`
@@ -1320,3 +1320,54 @@ PRD, shutdown, verification, status, capability and API records retain exact
 dependency hashes, independent review and eventual PR/CI/merge evidence.
 Historical dated snapshots remain historical. No release version, fix, PR or
 merge is claimed by this proposal.
+
+### Owning pre-edit record
+
+The four test/benchmark entries above correct package-relative spellings in the
+initial proposal to actual repository-relative paths. They name the same
+owning files and add no path beyond the approved 52-path surface.
+
+The smallest owning regression is now executed against the exact selected
+Communication source, independently of Bombay: one pre-close send remains
+pending while owner closure precedes the first poll of a new send. Both debug
+and optimized builds fail the intended law, with complete queue `[1,2,4,3]`:
+4 is the forbidden new admission; 3 is the legitimate pre-close operation.
+Original Box identities, exactly one user-lane-closed marker and final None
+are observed; no timeout substitutes for closure. The isolated test adds 73
+lines in the existing owning mailbox_retirement test, with no production edit.
+
+Artifact directory:
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/communication-admission-owner-3d10vk15`.
+Original regression patch SHA-256
+`679b5a599c08359ca127fbda7e5a73f6146df7011de94be85a8b14fd8b2ffe2d`.
+Receipt SHA-256 `23cba15eee846abf46cf870cab3e60cc28d24d18ca05e41747e78064ceaa7764`;
+selected owning source SHA-256
+`8598863bfa0bb6a5d8454b4cf0af3fcb35a4b57379b89474da3d6b25626ebf17`;
+selected owning lock SHA-256
+`482b67e02adad36bcba4eacf6950f2d35dfa255ed93313984357c1ce7bda5bd8`.
+The pre-edit ordinary comparison is `admission-comparison.md` in that directory,
+SHA-256 `baaac97257c27014d6f745e1d1cf6b561297391e47d8740928a4a99b58ec50c9`.
+Independent reviewer `/root/observation_research` verifies the selected source,
+lock, patch and genuine one-test failures in both profiles. This accepts the
+defect evidence, not an owning fix or full shutdown gate.
+
+The first bounded implementation experiment is the ordinary private closed sum
+`Open(UserSender<U>) | Closed`, shared by existing MailboxOwner and nonowning
+MailboxRef. It owns the admission phase independently of live in-flight senders.
+Acquisition clones the existing sender only while Open and releases the guard
+and temporarily promoted admission Arc before awaiting. Owner Drop explicitly
+closes under the same lock even when a reference holds that temporary Arc;
+the displaced sender drops outside the lock. Reuse the raw UserSender/UserAnchor,
+ring, backpressure, control lane and consumer marker unchanged. This deletes the
+incorrect inference that a surviving sender implies new mailbox admission.
+The concrete consumers are existing mailbox send and try_send, including stale
+references racing owner retirement. No public type is added or removed.
+
+Forecast: one owning production path, net +45 to +65 lines, subject to the
+approved +80 owning and +150 cumulative ceilings. This adds one mailbox
+construction allocation and per-operation locking; it is not code reduction
+or accepted performance. Compare the phase/count atomic alternative and verify
+owning allocation/throughput contracts before retention. The independent design
+critique identifies explicit Drop closure, lock-free await boundaries and
+outside-lock sender destruction as required conditions. Exact repaired traces,
+Loom/concurrency, raw API compatibility and performance remain unproved.
