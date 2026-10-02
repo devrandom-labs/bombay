@@ -1261,7 +1261,8 @@ remain pending. No Bombay-side duplicate admission mechanism is authorized.
 
 ## 20. Proposed Communication correction checkpoint (2026-10-02)
 
-Status: **awaiting user authorization**. This proposal expands the bounded
+Status: **user authorized** by the explicit response "approved" after the
+52-path checkpoint request. This authorization expands the bounded
 38-path source/shutdown stage to **52 cumulative canonical paths**, counting
 both repositories. It authorizes no particular admission representation and
 does not waive independent design review, owning verification or delivery.
