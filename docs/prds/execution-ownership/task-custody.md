@@ -521,3 +521,34 @@ classification. Existing LocalRetirement publishes Crash::Cancelled only from
 actual typed OwnerCancelled custody; all representable new completion/residual
 combinations need a truthful disposition. No generic cancellation policy or
 new port is accepted from this audit.
+
+## Affine source-retirement comparison (2026-10-02)
+
+Within the authorized source-stage surface, the researcher froze an ordinary
+unit-disposition alternative in the same capability-retention-ftl9frah directory:
+`source-unit-comparison.patch` SHA-256
+`c496281d05de85f4f9085da34b13e1fbef01a788c3736366bbfbb53befb20ec4`;
+receipt SHA-256
+`5b6965fda5ca512e604775f549ae6325467d904d23d2ceef4f1300cb33eb5622`.
+The coordinator independently verified both hashes and inspected the owning
+acquisition, Driver and publication changes. Production +47 / -30 / net +17;
+tests +534 / -7 / net +527, including earlier isolated comparisons; zero new
+public types. Five production paths and four additional test-only paths change.
+These are isolated deltas, not retained changes or gate acceptance.
+
+The alternative uses `ControlFlow<(), Option<Event>>` for source acquisition
+and a distinct `Completion::RetirementRequested`; the exact non-Clone owner
+request remains owned once in existing `LocalResidual::OwnerCancelled`.
+Conservation alone does not justify copying that affine fact into a generic
+completion. The debug source witness passes, as reported by its author;
+optimized and independent behavioral review remain required. The private
+ordinary publication path currently panics on the new disposition, relying on
+the producer's exact residual correlation. That precondition and coarse
+publication are not accepted from the direct-Driver witness.
+
+Independent source review also found that ordinary `next`, unchanged in this
+candidate, stores the owner request but returns `None`; Driver then labels it
+`Exhausted`. Existing exact local cancellation projection does not make that
+Engine claim of permanent source exhaustion true. A direct ordinary-acquisition
+falsifier and a comparison covering both acquisition ports are required before
+retention. Any additional consumer paths must be measured against the checkpoint.

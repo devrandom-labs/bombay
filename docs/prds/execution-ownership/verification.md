@@ -39,6 +39,11 @@ unit, integration, compile-contract and documentation tests. Production and
 the selected lock were unchanged. This is preservation evidence; it does not
 cover the isolated defect witnesses, repaired candidates, feature-specific
 optimized verification, Loom configuration, benchmarks or remaining EXEC gates.
+
+At the unchanged production baseline `8d06f67`, both
+`nix develop -c cargo fmt --all -- --check` and
+`nix develop -c cargo clippy --workspace --all-targets -- -D warnings`
+passed (exit 0). These checks will be required again for the retained changes.
 Historical inversion receipts for completed ARC fixes remain historical.
 [Compiled observation race failures](observation.md#compiled-original-race-failures-2026-10-02)
 now establish two original-defect failures in debug and optimized builds; no
@@ -104,6 +109,6 @@ inherited tracked or untracked delta. The measured stage delta follows.
 production: +0 / -0 / net 0
 tests:      +0 / -0 / net 0
 public API: +0 types / -0 types
-documentation: +990 / -8 / net 982
+documentation: +1026 / -8 / net 1018
 changed tracked and untracked paths: 7
 ```
