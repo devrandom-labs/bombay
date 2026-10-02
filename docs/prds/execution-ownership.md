@@ -1,0 +1,818 @@
+# EXEC: application execution and local actor ownership
+
+Date: 2026-09-29. Owner: Bombay. Programme ledger entry: `EXEC1`.
+
+**Revision note (2026-10-01):** The ARC-001 shutdown authority change has
+replaced the erased `ActorRef` field with a typed weak application lifecycle
+projection and exact child/Entity control senders. The source inventory below
+records the earlier representation; current API and verification are in the
+open design ledger and runtime capability document. ARC-002 also removed the
+unobservable private external Address claim and its impossible error branch;
+the dated source inventory below predates that change.
+ARC-012 later replaced the shared optional activation publisher and terminal
+report selection with affine handoffs, and gave owner cancellation its own
+residual variant. Its focused proof is in the live ledger; the dated source
+inventory below also predates that change.
+ARC-011 subsequently added cancellation authority for dropped startup/join
+waiters, moved activation-task settlement into the spawned actor task, and
+shared root/application and root/owned launch setup. The dated task-custody
+and projection descriptions below are research snapshots, not current source
+claims; the ARC-011 live-ledger entry and current runtime capability document
+record the selected representation.
+ARC-020 later renamed the private actor execution and outcome symbols; the
+snapshot names below remain historical, and `docs/module-boundaries.md` records
+the current source paths.
+
+**Status: specified for evidence collection and bounded design experiments.
+Production implementation is gated by the decision records below.** This is
+not a claim that the proposed Rust API compiles or that the runtime satisfies
+the required cancellation laws today.
+
+This PRD replaces the earlier conversational criterion that EXEC must produce
+a net reduction in production lines. Model quality is the acceptance criterion:
+one semantic owner, truthful names, coherent hierarchy, narrow interfaces,
+explicit ownership transfer, and no duplicate implementation of the same law.
+Line, file, type, allocation, and task counts are diagnostics and review limits.
+They cannot justify combining distinct responsibilities or keeping a wrapper
+with no independent purpose.
+
+## 1. Authority and how to execute this document
+
+Read Bombay's [AGENTS.md](../../AGENTS.md), resolve the current lock and patches,
+and read the complete `AGENTS.md` at the selected Behavior release revision.
+Then read the [ledger](../open-design-ledger.md),
+[capability contract](../runtime-capability-interfaces.md),
+[module map](../module-boundaries.md), [Driver law](../driver-law.md), and
+[Driver verification contract](../driver-test-strategy.md).
+
+This PRD specifies required outcomes and the boundaries of permitted work. It
+does not authorize an agent to replace an unavailable owning contract with an
+invented abstraction. Current implementation is evidence, not architectural
+authority. A sibling repository's unselected HEAD is not the build contract.
+
+Terms used here:
+
+- **Required**: an acceptance condition. An implementation cannot omit it.
+- **Preserved**: existing observable behavior that must remain unless a named
+  decision explicitly changes it and updates its callers and evidence.
+- **Decision gate**: a question with bounded experiments and required evidence.
+  Dependent production work is blocked until the coordinating design reviewer
+  accepts and records one concrete answer.
+- **Candidate**: a hypothesis to test, not an instruction to add production code.
+- **Deferred**: excluded from this PRD; no completion credit is claimed for it.
+
+Never interpret missing detail as permission. Record the exact unresolved
+ownership equation, affected requirement, and smallest falsifying example;
+return that issue to the coordinator. Independent work may continue. Do not
+resolve the uncertainty through a default, erased callback, additional generic
+parameter, broad error, silent discard, or compatibility implementation.
+
+All `XO-*`, `DG-*`, `EV-*`, and `WP-*` labels are documentation identifiers.
+They must not appear in production/test type names, module names, filenames,
+feature names, or test function names. Source names use domain language.
+
+## 2. User problem and release outcomes
+
+An application author must be able to execute one Bombay application inside
+an existing Tokio runtime without nesting a runtime or blocking its worker.
+An author who wants Bombay to own execution must have a small convenience
+surface that drives the same application future. Current-thread and multithread
+execution must preserve the same actor, effect, shutdown, and terminal laws.
+
+Maintainers must be able to locate application orchestration, actor task
+ownership, endpoint authority, ingress, observation, child custody, and effect
+interpretation without tracing one concern across unrelated top-level files.
+An Entity host must execute the same local actor composition without depending
+on application-runner internals.
+
+The following are required executable user stories:
+
+1. An async Tokio application starts Bombay, obtains its typed application
+   interface, exchanges a command/reply, requests root shutdown, and awaits the
+   exact application terminal result without owning or shutting down Tokio.
+2. A synchronous caller executes the equivalent application through the owned
+   executor convenience and receives the same typed result.
+3. Two independent actors run on multiple Tokio workers; each actor remains
+   serialized. No new actor trait, scheduler, or parallel Behavior fold exists.
+4. An HTTP application binds first, starts Bombay, exposes the typed interface
+   to its router, and coordinates HTTP/root shutdown through one application
+   execution path.
+5. An application with Entity families retires the root and completes the
+   required family shutdown/join path, including ordinary root-startup failure.
+6. Cancellation at every asynchronous ownership transfer has a specified
+   outcome. A surviving runtime cannot contain silently abandoned child or
+   capability tasks as a consequence of dropping an application future.
+
+These are desired contracts, not new guarantees attributed to Agha or Tokio.
+They are deliberate Bombay execution policies over the existing Behavior law.
+
+## 3. Scope and dependency boundary
+
+| Inventory | Coverage in this PRD |
+| --- | --- |
+| EXEC-01, EXEC-02, EXEC-03 | Executor ownership, mode selection, canonical async application execution. |
+| EXEC-04, EXEC-06, EXEC-08 | Serialization, cancellation, panic, retirement, joining, and exact terminal ownership. |
+| EXEC-05 | Explicit cooperative limits and a bounded external-work witness; no new general work-pool service. |
+| EXEC-07 | Standard execution remains `Send`; a `!Send` host is explicitly deferred. |
+| EXEC-09 | Public examples and an independent-actor concurrency benchmark. |
+| ACT-08 | Static shutdown authority; ownership redesign is gated by DG-SHUTDOWN. |
+| APP-04, APP-05 | Preserve runner startup/error visibility and ingress closure laws. |
+| APP-06 | Distinguish requested shutdown, owner cancellation, and executor destruction. A configurable universal grace deadline remains deferred. |
+| APP-07, APP-08 | Update affected authoring/diagnostic/documentation surfaces; no unrelated template support claim. |
+
+Not included: integrating the now implemented six atomic interpreters into
+executable supervisor and pool policies, repairing
+Behavior's source-action rejection/diagnostic contracts, choosing distributed
+identity or transport, Mnesis integration, a new mailbox-capacity API, ordinary
+Entity API expansion, supervision/restart policy, or replacing the Driver.
+See [core integration](../prd-backlog/core-integration.md) for those dependencies.
+
+The known activation publication defects remain ACT-01 through ACT-04 / ARC-006
+work. This PRD must preserve and keep visible their ignored regressions; it must
+not claim transactionally correct activation merely because code was moved.
+If a selected EXEC solution requires a new Address reservation or Behavior
+settlement contract, record that specific dependent work as blocked. Do not
+turn all independent EXEC research into an upstream wait.
+
+### 3.1 Audited build contract
+
+| Owner | Selected source at this PRD's snapshot | Required inspection |
+| --- | --- | --- |
+| Behavior | `bombay-behavior 0.17.0`, `435560ce7bea8ad3330ee2d42e5034f837a80602` | Actions, ordered interpretation, source custody, births, established capability ports; complete revision AGENTS. |
+| Behavior Actors | `0.17.0`, same revision | Observation, shutdown, terminal reporting, preparation protocols and their tests; preserve template policy. |
+| Behavior Macros | `0.12.0`, same revision | Existing generated protocol and concrete effect types; no new EXEC macro. |
+| Address | `0.2.0`, root lock checksum | Claim visibility, resolve, exact lease retirement, concurrent tests. |
+| Communication | `0.1.2`, root lock checksum | Control/user lanes, admission owner, close/send race, exact rejected payloads, drain and receiver drop. |
+| Observe | Bombay-private source | Shared/affine publication, waiting, cancellation and drop tests. |
+| Timers | `0.1.0`, patch `13e884da7ab41781f52337b0038060e375b00ee0` | Queue ownership, generation safety, deadlines, sequence and overflow tests. |
+| Tokio | `1.53.1` in `Cargo.lock` | Runtime ownership, spawning, handle drop/abort, joining, scheduler assumptions and blocking-work limits. |
+
+Recheck this table at every integration checkpoint. A lock change invalidates
+affected evidence until the relevant source, tests, instructions and contracts
+are reverified. Do not automatically upgrade a dependency while implementing
+this PRD. The complete imported Observe primitive and the primitive libraries
+are not targets for cosmetic reorganization.
+
+## 4. Current evidence and its limits
+
+Line numbers drift; the named symbols, owning paths and lock identify the
+evidence. The pre-edit manifest required in section 12 adds content hashes.
+
+| Finding | Source anchor | Classification and required response |
+| --- | --- | --- |
+| Seven owned current-thread runtime constructions | `application_runtime.rs`: `App::{run, run_with, run_axum, run_with_entities}` and `Application::{run, run_with, run_axum}` | Confirmed duplication. One owned-executor construction authority and one async application execution implementation. |
+| Internal `launch` already calls `launch_with` with unit work | `LaunchSystem::launch` | Confirmed existing reuse. Do not claim there are separate actor loops here or add another forwarding object. |
+| HTTP repeats root capability construction, activation and joining | `LaunchSystem::launch_axum` | Confirmed duplication. Preserve HTTP-specific coordination while consuming common application execution. |
+| Root and owned-child spawn bodies repeat activation/termination/environment setup | `launch.rs`: `spawn_root_with`, `spawn_owned_with_mode` | Confirmed duplication. Preserve the distinct returned control authority while sharing actor startup. |
+| Application runner file implements every actor's runtime capabilities | `ApplicationCapabilities`, `EstablishChild`, `InterpretItem`, `RetireCapabilities` | Confirmed responsibility mismatch. Move actor execution ownership below application orchestration. |
+| Entity imports application-runner composition | `entity/bombay.rs`: imports and native host implementation | Confirmed wrong placement of a shared responsibility. Entity and applications must depend on the same local actor owner. |
+| Actor reference erases its shutdown sender | `local.rs`: `ShutdownControl`, `TypedShutdownControl`, `ActorRef.shutdown`, `shutdown_liveness` | Confirmed static-dispatch violation in this representation. DG-SHUTDOWN is mandatory. |
+| Dropped owner can detach execution | `OwnedTask::finish`, spawn activation waits, `ActiveLocalEnvironment::next` closed-cancellation branch | Source-derived cancellation gap, not a newly executed regression. DG-TASK must reproduce and repair the exact ownership failure. |
+| Cancellation is polled differently by ordinary and source acquisition | `ActiveLocalEnvironment::{next,next_source}` | Confirmed implementation distinction. Test both; do not assume fixing `next` covers source settlement or effect waits. |
+| Projection spawns another task | `ProjectedTask::project` | Confirmed task, not proof it is unnecessary. DG-PROJECTION must establish cleanup timing and panic semantics before deleting it. |
+| Observation uses two mechanisms | `observation.rs::FactQueue`; `EstablishedObservationInterpreter` and `exact_observations` in `application_runtime.rs` | Confirmed split scheduling/cancellation ownership. DG-OBSERVATION selects one actor-owned relationship authority. |
+| Old exact observer may remove a reused ID | exact observation task removes `id`; cancellation removes and permits reuse; selection can race | Source-derived race candidate. Build a deterministic regression before calling it a reproduced defect. |
+| Exact observer task can run before `started` is admitted | observation starts a task before calling `return_fact(started)` | Source-derived ordering risk on multiple workers. Test immediate completion against the required start/terminal order. |
+| Runtime vocabulary has synonymous aliases and forwarding products | `OccurrenceBindings`, `LocalAddresses`, `LocalTerminalReports`, `FactState`, `HostedActorSpaces` | Review candidates, not automatic deletion authority. Apply the disposition table in section 7. |
+| Documentation diverges from observation implementation | capability document's exact-observation description | Confirmed discrepancy. Final guidance must name the implemented authority and scheduling path. |
+| Panic documentation says retirement completes during unwind | `lib.rs` panic strategy | Wording requires correction: synchronous drop/publication does not prove asynchronous joining. |
+
+The preceding audit ran:
+
+```sh
+nix develop -c cargo test --locked -p bombay-rs --features axum \
+  --test run_with --test axum --test application_terminal_custody \
+  -- --skip compile_checked
+```
+
+Result: 15 runtime tests passed; two compile-check tests were filtered out.
+This establishes a preservation baseline only. It does not prove the proposed
+API, cancellation fixes, observation race, multithread behavior, or full gates.
+No production code was changed by that audit.
+
+## 5. Required ownership and dependency direction
+
+| Responsibility | Sole semantic owner | Required boundary |
+| --- | --- | --- |
+| Pure actor policy and state transitions | Behavior / Behavior Actors | Runtime interprets their exact typed requests; no template-specific Driver branch. |
+| Causal fold/interpret/source-custody sequence | Engine | No Tokio, mailbox, HTTP, Entity, observation registry, or child policy. |
+| Application declaration and semantic child roles | Application composition | Pure values; no runtime handles or live endpoint allocation while authoring. |
+| Application lifetime and executor ownership | Application execution | Installs application resources, executes typed application work, awaits required retirement, then returns. |
+| One running actor task and cancellation/join custody | Local actor execution | Exactly one accountable owner at every handoff; cannot silently detach on caller cancellation. |
+| Prepared/active resource composition | Local Environment | Uses Address, Communication, Observe, Timers; supplies Engine's existing port. |
+| User ingress and exact endpoint capabilities | Local endpoint/ingress | Preserve protocol identity and weak admission; an endpoint cannot keep an actor alive. |
+| Child creation status, endpoint/control/task ownership | Existing closed child bindings | One authoritative product; no second map claiming a child is established. |
+| Concrete action interpretation | Local actor effects | One static capability composition; existing owning leaf traits, no service registry. |
+| Observation relationship state | Local observation interpretation | One authority for registration, completion, cancellation and ID reuse. Observe still owns publication/waiting primitives. |
+| Timer scheduling state | Existing TimerQueue | Exactly one queue per actor; no new timer task, channel, or generation counter. |
+| Exact terminal custody and external publication | Local termination | Preserve typed retirement separately from its documented coarse external observation. |
+| Stable Entity admission/hydration/passivation | Existing Entity owner | Reuse local actor execution; retain its separate family task/group semantics. |
+| HTTP serve/bind outcomes | Application HTTP integration | No direct Environment construction, actor spawn, or duplicate terminal projection. |
+
+Required conceptual dependencies:
+
+```text
+Application declaration -> Application execution -> Local actor execution
+Entity hosting ----------------------------------> Local actor execution
+HTTP coordination ------> Application execution
+Local actor execution --> Local Environment + concrete effect interpretation
+Local Environment ------> Engine port + Address/Communication/Observe/Timers
+Engine -----------------> Behavior
+```
+
+This describes responsibility direction, not a demand for a trait per arrow.
+Local actor implementation must not import application runners or Axum. Shared
+address allocation may remain in the address domain and be passed concretely.
+Terminal projections may be supplied through the existing static contract;
+they must not require the local owner to inspect an application topology.
+
+## 6. Source hierarchy and migration map
+
+The following is the target ownership layout to validate at DG-MODULES. It is
+not permission to pre-create empty modules or a type for each filename.
+
+```text
+crates/bombay/src/
+  application/
+    mod.rs                declarations and curated application exports
+    composition.rs        declared child product and role projections
+    execution.rs          application lifetime and owned/caller executor entry
+    interface.rs          application handle and external capability surface
+    http.rs               optional Axum coordination and errors
+  local/
+    mod.rs                local composition exports; no second implementation
+    endpoint.rs           ActorRef and exact endpoint capabilities
+    ingress.rs            admission, user/control acquisition, Entity fences
+    environment.rs        prepared/active Environment and resource residuals
+    execution.rs          actor startup, task custody, cancellation and joining
+    children.rs           closed creation bindings and descendant custody
+    termination.rs        outcomes, terminal projection contract and publication
+    effects/
+      mod.rs              concrete actor capabilities and complete interpretation
+      creation.rs         existing typed birth interpretation
+      delivery.rs         logical/exact/child/source delivery interpretation
+      observation.rs      observation relationships and their interpretation
+      timers.rs           existing queue adaptation and timer interpretation
+      reports.rs          parent and terminal report interpretation
+  address.rs              local address domain and application allocation
+  entity/                 existing Entity aggregate
+  actors/                 existing Behavior Actors authoring composition
+  observe/                existing private primitive, unchanged by rearrangement
+```
+
+| Existing source | Destination responsibility |
+| --- | --- |
+| `application.rs` | `application/mod.rs` declaration ownership. |
+| `application_runtime.rs`: App, runners, RunError | Application declaration/execution; error split decided by DG-API. |
+| `application_runtime.rs`: staging, ApplicationBehavior, origin products | `application/composition.rs`; preserve role and initialization laws. |
+| `application_runtime.rs`: handle/lifecycle; `actor_interface.rs` | `application/interface.rs`; retain separately justified capability types. |
+| `application_runtime.rs`: Axum | `application/http.rs`; call common execution. |
+| `application_runtime.rs`: capabilities and interpreter implementations | `local/effects/`; rename scope to actor ownership after DG-MODULES. |
+| `local.rs`: ActorRef, endpoint representation, SendError | `local/endpoint.rs`; ingress construction details stay private to their owner. |
+| `local.rs`: admission, ingress modes, inbox | `local/ingress.rs`; preserve affine drain and fence laws. |
+| `local.rs`: Environment states and residual | `local/environment.rs`; keep consuming phase relation together. |
+| `local.rs`: capability tasks; `launch.rs`: task owners | DG-TASK chooses one coherent placement under local execution/effects; no mechanical split by current file. |
+| `launch.rs`, `incarnation.rs`, `retirement.rs` | Local execution and termination according to exact owned authority; do not copy the Driver. |
+| `outcome.rs`, `terminal.rs`, `termination.rs` | `local/termination.rs`; preserve distinct exact outcome and coarse observation contracts. |
+| `child_bindings.rs` | `local/children.rs`; retain one closed product. |
+| `observation.rs`, `time.rs`, `reports.rs` | Matching `local/effects` concern; retain owning primitive semantics. |
+| `topology.rs` | Concrete host/resolution proof belongs with local composition; DG-WRAPPERS decides forwarding products. |
+| `worker_preparation.rs` | Keep the public source contract stable; private interpretation belongs with its proven local effect owner. No new pool policy. |
+
+Rules for accepting the layout:
+
+1. Use `mod.rs` at aggregate roots, with narrow child visibility. Do not retain
+   both `application.rs` and `application/mod.rs`, or both forms for `local`.
+2. Root modules curate ownership and exports. They must not become replacement
+   2,500-line implementation files or re-export every private symbol.
+3. Public paths such as `bombay::ActorRef` remain intentionally curated. A
+   directory move alone does not authorize a public API break.
+4. Use `pub(super)` or a specific ancestor visibility where sufficient. Record
+   every necessary `pub(crate)` crossing and its real consumer.
+5. Parent paths supply qualification. `local/effects/observation.rs` is enough;
+   do not repeat the entire path in a filename or create one file per verb.
+6. A child module must hide a meaningful design decision. Combine a proposed
+   child with its parent if it contains only forwarding or an alias. Conversely,
+   do not combine distinct authorities to meet a file/line target.
+7. This tree is a bounded proposal. DG-MODULES must attach a symbol-to-owner map
+   before migration. A worker may not independently invent a different tree.
+8. Known terminology in retained public contracts is not renamed incidentally.
+   In particular, do not rename every existing incarnation/retirement symbol
+   because upstream and Bombay instructions use different domain qualifiers;
+   resolve any actual instruction conflict in the recorded naming review.
+
+## 7. Existing abstraction disposition
+
+| Construct | Required treatment |
+| --- | --- |
+| Driver and Environment/ActiveEnvironment | Retain the owning Engine contract. Changes require a separately demonstrated Engine law defect. |
+| ApplicationBehavior | Retain its real initialization/birth composition semantics. It is not a pass-through wrapper. Test declared and dynamically created children together. |
+| ApplicationLifecycle | Retain restricted lifecycle authority unless a replacement proves the same static denial. Small field count is not grounds for deletion. |
+| ActorInterface / ExternalActor | Preserve external origin, admission, affine receive ownership and separation from lifecycle authority. |
+| Root terminal projections and ActorOrigin | Preserve semantic role, concrete Behavior/error, and descendant custody. Do not replace with strings or one erased outcome. |
+| ActionInterpreter | Its ordered complete interpretation and action-scoped report disposition are real responsibilities. DG-WRAPPERS may relocate or integrate it only with differential evidence. |
+| ChildBindings / OccurrenceBindings | Choose one canonical spelling for the identical product; remove the synonym and all stale references. Preserve occurrence distinctions in the actual type. |
+| ActorSpace / LocalAddresses | Choose the existing canonical ActorSpace spelling for this identical address-space alias unless the scope review proves a distinct public contract. Do not add a third name. |
+| LocalTerminalReports | Try direct use of the existing report-selection owner. Retain a separate value only if its restricted authority is real and tested, not merely forwarding methods. |
+| HostedActorSpaces / ResolveLogical | Compare direct existing Hosts composition with the current adapter. Delete the adapter only if logical resolution's selected policy and static denials are preserved. |
+| FactState / FactQueue | Rename to observation domain language. Remove storage-only wrapping if it owns no independent invariant; DG-OBSERVATION first resolves relationship ownership. |
+| LocalTimers | Keep one TimerQueue. Compare direct borrowing from its actor owner against current serialized shared views. Do not replace its mutex with unsafe or a dynamic context merely to reduce allocation. |
+| OwnedTask / ProjectedTask / ActivationTasks | DG-TASK and DG-PROJECTION must specify authority, cleanup timing and failure custody before deciding representation or task count. |
+| Entity task group | Preserve its different family admission/shutdown-claim law. Similar JoinHandle storage does not justify a universal task-group trait. |
+
+Every retained/new abstraction needs five answers in its decision record:
+unique state/authority, unique transformation, why the existing composition
+cannot express it, machinery removed or subsumed, and a concrete consumer.
+An alias may abbreviate a truthful unwieldy type; it may not create competing
+names for the same domain value without a documented distinction.
+
+## 8. Normative execution requirements
+
+### 8.1 Application and executor
+
+| ID | Required contract |
+| --- | --- |
+| XO-01 | There is one implementation of application execution. Simple execution, application work, HTTP integration, and Entity-family execution compose it without duplicating actor startup. |
+| XO-02 | Caller-owned execution creates no Tokio runtime and never calls block_on. It does not stop or reconfigure the caller's runtime. |
+| XO-03 | Owned execution constructs its runtime in one semantic location and drives the same application future. Construction failure occurs before actor activation. |
+| XO-04 | Current-thread and multithread modes are explicit. Thread-count validation and defaults are documented at DG-API; no global executor or implicit fallback. |
+| XO-05 | The ordinary host requires Send actors/events/effects as justified by current owning interfaces. No LocalSet, spawn_local, unsafe Send, or hidden !Send mode in this change. |
+| XO-06 | Application work is invoked exactly once after successful root activation; ordinary startup failure invokes it zero times. Preserve the typed handle and callback return value. |
+| XO-07 | Preserve current ordinary callback policy: it is awaited, then root completion is joined. Callback completion does not request root shutdown. Root completion does not automatically cancel arbitrary application work. Document that a pending callback can keep this API pending. |
+| XO-08 | A callback returning Result carries that Result as its own return value; an Err is not silently reclassified as actor failure. Panic and future drop are different and handled by the task contract. |
+| XO-09 | Application declaration/materialization stays pure until execution. Preserve semantic child roles, exact terminal projections and one initialization. |
+| XO-10 | Entity families are shut down after root execution returns, including ordinary root-startup Err. Preserve family shutdown order/results. Cancellation or panic cannot simply skip ownership; DG-TASK specifies that path. |
+| XO-11 | Family shutdown results remain typed. The current runner discards them when returning a root-startup error; do not promise preservation of independent shutdown failures without specifying the complete error equation at DG-API. |
+| XO-12 | Existing defaults such as mailbox capacity remain unchanged here. Do not bundle APP-01 configuration into an executor refactor. |
+
+### 8.2 Actor execution and task custody
+
+The following table specifies protocol distinctions, not a requirement to add
+an execution-state enum. Reuse ownership and existing sum/product types first.
+
+| Situation | Required behavior and authority |
+| --- | --- |
+| Before task spawn | No actor task exists; caller owns all prepared inputs. Dropping them cannot publish a successful activation. |
+| Spawned, awaiting activation | Startup owner retains cancellation and task custody. Dropping the activation waiter cannot abandon the spawned task. |
+| Active, acquiring input | Owner cancellation can request retirement; ordinary shutdown is still a Behavior policy request. A sender closing is not automatically equivalent to either. |
+| Awaiting source input/custody or effect completion | Cancellation law must be explicit at each await; do not assume the ordinary inbox select handles it. Partial accepted effects remain factual. |
+| Retirement requested | No new Behavior turn after the owning Driver contract ends execution. Close admission and retain queued payloads under existing Communication laws. |
+| Retirement/join underway | Cancelling the waiter cannot discard the only remaining owner of children or cleanup tasks. Do not publish successful joined completion early. |
+| Joined and returned | One affine terminal result transfers to its caller. No still-owned child/capability work is hidden behind a successful application return. |
+| Executor is destroyed or process aborts | Cannot promise asynchronous cleanup ran. Classify the observable local outcome where execution permits it; do not claim durable effects rolled back or a graceful drain completed. |
+
+| ID | Required contract |
+| --- | --- |
+| XO-13 | One owning actor execution contains one consuming Driver run. No second actor loop or per-template scheduler. |
+| XO-14 | Root, child, and Entity startup use the same local construction law; differences in ingress and returned authority stay static and explicit. |
+| XO-15 | At each await, record the owner of the actor JoinHandle, cancellation sender, child tasks, capability tasks, publication authority, and affine terminal payload. |
+| XO-16 | Successful awaited application return is a join barrier for the hierarchy/resources it owns. Completion observation and complete joined retirement are distinct events where the current contract distinguishes them. |
+| XO-17 | Dropping the caller's future must initiate or transfer cancellation/cleanup through a specifically identified owner while Tokio remains alive. No silent detachment, and no claim that synchronous Drop awaited cleanup. DG-TASK determines the concrete mechanism and the exact disposition of terminal/application values when their original receiver no longer exists; no fictitious return or accidental double drop. |
+| XO-18 | Dropping the runtime, a non-yielding Behavior, or permanently pending uncancellable external work limits liveness. State these limits explicitly; do not claim a universal deadline or preemption guarantee. |
+| XO-19 | Preserve normal waiting versus owner-forced retirement. Current finish closes the cancellation sender without requesting retirement; interpreting all channel closure as cancellation is forbidden without changing and proving every sender's ownership contract. |
+| XO-20 | Panic, controlled Behavior failure, activation failure, settlement failure, owner cancellation, exhaustion, and normal stop remain distinct where their owning typed contracts distinguish them. |
+| XO-21 | Child retirement remains in the existing observable order, including occurrence/role distinctions and descendant results. Do not switch to unordered joins solely for speed. |
+| XO-22 | Capability-task errors and returned events retain their actual typed source/custody. No log-and-continue, default success, blanket panic, or discarded join result may replace a selected contract. |
+| XO-23 | A terminal projection is an ownership-preserving conversion of the exact result and origin. Any additional task must own independently required progress, not merely shorten a generic signature. |
+
+### 8.3 Shutdown authority
+
+| ID | Required contract |
+| --- | --- |
+| XO-24 | User delivery, shutdown request, and forced retirement are distinct authorities. A clone of a messaging interface must not acquire new lifecycle authority. |
+| XO-25 | Replace trait-object shutdown storage with a verified static concrete contract. No dyn, Any, TypeId, unsafe cast, serialized control envelope, or callback that hides the same erased target. |
+| XO-26 | A shutdown request targets the captured actor generation. Address reuse must never retarget an old capability. |
+| XO-27 | Preserve request acceptance versus eventual shutdown. Existing AlreadyStopping/AlreadyStopped outcomes remain truthful; a request does not promise the Behavior stopped. |
+| XO-28 | Preserve admission closure before accepted shutdown can admit further ordinary user work. Test delivery racing closure and the exact rejected payload. |
+| XO-29 | A live endpoint cannot keep admission open or keep an actor executing after its owner retires it. An ExternalActor without Behavior shutdown policy must not acquire fictitious actor-control authority. |
+| XO-30 | Shutdown established through Behavior's typed ingress stays realized through that owner contract. If the selected contract cannot express a static solution, record a dependency blocker; do not implement a parallel lifecycle channel speculatively. |
+
+### 8.4 Observation relationships
+
+Preserve the difference between uncancellable peer/child observations and the
+ID-addressed established observation protocol. Sharing ownership does not
+authorize changing their public request/event types or delivery cardinality.
+
+| Condition | Required ID-addressed observation outcome |
+| --- | --- |
+| Start with free ID | Register the exact target generation; admit Started before any Stopped event for this relationship. |
+| Start with live ID | Return the existing typed IdAlreadyBound rejection. Leave the old registration unchanged. |
+| Target already terminated | Started followed by one exact Stopped notification, preserving timestamp meaning; no lost observation. |
+| Cancellation wins before completion commits | Remove that relationship, emit Cancelled once, and prevent a later Stopped for it. |
+| Completion wins before cancellation commits | Commit its one Stopped notification; later cancellation returns NotObserved. Already admitted events are not retracted. |
+| Start after the old relationship is removed | Establish a new relationship. Any old pending work must be unable to remove, cancel or notify on behalf of the new registration. |
+| Two independent consumers observe one target | Both retain their independently requested terminal notifications. Neither registration cancels the other. |
+| Actor retires | Release all registrations, cancel/settle owned waits, and preserve already admitted or returned control values under the retirement contract. |
+
+The completion commit point is the owning relationship authority's irrevocable
+decision to admit the completion notification. DG-OBSERVATION must identify its
+exact source operation and the failed-admission custody path. Removing a map
+entry alone is not proof of a delivered notification.
+
+| ID | Required contract |
+| --- | --- |
+| XO-31 | One actor-owned authority linearizes ID registration, cancellation, completion and reuse. A second task/map must not independently decide the same relationship's state. |
+| XO-32 | Peer/child observation preserves independent consumers, exact generation and existing typed injection. No allocation counter may infer lifecycle provenance. |
+| XO-33 | ID reuse safety is proven by adversarial replay. Add an internal generation only if an existing single-owner representation cannot express the required authority; it is not a default implementation requirement. |
+| XO-34 | Do not add an observation cell, global registry, task per request, or new channel as an organizational convenience. Reuse Observe and compare the existing actor polling path first. |
+| XO-35 | No notification disappears because the control lane closes. Preserve the exact returned event in the selected terminal custody path, or record the upstream contract gap. |
+| XO-36 | Preserve documented acquisition order and source priority. State the concrete fairness limits of the retained polling order, including a continuously ready mailbox; do not claim bounded observation/timer progress without a proven bound. A different fairness policy requires an explicit decision amendment, not an incidental select reordering. |
+
+### 8.5 HTTP, timers, external work and public errors
+
+| ID | Required contract |
+| --- | --- |
+| XO-37 | HTTP bind failure precedes root activation and router construction. Router construction occurs once after activation. |
+| XO-38 | Root termination initiates graceful HTTP shutdown. Serving failure requests root shutdown and preserves both the serving error and eventual root terminal. It does not guarantee a Behavior-independent shutdown deadline. |
+| XO-39 | HTTP delegates actor startup/joining to application execution; it owns only HTTP resources, coordination and error mapping. |
+| XO-40 | One actor-owned TimerQueue retains generation, replacement, due-order and overflow laws. Refactoring sharing must not introduce a second queue or task. |
+| XO-41 | Blocking/CPU-heavy external work must not execute inside Behavior init/receive/transition. A bounded typed interpreter witness exercises admission and shutdown; no EXEC-specific generic worker-pool framework. |
+| XO-42 | If blocking work cannot be stopped after it starts, the contract must say so. Do not equate cancelling its awaiting future with cancellation of the underlying work. Awaited completion and executor destruction must remain distinguishable. |
+| XO-43 | Async errors cannot fabricate a Runtime construction failure. DG-API decides whether to retain an existing broader error type or separate ownership-bearing errors; no erased aggregate error. |
+| XO-44 | Root failure and Entity shutdown failure can coexist. DG-API must specify their complete returned product/sum before claiming both are preserved. No use of ? may skip independently required cleanup. |
+| XO-45 | Ordinary public API includes no Driver phase controls, untyped capability bag, manual prepare/init/run-loop sequence, or public task owner introduced just to hide internal types. |
+
+## 9. Decision gates: exact experiments and stop conditions
+
+All gates below are **open** in this PRD. The coordinator must record evidence
+before changing a gate to accepted. A gate is not accepted because a worker
+produced a compiling patch or because another agent assumed its answer.
+
+Every decision record must contain: the law and requirement IDs; competing
+representations using current owners; exact candidate application syntax;
+compile-pass and compile-fail diagnostics; complete observable traces; ownership
+at every await/drop; expected files and production/public-surface delta;
+rejected alternatives and reasons; dependency revisions; acceptance command
+results; and reviewer disposition. Record resulting control-state alternatives
+and which current value each retained alternative owns. No new policy can be
+smuggled into a naming or compiler-fix patch.
+
+Create decision evidence only when that work starts, under
+`docs/prds/execution-ownership/`: `application-api.md`, `task-custody.md`,
+`shutdown-authority.md`, `observation.md`, `terminal-projection.md`,
+`abstraction-disposition.md`, `module-ownership.md`, and `external-work.md`,
+respectively for the gates below. Record integrated witness commands/results in
+`verification.md`. Do not create empty files with a passing status. The PRD is
+the requirement authority; these records select implementations within it.
+
+Acceptance is fail-closed: the coordinator and a reviewer who did not author
+the candidate both sign the record with the inspected source hash, then update
+the gate's status and link here. An unavailable independent reviewer leaves
+the gate open. A gate that changes a required outcome needs a visible PRD
+amendment explaining the changed law; it cannot silently overrule this document.
+Approval of a design record does not waive repository surface checkpoints.
+
+| Gate | Experiments required | Accepted artifact / implementation stop condition |
+| --- | --- | --- |
+| DG-API | Compare ordinary async inherent methods plus a blocking convenience against an ordinary free function driving the same future. Compare existing Tokio builder input versus a closed Bombay mode value only if a real semantic distinction requires one. Exercise Application, advanced App, Entity families and HTTP with inferred types. | Exact signatures, errors, defaults, nested-runtime behavior, runtime feature selection, migration table and valid public examples. No runtime wrapper/trait chosen in advance. No public runner implementation until accepted. |
+| DG-TASK | Reproduce dropped startup, dropped application work, dropped finish, source-wait cancellation and dropped retirement. Compare improving existing task ownership with transferring cleanup to a specifically owned execution task. Enumerate panic, failed spawn, closed cancellation sender and runtime destruction. | Ownership graph and transfer table with no unowned task at any await/drop. Define who can still join and observe cleanup after the application future is gone, without promising synchronous async cleanup. No async public release before acceptance. |
+| DG-SHUTDOWN | Compile-only witnesses for ordinary root shutdown, established child shutdown, external actors, reused addresses and two behavior implementations of one protocol. Compare existing concrete capabilities before changing an owning primitive. | Static target/authority representation, invalid-use denials and admission-close trace. If impossible under locked contracts, exact upstream requirement and affected work blocked. No erased fallback. |
+| DG-OBSERVATION | Deterministically exercise immediate completion, cancel/completion races and reused IDs. Compare existing actor-owned polling with independent-task design, including returned-event custody. | One owner and linearization point for each relationship operation; prescribed outcome table passes. Any retained task/map has an independent responsibility. No assumed generation token or extra observation framework. |
+| DG-PROJECTION | Compare current eager projection task with projecting in the existing actor completion/join path. Use a child that terminates while the parent continues and a capability completion requiring later settlement. Inject projection panic. | Exact cleanup timing, terminal conversion/custody and panic classification; task-count change measured. Do not remove a task if this delays required cleanup or changes failure semantics. |
+| DG-WRAPPERS | For every section-7 candidate, try direct existing values/methods with the same two meaningful consumers where available. Inspect locality, authority, diagnostics and type bounds. | Retain/delete/reshape table with individual reasons and regressions. No blanket removal of wrappers, no blanket retention of aliases, no universal capability trait. |
+| DG-MODULES | Map every current production symbol in the affected files to one owner. Trace imports from application, Entity, macros, tests and public exports. Apply the selected Behavior vocabulary and Rust API Guidelines. | Frozen file/symbol ownership map, narrow visibility map and exact migration paths. No production file move before this record. |
+| DG-WORK | Exercise one existing typed external-work port with a bounded admission mechanism, rejection carrying its input, operation completion and shutdown. Inspect the exact Tokio blocking-work contract if used. | Concrete work limit, ownership of admitted work and shutdown outcome; no promise of preemption. If no existing port can express it, report CAP dependency rather than inventing an EXEC service. |
+
+### 9.1 Public API constraints for DG-API
+
+Preferred syntax to compare, **not a compiled API promise**:
+
+```text
+Application::new(root).run().await
+Application::new(root).run_with(application_work).await
+```
+
+Do not automatically rename existing methods or add seven async twins. The
+accepted record must choose a single ordinary spelling and explicitly document
+source compatibility. Async-first naming is the preferred candidate, not a
+waiver of compilation, diagnostics, error or ownership evidence.
+
+The comparison must answer all of these, with exact signatures rather than
+phrases such as "add options later":
+
+1. Which methods are async, which blocking, and which public conveniences are
+   retained or removed? Which values determine terminal type inference?
+2. How does a synchronous caller choose current-thread versus multithread and
+   a valid worker count? Who owns the Tokio builder/runtime? What is the default?
+3. What happens when a blocking entry is invoked from a Tokio task? Prefer a
+   documented, typed rejection before side effects if the selected current
+   error model can express it; do not silently panic or spawn another runtime.
+4. What happens when the async future is polled outside an enabled Tokio host?
+   Establish and document a truthful precondition or checked failure; never
+   fabricate a runtime as fallback. Specify required time/network drivers.
+5. What exact error owns runtime construction failure, application staging
+   failure, activation failure, HTTP failure and family shutdown failure?
+6. Which ordinary input/output remains the caller's value? Avoid replacing a
+   callback's Result with another framework error or losing its Err payload.
+7. Are Entity-family reports preserved when the root fails? Specify the
+   complete error product/sum and its public-surface cost before changing it.
+8. Which public re-exports must remain for macro-generated/associated types?
+   A private module cannot conceal a required public type; public visibility
+   also does not justify putting implementation traits in the prelude.
+
+Accepted syntax must cover no children, heterogeneous declared children,
+dynamic births, advanced protocol hosts, ordinary application work, Entity
+families and Axum. No caller may spell structural paths or provide irrelevant
+dummy callbacks merely to satisfy a proposed abstraction.
+
+## 10. Verification matrix
+
+Each witness uses natural domain names. Tests must assert full typed payloads
+or independently observable traces; implementation branches copied into a
+model, source-string scans, and repeated assertions of one field are not
+semantic evidence. Use move-only payloads for custody laws.
+
+Behavior bodies remain pure. No channel, clock, callback, runtime operation,
+task or observation publisher may be called from init/receive/transition to
+make a test pass. Observe runtime scheduling outside the Behavior fold through
+the existing Environment/interpreter seam. Use deterministic barriers or
+explicit test-host control, never timing-sensitive sleeps as the race oracle.
+
+| Witness | Required evidence | Requirements / gate |
+| --- | --- | --- |
+| EV-01 | Caller-owned Tokio executes the complete application; another caller task continues; no nested runtime; host remains usable after Bombay returns. Its error surface matches the selected async ownership equation. | XO-01–03, XO-43, DG-API |
+| EV-02 | Owned current-thread and multithread modes produce equivalent typed lifecycle traces. Runtime construction failure activates nothing. | XO-03–05 |
+| EV-03 | Application work called once after activation and zero times on startup error; its success and Err values survive unchanged. | XO-06–09 |
+| EV-04 | Pending application work remains pending after root termination; completed work does not itself stop root. These are bounded deterministic tests, not hangs. | XO-07 |
+| EV-05 | Root-startup failure still closes and joins installed Entity families; simultaneous family failure retains the selected complete outcome. | XO-10–11, XO-44 |
+| EV-06 | Drop before spawn and during activation: exact input/drop counts, no success publication, no surviving abandoned task or lease after designated cleanup. | XO-15–18, DG-TASK |
+| EV-07 | Drop during application work and terminal join: owner requests/transfers cleanup; independent retained observer sees the selected outcome; children/tasks reach the selected barrier. | XO-15–20 |
+| EV-08 | Cancel while next_source, interpretation, source settlement, and retirement are pending. Accepted effects are retained; interrupted async cleanup is not called complete. | XO-15–22 |
+| EV-09 | Normal finish does not accidentally cancel the actor when its sender closes; explicit owner cancellation does not look like normal exhaustion. | XO-19–20 |
+| EV-10 | Parent panic/cancellation and child panic/cancellation preserve their separate provenance; no silently detached child or lost join failure. Include projection panic. | XO-20–23, DG-PROJECTION |
+| EV-11 | Root, child and Entity ingress share startup law; each preserves its actual control authority and exact terminal type. | XO-13–14 |
+| EV-12 | Child that finishes while parent continues does not defer required cleanup until parent retirement; final child terminals remain in the existing order. | XO-21–23 |
+| EV-13 | Messaging-only interface cannot request shutdown or own retirement; two behaviors with the same protocol do not require type erasure. | XO-24–25, DG-SHUTDOWN |
+| EV-14 | Stale shutdown capability cannot stop a new actor at a reused address; repeat shutdown cannot close/publish twice. | XO-26–29 |
+| EV-15 | Delivery races shutdown admission closure; accepted prefix and exact move-only rejected messages are preserved. External actor has no invented Behavior control. | XO-28–30 |
+| EV-16 | Already-stopped target gives Started then Stopped exactly once; duplicate start preserves original observer and yields exact rejection. | XO-31–32, DG-OBSERVATION |
+| EV-17 | Both orderings of cancel versus completion satisfy the outcome table. Cancel twice; replay completion twice; no contradictory Cancelled and later Stopped. | XO-31–33 |
+| EV-18 | Cancel old ID, reuse it for a different target, release old completion. Old work cannot remove/cancel/complete the new relationship. | XO-33 |
+| EV-19 | Two independently requested observations of one target both complete; cancelling one leaves the other intact; test nested template consumers. | XO-32 |
+| EV-20 | Control closure during notification returns the exact event into terminal custody; retirement leaves no live observation task/registration. Task/resource inspection confirms reuse of Observe and the accepted single-owner representation. | XO-34–35 |
+| EV-21 | Simultaneously ready observation, mailbox input, source input and timer deadlines exercise the preserved acquisition policy. Continuous-mailbox evidence establishes its actual fairness limits rather than asserting an unsupported bound. | XO-36, XO-40 |
+| EV-22 | HTTP bind failure starts no actor/builds no router; router built once; root termination shuts down server; serving failure retains error plus terminal. | XO-37–39 |
+| EV-23 | Timer replacement/stale expiry/overflow traces unchanged; no second timer queue. | XO-40 |
+| EV-24 | External work saturation rejects with original input; accepted work's completion and cancellation/shutdown are truthful, including work that cannot be stopped. | XO-41–42, DG-WORK |
+| EV-25 | Two actors perform overlapping runtime work on distinct workers; independent instrumentation sees no concurrent fold of one actor. A serial-only mutation fails. | EXEC-02, EXEC-04 |
+| EV-26 | Compile denials for !Send actor/effect, wrong protocol, wrong child role, forged shutdown, duplicated affine ownership, and forbidden ordinary Driver controls. | XO-05, XO-24–30, XO-45 |
+| EV-27 | Public examples, renamed dependency fixture, macros and external consumer compile with selected API; no private structural path leaks. | DG-API, DG-MODULES |
+| EV-28 | Before/after differential traces prove wrapper/module consolidation preserves initialization, actions, return custody, admission, configured defaults and terminal order. | XO-12, DG-WRAPPERS, DG-MODULES |
+| EV-29 | Scope checks: Engine has no Tokio/HTTP/template policy; local owner imports no application runner; Entity executes through local composition. | Section 5 |
+| EV-30 | Benchmark reports independent-actor overlap/throughput and scheduler configuration, plus task/allocation counts before/after. No performance threshold invented after observing results. | EXEC-09, DG-PROJECTION |
+
+Race tests must control the contested point in production ownership, using the
+narrowest test-only seam if required. A fake implementation that omits the
+original competing task is not evidence that the production race is fixed.
+Changes adding a test seam must explain why existing concrete composition
+cannot expose the race, and must not add a new production protocol.
+
+For every repaired defect: run the new witness on the original representation
+or a precise semantic inversion and establish failure for the intended law.
+Compilation failure is not a killed semantic mutant. Run the focused law in
+debug and optimized builds before broadening changes. Lifecycle/generation
+witnesses replay the same fact in optimized builds and prove no second
+acceptance. Required operations must occur outside assertions.
+
+### 10.1 Required command plan
+
+All Rust commands run through pinned Nix. The following baseline commands are
+exact; new test target names are recorded when DG artifacts select them, not
+guessed by an implementation worker.
+
+```sh
+nix develop -c cargo test --locked -p bombay-rs --test run_with
+nix develop -c cargo test --locked -p bombay-rs --features axum --test axum
+nix develop -c cargo test --locked -p bombay-rs --test application_terminal_custody
+nix develop -c cargo test --locked -p bombay-rs --test actor_interface
+nix develop -c cargo test --locked -p bombay-rs --test entity_application
+nix develop -c cargo test --locked -p bombay-rs --test terminal_projection
+nix develop -c cargo build --locked --workspace
+nix develop -c cargo test --locked --workspace
+nix develop -c cargo test --locked -p bombay-rs --no-default-features
+nix develop -c cargo test --locked -p bombay-rs --features axum
+nix develop -c cargo fmt --all -- --check
+nix develop -c cargo clippy --locked --workspace --all-targets -- -D warnings
+nix develop -c cargo clippy --locked -p bombay-rs --all-targets --features axum -- -D warnings
+nix build path:.#driver-law-evidence --no-link
+nix flake check
+```
+
+Also run focused debug/release regressions, relevant existing concurrency gates
+if their synchronization changed, and the selected execution benchmark. Record
+exact commands, feature flags, lock/source snapshot and results. Never report
+an axum-disabled build as HTTP verification. Do not run primitive-wide tests
+as a substitute for the concrete Bombay race witness. A pre-existing failure
+must be attributed, preserved and reported; it cannot silently be excluded
+from a claimed green full gate.
+
+## 11. Multi-agent work breakdown and synchronization
+
+This section is an execution contract for a future coordinated run. It does
+not itself start agents or authorize production edits now. Agents may research
+in parallel; production parallelism begins only after shared contracts and
+file ownership are frozen. One coordinator remains responsible for the whole
+ownership model and integration.
+
+| Package | Owner role and deliverable | Prerequisites | Allowed changes |
+| --- | --- | --- | --- |
+| WP-BASELINE | Coordinator: selected revisions, baseline manifest, requirement/evidence matrix, cumulative change budget and reciprocal ledger edges. | None | Documentation/evidence only. |
+| WP-TASK-DESIGN | Execution researcher: DG-TASK and DG-PROJECTION, original-defect witnesses and await/drop ownership table. | WP-BASELINE | Isolated experiments and law tests; no retained production API. |
+| WP-OBSERVATION-DESIGN | Observation researcher: DG-OBSERVATION, deterministic race/order evidence and one authority model. | WP-BASELINE | Isolated experiments and observation law tests. |
+| WP-SHUTDOWN-DESIGN | Capability researcher: DG-SHUTDOWN and static target/authority witnesses. | WP-BASELINE | Compile experiments and narrowly scoped owning-contract research. |
+| WP-API-DESIGN | Application researcher: DG-API, DG-WORK, consumer syntax/errors, compatibility table. | WP-BASELINE; final selection waits for task/shutdown answers | Isolated public-consumer experiments; no invented capability APIs. |
+| WP-CONTRACT | Coordinator with independent review: accepts/rejects gate evidence, DG-WRAPPERS and DG-MODULES, freezes symbols/files, identifies remaining blockers. | All affected design packages | Decision records and ledger only. |
+| WP-LAYOUT | Coordinator/integrator: establish frozen module ownership by differential-tested mechanical extraction before independent writers begin. | WP-CONTRACT, original behavior baseline, and required expanded-surface authorization | Frozen file moves/import/export changes only; preserve current semantics and known failures. No duplicate retained implementation. |
+| WP-TASK | Actor execution implementer: accepted task/cancellation/projection model and focused witnesses. | WP-LAYOUT; task/projection gates accepted | Only assigned local execution/termination files and associated tests. |
+| WP-OBSERVATION | Observation implementer: accepted relationship authority, race and retirement witnesses. | WP-LAYOUT; observation gate accepted | Only assigned local observation files/tests; shared structures remain coordinator-owned. |
+| WP-SHUTDOWN | Endpoint implementer: accepted static shutdown representation and denials. | WP-LAYOUT; shutdown gate accepted | Only assigned endpoint/ingress files/tests; no upstream mutation without separately selected contract. |
+| WP-APPLICATION | Application implementer: accepted async/owned execution and HTTP composition. | Task/shutdown interfaces accepted; semantic dependencies integrated | Assigned application files/tests; no duplicate actor construction. |
+| WP-ENTITY | Entity integration implementer: consume local execution owner and preserve family shutdown/errors. | Accepted local interface and DG-API error equation | Native hosting integration and focused family witnesses; no directory/state-machine redesign. |
+| WP-MIGRATE | Coordinator: remaining callers, examples, exports and docs using proven contracts. | Relevant semantic packages pass focused debug/release laws | Frozen API/symbol/path map only; may invent no interface or policy. |
+| WP-VERIFY | Independent reviewer: adversarial evidence, boundary audit, stale-pattern scan and final gates. | Integrated implementation | Tests/evidence/report; production issues returned to their assigned owner. |
+
+The present monolithic files prevent safe concurrent production editing. Until
+the accepted migration creates independent files, **one designated integrator
+is the sole writer of `application_runtime.rs`, `local.rs`, `launch.rs`,
+`lib.rs`, manifests/locks, the ledger, and shared test fixtures**. Workers send
+bounded patches or experiment evidence; they do not all edit those files.
+
+Do not move unproven implementations to separate files merely to create work
+for more agents. WP-LAYOUT extracts the current implementation only after
+DG-MODULES and its differential baseline are accepted; semantic changes then
+land through the same frozen ownership contract. If this extraction itself
+requires a new semantic interface, stop WP-LAYOUT and reopen the responsible
+gate instead of broadening a supposedly mechanical patch. Alternative models
+stay in isolated experiments and never coexist as production paths.
+
+### 11.1 Mandatory agent assignment format
+
+Each assignment must include every field below. An incomplete assignment is
+research-only and cannot authorize production edits.
+
+```text
+Objective and exact requirement IDs:
+Baseline commit plus working-tree snapshot hash:
+Selected dependency versions/revisions:
+Accepted decision records and exact interface signatures:
+Single semantic owner and preserved behaviors:
+Files exclusively writable by this agent:
+Shared files writable only by the integrator:
+Files/contracts explicitly forbidden to change:
+Smallest failing witness and intended failure:
+Complete expected trace and payload custody:
+Permitted production/public-type delta and cumulative remaining budget:
+Required debug/release, negative and inversion commands:
+Dependencies to wait for; precise stop conditions:
+Handoff artifacts and independent reviewer:
+```
+
+Every handoff returns: changed-file list and diff; law-to-symbol map; actual
+production/tests/public API delta; test commands/results; original-defect
+evidence; remaining uncertainty; and dependency/interface changes (normally
+none). The receiving agent rechecks the snapshot before applying the patch.
+
+Agent disagreement is resolved by the coordinator against the law and consumer
+witness, not by majority vote, whichever code compiles first, or merging both
+representations. An independently found upstream contract gap reopens the
+affected gate. Other agents must not code around it.
+
+### 11.2 Working-tree and merge discipline
+
+The audited repository is already extensively dirty. Preserve its tracked and
+untracked work. Never reset, stash, clean, revert, or overwrite unrelated
+changes to obtain an easier baseline. A normal worktree created from HEAD does
+not contain this source snapshot; isolated experiments must explicitly receive
+the selected dirty-tree overlay and record its hashes.
+
+The coordinator serializes integration, reruns dependent witnesses after a
+shared-interface change, and prevents two agents from defining the same task
+owner, error product or capability. No worker may weaken a bound, add Clone,
+widen visibility, change a lock, or introduce an alias merely to resolve a
+merge/compiler conflict. Return such a conflict as a design issue.
+
+## 12. Change containment and completion
+
+Before the first production edit, write the feature-local record in the
+existing ledger: exact locked owners; verified reciprocal dependencies; selected
+gates; one smallest failing regression; expected files and production delta;
+public types added/removed; existing owners/products reused or deleted.
+Keep PRD detail here rather than copying it into the ledger.
+
+Create a complete baseline manifest of tracked and untracked paths, content
+hashes, current diff and line counts. Record task-local deltas separately from
+the inherited working tree. Production-file counts that include embedded unit
+tests must be labelled as such; do not invent a public-API count for inherited
+work that has not been audited.
+
+At each checkpoint report:
+
+```text
+production: +A / -B / net C
+tests:      +A / -B / net C
+public API: +N types / -M types
+changed tracked and untracked paths:
+actor tasks / projection tasks / observation tasks per exercised application:
+retained abstractions and the law each owns:
+```
+
+Repository stop thresholds apply to the **cumulative task across every agent**:
+more than 15 changed files, more than 500 net new production lines, or more than
+three new public types requires explicit expanded-surface authorization before
+further production edits. This proposed hierarchy is likely to exceed the
+file threshold. PRD approval, an instruction to finish, splitting packages,
+separate agents or separate commits does not waive it. Prepare the concrete
+file/surface plan and evidence before requesting that authorization.
+
+Forbidden implementation shortcuts:
+
+- Another actor trait, effect algebra, supervisor policy, scheduler, registry,
+  mailbox, timer service, observation cell, or generic runtime object.
+- Trait objects, erased futures, Any/TypeId/downcasts, unsafe lifetime/type
+  escapes, serialized local control, or untyped callbacks hiding target types.
+  Standard library Error::source's required trait-object return is not a new
+  runtime dispatch abstraction; do not "fix" it by breaking the Error contract.
+- Boolean phase/authority/provenance state, structural role strings, inferred
+  lifecycle provenance, or a second copy of authoritative creation state.
+- Generic parameters/traits with no meaningful substitution, a capability bag,
+  or blanket public re-exports that make internal bounds application API.
+- New EXEC macros, no-op caller policies, dummy wrappers, compatibility actor
+  implementations, or parallel old/new production execution paths.
+- Silent terminal/event discard, blanket panic for a newly modeled failure,
+  manual rollback claims for accepted effects, or a success result before joins.
+- File shuffling presented as an ownership repair without a dependency change;
+  dense code presented as improvement while authority becomes harder to follow.
+
+### 12.1 Feature-complete acceptance
+
+All of these are required:
+
+1. Every applicable decision gate is accepted with recorded evidence; no worker
+   invented an unreviewed contract. A deferred gate means its dependent feature
+   is not feature-complete, even if other packages landed.
+2. Every XO requirement has a named witness and concrete owning symbol/module.
+   Every EV witness has an executable command or an explicit external blocker;
+   a blocked required witness prevents this PRD's full completion claim.
+3. Async, owned current-thread, owned multithread, HTTP and Entity execution
+   compose the same local actor owner; preserved return/error laws pass.
+4. Cancellation, observation reuse, static shutdown authority and complete
+   joined-return behavior have positive and deliberate inversion evidence.
+5. The actor/public API names, module hierarchy and visibility conform to the
+   selected rules and accepted symbol map. No forwarding-only replacement
+   layer or duplicate runtime path remains.
+6. Applicable public consumers, examples, macros, compile diagnostics, tests,
+   benchmarks, research probes, docs and re-exports use the selected contract.
+   Useful superseded reasoning moves to the historical record; contradictory
+   current guidance is removed.
+7. Required gates pass on the integrated source and selected lock. Remaining
+   unrelated failures are explicitly reported and cannot be called a green gate.
+8. Final complete-tree and task-local change ledgers are recorded. Report added
+   capability separately from deletion; a net-positive change is not described
+   as code reduction.
+
+Use the repository states accurately: `active` for eligible verified work,
+`blocked` for an unresolved prerequisite, `feature-complete` after feature gates,
+and `distilled` only after the required project-wide minimization audit. Never
+use `done`. This PRD and passing focused tests do not establish distillation.
+
+## 13. References
+
+- [Completion inventory](../prd-backlog/README.md) and
+  [local execution requirements](../prd-backlog/local-runtime.md#exec--parallel-execution-and-embedding).
+- [Current application execution](../../crates/bombay/src/application_runtime.rs),
+  [local Environment](../../crates/bombay/src/local.rs),
+  [actor launch/task ownership](../../crates/bombay/src/launch.rs),
+  [observation queue](../../crates/bombay/src/observation.rs),
+  [child custody](../../crates/bombay/src/child_bindings.rs), and
+  [Entity host](../../crates/bombay/src/entity/bombay.rs).
+- [Rust API naming](https://rust-lang.github.io/api-guidelines/naming.html) and
+  [future-proofing](https://rust-lang.github.io/api-guidelines/future-proofing.html)
+  inform public naming/visibility review; they do not select Bombay policy.
+- [Tokio 1.53.1 Runtime](https://docs.rs/tokio/1.53.1/tokio/runtime/struct.Runtime.html)
+  and the selected local Tokio task sources govern executor behavior. Verify
+  exact version semantics before retaining cancellation or blocking-work claims.
+
+## 14. PRD-authoring validation and change ledger
+
+This record covers creation of the PRD, not implementation of EXEC. Four
+documentation paths changed: this file, the inventory index, the local-runtime
+inventory's EXEC introduction, and the programme ledger backlink. No decision
+gate was accepted, feature state changed, or dependency edge altered.
+
+Task-local delta: documentation `+811 / -1 / net 810`;
+production `+0 / -0 / net 0`; tests `+0 / -0 / net 0`;
+public API `+0 types / -0 types`.
+
+Complete working-tree checkpoint, including inherited tracked/untracked work:
+production files `+3578 / -4158 / net -580`; tests/examples/verification
+`+4158 / -2226 / net +1932`; documentation `+10118 / -1814 / net +8304`;
+other files `+97 / -76 / net +21`; 116 changed tracked paths and 35 untracked
+files. Production-file counts include embedded unit tests. These are file-based
+measurement categories, not certification of inherited changes or their API.
+
+Validation: all 45 XO requirements have explicit EV mappings; 30 witness IDs,
+eight decision gates and 14 work-package IDs are unique and resolve; local
+document/source links resolve; whitespace checks pass, including this new
+untracked PRD. Snapshot comparison found only the four intended documentation
+changes and no production/test edits. No Rust commands were rerun for this
+documentation-only task; section 4 labels the preceding audit's test evidence.

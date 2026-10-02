@@ -1,7 +1,7 @@
 use bombay::behavior::{
-    ActiveTurn, Behavior, BehaviorActed, Never, NoBirths, Protocol, StashRoute, User,
+    ActiveTurn, Behavior, BehaviorActed, Never, NoBirths, Protocol, User,
 };
-use bombay::prelude::*;
+use bombay::{composition::StashRoute, prelude::*};
 
 struct Root;
 

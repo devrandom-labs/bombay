@@ -1,9 +1,11 @@
 use bombay::prelude::*;
 
-fn foundational<I, P>()
+fn foundational<I, P, RootEvent, Path>()
 where
     P: Protocol,
-    I: InterpretDelivery<P>,
+    P::Addr: Send,
+    P::Msg: Send,
+    I: InterpretItem<bombay::behavior::Delivery<P>, RootEvent, Path>,
 {
 }
 

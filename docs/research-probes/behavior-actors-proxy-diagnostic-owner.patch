@@ -1,0 +1,408 @@
+diff --git a/crates/actors/src/atomic/dynamic_supervisor/diagnostic.rs b/crates/actors/src/atomic/dynamic_supervisor/diagnostic.rs
+index 33a1b50..6a64ed7 100644
+--- a/crates/actors/src/atomic/dynamic_supervisor/diagnostic.rs
++++ b/crates/actors/src/atomic/dynamic_supervisor/diagnostic.rs
+@@ -2,6 +2,7 @@
+ 
+ use behavior::{Behavior, BehaviorAddr, ChildReport, EndpointAddress};
+ 
++use crate::atomic::ProxyDiagnostic;
+ use crate::atomic::proxy_creation::StableProxyCreationSettlement;
+ use crate::{
+     ActivationPlan, ChildStopped, ProxyInputResult, ProxyOutcome, StableProxy, WorkerSubmission,
+@@ -22,6 +23,9 @@ where
+     RejectedProxyOutcome {
+         report: ChildReport<ProxyOutcome<Worker, Plan>>,
+     },
++    ProxyDiagnosticReported {
++        report: ChildReport<ProxyDiagnostic<Worker, Plan>>,
++    },
+     ProxyInputRejected {
+         key: Key,
+         generation: u64,
+diff --git a/crates/actors/src/atomic/dynamic_supervisor/event.rs b/crates/actors/src/atomic/dynamic_supervisor/event.rs
+index 15f5994..a8bf6e9 100644
+--- a/crates/actors/src/atomic/dynamic_supervisor/event.rs
++++ b/crates/actors/src/atomic/dynamic_supervisor/event.rs
+@@ -5,6 +5,7 @@ use behavior::{
+     EndpointAddress, EventIngress, InjectEvent, RecoverEvent, User, UserEvent,
+ };
+ 
++use crate::atomic::ProxyDiagnostic;
+ use crate::{
+     ActivationPlan, ChildStopped, ProxyInputResult, ProxyOutcome, ScheduleAfter, ShutdownRequested,
+     StableProxy, TimerElapsed,
+@@ -25,6 +26,7 @@ where
+     ProxyCreationsSettled(CreationsSettled<BehaviorAddr<Worker>, StableProxy<Worker, Plan>>),
+     ProxyInputSettled(ProxyInputResult<behavior::Here, Worker, Plan>),
+     ProxyReported(ChildReport<ProxyOutcome<Worker, Plan>>),
++    ProxyDiagnosed(ChildReport<ProxyDiagnostic<Worker, Plan>>),
+     ProxyStopped(ChildStopped<BehaviorAddr<Worker>>),
+     Shutdown(ShutdownRequested),
+     ShutdownScheduleSettled(ActionItemResult<ScheduleAfter>),
+@@ -178,6 +180,49 @@ where
+     }
+ }
+ 
++impl<Key, Worker, Plan>
++    EventIngress<Births<StableProxy<Worker, Plan>>, ChildReport<ProxyDiagnostic<Worker, Plan>>>
++    for DynamicSupervisorEvent<Key, Worker, Plan>
++where
++    Worker: Behavior,
++    Plan: ActivationPlan,
++    BehaviorAddr<Worker>: EndpointAddress,
++    StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
++{
++    fn ingress(input: ChildReport<ProxyDiagnostic<Worker, Plan>>) -> Self {
++        Self::ProxyDiagnosed(input)
++    }
++}
++
++impl<Key, Worker, Plan> InjectEvent<ChildReport<ProxyDiagnostic<Worker, Plan>>, behavior::Here>
++    for DynamicSupervisorEvent<Key, Worker, Plan>
++where
++    Worker: Behavior,
++    Plan: ActivationPlan,
++    BehaviorAddr<Worker>: EndpointAddress,
++    StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
++{
++    fn inject_at(input: ChildReport<ProxyDiagnostic<Worker, Plan>>) -> Self {
++        Self::ProxyDiagnosed(input)
++    }
++}
++
++impl<Key, Worker, Plan> RecoverEvent<ChildReport<ProxyDiagnostic<Worker, Plan>>, behavior::Here>
++    for DynamicSupervisorEvent<Key, Worker, Plan>
++where
++    Worker: Behavior,
++    Plan: ActivationPlan,
++    BehaviorAddr<Worker>: EndpointAddress,
++    StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
++{
++    fn recover(event: Self) -> Result<ChildReport<ProxyDiagnostic<Worker, Plan>>, Self> {
++        match event {
++            Self::ProxyDiagnosed(report) => Ok(report),
++            input => Err(input),
++        }
++    }
++}
++
+ impl<Key, Worker, Plan> InjectEvent<ChildReport<ProxyOutcome<Worker, Plan>>, behavior::Here>
+     for DynamicSupervisorEvent<Key, Worker, Plan>
+ where
+diff --git a/crates/actors/src/atomic/dynamic_supervisor/mod.rs b/crates/actors/src/atomic/dynamic_supervisor/mod.rs
+index 412208f..b5f7b3f 100644
+--- a/crates/actors/src/atomic/dynamic_supervisor/mod.rs
++++ b/crates/actors/src/atomic/dynamic_supervisor/mod.rs
+@@ -2806,6 +2806,14 @@ where
+             }
+             DynamicSupervisorEvent::ProxyInputSettled(input) => self.accept_proxy_input(input),
+             DynamicSupervisorEvent::ProxyReported(report) => self.accept_proxy_report(report),
++            DynamicSupervisorEvent::ProxyDiagnosed(report) => {
++                let mut requests = DynamicSupervisorRequests::empty();
++                requests.diagnostics = InterpreterRequests::one(
++                    self.diagnostics
++                        .action(DynamicDiagnostic::ProxyDiagnosticReported { report }),
++                );
++                Ok(Actions::send(requests))
++            }
+             DynamicSupervisorEvent::ProxyStopped(stopped) => self.accept_proxy_stop(stopped),
+             DynamicSupervisorEvent::Shutdown(_) => self.begin_shutdown(),
+             DynamicSupervisorEvent::ShutdownScheduleSettled(input) => {
+diff --git a/crates/actors/src/atomic/fixed_supervisor/event.rs b/crates/actors/src/atomic/fixed_supervisor/event.rs
+index e04ce6d..30b0b95 100644
+--- a/crates/actors/src/atomic/fixed_supervisor/event.rs
++++ b/crates/actors/src/atomic/fixed_supervisor/event.rs
+@@ -5,6 +5,7 @@ use behavior::{
+     EndpointAddress, EventIngress, InjectEvent, RecoverEvent, User, UserEvent,
+ };
+ 
++use crate::atomic::ProxyDiagnostic;
+ use crate::{
+     ChildStopped, ProxyInputResult, ProxyOutcome, ScheduleAfter, StableProxy, TimerElapsed,
+ };
+@@ -24,6 +25,7 @@ where
+     ProxyCreationsSettled(CreationsSettled<BehaviorAddr<Worker>, StableProxy<Worker, Plan>>),
+     ProxyInputSettled(ProxyInputResult<behavior::Here, Worker, Plan>),
+     ProxyReported(ChildReport<ProxyOutcome<Worker, Plan>>),
++    ProxyDiagnosed(ChildReport<ProxyDiagnostic<Worker, Plan>>),
+     ProxyStopped(ChildStopped<BehaviorAddr<Worker>>),
+     WorkerPreparationSettled(Preparation),
+     RestartScheduleSettled(ActionItemResult<ScheduleAfter>),
+@@ -86,6 +88,51 @@ where
+     }
+ }
+ 
++impl<Role, Worker, Plan, Preparation>
++    EventIngress<Births<StableProxy<Worker, Plan>>, ChildReport<ProxyDiagnostic<Worker, Plan>>>
++    for FixedSupervisorEvent<Role, Worker, Plan, Preparation>
++where
++    Worker: Behavior,
++    Plan: ActivationPlan,
++    BehaviorAddr<Worker>: EndpointAddress,
++    StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
++{
++    fn ingress(input: ChildReport<ProxyDiagnostic<Worker, Plan>>) -> Self {
++        Self::ProxyDiagnosed(input)
++    }
++}
++
++impl<Role, Worker, Plan, Preparation>
++    InjectEvent<ChildReport<ProxyDiagnostic<Worker, Plan>>, behavior::Here>
++    for FixedSupervisorEvent<Role, Worker, Plan, Preparation>
++where
++    Worker: Behavior,
++    Plan: ActivationPlan,
++    BehaviorAddr<Worker>: EndpointAddress,
++    StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
++{
++    fn inject_at(input: ChildReport<ProxyDiagnostic<Worker, Plan>>) -> Self {
++        Self::ProxyDiagnosed(input)
++    }
++}
++
++impl<Role, Worker, Plan, Preparation>
++    RecoverEvent<ChildReport<ProxyDiagnostic<Worker, Plan>>, behavior::Here>
++    for FixedSupervisorEvent<Role, Worker, Plan, Preparation>
++where
++    Worker: Behavior,
++    Plan: ActivationPlan,
++    BehaviorAddr<Worker>: EndpointAddress,
++    StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
++{
++    fn recover(event: Self) -> Result<ChildReport<ProxyDiagnostic<Worker, Plan>>, Self> {
++        match event {
++            Self::ProxyDiagnosed(report) => Ok(report),
++            input => Err(input),
++        }
++    }
++}
++
+ impl<Role, Worker, Plan, Preparation>
+     InjectEvent<ChildReport<ProxyOutcome<Worker, Plan>>, behavior::Here>
+     for FixedSupervisorEvent<Role, Worker, Plan, Preparation>
+diff --git a/crates/actors/src/atomic/fixed_supervisor/mod.rs b/crates/actors/src/atomic/fixed_supervisor/mod.rs
+index 17f251e..1cb8986 100644
+--- a/crates/actors/src/atomic/fixed_supervisor/mod.rs
++++ b/crates/actors/src/atomic/fixed_supervisor/mod.rs
+@@ -1519,6 +1519,12 @@ where
+                 self.accept_proxy_operation(roster, settlement)
+             }
+             FixedSupervisorEvent::ProxyReported(report) => self.accept_proxy_report(roster, report),
++            FixedSupervisorEvent::ProxyDiagnosed(report) => {
++                self.roster = roster;
++                Err(FixedSupervisorError::InputRejected {
++                    input: FixedSupervisorEvent::ProxyDiagnosed(report),
++                })
++            }
+             FixedSupervisorEvent::ProxyStopped(stopped) => self.accept_proxy_exit(roster, stopped),
+             FixedSupervisorEvent::WorkerPreparationSettled(preparation) => {
+                 self.accept_worker_preparation(roster, preparation)
+diff --git a/crates/actors/tests/dynamic.rs b/crates/actors/tests/dynamic.rs
+index 693a37b..7b5a4dd 100644
+--- a/crates/actors/tests/dynamic.rs
++++ b/crates/actors/tests/dynamic.rs
+@@ -18,9 +18,9 @@ use behavior_actors::atomic::{
+     DiagnosticAction, DiagnosticDisposition, DynamicCommand, DynamicDiagnostic, DynamicLifecycle,
+     DynamicStatus, DynamicSupervisor, DynamicSupervisorEvent, EntryCapacity, EntryRetirement,
+     EntryStopFailureReason, InitialWorkerOutcome, InterruptedWorker, ProxyControl,
+-    ProxyControlAdmission, ProxyDrain, ProxyInputReceipt, ProxyInputResult, ProxyOutcome,
+-    ProxyPhase, QueryReply, ReplacementFailure, ReplacementOutcome, StableProxy, StartRejection,
+-    UnexpectedExit, WorkerChange, WorkerChangeInterruption, WorkerChangeReceipt,
++    ProxyControlAdmission, ProxyDiagnostic, ProxyDrain, ProxyInputReceipt, ProxyInputResult,
++    ProxyOutcome, ProxyPhase, QueryReply, ReplacementFailure, ReplacementOutcome, StableProxy,
++    StartRejection, UnexpectedExit, WorkerChange, WorkerChangeInterruption, WorkerChangeReceipt,
+     WorkerChangeRejection, WorkerCreationRejection, WorkerInitializationOutcome, WorkerStartResult,
+     WorkerSubmission, ZeroCapacity, dynamic,
+ };
+@@ -319,6 +319,64 @@ fn search_supervisor(
+     .behavior
+ }
+ 
++#[test]
++fn dynamic_supervisor_routes_the_complete_proxy_diagnostic() {
++    let mut creation_ids = CreationSequence::new();
++    let proxy = creation_ids.issue().expect("one proxy occurrence exists");
++    let worker = creation_ids.issue().expect("one worker occurrence exists");
++    let stopped_at = Instant::now();
++    let returned_worker = ChildStopped::new(worker, Ok(Exit::Normal), stopped_at);
++    let mut supervisor = search_supervisor(
++        EntryCapacity::new(1).expect("entry capacity is positive"),
++        ActivationPolicy::new(1).expect("activation capacity is positive"),
++        ActorDrainPolicy::WaitForActorGraph,
++        RootPeers {
++            lifecycle: Recipient::global(SearchAddress(40)),
++            diagnostics: Recipient::global(SearchAddress(41)),
++        },
++    );
++    let actions = supervisor
++        .on(ChildReport::new(
++            proxy,
++            ProxyDiagnostic::UnexpectedWorkerStop {
++                phase: ProxyPhase::Creating,
++                stopped: returned_worker,
++            },
++        ))
++        .unwrap_or_else(|_| panic!("the configured diagnostic route accepts the report"));
++    assert!(actions.creates.is_empty());
++    assert!(matches!(actions.become_, behavior::Step::Continue));
++    assert!(actions.sends.proxy_observations.is_empty());
++    assert!(actions.sends.proxy_operations.is_empty());
++    assert!(actions.sends.shutdown_schedules.is_empty());
++    assert!(actions.sends.start_replies.as_slice().is_empty());
++    assert!(actions.sends.replace_replies.as_slice().is_empty());
++    assert!(actions.sends.stop_replies.as_slice().is_empty());
++    assert!(actions.sends.query_replies.as_slice().is_empty());
++    assert!(actions.sends.cancel_replies.as_slice().is_empty());
++    assert!(actions.sends.lifecycle.is_empty());
++    let [
++        DiagnosticAction::Deliver {
++            diagnostic:
++                DynamicDiagnostic::ProxyDiagnosticReported {
++                    report: ChildReport { child, report },
++                },
++            ..
++        },
++    ] = actions.sends.diagnostics.as_slice()
++    else {
++        panic!("one routed diagnostic retains the complete proxy report")
++    };
++    assert_eq!(*child, proxy);
++    let ProxyDiagnostic::UnexpectedWorkerStop { phase, stopped } = report else {
++        panic!("the worker stop remains a distinct proxy diagnostic")
++    };
++    assert_eq!(*phase, ProxyPhase::Creating);
++    assert_eq!(stopped.child, returned_worker.child);
++    assert!(stopped.outcome == returned_worker.outcome);
++    assert_eq!(stopped.at, returned_worker.at);
++}
++
+ struct DynamicProxyHost {
+     creation: CreationId,
+     proxy: Active<StableProxy<SearchWorker, SearchActivation>>,
+diff --git a/crates/actors/tests/fixed_supervisor_initialization.rs b/crates/actors/tests/fixed_supervisor_initialization.rs
+index 0268804..098a0f1 100644
+--- a/crates/actors/tests/fixed_supervisor_initialization.rs
++++ b/crates/actors/tests/fixed_supervisor_initialization.rs
+@@ -27,11 +27,11 @@ use behavior_actors::atomic::{
+     self, ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticAction,
+     DiagnosticDisposition, FailureReaction, FixedCommand, FixedDiagnostic, FixedLifecycle,
+     FixedLifecycleEvent, FixedSupervisor, FixedSupervisorEvent, InitialWorkerOutcome, MemberStatus,
+-    OrderedRoles, PendingWorkerPreparation, PrepareWorkers, ProxyControl, ProxyInputResult,
+-    ProxyOperation, ProxyOutcome, ProxyPhase, Recovery, RecoveryDenialReason, ReplacementOutcome,
+-    RestartLimit, RestartRelease, StableProxy, Strategy, WorkerInitializationOutcome,
+-    WorkerPreparation, WorkerPreparationFailureReason, WorkerSource, WorkerStartResult,
+-    WorkerSubmission, fixed,
++    OrderedRoles, PendingWorkerPreparation, PrepareWorkers, ProxyControl, ProxyDiagnostic,
++    ProxyInputResult, ProxyOperation, ProxyOutcome, ProxyPhase, Recovery, RecoveryDenialReason,
++    ReplacementOutcome, RestartLimit, RestartRelease, StableProxy, Strategy,
++    WorkerInitializationOutcome, WorkerPreparation, WorkerPreparationFailureReason, WorkerSource,
++    WorkerStartResult, WorkerSubmission, fixed,
+ };
+ use behavior_actors::{
+     Activate as _, Active, ChildStopped, Crash, Exit, ReplyDelivery, ScheduleAfter,
+@@ -208,6 +208,42 @@ where
+     }
+ }
+ 
++#[test]
++fn fixed_supervisor_preserves_an_owned_proxy_diagnostic_under_terminal_policy() {
++    let (mut supervisor, operation) = first_proxy_dispatched(700);
++    let proxy = operation.creation();
++    let stopped_at = Instant::now();
++    let returned_worker = ChildStopped::new(proxy, Ok(Exit::Normal), stopped_at);
++    let actions = supervisor
++        .on(ChildReport::new(
++            proxy,
++            ProxyDiagnostic::UnexpectedWorkerStop {
++                phase: ProxyPhase::Creating,
++                stopped: returned_worker,
++            },
++        ))
++        .unwrap_or_else(|_| panic!("the configured disposition accepts the exact report"));
++    assert!(actions.creates.is_empty());
++    assert!(matches!(actions.become_, Step::Stop(_)));
++    assert!(actions.sends.proxy_observations.is_empty());
++    assert!(actions.sends.worker_preparations.is_empty());
++    assert!(actions.sends.proxy_operations.is_empty());
++    assert!(actions.sends.restart_schedules.is_empty());
++    let NoSends = actions.sends.lifecycle;
++    assert!(actions.sends.status_replies.as_slice().is_empty());
++    assert!(actions.sends.capability_replies.as_slice().is_empty());
++    let returned = terminal_unexpected(actions.sends.diagnostics.into_requests());
++    let FixedSupervisorEvent::ProxyDiagnosed(ChildReport { child, report }) = returned else {
++        panic!("the diagnostic keeps its parent-report event and child occurrence")
++    };
++    assert_eq!(child, proxy);
++    let ProxyDiagnostic::UnexpectedWorkerStop { phase, stopped } = report else {
++        panic!("the unexpected worker stop remains a distinct diagnostic")
++    };
++    assert_eq!(phase, ProxyPhase::Creating);
++    assert_eq!(stopped, returned_worker);
++}
++
+ #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+ enum SearchRole {
+     Search,
+@@ -757,6 +793,7 @@ fn fixed_event_adapters_recover_exact_values_and_return_foreign_events() {
+         | FixedSupervisorEvent::ProxyCreationsSettled(_)
+         | FixedSupervisorEvent::ProxyInputSettled(_)
+         | FixedSupervisorEvent::ProxyReported(_)
++        | FixedSupervisorEvent::ProxyDiagnosed(_)
+         | FixedSupervisorEvent::ProxyStopped(_)
+         | FixedSupervisorEvent::WorkerPreparationSettled(_)
+         | FixedSupervisorEvent::RestartScheduleSettled(_) => {
+diff --git a/crates/actors/tests/proxy_command_recovery.rs b/crates/actors/tests/proxy_command_recovery.rs
+index 37ee512..ddd6e7e 100644
+--- a/crates/actors/tests/proxy_command_recovery.rs
++++ b/crates/actors/tests/proxy_command_recovery.rs
+@@ -5,17 +5,18 @@ mod installed_control;
+ use std::time::{Duration, Instant};
+ 
+ use behavior::{
+-    ActionItem, Actions, ActiveTurn, Address, Behavior, BehaviorActed, ChildCreationOutcome,
+-    ChildHead, ChildNamespaceExhausted, CreateChild, CreationRejection, CreationSequence,
+-    CreationSettlement, CreationsSettled, EndpointAddress, EstablishedRecipient, ItemSettlement,
+-    Never, NoBirths, Protocol, RoutedCreation, SettledItem, Step, User,
++    ActionItem, Actions, ActiveTurn, Address, Behavior, BehaviorActed, Births,
++    ChildCreationOutcome, ChildHead, ChildNamespaceExhausted, ChildReport, CreateChild,
++    CreationRejection, CreationSequence, CreationSettlement, CreationsSettled, EndpointAddress,
++    EstablishedRecipient, EventIngress, ItemSettlement, Never, NoBirths, Protocol, RoutedCreation,
++    SettledItem, Step, User,
+ };
+ use behavior_actors::atomic::{
+-    ActivationPlan, ActivationStartRejection, BeginActivation, ImmediateActivation,
+-    InitialWorkerOutcome, InitializeWorker, ProxyControl, ProxyDiagnostic, ProxyDrain,
+-    ProxyOutcome, ProxyPhase, ReplacementOutcome, StableProxy, WorkerAttempt,
+-    WorkerCreationRejection, WorkerInitializationFailure, WorkerInitializationOutcome,
+-    WorkerInitializationReport, WorkerStartResult,
++    ActivationPlan, ActivationStartRejection, BeginActivation, DynamicSupervisorEvent,
++    FixedSupervisorEvent, ImmediateActivation, InitialWorkerOutcome, InitializeWorker,
++    ProxyControl, ProxyDiagnostic, ProxyDrain, ProxyOutcome, ProxyPhase, ReplacementOutcome,
++    StableProxy, WorkerAttempt, WorkerCreationRejection, WorkerInitializationFailure,
++    WorkerInitializationOutcome, WorkerInitializationReport, WorkerStartResult,
+ };
+ use behavior_actors::{
+     Activate as _, Active, ChildStopped, EstablishedShutdownResolved, Exit, ObserveChild,
+@@ -98,6 +99,21 @@ impl ActivationPlan for Hydrate {
+     }
+ }
+ 
++#[test]
++fn supervisors_accept_their_stable_proxy_diagnostic_report() {
++    fn require_parent_ingress<Event>()
++    where
++        Event: EventIngress<
++                Births<StableProxy<Worker, Hydrate>>,
++                ChildReport<ProxyDiagnostic<Worker, Hydrate>>,
++            >,
++    {
++    }
++
++    require_parent_ingress::<FixedSupervisorEvent<(), Worker, Hydrate, ()>>();
++    require_parent_ingress::<DynamicSupervisorEvent<(), Worker, Hydrate>>();
++}
++
+ #[derive(Debug, Eq, PartialEq)]
+ struct RejectHydration(u8);
+ 

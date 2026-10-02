@@ -1,8 +1,8 @@
-use bombay::behavior::{
+use behavior_actors::{
     Barrier, BarrierGeneration, BarrierMembership, BarrierMessage, BarrierReleased, Cache,
     CacheConfiguration, CacheMessage, CacheResult, Latch, LatchMessage, LatchReleased,
-    MessageProtocol,
 };
+use bombay::behavior::MessageProtocol;
 use bombay::prelude::*;
 
 mod application_support;
@@ -35,8 +35,9 @@ fn cache_preserves_an_exact_external_customer() {
                 )
                 .await
                 .expect("the exact cache admits the put");
+            let stored = caller.receive().await.map(|reply| reply.message);
             assert!(matches!(
-                caller.receive().await.map(|reply| reply.message),
+                stored,
                 Some(CacheResult::Stored {
                     key: 7,
                     replaced: None,
@@ -54,11 +55,12 @@ fn cache_preserves_an_exact_external_customer() {
                 )
                 .await
                 .expect("the exact cache admits the get");
-            assert_eq!(
-                caller.receive().await.map(|reply| reply.message),
-                Some(CacheResult::Hit { key: 7, value: 42 })
-            );
-            assert_eq!(lifecycle.request_shutdown(), Ok(()));
+            let hit = caller.receive().await.map(|reply| reply.message);
+            assert_eq!(hit, Some(CacheResult::Hit { key: 7, value: 42 }));
+            let shutdown = lifecycle.request_shutdown();
+            assert_eq!(shutdown, Ok(()));
+            let repeated = lifecycle.request_shutdown();
+            assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         })
         .expect("the exact-customer cache application terminates normally");
     assert_completed(terminal);
@@ -106,19 +108,24 @@ fn barrier_releases_two_exact_external_participants() {
                 .await
                 .expect("the barrier admits the second arrival");
 
+            let first_release = first.receive().await.map(|reply| reply.message);
             assert_eq!(
-                first.receive().await.map(|reply| reply.message),
+                first_release,
                 Some(BarrierReleased {
                     generation: BarrierGeneration(0),
                 })
             );
+            let second_release = second.receive().await.map(|reply| reply.message);
             assert_eq!(
-                second.receive().await.map(|reply| reply.message),
+                second_release,
                 Some(BarrierReleased {
                     generation: BarrierGeneration(0),
                 })
             );
-            assert_eq!(lifecycle.request_shutdown(), Ok(()));
+            let shutdown = lifecycle.request_shutdown();
+            assert_eq!(shutdown, Ok(()));
+            let repeated = lifecycle.request_shutdown();
+            assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         })
         .expect("the exact-customer barrier application terminates normally");
     assert_completed(terminal);
@@ -150,15 +157,14 @@ fn latch_releases_exact_external_participants() {
             .await
             .expect("the latch admits the second arrival");
 
-        assert_eq!(
-            first.receive().await.map(|reply| reply.message),
-            Some(LatchReleased)
-        );
-        assert_eq!(
-            second.receive().await.map(|reply| reply.message),
-            Some(LatchReleased)
-        );
-        assert_eq!(lifecycle.request_shutdown(), Ok(()));
+        let first_release = first.receive().await.map(|reply| reply.message);
+        assert_eq!(first_release, Some(LatchReleased));
+        let second_release = second.receive().await.map(|reply| reply.message);
+        assert_eq!(second_release, Some(LatchReleased));
+        let shutdown = lifecycle.request_shutdown();
+        assert_eq!(shutdown, Ok(()));
+        let repeated = lifecycle.request_shutdown();
+        assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
     })
     .expect("the exact-route latch application terminates normally");
     assert_completed(terminal);

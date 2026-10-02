@@ -8,6 +8,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    - cron: '17 5 * * 1'
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -48,3 +50,43 @@ jobs:
           purge-primary-key: never
       - name: Flake Check
         run: nix flake check -L
+
+      - name: Bounded Driver fuzz campaign
+        id: driver_fuzz
+        run: nix develop .#fuzz -c bash crates/bombay-engine/fuzz/verify-causal-turns.sh
+
+      - name: Retain Driver fuzz corpus and crashes
+        if: always() && (steps.driver_fuzz.outcome == 'success' || steps.driver_fuzz.outcome == 'failure')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: driver-fuzz-${{ github.run_id }}
+          path: crates/bombay-engine/fuzz/artifacts/causal_turns/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Bounded Observe fuzz campaign
+        id: observe_fuzz
+        run: nix develop .#fuzz -c bash crates/observe-fuzz/verify-observation-operations.sh
+
+      - name: Retain Observe fuzz corpus and crashes
+        if: always() && (steps.observe_fuzz.outcome == 'success' || steps.observe_fuzz.outcome == 'failure')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: observe-fuzz-${{ github.run_id }}
+          path: crates/observe-fuzz/artifacts/run.*/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Bounded Observe Miri campaign
+        id: observe_miri
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: nix develop .#miri -c bash crates/observe-tests/verify-miri.sh
+
+      - name: Retain Observe Miri result
+        if: always() && (steps.observe_miri.outcome == 'success' || steps.observe_miri.outcome == 'failure')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: observe-miri-${{ github.run_id }}
+          path: target/miri-evidence/
+          if-no-files-found: error
+          retention-days: 14

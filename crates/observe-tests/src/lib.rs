@@ -1,14 +1,12 @@
 //! Isolated model-checking boundary for Bombay's private observation code.
 
-#![allow(
-    clippy::duplicate_mod,
-    reason = "the shared probe is public for fuzz targets and is also compiled privately by Observe's own unit corpus"
-)]
-
+#[cfg(any(not(test), loom))]
 #[path = "../../bombay/src/observe/mod.rs"]
 pub mod observe;
 
+#[cfg(any(not(test), loom))]
 pub use observe::*;
 
+#[cfg(not(test))]
 #[path = "../../bombay/src/observe/test_support/mod.rs"]
 pub mod probe;

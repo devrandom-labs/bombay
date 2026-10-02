@@ -10,8 +10,8 @@ use crate::observe::{AffineObservation, Observation, Publisher, affine_pair, pai
 
 use super::{
     ActivationId, DirectoryConfig, DirectoryError, DispatchId, DrainFailure, DrainStage,
-    EffectInterpreter, EntityId, LifecyclePhase, LocalDirectory, Refusal, RetirementMode,
-    TransitionEvidence,
+    EffectInterpreter, EntityId, LifecycleEdge, LifecyclePhase, LocalDirectory, Refusal,
+    RetirementMode, TransitionEvidence,
 };
 
 /// Exact-incarnation capabilities returned by transactional activation.
@@ -44,6 +44,8 @@ pub enum Passivation {
     AlreadyPassivating,
     /// The observed incarnation was superseded before the drain linearized.
     Superseded,
+    /// Family shutdown already owns draining and retirement.
+    ShuttingDown,
 }
 
 /// Runtime port implemented once by an actor runtime integration.
@@ -59,15 +61,22 @@ pub trait LocalEntityRuntime<I, C>: Send + Sync + 'static {
     type Lease: Send + 'static;
     /// Transactional activation failure.
     type ActivationError: Send + 'static;
+    /// Owned handle returned by one scheduled lifecycle task.
+    type Task: Send + 'static;
+    /// Exact failure returned when the owned task is joined.
+    type TaskFailure: Send + 'static;
 
-    /// Spawn work owned by the entity directory rather than a caller.
+    /// Schedule work owned by the entity directory and return its join handle.
     ///
-    /// The spawned task MUST be driven to completion: every lifecycle task
-    /// ends by submitting its typed fact back through the directory. Dropping
-    /// or canceling a task strands the entity — an activation task wedges the
-    /// slot in `Activating`, a delivery task wedges a drain, and a retirement
-    /// task leaks the directory entry.
-    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static);
+    /// Scheduling is infallible at this port boundary: dropping the future
+    /// instead strands its required lifecycle fact. A task panic or cancel is
+    /// retained by the join result and returned from family shutdown.
+    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task;
+
+    /// Join one exact task and preserve its concrete failure on panic or cancel.
+    /// Dropping the returned future before it resolves must leave `task`
+    /// joinable by a later family shutdown claimant.
+    fn join(task: &mut Self::Task) -> impl Future<Output = Result<(), Self::TaskFailure>> + Send;
 
     /// Prepare and transactionally activate an exact incarnation.
     fn activate(
@@ -146,11 +155,11 @@ where
     inner: Arc<RuntimeState<I, C, R>>,
 }
 
-struct Runtime<I, C, R, Origin, Endpoint, Lease> {
+struct Runtime<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure> {
     directory: LocalDirectory<I, PendingCommand<Origin, C>, Endpoint, Lease>,
     port: R,
     admission: Mutex<EntityAdmission>,
-    tasks: Arc<EntityTaskGroup>,
+    tasks: Arc<EntityTaskGroup<Task, TaskFailure>>,
 }
 
 type RuntimeState<I, C, R> = Runtime<
@@ -160,10 +169,26 @@ type RuntimeState<I, C, R> = Runtime<
     <R as LocalEntityRuntime<I, C>>::Origin,
     <R as LocalEntityRuntime<I, C>>::Endpoint,
     <R as LocalEntityRuntime<I, C>>::Lease,
+    <R as LocalEntityRuntime<I, C>>::Task,
+    <R as LocalEntityRuntime<I, C>>::TaskFailure,
+>;
+type RuntimeReceptionist<I, C, R> = EntityReceptionist<
+    I,
+    C,
+    R,
+    <R as LocalEntityRuntime<I, C>>::Origin,
+    <R as LocalEntityRuntime<I, C>>::Endpoint,
+    <R as LocalEntityRuntime<I, C>>::Lease,
+    <R as LocalEntityRuntime<I, C>>::Task,
+    <R as LocalEntityRuntime<I, C>>::TaskFailure,
 >;
 
-pub(crate) struct EntityReceptionist<I, C, R, Origin, Endpoint, Lease> {
-    inner: Arc<Runtime<I, C, R, Origin, Endpoint, Lease>>,
+pub(crate) struct EntityReceptionist<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure> {
+    #[expect(
+        clippy::type_complexity,
+        reason = "the private receptionist retains exact runtime task and join-failure types"
+    )]
+    inner: Arc<Runtime<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure>>,
 }
 
 enum EntityAdmission {
@@ -171,42 +196,80 @@ enum EntityAdmission {
     Closed,
 }
 
-struct EntityTaskGroup {
-    state: Mutex<EntityTaskState>,
+struct EntityTaskGroup<Task, TaskFailure> {
+    state: Mutex<EntityTaskState<Task, TaskFailure>>,
 }
 
-enum EntityTaskState {
+enum EntityTaskState<Task, TaskFailure> {
     Open {
         active: usize,
         idle_epoch: Option<(Publisher<()>, Observation<()>)>,
+        tasks: Vec<EntityTaskRecord<Task, TaskFailure>>,
+        shutdown: ShutdownClaimPhase,
+        drain: FamilyDrainPhase,
     },
     Closed,
 }
 
-struct EntityTaskGuard {
-    group: Arc<EntityTaskGroup>,
+enum ShutdownClaimPhase {
+    Available,
+    Claimed,
 }
 
-/// Exact summary of one completed family shutdown transaction.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EntityShutdown {
-    /// Number of represented incarnation slots observed at the drain boundary.
-    pub represented: usize,
+#[derive(Clone, Copy)]
+enum FamilyDrainPhase {
+    NotStarted,
+    Started { represented: usize },
 }
 
-impl EntityTaskGroup {
+enum EntityTaskRecord<Task, TaskFailure> {
+    Running(Task),
+    Joined,
+    Failed(TaskFailure),
+}
+
+struct EntityShutdownClaim<Task, TaskFailure> {
+    group: Arc<EntityTaskGroup<Task, TaskFailure>>,
+    tasks: Vec<EntityTaskRecord<Task, TaskFailure>>,
+}
+
+struct EntityTaskGuard<Task, TaskFailure> {
+    group: Arc<EntityTaskGroup<Task, TaskFailure>>,
+}
+
+/// Exact result of one family shutdown request.
+#[derive(Debug)]
+pub enum EntityShutdown<TaskFailure> {
+    /// Every represented incarnation retired and every lifecycle task joined.
+    Settled { represented: usize },
+    /// Another caller owns or already received the affine shutdown result.
+    AlreadyClaimed,
+    /// A lifecycle task failed; exact failures remain owned by the caller.
+    TaskFailed {
+        represented: usize,
+        failures: Vec<TaskFailure>,
+    },
+}
+
+impl<Task, TaskFailure> EntityTaskGroup<Task, TaskFailure> {
     fn new() -> Self {
         Self {
             state: Mutex::new(EntityTaskState::Open {
                 active: 0,
                 idle_epoch: None,
+                tasks: Vec::new(),
+                shutdown: ShutdownClaimPhase::Available,
+                drain: FamilyDrainPhase::NotStarted,
             }),
         }
     }
 
-    fn begin(self: &Arc<Self>) -> EntityTaskGuard {
+    fn begin(self: &Arc<Self>) -> EntityTaskGuard<Task, TaskFailure> {
         let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
-        let EntityTaskState::Open { active, idle_epoch } = &mut *state else {
+        let EntityTaskState::Open {
+            active, idle_epoch, ..
+        } = &mut *state
+        else {
             panic!("entity lifecycle task scheduled after family shutdown");
         };
         if *active == 0 {
@@ -218,6 +281,31 @@ impl EntityTaskGroup {
         EntityTaskGuard {
             group: Arc::clone(self),
         }
+    }
+
+    fn claim(self: &Arc<Self>) -> Option<EntityShutdownClaim<Task, TaskFailure>> {
+        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        match &mut *state {
+            EntityTaskState::Open { shutdown, .. } => match shutdown {
+                ShutdownClaimPhase::Available => {
+                    *shutdown = ShutdownClaimPhase::Claimed;
+                    Some(EntityShutdownClaim {
+                        group: Arc::clone(self),
+                        tasks: Vec::new(),
+                    })
+                }
+                ShutdownClaimPhase::Claimed => None,
+            },
+            EntityTaskState::Closed => None,
+        }
+    }
+
+    fn track(&self, task: Task) {
+        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        let EntityTaskState::Open { tasks, .. } = &mut *state else {
+            panic!("entity lifecycle task registered after family shutdown");
+        };
+        tasks.push(EntityTaskRecord::Running(task));
     }
 
     async fn wait_idle(&self) {
@@ -241,7 +329,10 @@ impl EntityTaskGroup {
     fn finish(&self) {
         let publisher = {
             let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
-            let EntityTaskState::Open { active, idle_epoch } = &mut *state else {
+            let EntityTaskState::Open {
+                active, idle_epoch, ..
+            } = &mut *state
+            else {
                 panic!("entity lifecycle task completed after family shutdown");
             };
             *active = active
@@ -258,16 +349,103 @@ impl EntityTaskGroup {
 
     fn close(&self) {
         let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
-        let EntityTaskState::Open { active, idle_epoch } = &*state else {
+        let EntityTaskState::Open {
+            active,
+            idle_epoch,
+            tasks,
+            shutdown,
+            ..
+        } = &*state
+        else {
             return;
         };
         assert_eq!(*active, 0, "entity lifecycle tasks remain at shutdown");
         assert!(idle_epoch.is_none(), "idle entity epoch was not discharged");
+        assert!(
+            tasks.is_empty(),
+            "entity lifecycle task handles remain at shutdown"
+        );
+        assert!(matches!(shutdown, ShutdownClaimPhase::Claimed));
         *state = EntityTaskState::Closed;
     }
 }
 
-impl Drop for EntityTaskGuard {
+impl<Task, TaskFailure> EntityShutdownClaim<Task, TaskFailure> {
+    fn drain_phase(&self) -> FamilyDrainPhase {
+        let state = self
+            .group
+            .state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let EntityTaskState::Open { drain, .. } = &*state else {
+            panic!("family drain phase requested after shutdown");
+        };
+        *drain
+    }
+
+    fn record_drain(&self, represented: usize) {
+        let mut state = self
+            .group
+            .state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let EntityTaskState::Open {
+            drain: phase @ FamilyDrainPhase::NotStarted,
+            ..
+        } = &mut *state
+        else {
+            panic!("family drain was already recorded");
+        };
+        *phase = FamilyDrainPhase::Started { represented };
+    }
+
+    fn take_tasks(&mut self) {
+        let mut state = self
+            .group
+            .state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let EntityTaskState::Open {
+            tasks,
+            shutdown: ShutdownClaimPhase::Claimed,
+            ..
+        } = &mut *state
+        else {
+            panic!("only the family shutdown claimant can take lifecycle tasks");
+        };
+        self.tasks.append(tasks);
+    }
+
+    fn complete(mut self) -> Vec<TaskFailure> {
+        let mut failures = Vec::new();
+        for task in self.tasks.drain(..) {
+            if let EntityTaskRecord::Failed(failure) = task {
+                failures.push(failure);
+            }
+        }
+        self.group.close();
+        failures
+    }
+}
+
+impl<Task, TaskFailure> Drop for EntityShutdownClaim<Task, TaskFailure> {
+    fn drop(&mut self) {
+        let mut state = self
+            .group
+            .state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if let EntityTaskState::Open {
+            tasks, shutdown, ..
+        } = &mut *state
+        {
+            tasks.append(&mut self.tasks);
+            *shutdown = ShutdownClaimPhase::Available;
+        }
+    }
+}
+
+impl<Task, TaskFailure> Drop for EntityTaskGuard<Task, TaskFailure> {
     fn drop(&mut self) {
         self.group.finish();
     }
@@ -284,8 +462,8 @@ where
     }
 }
 
-impl<I, C, R, Origin, Endpoint, Lease> Clone
-    for EntityReceptionist<I, C, R, Origin, Endpoint, Lease>
+impl<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure> Clone
+    for EntityReceptionist<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure>
 {
     fn clone(&self) -> Self {
         Self {
@@ -328,9 +506,7 @@ where
         })
     }
 
-    pub(crate) fn receptionist(
-        &self,
-    ) -> EntityReceptionist<I, C, R, R::Origin, R::Endpoint, R::Lease> {
+    pub(crate) fn receptionist(&self) -> RuntimeReceptionist<I, C, R> {
         EntityReceptionist {
             inner: Arc::clone(&self.inner),
         }
@@ -394,10 +570,10 @@ where
                     }
                 })?;
             let dispatch_id = dispatched.dispatch_id;
-            let activation_id = dispatched.output.activation_id;
+            let activation_id = dispatched.decision.activation_id;
             self.inner
                 .directory
-                .interpret(dispatched.output, &self.inner);
+                .interpret(dispatched.decision, &self.inner);
             (observation, activation_id, dispatch_id)
         };
         DispatchWait {
@@ -411,36 +587,63 @@ where
     }
 
     /// Close admission, settle installed work, drain every represented exact
-    /// incarnation, and close the lifecycle task group.
+    /// incarnation, join every lifecycle task, and close the task group.
     ///
     /// # Panics
     ///
     /// Panics after synchronization poison or if an internal lifecycle law is
     /// violated by late task scheduling, an unmatched task completion, or a
-    /// represented slot that survives the settled drain transaction.
-    pub async fn shutdown(&self) -> EntityShutdown {
+    /// represented slot that survives the drain without a task failure.
+    pub async fn shutdown(&self) -> EntityShutdown<R::TaskFailure> {
         {
             let mut admission = self
                 .inner
                 .admission
                 .lock()
                 .unwrap_or_else(PoisonError::into_inner);
-            *admission = EntityAdmission::Closed;
+            match *admission {
+                EntityAdmission::Open => *admission = EntityAdmission::Closed,
+                EntityAdmission::Closed => {}
+            }
         }
+        let Some(mut claim) = self.inner.tasks.claim() else {
+            return EntityShutdown::AlreadyClaimed;
+        };
 
         self.inner.tasks.wait_idle().await;
-        let drains = self.inner.directory.begin_family_drain();
-        let represented = drains.len();
-        for output in drains {
-            self.inner.directory.interpret(output, &self.inner);
-        }
+        let represented = match claim.drain_phase() {
+            FamilyDrainPhase::NotStarted => {
+                let drains = self.inner.directory.begin_family_drain();
+                let represented = drains.len();
+                for decision in drains {
+                    self.inner.directory.interpret(decision, &self.inner);
+                }
+                claim.record_drain(represented);
+                represented
+            }
+            FamilyDrainPhase::Started { represented } => represented,
+        };
         self.inner.tasks.wait_idle().await;
-        assert!(
-            self.inner.directory.is_empty(),
-            "settled entity family retained a lifecycle slot"
-        );
-        self.inner.tasks.close();
-        EntityShutdown { represented }
+        claim.take_tasks();
+        for task in &mut claim.tasks {
+            if let EntityTaskRecord::Running(handle) = task {
+                *task = match R::join(handle).await {
+                    Ok(()) => EntityTaskRecord::Joined,
+                    Err(failure) => EntityTaskRecord::Failed(failure),
+                };
+            }
+        }
+        let settled = self.inner.directory.is_empty();
+        let failures = claim.complete();
+        if failures.is_empty() {
+            assert!(settled, "settled entity family retained a lifecycle slot");
+            EntityShutdown::Settled { represented }
+        } else {
+            EntityShutdown::TaskFailed {
+                represented,
+                failures,
+            }
+        }
     }
 
     /// Begin graceful passivation if the entity currently has an active incarnation.
@@ -452,14 +655,23 @@ where
     ///
     /// Panics if directory synchronization was poisoned.
     pub fn passivate(&self, entity_id: &EntityId<I>) -> Passivation {
+        let admission = self
+            .inner
+            .admission
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if matches!(*admission, EntityAdmission::Closed) {
+            return Passivation::ShuttingDown;
+        }
         let Some(activation_id) = self.inner.directory.current_activation(entity_id) else {
             return Passivation::NotActive;
         };
-        let output = self.inner.directory.begin_drain(entity_id, activation_id);
-        let passivation = match output.evidence {
-            TransitionEvidence::Traversed(_) => Passivation::Begun,
-            TransitionEvidence::SelfLoop { phase, .. }
-            | TransitionEvidence::Ignored { phase, .. } => match phase {
+        let decision = self.inner.directory.begin_drain(entity_id, activation_id);
+        let passivation = match decision.evidence {
+            TransitionEvidence::Traversed(LifecycleEdge::BeginDrain) => Passivation::Begun,
+            TransitionEvidence::Traversed(_)
+            | TransitionEvidence::SelfLoop
+            | TransitionEvidence::Ignored => match decision.phase {
                 LifecyclePhase::Active => Passivation::Superseded,
                 LifecyclePhase::Draining | LifecyclePhase::Retiring => {
                     Passivation::AlreadyPassivating
@@ -467,16 +679,25 @@ where
                 LifecyclePhase::Inactive | LifecyclePhase::Activating => Passivation::NotActive,
             },
         };
-        self.inner.directory.interpret(output, &self.inner);
+        self.inner.directory.interpret(decision, &self.inner);
         passivation
     }
 }
 
-impl<I, C, R, Origin, Endpoint, Lease> EntityReceptionist<I, C, R, Origin, Endpoint, Lease>
+impl<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure>
+    EntityReceptionist<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure>
 where
     I: Clone + Eq + Hash + Send + Sync + 'static,
     C: Send + 'static,
-    R: LocalEntityRuntime<I, C, Origin = Origin, Endpoint = Endpoint, Lease = Lease>,
+    R: LocalEntityRuntime<
+            I,
+            C,
+            Origin = Origin,
+            Endpoint = Endpoint,
+            Lease = Lease,
+            Task = Task,
+            TaskFailure = TaskFailure,
+        >,
 {
     pub(crate) async fn admit(
         &self,
@@ -512,6 +733,16 @@ where
     runtime: Weak<RuntimeState<I, C, R>>,
 }
 
+// The observation owns its pinned state in a heap-stable slot and is Unpin.
+// No other field is projected as pinned or refers into this future.
+impl<I, C, R> Unpin for DispatchWait<I, C, R>
+where
+    I: Clone + Eq + Hash + Send + Sync + 'static,
+    C: Send + 'static,
+    R: LocalEntityRuntime<I, C>,
+{
+}
+
 impl<I, C, R> Future for DispatchWait<I, C, R>
 where
     I: Clone + Eq + Hash + Send + Sync + 'static,
@@ -521,12 +752,8 @@ where
     type Output = Result<(), AdmissionFailure<C>>;
 
     fn poll(self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Self::Output> {
-        // SAFETY: `DispatchWait` never moves `observation` after it has been
-        // pinned. The remaining fields are ordinary cancellation-authority
-        // metadata and are only mutated in place after polling the future.
-        let this = unsafe { self.get_unchecked_mut() };
-        // SAFETY: `observation` is structurally pinned with `DispatchWait`.
-        let observation = unsafe { Pin::new_unchecked(&mut this.observation) };
+        let this = self.get_mut();
+        let observation = Pin::new(&mut this.observation);
         match observation.poll(context) {
             Poll::Ready(result) => {
                 this.activation_id.take();
@@ -547,11 +774,11 @@ where
         if let Some(runtime) = self.runtime.upgrade()
             && let Some(activation_id) = self.activation_id.take()
         {
-            let output =
+            let decision =
                 runtime
                     .directory
                     .cancel_waiter(&self.entity_id, activation_id, self.dispatch_id);
-            runtime.directory.interpret(output, &runtime);
+            runtime.directory.interpret(decision, &runtime);
         }
     }
 }
@@ -570,7 +797,7 @@ where
                 .port
                 .activate(entity_id.clone(), activation_id)
                 .await;
-            let output = match result {
+            let decision = match result {
                 Ok(activated) => runtime.directory.activation_succeeded(
                     &entity_id,
                     activation_id,
@@ -586,7 +813,7 @@ where
                         .activation_failed(&entity_id, activation_id)
                 }
             };
-            runtime.directory.interpret(output, &runtime);
+            runtime.directory.interpret(decision, &runtime);
         });
     }
 
@@ -623,10 +850,10 @@ where
                     },
                 )),
             };
-            let output = runtime
+            let decision = runtime
                 .directory
                 .delivery_resolved(&entity_id, activation_id, failure);
-            runtime.directory.interpret(output, &runtime);
+            runtime.directory.interpret(decision, &runtime);
         });
     }
 
@@ -645,7 +872,7 @@ where
     ) {
         let runtime = Arc::clone(self);
         self.spawn_owned(async move {
-            let output = match runtime.port.fence(endpoint).await {
+            let decision = match runtime.port.fence(endpoint).await {
                 Ok(()) => runtime
                     .directory
                     .fence_acknowledged(&entity_id, activation_id),
@@ -661,7 +888,7 @@ where
                     },
                 ),
             };
-            runtime.directory.interpret(output, &runtime);
+            runtime.directory.interpret(decision, &runtime);
         });
     }
 
@@ -678,8 +905,8 @@ where
                 .port
                 .retire(entity_id.clone(), activation_id, lease, retirement)
                 .await;
-            let output = runtime.directory.terminated(&entity_id, activation_id);
-            runtime.directory.interpret(output, &runtime);
+            let decision = runtime.directory.terminated(&entity_id, activation_id);
+            runtime.directory.interpret(decision, &runtime);
         });
     }
 }
@@ -692,9 +919,10 @@ where
 {
     fn spawn_owned(self: &Arc<Self>, task: impl Future<Output = ()> + Send + 'static) {
         let guard = self.tasks.begin();
-        self.port.spawn(async move {
+        let scheduled = self.port.spawn(async move {
             let _guard = guard;
             task.await;
         });
+        self.tasks.track(scheduled);
     }
 }

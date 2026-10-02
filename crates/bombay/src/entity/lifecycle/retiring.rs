@@ -1,6 +1,6 @@
 use super::{
-    ActivationId, EntitySlot, Generation, Refusal, SlotDecision, SlotEffect, SlotEffectBatch,
-    SlotEvent, decision, reject, reject_failed_delivery, retire_stale,
+    ActivationId, EntitySlot, Generation, LifecycleEdge, Refusal, SlotDecision, SlotEffect,
+    SlotEffectBatch, SlotEvent, decision, reject, reject_failed_delivery, retire_stale, traversed,
 };
 
 pub(super) fn decide_retiring<C, E, L>(
@@ -11,9 +11,10 @@ pub(super) fn decide_retiring<C, E, L>(
         SlotEvent::Terminated {
             activation_id: observed,
         } => match activation_id.classify(observed, ()) {
-            Generation::Current(()) => decision(
+            Generation::Current(()) => traversed(
                 EntitySlot::Inactive,
                 SlotEffectBatch::one(SlotEffect::Remove { activation_id }),
+                LifecycleEdge::Terminated,
             ),
             Generation::Stale(()) => decision(
                 EntitySlot::Retiring { activation_id },

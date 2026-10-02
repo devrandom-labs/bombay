@@ -38,8 +38,9 @@ nix develop -c cargo --version   # ~7 min cold: builds dev shell closure (~4.4G 
 ```
 
 The dev shell closure does NOT include the flake `checks`; `nix develop` alone
-is quick after the first build. `nix flake check -L` (full CI lanes) was not
-run locally — CI runs it green on main.
+is quick after the first build. The 2026-10-02 audit subsequently ran all 21
+flake checks on the current source; the sandbox measurements below remain a
+dated 2026-09-17 snapshot.
 
 ## Environment setup
 
@@ -72,12 +73,12 @@ run locally — CI runs it green on main.
 - Lint: `nix develop -c cargo clippy --workspace --all-targets -- -D warnings` (exit 0)
 - Format: `nix develop -c cargo fmt --all -- --check` (exit 0)
 - Tests: `nix develop -c cargo test --workspace -- --test-threads=1` (exit 0, 55 result blocks, 0 failed)
-- Scoped: `cargo check -p bombay-machine`; `cargo clippy -p bombay-engine --all-targets -- -D warnings`; `cargo test -p bombay-rs --test entity_runtime -- --test-threads=1` (11 passed)
+- Scoped current command: `nix develop -c cargo check --locked -p bombay-engine`. The 2026-09-17 `bombay-machine` check belongs to the dated snapshot; that crate was removed by the architecture audit.
 
 ## Known blockers and workarounds
 
 - **No preinstalled toolchain on the fresh sandbox** (`runtime_unavailable` → resolved): install single-user Nix as above; no sudo-free alternative was viable. Passwordless sudo is available.
-- **Test-parallelism flake (non-fatal):** `cargo test --workspace` at default
+- **2026-09-17 test-parallelism snapshot (subsequently resolved):** `cargo test --workspace` at default
   parallelism can fail 1–2 `entity_runtime` tests
   (`passivation_reports_superseded_after_incarnation_replacement`,
   `fence_failures_preserve_the_forced_retirement_stage`) on many-core hosts —
@@ -85,8 +86,8 @@ run locally — CI runs it green on main.
   retirement threads compete with 8 test threads. Reproduced at 8 threads and
   under `taskset -c 0-3`; passes with `--test-threads=1` (11/11) and per-test
   with `--exact`. CI is green (tests run inside the Nix build sandbox with
-  restricted affinity). **Workaround: always run tests with
-  `-- --test-threads=1` on this sandbox.**
+  restricted affinity). The 2026-10-02 locked workspace suite passed at default
+  parallelism; use its current command above.
 - Memory: 7.8 GB RAM is comfortable for the whole suite; Nix `cores = 4` keeps
   builds well within budget.
 

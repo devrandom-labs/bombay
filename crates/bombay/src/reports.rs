@@ -1,52 +1,52 @@
 //! Runtime-owned translation of structural parent-report requests.
 
-use std::sync::Arc;
-
-use behavior::{
-    Behavior, ChildReport, ChildRoute, EventIngress, Exit, ReportSupervisionFailure,
-    ReportTerminalOutcome,
-};
+use behavior::{Behavior, ChildReport, CreationId, EventIngress};
+use behavior_actors::ReportTerminalOutcome;
 use communication::{ControlClosed, ControlSender};
+use tokio::sync::oneshot;
 
 use crate::address::MailAddr;
 use crate::local::Termination;
 use crate::termination::{TerminalReportDisposition, TerminationSelection};
 
 pub(crate) trait TerminalReportTransaction {
-    fn begin_terminal_reports(&self);
-    fn finish_terminal_reports(&self, disposition: TerminalReportDisposition);
+    fn finish_terminal_reports(&mut self, disposition: TerminalReportDisposition);
 }
 
 pub(crate) struct LocalTerminalReports {
-    selection: Arc<TerminationSelection<MailAddr>>,
+    selection: TerminationSelection<MailAddr>,
+    report: oneshot::Sender<Termination<MailAddr>>,
 }
 
 impl LocalTerminalReports {
-    pub(crate) const fn new(selection: Arc<TerminationSelection<MailAddr>>) -> Self {
-        Self { selection }
+    pub(crate) const fn new(report: oneshot::Sender<Termination<MailAddr>>) -> Self {
+        Self {
+            selection: TerminationSelection::new(),
+            report,
+        }
     }
 
-    pub(crate) fn begin(&self) {
-        self.selection.begin();
-    }
-
-    pub(crate) fn finish(&self, disposition: TerminalReportDisposition) {
+    pub(crate) fn finish(&mut self, disposition: TerminalReportDisposition) {
         self.selection.finish(disposition);
     }
 
-    pub(crate) fn report_supervision(&self, report: ReportSupervisionFailure<MailAddr>) {
-        self.selection
-            .select(Ok(Exit::SupervisionFailed(report.failure.reason())));
-    }
-
-    pub(crate) fn report_outcome(&self, report: ReportTerminalOutcome<MailAddr>) {
+    pub(crate) fn report_outcome(&mut self, report: ReportTerminalOutcome<MailAddr>) {
         let outcome: Termination<MailAddr> = report.outcome;
         self.selection.select(outcome);
+    }
+
+    pub(crate) fn retire(self) {
+        if let TerminationSelection::Selected(outcome) = self.selection {
+            match self.report.send(outcome) {
+                Ok(()) => {}
+                Err(_) => unreachable!("the incarnation retirement owns the report receiver"),
+            }
+        }
     }
 }
 
 pub(crate) struct LocalParentReports<Event, Child, Position> {
-    nonce: u64,
+    child: CreationId,
     parent: ControlSender<Event>,
     occurrence: core::marker::PhantomData<fn() -> (Child, Position)>,
 }
@@ -56,9 +56,9 @@ pub(crate) trait ParentReporting<Report> {
 }
 
 impl<Event, Child, Position> LocalParentReports<Event, Child, Position> {
-    pub(crate) const fn new(nonce: u64, parent: ControlSender<Event>) -> Self {
+    pub(crate) const fn new(child: CreationId, parent: ControlSender<Event>) -> Self {
         Self {
-            nonce,
+            child,
             parent,
             occurrence: core::marker::PhantomData,
         }
@@ -67,9 +67,9 @@ impl<Event, Child, Position> LocalParentReports<Event, Child, Position> {
     pub(crate) fn report<Report>(&self, report: Report)
     where
         Child: Behavior,
-        Event: EventIngress<ChildRoute<Child, Position>, ChildReport<MailAddr, Report>>,
+        Event: EventIngress<Position, ChildReport<Report>>,
     {
-        let event = Event::ingress(ChildReport::new(self.nonce, report));
+        let event = Event::ingress(ChildReport::new(self.child, report));
         match self.parent.send(event) {
             Ok(()) => {}
             Err(ControlClosed(_event)) => {
@@ -83,7 +83,7 @@ impl<Event, Child, Position, Report> ParentReporting<Report>
     for LocalParentReports<Event, Child, Position>
 where
     Child: Behavior,
-    Event: EventIngress<ChildRoute<Child, Position>, ChildReport<MailAddr, Report>>,
+    Event: EventIngress<Position, ChildReport<Report>>,
 {
     fn report(&self, report: Report) {
         LocalParentReports::report(self, report);

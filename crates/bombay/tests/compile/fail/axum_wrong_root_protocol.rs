@@ -1,5 +1,8 @@
 use axum::Router;
+use bombay::behavior::Behavior;
 use bombay::prelude::*;
+
+type RootEvent = <StopOnShutdown<Root> as Behavior>::Event;
 
 struct Root;
 
@@ -17,7 +20,7 @@ impl Protocol for Other {
     type Msg = ();
 }
 
-fn wrong_router(_: ApplicationHandle<Other>) -> Router {
+fn wrong_router(_: ApplicationHandle<Other, RootEvent>) -> Router {
     Router::new()
 }
 

@@ -7,7 +7,7 @@ impl Protocol for RootProtocol {
     type Msg = Never;
 }
 
-fn request_application_shutdown(application: ApplicationHandle<RootProtocol>) {
+fn request_application_shutdown(application: ApplicationHandle<RootProtocol, ()>) {
     let _accepted = application.request_shutdown();
 }
 

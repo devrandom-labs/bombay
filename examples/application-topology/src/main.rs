@@ -3,11 +3,15 @@
 //! shutdown. Behavior owns the closed roles and routes, Behavior Actors owns
 //! the shutdown plan, and Bombay only interprets and retains the result.
 
-use bombay::behavior::{Behavior, BehaviorBase, Children, Never, shutdown_after_children};
+use bombay::behavior::{
+    BehaviorBase, BehaviorSettlements, Children, ClassifySettlement, CreationSequence, Never,
+    SettlementStatus,
+};
+use bombay::lifecycle::shutdown_after_children;
 use bombay::prelude::*;
 
-const INDEXER_NONCE: u64 = 11;
-const JOURNAL_NONCE: u64 = 12;
+const INDEXER_NONCE: u64 = 0;
+const JOURNAL_NONCE: u64 = 1;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum IndexCommand {
@@ -54,7 +58,7 @@ struct DocumentSystem;
 
 #[bombay::actor(
     message = Never,
-    sends = {
+    sends = pub(crate) {
         indexing: Vec<ChildDelivery<Indexer, DocumentSystemChildrenIndexer>>,
         journaling: Vec<ChildDelivery<Journal, DocumentSystemChildrenJournal>>,
     },
@@ -62,6 +66,7 @@ struct DocumentSystem;
         indexer: ManagedIndexer,
         journal: ManagedJournal,
     },
+    creation_settlements = retain_for_retirement,
 )]
 impl DocumentSystem {
     #[allow(
@@ -70,19 +75,24 @@ impl DocumentSystem {
         reason = "the generated foundational fold fixes the controlled-error boundary"
     )]
     fn init(&mut self) -> BehaviorActed<Self> {
-        let routes = DocumentSystemChildrenRoutes::new(INDEXER_NONCE, JOURNAL_NONCE);
-        let children = Children::new()
-            .child_at(routes.indexer, Indexer::default().stop_on_shutdown())
-            .child_at(routes.journal, Journal::default().stop_on_shutdown())
-            .into_creates()
-            .expect("the document-system child nonces are distinct");
+        let mut creations = CreationSequence::new();
+        let indexer = creations
+            .issue()
+            .expect("the indexer creation ID is available");
+        let journal = creations
+            .issue()
+            .expect("the journal creation ID is available");
+        let children = Children::<MailAddr>::new()
+            .child(indexer, Indexer::default().stop_on_shutdown())
+            .child(journal, Journal::default().stop_on_shutdown())
+            .into_creates();
         Ok(Actions::create(children)
-            .send_indexing(ChildDelivery::at(
-                routes.indexer,
+            .send_indexing(ChildDelivery::after(
+                indexer,
                 IndexCommand::Index(vec!["contract".to_owned(), "ledger".to_owned()]),
             ))
-            .send_journaling(ChildDelivery::at(
-                routes.journal,
+            .send_journaling(ChildDelivery::after(
+                journal,
                 JournalCommand::Record("topology initialized".to_owned()),
             )))
     }
@@ -91,18 +101,20 @@ impl DocumentSystem {
 #[derive(TerminalProjection)]
 enum ApplicationTerminal<R>
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     Root {
-        origin: ActorOrigin<R>,
+        origin: RootOrigin<R>,
         terminal: ActorRetirement<R, Self>,
     },
+    #[declared_child(DocumentSystem, DocumentSystemChildrenIndexer, ManagedIndexer)]
     Indexer {
-        origin: ActorOrigin<DocumentSystem, DocumentSystemChildrenIndexer>,
+        origin: ChildOrigin<DocumentSystem, DocumentSystemChildrenIndexer>,
         terminal: ActorRetirement<ManagedIndexer, Self>,
     },
+    #[declared_child(DocumentSystem, DocumentSystemChildrenJournal, ManagedJournal)]
     Journal {
-        origin: ActorOrigin<DocumentSystem, DocumentSystemChildrenJournal>,
+        origin: ChildOrigin<DocumentSystem, DocumentSystemChildrenJournal>,
         terminal: ActorRetirement<ManagedJournal, Self>,
     },
 }
@@ -115,7 +127,8 @@ fn main() {
     let (termination, terminal): (_, ApplicationTerminal<_>) = Application::new(application)
         .run_with(|application| async move {
             let lifecycle = application.lifecycle();
-            assert_eq!(lifecycle.request_shutdown(), Ok(()));
+            let shutdown = lifecycle.request_shutdown();
+            assert_eq!(shutdown, Ok(()));
             lifecycle.termination().await
         })
         .expect("the named child topology activates and shuts down in declared phase order");
@@ -126,12 +139,14 @@ fn main() {
 
 fn assert_terminal_tree<R>(terminal: ApplicationTerminal<R>)
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R::Settlements: ClassifySettlement,
 {
     let ApplicationTerminal::Root {
         origin,
         terminal:
             ActorRetirement::Completed {
+                settlements,
                 control,
                 user,
                 descendants,
@@ -143,7 +158,8 @@ where
         panic!("phased shutdown must preserve the completed application root")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), None);
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert_eq!(completion, Completion::Stopped);
@@ -154,12 +170,16 @@ where
     for descendant in descendants {
         match descendant {
             ApplicationTerminal::Indexer { origin, terminal } => {
-                assert_eq!(indexer.replace(assert_indexer(terminal)), None);
-                assert_eq!(origin.nonce(), Some(INDEXER_NONCE));
+                let indexed_documents = assert_indexer(terminal);
+                let previous_indexer = indexer.replace(indexed_documents);
+                assert_eq!(previous_indexer, None);
+                assert_eq!(origin.nonce(), INDEXER_NONCE);
             }
             ApplicationTerminal::Journal { origin, terminal } => {
-                assert_eq!(journal.replace(assert_journal(terminal)), None);
-                assert_eq!(origin.nonce(), Some(JOURNAL_NONCE));
+                let journal_entry = assert_journal(terminal);
+                let previous_journal = journal.replace(journal_entry);
+                assert_eq!(previous_journal, None);
+                assert_eq!(origin.nonce(), JOURNAL_NONCE);
             }
             ApplicationTerminal::Root { .. } => {
                 panic!("a child retirement cannot project as another root")
@@ -172,10 +192,11 @@ where
 
 fn assert_indexer<R>(terminal: ActorRetirement<ManagedIndexer, ApplicationTerminal<R>>) -> usize
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
         behavior,
+        settlements,
         control,
         user,
         descendants,
@@ -184,6 +205,8 @@ where
     else {
         panic!("the indexer must complete its explicit shutdown")
     };
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());
@@ -193,10 +216,11 @@ where
 
 fn assert_journal<R>(terminal: ActorRetirement<ManagedJournal, ApplicationTerminal<R>>) -> String
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
         behavior,
+        settlements,
         control,
         user,
         descendants,
@@ -205,6 +229,8 @@ where
     else {
         panic!("the journal must complete its explicit shutdown")
     };
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());
@@ -219,7 +245,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use bombay::behavior::{Activate as _, Step};
+    use bombay::behavior::Step;
+    use bombay::prelude::Activate as _;
 
     use super::*;
 
@@ -230,10 +257,19 @@ mod tests {
             .expect("document-system initialization is infallible");
 
         assert_eq!(initialized.actions.creates.len(), 2);
-        assert_eq!(initialized.actions.creates[0].nonce, INDEXER_NONCE);
-        assert_eq!(initialized.actions.creates[1].nonce, JOURNAL_NONCE);
+        let creation_ids = initialized
+            .actions
+            .creates
+            .iter()
+            .map(|creation| creation.id().get())
+            .collect::<Vec<_>>();
+        assert_eq!(creation_ids, [1, 2]);
         assert_eq!(initialized.actions.sends.indexing.len(), 1);
         assert_eq!(initialized.actions.sends.journaling.len(), 1);
+        let indexing_creation = initialized.actions.sends.indexing[0].creation.get();
+        let journaling_creation = initialized.actions.sends.journaling[0].creation.get();
+        assert_eq!(indexing_creation, 1);
+        assert_eq!(journaling_creation, 2);
         assert!(matches!(
             initialized.actions.sends.indexing[0].message,
             IndexCommand::Index(ref documents) if documents == &["contract", "ledger"]

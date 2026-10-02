@@ -1,200 +1,188 @@
-//! For learning a bounded worker pool with explicit topology, capacity,
-//! interruption, restart, assignment ownership, typed replies, and graceful
-//! shutdown. Behavior Actors owns every pool policy; Bombay only executes the
-//! concrete composition and supplies a truthful external customer.
+//! Run one bounded FIFO pool through Bombay's concrete local application.
+//! The pool owns admission, assignment, completion, and orderly worker drain.
 
 mod worker;
 
-use core::time::Duration;
+use core::convert::Infallible;
 
-use bombay::behavior::composition::RelayChildReports;
-use bombay::behavior::{
-    ChildHead, ChildTopology, EstablishedRecipient, InterruptionPolicy, JobId, Never,
-    PoolCompletion, PoolConfiguration, PoolFailure, PoolMessage, PoolResponse, Proxy,
-    RestartPolicy, RestartTiming, WorkerPool,
+use bombay::atomic::{
+    ActivationPolicy, ActorDrainPolicy, Assignment, BacklogCapacity, DiagnosticDisposition,
+    FifoCommand, FifoOutcome, FifoPool, ImmediateActivation, Interruption, OrderedRoles,
+    PoolFailureReaction, PoolRecovery, SubmissionId, WorkerSubmission, fifo,
 };
-use bombay::prelude::*;
-use tokio::time::timeout;
-use worker::{ManagedSearchWorker, SearchJob, SearchResult, managed_search_worker};
+use bombay::behavior::{ChildHead, MessageProtocol, Never};
+use bombay::prelude::{
+    ActorRetirement, ChildOrigin, Completion, Exit, MailAddr, RootOrigin, StopOnShutdown,
+    TerminalProjection,
+};
+use bombay::{ActorSpace, ActorSpaces, App};
+use worker::{SearchJob, SearchResult, SearchWorker};
 
-const PRIMARY_WORKER: u64 = 7;
-const EXAMPLE_DEADLINE: Duration = Duration::from_secs(1);
-
-struct SearchReplies;
-
-impl Protocol for SearchReplies {
-    type Addr = MailAddr;
-    type Msg = PoolResponse<SearchJob, SearchResult, MailAddr>;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum WorkerRole {
+    Primary,
 }
 
-type StableLayer = fn(ManagedSearchWorker) -> Proxy<ManagedSearchWorker>;
-type SearchPool = WorkerPool<
-    MailAddr,
+type SearchPool = FifoPool<
+    WorkerRole,
+    SearchWorker,
+    ImmediateActivation,
+    Never,
+    Infallible,
     SearchJob,
     SearchResult,
-    ManagedSearchWorker,
-    EstablishedRecipient<SearchReplies>,
-    StableLayer,
 >;
-type StableSearchWorker = RelayChildReports<
-    Proxy<ManagedSearchWorker>,
-    ManagedSearchWorker,
-    PoolCompletion<SearchResult>,
->;
-type SearchPoolRunError = RunError<PoolFailure<MailAddr, SearchJob, SearchResult, Never>>;
+type WorkerProtocol = MessageProtocol<MailAddr, Assignment<SearchJob>>;
+type PoolProtocol =
+    MessageProtocol<MailAddr, FifoCommand<MailAddr, WorkerRole, SearchJob, SearchResult>>;
+type CustomerProtocol = MessageProtocol<MailAddr, FifoOutcome<WorkerRole, SearchJob, SearchResult>>;
 
-#[derive(TerminalProjection)]
+#[derive(ActorSpaces)]
+struct SearchSpaces {
+    #[actor_space(PoolProtocol)]
+    pool: ActorSpace<PoolProtocol>,
+    #[actor_space(WorkerProtocol)]
+    workers: ActorSpace<WorkerProtocol>,
+    #[actor_space(CustomerProtocol)]
+    customers: ActorSpace<CustomerProtocol>,
+}
+
 #[allow(
     clippy::large_enum_variant,
-    reason = "exact unboxed terminal custody is the observable example result"
+    reason = "the projection retains the exact unboxed pool and worker terminals"
 )]
-enum ApplicationTerminal {
-    Root {
-        origin: ActorOrigin<SearchPool>,
+#[derive(TerminalProjection)]
+enum SearchTerminal {
+    Pool {
+        origin: RootOrigin<SearchPool>,
         terminal: ActorRetirement<SearchPool, Self>,
     },
-    StableWorker {
-        origin: ActorOrigin<SearchPool, ChildHead>,
-        terminal: ActorRetirement<StableSearchWorker, Self>,
-    },
-    WorkerIncarnation {
-        origin: ActorOrigin<Proxy<ManagedSearchWorker>, ChildHead>,
-        terminal: ActorRetirement<ManagedSearchWorker, Self>,
+    #[structural_child]
+    Worker {
+        origin: ChildOrigin<SearchPool, ChildHead>,
+        terminal: ActorRetirement<StopOnShutdown<SearchWorker>, Self>,
     },
 }
 
-fn main() -> Result<(), SearchPoolRunError> {
-    let configuration = PoolConfiguration::new(
-        2,
-        InterruptionPolicy::Retry,
-        RestartPolicy::Permanent,
-        2,
-        Duration::from_secs(30),
-        RestartTiming::Immediate,
-    );
-    let pool = WorkerPool::new(
-        ChildTopology::new([PRIMARY_WORKER], managed_search_worker),
-        configuration,
-        Proxy::new as StableLayer,
+fn search_pool() -> SearchPool {
+    let roles =
+        OrderedRoles::new(WorkerRole::Primary, []).expect("the single search role is unique");
+    fifo(
+        |_: &WorkerRole| Ok::<_, Never>(WorkerSubmission::immediate(SearchWorker)),
+        roles,
+        ActivationPolicy::new(1).expect("one activation is positive capacity"),
+        PoolRecovery::temporary(PoolFailureReaction::RetireRole),
+        BacklogCapacity::new(8),
+        Interruption::Retry,
+        ActorDrainPolicy::WaitForActorGraph,
+        DiagnosticDisposition::terminate(),
     )
-    .expect("the pool has one uniquely named worker slot");
+    .unwrap_or_else(|_| panic!("the declared search worker is prepared"))
+}
 
-    let (termination, terminal): (_, ApplicationTerminal) =
-        Application::new(pool).run_with(|application| async move {
-            let lifecycle = application.lifecycle();
+fn run_search_pool() {
+    let spaces = SearchSpaces {
+        pool: ActorSpace::new(),
+        workers: ActorSpace::new(),
+        customers: ActorSpace::new(),
+    };
+    let (termination, terminal): (_, SearchTerminal) = App::new(search_pool(), spaces)
+        .run_with(|application| async move {
             let interface = application.interface(application.root().established_recipient());
             let mut customer = interface
-                .external::<SearchReplies>()
+                .external::<CustomerProtocol>()
                 .expect("the search customer is established");
-            let job = SearchJob {
-                document: "Bombay keeps assignment ownership explicit".to_owned(),
-                needle: 'e',
-            };
+            let reply = customer.recipient();
             customer
                 .send(
                     interface.api(),
-                    PoolMessage::Submit {
-                        job: JobId(41),
-                        payload: job,
-                        reply_to: customer.recipient(),
-                    },
+                    FifoCommand::submit(
+                        SubmissionId::new(7),
+                        SearchJob {
+                            document: String::from("bombay behavior"),
+                            needle: 'b',
+                        },
+                        reply,
+                    ),
                 )
                 .await
-                .expect("the pool admits the search job");
-
-            let accepted = timeout(EXAMPLE_DEADLINE, customer.receive())
+                .expect("the pool accepts the search submission");
+            let accepted = customer
+                .receive()
                 .await
-                .expect("the pool accepts before the example deadline")
-                .expect("the customer reply lane remains live");
-            assert!(matches!(
-                accepted.message,
-                PoolResponse::Accepted { job: JobId(41) }
-            ));
-            let completed = timeout(EXAMPLE_DEADLINE, customer.receive())
+                .expect("the pool reports accepted admission")
+                .message;
+            let (submission, job) = accepted
+                .into_accepted()
+                .unwrap_or_else(|_| panic!("the first customer outcome accepts the job"));
+            assert_eq!(submission, SubmissionId::new(7));
+            let completed = customer
+                .receive()
                 .await
-                .expect("the worker completes before the example deadline")
-                .expect("the customer receives the completion");
-            assert!(matches!(
-                completed.message,
-                PoolResponse::Completed {
-                    job: JobId(41),
-                    result: SearchResult { matches: 5 },
-                }
-            ));
-
-            assert_eq!(lifecycle.request_shutdown(), Ok(()));
-            lifecycle.termination().await
-        })?;
-
+                .expect("the worker returns its search result")
+                .message;
+            assert_eq!(completed.role(), Some(&WorkerRole::Primary));
+            let (completed_job, result) = completed
+                .into_completed()
+                .unwrap_or_else(|_| panic!("the second customer outcome completes the job"));
+            assert_eq!(completed_job, job);
+            assert_eq!(result.matches, 3);
+            customer
+                .send(interface.api(), FifoCommand::shutdown())
+                .await
+                .expect("the pool accepts orderly shutdown");
+            application.lifecycle().termination().await
+        })
+        .unwrap_or_else(|_| panic!("the pool runs its worker and shuts down"));
     assert_eq!(termination, Ok(Exit::Normal));
-    assert_terminal_tree(terminal);
-    Ok(())
+    assert_search_terminal(terminal);
 }
 
-fn assert_terminal_tree(terminal: ApplicationTerminal) {
-    let ApplicationTerminal::Root {
-        origin,
-        terminal:
-            ActorRetirement::Completed {
-                behavior,
-                control,
-                user,
-                descendants,
-                completion,
-            },
-    } = terminal
-    else {
-        panic!("pool shutdown must preserve the completed coordinator state")
+fn assert_search_terminal(terminal: SearchTerminal) {
+    let SearchTerminal::Pool { origin, terminal } = terminal else {
+        panic!("the application returns the pool root");
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), None);
-    assert_eq!(behavior.backlog_len(), 0);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
+    let ActorRetirement::Completed {
+        descendants,
+        completion,
+        ..
+    } = terminal
+    else {
+        panic!("the pool completes after its worker graph");
+    };
     assert_eq!(completion, Completion::Stopped);
-
-    let [
-        ApplicationTerminal::StableWorker {
-            origin,
-            terminal:
-                ActorRetirement::Completed {
-                    control,
-                    user,
-                    descendants,
-                    completion,
-                    ..
-                },
-        },
-    ] = descendants.as_slice()
+    assert_eq!(descendants.len(), 1);
+    let SearchTerminal::Worker { origin, terminal } = descendants
+        .into_iter()
+        .next()
+        .expect("the primary role retains one worker")
     else {
-        panic!("pool shutdown must retain the stable worker terminal")
+        panic!("the declared child is the search worker");
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), Some(PRIMARY_WORKER));
-    assert!(control.is_empty());
-    assert!(user.is_empty());
-    assert_eq!(*completion, Completion::Stopped);
-
-    let [
-        ApplicationTerminal::WorkerIncarnation {
-            origin,
-            terminal:
-                ActorRetirement::Completed {
-                    control,
-                    user,
-                    descendants,
-                    completion,
-                    ..
-                },
-        },
-    ] = descendants.as_slice()
+    let ActorRetirement::Completed {
+        completion,
+        descendants,
+        ..
+    } = terminal
     else {
-        panic!("pool shutdown must retain the exact worker incarnation")
+        panic!("orderly shutdown completes the exact worker");
     };
-    assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), Some(0));
-    assert!(control.is_empty());
-    assert!(user.is_empty());
+    assert_eq!(completion, Completion::Stopped);
     assert!(descendants.is_empty());
-    assert_eq!(*completion, Completion::Stopped);
+}
+
+fn main() {
+    run_search_pool();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::run_search_pool;
+
+    #[test]
+    fn fifo_search_completes_and_drains_its_worker() {
+        run_search_pool();
+    }
 }

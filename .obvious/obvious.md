@@ -13,9 +13,9 @@ no long-running service to deploy and no external infrastructure.
 - **Language:** Rust 2024 edition; toolchain pinned to **1.96.0** via `rust-toolchain.toml`.
 - **Dev environment:** Nix flake dev shell (`nix develop`) — nixpkgs unstable + crane + fenix. Provides cargo/rustc 1.96.0, rustfmt, clippy, rust-analyzer, cargo-nextest, cargo-mutants, bacon, taplo.
 - **Package manager:** cargo, always invoked inside the pinned Nix shell (`nix develop -c cargo ...`). AGENTS.md forbids invoking host `cargo`/`rustc` directly.
-- **Dependencies:** crates.io plus git-pinned sibling crates via `[patch.crates-io]` (bombay-behavior @ `a272adf`, bombay-timers @ `13e884d`) — fetched from GitHub at build time.
+- **Dependencies:** locked crates.io `bombay-behavior` and `bombay-behavior-actors` 0.20.0 plus the pinned `bombay-timers` git patch (`13e884d`).
 - **External services:** none. No database, Redis, Docker, or HTTP service is required; no env vars are required (no `.env.example` exists).
-- **CI:** `nix flake check -L` (crane lanes: build, test, fmt, clippy, doc, doctest, three loom lanes, panic lanes, example runs).
+- **CI:** `nix flake check -L` (21 checks covering build, test, fmt, Clippy, docs, coverage, Loom, panic boundaries, and examples). The mutation and performance packages have separate gates.
 - **Fresh-sandbox setup:** install single-user Nix (`curl -L https://nixos.org/nix/install | sh -s -- --no-daemon`), set `experimental-features = nix-command flakes` + `accept-flake-config = true` in `~/.config/nix/nix.conf`, then `nix develop` once (~7 min cold) — see `.obvious/skills/local-dev/SKILL.md`.
 
 ## Commands
@@ -24,21 +24,16 @@ no long-running service to deploy and no external infrastructure.
 |---|---|
 | Enter dev shell | `nix develop` |
 | Build workspace | `nix develop -c cargo build --workspace` |
-| Test workspace | `nix develop -c cargo test --workspace -- --test-threads=1` |
+| Test workspace | `nix develop -c cargo test --locked --workspace` |
 | Format check | `nix develop -c cargo fmt --all -- --check` |
 | Lint | `nix develop -c cargo clippy --workspace --all-targets -- -D warnings` |
 | Run primary example | `nix develop -c cargo run -p bombay-example-counter` |
 | Run HTTP example | `nix develop -c cargo run -p bombay-example-axum` (serves 127.0.0.1:3000) |
 | Full CI locally | `nix flake check -L` |
 
-> **Test-parallelism caveat:** at default parallelism (`cargo test --workspace`
-> with no `--test-threads`), two `entity_runtime` tests
-> (`passivation_reports_superseded_after_incarnation_replacement`,
-> `fence_failures_preserve_the_forced_retirement_stage`) can exceed their
-> bounded spin budgets (1,000 `thread::yield_now()` iterations) on hosts with
-> many test threads; each passes in isolation and the whole suite passes with
-> `--test-threads=1`. CI is green because the Nix build sandbox restricts CPU
-> affinity there. Prefer the `--test-threads=1` invocation above on many-core hosts.
+The 2026-10-02 audit passed the locked workspace suite at default parallelism
+and the full 21-check flake gate. The sequential-only measurements below are
+a dated 2026-09-17 sandbox snapshot.
 
 ## Codebase Map
 
@@ -63,8 +58,8 @@ See `.obvious/codebase-map.md`.
 <!-- local-verification-summary:v1 -->
 - **Typecheck command:** `nix develop -c cargo build --workspace`
 - **Lint command:** `nix develop -c cargo clippy --workspace --all-targets -- -D warnings`
-- **Test command:** `nix develop -c cargo test --workspace -- --test-threads=1`
-- **Scoped typecheck:** `nix develop -c cargo check -p bombay-machine`
+- **Test command:** `nix develop -c cargo test --locked --workspace`
+- **Scoped typecheck:** `nix develop -c cargo check --locked -p bombay-engine`
 - **Scoped lint:** `nix develop -c cargo clippy -p bombay-engine --all-targets -- -D warnings`
 - **Scoped test:** `nix develop -c cargo test -p bombay-rs --test entity_runtime -- --test-threads=1`
 - **Full-repo check safe:** yes — build 21s, clippy ~1 min, sequential tests ~2 min on 8 cores

@@ -2,6 +2,7 @@
 //! behaviors the public API promises. These guard the contract the
 //! adversarial tests rely on.
 
+use std::task::Poll;
 use std::time::Duration;
 
 use crate::observe::{ObservationSpace, SubjectExists, UnknownSubject};
@@ -65,10 +66,8 @@ fn wait_timeout_huge_on_completed_returns_outcome() {
     let mut subject = space.subject(4).expect("first registration succeeds");
     subject.complete(44);
     let observation = space.observe(&4).expect("subject retained");
-    assert_eq!(
-        observation.wait_timeout(Duration::from_secs(3600)),
-        Some(44)
-    );
+    let outcome = observation.wait_timeout(Duration::from_secs(3600));
+    assert_eq!(outcome, Some(44));
 }
 
 /// A truly move-only outcome (no `Clone`): only `into_outcome` can read
@@ -97,11 +96,8 @@ fn into_outcome_pending_yields_nothing() {
     let second = space.observe(&6).expect("subject retained");
     // Two handles: not exclusive — must refuse even after completion.
     subject.complete(66);
-    assert_eq!(
-        first.into_outcome(),
-        None,
-        "shared slot must refuse the move"
-    );
+    let shared_outcome = first.into_outcome();
+    assert_eq!(shared_outcome, None, "shared slot must refuse the move");
     assert_eq!(second.try_get(), Some(66));
 }
 
@@ -114,48 +110,45 @@ fn wait_timeout_zero_on_completed_returns_outcome() {
     let mut subject = space.subject(4).expect("first registration succeeds");
     subject.complete(41);
     let observation = space.observe(&4).expect("subject retained");
-    assert_eq!(observation.wait_timeout(Duration::ZERO), Some(41));
+    let outcome = observation.wait_timeout(Duration::ZERO);
+    assert_eq!(outcome, Some(41));
 }
 
-/// `register_waker` on a completed-and-RETIRED observation returns `true`
-/// (already published) without registering: the slot keeps its COMPLETED
-/// bit across retirement while any observation pins it.
+/// `register_waker` on a completed-and-retired observation is ready without
+/// requiring a wake: the slot keeps its completed state across retirement
+/// while any observation pins it.
 #[test]
-fn register_waker_true_on_retired_completed() {
+fn register_waker_ready_on_retired_completed() {
     let space = ObservationSpace::<u8, u8>::new();
     let mut subject = space.subject(4).expect("first registration succeeds");
     subject.complete(42);
     let observation = space.observe(&4).expect("completed generation observable");
     drop(subject); // retire; the observation pins the completed slot
     let (waker, probe) = crate::observe::test_support::CountWake::waker();
-    assert!(
-        observation.register_waker(&waker),
-        "completed: nothing registered"
-    );
+    let readiness = observation.register_waker(&waker);
+    assert_eq!(readiness, Poll::Ready(()));
     assert_eq!(observation.try_get(), Some(42));
     assert_eq!(probe.count(), 0, "no registration, no wake");
 }
 
-/// `register_waker` returning `true` (already published — nothing
-/// registered) must not interfere with a later `into_outcome` take: the
-/// value still moves out exactly once by the last handle.
+/// Ready registration must not interfere with a later `into_outcome` take:
+/// the value still moves out exactly once by the last handle.
 #[test]
-fn register_waker_true_then_into_outcome_takes() {
+fn register_waker_ready_then_into_outcome_takes() {
     for round in 0..50_u64 {
         let space = ObservationSpace::<u8, u64>::new();
         let mut subject = space.subject(4).expect("first registration succeeds");
         subject.complete(round);
         let observation = space.observe(&4).expect("completed generation observable");
         let (waker, probe) = crate::observe::test_support::CountWake::waker();
-        assert!(
-            observation.register_waker(&waker),
-            "completed: nothing registered"
-        );
+        let readiness = observation.register_waker(&waker);
+        assert_eq!(readiness, Poll::Ready(()));
         drop(subject); // retire; the observation is the last handle
+        let ready_outcome = observation.into_outcome();
         assert_eq!(
-            observation.into_outcome(),
+            ready_outcome,
             Some(round),
-            "a true-return registration must not block the take (round {round})"
+            "ready registration must not block the take (round {round})"
         );
         assert_eq!(probe.count(), 0, "nothing was registered, nothing fires");
     }
@@ -169,8 +162,10 @@ fn wait_twice_on_completed_returns_immediately() {
     let mut subject = space.subject(4).expect("first registration succeeds");
     subject.complete(43);
     let observation = space.observe(&4).expect("subject retained");
-    assert_eq!(observation.wait(), 43);
-    assert_eq!(observation.wait(), 43);
+    let first = observation.wait();
+    assert_eq!(first, 43);
+    let second = observation.wait();
+    assert_eq!(second, 43);
 }
 
 /// Cloning the space shares the namespace: conflicts, observations, and

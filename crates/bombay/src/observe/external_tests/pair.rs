@@ -47,7 +47,8 @@ fn many_blocking_observers_all_receive_the_outcome() {
     barrier.wait();
     publisher.complete(77);
     for waiter in waiters {
-        assert_eq!(waiter.join().unwrap(), 77);
+        let outcome = waiter.join().unwrap();
+        assert_eq!(outcome, 77);
     }
 }
 
@@ -57,7 +58,8 @@ fn completion_racing_wait_never_loses_the_outcome() {
         let (publisher, observation) = pair::<u64>();
         let waiter = std::thread::spawn(move || observation.wait());
         publisher.complete(9);
-        assert_eq!(waiter.join().unwrap(), 9);
+        let outcome = waiter.join().unwrap();
+        assert_eq!(outcome, 9);
     }
 }
 
@@ -65,9 +67,11 @@ fn completion_racing_wait_never_loses_the_outcome() {
 fn timeout_cancellation_does_not_change_other_observers() {
     let (publisher, timed) = pair::<u64>();
     let survivor = timed.clone();
-    assert_eq!(timed.wait_timeout(Duration::from_millis(1)), None);
+    let timeout = timed.wait_timeout(Duration::from_millis(1));
+    assert_eq!(timeout, None);
     publisher.complete(12);
-    assert_eq!(survivor.wait(), 12);
+    let outcome = survivor.wait();
+    assert_eq!(outcome, 12);
 }
 
 #[test]
@@ -75,7 +79,8 @@ fn dropping_incomplete_publisher_leaves_observations_pending() {
     let (publisher, observation) = pair::<u64>();
     drop(publisher);
     assert_eq!(observation.try_get(), None);
-    assert_eq!(observation.wait_timeout(Duration::from_millis(1)), None);
+    let timeout = observation.wait_timeout(Duration::from_millis(1));
+    assert_eq!(timeout, None);
 }
 
 #[test]
@@ -118,7 +123,8 @@ fn direct_and_future_waker_ownership_survive_sibling_cancellation() {
     let (publisher, direct) = pair::<u64>();
     let future_observation = direct.clone();
     let (waker, probe) = CountWake::waker();
-    assert!(!direct.register_waker(&waker));
+    let readiness = direct.register_waker(&waker);
+    assert_eq!(readiness, Poll::Pending);
     let mut future = Box::pin(future_observation.into_future());
     assert_eq!(poll_once(future.as_mut(), &waker), Poll::Pending);
     drop(future);
@@ -139,9 +145,11 @@ impl Wake for PanicWake {
 fn panicking_waker_does_not_strand_later_pair_waiters() {
     let (publisher, panicking) = pair::<u64>();
     let good = panicking.clone();
-    assert!(!panicking.register_waker(&Arc::new(PanicWake).into()));
+    let readiness = panicking.register_waker(&Arc::new(PanicWake).into());
+    assert_eq!(readiness, Poll::Pending);
     let (good_waker, good_probe) = CountWake::waker();
-    assert!(!good.register_waker(&good_waker));
+    let readiness = good.register_waker(&good_waker);
+    assert_eq!(readiness, Poll::Pending);
 
     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         publisher.complete(34);
@@ -189,10 +197,8 @@ fn move_only_outcome_can_be_taken_by_last_observation() {
 
     let (publisher, observation) = pair();
     publisher.complete(MoveOnly("owned".to_owned()));
-    assert_eq!(
-        observation.into_outcome(),
-        Some(MoveOnly("owned".to_owned()))
-    );
+    let outcome = observation.into_outcome();
+    assert_eq!(outcome, Some(MoveOnly("owned".to_owned())));
 }
 
 #[test]
@@ -202,6 +208,8 @@ fn shared_move_only_outcome_cannot_be_taken() {
     let (publisher, observation) = pair();
     let survivor = observation.clone();
     publisher.complete(MoveOnly);
-    assert!(observation.into_outcome().is_none());
-    assert!(survivor.into_outcome().is_some());
+    let shared_outcome = observation.into_outcome();
+    assert!(shared_outcome.is_none());
+    let survivor_outcome = survivor.into_outcome();
+    assert!(survivor_outcome.is_some());
 }

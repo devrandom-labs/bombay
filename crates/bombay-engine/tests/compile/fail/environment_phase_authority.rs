@@ -1,6 +1,9 @@
 use std::convert::Infallible;
 
-use behavior::{Actions, Behavior, BehaviorActed, MailAddr, Never, NoBirths, User};
+use behavior::{
+    Actions, Behavior, BehaviorActed, ClassifySettlement, Interpretation, MailAddr, Never,
+    NoBirths, SettlementStatus, SourceCustody, User,
+};
 use bombay_engine::{ActionsOf, ActiveEnvironment, Environment};
 
 struct Definition;
@@ -24,35 +27,59 @@ impl Behavior for Definition {
 
 struct Active;
 struct Prepared;
+struct Settlement;
+
+impl ClassifySettlement for Settlement {
+    fn settlement_status(&self) -> SettlementStatus {
+        SettlementStatus::Accepted
+    }
+}
 
 impl Environment<Definition> for Prepared {
     type Active = Active;
+    type Settlement = Settlement;
     type Error = Infallible;
     type Residual = ();
 
     async fn activate(
         self,
         _: ActionsOf<Definition>,
-    ) -> Result<Active, (Self::Error, Self::Residual)> {
-        Ok(Active)
+    ) -> Result<
+        (Self::Active, Interpretation<Self::Settlement>),
+        (Self::Error, Self::Residual),
+    > {
+        Ok((Active, Interpretation::Complete(Settlement)))
     }
 
     async fn retire(self) {}
 }
 
 impl ActiveEnvironment<Definition> for Active {
-    type Error = Infallible;
+    type Settlement = Settlement;
     type Residual = ();
 
     async fn next(&mut self) -> Option<<Definition as Behavior>::Event> {
         None
     }
 
-    async fn apply(&mut self, _: ActionsOf<Definition>) -> Result<(), Self::Error> {
-        Ok(())
+    async fn next_source(&mut self) -> Option<<Definition as Behavior>::Event> {
+        None
     }
 
-    async fn retire(self) {}
+    async fn apply(&mut self, _: ActionsOf<Definition>) -> Interpretation<Self::Settlement> {
+        Interpretation::Complete(Settlement)
+    }
+
+    async fn offer_next(
+        &mut self,
+        settlement: Self::Settlement,
+    ) -> SourceCustody<Self::Settlement> {
+        SourceCustody::Exhausted(settlement)
+    }
+
+    fn publish(&mut self) {}
+
+    async fn retire(self, _: Vec<Self::Settlement>) {}
 }
 
 fn main() {

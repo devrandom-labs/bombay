@@ -1,6 +1,9 @@
 use core::future::{Ready, ready};
 
+use bombay::behavior::Behavior;
 use bombay::prelude::*;
+
+type RootEvent = <StopOnShutdown<Root> as Behavior>::Event;
 
 struct Root;
 
@@ -18,7 +21,7 @@ impl Protocol for Other {
     type Msg = ();
 }
 
-fn wrong_boundary(_: ApplicationHandle<Other>) -> Ready<()> {
+fn wrong_boundary(_: ApplicationHandle<Other, RootEvent>) -> Ready<()> {
     ready(())
 }
 

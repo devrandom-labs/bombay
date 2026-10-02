@@ -1,0 +1,5 @@
+error[E0599]: no method named `clone` found for struct `Publisher<O>` in the current scope
+ --> tests/compile/fail/publisher_cannot_clone.rs:5:31
+  |
+5 |     let duplicate = publisher.clone();
+  |                               ^^^^^ method not found in `Publisher<u64>`

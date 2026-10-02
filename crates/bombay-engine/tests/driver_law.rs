@@ -8,10 +8,10 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Wake, Waker};
 
 use behavior::{
-    Actions, Behavior, BehaviorActed, Births, Create, CreationKind, MailAddr, Never, NoBirths,
-    Step, User, UserEvent,
+    Actions, Behavior, BehaviorActed, Births, CreateChild, CreationKind, CreationSequence,
+    Creations, MailAddr, Never, NoBirths, Step, User, UserEvent,
 };
-use bombay_engine::{ActiveEnvironment, Completion, Driver, DriverError};
+use bombay_engine::{Completion, Driver, DriverError, SettlementFailure};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Fact {
@@ -44,9 +44,10 @@ impl Behavior for Probe {
         self.facts.lock().unwrap().push(Fact::Fold(value));
         match value {
             7 => Err("controlled"),
+            6 => Ok(Actions::send(vec![60, 61])),
             9 => Ok(Actions::new(
                 vec![90, 91],
-                Vec::new(),
+                Creations::empty(),
                 Step::Stop(behavior::Stopped),
             )),
             value => Ok(Actions::send(vec![value * 10])),
@@ -63,7 +64,7 @@ struct Env {
 type ProbeDriver = Driver<Probe, support::TestEnvironment<Env>>;
 type Facts = Arc<Mutex<Vec<Fact>>>;
 
-impl ActiveEnvironment<Probe> for Env {
+impl TestActions<Probe> for Env {
     type Error = u64;
     type Residual = ();
 
@@ -111,7 +112,8 @@ fn execution(events: impl IntoIterator<Item = u64>, fail_on: Option<u64>) -> (Pr
 #[tokio::test]
 async fn universal_causal_transcript_has_no_prefetch_or_reentrancy() {
     let (driver, facts) = execution([1, 2, 9, 100], None);
-    assert_eq!(driver.run().await.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await;
+    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
     assert_eq!(
         *facts.lock().unwrap(),
         [
@@ -132,63 +134,70 @@ async fn universal_causal_transcript_has_no_prefetch_or_reentrancy() {
 }
 
 #[tokio::test]
-async fn every_successful_decision_is_committed_exactly_once() {
-    let (driver, facts) = execution([1, 2, 9, 100], None);
-    assert_eq!(driver.run().await.disposition, Ok(Completion::Stopped));
-    let facts = facts.lock().unwrap();
-    assert_eq!(
-        facts
-            .iter()
-            .filter(|fact| matches!(fact, Fact::Commit(_)))
-            .count(),
-        4
-    );
-    assert_eq!(
-        facts
-            .iter()
-            .filter(|fact| matches!(fact, Fact::Fold(_)))
-            .count(),
-        3
-    );
-}
-
-#[tokio::test]
-async fn initialization_occurs_once_across_stop_closure_and_failure_boundaries() {
-    for (events, fail_on) in [
-        (Vec::from([9]), None),
-        (Vec::new(), None),
-        (Vec::from([7]), None),
-        (Vec::from([1]), Some(0)),
-        (Vec::from([9]), Some(91)),
+async fn initialization_has_exact_disposition_and_trace_across_terminal_boundaries() {
+    for (events, fail_on, disposition, transcript) in [
+        (
+            vec![9],
+            None,
+            Ok(Completion::Stopped),
+            vec![
+                Fact::Initialized,
+                Fact::Commit(vec![0]),
+                Fact::Next,
+                Fact::Fold(9),
+                Fact::Commit(vec![90, 91]),
+                Fact::Retired,
+            ],
+        ),
+        (
+            vec![],
+            None,
+            Ok(Completion::Exhausted),
+            vec![
+                Fact::Initialized,
+                Fact::Commit(vec![0]),
+                Fact::Next,
+                Fact::Retired,
+            ],
+        ),
+        (
+            vec![7],
+            None,
+            Err(DriverError::Behavior("controlled")),
+            vec![
+                Fact::Initialized,
+                Fact::Commit(vec![0]),
+                Fact::Next,
+                Fact::Fold(7),
+                Fact::Retired,
+            ],
+        ),
+        (
+            vec![1],
+            Some(0),
+            Err(DriverError::Settlement(SettlementFailure::Corrupt)),
+            vec![Fact::Initialized, Fact::Commit(vec![]), Fact::Retired],
+        ),
+        (
+            vec![9],
+            Some(91),
+            Err(DriverError::Settlement(SettlementFailure::Corrupt)),
+            vec![
+                Fact::Initialized,
+                Fact::Commit(vec![0]),
+                Fact::Next,
+                Fact::Fold(9),
+                Fact::Commit(vec![90]),
+                Fact::Retired,
+            ],
+        ),
     ] {
         let (driver, facts) = execution(events, fail_on);
-        let _result = driver.run().await.disposition;
-        assert_eq!(
-            facts
-                .lock()
-                .unwrap()
-                .iter()
-                .filter(|fact| **fact == Fact::Initialized)
-                .count(),
-            1
-        );
+        let retirement = driver.run().await;
+        assert_eq!(retirement.disposition, disposition);
+        assert_eq!(retirement.residual, ());
+        assert_eq!(*facts.lock().unwrap(), transcript);
     }
-}
-
-#[tokio::test]
-async fn every_accepted_event_is_folded_exactly_once() {
-    let (driver, facts) = execution([1, 2, 9, 100], None);
-    assert_eq!(driver.run().await.disposition, Ok(Completion::Stopped));
-    let folds: Vec<_> = facts
-        .lock()
-        .unwrap()
-        .iter()
-        .filter_map(|fact| match fact {
-            Fact::Fold(value) => Some(*value),
-            _ => None,
-        })
-        .collect();
-    assert_eq!(folds, [1, 2, 9]);
 }
 
 struct StatefulDecision {
@@ -221,7 +230,7 @@ impl Behavior for StatefulDecision {
         if event.message == 0 {
             return Ok(Actions::new(
                 vec![self.value],
-                Vec::new(),
+                Creations::empty(),
                 Step::Stop(behavior::Stopped),
             ));
         }
@@ -235,7 +244,7 @@ struct StatefulDecisionEnv {
     committed: Arc<Mutex<Vec<usize>>>,
 }
 
-impl ActiveEnvironment<StatefulDecision> for StatefulDecisionEnv {
+impl TestActions<StatefulDecision> for StatefulDecisionEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -271,8 +280,11 @@ async fn successor_state_and_complete_actions_come_from_the_same_decision() {
         },
     );
 
-    assert_eq!(driver.run().await.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await;
+    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
     assert_eq!(*committed.lock().unwrap(), [0, 2, 5, 5]);
+    assert_eq!(retirement.behavior.value, 5);
+    drop(retirement);
     assert_eq!(dropped_value.load(Ordering::SeqCst), 5);
 }
 
@@ -281,7 +293,7 @@ struct FailingStateEnv {
     commits: usize,
 }
 
-impl ActiveEnvironment<StatefulDecision> for FailingStateEnv {
+impl TestActions<StatefulDecision> for FailingStateEnv {
     type Error = &'static str;
     type Residual = ();
 
@@ -318,34 +330,32 @@ async fn commitment_failure_does_not_roll_back_the_successful_fold() {
         },
     );
 
+    let retirement = driver.run().await;
     assert_eq!(
-        driver.run().await.disposition,
-        Err(DriverError::Environment("commit"))
+        retirement.disposition,
+        Err(DriverError::Settlement(SettlementFailure::Corrupt))
     );
+    assert_eq!(retirement.behavior.value, 3);
+    drop(retirement);
     assert_eq!(dropped_value.load(Ordering::SeqCst), 3);
 }
 
 #[tokio::test]
 async fn unrelated_custom_behavior_shapes_use_the_same_driver_algorithm() {
     let (probe, _) = execution([9], None);
-    assert_eq!(probe.run().await.disposition, Ok(Completion::Stopped));
+    let probe_retirement = probe.run().await;
+    assert_eq!(probe_retirement.disposition, Ok(Completion::Stopped));
 
-    assert_eq!(
-        direct(SendNotSync(Cell::new(0)), MoveEnv(Some(Box::new(42))))
-            .run()
-            .await
-            .disposition,
-        Ok(Completion::Stopped)
-    );
+    let move_retirement = direct(SendNotSync(Cell::new(0)), MoveEnv(Some(Box::new(42))))
+        .run()
+        .await;
+    assert_eq!(move_retirement.disposition, Ok(Completion::Stopped));
 
     let complete = Arc::new(Mutex::new(Vec::new()));
-    assert_eq!(
-        direct(CompleteActions, CompleteEnvironment(complete))
-            .run()
-            .await
-            .disposition,
-        Ok(Completion::Stopped)
-    );
+    let complete_retirement = direct(CompleteActions, CompleteEnvironment(complete))
+        .run()
+        .await;
+    assert_eq!(complete_retirement.disposition, Ok(Completion::Stopped));
 }
 
 enum ClosedEvent {
@@ -388,7 +398,7 @@ impl Behavior for ClosedInputBehavior {
             ClosedEvent::User(user) => Ok(Actions::send(vec![*user.message])),
             ClosedEvent::Capability(value) => Ok(Actions::new(
                 vec![value],
-                Vec::new(),
+                Creations::empty(),
                 Step::Stop(behavior::Stopped),
             )),
         }
@@ -400,7 +410,7 @@ struct ClosedInputEnv {
     committed: Arc<Mutex<Vec<usize>>>,
 }
 
-impl ActiveEnvironment<ClosedInputBehavior> for ClosedInputEnv {
+impl TestActions<ClosedInputBehavior> for ClosedInputEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -433,7 +443,8 @@ async fn driver_accepts_only_the_final_closed_behavior_event_type() {
         },
     );
 
-    assert_eq!(driver.run().await.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await;
+    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
     assert_eq!(*committed.lock().unwrap(), [7, 8]);
 }
 
@@ -468,7 +479,7 @@ impl Behavior for ExclusiveFold {
 
 struct ExclusiveFoldEnv(VecDeque<usize>);
 
-impl ActiveEnvironment<ExclusiveFold> for ExclusiveFoldEnv {
+impl TestActions<ExclusiveFold> for ExclusiveFoldEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -500,7 +511,8 @@ async fn at_most_one_behavior_fold_is_active() {
         ExclusiveFoldEnv(VecDeque::from([1, 1, 0])),
     );
 
-    assert_eq!(driver.run().await.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await;
+    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
     assert_eq!(active.load(Ordering::SeqCst), 0);
     assert_eq!(maximum.load(Ordering::SeqCst), 1);
 }
@@ -528,7 +540,8 @@ fn pending_commit_prevents_reentrant_or_later_fold() {
     );
     let mut context = Context::from_waker(Waker::noop());
 
-    assert!(execution.as_mut().poll(&mut context).is_pending());
+    let pending = execution.as_mut().poll(&mut context);
+    assert!(pending.is_pending());
     assert_eq!(*facts.lock().unwrap(), [Fact::Initialized, Fact::Fold(1)]);
 }
 
@@ -546,13 +559,14 @@ async fn local_commitment_advances_only_through_a_later_capability_event() {
         },
     );
 
-    assert_eq!(driver.run().await.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await;
+    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
     assert_eq!(*committed.lock().unwrap(), [7, 8]);
 }
 
 struct AlternateProbeEnv(VecDeque<u64>);
 
-impl ActiveEnvironment<Probe> for AlternateProbeEnv {
+impl TestActions<Probe> for AlternateProbeEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -575,33 +589,38 @@ impl ActiveEnvironment<Probe> for AlternateProbeEnv {
 #[tokio::test]
 async fn one_behavior_is_substitutable_across_distinct_static_environments() {
     let (recording, _) = execution([9], None);
-    assert_eq!(recording.run().await.disposition, Ok(Completion::Stopped));
+    let recording_retirement = recording.run().await;
+    assert_eq!(recording_retirement.disposition, Ok(Completion::Stopped));
 
     let facts = Arc::new(Mutex::new(Vec::new()));
     let alternate = direct(Probe { facts }, AlternateProbeEnv(VecDeque::from([9])));
-    assert_eq!(alternate.run().await.disposition, Ok(Completion::Stopped));
+    let alternate_retirement = alternate.run().await;
+    assert_eq!(alternate_retirement.disposition, Ok(Completion::Stopped));
 }
 
 #[tokio::test]
 async fn exact_behavior_and_environment_errors_remain_distinct() {
     let (behavior_failure, _) = execution([7], None);
+    let behavior_retirement = behavior_failure.run().await;
     assert_eq!(
-        behavior_failure.run().await.disposition,
+        behavior_retirement.disposition,
         Err(DriverError::Behavior("controlled"))
     );
 
-    let (environment_failure, _) = execution([9], Some(91));
+    let (environment_failure, _) = execution([6], Some(61));
+    let environment_retirement = environment_failure.run().await;
     assert_eq!(
-        environment_failure.run().await.disposition,
-        Err(DriverError::Environment(91))
+        environment_retirement.disposition,
+        Err(DriverError::Settlement(SettlementFailure::Corrupt))
     );
 }
 
 #[tokio::test]
 async fn controlled_failure_is_terminal_and_commits_no_nonexistent_actions() {
     let (driver, facts) = execution([7, 8], None);
+    let retirement = driver.run().await;
     assert_eq!(
-        driver.run().await.disposition,
+        retirement.disposition,
         Err(DriverError::Behavior("controlled"))
     );
     assert_eq!(
@@ -618,10 +637,11 @@ async fn controlled_failure_is_terminal_and_commits_no_nonexistent_actions() {
 
 #[tokio::test]
 async fn commit_failure_preserves_the_factual_committed_prefix() {
-    let (driver, facts) = execution([9, 10], Some(91));
+    let (driver, facts) = execution([6, 10], Some(61));
+    let retirement = driver.run().await;
     assert_eq!(
-        driver.run().await.disposition,
-        Err(DriverError::Environment(91))
+        retirement.disposition,
+        Err(DriverError::Settlement(SettlementFailure::Corrupt))
     );
     assert_eq!(
         *facts.lock().unwrap(),
@@ -629,8 +649,8 @@ async fn commit_failure_preserves_the_factual_committed_prefix() {
             Fact::Initialized,
             Fact::Commit(vec![0]),
             Fact::Next,
-            Fact::Fold(9),
-            Fact::Commit(vec![90]),
+            Fact::Fold(6),
+            Fact::Commit(vec![60]),
             Fact::Retired,
         ]
     );
@@ -639,9 +659,10 @@ async fn commit_failure_preserves_the_factual_committed_prefix() {
 #[tokio::test]
 async fn initialization_commit_failure_is_exact_and_terminal() {
     let (driver, facts) = execution([1], Some(0));
+    let retirement = driver.run().await;
     assert_eq!(
-        driver.run().await.disposition,
-        Err(DriverError::Activation(0))
+        retirement.disposition,
+        Err(DriverError::Settlement(SettlementFailure::Corrupt))
     );
     assert_eq!(
         *facts.lock().unwrap(),
@@ -652,7 +673,8 @@ async fn initialization_commit_failure_is_exact_and_terminal() {
 #[tokio::test]
 async fn source_closure_folds_no_synthetic_event_and_retires_once() {
     let (driver, facts) = execution([], None);
-    assert_eq!(driver.run().await.disposition, Ok(Completion::Exhausted));
+    let retirement = driver.run().await;
+    assert_eq!(retirement.disposition, Ok(Completion::Exhausted));
     assert_eq!(
         *facts.lock().unwrap(),
         [
@@ -669,8 +691,10 @@ async fn completion_preserves_stop_and_input_exhaustion_as_success() {
     let (stopping, _) = execution([9], None);
     let (closing, _) = execution([], None);
 
-    assert_eq!(stopping.run().await.disposition, Ok(Completion::Stopped));
-    assert_eq!(closing.run().await.disposition, Ok(Completion::Exhausted));
+    let stopping_retirement = stopping.run().await;
+    assert_eq!(stopping_retirement.disposition, Ok(Completion::Stopped));
+    let closing_retirement = closing.run().await;
+    assert_eq!(closing_retirement.disposition, Ok(Completion::Exhausted));
 }
 
 struct InitFailure;
@@ -694,7 +718,7 @@ impl Behavior for InitFailure {
 
 struct EmptyEnv(Arc<AtomicUsize>);
 
-impl ActiveEnvironment<InitFailure> for EmptyEnv {
+impl TestActions<InitFailure> for EmptyEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -715,12 +739,68 @@ impl ActiveEnvironment<InitFailure> for EmptyEnv {
 #[tokio::test]
 async fn initialization_failure_returns_definition_and_retires_prepared_environment() {
     let retirements = Arc::new(AtomicUsize::new(0));
+    let retirement = direct(InitFailure, EmptyEnv(retirements.clone()))
+        .run()
+        .await;
+    assert_eq!(retirement.disposition, Err(DriverError::Behavior("init")));
+    assert_eq!(retirements.load(Ordering::SeqCst), 1);
+}
+
+struct InitPanic {
+    initialized: usize,
+}
+
+impl Behavior for InitPanic {
+    type Protocol = behavior::MessageProtocol<MailAddr, Never>;
+    type Event = User<MailAddr, Never>;
+    type Sends = Vec<Never>;
+    type Ph = Never;
+    type Error = Infallible;
+    type Birth = NoBirths;
+
+    fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
+        self.initialized += 1;
+        panic!("pure initialization panic")
+    }
+
+    fn transition(&mut self, _: behavior::ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
+        match event.message {}
+    }
+}
+
+struct InitializationPanicEnvironment(Arc<AtomicUsize>);
+
+impl TestActions<InitPanic> for InitializationPanicEnvironment {
+    type Error = Infallible;
+    type Residual = ();
+
+    async fn next(&mut self) -> Option<<InitPanic as Behavior>::Event> {
+        None
+    }
+
+    async fn apply(&mut self, _: bombay_engine::ActionsOf<InitPanic>) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    async fn retire(self) {
+        self.0.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+#[tokio::test]
+async fn pure_initialization_panic_returns_surviving_behavior_and_retires_once() {
+    let retirements = Arc::new(AtomicUsize::new(0));
+    let retirement = direct(
+        InitPanic { initialized: 0 },
+        InitializationPanicEnvironment(retirements.clone()),
+    )
+    .run()
+    .await;
+
+    assert_eq!(retirement.behavior.initialized, 1);
     assert_eq!(
-        direct(InitFailure, EmptyEnv(retirements.clone()))
-            .run()
-            .await
-            .disposition,
-        Err(DriverError::Behavior("init"))
+        retirement.disposition,
+        Err(DriverError::InitializationPanicked)
     );
     assert_eq!(retirements.load(Ordering::SeqCst), 1);
 }
@@ -728,11 +808,11 @@ async fn initialization_failure_returns_definition_and_retires_prepared_environm
 #[tokio::test]
 async fn every_ordinary_return_attempts_retirement_exactly_once() {
     let init_retirements = Arc::new(AtomicUsize::new(0));
+    let initialization = direct(InitFailure, EmptyEnv(init_retirements.clone()))
+        .run()
+        .await;
     assert_eq!(
-        direct(InitFailure, EmptyEnv(init_retirements.clone()))
-            .run()
-            .await
-            .disposition,
+        initialization.disposition,
         Err(DriverError::Behavior("init"))
     );
     assert_eq!(init_retirements.load(Ordering::SeqCst), 1);
@@ -768,15 +848,20 @@ async fn every_ordinary_terminal_edge_is_fused_against_later_work() {
             Err(DriverError::Behavior("controlled")),
         ),
         (
-            Vec::from([9, 100]),
-            Some(91),
-            Err(DriverError::Environment(91)),
+            Vec::from([6, 100]),
+            Some(61),
+            Err(DriverError::Settlement(SettlementFailure::Corrupt)),
         ),
         (Vec::new(), None, Ok(Completion::Exhausted)),
-        (Vec::from([1]), Some(0), Err(DriverError::Activation(0))),
+        (
+            Vec::from([1]),
+            Some(0),
+            Err(DriverError::Settlement(SettlementFailure::Corrupt)),
+        ),
     ] {
         let (driver, facts) = execution(events, fail_on);
-        assert_eq!(driver.run().await.disposition, expected);
+        let retirement = driver.run().await;
+        assert_eq!(retirement.disposition, expected);
         let facts = facts.lock().unwrap();
         assert_eq!(facts.last(), Some(&Fact::Retired));
         assert_eq!(
@@ -809,7 +894,7 @@ impl Behavior for SendNotSync {
 
 struct MoveEnv(Option<Box<u64>>);
 
-impl ActiveEnvironment<SendNotSync> for MoveEnv {
+impl TestActions<SendNotSync> for MoveEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -828,7 +913,8 @@ impl ActiveEnvironment<SendNotSync> for MoveEnv {
 #[tokio::test]
 async fn driver_adds_no_sync_clone_or_static_payload_bound() {
     let driver = direct(SendNotSync(Cell::new(0)), MoveEnv(Some(Box::new(42))));
-    assert_eq!(driver.run().await.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await;
+    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
 }
 
 struct PendingEnv {
@@ -842,7 +928,7 @@ impl Drop for PendingEnv {
     }
 }
 
-impl ActiveEnvironment<Probe> for PendingEnv {
+impl TestActions<Probe> for PendingEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -873,11 +959,8 @@ async fn cancellation_drops_ownership_without_claiming_async_retirement() {
         },
     )
     .run();
-    assert!(
-        tokio::time::timeout(std::time::Duration::ZERO, future)
-            .await
-            .is_err()
-    );
+    let timed_out = tokio::time::timeout(std::time::Duration::ZERO, future).await;
+    assert!(timed_out.is_err());
     assert!(dropped.load(Ordering::SeqCst));
     assert!(!retired.load(Ordering::SeqCst));
 }
@@ -899,7 +982,7 @@ struct PendingInputEnv {
     polls: Arc<AtomicUsize>,
 }
 
-impl ActiveEnvironment<Probe> for PendingInputEnv {
+impl TestActions<Probe> for PendingInputEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -948,7 +1031,8 @@ fn pending_input_is_polled_once_without_busy_wait_or_self_wake() {
     let test_waker = Waker::from(wake_counter.clone());
     let mut context = Context::from_waker(&test_waker);
 
-    assert!(execution.as_mut().poll(&mut context).is_pending());
+    let pending = execution.as_mut().poll(&mut context);
+    assert!(pending.is_pending());
     assert_eq!(polls.load(Ordering::SeqCst), 1);
     assert_eq!(wake_counter.0.load(Ordering::SeqCst), 0);
 }
@@ -975,7 +1059,7 @@ impl Drop for StallingEnv {
     }
 }
 
-impl ActiveEnvironment<Probe> for StallingEnv {
+impl TestActions<Probe> for StallingEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -1034,7 +1118,8 @@ fn cancellation_at(stall_at: StallAt) -> (usize, bool, bool) {
     );
     let test_waker = Waker::noop();
     let mut context = Context::from_waker(test_waker);
-    assert!(execution.as_mut().poll(&mut context).is_pending());
+    let pending = execution.as_mut().poll(&mut context);
+    assert!(pending.is_pending());
     drop(execution);
     (
         commits_started.load(Ordering::SeqCst),
@@ -1054,8 +1139,13 @@ fn cancellation_at_every_await_drops_ownership_without_false_completion_or_retir
     assert_eq!(cancellation_at(StallAt::Retirement), (2, true, true));
 }
 
+enum PanicStage {
+    Initialization,
+    Turn,
+}
+
 struct PanicBehavior {
-    panic_in_init: bool,
+    panic_stage: PanicStage,
 }
 
 impl Behavior for PanicBehavior {
@@ -1067,8 +1157,10 @@ impl Behavior for PanicBehavior {
     type Birth = NoBirths;
 
     fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
-        assert!(!self.panic_in_init, "injected initialization panic");
-        Ok(Actions::cont())
+        match &self.panic_stage {
+            PanicStage::Initialization => panic!("injected initialization panic"),
+            PanicStage::Turn => Ok(Actions::cont()),
+        }
     }
     fn transition(&mut self, _: behavior::ActiveTurn, _: Self::Event) -> BehaviorActed<Self> {
         panic!("injected fold panic")
@@ -1086,7 +1178,7 @@ impl Drop for PanicEnv {
     }
 }
 
-impl ActiveEnvironment<PanicBehavior> for PanicEnv {
+impl TestActions<PanicBehavior> for PanicEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -1103,11 +1195,11 @@ impl ActiveEnvironment<PanicBehavior> for PanicEnv {
     async fn retire(self) {}
 }
 
-fn panic_case(panic_in_init: bool) -> (bool, usize, bool) {
+fn panic_case(panic_stage: PanicStage) -> (bool, usize, bool) {
     let next = Arc::new(AtomicUsize::new(0));
     let dropped = Arc::new(AtomicBool::new(false));
     let driver = direct(
-        PanicBehavior { panic_in_init },
+        PanicBehavior { panic_stage },
         PanicEnv {
             next: next.clone(),
             dropped: dropped.clone(),
@@ -1127,14 +1219,14 @@ fn panic_case(panic_in_init: bool) -> (bool, usize, bool) {
 }
 
 #[test]
-fn initialization_and_turn_panics_consume_the_only_execution_and_cannot_poll_again() {
-    assert_eq!(panic_case(true), (true, 0, true));
-    assert_eq!(panic_case(false), (true, 1, true));
+fn pure_initialization_panic_is_caught_and_turn_panic_consumes_execution() {
+    assert_eq!(panic_case(PanicStage::Initialization), (false, 0, true));
+    assert_eq!(panic_case(PanicStage::Turn), (true, 1, true));
 }
 
 #[test]
 fn panic_consumes_the_only_execution_and_cannot_poll_again() {
-    assert_eq!(panic_case(false), (true, 1, true));
+    assert_eq!(panic_case(PanicStage::Turn), (true, 1, true));
 }
 
 struct SelfSendEnv {
@@ -1142,7 +1234,7 @@ struct SelfSendEnv {
     transcript: Arc<Mutex<Vec<&'static str>>>,
 }
 
-impl ActiveEnvironment<SelfSender> for SelfSendEnv {
+impl TestActions<SelfSender> for SelfSendEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -1201,7 +1293,8 @@ async fn self_send_reenters_only_as_a_later_ordinary_event() {
             transcript: transcript.clone(),
         },
     );
-    assert_eq!(driver.run().await.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await;
+    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
     assert_eq!(
         *transcript.lock().unwrap(),
         [
@@ -1221,12 +1314,17 @@ impl Behavior for CompleteActions {
     type Birth = Births<Box<u64>>;
 
     fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
+        let mut creations = CreationSequence::new();
+        let first = creations.issue().expect("the first creation ID exists");
+        let second = creations.issue().expect("the second creation ID exists");
         Ok(Actions::new(
             vec![Box::new(10), Box::new(11)],
-            vec![
-                Create::birth(1, Box::new(20)),
-                Create::replacement_incarnation(2, 1, Box::new(21)),
-            ],
+            [
+                CreateChild::birth(first, Box::new(20)),
+                CreateChild::replacement(second, first, Box::new(21)),
+            ]
+            .into_iter()
+            .collect(),
             Step::Stop(behavior::Stopped),
         ))
     }
@@ -1238,7 +1336,7 @@ impl Behavior for CompleteActions {
 
 struct CompleteEnvironment(Arc<Mutex<Vec<u64>>>);
 
-impl ActiveEnvironment<CompleteActions> for CompleteEnvironment {
+impl TestActions<CompleteActions> for CompleteEnvironment {
     type Error = Infallible;
     type Residual = ();
 
@@ -1258,12 +1356,13 @@ impl ActiveEnvironment<CompleteActions> for CompleteEnvironment {
         let mut observed = self.0.lock().unwrap();
         observed.extend(sends.into_iter().map(|value| *value));
         for creation in creates {
-            observed.push(creation.nonce);
-            observed.push(match creation.kind {
+            let (id, child, kind) = creation.into_parts();
+            observed.push(id.get());
+            observed.push(match kind {
                 CreationKind::Birth => 0,
-                CreationKind::ReplacementIncarnation { replaces } => replaces,
+                CreationKind::Replacement { previous } => previous.get(),
             });
-            observed.push(*creation.child);
+            observed.push(*child);
         }
         assert!(matches!(become_, Step::Stop(behavior::Stopped)));
         Ok(())
@@ -1277,13 +1376,10 @@ impl ActiveEnvironment<CompleteActions> for CompleteEnvironment {
 #[tokio::test]
 async fn complete_move_only_stop_actions_cross_once_before_completion() {
     let observed = Arc::new(Mutex::new(Vec::new()));
-    assert_eq!(
-        direct(CompleteActions, CompleteEnvironment(observed.clone()))
-            .run()
-            .await
-            .disposition,
-        Ok(Completion::Stopped)
-    );
+    let retirement = direct(CompleteActions, CompleteEnvironment(observed.clone()))
+        .run()
+        .await;
+    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
     assert_eq!(*observed.lock().unwrap(), [10, 11, 1, 0, 20, 2, 1, 21, 99]);
 }
 
@@ -1304,7 +1400,9 @@ impl UserEvent for CreationResultEvent {
     }
 }
 
-struct CreationScopeBehavior;
+struct CreationScopeBehavior {
+    results: Vec<u64>,
+}
 
 impl Behavior for CreationScopeBehavior {
     type Protocol = behavior::MessageProtocol<MailAddr, Never>;
@@ -1315,24 +1413,27 @@ impl Behavior for CreationScopeBehavior {
     type Birth = Births<usize>;
 
     fn init(&mut self, _: behavior::InitializationTurn) -> BehaviorActed<Self> {
+        let mut creations = CreationSequence::new();
+        let first = creations.issue().expect("the first creation ID exists");
+        let second = creations.issue().expect("the second creation ID exists");
         Ok(Actions::new(
             vec![90],
-            vec![
-                Create::birth(1, 20),
-                Create::replacement_incarnation(2, 1, 21),
-            ],
+            [
+                CreateChild::birth(first, 20),
+                CreateChild::replacement(second, first, 21),
+            ]
+            .into_iter()
+            .collect(),
             Step::Continue,
         ))
     }
 
     fn transition(&mut self, _: behavior::ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
         let CreationResultEvent::Results(nonces) = event;
-        if nonces != [1, 2] {
-            return Err("mis-scoped creation results");
-        }
+        self.results = nonces;
         Ok(Actions::new(
             vec![99],
-            Vec::new(),
+            Creations::empty(),
             Step::Stop(behavior::Stopped),
         ))
     }
@@ -1340,7 +1441,7 @@ impl Behavior for CreationScopeBehavior {
 
 #[derive(Debug, PartialEq, Eq)]
 enum CreationFact {
-    Created(u64, CreationKind<u64>, usize),
+    Created(u64, CreationKind, usize),
     Sent(usize),
     Results(Vec<u64>),
     Retired,
@@ -1351,7 +1452,7 @@ struct CreationScopeEnv {
     facts: Arc<Mutex<Vec<CreationFact>>>,
 }
 
-impl ActiveEnvironment<CreationScopeBehavior> for CreationScopeEnv {
+impl TestActions<CreationScopeBehavior> for CreationScopeEnv {
     type Error = Infallible;
     type Residual = ();
 
@@ -1373,12 +1474,9 @@ impl ActiveEnvironment<CreationScopeBehavior> for CreationScopeEnv {
         let mut nonces = Vec::new();
         let mut facts = self.facts.lock().unwrap();
         for creation in actions.creates {
-            nonces.push(creation.nonce);
-            facts.push(CreationFact::Created(
-                creation.nonce,
-                creation.kind,
-                creation.child,
-            ));
+            let (id, child, kind) = creation.into_parts();
+            nonces.push(id.get());
+            facts.push(CreationFact::Created(id.get(), kind, child));
         }
         for send in actions.sends {
             facts.push(CreationFact::Sent(send));
@@ -1399,26 +1497,35 @@ impl ActiveEnvironment<CreationScopeBehavior> for CreationScopeEnv {
 async fn environment_preserves_creation_precedence_and_same_action_result_scope() {
     let facts = Arc::new(Mutex::new(Vec::new()));
     let driver = direct(
-        CreationScopeBehavior,
+        CreationScopeBehavior {
+            results: Vec::new(),
+        },
         CreationScopeEnv {
             result: None,
             facts: facts.clone(),
         },
     );
 
-    assert_eq!(driver.run().await.disposition, Ok(Completion::Stopped));
-    assert_eq!(
-        *facts.lock().unwrap(),
-        [
-            CreationFact::Created(1, CreationKind::Birth, 20),
-            CreationFact::Created(2, CreationKind::ReplacementIncarnation { replaces: 1 }, 21,),
-            CreationFact::Sent(90),
-            CreationFact::Results(vec![1, 2]),
-            CreationFact::Sent(99),
-            CreationFact::Retired,
-        ]
-    );
+    let retirement = driver.run().await;
+    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+    assert_eq!(retirement.residual, ());
+    let observed = facts.lock().unwrap();
+    let [
+        CreationFact::Created(first, CreationKind::Birth, 20),
+        CreationFact::Created(second, CreationKind::Replacement { previous }, 21),
+        CreationFact::Sent(90),
+        CreationFact::Results(results),
+        CreationFact::Sent(99),
+        CreationFact::Retired,
+    ] = observed.as_slice()
+    else {
+        panic!("creation, send, result, and retirement order changed: {observed:?}");
+    };
+    assert_ne!(first, second);
+    assert_eq!(previous.get(), *first);
+    assert_eq!(results.as_slice(), [*first, *second]);
+    assert_eq!(retirement.behavior.results, *results);
 }
 mod support;
 
-use support::direct;
+use support::{TestActions, direct};

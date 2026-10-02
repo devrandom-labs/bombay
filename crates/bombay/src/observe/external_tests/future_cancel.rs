@@ -187,12 +187,12 @@ fn same_waker_registered_twice_fires_once() {
         let obs_b = space.observe(&37).expect("subject retained");
         let (waker, probe) = CountWake::waker();
 
-        assert!(
-            !obs_a.register_waker(&waker),
-            "pending: registration stored"
-        );
-        assert!(
-            !obs_b.register_waker(&waker),
+        let first = obs_a.register_waker(&waker);
+        let second = obs_b.register_waker(&waker);
+        assert_eq!(first, Poll::Pending, "pending: registration stored");
+        assert_eq!(
+            second,
+            Poll::Pending,
             "deduped re-registration still reports pending (round {round})"
         );
         subject.complete(round);
@@ -251,7 +251,8 @@ fn cancelled_future_steals_direct_waker_registration() {
     let obs2 = space.observe(&41).expect("subject retained");
     let (waker, probe) = CountWake::waker();
 
-    assert!(!obs1.register_waker(&waker), "pending: registration stored");
+    let readiness = obs1.register_waker(&waker);
+    assert_eq!(readiness, Poll::Pending, "pending: registration stored");
     let mut f2 = Box::pin(obs2.into_future());
     assert!(poll_once(f2.as_mut(), &waker).is_pending());
     drop(f2);

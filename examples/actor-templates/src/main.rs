@@ -5,11 +5,9 @@ mod processor;
 
 use core::time::Duration;
 
-use bombay::behavior::{Behavior, MachineError};
+use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
-use processor::{ProcessorError, ProcessorMessage, ProcessorPhase, ProcessorState, transition};
-
-type ProcessorRunError = RunError<MachineError<MailAddr, ProcessorMessage, ProcessorError>>;
+use processor::{ProcessorMessage, ProcessorPhase, ProcessorState, transition};
 
 struct BoundaryReplies;
 
@@ -21,20 +19,20 @@ impl Protocol for BoundaryReplies {
 #[derive(TerminalProjection)]
 enum ApplicationTerminal<R>
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     Root {
-        origin: ActorOrigin<R>,
+        origin: RootOrigin<R>,
         terminal: ActorRetirement<R, Self>,
     },
 }
 
-fn main() -> Result<(), ProcessorRunError> {
-    run_receive_timeout()?;
-    run_shutdown()
+fn main() {
+    run_receive_timeout();
+    run_shutdown();
 }
 
-fn run_receive_timeout() -> Result<(), ProcessorRunError> {
+fn run_receive_timeout() {
     let actor = Machine::new(ProcessorState::new(), ProcessorPhase::Closed, transition)
         .with_receive_timeout(TimerId(1), Duration::from_millis(50), |processor| {
             if processor.state().completed(7) {
@@ -45,53 +43,56 @@ fn run_receive_timeout() -> Result<(), ProcessorRunError> {
         })
         .stop_on_shutdown();
 
-    let ((), terminal) = Application::new(actor).run_with(|application| async move {
-        let lifecycle = application.lifecycle();
-        let interface = application.interface(application.root().established_recipient());
-        let boundary = interface
-            .external::<BoundaryReplies>()
-            .expect("the example boundary is established");
-        boundary
-            .send(interface.api(), ProcessorMessage::Work(7))
-            .await
-            .expect("the actor accepts work while closed");
-        boundary
-            .send(interface.api(), ProcessorMessage::Open)
-            .await
-            .expect("the actor opens and replays deferred work");
-        assert_eq!(
-            tokio::time::timeout(Duration::from_secs(1), lifecycle.termination())
+    let ((), terminal) = Application::new(actor)
+        .run_with(|application| async move {
+            let lifecycle = application.lifecycle();
+            let interface = application.interface(application.root().established_recipient());
+            let boundary = interface
+                .external::<BoundaryReplies>()
+                .expect("the example boundary is established");
+            boundary
+                .send(interface.api(), ProcessorMessage::Work(7))
                 .await
-                .expect("the receive-timeout policy terminates before the example deadline"),
-            Ok(Exit::Normal)
-        );
-    })?;
+                .expect("the actor accepts work while closed");
+            boundary
+                .send(interface.api(), ProcessorMessage::Open)
+                .await
+                .expect("the actor opens and replays deferred work");
+            let termination = tokio::time::timeout(Duration::from_secs(1), lifecycle.termination())
+                .await
+                .expect("the receive-timeout policy terminates before the example deadline");
+            assert_eq!(termination, Ok(Exit::Normal));
+        })
+        .expect("the receive-timeout actor starts and retires");
     assert_application_stopped(terminal);
-    Ok(())
 }
 
-fn run_shutdown() -> Result<(), ProcessorRunError> {
+fn run_shutdown() {
     let ((), terminal) = Application::new(
         Machine::new(ProcessorState::new(), ProcessorPhase::Closed, transition).stop_on_shutdown(),
     )
     .run_with(|application| async move {
         let lifecycle = application.lifecycle();
-        assert_eq!(lifecycle.request_shutdown(), Ok(()));
-        assert_eq!(lifecycle.termination().await, Ok(Exit::Normal));
-    })?;
+        let shutdown = lifecycle.request_shutdown();
+        assert_eq!(shutdown, Ok(()));
+        let termination = lifecycle.termination().await;
+        assert_eq!(termination, Ok(Exit::Normal));
+    })
+    .expect("the shutdown actor starts and retires");
     assert_application_stopped(terminal);
-    Ok(())
 }
 
 fn assert_application_stopped<R>(terminal: ApplicationTerminal<R>)
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R::Settlements: ClassifySettlement,
 {
     let ApplicationTerminal::Root {
         origin,
         terminal:
             ActorRetirement::Completed {
                 behavior,
+                settlements,
                 control,
                 user,
                 descendants,
@@ -102,8 +103,9 @@ where
         panic!("the application must preserve the root's completed terminal state")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), None);
     drop(behavior);
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());

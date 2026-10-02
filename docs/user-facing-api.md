@@ -4,11 +4,30 @@ This is the target product contract. Bombay owns the stable application and
 runtime experience over foundational Behavior and the reusable templates owned
 by Behavior Actors.
 
+Implementation status is separate from this target contract. Local application,
+external interface, timer, Entity, supervisor, and worker-pool paths have
+executable coverage. Ordinary runners use a current-thread Tokio runtime;
+durability and networking remain planned.
+See the [source-backed inventory](prd-backlog/evidence.md). The short code
+fragments below are schematic, omit surrounding definitions, and are not
+compilation evidence. The executable, compiler-checked spellings are:
+
+| Boundary | Executable or compile-checked owner |
+| --- | --- |
+| Root execution, typed terminal, application children | [application topology example](../examples/application-topology/src/main.rs), [terminal projection tests](../crates/bombay/tests/terminal_projection.rs) |
+| `run_with`, lifecycle, shutdown, exact terminal results | [run_with tests](../crates/bombay/tests/run_with.rs) |
+| Axum adapter | [Axum example](../examples/axum/src/main.rs), [HTTP tests](../examples/axum/src/http.rs) |
+| Advanced actor-space product and protocol hosts | [supervision example](../examples/supervision/src/main.rs), [host compile fixtures](../crates/bombay/tests/actor_spaces.rs) |
+| `Machine`, timers, and `ActorExt` wrappers | [actor-template example](../examples/actor-templates/src/main.rs), [template application tests](../crates/bombay/tests/template_application.rs) |
+| Actor facade and exact send lane | [counter example](../examples/counter/src/counter.rs), [macro parity tests](../crates/bombay/tests/macro_last_authoring.rs) |
+| Exact external request and reply | [actor interface tests](../crates/bombay/tests/actor_interface.rs) |
+| Native Entity definition and application | [Entity example](../examples/entity/src/main.rs), [Entity application test](../crates/bombay/tests/entity_application.rs) |
+
 ## Entry boundary
 
 A complete single-protocol application supplies one ordinary root value:
 
-```rust,ignore
+```text
 let terminal: ApplicationTerminal<_> = Application::new(root()).run()?;
 inspect_terminal(terminal);
 ```
@@ -22,7 +41,7 @@ descendant custody, or the exact fact that selected retirement.
 For a framework-neutral external boundary, `run_with` supplies the live
 application's concrete typed handle and keeps the future and output generic:
 
-```rust,ignore
+```text
 let (boundary_result, terminal): (_, ApplicationTerminal<_>) =
     Application::new(root()).run_with(|application| async move {
     boundary(application.root()).await?;
@@ -42,12 +61,14 @@ value remains nested so boundary and runtime failures are not aggregated.
 
 Shutdown policy is part of the root value, not a second execution mode:
 
-```rust,ignore
+```text
 let ((), terminal): (_, ApplicationTerminal<_>) =
-    Application::new(worker_pool.stop_on_shutdown()).run_with(|application| async move {
+    Application::new(service.stop_on_shutdown()).run_with(|application| async move {
     let lifecycle = application.lifecycle();
-    assert_eq!(lifecycle.request_shutdown(), Ok(()));
-    assert_eq!(lifecycle.termination().await, Ok(Exit::Normal));
+    let shutdown = lifecycle.request_shutdown();
+    assert_eq!(shutdown, Ok(()));
+    let termination = lifecycle.termination().await;
+    inspect_termination(termination);
     })?;
 inspect_terminal(terminal);
 ```
@@ -58,14 +79,15 @@ shutdown policy from topology and does not secretly insert a root wrapper.
 
 With the opt-in `axum` feature, the same boundary can host an HTTP adapter:
 
-```rust,ignore
+```text
 Application::new(root()).run_axum(
     "127.0.0.1:3000".parse()?,
     order_http::router,
 )?;
 ```
 
-The router factory receives `ApplicationHandle<Root::Protocol>`. Axum owns
+The router factory receives `ApplicationHandle<Root::Protocol, Root::Event>`
+for a direct root, or the composed actor's event sum for a templated root. Axum owns
 extraction and HTTP responses; `application.root()` is the delivery-only
 reference and `application.lifecycle()` is the lifecycle authority.
 Bombay owns the shared executor, graceful server stop, exact root termination
@@ -120,12 +142,16 @@ transition.
 Advanced multi-protocol applications may still package the pure root separately
 from a named product of runtime-owned local actor spaces:
 
-```rust,ignore
+```text
 #[derive(Default, ActorSpaces)]
 struct AppActors {
+    #[actor_space(SystemProtocol)]
     system: ActorSpace<SystemProtocol>,
+    #[actor_space(GroupProtocol)]
     groups: ActorSpace<GroupProtocol>,
+    #[actor_space(DeviceProtocol)]
     devices: ActorSpace<DeviceProtocol>,
+    #[actor_space(QueryProtocol)]
     queries: ActorSpace<QueryProtocol>,
 }
 
@@ -133,16 +159,18 @@ struct AppActors {
 
 `ActorSpaces` is deliberate level-3 runtime plumbing, not the ordinary
 application API. It generates one ordinary `Hosts<P>` implementation for each
-`ActorSpace<P>` field. These implementations remain the static protocol-to-
-space mapping; they are generated at compile time, never erased or discovered
-at runtime. Duplicate protocols are rejected. Bombay's generic
+field explicitly marked `#[actor_space(P)]`; Rust verifies the field is an
+`ActorSpace<P>`, including through a type alias. These implementations remain
+the static protocol-to-space mapping; they are generated at compile time,
+never erased or discovered at runtime. Rust rejects duplicate protocols.
+Bombay's generic
 `App<Root, Actors>` retains the spaces while giving only the root to the
 Behavior Driver.
 
 A single-protocol root does not declare that product. Bombay supplies its one
 concrete protocol space directly:
 
-```rust,ignore
+```text
 Application::new(OrderBook::default()).run_axum(address, order_http::router)?;
 ```
 
@@ -158,7 +186,7 @@ Applications first select and compose Bombay actor templates. A template-only
 single-protocol root can use `Machine` for state transitions and `OneShot` for
 timed termination without application code implementing `Behavior`:
 
-```rust,ignore
+```text
 let root = Machine::new(state, phase, transition)
     .with_one_shot(TimerId(1), Duration::from_secs(1), stop)
     .stop_on_shutdown();
@@ -182,27 +210,27 @@ Choose a template by the application problem it owns:
 | Hold and replay selected messages | `.with_stash(...)` |
 | Idle, relative, periodic, or absolute time policy | `.with_receive_timeout(...)`, `.with_one_shot(...)`, `.with_periodic(...)`, `.with_deadline(...)`, `Lease` |
 | One result with cancellation | `Task` |
-| Graceful lifecycle policy | `.stop_on_shutdown()`, `FinalizeOnShutdown`, `Watch`, `Link`, `TerminationMonitor` |
-| Fixed and dynamic supervision | `Supervisor`, `Supervise`, `DynamicSupervisor`, `Proxy` |
-| FIFO and keyed assignment | `WorkerPool`, `KeyedWorkerPool` |
-| Transform or route protocols | `MessageAdapter`, `Router`, `Broadcast` |
+| Graceful lifecycle policy | `.stop_on_shutdown()`, `FinalizeOnShutdown`, `Watch`, `TerminationMonitor` |
+| Fixed and dynamic supervision (runtime integration incomplete) | `FixedSupervisor`, `DynamicSupervisor`, `StableProxy` |
+| FIFO and keyed assignment (runtime integration incomplete) | `FifoPool`, `KeyedPool` |
+| Transform or route protocols | `MessageAdapter`, `Router` |
 | Admission, ordering, and resilience | `Buffer`, `WorkQueue`, `PriorityQueue`, `RateLimiter`, `CircuitBreaker`, `Sequencer`, `Deduplicator`, `Correlator`, `Acknowledgements`, `OrderGate` |
 | Discovery and membership | `Registry`, `Resolver`, `Presence`, `PubSub`, `Topic` |
 | Multi-party coordination | `Latch`, `Barrier`, `Workflow` |
 | Bounded state retention | `Cache` |
-| Operational state | `Health`, `Readiness`, `Features`, `Configuration` |
+| Operational state | `Health`, `Readiness`, `Configuration`; `FeatureSet` is supporting state |
 
-These names are owning library constructions, not Bombay imitations. They use
-the same root-first `Application` and exact typed interpreter lanes as every
-other actor; there is no separate atomic module, source-settlement framework,
-or aggregate runtime path.
+These names come from the selected owning library. Existing compositions use
+the same Behavior algebra and typed interpreter lanes. The owner has an
+`atomic` module; Bombay must complete interpretation of its requests before
+advertising those templates as executable Application features.
 
 When the template catalogue cannot express an application-specific
 user-message fold, `#[bombay::actor]` delegates its nominal algebra to the
 owning Behavior attribute while the application authors deterministic state
 and exact actions:
 
-```rust,ignore
+```text
 struct Device {
     temperature: Option<f64>,
 }
@@ -224,9 +252,13 @@ impl Device {
 
 The message remains an explicit Rust type on the fold. Bombay's local address
 is fixed by the application runtime, so the facade supplies it and the ignored
-sender mechanically. `MACRO-LAST-COMPARISON.md` records the ordinary-Rust,
-diagnostic, differential, hygiene, and expansion evidence that justified this
-narrow syntax layer.
+sender mechanically. The [macro-last comparison](../crates/bombay/tests/macro_last_authoring.rs)
+keeps the plain-builder experiment and compares complete observable actions
+with the owning Behavior form. [Compile fixtures](../crates/bombay/tests/outer_authoring.rs)
+and the [renamed downstream crate](../tests/renamed-downstream/tests/renamed.rs)
+exercise diagnostics and generated-path hygiene. The
+[facade expansion](../crates/bombay-macros/src/lib.rs) delegates to Behavior's
+owning macro.
 
 Effects are authored with Behavior's named semantic send products and
 typed `SendAlgebra::send`. Heterogeneous children use Behavior's closed
@@ -288,7 +320,7 @@ mailbox, runtime task ownership, endpoint extraction, or cancellation.
 
 Exact request/reply can therefore state its lifetime policy directly:
 
-```rust,ignore
+```text
 enum CounterMessage {
     Read(EstablishedRecipient<CounterValue>),
 }
@@ -302,7 +334,7 @@ replacement routing is intended instead.
 
 External transports, CLIs, tests, and embedded clients use one boundary:
 
-```rust,ignore
+```text
 struct Api {
     orders: EstablishedRecipient<Orders>,
 }
@@ -327,9 +359,9 @@ let reply = caller.receive().await;
 `ActorInterface<Api>` does not expose topology, private children,
 interpreters, or shutdown. `Api` is the application-owned receptionist
 product; Bombay does not infer publicness from behavior types or names.
-`ExternalActor<P>` owns a fresh claimed address, supplies that address as the
+`ExternalActor<P>` owns a fresh allocated address, supplies that address as the
 truthful message origin, clones only its exact reply capability, and keeps the
-receiver affine. `ApplicationLifecycle<P>` is the separate shutdown and
+receiver affine. `ApplicationLifecycle<P, E>` is the separate shutdown and
 termination authority.
 
 The direct interface send is intentionally exact. A logical `Recipient<P>` is
@@ -349,14 +381,14 @@ The intended ordinary public surface is:
 - a focused prelude for Level-1/2 Bombay actor vocabulary;
 - pure logical `Recipient<P>` and exact `EstablishedRecipient<P>` values in
   actor messages;
-- `ApplicationHandle<P>` at running application boundaries, with its
+- `ApplicationHandle<P, E, Families>` at running application boundaries, with its
   non-owning root `ActorRef<P>` reached through `root()` and its explicit
-  `ApplicationLifecycle<P>` reached through `lifecycle()`;
+  `ApplicationLifecycle<P, E>` reached through `lifecycle()`;
 - `ActorInterface<Api>` for one explicit receptionist product and creation of
   real typed external actors;
 - `ExternalActor<P>` with cloneable exact reply capability, truthful origin,
   and affine receive ownership;
-- `ApplicationLifecycle<P>` as the projection carrying only shutdown and
+- `ApplicationLifecycle<P, E>` as the projection carrying only shutdown and
   termination authority;
 - retained terminal facts through `ActorRef::termination`;
 - concrete Behavior Actors templates and their policy types;
@@ -369,7 +401,7 @@ ordinary prelude and is not the target application API.
 
 Users never manually construct or implement:
 
-- a runtime, System, Guardian, Driver, Environment, or Incarnation;
+- a runtime, System, Guardian, Driver, Environment, or actor execution object;
 - mailboxes, channels, capacities, address spaces, claims, or leases;
 - observation publishers, timer queues, executor tasks, or child-task owners;
 - creation, delivery, observation, timer, report, or shutdown interpreters;
@@ -383,7 +415,7 @@ Users never manually construct or implement:
 An ordinary application names asynchronous reconstruction and exact lifecycle
 fact consumers once in a nominal definition:
 
-```rust,ignore
+```text
 struct Accounts;
 
 impl EntityDefinition for Accounts {
@@ -448,10 +480,17 @@ separate typed facts consumed by the definition.
 
 The generic `EntityRuntime<I, C, R>`, `EntityId<I>`, directory kernel, and
 `LocalEntityRuntime` remain available under `bombay::entity` for integrations
-and deliberate advanced use. The kernel now closes admission, settles
-installed activation/delivery work, drains every represented exact
-incarnation, and joins its logical task group without polling. Native lowering
-hydrates before address allocation, uses the application allocator, preserves
+and deliberate advanced use. `EntityRuntime` closes admission, drains every
+represented exact incarnation, and joins its logical task group without
+polling. The kernel installs and interprets activation/delivery decisions.
+`LocalDirectory::dispatch` returns
+`InstalledDispatch { dispatch_id, decision }` for one admitted command;
+the owned `InstalledSlotDecision` crosses `LocalDirectory::interpret` exactly
+once. The pure `EntitySlot`/`SlotEvent` fold remains an advanced model and
+benchmark boundary. Slot phase structs and raw effect batches stay private to
+Entity.
+
+Native lowering hydrates before address allocation, uses the application allocator, preserves
 forced-retirement provenance and descendant terminals, and launches the exact
 authored lifecycle stack. `run_with_entities` settles the root first, then
 closes, drains, and joins every declared family and returns its bounded metrics.
@@ -483,12 +522,13 @@ capability: an interpreter may route locally, remotely, or through a
 composition of both. `Hosts<P>` says only that this actor system can install
 and resolve local incarnations of `P`.
 
-Established destinations use absolute `Recipient<P>` values, while
+Logical destinations use namespace-relative `Recipient<P>` values; exact
+established destinations use `EstablishedRecipient<P>`. Meanwhile,
 creator-local delivery uses `ChildRecipient<P>` and cannot escape as a stable
 identity. Dynamic-supervisor outcomes now return the established managed-child
-recipient, and pool assignments carry their completion recipient. Bombay
-interprets both generically; it does not conceal address arithmetic behind a
-parallel reference abstraction.
+recipient, and pool assignments carry their completion recipient. Generic
+delivery already exists, but interpreting AssignWorker and ProxyOperation
+with exact rejection custody is still blocked in the selected contract.
 
 ## Acceptance application
 
@@ -506,7 +546,7 @@ application must prove all of these while retaining the tiny `main`:
 - no runtime plumbing in application code.
 
 Graceful shutdown order is Behavior policy expressed by templates such as
-`ShutdownCoordinator` and `TreeShutdown`. Independently of that policy,
+`ShutdownCoordinator` and `HeterogeneousShutdownCoordinator`. Independently of that policy,
 Bombay cancels and joins any child still live when its owner terminates, so an
 incomplete graceful protocol cannot leak a subtree or deadlock retirement.
 

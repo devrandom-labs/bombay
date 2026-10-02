@@ -4,7 +4,7 @@
 use loom::sync::atomic::{AtomicU64, Ordering};
 #[cfg(bombay_entity_loom)]
 use loom::sync::{Arc, Mutex};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::hash::{BuildHasher, Hash, RandomState};
 use std::num::{NonZeroU64, NonZeroUsize};
 #[cfg(not(bombay_entity_loom))]
@@ -13,11 +13,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use super::{
-    ActivationId, DispatchId, DrainFailure, EntityId, LifecycleMachine, LifecycleOutput, Refusal,
-    RetirementMode, SlotEffect, SlotEvent, TransitionEvidence, lifecycle_machine,
+    ActivationId, DispatchId, DrainFailure, EntityId, EntitySlot, LifecyclePhase, Refusal,
+    RetirementMode, SlotEffect, SlotEffectBatch, SlotEvent, TransitionEvidence,
 };
-use bombay_machine::Machine;
-use bombay_machine::executor::{LinearizedExecutor, OutputEvidence};
 
 /// Fixed sizing and admission limits for a local directory.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -84,16 +82,18 @@ pub trait EffectInterpreter<I, C, E, L> {
 
 /// One installed lifecycle decision awaiting effect interpretation.
 #[must_use = "installed lifecycle decision awaits effect interpretation via LocalDirectory::interpret"]
-pub struct DirectoryOutput<I, C, E, L> {
-    /// Checked evidence for the installed lifecycle decision.
+pub struct InstalledSlotDecision<I, C, E, L> {
+    /// Disposition selected by the installed lifecycle decision.
     pub evidence: TransitionEvidence,
+    /// Phase installed by the decision.
+    pub phase: LifecyclePhase,
     pub(crate) activation_id: Option<ActivationId>,
     entity_id: EntityId<I>,
-    target: OutputTarget<C, E, L>,
+    target: InstalledEffectSource<C, E, L>,
 }
 
 /// Where an installed decision's effects await interpretation.
-enum OutputTarget<C, E, L> {
+enum InstalledEffectSource<C, E, L> {
     /// A directory-mapped slot with queued effects.
     Mapped(Arc<Slot<C, E, L>>),
     /// Concrete ordered effects for an event addressed to an absent entry.
@@ -105,39 +105,125 @@ enum OutputTarget<C, E, L> {
 /// The installed decision for one dispatched command, with its guaranteed
 /// correlation identity.
 #[must_use = "installed lifecycle decision awaits effect interpretation via LocalDirectory::interpret"]
-pub struct DispatchOutput<I, C, E, L> {
+pub struct InstalledDispatch<I, C, E, L> {
     /// Correlation identity allocated for the dispatched command.
     pub dispatch_id: DispatchId,
-    /// Installed decision awaiting effect interpretation.
-    pub output: DirectoryOutput<I, C, E, L>,
+    /// Installed slot decision awaiting effect interpretation.
+    pub decision: InstalledSlotDecision<I, C, E, L>,
 }
 
 struct Slot<C, E, L> {
-    lifecycle: LinearizedExecutor<LifecycleMachine<C, E, L>>,
+    execution: Mutex<SlotExecution<C, E, L>>,
 }
 
-struct Installed {
+struct SlotExecution<C, E, L> {
+    state: SlotState<C, E, L>,
+    pending: VecDeque<SlotEffectBatch<C, E, L>>,
+    dispatch: SlotDispatchPhase,
+}
+
+enum SlotState<C, E, L> {
+    Ready(EntitySlot<C, E, L>),
+    Poisoned,
+}
+
+enum SlotDispatchPhase {
+    Idle,
+    Dispatching,
+}
+
+struct SlotDispatch<'a, C, E, L> {
+    execution: Option<&'a Mutex<SlotExecution<C, E, L>>>,
+}
+
+#[derive(Clone, Copy)]
+struct InstalledSlotEvidence {
     evidence: TransitionEvidence,
+    phase: LifecyclePhase,
     activation_id: Option<ActivationId>,
 }
 
 impl<C, E: Clone, L> Slot<C, E, L> {
     fn new() -> Self {
         Self {
-            lifecycle: LinearizedExecutor::new(lifecycle_machine()),
+            execution: Mutex::new(SlotExecution {
+                state: SlotState::Ready(EntitySlot::Inactive),
+                pending: VecDeque::new(),
+                dispatch: SlotDispatchPhase::Idle,
+            }),
         }
     }
 
-    fn submit(&self, event: SlotEvent<C, E, L>) -> Installed {
-        let (evidence, activation_id) = self.lifecycle.submit(event);
-        Installed {
-            evidence,
-            activation_id,
-        }
+    fn submit(&self, event: SlotEvent<C, E, L>) -> InstalledSlotEvidence {
+        let mut execution = self.execution.lock().expect("entity slot lock poisoned");
+        let SlotState::Ready(state) = core::mem::replace(&mut execution.state, SlotState::Poisoned)
+        else {
+            panic!("entity slot transition poisoned");
+        };
+        let decision = state.decide(event);
+        let installed = InstalledSlotEvidence {
+            evidence: decision.evidence,
+            phase: decision.state.phase(),
+            activation_id: decision.state.activation_id(),
+        };
+        execution.state = SlotState::Ready(decision.state);
+        execution.pending.push_back(decision.effects);
+        installed
     }
 
     fn activation_id(&self) -> Option<ActivationId> {
-        self.lifecycle.evidence().and_then(|evidence| evidence.1)
+        let execution = self.execution.lock().expect("entity slot lock poisoned");
+        match &execution.state {
+            SlotState::Ready(state) => state.activation_id(),
+            SlotState::Poisoned => panic!("entity slot transition poisoned"),
+        }
+    }
+
+    fn dispatch_pending(&self, interpret: &impl Fn(SlotEffectBatch<C, E, L>)) {
+        let Some(mut dispatch) = SlotDispatch::acquire(&self.execution) else {
+            return;
+        };
+        while let Some(effects) = dispatch.next() {
+            interpret(effects);
+        }
+    }
+}
+
+impl<'a, C, E, L> SlotDispatch<'a, C, E, L> {
+    fn acquire(execution: &'a Mutex<SlotExecution<C, E, L>>) -> Option<Self> {
+        let mut slot = execution.lock().expect("entity slot lock poisoned");
+        match slot.dispatch {
+            SlotDispatchPhase::Idle => {
+                slot.dispatch = SlotDispatchPhase::Dispatching;
+                Some(Self {
+                    execution: Some(execution),
+                })
+            }
+            SlotDispatchPhase::Dispatching => None,
+        }
+    }
+
+    fn next(&mut self) -> Option<SlotEffectBatch<C, E, L>> {
+        let execution = self.execution?;
+        let mut slot = execution.lock().expect("entity slot lock poisoned");
+        if let Some(effects) = slot.pending.pop_front() {
+            Some(effects)
+        } else {
+            slot.dispatch = SlotDispatchPhase::Idle;
+            self.execution = None;
+            None
+        }
+    }
+}
+
+impl<C, E, L> Drop for SlotDispatch<'_, C, E, L> {
+    fn drop(&mut self) {
+        if let Some(execution) = self.execution {
+            execution
+                .lock()
+                .expect("entity slot lock poisoned")
+                .dispatch = SlotDispatchPhase::Idle;
+        }
     }
 }
 
@@ -229,7 +315,7 @@ where
         &self,
         entity_id: EntityId<I>,
         command: C,
-    ) -> Result<DispatchOutput<I, C, E, L>, DirectoryError<C>> {
+    ) -> Result<InstalledDispatch<I, C, E, L>, DirectoryError<C>> {
         let Some(dispatch_sequence) = allocate(&self.next_dispatch) else {
             return Err(DirectoryError::DispatchIdsExhausted(command));
         };
@@ -243,13 +329,12 @@ where
                 dispatch_id,
                 command,
             });
-            return Ok(DispatchOutput {
+            return Ok(InstalledDispatch {
                 dispatch_id,
-                output: directory_output(
+                decision: installed_slot_decision(
                     entity_id,
-                    installed.evidence,
-                    installed.activation_id,
-                    OutputTarget::Mapped(slot),
+                    installed,
+                    InstalledEffectSource::Mapped(slot),
                 ),
             });
         }
@@ -266,13 +351,12 @@ where
         });
         entries.insert(entity_id.clone(), Arc::clone(&slot));
         drop(entries);
-        Ok(DispatchOutput {
+        Ok(InstalledDispatch {
             dispatch_id,
-            output: directory_output(
+            decision: installed_slot_decision(
                 entity_id,
-                installed.evidence,
-                installed.activation_id,
-                OutputTarget::Mapped(slot),
+                installed,
+                InstalledEffectSource::Mapped(slot),
             ),
         })
     }
@@ -284,7 +368,7 @@ where
         activation_id: ActivationId,
         endpoint: E,
         lease: L,
-    ) -> DirectoryOutput<I, C, E, L> {
+    ) -> InstalledSlotDecision<I, C, E, L> {
         let event = SlotEvent::ActivationSucceeded {
             activation_id,
             endpoint,
@@ -298,7 +382,7 @@ where
         &self,
         entity_id: &EntityId<I>,
         activation_id: ActivationId,
-    ) -> DirectoryOutput<I, C, E, L> {
+    ) -> InstalledSlotDecision<I, C, E, L> {
         self.submit_or_inactive(entity_id, SlotEvent::ActivationFailed { activation_id })
     }
 
@@ -308,7 +392,7 @@ where
         entity_id: &EntityId<I>,
         activation_id: ActivationId,
         dispatch_id: DispatchId,
-    ) -> DirectoryOutput<I, C, E, L> {
+    ) -> InstalledSlotDecision<I, C, E, L> {
         self.submit_or_inactive(
             entity_id,
             SlotEvent::CancelWaiter {
@@ -324,7 +408,7 @@ where
         entity_id: &EntityId<I>,
         activation_id: ActivationId,
         failure: Option<(DispatchId, C)>,
-    ) -> DirectoryOutput<I, C, E, L> {
+    ) -> InstalledSlotDecision<I, C, E, L> {
         self.submit_or_inactive(
             entity_id,
             SlotEvent::DeliveryResolved {
@@ -339,7 +423,7 @@ where
         &self,
         entity_id: &EntityId<I>,
         activation_id: ActivationId,
-    ) -> DirectoryOutput<I, C, E, L> {
+    ) -> InstalledSlotDecision<I, C, E, L> {
         self.submit_or_inactive(entity_id, SlotEvent::BeginDrain { activation_id })
     }
 
@@ -348,7 +432,7 @@ where
         &self,
         entity_id: &EntityId<I>,
         activation_id: ActivationId,
-    ) -> DirectoryOutput<I, C, E, L> {
+    ) -> InstalledSlotDecision<I, C, E, L> {
         self.submit_or_inactive(entity_id, SlotEvent::FenceAcknowledged { activation_id })
     }
 
@@ -358,7 +442,7 @@ where
         entity_id: &EntityId<I>,
         activation_id: ActivationId,
         failure: DrainFailure,
-    ) -> DirectoryOutput<I, C, E, L> {
+    ) -> InstalledSlotDecision<I, C, E, L> {
         self.submit_or_inactive(
             entity_id,
             SlotEvent::ForceDrain {
@@ -373,7 +457,7 @@ where
         &self,
         entity_id: &EntityId<I>,
         activation_id: ActivationId,
-    ) -> DirectoryOutput<I, C, E, L> {
+    ) -> InstalledSlotDecision<I, C, E, L> {
         self.submit_or_inactive(entity_id, SlotEvent::Terminated { activation_id })
     }
 
@@ -403,8 +487,8 @@ where
     /// The owning [`super::EntityRuntime`] closes family admission and settles
     /// activation and delivery tasks before calling this operation. Snapshot
     /// entries are addressed by their exact activation identity, so a stale
-    /// output cannot drain a replacement incarnation.
-    pub(crate) fn begin_family_drain(&self) -> Vec<DirectoryOutput<I, C, E, L>> {
+    /// decision cannot drain a replacement incarnation.
+    pub(crate) fn begin_family_drain(&self) -> Vec<InstalledSlotDecision<I, C, E, L>> {
         let represented = self
             .shards
             .iter()
@@ -440,7 +524,7 @@ where
         &self,
         entity_id: &EntityId<I>,
         event: SlotEvent<C, E, L>,
-    ) -> DirectoryOutput<I, C, E, L> {
+    ) -> InstalledSlotDecision<I, C, E, L> {
         let slot = self.shards[self.shard_index(entity_id)]
             .lock()
             .expect("directory shard lock poisoned")
@@ -448,11 +532,10 @@ where
             .cloned();
         if let Some(slot) = slot {
             let installed = slot.submit(event);
-            return directory_output(
+            return installed_slot_decision(
                 entity_id.clone(),
-                installed.evidence,
-                installed.activation_id,
-                OutputTarget::Mapped(slot),
+                installed,
+                InstalledEffectSource::Mapped(slot),
             );
         }
         // No entry: reduce the event on a stack-resident machine instead of
@@ -460,28 +543,27 @@ where
         submit_absent(entity_id.clone(), event)
     }
 
-    /// Interpret all effects queued for the output's stable slot.
+    /// Interpret all effects queued for the decision's stable slot.
     ///
     /// A concurrent or reentrant call only contributes its already-queued
     /// effects; the current interpreter retains ownership until the queue is
     /// empty. Runtime callbacks execute without directory synchronization held.
-    pub fn interpret<R>(&self, output: DirectoryOutput<I, C, E, L>, runtime: &R)
+    pub fn interpret<R>(&self, decision: InstalledSlotDecision<I, C, E, L>, runtime: &R)
     where
         R: EffectInterpreter<I, C, E, L>,
     {
-        let DirectoryOutput {
+        let InstalledSlotDecision {
             entity_id, target, ..
-        } = output;
+        } = decision;
         match target {
-            OutputTarget::Mapped(slot) => {
-                slot.lifecycle
-                    .dispatch_pending(&|output: LifecycleOutput<C, E, L>| {
-                        output.effects.for_each(|effect| {
-                            self.apply_effect(&entity_id, Some(&slot), effect, runtime);
-                        });
+            InstalledEffectSource::Mapped(slot) => {
+                slot.dispatch_pending(&|effects| {
+                    effects.for_each(|effect| {
+                        self.apply_effect(&entity_id, Some(&slot), effect, runtime);
                     });
+                });
             }
-            OutputTarget::Transient(effects) => {
+            InstalledEffectSource::Transient(effects) => {
                 for effect in effects {
                     self.apply_effect(&entity_id, None, effect, runtime);
                 }
@@ -560,14 +642,6 @@ where
     }
 }
 
-impl<C, E, L> OutputEvidence for LifecycleOutput<C, E, L> {
-    type Evidence = (TransitionEvidence, Option<ActivationId>);
-
-    fn evidence(&self) -> Self::Evidence {
-        (self.evidence, self.activation_id)
-    }
-}
-
 /// Allocate the next non-zero identity from a monotonic sequence.
 ///
 /// `Relaxed` suffices by structural argument: the only requirement is
@@ -584,32 +658,80 @@ fn allocate(sequence: &AtomicU64) -> Option<NonZeroU64> {
         .and_then(NonZeroU64::new)
 }
 
-/// Reduce an event addressed to an absent entry on a stack-resident machine.
+/// Reduce an event addressed to an absent entry on an unallocated slot.
 #[cold]
 #[inline(never)]
 fn submit_absent<I, C, E: Clone, L>(
     entity_id: EntityId<I>,
     event: SlotEvent<C, E, L>,
-) -> DirectoryOutput<I, C, E, L> {
-    let (output, _) = lifecycle_machine().step(event);
-    directory_output(
+) -> InstalledSlotDecision<I, C, E, L> {
+    let decision = EntitySlot::<C, E, L>::Inactive.decide(event);
+    installed_slot_decision(
         entity_id,
-        output.evidence,
-        output.activation_id,
-        OutputTarget::Transient(output.effects.into_vec()),
+        InstalledSlotEvidence {
+            evidence: decision.evidence,
+            phase: decision.state.phase(),
+            activation_id: decision.state.activation_id(),
+        },
+        InstalledEffectSource::Transient(decision.effects.into_vec()),
     )
 }
 
-fn directory_output<I, C, E, L>(
+fn installed_slot_decision<I, C, E, L>(
     entity_id: EntityId<I>,
-    evidence: TransitionEvidence,
-    activation_id: Option<ActivationId>,
-    target: OutputTarget<C, E, L>,
-) -> DirectoryOutput<I, C, E, L> {
-    DirectoryOutput {
-        evidence,
-        activation_id,
+    installed: InstalledSlotEvidence,
+    target: InstalledEffectSource<C, E, L>,
+) -> InstalledSlotDecision<I, C, E, L> {
+    InstalledSlotDecision {
+        evidence: installed.evidence,
+        phase: installed.phase,
+        activation_id: installed.activation_id,
         entity_id,
         target,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use core::num::{NonZeroU64, NonZeroUsize};
+    use std::panic::{AssertUnwindSafe, catch_unwind};
+
+    use super::{ActivationId, DispatchId, Slot, SlotEvent};
+
+    struct PanickingEndpoint;
+
+    impl Clone for PanickingEndpoint {
+        fn clone(&self) -> Self {
+            panic!("endpoint clone aborted the pure transition");
+        }
+    }
+
+    #[test]
+    fn panicking_transition_poisoned_its_slot() {
+        let activation_id = ActivationId::new(NonZeroU64::MIN);
+        let slot = Slot::<u8, PanickingEndpoint, u8>::new();
+        let claimed = slot.submit(SlotEvent::ClaimActivation {
+            activation_id,
+            dispatch_id: DispatchId::new(NonZeroU64::MIN),
+            command: 1,
+            waiter_limit: NonZeroUsize::MIN,
+        });
+        assert_eq!(claimed.activation_id, Some(activation_id));
+
+        let transition_panicked = catch_unwind(AssertUnwindSafe(|| {
+            slot.submit(SlotEvent::ActivationSucceeded {
+                activation_id,
+                endpoint: PanickingEndpoint,
+                lease: 2,
+            });
+        }))
+        .is_err();
+        assert!(transition_panicked);
+
+        let replay_panicked = catch_unwind(AssertUnwindSafe(|| {
+            slot.submit(SlotEvent::Terminated { activation_id });
+        }))
+        .is_err();
+        assert!(replay_panicked);
     }
 }

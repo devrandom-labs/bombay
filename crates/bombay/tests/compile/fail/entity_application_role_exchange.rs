@@ -1,5 +1,5 @@
-use bombay::actors::ActorExt;
-use bombay::behavior::{Actions, BehaviorActed, Never, StopOnShutdown};
+use bombay::{actors::ActorExt, prelude::StopOnShutdown};
+use bombay::behavior::{Actions, BehaviorActed, Never};
 use bombay::entity::{
     ActivationId, AdmissionFailure, DrainFailure, Entities, EntityActivationError,
     EntityDefinition, EntityId,
@@ -31,8 +31,11 @@ impl Profile {
 
 #[derive(ActorSpaces)]
 struct Spaces {
+    #[actor_space(Root)]
     root: ActorSpace<Root>,
+    #[actor_space(Account)]
     accounts: ActorSpace<Account>,
+    #[actor_space(Profile)]
     profiles: ActorSpace<Profile>,
 }
 
@@ -117,7 +120,7 @@ type Families = (
     (AccountsRole, Entities<Accounts>, ()),
 );
 
-fn exchange(application: ApplicationHandle<Root, Families>) {
+fn exchange(application: ApplicationHandle<Root, (), Families>) {
     let _: Entities<Profiles> = application.entities(AccountsRole);
 }
 

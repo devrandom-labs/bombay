@@ -48,6 +48,6 @@ mod driver;
 mod environment;
 
 #[doc(hidden)]
-pub use driver::{ActionsOf, Completion, Driver, DriverError, DriverRetirement};
+pub use driver::{ActionsOf, Completion, Driver, DriverError, DriverRetirement, SettlementFailure};
 #[doc(hidden)]
 pub use environment::{ActiveEnvironment, Environment};

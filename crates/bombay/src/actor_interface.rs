@@ -1,17 +1,18 @@
 //! Transport-neutral access to explicitly exported actor capabilities.
 
+use core::fmt;
 use std::future::Future;
 use std::sync::Arc;
 
 use behavior::{
-    AllocationRejection, EstablishedRecipient, Exit, InterpretEstablished, Never, Protocol, User,
+    AllocationRejection, EstablishedRecipient, InterpretEstablished, Never, Protocol, User,
 };
-use bombay_address::{AddressSpace, ClaimError, Lease};
+use behavior_actors::Exit;
 use communication::{Consumer, ControlSender, Received, mailbox_channel};
 
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::entity::{AdmissionFailure, EntityDefinition, EntityRef, NativeEntityHost};
-use crate::local::{ActorRef, Admission, SendError, Termination};
+use crate::local::{ActorRef, Admission, AdmissionClosure, SendError, Termination};
 use crate::observe::{Publisher, pair};
 
 const EXTERNAL_USER_CAPACITY: usize = 1_024;
@@ -91,6 +92,15 @@ pub struct ActorInterface<Api> {
     allocations: ApplicationAddresses,
 }
 
+impl<Api> fmt::Debug for ActorInterface<Api> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("ActorInterface")
+            .field("api_type", &core::any::type_name::<Api>())
+            .finish_non_exhaustive()
+    }
+}
+
 impl<Api> Clone for ActorInterface<Api>
 where
     Api: Clone,
@@ -116,13 +126,13 @@ impl<Api> ActorInterface<Api> {
 
     /// Establish one real external actor for a concrete reply protocol.
     ///
-    /// The returned actor owns one fresh claimed address, one exact cloneable
+    /// The returned actor owns one fresh allocated address, one exact cloneable
     /// recipient, and the only receive authority for its mailbox.
     ///
     /// # Errors
     ///
-    /// Returns the exact allocation or Address claim failure. No raw address
-    /// or unclaimed recipient is returned on failure.
+    /// Returns the exact allocation failure. No raw address or unbound
+    /// recipient is returned on failure.
     pub fn external<P>(&self) -> Result<ExternalActor<P>, ExternalActorError>
     where
         P: Protocol<Addr = MailAddr>,
@@ -138,12 +148,9 @@ pub enum ExternalActorError {
     /// Bombay's one never-wrapping application address source is exhausted.
     #[error("the Bombay application has exhausted its local address space")]
     Allocation(#[source] AllocationRejection),
-    /// Address could not commit the exact external endpoint claim.
-    #[error("the external actor address could not be claimed")]
-    Address(ClaimError<MailAddr>),
 }
 
-/// One claimed external actor with affine receive authority.
+/// One allocated external actor with affine receive authority.
 ///
 /// This value intentionally does not implement `Clone`. Cloneable producer
 /// authority is available separately through [`Self::recipient`].
@@ -156,8 +163,19 @@ where
     admission: Arc<Admission<User<MailAddr, P::Msg>>>,
     _control_liveness: ControlSender<Never>,
     receiver: Consumer<Never, User<MailAddr, P::Msg>>,
-    lease: Option<Lease<MailAddr, ActorRef<P>>>,
     termination: Option<Publisher<Termination<MailAddr>>>,
+}
+
+impl<P> fmt::Debug for ExternalActor<P>
+where
+    P: Protocol<Addr = MailAddr>,
+{
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("ExternalActor")
+            .field("address", &self.address)
+            .finish_non_exhaustive()
+    }
 }
 
 impl<P> ExternalActor<P>
@@ -177,10 +195,6 @@ where
         let (termination, observation) = pair();
         let endpoint =
             ActorRef::external(address, mailbox, Arc::downgrade(&admission), observation);
-        let addresses = AddressSpace::new();
-        let lease = addresses
-            .try_claim(address, endpoint.clone())
-            .map_err(ExternalActorError::Address)?;
         let recipient = endpoint.established_recipient();
         Ok(Self {
             address,
@@ -188,7 +202,6 @@ where
             admission,
             _control_liveness: control_liveness,
             receiver,
-            lease: Some(lease),
             termination: Some(termination),
         })
     }
@@ -207,7 +220,7 @@ where
 
     /// Send directly to one exact exported or extruded actor capability.
     ///
-    /// The external actor's own claimed address is always used as the message
+    /// The external actor's own allocated address is always used as the message
     /// origin. The reply destination remains an explicit field of the domain
     /// message when the protocol requires one.
     ///
@@ -241,7 +254,7 @@ where
     /// Close new reply admission while retaining the already accepted prefix.
     pub fn close_admission(&self) {
         match self.admission.close() {
-            Some(()) | None => {}
+            AdmissionClosure::Closed | AdmissionClosure::AlreadyClosed => {}
         }
     }
 }
@@ -252,10 +265,7 @@ where
 {
     fn drop(&mut self) {
         match self.admission.close() {
-            Some(()) | None => {}
-        }
-        if let Some(lease) = self.lease.take() {
-            lease.release();
+            AdmissionClosure::Closed | AdmissionClosure::AlreadyClosed => {}
         }
         if let Some(termination) = self.termination.take() {
             termination.complete(Ok(Exit::Normal));
@@ -263,7 +273,7 @@ where
     }
 }
 
-struct ExtractLocalEndpoint;
+pub(crate) struct ExtractLocalEndpoint;
 
 impl<P> InterpretEstablished<P> for ExtractLocalEndpoint
 where
@@ -273,5 +283,29 @@ where
 
     fn interpret_established(&mut self, endpoint: ActorRef<P>) -> Self::Output {
         endpoint
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use behavior::MessageProtocol;
+    use behavior_actors::Exit;
+
+    use super::{ApplicationAddresses, ExternalActor, ExtractLocalEndpoint, MailAddr};
+
+    #[test]
+    fn external_actor_drop_publishes_normal_termination_to_its_exact_recipient() {
+        let allocations = ApplicationAddresses::new();
+        let external = ExternalActor::<MessageProtocol<MailAddr, u64>>::establish(&allocations)
+            .expect("the external actor is established");
+        let address = external.address();
+        let recipient = external.recipient().interpret(&mut ExtractLocalEndpoint);
+        let description = format!("{external:?}");
+        assert!(description.contains("ExternalActor"));
+        assert!(description.contains(&format!("{address:?}")));
+
+        drop(external);
+        let terminal = recipient.termination_observation().try_get();
+        assert_eq!(terminal, Some(Ok(Exit::Normal)));
     }
 }

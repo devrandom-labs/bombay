@@ -1,0 +1,5 @@
+error[E0599]: no method named `clone` found for struct `AffineObservation<O>` in the current scope
+ --> tests/compile/fail/affine_observation_cannot_clone.rs:5:33
+  |
+5 |     let duplicate = observation.clone();
+  |                                 ^^^^^ method not found in `AffineObservation<u64>`

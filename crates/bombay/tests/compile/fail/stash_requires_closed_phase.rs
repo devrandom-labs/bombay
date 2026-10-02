@@ -1,7 +1,7 @@
 use bombay::behavior::{
-    Actions, ActiveTurn, Behavior, BehaviorActed, Never, NoBirths, Protocol, StashRoute, User,
+    Actions, ActiveTurn, Behavior, BehaviorActed, Never, NoBirths, Protocol, User,
 };
-use bombay::prelude::*;
+use bombay::{composition::StashRoute, prelude::*};
 
 struct Phased;
 

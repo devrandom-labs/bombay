@@ -1,5 +1,5 @@
-use bombay::actors::ActorExt;
-use bombay::behavior::{Actions, BehaviorActed, Never, StopOnShutdown};
+use bombay::{actors::ActorExt, prelude::StopOnShutdown};
+use bombay::behavior::{Actions, BehaviorActed, Never};
 use bombay::entity::{
     ActivationId, AdmissionFailure, DrainFailure, EntityActivationError, EntityDefinition,
     EntityId,
@@ -17,6 +17,7 @@ impl Account {
 
 #[derive(ActorSpaces)]
 struct MissingAccountSpace {
+    #[actor_space(Root)]
     root: ActorSpace<Root>,
 }
 

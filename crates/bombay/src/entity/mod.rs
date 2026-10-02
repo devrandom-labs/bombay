@@ -9,10 +9,6 @@
 use core::fmt;
 use core::hash::Hash;
 
-#[allow(
-    dead_code,
-    reason = "the native adapter remains private until typed application topology can materialize its requirements"
-)]
 mod bombay;
 mod directory;
 mod family;
@@ -20,9 +16,8 @@ mod lifecycle;
 mod runtime;
 
 pub(crate) use bombay::NativeEntityHost;
-pub use bombay_machine::{Decision, Reducer};
 pub use directory::{
-    DirectoryConfig, DirectoryError, DirectoryOutput, DispatchOutput, EffectInterpreter,
+    DirectoryConfig, DirectoryError, EffectInterpreter, InstalledDispatch, InstalledSlotDecision,
     LocalDirectory,
 };
 pub use family::{
@@ -31,12 +26,10 @@ pub use family::{
 };
 pub(crate) use family::{InstallEntityFamilies, InstalledEntityFamilies};
 pub use lifecycle::{
-    ActivatingSlot, ActivationId, ActiveSlot, DispatchId, DrainFailure, DrainStage, DrainingSlot,
-    EntitySlot, LIFECYCLE_TOPOLOGY, LifecycleEdge, LifecycleMachine, LifecycleOutput,
-    LifecyclePhase, LifecycleTopologyError, LifecycleTrigger, Refusal, RetirementMode,
-    SlotDecision, SlotEffect, SlotEffectBatch, SlotEvent, SlotReducer, TransitionEvidence,
-    lifecycle_machine, validate_lifecycle_topology,
+    ActivationId, DispatchId, DrainFailure, DrainStage, EntitySlot, LifecycleEdge, LifecyclePhase,
+    Refusal, RetirementMode, SlotEvent, TransitionEvidence,
 };
+pub(crate) use lifecycle::{SlotEffect, SlotEffectBatch};
 pub use runtime::{
     Activated, AdmissionFailure, EntityRuntime, EntityShutdown, FenceFailure, LocalEntityRuntime,
     Passivation,
@@ -89,6 +82,8 @@ mod tests {
 
         assert_eq!(id.get(), &42);
         assert_eq!(id.to_string(), "42");
-        assert_eq!(id.into_inner(), 42);
+        assert_eq!(format!("{id:?}"), "EntityId(42)");
+        let recovered_id = id.into_inner();
+        assert_eq!(recovered_id, 42);
     }
 }

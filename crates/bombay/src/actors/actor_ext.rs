@@ -1,10 +1,10 @@
 use core::time::Duration;
 use std::time::Instant;
 
-use behavior::{
-    Behavior, BehaviorMessage, Deadline, DeadlineReaction, Never, OneShot, OneShotReaction,
-    Periodic, PeriodicReaction, ReceiveTimeout, ReceiveTimeoutReaction, Stash, StashRoute,
-    StopOnShutdown, TimerId,
+use behavior::{Behavior, BehaviorMessage, Never};
+use behavior_actors::{
+    Deadline, DeadlineReaction, OneShot, Periodic, ReceiveTimeout, Stash, StashRoute,
+    StopOnShutdown, TimedReaction, TimerId,
 };
 
 /// Discover and compose reusable wrappers from any concrete actor behavior.
@@ -15,6 +15,7 @@ use behavior::{
 /// is supplied explicitly by the application.
 pub trait ActorExt: Behavior + Sized {
     /// Stash selected messages and replay them according to `route`.
+    #[must_use]
     fn with_stash(self, route: fn(&BehaviorMessage<Self>) -> StashRoute) -> Stash<Self>
     where
         Self: Behavior<Ph = Never>,
@@ -23,26 +24,29 @@ pub trait ActorExt: Behavior + Sized {
     }
 
     /// React once after the relative delay.
+    #[must_use]
     fn with_one_shot(
         self,
         id: TimerId,
         after: Duration,
-        on_elapsed: OneShotReaction<Self>,
+        on_elapsed: TimedReaction<Self>,
     ) -> OneShot<Self> {
         OneShot::new(self, id, after, on_elapsed)
     }
 
     /// React after each relative interval while the behavior continues.
+    #[must_use]
     fn with_periodic(
         self,
         id: TimerId,
         every: Duration,
-        on_elapsed: PeriodicReaction<Self>,
+        on_elapsed: TimedReaction<Self>,
     ) -> Periodic<Self> {
         Periodic::new(self, id, every, on_elapsed)
     }
 
     /// React once at an optional absolute deadline.
+    #[must_use]
     fn with_deadline(
         self,
         id: TimerId,
@@ -53,16 +57,18 @@ pub trait ActorExt: Behavior + Sized {
     }
 
     /// React after one idle period, rearmed by successful user messages.
+    #[must_use]
     fn with_receive_timeout(
         self,
         id: TimerId,
         after: Duration,
-        on_elapsed: ReceiveTimeoutReaction<Self>,
+        on_elapsed: TimedReaction<Self>,
     ) -> ReceiveTimeout<Self> {
         ReceiveTimeout::new(self, id, after, on_elapsed)
     }
 
     /// Stop normally when this wrapper receives the typed shutdown request.
+    #[must_use]
     fn stop_on_shutdown(self) -> StopOnShutdown<Self> {
         StopOnShutdown::new(self)
     }

@@ -1,3 +1,4 @@
+use bombay::behavior::NoBirths;
 use bombay::prelude::*;
 use bombay::testing::InfallibleResultExt;
 
@@ -15,7 +16,7 @@ struct Counter {
 #[bombay::behavior::behavior(
     addr = MailAddr,
     message = u8,
-    sends = { markers: Vec<Delivery<Marker>> },
+    sends = pub(crate) { markers: Vec<Delivery<Marker>> },
 )]
 #[allow(
     clippy::needless_pass_by_value,
@@ -38,24 +39,23 @@ fn consuming_activation_preserves_the_explicit_initialization_and_transition_tra
     let active_initialization = initialized.actions;
     let mut active = initialized.behavior;
 
-    assert!(matches!(explicit_initialization.become_, Step::Continue));
-    assert!(matches!(active_initialization.become_, Step::Continue));
-    assert!(explicit_initialization.sends.markers.is_empty());
-    assert!(active_initialization.sends.markers.is_empty());
+    let expected_initialization: Actions<MailAddr, Never, Vec<Delivery<Marker>>, NoBirths> =
+        Actions::cont();
+    let explicit_initialization_markers = explicit_initialization.map_sends(|sends| sends.markers);
+    let active_initialization_markers = active_initialization.map_sends(|sends| sends.markers);
+    assert!(explicit_initialization_markers == expected_initialization);
+    assert!(active_initialization_markers == expected_initialization);
 
     let explicit_actions = explicit.receive(MailAddr(3), 4).infallible();
     let active_actions = active.receive(MailAddr(3), 4).infallible();
 
     assert_eq!(explicit.value, active.value);
-    assert_eq!(
-        explicit_actions.sends.markers[0].message,
-        active_actions.sends.markers[0].message
-    );
-    assert_eq!(
-        explicit_actions.sends.markers[0].to,
-        active_actions.sends.markers[0].to
-    );
-    assert_eq!(explicit_actions.become_, active_actions.become_);
+    let expected_actions: Actions<MailAddr, Never, Vec<Delivery<Marker>>, NoBirths> =
+        Actions::send(vec![Delivery::new(Recipient::global(MailAddr(9)), 6)]);
+    let explicit_action_markers = explicit_actions.map_sends(|sends| sends.markers);
+    let active_action_markers = active_actions.map_sends(|sends| sends.markers);
+    assert!(explicit_action_markers == expected_actions);
+    assert!(active_action_markers == expected_actions);
 }
 
 #[test]

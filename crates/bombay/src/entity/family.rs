@@ -1,10 +1,5 @@
 //! Nominal native Entity definitions, stable references, and family products.
 
-#![allow(
-    private_bounds,
-    reason = "native execution proof remains private application composition"
-)]
-
 use core::future::Future;
 use core::hash::Hash;
 use core::num::NonZeroUsize;
@@ -12,10 +7,11 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use behavior::{
-    Behavior, BehaviorBase, BehaviorMessage, BirthMode, Here, InjectEvent, Inside,
-    InterpreterRequest, LogicalHostRequirements, Never, NoReturnToEmitter, Protocol,
-    ShutdownRequested,
+    ActionItem, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
+    ClassifySettlement, Here, InjectEvent, Inside, InterpreterRequest, LogicalHostRequirements,
+    Never, NoBirthProtocols, NoReturnToEmitter, Protocol,
 };
+use behavior_actors::ShutdownRequested;
 
 use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
@@ -23,8 +19,7 @@ use crate::local::ActorRef;
 use crate::topology::Hosts as LocalHosts;
 
 use super::bombay::{
-    BombayEntityRuntime, EntityTaskOwner, NativeEntityHost, NativeEntityLease,
-    bombay_entity_runtime,
+    BombayEntityRuntime, NativeEntityHost, NativeEntityLease, bombay_entity_runtime,
 };
 use super::runtime::EntityReceptionist;
 use super::{
@@ -37,12 +32,13 @@ pub trait EntityDefinition: Send + Sync + 'static {
     /// Stable domain identity stored by one Entity reference.
     type Id: Clone + Eq + Hash + Send + Sync + 'static;
     /// Complete authored actor stack for one live incarnation.
-    type Behavior: Behavior<
+    type Behavior: BehaviorSettlements<
             Protocol: Protocol<Addr = MailAddr, Msg: Send + 'static>,
             Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
             Sends: Send + 'static,
             Error: Send + 'static,
             Birth: BirthMode<Child: Send + 'static>,
+            Settlements: ClassifySettlement + Send + 'static,
             Ph = Never,
         > + BehaviorBase
         + LogicalHostRequirements
@@ -122,7 +118,7 @@ impl EntityCapacity {
 /// Exact phase and fact that prevented native activation.
 pub enum EntityActivationError<Hydration, B, Terminal>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     /// The explicit active-or-activating family bound was full.
     ResidentCapacity,
@@ -216,6 +212,8 @@ type ReceptionistFor<D> = EntityReceptionist<
     MailAddr,
     ActorRef<<<D as EntityDefinition>::Behavior as Behavior>::Protocol>,
     NativeEntityLease<D>,
+    tokio::task::JoinHandle<()>,
+    tokio::task::JoinError,
 >;
 
 /// Cloneable receptionist for one application-installed native family.
@@ -339,8 +337,22 @@ where
     D: EntityDefinition,
 {
     type ReturnToEmitter = NoReturnToEmitter;
+    type LogicalProtocols = NoBirthProtocols;
 }
 
+impl<D> ActionItem for EntityAdmission<D>
+where
+    D: EntityDefinition,
+{
+    type Accepted = ();
+    type Rejection = Never;
+    type Prerequisite = Never;
+}
+
+#[expect(
+    private_bounds,
+    reason = "native admission is constructed only by Bombay's private application host proof"
+)]
 impl<D> EntityAdmission<D>
 where
     D: EntityDefinition,
@@ -392,7 +404,11 @@ where
     Tail: EntityApplicationFamilies<Hosts>,
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
-    type Shutdowns = (Role, (EntityShutdown, EntityMetrics), Tail::Shutdowns);
+    type Shutdowns = (
+        Role,
+        (EntityShutdown<tokio::task::JoinError>, EntityMetrics),
+        Tail::Shutdowns,
+    );
 }
 
 mod family_at_sealed {
@@ -451,7 +467,6 @@ where
 {
     runtime: InstalledRuntimeFor<D>,
     entities: Entities<D>,
-    tasks: Arc<EntityTaskOwner>,
     metrics: Arc<EntityMetricState>,
 }
 
@@ -460,9 +475,8 @@ where
     D: EntityDefinition,
     D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
 {
-    async fn shutdown(self) -> (EntityShutdown, EntityMetrics) {
+    async fn shutdown(self) -> (EntityShutdown<tokio::task::JoinError>, EntityMetrics) {
         let directory = self.runtime.shutdown().await;
-        self.tasks.join().await;
         (directory, self.metrics.snapshot())
     }
 }
@@ -498,7 +512,7 @@ where
         let (role, definition, directory, capacity, tail) = self;
         let definition = Arc::new(definition);
         let metrics = Arc::new(EntityMetricState::default());
-        let (runtime, tasks) = bombay_entity_runtime(
+        let runtime = bombay_entity_runtime(
             Arc::clone(&definition),
             Arc::clone(&hosts),
             allocations.clone(),
@@ -512,7 +526,6 @@ where
         let family = InstalledEntityFamily {
             runtime,
             entities,
-            tasks,
             metrics,
         };
         let tail = tail.install(hosts, allocations);
@@ -546,7 +559,11 @@ where
     Tail: InstalledEntityFamilies + Send,
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
-    type Shutdowns = (Role, (EntityShutdown, EntityMetrics), Tail::Shutdowns);
+    type Shutdowns = (
+        Role,
+        (EntityShutdown<tokio::task::JoinError>, EntityMetrics),
+        Tail::Shutdowns,
+    );
 
     fn receptionists(&self) -> Self::Receptionists {
         (

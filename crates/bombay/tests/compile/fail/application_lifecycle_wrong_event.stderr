@@ -1,0 +1,10 @@
+error[E0308]: mismatched types
+ --> tests/compile/fail/application_lifecycle_wrong_event.rs:5:50
+  |
+5 |     let _other: ApplicationLifecycle<P, Never> = lifecycle;
+  |                 ------------------------------   ^^^^^^^^^ expected `ApplicationLifecycle<P, Never>`, found `ApplicationLifecycle<P, ()>`
+  |                 |
+  |                 expected due to this
+  |
+  = note: expected struct `ApplicationLifecycle<P, Never>`
+             found struct `ApplicationLifecycle<P, ()>`

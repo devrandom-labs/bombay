@@ -10,3 +10,4 @@ workspace = true
 
 [dependencies]
 bombay-rs = { path = "../../crates/bombay" }
+tokio = { workspace = true, features = ["sync", "time"] }

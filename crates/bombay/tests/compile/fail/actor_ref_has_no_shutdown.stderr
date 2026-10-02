@@ -1,10 +1,5 @@
-error[E0624]: method `request_shutdown` is private
+error[E0599]: no method named `request_shutdown` found for struct `bombay::ActorRef<P>` in the current scope
   --> tests/compile/fail/actor_ref_has_no_shutdown.rs:11:26
    |
 11 |     let _accepted = root.request_shutdown();
-   |                          ^^^^^^^^^^^^^^^^ private method
-   |
-  ::: src/local.rs
-   |
-   |     pub(crate) fn request_shutdown(&self) -> Result<(), ShutdownRejection> {
-   |     ---------------------------------------------------------------------- private method defined here
+   |                          ^^^^^^^^^^^^^^^^ method not found in `bombay::ActorRef<RootProtocol>`

@@ -4,6 +4,17 @@ This document maps source ownership. Semantic capability laws are in
 [`runtime-capability-interfaces.md`](runtime-capability-interfaces.md); current
 implementation blockers are in
 [`open-design-ledger.md`](open-design-ledger.md).
+The [public API audit](public-api-audit.md) records each retained caller-facing
+type, its methods, construction and custody rules, standard trait decisions,
+and compiled caller evidence.
+
+The [completion requirements](prd-backlog/README.md) extend the
+planned scope with Bombay-owned Zenoh networking, typed identity integration
+and distributed hosting. Zenoh is the only planned production networking
+substrate; deterministic test hosts remain supported. Selo's KERI integration
+is supplied by Selo, which builds on Bombay, Mnesis and `mnesis-bombay`;
+there is no reverse Bombay dependency. These are planned ownership boundaries,
+not additional source modules or currently implemented public APIs.
 
 ## Workspace boundary
 
@@ -18,7 +29,7 @@ crates/bombay-engine
                 |
                 v
 crates/bombay
-    actor API, templates, local capability composition, and incarnation ownership
+    actor API, template composition, local capabilities, and actor execution ownership
 ```
 
 ### `bombay-engine`
@@ -78,24 +89,28 @@ tree:
 | `lib.rs` | minimal façade and semantic-level re-exports | curated application prelude, template-family modules, `Application`, `App`, `RunError`, typed boundaries, transitional hosting evidence, and deliberate `behavior` power surface |
 | `application.rs` | pure ownership of one root and its semantic-role child declarations before execution | `Application` and its root-first `child` method are public; it owns values and roles, never runtime capabilities, addresses, or a second birth algebra |
 | `application_runtime.rs` | actor-system runner and concrete runtime capability product | `ApplicationHandle`, `ApplicationLifecycle`, `App`, and `RunError`; opt-in `AxumRunError` and Axum execution |
+| `child_bindings.rs` | one closed occurrence product for exact child creation status, endpoint/control, address space, ordered task ownership, and descendant retirement | crate-private; application interpretation consumes its typed creation state |
 | `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |
 | `topology.rs` | transitional static `Hosts<P>` runtime selection | public until `Application` materialization internalizes the closed actor-space product |
 | `local.rs` | prepared/live Environment and external typed reference | only `ActorRef` and exact-payload `SendError` escape the private module |
-| `launch.rs` | construct one incarnation and place it on Tokio | only the `ActorSpace<P>` alias is public |
-| `observe/` | actor-independent exact publication and shared/affine waiting | private, non-publishable, and verified through isolated normal/Loom/fuzz/performance harnesses |
+| `launch.rs` | share the concrete root/owned spawn transaction, request owner cancellation on abandoned waits, and settle actor-owned activation tasks inside the spawned incarnation task | only the `ActorSpace<P>` alias is public |
+| `observe/` | actor-independent exact publication and shared/affine waiting | private to Bombay; its ordinary tests run in Bombay, while the isolated test package compiles the same source for Loom and for fuzz/performance dependencies |
 | `interpret.rs` | statically dispatch complete named action lanes and classify concrete runtime interpretation failure | only the flat `EffectInterpretationError` sum is public; traversal and interpreters remain private |
-| `observation.rs` | multiplex retained peer and child termination facts into typed Behavior events | private; unsupported duplicate observation and cancellation adapters remain removed |
-| `time.rs` | adapt the actor-owned `TimerQueue` into typed events | private |
+| `observation.rs` | own the actor's pending peer and child termination facts in registration order and inject their typed Behavior events | private; the application capability product owns its single queue |
+| `time.rs` | own the actor's `TimerQueue` and adapt due entries into typed events | private; the application capability product owns its single queue |
+| `terminal.rs` | preserve exact root and child origin provenance and typed actor retirement | public `RootOrigin<Owner>`, `ChildOrigin<Owner, Role>`, `ActorRetirement`, and `ProjectTerminal`; root origins have no nonce and child origins require one |
 | `reports.rs` | preserve exact typed parent reports | private |
 | `termination.rs` | publish the coarse external termination observation | private |
-| `incarnation.rs` | one Driver execution plus terminal classification | private |
-| `outcome.rs` | exact terminal vocabulary | private |
+| `actor_execution.rs` | one Driver execution plus terminal classification | private `ActorExecution` owning the Driver and retirement authority |
+| `actor_outcome.rs` | exact terminal vocabulary | private `ActorExecutionOutcome` preserving every disposition |
 | `retirement.rs` | affine terminal handoff | private |
 
 `crates/bombay-macros` owns three syntax-only projections: the narrow
 `#[bombay::actor]` facade delegates to Behavior's owning actor expansion,
 `TerminalProjection` lifts exact actor retirements into an application-owned
-sum, and transitional `ActorSpaces` derives static protocol-host proofs. None
+sum using explicit child-source markers and Rust's `ChildRole` proofs, and
+transitional `ActorSpaces` derives static protocol-host proofs from explicit
+field annotations. Neither derives type identity from a spelling. None
 owns actor semantics, an effect algebra, lifecycle policy, or runtime behavior.
 Bombay has no protocol macro.
 
@@ -132,10 +147,57 @@ surface.
 
 Behavior's application-authoring profile generates nominal effect and birth
 products. Bombay re-exports `ActorExt` and owning Behavior Actors constructors
-such as `Machine`, `Supervisor`, `DynamicSupervisor`, `WorkerPool`, and
-`KeyedWorkerPool`; Bombay does not wrap them in compatibility recipes. Every
+such as `Machine`, `FixedSupervisor`, `DynamicSupervisor`, `FifoPool`, and
+`KeyedPool`; Bombay does not wrap them in compatibility recipes. Every
 policy and domain capability input remains explicit. Behavior owns the
 deterministic algebra, Behavior Actors owns reusable actor policy, and Bombay
 owns concrete application composition, activation, and runtime interpretation.
 The result remains inspectable concrete composition, never a dynamic context,
 erased graph, alternate actor trait, or second runtime path.
+
+## Entity boundary
+
+Entity is not a second actor lifecycle. A stable `EntityId` is a Bombay
+runtime-routing key that can accept a caller-owned domain command while no
+actor exists. The Entity directory owns the bounded shared activation waiter
+set, asynchronous domain hydration, exact-incarnation delivery reservations,
+the ordered processing fence, the affine runtime lease, and removal after the
+matching termination fact.
+
+Behavior Actors retains every law inside the activated actor graph.
+`StableProxy` owns one proxy actor's worker creation, initialization,
+readiness, explicit replacement, shutdown, and terminal custody;
+`DynamicSupervisor` owns keyed proxy management and its operation authority;
+`Registry` and `Resolver` own behavior-level typed recipient discovery; and
+Behavior Actors `Machine` owns only receive/become/defer/stop policy. Entity
+may launch an authored behavior already composed from those templates, but it
+must not translate or reproduce their events, effects, correlations, errors,
+or terminal products.
+
+The Entity slot's total `decide` transition returns its successor state,
+ordered effects, and disposition together. One private slot mutex linearizes
+that turn and queues its effects for ordered interpretation without holding the
+lock during callbacks. The independent state/input oracle checks the
+transition directly. Bombay has no separate Machine crate or topology
+execution layer.
+
+The ordinary Entity facade exposes stable references, nominal definitions,
+capacity, admission results, and terminal facts. The deliberate advanced
+`LocalEntityRuntime` port and `LocalDirectory` kernel remain nameable. A
+directory dispatch returns an `InstalledDispatch` containing its correlation
+and one `InstalledSlotDecision` awaiting interpretation. Slot phase structs,
+raw effect batches, and private native host proofs do not cross that boundary.
+
+Entity lifecycle tasks are registered and joined by one Entity task group.
+The local runtime port returns a concrete join handle for each scheduled task;
+family shutdown preserves exact panic or cancellation failures in its typed
+shutdown outcome. The group gives one shutdown claimant the result and returns
+task custody on cancellation. Admission and passivation share the shutdown
+gate, so a passivation cannot schedule a drain after family shutdown claims it.
+
+Consequently Entity "replacement" means a fresh command-triggered activation
+only after the previous incarnation's fenced retirement and exact directory
+removal. It is not `StableProxy::replace` or `DynamicCommand::Replace`.
+Conversely, none of the locked templates accepts a domain command for an absent
+key and retains that command through one shared hydration attempt, so composing
+them does not replace the Entity directory transaction.

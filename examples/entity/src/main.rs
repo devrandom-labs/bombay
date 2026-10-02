@@ -1,20 +1,25 @@
 //! For learning native Entity installation: `Account` owns domain state,
 //! `StopOnShutdown` owns lifecycle policy, Behavior owns typed actions, and the
 //! advanced Bombay `App` boundary owns hydration, stable identity, passivation,
-//! reactivation, and root-first family shutdown.
+//! command-triggered reactivation, and root-first family shutdown. Reactivation
+//! is a fresh incarnation after fenced retirement; it is not Behavior Actors'
+//! explicit `StableProxy` worker-replacement policy.
 
 use core::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use bombay::actors::ActorExt;
-use bombay::behavior::{Actions, Behavior, BehaviorActed, BehaviorBase, Never, Protocol};
+use bombay::behavior::{
+    Actions, BehaviorActed, BehaviorBase, BehaviorSettlements, ClassifySettlement, Never, Protocol,
+    SettlementStatus,
+};
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId, Passivation,
+    EntityCapacity, EntityDefinition, EntityId, EntityShutdown, Passivation,
 };
 use bombay::prelude::{
-    ActorOrigin, ActorRetirement, Completion, MailAddr, StopOnShutdown, TerminalProjection,
+    ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown, TerminalProjection,
 };
 use bombay::{ActorSpace, ActorSpaces, App};
 use tokio::sync::Semaphore;
@@ -108,17 +113,19 @@ impl Protocol for Replies {
 
 #[derive(ActorSpaces)]
 struct Spaces {
+    #[actor_space(Root)]
     root: ActorSpace<Root>,
+    #[actor_space(Account)]
     accounts: ActorSpace<Account>,
 }
 
 #[derive(TerminalProjection)]
 enum ApplicationTerminal<R>
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     Root {
-        origin: ActorOrigin<R>,
+        origin: RootOrigin<R>,
         terminal: ActorRetirement<R, Self>,
     },
 }
@@ -163,10 +170,8 @@ fn main() {
                     .send(interface.api(), AccountCommand::Deposit(40))
                     .await
                     .expect("the first incarnation accepts its command");
-                assert_eq!(
-                    application.passivate_entity(AccountsRole, &ACCOUNT_ID),
-                    Passivation::Begun
-                );
+                let passivation = application.passivate_entity(AccountsRole, &ACCOUNT_ID);
+                assert_eq!(passivation, Passivation::Begun);
                 Arc::clone(&retired)
                     .acquire_owned()
                     .await
@@ -176,11 +181,15 @@ fn main() {
                     .send(&account, AccountCommand::Deposit(2))
                     .await
                     .expect("the same stable reference activates a replacement");
-                assert_eq!(application.lifecycle().request_shutdown(), Ok(()));
+                let shutdown = application.lifecycle().request_shutdown();
+                assert_eq!(shutdown, Ok(()));
             })
             .expect("the root and Entity family settle");
 
-    assert_eq!(shutdown.represented, 1);
+    assert!(matches!(
+        shutdown,
+        EntityShutdown::Settled { represented: 1 }
+    ));
     assert_eq!(metrics.activations, 2);
     assert_eq!(metrics.residents, 0);
     assert_eq!(unexpected_facts.load(Ordering::Relaxed), 0);
@@ -190,12 +199,14 @@ fn main() {
 
 fn assert_application_stopped<R>(terminal: ApplicationTerminal<R>)
 where
-    R: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R::Settlements: ClassifySettlement,
 {
     let ApplicationTerminal::Root {
         origin,
         terminal:
             ActorRetirement::Completed {
+                settlements,
                 control,
                 user,
                 descendants,
@@ -207,6 +218,8 @@ where
         panic!("the application root must stop normally")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let settlement_status = settlements.settlement_status();
+    assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());
@@ -219,9 +232,16 @@ fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
     let balances = retirements
         .iter()
         .map(|retirement| {
-            let ActorRetirement::Completed { behavior, .. } = retirement else {
+            let ActorRetirement::Completed {
+                behavior,
+                settlements,
+                ..
+            } = retirement
+            else {
                 panic!("each account incarnation must retire normally")
             };
+            let settlement_status = settlements.settlement_status();
+            assert_eq!(settlement_status, SettlementStatus::Accepted);
             behavior.base().balance
         })
         .collect::<Vec<_>>();

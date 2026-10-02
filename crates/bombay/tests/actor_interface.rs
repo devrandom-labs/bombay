@@ -1,3 +1,5 @@
+use core::any::type_name;
+
 use bombay::behavior::EstablishedDelivery;
 use bombay::prelude::*;
 
@@ -38,7 +40,7 @@ enum Command {
 struct Service;
 
 #[bombay::actor(
-    sends = {
+    sends = pub(crate) {
         replies: Vec<EstablishedDelivery<Replies>>,
     },
 )]
@@ -73,12 +75,17 @@ impl WaitsForShutdown {
 }
 
 #[test]
-fn external_actor_sends_with_its_claimed_origin_and_receives_exact_reply() {
+fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
     let ((), terminal): (_, RootTerminal<_>) = Application::new(Service.stop_on_shutdown())
         .run_with(|application| async move {
             let interface = application.interface(Api {
                 service: application.root().established_recipient(),
             });
+            let interface_description = format!("{interface:?}");
+            assert!(interface_description.contains("ActorInterface"));
+            assert!(interface_description.contains("api_type"));
+            assert!(interface_description.contains(type_name::<Api>()));
+            assert!(!interface_description.contains("EstablishedRecipient"));
             let lifecycle = application.lifecycle();
             let mut caller = interface
                 .external::<Replies>()
@@ -102,7 +109,8 @@ fn external_actor_sends_with_its_claimed_origin_and_receives_exact_reply() {
                 .expect("the external actor receives the exact reply");
             assert_eq!(reply.from, MailAddr(0));
             assert_eq!(reply.message, (caller_address, 42));
-            assert_eq!(lifecycle.termination().await, Ok(Exit::Normal));
+            let termination = lifecycle.termination().await;
+            assert_eq!(termination, Ok(Exit::Normal));
         })
         .expect("the application terminates normally");
     assert_completed(terminal);
@@ -133,17 +141,29 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
                     .await
                     .expect("the second reply is accepted");
                 close_reply_admission(&receiver);
-                assert_eq!(receiver.receive().await.map(|user| user.message), Some(10));
-                assert_eq!(receiver.receive().await.map(|user| user.message), Some(20));
-                assert_eq!(receiver.receive().await, None);
+                let rejected_after_close = sender
+                    .send(&recipient, 30)
+                    .await
+                    .expect_err("closed admission rejects the exact recipient immediately");
+                assert_eq!(rejected_after_close.into_message(), 30);
+                let first_reply = receiver.receive().await.map(|user| user.message);
+                assert_eq!(first_reply, Some(10));
+                let second_reply = receiver.receive().await.map(|user| user.message);
+                assert_eq!(second_reply, Some(20));
+                let exhausted = receiver.receive().await;
+                assert_eq!(exhausted, None);
                 drop(receiver);
 
                 let rejected = sender
-                    .send(&recipient, 30)
+                    .send(&recipient, 31)
                     .await
                     .expect_err("the stale exact endpoint is closed");
-                assert_eq!(rejected.into_message(), 30);
-                assert_eq!(lifecycle.request_shutdown(), Ok(()));
+                let rejected_message = rejected.into_message();
+                assert_eq!(rejected_message, 31);
+                let shutdown = lifecycle.request_shutdown();
+                assert_eq!(shutdown, Ok(()));
+                let repeated = lifecycle.request_shutdown();
+                assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
             })
             .expect("the application terminates normally");
     assert_completed(terminal);
@@ -152,6 +172,7 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
 #[test]
 fn interface_denies_lifecycle_and_receive_authority_duplication() {
     let cases = trybuild::TestCases::new();
+    cases.pass("tests/compile/pass/external_actor_error.rs");
     cases.compile_fail("tests/compile/fail/actor_interface_has_no_lifecycle.rs");
     cases.compile_fail("tests/compile/fail/external_actor_receiver_is_affine.rs");
 }

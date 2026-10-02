@@ -1,12 +1,31 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use serde::Deserialize;
+use serde_json::Value;
+
+const BEHAVIOR_REVISION: &str = "804b2bf25325a523884ec49d8a4ae6d2d2b6e9da";
 
 #[derive(Deserialize)]
 struct Manifest {
     schema: u8,
     law_source: String,
+    behavior: BehaviorSelection,
+    gate: EvidenceGate,
     laws: Vec<Law>,
+}
+
+#[derive(Deserialize)]
+struct BehaviorSelection {
+    core: String,
+    actors: String,
+    macros: String,
+    revision: String,
+}
+
+#[derive(Deserialize)]
+struct EvidenceGate {
+    command: String,
+    artifact: String,
 }
 
 #[allow(clippy::struct_field_names)]
@@ -14,15 +33,29 @@ struct Manifest {
 struct Law {
     law: String,
     owner: String,
-    positive: String,
-    inversion: String,
-    killer: String,
-    negative: String,
-    boundaries: String,
-    adversarial: String,
-    templates: String,
+    positive: TestEvidence,
+    boundary: TestEvidence,
+    inversion: InversionEvidence,
+}
+
+#[derive(Deserialize)]
+struct TestEvidence {
+    id: String,
+    revision: String,
+    claim: String,
+    test: String,
     command: String,
-    status: String,
+}
+
+#[derive(Deserialize)]
+struct InversionEvidence {
+    id: String,
+    revision: String,
+    claim: String,
+    target: String,
+    mutation: String,
+    killer: String,
+    command: String,
 }
 
 fn audit_obsolete_api(path: &std::path::Path, violations: &mut Vec<std::path::PathBuf>) {
@@ -47,6 +80,21 @@ fn audit_obsolete_api(path: &std::path::Path, violations: &mut Vec<std::path::Pa
             violations.push(path);
         }
     }
+}
+
+fn rust_source_contains(path: &std::path::Path, excluded: Option<&str>, needle: &str) -> bool {
+    std::fs::read_dir(path)
+        .expect("read Rust source tree")
+        .map(|entry| entry.expect("Rust source entry").path())
+        .any(|path| {
+            if path.is_dir() {
+                rust_source_contains(&path, excluded, needle)
+            } else {
+                path.extension().and_then(|extension| extension.to_str()) == Some("rs")
+                    && path.file_name().and_then(|name| name.to_str()) != excluded
+                    && std::fs::read_to_string(path).is_ok_and(|source| source.contains(needle))
+            }
+        })
 }
 
 fn repository_artifacts() -> Vec<(String, String)> {
@@ -127,7 +175,7 @@ fn repository_artifacts_are_closed(files: &[(String, String)]) -> bool {
             || path == "docs/driver-law.md"
             || path == "crates/bombay-engine/tests/law_manifest.rs"
             || path.starts_with("crates/bombay-engine/tests/compile/")
-            || path == "crates/bombay/src/incarnation.rs"
+            || path == "crates/bombay/src/actor_execution.rs"
         {
             return true;
         }
@@ -153,19 +201,10 @@ fn manifest() -> Manifest {
 fn evidence_source(suite: &str) -> Option<std::path::PathBuf> {
     let file = match suite {
         "driver_law" => "driver_law.rs",
-        "driver_inversions" => "driver_inversions.rs",
-        "driver_property" => "driver_property.rs",
+        "source_settlement_order" => "source_settlement_order.rs",
+        "terminal_custody" => "terminal_custody.rs",
         "compile" => "compile.rs",
         "law_manifest" => "law_manifest.rs",
-        "incarnation" => {
-            return Some(root().join("crates/bombay/src").join("incarnation.rs"));
-        }
-        "local" => {
-            return Some(root().join("crates/bombay/src").join("local.rs"));
-        }
-        "generation" => {
-            return Some(root().join("crates/bombay/src").join("generation.rs"));
-        }
         _ => return None,
     };
     Some(root().join("crates/bombay-engine/tests").join(file))
@@ -188,20 +227,12 @@ fn assert_test_reference_exists(law: &str, reference: &str) {
     );
 }
 
-fn assert_adversarial_references_exist(law: &str, references: &str) {
-    let mut suite = None;
-    for reference in references.split(" + ") {
-        let qualified = if reference.contains("::") {
-            suite = reference.split_once("::").map(|(suite, _)| suite);
-            reference.to_owned()
-        } else {
-            format!(
-                "{}::{reference}",
-                suite.unwrap_or_else(|| panic!("{law} starts with unqualified evidence"))
-            )
-        };
-        assert_test_reference_exists(law, &qualified);
-    }
+fn test_command(reference: &str) -> Option<String> {
+    let (suite, test) = reference.split_once("::")?;
+    evidence_source(suite)?;
+    Some(format!(
+        "nix develop -c cargo test --locked -p bombay-engine --test {suite} {test} -- --exact"
+    ))
 }
 
 fn canonical_ids() -> Vec<String> {
@@ -220,223 +251,125 @@ fn exact_law_rows(canonical: &[String], rows: &[String]) -> bool {
     rows == canonical && rows.iter().collect::<BTreeSet<_>>().len() == rows.len()
 }
 
-fn every_law_executed(statuses: &[String]) -> bool {
-    statuses.iter().all(|status| status == "passing")
-}
-
-fn validate_shared_evidence(row: &Law) {
-    assert_eq!(
-        row.negative,
-        "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions"
-    );
-    assert_eq!(
-        row.boundaries,
-        "driver_property::zero_singleton_limit_and_post_stop_boundaries"
-    );
-    assert_eq!(
-        row.adversarial,
-        "driver_law::panic_consumes_the_only_execution_and_cannot_poll_again + cancellation_drops_ownership_without_claiming_async_retirement + commit_failure_preserves_the_factual_committed_prefix"
-    );
-    assert_eq!(
-        row.templates,
-        "law_manifest::engine_does_not_mirror_actor_template_laws"
-    );
-    assert_eq!(row.command, "cargo test -p bombay-engine");
-}
-
-#[allow(
-    clippy::too_many_lines,
-    reason = "the reviewed evidence registry is intentionally exhaustive"
-)]
-fn validate_evidence(row: &Law) {
+fn validate_test_evidence(law: &str, evidence: &TestEvidence) {
     for (field, value) in [
-        ("owner", &row.owner),
-        ("positive", &row.positive),
-        ("inversion", &row.inversion),
-        ("killer", &row.killer),
-        ("negative", &row.negative),
-        ("boundaries", &row.boundaries),
-        ("adversarial", &row.adversarial),
-        ("templates", &row.templates),
-        ("command", &row.command),
+        ("id", &evidence.id),
+        ("revision", &evidence.revision),
+        ("claim", &evidence.claim),
+        ("test", &evidence.test),
+        ("command", &evidence.command),
     ] {
-        assert!(!value.trim().is_empty(), "{} has empty {field}", row.law);
+        assert!(!value.trim().is_empty(), "{law} has empty {field}");
     }
-    assert!(matches!(
-        row.status.as_str(),
-        "planned" | "blocked" | "passing"
-    ));
-    assert_test_reference_exists(&row.law, &row.positive);
-    assert_test_reference_exists(&row.law, &row.killer);
-    assert_test_reference_exists(&row.law, &row.negative);
-    assert_test_reference_exists(&row.law, &row.boundaries);
-    assert_test_reference_exists(&row.law, &row.templates);
-    assert_adversarial_references_exist(&row.law, &row.adversarial);
-    assert!(
-        [
-            "driver_law::universal_causal_transcript_has_no_prefetch_or_reentrancy",
-            "driver_law::complete_move_only_stop_actions_cross_once_before_completion",
-            "driver_law::pending_input_is_polled_once_without_busy_wait_or_self_wake",
-            "driver_law::cancellation_at_every_await_drops_ownership_without_false_completion_or_retirement",
-            "driver_law::initialization_and_turn_panics_consume_the_only_execution_and_cannot_poll_again",
-            "driver_law::completion_preserves_stop_and_input_exhaustion_as_success",
-            "driver_law::every_ordinary_return_attempts_retirement_exactly_once",
-            "driver_law::source_closure_folds_no_synthetic_event_and_retires_once",
-            "driver_law::every_ordinary_terminal_edge_is_fused_against_later_work",
-            "driver_law::initialization_occurs_once_across_stop_closure_and_failure_boundaries",
-            "driver_law::every_accepted_event_is_folded_exactly_once",
-            "driver_law::successor_state_and_complete_actions_come_from_the_same_decision",
-            "driver_law::controlled_failure_is_terminal_and_commits_no_nonexistent_actions",
-            "driver_law::unrelated_custom_behavior_shapes_use_the_same_driver_algorithm",
-            "driver_law::driver_accepts_only_the_final_closed_behavior_event_type",
-            "driver_law::self_send_reenters_only_as_a_later_ordinary_event",
-            "driver_law::at_most_one_behavior_fold_is_active",
-            "driver_law::pending_commit_prevents_reentrant_or_later_fold",
-            "driver_law::local_commitment_advances_only_through_a_later_capability_event",
-            "driver_law::every_successful_decision_is_committed_exactly_once",
-            "driver_law::commit_failure_preserves_the_factual_committed_prefix",
-            "driver_law::commitment_failure_does_not_roll_back_the_successful_fold",
-            "driver_law::environment_preserves_creation_precedence_and_same_action_result_scope",
-            "driver_law::one_behavior_is_substitutable_across_distinct_static_environments",
-            "driver_law::exact_behavior_and_environment_errors_remain_distinct",
-            "compile::driver_surface_conformance",
-            "law_manifest::repository_has_one_direct_driver_path_and_no_obsolete_product_api",
-            "law_manifest::repository_closure_accounts_for_every_current_driver_artifact",
-            "law_manifest::manifest_exactly_matches_canonical_law_index",
-            "law_manifest::driver_has_no_observation_control_surface",
-            "incarnation::successful_completion_drops_driver_then_retires_once",
-            "incarnation::exact_driver_failures_remain_distinct",
-            "incarnation::panic_drops_driver_before_exactly_one_terminal_classification",
-            "incarnation::core_surface_has_one_driver_run_and_no_split_lifecycle",
-            "local::complete_actions_commit_once_and_initialization_precedes_publication",
-            "local::rejected_initial_commit_exposes_no_endpoint_and_closes_anchor",
-            "generation::root_and_child_generations_use_the_same_transactional_activation_path",
-            "generation::replacement_uses_fresh_driver_environment_address_and_observation_generations",
-            "generation::panic_and_cancellation_release_address_before_exact_terminal_publication",
-            "generation::address_collision_rejects_activation_without_replacing_the_live_generation",
-        ]
-        .contains(&row.positive.as_str()),
-        "{} names unknown positive evidence: {}",
-        row.law,
-        row.positive
+    assert_test_reference_exists(law, &evidence.test);
+    assert_eq!(
+        Some(evidence.command.as_str()),
+        test_command(&evidence.test).as_deref(),
+        "{law} test command does not run its exact reference"
     );
+}
+
+fn validate_inversion_evidence(law: &str, evidence: &InversionEvidence) {
+    for (field, value) in [
+        ("id", &evidence.id),
+        ("revision", &evidence.revision),
+        ("claim", &evidence.claim),
+        ("target", &evidence.target),
+        ("mutation", &evidence.mutation),
+        ("killer", &evidence.killer),
+        ("command", &evidence.command),
+    ] {
+        assert!(
+            !value.trim().is_empty(),
+            "{law} has empty inversion {field}"
+        );
+    }
     assert!(
-        [
-            "driver_inversions::causal_algorithm_mutations",
-            "driver_inversions::pending_progress_mutations",
-            "driver_inversions::cancellation_ownership_mutations",
-            "driver_inversions::panic_terminality_mutations",
-            "driver_inversions::collapsed_swapped_or_failure_completion_mutations",
-            "driver_inversions::ordinary_retirement_count_mutations",
-            "driver_inversions::explicit_stop_mutations",
-            "driver_inversions::source_closure_mutations",
-            "driver_inversions::terminal_fusion_mutations",
-            "driver_inversions::initialization_count_mutations",
-            "driver_inversions::accepted_fold_count_mutations",
-            "driver_inversions::decision_integrity_mutations",
-            "driver_inversions::controlled_failure_mutations",
-            "driver_inversions::shape_specific_driver_mutation",
-            "driver_inversions::driver_owned_input_side_channel_mutation",
-            "driver_inversions::projected_action_output_mutation",
-            "driver_inversions::event_before_initial_commit_mutation",
-            "driver_inversions::next_before_turn_commit_mutation",
-            "driver_inversions::early_second_input_mutation",
-            "driver_inversions::synchronous_self_reentry_mutation",
-            "driver_inversions::overlapping_fold_mutation",
-            "driver_inversions::fold_during_pending_commit_mutation",
-            "driver_inversions::external_completion_wait_mutation",
-            "driver_inversions::capability_callback_fold_mutation",
-            "driver_inversions::interpretation_count_mutations",
-            "driver_inversions::lane_reordering_mutation",
-            "driver_inversions::payload_drop_or_duplication_mutations",
-            "driver_inversions::external_delivery_claim_mutation",
-            "driver_inversions::post_interpretation_failure_work_mutation",
-            "driver_inversions::fictitious_transaction_mutations",
-            "driver_inversions::implicit_retry_mutation",
-            "driver_inversions::state_rollback_mutation",
-            "driver_inversions::send_before_creation_mutation",
-            "driver_inversions::cross_action_creation_result_mutation",
-            "driver_inversions::missing_capability_acceptance_mutation",
-            "driver_inversions::concrete_environment_coupling_mutation",
-            "driver_inversions::typed_error_erasure_mutations",
-            "driver_inversions::source_event_reordering_mutation",
-            "law_manifest::structural_surface_and_authority_mutations",
-            "law_manifest::repository_closure_oracle_kills_stale_path_and_contract_inversions",
-            "law_manifest::observation_control_mutations",
-            "incarnation::incarnation_terminal_mutations_are_deliberate_semantic_inversions",
-            "local::local_activation_inversions_are_deliberate_semantic_mutations",
-            "generation::generation_inversions_are_deliberate_semantic_mutations",
-        ]
-        .contains(&row.inversion.as_str()),
-        "{} names unknown inversion: {}",
-        row.law,
-        row.inversion
+        root().join(&evidence.target).is_file(),
+        "{law} mutation target is absent"
     );
+    assert_test_reference_exists(law, &evidence.killer);
+    assert_eq!(
+        evidence.command,
+        format!(
+            "nix develop -c bash crates/bombay-engine/tests/driver-law-evidence.sh --law {law}"
+        )
+    );
+    let runner =
+        std::fs::read_to_string(root().join("crates/bombay-engine/tests/driver-law-evidence.sh"))
+            .expect("read executable evidence runner");
     assert!(
-        [
-            "driver_inversions::causal_oracle_kills_every_deliberate_algorithm_inversion",
-            "driver_inversions::pending_progress_oracle_kills_spin_and_self_wake_inversions",
-            "driver_inversions::cancellation_oracle_kills_leak_false_retirement_and_false_completion_inversions",
-            "driver_inversions::panic_terminality_oracle_kills_recovery_repoll_and_leak_inversions",
-            "driver_inversions::completion_oracle_kills_collapsed_swapped_and_failure_classifications",
-            "driver_inversions::ordinary_retirement_oracle_kills_missing_and_duplicate_retirement_inversions",
-            "driver_inversions::explicit_stop_oracle_kills_dropped_final_actions_and_later_ingress_inversions",
-            "driver_inversions::source_closure_oracle_kills_synthetic_fold_and_repoll_inversions",
-            "driver_inversions::terminal_fusion_oracle_kills_every_post_terminal_work_inversion",
-            "driver_inversions::initialization_count_oracle_kills_missing_and_duplicate_initialization_inversions",
-            "driver_inversions::accepted_fold_count_oracle_kills_missing_and_duplicate_fold_inversions",
-            "driver_inversions::decision_integrity_oracle_kills_stale_state_and_stale_action_inversions",
-            "driver_inversions::controlled_failure_oracle_kills_fabricated_actions_and_continuation_inversions",
-            "driver_inversions::universality_oracle_kills_shape_specific_driver_inversion",
-            "driver_inversions::closed_input_oracle_kills_driver_owned_side_channel_inversion",
-            "driver_inversions::complete_output_oracle_kills_projected_or_dropped_lane_inversion",
-            "driver_inversions::initialization_order_oracle_kills_event_before_initial_commit_inversion",
-            "driver_inversions::commit_order_oracle_kills_next_before_commit_inversion",
-            "driver_inversions::no_prefetch_oracle_kills_early_second_input_inversion",
-            "driver_inversions::self_send_oracle_kills_synchronous_reentry_inversion",
-            "driver_inversions::exclusive_fold_oracle_kills_overlapping_fold_inversion",
-            "driver_inversions::non_reentrancy_oracle_kills_fold_during_pending_commit_inversion",
-            "driver_inversions::local_commit_oracle_kills_external_completion_wait_inversion",
-            "driver_inversions::capability_event_oracle_kills_callback_fold_inversion",
-            "driver_inversions::interpretation_count_oracle_kills_dropped_and_duplicate_commit_inversions",
-            "driver_inversions::lane_order_oracle_kills_reordering_inversion",
-            "driver_inversions::payload_ownership_oracle_kills_drop_and_duplication_inversions",
-            "driver_inversions::honest_completion_oracle_kills_external_delivery_claim_inversion",
-            "driver_inversions::interpretation_failure_oracle_kills_later_work_inversion",
-            "driver_inversions::committed_prefix_oracle_kills_rollback_and_fabricated_prefix_inversions",
-            "driver_inversions::retry_oracle_kills_implicit_retry_inversion",
-            "driver_inversions::no_rollback_oracle_kills_state_rollback_inversion",
-            "driver_inversions::creation_precedence_oracle_kills_send_before_creation_inversion",
-            "driver_inversions::creation_result_scope_oracle_kills_cross_action_and_reordering_inversions",
-            "driver_inversions::static_sufficiency_oracle_kills_missing_capability_acceptance_inversion",
-            "driver_inversions::environment_substitutability_oracle_kills_concrete_environment_coupling_inversion",
-            "driver_inversions::exact_error_oracle_kills_behavior_and_environment_erasure_inversions",
-            "driver_inversions::source_order_oracle_kills_reordered_environment_event_inversion",
-            "law_manifest::structural_oracle_kills_surface_and_authority_inversions",
-            "law_manifest::repository_closure_oracle_kills_stale_path_and_contract_inversions",
-            "law_manifest::observation_oracle_kills_control_surface_inversions",
-            "incarnation::incarnation_oracles_kill_order_count_and_classification_inversions",
-            "local::local_activation_ordering_oracle_kills_every_publication_inversion",
-            "generation::generation_ordering_oracle_kills_release_and_identity_inversions",
-        ]
-        .contains(&row.killer.as_str()),
-        "{} names unknown killer: {}",
-        row.law,
-        row.killer
+        runner.contains(&format!("{law}:{id}", id = evidence.id)),
+        "{law} inversion {} has no executable mutation",
+        evidence.id
     );
-    validate_shared_evidence(row);
+}
+
+#[test]
+fn production_driver_mutation_evidence_has_one_owner() {
+    let root = root();
+    let mut disconnected_evidence = Vec::new();
+    if root
+        .join("crates/bombay-engine/tests/driver_inversions.rs")
+        .exists()
+    {
+        disconnected_evidence.push("disconnected Driver inversion suite remains");
+    }
+
+    let manifest = std::fs::read_to_string(root.join("docs/driver-law-manifest.json"))
+        .expect("read Driver law manifest");
+    if manifest.contains("driver_inversions::") {
+        disconnected_evidence.push("manifest still names disconnected Driver inversions");
+    }
+
+    let flake = std::fs::read_to_string(root.join("flake.nix")).expect("read flake");
+    let required_mutation = flake
+        .split_once("mutants = craneLib.mkCargoDerivation")
+        .and_then(|(_, packages)| packages.split_once("mutants-sweep ="))
+        .map(|(required, _)| required)
+        .expect("required mutation derivation remains present");
+    if !required_mutation.contains("--package bombay-engine") {
+        disconnected_evidence.push("required mutation derivation omits bombay-engine");
+    }
+    let nextest_profiles = std::fs::read_to_string(root.join(".config/nextest.toml"))
+        .expect("read Nextest mutation profile");
+    if !nextest_profiles.contains("[profile.mutants]")
+        || flake.matches("-- --profile mutants").count() != 2
+        || flake
+            .replace("-- --profile mutants", "")
+            .contains("--profile mutants")
+    {
+        disconnected_evidence.push("mutation derivations lack the declared Nextest profile");
+    }
+
+    let baseline = std::fs::read_to_string(root.join("mutants-baseline.json"))
+        .expect("read mutation baseline");
+    if !baseline.contains("crates/bombay-engine/src/driver.rs::") {
+        disconnected_evidence.push("reviewed mutation baseline omits the production Driver");
+    }
+
+    assert_eq!(disconnected_evidence, Vec::<&str>::new());
 }
 
 #[test]
 fn manifest_exactly_matches_canonical_law_index() {
     let manifest = manifest();
-    assert_eq!(manifest.schema, 1);
+    assert_eq!(manifest.schema, 2);
     assert_eq!(manifest.law_source, "docs/driver-law.md");
+    assert_eq!(manifest.behavior.core, "0.20.0");
+    assert_eq!(manifest.behavior.actors, "0.20.0");
+    assert_eq!(manifest.behavior.macros, "0.13.0");
+    assert_eq!(manifest.behavior.revision, BEHAVIOR_REVISION);
+    assert_eq!(
+        manifest.gate.command,
+        "nix build path:.#driver-law-evidence --no-link"
+    );
+    assert_eq!(manifest.gate.artifact, "driver-law-evidence.json");
 
     let canonical = canonical_ids();
     assert_eq!(
         canonical.len(),
-        68,
+        8,
         "law-count changes require explicit review"
     );
     let rows: Vec<_> = manifest.laws.iter().map(|row| row.law.clone()).collect();
@@ -445,11 +378,32 @@ fn manifest_exactly_matches_canonical_law_index() {
         "missing, duplicate, renamed, reordered, stale, or unknown law row"
     );
 
-    manifest.laws.iter().for_each(validate_evidence);
+    let mut evidence_ids = BTreeSet::new();
+    for row in &manifest.laws {
+        assert!(!row.owner.trim().is_empty(), "{} has no owner", row.law);
+        validate_test_evidence(&row.law, &row.positive);
+        validate_test_evidence(&row.law, &row.boundary);
+        validate_inversion_evidence(&row.law, &row.inversion);
+        for id in [&row.positive.id, &row.boundary.id, &row.inversion.id] {
+            let unique = evidence_ids.insert(id);
+            assert!(unique, "{} reuses evidence id {id}", row.law);
+        }
+        for revision in [
+            &row.positive.revision,
+            &row.boundary.revision,
+            &row.inversion.revision,
+        ] {
+            assert_eq!(
+                revision, BEHAVIOR_REVISION,
+                "{} has stale evidence",
+                row.law
+            );
+        }
+    }
 }
 
 #[test]
-fn manifest_gate_kills_missing_duplicate_renamed_unknown_and_unexecuted_laws() {
+fn manifest_gate_kills_missing_duplicate_renamed_and_unknown_laws() {
     let canonical = canonical_ids();
     assert!(exact_law_rows(&canonical, &canonical));
 
@@ -468,73 +422,295 @@ fn manifest_gate_kills_missing_duplicate_renamed_unknown_and_unexecuted_laws() {
     let mut unknown = canonical.clone();
     unknown.push("D-UNKNOWN-1".to_owned());
     assert!(!exact_law_rows(&canonical, &unknown));
-
-    let passing = vec!["passing".to_owned(); canonical.len()];
-    assert!(every_law_executed(&passing));
-    for stale_status in ["planned", "blocked", "unknown"] {
-        let mut unexecuted = passing.clone();
-        unexecuted[canonical.len() / 2] = stale_status.to_owned();
-        assert!(!every_law_executed(&unexecuted));
-    }
 }
 
 #[test]
 fn manifest_gate_kills_stale_renamed_and_unknown_executable_evidence() {
     assert!(test_reference_exists(
-        "driver_law::every_accepted_event_is_folded_exactly_once"
+        "driver_law::initialization_has_exact_disposition_and_trace_across_terminal_boundaries"
     ));
     assert!(!test_reference_exists(
         "driver_law::renamed_event_is_folded_exactly_once"
     ));
     assert!(!test_reference_exists(
-        "unknown_suite::every_accepted_event_is_folded_exactly_once"
+        "unknown_suite::initialization_has_exact_disposition_and_trace_across_terminal_boundaries"
     ));
     assert!(!test_reference_exists("unqualified_test_name"));
 }
 
 #[test]
-#[ignore = "explicit completion gate; run with --ignored"]
-fn executes_all_manifest_evidence() {
-    let manifest = manifest();
-    let statuses: Vec<_> = manifest.laws.iter().map(|row| row.status.clone()).collect();
-    let not_passing: BTreeMap<_, _> = manifest
-        .laws
-        .iter()
-        .filter(|row| row.status != "passing")
-        .map(|row| (row.law.as_str(), row.status.as_str()))
-        .collect();
+fn manifest_evidence_is_revision_bound_and_executable() {
+    let path = root().join("docs/driver-law-manifest.json");
+    let manifest: Value =
+        serde_json::from_str(&std::fs::read_to_string(path).expect("read Driver law manifest"))
+            .expect("parse Driver law manifest");
+    let mut defects = Vec::new();
+    if manifest["schema"] != 2 {
+        defects.push("manifest schema is not executable schema 2".to_owned());
+    }
+    if manifest["behavior"]["revision"] != BEHAVIOR_REVISION {
+        defects.push("manifest is not bound to the selected Behavior revision".to_owned());
+    }
+    if manifest["gate"]["command"] != "nix build path:.#driver-law-evidence --no-link" {
+        defects.push("completion gate is not the pinned executable evidence gate".to_owned());
+    }
+    if manifest["gate"]["artifact"] != "driver-law-evidence.json" {
+        defects.push("completion gate does not emit an actual result artifact".to_owned());
+    }
+
+    let mut evidence_ids = BTreeSet::new();
+    for law in manifest["laws"].as_array().into_iter().flatten() {
+        let law_id = law["law"].as_str().unwrap_or("<missing law>");
+        for kind in ["positive", "boundary", "inversion"] {
+            let evidence = &law[kind];
+            let Some(id) = evidence["id"].as_str() else {
+                defects.push(format!("{law_id} has no structured {kind} evidence"));
+                continue;
+            };
+            if !evidence_ids.insert(id.to_owned()) {
+                defects.push(format!("{law_id} reuses evidence id {id}"));
+            }
+            if evidence["revision"] != BEHAVIOR_REVISION {
+                defects.push(format!("{law_id} {kind} evidence is not revision-bound"));
+            }
+            if evidence["claim"].as_str().is_none_or(str::is_empty) {
+                defects.push(format!("{law_id} {kind} evidence has no exact claim"));
+            }
+            if evidence["command"]
+                .as_str()
+                .is_none_or(|command| !command.starts_with("nix develop -c "))
+            {
+                defects.push(format!(
+                    "{law_id} {kind} evidence has no pinned-Nix command"
+                ));
+            }
+            match kind {
+                "positive" | "boundary" if evidence["test"].as_str().is_none() => {
+                    defects.push(format!("{law_id} {kind} evidence has no executable test"));
+                }
+                "inversion"
+                    if ["target", "mutation", "killer"]
+                        .iter()
+                        .any(|field| evidence[*field].as_str().is_none_or(str::is_empty)) =>
+                {
+                    defects.push(format!(
+                        "{law_id} inversion lacks a target, mutation, or killer"
+                    ));
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let source = std::fs::read_to_string(root().join("crates/bombay-engine/tests/law_manifest.rs"))
+        .expect("read manifest test source");
+    if source.contains("#[ignore = \"explicit completion gate; run with --ignored\"]") {
+        defects.push("completion still depends on an ignored status-string test".to_owned());
+    }
     assert!(
-        every_law_executed(&statuses) && not_passing.is_empty(),
-        "every law must have executed positive and inversion evidence: {not_passing:?}"
+        defects.is_empty(),
+        "Driver-law evidence is not executable and revision-bound:\n{}",
+        defects.join("\n")
     );
 }
 
 #[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "the exact locked actor-template catalogue is one boundary contract"
+)]
 fn engine_does_not_mirror_actor_template_laws() {
     let path = root().join("docs/driver-template-manifest.json");
     let manifest: serde_json::Value = serde_json::from_str(
         &std::fs::read_to_string(path).expect("read template boundary manifest"),
     )
     .expect("parse template boundary manifest");
-    assert_eq!(manifest["schema"], 2);
-    assert_eq!(manifest["owner"], "bombay-behavior-actors");
-    assert_eq!(
-        manifest["engine_contract"],
-        "universal Behavior execution only"
-    );
-    assert_eq!(
-        manifest["mirrored_templates"].as_array().map(Vec::len),
-        Some(0)
-    );
+    let expected_templates = BTreeSet::from([
+        "atomic.dynamic-supervisor",
+        "atomic.fifo-pool",
+        "atomic.fixed-supervisor",
+        "atomic.keyed-pool",
+        "atomic.stable-proxy",
+        "composition.machine",
+        "composition.message-adapter",
+        "composition.stash",
+        "discovery.presence",
+        "discovery.pub-sub",
+        "discovery.registry",
+        "discovery.resolver",
+        "discovery.topic",
+        "lifecycle.child-shutdown-plan",
+        "lifecycle.finalize-on-shutdown",
+        "lifecycle.heterogeneous-shutdown-coordinator",
+        "lifecycle.propagate-termination",
+        "lifecycle.shutdown-coordinator",
+        "lifecycle.stop-on-shutdown",
+        "lifecycle.task",
+        "lifecycle.termination-monitor",
+        "lifecycle.watch",
+        "operations.configuration",
+        "operations.health",
+        "operations.readiness",
+        "persistence.cache",
+        "routing.acknowledgements",
+        "routing.buffer",
+        "routing.circuit-breaker",
+        "routing.correlator",
+        "routing.deduplicator",
+        "routing.order-gate",
+        "routing.priority-queue",
+        "routing.rate-limiter",
+        "routing.router",
+        "routing.sequencer",
+        "routing.work-queue",
+        "time.deadline",
+        "time.lease",
+        "time.one-shot",
+        "time.periodic",
+        "time.receive-timeout",
+        "workflow.barrier",
+        "workflow.latch",
+        "workflow.workflow",
+    ]);
+    let expected_capabilities = BTreeSet::from([
+        "request.begin-activation",
+        "request.cancel-observation",
+        "request.customer-delivery",
+        "request.diagnostic-action",
+        "request.initialize-worker",
+        "request.observe-child",
+        "request.observe-creation",
+        "request.observe-established",
+        "request.observe-established-creation",
+        "request.observe-peer",
+        "request.report-shutdown-plan",
+        "request.report-terminal-outcome",
+        "request.schedule-after",
+        "request.schedule-at",
+        "request.shutdown-child",
+        "request.shutdown-established",
+        "source-action.assign-worker",
+        "source-action.prepare-workers",
+        "source-action.proxy-operation",
+    ]);
+    let mut defects = Vec::new();
+
+    if manifest["schema"] != 3 {
+        defects.push(format!("expected schema 3, found {}", manifest["schema"]));
+    }
+    for (field, expected) in [
+        ("package", "bombay-behavior-actors"),
+        ("version", "0.20.0"),
+        ("revision", BEHAVIOR_REVISION),
+    ] {
+        if manifest["owner"][field] != expected {
+            defects.push(format!("owner {field} is not {expected}"));
+        }
+    }
+    if manifest["engine_contract"] != "universal Behavior execution only" {
+        defects.push("Engine contract was broadened to actor-template policy".to_owned());
+    }
+
+    let templates = manifest["templates"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    let template_ids = templates
+        .iter()
+        .filter_map(|entry| entry["id"].as_str())
+        .collect::<BTreeSet<_>>();
+    if template_ids != expected_templates || template_ids.len() != templates.len() {
+        defects.push(format!(
+            "template inventory mismatch: missing {:?}; extra {:?}; duplicate or malformed rows {}",
+            expected_templates
+                .difference(&template_ids)
+                .collect::<Vec<_>>(),
+            template_ids
+                .difference(&expected_templates)
+                .collect::<Vec<_>>(),
+            templates.len().saturating_sub(template_ids.len())
+        ));
+    }
+    for template in &templates {
+        let id = template["id"].as_str().unwrap_or("<missing id>");
+        for field in ["source", "event", "composition"] {
+            if template[field].as_str().is_none_or(str::is_empty) {
+                defects.push(format!("{id} lacks {field}"));
+            }
+        }
+        for field in ["public", "lanes", "evidence"] {
+            if template[field].as_array().is_none_or(Vec::is_empty) {
+                defects.push(format!("{id} lacks {field}"));
+            }
+        }
+    }
+
+    let capabilities = manifest["capabilities"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    let capability_ids = capabilities
+        .iter()
+        .filter_map(|entry| entry["id"].as_str())
+        .collect::<BTreeSet<_>>();
+    if capability_ids != expected_capabilities || capability_ids.len() != capabilities.len() {
+        defects.push(format!(
+            "capability inventory mismatch: missing {:?}; extra {:?}; duplicate or malformed rows {}",
+            expected_capabilities
+                .difference(&capability_ids)
+                .collect::<Vec<_>>(),
+            capability_ids
+                .difference(&expected_capabilities)
+                .collect::<Vec<_>>(),
+            capabilities.len().saturating_sub(capability_ids.len())
+        ));
+    }
+    let bombay_sources = root().join("crates/bombay/src");
+    for capability in &capabilities {
+        let id = capability["id"].as_str().unwrap_or("<missing id>");
+        let public = capability["public"].as_str().unwrap_or_default();
+        for field in ["public", "contract", "source"] {
+            if capability[field].as_str().is_none_or(str::is_empty) {
+                defects.push(format!("{id} lacks {field}"));
+            }
+        }
+        if !capability["emitted_by"].is_array() || !capability["evidence"].is_array() {
+            defects.push(format!("{id} lacks emitter or evidence arrays"));
+        }
+        let implemented =
+            rust_source_contains(&bombay_sources, None, &format!("InterpretItem<{public}"));
+        let recorded = capability["bombay_interpreter"].as_str();
+        let expected = if implemented {
+            "implemented"
+        } else {
+            "missing"
+        };
+        if recorded != Some(expected) {
+            defects.push(format!(
+                "{id} records Bombay interpreter {recorded:?}, but source proves {expected}"
+            ));
+        }
+    }
+
+    if manifest["mirrored_templates"]
+        .as_array()
+        .is_none_or(|rows| !rows.is_empty())
+    {
+        defects.push("Engine mirrors actor-template policy".to_owned());
+    }
+    let engine = root().join("crates/bombay-engine");
+    let engine_manifest =
+        std::fs::read_to_string(engine.join("Cargo.toml")).expect("read Engine Cargo manifest");
+    if engine_manifest.contains("bombay-behavior-actors")
+        || rust_source_contains(&engine, Some("law_manifest.rs"), "behavior_actors")
+    {
+        defects.push("Engine depends on or imports Behavior Actors".to_owned());
+    }
+
     assert!(
-        !root()
-            .join("crates/bombay-engine/tests/behavior_actors.rs")
-            .exists()
-    );
-    assert!(
-        !root()
-            .join("crates/bombay-engine/tests/support/behavior_actors_scenarios.rs")
-            .exists()
+        defects.is_empty(),
+        "actor-template boundary inventory is incomplete or mirrored:\n{}",
+        defects.join("\n")
     );
 }
 
@@ -554,7 +730,7 @@ fn repository_has_one_direct_driver_path_and_no_obsolete_product_api() {
     let driver = std::fs::read_to_string(root.join("crates/bombay-engine/src/driver.rs")).unwrap();
     assert_eq!(
         driver
-            .matches("behavior::delegate_transition(&mut behavior, event)")
+            .matches("behavior::delegate_transition(behavior, event)")
             .count(),
         1,
         "the production Driver must contain exactly one direct fold site"
@@ -578,7 +754,7 @@ fn repository_has_one_direct_driver_path_and_no_obsolete_product_api() {
         "dyn Any",
         "downcast",
         "type_id",
-        "behavior::delegate_transition(&mut behavior, event).await",
+        "behavior::delegate_transition(behavior, event).await",
         "spawn(",
         "yield_now",
         "    registry:",
@@ -610,7 +786,7 @@ fn repository_has_one_direct_driver_path_and_no_obsolete_product_api() {
 
     let exports = std::fs::read_to_string(root.join("crates/bombay-engine/src/lib.rs")).unwrap();
     assert!(exports.contains(
-        "pub use driver::{ActionsOf, Completion, Driver, DriverError, DriverRetirement};"
+        "pub use driver::{ActionsOf, Completion, Driver, DriverError, DriverRetirement, SettlementFailure};"
     ));
     assert!(exports.contains("ActiveEnvironment"));
     assert!(exports.contains("Environment"));
@@ -636,40 +812,6 @@ fn repository_closure_accounts_for_every_current_driver_artifact() {
     assert!(repository_artifacts_are_closed(&repository_artifacts()));
 }
 
-#[test]
-fn repository_closure_oracle_kills_stale_path_and_contract_inversions() {
-    let files = repository_artifacts();
-    assert!(repository_artifacts_are_closed(&files));
-
-    for stale_path in [
-        "crates/bombay-framework/src/lib.rs",
-        "crates/bombay/src/runtime/system.rs",
-        "crates/bombay/fuzz/fuzz_targets/runtime_operations.rs",
-        "crates/bombay/benches/runtime_operations.rs",
-    ] {
-        let mut inverted = files.clone();
-        inverted.push((stale_path.to_owned(), "pub struct Legacy;".to_owned()));
-        assert!(!repository_artifacts_are_closed(&inverted));
-    }
-
-    for stale_contract in [
-        "System::spawn",
-        "PreparedDriver",
-        "RunExit",
-        "RuntimeEffects",
-        "runtime_composition",
-        "Prepared -> Live",
-        "name = \"bombay-framework\"",
-    ] {
-        let mut inverted = files.clone();
-        inverted.push((
-            "docs/current-driver-adapter.md".to_owned(),
-            stale_contract.to_owned(),
-        ));
-        assert!(!repository_artifacts_are_closed(&inverted));
-    }
-}
-
 fn observation_is_nonsemantic(source: &str) -> bool {
     [
         "observer",
@@ -688,121 +830,4 @@ fn driver_has_no_observation_control_surface() {
     let source =
         std::fs::read_to_string(root().join("crates/bombay-engine/src/driver.rs")).unwrap();
     assert!(observation_is_nonsemantic(&source));
-}
-
-#[test]
-fn observation_oracle_kills_control_surface_inversions() {
-    let source =
-        std::fs::read_to_string(root().join("crates/bombay-engine/src/driver.rs")).unwrap();
-    for inversion in [
-        "\n    observer: (),",
-        "\n    tracing_callback: (),",
-        "\n    metrics_select_work: (),",
-        "\n    diagnostic_keeps_alive: (),",
-    ] {
-        assert!(!observation_is_nonsemantic(&format!("{source}{inversion}")));
-    }
-}
-
-fn structural_driver_oracle(source: &str) -> bool {
-    source
-        .matches("behavior::delegate_transition(&mut behavior, event)")
-        .count()
-        == 1
-        && source.matches("\n    environment: E,").count() == 1
-        && [
-            "ExclusiveExecutor",
-            "BehaviorMachine",
-            "PreparedDriver",
-            "RuntimeEffects",
-            "from_definition",
-            "run_init",
-            "run_loop",
-            "fn recover",
-            "fn reset",
-            "fn restart",
-            "fn reuse",
-            "fn clear_poison",
-            "DriverError::Poisoned",
-            "behavior::Task",
-            "behavior::Supervisor",
-            "dyn Any",
-            "downcast",
-            "type_id",
-            "behavior::delegate_transition(&mut behavior, event).await",
-            "spawn(",
-            "yield_now",
-            "    registry:",
-            "HashMap<TypeId",
-            "B: Behavior<Ph = Never> +",
-            "E: ActiveEnvironment<B> +",
-            "'static",
-            "#[derive(Clone)]\npub struct Driver",
-            "    address:",
-            "    mailbox:",
-            "    router:",
-            "    scheduler:",
-            "    dispatcher:",
-            "    registration:",
-            "    generation:",
-        ]
-        .iter()
-        .all(|forbidden| !source.contains(forbidden))
-}
-
-#[test]
-fn structural_oracle_kills_surface_and_authority_inversions() {
-    let source =
-        std::fs::read_to_string(root().join("crates/bombay-engine/src/driver.rs")).unwrap();
-    assert!(structural_driver_oracle(&source));
-
-    for inversion in [
-        "\nstruct BehaviorMachine;",
-        "\nstruct PreparedDriver;",
-        "\nstruct RuntimeEffects;",
-        "\nfn run_init() {}",
-        "\nfn run_loop() {}",
-        "\nfn recover() {}",
-        "\nfn reset() {}",
-        "\nfn restart() {}",
-        "\nfn reuse() {}",
-        "\nfn clear_poison() {}",
-        "\ntype TemplateSpecialCase = behavior::Task;",
-        "\ntype SupervisionSpecialCase = behavior::Supervisor;",
-        "\nfn inspect(_: &dyn Any) {}",
-        "\nfn downcast() {}",
-        "\nfn type_id() {}",
-        "\nfn spawn() {}",
-        "\nfn yield_now() {}",
-        "\n    registry: (),",
-        "\ntype Capabilities = HashMap<TypeId, Box<dyn Any>>;",
-        "\nfn extra_behavior_bound<B: Behavior<Ph = Never> + Sync>() {}",
-        "\nfn extra_environment_bound<B, E: ActiveEnvironment<B> + Send>() where B: Behavior<Ph = Never> {}",
-        "\nfn static_bound<T: 'static>() {}",
-        "\n#[derive(Clone)]\npub struct Driver;",
-        "\n    address: u64,",
-        "\n    mailbox: (),",
-        "\n    router: (),",
-        "\n    scheduler: (),",
-        "\n    dispatcher: (),",
-        "\n    registration: (),",
-        "\n    generation: u64,",
-    ] {
-        let mutated = format!("{source}{inversion}");
-        assert!(!structural_driver_oracle(&mutated));
-    }
-
-    let bypass = source.replacen(
-        "behavior::delegate_transition(&mut behavior, event)",
-        "behavior::delegate_transition(&mut behavior, event); behavior::delegate_transition(&mut behavior, event)",
-        1,
-    );
-    assert!(!structural_driver_oracle(&bypass));
-
-    let asynchronous_fold = source.replacen(
-        "behavior::delegate_transition(&mut behavior, event)",
-        "behavior::delegate_transition(&mut behavior, event).await",
-        1,
-    );
-    assert!(!structural_driver_oracle(&asynchronous_fold));
 }

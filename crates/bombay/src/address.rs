@@ -3,9 +3,9 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-use behavior::{Address, AllocationRejection, EndpointAddress, Protocol};
+use behavior::{Address, AllocationRejection, Behavior, EndpointAddress, Protocol};
 
-use crate::local::ActorRef;
+use crate::local::{ActorRef, InstalledActor};
 
 /// One logical address in Bombay's standard local runtime.
 ///
@@ -45,6 +45,18 @@ impl EndpointAddress for MailAddr {
         = ActorRef<P>
     where
         P: Protocol<Addr = Self>;
+
+    type Installed<B>
+        = InstalledActor<B>
+    where
+        B: Behavior<Protocol: Protocol<Addr = Self>>;
+
+    fn recipient<B>(installed: &Self::Installed<B>) -> Self::Established<B::Protocol>
+    where
+        B: Behavior<Protocol: Protocol<Addr = Self>>,
+    {
+        installed.recipient()
+    }
 }
 
 /// One never-wrapping address source shared by a complete local application.
@@ -86,17 +98,30 @@ mod tests {
         let addresses = ApplicationAddresses::new();
 
         assert_eq!(MailAddr::APPLICATION_ROOT, MailAddr(0));
-        assert_eq!(addresses.allocate(), Ok(MailAddr(1)));
-        assert_eq!(addresses.allocate(), Ok(MailAddr(2)));
+        let first_address = addresses.allocate();
+        assert_eq!(first_address, Ok(MailAddr(1)));
+        let second_address = addresses.allocate();
+        assert_eq!(second_address, Ok(MailAddr(2)));
+    }
+
+    #[test]
+    fn address_converts_to_its_exact_numeric_identity() {
+        let address = MailAddr(73);
+        let numeric_address: u64 = address.into();
+        assert_eq!(numeric_address, 73);
+        assert_eq!(MailAddr::from(numeric_address), address);
     }
 
     #[test]
     fn allocation_never_wraps() {
         let addresses = ApplicationAddresses::from_next(u64::MAX - 1);
 
-        assert_eq!(addresses.allocate(), Ok(MailAddr(u64::MAX - 1)));
-        assert_eq!(addresses.allocate(), Err(AllocationRejection::Exhausted));
-        assert_eq!(addresses.allocate(), Err(AllocationRejection::Exhausted));
+        let final_address = addresses.allocate();
+        assert_eq!(final_address, Ok(MailAddr(u64::MAX - 1)));
+        let first_exhaustion = addresses.allocate();
+        assert_eq!(first_exhaustion, Err(AllocationRejection::Exhausted));
+        let repeated_exhaustion = addresses.allocate();
+        assert_eq!(repeated_exhaustion, Err(AllocationRejection::Exhausted));
     }
 
     #[test]

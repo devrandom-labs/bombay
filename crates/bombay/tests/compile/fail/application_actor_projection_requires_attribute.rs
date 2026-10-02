@@ -1,6 +1,6 @@
 use bombay::behavior::Never;
 use bombay::prelude::{
-    ActorExt, ActorOrigin, ActorRetirement, StopOnShutdown, TerminalProjection,
+    ActorExt, ChildOrigin, ActorRetirement, StopOnShutdown, TerminalProjection,
 };
 
 struct Root;
@@ -18,7 +18,7 @@ struct Lifecycle;
 #[derive(TerminalProjection)]
 enum ApplicationTerminal {
     Lifecycle {
-        origin: ActorOrigin<StopOnShutdown<Root>, Lifecycle>,
+        origin: ChildOrigin<StopOnShutdown<Root>, Lifecycle>,
         terminal: ActorRetirement<StopOnShutdown<LifecycleActor>, Self>,
     },
 }

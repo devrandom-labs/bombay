@@ -1,5 +1,10 @@
-error: duplicate hosted protocol; it is already hosted by field `primary`
-  --> tests/compile/fail/actor_spaces_duplicate.rs:14:5
+error[E0119]: conflicting implementations of trait `Hosts<Orders>` for type `Actors`
+  --> tests/compile/fail/actor_spaces_duplicate.rs:11:10
    |
-14 |     duplicate: ActorSpace<Orders>,
-   |     ^^^^^^^^^
+11 | #[derive(ActorSpaces)]
+   |          ^^^^^^^^^^^
+   |          |
+   |          first implementation here
+   |          conflicting implementation for `Actors`
+   |
+   = note: this error originates in the derive macro `ActorSpaces` (in Nightly builds, run with -Z macro-backtrace for more info)

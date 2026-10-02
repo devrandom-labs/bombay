@@ -1,10 +1,10 @@
 use core::time::Duration;
 
 use bombay::behavior::{
-    Actions, ActiveTurn, Behavior, BehaviorActed, Never, NoBirths, OneShot, Protocol,
-    StopOnShutdown, User,
+    Actions, ActiveTurn, Behavior, BehaviorActed, Never, NoBirths, Protocol, User,
 };
 use bombay::prelude::*;
+use bombay::{lifecycle::StopOnShutdown, timing::OneShot};
 
 struct Root;
 

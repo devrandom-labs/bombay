@@ -18,8 +18,9 @@ compile_error!(
 );
 
 pub use ::behavior;
-pub use ::behavior::{
-    composition, discovery, lifecycle, operations, persistence, routing, time as timing, workflow,
+pub use ::behavior_actors::{
+    atomic, composition, discovery, lifecycle, operations, persistence, routing, time as timing,
+    workflow,
 };
 pub use address::MailAddr;
 mod actor_interface;
@@ -28,26 +29,27 @@ pub mod actors;
 pub use application::Application;
 #[cfg(feature = "axum")]
 pub use application_runtime::AxumRunError;
-pub use application_runtime::{App, ApplicationHandle, ApplicationLifecycle, RunError};
-pub use bombay_engine::Completion;
+pub use application_runtime::{
+    App, ApplicationBehavior, ApplicationHandle, ApplicationLifecycle, RunError,
+};
+pub use bombay_engine::{Completion, SettlementFailure};
 pub use bombay_macros::{ActorSpaces, TerminalProjection, actor};
-pub use interpret::EffectInterpretationError;
+mod actor_execution;
+mod actor_outcome;
 mod address;
 mod application;
 mod application_runtime;
 mod child_bindings;
 pub mod entity;
-mod incarnation;
 mod interpret;
 mod launch;
 mod local;
 mod observation;
 #[allow(
     dead_code,
-    reason = "the complete imported Observe algebra remains verified while Bombay narrows its private production consumers"
+    reason = "Bombay uses pair publication while this same private source retains the separately verified keyed Observe API"
 )]
 mod observe;
-mod outcome;
 mod reports;
 mod retirement;
 mod terminal;
@@ -55,14 +57,16 @@ mod termination;
 pub mod testing;
 mod time;
 mod topology;
+mod worker_preparation;
 
-pub(crate) use incarnation::Incarnation;
+pub(crate) use actor_execution::ActorExecution;
+pub(crate) use actor_outcome::ActorExecutionOutcome;
 pub use launch::ActorSpace;
-pub use local::{ActorRef, SendError};
-pub(crate) use outcome::IncarnationOutcome;
+pub use local::{ActorRef, InstalledActor, SendError};
 pub(crate) use retirement::Retirement;
-pub use terminal::{ActorOrigin, ActorRetirement, ProjectTerminal};
+pub use terminal::{ActorRetirement, ChildOrigin, ProjectTerminal, RootOrigin};
 pub use topology::Hosts;
+pub use worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
 
 /// Conventional imports for Bombay applications.
 pub mod prelude {
@@ -70,18 +74,22 @@ pub mod prelude {
     pub use crate::AxumRunError;
     pub use crate::actors::ActorExt;
     pub use crate::behavior::{
-        Actions, Activate, BehaviorActed, ChildDelivery, ChildRole, Children, Crash,
-        CreationRejection, Delivery, EstablishedCreation, EstablishedDelivery,
-        EstablishedRecipient, Exit, Machine, Never, Protocol, Recipient, ShutdownRejection, Step,
-        StopOnShutdown, TimerId,
+        Actions, BehaviorActed, ChildDelivery, ChildRole, Children, CreationRejection, Delivery,
+        EstablishedCreation, EstablishedDelivery, EstablishedRecipient, Never, Protocol, Recipient,
+        Step,
     };
     pub use crate::entity::{
         Entities, EntityActivationError, EntityAdmission, EntityCapacity, EntityDefinition,
         EntityMetrics, EntityRef,
     };
     pub use crate::{
-        ActorInterface, ActorOrigin, ActorRef, ActorRetirement, Application, ApplicationHandle,
-        ApplicationLifecycle, Completion, EffectInterpretationError, ExternalActor,
-        ExternalActorError, ExternalTarget, MailAddr, RunError, TerminalProjection,
+        ActorInterface, ActorRef, ActorRetirement, Application, ApplicationBehavior,
+        ApplicationHandle, ApplicationLifecycle, ChildOrigin, Completion, ExternalActor,
+        ExternalActorError, ExternalTarget, MailAddr, RootOrigin, RunError, SettlementFailure,
+        TerminalProjection,
+    };
+    pub use behavior_actors::{
+        Activate, Crash, Exit, Machine, MachineError, Move, ShutdownRejection, StopOnShutdown,
+        TimerId,
     };
 }

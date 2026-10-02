@@ -1,249 +1,308 @@
-//! For learning fixed supervision with an explicit restart policy and delayed
-//! backoff. The worker stops on a timer, the supervisor performs one restart,
-//! then restart-budget exhaustion ends the application with the exact typed
-//! supervision failure.
+//! Run one fixed supervisor through worker failure, replacement, and shutdown.
+//! The supervisor owns recovery policy; Bombay interprets its typed actions.
 
+use core::convert::Infallible;
 use core::time::Duration;
 
-use bombay::behavior::{
-    ActiveTurn, Backoff, Behavior, BehaviorActed, BehaviorBase, ChildHead, ChildRoute,
-    ChildTopology, EventIngress, Here, NoBirths, NoSends, OneShot, Proxy, ProxyUnavailable,
-    RestartConfiguration, RestartDenial, RestartPolicy, RestartTiming, StopOnShutdown, Strategy,
-    Supervise, SuperviseError, SupervisionFailure, SupervisionFailureReason, SupervisionLifecycle,
-    User, UserEvent, stop_on_supervision_failure,
+use bombay::actors::ActorExt as _;
+use bombay::atomic::{
+    ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
+    FailureReaction, FixedCommand, FixedSnapshot, FixedSupervisor, OrderedRoles, Recovery,
+    RestartLimit, RestartRelease, StableProxy, Strategy, WorkerSource, WorkerSubmission, fixed,
 };
-use bombay::prelude::*;
+use bombay::behavior::{Actions, BehaviorActed, ChildHead, MessageProtocol, Never};
+use bombay::prelude::{
+    ActorRetirement, ChildOrigin, Completion, Exit, MailAddr, RootOrigin, StopOnShutdown,
+    TerminalProjection,
+};
+use bombay::{ActorSpace, ActorSpaces, App, WorkerPreparationSource, WorkerPreparationStart};
+use tokio::sync::mpsc;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum WorkerRole {
+    Primary,
+}
+
+enum WorkerCommand {
+    Stop,
+}
 
 struct Worker;
 
-#[bombay::actor(message = Never)]
-impl Worker {}
-
-type TimedWorker = OneShot<Worker>;
-type ManagedWorker = StopOnShutdown<TimedWorker>;
-type StableWorker = Proxy<ManagedWorker>;
-type StableLayer = fn(ManagedWorker) -> StableWorker;
-type SupervisedApplication = Supervise<ApplicationState, ManagedWorker, StableLayer>;
-type SupervisorRunError = RunError<SuperviseError<Never, MailAddr>>;
-
-enum ApplicationEvent {
-    Lifecycle(SupervisionLifecycle<MailAddr>),
-    WorkerUnavailable(ProxyUnavailable<MailAddr, Never>),
-}
-
-impl UserEvent for ApplicationEvent {
-    type Addr = MailAddr;
-    type Message = Never;
-
-    fn user(_: MailAddr, message: Self::Message) -> Self {
-        match message {}
-    }
-
-    fn into_user(self) -> Result<User<MailAddr, Self::Message>, Self> {
-        Err(self)
-    }
-}
-
-impl EventIngress<Here, SupervisionLifecycle<MailAddr>> for ApplicationEvent {
-    fn ingress(lifecycle: SupervisionLifecycle<MailAddr>) -> Self {
-        Self::Lifecycle(lifecycle)
-    }
-}
-
-impl EventIngress<ChildRoute<StableWorker, ChildHead>, ProxyUnavailable<MailAddr, Never>>
-    for ApplicationEvent
-{
-    fn ingress(unavailable: ProxyUnavailable<MailAddr, Never>) -> Self {
-        Self::WorkerUnavailable(unavailable)
-    }
-}
-
-#[derive(Default)]
-struct ApplicationState {
-    latest_supervision: Option<SupervisionLifecycle<MailAddr>>,
-}
-
-impl Protocol for ApplicationState {
-    type Addr = MailAddr;
-    type Msg = Never;
-}
-
-impl BehaviorBase for ApplicationState {
-    type Base = Self;
-
-    fn base(&self) -> &Self::Base {
-        self
-    }
-}
-
-impl Behavior for ApplicationState {
-    type Protocol = Self;
-    type Event = ApplicationEvent;
-    type Sends = NoSends;
-    type Ph = Never;
-    type Error = Never;
-    type Birth = NoBirths;
-
-    fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
-        match event {
-            ApplicationEvent::Lifecycle(lifecycle) => self.latest_supervision = Some(lifecycle),
-            ApplicationEvent::WorkerUnavailable(unavailable) => match unavailable.command {},
+#[bombay::actor]
+impl Worker {
+    fn receive(&mut self, message: WorkerCommand) -> BehaviorActed<Self> {
+        match message {
+            WorkerCommand::Stop => Ok(Actions::stop()),
         }
-        Ok(Actions::cont())
     }
+}
+
+type ManagedWorker = StopOnShutdown<Worker>;
+
+struct ActivationNotice {
+    role: WorkerRole,
+    activated: mpsc::UnboundedSender<WorkerRole>,
+}
+
+impl ActivationPlan for ActivationNotice {
+    type Ready = ();
+    type Rejection = Never;
+
+    async fn activate(self) -> Result<Self::Ready, Self::Rejection> {
+        self.activated
+            .send(self.role)
+            .expect("the application observes each worker activation");
+        Ok(())
+    }
+}
+
+struct Workshop {
+    activated: mpsc::UnboundedSender<WorkerRole>,
+}
+
+impl WorkerSource<WorkerRole, ManagedWorker, ActivationNotice> for Workshop {
+    type WorkerRejection = Never;
+    type SourceRejection = Never;
+}
+
+impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Workshop {
+    async fn prepare_first(
+        &mut self,
+        role: &WorkerRole,
+    ) -> WorkerPreparationStart<ManagedWorker, ActivationNotice, Never, Never> {
+        WorkerPreparationStart::Submitted(worker_submission(*role, &self.activated))
+    }
+
+    async fn prepare_next(
+        &mut self,
+        role: &WorkerRole,
+    ) -> Result<WorkerSubmission<ManagedWorker, ActivationNotice>, Never> {
+        Ok(worker_submission(*role, &self.activated))
+    }
+}
+
+fn worker_submission(
+    role: WorkerRole,
+    activated: &mpsc::UnboundedSender<WorkerRole>,
+) -> WorkerSubmission<ManagedWorker, ActivationNotice> {
+    WorkerSubmission::activated(
+        Worker.stop_on_shutdown(),
+        ActivationNotice {
+            role,
+            activated: activated.clone(),
+        },
+    )
+}
+
+type WorkerProxy = StableProxy<ManagedWorker, ActivationNotice>;
+type ProxyWorker = StopOnShutdown<ManagedWorker>;
+type Supervisor =
+    FixedSupervisor<WorkerRole, ManagedWorker, ActivationNotice, Workshop, Infallible, Infallible>;
+type RootSupervisor = StopOnShutdown<Supervisor>;
+type RootProtocol = MessageProtocol<MailAddr, FixedCommand<MailAddr, WorkerRole, Worker>>;
+type Status = MessageProtocol<MailAddr, FixedSnapshot<Worker>>;
+type Capability = MessageProtocol<MailAddr, CapabilityResult<WorkerRole, Worker>>;
+
+#[derive(ActorSpaces)]
+struct SupervisorSpaces {
+    #[actor_space(RootProtocol)]
+    root: ActorSpace<RootProtocol>,
+    #[actor_space(Worker)]
+    workers: ActorSpace<Worker>,
+    #[actor_space(Status)]
+    status: ActorSpace<Status>,
+    #[actor_space(Capability)]
+    capability: ActorSpace<Capability>,
 }
 
 #[derive(TerminalProjection)]
-#[allow(
-    clippy::large_enum_variant,
-    reason = "exact unboxed terminal custody is the observable example result"
-)]
-enum ApplicationTerminal {
+enum SupervisorTerminal {
     Root {
-        origin: ActorOrigin<SupervisedApplication>,
-        terminal: ActorRetirement<SupervisedApplication, Self>,
+        origin: RootOrigin<RootSupervisor>,
+        terminal: ActorRetirement<RootSupervisor, Self>,
     },
-    StableWorker {
-        origin: ActorOrigin<ApplicationState, ChildHead>,
-        terminal: ActorRetirement<StableWorker, Self>,
+    #[structural_child]
+    Proxy {
+        origin: ChildOrigin<Supervisor, ChildHead>,
+        terminal: ActorRetirement<WorkerProxy, Self>,
     },
-    WorkerIncarnation {
-        origin: ActorOrigin<StableWorker, ChildHead>,
-        terminal: ActorRetirement<ManagedWorker, Self>,
+    #[structural_child]
+    Worker {
+        origin: ChildOrigin<WorkerProxy, ChildHead>,
+        terminal: ActorRetirement<ProxyWorker, Self>,
     },
 }
 
-fn stop_worker(_: &mut Worker) -> Actions<MailAddr, Never, NoSends, NoBirths> {
-    Actions::stop()
-}
-
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "ChildTopology's owner contract models a potentially vacant worker slot"
-)]
-fn worker(_: usize) -> Option<ManagedWorker> {
-    Some(StopOnShutdown::new(OneShot::new(
-        Worker,
-        TimerId(1),
-        Duration::from_millis(1),
-        stop_worker,
-    )))
-}
-
-fn main() -> Result<(), SupervisorRunError> {
-    let restart = RestartConfiguration::new(
-        Strategy::OneForOne,
-        RestartPolicy::Permanent,
-        1,
-        Duration::from_secs(30),
-        RestartTiming::Delayed(
-            Backoff::constant(Duration::from_millis(1)).expect("the restart delay is non-zero"),
+fn prepared_supervisor(activated: mpsc::UnboundedSender<WorkerRole>) -> Supervisor {
+    let roles =
+        OrderedRoles::new(WorkerRole::Primary, []).expect("the one-role roster is distinct");
+    let initial_activated = activated.clone();
+    fixed(
+        move |role: &WorkerRole| Ok::<_, Infallible>(worker_submission(*role, &initial_activated)),
+        roles,
+        ActivationPolicy::new(1).expect("one worker fits the activation policy"),
+        Recovery::permanent(
+            Workshop { activated },
+            Strategy::OneForOne,
+            RestartLimit::new(1, Duration::from_secs(30)),
+            RestartRelease::immediate(),
         ),
-    );
-    let supervised = Supervise::new(
-        ApplicationState::default(),
-        ChildTopology::new([7], worker),
-        restart,
-        Proxy::new as StableLayer,
+        FailureReaction::StopSupervisor,
+        ActorDrainPolicy::WaitForActorGraph,
+        DiagnosticDisposition::terminate(),
     )
-    .expect("the supervised child nonce is unique")
-    .with_failure_reaction(stop_on_supervision_failure::<ApplicationState>);
+    .build()
+    .unwrap_or_else(|_| panic!("the declared worker is prepared"))
+}
 
-    let (termination, terminal): (_, ApplicationTerminal) = Application::new(supervised)
-        .run_with(|application| async move { application.lifecycle().termination().await })?;
-    let denial = RestartDenial::BudgetExceeded {
-        restarts_in_window: 1,
-        replacements_requested: 1,
-        maximum_restarts: 1,
+fn run_supervision() {
+    let (activated, mut activations) = mpsc::unbounded_channel();
+    let supervisor = prepared_supervisor(activated);
+    let spaces = SupervisorSpaces {
+        root: ActorSpace::new(),
+        workers: ActorSpace::new(),
+        status: ActorSpace::new(),
+        capability: ActorSpace::new(),
     };
-    assert_eq!(
-        termination,
-        Ok(Exit::SupervisionFailed(
-            SupervisionFailureReason::RestartDenied(denial)
-        ))
-    );
-    let ApplicationTerminal::Root {
-        origin,
-        terminal:
-            ActorRetirement::Completed {
-                behavior,
-                control,
-                user,
-                descendants,
-                completion,
-            },
-    } = terminal
-    else {
-        panic!("restart-budget exhaustion must preserve the supervised application state")
+    let (termination, terminal): (_, SupervisorTerminal) =
+        App::new(supervisor.stop_on_shutdown(), spaces)
+            .run_with(move |application| async move {
+                let first = tokio::time::timeout(Duration::from_secs(5), activations.recv())
+                    .await
+                    .expect("the first worker activates")
+                    .expect("the first activation has a role");
+                assert_eq!(first, WorkerRole::Primary);
+
+                let interface = application.interface(application.root().established_recipient());
+                let mut caller = interface
+                    .external::<Capability>()
+                    .expect("the capability caller is established");
+                caller
+                    .send(
+                        interface.api(),
+                        FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
+                    )
+                    .await
+                    .expect("the supervisor accepts the capability query");
+                let reply = caller
+                    .receive()
+                    .await
+                    .expect("the primary capability is returned");
+                let CapabilityResult::Ready { role, proxy } = reply.message else {
+                    panic!("the primary proxy is ready")
+                };
+                assert_eq!(role, WorkerRole::Primary);
+                caller
+                    .send(&proxy, WorkerCommand::Stop)
+                    .await
+                    .expect("the first worker accepts its stop command");
+
+                let replacement = tokio::time::timeout(Duration::from_secs(5), activations.recv())
+                    .await
+                    .expect("the replacement activates")
+                    .expect("the replacement activation has a role");
+                assert_eq!(replacement, WorkerRole::Primary);
+                caller
+                    .send(interface.api(), FixedCommand::shutdown())
+                    .await
+                    .expect("the supervisor accepts shutdown");
+                let lifecycle = application.lifecycle();
+                tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                    .await
+                    .expect("the supervisor retires after replacement and shutdown")
+            })
+            .unwrap_or_else(|_| panic!("the supervisor runs its recovery policy"));
+
+    assert_eq!(termination, Ok(Exit::Normal));
+    assert_restarted_worker_retirement(terminal);
+}
+
+fn assert_restarted_worker_retirement(terminal: SupervisorTerminal) {
+    let SupervisorTerminal::Root { origin, terminal } = terminal else {
+        panic!("the application returns its supervisor root");
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), None);
-    assert_eq!(behavior.child_count(), 1);
-    assert_eq!(behavior.restarts_in_window(), 1);
-    assert_eq!(behavior.pending_restarts(), 0);
-    assert_eq!(
-        behavior.base().latest_supervision,
-        Some(SupervisionLifecycle::Retired {
-            failure: SupervisionFailure::restart_denied(7, Ok(Exit::Normal), denial),
-        })
-    );
-    assert!(control.is_empty());
-    assert!(user.is_empty());
-    assert_eq!(completion, Completion::Stopped);
-    assert_terminal_descendants(&descendants);
-    Ok(())
-}
-
-fn assert_terminal_descendants(descendants: &[ApplicationTerminal]) {
-    let [
-        ApplicationTerminal::StableWorker {
-            origin,
-            terminal:
-                ActorRetirement::OwnerCancelled {
-                    control,
-                    user,
-                    descendants,
-                    ..
-                },
-        },
-    ] = descendants
-    else {
-        panic!("the supervised proxy must retain both worker retirements")
-    };
-    assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), Some(7));
-    assert!(control.is_empty());
-    assert!(user.is_empty());
-
-    let [first, second] = descendants.as_slice() else {
-        panic!("the initial and replacement worker must both be retained")
-    };
-    let first_address = assert_worker_retirement(first, 0);
-    let second_address = assert_worker_retirement(second, 1);
-    assert_ne!(first_address, MailAddr::APPLICATION_ROOT);
-    assert_ne!(second_address, MailAddr::APPLICATION_ROOT);
-    assert_ne!(first_address, second_address);
-}
-
-fn assert_worker_retirement(terminal: &ApplicationTerminal, nonce: u64) -> MailAddr {
-    let ApplicationTerminal::WorkerIncarnation {
-        origin,
-        terminal:
-            ActorRetirement::Completed {
-                control,
-                user,
-                descendants,
-                completion,
-                ..
-            },
+    let ActorRetirement::Completed {
+        completion,
+        descendants,
+        ..
     } = terminal
     else {
-        panic!("each timed worker must preserve its completed terminal state")
+        panic!("the supervisor returns completed terminal custody")
     };
-    assert_eq!(origin.nonce(), Some(nonce));
-    assert!(control.is_empty());
-    assert!(user.is_empty());
-    assert!(descendants.is_empty());
-    assert_eq!(*completion, Completion::Stopped);
-    origin.address()
+    assert_eq!(completion, Completion::Stopped);
+    assert_eq!(descendants.len(), 1);
+    let SupervisorTerminal::Proxy { origin, terminal } = descendants
+        .into_iter()
+        .next()
+        .expect("the primary role retains its proxy")
+    else {
+        panic!("the primary child is a stable proxy")
+    };
+    assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let ActorRetirement::Completed {
+        completion,
+        descendants,
+        ..
+    } = terminal
+    else {
+        panic!("the proxy returns both worker incarnations")
+    };
+    assert_eq!(completion, Completion::Stopped);
+    assert_eq!(descendants.len(), 2);
+    for descendant in descendants {
+        let SupervisorTerminal::Worker { origin, terminal } = descendant else {
+            panic!("the proxy retains a worker incarnation")
+        };
+        assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
+        let ActorRetirement::Completed {
+            completion,
+            descendants,
+            ..
+        } = terminal
+        else {
+            panic!("the worker returns completed terminal custody")
+        };
+        assert_eq!(completion, Completion::Stopped);
+        assert!(descendants.is_empty());
+    }
+}
+
+fn main() {
+    run_supervision();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::prepared_supervisor;
+    use bombay::atomic::ProxyPhase;
+    use bombay::behavior::{CreationKind, Step};
+    use bombay::prelude::Activate as _;
+    use tokio::sync::mpsc;
+
+    #[test]
+    fn fixed_supervisor_initialization_preserves_role_and_correlation() {
+        let (activated, _) = mpsc::unbounded_channel();
+        let supervisor = prepared_supervisor(activated);
+        let initialized = supervisor
+            .initialize()
+            .unwrap_or_else(|_| panic!("the fixed supervisor initializes its stable proxy"));
+        assert_eq!(initialized.actions.creates.len(), 1);
+        let proxy = initialized
+            .actions
+            .creates
+            .iter()
+            .next()
+            .expect("the primary role owns one stable proxy");
+        let creation = proxy.id();
+        assert_eq!(proxy.kind(), CreationKind::Birth);
+        assert_eq!(proxy.child().phase(), ProxyPhase::Dormant);
+        assert_eq!(initialized.actions.sends.proxy_observations.len(), 1);
+        assert_eq!(
+            initialized.actions.sends.proxy_observations[0].child,
+            creation
+        );
+        assert_eq!(initialized.actions.become_, Step::Continue);
+    }
 }

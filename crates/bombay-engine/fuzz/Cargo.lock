@@ -10,26 +10,19 @@ checksum = "c3d036a3c4ab069c7b410a2ce876bd74808d2d0888a82667669f8e783a898bf1"
 
 [[package]]
 name = "bombay-behavior"
-version = "0.14.0"
-source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=a272adf8d2cbb6a2784d565f47c74adff3e7d01b#a272adf8d2cbb6a2784d565f47c74adff3e7d01b"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10ebe68552dcb07f48c5af0af4ef0cafbbf4f9743a4a58845879768d712f9846"
 dependencies = [
  "bombay-behavior-macros",
  "thiserror",
 ]
 
 [[package]]
-name = "bombay-behavior-actors"
-version = "0.14.0"
-source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=a272adf8d2cbb6a2784d565f47c74adff3e7d01b#a272adf8d2cbb6a2784d565f47c74adff3e7d01b"
-dependencies = [
- "bombay-behavior",
- "thiserror",
-]
-
-[[package]]
 name = "bombay-behavior-macros"
-version = "0.11.4"
-source = "git+https://github.com/devrandom-labs/bombay-behavior.git?rev=a272adf8d2cbb6a2784d565f47c74adff3e7d01b#a272adf8d2cbb6a2784d565f47c74adff3e7d01b"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6f66dda26895533be22286fe4a062b43a524cac5ea2a3cc1a956b6c0d38a4bc"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -41,7 +34,7 @@ dependencies = [
 name = "bombay-engine"
 version = "0.1.0"
 dependencies = [
- "bombay-behavior-actors",
+ "bombay-behavior",
  "thiserror",
 ]
 
@@ -49,7 +42,7 @@ dependencies = [
 name = "bombay-engine-fuzz"
 version = "0.0.0"
 dependencies = [
- "bombay-behavior-actors",
+ "bombay-behavior",
  "bombay-engine",
  "libfuzzer-sys",
 ]

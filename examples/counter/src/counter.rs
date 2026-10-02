@@ -28,7 +28,7 @@ impl Counter {
 }
 
 #[bombay::actor(
-    sends = { values: Vec<EstablishedDelivery<CounterValue>> },
+    sends = pub(crate) { values: Vec<EstablishedDelivery<CounterValue>> },
     error = CounterError,
 )]
 impl Counter {

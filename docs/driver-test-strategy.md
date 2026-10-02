@@ -1,555 +1,177 @@
 # Bombay Driver test strategy
 
-This is the accepted verification contract for the Driver law. It defines how
-each law is falsified and does not itself constitute a completion claim.
-
-The strategy supplements [`driver-law.md`](driver-law.md). Actor-template unit
-tests prove each deterministic fold; these tests prove that the universal
-Driver can execute every closed template/domain composition without learning
-template semantics or violating runtime ordering.
-
-## Derivation record
-
-This strategy was originally derived after checking Behavior/Actors
-source at `5d8c8e0b0294f92bd7ce90beb18646acd46393af`, Address at
-`7df3bedc5f3177ddbdb617cefe4b6ffcd60ecda3`, Observe at
-`43016e5f781e006e072e77af996c4da64466dee8`, Timers at
-`4e515ed176f503bf6a5bd0d736ffa0394cb7f1f2`, and the locked Communication
-0.1.2, Observe 0.1.1, Timers 0.1.0, Address 0.2.0, Transition 0.1.0, and Machine
-Executor 0.1.0 APIs and tests. Transition and Machine Executor were inspected
-only to verify their removal from Engine; they are not Driver dependencies.
-
-Those revisions are historical provenance, not the current Bombay dependency
-contract. Every implementation feature must use the exact versions recorded by
-its fresh verification in `open-design-ledger.md`. The strategy's causal laws
-remain applicable unless a new owning contract explicitly changes them.
-
-The Behavior mismatch is deliberately resolved. The workspace and lock select
-`bombay-behavior-actors` and `bombay-behavior` 0.14.0, with
-`bombay-behavior-macros` 0.11.4, from exact Git revision
-`a272adf8d2cbb6a2784d565f47c74adff3e7d01b`. Engine accepts any closed
-Actors/custom Behavior, returns its final concrete value with the typed
-environment residual, and does not recreate composition, interpretation, or
-routing algebra.
-
-Ownership remains:
-
-- Actors tests own each template's pure state-transition law.
-- Engine tests own universal Driver sequencing and template opacity.
-- Bombay tests own concrete capability interpretation and incarnation order.
-- Communication, Address, Observe, and Timers retain their primitive
-  concurrency/model tests; Bombay tests their composition rather than copying
-  their implementations.
-- Integration repositories own persistence, entity, transport, and other
-  external capability conformance.
-
-## Meaning of complete coverage
-
-“All templates in all possible ways” cannot mean enumerating infinitely many
-domain values or arbitrarily deep generic nesting. It means closing every
-finite, declared dimension below and failing the test gate when an exported
-template or supported composition is unaccounted for.
-
-Completion requires:
-
-1. every exported concrete actor template and strategy variant appears in a
-   machine-checked manifest;
-2. every public event constructor and every continue/stop/error outcome path
-   for that template crosses the real Driver at least once;
-3. every named action lane emitted by the template reaches its real or
-   conformance interpreter;
-4. every documented supported template-to-template composition edge compiles
-   and runs in both meaningful orders;
-5. every documented rejected edge fails to compile for the intended reason;
-6. generated deeper compositions cover all compatibility-graph paths through
-   an agreed depth and all semantically important full stacks beyond it; and
-7. every Driver law has a positive oracle and a deliberate inversion that
-   makes that oracle fail.
-
-No aggregate test count substitutes for this closure accounting.
-
-## Law-test manifest contract
-
-The repository must contain one machine-readable manifest generated from the
-canonical `D-*` headings in `driver-law.md`. Every law has exactly one manifest
-row and no manifest row may name an unknown law. The CI consistency test fails
-on missing, duplicate, renamed, reordered-without-review, or orphaned IDs.
-
-Each row contains these mandatory fields:
-
-| Field | Required meaning |
-|---|---|
-| `law` | Exact stable `D-*` identifier |
-| `owner` | Crate and layer that can observe the property |
-| `positive` | Executable oracle proving the promised behavior |
-| `inversion` | Deliberate violating implementation or mutation |
-| `killer` | Test that fails against that inversion |
-| `negative` | Invalid input/composition/failure case |
-| `boundaries` | Zero, one, limit, rollover, closure, or cancellation edges that apply |
-| `adversarial` | Schedule/fault/fuzz campaign that applies |
-| `templates` | Template and composition cells exercising the law |
-| `command` | Exact reproducible command that runs the evidence |
-| `status` | `planned`, `blocked`, or `passing` with evidence revision |
-
-`not-applicable` is not a blanket escape. It is permitted only for a specific
-field, with a written ownership/type argument and a review test that would fail
-if the field later became applicable. `externally-owned` requires both the
-owner's test identifier and a Bombay integration/conformance oracle; linking a
-dependency test alone does not close a Driver law.
-
-A row becomes `passing` only when its positive oracle passes, its inversion is
-killed, all applicable negative/boundary/adversarial evidence passes, and the
-named command is run in CI. Compilation, code review, coverage percentage, or a
-test name without an assertion cannot substitute for executable evidence.
-
-Law tests are divided by observable owner:
-
-- Engine: Behavior opacity, exactly-once folds, turn sequencing, no prefetch,
-  commit boundaries, terminal fusion, and black-box API constraints.
-- Bombay integration: action-lane meaning, partial commits, transactional
-  publication, incarnation/drop order, lifecycle classification, self-send,
-  and concrete environment coherence.
-- Primitive crates: their own mailbox, address, observation, timer, and typed
-  capability algorithms, plus Bombay conformance tests at each adapter edge.
-- Repository gates: dependency removal, single production path, visibility,
-  forbidden-bound/static-bound checks, template accounting, and documentation
-  synchronization.
-
-The first test added during implementation is the manifest-consistency test.
-No production Driver replacement may merge while any law row is `planned`,
-`blocked`, missing its killer, or absent from the CI command set.
-
-## Template manifest
-
-The manifest is generated from the exact selected `bombay-behavior-actors`
-public exports and checked against a reviewed semantic classification. The gate
-fails when a public template is added, removed, or renamed without updating its
-Driver evidence.
-
-The current families to account for are:
-
-| Family | Current templates and strategy variants |
-|---|---|
-| Composition/fundamental | `Machine`, `Stash`; `Activate` and `Compose` are lifecycle/composition traits, not templates |
-| Lifecycle/shutdown/watch | `Task`, `Watch`, `FinalizeOnShutdown`, `StopOnShutdown` |
-| Atomic ownership | `StableProxy`, `FixedSupervisor`, `DynamicSupervisor`, their explicit recovery and drain policies |
-| Pools | `FifoPool`, `KeyedPool`, their explicit admission, interruption, recovery, and drain policies |
-| Routing/admission | `Router<RoundRobin>`, `Router<Broadcast>`, `Router<LeastLoaded<_>>`, `Router<ConsistentHash<_>>`, `Router<RendezvousHash<_>>`, `WorkQueue`, `PriorityQueue`, `Buffer`, `CircuitBreaker`, `RateLimiter`, `Correlator`, `Acknowledgements`, `Sequencer`, `OrderGate`, `Deduplicator` |
-| Discovery/pub-sub | `Registry`, `Resolver`, `Presence`, `Topic`, `PubSub` |
-| Time | `Deadline`, `ReceiveTimeout`, `OneShot`, `Periodic`, `Lease` |
-| Workflow | `Workflow`, `Barrier`, `Latch` |
-| Persistence policy | `Cache` |
-| Operations | `Health`, `Readiness`, `Configuration`, `Features` |
-
-Protocol, message, state, result, error, and evidence types are not counted as
-separate templates, but every variant they expose must be represented in the
-owning template's event/outcome coverage.
-
-Each manifest row records:
-
-- exact type constructor and source revision;
-- family and semantic owner;
-- minimal custom domain used to close its generic slots;
-- accepted event constructors;
-- emitted named action lanes;
-- initialization, continue, stop, and controlled-error reachability;
-- required environment interpreters;
-- supported inner/outer composition edges;
-- deliberately rejected compositions;
-- deterministic, Driver, Bombay-runtime, property, fuzz, mutation, and
-  performance evidence identifiers; and
-- unresolved runtime capability or external-integration blocker.
-
-## User-defined behavior matrix
-
-The Driver must first be tested independently of reusable templates using
-user-defined Behaviors that vary every relevant shape.
-
-### State shapes
-
-- zero-sized and stateless;
-- scalar counter and checked arithmetic boundary;
-- enum typestate with every variant transition;
-- owned collection with empty, one, capacity-boundary, and large states;
-- move-only state with drop accounting;
-- large and highly aligned state;
-- nested domain state containing independently updated subdomains;
-- state whose `Drop` panics in an isolated subprocess oracle; and
-- `Send` but intentionally not `Sync` state, proving exclusive ownership is
-  sufficient where the production contract permits it.
-
-### Event shapes
-
-- ordinary user event;
-- composed user/service event sum;
-- move-only payload;
-- empty and maximum-size payloads admitted by the test configuration;
-- repeated equal values and unique sequence identities;
-- control-priority and user-lane events after real mailbox selection;
-- timer, observation, creation-result, and shutdown facts; and
-- events whose clone, comparison, hash, or drop behavior exposes accidental
-  duplication or hidden constraints.
-
-### Action shapes
-
-- empty continue;
-- exactly one send;
-- multiple sends in one lane;
-- heterogeneous named send lanes;
-- creation only;
-- multiple ordered creations;
-- creations plus dependent sends;
-- continue with actions;
-- stop with final actions;
-- controlled error with no actions;
-- rejected action with exact payload recovery; and
-- semantic rejection events, exact actionable interpretation errors, and
-  factual committed prefixes before failure;
-- maximal configured batches and zero-capacity admission.
-
-### Lifecycle shapes
-
-- empty initialization, initialization actions, initialization stop,
-  initialization error, and initialization panic;
-- first-event stop/error/panic;
-- stop/error/panic after a long successful prefix;
-- permanent environment closure before any event and after arbitrary turns;
-- cancellation while waiting for input, committing initialization, committing
-  a turn, and retiring; and
-- final concrete Behavior plus prepared/active residual on every ordinary
-  completion or failure path; and
-- attempted reuse after every terminal route.
-
-## User-defined behavior plus templates
-
-Every template is closed over at least three custom domains:
-
-1. a minimal inert domain that isolates template behavior;
-2. a stateful domain emitting ordinary deliveries; and
-3. an adversarial domain emitting heterogeneous actions, stopping, failing,
-   and panicking at controlled points.
-
-For wrappers, the matrix proves both owned and forwarded event lanes. An outer
-template must consume its protocol exactly once and must preserve every inner
-event and action it does not own. Reordering wrappers must either preserve the
-documented semantics or be a compile-time rejection with a recorded reason.
-
-The matrix includes semantic full-stack compositions, not only pairs, such as:
-
-```text
-shutdown + watch + task + supervisor + proxy + stateful domain
-receive-timeout + deadline + stash + stateful domain
-worker pool + supervisor + proxy + adversarial worker domain
-registry/resolver/presence + stateful discovery domain
-buffer/rate-limit/circuit-breaker + delivery domain
-workflow + timer-backed domain
-operations templates + versioned reply domain
-```
-
-Exact syntax and supported ordering come from the aligned Actors API; these
-examples do not pre-approve combinations that the type algebra rejects.
-
-## Composition generation
-
-Maintain a reviewed directed compatibility graph whose nodes are templates and
-whose edge `A -> B` means `A<B<Domain>>` is supported.
-
-Generate:
-
-- all nodes individually;
-- every declared edge;
-- every valid path of depth two and three;
-- every repeated-template path the API intentionally supports;
-- one maximal stack per distinct capability set;
-- permutations where order is semantically meaningful;
-- duplicated request types in different named lanes;
-- multiple address/message/reply types; and
-- compile-fail cases for every absent or explicitly forbidden edge.
-
-Pairwise generation catches interaction defects economically; covering arrays
-extend this to three-way capability interactions. Property-generated runtime
-traces then vary events and outcomes within each compiled composition.
-
-The generator emits stable case identifiers so shrinking or compiler errors can
-be reproduced without regenerating the entire matrix.
-
-## Oracle layers
-
-### 1. Compile-time conformance
-
-Use compile-pass and compile-fail fixtures to prove:
-
-- every supported composition closes `B::Event` and its complete
-  `ActionsOf<B>` projection;
-- the selected environment interprets every lane;
-- a missing capability interpreter fails compilation;
-- an invalid event route fails compilation;
-- no application implementation of Driver/interpreter plumbing is required;
-- no `dyn`, `Any`, downcast, erased envelope, ambient context, or positional
-  product traversal enters the path; and
-- nominal user-defined Behaviors remain nameable in actors, births, endpoints,
-  and routers.
-
-Compiler diagnostics are snapshot-tested only for stable, intentionally
-authored messages; otherwise fixtures assert pass/fail and the relevant error
-category without freezing compiler prose.
-
-### 2. Deterministic trace model
-
-A synchronous model consumes a generated sequence of events and interpreter
-outcomes and produces a canonical transcript:
-
-```text
-Initialized(actions)
-EventAccepted(id)
-Folded(id, actions)
-ActionsCommitted(id)
-Stopped | Closed | BehaviorFailed | EnvironmentFailed
-Retired(final_behavior, environment_residual, disposition)
-```
-
-The real Driver runs against a deterministic environment and must refine the
-model exactly. Every accepted event appears once; no commit or terminal fact is
-invented, lost, duplicated, or reordered.
-
-The model also represents `CommitAccepted(lane, item)` prefixes. A later failure
-or cancellation preserves that factual prefix, performs no implicit retry, and
-never claims rollback. Creation publication is modeled separately as a Bombay
-runtime integration contract; it is outside Engine's Driver law manifest.
-
-### 3. Differential migration oracle
-
-During Transition removal only, run identical generated traces through the
-historical Driver and the candidate direct-Behavior Driver. Compare observable
-actions, errors, stops, input ownership, and retirement. This is test-only
-migration evidence, never a second production path, and is deleted after the
-new law suite independently proves the replacement.
-
-Historical behavior is not automatically correct: divergences are classified
-against the Driver law, and a known historical bug becomes a negative fixture
-rather than the expected result.
-
-### 4. Metamorphic tests
-
-Assert relationships that hold without a full expected transcript:
-
-- appending events after a guaranteed stop changes nothing;
-- splitting a source into ready/pending polls preserves the accepted trace;
-- inserting scheduler yields changes no semantic output;
-- replacing payloads with unique identities preserves their order and count;
-- adding an empty action lane changes no other lane;
-- wrapping with a semantic identity template preserves the inner trace;
-- changing unrelated capability timing cannot change pure fold decisions; and
-- deterministic replay from the same initial definition and facts produces the
-  same transcript.
-
-### 5. Model-based and property testing
-
-Generate stateful command sequences covering initialization, events, action
-commit success/failure, closure, stop, cancellation requests, and injected
-panics. Compare every prefix against a small ownership/state model. Shrink by
-removing operations, simplifying payloads, reducing composition depth, and
-reducing pending-poll counts while retaining the failure.
-
-Properties include exactly-once processing, prefix closure after termination,
-payload conservation, action-lane conservation, creation-before-send, and
-retirement idempotence at the observable boundary.
-
-Generated histories also assert: at most one prefetched event, no recursive
-self-send turn, no interpreter callback into Behavior, no polling after a
-terminal edge, no busy polling while dependencies are pending, and equivalence
-under arbitrary scheduler-yield insertion.
-
-## Negative and boundary strategy
-
-Every boundary is tested at `0`, `1`, configured maximum minus one, maximum,
-and maximum plus one where representable:
-
-- mailbox capacity and queued producers;
-- send/action batch length;
-- creation count and duplicate nonces;
-- wrapper depth and event-sum width;
-- timer deadline equality, past deadlines, and generation rollover;
-- restart, retry, rate, queue, buffer, workflow, barrier, latch, cache, and
-  membership limits;
-- sequence/version/identity counters near rollover;
-- empty and fully occupied child scopes;
-- environment closure with empty and nonempty queues; and
-- cancellation before poll, after readiness, during commit, and immediately
-  before terminal publication.
-
-Integer boundaries use checked construction and test the documented rejection
-rather than relying on debug/release overflow differences.
-
-Negative tests also include wrong reply behavior, wrong address family,
-missing event injection, missing send interpreter, unsupported birth mode,
-misordered wrapper products, stale timer/observation/creation facts, duplicate
-completion, and attempts to use internal Driver phase controls from application
-code.
-
-## Adversarial strategy
-
-### Poll and cancellation adversary
-
-A manually controlled future harness chooses `Pending` or `Ready` at every
-Driver await boundary. It drops and resumes owning futures at every legal poll
-point, uses wake-before-register and wake-after-register schedules, and verifies
-that no event or action is duplicated or lost.
-
-### Fault injection
-
-Inject failure and panic independently at:
-
-- Behavior initialization;
-- initialization-action commit;
-- event acquisition;
-- Behavior turn;
-- each creation reservation/install/result stage;
-- each named action interpreter;
-- action commit after a successful prefix;
-- environment retirement;
-- lifecycle reporting and terminal observation; and
-- payload/state destructors in isolated subprocess tests.
-
-Every injection has an ownership oracle for Behavior state, event payload,
-actions, child reservations, mailbox handles, timer tokens, address lease, and
-terminal publication.
-
-### Concurrency adversary
-
-Race:
-
-- many producers with Driver polling;
-- control and user lanes under configurable aging;
-- delivery with last-sender and consumer retirement;
-- stop, abort, panic, and environment closure;
-- timer replacement/cancellation with expiry;
-- observation install/cancel with peer completion;
-- child creation with parent retirement;
-- address release with resolution and replacement generation; and
-- external capability completion with incarnation cancellation.
-
-Loom remains in the primitive owner for shared-memory algorithms. Bombay uses
-real adapter compositions, deterministic schedule control where possible, and
-repeated multithreaded races without claiming that repetition proves all
-interleavings.
-
-### Systematic schedule exploration
-
-For bounded actor topologies, enumerate delivery, readiness, cancellation, and
-failure schedules against a small sequential/reference model. Use partial-order
-reduction only where operations are proven independent. Preserve and replay the
-smallest counterexample schedule. Include protocol deadlock, behavioral
-deadlock, livelock, orphaned-message, unexpected-order, and stale-generation
-classes identified by actor-system testing research.
-
-Linearizability is asserted only for a template or capability whose own
-contract declares a linearization point. It is never projected onto the Driver
-or onto asynchronous delivery generally.
-
-## Extreme-adversarial campaigns
-
-Run separate bounded campaigns unsuitable for ordinary unit tests:
-
-- millions of turns with unique sequence identities;
-- maximum supported composition depth and type width;
-- sustained full mailbox with cancelled and blocked producers;
-- control floods with waiting users and the exact configured fairness law;
-- mass child creation/retirement and rapid address-generation reuse;
-- equal-deadline timer storms, replacement storms, and stale expirations;
-- simultaneous observer registration/completion/cancellation storms;
-- panic and abort storms during every Driver phase;
-- allocator-failure injection where the platform harness supports it;
-- memory-pressure and file-descriptor/resource exhaustion for external
-  interpreters in their owning integration suites;
-- long-running soak with stable live-resource counts; and
-- deterministic replay of every discovered failure seed.
-
-Campaigns have explicit operation/time bounds, progress reporting, seed
-capture, and hang detection. A timeout is a failure with the last reproducible
-trace, not a discarded run.
-
-## Specialized verification
-
-- **Structured fuzzing:** generate typed event/interpreter operations rather
-  than arbitrary bytes only; retain a byte decoder for libFuzzer integration.
-- **Mutation testing:** require mutations of every Driver branch and ordering
-  edge to be killed; surviving mutations create named test obligations.
-- **Miri:** exercise move-only payload, drop order, aliasing, and cancellation
-  smoke paths supported by Miri.
-- **Sanitizers/platform tools:** run thread/address/leak tooling where Rust and
-  the platform support the relevant configuration.
-- **Allocation tests:** prove the steady-state Driver turn adds no allocation
-  beyond the Behavior/environment operations being measured.
-- **Performance tests:** measure empty, delivery-heavy, heterogeneous-action,
-  deep-composition, closure, and retirement paths; compare distributions, not
-  one sample.
-- **Compile-time tests:** track representative deep-composition compile time,
-  type-size diagnostics, and binary-size impact so static composition remains
-  usable by developers.
-- **Documentation tests:** every public authoring example runs through the same
-  Driver path; no example implements hidden interpreter plumbing.
-- **Repository audit:** scan examples, benchmarks, fuzz targets, research
-  probes, documentation, and re-exports—not only `crates/`—for bypasses,
-  obsolete Transition paths, positional products, and unmanifested templates.
-
-## Coverage accounting
-
-The test report is a matrix, not a percentage:
-
-```text
-template
-  x domain shape
-  x event/outcome path
-  x action lane
-  x composition edge/path
-  x environment result
-  x lifecycle terminal route
-  x verification technique
-```
-
-Each cell is `covered`, `compile-rejected`, `externally-owned`, or `blocked`
-with an evidence identifier. No blank cells are allowed. Line/branch coverage
-locates unexamined implementation but does not close a semantic cell.
-
-The report contains one row for every `D-*` identifier in
-[`driver-law.md`](driver-law.md), mapping that explicit law to its positive
-oracle, inversion and killer, applicable template/composition cells, and owning
-test gate under the manifest contract above. Adding or renaming a law without
-updating this mapping fails the documentation and test-manifest check.
-
-## Completion gate
-
-The ordinary `cargo test -p bombay-engine` command executes every currently
-implemented standalone oracle and validates every manifest reference. The two
-all-evidence assertions are explicit completion gates because they must remain
-red while any integration row is honestly unexecuted:
+This is the executable verification contract for
+[`driver-law.md`](driver-law.md). It covers Engine's eight retained laws and
+does not claim ownership of Behavior, actor-template, concrete-runtime, or
+primitive concurrency semantics.
+
+## Selected contract and ownership
+
+The workspace selects Behavior Core and Actors 0.20.0 from release revision
+`804b2bf25325a523884ec49d8a4ae6d2d2b6e9da` and Behavior Macros 0.13.0
+from `3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8`. Evidence must name the
+revision of each owner it exercises.
+
+Behavior owns initialization, synchronous folds, complete `Actions`, ordered
+interpretation, total settlements, source custody, and child products. Behavior
+Actors owns every template's pure topology and lifecycle policy. Engine tests
+only the causal protocol by which one closed Behavior and one typed Environment
+execute. Bombay tests concrete mailbox, address, timer, observation,
+publication, and incarnation composition. Primitive crates retain their own
+concurrency models.
+
+The previous strategy required a 68-row cross-product and template campaign
+inside the Driver manifest. That representation was ownership-stale: it turned
+upstream and downstream obligations into unexecutable Engine status strings.
+The template inventory is now recorded in `driver-template-manifest.json`;
+`docs/todo.md` retains the historical TEST-008 evidence. Catalogue support is
+tracked separately in [the completion inventory](prd-backlog/evidence.md);
+it cannot be used to pass or block an Engine law.
+
+## Actor-template boundary inventory
+
+`driver-template-manifest.json` schema 3 is the revision-bound ownership
+boundary for the selected Behavior Actors 0.20.0 package. It records the exact
+45 public Behavior compositions by family, public spelling, event boundary,
+ordered effect lanes, composition edge, owning source, and upstream evidence.
+It separately records all 19 actor-owned interpreter-request/source-action
+types, their emitters, and whether Bombay currently has a matching
+`InterpretItem` implementation. Behavior-owned delivery, child-input,
+creation, and parent-report products are listed as structural lanes rather
+than redefined as actor capabilities.
+
+`engine_does_not_mirror_actor_template_laws` compares both inventories with
+independent exact sets, rejects duplicate or malformed rows, checks each
+template record has its boundary fields, derives interpreter status from the
+Bombay source, requires an empty mirror list, and rejects an Engine dependency
+or import of Behavior Actors. Removing one template or adding one mirror is a
+failing mutation. This remains an Engine ownership gate only: the manifest
+points to upstream source/tests and does not copy template transition law into
+Engine.
+
+The audit identified six Bombay interpreter boundaries in the locked
+atomic surface: `BeginActivation`, `CustomerDelivery`, `DiagnosticAction`,
+`InitializeWorker`, `AssignWorker`, and `ProxyOperation`. Each now has a
+typed Bombay interpreter and a compile-contract witness under ARC-010; the
+manifest records all 19 actor-owned request types as implemented. The
+`PrepareWorkers` source action also has a direct typed interpreter. Selected
+Actors 0.20.0 supplies typed `ProxyDiagnostic` ingress and split worker
+preparation; Bombay's live fixed-supervisor and held-source FIFO regressions
+exercise those contracts. This manifest alone is not end-to-end template
+proof. `ObserveEstablishedCreation` and `CancelObservation` are
+public capability contracts with no current public-template emitter and stay
+listed so a later emitter cannot appear outside the inventory.
+
+## Schema-2 manifest
+
+`driver-law-manifest.json` contains exactly one row for every canonical `D-*`
+identifier in the law document and no other row. Each row owns three structured
+records:
+
+- `positive`: one caller-observable test of the promised causal behavior;
+- `boundary`: one distinct edge that constrains the law; and
+- `inversion`: one unique edit to the real owning source plus the exact test
+  that must kill it.
+
+Every record contains a unique evidence identifier, the selected Behavior
+revision, an exact claim, and a pinned-Nix reproduction command. Positive and
+boundary records name an integration-test target and exact test. Inversion
+records additionally name the edited repository path, the semantic mutation,
+and the exact killer. There are no `status`, blanket negative, generic
+adversarial, or empty template fields.
+
+The ordinary `law_manifest` suite checks:
+
+- exact law/row identity and order;
+- exact dependency versions and Behavior revision;
+- uniqueness and completeness of every evidence record;
+- resolution of every positive, boundary, inversion, and killer reference;
+- agreement between each reference and its pinned-Nix command;
+- one real mutation implementation for every inversion identifier; and
+- absence of the former ignored status-only completion test.
+
+Source scanning remains useful for the narrow D-SURFACE-1 repository policy and
+for detecting stale paths. It is supplemental everywhere else. Appending a
+forbidden string to an in-memory copy is not a semantic Driver mutation.
+
+## Executable evidence gate
+
+The required gate is:
 
 ```console
-cargo test -p bombay-engine --test law_manifest -- --ignored
+nix build path:.#driver-law-evidence --no-link
 ```
 
-That command must pass before Driver-law completion can be claimed. Ignoring
-the assertions during the ordinary development suite does not waive them; it
-keeps already-passing per-law commands executable while preserving a distinct
-red completion signal.
+It is also a required `nix flake check` check. The gate copies the current
+filtered repository source to a temporary workspace, so neither a successful
+mutation nor an interrupted run can alter the caller's worktree. For every law
+it then:
 
-The Driver test strategy is ready for implementation only after:
+1. runs the exact positive test;
+2. runs the exact boundary test;
+3. applies the named mutation to the real Driver, Environment, or manifest
+   source in the temporary workspace;
+4. runs only the named killer;
+5. rejects compilation failure, an unrelated failure, or a surviving mutant;
+6. restores the pristine temporary source; and
+7. writes the command outcomes to `driver-law-evidence.json` in the immutable
+   Nix output.
 
-1. the Driver law is explicitly accepted;
-2. the Behavior dependency is aligned and the template-boundary manifest
-   confirms that Engine mirrors no Behavior Actors template laws;
-3. every supported/rejected composition edge is reviewed;
-4. owners agree which runtime-backed templates can run end to end and which
-   remain blocked by absent interpreters;
-5. every Driver law maps to at least one positive, negative, boundary,
-   adversarial, mutation, and ownership oracle as applicable; and
-6. ordinary, generated, fuzz, mutation, concurrency, Miri, allocation,
-   performance, documentation, and repository-audit gates have explicit
-   commands, budgets, and failure-retention rules.
+The artifact contains one record per canonical law with `passed` positive and
+boundary results and a `killed` inversion result. The gate derives work from the
+manifest, so adding a law or evidence identifier without an implementation
+fails closed. A static `passing` string cannot satisfy it.
 
-Behavior Actors owns its template-specific semantic proofs. Engine proves the
-universal `Behavior` execution contract once, parametrically, rather than
-recreating an application scenario for every upstream template. Passing
-template unit tests, Driver unit tests, or workspace tests alone is never
-sufficient.
+Focused reproduction of one row uses its manifest command, for example:
+
+```console
+nix develop -c bash crates/bombay-engine/tests/driver-law-evidence.sh --law D-TURN-1
+```
+
+The script's inner Cargo invocations are valid only because the script itself
+runs inside the pinned Nix shell or check derivation.
+
+## Oracle responsibilities
+
+Deterministic Driver tests assert complete transcripts: initialization,
+publication, event acquisition, fold, complete action commitment, source
+settlement, terminal selection, retirement, final Behavior, and exact residual.
+They use move-only payloads and typed errors where ownership or distinction is
+part of the law.
+
+The retained boundary witnesses cover:
+
+- initialization rejection and prepared-environment retirement;
+- pending input without spin or self-wake;
+- retained and transitive settlement products;
+- corrupt or rejected final initialization and turn settlements;
+- cancellation at every await boundary;
+- prepared/active Environment phase separation and minimum bounds;
+- repository closure and forbidden lifecycle surface; and
+- manifest row deletion and stale-reference rejection.
+
+Debug and optimized executions remain separate required focused gates. A test
+must perform every transition or ownership transfer before its assertions and
+must compare complete typed state, effects, errors, custody, order, and terminal
+outcome. Mutation failure is accepted only when the named test runs and reports
+`FAILED`; a compiler error is an unviable mutation, not a kill.
+
+## Separate queued obligations
+
+The TEST-006 property model now compares typed, complete causal traces over
+initialization, activation, ordinary and source turns, settlement outcomes,
+creation, and heterogeneous send lanes. The separate fuzz target explores
+malformed and long operation streams, pending cancellation, and structural
+custody invariants. The pinned `.#fuzz` shell runs its fixed-seed, 2,048-run
+campaign through `fuzz/verify-causal-turns.sh`; CI retains the corpus and crash
+artifacts. Driver panic and cancellation-stage tests remain separate focused
+ownership witnesses.
+
+Redundant Driver-test cleanup, Miri, Loom, coverage, sanitizer, allocation,
+and performance findings retain their historical references in `docs/todo.md`.
+Their absence cannot be hidden in this manifest, and their eventual results
+cannot silently broaden the eight Engine laws. TEST-008's
+separate actor-template inventory is now executable, but its missing
+interpreter rows remain ARC-010 work. Concrete Bombay adapter tests continue to
+prove capability ordering and lifecycle integration without copying those laws
+into Engine.

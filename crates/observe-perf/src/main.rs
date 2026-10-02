@@ -15,8 +15,9 @@
 //! - affine await allocation count and bytes, including its one slot;
 //! - retained bytes/blocks per subject+observer and the after-drop residue.
 //!
-//! All workloads use fixed operation counts and disjoint key ranges, with no
-//! RNG, so runs are reproducible. A counting global allocator wraps the
+//! All workloads use fixed operation counts and no RNG, so runs are
+//! reproducible. Most use disjoint keys; pooled-slot reuse repeats one key.
+//! A counting global allocator wraps the
 //! system allocator for the allocation and retention phases; its counters
 //! are Relaxed atomics read only after the measured window, so the
 //! throughput phases are unaffected. The allocator is a measurement tool; it
@@ -128,7 +129,7 @@ fn main() {
     throughput("seq_observe_first_ops_per_second", seq_observe_first);
     // Complete-before-observe: the late observer reads a retained outcome.
     throughput("seq_complete_first_ops_per_second", seq_complete_first);
-    // Rapid address reuse: register then retire, disjoint keys.
+    // Register and retire one subject per distinct key.
     throughput("seq_retire_recreate_ops_per_second", seq_retire_recreate);
     // Same-key retire/recreate: pooled-slot reuse with a single map entry.
     throughput("seq_pool_reuse_ops_per_second", seq_pool_reuse);
@@ -176,7 +177,7 @@ fn seq_complete_first() -> Duration {
     started.elapsed()
 }
 
-/// Rapid address reuse: register then retire the same key repeatedly.
+/// Register and retire one subject per distinct key.
 fn seq_retire_recreate() -> Duration {
     let space: ObservationSpace<u64, u64> = ObservationSpace::new();
     let started = Instant::now();
@@ -369,12 +370,11 @@ fn allocation_and_retention() {
     let mut context = Context::from_waker(Waker::noop());
     for outcome in 0..N_ALLOC {
         let (publisher, mut observation) = affine_pair();
-        assert!(Pin::new(&mut observation).poll(&mut context).is_pending());
+        let pending = Pin::new(&mut observation).poll(&mut context);
+        assert!(pending.is_pending());
         publisher.complete(outcome);
-        assert_eq!(
-            Pin::new(&mut observation).poll(&mut context),
-            Poll::Ready(outcome)
-        );
+        let ready = Pin::new(&mut observation).poll(&mut context);
+        assert_eq!(ready, Poll::Ready(outcome));
     }
     let after = snapshot();
     emit_ratio(
