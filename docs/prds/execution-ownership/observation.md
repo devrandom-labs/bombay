@@ -494,3 +494,44 @@ full consumers and failure custody remain unresolved. In particular, the draft
 that shape is rejected pending a conserving ordinary-Rust comparison. Fresh
 nominal issuance inside a fold remains forbidden. The earlier broad Core-input
 migration counts are alternative costs, not proof that such growth is required.
+
+## External typed request and receipt comparison (2026-10-02)
+
+Scratch
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-observation-request-receipt-up9fwt6x`
+contains 383 formatted private research lines and no owning production/API
+change. Receipt SHA-256:
+`cb0e2c046625108f1e39f70b68baac8cbc00ac8ee33662d1f77b8213bf1b4e23`;
+source:
+`4f099be052cea823489ba6f493b00ffd0aad5cd8469a9dbc5f3f7fcdec3af59a`.
+Every selected registry/git dependency tuple matches Bombay's locked source.
+
+Actual selected ObserveEstablished transfers the original endpoint through a
+cloned existing recipient capability while a private stamped request remains
+owned. Existing Core SendLayer aligns independent nested acknowledgement lanes;
+a bare request lane with a nested report fails the actual SendsFor constraint.
+The pure fold returns complete typed cancellation actions, and the rejected
+report is retained in ordinary state. Checked sequence exhaustion borrows the
+recipient so the caller still owns its exact endpoint. Replaying the same ID
+and request correlation at the interpreter-side acceptance boundary produces
+distinct accepted relationship identities; an old authority is rejected whole
+against the new grant. No nominal identity is issued inside a fold.
+
+Pinned-shell `cargo test --locked` and its `--release` variant pass three tests
+each. `cargo check --locked --features wrong_protocol` fails E0308 and
+`--features wrong_ack` fails E0277 in both profiles; strict Clippy and formatting
+pass. All commands and fourteen artifact hashes are in the frozen receipt.
+Independent reviewer `/root` read the complete source, authenticated those
+hashes and compared resolved dependency tuples with Bombay's Cargo.lock.
+This accepts the narrow endpoint, pure lane, identity, rejection-custody and
+static-path feasibility claims; no gate is accepted.
+
+Private request/report stand-ins are not the current owning public protocol.
+Actual sealed Monitor integration, public issuance/static denials, heterogeneous
+Stopped report custody, complete live-operation/replay tables and all original
+interpreter regressions remain required. Actual cloned endpoint transfer does
+not prove every future owning rejected-start receipt retains its complete input.
+Existing FnMut worker factories can capture an affine sequence as pure explicit
+factory state; this does not justify a universal Core input port or macro change.
+The real factory/rejected-birth witness remains required. Public representation,
+full owning path forecast and user change-budget approval remain open.
