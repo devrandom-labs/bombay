@@ -6,9 +6,9 @@ removed packages are historical evidence, not current API guidance.
 
 ## Final audit closure (2026-10-02)
 
-The PR CodeQL fixture alert temporarily reopened TEST-014, ARC-020, and
-TEST-020 after this first closure. The recheck below is active; restore this
-closure only after focused and full gates pass on the corrected test source.
+The PR CodeQL fixture alert reopened TEST-014, ARC-020, and TEST-020 after the
+first closure. The focused debug and optimized tests, corrected PR CodeQL,
+and repeated local 21-check flake gate passed, restoring their terminal states.
 
 ### TEST-014 CI nonce fixture recheck
 
@@ -37,9 +37,12 @@ or its module-scope import; production behavior and public types remain
 unchanged. `nix develop -c cargo test --locked -p bombay-rs --lib
 projected_child_retirement_preserves_origin_state_and_descendants` and the
 same command with `--release` both passed (1/1). The original two literal
-nonce alerts are recorded in the failing PR CodeQL check; the repeated full
-flake and remote CodeQL gates are still pending. The pinned rustfmt check
-passes on the formatted test source.
+nonce alerts are recorded in the failing PR CodeQL check. The repeated local
+`nix flake check path:. --max-jobs 1 --cores 2` passed all 21 checks on the
+formatted test source. The corrected `c4400b5` PR commit passed CodeQL, its
+Analyze job, and cargo-deny; the original two critical nonce alerts are absent
+from the corrected CodeQL result. The PR Nix check for the final documentation
+commit is a merge gate; its result is reported on the PR.
 
 The 45-row [canonical queue](todo.md#canonical-execution-queue) is terminal:
 25 `TEST-*` rows are `verified`, 19 `ARC-*` rows are `distilled`, and ARC-009
