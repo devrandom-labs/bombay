@@ -773,3 +773,55 @@ product remains unproved. Do not select additional public products to fill an
 allowance. Complete the actual ordinary-Rust lifetime/result comparison, then
 show a concrete bounded expansion and obtain user approval before production
 edits. Observation authority and later module extraction are separate scopes.
+
+## Application work disposition (2026-10-02)
+
+The user selected immediate release of an unfinished application work future
+when execution is dropped. Retained actor/child/family cleanup still joins and
+the independent receiver keeps its exact results. Work that already completed
+keeps its exact returned value; unfinished work has no returned value. Do not
+add a redundant completion flag beside that sum. This is an explicit discharge
+of the pending future, not a claim that external effects were rolled back.
+
+Before the callback is invoked, it remains an untouched owned input. Root
+startup rejection therefore must return that callback together with the exact
+root rejection and actual installed-family shutdown facts. It cannot claim an
+untouched whole application after staging, initialization or family installation.
+The pre-first-poll original-input law remains the distinct earlier boundary.
+Actual pending-work Drop, completed affine output, cleanup/family races and
+public syntax proofs remain required; this law selects no extra result wrapper.
+
+## Borrowed output and receiverless cleanup comparison (2026-10-02)
+
+The frozen `bombay-receiverless-cleanup-custody-c7app_dl` comparison uses actual
+root retirement and existing affine Observe receipts. Completed application
+output contains an original move-only Vec and a caller-borrowed slice; static
+cleanup owns the actual root task. Receiving after cleanup preserves the exact
+output and root result. Surrendering both receivers before cleanup still lets
+the same retained cleanup task join and release the undeliverable root once.
+An omitted-join inversion fails its intended root-release assertion in both
+profiles; it does not prove a permanently aborted cleanup task.
+
+This last disposition releases completed work output before cleanup joins.
+It therefore does **not** satisfy the selected complete-result discharge timing
+in EXEC section 16. Retaining a caller-borrowed output beyond disappearance of
+all caller-owned futures/receivers needs a lifetime proof; do not silently add
+`'static`, permit earlier discharge or call this full DG-TASK acceptance.
+
+Receipt SHA-256:
+`61e42e39952d27fe8855611fba25a450245ac262681b1f34947640dbb27a938c`;
+complete comparison patch:
+`f73ea303c4fe4dae54b6f0255fa6401fed3ef28205550e35e86ca8e31297b8dd`.
+The receipt records fifteen authenticated artifacts and exact pinned-Nix
+commands. Debug/release each pass two tests covering three output dispositions;
+formatting and strict Clippy pass; the compiled join omission fails one test
+in each profile and restored positives pass again. Independent reviewer
+`/root/contract_inventory` authenticated the artifacts and independently reran
+both positive profiles. Its signature covers the bounded research trace only.
+
+One existing application_runtime.rs test module, production/public types zero,
+complete tests +426 / -0; extension from the preceding frozen comparison
++28 / -1. This uses the historical Communication 0.1.2 lock and isolated
+source-retirement patch 770d2979, not current 0.1.3 integration acceptance.
+Native family cleanup, pending-work Drop and actual public execution remain
+unproved. A named public execution or receiver wrapper is not justified here.
