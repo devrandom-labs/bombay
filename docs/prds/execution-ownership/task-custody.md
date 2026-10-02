@@ -606,3 +606,22 @@ owner-request priority. That changes XO-36 without an accepted policy amendment.
 Preserve the original two-source arbitration inside the owner-request boundary;
 verify ownership and cancellation safety before updating the narrowed review.
 Earlier conditional acceptance does not approve this scheduling change.
+
+## Unread owner request conservation (2026-10-02)
+
+The user selected the recommendation to retain an accepted unread cancellation
+request with the exact result when an independent result receiver has no caller
+request context. For example, actor stop can win before the cancellation is
+read: the actual outcome remains Stopped, while the unread request records what
+was asked. Stopped alone establishes that cancellation did not cause the finish;
+it cannot establish whether anyone requested it. Preserve each fact once, with
+no second marker repeating the actual completion reason.
+
+This is Bombay's concrete owner-request/result contract. Engine continues to
+own generic acquisition and the exact request it actually acquired; it must not
+invent an actor-specific unread-request policy. Distinguish accepted queued
+requests from sends rejected after the receiver closes. Review the exact
+close/drain race, surviving receiver ownership, complete typed result equation
+and final-receiver discharge before retention. No public type, field or wrapper
+is selected by this law decision. The current zero-new-public-type source and
+mailbox checkpoint does not authorize an unseen result-interface expansion.
