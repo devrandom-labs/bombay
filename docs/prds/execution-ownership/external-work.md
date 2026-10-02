@@ -165,3 +165,51 @@ SHA-256 is `d9e8e7b9be4c61e44c558d8218dc701eb99f067046032e230f64c71fd044c41e`.
 Scratch: one path, tests +235 / -0, production/public types zero. Retained
 repository delta from experiments: zero. Two dead-code warnings remain in
 research error payloads; no strict-lint or integrated acceptance is claimed.
+
+## Actual interpreter and owning FIFO custody comparison (2026-10-02)
+
+Frozen `bombay-worker-admission-custody-wb8ytqps` uses the current unchanged
+Communication 0.1.3 manifest/lock and selected Core/Actors 0.20.0. Actual pure
+FIFO recovery emits PrepareWorkers; ApplicationCapabilities returns the exact
+accepted start receipt and owns the asynchronous operation in ActivationTasks.
+An admitted synchronous operation retains its move-only input allocation and
+semaphore permit through admission closure. Actual capability retirement stays
+Pending until that operation finishes and is joined. The late complete return
+then reaches FIFO shutdown, whose opaque terminal diagnostic retains the
+original sorted input until explicit discharge, observed exactly once.
+The direct async comparison completes two sequential inputs using the same
+bound. Saturated and closed requests return their untouched inputs at the
+source port without starting another operation.
+
+All nine owning send lanes, creates and transition choice are asserted in the
+pure setup and return traces; observation correlation uses actually issued
+CreationIds. Replacement.previous is only matched with `{ .. }`, so this does
+not prove complete previous-incarnation lineage. Initial worker installation
+uses the existing simulated fixture: no actual installed worker graph claim.
+
+Seven tests pass in each pinned-Nix debug/release profile; strict Clippy and
+formatting pass. Capacity one-to-two and omitted owning settlement each fail
+the intended compiled assertion with exit 101 in both profiles; restored
+positives pass. These are comparison inversions, not an original production
+repair. Receipt SHA-256:
+`8946adcff5e846d612dc9b352cbe688268c89e91d4f7f2a2877a0c4e486adb7f`;
+patch `fe6bc0a2e339e9f66ac291498a8569dfe71969070e670d78871fecfea8b8052a`;
+source `413af4253d272b19a32f80ff1159514fa5b9da7ac69061ab20622b293b42ddc2`.
+The receipt records exact commands, profile logs and 22 authenticated artifacts.
+Independent reviewer `/root/task_custody_research` read the complete candidate
+and actual interpreter, retirement and FIFO owners, verified the unchanged
+production prefix, and independently reran all seven tests in each profile
+with a separate build target. Its signature covers this bounded comparison.
+Isolated tests +509 / -32 / net 477, one existing test module; production,
+public types and canonical retained source delta zero.
+
+DG-WORK remains open. Shutdown with both an admitted queued operation and a
+running operation is unproved: the second operation here is rejected.
+Consuming original-input recovery through FIFO's opaque diagnostic remains a
+user decision. More fundamentally, the source contains semaphore and receiver
+resources in Behavior state, contradicting AGENTS.md's state prohibition and
+this record's proposed source construction. No I/O occurs inside the folds,
+but that does not satisfy the stronger state rule. The user must resolve that
+conflict before this fixture can count as semantic acceptance or select a
+production composition. Runtime destruction, panic, installed worker graph
+and remaining DG-TASK dependencies also remain open.

@@ -225,3 +225,35 @@ a repaired implementation that retains the sibling would keep that publisher
 alive. Adapt the final regression to observe successful result custody directly
 rather than waiting for discard. Public births/roles, all sibling cleanup,
 projection timing and failure provenance remain required. DG-PROJECTION is open.
+
+## Projector contract-fault conservation comparison (2026-10-02)
+
+Separate frozen `bombay-total-projection-custody-qi3sl6z4` injects a panic into
+ProjectTerminal after it receives a complete stopped child retirement. This
+violates the documented total static-lift contract; it is not a lawful
+projector or the preceding lawful-caller runtime defect. After that fault,
+ordinary tuples retain each child's existing origin, ID, kind, endpoint and
+control outside its joining task, while a standard Result pair joins both
+actual handles. The acquired JoinError preserves the original panic String's
+bytes and allocation; the sibling's whole stopped retirement is retained and
+both endpoints retire. Original ProjectedTask::finish instead replaces that
+panic with formatted text; the compiled exact-message oracle fails in both
+profiles with exit 101. No recovery of values destroyed inside the projector
+panic is claimed.
+
+One positive test passes in each profile, including restored positives;
+formatting and strict Clippy pass. Isolated launch.rs tests +219 / -2 / net 217;
+production/public types zero. This uses archival Communication 0.1.2 and the
+source-retirement research freeze, not current integration acceptance.
+Receipt `ed58988e62c4be9ef31b716bcaa548159ea11c5c302b5a4667b932239fd30735`;
+patch `01e99eb1b4aca2bf7d0147f9a8a1d1b12709266d7aa1fc00de4563739d55928f`.
+Its 24 artifacts were authenticated. Independent reviewer
+`/root/contract_inventory` signs bounded after-fault conservation only, together
+with immutable scope corrections
+`479d8e8b23efbf44935ca00f94dc8b975c651c060ab3d6eb05acd9c0829da647`.
+The two role markers are nominal ChildOrigin parameters without owning
+ChildRole<RootProbe> topology proof; actual heterogeneous RuntimeChildBindings
+registration/traversal remains unproved. Fixture names RejectedProjectionActor,
+RejectedRole and Rejected incorrectly imply typed rejection when the child
+stopped normally and projection panicked. Correct naming and minimization
+before retention. No public representation, arbitration or gate is approved.

@@ -578,3 +578,37 @@ original request; actual admission-before-Started ordering is unproved. Public
 issuance, heterogeneous live relationship collection, completion/reuse races,
 terminal authority discharge, accessors and full runtime integration remain
 required. No public producer or representation is selected from this test.
+
+## Whole-request producer feasibility (2026-10-02)
+
+Frozen `bombay-observation-producer-custody-2tnj4sf5` adds 249 test lines to the
+copied owning established.rs, retaining the preceding signed 565-line monitor
+unchanged. The other 170 Rust files match selected Actors 0.20.0. A private
+host consumes the whole ObserveEstablished through the actual affine Core
+callback, inserts collection membership, then issues private typed authority
+and Started. Duplicate admission returns the original request, supplied
+correlation and reason; consuming it through the selected interpreter recovers
+the exact original endpoint allocation and ID. Missing-member cancellation
+returns the whole existing request and grant with NotObserved.
+
+One test passes per pinned-Nix debug/release profile; formatting and strict
+Clippy pass. Both profiles deny passing the whole request to the current
+numeric-only public interpreter (E0308) and deny constructing authority from
+its private fields (E0451). These compiler comparisons demonstrate an owning
+API gap and privacy, not a selected new public producer.
+Receipt `291b36cc59dbed26d48a454318cda8e6724801c12f917b81865c8307998a854d`;
+patch `a0338363a8af5dfc1e85de95eb5050d6cdd491379a5d367c4cecabf3bd4f244e`.
+Independent reviewer `/root/contract_inventory` read the complete extension,
+authenticated all 18 artifacts and unchanged sources, and signs bounded
+whole-request custody and admission-order feasibility only. Production/public
+types zero; two copied test paths now contain 814 research lines in total.
+
+The cancellation comparison checks authority membership but omits equality of
+the original numeric request ID and authority's ID. A mismatched request with a
+valid grant would therefore pass; the empty-member rejection test does not
+prove this denial. Immutable scope correction:
+`362a7839a16bfba76f37c466d438b3598918fa50b8785bf8c4d6dff634fe2f9b`.
+A bounded isolated successor may prove that consistency without changing this
+freeze. External public issuance, actual async collection, accepted removal,
+replay policy and terminal discharge remain unselected/unproved. No full gate
+or retained production is approved.
