@@ -612,3 +612,20 @@ A bounded isolated successor may prove that consistency without changing this
 freeze. External public issuance, actual async collection, accepted removal,
 replay policy and terminal discharge remain unselected/unproved. No full gate
 or retained production is approved.
+
+The separate consistency successor `bombay-observation-cancel-consistency-3up1y94r`
+requires both original request-ID equality and exact authority membership.
+Matching ID 41 succeeds; an original ID 43 request paired with the valid ID 41
+grant returns that whole pair with NotObserved. The actual selected cancel
+interpreter then consumes the returned original request and returns ID 43;
+membership and the complete admission trace remain unchanged. One positive
+and restored test pass per profile; removing only the ID check produces the
+intended compiled mismatch assertion failure, exit 101 in both profiles.
+Formatting and strict Clippy pass. Receipt
+`80f0f16fed459489f4ef585ef39b51a5eb23e49c0e8acf8e25f9abd0552212da`;
+incremental patch
+`c55b22a345583ae5582570519e3bc7d4b249826a46a46f067fe54da012a7d0c6`.
+Independent reviewer `/root/contract_inventory` authenticated all 29 artifacts,
+read the full diff and verified 171 unchanged sources and the lock. It signs
+bounded request/grant consistency only. Tests +33 / -3 / net 30; production,
+public types and canonical source delta zero. The preceding wider limits remain.
