@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.0...bombay-engine-v0.2.1) - 2026-10-02
+
+### Other
+
+- reconcile released main with runtime audit
+- distill Bombay ownership and verification
+- adopt Behavior 0.16 settlement custody
+- retain exact driver custody failures
+- name driver panic injection stage
+- store exact driver allocation input
+
 ## [0.2.0](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.1.0...bombay-engine-v0.2.0) - 2026-09-15
 
 ### Other
