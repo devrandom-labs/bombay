@@ -21,7 +21,7 @@ axum = ["dep:axum", "tokio/net"]
 behavior = { workspace = true }
 behavior-actors = { workspace = true }
 bombay-engine = { workspace = true }
-bombay-macros = { version = "0.1.0", path = "../bombay-macros" }
+bombay-macros = { version = "0.1.1", path = "../bombay-macros" }
 bombay-address = { workspace = true }
 communication = { workspace = true }
 parking_lot = { workspace = true }
