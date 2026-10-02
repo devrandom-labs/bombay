@@ -791,6 +791,19 @@ The pre-first-poll original-input law remains the distinct earlier boundary.
 Actual pending-work Drop, completed affine output, cleanup/family races and
 public syntax proofs remain required; this law selects no extra result wrapper.
 
+Fresh current-source check: application_runtime.rs LaunchSystem::launch_with
+owns the callback across startup, whose `?` discards it uninvoked on rejection.
+It awaits application work before joining root; dropping that future releases
+unfinished work and preserves the existing OwnedTask cleanup authority. A
+completed output instead remains in the same waiting frame and is lost on its
+drop. There is no independent full-result receiver at this seam. Public
+App/Application run_with still synchronously calls block_on, so an unpolled
+public execution-drop witness requires the accepted async API first. Private
+LaunchSystem Drop evidence cannot substitute for that public contract.
+Reviewer `/root/task_custody_research` and `/root` independently read these
+current paths; this is source evidence, not a newly executed regression or
+acceptance of the missing result-custody implementation.
+
 ## Borrowed output and receiverless cleanup comparison (2026-10-02)
 
 The frozen `bombay-receiverless-cleanup-custody-c7app_dl` comparison uses actual
