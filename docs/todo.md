@@ -1,7 +1,7 @@
 # Bombay audit TODO and session handoff
 
-Status: active audit queue by the user's explicit request to complete every
-TODO here. The [PRD inventory](prd-backlog/README.md) and
+Status: complete audit queue; every canonical TODO is terminal and the
+project-wide distillation gate passed. The [PRD inventory](prd-backlog/README.md) and
 [evidence report](prd-backlog/evidence.md) supply additional research; the
 canonical queue below controls this goal. Historical claims in detailed
 records require re-verification against the current lock and source.
@@ -116,36 +116,36 @@ unblocked row to `ready`. A dependency is satisfied only by
 | 004 | TEST-003 | P0 | verified | TEST-004 | Make the law manifest execute positive and inversion evidence |
 | 005 | TEST-005 | P0 | verified | — | Replace constant mutation checks with production incarnation mutations |
 | 006 | TEST-023 | P0 | verified | — | Add the gated commit-before-claim visibility regression |
-| 007 | ARC-006 | P0 | feature-complete | TEST-023 | Implement one commit-before-claim activation transaction |
-| 008 | ARC-007 | P0 | feature-complete | — | Produce the Entity versus Behavior Actors ownership/differential table |
-| 009 | ARC-001 | P0 | feature-complete | ARC-006 | Prove caller syntax, then remove erased shutdown authority |
-| 010 | ARC-002 | P1 | feature-complete | ARC-001 | Decide whether the external address claim has an observable owner |
+| 007 | ARC-006 | P0 | distilled | TEST-023 | Implement one commit-before-claim activation transaction |
+| 008 | ARC-007 | P0 | distilled | — | Produce the Entity versus Behavior Actors ownership/differential table |
+| 009 | ARC-001 | P0 | distilled | ARC-006 | Prove caller syntax, then remove erased shutdown authority |
+| 010 | ARC-002 | P1 | distilled | ARC-001 | Decide whether the external address claim has an observable owner |
 | 011 | TEST-008 | P1 | verified | — | Inventory every locked Behavior Actors template and capability request |
-| 012 | ARC-010 | P1 | feature-complete | TEST-008 | Interpret the missing upstream source-action capability directly |
+| 012 | ARC-010 | P1 | distilled | TEST-008 | Interpret the missing upstream source-action capability directly |
 | 013 | TEST-025 | P1 | verified | ARC-010 | Execute supervisor and pool policies end to end |
-| 014 | ARC-003 | P1 | feature-complete | ARC-007 | Give the retained Entity transition one classification owner |
-| 015 | ARC-004 | P1 | feature-complete | ARC-003 | Remove or reduce `bombay-machine` to a proven shared law |
+| 014 | ARC-003 | P1 | distilled | ARC-007 | Give the retained Entity transition one classification owner |
+| 015 | ARC-004 | P1 | distilled | ARC-003 | Remove or reduce `bombay-machine` to a proven shared law |
 | 016 | TEST-010 | P1 | verified | ARC-003 | Compare complete Entity transitions with an independent oracle |
 | 017 | TEST-021 | P2 | verified | ARC-004 | Remove unowned Machine tests/API or prove a concrete consumer |
-| 018 | ARC-014 | P1 | feature-complete | ARC-003 | Unify Entity task ownership and make spawn rejection explicit |
+| 018 | ARC-014 | P1 | distilled | ARC-003 | Unify Entity task ownership and make spawn rejection explicit |
 | 019 | TEST-009 | P1 | verified | ARC-003, ARC-014 | Replace toy Entity Loom models with production interleavings |
-| 020 | ARC-015 | P1 | feature-complete | ARC-004, ARC-014, TEST-009, TEST-010, TEST-021 | Shrink the Entity public surface after its owners stabilize |
-| 021 | ARC-008 | P1 | feature-complete | ARC-007 | Give each Behavior child occurrence one cohesive runtime state |
+| 020 | ARC-015 | P1 | distilled | ARC-004, ARC-014, TEST-009, TEST-010, TEST-021 | Shrink the Entity public surface after its owners stabilize |
+| 021 | ARC-008 | P1 | distilled | ARC-007 | Give each Behavior child occurrence one cohesive runtime state |
 | 022 | ARC-009 | P1 | retained | ARC-008, ARC-010 | Decompose the complete known capability set by semantic owner |
-| 023 | ARC-013 | P2 | feature-complete | ARC-009 | Prove or remove actor-local shared synchronization and define fact order |
-| 024 | ARC-012 | P1 | feature-complete | ARC-001 | Replace coordinated optional activation/termination authority with owned phases |
-| 025 | ARC-011 | P1 | feature-complete | ARC-009, ARC-012 | Consolidate launch/spawn orchestration and projection tasks |
+| 023 | ARC-013 | P2 | distilled | ARC-009 | Prove or remove actor-local shared synchronization and define fact order |
+| 024 | ARC-012 | P1 | distilled | ARC-001 | Replace coordinated optional activation/termination authority with owned phases |
+| 025 | ARC-011 | P1 | distilled | ARC-009, ARC-012 | Consolidate launch/spawn orchestration and projection tasks |
 | 026 | TEST-012 | P1 | verified | — | Compare complete typed `Actions` for every authoring path |
 | 027 | TEST-015 | P1 | verified | — | Add a real renamed-downstream macro crate |
 | 028 | TEST-016 | P1 | verified | — | Make the compile-fixture feature matrix explicit |
-| 029 | ARC-018 | P2 | feature-complete | ARC-011 | Make root/child origin provenance algebraic |
-| 030 | ARC-016 | P1 | feature-complete | ARC-011, ARC-015, ARC-018, TEST-012, TEST-015, TEST-016 | Remove type-name string inference from retained macros |
+| 029 | ARC-018 | P2 | distilled | ARC-011 | Make root/child origin provenance algebraic |
+| 030 | ARC-016 | P1 | distilled | ARC-011, ARC-015, ARC-018, TEST-012, TEST-015, TEST-016 | Remove type-name string inference from retained macros |
 | 031 | TEST-018 | P2 | verified | — | Select one owner for ordinary Observe tests |
-| 032 | ARC-017 | P1 | feature-complete | ARC-007 | Remove unnecessary pinning unsafe and inventory Observe unsafe |
-| 033 | ARC-019 | P2 | feature-complete | TEST-018, ARC-017 | Give Observe one physical compilation owner |
+| 032 | ARC-017 | P1 | distilled | ARC-007 | Remove unnecessary pinning unsafe and inventory Observe unsafe |
+| 033 | ARC-019 | P2 | distilled | TEST-018, ARC-017 | Give Observe one physical compilation owner |
 | 034 | TEST-011 | P1 | verified | ARC-003, ARC-019 | Replace Entity/Observe sleep ordering with causal handshakes |
 | 035 | TEST-019 | P2 | verified | — | Move the pseudo-benchmark to an owned performance gate or remove it |
-| 036 | ARC-005 | P2 | feature-complete | — | Recheck overlapping manifest edits, then remove workspace residue |
+| 036 | ARC-005 | P2 | distilled | — | Recheck overlapping manifest edits, then remove workspace residue |
 | 037 | TEST-022 | P2 | verified | — | Preserve useful research conclusions and delete stale references |
 | 038 | TEST-006 | P1 | verified | TEST-001 | Expand Driver property/fuzz coverage to failure and terminal branches |
 | 039 | TEST-007 | P1 | verified | TEST-001 | Remove redundant Driver cases and complete partial assertions |
@@ -153,7 +153,7 @@ unblocked row to `ready`. A dependency is satisfied only by
 | 041 | TEST-014 | P1 | verified | ARC-011, ARC-015 | Eliminate discarded authoritative facts and predicted identities |
 | 042 | TEST-017 | P1 | verified | ARC-016, ARC-019 | Convert current ignored docs into executable/compile-fail evidence |
 | 043 | TEST-024 | P1 | verified | — | Make the mutation verdict parser fail closed for every outcome |
-| 044 | ARC-020 | P2 | feature-complete | TEST-002, TEST-003, TEST-005, TEST-006, TEST-007, TEST-011, TEST-013, TEST-014, TEST-017, TEST-019, TEST-022, TEST-024, TEST-025, ARC-002, ARC-005, ARC-013, ARC-015, ARC-016, ARC-019 | Audit and minimize every remaining caller-facing API |
+| 044 | ARC-020 | P2 | distilled | TEST-002, TEST-003, TEST-005, TEST-006, TEST-007, TEST-011, TEST-013, TEST-014, TEST-017, TEST-019, TEST-022, TEST-024, TEST-025, ARC-002, ARC-005, ARC-013, ARC-015, ARC-016, ARC-019 | Audit and minimize every remaining caller-facing API |
 | 045 | TEST-020 | P2 | verified | ARC-020 | Run and enforce the final mutation, coverage, fuzz, Miri, and sanitizer obligations |
 
 ### Iteration loop
@@ -302,6 +302,11 @@ repository and selected Behavior instructions as stricter project law:
 
 ## Detailed finding records
 
+Each finding description below preserves the original defect or proposed
+repair as dated audit evidence. Its `Status` line, completed checklist, and
+resolution record state the current result; the canonical queue controls
+current execution state.
+
 The canonical queue above owns execution state and order. The records below own
 the evidence, checklist, and exit criteria for each ID. Read the complete record
 for the selected row; never infer completion from the table's short first-action
@@ -381,8 +386,7 @@ remaining risk or N/A rationale: transactional commit-before-claim and executabl
 
 ### TEST-002 — The Driver benchmark fails the repository gate
 
-**Status:** confirmed; ready after the law in TEST-001 is fixed or explicitly
-held constant. **Priority:** P0. **Owner:** `bombay-engine`.
+**Status:** verified; benchmark custody law and final gate passed. **Priority:** P0. **Owner:** `bombay-engine`.
 
 `crates/bombay-engine/benches/driver.rs` expects retirement to receive no
 settlements, while a stopping turn transfers its final settlement to
@@ -414,7 +418,7 @@ remaining risk or N/A rationale: the benchmark now returns complete custody as i
 
 ### TEST-003 — The 68-law manifest does not execute its claimed evidence
 
-**Status:** confirmed; ready. **Priority:** P0. **Owner:** `bombay-engine`.
+**Status:** verified. **Priority:** P0. **Owner:** `bombay-engine`.
 
 `crates/bombay-engine/tests/law_manifest.rs` source-scans for positive test
 function names but never proves those tests ran. It does not resolve inversion
@@ -458,7 +462,7 @@ remaining risk or N/A rationale: actor-template inventory, broader property/fuzz
 
 ### TEST-004 — Driver inversion tests mutate a disconnected toy model
 
-**Status:** confirmed; ready. **Priority:** P0. **Owner:** `bombay-engine`.
+**Status:** verified. **Priority:** P0. **Owner:** `bombay-engine`.
 
 All 38 tests in `crates/bombay-engine/tests/driver_inversions.rs` operate on
 local booleans, counts, vectors, `Fact`, and `Inversion`; none invokes `Driver`
@@ -525,7 +529,7 @@ remaining risk or N/A rationale: the indiscriminate sequential cargo-mutants uni
 
 ### TEST-006 — Driver property and fuzz models cover only the happy byte path
 
-**Status:** confirmed; ready after TEST-001. **Priority:** P1.
+**Status:** verified after TEST-001. **Priority:** P1.
 
 `driver_property.rs` and `fuzz/fuzz_targets/causal_turns.rs` generate nearly the
 same `Vec<u8>` model: every settlement succeeds and `u8::MAX` stops. They do not
@@ -566,7 +570,7 @@ remaining risk or N/A rationale: the final flake check and whole-goal distillati
 
 ### TEST-007 — Driver unit evidence contains redundant and incomplete cases
 
-**Status:** confirmed; ready after TEST-001. **Priority:** P1.
+**Status:** verified after TEST-001. **Priority:** P1.
 
 In `driver_law.rs`, the complete causal transcript test already entails the two
 count/projection tests using the same `[1, 2, 9, 100]` scenario. The
@@ -682,7 +686,7 @@ remaining risk or N/A rationale: no Loom test claims a physically impossible rep
 
 ### TEST-010 — Entity exhaustive testing uses production as its oracle
 
-**Status:** ready; ARC-003 installed the independent oracle as its regression.
+**Status:** verified; ARC-003's independent oracle and inversions passed.
 **Priority:** P1.
 
 The original bounded 137,561-trace test was self-referential. ARC-003 replaced
@@ -898,7 +902,7 @@ remaining risk or N/A rationale: full isolated flake build was not completed; fi
 
 ### TEST-017 — Ignored and uncompiled documentation is not API evidence
 
-**Status:** confirmed; ready. **Priority:** P1.
+**Status:** verified. **Priority:** P1.
 
 Five Observe rustdoc snippets are ignored, including affine/no-clone and
 double-completion examples that should be compile-fail evidence. README and
@@ -1130,7 +1134,7 @@ remaining risk or N/A rationale: historical evidence remains provenance only; cu
 
 ### TEST-023 — Activation can become addressable before initialization commits
 
-**Status:** verified; desired-law regressions are ignored pending ARC-006. **Priority:** P0.
+**Status:** verified; ARC-006 made the desired-law regressions executable and passing. **Priority:** P0.
 **Owner:** local Environment. **Unblocks:** ARC-006.
 
 `LocalEnvironment::activate` currently calls `AddressSpace::try_claim` before
@@ -1272,7 +1276,7 @@ design may skip its required regression or upstream comparison.
 
 ### ARC-001 — Replace erased shutdown authority
 
-**Status:** feature-complete; final project-wide distillation remains. **Priority:** P0.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface. **Priority:** P0.
 **Owner:** local Communication/lifecycle boundary.
 
 The prior `ActorRef` stored `Weak<dyn ShutdownControl>`, erasing the concrete
@@ -1314,7 +1318,7 @@ working tree checkpoint is in the open design ledger.
 
 ### ARC-002 — Remove or make external address claims observable
 
-**Status:** feature-complete; final project-wide distillation remains. **Priority:** P1.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface. **Priority:** P1.
 **Owner:** external interface/address composition.
 
 `ExternalActor::establish` previously created a private `AddressSpace`, claimed
@@ -1342,7 +1346,7 @@ public type; the complete tree checkpoint is in the open design ledger.
 
 ### ARC-003 — Give Entity transition classification one owner
 
-**Status:** feature-complete; final minimization awaits ARC-004. **Priority:** P1.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface. **Priority:** P1.
 **Owner:** Entity lifecycle. **Unblocks:** TEST-010 and TEST-021.
 
 `SlotReducer::reduce` owns the executable transition, while
@@ -1375,7 +1379,7 @@ The task-local change ledger and gates are recorded in
 
 ### ARC-004 — Minimize `bombay-machine`
 
-**Status:** feature-complete; final absence audit belongs to TEST-021.
+**Status:** distilled; TEST-021 and terminal audit confirmed package absence.
 **Priority:** P1. **Owner:** Entity only if a residual law remains.
 
 The crate exposes two transition algebras—`Reducer<S, E> -> Decision<S, F>` and
@@ -1408,7 +1412,7 @@ generic Machine test edits were removed with that package.
 
 ### ARC-005 — Remove manifest and workspace residue
 
-**Status:** feature-complete; final minimization belongs to ARC-020.
+**Status:** distilled; ARC-020 and terminal audit confirmed no manifest residue.
 **Priority:** P2.
 
 - [x] Remove redundant `bombay-rs` dev-dependencies for `tokio` and
@@ -1439,15 +1443,13 @@ remaining risk or N/A rationale: the remaining Syn 2 dependency is transitive, a
 
 ### ARC-006 — Make activation one commit-before-claim transaction
 
-**Status:** feature-complete; the implementation uses Address 0.3.0 reservation and selected
-Behavior 0.20.0 child commitment. **Priority:** P0.
+**Status:** distilled; Address 0.3.0 reservation and Behavior 0.20.0 child commitment passed terminal audit. **Priority:** P0.
 **Owner:** `LocalEnvironment` implementation of Engine `Environment`.
 
 The prior order was address claim, initialization action commit, then endpoint
 publication. Address 0.3.0 now reserves an address invisibly before commitment,
 and Bombay publishes the reservation only after accepted continuing settlement
-and source admission. The remaining feature gate is complete debug and
-optimized evidence for every rejection and terminal custody path.
+and source admission. Complete debug and optimized evidence now covers every rejection and terminal custody path.
 
 - [x] Add TEST-023 without modifying production and capture the failing causal
   trace.
@@ -1496,8 +1498,7 @@ dependency effect: ARC-001 remains blocked; useful ready work remains, so the ov
 
 ### ARC-007 — Differentially separate Entity from Behavior Actors
 
-**Status:** feature-complete; retained stable-routing law is separated from
-Behavior Actors and awaits terminal distillation. **Priority:** P0.
+**Status:** distilled; retained stable routing is separated from Behavior Actors by terminal differential evidence. **Priority:** P0.
 **Owner:** Behavior Actors unless a Bombay-only gap is proven.
 **Blocks:** ARC-003, ARC-004, ARC-014, and Entity expansion.
 
@@ -1546,7 +1547,7 @@ N/A: Miri, fuzz, and benchmarks add no ownership evidence for this pure-fold/doc
 
 ### ARC-008 — Give each child occurrence one cohesive binding state
 
-**Status:** feature-complete; final minimization remains.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface.
 **Priority:** P1. **Owner:** Behavior child product plus Bombay runtime binding.
 
 `ChildBinding` splits one occurrence across a creation map, endpoint/control
@@ -1656,8 +1657,7 @@ remaining risk or N/A rationale: ARC-011 owns launch/task consolidation and its 
 
 ### ARC-010 — Interpret the complete selected Behavior Actors capability set
 
-**Status:** feature-complete on the published Behavior Core/Actors 0.20.0 contract;
-awaiting final project-wide distillation.
+**Status:** distilled on the published Behavior Core/Actors 0.20.0 contract.
 The 0.19.0 fixed-supervisor diagnostic ingress and live shutdown-during-source
 gaps are prior-representation failures. The selected 0.20.0 contract supplies
 typed diagnostic ingress, an exact preparation-start receipt, and a later
@@ -1815,7 +1815,7 @@ Blocker and stage record (2026-09-28)
 
 ### ARC-011 — Consolidate launch and application orchestration
 
-**Status:** feature-complete; final repository-wide minimization pending.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface.
 **Priority:** P1. **Owner:** Bombay local composition.
 
 `App`, `Application`, and the single-implementation `LaunchSystem` repeat
@@ -1859,7 +1859,7 @@ joining owner. All 17 local and five launch tests pass in debug and release.
 
 ### ARC-012 — Replace coordinated optional authority with owned phases
 
-**Status:** feature-complete; final repository-wide minimization pending.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface.
 **Priority:** P1. **Owner:** activation and termination transactions.
 
 `ActivationPublisher = Arc<Mutex<Option<Publisher<_>>>>` coordinates one affine
@@ -1891,7 +1891,7 @@ terminal report fails the corresponding public trace.
 
 ### ARC-013 — Remove synchronization that only compensates for ownership splits
 
-**Status:** feature-complete; final minimization remains.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface.
 **Priority:** P2. **Owner:** actor-local timers and observations.
 
 `LocalTimers` and `FactQueue` use `Arc<Mutex<_>>` so the Environment and action
@@ -1921,7 +1921,7 @@ and diff checks pass. The complete delta and selected-contract proof are in
 
 ### ARC-014 — Unify Entity task ownership and make spawn failure explicit
 
-**Status:** feature-complete; final minimization remains. **Priority:** P1.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface. **Priority:** P1.
 **Owner:** Bombay task hierarchy.
 
 Entity runtime maintains `EntityTaskGroup` for active/idle/shutdown state while
@@ -1968,7 +1968,7 @@ remaining risk or N/A rationale: final public-surface minimization belongs to AR
 
 ### ARC-015 — Shrink Entity's public mechanism surface
 
-**Status:** feature-complete; final project-wide minimization remains.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface.
 **Priority:** P1. **Owner:** public `entity` facade.
 
 The public module exports directory internals, reducer types, slot phase structs,
@@ -2010,7 +2010,7 @@ remaining risk or N/A rationale: `LocalDirectory` and the pure `EntitySlot` fold
 
 ### ARC-016 — Remove syntax-spelling inference from macros
 
-**Status:** feature-complete; final minimization remains.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface.
 **Priority:** P1. **Owner:** `bombay-macros`.
 
 `ActorSpaces` recognizes fields by the last path segment string `ActorSpace`
@@ -2050,7 +2050,7 @@ are in `docs/open-design-ledger.md`.
 
 ### ARC-017 — Minimize and prove every unsafe boundary
 
-**Status:** feature-complete; final minimization pending.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface.
 **Priority:** P1. **Owner:** Entity future and private Observe implementation.
 
 `DispatchWait::poll` uses `Pin::get_unchecked_mut` and `Pin::new_unchecked` even
@@ -2094,7 +2094,7 @@ remaining risk or N/A rationale: sleep-based Observe probe belongs to TEST-011; 
 
 ### ARC-018 — Make actor origin provenance unrepresentable as an invalid state
 
-**Status:** feature-complete; final minimization remains. **Priority:** P2.
+**Status:** distilled; terminal repository audit confirmed minimal remaining surface. **Priority:** P2.
 **Owner:** terminal projection.
 
 `ActorOrigin` stores root-versus-child provenance in `Option<u64>` even though
@@ -2121,14 +2121,14 @@ surface checkpoint is in `docs/open-design-ledger.md`.
 
 ### ARC-019 — Give Observe one physical code owner
 
-**Status:** feature-complete; the cfg harness was selected after TEST-018.
+**Status:** distilled; the cfg harness and private-module allowance passed terminal audit.
 **Priority:** P2. **Owner:** private Observe implementation.
 
 `observe-tests` retains a conditional `#[path]` import of Bombay's private
 source for Loom and normal fuzz/performance dependencies. Bombay alone owns
 ordinary Observe tests. The former duplicate-module allowance is gone;
-Bombay's private-module `dead_code` allowance remains explicit pending the
-final caller audit.
+Bombay's private-module `dead_code` allowance remains explicit after the
+final caller audit measured 26 diagnostics for its separately verified keyed API.
 
 - [x] Select one physical compilation owner: either a private non-publishable
   workspace crate used by Bombay and the harnesses, or a cfg/harness structure
@@ -2158,7 +2158,7 @@ remaining risk or N/A rationale: the allowed cfg structure still compiles one so
 
 ### ARC-020 — Complete a caller-facing Rust API audit
 
-**Status:** feature-complete; final distillation remains. **Priority:** P2.
+**Status:** distilled; terminal API audit confirmed minimal remaining surface. **Priority:** P2.
 **Owner:** each remaining public crate.
 
 The API audit must follow deletion, not rationalize current surface. Public
@@ -2399,6 +2399,39 @@ visibility regressions now run ordinarily. Two ignored Local cancellation
 tests remain under ARC-011; the startup-waiter test now probes the invisible
 reservation directly and fails for its task-ownership law under `--ignored`.
 
+## Final terminal audit result (2026-10-02)
+
+All 45 canonical rows are terminal: 25 `TEST-*` rows are `verified`, 19
+`ARC-*` rows are `distilled`, and ARC-009 is `retained` by its direct
+composition evidence. No checkbox remains open. A reciprocal scan of the 67
+dependency edges found no missing ID, cycle, or unsatisfied prerequisite. The
+source/export/caller/example/fixture/benchmark/fuzz/document inventories and
+each architecture row's minimal retained owner are recorded in the
+[terminal ledger](open-design-ledger.md#final-audit-closure-2026-10-02) and
+[public API audit](public-api-audit.md).
+
+The merged-tree `nix flake check path:. --max-jobs 1 --cores 2` passed all 21
+`aarch64-darwin` checks. `nix develop -c cargo test --locked --workspace`
+also passed after merging `main`. The independent source-equivalent
+`nix build path:.#packages.aarch64-darwin.mutants --print-out-paths --no-link
+-L` passed its fail-closed baseline after 870 candidates: 342 caught, 524
+unviable, four classified equivalent misses, and zero timeouts. Its complete
+outcomes and per-candidate logs are preserved under ignored
+`target/mutation-evidence/mutants.out/`. Earlier final-source gates also
+passed four-seed Observe Miri, bounded ASan fuzzing of Driver and four Observe
+targets, the Observe performance harness, and the Nix performance package.
+The `main` merge and later packaging correction changed no runtime, Engine,
+or macro source after those gates.
+
+The release check is separate from this audit queue. The published
+`bombay-engine` 0.2.0 and `bombay-macros` 0.1.0 contain older code, while
+`bombay-rs` 0.1.1 is not yet published. The selected Timers git revision has
+a typed scheduling rejection absent from the published Timers 0.1.0 archive.
+The manifest now gives the local macro dependency an explicit version, and
+the publish workflow waits for a merged release PR. The exact registry and
+version dependencies are recorded in the
+[publication ledger](open-design-ledger.md#bombay-publication-manifest-blocker-2026-10-02).
+
 ## Terminal audit
 
 Run this only after TEST-020 is `verified`. Failure of any step reopens the
@@ -2447,24 +2480,26 @@ Update this block at the end of every iteration. It is a cache of the canonical
 queue, not a substitute for rescanning that queue.
 
 ```text
-goal: active
+goal: complete
 queue schema: 1
-active item: terminal audit and distillation
-next item by selector: revisit 19 feature-complete architecture rows after repository audit and gates
-last terminal item: TEST-022
-last architecture resolution: ARC-020 feature-complete
-external blockers: none for TEST-020
+active item: none
+next item by selector: none
+last terminal item: TEST-020 verified
+last architecture resolution: ARC-020 distilled
+external blockers: none for the canonical queue; crate publication has the separate Timers and coordinated version dependencies above
 locked Behavior Core/Actors revision: 804b2bf25325a523884ec49d8a4ae6d2d2b6e9da; Macros revision: 3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8
-worktree checkpoint: 256 changed paths including 94 untracked; complete physical deltas in the 2026-10-02 terminal audit checkpoint of the design ledger
+worktree checkpoint: complete source delta against origin/main, including tracked and untracked files, is recorded in the final change ledger below
 last updated: 2026-10-02
 ```
 
 ## Change ledger for this audit
 
 ```text
-production: +34 / -34 / net 0
-tests:      +1285 / -1055 / net +230
-public API: +0 types / -0 types
-docs:       docs/todo.md created and updated; Driver law distilled to eight Engine-owned laws, schema-2 Driver and Incarnation mutation receipts added, and audit records completed through TEST-005
-removed:    .research/ moved to the recoverable Trash path recorded above
+baseline:   origin/main after reconciling the release merge; 269 changed paths, 0 untracked, including 16 binary fuzz seeds
+production: +8843 / -7059 / net +1784 (runtime, Engine, macros, and removed Machine source; embedded unit tests included)
+tests:      +8583 / -3195 / net +5388 (tests, examples, benches, fuzz, and tools outside production source)
+public API: +7 types / -41 types (reachable named owners; see docs/public-api-audit.md)
+docs:       +18982 / -1959 / net +17023 (reconciled architecture, ownership, verification, release, and recovery records)
+other:      +932 / -230 / net +702 (manifests, lock, Nix, CI, baselines, and configuration)
+removed:    obsolete bombay-machine source/package removed; .research/ remains recoverable at the Trash path recorded above
 ```

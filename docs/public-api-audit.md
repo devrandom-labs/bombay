@@ -71,6 +71,16 @@ The Entity root and advanced directory are compiled by the
 
 ## Entity and advanced directory
 
+`EntitySlot::decide` exposes transition evidence to an advanced caller, but
+its `SlotDecision`, `SlotEffect`, and `SlotEffectBatch` representations remain
+inside the private lifecycle module. The caller can infer the returned value
+and inspect its evidence; the
+[representation denial](../crates/bombay/tests/compile/fail/entity_lifecycle_representation_is_private.rs)
+proves those product names and phase internals cannot be imported. Their rows
+below record the internal ownership decision, not three additional public
+exports. External effect interpretation goes through the named
+`LocalDirectory::interpret` interface.
+
 | Item and operations | Owner, caller, construction invariant | Traits and custody / failure |
 | --- | --- | --- |
 | `EntityId::new`, `get`, `into_inner` | Bombay stable logical identity; caller supplies a domain key independently of any actor address. | `Copy`/`Clone`/equality/order/hash when the key permits; conditional `Debug`/`Display`. It is a justified newtype that prevents address/key exchange. |

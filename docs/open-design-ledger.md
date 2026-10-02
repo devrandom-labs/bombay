@@ -4,7 +4,28 @@ This ledger records the current Bombay dependency graph, selected contracts,
 feature verification, and the disposition of earlier work. Entries for
 removed packages are historical evidence, not current API guidance.
 
-## Recovery checkpoint (2026-10-01)
+## Final audit closure (2026-10-02)
+
+The 45-row [canonical queue](todo.md#canonical-execution-queue) is terminal:
+25 `TEST-*` rows are `verified`, 19 `ARC-*` rows are `distilled`, and ARC-009
+is `retained` by direct-composition evidence. No row is ready, active, blocked,
+or feature-complete; no detailed checkbox is open. The 67 reciprocal
+dependency edges have no missing ID, cycle, or unsatisfied prerequisite.
+
+The final merged-tree `nix flake check path:. --max-jobs 1 --cores 2` passed
+all 21 `aarch64-darwin` checks, including release workspace tests, strict
+Clippy, docs, coverage, Loom, panic boundaries, and the public examples. The
+independent full mutation package passed its baseline gate on the identical
+runtime/Engine/macro source: 870 candidates, 342 caught, 524 unviable, four
+classified equivalent misses, and zero timeouts. Bounded Driver and Observe
+ASan fuzz runs, four-seed Observe Miri, and the retained performance package
+passed at the preceding source checkpoint. The final source and public API
+dispositions are in the [API audit](public-api-audit.md) and the row review
+below. Publication status is a separate release dependency, recorded in the
+publication manifest section; it does not reopen a canonical architecture or
+test row.
+
+## Historical recovery checkpoint (2026-10-01)
 
 - Active user goal: finish every item in `docs/todo.md`, prove each result
   against its prior representation, distill the architecture, and pass all
@@ -40,6 +61,69 @@ removed packages are historical evidence, not current API guidance.
   pre-fix failures and debug/release results are recorded below.
 
 ## Selected contracts
+
+### Bombay publication manifest blocker (2026-10-02)
+
+- After merging the already released `main` manifests, `Cargo.lock` still
+  selects Behavior Core/Actors 0.20.0, Macros 0.13.0, Address 0.3.0,
+  Communication 0.1.2, and the Timers git patch. The prior release job
+  published `bombay-engine` 0.2.0 and `bombay-macros` 0.1.0, then failed to
+  publish `bombay-rs` 0.1.1 because `bombay-machine` had a path-only
+  dependency. ARC-004 has removed that crate and dependency.
+- The smallest remaining blocker is the exact pinned-Nix
+  `cargo package --locked -p bombay-rs --allow-dirty` command: Cargo rejects
+  another path-only dependency, `bombay-macros`, before assembling the
+  archive. Its published 0.1.0 version is known from the registry. The
+  pre-edit failure is the inversion; the same command must advance past
+  manifest validation after the correction.
+- Change ledger before the manifest edit: touch `crates/bombay/Cargo.toml`,
+  this ledger, and `docs/todo.md`; production source `+0/-0/net 0`, test
+  source `+0/-0/net 0`, public types `+0/-0`. Reuse the existing macro crate
+  and its published version by adding an explicit version requirement beside
+  the local path. No new dependency, runtime abstraction, or API is added.
+- Publication still needs a coordinated versioned release of the changed
+  Engine, Macros, and runtime packages. A package dry run may expose the next
+  exact release dependency after this manifest blocker is removed.
+- Resolution: the macro path now has `version = "0.1.0"`. Repeating the exact
+  package command advanced through manifest validation and produced a 198-file
+  `bombay-rs` 0.1.1 archive. Tarball verification then failed while compiling
+  against the already published `bombay-engine` 0.2.0 and `bombay-macros`
+  0.1.0: the registry Engine still owns the older Behavior 0.14 contract,
+  producing 220 compile errors against the new Behavior 0.20 runtime. This
+  establishes the next release dependency: publish new, coordinated Engine
+  and Macros versions before a matching `bombay-rs` archive can verify. The
+  full local workspace test passed after the `main` merge, before the macro
+  manifest correction; the final flake gate will cover that correction.
+- Release sequencing blocker before workflow edit: the existing `Publish`
+  workflow runs on every `main` source push, independently of the release-PR
+  workflow. The 2026-09-17 run 35268085163 is the exact failing regression:
+  it published Engine/Macros, then attempted an unreleasable runtime package
+  before its dependency correction. On this branch the newly changed Engine,
+  Macros, and runtime require one coordinated release PR; a normal feature
+  merge must create that PR without prematurely invoking `release-plz
+  release`. Expected files: `.github/workflows/release.yml`, this ledger,
+  and `docs/todo.md`; production/tests `+0/-0/net 0`, public types `+0/-0`.
+  Reuse the existing `release-pr.yml` merged-PR detection. The `Publish` job
+  should run only for a merged `release-plz-*` PR (or deliberate manual
+  dispatch), so its existing package order and registry credentials remain
+  unchanged. Verify the condition against both an ordinary feature merge
+  and a release PR merge using the GitHub commit-to-PR API before retention.
+- Resolution: `release.yml` now reuses that exact merged-PR predicate before
+  its publish step. The GitHub commit-to-PR API returned `true` for release
+  merge `3e54328` and `false` for ordinary CI merge `1881950`, matching the
+  intended gate; `git diff --check` passed. The workflow keeps manual
+  dispatch explicit and does not alter release-plz's package order or
+  credentials. This edit contributes production/tests/public API zero.
+- Registry dependency audit: the sole Timers patch selects upstream commit
+  `13e884d`, which follows the published `bombay-timers-v0.1.0` tag at
+  `9ddb112`. The published 0.1.0 archive still has an infallible `schedule`
+  that panics on counter exhaustion; the selected revision returns a typed
+  `ScheduleError` with the complete rejected input. Bombay's runtime uses
+  the selected contract, so a publishable Bombay archive requires a new
+  Timers release and a corresponding dependency version before coordinated
+  Engine/Macros/runtime publication. The registry currently has 0.1.0 only.
+  This is a separate upstream release dependency, not a remaining canonical
+  architecture or test queue row.
 
 ### ARC-006 terminal activation-status documentation (2026-10-02)
 
@@ -140,9 +224,10 @@ removed packages are historical evidence, not current API guidance.
   suppressions' “cannot materialize” rationale is disproved by those callers;
   no new production abstraction was introduced. Final suite gates continue.
 
-- Preliminary queue closure: all 45 rows have a valid state, 25 `TEST-*`
-  rows are `verified`, ARC-009 is `retained`, and 19 `ARC-*` rows await
-  distillation. No checkbox is open; no row is active, ready, or blocked.
+- Preliminary queue closure at that checkpoint: all 45 rows had a valid
+  state, 25 `TEST-*` rows were `verified`, ARC-009 was `retained`, and 19
+  `ARC-*` rows awaited distillation. No checkbox was open; no row was active,
+  ready, or blocked.
   The 67 dependency edges have no missing ID or cycle and all prerequisites
   satisfy their downstream rows. The canonical queue and this ledger's
   current dependency graph agree.
@@ -196,9 +281,21 @@ removed packages are historical evidence, not current API guidance.
   1,024 ASan runs each for four Observe targets at seed 20261001. The
   standalone performance package and the Observe performance harness pass.
   Stable Rust/Cargo are 1.96.0; Nix is 2.33.3. The complete mutation gate
-  remains active, so architecture row promotion is still pending.
+  was still active at that checkpoint, so architecture row promotion was
+  pending.
+- Completed source-equivalent mutation gate: the independent pinned-Nix
+  `packages.aarch64-darwin.mutants` build finished all 870 candidates in
+  2h24m with 342 caught, 524 unviable, the four baseline-classified
+  equivalent misses, and zero timeouts. The fail-closed `mutants-gate check`
+  accepted 346 viable candidates. Its complete `outcomes.json`, four-miss
+  list, and per-mutant logs were copied into ignored
+  `target/mutation-evidence/mutants.out/` before Nix cleanup. The later
+  `main` merge changed manifest versions, release notes/workflows, and setup
+  guidance; the macro dependency correction changed only manifest
+  packaging. No runtime, Engine, or macro source changed after the mutation
+  snapshot. The subsequent merged-tree flake check passed all 21 checks.
 
-#### Architecture row minimization review (pending final gates)
+#### Architecture row minimization review (final gates passed)
 
 The terminal performance gate found a separate TEST-020 verification defect:
 `nix build path:.#packages.aarch64-darwin.performance --print-out-paths
@@ -229,8 +326,8 @@ actual three outputs and propagates bench failures through `tee`.
 The complete source, export, caller, example, fixture, benchmark, fuzz, and
 current-guide inventories were compared with each row's inversion in
 `docs/todo.md`. The retained public interface and caller proof are enumerated
-in `docs/public-api-audit.md`. These are candidate dispositions; the queue
-remains `feature-complete` until final verification finishes.
+in `docs/public-api-audit.md`. The final gate accepted these dispositions and
+promoted all 19 rows to `distilled` in the canonical queue.
 
 | Row | Minimal remaining owner and distinction from the prior representation |
 | --- | --- |
@@ -1823,9 +1920,8 @@ dependency graph for this audit. Its `Depends on` column is the `Blocked by`
 relation; for each ID, `Unblocks` is exactly the reverse set of rows naming
 that ID. A complete reciprocal scan found 67 edges, no missing ID, no cycle,
 and no unsatisfied prerequisite. Twenty-five `TEST-*` rows are `verified`,
-ARC-009 is `retained`, and the remaining 19 `ARC-*` rows are
-`feature-complete` pending this terminal audit. The audit will either distill
-each of those rows or reopen its smallest owning item. The programme graph
+ARC-009 is `retained`, and the remaining 19 `ARC-*` rows are `distilled`
+after the terminal audit. The programme graph
 below is a historical snapshot of different work and does not set queue state.
 
 ## Historical programme dependency graph
