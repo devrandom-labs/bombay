@@ -122,6 +122,6 @@ inherited tracked or untracked delta. The measured stage delta follows.
 production: +0 / -0 / net 0
 tests:      +0 / -0 / net 0
 public API: +0 types / -0 types
-documentation: +1257 / -8 / net 1249
+documentation: +1318 / -8 / net 1310
 changed tracked and untracked paths: 8
 ```

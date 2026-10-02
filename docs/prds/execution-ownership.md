@@ -1258,3 +1258,64 @@ copy's artifact and executed zero matching tests. It is excluded from evidence;
 the independent private-directory runs reproduce the actual defect. The owning
 fix, concurrency proof, performance comparison and released dependency selection
 remain pending. No Bombay-side duplicate admission mechanism is authorized.
+
+## 20. Proposed Communication correction checkpoint (2026-10-02)
+
+Status: **awaiting user authorization**. This proposal expands the bounded
+38-path source/shutdown stage to **52 cumulative canonical paths**, counting
+both repositories. It authorizes no particular admission representation and
+does not waive independent design review, owning verification or delivery.
+
+Measured retained baseline-to-`d7e2f04` delta: eight documentation paths,
++1257 / -8 / net +1249; production +0 / -0 / net 0; tests +0 / -0 / net 0;
+public types +0 / -0; untracked paths zero. The revised isolated source candidate
+currently measures production +247 / -180 / net +67 and zero new public types;
+its test minimization/checks are still in progress. The isolated generic
+shutdown correction adds one net production line. Neither is retained.
+
+The exact blocker and failing end-to-end regression are section 19's forbidden
+post-close admission while a legitimate pre-close operation remains live.
+Communication owns the correction. Compare ordinary mutex-serialized admission
+with an explicit admission phase in the existing atomic sender-count state;
+retain only a proven acquire/close linearization with exact rejected payloads.
+Reuse the existing user ring, control lane, UserSender/UserAnchor and
+MailboxOwner/MailboxRef. Add no second mailbox, permit registry, runtime policy
+or public type. Raw channel semantics, overflow, already admitted work and the
+owning performance/allocation contracts require independent verification.
+
+The proposed owning allowance is at most **80 net new production lines** and
+**500 net test/benchmark lines**, with no new public types. These are bounds,
+not measurements or permission to omit required laws. The existing cumulative
+150-net-production-line ceiling remains: current source 67 + shutdown 1 +
+owning allowance 80 = 148. Report exact additions/deletions after implementation;
+stop for another concrete checkpoint if the required correction exceeds a bound.
+
+New owning Communication paths (10; repository-relative):
+
+- `crates/communication/src/lib.rs`
+- `tests/mailbox_retirement.rs`
+- `tests/loom.rs`
+- `tests/mailbox_allocation.rs` (new)
+- `benches/twolane.rs`
+- `README.md`
+- `docs/mailbox-admission.md` (new)
+- `crates/communication/CHANGELOG.md`
+- `Cargo.toml`
+- `Cargo.lock`
+
+New Bombay paths beyond section 18's inventory (four):
+
+- `Cargo.toml`
+- `Cargo.lock`
+- `README.md`
+- `docs/prd-backlog/evidence.md`
+
+Communication's package manifest inherits the owning workspace version; inspect
+it during release but no change is forecast there. The owning manifest/lock
+allowance includes publication rather than pretending source verification alone
+selects a released contract. Bombay's manifest/lock selects the verified release;
+README and the backlog evidence table update current guidance. Existing authorized
+PRD, shutdown, verification, status, capability and API records retain exact
+dependency hashes, independent review and eventual PR/CI/merge evidence.
+Historical dated snapshots remain historical. No release version, fix, PR or
+merge is claimed by this proposal.
