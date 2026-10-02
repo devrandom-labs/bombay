@@ -1,7 +1,7 @@
 # Bombay audit TODO and session handoff
 
-Status: complete. All 45 canonical rows are terminal after the TEST-014
-child-nonce fixture recheck and repeated local final gate. The [PRD inventory](prd-backlog/README.md) and
+Status: active CI recheck of TEST-020 after the Linux fuzz runner failed to
+load `libstdc++.so.6`. The [PRD inventory](prd-backlog/README.md) and
 [evidence report](prd-backlog/evidence.md) supply additional research; the
 canonical queue below controls this goal. Historical claims in detailed
 records require re-verification against the current lock and source.
@@ -154,7 +154,7 @@ unblocked row to `ready`. A dependency is satisfied only by
 | 042 | TEST-017 | P1 | verified | ARC-016, ARC-019 | Convert current ignored docs into executable/compile-fail evidence |
 | 043 | TEST-024 | P1 | verified | — | Make the mutation verdict parser fail closed for every outcome |
 | 044 | ARC-020 | P2 | distilled | TEST-002, TEST-003, TEST-005, TEST-006, TEST-007, TEST-011, TEST-013, TEST-014, TEST-017, TEST-019, TEST-022, TEST-024, TEST-025, ARC-002, ARC-005, ARC-013, ARC-015, ARC-016, ARC-019 | Audit and minimize every remaining caller-facing API |
-| 045 | TEST-020 | P2 | verified | ARC-020 | Run and enforce the final mutation, coverage, fuzz, Miri, and sanitizer obligations |
+| 045 | TEST-020 | P2 | active | ARC-020 | Run and enforce the final mutation, coverage, fuzz, Miri, and sanitizer obligations |
 
 ### Iteration loop
 
@@ -1008,7 +1008,7 @@ remaining risk or N/A rationale: removing an unthresholded measurement leaves or
 
 ### TEST-020 — Mutation, coverage, fuzz, and Miri are mostly on-demand
 
-**Status:** verified; TEST-003/004/005/017/018/024 prerequisites are terminal.
+**Status:** active; TEST-003/004/005/017/018/024 prerequisites are terminal.
 **Priority:** P2.
 
 Coverage produces HTML/summary output but enforces no floor. The default mutant
@@ -2407,7 +2407,7 @@ visibility regressions now run ordinarily. Two ignored Local cancellation
 tests remain under ARC-011; the startup-waiter test now probes the invisible
 reservation directly and fails for its task-ownership law under `--ignored`.
 
-## Final terminal audit result (2026-10-02)
+## Prior terminal audit result (2026-10-02; Linux CI recheck active)
 
 All 45 canonical rows are terminal: 25 `TEST-*` rows are `verified`, 19
 `ARC-*` rows are `distilled`, and ARC-009 is `retained` by its direct
@@ -2490,10 +2490,10 @@ Update this block at the end of every iteration. It is a cache of the canonical
 queue, not a substitute for rescanning that queue.
 
 ```text
-goal: complete
+goal: active
 queue schema: 1
-active item: none
-next item by selector: none
+active item: TEST-020 Linux fuzz runner library path
+next item by selector: TEST-020
 last terminal item: TEST-020 verified
 last architecture resolution: ARC-020 distilled
 external blockers: none for the canonical queue; crate publication has the separate Timers and coordinated version dependencies above
@@ -2509,7 +2509,7 @@ baseline:   origin/main after reconciling the release merge; 269 changed paths, 
 production: +8855 / -7060 / net +1795 (runtime, Engine, macros, and removed Machine source; embedded unit tests included)
 tests:      +8583 / -3195 / net +5388 (tests, examples, benches, fuzz, and tools outside production source)
 public API: +7 types / -41 types (reachable named owners; see docs/public-api-audit.md)
-docs:       +19030 / -1959 / net +17071 (reconciled architecture, ownership, verification, release, and recovery records)
-other:      +932 / -230 / net +702 (manifests, lock, Nix, CI, baselines, and configuration)
+docs:       +19071 / -1959 / net +17112 (reconciled architecture, ownership, verification, release, and recovery records)
+other:      +938 / -230 / net +708 (manifests, lock, Nix, CI, baselines, and configuration)
 removed:    obsolete bombay-machine source/package removed; .research/ remains recoverable at the Trash path recorded above
 ```

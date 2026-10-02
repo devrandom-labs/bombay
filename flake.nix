@@ -441,6 +441,9 @@
             miriToolchain
             pkgs.cargo-fuzz
           ];
+          LD_LIBRARY_PATH = pkgs.lib.optionalString pkgs.stdenv.isLinux (
+            pkgs.lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib ]
+          );
           shellHook = ''
             echo "bombay fuzz shell — nightly, on-demand only."
             echo "  cd crates/bombay-engine/fuzz && cargo fuzz run causal_turns"

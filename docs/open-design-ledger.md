@@ -6,6 +6,47 @@ removed packages are historical evidence, not current API guidance.
 
 ## Final audit closure (2026-10-02)
 
+The Linux CI run `36982123753` reopened TEST-020 after its 21-check flake
+passed: `cargo fuzz` built the Driver target but its executable exited 127
+because `libstdc++.so.6` was absent from the loader path. The skipped Observe
+campaign then made its unconditional artifact upload fail independently.
+TEST-020 is active until the exact final PR run passes both campaigns.
+
+### TEST-020 Linux fuzz shell and artifact custody recheck
+
+The selected `Cargo.lock` still pins Behavior Core/Actors 0.20.0 at
+`804b2bf25325a523884ec49d8a4ae6d2d2b6e9da`, Macros 0.13.0 at
+`3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8`, Address 0.3.0,
+Communication 0.1.2, and Timers at `13e884da7ab41781f52337b0038060e375b00ee0`.
+The existing Engine and Observe fuzz targets, retained corpora, scripts, and
+TEST-020 owner evidence remain the selected test contracts. This blocker is
+in the Nix fuzz shell and CI step custody; it changes no Behavior fold or
+Bombay production owner. The original remote failure is the regression:
+the Driver fuzz executable could not load the C++ runtime after a successful
+compile, and the Observe artifact step failed despite its campaign being
+skipped.
+
+Before editing configuration, the expected paths are `flake.nix`,
+`.github/workflows/checks.yml`, this ledger, and `docs/todo.md`. Production
+source `+0/-0`, test source `+0/-0`, public types `+0/-0`; the only new lines
+belong to the existing Nix shell and CI step conditions. Reuse the pinned
+`stdenv.cc.cc.lib` runtime path in the fuzz shell and GitHub's typed step
+outcome to upload an attempted campaign's artifacts on success or failure,
+without claiming a skipped campaign produced evidence. The fixed Linux run
+must execute both bounded fuzz campaigns, retain their artifacts, and pass
+the full check. The existing local ASan campaign results remain independent
+source evidence.
+
+The configuration fix exposes the pinned `stdenv.cc.cc.lib` path only in the
+Linux fuzz shell. `nix eval --raw path:.#devShells.x86_64-linux.fuzz.LD_LIBRARY_PATH`
+returned `/nix/store/chqq8mpmpyfi9kgsngya71akv5xicn03-gcc-15.2.0-lib/lib`;
+the Darwin shell evaluates to an empty loader path. `nix flake check path:.
+--no-build` evaluated all local derivations, and the workflow YAML parsed with
+all three campaign IDs. Artifact upload now follows the corresponding
+campaign outcome, including failed attempted campaigns and excluding skipped
+ones. The observed original Linux run remains the negative case; the remote
+positive run is pending.
+
 The PR CodeQL fixture alert reopened TEST-014, ARC-020, and TEST-020 after the
 first closure. The focused debug and optimized tests, corrected PR CodeQL,
 and repeated local 21-check flake gate passed, restoring their terminal states.
