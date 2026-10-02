@@ -907,7 +907,8 @@ The user started the EXEC delivery goal on `exec-prd-backlog` at
 working-tree delta was empty. All existing local-runtime fixes remain in the
 baseline. The exact lock SHA-256 is
 `df9acbe4e947538ce4e8ec979243210c665a4dd7710bc018d28c269af2ada81e`;
-selection remains the section-15 dependency set, with the sole Timers patch.
+Initial selection was the section-15 dependency set, with the sole Timers patch.
+The released Communication selection in section 20 supersedes that package only.
 The complete Behavior instructions were read from the exact release object
 `804b2bf25325a523884ec49d8a4ae6d2d2b6e9da`, fetched from its owning repository.
 No dependency was changed.
@@ -1372,6 +1373,61 @@ critique identifies explicit Drop closure, lock-free await boundaries and
 outside-lock sender destruction as required conditions. At that pre-edit checkpoint, repaired traces,
 Loom/concurrency, raw API compatibility and performance remained unproved.
 The [current owning correction record](execution-ownership/shutdown-authority.md#communication-owning-correction-and-delivery-boundary-2026-10-02)
-now records the verified candidate, complete measured delta and remaining
-delivery prerequisites; the accepted cost and upstream merge do not yet
-prove a published or selected dependency.
+now records the reviewed correction, complete measured delta, passing CI,
+both merges and verified publication. The released selection below resolves
+this dependency prerequisite; full EXEC gates remain open.
+
+### Released dependency selection pre-edit record
+
+Communication's correction and generated 0.1.3 release are now delivered through
+reviewed PRs #7 and #8 with passing CI. Publication is verified independently;
+[the owning evidence](execution-ownership/shutdown-authority.md#communication-owning-correction-and-delivery-boundary-2026-10-02)
+records the source correction and its scope. Released registry archive checksum
+is `eb0dc8a057efce6e387c9bc24955ffb020b2c138c5ce6b10c1f6c211d32ad268`,
+VCS commit `272a2343187b40615ab26c2d0d2e136010a16e77`, source SHA-256
+`c6e601bbc4deb6c17d0ab5b2a3ca9af53482fbc689c603e41a1ceca51edaea5c`.
+All fourteen packaged Rust source/test/benchmark files match that release tree.
+No standalone archive tests are claimed: owning workspace CI supplies the test
+provenance where unpublished testkit dependencies are needed.
+
+The fresh registry-selected Bombay regression passes one actual ActorRef test
+in both debug and optimized builds, preserving the accepted three-message trace,
+pre-close allocation and exact rejected post-close Vec allocation. The same
+oracle fails for original 0.1.2 in both profiles. Frozen published-selection
+receipt `3c22c9a87628402af5284c7026237a03c3c4bcee97abf4b626b2a96f4708c760`
+and patch `2bbe1ca85efebc5a2bea31f62b759f8792f6c6f6947882f4e4d70dc8b3e6ecd0`
+are in `bombay-published-communication-zgzyf3vj` under the recorded scratch root.
+Independent reviewer `/root/observation_research` authenticated all artifacts,
+read the patch and verified only one registry package changes in the lock.
+This accepts the narrow dependency selection, not full DG-SHUTDOWN or EXEC.
+
+Recorded before the canonical edit: root Cargo.toml will require 0.1.3 and Cargo.lock will select
+exactly that registry version/checksum. Expected paths: those two already
+authorized paths. Expected production +0 / -0, tests +0 / -0, public types
++0 / -0; manifest/lock +3 / -3 / net 0. Reuse the released owning admission
+state; add no local phase, patch or duplicated gate. All other selected package
+records, including Core/Actors/Macros and Timers' patch, must remain unchanged.
+Fresh pinned-Nix locked workspace verification follows the selection.
+
+The canonical selection now matches the frozen manifest and lock exactly:
+Cargo.toml SHA-256
+`2c5f9bfebcb5cf6db87874995debbbcceac14dbce6886485978b4665acc56c76`;
+Cargo.lock
+`1ca7df546ffd2db7406810a32d745c1fe70b891189c42b8a020daa242c6710b4`.
+A parsed before/after comparison proves that Communication's version/checksum
+is the only changed package record. The actual selected registry source and VCS
+metadata match the reviewed release. Core/Actors remain 0.20.0 at 804b2bf,
+Macros 0.13.0 at 3f08364, Address 0.3.0, Tokio 1.53.1 and the exact Timers patch
+remain unchanged. The selected complete Behavior instructions still apply.
+
+Canonical `nix develop -c cargo test --locked --workspace` passes 414 tests
+in 61 result summaries, exit zero. Log `/tmp/bombay-exec-communication-013-workspace.log`,
+SHA-256 `9b07b81d9a25d3c291d9e014a21e4cea839c97bf960e9516372d5096aa3efa44`.
+`nix develop -c cargo fmt --all -- --check` and
+`nix develop -c cargo clippy --workspace --all-targets -- -D warnings` also pass.
+Their `/tmp/bombay-exec-communication-013-fmt.log` and `-clippy.log` SHA-256
+values are respectively
+`f30664ab871acc90ca42079b62a213e06ace0acb49e91b12eb5b86403afb7257` and
+`26f34b25512d8130c5fe14c71da45ac8ea0aae8d09745860cf0b3b829612f45c`.
+These verify released dependency selection and preserve existing local fixes;
+all EXEC design gates and final delivery remain required.

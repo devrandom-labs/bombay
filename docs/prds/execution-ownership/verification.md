@@ -1,7 +1,7 @@
 # EXEC verification evidence
 
 Status: baseline research; all decision gates remain open. No integrated EXEC
-acceptance, independent gate approval, reviewed PR or passing delivery CI is
+acceptance, independent gate approval, Bombay delivery PR or passing delivery CI is
 claimed. The selected baseline is `2fccedf6eb636ac22143e7e01de7e784f96e2b4e`,
 with the exact lock and manifest hashes in PRD section 16.
 
@@ -60,7 +60,7 @@ Each executed one test. Early exact-filter attempts named the wrong module and
 executed zero tests; those are excluded from evidence. The verified symbol is
 `application_runtime::atomic_interpretation_contract::source_admission_places_the_exact_input_on_the_actor_control_lane`.
 
-## Inspected runtime source anchors
+## Baseline inspected runtime source anchors
 
 | Path | SHA-256 |
 | --- | --- |
@@ -102,7 +102,8 @@ protocol types. All decision gates remain open.
 [EXEC section 19](../execution-ownership.md#19-communication-admission-prerequisite-2026-10-02)
 records the frozen actual ActorRef defect, complete trace and independently
 reproduced one-test failures in both profiles. Shared-target zero-test runs
-are excluded. This verifies the prerequisite defect, not an accepted correction.
+are excluded. This verifies the original prerequisite defect. The current released correction
+and registry selection are recorded in EXEC section 20; full gates remain open.
 
 [Single-owner retirement-cause review](task-custody.md#single-owner-retirement-cause-review-2026-10-02)
 records conditional independent review of the 18-path isolated candidate,
@@ -110,12 +111,18 @@ final source-only profile/inversion evidence and its standalone generic inferenc
 cost. The final unchanged source freeze also passes full workspace/all-feature
 tests in both profiles. Capability/receiver/Communication integration,
 capability-failure production and full DG-TASK remain open.
+That source freeze contains new test names using prohibited architectural
+vocabulary (`AcquisitionBoundary`, `SourceFact` and related identifiers).
+Its logs remain historical evidence; naming correction, minimization, a new
+source freeze and independent review are required before retention.
 
 ## Complete change measurement
 
-This stage changes documentation only. Production-file counts would include
-embedded unit tests if any production file changed; none did. Baseline has no
-inherited tracked or untracked delta. The measured stage delta follows.
+This stage updates project records and selects published Communication 0.1.3.
+Production Rust and tests remain unchanged; manifest/lock changes measure
++3 / -3 / net 0. Baseline has no inherited tracked or untracked delta.
+The complete canonical Bombay delta follows; owning repository delivery has
+its separate complete ten-path record in the shutdown decision record.
 
 <!-- exec-research-counts -->
 
@@ -123,6 +130,7 @@ inherited tracked or untracked delta. The measured stage delta follows.
 production: +0 / -0 / net 0
 tests:      +0 / -0 / net 0
 public API: +0 types / -0 types
-documentation: +1737 / -11 / net 1726
-changed tracked and untracked paths: 9
+documentation: +1938 / -11 / net 1927
+manifest/lock: +3 / -3 / net 0
+changed tracked and untracked paths: 12
 ```

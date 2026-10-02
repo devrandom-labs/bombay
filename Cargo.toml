@@ -35,7 +35,7 @@ behavior = { package = "bombay-behavior", version = "0.20.0" }
 behavior-actors = { package = "bombay-behavior-actors", version = "0.20.0" }
 bombay-engine = { version = "0.2.1", path = "crates/bombay-engine" }
 bombay-address = "0.3.0"
-communication = { package = "bombay-communication", version = "0.1.2" }
+communication = { package = "bombay-communication", version = "0.1.3" }
 timers = { package = "bombay-timers", version = "0.1.0" }
 parking_lot = "0.12"
 triomphe = { version = "0.1", default-features = false, features = ["std"] }

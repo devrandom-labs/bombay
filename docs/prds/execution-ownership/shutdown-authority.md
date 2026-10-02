@@ -331,8 +331,41 @@ merged at `2026-10-02T21:40:46Z`, is independently confirmed by GitHub.
 The scratch parent directory retains `owner-pr-merge-receipt.json`, SHA-256
 `7fc3c932e14bfeeadc38512039a8ed42a8579e0a9eccb1b5f03736fe7600a8da`,
 binding reviewed head, all checks, review URL and merge.
-[Release workflow](https://github.com/devrandom-labs/bombay-communication/actions/runs/37068256523)
-is running. No published version or Bombay dependency selection is yet claimed.
-Verify the generated release PR, publication and actual selected source before
-dependent integration. This owning delivery does not mark EXEC or DG-SHUTDOWN
+The generated [version PR #8](https://github.com/devrandom-labs/bombay-communication/pull/8)
+at `940bfd9fef41a9d8eb49a89d80b5d10bec0ac5e5` changes only the three approved
+release paths: workspace version, four matching local package lock versions
+and six changelog lines. Source and all other dependency records are unchanged.
+[Independent exact-head review](https://github.com/devrandom-labs/bombay-communication/pull/8#pullrequestreview-5397174834)
+approves that version-only change with the same transparent agent/account
+limits. Both [Nix PR](https://github.com/devrandom-labs/bombay-communication/actions/runs/37068327677)
+and [Nix push](https://github.com/devrandom-labs/bombay-communication/actions/runs/37068324825),
+[dependency policy](https://github.com/devrandom-labs/bombay-communication/actions/runs/37068327675),
+[Rust analysis](https://github.com/devrandom-labs/bombay-communication/actions/runs/37068327669)
+and [CodeQL](https://github.com/devrandom-labs/bombay-communication/runs/111042420757)
+passed before merge `272a2343187b40615ab26c2d0d2e136010a16e77`
+at `2026-10-02T21:48:03Z`.
+
+[Publication workflow](https://github.com/devrandom-labs/bombay-communication/actions/runs/37068966628)
+succeeded at that merge. The [0.1.3 release/tag](https://github.com/devrandom-labs/bombay-communication/releases/tag/bombay-communication-v0.1.3)
+was published at `2026-10-02T21:48:46Z` and points to that commit. Registry
+version 0.1.3 is not yanked; downloaded checksum
+`eb0dc8a057efce6e387c9bc24955ffb020b2c138c5ce6b10c1f6c211d32ad268`
+matches registry metadata and Cargo's selected checksum. Archive VCS metadata
+points to the merge, and all fourteen packaged Rust files byte-match the release
+tree. Publication receipt SHA-256
+`8880357b5f4a81372643387fa229f2def025c0603059ee6a1bc912ac654055e4`
+and source equivalence receipt
+`c23a26d0a79e7bcdf52ecb15c83a8f52c41ba30daf0f037db7b4c4a4a0cd1ca0`
+are retained in the scratch parent directory. Independent reviewer authenticated
+the archive, metadata and all file comparisons; its own direct registry request
+failed, so it does not claim an independent fresh registry query. No standalone
+archive test execution is claimed where unpublished testkit is required.
+
+Complete delivered owning record: ten authorized paths, production net +49,
+tests/benchmarks net +497, documentation +111, manifest/lock net 0, public types
++0 / -0. Record SHA-256
+`9174e02044b98c0bf71735a06eb943bb274ad866feaa9945068ce7ff3ce491bc`.
+Fresh registry-selected actual Bombay interoperability passes in both profiles;
+EXEC section 20 records its independent review, canonical dependency selection
+and workspace checks. This owning delivery does not mark EXEC or DG-SHUTDOWN
 complete.
