@@ -1,7 +1,7 @@
 # Bombay audit TODO and session handoff
 
-Status: active CI recheck of TEST-020 after the Linux fuzz runner failed to
-load `libstdc++.so.6`. The [PRD inventory](prd-backlog/README.md) and
+Status: complete. All 45 canonical rows are terminal after the Linux fuzz
+runner recheck. The [PRD inventory](prd-backlog/README.md) and
 [evidence report](prd-backlog/evidence.md) supply additional research; the
 canonical queue below controls this goal. Historical claims in detailed
 records require re-verification against the current lock and source.
@@ -154,7 +154,7 @@ unblocked row to `ready`. A dependency is satisfied only by
 | 042 | TEST-017 | P1 | verified | ARC-016, ARC-019 | Convert current ignored docs into executable/compile-fail evidence |
 | 043 | TEST-024 | P1 | verified | — | Make the mutation verdict parser fail closed for every outcome |
 | 044 | ARC-020 | P2 | distilled | TEST-002, TEST-003, TEST-005, TEST-006, TEST-007, TEST-011, TEST-013, TEST-014, TEST-017, TEST-019, TEST-022, TEST-024, TEST-025, ARC-002, ARC-005, ARC-013, ARC-015, ARC-016, ARC-019 | Audit and minimize every remaining caller-facing API |
-| 045 | TEST-020 | P2 | active | ARC-020 | Run and enforce the final mutation, coverage, fuzz, Miri, and sanitizer obligations |
+| 045 | TEST-020 | P2 | verified | ARC-020 | Run and enforce the final mutation, coverage, fuzz, Miri, and sanitizer obligations |
 
 ### Iteration loop
 
@@ -1008,7 +1008,7 @@ remaining risk or N/A rationale: removing an unthresholded measurement leaves or
 
 ### TEST-020 — Mutation, coverage, fuzz, and Miri are mostly on-demand
 
-**Status:** active; TEST-003/004/005/017/018/024 prerequisites are terminal.
+**Status:** verified; TEST-003/004/005/017/018/024 prerequisites are terminal.
 **Priority:** P2.
 
 Coverage produces HTML/summary output but enforces no floor. The default mutant
@@ -1041,6 +1041,18 @@ cargo-mutants sweep passed its unmutated baseline and classified 342 caught,
 524 unviable, four exact reviewed equivalences, and zero timeouts. The
 generated 206-floor/246-zero-viable baseline passed the fail-closed check;
 the earlier partial and disk-exhausted attempts provide no mutation verdict.
+
+Linux CI recheck (2026-10-02): run `36982123753` passed its 21-check flake but
+the Driver fuzz executable exited 127 before testing because the loader could
+not find `libstdc++.so.6`. Its skipped Observe campaign also exposed an
+unconditional artifact upload. The pinned fuzz shell now supplies
+`stdenv.cc.cc.lib` on Linux, and each artifact upload follows its campaign's
+attempted outcome. Run `36985076274` passed the Linux flake, Driver and
+Observe bounded fuzz campaigns, and both artifact uploads. The two retained
+artifacts are `driver-fuzz-36985076274` and
+`observe-fuzz-36985076274`; local `nix flake check path:. --max-jobs 1
+--cores 2` passed all 21 checks on the repair. Production behavior and
+public types are unchanged.
 
 Resolution record (2026-10-02)
 
@@ -2407,7 +2419,7 @@ visibility regressions now run ordinarily. Two ignored Local cancellation
 tests remain under ARC-011; the startup-waiter test now probes the invisible
 reservation directly and fails for its task-ownership law under `--ignored`.
 
-## Prior terminal audit result (2026-10-02; Linux CI recheck active)
+## Final terminal audit result (2026-10-02)
 
 All 45 canonical rows are terminal: 25 `TEST-*` rows are `verified`, 19
 `ARC-*` rows are `distilled`, and ARC-009 is `retained` by its direct
@@ -2421,7 +2433,10 @@ each architecture row's minimal retained owner are recorded in the
 The merged-tree `nix flake check path:. --max-jobs 1 --cores 2` passed all 21
 `aarch64-darwin` checks again after the TEST-014 nonce-fixture correction.
 The corrected PR commit passed CodeQL with no nonce alerts, Rust analysis,
-and cargo-deny. `nix develop -c cargo test --locked --workspace`
+and cargo-deny. The later `00ab6e8` PR run passed its Linux flake, both bounded
+fuzz campaigns, and both artifact uploads after the pinned C++ runtime path
+was supplied to the fuzz shell; its CodeQL, Rust analysis, and cargo-deny
+checks passed too. `nix develop -c cargo test --locked --workspace`
 also passed after merging `main`. The independent source-equivalent
 `nix build path:.#packages.aarch64-darwin.mutants --print-out-paths --no-link
 -L` passed its fail-closed baseline after 870 candidates: 342 caught, 524
@@ -2490,26 +2505,26 @@ Update this block at the end of every iteration. It is a cache of the canonical
 queue, not a substitute for rescanning that queue.
 
 ```text
-goal: active
+goal: complete
 queue schema: 1
-active item: TEST-020 Linux fuzz runner library path
-next item by selector: TEST-020
+active item: none
+next item by selector: none
 last terminal item: TEST-020 verified
 last architecture resolution: ARC-020 distilled
 external blockers: none for the canonical queue; crate publication has the separate Timers and coordinated version dependencies above
 locked Behavior Core/Actors revision: 804b2bf25325a523884ec49d8a4ae6d2d2b6e9da; Macros revision: 3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8
-worktree checkpoint: complete source delta against origin/main, including tracked and untracked files, is recorded in the final change ledger below
+worktree checkpoint: complete source delta against the pre-audit main commit 3e54328, including tracked and untracked files, is recorded in the final change ledger below
 last updated: 2026-10-02
 ```
 
 ## Change ledger for this audit
 
 ```text
-baseline:   origin/main after reconciling the release merge; 269 changed paths, 0 untracked, including 16 binary fuzz seeds
+baseline:   main at 3e5432830d3ba7cbd7210cf9cbf0ab45d0a61950 after reconciling the release merge; 269 changed paths, 0 untracked, including 16 binary fuzz seeds
 production: +8855 / -7060 / net +1795 (runtime, Engine, macros, and removed Machine source; embedded unit tests included)
 tests:      +8583 / -3195 / net +5388 (tests, examples, benches, fuzz, and tools outside production source)
 public API: +7 types / -41 types (reachable named owners; see docs/public-api-audit.md)
-docs:       +19071 / -1959 / net +17112 (reconciled architecture, ownership, verification, release, and recovery records)
+docs:       +19092 / -1959 / net +17133 (reconciled architecture, ownership, verification, release, and recovery records)
 other:      +938 / -230 / net +708 (manifests, lock, Nix, CI, baselines, and configuration)
 removed:    obsolete bombay-machine source/package removed; .research/ remains recoverable at the Trash path recorded above
 ```

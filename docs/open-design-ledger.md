@@ -10,7 +10,9 @@ The Linux CI run `36982123753` reopened TEST-020 after its 21-check flake
 passed: `cargo fuzz` built the Driver target but its executable exited 127
 because `libstdc++.so.6` was absent from the loader path. The skipped Observe
 campaign then made its unconditional artifact upload fail independently.
-TEST-020 is active until the exact final PR run passes both campaigns.
+The corrected `00ab6e8` run `36985076274` passed its Linux flake, both
+bounded fuzz campaigns, and both retained-artifact uploads, restoring
+TEST-020 to `verified`.
 
 ### TEST-020 Linux fuzz shell and artifact custody recheck
 
@@ -44,8 +46,12 @@ the Darwin shell evaluates to an empty loader path. `nix flake check path:.
 --no-build` evaluated all local derivations, and the workflow YAML parsed with
 all three campaign IDs. Artifact upload now follows the corresponding
 campaign outcome, including failed attempted campaigns and excluding skipped
-ones. The observed original Linux run remains the negative case; the remote
-positive run is pending.
+ones. The observed original Linux run is the negative case. The remote
+positive run `36985076274` passed the Driver and Observe campaigns and
+retained `driver-fuzz-36985076274` (25,133 bytes) and
+`observe-fuzz-36985076274` (89,619 bytes), both unexpired. The local repeated
+`nix flake check path:. --max-jobs 1 --cores 2` passed all 21 checks; the
+PR's CodeQL, Rust analysis, and cargo-deny checks also passed.
 
 The PR CodeQL fixture alert reopened TEST-014, ARC-020, and TEST-020 after the
 first closure. The focused debug and optimized tests, corrected PR CodeQL,
