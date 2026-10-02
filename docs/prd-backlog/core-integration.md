@@ -7,7 +7,7 @@ changed during this investigation.
 
 The selected 0.20.0 Behavior Actors release now supplies the diagnostic ingress
 and split preparation contract described as missing below. The dated 0.17.0
-investigation remains prior-representation evidence; use the ARC-010 ledger and
+investigation remains prior-representation evidence; use the ARC-010 retained evidence in [the status index](status.md) and
 current lockfile for implementation status.
 
 ## Historical 0.17.0 revision and interpretation
@@ -47,7 +47,7 @@ The manifest now records all 19 actor-owned capability types as implemented;
 this excludes ordinary structural lanes and is not a completion score. The
 earlier Behavior Actors 0.19.0 fixed-supervisor diagnostic parent-ingress
 gap blocked the executable supervisor probe. The current 0.20.0 release and
-Bombay runtime tests cover that path; see ARC-010 in the live ledger.
+Bombay runtime tests cover that path; see ARC-010 in [the status index](status.md).
 
 ## Already implemented: retain and compose
 

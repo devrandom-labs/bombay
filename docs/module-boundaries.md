@@ -3,7 +3,7 @@
 This document maps source ownership. Semantic capability laws are in
 [`runtime-capability-interfaces.md`](runtime-capability-interfaces.md); current
 implementation blockers are in
-[`open-design-ledger.md`](open-design-ledger.md).
+[`prd-backlog/status.md`](prd-backlog/status.md).
 The [public API audit](public-api-audit.md) records each retained caller-facing
 type, its methods, construction and custody rules, standard trait decisions,
 and compiled caller evidence.

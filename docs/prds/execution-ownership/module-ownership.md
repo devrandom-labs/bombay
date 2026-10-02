@@ -3,7 +3,7 @@
 **Revision note (2026-10-01):** ARC-001 removed `ShutdownControl`,
 `TypedShutdownControl`, `ShutdownSignalRejection`, and `ActorRef.shutdown`.
 The table below is a dated source inventory, not the current module map. See
-`../../module-boundaries.md` and `../../open-design-ledger.md` for current
+`../../module-boundaries.md` and `../../prd-backlog/status.md` for current
 ownership and selected dependencies. ARC-002 removed the private external
 Address space and lease from `actor_interface.rs`.
 ARC-012 removed `ignore_publication` and moved terminal-report selection to

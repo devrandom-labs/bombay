@@ -551,7 +551,7 @@ Bombay cancels and joins any child still live when its owner terminates, so an
 incomplete graceful protocol cannot leak a subtree or deadlock retirement.
 
 Current implementation eligibility and upstream blockers are recorded in
-[`open-design-ledger.md`](open-design-ledger.md).
+[`prd-backlog/status.md`](prd-backlog/status.md).
 
 The acceptance application originated as a manually constructed foundational
 composition. Behavior's generated products and Bombay's actor recipes

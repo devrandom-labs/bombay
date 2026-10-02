@@ -3,7 +3,7 @@
 **Frozen research snapshot:** The ARC-011 change on 2026-10-01 resolved the
 startup/finish waiter and activation-task settlement failures described below.
 Current 0.20.0 source and tests, with the retained typed projection task, are
-recorded in `docs/open-design-ledger.md` under ARC-011. Failure candidates and
+recorded in `docs/prd-backlog/status.md` under ARC-011. Failure candidates and
 source descriptions below apply to the earlier 0.17.0 snapshot only.
 
 Status: **open research; no representation accepted and no production edit

@@ -24,7 +24,8 @@ The previous strategy required a 68-row cross-product and template campaign
 inside the Driver manifest. That representation was ownership-stale: it turned
 upstream and downstream obligations into unexecutable Engine status strings.
 The template inventory is now recorded in `driver-template-manifest.json`;
-`docs/todo.md` retains the historical TEST-008 evidence. Catalogue support is
+[The backlog status index](prd-backlog/status.md) retains the TEST-008 evidence
+location; the retired audit chronology remains in Git history. Catalogue support is
 tracked separately in [the completion inventory](prd-backlog/evidence.md);
 it cannot be used to pass or block an Engine law.
 
@@ -168,10 +169,11 @@ artifacts. Driver panic and cancellation-stage tests remain separate focused
 ownership witnesses.
 
 Redundant Driver-test cleanup, Miri, Loom, coverage, sanitizer, allocation,
-and performance findings retain their historical references in `docs/todo.md`.
+and performance findings retain their historical audit records in Git.
 Their absence cannot be hidden in this manifest, and their eventual results
 cannot silently broaden the eight Engine laws. TEST-008's
-separate actor-template inventory is now executable, but its missing
-interpreter rows remain ARC-010 work. Concrete Bombay adapter tests continue to
+separate actor-template inventory is executable, and ARC-010 now supplies all
+19 inventoried actor-owned capability interpretations. Broader policy proofs
+remain explicit backlog requirements. Concrete Bombay adapter tests continue to
 prove capability ordering and lifecycle integration without copying those laws
 into Engine.

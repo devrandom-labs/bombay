@@ -158,10 +158,11 @@ activation channels, keyed termination cell, timer task, and timer command
 channel are gone.
 
 The exact selected contracts and any live blockers are recorded in
-[`docs/open-design-ledger.md`](docs/open-design-ledger.md). The local
+[`docs/prd-backlog/status.md`](docs/prd-backlog/status.md). The local
 explicit application path is executable. Named topology declaration and the
 opt-in Axum boundary are feature-complete; automatic topology-owned actor-space
-materialization remains blocked on the owning contracts in the ledger.
+materialization remains blocked on the owning contracts identified by the
+backlog and selected PRD.
 
 The product exposes Behavior's generated user-message form and statically
 typed application composition. Every level is static: generated code reduces to ordinary concrete
@@ -178,8 +179,7 @@ communication remains explicit in `Actions`.
 - [Module boundaries](docs/module-boundaries.md)
 - [Driver law](docs/driver-law.md)
 - [Driver verification strategy](docs/driver-test-strategy.md)
-- [Open design ledger](docs/open-design-ledger.md)
-- [Historical decisions](docs/historical-design-decisions.md)
+- [Backlog status and dependencies](docs/prd-backlog/status.md)
 
 ## Development
 

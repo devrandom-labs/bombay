@@ -4,7 +4,7 @@
 `Application` and advanced `App` construction policies and factored their
 root launch into one private transaction. The duplicated-root descriptions
 below apply to the recorded 0.17.0 baseline; current selected code and tests
-are in the ARC-011 live ledger.
+are in the ARC-011 retained evidence in the backlog status index.
 
 Status: **open**. The current work is DG-API research, not an accepted public
 interface or authorization for production edits. Owner: WP-API-DESIGN; reviewer
@@ -205,5 +205,18 @@ negative consumer diagnostics, all applicable baseline and optimized trace
 results, a public migration map, and independent reviewer agreement. If the
 task/shutdown decisions require a different caller authority, reopen this
 record before migrating examples. The coordinator alone updates the PRD gate
-status and the repository ledger. No worker may add an async twin, runtime
+status and the feature PRD. No worker may add an async twin, runtime
 wrapper or new error type to make one compile fixture pass.
+
+## Current EXEC work stage (2026-10-02)
+
+This decision record is current work; its 0.17.0 source observations above are
+research inputs. The [execution checkpoint](../execution-ownership.md#15-exec-execution-checkpoint-2026-10-02)
+resolves Core/Actors 0.20.0, Macros 0.13.0 and Address 0.3.0 and records 20
+passing preservation tests. Current source still has seven owned current-thread
+runner constructions and a separate HTTP coordination body. Begin by comparing
+async inherent methods against the free-function candidate with ordinary inferred
+caller types. No candidate is accepted until the signatures, errors, cancellation
+custody and independent review required by DG-API/DG-TASK are recorded.
+
+Inspected runner source SHA-256: `0b8e2c1c475ab46c50c451082b8d67dadb0a138e1d3ee8ccca9129ee7b7f57c4`.

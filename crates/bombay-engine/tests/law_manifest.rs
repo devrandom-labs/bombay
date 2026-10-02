@@ -170,9 +170,7 @@ fn repository_artifacts_are_closed(files: &[(String, String)]) -> bool {
         "name = \"bombay-framework\"",
     ];
     files.iter().all(|(path, source)| {
-        if path == "docs/open-design-ledger.md"
-            || path == "docs/historical-design-decisions.md"
-            || path == "docs/driver-law.md"
+        if path == "docs/driver-law.md"
             || path == "crates/bombay-engine/tests/law_manifest.rs"
             || path.starts_with("crates/bombay-engine/tests/compile/")
             || path == "crates/bombay/src/actor_execution.rs"

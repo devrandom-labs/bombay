@@ -5,7 +5,7 @@
 `ActorRef<P>` as a protocol-indexed delivery reference. Child and Entity
 shutdown borrow their existing exact control senders. The 0.17.0 contract and
 erased representation below are the dated pre-change experiment; current
-selection and gates are recorded in `../../open-design-ledger.md`.
+selection and gates are recorded in `../../prd-backlog/status.md`.
 
 Date: 2026-09-29. Gate: `DG-SHUTDOWN` remains **open**. This record is evidence
 for `WP-SHUTDOWN-DESIGN`, not an accepted API or permission to edit production.

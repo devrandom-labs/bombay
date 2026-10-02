@@ -1,30 +1,31 @@
 # EXEC: application execution and local actor ownership
 
-Date: 2026-09-29. Owner: Bombay. Programme ledger entry: `EXEC1`.
+Date: 2026-09-29. Owner: Bombay. Backlog ID: `EXEC1`.
 
 **Revision note (2026-10-01):** The ARC-001 shutdown authority change has
 replaced the erased `ActorRef` field with a typed weak application lifecycle
 projection and exact child/Entity control senders. The source inventory below
 records the earlier representation; current API and verification are in the
-open design ledger and runtime capability document. ARC-002 also removed the
+backlog status index and runtime capability document. ARC-002 also removed the
 unobservable private external Address claim and its impossible error branch;
 the dated source inventory below predates that change.
 ARC-012 later replaced the shared optional activation publisher and terminal
 report selection with affine handoffs, and gave owner cancellation its own
-residual variant. Its focused proof is in the live ledger; the dated source
+residual variant. Its focused proof is in the backlog status index; the dated source
 inventory below also predates that change.
 ARC-011 subsequently added cancellation authority for dropped startup/join
 waiters, moved activation-task settlement into the spawned actor task, and
 shared root/application and root/owned launch setup. The dated task-custody
 and projection descriptions below are research snapshots, not current source
-claims; the ARC-011 live-ledger entry and current runtime capability document
+claims; the ARC-011 retained-evidence entry and current runtime capability document
 record the selected representation.
 ARC-020 later renamed the private actor execution and outcome symbols; the
 snapshot names below remain historical, and `docs/module-boundaries.md` records
 the current source paths.
 
-**Status: specified for evidence collection and bounded design experiments.
-Production implementation is gated by the decision records below.** This is
+**Status: selected for execution (2026-10-02); current contract verification
+and decision gates are the first work stage. Production implementation is gated
+by the decision records below.** This is
 not a claim that the proposed Rust API compiles or that the runtime satisfies
 the required cancellation laws today.
 
@@ -40,7 +41,7 @@ with no independent purpose.
 
 Read Bombay's [AGENTS.md](../../AGENTS.md), resolve the current lock and patches,
 and read the complete `AGENTS.md` at the selected Behavior release revision.
-Then read the [ledger](../open-design-ledger.md),
+Then read the [backlog status](../prd-backlog/status.md),
 [capability contract](../runtime-capability-interfaces.md),
 [module map](../module-boundaries.md), [Driver law](../driver-law.md), and
 [Driver verification contract](../driver-test-strategy.md).
@@ -127,16 +128,16 @@ identity or transport, Mnesis integration, a new mailbox-capacity API, ordinary
 Entity API expansion, supervision/restart policy, or replacing the Driver.
 See [core integration](../prd-backlog/core-integration.md) for those dependencies.
 
-The known activation publication defects remain ACT-01 through ACT-04 / ARC-006
-work. This PRD must preserve and keep visible their ignored regressions; it must
-not claim transactionally correct activation merely because code was moved.
+ARC-006 has resolved the activation publication defects under the selected
+Address 0.3.0 contract. This PRD must preserve its executable visibility and
+failed-commit regressions; moving code supplies no additional activation proof.
 If a selected EXEC solution requires a new Address reservation or Behavior
 settlement contract, record that specific dependent work as blocked. Do not
 turn all independent EXEC research into an upstream wait.
 
 ### 3.1 Audited build contract
 
-| Owner | Selected source at this PRD's snapshot | Required inspection |
+| Owner | Original selected source (historical baseline) | Required inspection |
 | --- | --- | --- |
 | Behavior | `bombay-behavior 0.17.0`, `435560ce7bea8ad3330ee2d42e5034f837a80602` | Actions, ordered interpretation, source custody, births, established capability ports; complete revision AGENTS. |
 | Behavior Actors | `0.17.0`, same revision | Observation, shutdown, terminal reporting, preparation protocols and their tests; preserve template policy. |
@@ -153,7 +154,11 @@ are reverified. Do not automatically upgrade a dependency while implementing
 this PRD. The complete imported Observe primitive and the primitive libraries
 are not targets for cosmetic reorganization.
 
-## 4. Current evidence and its limits
+## 4. Original source inventory and its limits
+
+The table below is the dated 0.17.0 inventory. Section 15 records execution
+against the current selected contracts. The PRD and its required outcomes
+remain current; resolved observations below are preservation obligations.
 
 Line numbers drift; the named symbols, owning paths and lock identify the
 evidence. The pre-edit manifest required in section 12 adds content hashes.
@@ -369,7 +374,7 @@ an execution-state enum. Reuse ownership and existing sum/product types first.
 | XO-16 | Successful awaited application return is a join barrier for the hierarchy/resources it owns. Completion observation and complete joined retirement are distinct events where the current contract distinguishes them. |
 | XO-17 | Dropping the caller's future must initiate or transfer cancellation/cleanup through a specifically identified owner while Tokio remains alive. No silent detachment, and no claim that synchronous Drop awaited cleanup. DG-TASK determines the concrete mechanism and the exact disposition of terminal/application values when their original receiver no longer exists; no fictitious return or accidental double drop. |
 | XO-18 | Dropping the runtime, a non-yielding Behavior, or permanently pending uncancellable external work limits liveness. State these limits explicitly; do not claim a universal deadline or preemption guarantee. |
-| XO-19 | Preserve normal waiting versus owner-forced retirement. Current finish closes the cancellation sender without requesting retirement; interpreting all channel closure as cancellation is forbidden without changing and proving every sender's ownership contract. |
+| XO-19 | Preserve normal waiting versus owner-forced retirement. Normal finish awaits the existing owner without requesting retirement; abandoned-wait cancellation is a distinct ownership transfer. Preserve that distinction and prove every sender's ownership contract. |
 | XO-20 | Panic, controlled Behavior failure, activation failure, settlement failure, owner cancellation, exhaustion, and normal stop remain distinct where their owning typed contracts distinguish them. |
 | XO-21 | Child retirement remains in the existing observable order, including occurrence/role distinctions and descendant results. Do not switch to unordered joins solely for speed. |
 | XO-22 | Capability-task errors and returned events retain their actual typed source/custody. No log-and-continue, default success, blanket panic, or discarded join result may replace a selected contract. |
@@ -616,12 +621,12 @@ ownership model and integration.
 
 | Package | Owner role and deliverable | Prerequisites | Allowed changes |
 | --- | --- | --- | --- |
-| WP-BASELINE | Coordinator: selected revisions, baseline manifest, requirement/evidence matrix, cumulative change budget and reciprocal ledger edges. | None | Documentation/evidence only. |
+| WP-BASELINE | Coordinator: selected revisions, baseline manifest, requirement/evidence matrix, cumulative change budget and reciprocal backlog edges. | None | Documentation/evidence only. |
 | WP-TASK-DESIGN | Execution researcher: DG-TASK and DG-PROJECTION, original-defect witnesses and await/drop ownership table. | WP-BASELINE | Isolated experiments and law tests; no retained production API. |
 | WP-OBSERVATION-DESIGN | Observation researcher: DG-OBSERVATION, deterministic race/order evidence and one authority model. | WP-BASELINE | Isolated experiments and observation law tests. |
 | WP-SHUTDOWN-DESIGN | Capability researcher: DG-SHUTDOWN and static target/authority witnesses. | WP-BASELINE | Compile experiments and narrowly scoped owning-contract research. |
 | WP-API-DESIGN | Application researcher: DG-API, DG-WORK, consumer syntax/errors, compatibility table. | WP-BASELINE; final selection waits for task/shutdown answers | Isolated public-consumer experiments; no invented capability APIs. |
-| WP-CONTRACT | Coordinator with independent review: accepts/rejects gate evidence, DG-WRAPPERS and DG-MODULES, freezes symbols/files, identifies remaining blockers. | All affected design packages | Decision records and ledger only. |
+| WP-CONTRACT | Coordinator with independent review: accepts/rejects gate evidence, DG-WRAPPERS and DG-MODULES, freezes symbols/files, identifies remaining blockers. | All affected design packages | Decision records and PRD status only. |
 | WP-LAYOUT | Coordinator/integrator: establish frozen module ownership by differential-tested mechanical extraction before independent writers begin. | WP-CONTRACT, original behavior baseline, and required expanded-surface authorization | Frozen file moves/import/export changes only; preserve current semantics and known failures. No duplicate retained implementation. |
 | WP-TASK | Actor execution implementer: accepted task/cancellation/projection model and focused witnesses. | WP-LAYOUT; task/projection gates accepted | Only assigned local execution/termination files and associated tests. |
 | WP-OBSERVATION | Observation implementer: accepted relationship authority, race and retirement witnesses. | WP-LAYOUT; observation gate accepted | Only assigned local observation files/tests; shared structures remain coordinator-owned. |
@@ -634,7 +639,7 @@ ownership model and integration.
 The present monolithic files prevent safe concurrent production editing. Until
 the accepted migration creates independent files, **one designated integrator
 is the sole writer of `application_runtime.rs`, `local.rs`, `launch.rs`,
-`lib.rs`, manifests/locks, the ledger, and shared test fixtures**. Workers send
+`lib.rs`, manifests/locks, the backlog status index, and shared test fixtures**. Workers send
 bounded patches or experiment evidence; they do not all edit those files.
 
 Do not move unproven implementations to separate files merely to create work
@@ -694,10 +699,10 @@ merge/compiler conflict. Return such a conflict as a design issue.
 ## 12. Change containment and completion
 
 Before the first production edit, write the feature-local record in the
-existing ledger: exact locked owners; verified reciprocal dependencies; selected
+selected PRD: exact locked owners; verified reciprocal dependencies; selected
 gates; one smallest failing regression; expected files and production delta;
 public types added/removed; existing owners/products reused or deleted.
-Keep PRD detail here rather than copying it into the ledger.
+Keep feature detail here; the backlog index records status and dependencies.
 
 Create a complete baseline manifest of tracked and untracked paths, content
 hashes, current diff and line counts. Record task-local deltas separately from
@@ -792,11 +797,11 @@ use `done`. This PRD and passing focused tests do not establish distillation.
   and the selected local Tokio task sources govern executor behavior. Verify
   exact version semantics before retaining cancellation or blocking-work claims.
 
-## 14. PRD-authoring validation and change ledger
+## 14. Original PRD-authoring validation and change ledger
 
 This record covers creation of the PRD, not implementation of EXEC. Four
 documentation paths changed: this file, the inventory index, the local-runtime
-inventory's EXEC introduction, and the programme ledger backlink. No decision
+inventory's EXEC introduction, and the programme status backlink. No decision
 gate was accepted, feature state changed, or dependency edge altered.
 
 Task-local delta: documentation `+811 / -1 / net 810`;
@@ -816,3 +821,75 @@ document/source links resolve; whitespace checks pass, including this new
 untracked PRD. Snapshot comparison found only the four intended documentation
 changes and no production/test edits. No Rust commands were rerun for this
 documentation-only task; section 4 labels the preceding audit's test evidence.
+
+## 15. EXEC execution checkpoint (2026-10-02)
+
+EXEC is selected next on `exec-prd-backlog`. Its PRD is current and will be
+implemented through the backlog → PRD → verification → PR → passing CI →
+merge workflow. The older source inventories and candidate experiments are
+inputs to reconciliation; they do not replace the required outcomes.
+
+### Selected contracts and first source inspection
+
+The current `Cargo.lock` and sole patch select:
+
+| Owner | Current selection |
+| --- | --- |
+| Behavior Core / Actors | Registry 0.20.0; both archive VCS records identify `804b2bf25325a523884ec49d8a4ae6d2d2b6e9da`. |
+| Behavior Macros | Registry 0.13.0; archive VCS record identifies `3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8`. |
+| Address | Registry 0.3.0, checksum `8dfc2197b4156cc87c4021a2fa0e8767a5efb009c98d4238c4147714840fc1dc`. |
+| Communication | Registry 0.1.2, checksum `fc3d06aaf88ef9fe5392506d13e208c2141e6978563e1b802b97b489b1a071e2`. |
+| Observe | Bombay-private owning source in `crates/bombay/src/observe/`. |
+| Timers | 0.1.0; sole crates.io patch selects Git revision `13e884da7ab41781f52337b0038060e375b00ee0`. |
+| Tokio | Registry 1.53.1; standard Bombay enables macros, rt, sync and time; Axum adds net. Multithread runtime support is not selected by Bombay's manifest. |
+
+Read the complete Behavior instructions at the exact Core/Actors revision.
+Inspected application runner signatures and `LaunchSystem::{launch,launch_with,
+launch_axum}`, the Bombay dependency features, current launch ownership and
+runtime preservation tests. Seven current-thread builder constructions remain
+in the seven public runner methods. `launch` already delegates to `launch_with`;
+HTTP still repeats root launch, handle construction and joining. Entity execution
+awaits family shutdown after ordinary root return but discards that shutdown
+product on root-startup error. These are current DG-API comparison inputs.
+
+Fresh primitive API/test inspection and the remaining decision experiments are
+still required before production eligibility; this checkpoint does not certify
+those inspections or accept a gate. The first work stage is DG-API's ordinary
+Rust signature/inference comparison, with DG-TASK cancellation custody checked
+before exposing caller-owned asynchronous execution. Reuse the existing
+LaunchSystem futures, typed application projections and owning runtime primitives.
+No new public type or runtime wrapper has been selected.
+
+### Preserved evidence and verification
+
+ARC-001/002 static lifecycle authority, ARC-006 activation, ARC-011 abandoned
+wait cleanup, ARC-012 affine terminal custody, and ARC-010/TEST-025 interpreter
+and template evidence are linked in the [backlog status index](../prd-backlog/status.md#retained-local-evidence).
+Their original defects are not reopened by this PRD. All eight decision gates
+still need their feature-specific comparison and review; the completed audit
+does not establish caller-owned async execution or multicore acceptance.
+
+Initial preservation command:
+
+```sh
+nix develop -c cargo test --locked -p bombay-rs --features axum \
+  --test run_with --test axum --test application_terminal_custody \
+  -- --skip compile_checked
+```
+
+Result: 20 passed, zero failures; two compile-check tests filtered out.
+This proves the current application boundary, typed terminal custody and HTTP
+baseline. It does not pass EV-01 caller hosting or any unexecuted EXEC witness.
+
+### First stage change boundary
+
+This stage reconciles the current PRD and records source/baseline evidence;
+production `+0 / -0 / net 0`, tests `+0 / -0 / net 0`, public API
+`+0 types / -0 types`. The separate ledger-retirement task changes one existing
+artifact test by removing obsolete exemptions. No EXEC runtime edit is retained.
+Before production work, the accepted decision record must provide the exact
+failing witness, signatures, expected files/line delta and public surface.
+The combined working tree already exceeds the repository's 15-file checkpoint;
+obtain explicit authorization for expanded production scope before those edits.
+The documentation migration and its complete-tree measurement are recorded in
+[backlog status](../prd-backlog/status.md#retirement-change-record).

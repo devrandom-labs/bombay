@@ -3,14 +3,14 @@
 **Frozen research snapshot:** ARC-011 on 2026-10-01 retained
 `ProjectedTask` as the concrete typed origin boundary, moved activation-task
 settlement into the spawned actor task, and shared root/owned setup. Its
-current disposition and tests are recorded in the live ledger; the table
+current disposition and tests are recorded in the backlog status index; the table
 below describes the prior 0.17.0 representation.
 
 **Revision note (2026-10-01):** ARC-001 retained the public lifecycle
 projection as `ApplicationLifecycle<P, E>` and removed the erased shutdown
 path from `ActorRef<P>`. The table below records the earlier 0.17.0 source
 audit; the current selected contract and verification are in
-`../../open-design-ledger.md`. ARC-002 removed the unobservable Address lease
+`../../prd-backlog/status.md`. ARC-002 removed the unobservable Address lease
 from `ExternalActor<P>`; its allocated origin, exact recipient, affine receive,
 and admission owner remain.
 
@@ -19,7 +19,7 @@ mutable `Unselected | Selected` transaction state and the sole sender of the
 selected terminal report. `TerminationPublication` owns its receiver. The
 dated candidate below to delete this wrapper by sharing an
 `Arc<TerminationSelection<_>>` is superseded; the owning transaction now has
-an affine handoff. See the ARC-012 proof in the live ledger.
+an affine handoff. See the ARC-012 proof in the backlog status index.
 
 Date: 2026-09-29. Work package: `WP-CONTRACT` input for `DG-WRAPPERS` in the
 [execution PRD](../execution-ownership.md). Status: **source audit complete;

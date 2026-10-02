@@ -36,17 +36,18 @@ Keep internal mechanism tests in their owning crate.
 
 Read these documents before changing architecture:
 
-- `docs/open-design-ledger.md`: live backlog, blockers, and current feature
-  verification;
+- `docs/prd-backlog/README.md` and `docs/prd-backlog/status.md`: requirements,
+  current blockers, dependencies, and the PRD execution workflow;
+- the selected feature PRD in `docs/prds/`: scope, locked-contract verification,
+  decisions, change record, and acceptance evidence;
 - `docs/runtime-capability-interfaces.md`: capability ownership and the target
   Environment spine;
 - `docs/module-boundaries.md`: current source ownership;
 - `docs/driver-law.md`: normative Driver semantics;
 - `docs/driver-test-strategy.md`: Driver verification requirements.
 
-`docs/historical-design-decisions.md` is historical context, not current API
-guidance. Existing Bombay code and earlier conversation are not architectural
-authority.
+Git history preserves retired audit and design records. Existing Bombay code
+and earlier conversation are not architectural authority.
 
 ## Architecture
 
@@ -105,7 +106,7 @@ prototype and compare plain functions, inherent methods, type inference,
 associated types, extension traits, named products, builders, typestate, and
 the other applicable stable Rust mechanisms. Record the alternatives, their
 measured application syntax, compiler diagnostics, static denials, and the
-specific remaining gap in the feature's research and ledger entry. A macro is
+specific remaining gap in the feature's research and PRD. A macro is
 eligible only when that evidence proves ordinary Rust cannot provide an
 equally direct, statically checked, diagnosable, and maintainable experience.
 DX42 accepts exactly one distilled Bombay actor facade: `#[bombay::actor]`
@@ -162,7 +163,8 @@ Before designing, implementing, unblocking, or auditing every Bombay feature:
    documentation for Behavior, Behavior Actors, Address, Communication,
    Observe, and Timers. Inspect Entity or other neighbors when touched.
 3. Record the feature-specific versions, ownership map, blockers, and
-   dependency edges in `docs/open-design-ledger.md` before implementation.
+   dependency edges in the selected PRD before implementation; keep the
+   backlog status index consistent with those prerequisites.
 4. Keep implementation blocked while any dependency contract, protocol
    consumer, version relationship, or ownership boundary is unverified.
 
@@ -193,7 +195,7 @@ and tests.
   remain deliberate imports through `bombay::behavior`; do not restore a glob
   re-export of the full owner crate into the ordinary prelude.
 
-Actor-template recipes, when selected by the ledger, are derived statically
+Actor-template recipes, when selected by the PRD, are derived statically
 dispatched library constructions over existing Behavior Actors templates. They
 are deliberate API composition policy, not new actor-model laws or runtime
 actors. Separate their requirements into:
@@ -246,8 +248,8 @@ audit may add independent tests and identify later work, but it must not grow
 the current production design unless a failing law independently proves that
 the additional machinery is necessary.
 
-Before the first production edit, add a change ledger to the active design
-ledger containing:
+Before the first production edit, add a change record to the selected PRD
+containing:
 
 - the exact blocker and the smallest end-to-end failing regression;
 - expected files touched and expected production line delta;
@@ -256,14 +258,14 @@ ledger containing:
   reused or deleted.
 
 The following are automatic stop thresholds for the cumulative task, not
-targets to evade by splitting commits or ledger items:
+targets to evade by splitting commits or PRD items:
 
 - more than 15 changed files;
 - more than 500 net new production lines; or
 - more than three new public types.
 
 When any threshold is reached, stop before further production edits. Report
-the current ledger and obtain explicit user authorization for the expanded
+the current PRD change record and obtain explicit user authorization for the expanded
 surface. Prior instructions to “finish,” “audit everything,” or “do it
 holistically” do not waive this checkpoint.
 
@@ -298,20 +300,31 @@ work so each can be judged honestly. Work in independently reviewable stages;
 do not combine the blocker, a repository-wide redesign, wrapper cleanup, and a
 test expansion into one undifferentiated patch.
 
-## Ledger states
+## PRD workflow and states
 
-Select work from the reciprocal dependency graph in
-`docs/open-design-ledger.md`. Every unresolved ID in `Blocked by` must name the
-dependent item in `Unblocks`. Repair inconsistent edges before selecting work.
+Select work from `docs/prd-backlog/README.md` and its reciprocal dependency
+index in `docs/prd-backlog/status.md`. Every unresolved ID in `Blocked by`
+must name the dependent item in `Unblocks`. Repair inconsistent edges first.
 
+Take a backlog requirement, create or reconcile its PRD in `docs/prds/`,
+complete the PRD's accepted scope and verification, then submit a focused PR
+targeting `main`. Merge through the PR only after required CI checks pass and
+review requirements are satisfied. Record the PR, passing CI and merge commit
+in the PRD and update the backlog status. Do not mark a feature merged from a
+local build, commit, or open PR. Keep incomplete requirements in the backlog.
+
+- `candidate`: PRD preparation and fresh dependency verification remain;
 - `blocked`: an unresolved prerequisite exists;
-- `active`: feature-local verification is recorded and implementation is
-  eligible;
-- `feature-complete`: feature gates pass but final minimization is pending;
-- `distilled`: project-wide audit proved the remaining types, objects, public
-  interfaces, and ownership boundaries minimal.
+- `active`: the PRD records feature-local verification and accepted decisions;
+- `feature-complete`: acceptance gates pass; final minimization is pending;
+- `distilled`: the scoped ownership and interface audit proved the retained
+  composition minimal;
+- `merged`: the reviewed PR merged to `main` with required CI passing.
 
 Never use `done`. Building or passing focused tests is not distillation.
+`merged` records delivery; the PRD also retains its semantic acceptance and
+minimization evidence. Feature verification and change records belong in each
+PRD, rather than a repository-wide chronological ledger.
 
 ## Documentation
 
@@ -361,5 +374,5 @@ become visual bookkeeping.
 
 Use short imperative commit subjects with a scope-like prefix. Keep commits
 focused and report the exact verification commands and results. Completion
-also requires a final change ledger covering the complete tracked and
+also requires a final PRD change record covering the complete tracked and
 untracked delta.

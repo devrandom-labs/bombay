@@ -5,7 +5,8 @@ planning, not a fresh certification of the workspace. Existing uncommitted
 changes are included in the observed baseline. Before implementation, repeat
 feature-local verification against the selected lockfile and patches.
 The documentation-reconciliation table below records that snapshot's edits;
-`docs/todo.md` has since been reactivated as the canonical audit queue.
+The local audit is now closed; [current status](status.md) retains its relevant
+evidence and the remaining product dependencies.
 
 Follow-up: [core integration research](core-integration.md) adds focused
 execution evidence for supervisor/pool prerequisites. Worker preparation tests
@@ -56,9 +57,9 @@ This inventory does not replace those normative contracts.
 | Finding | Source | What may truthfully be concluded |
 | --- | --- | --- |
 | All inventoried atomic interpreter requests and `PrepareWorkers` have typed Bombay interpretation | [Application runtime](../../crates/bombay/src/application_runtime.rs), [capability manifest](../driver-template-manifest.json) | Selected 0.20.0 adds typed proxy diagnostic ingress and separates accepted source start from its late result; live policy evidence remains necessary. |
-| Queued pool shutdown folds while `PrepareWorkers` holds an affine source | [prior failure](../research-probes/fifo-preparation-shutdown-gap.md), [selected runtime regression](../../crates/bombay/tests/fifo_pool_recovery.rs) | The 0.19.0 trace failed; the selected runtime rejects a later job as `ShuttingDown` before source release and does not start a replacement. |
+| Queued pool shutdown folds while `PrepareWorkers` holds an affine source | the prior 0.19.0 failure recorded in Git history, [selected runtime regression](../../crates/bombay/tests/fifo_pool_recovery.rs) | The 0.19.0 trace failed; the selected runtime rejects a later job as `ShuttingDown` before source release and does not start a replacement. |
 | Assignment/proxy exact returned-request reconstruction remains selected in Actors 0.20.0 | Behavior Actors `src/atomic/pool/assignment.rs`, `src/atomic/stable_proxy/operation.rs` | Bombay's rejected delivery interpreters can return the original typed request; the earlier 0.17.0 owner gap is resolved. |
-| Activation publication regressions | [local activation](../../crates/bombay/src/local.rs), [ARC-006](../open-design-ledger.md) | The selected invisible-reservation order passes ordinary gated visibility regressions; the original claim-before-commit order failed them. |
+| Activation publication regressions | [local activation](../../crates/bombay/src/local.rs), [ARC-006 retained evidence](status.md#retained-local-evidence) | The selected invisible-reservation order passes ordinary gated visibility regressions; the original claim-before-commit order failed them. |
 | Ordinary public runners construct current-thread Tokio runtimes | [Application runtime](../../crates/bombay/src/application_runtime.rs) | Ordinary multicore actor execution and caller-owned async embedding are not supplied by merely having Tokio as a dependency. |
 | User mailbox capacity is fixed at DEFAULT_USER_CAPACITY in ordinary construction | Same runtime | Application-facing capacity configuration remains a specific gap. |
 | The public supervision example executes worker replacement and retirement; the FIFO example executes a job and orderly drain | [supervision](../../examples/supervision/src/main.rs), [worker pool](../../examples/worker-pool/src/main.rs), [supervisor recovery](../../crates/bombay/tests/fixed_supervisor_recovery.rs), [pool recovery](../../crates/bombay/tests/fifo_pool_recovery.rs) | Selected 0.20.0 tests prove coordinated replacement, later-role rejection, exact terminal diagnostic custody, child retirement, both pool interruption choices, and shutdown during held preparation. |
@@ -169,11 +170,8 @@ This task corrected current-facing claims while retaining historical evidence:
 | module-boundaries.md | Corrected obsolete supervisor/pool names and replaced alternate-production-transport scope with the Zenoh-only direction. |
 | runtime-capability-interfaces.md | Updated planned networking scope and explicitly marked activation order as an unresolved target law, not completed behavior. |
 | runtime-completion-design.md | Pruned the duplicate long-form proposal into navigation; removed competing proposed fluent APIs and obsolete transport interchangeability requirement. |
-| todo.md | Marked the old audit and its persistent-goal instructions historical; retained the underlying findings rather than silently deleting unresolved evidence. |
-| open-design-ledger.md | Corrected only obsolete programme transport scope and linked the separate inventory; existing implementation IDs, eligibility states and dependency edges retained. No new completion task list inserted. |
 | driver-law.md | Retained normative semantics; a required law is not proof of current implementation. ACT documents the known activation gap. |
 | driver-test-strategy.md | Retained verification requirements and clarified historical audit references; the existing executable template inventory is not described as still awaiting inventory. |
-| historical-design-decisions.md | Retained as explicitly historical context, not current API authority. |
 
 This is a source-backed correction of identified contradictions, not a claim
 that every legacy audit checkbox or ignored documentation snippet has been

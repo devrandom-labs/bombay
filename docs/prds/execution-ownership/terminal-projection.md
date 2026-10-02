@@ -5,7 +5,7 @@ projection task after comparing typed origin propagation with erased
 projection dispatch. The spawned actor task now settles its own activation
 tasks, and abandoned join waiters request owner cancellation. Descriptions
 below of `finish_owned_task` and bare sender-drop behavior apply only to the
-earlier 0.17.0 snapshot; current evidence is in the ARC-011 live ledger.
+earlier 0.17.0 snapshot; current evidence is in the ARC-011 retained evidence in the backlog status index.
 
 Status: **open research; the projection task is retained until its independent
 timing and panic laws are proved.** This record addresses DG-PROJECTION,
