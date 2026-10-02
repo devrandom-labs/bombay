@@ -988,9 +988,11 @@ distinct from cancellation. This selects no particular Engine/Behavior port
 or representation. Existing Retained cannot silently relabel live source
 inputs. Owning contract comparisons and independent review remain required.
 
-Caller disappearance also needs a researched ownership equation: arbitrary work
-future disposition, receiverless exact values, and who progresses root/child and
-Entity cleanup. Capability-task panic currently drops typed residual custody. The user
+Caller disappearance also needs a researched ownership equation for
+receiverless exact values and who progresses root/child and Entity cleanup.
+[Application work disposition](execution-ownership/task-custody.md#application-work-disposition-2026-10-02)
+is user-selected; borrowed-result discharge timing remains unresolved.
+Capability-task panic currently drops typed residual custody. The user
 selected the core law: preserve the complete actor outcome and all available
 task failures in a typed result, joining remaining capability work before
 returning. Noncooperative work may keep the join pending indefinitely; values
