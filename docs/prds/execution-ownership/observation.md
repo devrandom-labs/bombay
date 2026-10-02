@@ -535,3 +535,46 @@ Existing FnMut worker factories can capture an affine sequence as pure explicit
 factory state; this does not justify a universal Core input port or macro change.
 The real factory/rejected-birth witness remains required. Public representation,
 full owning path forecast and user change-budget approval remain open.
+
+## Existing sealed Monitor ownership comparison (2026-10-02)
+
+The isolated `bombay-observation-monitor-custody-cc54p8j_` stage exercises the
+selected 0.20.0 generic TerminationMonitor with a private proposed target
+implementing its actual sealed owning trait. Original production source is
+unchanged; all 171 other copied Rust files byte-match the selected archive.
+All 58 external dependency tuples match Bombay's current lock. No Core or
+macro source change is needed for this comparison.
+
+Three tests preserve the whole existing ObserveEstablished request and original
+recipient on rejection, preserve the whole existing CancelObservation plus
+protocol-indexed authority and exact rejection reason, and reject a foreign
+Started report without consuming the expected request. Existing request
+interpretation transfers the original endpoint allocation. Nested typed event
+products keep acknowledgement routing separate from target protocol; wrong
+target and wrong acknowledgement path compile-deny with E0308 and E0277 in both
+profiles. Accepted Started replay is rejected by the existing Monitor phase.
+Two host-issued acceptance identities for the same request correlation stay
+distinct; this is not a runtime replay-admission policy proof.
+
+The actual selected numeric-only EstablishedTerminationTarget accepts a
+same-protocol/same-ID Started report associated by the test host with a distinct
+recipient. Its intended correlation assertion compiles and fails one test per
+profile. This exposes the report's missing distinguishing information; it is
+not an end-to-end runtime delivery/reachability proof. The private candidate
+passes three tests per profile, formatting and strict Clippy.
+
+Receipt SHA-256:
+`67c88dccd727df198958bc690c2e5585e66cb453bc31a04598f071322ff30a15`;
+patch `7725b8aae65a14a754167708a13a836f2adf7a481c1ae3f205ccf5866b394e1f`.
+The receipt records exact pinned-Nix commands and excluded preliminary runs.
+Independent reviewer `/root` read the complete patch, authenticated twenty
+artifacts, compared all unchanged sources and verified selected dependency
+tuples. It accepts these bounded comparison claims, not DG-OBSERVATION.
+
+One copied owning test module adds 565 lines; production/public types zero.
+Private request/report stand-ins describe prospective fields on existing types,
+not extra public wrappers. The host issues authority before later consuming the
+original request; actual admission-before-Started ordering is unproved. Public
+issuance, heterogeneous live relationship collection, completion/reuse races,
+terminal authority discharge, accessors and full runtime integration remain
+required. No public producer or representation is selected from this test.
