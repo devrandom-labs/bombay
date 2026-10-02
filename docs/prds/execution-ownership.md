@@ -1146,3 +1146,48 @@ contract, corrected public interface, original failure and repaired positive
 oracles in debug/optimized builds, all relevant typed causal/source invariants
 and inversions, advanced-host/diagnostic migration and current-document audit.
 All full EXEC gates remain required afterward.
+
+## 18. Nested shutdown checkpoint (2026-10-02)
+
+The user explicitly authorized the bounded **38-path** expansion. It extends
+section 17's canonical inventory with exactly these two paths:
+
+- `docs/prds/execution-ownership/shutdown-authority.md`
+- `docs/driver-template-manifest.json`
+
+The cumulative allowance remains at most 150 net new production lines and zero
+new public types. This also covers the independently demonstrated nested
+shutdown blocker in the existing `local.rs` and `application_runtime.rs` paths;
+it does not approve the full shutdown gate or later observation/application
+contracts. Before this record, retained changes were seven documentation paths,
++1026 / -8 / net +1018; production/tests/public types zero. Verification.md
+maintains the complete current tracked and untracked count.
+
+Exact selected Actors 0.20.0 permits `ShutdownEstablished<B, TargetPath>` when
+the target event admits that path. Bombay hardcodes `Here` in both interpretation
+and its installed control ingress. The isolated nominal target admits
+`ShutdownRequested` at `Inside<Here>`; the owning ActionItem compiles, but the
+original Bombay interpreter fails E0277 in debug and optimized builds.
+
+The isolated correction forwards the existing generic TargetPath unchanged
+through InstalledActor and both existing interpretation implementations.
+Production +17 / -16 / net +1; internal tests +184 / -0; public types +0 / -0.
+It adds no owner, runtime, macro or policy. Artifact directory:
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-nested-shutdown-4arnlt3o`.
+Patch SHA-256 `e328ce7e1ee10fe73213baced1862565fb319ac2b32aabfb66f1bb5f6f2b066c`;
+receipt SHA-256 `287c0846a29d34c921389858ae99462159d785fc47b403b4a664eace4d91bb4f`.
+
+Research author `/root/contract_inventory`; independent reviewer
+`/root/observation_research` verified artifact/source/log hashes and reran both
+profile witnesses through pinned Nix: two passed per profile. The full trace is
+one nested shutdown event and Accepted(1), AlreadyStopping(2), AlreadyStopped(3),
+AlreadyStopped(4) acknowledgments, with exact rejected IDs. The existing Here
+regression also passes both profiles; formatting and strict library Clippy pass.
+The coordinator independently inspected the patch and verified artifact hashes.
+
+This supports the narrow generic-path correction, not full DG-SHUTDOWN
+acceptance. Actual committed application/child installation, same-protocol
+distinct behaviors, stale-address exact authority, admitted delivery/rejected
+payload custody, and the remaining static denials must have their required
+evidence before production retention. No retained production edit is made by
+this record.

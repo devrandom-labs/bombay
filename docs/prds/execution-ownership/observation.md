@@ -462,3 +462,35 @@ enter Behavior state. A general stronger preaccept law therefore needs a
 verified owning input/continuation contract. The stronger product law is
 selected; its representation remains unresolved. No new scope input, service
 or effect has been invented.
+
+## Ordinary affine inputs before a fold (2026-10-02)
+
+Fresh ordinary-Rust comparison shows that a generic Core initialization change
+is not established as necessary. A root input supplied before a fold can own
+an immutable origin and checked affine branch counter. Deriving child inputs
+from that known state is deterministic; actual selected `CreateChild` products
+accept those already-constructed child Behaviors. The selected Core has no
+`Behavior::allocate` or `Allocations` seam; Bombay's allocation inputs remain
+private to its interpreter and are not incarnation identities.
+
+The authority-j8_mkbis directory contains `affine_request_births.rs`, SHA-256
+`a2f6ce410e4e183ed21fa7221c785ab37d3a037bdc0f89c69bd5f84d04d641f8`.
+Five tests pass in debug and optimized builds, including actual pure root/child
+folds with complete typed research request lanes. Identical known input/state
+replays identically; sibling branches and separate root inputs remain distinct;
+checked exhaustion does not wrap. Reusing the moved child input fails E0382
+in both profiles. Command receipt SHA-256:
+`d485f3a2ebff6b29c98c4098c181fd29275ec85f8fef51659f552607439e21aa`.
+These are correlation feasibility witnesses, not integration with the actual
+ObserveEstablished protocol, monitor or Bombay interpreter.
+
+The proposal `affine-observation-input-proposal.txt`, SHA-256
+`4733ecb8d7ff5e21629e4cae501a38dae8cd99f35b3486b76fda6cc8817e673a`,
+forecasts three distinct public laws: affine request sequence, protocol-indexed
+accepted authority, and non-authorizing relationship comparison. It is neither
+an accepted API nor authorization for owning edits. Root issuance placement,
+full consumers and failure custody remain unresolved. In particular, the draft
+`observe(id, recipient) -> Option<Request>` loses exact inputs on exhaustion;
+that shape is rejected pending a conserving ordinary-Rust comparison. Fresh
+nominal issuance inside a fold remains forbidden. The earlier broad Core-input
+migration counts are alternative costs, not proof that such growth is required.

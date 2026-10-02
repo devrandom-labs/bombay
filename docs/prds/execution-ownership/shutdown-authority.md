@@ -219,3 +219,32 @@ No production source, shared ledger, or retained tests were edited in this
 research package. Dependency edge: generic established shutdown blocks
 `DG-SHUTDOWN` and the static shutdown implementation work; root/child/Entity
 experiments can continue without claiming the gate accepted.
+
+## Selected 0.20.0 nested-path correction (2026-10-02)
+
+The historical erased-authority blocker above is resolved by the selected
+Core's `EndpointAddress::Installed<B>` and Bombay's existing
+`InstalledActor<B>`. Fresh inspection found a different, smaller blocker:
+Actors permits a generic `ShutdownEstablished<B, TargetPath>`, while Bombay's
+installed ingress and interpretation are restricted to `Here`.
+
+The isolated candidate and user-authorized 38-path checkpoint are recorded in
+[EXEC section 18](../execution-ownership.md#18-nested-shutdown-checkpoint-2026-10-02).
+The candidate changes only the existing concrete ingress and implementations
+to forward TargetPath. It adds no lifecycle owner, public type or policy.
+Original exact fixtures fail E0277 in debug and optimized builds; the repaired
+fixtures pass, with one nested event and the complete ordered accepted,
+already-stopping and already-stopped acknowledgment trace. The existing Here
+regression passes both profiles. Source, lock, log and patch hashes are in the
+frozen receipt linked by section 18.
+
+Author `/root/contract_inventory`; independent reviewer
+`/root/observation_research` verified all receipt hashes and independently ran
+the two nested witnesses in both profiles through pinned Nix. It found no
+material defect in the narrow path correction. This supports an XO-30
+subdecision; **DG-SHUTDOWN remains open**. The constructed installed capability
+proves actual control ingress, not committed Application/child installation or
+the full actor termination law. Exact rejected IDs and complete acknowledgment
+reasons do not by themselves prove every rejected target/ingress value's custody.
+Those broader witnesses, stale-address authority, same-protocol distinct
+behaviors, admission races and static denials remain required before retention.
