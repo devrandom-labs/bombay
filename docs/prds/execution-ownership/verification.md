@@ -23,7 +23,15 @@ nor accept their proposed representations.
 | `nix develop -c cargo test --locked -p bombay-rs --lib exact_shutdown_classifies_repeated_and_stopped_requests_without_resending` | One passed. |
 | `nix develop -c cargo test --locked -p bombay-rs --release --lib exact_shutdown_classifies_repeated_and_stopped_requests_without_resending` | One passed. |
 
-The two initial filtered compile harnesses remain required for full verification.
+The two initially filtered compile harnesses were subsequently executed:
+
+| Command | Result |
+| --- | --- |
+| `nix develop -c cargo test --locked -p bombay-rs --test run_with run_with_protocol_is_compile_checked` | One harness passed: shutdown-authority compile pass and five static denials. |
+| `nix develop -c cargo test --locked -p bombay-rs --features axum --test axum axum_protocol_inversion_is_compile_checked` | One harness passed: wrong root protocol statically denied. |
+| `nix develop -c cargo test --locked -p bombay-rs --test actor_ref_authoring` | One harness passed: three authoring static denials. |
+
+These focused results do not establish full workspace or EXEC acceptance.
 Historical inversion receipts for completed ARC fixes remain historical.
 [Compiled observation race failures](observation.md#compiled-original-race-failures-2026-10-02)
 now establish two original-defect failures in debug and optimized builds; no
@@ -89,6 +97,6 @@ inherited tracked or untracked delta. The measured stage delta follows.
 production: +0 / -0 / net 0
 tests:      +0 / -0 / net 0
 public API: +0 types / -0 types
-documentation: +970 / -8 / net 962
+documentation: +983 / -8 / net 975
 changed tracked and untracked paths: 7
 ```

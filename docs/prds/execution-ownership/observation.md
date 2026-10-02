@@ -436,12 +436,13 @@ owning-law issue against established.rs SHA-256
 `f351de778f9b2ec27474ba366b324bb244e4d3c8bd6b89a09daa2b79d90a66de`
 and monitor SHA-256
 `6a256eaf03522ebf95e07662ff11670e13f2bfa5845aad6f7e5b2d260e5fa87f`.
-No gate or candidate is approved. The user was asked whether exact preaccept
-request correlation is itself required, or verified runtime emitter routing
-is the request authority until Started returns fresh accepted-relationship
-authority. The earlier exact cancellation law remains selected in either
-case. Determinism will not be silently weakened to satisfy a stronger law
-introduced during research. Dependent owning edits remain blocked.
+No gate or candidate is approved. In response to the pending decision, the
+user authorized the stronger exact preaccept request-correlation direction
+with “yes authorize everything” and “just do these changes”. The earlier
+exact cancellation law remains selected. This selects the required fact,
+not an initialization API or permission to weaken fold determinism.
+Dependent owning edits remain blocked until a concrete owning contract,
+measured scope and independent review are established.
 
 
 The exact static-route research confirms ReturnToEmitterFor proves
@@ -458,5 +459,6 @@ runtime instances. An opaque namespace supplied as explicit initial state or
 input plus a checked ordinal could conserve purity, but current initialization
 turns contain only phase authority and interpreter capability inputs do not
 enter Behavior state. A general stronger preaccept law therefore needs a
-verified owning input/continuation contract. That product decision is pending;
-no new scope input, service or effect has been invented.
+verified owning input/continuation contract. The stronger product law is
+selected; its representation remains unresolved. No new scope input, service
+or effect has been invented.

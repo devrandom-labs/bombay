@@ -1027,8 +1027,10 @@ only documentation, adds no public type and authorizes no production edit.
 
 ## 17. Source-retirement surface checkpoint (2026-10-02)
 
-Status: **authorization pending; expanded source editing stopped**. All design
-gates remain open. This checkpoint requests surface authorization, not approval
+Status: **user-authorized bounded expansion (2026-10-02)**. The user's
+“yes authorize everything” and “just do these changes” authorize the concrete
+36-path, 150-net-production-line, zero-new-public-type source-retirement stage
+below. All design gates remain open; this is surface authorization, not approval
 of a representation or waiver of independent review. No retained production
 code changed. The user-selected typed source-retirement law requires a factual
 Engine disposition and exact Bombay cancellation/residual custody; it cannot
@@ -1059,7 +1061,7 @@ This is not a green gate, a completed fix or a retained production delta.
 
 The proposed nine production paths plus seven existing documentation paths
 reach 16, crossing AGENTS.md's 15-file checkpoint before required consumers.
-All further expanded source edits stopped. The concrete proposed authorization
+Expanded source edits stopped before authorization. The authorized expansion
 is **up to 36 cumulative paths for this source-retirement stage**, under the
 following inventory, **at most 150 net new production lines and no new public
 types**. Existing public interface changes remain independently reviewed.
@@ -1119,8 +1121,9 @@ Affected mutation baseline (one path):
 Independent scope reviewer `/root/contract_inventory` corrected the initial
 34-path proposal to 36: the Driver evidence script must execute the new law's
 inversion, and the mutation baseline records the deleted private adapter.
-The corrected request supersedes the earlier 34-path question. No expanded
-source editing resumed. The same reviewer confirms the partial patch's exact
+The corrected request supersedes the earlier 34-path question. Authorization
+permits bounded isolated comparison; retention still requires the gates below.
+The same reviewer confirms the partial patch's exact
 hashes, real private-interface warning and missing optimized/inversion checks.
 The tested request is a Copy unit cancellation fact; move-only request custody
 and necessity over a unit disposition plus residual still need comparison.
