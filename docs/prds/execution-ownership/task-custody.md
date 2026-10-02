@@ -255,3 +255,165 @@ regressions above must first fail on the original design for the intended law
 in debug and optimized builds, then pass after the selected change. The
 coordinator must record its pre-edit ledger and obtain the PRD's independent
 reviewer disposition before WP-TASK implementation.
+
+
+## Current cancellation and failure-custody research (2026-10-02)
+
+Baseline and exact selected owners are in PRD section 16. Current startup and
+normal-finish abandonment regressions pass in both profiles; they must remain.
+The actor task already settles capability work before returning its exact
+outcome. Projection no longer owns that settlement progress.
+
+Standard source admission synchronously sends the exact control event before
+returning acceptance. Its actual ready-control witness passed in debug and
+optimized builds (commands in `verification.md`). Missing cancellation polling
+in `next_source` alone is not a reproduced external-operation defect. Reachable
+pending boundaries include bounded delivery pressure, child startup, Entity
+admission, ordered child retirement and post-Driver capability settlement.
+No Engine cancellation extension is selected by this research.
+
+The user asked for further research and requires maximal truthful information
+and correctness in core execution. Distinguish cancellation intent, actor
+termination, completed joins and disposition of receiverless values. A token
+proves none of the other three events. No source closure, ordinary stop or
+successful join may substitute for its actual provenance.
+
+Primary comparisons:
+
+- [Tokio 1.53.1 task cancellation](https://docs.rs/tokio/1.53.1/tokio/task/index.html#cancellation)
+  destroys a yielding task future; joining establishes completion. Running
+  blocking work generally cannot be aborted. It does not complete async cleanup.
+- [Tokio JoinHandle](https://docs.rs/tokio/1.53.1/tokio/task/struct.JoinHandle.html#cancel-safety)
+  supports cancellation-safe borrowed waiting, while dropping the handle
+  detaches execution and loses its result. Result custody needs another owner.
+- [Akka graceful stop](https://doc.akka.io/libraries/akka-core/current/actors.html#graceful-stop)
+  coordinates subtree stopping and postStop; long-running work can stall it.
+  [Coordinated shutdown](https://doc.akka.io/libraries/akka-core/current/coordinated-shutdown.html)
+  has explicit phase timeouts and failure policy, which cannot substitute for
+  Bombay's complete joined-return law.
+- [Erlang processes](https://www.erlang.org/doc/system/ref_man_processes.html)
+  distinguishes exit signaling, trapped exit, resource release and reply-alias
+  deactivation. Native work may outlive directly visible process resources.
+- [Orleans cancellation](https://learn.microsoft.com/en-us/dotnet/orleans/grains/cancellation-tokens)
+  requires cooperative observation by running calls; acknowledgements and
+  partial streaming results have distinct semantics.
+
+These comparisons do not select Bombay policy or prove rollback. Completing
+current interpretation preserves its exact settlement but can delay retirement
+indefinitely. A typed safe cancellation boundary must instead retain its
+current action, untouched suffix, admitted events and outstanding work.
+Capability-specific cooperative cancellation requires its owning typed outcome;
+arbitrary future abort cannot invent exact recovery.
+
+### Compiled recoverable-custody loss
+
+The actual source was copied from baseline into
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-activation-custody-mpqp4jpv`.
+Only a 110-line test module was appended. Existing production functions and
+the selected lock remain unchanged. Tests call actual
+`LocalResidual::settle_activation_tasks`, not a copied model.
+
+The first task returns a move-only event [11]; a later task waits on a gate.
+Direct settlement polling is pending with zero witnessed drops. The later task
+then panics without owning any witnessed value. Before the actual JoinError
+returns, the complete sorted destruction inventory is: returned event [11], retained settlement
+[22], accepted control [33], accepted user [44], descendant terminal [55].
+Every payload is destroyed exactly once. `ActivationTasks::settle` first drops
+its accumulated events; the residual's `?` then drops the other owned values.
+All five were recoverable outside the panicking task.
+
+The characterization test
+`later_activation_panic_destroys_returned_event_and_actor_residual` passes;
+the intended conservation oracle
+`later_activation_panic_preserves_recoverable_actor_custody` fails.
+Both commands ran from the isolated directory:
+
+```sh
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked -p bombay-rs --lib activation_custody_research -- --nocapture --test-threads=1
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked --release -p bombay-rs --lib activation_custody_research -- --nocapture --test-threads=1
+```
+
+Each compiled and exited 101: one characterization passed and one conservation
+assertion failed. Patch SHA-256:
+`9a84c0c153c208dc648ae7c0ffbe32c970914241fe2d7c154cb42cf9f4762d85`.
+Experiment delta: tests +110 / -0; production/public API zero. Repository
+delta from this experiment is zero. This proves original recoverable-custody
+loss, not a fixed representation or recovery of unavailable values destroyed
+inside the panicked task. A replacement must preserve ambient actor outcome,
+exact returned events and actual failure provenance, then prove the remaining
+work's disposition and join barrier. DG-TASK remains open.
+
+
+Independent original-evidence review: `/root/contract_inventory`, which authored
+neither observation nor custody experiment, inspected both patches, all
+positive/failed debug/release logs and the unchanged lock. It confirms the
+custody claim against patch
+`9a84c0c153c208dc648ae7c0ffbe32c970914241fe2d7c154cb42cf9f4762d85`
+and instrumented local source
+`f1c5ad61fc6c4706d3f675927c34c3539cd49c8ebca2b62200f47d6ea80b3018`.
+Sorting proves the complete inventory and exactly-once destruction, not
+chronological drop order. This review certifies research evidence only;
+DG-TASK remains open with no replacement candidate accepted.
+
+
+### Ordinary-Rust custody comparison and selected failure law
+
+The isolated comparison at
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-capability-retention-ftl9frah`
+adds only a 204-line cfg(test) module. Candidate routines consume the actual
+JoinSet and exhaustively reconstruct the current LocalResidual and
+ActorExecutionOutcome alternatives, returning ordinary products of exact
+outcome and `Vec<JoinError>`. No named wrapper or public type is introduced.
+The positive witness includes two panics, one cancellation, first and later
+returned events, final Behavior, accepted control/user messages and descendant
+terminal custody. It replays twice; no witnessed value drops before the
+consumer releases custody, and every move-only value then drops exactly once.
+The concrete retained settlement collection is empty in this comparison, so
+this test does not prove a nonempty settlement payload.
+
+From the isolated directory, both commands exit zero with one passing test:
+
+```sh
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked -p bombay-rs --lib capability_retention_comparison -- --nocapture --test-threads=1
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --locked --release -p bombay-rs --lib capability_retention_comparison -- --nocapture --test-threads=1
+```
+
+Patch SHA-256:
+`e6ebb575e509aabcecab274d380ac4733275c90cb4de2a31d15233c30c97fc35`;
+candidate local.rs SHA-256:
+`e00f4fe747793787083396f191ed1fd3006fa8fd06d33c378095afc9dcebcaef`.
+Scratch delta: tests +204 / -0; production/public types zero. Retained
+repository delta from the experiment: zero. These test-local alternatives
+prove feasibility, not integrated runtime or public-consumer behavior.
+
+The user selected the core capability-failure law on 2026-10-02: **preserve
+the complete actor outcome and all available task failures in a typed result,
+and join remaining capability work before returning**. Noncooperative work
+may keep that join pending indefinitely. Values destroyed inside a panicking
+task cannot be recovered. This selects the law, not the product spelling,
+public interface or gate representation. Live acquisition failure, child
+projection, caller disappearance, Entity ownership and receiverless-value
+disposition still need their own proofs or decisions. DG-TASK remains open.
+
+
+Caller-disappearance discussion: the user requested further explanation rather
+than selecting receiverless release. After separating arbitrary application
+work, retained cleanup ownership and complete-result custody, the user
+authorized proceeding with the **separate completion receiver comparison**.
+Cancelling execution need not surrender receipt of complete cleanup results.
+This is a preferred research direction, not acceptance of an API or final
+receiver-drop policy. Keeping results permanently would be an unbounded
+retention policy; silently releasing them would be an unselected discharge.
+Both must remain explicit. Application-work disposition and the exact
+root/children/Entity transfer equation remain open until proved and selected.
+
+
+Source-cancellation comparison rejected as currently justified: returning
+`SourceCustody::Retained` from offer_next solely because an owner request is
+pending would let the Driver reach ordinary cancellation acquisition. However,
+the locked variant means that no live source input remains and exact terminal
+custody is required; Driver retained products are not offered again. An
+unoffered live source suffix cannot silently be relabelled terminal-only
+custody. The variant's storage capacity is not authority for that semantic
+change. No such implementation or new Engine port is selected. A typed owning
+cancellation disposition would need independent contract evidence.

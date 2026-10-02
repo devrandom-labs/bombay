@@ -1,5 +1,13 @@
 # Exact observation relationship design evidence
 
+**Historical baseline:** The 0.17.0 selection, names and copied-algorithm replay
+below describe the 2026-09-29 research snapshot. Current EXEC selects Core/Actors
+0.20.0 and Macros 0.13.0; PRD section 16 and `verification.md` record the fresh
+baseline. Current polling uses `TerminationObservations` and ordered vector
+removal. The separate established-observation map/task still exists. Its races
+need witnesses against the actual compiled interpreter, not the old replay.
+No gate is accepted by this reconciliation.
+
 Date: 2026-09-29. Work package: `WP-OBSERVATION-DESIGN`. Decision gate:
 `DG-OBSERVATION`. Status: **research complete; gate not accepted**. This note
 contains a bounded design candidate and its falsifiers. It does not authorize
@@ -210,3 +218,165 @@ and the coordinator records its source ownership and module path. If direct
 actor polling cannot preserve a required typed event, timestamp, or custody
 law under the locked contracts, report the smallest failing program and exact
 owner dependency; do not add an unproven task/map fallback.
+
+
+## Observation identity research (2026-10-02)
+
+The user requested comparative research and pros/cons before selecting the
+cross-protocol cancellation law. In selected Actors 0.20, `ObservationId` is
+observer-local relationship evidence; `CancelObservation<P>` carries that ID
+plus a protocol marker. Its `Cancelled` report contains only the ID and marker,
+whereas `Stopped` contains the exact termination outcome and notification time.
+The marker alone does not establish that cross-protocol cancellation
+misclassifies a target. Verify whether it denotes the requesting event lane or
+constrains the registered target; no policy is inferred from storage convenience.
+
+[Erlang demonitor](https://www.erlang.org/doc/apps/erts/erlang.html#demonitor/1)
+uses the monitor reference. It prevents future DOWN admission and separately
+offers removal of an already queued notification. [Akka typed watching](https://doc.akka.io/libraries/akka-core/current/typed/actor-lifecycle.html#watching-actors)
+uses the target ActorRef; unwatch suppresses termination processing even if the
+notification was queued. These are distinct owning policies, not a universal
+cancellation law. Bombay's PRD explicitly preserves already admitted events.
+
+ID authority fits the current request and one observer-local namespace, but
+requires truthful acknowledgement semantics and cross-protocol tests. A
+protocol-matching law could prevent cross-lane cancellation, but requires a
+verified static owning contract and a truthful mismatch outcome; it cannot
+silently call a globally live ID absent. This paragraph records the
+pre-selection comparison; the later amendment below records the user-selected
+exact relationship law. Representation research remains open. Same-protocol
+original-race experiments are independent evidence.
+
+
+## Compiled original-race failures (2026-10-02)
+
+Both race laws now fail against the actual Bombay interpreter from baseline
+`2fccedf6eb636ac22143e7e01de7e784f96e2b4e`, in debug and optimized builds.
+The isolated snapshot is
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-observation-interpreter-o0yu2gdh`.
+Its unchanged lock hash is the PRD section-16 hash. The only feature difference
+is Tokio `rt-multi-thread` for the contested valid schedule. Test-only barriers
+pause the real interpreter between spawn and Started admission, and pause its
+real completion task between selection and ID removal. No copied algorithm
+stands in for the production authority.
+
+`completed_observation_admits_started_before_stopped` observes the complete
+trace `Stopped(41, Ok(Normal), at), Started(41)` rather than the required
+`Started(41), Stopped(41, Ok(Normal), at)`. The exact notification timestamp is
+retained and bounded by surrounding instants.
+
+`old_completion_cannot_consume_reused_observation` observes
+`Started(41), Cancelled(41), Started(41), Stopped(41, Ok(Normal), at),
+Rejected(41, Cancel, NotObserved)` rather than
+`Started(41), Cancelled(41), Started(41), Cancelled(41)`. The replacement target
+is a distinct captured endpoint of the same protocol. Releasing the old
+completion consumes the replacement registration and admits the old terminal.
+The live consumer accepted all notifications; settling the real capability
+tasks returned no rejected event.
+
+Each command below ran once for each named test, then again with `--release`:
+
+```sh
+nix develop -c cargo test --locked \
+  --manifest-path /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-observation-interpreter-o0yu2gdh/Cargo.toml \
+  -p bombay-rs --lib completed_observation_admits_started_before_stopped
+nix develop -c cargo test --locked \
+  --manifest-path /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-observation-interpreter-o0yu2gdh/Cargo.toml \
+  -p bombay-rs --lib old_completion_cannot_consume_reused_observation
+```
+
+All four compiled and exited 101 at the intended complete-trace equality
+assertion. These are original-defect failures, not compiler denials or a fix.
+Experiment patch SHA-256:
+`0769a59d268ca3dea5f3f552ca0f55919ca99384600aa823f258ee468b9bbb22`.
+Instrumented interpreter SHA-256:
+`089481674f5b8dda7e4de66707e1e278b990c1e108e58929d6e7eb896a9c69c7`.
+Isolated patch delta: two files, +159 / -3; no repository production/test or
+public-API change. Temporary hooks are not a selected runtime interface.
+A repaired candidate, full operation-table witnesses and independent review
+remain required before DG-OBSERVATION can be accepted.
+
+
+## Selected authority law and owning prerequisite (2026-10-02)
+
+The user selected cancellation of the **exact relationship**, with target
+protocol checked statically and acknowledgement routing separate from that
+authority. This includes distinguishing an old cancellation from a newer
+registration that reused its numeric ID and protocol. See the visible PRD
+section-16 amendment. This is product-law selection, not DG acceptance.
+
+The locked CancelObservation request has only a public ObservationId and a
+protocol marker. Same-protocol old/new requests are indistinguishable. Fixing
+the independent-task race through single actor polling cannot supply missing
+request authority. The owning Behavior Actors contract must first express the
+selected law, with verified producers, receipts, consumers and version edges.
+No specific token or generation representation is accepted.
+
+The ordinary actor-polling comparison against the old ID-authority law is
+frozen at
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-observation-polling-10_5pz_x`.
+It compiles with no new public type or bound, removes the separate map/task,
+and preserves acquisition order. Seven new complete-trace tests, five existing
+observation tests and one exact start/cancel witness pass in both profiles.
+Its ID-only cancellation fails eligibility for the newly selected authority
+law and is not retained. Patch SHA-256:
+`beead413a364319d8c8247216e56b73ed09179269bc7b7aa5b8144661cd9f198`.
+Isolated production +79 / -86 / net -7; tests +559 / -2 / net +557;
+public API zero. Repository production/test delta zero. Complete command and
+candidate-review receipts remain required before any retention decision.
+
+Independent original-race evidence review: `/root/contract_inventory`, which did
+not author the race probe, inspected patch
+`0769a59d268ca3dea5f3f552ca0f55919ca99384600aa823f258ee468b9bbb22`,
+instrumented source
+`089481674f5b8dda7e4de66707e1e278b990c1e108e58929d6e7eb896a9c69c7`
+and all four logs. The reviewer confirms intended compiled trace failures with
+the selected unchanged lock. The global research hooks require separately
+filtered execution and are not parallel-safe retained tests. This is evidence
+review only; no candidate or DG-OBSERVATION gate is approved.
+
+
+### Ordinary-Rust exact-authority feasibility comparison
+
+The isolated comparison at
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-observation-authority-j8_mkbis`
+uses the selected Behavior/Actors rlibs and no new macro. Its candidate has a
+private fresh `Arc<()>` relationship identity compared by pointer identity,
+and a protocol-indexed authority containing that identity and numeric ID.
+Fresh issuance cannot recreate an existing identity; cloning preserves it.
+The identity remains allocated while any stale authority exists, preventing
+allocator address reuse from aliasing that authority. Cancellation requests
+carry the authority. Report alternatives preserve exact rejected start/cancel
+requests and the accepted cancellation request; termination retains relationship,
+outcome and timestamp. This is a feasibility comparison, not an upstream API
+implementation or an accepted naming/representation decision.
+
+Three pure identity/custody tests pass in each profile: repeated/stale
+cancellation, another observer with the same protocol/ID, and two protocols
+using the same ID. Wrong-protocol and numeric-forgery fixtures each fail with
+E0308 in both profiles. Tests use a small pure cancellation comparison, not
+Bombay's interpreter; they cannot establish integrated linearization or
+retirement. The separate compiled Bombay stale-request witness fails the
+selected law in both profiles even after the ID-only queue migration.
+
+Receipts: `opaque_authority.rs` SHA-256
+`c65c1ee25a8d6543263f37b432f60c6dfa6d0eee5ba02a80eaf116686f0bc31c`;
+exact eight pinned-Nix commands in `opaque-authority-commands.txt`, SHA-256
+`bd1e7ab3ae009cc3a15d6a158b6abee8d93efc27e7e73d17302a967d07233bac`.
+Both compilation commands exit zero, both test commands pass three tests, and
+the four denial commands exit one with the intended type mismatch. The
+compiled stale-request patch SHA-256 is
+`4f2c1c2d59ed6eccae4a0953a2c669db0aa7a38f24c8107460ddcac4f8301f79`;
+it adds 41 test lines to the frozen queue comparison and both runs exit 101
+at the intended conservation assertion.
+
+Scratch feasibility delta: prototype +48 / -0; embedded tests +92 / -0;
+denial fixtures +16 / -0; two new public types plus two replacement protocol types. Retained
+repository/upstream production, tests and public API delta: zero. These
+scratch types are not approved additions. The existing
+`TerminationMonitorWith`/`EstablishedTerminationTarget` consumers retain only
+a numeric ID and a Copy phase. They must also consume and retain the exact
+Started receipt and validate subsequent reports. A protocol-file-only
+upstream proposal would omit required consumers and is rejected as incomplete.
+Full ordinary-Rust alternatives, interface/ownership review and concrete
+upstream scope remain required. DG-OBSERVATION remains open.

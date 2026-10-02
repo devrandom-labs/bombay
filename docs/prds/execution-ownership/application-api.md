@@ -220,3 +220,52 @@ caller types. No candidate is accepted until the signatures, errors, cancellatio
 custody and independent review required by DG-API/DG-TASK are recorded.
 
 Inspected runner source SHA-256: `0b8e2c1c475ab46c50c451082b8d67dadb0a138e1d3ee8ccca9129ee7b7f57c4`.
+
+
+## Fresh ordinary-Rust signature comparison (2026-10-02)
+
+An isolated archive of baseline `2fccedf6eb636ac22143e7e01de7e784f96e2b4e`
+at `/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-application-signatures-b8m4lay2`
+compares async inherent methods with an ordinary free `run_application` using
+the same concrete bounds and launch body. The exact lock remains unchanged.
+No trait, macro, erasure, runtime wrapper or new public type is required for
+these signatures. No production candidate is selected.
+
+The clean original stopped-root `.run().await` fixture fails only E0277:
+`Result<_, RunError<Never, _>> is not a future`. The isolated candidate changes
+seven runners to async methods awaiting the existing LaunchSystem futures.
+Compile checks then pass for inferred simple/root-work, advanced App,
+heterogeneous declared children, two Entity families and HTTP signatures.
+The free-function simple and heterogeneous-child callers also infer root and
+members; an ordinary result annotation supplies the terminal type.
+
+The family product candidate
+`(Result<(Output, Terminal), RunError<Root::Error, Terminal>>, Shutdowns)`
+also compiles with the same consumers and adds no public type. This establishes
+representation and inference only; it does not select cancellation, panic,
+family-failure or receiverless-value policy.
+
+Commands ran in the isolated workspace through the pinned shell:
+
+```sh
+nix develop -c cargo check --locked -p bombay-rs --test application_signature --target-dir /Users/joel/Code/devrandom/bombay/target
+nix develop -c cargo check --locked -p bombay-rs --features axum --test application_signature --test run_with --test axum --test application_terminal_custody --test entity_application --target-dir /Users/joel/Code/devrandom/bombay/target
+nix develop -c cargo check --locked -p bombay-rs --test application_protocol_denial --target-dir /Users/joel/Code/devrandom/bombay/target
+nix develop -c cargo check --locked -p bombay-rs --test application_role_denial --target-dir /Users/joel/Code/devrandom/bombay/target
+```
+
+Original first command exits 101; candidate first and combined positive command
+exit zero. The combined command also passes after direct family-product
+substitution. Wrong protocol exits 101 with E0631 (Root versus Other handle);
+wrong child role exits 101 with the intended missing concrete ProjectTerminal
+implementation. These are signature/static-denial evidence, not runtime tests.
+
+Patch SHA-256:
+`bda9172c2a5f0393263b6ea013f362cc64e3b5fe686123984cc5dce1ec96a21e`.
+The directory retains the patch, source hashes, receipt and compiler logs.
+Isolated delta: nine paths, production +49 / -57 / net -8;
+tests +188 / -69 / net +119; public types +0 / -0;
+one experimental public free function. Repository production/test delta zero.
+Complete task custody, executor convenience/defaults/features, truthful error
+ownership, HTTP consolidation, runtime traces, migration and independent
+review remain required. DG-API stays open.

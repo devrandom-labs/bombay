@@ -684,11 +684,14 @@ affected gate. Other agents must not code around it.
 
 ### 11.2 Working-tree and merge discipline
 
-The audited repository is already extensively dirty. Preserve its tracked and
-untracked work. Never reset, stash, clean, revert, or overwrite unrelated
-changes to obtain an easier baseline. A normal worktree created from HEAD does
-not contain this source snapshot; isolated experiments must explicitly receive
-the selected dirty-tree overlay and record its hashes.
+The original research baseline was extensively dirty. The 2026-10-02
+execution baseline at `2fccedf6eb636ac22143e7e01de7e784f96e2b4e` is clean.
+Preserve any tracked and untracked work present at subsequent checkpoints.
+Never reset, stash, clean, revert, or overwrite unrelated changes to obtain an
+easier baseline. A worktree from the selected clean commit contains the current
+source baseline. Experiments based on a later dirty tree must explicitly receive
+that selected overlay and record its hashes. The original dirty-overlay
+requirement applied to the historical research snapshot.
 
 The coordinator serializes integration, reruns dependent witnesses after a
 shared-interface change, and prevents two agents from defining the same task
@@ -889,7 +892,122 @@ production `+0 / -0 / net 0`, tests `+0 / -0 / net 0`, public API
 artifact test by removing obsolete exemptions. No EXEC runtime edit is retained.
 Before production work, the accepted decision record must provide the exact
 failing witness, signatures, expected files/line delta and public surface.
-The combined working tree already exceeds the repository's 15-file checkpoint;
-obtain explicit authorization for expanded production scope before those edits.
+That preceding documentation task exceeded 15 changed paths before its commit.
+The current execution baseline is clean; its cumulative EXEC change budget starts
+at zero. The proposed module migration still requires a measured expansion plan
+and explicit authorization before crossing a repository checkpoint.
 The documentation migration and its complete-tree measurement are recorded in
 [backlog status](../prd-backlog/status.md#retirement-change-record).
+
+
+## 16. Fresh execution baseline and sequencing amendment (2026-10-02)
+
+The user started the EXEC delivery goal on `exec-prd-backlog` at
+`2fccedf6eb636ac22143e7e01de7e784f96e2b4e`. Initial tracked and untracked
+working-tree delta was empty. All existing local-runtime fixes remain in the
+baseline. The exact lock SHA-256 is
+`df9acbe4e947538ce4e8ec979243210c665a4dd7710bc018d28c269af2ada81e`;
+selection remains the section-15 dependency set, with the sole Timers patch.
+The complete Behavior instructions were read from the exact release object
+`804b2bf25325a523884ec49d8a4ae6d2d2b6e9da`, fetched from its owning repository.
+No dependency was changed.
+
+Baseline manifest: 344 tracked and untracked files, individually SHA-256 hashed,
+with an empty binary diff, captured at
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-exec-baseline-1h6higml/manifest.json`.
+Manifest SHA-256:
+`1457dc847f5e4f9ac8883a92c06a68dda8b36ff17d4b24821a22578d2fd51958`.
+This local evidence path is a research receipt, not a portable acceptance gate.
+
+### User-selected implementation order
+
+The user resolved the conflict between section 11's layout-first sequence and
+AGENTS.md's blocker-first containment rule: **fix and verify semantic blockers
+before module extraction**. This explicitly supersedes the layout-first
+prerequisites in section 11 for WP-TASK, WP-OBSERVATION, WP-SHUTDOWN and
+WP-APPLICATION. Each semantic edit still requires its accepted, independently
+reviewed decision record, original-defect witness, change record and budget.
+WP-LAYOUT follows focused debug/release semantic verification and requires the
+accepted DG-MODULES map, differential baseline and expanded-surface approval.
+No acceptance condition is removed. Until extraction, one integrator owns all
+shared production files; research agents have no repository-write authority.
+
+### Current-source reconciliation
+
+- Root, child and Entity already share local startup construction. Active
+  startup/finish abandonment regressions preserve the ARC-011 fixes; dated
+  ignored-test descriptions do not identify current defects.
+- The actor task already settles its activation tasks. A projection task's
+  independent cleanup-progress premise in the dated record is obsolete;
+  removing it still requires origin, panic, custody and timing evidence.
+- `OccurrenceBindings`, `LocalAddresses` and `FactState` are already absent.
+  `TerminationObservations` owns its vector directly and uses ordered removal.
+  No new deletion credit can be claimed for these historical candidates.
+- Capability tasks have three current production spawn sites: worker activation,
+  worker preparation and established observation. Migrating observation alone
+  cannot justify deleting capability-task authority.
+- Static shutdown is already realized by typed root lifecycle authority and
+  Behavior 0.20's behavior-indexed installed actor product. The dated upstream
+  shutdown-impossibility finding does not apply to the current selected API.
+- Established observation still uses a separate ID map and task.
+  [Compiled original-race witnesses](execution-ownership/observation.md#compiled-original-race-failures-2026-10-02)
+  now reproduce Started-order and stale-ID removal failures in debug and
+  optimized builds. The old copied-algorithm replay is not their evidence.
+- Timers already uses one directly owned queue, without the historical shared
+  mutex view. Preserve its current borrowing and generation laws.
+- Seven owned current-thread runner constructions and separate HTTP startup
+  remain. Entity shutdown results are still dropped on ordinary root failure.
+
+All eight gates remain open. No source audit, preservation test, recommendation
+or user sequencing answer constitutes gate acceptance.
+
+### Open research and user decisions
+
+The user requires correctness and robustness at every core boundary: preserve
+as much exact information as possible, with explicit policy only at a higher
+owning layer. No compatibility argument can justify accidental typed-fact
+loss or a result that says something different from the proven event.
+
+DG-TASK: the first source-cancellation question was premature. The standard
+`SourceAdmission` synchronously enqueues the exact control event before returning
+acceptance; its existing direct-poll witness proves that event is ready. An
+admitted source is not thereby an indefinitely pending external operation.
+Research must establish the reachable boundary first: backpressured delivery
+interpretation, transitive source progression, or post-Driver capability
+settlement. Current `next_source -> None` still means source closure and cannot
+silently mean owner cancellation. No Engine port change is selected or presumed
+necessary. The user asked for further research rather than selecting that
+initially framed alternative.
+
+Caller disappearance also needs a researched ownership equation: arbitrary work
+future disposition, receiverless exact values, and who progresses root/child and
+Entity cleanup. Capability-task panic currently drops typed residual custody. The user
+selected the core law: preserve the complete actor outcome and all available
+task failures in a typed result, joining remaining capability work before
+returning. Noncooperative work may keep the join pending indefinitely; values
+destroyed inside a panicking task cannot be recovered. The ordinary-Rust
+comparison and original loss are recorded in task-custody.md. Representation,
+live acquisition, projection and public interfaces remain independently gated.
+This decision does not select caller-drop or receiverless-value disposition.
+
+DG-OBSERVATION product-law amendment: after the comparative explanation, the
+user selected **exact observation-relationship cancellation authority, with its
+target protocol statically checked and acknowledgement routing separate from
+authority**. A cancellation from an old relationship cannot consume a newer
+relationship that reuses the numeric ID, even when the protocol is the same.
+Protocol matching alone is insufficient. This strengthens the explicit
+cancellation/static-denial witnesses; it selects no implementation or new type.
+
+The locked request contains only a public numeric ObservationId and a protocol
+marker. It cannot distinguish those same-protocol old/new cancellation requests.
+DG-OBSERVATION therefore has an owning-contract prerequisite: a verified
+Behavior Actors relationship-authority contract, including its producers,
+receipts, consumers and version relationship. The ID-only actor-polling
+candidate remains comparison evidence and cannot be retained for the selected
+law. Prepare the smallest ordinary-Rust comparison and exact upstream scope;
+no token, generation, registry or new observation primitive is presumed.
+Dependent production work remains blocked; independent EXEC research continues.
+
+Fresh command results and this stage's complete delta are recorded in
+[verification](execution-ownership/verification.md). This stage changes
+only documentation, adds no public type and authorizes no production edit.
