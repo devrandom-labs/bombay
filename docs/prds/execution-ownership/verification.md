@@ -106,9 +106,9 @@ are excluded. This verifies the prerequisite defect, not an accepted correction.
 
 [Single-owner retirement-cause review](task-custody.md#single-owner-retirement-cause-review-2026-10-02)
 records conditional independent review of the 18-path isolated candidate,
-workspace debug/optimized preservation and its standalone generic inference
-cost. Source-stage imports, documentation and inversion receipts remain required
-before retaining it; capability-failure production and full DG-TASK remain open.
+final source-only profile/inversion evidence and its standalone generic inference
+cost. Reviewed drafts cover the port migration; integrated workspace verification,
+capability-failure production and full DG-TASK remain open.
 
 ## Complete change measurement
 
@@ -122,6 +122,6 @@ inherited tracked or untracked delta. The measured stage delta follows.
 production: +0 / -0 / net 0
 tests:      +0 / -0 / net 0
 public API: +0 types / -0 types
-documentation: +1411 / -11 / net 1400
+documentation: +1422 / -11 / net 1411
 changed tracked and untracked paths: 9
 ```

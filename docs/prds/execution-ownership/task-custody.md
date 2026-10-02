@@ -564,32 +564,52 @@ to its causal position before retirement. Public ActorRetirement continues to
 separate exact OwnerCancelled from ordinary Completed with `Completion<Never>`.
 No new actor policy, capability map or coarse generic policy is introduced.
 
-Frozen patch `single-owner-retirement.patch` SHA-256
-`880d41d5855dd3be415f3d9809f7640e1a55efd54c5dfaa2b63db6bf989bdbb8`.
-Receipt SHA-256
-`3bc185a0b1eaf3dfc5c7b298bf7410f365edf60fa8836472d4907ecf5d1032ed`.
-Both reside in the previously recorded capability-retention-ftl9frah directory.
-The candidate covers 18 canonical paths within the authorized 38-path stage:
-production +224 / -174 / net +50; tests +1266 / -58 / net +1208;
-public types +0 / -0. These are isolated measurements, not retained changes.
+The final source-only patch `source-candidate.patch` has SHA-256
+`770d29797287485243e6b169480d7b03c6d80103772e5396b80117fa70fe8f08`;
+receipt SHA-256
+`676dfc1e686c85fb0e0d0614216bbf3556962362683b9d9750580aafd371f854`.
+Both reside in the previously recorded capability-retention-ftl9frah directory;
+`source-candidate/` contains the frozen source. It covers 18 canonical paths
+within the authorized stage: production +239 / -175 / net +64;
+tests +891 / -63 / net +828; public types +0 / -0.
+These are isolated measurements; no production correction is retained.
 
 Author `/root/task_custody_research`; independent reviewer
-`/root/observation_research` verified the frozen patch, receipt and all 18 source
-hashes. Fresh private-directory debug and optimized `owner_retirement` runs
-pass two tests each. They exercise actual ordinary/source acquisition and
-preserve the exact actor state, admitted receipt, unoffered second schedule,
-remaining lanes and lease retirement. Coarse publication is Cancelled; the
-public outcome is exact OwnerCancelled. The clean canonical workspace passes
-in both profiles. An earlier closure check scanned historical research files
-inside another temporary workspace; that failure is not semantic acceptance
-evidence and does not justify weakening the repository scanner.
+`/root/observation_research` verified every snapshot and clean-stage source hash,
+all seven verification logs and the four inversion cohorts. The final fixture
+adds an observational `Step::Continue` assertion to the already checked complete
+nonempty source settlement. Its focused source-retirement test passes once in
+each profile, and strict workspace/all-target Clippy passes after that addition.
+The preceding candidate passed all 228 Bombay library tests in both profiles
+and formatting. Earlier full-workspace results belong to a superseded candidate,
+not this final freeze; integrated workspace verification remains required.
 
-The reviewer recommends conditional acceptance of this narrow subdecision,
-subject to module-scope Completion imports, truthful acquisition-port/current
-documentation and reproducible inversion patches/hashes. It approves no full
-DG-TASK gate. Earlier failure-conservation tests use a test-only alternate
-settler; production capability failure remains unresolved. Caller cancellation,
-Entity cleanup and unread request disposition remain separate open requirements.
+The witnesses exercise ordinary acquisition, a real ScheduleAfter source with
+an admitted receipt and unoffered remainder, jointly ready mailbox/local facts,
+and cancellation while retaining the same previously pending acquisition future.
+They preserve exact move-only state and events, every settlement lane, lease
+retirement, exact OwnerCancelled projection and coarse Cancelled publication.
+The original unbiased mailbox/local arbitration is preserved inside an outer
+owner-request boundary. A prior three-way biased comparison incorrectly favored
+the mailbox; that candidate was rejected rather than changing XO-36.
+
+Inversion receipt SHA-256
+`afe47abe795c6ba25f89928ef913866cab6fc7b94c533ceb30c5c020f110df8a`
+authenticates compiled debug and optimized failures for omitted owner acquisition,
+the original recurring source chain, false Exhausted classification and false
+public cancellation projection. Each fails its intended law. Those runs precede
+only the final additional observational assertion; no mutant remains in the
+candidate. Truthful Driver/runtime drafts and the public-interface audit were
+independently reviewed, but the changed acquisition contract is not yet current
+repository guidance.
+
+The independent review accepts the narrow acquired-request conservation and
+source-arbitration evidence conditionally. It approves no full DG-TASK gate.
+Required retention conditions include the recorded compatibility cost, cumulative
+surface checks, integrated verification and the remaining design-gate conditions.
+Capability-failure production, caller cleanup, Entity cleanup and the selected
+unread-request law remain unimplemented. Earlier test-only alternate settlers
+cannot establish those production laws.
 
 Source compatibility cost: the generic Never default does not infer an
 unannotated standalone `let completion = Completion::Stopped`; an actual
@@ -597,15 +617,6 @@ compiled probe reports E0282. `let completion: Completion = Completion::Stopped`
 or a type inferred from Driver output provides the request type. This cost
 must be judged explicitly before interface retention, rather than hidden by
 the default or treated as architectural necessity from compiler output.
-
-Coordinator review found an additional retention blocker in the isolated
-candidate: the original source acquisition selects without bias between inbox
-control and interpreter-local events. The candidate's three-way biased select
-gives inbox control strict priority over local events, beyond the selected
-owner-request priority. That changes XO-36 without an accepted policy amendment.
-Preserve the original two-source arbitration inside the owner-request boundary;
-verify ownership and cancellation safety before updating the narrowed review.
-Earlier conditional acceptance does not approve this scheduling change.
 
 ## Unread owner request conservation (2026-10-02)
 
