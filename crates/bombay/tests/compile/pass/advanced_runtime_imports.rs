@@ -9,16 +9,17 @@ impl Protocol for Orders {
 }
 
 #[derive(ActorSpaces)]
-struct LocalActors {
+struct OrderSpaces {
+    #[actor_space(Orders)]
     orders: ActorSpace<Orders>,
 }
 
 fn require_host<T: Hosts<Orders>>(_: &T) {}
 
 fn main() {
-    let actors = LocalActors {
+    let spaces = OrderSpaces {
         orders: ActorSpace::new(),
     };
-    require_host(&actors);
-    let _ = App::new((), actors);
+    require_host(&spaces);
+    let _ = App::new((), spaces);
 }

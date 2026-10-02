@@ -1,11 +1,11 @@
 //! Native binding from Entity lifecycle effects to Bombay incarnations.
 
 use core::future::Future;
-use std::sync::{Arc, Mutex, PoisonError, Weak};
+use std::sync::Arc;
 
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
-    ChildOccurrenceProduct, ClassifySettlement, Here, InjectEvent, Never, Protocol,
+    ChildOccurrenceProduct, ClassifySettlement, Here, Ingress, InjectEvent, Never, Protocol,
 };
 use behavior_actors::{ShutdownRejection, ShutdownRequested};
 use communication::Config;
@@ -14,12 +14,10 @@ use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application_runtime::{ApplicationCapabilities, NoParent, StructuralOrigins};
-use crate::child_bindings::{
-    OccurrenceBindings, RetireChildTasks, RuntimeChildBindings, RuntimeChildSpaces,
-};
+use crate::child_bindings::{ChildBindings, RetireChildTasks, RuntimeChildBindings};
 use crate::interpret::{ActionInterpreter, ActionSettlementOf};
 use crate::launch::{OwnedActor, SpawnError, spawn_owned_entity_with};
-use crate::local::{ActorRef, CommitActions};
+use crate::local::{ActorRef, CommitActions, request_actor_shutdown};
 use crate::topology::{HostedActorSpaces, Hosts};
 
 use super::family::{EntityCapacity, EntityDefinition, EntityMetricState};
@@ -34,7 +32,7 @@ type NativeEntityCapabilities<B, N, Terminal> = ApplicationCapabilities<
     B,
     HostedActorSpaces<Arc<N>>,
     NoParent,
-    OccurrenceBindings<B, Terminal>,
+    ChildBindings<B, Terminal>,
     StructuralOrigins<<B as BehaviorBase>::Base>,
 >;
 type NativeEntityInterpreter<B, N, Terminal> =
@@ -67,12 +65,10 @@ where
     B::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
     B::Sends: Send + 'static,
     BehaviorMessage<B>: Send + 'static,
-    <B::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal>>
-        + ChildOccurrenceProduct<RuntimeChildSpaces>
-        + Send
-        + 'static,
+    <B::Birth as BirthMode>::Child:
+        ChildOccurrenceProduct<RuntimeChildBindings<Terminal>> + Send + 'static,
     N: Hosts<B::Protocol> + Send + Sync + 'static,
-    OccurrenceBindings<B, Terminal>: Default + RetireChildTasks<Root = Terminal> + Send + 'static,
+    ChildBindings<B, Terminal>: Default + RetireChildTasks<Root = Terminal> + Send + 'static,
     NativeEntityInterpreter<B, N, Terminal>:
         CommitActions<B, Retired = Vec<Terminal>> + Send + 'static,
     ActionSettlementOf<B>: ClassifySettlement + Send + 'static,
@@ -90,7 +86,7 @@ where
             Config::new(USER_CAPACITY),
             address,
             behavior,
-            move |control, terminal_reports, timers, facts| {
+            move |control, terminal_reports, timers, observations| {
                 ActionInterpreter::new(ApplicationCapabilities::new_with_bindings(
                     crate::application_runtime::ApplicationCapabilityInputs {
                         address,
@@ -98,52 +94,15 @@ where
                         allocations,
                         control,
                         timers,
-                        facts,
+                        observations,
                         terminal_reports,
                     },
-                    OccurrenceBindings::<B, Terminal>::default(),
+                    ChildBindings::<B, Terminal>::default(),
                 ))
             },
         )
         .await
         .map_err(crate::launch::SpawnError::into_retirement)
-    }
-}
-
-pub(crate) struct EntityTaskOwner {
-    tasks: Mutex<Vec<tokio::task::JoinHandle<()>>>,
-}
-
-impl EntityTaskOwner {
-    fn new() -> Self {
-        Self {
-            tasks: Mutex::new(Vec::new()),
-        }
-    }
-
-    fn track(&self, task: tokio::task::JoinHandle<()>) {
-        let mut tasks = self.tasks.lock().unwrap_or_else(PoisonError::into_inner);
-        tasks.retain(|task| !task.is_finished());
-        tasks.push(task);
-    }
-
-    pub(crate) async fn join(&self) {
-        let tasks = {
-            let mut tasks = self.tasks.lock().unwrap_or_else(PoisonError::into_inner);
-            tasks.drain(..).collect::<Vec<_>>()
-        };
-        for task in tasks {
-            drop(task.await);
-        }
-    }
-}
-
-impl Drop for EntityTaskOwner {
-    fn drop(&mut self) {
-        let tasks = self.tasks.get_mut().unwrap_or_else(PoisonError::into_inner);
-        for task in tasks.drain(..) {
-            task.abort();
-        }
     }
 }
 
@@ -182,7 +141,6 @@ where
     hydrations: Arc<Semaphore>,
     residents: Arc<Semaphore>,
     metrics: Arc<EntityMetricState>,
-    tasks: Weak<EntityTaskOwner>,
 }
 
 impl<D> Clone for BombayEntityRuntime<D>
@@ -197,7 +155,6 @@ where
             hydrations: Arc::clone(&self.hydrations),
             residents: Arc::clone(&self.residents),
             metrics: Arc::clone(&self.metrics),
-            tasks: self.tasks.clone(),
         }
     }
 }
@@ -208,21 +165,18 @@ pub(crate) fn bombay_entity_runtime<D>(
     allocations: ApplicationAddresses,
     capacity: EntityCapacity,
     metrics: Arc<EntityMetricState>,
-) -> (BombayEntityRuntime<D>, Arc<EntityTaskOwner>)
+) -> BombayEntityRuntime<D>
 where
     D: EntityDefinition,
 {
-    let tasks = Arc::new(EntityTaskOwner::new());
-    let runtime = BombayEntityRuntime {
+    BombayEntityRuntime {
         definition,
         actors,
         allocations,
         hydrations: Arc::new(Semaphore::new(capacity.concurrent_hydrations().get())),
         residents: Arc::new(Semaphore::new(capacity.residents().get())),
         metrics,
-        tasks: Arc::downgrade(&tasks),
-    };
-    (runtime, tasks)
+    }
 }
 
 impl<D> LocalEntityRuntime<D::Id, BehaviorMessage<D::Behavior>> for BombayEntityRuntime<D>
@@ -234,12 +188,15 @@ where
     type Endpoint = ActorRef<<D::Behavior as Behavior>::Protocol>;
     type Lease = NativeEntityLease<D>;
     type ActivationError = EntityActivationError<D::HydrationError, D::Behavior, D::Terminal>;
+    type Task = tokio::task::JoinHandle<()>;
+    type TaskFailure = tokio::task::JoinError;
 
-    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) {
-        let Some(owner) = self.tasks.upgrade() else {
-            return;
-        };
-        owner.track(tokio::spawn(task));
+    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
+        tokio::spawn(task)
+    }
+
+    async fn join(task: &mut Self::Task) -> Result<(), Self::TaskFailure> {
+        task.await
     }
 
     async fn activate(
@@ -274,13 +231,14 @@ where
                 return Err(EntityActivationError::Launch(failure.into_retirement()));
             }
         };
-        let actor = Arc::clone(&self.actors)
+        let mut actor = Arc::clone(&self.actors)
             .launch_entity(address, self.allocations.clone(), behavior)
             .await
             .map_err(|retirement| {
                 self.metrics.launch_failed();
                 EntityActivationError::Launch(retirement)
             })?;
+        actor.acknowledge_binding();
         self.metrics.activation_succeeded();
         Ok(Activated {
             endpoint: actor.actor.clone(),
@@ -327,7 +285,7 @@ where
                 .forced_retirement(entity_id.clone(), activation_id, failure);
         }
         let actor = lease.actor.actor.clone();
-        match actor.request_shutdown() {
+        match request_actor_shutdown(&actor, &lease.actor.control, Ingress::new()) {
             Ok(())
             | Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped) => {}
         }
@@ -339,5 +297,84 @@ where
             .retired(entity_id, activation_id, retirement);
         self.metrics.retired();
         drop(lease.resident);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use behavior_actors::StopOnShutdown;
+
+    use crate::actors::ActorExt;
+    use crate::entity::{AdmissionFailure, DrainFailure};
+    use crate::launch::ActorSpace;
+
+    struct JoinedActor;
+
+    #[crate::actor(message = Never)]
+    impl JoinedActor {}
+
+    struct JoinDefinition;
+
+    impl EntityDefinition for JoinDefinition {
+        type Id = u64;
+        type Behavior = StopOnShutdown<JoinedActor>;
+        type Hosts = ActorSpace<JoinedActor>;
+        type HydrationError = Never;
+        type Terminal = Never;
+
+        async fn hydrate(
+            &self,
+            _: EntityId<Self::Id>,
+        ) -> Result<Self::Behavior, Self::HydrationError> {
+            Ok(JoinedActor.stop_on_shutdown())
+        }
+
+        fn activation_failed(
+            &self,
+            _: EntityId<Self::Id>,
+            _: ActivationId,
+            _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
+        ) {
+            unreachable!("the join regression never activates an entity")
+        }
+
+        fn admission_refused(
+            &self,
+            _: EntityId<Self::Id>,
+            _: AdmissionFailure<BehaviorMessage<Self::Behavior>>,
+        ) {
+            unreachable!("the join regression never admits a command")
+        }
+
+        fn forced_retirement(&self, _: EntityId<Self::Id>, _: ActivationId, _: DrainFailure) {
+            unreachable!("the join regression never retires an entity")
+        }
+
+        fn retired(
+            &self,
+            _: EntityId<Self::Id>,
+            _: ActivationId,
+            _: ActorRetirement<Self::Behavior, Self::Terminal>,
+        ) {
+            unreachable!("the join regression never retires an entity")
+        }
+    }
+
+    #[tokio::test]
+    async fn native_join_preserves_a_panicked_task_failure() {
+        let mut task = tokio::spawn(async {
+            panic!("the native lifecycle task fails");
+        });
+        let outcome =
+            <BombayEntityRuntime<JoinDefinition> as LocalEntityRuntime<u64, Never>>::join(
+                &mut task,
+            )
+            .await;
+
+        let Err(failure) = outcome else {
+            panic!("the native join must preserve the failed task")
+        };
+        assert!(failure.is_panic());
     }
 }

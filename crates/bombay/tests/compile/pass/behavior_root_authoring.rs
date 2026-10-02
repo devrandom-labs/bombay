@@ -25,7 +25,7 @@ struct Counter {
 #[bombay::behavior::behavior(
     addr = MailAddr,
     message = u8,
-    sends = { replies: Vec<Delivery<Replies>> },
+    sends = pub(crate) { replies: Vec<Delivery<Replies>> },
 )]
 #[allow(
     clippy::needless_pass_by_value,
@@ -66,6 +66,7 @@ struct Parent;
     addr = MailAddr,
     message = Never,
     births = { child: Child },
+    creation_settlements = retain_for_retirement,
 )]
 #[allow(
     clippy::needless_pass_by_value,

@@ -1,0 +1,5 @@
+error[E0599]: no method named `into_declared_root` found for struct `ChildOrigin<Owner, Role>` in the current scope
+ --> tests/compile/fail/child_origin_cannot_be_root.rs:7:11
+  |
+7 |     child.into_declared_root()
+  |           ^^^^^^^^^^^^^^^^^^ method not found in `ChildOrigin<Parent, Role>`

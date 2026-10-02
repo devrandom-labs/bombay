@@ -1,5 +1,5 @@
 use bombay::behavior::{ChildRole, Never};
-use bombay::ActorOrigin;
+use bombay::ChildOrigin;
 
 struct Worker;
 
@@ -14,14 +14,15 @@ struct Parent;
         primary: Worker,
         replica: Worker,
     },
+    creation_settlements = retain_for_retirement,
 )]
 impl Parent {}
 
 type PrimaryPosition = <ParentChildrenPrimary as ChildRole<Parent>>::Position;
 
 fn change_role(
-    origin: ActorOrigin<Parent, PrimaryPosition>,
-) -> ActorOrigin<Parent, ParentChildrenReplica> {
+    origin: ChildOrigin<Parent, PrimaryPosition>,
+) -> ChildOrigin<Parent, ParentChildrenReplica> {
     origin.into_declared_child::<ParentChildrenReplica>()
 }
 

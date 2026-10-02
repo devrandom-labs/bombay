@@ -1,0 +1,193 @@
+--- a/crates/bombay/tests/fifo_pool_recovery.rs
++++ b/crates/bombay/tests/fifo_pool_recovery.rs
+@@ -4,16 +4,16 @@
+ use std::sync::atomic::{AtomicUsize, Ordering};
+ 
+ use behavior_actors::atomic::{
+-    ActivationPolicy, ActorDrainPolicy, AssignedReturnReason, Assignment, BacklogCapacity,
+-    DiagnosticDisposition, FifoCommand, FifoOutcome, FifoPool, ImmediateActivation, Interruption,
+-    OrderedRoles, PoolFailureReaction, PoolRecovery, RestartLimit, RestartRelease, SubmissionId,
+-    WorkerSource, WorkerSubmission, fifo, pool_worker,
++    ActivationPolicy, ActorDrainPolicy, AdmissionRejection, AssignedReturnReason, Assignment,
++    BacklogCapacity, DiagnosticDisposition, FifoCommand, FifoOutcome, FifoPool,
++    ImmediateActivation, Interruption, OrderedRoles, PoolFailureReaction, PoolRecovery,
++    RestartLimit, RestartRelease, SubmissionId, WorkerSource, WorkerSubmission, fifo, pool_worker,
+ };
+ use behavior_actors::{Exit, StopOnShutdown};
+ use bombay::behavior::{Actions, ChildHead, MessageProtocol, Never};
+ use bombay::prelude::{ActorOrigin, ActorRetirement, Completion, MailAddr, TerminalProjection};
+ use bombay::{ActorSpace, ActorSpaces, App, WorkerPreparationSource, WorkerPreparationStart};
+-use tokio::sync::Notify;
++use tokio::sync::{Notify, oneshot};
+ 
+ #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+ enum WorkerRole {
+@@ -55,6 +55,12 @@
+ struct RecoveryWorkshop {
+     preparations: Arc<AtomicUsize>,
+     prepared: Arc<Notify>,
++    release: PreparationRelease,
++}
++
++enum PreparationRelease {
++    Immediate,
++    Await(oneshot::Receiver<()>),
+ }
+ 
+ impl WorkerSource<WorkerRole, RecoverableWorker, ImmediateActivation> for RecoveryWorkshop {
+@@ -72,6 +78,12 @@
+         assert_eq!(*role, WorkerRole::Primary);
+         self.preparations.fetch_add(1, Ordering::SeqCst);
+         self.prepared.notify_one();
++        match &mut self.release {
++            PreparationRelease::Immediate => {}
++            PreparationRelease::Await(release) => {
++                release.await.expect("the test releases worker preparation");
++            }
++        }
+         WorkerPreparationStart::Submitted(WorkerSubmission::immediate(RecoverableWorker {
+             availability: WorkerAvailability::RemainAvailable,
+         }))
+@@ -126,6 +138,7 @@
+     prepared: &Arc<Notify>,
+     initial_availability: WorkerAvailability,
+     interruption: Interruption,
++    release: PreparationRelease,
+ ) -> Pool {
+     let roles =
+         OrderedRoles::new(WorkerRole::Primary, []).expect("one role is a valid worker roster");
+@@ -141,6 +154,7 @@
+             RecoveryWorkshop {
+                 preparations: Arc::clone(preparations),
+                 prepared: Arc::clone(prepared),
++                release,
+             },
+             RestartLimit::new(1, Duration::from_secs(30)),
+             RestartRelease::immediate(),
+@@ -163,6 +177,7 @@
+         &prepared,
+         WorkerAvailability::RetireAfterAssignment,
+         Interruption::Retry,
++        PreparationRelease::Immediate,
+     );
+     let spaces = RecoverySpaces {
+         root: ActorSpace::new(),
+@@ -261,6 +276,7 @@
+         &prepared,
+         WorkerAvailability::RetireWithoutCompletion,
+         Interruption::Retry,
++        PreparationRelease::Immediate,
+     );
+     let spaces = RecoverySpaces {
+         root: ActorSpace::new(),
+@@ -331,6 +347,7 @@
+         &prepared,
+         WorkerAvailability::RetireWithoutCompletion,
+         Interruption::Fail,
++        PreparationRelease::Immediate,
+     );
+     let spaces = RecoverySpaces {
+         root: ActorSpace::new(),
+@@ -418,6 +435,102 @@
+     assert_eq!(termination, Ok(Exit::Normal));
+     assert_eq!(preparations.load(Ordering::SeqCst), 1);
+     assert_recovered_pool_terminal(terminal);
++}
++
++#[test]
++fn shutdown_while_worker_source_is_held_avoids_replacement() {
++    let preparations = Arc::new(AtomicUsize::new(0));
++    let prepared = Arc::new(Notify::new());
++    let (release_preparation, release) = oneshot::channel();
++    let pool = recovery_pool(
++        &preparations,
++        &prepared,
++        WorkerAvailability::RetireAfterAssignment,
++        Interruption::Retry,
++        PreparationRelease::Await(release),
++    );
++    let spaces = RecoverySpaces {
++        root: ActorSpace::new(),
++        workers: ActorSpace::new(),
++        customers: ActorSpace::new(),
++    };
++    let (termination, terminal): (_, RecoveryTerminal) = App::new(pool, spaces)
++        .run_with(move |application| async move {
++            let interface = application.interface(application.root().established_recipient());
++            let mut caller = interface
++                .external::<CustomerProtocol>()
++                .expect("the customer is established");
++            let customer = caller.recipient();
++            caller
++                .send(
++                    interface.api(),
++                    FifoCommand::submit(SubmissionId::new(12), 8, customer.clone()),
++                )
++                .await
++                .expect("the first job reaches the pool");
++            let accepted = tokio::time::timeout(Duration::from_secs(5), caller.receive())
++                .await
++                .expect("the job is admitted")
++                .expect("the pool reports admission")
++                .message;
++            let (submission, job) = accepted
++                .into_accepted()
++                .unwrap_or_else(|_| panic!("the first outcome admits the job"));
++            assert_eq!(submission, SubmissionId::new(12));
++            let completed = tokio::time::timeout(Duration::from_secs(5), caller.receive())
++                .await
++                .expect("the first worker completes its job")
++                .expect("the customer receives completion")
++                .message;
++            let (completed_job, result) = completed
++                .into_completed()
++                .unwrap_or_else(|_| panic!("the completed outcome retains the job"));
++            assert_eq!(completed_job, job);
++            assert_eq!(result, 8);
++            tokio::time::timeout(Duration::from_secs(5), prepared.notified())
++                .await
++                .expect("the source begins replacement preparation");
++            caller
++                .send(interface.api(), FifoCommand::shutdown())
++                .await
++                .expect("shutdown is admitted while preparation is held");
++            caller
++                .send(
++                    interface.api(),
++                    FifoCommand::submit(SubmissionId::new(13), 9, customer),
++                )
++                .await
++                .expect("the later job is admitted while preparation is held");
++            let shutdown_response =
++                tokio::time::timeout(Duration::from_secs(1), caller.receive()).await;
++            release_preparation
++                .send(())
++                .unwrap_or_else(|()| panic!("the source still awaits release"));
++            let rejected = shutdown_response
++                .expect("shutdown must fold while preparation is held")
++                .expect("the pool returns the later job")
++                .message;
++            let (submission, payload, reason) = rejected
++                .into_rejected()
++                .unwrap_or_else(|_| panic!("the later job is rejected after shutdown"));
++            assert_eq!(submission, SubmissionId::new(13));
++            assert_eq!(payload, 9);
++            assert_eq!(reason, AdmissionRejection::ShuttingDown);
++            let lifecycle = application.lifecycle();
++            tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
++                .await
++                .expect("the pool finishes shutdown after the source returns")
++        })
++        .unwrap_or_else(|_| panic!("the pool drains after held preparation"));
++    assert_eq!(termination, Ok(Exit::Normal));
++    assert_eq!(preparations.load(Ordering::SeqCst), 1);
++    let RecoveryTerminal::Root { terminal, .. } = terminal else {
++        panic!("the root returns its terminal");
++    };
++    let ActorRetirement::Completed { descendants, .. } = terminal else {
++        panic!("the root completes its drain");
++    };
++    assert_eq!(descendants.len(), 1, "shutdown must suppress replacement");
+ }
+ 
+ fn assert_recovered_pool_terminal(terminal: RecoveryTerminal) {

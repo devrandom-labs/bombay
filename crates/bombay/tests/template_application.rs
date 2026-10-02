@@ -258,9 +258,7 @@ fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
     let mut direct = direct
         .initialize()
         .expect("the direct stack initializes through the owning wrappers");
-    assert!(fluent.actions.sends == direct.actions.sends);
-    assert_eq!(fluent.actions.creates.len(), direct.actions.creates.len());
-    assert_eq!(fluent.actions.become_, direct.actions.become_);
+    assert!(fluent.actions == direct.actions);
 
     let elapsed = TimerElapsed::new(TimerId(5), TimerGeneration(0));
     let fluent_elapsed = fluent
@@ -271,9 +269,7 @@ fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
         .behavior
         .on_path(elapsed)
         .expect("the direct stack accepts its exact timer generation");
-    assert!(fluent_elapsed.sends == direct_elapsed.sends);
-    assert_eq!(fluent_elapsed.creates.len(), direct_elapsed.creates.len());
-    assert_eq!(fluent_elapsed.become_, direct_elapsed.become_);
+    assert!(fluent_elapsed == direct_elapsed);
 
     let runtime = TimerRoot
         .with_stash(deliver_never)

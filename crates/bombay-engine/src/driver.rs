@@ -8,6 +8,7 @@
 //! routing, mailbox, scheduling, identity, retry, or machine-topology policy.
 
 use std::collections::VecDeque;
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use behavior::{
     Actions, Behavior, ClassifySettlement, Never, SettlementStatus, SourceCustody, Step, Stopped,
@@ -52,6 +53,9 @@ pub enum DriverError<B, A> {
     /// The Behavior rejected initialization or an event.
     #[error("behavior transition failed")]
     Behavior(#[source] B),
+    /// The synchronous pure initialization fold panicked before host commitment.
+    #[error("behavior initialization panicked")]
+    InitializationPanicked,
     /// The prepared environment rejected initialization commitment or publication.
     #[error("environment activation failed")]
     Activation(#[source] A),
@@ -63,14 +67,26 @@ pub enum DriverError<B, A> {
 enum SettlementTurn<S> {
     Offer(S),
     AwaitSource(S),
+    Retained(S),
 }
 
 impl<S> SettlementTurn<S> {
     fn into_settlement(self) -> S {
         match self {
-            Self::Offer(settlement) | Self::AwaitSource(settlement) => settlement,
+            Self::Offer(settlement)
+            | Self::AwaitSource(settlement)
+            | Self::Retained(settlement) => settlement,
         }
     }
+}
+
+fn next_progressing_settlement<S>(
+    settlements: &mut VecDeque<SettlementTurn<S>>,
+) -> Option<(usize, SettlementTurn<S>)> {
+    let index = settlements
+        .iter()
+        .position(|turn| !matches!(turn, SettlementTurn::Retained(_)))?;
+    settlements.remove(index).map(|turn| (index, turn))
 }
 
 enum ExecutionPhase {
@@ -104,26 +120,32 @@ where
 {
     let mut phase = ExecutionPhase::Initializing;
     loop {
-        let event = match settlements.pop_front() {
-            Some(SettlementTurn::Offer(settlement)) => {
+        let event = match next_progressing_settlement(settlements) {
+            Some((index, SettlementTurn::Offer(settlement))) => {
                 match environment.offer_next(settlement).await {
                     SourceCustody::Exhausted(_) => {}
+                    SourceCustody::Retained(settlement) => {
+                        settlements.insert(index, SettlementTurn::Retained(settlement));
+                    }
                     SourceCustody::Admitted(settlement) => {
-                        settlements.push_front(SettlementTurn::AwaitSource(settlement));
+                        settlements.insert(index, SettlementTurn::AwaitSource(settlement));
                     }
                     SourceCustody::Closed(settlement) => {
-                        settlements.push_front(SettlementTurn::Offer(settlement));
+                        settlements.insert(index, SettlementTurn::Offer(settlement));
                         return Err(DriverError::Settlement(SettlementFailure::SourceClosed));
                     }
                 }
                 continue;
             }
-            Some(SettlementTurn::AwaitSource(residual)) => {
-                settlements.push_front(SettlementTurn::Offer(residual));
+            Some((index, SettlementTurn::AwaitSource(residual))) => {
+                settlements.insert(index, SettlementTurn::Offer(residual));
                 environment
                     .next_source()
                     .await
                     .ok_or(DriverError::Settlement(SettlementFailure::SourceClosed))?
+            }
+            Some((_, SettlementTurn::Retained(_))) => {
+                unreachable!("retained settlements do not progress through source admission")
             }
             None => match phase {
                 ExecutionPhase::Initializing => {
@@ -144,12 +166,15 @@ where
         let interpretation = environment.apply(actions).await;
         let status = interpretation.settlement_status();
         settlements.push_front(SettlementTurn::Offer(interpretation.into_settlement()));
-        match decision {
-            ActionDecision::Stop => return Ok(Completion::Stopped),
-            ActionDecision::Continue => {}
-        }
-        if status == SettlementStatus::Corrupt {
-            return Err(DriverError::Settlement(SettlementFailure::Corrupt));
+        match (status, decision) {
+            (SettlementStatus::Corrupt, _) => {
+                return Err(DriverError::Settlement(SettlementFailure::Corrupt));
+            }
+            (SettlementStatus::Accepted | SettlementStatus::Rejected, ActionDecision::Stop) => {
+                return Ok(Completion::Stopped);
+            }
+            (SettlementStatus::Accepted | SettlementStatus::Rejected, ActionDecision::Continue) => {
+            }
         }
     }
 }
@@ -211,17 +236,28 @@ where
             environment,
         } = self;
         let mut behavior = behavior;
-        let initialized = match behavior::initialize(&mut behavior) {
-            Ok(initialized) => initialized,
-            Err(error) => {
-                let residual = environment.retire().await;
-                return DriverRetirement {
-                    behavior,
-                    residual,
-                    disposition: Err(DriverError::Behavior(error)),
-                };
-            }
-        };
+        // A partially mutated behavior is returned as terminal custody only;
+        // it is never resumed after unwinding through its pure fold.
+        let initialized =
+            match catch_unwind(AssertUnwindSafe(|| behavior::initialize(&mut behavior))) {
+                Ok(Ok(initialized)) => initialized,
+                Ok(Err(error)) => {
+                    let residual = environment.retire().await;
+                    return DriverRetirement {
+                        behavior,
+                        residual,
+                        disposition: Err(DriverError::Behavior(error)),
+                    };
+                }
+                Err(_) => {
+                    let residual = environment.retire().await;
+                    return DriverRetirement {
+                        behavior,
+                        residual,
+                        disposition: Err(DriverError::InitializationPanicked),
+                    };
+                }
+            };
         let initialization_decision = ActionDecision::from_step(initialized.become_);
         let (mut environment, interpretation) = match environment.activate(initialized).await {
             Ok(activated) => activated,
@@ -235,37 +271,27 @@ where
         };
         let initialization_status = interpretation.settlement_status();
         let initialization = interpretation.into_settlement();
-        let (disposition, settlements) = match initialization_decision {
-            ActionDecision::Stop => {
-                environment.publish();
+        let (disposition, settlements) = match (initialization_status, initialization_decision) {
+            (SettlementStatus::Rejected, _) => (
+                Err(DriverError::Settlement(SettlementFailure::Rejected)),
+                vec![initialization],
+            ),
+            (SettlementStatus::Corrupt, _) => (
+                Err(DriverError::Settlement(SettlementFailure::Corrupt)),
+                vec![initialization],
+            ),
+            (SettlementStatus::Accepted, ActionDecision::Stop) => {
                 (Ok(Completion::Stopped), vec![initialization])
             }
-            ActionDecision::Continue => match initialization_status {
-                SettlementStatus::Rejected => {
-                    environment.publish();
-                    (
-                        Err(DriverError::Settlement(SettlementFailure::Rejected)),
-                        vec![initialization],
-                    )
-                }
-                SettlementStatus::Corrupt => {
-                    environment.publish();
-                    (
-                        Err(DriverError::Settlement(SettlementFailure::Corrupt)),
-                        vec![initialization],
-                    )
-                }
-                SettlementStatus::Accepted => {
-                    let mut pending = VecDeque::from([SettlementTurn::Offer(initialization)]);
-                    let disposition =
-                        drive_active(&mut behavior, &mut environment, &mut pending).await;
-                    let settlements = pending
-                        .into_iter()
-                        .map(SettlementTurn::into_settlement)
-                        .collect();
-                    (disposition, settlements)
-                }
-            },
+            (SettlementStatus::Accepted, ActionDecision::Continue) => {
+                let mut pending = VecDeque::from([SettlementTurn::Offer(initialization)]);
+                let disposition = drive_active(&mut behavior, &mut environment, &mut pending).await;
+                let settlements = pending
+                    .into_iter()
+                    .map(SettlementTurn::into_settlement)
+                    .collect();
+                (disposition, settlements)
+            }
         };
         let residual = environment.retire(settlements).await;
         DriverRetirement {

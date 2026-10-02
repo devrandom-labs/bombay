@@ -4,20 +4,14 @@ use core::cmp::Ordering;
 use core::num::{NonZeroU64, NonZeroUsize};
 use core::ops::Add;
 
-use bombay_machine::{Decision, Reducer};
-
 mod inactive;
-mod machine;
 mod retiring;
+mod transition;
 
 use inactive::decide_inactive;
 use retiring::decide_retiring;
 
-pub use machine::{
-    LIFECYCLE_TOPOLOGY, LifecycleEdge, LifecycleMachine, LifecycleOutput, LifecyclePhase,
-    LifecycleTopologyError, LifecycleTrigger, TransitionEvidence, lifecycle_machine,
-    validate_lifecycle_topology,
-};
+pub use transition::{LifecycleEdge, LifecyclePhase, TransitionEvidence};
 
 /// Globally unique identity of one activation attempt and incarnation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -440,30 +434,22 @@ impl<C, E, L> Add for SlotEffectBatch<C, E, L> {
     }
 }
 
-/// Result of one deterministic entity-slot reduction.
-pub type SlotDecision<C, E, L> = Decision<EntitySlot<C, E, L>, SlotEffectBatch<C, E, L>>;
+/// Complete result of one deterministic entity-slot transition.
+#[must_use = "the successor, effects, and disposition must be retained"]
+#[derive(Debug)]
+pub struct SlotDecision<C, E, L> {
+    /// Successor slot state.
+    pub state: EntitySlot<C, E, L>,
+    /// Ordered effects, including exact returned commands and leases.
+    pub effects: SlotEffectBatch<C, E, L>,
+    /// Classification selected by the executable transition branch.
+    pub evidence: TransitionEvidence,
+}
 
-/// Pure reducer for one stable entity slot.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct SlotReducer;
-
-impl<C, E: Clone, L> Reducer<EntitySlot<C, E, L>, SlotEvent<C, E, L>> for SlotReducer {
-    type Effects = SlotEffectBatch<C, E, L>;
-
-    fn reduce(
-        &self,
-        state: EntitySlot<C, E, L>,
-        event: SlotEvent<C, E, L>,
-    ) -> Decision<EntitySlot<C, E, L>, Self::Effects> {
-        match (state, event) {
-            (EntitySlot::Inactive, event) => decide_inactive(event),
-            (EntitySlot::Activating(state), event) => decide_activating(state, event),
-            (EntitySlot::Active(state), event) => decide_active(state, event),
-            (EntitySlot::Draining(state), event) => decide_draining(state, event),
-            (EntitySlot::Retiring { activation_id }, event) => {
-                decide_retiring(activation_id, event)
-            }
-        }
+impl<C, E, L> SlotDecision<C, E, L> {
+    fn with_evidence(mut self, evidence: TransitionEvidence) -> Self {
+        self.evidence = evidence;
+        self
     }
 }
 
@@ -494,7 +480,15 @@ impl<C, E: Clone, L> EntitySlot<C, E, L> {
 
     /// Consume one fact and return the next state plus an effect batch.
     pub fn decide(self, event: SlotEvent<C, E, L>) -> SlotDecision<C, E, L> {
-        SlotReducer.reduce(self, event)
+        match (self, event) {
+            (EntitySlot::Inactive, event) => decide_inactive(event),
+            (EntitySlot::Activating(state), event) => decide_activating(state, event),
+            (EntitySlot::Active(state), event) => decide_active(state, event),
+            (EntitySlot::Draining(state), event) => decide_draining(state, event),
+            (EntitySlot::Retiring { activation_id }, event) => {
+                decide_retiring(activation_id, event)
+            }
+        }
     }
 
     /// Fold an ordered stream of facts through this slot.
@@ -507,65 +501,16 @@ impl<C, E: Clone, L> EntitySlot<C, E, L> {
         I: IntoIterator<Item = SlotEvent<C, E, L>>,
     {
         events.into_iter().fold(
-            Decision::new(self, SlotEffectBatch::default()),
+            decision(self, SlotEffectBatch::default()),
             |accumulated, event| {
-                let decision = SlotReducer.reduce(accumulated.state, event);
-                Decision::new(decision.state, accumulated.effects + decision.effects)
+                let next = accumulated.state.decide(event);
+                SlotDecision {
+                    state: next.state,
+                    effects: accumulated.effects + next.effects,
+                    evidence: next.evidence,
+                }
             },
         )
-    }
-}
-
-impl<C, E, L> SlotEvent<C, E, L> {
-    const fn trigger(&self) -> LifecycleTrigger {
-        match self {
-            Self::ClaimActivation { .. } => LifecycleTrigger::ClaimActivation,
-            Self::Dispatch { .. } => LifecycleTrigger::Dispatch,
-            Self::CancelWaiter { .. } => LifecycleTrigger::CancelWaiter,
-            Self::ActivationSucceeded { .. } => LifecycleTrigger::ActivationSucceeded,
-            Self::ActivationFailed { .. } => LifecycleTrigger::ActivationFailed,
-            Self::DeliveryResolved { .. } => LifecycleTrigger::DeliveryResolved,
-            Self::BeginDrain { .. } => LifecycleTrigger::BeginDrain,
-            Self::FenceAcknowledged { .. } => LifecycleTrigger::FenceAcknowledged,
-            Self::ForceDrain { .. } => LifecycleTrigger::ForceDrain,
-            Self::Terminated { .. } => LifecycleTrigger::Terminated,
-        }
-    }
-}
-
-impl<C, E, L> EntitySlot<C, E, L> {
-    fn handles(&self, event: &SlotEvent<C, E, L>) -> bool {
-        match (self, event) {
-            (Self::Inactive, SlotEvent::Dispatch { .. })
-            | (
-                Self::Activating(_) | Self::Active(_) | Self::Draining(_) | Self::Retiring { .. },
-                SlotEvent::Dispatch { .. } | SlotEvent::ClaimActivation { .. },
-            ) => true,
-            (
-                Self::Activating(state),
-                SlotEvent::CancelWaiter { activation_id, .. }
-                | SlotEvent::ActivationSucceeded { activation_id, .. }
-                | SlotEvent::ActivationFailed { activation_id },
-            ) => state.activation_id == *activation_id,
-            (
-                Self::Active(state),
-                SlotEvent::DeliveryResolved { activation_id, .. }
-                | SlotEvent::BeginDrain { activation_id },
-            ) => state.activation_id == *activation_id,
-            (
-                Self::Draining(state),
-                SlotEvent::DeliveryResolved { activation_id, .. }
-                | SlotEvent::FenceAcknowledged { activation_id }
-                | SlotEvent::ForceDrain { activation_id, .. },
-            ) => state.activation_id == *activation_id,
-            (
-                Self::Retiring { activation_id },
-                SlotEvent::Terminated {
-                    activation_id: observed,
-                },
-            ) => activation_id == observed,
-            _ => false,
-        }
     }
 }
 
@@ -573,7 +518,34 @@ fn decision<C, E, L>(
     state: EntitySlot<C, E, L>,
     effects: SlotEffectBatch<C, E, L>,
 ) -> SlotDecision<C, E, L> {
-    Decision::new(state, effects)
+    SlotDecision {
+        state,
+        effects,
+        evidence: TransitionEvidence::Ignored,
+    }
+}
+
+fn handled<C, E, L>(
+    state: EntitySlot<C, E, L>,
+    effects: SlotEffectBatch<C, E, L>,
+) -> SlotDecision<C, E, L> {
+    SlotDecision {
+        state,
+        effects,
+        evidence: TransitionEvidence::SelfLoop,
+    }
+}
+
+fn traversed<C, E, L>(
+    state: EntitySlot<C, E, L>,
+    effects: SlotEffectBatch<C, E, L>,
+    edge: LifecycleEdge,
+) -> SlotDecision<C, E, L> {
+    SlotDecision {
+        state,
+        effects,
+        evidence: TransitionEvidence::Traversed(edge),
+    }
 }
 
 fn reject<C, E, L>(
@@ -582,7 +554,7 @@ fn reject<C, E, L>(
     command: C,
     reason: Refusal,
 ) -> SlotDecision<C, E, L> {
-    decision(
+    handled(
         state,
         SlotEffectBatch::one(SlotEffect::Reject {
             dispatch_id,
@@ -606,7 +578,7 @@ fn decide_activating<C, E: Clone, L>(
                     dispatch_id,
                     command,
                 });
-                decision(EntitySlot::Activating(state), SlotEffectBatch::default())
+                handled(EntitySlot::Activating(state), SlotEffectBatch::default())
             }
             Ordering::Equal | Ordering::Greater => reject(
                 EntitySlot::Activating(state),
@@ -620,10 +592,15 @@ fn decide_activating<C, E: Clone, L>(
             dispatch_id,
         } => match state.activation_id.classify(activation_id, dispatch_id) {
             Generation::Current(dispatch_id) => {
+                let prior_waiters = state.waiters.len();
                 state
                     .waiters
                     .retain(|waiter| waiter.dispatch_id != dispatch_id);
-                decision(EntitySlot::Activating(state), SlotEffectBatch::default())
+                if state.waiters.len() < prior_waiters {
+                    handled(EntitySlot::Activating(state), SlotEffectBatch::default())
+                } else {
+                    decision(EntitySlot::Activating(state), SlotEffectBatch::default())
+                }
             }
             Generation::Stale(_) => {
                 decision(EntitySlot::Activating(state), SlotEffectBatch::default())
@@ -676,7 +653,7 @@ fn finish_activation<C, E: Clone, L>(
                     command: waiter.command,
                 })
                 .collect();
-            decision(
+            traversed(
                 EntitySlot::Active(ActiveSlot {
                     activation_id,
                     endpoint,
@@ -684,6 +661,7 @@ fn finish_activation<C, E: Clone, L>(
                     reservations,
                 }),
                 effects,
+                LifecycleEdge::ActivationSucceeded,
             )
         }
         Generation::Stale((_, lease)) => {
@@ -708,7 +686,11 @@ fn fail_activation<C, E, L>(
                 })
                 .chain(core::iter::once(SlotEffect::Remove { activation_id }))
                 .collect();
-            decision(EntitySlot::Inactive, effects)
+            traversed(
+                EntitySlot::Inactive,
+                effects,
+                LifecycleEdge::ActivationFailed,
+            )
         }
         Generation::Stale(()) => {
             decision(EntitySlot::Activating(state), SlotEffectBatch::default())
@@ -727,7 +709,7 @@ fn decide_active<C, E: Clone, L>(
         } => {
             let activation_id = state.activation_id;
             let endpoint = state.endpoint.clone();
-            decision(
+            handled(
                 EntitySlot::Active(ActiveSlot {
                     reservations: state.reservations.reserve(),
                     ..state
@@ -791,7 +773,8 @@ fn resolve_active_delivery<C, E, L>(
             }),
             failure,
             Refusal::Unavailable,
-        ),
+        )
+        .with_evidence(TransitionEvidence::SelfLoop),
         ReservationResolution::Drained => reject_failed_delivery(
             EntitySlot::Active(ActiveSlot {
                 reservations: ReservationCount::Drained,
@@ -799,7 +782,8 @@ fn resolve_active_delivery<C, E, L>(
             }),
             failure,
             Refusal::Unavailable,
-        ),
+        )
+        .with_evidence(TransitionEvidence::SelfLoop),
     }
 }
 
@@ -808,7 +792,7 @@ fn begin_drain<C, E: Clone, L>(state: ActiveSlot<E, L>) -> SlotDecision<C, E, L>
         ReservationCount::Drained => {
             let activation_id = state.activation_id;
             let endpoint = state.endpoint.clone();
-            decision(
+            traversed(
                 EntitySlot::Draining(DrainingSlot {
                     activation_id,
                     endpoint: state.endpoint,
@@ -819,9 +803,10 @@ fn begin_drain<C, E: Clone, L>(state: ActiveSlot<E, L>) -> SlotDecision<C, E, L>
                     activation_id,
                     endpoint,
                 }),
+                LifecycleEdge::BeginDrain,
             )
         }
-        ReservationCount::Pending(pending) => decision(
+        ReservationCount::Pending(pending) => traversed(
             EntitySlot::Draining(DrainingSlot {
                 activation_id: state.activation_id,
                 endpoint: state.endpoint,
@@ -829,6 +814,7 @@ fn begin_drain<C, E: Clone, L>(state: ActiveSlot<E, L>) -> SlotDecision<C, E, L>
                 progress: DrainProgress::Reservations(pending),
             }),
             SlotEffectBatch::default(),
+            LifecycleEdge::BeginDrain,
         ),
     }
 }
@@ -907,6 +893,7 @@ fn resolve_draining_delivery<C, E: Clone, L>(
                     failure,
                     Refusal::Unavailable,
                 )
+                .with_evidence(TransitionEvidence::SelfLoop)
             } else {
                 let activation_id = state.activation_id;
                 let endpoint = state.endpoint.clone();
@@ -921,6 +908,7 @@ fn resolve_draining_delivery<C, E: Clone, L>(
                         endpoint,
                     },
                 )
+                .with_evidence(TransitionEvidence::SelfLoop)
             }
         }
     }
@@ -931,7 +919,7 @@ fn acknowledge_fence<C, E, L>(state: DrainingSlot<E, L>) -> SlotDecision<C, E, L
         DrainProgress::Reservations(_) => {
             decision(EntitySlot::Draining(state), SlotEffectBatch::default())
         }
-        DrainProgress::FenceAcknowledgement => decision(
+        DrainProgress::FenceAcknowledgement => traversed(
             EntitySlot::Retiring {
                 activation_id: state.activation_id,
             },
@@ -940,12 +928,13 @@ fn acknowledge_fence<C, E, L>(state: DrainingSlot<E, L>) -> SlotDecision<C, E, L
                 lease: state.lease,
                 retirement: RetirementMode::Graceful,
             }),
+            LifecycleEdge::FenceAcknowledged,
         ),
     }
 }
 
 fn force_drain<C, E, L>(state: DrainingSlot<E, L>, failure: DrainFailure) -> SlotDecision<C, E, L> {
-    decision(
+    traversed(
         EntitySlot::Retiring {
             activation_id: state.activation_id,
         },
@@ -954,6 +943,7 @@ fn force_drain<C, E, L>(state: DrainingSlot<E, L>, failure: DrainFailure) -> Slo
             lease: state.lease,
             retirement: RetirementMode::Forced(failure),
         }),
+        LifecycleEdge::ForceDrain,
     )
 }
 
@@ -963,7 +953,14 @@ fn reject_failed_delivery<C, E, L>(
     reason: Refusal,
 ) -> SlotDecision<C, E, L> {
     match failure {
-        Some((dispatch_id, command)) => reject(state, dispatch_id, command, reason),
+        Some((dispatch_id, command)) => decision(
+            state,
+            SlotEffectBatch::one(SlotEffect::Reject {
+                dispatch_id,
+                command,
+                reason,
+            }),
+        ),
         None => decision(state, SlotEffectBatch::default()),
     }
 }
@@ -990,19 +987,91 @@ fn with_effect<C, E, L>(
     decision: SlotDecision<C, E, L>,
     effect: SlotEffect<C, E, L>,
 ) -> SlotDecision<C, E, L> {
-    Decision::new(
-        decision.state,
-        decision.effects + SlotEffectBatch::one(effect),
-    )
+    SlotDecision {
+        state: decision.state,
+        effects: decision.effects + SlotEffectBatch::one(effect),
+        evidence: decision.evidence,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use core::num::{NonZeroU64, NonZeroUsize};
 
-    use super::{
-        ActivationId, DispatchId, EntitySlot, Refusal, RetirementMode, SlotEffect, SlotEvent,
+    use core::marker::PhantomData;
+
+    use behavior::{
+        Actions, ActiveTurn, Address, Behavior, BehaviorActed, EndpointAddress, Never, NoBirths,
+        Protocol, User,
     };
+    use behavior_actors::Activate;
+    use behavior_actors::atomic::{
+        ImmediateActivation, InitialWorkerOutcome, ProxyControl, ProxyOutcome, ProxyPhase,
+        StableProxy,
+    };
+
+    use super::{
+        ActivationId, DispatchId, DrainStage, EntitySlot, Refusal, RetirementMode, SlotEffect,
+        SlotEvent,
+    };
+
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    struct ProxyAddress;
+
+    impl Address for ProxyAddress {
+        type Nonce = u64;
+    }
+
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    struct ProxyEndpoint;
+
+    struct ProxyInstalled<B: Behavior>(ProxyEndpoint, PhantomData<fn() -> B>);
+
+    impl<B: Behavior> Clone for ProxyInstalled<B> {
+        fn clone(&self) -> Self {
+            Self(self.0, PhantomData)
+        }
+    }
+
+    impl EndpointAddress for ProxyAddress {
+        type Established<P>
+            = ProxyEndpoint
+        where
+            P: Protocol<Addr = Self>;
+
+        type Installed<B>
+            = ProxyInstalled<B>
+        where
+            B: Behavior<Protocol: Protocol<Addr = Self>>;
+
+        fn recipient<B>(installed: &Self::Installed<B>) -> Self::Established<B::Protocol>
+        where
+            B: Behavior<Protocol: Protocol<Addr = Self>>,
+        {
+            installed.0
+        }
+    }
+
+    #[derive(Debug, Eq, PartialEq)]
+    struct ProxyWorker(u8);
+
+    impl Protocol for ProxyWorker {
+        type Addr = ProxyAddress;
+        type Msg = ();
+    }
+
+    impl Behavior for ProxyWorker {
+        type Protocol = Self;
+        type Event = User<ProxyAddress, ()>;
+        type Sends = Vec<Never>;
+        type Ph = Never;
+        type Error = Never;
+        type Birth = NoBirths;
+
+        fn transition(&mut self, _: ActiveTurn, _: Self::Event) -> BehaviorActed<Self> {
+            Ok(Actions::cont())
+        }
+    }
 
     fn activation(value: u64) -> ActivationId {
         ActivationId::new(NonZeroU64::new(value).unwrap())
@@ -1079,43 +1148,6 @@ mod tests {
     }
 
     #[test]
-    fn stale_activation_cannot_replace_live_incarnation() {
-        let active = EntitySlot::<u8, u8, u8>::Active(super::ActiveSlot {
-            activation_id: activation(5),
-            endpoint: 5,
-            lease: 5,
-            reservations: super::ReservationCount::Drained,
-        });
-        let stale = active.decide(SlotEvent::ActivationSucceeded {
-            activation_id: activation(4),
-            endpoint: 4,
-            lease: 4,
-        });
-        assert!(matches!(
-            stale.state,
-            EntitySlot::Active(super::ActiveSlot { activation_id, .. }) if activation_id == activation(5)
-        ));
-        assert!(
-            matches!(stale.effects.as_slice(), [SlotEffect::Retire { activation_id, .. }] if *activation_id == activation(4))
-        );
-    }
-
-    #[test]
-    fn stale_termination_cannot_remove_newer_incarnation() {
-        let retiring = EntitySlot::<u8, u8, u8>::Retiring {
-            activation_id: activation(7),
-        };
-        let stale = retiring.decide(SlotEvent::Terminated {
-            activation_id: activation(6),
-        });
-        assert!(matches!(
-            stale.state,
-            EntitySlot::Retiring { activation_id } if activation_id == activation(7)
-        ));
-        assert!(stale.effects.as_slice().is_empty());
-    }
-
-    #[test]
     fn draining_never_reopens_admission() {
         let draining = EntitySlot::<u8, u8, u8>::Draining(super::DrainingSlot {
             activation_id: activation(3),
@@ -1139,7 +1171,7 @@ mod tests {
     }
 
     #[test]
-    fn activation_failure_preserves_waiter_order_before_removal() {
+    fn entity_first_demand_is_not_stable_proxy_worker_start() {
         let first = EntitySlot::<u8, u8, u8>::Inactive.decide(SlotEvent::ClaimActivation {
             activation_id: activation(1),
             dispatch_id: dispatch(1),
@@ -1150,16 +1182,186 @@ mod tests {
             dispatch_id: dispatch(2),
             command: 20,
         });
+
+        assert!(second.effects.as_slice().is_empty());
+        assert!(matches!(second.state, EntitySlot::Activating(_)));
+
+        let initialized = StableProxy::<ProxyWorker, ImmediateActivation>::immediate()
+            .initialize()
+            .unwrap_or_else(|_| panic!("proxy initialization is pure"));
+        let mut proxy = initialized.behavior;
+        let started = proxy
+            .on(ProxyControl::start(ProxyWorker(1)))
+            .unwrap_or_else(|_| panic!("the first worker start is accepted"));
+        assert_eq!(proxy.phase(), ProxyPhase::Creating);
+        assert_eq!(started.creates.len(), 1);
+
+        let overlap = proxy
+            .on(ProxyControl::start(ProxyWorker(2)))
+            .unwrap_or_else(|_| panic!("the overlapping worker start is classified"));
+        assert!(overlap.creates.is_empty());
+        assert!(overlap.sends.diagnostics.is_empty());
+        let outcome = overlap
+            .sends
+            .owner_outcomes
+            .into_requests()
+            .into_iter()
+            .next()
+            .unwrap_or_else(|| panic!("the overlapping worker returns to its owner"))
+            .into_inner();
+        match outcome {
+            ProxyOutcome::Initial {
+                outcome:
+                    InitialWorkerOutcome::Overlap {
+                        worker,
+                        activation,
+                        phase,
+                    },
+            } => {
+                assert_eq!(worker, ProxyWorker(2));
+                assert_eq!(activation, ImmediateActivation);
+                assert_eq!(phase, ProxyPhase::Creating);
+            }
+            _ => panic!("the proxy returned a different owner outcome"),
+        }
+    }
+
+    fn active_after_hydration_failure_and_retry() -> EntitySlot<u8, u8, u8> {
+        let first = EntitySlot::<u8, u8, u8>::Inactive.decide(SlotEvent::ClaimActivation {
+            activation_id: activation(1),
+            dispatch_id: dispatch(1),
+            command: 10,
+            waiter_limit: NonZeroUsize::new(2).unwrap(),
+        });
+        assert!(matches!(
+            first.effects.as_slice(),
+            [SlotEffect::StartActivation { activation_id }] if *activation_id == activation(1)
+        ));
+        let second = first.state.decide(SlotEvent::Dispatch {
+            dispatch_id: dispatch(2),
+            command: 20,
+        });
+        assert!(second.effects.as_slice().is_empty());
         let failed = second.state.decide(SlotEvent::ActivationFailed {
             activation_id: activation(1),
         });
+        assert!(matches!(failed.state, EntitySlot::Inactive));
         assert!(matches!(
             failed.effects.as_slice(),
             [
-                SlotEffect::Reject { dispatch_id: first_id, command: 10, .. },
-                SlotEffect::Reject { dispatch_id: second_id, command: 20, .. },
-                SlotEffect::Remove { activation_id }
-            ] if *first_id == dispatch(1) && *second_id == dispatch(2) && *activation_id == activation(1)
+                SlotEffect::Reject {
+                    dispatch_id: first_dispatch,
+                    command: 10,
+                    reason: Refusal::Unavailable,
+                },
+                SlotEffect::Reject {
+                    dispatch_id: second_dispatch,
+                    command: 20,
+                    reason: Refusal::Unavailable,
+                },
+                SlotEffect::Remove { activation_id },
+            ] if *first_dispatch == dispatch(1)
+                && *second_dispatch == dispatch(2)
+                && *activation_id == activation(1)
+        ));
+
+        let replacement = failed.state.decide(SlotEvent::ClaimActivation {
+            activation_id: activation(2),
+            dispatch_id: dispatch(3),
+            command: 30,
+            waiter_limit: NonZeroUsize::new(2).unwrap(),
+        });
+        let activated = replacement.state.decide(SlotEvent::ActivationSucceeded {
+            activation_id: activation(2),
+            endpoint: 7,
+            lease: 9,
+        });
+        assert!(matches!(
+            activated.effects.as_slice(),
+            [SlotEffect::Deliver {
+                activation_id,
+                dispatch_id,
+                endpoint: 7,
+                command: 30,
+            }] if *activation_id == activation(2) && *dispatch_id == dispatch(3)
+        ));
+        let delivered = activated.state.decide(SlotEvent::DeliveryResolved {
+            activation_id: activation(2),
+            failure: None,
+        });
+        assert!(delivered.effects.as_slice().is_empty());
+        delivered.state
+    }
+
+    #[test]
+    fn entity_trace_owns_hydration_waiters_fence_and_runtime_generation() {
+        let stale =
+            active_after_hydration_failure_and_retry().decide(SlotEvent::ActivationSucceeded {
+                activation_id: activation(1),
+                endpoint: 1,
+                lease: 2,
+            });
+        assert!(matches!(
+            stale.state,
+            EntitySlot::Active(ref active) if active.activation_id == activation(2)
+        ));
+        assert!(matches!(
+            stale.effects.as_slice(),
+            [SlotEffect::Retire {
+                activation_id,
+                lease: 2,
+                retirement: RetirementMode::Forced(failure),
+            }] if *activation_id == activation(1)
+                && failure.stage == DrainStage::Retirement
+                && failure.outstanding_reservations == 0
+        ));
+
+        let draining = stale.state.decide(SlotEvent::BeginDrain {
+            activation_id: activation(2),
+        });
+        assert!(matches!(draining.state, EntitySlot::Draining(_)));
+        assert!(matches!(
+            draining.effects.as_slice(),
+            [SlotEffect::EnqueueFence {
+                activation_id,
+                endpoint: 7,
+            }] if *activation_id == activation(2)
+        ));
+        let stale_fence = draining.state.decide(SlotEvent::FenceAcknowledged {
+            activation_id: activation(1),
+        });
+        assert!(matches!(stale_fence.state, EntitySlot::Draining(_)));
+        assert!(stale_fence.effects.as_slice().is_empty());
+        let fenced = stale_fence.state.decide(SlotEvent::FenceAcknowledged {
+            activation_id: activation(2),
+        });
+        assert!(matches!(
+            fenced.state,
+            EntitySlot::Retiring { activation_id } if activation_id == activation(2)
+        ));
+        assert!(matches!(
+            fenced.effects.as_slice(),
+            [SlotEffect::Retire {
+                activation_id,
+                lease: 9,
+                retirement: RetirementMode::Graceful,
+            }] if *activation_id == activation(2)
+        ));
+        let stale_termination = fenced.state.decide(SlotEvent::Terminated {
+            activation_id: activation(1),
+        });
+        assert!(matches!(
+            stale_termination.state,
+            EntitySlot::Retiring { activation_id } if activation_id == activation(2)
+        ));
+        assert!(stale_termination.effects.as_slice().is_empty());
+        let terminated = stale_termination.state.decide(SlotEvent::Terminated {
+            activation_id: activation(2),
+        });
+        assert!(matches!(terminated.state, EntitySlot::Inactive));
+        assert!(matches!(
+            terminated.effects.as_slice(),
+            [SlotEffect::Remove { activation_id }] if *activation_id == activation(2)
         ));
     }
 

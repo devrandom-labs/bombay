@@ -3,9 +3,8 @@ use std::num::{NonZeroU64, NonZeroUsize};
 use std::time::{Duration, Instant};
 
 use bombay::entity::{
-    ActivationId, DispatchId, LifecycleEdge, SlotEvent, TransitionEvidence, lifecycle_machine,
+    ActivationId, DispatchId, EntitySlot, LifecycleEdge, SlotEvent, TransitionEvidence,
 };
-use bombay_machine::Machine;
 
 const ITERATIONS: u64 = 1_000_000;
 
@@ -36,16 +35,14 @@ fn repeat(mut operation: impl FnMut()) -> (Duration, Duration) {
 
 fn main() {
     let (ignored_min, ignored_med) = repeat(|| {
-        let machine = lifecycle_machine::<u8, u8, u8>();
-        let (output, machine) = machine.step(SlotEvent::Terminated {
+        let output = EntitySlot::<u8, u8, u8>::Inactive.decide(SlotEvent::Terminated {
             activation_id: activation(2),
         });
-        black_box((output.evidence, machine));
+        black_box((output.evidence, output.state));
     });
 
     let (activation_min, activation_med) = repeat(|| {
-        let machine = lifecycle_machine::<u8, u8, u8>();
-        let (output, machine) = machine.step(SlotEvent::ClaimActivation {
+        let output = EntitySlot::<u8, u8, u8>::Inactive.decide(SlotEvent::ClaimActivation {
             activation_id: activation(1),
             dispatch_id: DispatchId::new(NonZeroU64::MIN),
             command: 1,
@@ -55,7 +52,7 @@ fn main() {
             output.evidence,
             TransitionEvidence::Traversed(LifecycleEdge::ClaimActivation)
         );
-        black_box(machine);
+        black_box(output.state);
     });
 
     println!("iterations={ITERATIONS}");

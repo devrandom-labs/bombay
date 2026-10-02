@@ -1,6 +1,6 @@
 //! Terminal handoff after one Driver execution has been destroyed.
 
-use super::IncarnationOutcome;
+use super::ActorExecutionOutcome;
 
 /// Consumes the terminal capability for one incarnation exactly once.
 ///
@@ -13,17 +13,17 @@ pub trait Retirement<B, R, BehaviorError, ActivationError> {
     /// Retire the incarnation with its exact terminal classification.
     fn retire(
         self,
-        outcome: IncarnationOutcome<B, R, BehaviorError, ActivationError>,
+        outcome: ActorExecutionOutcome<B, R, BehaviorError, ActivationError>,
     ) -> Self::Output;
 }
 
 impl<B, R, BehaviorError, ActivationError, F> Retirement<B, R, BehaviorError, ActivationError> for F
 where
-    F: FnOnce(IncarnationOutcome<B, R, BehaviorError, ActivationError>),
+    F: FnOnce(ActorExecutionOutcome<B, R, BehaviorError, ActivationError>),
 {
     type Output = ();
 
-    fn retire(self, outcome: IncarnationOutcome<B, R, BehaviorError, ActivationError>) {
+    fn retire(self, outcome: ActorExecutionOutcome<B, R, BehaviorError, ActivationError>) {
         self(outcome);
     }
 }

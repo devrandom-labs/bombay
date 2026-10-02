@@ -52,6 +52,10 @@
               ) ./.)
               ./.cargo/mutants.toml
               ./.config/nextest.toml
+              (pkgs.lib.fileset.maybeMissing ./crates/bombay-engine/tests/driver-law-evidence.sh)
+              (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/actor-execution-law-evidence.sh)
+              (pkgs.lib.fileset.maybeMissing ./tools/verify-owner-coverage.py)
+              ./flake.nix
               (pkgs.lib.fileset.maybeMissing ./mutants-baseline.json)
             ];
             buildOutputs = pkgs.lib.fileset.unions [
@@ -104,6 +108,20 @@
               cargoTestExtraArgs = "--workspace --all-targets";
             }
           );
+          bombay-child-no-default-features = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              buildPhaseCargoCommand = "cargo test --locked -p bombay-rs --no-default-features --test application_children";
+            }
+          );
+          bombay-child-all-features = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              buildPhaseCargoCommand = "cargo test --locked -p bombay-rs --all-features --test application_children";
+            }
+          );
           bombay-fmt = craneLib.cargoFmt commonArgs;
           bombay-clippy = craneLib.cargoClippy (
             commonArgs
@@ -127,12 +145,23 @@
               buildPhaseCargoCommand = "cargo test --locked --workspace --doc";
             }
           );
-          bombay-machine-loom = craneLib.mkCargoDerivation (
+          bombay-owner-coverage = craneLib.mkCargoDerivation (
             commonArgs
             // {
               inherit cargoArtifacts;
-              RUSTFLAGS = "--cfg loom";
-              buildPhaseCargoCommand = "cargo test --locked -p bombay-machine --lib --release";
+              nativeBuildInputs = [
+                pkgs.cargo-llvm-cov
+                pkgs.python3
+              ];
+              buildPhaseCargoCommand = ''
+                mkdir -p "$out"
+                cargo llvm-cov --locked --workspace --all-targets \
+                  --json --output-path "$out/coverage.json"
+                python3 tools/verify-owner-coverage.py "$out/coverage.json" \
+                  | tee "$out/owner-coverage.txt"
+              '';
+              doInstallCargoArtifacts = false;
+              doCheck = false;
             }
           );
           bombay-entity-loom = craneLib.mkCargoDerivation (
@@ -150,6 +179,38 @@
               RUSTFLAGS = "--cfg loom";
               LOOM_MAX_PREEMPTIONS = "3";
               buildPhaseCargoCommand = "cargo test --locked -p observe-tests --lib --release";
+            }
+          );
+          bombay-driver-law-evidence = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              nativeBuildInputs = [
+                pkgs.jq
+                pkgs.perl
+              ];
+              buildPhaseCargoCommand = ''
+                mkdir -p "$out"
+                bash crates/bombay-engine/tests/driver-law-evidence.sh --output "$out"
+              '';
+              doInstallCargoArtifacts = false;
+              doCheck = false;
+            }
+          );
+          bombay-actor-execution-law-evidence = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              nativeBuildInputs = [
+                pkgs.jq
+                pkgs.perl
+              ];
+              buildPhaseCargoCommand = ''
+                mkdir -p "$out"
+                bash crates/bombay/tests/actor-execution-law-evidence.sh --output "$out"
+              '';
+              doInstallCargoArtifacts = false;
+              doCheck = false;
             }
           );
           bombay-panic-unwind = craneLib.mkCargoDerivation (
@@ -237,6 +298,8 @@
 
         packages = rec {
           default = self.checks.${system}.bombay-build;
+          driver-law-evidence = self.checks.${system}.bombay-driver-law-evidence;
+          actor-execution-law-evidence = self.checks.${system}.bombay-actor-execution-law-evidence;
           coverage = craneLib.cargoLlvmCov (
             commonArgs
             // {
@@ -258,9 +321,12 @@
               ];
               buildPhaseCargoCommand = ''
                 set -o pipefail
+                export CARGO_INCREMENTAL=0
                 PROPTEST_CASES=64 cargo mutants \
-                  --package bombay-rs \
-                  --test-tool nextest --no-shuffle --colors never \
+                  --package bombay-rs --package bombay-engine \
+                  --all-features \
+                  --test-tool nextest --test-workspace false --jobs 2 \
+                  --no-shuffle --colors never \
                   --minimum-test-timeout 180 \
                   --output "$out" -- --profile mutants || true
                 cargo run --release -p mutants-gate -- \
@@ -283,13 +349,17 @@
                 pkgs.cargo-nextest
               ];
               buildPhaseCargoCommand = ''
+                export CARGO_INCREMENTAL=0
                 PROPTEST_CASES=64 cargo mutants \
-                  --package bombay-rs --package bombay-engine --package bombay-machine \
-                  --test-tool nextest --no-shuffle --colors never \
+                  --package bombay-rs --package bombay-engine \
+                  --all-features \
+                  --test-tool nextest --test-workspace false --jobs 2 \
+                  --no-shuffle --colors never \
                   --minimum-test-timeout 180 \
                   --output "$out" -- --profile mutants || true
                 cargo run --release -p mutants-gate -- \
-                  emit-baseline "$out/mutants.out" > "$out/mutants-baseline.json"
+                  emit-baseline "$out/mutants.out" "$PWD/mutants-baseline.json" \
+                  > "$out/mutants-baseline.json"
                 cp -f "$out/mutants.out/missed.txt" "$out/missed.txt" 2>/dev/null || true
                 cp -f "$out/mutants.out/timeout.txt" "$out/timeout.txt" 2>/dev/null || true
               '';
@@ -304,10 +374,11 @@
               inherit cargoArtifacts;
               pnameSuffix = "-performance";
               buildPhaseCargoCommand = ''
-                cargo bench --locked -p bombay-rs --bench entity_directory
-                cargo bench --locked -p bombay-rs --bench entity_lifecycle
-                cargo bench --locked -p bombay-rs --bench machine_executor
+                set -o pipefail
                 mkdir -p "$out"
+                cargo bench --locked -p bombay-engine --bench driver 2>&1 | tee "$out/driver.txt"
+                cargo bench --locked -p bombay-rs --bench entity_directory 2>&1 | tee "$out/entity-directory.txt"
+                cargo bench --locked -p bombay-rs --bench entity_lifecycle 2>&1 | tee "$out/entity-lifecycle.txt"
                 cp -R target/criterion "$out/criterion"
                 {
                   rustc --version --verbose
@@ -337,8 +408,10 @@
             cowsay
             figlet
             gh
+            jq
             lolcat
             nixfmt
+            perl
             taplo
             tree
           ];

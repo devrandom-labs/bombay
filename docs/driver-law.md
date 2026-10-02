@@ -3,259 +3,94 @@
 This is the accepted normative contract for `bombay-engine` and its Bombay
 runtime integration. Every `D-*` identifier is mandatory.
 
-The 2026-09-14 revision aligns this law with the lean Behavior contract at
-`a272adf8d2cbb6a2784d565f47c74adff3e7d01b`. The owner supplies one direct
-`Behavior -> Actions` fold, ordered creations, named send interpretation, and
-static birth installation. Every ordinary Driver terminal path returns the
-final concrete Behavior together with the prepared or active environment
-residual; no source-settlement layer exists.
+The selected contract is Behavior Core and Actors 0.20.0 at
+`804b2bf25325a523884ec49d8a4ae6d2d2b6e9da` and Macros 0.13.0 at
+`3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8`.
+The owner supplies one direct `Behavior -> Actions` fold, ordered creations,
+named send interpretation, total action settlements, and typed source custody.
+Every ordinary Driver terminal path transfers all still-owned settlements
+through the one retirement barrier and returns the final concrete Behavior
+together with the prepared or active environment residual.
 
 The corresponding verification design is
 [`driver-test-strategy.md`](driver-test-strategy.md).
 
+## Ownership boundary
+
+The former 68-row catalogue mixed the universal Engine loop with laws already
+owned by Behavior, Behavior Actors, Bombay's concrete environment, primitive
+crates, and future test campaigns. That catalogue was removed rather than
+manufacturing Engine evidence for contracts Engine cannot observe.
+
+At the selected revision, Behavior owns initialization and transition,
+complete `Actions`, creation-before-send interpretation, total settlement
+classification, source custody, and closed child products. Behavior Actors
+owns template topology and lifecycle policy. Bombay owns the local mailbox,
+address lease, timers, observation, capability interpreters, incarnation task,
+and publication/retirement integration. Engine owns only the affine causal
+protocol below.
+
 ## Explicit law set
 
-These identifiers are the canonical index for the accepted contract. A law is
-not accepted merely because it appears here. Acceptance, rejection, or revision
-must be recorded explicitly. Explanatory sections below must cite and must not
-contradict these laws.
+These eight identifiers are the complete normative Engine index. Explanatory
+text can refine them but cannot create another mandatory law implicitly.
 
-### Behavior-boundary laws
-
-- **D-BEH-1 — Universality.** One Driver algorithm runs every closed custom
-  Behavior and every supported actor-template composition. A template cannot
-  introduce a second Driver or event loop.
-- **D-BEH-2 — Closed input.** The Driver receives only the final composed
-  `B::Event`; it does not inspect or select the event's originating capability
-  or mailbox lane.
-- **D-BEH-3 — Closed output.** One successful fold yields one complete
-  `ActionsOf<B>`. The Driver neither invents, erases, duplicates, nor
-  template-specifically traverses action lanes.
-- **D-BEH-4 — Behavior opacity.** The Driver knows only the Behavior contract.
-  It contains no supervisor, proxy, pool, timer, persistence, workflow,
-  routing, discovery, or application-domain branches.
-- **D-BEH-5 — Exactly-once initialization.** The owned Behavior is initialized
-  exactly once before any active event is accepted.
-- **D-BEH-6 — Exactly-once turn.** Every event accepted from the environment is
-  folded through the current Behavior exactly once.
-- **D-BEH-7 — Decision integrity.** The successor Behavior state, complete
-  actions, and continue/stop verdict from one fold are one indivisible
-  decision. No part may be combined with another turn.
-- **D-BEH-8 — Controlled failure.** A controlled initialization or turn error
-  ends Driver execution. No nonexistent actions are interpreted and no later
-  event is accepted.
-
-### Turn-order laws
-
-- **D-TURN-1 — Single active turn.** At most one Behavior turn is active for
-  one Driver execution.
-- **D-TURN-2 — Non-reentrancy.** Turn `N + 1` cannot begin until turn `N` and
-  local commitment of its complete actions have finished.
-- **D-TURN-3 — Initialization ordering.** Complete initialization actions are
-  committed before the first active event is obtained.
-- **D-TURN-4 — Commit-before-next-input.** Complete actions from an accepted
-  event are committed before the Driver asks for another event.
-- **D-TURN-5 — Commit is local.** Commitment ends at each capability's owned
-  acceptance/rejection boundary. It does not wait for recipient processing,
-  timer expiry, storage completion, transport acknowledgement, or a business
-  reply.
-- **D-TURN-6 — External completion by event.** Facts produced after local
-  commitment can influence the Behavior only by returning through a declared
-  typed event lane.
-- **D-TURN-7 — No hidden interleaving.** The universal Driver exposes no
-  reentrancy flag or callback interleaving mode. Any future interleaving model
-  requires a separate typed protocol and cannot weaken this Driver.
-- **D-TURN-8 — No prefetch.** The Driver requests at most one event and owns at
-  most one uncommitted event. It cannot read ahead, batch, scan, skip, or retain
-  a private event backlog.
-- **D-TURN-9 — Self-send is asynchronous.** A send to the current incarnation
-  is committed through the ordinary delivery capability and can become only a
-  later event. It cannot recursively invoke the Behavior.
-- **D-TURN-10 — No capability callback turn.** An interpreter cannot enter the
-  Behavior or Driver synchronously. A capability result that affects Behavior
-  is enqueued as an event under D-TURN-6.
-- **D-TURN-11 — Synchronous fold.** Initialization and event folding contain no
-  Driver await point. The Behavior contract requires deterministic computation
-  without I/O; termination remains a condition on user code. The Driver supplies
-  no preemption, watchdog, or blocking-operation escape hatch.
-
-### Action-interpretation laws
-
-- **D-ACT-1 — Exactly-once interpretation.** Every successful decision's
-  complete actions are handed to the environment exactly once.
-- **D-ACT-2 — Creation precedence.** The complete creation sequence is
-  installed once in declared order before named sends from the same action
-  value. The Environment reports the first actionable installation or send
-  error without manufacturing a settlement product.
-- **D-ACT-3 — Lane preservation.** Order within each named action lane is
-  preserved. The Driver invents no order between independent lanes beyond the
-  ordering required by their owning contracts.
-- **D-ACT-4 — Payload ownership.** Acceptance, rejection, failure, panic, and
-  cancellation obey affine Rust ownership: no payload is duplicated or used
-  after move. An unaccepted payload is returned only at a boundary whose
-  contract promises recovery; cancellation or unwind may instead drop the value
-  currently owning it and must not falsely report recovery.
-- **D-ACT-5 — Honest completion.** Committing a delivery proves only the
-  documented admission boundary, never recipient processing or business
-  success. The same rule applies to every other capability.
-- **D-ACT-6 — Stop actions survive.** Final actions emitted with a stop verdict
-  are committed before ordinary terminal return.
-- **D-ACT-7 — Interpretation failure is terminal.** A semantic capability
-  rejection represented by its declared typed event is a committed fact and
-  does not itself fail the Driver. If the Environment reports an actionable
-  interpretation failure, the Driver accepts no later event and retains that
-  exact error beside the final Behavior and environment residual.
-- **D-ACT-8 — No fictitious transaction.** General action commitment is not an
-  all-or-nothing transaction. If an interpreter fails or is cancelled after a
-  successful prefix, the already accepted prefix remains factual and is never
-  reported as rolled back.
-- **D-ACT-9 — No implicit retry.** The Driver never retries an action or an
-  uncertain commit. Retry, deduplication, idempotency, acknowledgement, and
-  delivery guarantees belong to explicitly composed capability protocols.
-- **D-ACT-10 — State is not rolled back.** A successful fold installs its
-  successor Behavior before commitment. If commitment subsequently fails, the
-  incarnation terminates; the Driver does not reconstruct the predecessor
-  state or reuse the successor in another incarnation.
-- **D-ACT-11 — Creation-result scope.** Same-action child operations resolve
-  only against the creator-local nonce results produced by the current action
-  value. The Environment clears that scope before installation, so an
-  operation cannot observe a previous turn's result or convert an absent
-  creation into recovery.
-
-### Capability-boundary laws
-
-- **D-CAP-1 — Static sufficiency.** A concrete environment must statically
-  supply `B::Event` and interpret every lane of `ActionsOf<B>`. A missing
-  capability interpreter is a compile-time failure.
-- **D-CAP-2 — Heterogeneous ownership.** Each capability retains its own typed
-  requests, facts, errors, ordering, cancellation, and resource laws. The
-  Driver does not normalize them into one dynamic service protocol.
-- **D-CAP-3 — No ambient authority.** A Behavior receives no environment,
-  runtime context, actor handle, channel, clock, registry, router, or service
-  locator.
-- **D-CAP-4 — No dynamic capability registry.** The Driver/environment boundary
-  contains no `dyn` capability map, `Any`, downcast, erased action envelope, or
-  runtime string/key lookup.
-- **D-CAP-5 — Coherent environment lifetime.** One Driver execution cannot
-  combine an event source, interpreter, or retirement scope from different
-  incarnations.
-- **D-CAP-6 — Runtime substitutability.** Live Bombay, deterministic tests,
-  simulations, and future runtime adapters may implement the same environment
-  law without changing Behavior or Driver semantics.
-- **D-CAP-7 — Exact facts and errors.** Every named capability fixes its request,
-  typed result event where applicable, and actionable error. Rejected payloads
-  remain in the boundary that promises recovery, while committed result facts
-  return only through declared event lanes. The Driver cannot erase, merge,
-  stringify, or reinterpret those facts or errors.
-- **D-CAP-8 — No hidden guarantees.** The Driver adds no durability, remote
-  transparency, global ordering, exactly-once delivery, timeout, retry, or
-  acknowledgement guarantee beyond the selected capability contracts.
-
-### Identity and scheduling laws
-
-- **D-ID-1 — No address value.** The Driver stores and requires no actor
-  address value. `BehaviorAddr<B>` remains only a type-level part of events,
-  actions, creations, and exits.
-- **D-ID-2 — No incarnation authority.** The Driver owns no registration lease,
-  mailbox generation, observation subject, task handle, abort authority, or
-  terminal publisher.
-- **D-SCHED-1 — Scheduler separation.** The Driver selects no thread,
-  dispatcher, priority, throughput quota, reduction budget, or preemption
-  policy.
-- **D-SCHED-2 — Mailbox-policy separation.** Mailbox admission, priority,
-  control/user fairness, queue capacity, and producer backpressure remain owned
-  by Communication and the concrete event source.
-- **D-SCHED-3 — Cooperative resumability.** The incarnation/executor may yield
-  and resume Driver polling according to its scheduling budget without
-  changing the accepted event/action transcript.
-- **D-SCHED-4 — Source order is authoritative.** The Driver preserves the exact
-  order yielded by its event source and promises no global, cross-sender, or
-  cross-lane order that the source does not promise.
-- **D-SCHED-5 — Progress is conditional.** Driver progress requires a ready
-  source, a terminating Behavior fold, a completing interpreter, and continued
-  executor polling. The Driver promises neither fairness nor liveness when one
-  of those conditions is absent.
-- **D-SCHED-6 — No busy wait.** When its source or interpreter is pending, the
-  Driver remains pending and relies on the future's wake contract. It neither
-  spins nor manufactures work.
-
-### Termination laws
-
-- **D-TERM-1 — Explicit stop.** A stop verdict ends Behavior ingress after its
-  final actions are committed.
-- **D-TERM-2 — Source closure.** Permanent environment closure ends execution
-  without synthesizing a Behavior event or turn.
-- **D-TERM-3 — Ordinary retirement.** Every ordinary Driver return crosses
-  environment retirement exactly once and returns its exact typed residual
-  before releasing the barrier. Behavior-initialization failure retires the
-  prepared environment; every post-activation terminal path retires the active
-  environment.
-- **D-TERM-4 — Panic terminality.** A panic during initialization or a turn
-  makes the execution terminal; no successor Behavior or later event is used.
-- **D-TERM-5 — Cancellation honesty.** Cancelling the Driver future drops its
-  owned Behavior/environment but does not claim that asynchronous retirement
-  completed.
-- **D-TERM-6 — No recovery surface.** The black-box Driver exposes no poison
-  recovery, reset, restart, or reuse operation. Replacement is a new
-  incarnation constructed by its owner.
-- **D-TERM-7 — Terminal results are honest.** One `DriverRetirement` returns
-  the final concrete Behavior, exact environment residual, and disposition.
-  Explicit stop selects `Ok(Completion::Stopped)`; permanent input exhaustion
-  selects `Ok(Completion::Exhausted)`. Behavior, activation, and environment
-  failures retain their exact, disjoint `DriverError` variants in the same
-  disposition field. Panic and cancellation remain distinguishable at the
-  incarnation layer that owns their classification.
-- **D-TERM-8 — Terminal means fused.** Once any terminal path begins, the Driver
-  never polls the event source, folds Behavior, or starts another action commit.
-
-### Surface and dependency laws
-
-- **D-API-1 — Black-box application surface.** Ordinary application authors
-  use actor definitions and whatever typed capabilities later composition
-  layers provide—not Driver lifecycle controls.
-- **D-API-2 — Technical visibility is not authority.** Items made public only
-  for cross-crate integration remain hidden from the facade and documented as
-  internal integration surface.
-- **D-API-3 — No template-specific API.** The Driver exposes no capability- or
-  template-specific methods or result types.
-- **D-API-4 — Minimum bounds.** Driver types add no `Clone`, `Sync`, `'static`,
-  allocation, serialization, or thread-affinity bound unless the exact owning
-  executor or capability contract requires it.
-- **D-DEP-1 — No Transition dependency.** `bombay-engine` does not depend on
-  `bombay-transition`; actor templates may use Transition independently when
-  they genuinely own representable-machine laws.
-- **D-DEP-2 — No Machine Executor dependency.** `bombay-engine` does not depend
-  on `bombay-machine-executor`; executor policies remain available to concrete
-  consumers that independently require them.
-- **D-DEP-3 — Single production path.** No direct fold bypass, legacy Driver,
-  compatibility executor, test hook, or template-specific loop forms a second
-  production execution path.
-
-### Verification laws
-
-- **D-VER-1 — Observable transcript.** Tests can observe a deterministic
-  transcript of initialization, accepted events, decisions, commitments,
-  terminal classification, and retirement without gaining control over the
-  production lifecycle.
-- **D-VER-2 — Inversion sensitivity.** Every law above has an oracle that fails
-  when the corresponding ordering, ownership, or boundary is deliberately
-  inverted.
-- **D-VER-3 — Complete template accounting.** Every exported actor template,
-  strategy variant, public event/outcome path, supported composition edge, and
-  rejected composition is accounted for by the Driver test matrix.
-- **D-VER-4 — Repository-wide closure.** Tests, examples, benchmarks, fuzz
-  targets, research probes, diagnostics, documentation, and re-exports contain
-  no unaccounted Driver bypass or obsolete normative contract.
-- **D-VER-5 — Observation is non-semantic.** Test transcripts, tracing,
-  metrics, and lifecycle diagnostics may observe facts but cannot select work,
-  mutate Behavior, alter ordering, keep an incarnation alive, or prevent
-  retirement when an observer fails.
-- **D-VER-6 — No untested law.** No `D-*` law may be accepted, implemented,
-  declared complete, or retained without executable evidence that directly
-  observes the promised property.
-- **D-VER-7 — Falsification required.** Each law's evidence must include a
-  deliberate violating implementation or mutation and must fail for that
-  violation. A test that also passes when its law is inverted is not evidence.
+- **D-INIT-1 — One initialization and activation boundary.** The Driver invokes
+  Behavior initialization exactly once. Rejection retires the prepared
+  environment without activation. A panic in the synchronous pure initialization
+  fold also retires the prepared environment and returns the surviving behavior
+  with `InitializationPanicked`; it does not invent an error or Actions. Success
+  transfers the complete initialization
+  `Actions` once to `Environment::activate`; activation failure returns its exact
+  prepared residual. The resulting settlement is classified before ordinary
+  ingress, and the active environment is published exactly once only after no
+  initialization settlement can make further source progress.
+- **D-TURN-1 — One causal turn at a time.** The Driver obtains at most one event,
+  folds the current Behavior synchronously exactly once, installs that
+  successor state, and applies the complete returned `Actions` exactly once
+  before asking for another event. It does not prefetch, recurse, retry, roll
+  back, or wait for facts beyond the Environment's declared local commitment.
+  Pending sources and commits remain pending without busy-waiting or self-wake.
+- **D-SETTLE-1 — Ordered total-settlement custody.** After every successful
+  decision, the Driver preserves Behavior's exact settlement and offers at most
+  one result to its typed source. An admitted result and its transitive action
+  chain progress before the older product; a retained product is never
+  reoffered and cannot hide an older progressing product. Source closure or a
+  corrupt settlement is terminal, with every still-owned product transferred
+  to retirement in causal queue order.
+- **D-TERM-1 — Exact fused terminal disposition.** Accepted or lawfully rejected
+  final actions accompany active stop; corruption overrides stop. Rejected or
+  corrupt installed initialization is failure even when initialization chose
+  stop. Permanent ordinary-source closure is exhaustion and creates no
+  synthetic turn. Behavior, activation, and settlement failures remain
+  disjoint. Once a terminal edge is selected, no later event, fold, apply, or
+  source offer begins.
+- **D-RETIRE-1 — Honest affine retirement.** Every ordinary return crosses the
+  applicable prepared or active retirement barrier exactly once and returns
+  the final concrete Behavior, exact residual, complete settlement custody,
+  and factual disposition together. A pure initialization panic is caught
+  before commitment and returns through prepared retirement. Panic after that
+  boundary or cancellation drops the currently owned execution and never
+  falsely claims that asynchronous retirement or completion occurred.
+- **D-PORT-1 — One typed phased Environment port.** `Environment<B>` alone owns
+  preparation and activation; `ActiveEnvironment<B>` alone owns ingress,
+  action application, source settlement, publication, and active retirement.
+  The port preserves `B::Event`, `ActionsOf<B>`, settlement, errors, and
+  residuals without type erasure or cross-incarnation mixing. The Driver adds
+  no `Clone`, `Sync`, `'static`, runtime, or capability-specific bound that this
+  protocol does not require.
+- **D-SURFACE-1 — One opaque production path.** `Driver::run` is the sole
+  direct-Behavior execution path. Engine contains no template, application,
+  mailbox, address, timer, observation, identity, scheduler, dynamic registry,
+  recovery, restart, or reusable lifecycle authority. Cross-crate technical
+  visibility does not make Driver an application-facing lifecycle API.
+- **D-EVIDENCE-1 — Executed revision-bound falsification.** Every retained law
+  has one exact positive witness, one applicable boundary witness, and one
+  unique mutation of its real owning source, all bound to the selected Behavior
+  revision. The required Nix gate executes those witnesses, requires the named
+  killer to fail against the mutation for a test-failure reason, and emits one
+  immutable result record per law. Source-text policy checks are supplemental;
+  appended forbidden strings and local status fields are not semantic evidence.
 
 ## Purpose
 
@@ -272,12 +107,12 @@ is treated as an API specification.
 - Agha's actor semantics permits an actor, in response to a communication, to
   compute a replacement Behavior, create actors, and send messages. It does not
   require Bombay to await the external completion of those messages before the
-  replacement can receive another communication. Bombay's D-TURN-2 is therefore
+  replacement can receive another communication. Bombay's D-TURN-1 is therefore
   a deliberately stronger, non-reentrant local-commit policy, not a claim about
   the maximum concurrency allowed by the actor model.
 - Current Akka describes one-message-at-a-time actor execution while placing
   dispatcher throughput and thread selection in a hidden execution environment.
-  This supports D-TURN-1 and D-SCHED-1; it does not make Akka's mailbox or
+  This supports D-TURN-1 and D-SURFACE-1; it does not make Akka's mailbox or
   dispatcher choices universal laws.
 - Current Orleans defaults to non-reentrant request completion but permits
   explicitly selected interleaving. This supports making Bombay's default
@@ -288,7 +123,7 @@ is treated as an API specification.
   the Driver; it does not adopt selective receive in the Driver.
 - *Actor Capabilities for Message Ordering* (2025) obtains stronger ordering by
   constraining actor references with typed capabilities and effects. That
-  supports D-SCHED-4 and D-CAP-8: stronger order belongs in an explicit typed
+  supports D-TURN-1 and D-PORT-1: stronger order belongs in an explicit typed
   protocol, not in a universal loop.
 - Plyukhin and Agha's distributed actor termination work (2020/2021) distinguishes
   actor termination from ordinary reachability and states safety/liveness under
@@ -296,7 +131,7 @@ is treated as an API specification.
   quiescence; incarnation and higher runtime layers own lifecycle facts.
 - Paul, Agha, Patterson, and Varela's failure-aware actor model (2021) proves
   eventual progress only under stated failure and scheduling assumptions. This
-  supports D-SCHED-5: the Driver must not advertise unconditional liveness.
+  supports D-TURN-1: the Driver must not advertise unconditional liveness.
 - Actor concurrency-bug studies and DS2 schedule exploration show that actor
   isolation does not remove protocol deadlocks, livelocks, ordering bugs, or
   failure races. Those are addressed by the verification strategy, not by
@@ -361,7 +196,7 @@ handle into the Driver.
 application domain and topology
     -> Behavior templates and static composition
     -> bombay-engine Driver
-    -> bombay private Incarnation
+    -> bombay private ActorExecution
     -> future concrete composition layers
 ```
 
@@ -369,29 +204,14 @@ The dependency and authority direction is one-way. A lower layer must not ask
 application code to implement execution, routing, lifecycle, registration, or
 product-traversal machinery.
 
-## Transition removal gate
+## Transition ownership
 
-The first implementation change is to remove `bombay-transition` and
-`bombay-machine-executor` from `bombay-engine`.
-
-The actor Driver uses none of Transition's meaningful capabilities:
-
-- no topology is derived from a composed Behavior;
-- no `then`, `product`, or `routed` machine composition is used;
-- the production adapter reports a fabricated one-state topology; and
-- Machine Executor exists in this path to wrap the Behavior turn and make a
-  publicly reusable mutable Driver poisonable.
-
-Transition remains valid infrastructure for Bombay Entity and any future actor
-template that explicitly owns a representable state-machine invariant. It is
-not part of the universal actor execution path merely because another Bombay
-subsystem uses it.
-
-Removal is accepted only when the replacement Driver passes all laws and
-inversion oracles in this document. Tests must prove behavioral equivalence;
-the old adapter, topology fixture, executor compatibility tests, and
-poison-reentry API must then be deleted rather than preserved as a parallel
-path.
+`bombay-engine` owns only the universal affine Driver and Environment port.
+It has no Transition adapter, Machine executor, topology fixture, or mutable
+poison-reentry API. Bombay Entity owns its concrete slot transition and ordered
+effect interpretation. Behavior Actors owns the separate actor `Machine`
+template's receive/become/defer/stop policy. Neither law is copied into the
+Driver.
 
 ## Inputs
 
@@ -514,26 +334,48 @@ ActionsOf<B>   complete output algebra derived from B's associated types
 ```
 
 The runtime constructs one concrete environment specialized for that exact
-Behavior. The Engine port is:
+Behavior. The following port sketch is schematic; the compiled contract lives
+in [Engine](../crates/bombay-engine/src/driver.rs) and its
+[law tests](../crates/bombay-engine/tests/driver_law.rs):
 
-```rust,ignore
+```text
 trait Environment<B: Behavior<Ph = Never>> {
-    type Active: ActiveEnvironment<B, Residual = Self::Residual>;
+    type Active: ActiveEnvironment<
+        B,
+        Residual = Self::Residual,
+        Settlement = Self::Settlement,
+    >;
+    type Settlement: ClassifySettlement;
     type Error;
     type Residual;
 
     async fn activate(self, actions: ActionsOf<B>)
-        -> Result<Self::Active, (Self::Error, Self::Residual)>;
+        -> Result<
+            (Self::Active, Interpretation<Self::Settlement>),
+            (Self::Error, Self::Residual),
+        >;
     async fn retire(self) -> Self::Residual;
 }
 
 trait ActiveEnvironment<B: Behavior<Ph = Never>> {
-    type Error;
+    type Settlement: ClassifySettlement;
     type Residual;
 
     async fn next(&mut self) -> Option<B::Event>;
-    async fn apply(&mut self, actions: ActionsOf<B>) -> Result<(), Self::Error>;
-    async fn retire(self) -> Self::Residual;
+    async fn next_source(&mut self) -> Option<B::Event>;
+    async fn apply(
+        &mut self,
+        actions: ActionsOf<B>,
+    ) -> Interpretation<Self::Settlement>;
+    async fn offer_next(
+        &mut self,
+        settlement: Self::Settlement,
+    ) -> SourceCustody<Self::Settlement>;
+    fn publish(&mut self);
+    async fn retire(
+        self,
+        settlements: Vec<Self::Settlement>,
+    ) -> Self::Residual;
 }
 ```
 
@@ -566,7 +408,8 @@ The universal Driver remains limited to:
 obtain B::Event
     -> fold the Behavior once
     -> pass the complete ActionsOf<B> to its active environment
-    -> await complete interpretation
+    -> retain the complete Interpretation settlement
+    -> offer ordered results back to their typed sources
     -> repeat
 ```
 
@@ -577,18 +420,25 @@ The Driver performs this sequence and no other:
 ```text
 initialize the owned Behavior exactly once
     -> consume Environment::activate with the complete initialization actions
-    -> receive the only ActiveEnvironment
+    -> receive the only ActiveEnvironment and exact initialization settlement
+    -> resolve live-return custody or retain the product for retirement
+    -> publish the installed environment
     -> if terminal: retire and return Behavior + residual + disposition
     -> otherwise:
         obtain exactly one event
         -> fold it exactly once
-        -> interpret the complete successful actions
+        -> interpret the complete successful actions into one total settlement
+        -> resolve live-return custody or retain the product for retirement
         -> if terminal: retire and return Behavior + residual + disposition
         -> otherwise repeat
 ```
 
-The Driver never obtains the next event until interpretation of the previous
-complete action value has finished successfully.
+The Driver never obtains the next ordinary event until interpretation and all
+progressing source custody from the previous complete action value have become
+quiescent. A source-admitted control event is the only intervening input; its
+new settlement progresses before the older residual resumes. A terminally
+retained product remains at its original queue position until retirement and
+is never offered again.
 
 The environment interprets creations in vector order before sends from the
 same action value. It preserves the documented order within every named send
@@ -598,6 +448,12 @@ A controlled Behavior error ends execution without interpreting nonexistent
 actions. An environment interpretation error ends execution without obtaining
 another event. Permanent environment closure ends execution without invoking a
 Behavior turn.
+
+Disposition classification observes the complete settlement before honoring a
+stop verdict. Corruption therefore overrides an active stop. Lawful rejection
+from an active stopping turn remains stopped with exact retirement custody,
+while rejected or corrupt installed initialization overrides an initialization
+stop because successful initialization was never established.
 
 ## Transactional initialization boundary
 
@@ -629,6 +485,7 @@ The Driver owns:
 - serialized one-event-at-a-time folds;
 - ordering between event acquisition and complete action interpretation;
 - ordinary execution classification;
+- causal ordering of pending and terminally retained total settlements;
 - ordinary environment retirement; and
 - transfer of the final concrete Behavior and typed environment residual
   without inspecting or erasing either one.
@@ -721,7 +578,7 @@ After this law is accepted and the Behavior dependency version is aligned:
 7. update all examples, benchmarks, probes, tests, re-exports, and documents;
 8. run workspace tests, Clippy, rustfmt, rustdoc, allocation, performance,
    mutation, concurrency, and adversarial gates; and
-9. perform the final decomposition/public-interface audit before assigning
-   `feature-complete`.
+9. perform the final decomposition/public-interface audit before claiming
+   project-wide distillation.
 
 No step may temporarily introduce a second production transition path.

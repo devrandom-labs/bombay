@@ -1,5 +1,6 @@
 use std::convert::Infallible;
 use std::future::Future;
+use std::hint::black_box;
 use std::pin::pin;
 use std::task::{Context, Poll, Waker};
 
@@ -7,9 +8,12 @@ use behavior::{
     Actions, Behavior, BehaviorActed, Interpretation, MailAddr, Never, NoBirths, SourceCustody,
     User,
 };
-use bombay_engine::{ActionsOf, ActiveEnvironment, Completion, Driver, Environment};
+use bombay_engine::{
+    ActionsOf, ActiveEnvironment, Completion, Driver, DriverRetirement, Environment,
+};
 use criterion::{Criterion, criterion_group, criterion_main};
 
+#[derive(Debug, PartialEq, Eq)]
 struct OneTurn;
 
 impl Behavior for OneTurn {
@@ -29,14 +33,22 @@ impl Behavior for OneTurn {
     }
 }
 
-struct Immediate(bool);
+enum Ingress {
+    Pending,
+    Exhausted,
+}
+
+struct Immediate(Ingress);
 
 impl ActiveEnvironment<OneTurn> for Immediate {
     type Settlement = Vec<Never>;
-    type Residual = ();
+    type Residual = Vec<Self::Settlement>;
 
     async fn next(&mut self) -> Option<<OneTurn as Behavior>::Event> {
-        (!std::mem::replace(&mut self.0, true)).then(|| User::new(MailAddr(1), 1))
+        match std::mem::replace(&mut self.0, Ingress::Exhausted) {
+            Ingress::Pending => Some(User::new(MailAddr(1), 1)),
+            Ingress::Exhausted => None,
+        }
     }
 
     async fn next_source(&mut self) -> Option<<OneTurn as Behavior>::Event> {
@@ -56,9 +68,8 @@ impl ActiveEnvironment<OneTurn> for Immediate {
 
     fn publish(&mut self) {}
 
-    async fn retire(self, settlements: Vec<Self::Settlement>) {
-        let settlements_are_empty = settlements.is_empty();
-        assert!(settlements_are_empty);
+    async fn retire(self, settlements: Vec<Self::Settlement>) -> Self::Residual {
+        settlements
     }
 }
 
@@ -66,7 +77,7 @@ impl Environment<OneTurn> for Immediate {
     type Active = Self;
     type Settlement = Vec<Never>;
     type Error = Infallible;
-    type Residual = ();
+    type Residual = Vec<Self::Settlement>;
 
     async fn activate(
         mut self,
@@ -76,7 +87,9 @@ impl Environment<OneTurn> for Immediate {
         Ok((self, interpretation))
     }
 
-    async fn retire(self) {}
+    async fn retire(self) -> Self::Residual {
+        Vec::new()
+    }
 }
 
 fn block_on<T>(future: impl Future<Output = T>) -> T {
@@ -90,10 +103,21 @@ fn block_on<T>(future: impl Future<Output = T>) -> T {
 }
 
 fn driver_benchmark(criterion: &mut Criterion) {
+    let retirement = block_on(Driver::new(OneTurn, Immediate(Ingress::Pending)).run());
+    assert_eq!(
+        retirement,
+        DriverRetirement {
+            behavior: OneTurn,
+            residual: vec![Vec::new()],
+            disposition: Ok(Completion::Stopped),
+        }
+    );
+
     criterion.bench_function("driver/init_commit_turn_commit_stop_retire", |bencher| {
         bencher.iter(|| {
-            let result = block_on(Driver::new(OneTurn, Immediate(false)).run());
-            assert_eq!(result.disposition, Ok(Completion::Stopped));
+            black_box(block_on(
+                Driver::new(OneTurn, Immediate(Ingress::Pending)).run(),
+            ))
         });
     });
 }

@@ -1,5 +1,7 @@
 //! Ordered, statically dispatched interpretation of complete actor actions.
 
+use std::time::Instant;
+
 use behavior::{
     ActionSettlement, BehaviorAddr, BehaviorSettlements, CreationSettlements, InterpretCreations,
     InterpretSends, Interpretation, Never, SendSettlements, SourceCustody, SourceSettlementCustody,
@@ -21,6 +23,12 @@ pub(crate) type InterpretedActionSettlement<B> = ActionSettlement<
 pub(crate) trait RetireCapabilities {
     type Event;
     type Descendants;
+
+    fn next_local_event(&mut self) -> impl core::future::Future<Output = Self::Event> + Send;
+
+    fn next_deadline(&mut self) -> Option<Instant>;
+
+    fn pop_due(&mut self, now: Instant) -> Option<Self::Event>;
 
     fn retire(
         self,
@@ -55,7 +63,6 @@ where
         &mut self,
         actions: bombay_engine::ActionsOf<B>,
     ) -> Interpretation<ActionSettlementOf<B>> {
-        self.capabilities.begin_terminal_reports();
         let terminal_disposition = match &actions.become_ {
             Step::Continue => TerminalReportDisposition::Discard,
             Step::Goto(never) => match *never {},
@@ -76,6 +83,18 @@ where
         settlement
             .offer_next_to_source(&mut self.capabilities)
             .await
+    }
+
+    async fn next_local_event(&mut self) -> B::Event {
+        self.capabilities.next_local_event().await
+    }
+
+    fn next_deadline(&mut self) -> Option<Instant> {
+        self.capabilities.next_deadline()
+    }
+
+    fn pop_due(&mut self, now: Instant) -> Option<B::Event> {
+        self.capabilities.pop_due(now)
     }
 
     async fn retire(self) -> CapabilityRetirement<B::Event, Self::Retired> {

@@ -1,14 +1,14 @@
 //! One concrete task-launch boundary for local actors.
 
 use core::fmt;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::Weak;
 
 use crate::address::MailAddr;
-use crate::observation::FactQueue;
-use crate::observe::{self, Publisher};
-use crate::terminal::{ActorOrigin, ActorRetirement, LocalOutcome, ProjectTerminal};
+use crate::observation::TerminationObservations;
+use crate::observe;
+use crate::terminal::{ActorRetirement, ChildOrigin, LocalOutcome, ProjectTerminal};
 use crate::time::LocalTimers;
-use crate::{IncarnationOutcome, Retirement};
+use crate::{ActorExecutionOutcome, Retirement};
 use behavior::{
     Behavior, BehaviorMessage, BehaviorSettlements, BirthMode, ClassifySettlement, Never, Protocol,
     User,
@@ -23,24 +23,25 @@ use bombay_engine::ActionsOf;
 use bombay_engine::Driver;
 use communication::Config;
 use tokio::sync::oneshot;
+use tokio::task::{JoinError, JoinHandle};
 
 #[cfg(test)]
 use crate::interpret::{ActionSettlementOf, InterpretedActionSettlement};
 
-use super::Incarnation;
+use super::ActorExecution;
 #[cfg(test)]
 use super::local::CapabilityRetirement;
 use super::local::{
-    ActorRef, CommitActions, EntityIngress, IngressMode, LocalEnvironment, LocalResidual,
-    OwnerCancellation, StandardIngress,
+    ActorRef, CommitActions, EntityIngress, IngressMode, LocalActivationRejection,
+    LocalEnvironment, LocalResidual, OwnerCancellation, StandardIngress,
 };
 use super::reports::LocalTerminalReports;
-use super::termination::{TerminationPublication, TerminationSelection};
+use super::termination::TerminationPublication;
 
 /// Failure before a launched actor publishes its live reference.
 pub(crate) enum SpawnError<B, Descendants = ()>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>>,
 {
     AllocationRejected {
         behavior: B,
@@ -53,6 +54,12 @@ where
         user: Vec<User<MailAddr, BehaviorMessage<B>>>,
         descendants: Descendants,
     },
+    InitializationPanicked {
+        behavior: B,
+        control: Vec<B::Event>,
+        user: Vec<User<MailAddr, BehaviorMessage<B>>>,
+        descendants: Descendants,
+    },
     HostRejected {
         behavior: B,
         initialization: ActionsOf<B>,
@@ -61,30 +68,39 @@ where
         user: Vec<User<MailAddr, BehaviorMessage<B>>>,
         descendants: Descendants,
     },
+    BindingAbandoned {
+        behavior: B,
+        initialization: ActionsOf<B>,
+        control: Vec<B::Event>,
+        user: Vec<User<MailAddr, BehaviorMessage<B>>>,
+        descendants: Descendants,
+    },
+    Unpublished(LocalOutcome<B, Descendants>),
     Panicked,
     Cancelled,
-    Ended(bombay_engine::Completion),
 }
 
 impl<B, Descendants> fmt::Debug for SpawnError<B, Descendants>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>>,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
             Self::AllocationRejected { .. } => "AllocationRejected",
             Self::InitializationRejected { .. } => "InitializationRejected",
+            Self::InitializationPanicked { .. } => "InitializationPanicked",
             Self::HostRejected { .. } => "HostRejected",
+            Self::BindingAbandoned { .. } => "BindingAbandoned",
+            Self::Unpublished(_) => "Unpublished",
             Self::Panicked => "Panicked",
             Self::Cancelled => "Cancelled",
-            Self::Ended(_) => "Ended",
         })
     }
 }
 
 impl<B, Descendants> fmt::Display for SpawnError<B, Descendants>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>>,
 {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -94,39 +110,37 @@ where
             Self::InitializationRejected { .. } => {
                 formatter.write_str("the behavior rejected initialization")
             }
+            Self::InitializationPanicked { .. } => {
+                formatter.write_str("the behavior panicked during pure initialization")
+            }
             Self::HostRejected { .. } => {
                 formatter.write_str("the actor host rejected initialization")
             }
+            Self::BindingAbandoned { .. } => {
+                formatter.write_str("the actor's private binding was abandoned")
+            }
+            Self::Unpublished(_) => formatter.write_str("the actor retired before publication"),
             Self::Panicked => formatter.write_str("actor initialization panicked"),
             Self::Cancelled => formatter.write_str("actor initialization was cancelled"),
-            Self::Ended(completion) => {
-                write!(
-                    formatter,
-                    "the actor ended before publishing activation: {completion:?}"
-                )
-            }
         }
     }
 }
 
 impl<B, Descendants> std::error::Error for SpawnError<B, Descendants> where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>>
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>>
 {
 }
 
 impl<B, Descendants> SpawnError<B, Descendants>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
-    fn from_local(outcome: LocalOutcome<B, Descendants>) -> Self
-    where
-        B: BehaviorSettlements,
-    {
+    fn from_local(outcome: LocalOutcome<B, Descendants>) -> Self {
         match outcome {
-            IncarnationOutcome::BehaviorFailed {
+            ActorExecutionOutcome::BehaviorFailed {
                 behavior,
                 residual:
-                    LocalResidual::Retired {
+                    LocalResidual::Prepared {
                         ingress,
                         descendants,
                         ..
@@ -139,7 +153,21 @@ where
                 user: ingress.user,
                 descendants,
             },
-            IncarnationOutcome::ActivationFailed {
+            ActorExecutionOutcome::InitializationPanicked {
+                behavior,
+                residual:
+                    LocalResidual::Prepared {
+                        ingress,
+                        descendants,
+                        ..
+                    },
+            } => Self::InitializationPanicked {
+                behavior,
+                control: ingress.control,
+                user: ingress.user,
+                descendants,
+            },
+            ActorExecutionOutcome::ActivationFailed {
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
@@ -148,7 +176,7 @@ where
                         descendants,
                         ..
                     },
-                error,
+                error: LocalActivationRejection::Address(error),
             } => Self::HostRejected {
                 behavior,
                 initialization,
@@ -157,20 +185,26 @@ where
                 user: ingress.user,
                 descendants,
             },
-            IncarnationOutcome::Panicked => Self::Panicked,
-            IncarnationOutcome::Cancelled => Self::Cancelled,
-            IncarnationOutcome::Completed { completion, .. } => Self::Ended(completion),
-            IncarnationOutcome::BehaviorFailed {
-                residual: LocalResidual::Uncommitted { .. },
-                ..
-            }
-            | IncarnationOutcome::ActivationFailed {
-                residual: LocalResidual::Retired { .. },
-                ..
-            }
-            | IncarnationOutcome::SettlementFailed { .. } => {
-                unreachable!("the active environment cannot fail before activation publication")
-            }
+            ActorExecutionOutcome::ActivationFailed {
+                behavior,
+                residual:
+                    LocalResidual::Uncommitted {
+                        initialization,
+                        ingress,
+                        descendants,
+                        ..
+                    },
+                error: LocalActivationRejection::BindingAbandoned,
+            } => Self::BindingAbandoned {
+                behavior,
+                initialization,
+                control: ingress.control,
+                user: ingress.user,
+                descendants,
+            },
+            ActorExecutionOutcome::Panicked => Self::Panicked,
+            ActorExecutionOutcome::Cancelled => Self::Cancelled,
+            unpublished => Self::Unpublished(unpublished),
         }
     }
 }
@@ -197,6 +231,17 @@ where
                 user,
                 descendants,
             },
+            Self::InitializationPanicked {
+                behavior,
+                control,
+                user,
+                descendants,
+            } => ActorRetirement::InitializationPanicked {
+                behavior,
+                control,
+                user,
+                descendants,
+            },
             Self::HostRejected {
                 behavior,
                 initialization,
@@ -212,9 +257,22 @@ where
                 user,
                 descendants,
             },
+            Self::BindingAbandoned {
+                behavior,
+                initialization,
+                control,
+                user,
+                descendants,
+            } => ActorRetirement::BindingAbandoned {
+                behavior,
+                initialization,
+                control,
+                user,
+                descendants,
+            },
+            Self::Unpublished(outcome) => ActorRetirement::from_local(outcome),
             Self::Panicked => ActorRetirement::Panicked,
             Self::Cancelled => ActorRetirement::Cancelled,
-            Self::Ended(completion) => ActorRetirement::EndedBeforeActivation { completion },
         }
     }
 }
@@ -226,14 +284,72 @@ where
     pub(crate) actor: ActorRef<B::Protocol>,
     pub(crate) control: communication::ControlSender<B::Event>,
     pub(crate) task: OwnedTask<B, Descendants>,
+    pub(crate) binding: Option<oneshot::Sender<()>>,
+}
+
+impl<B, Descendants> OwnedActor<B, Descendants>
+where
+    B: BehaviorSettlements,
+{
+    pub(crate) fn acknowledge_binding(&mut self) {
+        if let Some(binding) = self.binding.take() {
+            let acknowledgement = binding.send(());
+            assert!(
+                acknowledgement.is_ok(),
+                "the privately committed actor awaits its owning binding"
+            );
+        }
+    }
 }
 
 pub(crate) struct OwnedTask<B, Descendants>
 where
     B: BehaviorSettlements,
 {
-    task: tokio::task::JoinHandle<LocalOutcome<B, Descendants>>,
-    cancellation: oneshot::Sender<OwnerCancellation>,
+    task: JoinHandle<Result<LocalOutcome<B, Descendants>, JoinError>>,
+    cancellation: OwnerCancellationAuthority,
+}
+
+/// Requests actor cleanup if its startup or join waiter disappears.
+struct OwnerCancellationAuthority {
+    sender: Option<oneshot::Sender<OwnerCancellation>>,
+}
+
+impl OwnerCancellationAuthority {
+    fn new(sender: oneshot::Sender<OwnerCancellation>) -> Self {
+        Self {
+            sender: Some(sender),
+        }
+    }
+
+    fn request(&mut self) {
+        if let Some(sender) = self.sender.take() {
+            match sender.send(OwnerCancellation) {
+                Ok(()) | Err(OwnerCancellation) => {}
+            }
+        }
+    }
+
+    fn disarm(&mut self) {
+        drop(self.sender.take());
+    }
+
+    async fn retire<T>(mut self, task: JoinHandle<T>) -> Result<T, JoinError> {
+        self.request();
+        task.await
+    }
+
+    async fn finish<T>(mut self, task: JoinHandle<T>) -> Result<T, JoinError> {
+        let joined = task.await;
+        self.disarm();
+        joined
+    }
+}
+
+impl Drop for OwnerCancellationAuthority {
+    fn drop(&mut self) {
+        self.request();
+    }
 }
 
 pub(crate) struct ProjectedTask<B, Root>
@@ -241,7 +357,7 @@ where
     B: Behavior,
 {
     task: tokio::task::JoinHandle<Root>,
-    cancellation: oneshot::Sender<OwnerCancellation>,
+    cancellation: OwnerCancellationAuthority,
     behavior: core::marker::PhantomData<fn() -> B>,
 }
 
@@ -250,16 +366,10 @@ where
     B: BehaviorSettlements,
 {
     pub(crate) actor: ActorRef<B::Protocol>,
+    pub(crate) shutdown_control: Weak<communication::ControlSender<B::Event>>,
     pub(crate) task: OwnedTask<B, Descendants>,
 }
 
-#[derive(Clone, Copy)]
-enum ActivationRejection {
-    EndedBeforePublication,
-}
-
-type Activation<B> = Result<ActorRef<<B as Behavior>::Protocol>, ActivationRejection>;
-type ActivationPublisher<B> = Arc<Mutex<Option<Publisher<Activation<B>>>>>;
 impl<B, Descendants> OwnedTask<B, Descendants>
 where
     B: BehaviorSettlements,
@@ -267,93 +377,95 @@ where
 {
     pub(crate) async fn retire(self) -> LocalOutcome<B, Descendants> {
         let Self { task, cancellation } = self;
-        drop(cancellation.send(OwnerCancellation));
-        finish_owned_task(task).await
+        owned_outcome(cancellation.retire(task).await)
     }
 
     pub(crate) async fn finish(self) -> LocalOutcome<B, Descendants> {
         let Self { task, cancellation } = self;
-        drop(cancellation);
-        finish_owned_task(task).await
+        owned_outcome(cancellation.finish(task).await)
     }
 }
 
-async fn finish_owned_task<B, Descendants>(
-    task: tokio::task::JoinHandle<LocalOutcome<B, Descendants>>,
+fn owned_outcome<B, Descendants>(
+    joined: Result<Result<LocalOutcome<B, Descendants>, JoinError>, JoinError>,
 ) -> LocalOutcome<B, Descendants>
 where
     B: BehaviorSettlements,
     B::Event: Send + 'static,
 {
-    let outcome = match task.await {
-        Ok(outcome) => outcome,
-        Err(error) if error.is_panic() => IncarnationOutcome::Panicked,
-        Err(_) => IncarnationOutcome::Cancelled,
-    };
-    settle_local_outcome(outcome).await
+    match joined {
+        Ok(Ok(outcome)) => outcome,
+        Ok(Err(error)) if error.is_panic() => std::panic::resume_unwind(error.into_panic()),
+        Ok(Err(error)) => panic!("activation task was cancelled unexpectedly: {error}"),
+        Err(error) if error.is_panic() => ActorExecutionOutcome::Panicked,
+        Err(_) => ActorExecutionOutcome::Cancelled,
+    }
 }
 
 async fn settle_local_outcome<B, Descendants>(
     outcome: LocalOutcome<B, Descendants>,
-) -> LocalOutcome<B, Descendants>
+) -> Result<LocalOutcome<B, Descendants>, JoinError>
 where
     B: BehaviorSettlements,
     B::Event: Send + 'static,
 {
-    match outcome {
-        IncarnationOutcome::Completed {
+    Ok(match outcome {
+        ActorExecutionOutcome::Completed {
             behavior,
             residual,
             completion,
-        } => IncarnationOutcome::Completed {
+        } => ActorExecutionOutcome::Completed {
             behavior,
-            residual: residual.settle_activation_tasks().await,
+            residual: residual.settle_activation_tasks().await?,
             completion,
         },
-        IncarnationOutcome::BehaviorFailed {
+        ActorExecutionOutcome::BehaviorFailed {
             behavior,
             residual,
             error,
-        } => IncarnationOutcome::BehaviorFailed {
+        } => ActorExecutionOutcome::BehaviorFailed {
             behavior,
-            residual: residual.settle_activation_tasks().await,
+            residual: residual.settle_activation_tasks().await?,
             error,
         },
-        IncarnationOutcome::ActivationFailed {
+        ActorExecutionOutcome::InitializationPanicked { behavior, residual } => {
+            ActorExecutionOutcome::InitializationPanicked {
+                behavior,
+                residual: residual.settle_activation_tasks().await?,
+            }
+        }
+        ActorExecutionOutcome::ActivationFailed {
             behavior,
             residual,
             error,
-        } => IncarnationOutcome::ActivationFailed {
+        } => ActorExecutionOutcome::ActivationFailed {
             behavior,
-            residual: residual.settle_activation_tasks().await,
+            residual: residual.settle_activation_tasks().await?,
             error,
         },
-        IncarnationOutcome::SettlementFailed {
+        ActorExecutionOutcome::SettlementFailed {
             behavior,
             residual,
             error,
-        } => IncarnationOutcome::SettlementFailed {
+        } => ActorExecutionOutcome::SettlementFailed {
             behavior,
-            residual: residual.settle_activation_tasks().await,
+            residual: residual.settle_activation_tasks().await?,
             error,
         },
-        IncarnationOutcome::Panicked => IncarnationOutcome::Panicked,
-        IncarnationOutcome::Cancelled => IncarnationOutcome::Cancelled,
-    }
+        ActorExecutionOutcome::Panicked => ActorExecutionOutcome::Panicked,
+        ActorExecutionOutcome::Cancelled => ActorExecutionOutcome::Cancelled,
+    })
 }
 
 async fn startup_failure<B, Descendants>(
-    task: tokio::task::JoinHandle<LocalOutcome<B, Descendants>>,
+    task: JoinHandle<Result<LocalOutcome<B, Descendants>, JoinError>>,
+    cancellation: OwnerCancellationAuthority,
 ) -> SpawnError<B, Descendants>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     B::Event: Send + 'static,
 {
-    match task.await {
-        Ok(outcome) => SpawnError::from_local(settle_local_outcome(outcome).await),
-        Err(error) if error.is_panic() => SpawnError::Panicked,
-        Err(_) => SpawnError::Cancelled,
-    }
+    SpawnError::from_local(owned_outcome(cancellation.finish(task).await))
 }
 
 impl<B, Root> ProjectedTask<B, Root>
@@ -369,12 +481,12 @@ where
 {
     pub(crate) fn project<Owner, Role>(
         task: OwnedTask<B, Vec<Root>>,
-        origin: ActorOrigin<Owner, Role>,
+        origin: ChildOrigin<Owner, Role>,
     ) -> Self
     where
         Owner: 'static,
         Role: 'static,
-        Root: ProjectTerminal<ActorOrigin<Owner, Role>, ActorRetirement<B, Root>>,
+        Root: ProjectTerminal<ChildOrigin<Owner, Role>, ActorRetirement<B, Root>>,
     {
         let OwnedTask {
             task: actor_task,
@@ -383,7 +495,7 @@ where
         let task = tokio::spawn(async move {
             Root::project(
                 origin,
-                ActorRetirement::from_local(finish_owned_task(actor_task).await),
+                ActorRetirement::from_local(owned_outcome(actor_task.await)),
             )
         });
         Self {
@@ -402,10 +514,11 @@ where
         let Self {
             task,
             cancellation,
-            behavior,
+            behavior: _,
         } = self;
-        drop((cancellation.send(OwnerCancellation), behavior));
-        task.await
+        cancellation
+            .retire(task)
+            .await
             .unwrap_or_else(|error| panic!("typed terminal projection task failed: {error}"))
     }
 
@@ -414,10 +527,11 @@ where
         let Self {
             task,
             cancellation,
-            behavior,
+            behavior: _,
         } = self;
-        drop((cancellation, behavior));
-        task.await
+        cancellation
+            .finish(task)
+            .await
             .unwrap_or_else(|error| panic!("typed terminal projection task failed: {error}"))
     }
 }
@@ -426,39 +540,8 @@ where
 #[doc(hidden)]
 pub type ActorSpace<P> = AddressSpace<<P as Protocol>::Addr, ActorRef<P>>;
 
-pub(crate) type LocalAddresses<P> = ActorSpace<P>;
-
-#[cfg(test)]
-pub(crate) async fn spawn_with<B, I>(
-    addresses: LocalAddresses<B::Protocol>,
-    config: Config,
-    address: MailAddr,
-    behavior: B,
-    make_interpreter: impl FnOnce(
-        communication::ControlSender<B::Event>,
-        LocalTerminalReports,
-        LocalTimers<B::Event>,
-        FactQueue<MailAddr, B::Event>,
-    ) -> I,
-) -> Result<ActorRef<B::Protocol>, SpawnError<B, I::Retired>>
-where
-    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
-    BehaviorMessage<B>: Send + 'static,
-    B::Sends: Send + 'static,
-    B::Error: Send + 'static,
-    <B::Birth as BirthMode>::Child: Send + 'static,
-    I: CommitActions<B> + Send + 'static,
-    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
-    I::Retired: Send + 'static,
-{
-    spawn_owned_with(addresses, config, address, behavior, make_interpreter)
-        .await
-        .map(|owned| owned.actor)
-}
-
 pub(crate) async fn spawn_owned_with<B, I>(
-    addresses: LocalAddresses<B::Protocol>,
+    addresses: ActorSpace<B::Protocol>,
     config: Config,
     address: MailAddr,
     behavior: B,
@@ -466,12 +549,12 @@ pub(crate) async fn spawn_owned_with<B, I>(
         communication::ControlSender<B::Event>,
         LocalTerminalReports,
         LocalTimers<B::Event>,
-        FactQueue<MailAddr, B::Event>,
+        TerminationObservations<MailAddr, B::Event>,
     ) -> I,
 ) -> Result<OwnedActor<B, I::Retired>, SpawnError<B, I::Retired>>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
+    B::Event: Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
@@ -491,7 +574,7 @@ where
 }
 
 pub(crate) async fn spawn_root_with<B, I>(
-    addresses: LocalAddresses<B::Protocol>,
+    addresses: ActorSpace<B::Protocol>,
     config: Config,
     address: MailAddr,
     behavior: B,
@@ -499,7 +582,7 @@ pub(crate) async fn spawn_root_with<B, I>(
         communication::ControlSender<B::Event>,
         LocalTerminalReports,
         LocalTimers<B::Event>,
-        FactQueue<MailAddr, B::Event>,
+        TerminationObservations<MailAddr, B::Event>,
     ) -> I,
 ) -> Result<RootActor<B, I::Retired>, SpawnError<B, I::Retired>>
 where
@@ -513,52 +596,31 @@ where
     crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
-    let (activation_publisher, activation) = observe::affine_pair();
-    let activation_publisher = Arc::new(Mutex::new(Some(activation_publisher)));
-    let (termination_publisher, termination) = observe::pair();
-    let termination_selection = Arc::new(TerminationSelection::new());
-    let (cancellation, cancellation_request) = oneshot::channel();
-    let published = activation_publisher.clone();
-    let interpreter_selection = termination_selection.clone();
-    let environment = LocalEnvironment::<B, I, StandardIngress>::prepare(
-        address,
+    let (actor, shutdown_control, task) = spawn_local_with::<B, I, StandardIngress, _, _, _>(
         addresses,
         config,
-        termination,
-        cancellation_request,
-        move |control, timers, facts| {
-            make_interpreter(
-                control,
-                LocalTerminalReports::new(interpreter_selection),
-                timers,
-                facts,
-            )
+        address,
+        behavior,
+        make_interpreter,
+        |environment| {
+            let (publication, activation) = oneshot::channel();
+            let shutdown_control = environment.shutdown_control();
+            let environment = environment.publish_with(move |actor| {
+                drop(publication.send(actor));
+            });
+            (environment, activation, shutdown_control)
         },
-    );
-    let environment = environment.publish_with(move |actor| {
-        complete_activation::<B>(&published, Ok(actor));
-    });
-    let retirement = LocalRetirement::<B>::new(
-        TerminationPublication::new(termination_publisher, termination_selection),
-        activation_publisher,
-    );
-    let task = tokio::spawn(Incarnation::new(Driver::new(behavior, environment), retirement).run());
-
-    match activation.await {
-        Ok(actor) => Ok(RootActor {
-            actor,
-            task: OwnedTask { task, cancellation },
-        }),
-        Err(ActivationRejection::EndedBeforePublication) => Err(startup_failure(task).await),
-    }
+    )
+    .await?;
+    Ok(RootActor {
+        actor,
+        shutdown_control,
+        task,
+    })
 }
 
-#[allow(
-    dead_code,
-    reason = "the native Entity adapter remains private until typed application topology can materialize its requirements"
-)]
 pub(crate) async fn spawn_owned_entity_with<B, I>(
-    addresses: LocalAddresses<B::Protocol>,
+    addresses: ActorSpace<B::Protocol>,
     config: Config,
     address: MailAddr,
     behavior: B,
@@ -566,12 +628,12 @@ pub(crate) async fn spawn_owned_entity_with<B, I>(
         communication::ControlSender<B::Event>,
         LocalTerminalReports,
         LocalTimers<B::Event>,
-        FactQueue<MailAddr, B::Event>,
+        TerminationObservations<MailAddr, B::Event>,
     ) -> I,
 ) -> Result<OwnedActor<B, I::Retired>, SpawnError<B, I::Retired>>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
+    B::Event: Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
@@ -591,7 +653,7 @@ where
 }
 
 async fn spawn_owned_with_mode<B, I, M>(
-    addresses: LocalAddresses<B::Protocol>,
+    addresses: ActorSpace<B::Protocol>,
     config: Config,
     address: MailAddr,
     behavior: B,
@@ -599,13 +661,13 @@ async fn spawn_owned_with_mode<B, I, M>(
         communication::ControlSender<B::Event>,
         LocalTerminalReports,
         LocalTimers<B::Event>,
-        FactQueue<MailAddr, B::Event>,
+        TerminationObservations<MailAddr, B::Event>,
     ) -> I,
 ) -> Result<OwnedActor<B, I::Retired>, SpawnError<B, I::Retired>>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
     M: IngressMode<B, Retired = User<MailAddr, BehaviorMessage<B>>> + 'static,
-    B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
+    B::Event: Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
@@ -614,46 +676,96 @@ where
     crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
-    let (activation_publisher, activation) = observe::affine_pair();
-    let activation_publisher = Arc::new(Mutex::new(Some(activation_publisher)));
+    let ((actor, binding), control, task) = spawn_local_with::<B, I, M, _, _, _>(
+        addresses,
+        config,
+        address,
+        behavior,
+        make_interpreter,
+        |environment| {
+            let (commitment, committed) = oneshot::channel();
+            let control = environment.control();
+            let environment = environment.with_private_commitment(commitment);
+            (environment, committed, control)
+        },
+    )
+    .await?;
+    Ok(OwnedActor {
+        actor,
+        control,
+        task,
+        binding: Some(binding),
+    })
+}
+
+async fn spawn_local_with<B, I, M, P, Start, Control>(
+    addresses: ActorSpace<B::Protocol>,
+    config: Config,
+    address: MailAddr,
+    behavior: B,
+    make_interpreter: impl FnOnce(
+        communication::ControlSender<B::Event>,
+        LocalTerminalReports,
+        LocalTimers<B::Event>,
+        TerminationObservations<MailAddr, B::Event>,
+    ) -> I,
+    publish: impl FnOnce(
+        LocalEnvironment<B, I, M>,
+    ) -> (
+        LocalEnvironment<B, I, M, P>,
+        oneshot::Receiver<Start>,
+        Control,
+    ),
+) -> Result<(Start, Control, OwnedTask<B, I::Retired>), SpawnError<B, I::Retired>>
+where
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    M: IngressMode<B, Retired = User<MailAddr, BehaviorMessage<B>>> + 'static,
+    P: FnOnce(ActorRef<B::Protocol>) + Send + 'static,
+    B::Event: Send + 'static,
+    BehaviorMessage<B>: Send + 'static,
+    B::Sends: Send + 'static,
+    B::Error: Send + 'static,
+    <B::Birth as BirthMode>::Child: Send + 'static,
+    I: CommitActions<B> + Send + 'static,
+    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
+    I::Retired: Send + 'static,
+    Start: Send,
+    Control: Send,
+{
     let (termination_publisher, termination) = observe::pair();
-    let termination_selection = Arc::new(TerminationSelection::new());
+    let (report_sender, selected_report) = oneshot::channel();
     let (cancellation, cancellation_request) = oneshot::channel();
-    let published = activation_publisher.clone();
-    let interpreter_selection = termination_selection.clone();
+    let cancellation = OwnerCancellationAuthority::new(cancellation);
     let environment = LocalEnvironment::<B, I, M>::prepare(
         address,
         addresses,
         config,
         termination,
         cancellation_request,
-        move |control, timers, facts| {
+        move |control, timers, observations| {
             make_interpreter(
                 control,
-                LocalTerminalReports::new(interpreter_selection),
+                LocalTerminalReports::new(report_sender),
                 timers,
-                facts,
+                observations,
             )
         },
     );
-    let control = environment.control();
-    let environment = environment.publish_with(move |actor| {
-        complete_activation::<B>(&published, Ok(actor));
+    let (environment, startup, control) = publish(environment);
+    let retirement = LocalRetirement::<B>::new(TerminationPublication::new(
+        termination_publisher,
+        selected_report,
+    ));
+    let actor_execution = ActorExecution::new(Driver::new(behavior, environment), retirement);
+    let task = tokio::spawn(async move {
+        let outcome = actor_execution.run().await;
+        settle_local_outcome(outcome).await
     });
-    let retirement = LocalRetirement::<B>::new(
-        TerminationPublication::new(termination_publisher, termination_selection),
-        activation_publisher,
-    );
-    let incarnation = Incarnation::new(Driver::new(behavior, environment), retirement);
-    let task = tokio::spawn(incarnation.run());
 
-    match activation.await {
-        Ok(actor) => Ok(OwnedActor {
-            actor,
-            control,
-            task: OwnedTask { task, cancellation },
-        }),
-        Err(ActivationRejection::EndedBeforePublication) => Err(startup_failure(task).await),
+    if let Ok(started) = startup.await {
+        Ok((started, control, OwnedTask { task, cancellation }))
+    } else {
+        Err(startup_failure(task, cancellation).await)
     }
 }
 
@@ -663,12 +775,12 @@ where
 /// initialization.
 #[cfg(test)]
 pub(crate) async fn launch_inert<B, F>(
-    addresses: LocalAddresses<B::Protocol>,
+    addresses: ActorSpace<B::Protocol>,
     config: Config,
     address: MailAddr,
     behavior: B,
     commit: F,
-) -> Result<ActorRef<B::Protocol>, SpawnError<B>>
+) -> Result<RootActor<B, ()>, SpawnError<B>>
 where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never, Birth = NoBirths> + Send + 'static,
     B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
@@ -680,7 +792,7 @@ where
     ActionSettlementOf<B>: SourceSettlementCustody<InertCapabilities, B::Event> + Send,
     F: FnMut(&ActionsOf<B>) + Send + 'static,
 {
-    spawn_with(addresses, config, address, behavior, move |_, _, _, _| {
+    spawn_root_with(addresses, config, address, behavior, move |_, _, _, _| {
         ObserveInertActions(commit)
     })
     .await
@@ -689,12 +801,12 @@ where
 /// Launch one Entity-capable actor in a focused lower-layer test.
 #[cfg(test)]
 pub(crate) async fn launch_inert_entity<B, F>(
-    addresses: LocalAddresses<B::Protocol>,
+    addresses: ActorSpace<B::Protocol>,
     config: Config,
     address: MailAddr,
     behavior: B,
     commit: F,
-) -> Result<ActorRef<B::Protocol>, SpawnError<B>>
+) -> Result<OwnedActor<B, ()>, SpawnError<B>>
 where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never, Birth = NoBirths> + Send + 'static,
     B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
@@ -710,7 +822,10 @@ where
         ObserveInertActions(commit)
     })
     .await
-    .map(|owned| owned.actor)
+    .map(|mut owned| {
+        owned.acknowledge_binding();
+        owned
+    })
 }
 
 struct LocalRetirement<B>
@@ -718,36 +833,18 @@ where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
     termination: TerminationPublication<MailAddr>,
-    activation: ActivationPublisher<B>,
+    behavior: core::marker::PhantomData<fn() -> B>,
 }
 
 impl<B> LocalRetirement<B>
 where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
-    fn new(
-        termination: TerminationPublication<MailAddr>,
-        activation: ActivationPublisher<B>,
-    ) -> Self {
+    fn new(termination: TerminationPublication<MailAddr>) -> Self {
         Self {
             termination,
-            activation,
+            behavior: core::marker::PhantomData,
         }
-    }
-}
-
-fn complete_activation<B>(
-    publisher: &Mutex<Option<Publisher<Activation<B>>>>,
-    outcome: Activation<B>,
-) where
-    B: Behavior,
-{
-    if let Some(publisher) = publisher
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
-        .take()
-    {
-        publisher.complete(outcome);
     }
 }
 
@@ -762,7 +859,7 @@ impl<B, Descendants>
             Descendants,
         >,
         B::Error,
-        ClaimError<MailAddr>,
+        LocalActivationRejection<MailAddr>,
     > for LocalRetirement<B>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
@@ -770,26 +867,13 @@ where
     type Output = LocalOutcome<B, Descendants>;
 
     fn retire(self, outcome: LocalOutcome<B, Descendants>) -> Self::Output {
-        let publisher = self
-            .activation
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .take();
-        let Some(publisher) = publisher else {
-            match &outcome {
-                IncarnationOutcome::Completed {
-                    residual:
-                        LocalResidual::Retired {
-                            owner_cancellation: Some(_),
-                            ..
-                        },
-                    ..
-                } => self.termination.publish_owner_cancellation(),
-                _ => self.termination.publish(&outcome),
-            }
-            return outcome;
-        };
-        publisher.complete(Err(ActivationRejection::EndedBeforePublication));
+        match &outcome {
+            ActorExecutionOutcome::Completed {
+                residual: LocalResidual::OwnerCancelled { .. },
+                ..
+            } => self.termination.publish_owner_cancellation(),
+            _ => self.termination.publish(&outcome),
+        }
         outcome
     }
 }
@@ -837,6 +921,10 @@ where
             .await
     }
 
+    async fn next_local_event(&mut self) -> B::Event {
+        core::future::pending().await
+    }
+
     async fn retire(self) -> CapabilityRetirement<B::Event, Self::Retired> {
         CapabilityRetirement::without_activations(())
     }
@@ -874,6 +962,10 @@ where
             .await
     }
 
+    async fn next_local_event(&mut self) -> B::Event {
+        core::future::pending().await
+    }
+
     async fn retire(self) -> CapabilityRetirement<B::Event, Self::Retired> {
         CapabilityRetirement::without_activations(self.retirement)
     }
@@ -882,12 +974,14 @@ where
 #[cfg(test)]
 mod tests {
     use std::convert::Infallible;
+    use std::future::pending;
+    use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
 
     use behavior::{
         Actions, BehaviorActed, EventLayer, InitializationTurn, MessageProtocol, Never, NoBirths,
         NoSends, SettlementStatus, User,
     };
-    use behavior_actors::ShutdownRequested;
+    use behavior_actors::{Crash, ShutdownRequested};
     use bombay_engine::Completion;
     use communication::Config;
 
@@ -898,10 +992,13 @@ mod tests {
         terminal_marker: u8,
     }
 
+    struct ProbeChildRole;
+
     #[derive(crate::TerminalProjection)]
     enum ProbeTerminal {
+        #[application_actor]
         Probe {
-            origin: ActorOrigin<RootProbe>,
+            origin: ChildOrigin<RootProbe, ProbeChildRole>,
             terminal: ActorRetirement<RootProbe, Self>,
         },
     }
@@ -937,20 +1034,94 @@ mod tests {
         }
     }
 
+    #[test]
+    fn spawn_error_names_the_exact_startup_failure() {
+        let failure = SpawnError::<RootProbe>::Panicked;
+        assert_eq!(format!("{failure:?}"), "Panicked");
+        assert_eq!(failure.to_string(), "actor initialization panicked");
+    }
+
+    #[test]
+    fn owner_cancellation_request_and_disarm_transfer_distinct_authority() {
+        let (request_sender, mut requested) = oneshot::channel();
+        let mut request_authority = OwnerCancellationAuthority::new(request_sender);
+        request_authority.request();
+        assert!(matches!(requested.try_recv(), Ok(OwnerCancellation)));
+
+        let (disarm_sender, mut disarmed) = oneshot::channel();
+        let mut disarm_authority = OwnerCancellationAuthority::new(disarm_sender);
+        disarm_authority.disarm();
+        drop(disarm_authority);
+        assert!(matches!(
+            disarmed.try_recv(),
+            Err(oneshot::error::TryRecvError::Closed)
+        ));
+    }
+
+    #[tokio::test]
+    async fn owned_outcome_classifies_task_panic_and_cancellation_separately() {
+        let panicking = tokio::spawn(async { panic!("the actor task panicked") });
+        let panic_error = panicking.await.expect_err("the task panic is retained");
+        let panicked = owned_outcome::<RootProbe, ()>(Err(panic_error));
+        assert!(matches!(panicked, ActorExecutionOutcome::Panicked));
+
+        let pending_task = tokio::spawn(async { pending::<()>().await });
+        pending_task.abort();
+        let cancellation = pending_task
+            .await
+            .expect_err("the task cancellation is retained");
+        let cancelled = owned_outcome::<RootProbe, ()>(Err(cancellation));
+        assert!(matches!(cancelled, ActorExecutionOutcome::Cancelled));
+    }
+
+    struct ActivationPanicMarker;
+
+    #[tokio::test]
+    async fn owned_outcome_preserves_activation_panic_and_rejects_cancellation() {
+        let panicking = tokio::spawn(async { panic_any(ActivationPanicMarker) });
+        let panic_error = panicking
+            .await
+            .expect_err("the activation panic is retained");
+        let Err(replayed) = catch_unwind(AssertUnwindSafe(|| {
+            owned_outcome::<RootProbe, ()>(Ok(Err(panic_error)))
+        })) else {
+            panic!("the exact activation panic must resume");
+        };
+        assert!(replayed.is::<ActivationPanicMarker>());
+
+        let pending_task = tokio::spawn(async { pending::<()>().await });
+        pending_task.abort();
+        let cancellation = pending_task
+            .await
+            .expect_err("the activation cancellation is retained");
+        let Err(rejected) = catch_unwind(AssertUnwindSafe(|| {
+            owned_outcome::<RootProbe, ()>(Ok(Err(cancellation)))
+        })) else {
+            panic!("unexpected activation cancellation must be rejected");
+        };
+        let description = rejected
+            .downcast_ref::<String>()
+            .expect("the cancellation diagnostic owns its text");
+        assert!(description.contains("activation task was cancelled unexpectedly"));
+    }
+
     #[tokio::test]
     async fn owned_root_task_returns_final_behavior_and_complete_residual() {
-        let root = spawn_root_with(
+        let unpublished = spawn_root_with(
             ActorSpace::new(),
             Config::new(2),
             MailAddr::APPLICATION_ROOT,
             RootProbe { terminal_marker: 0 },
             |_, _, _, _| ObserveInertActions(ignore_root_actions),
         )
-        .await
-        .expect("the root must publish after initialization commitment");
+        .await;
 
-        let outcome = root.task.finish().await;
-        let IncarnationOutcome::Completed {
+        let outcome = match unpublished {
+            Err(SpawnError::Unpublished(outcome)) => outcome,
+            Err(error) => panic!("the committed root was misclassified: {error:?}"),
+            Ok(_) => panic!("a stopping root was publicly published"),
+        };
+        let ActorExecutionOutcome::Completed {
             behavior,
             residual:
                 LocalResidual::Retired {
@@ -958,7 +1129,6 @@ mod tests {
                     ingress,
                     activation_tasks,
                     descendants,
-                    owner_cancellation,
                 },
             completion,
         } = outcome
@@ -972,14 +1142,55 @@ mod tests {
         assert!(ingress.control.is_empty());
         assert!(ingress.user.is_empty());
         assert!(activation_tasks.is_empty());
-        assert!(owner_cancellation.is_none());
         assert_eq!(descendants, ());
         assert_eq!(completion, Completion::Stopped);
     }
 
     #[tokio::test]
+    async fn address_reservation_rejection_returns_untouched_initialization() {
+        let addresses = ActorSpace::new();
+        let reservation = addresses
+            .try_reserve(MailAddr::APPLICATION_ROOT)
+            .expect("the competing reservation must own the address");
+        let rejection = spawn_root_with(
+            addresses.clone(),
+            Config::new(2),
+            MailAddr::APPLICATION_ROOT,
+            RootProbe { terminal_marker: 0 },
+            |_, _, _, _| {
+                ObserveInertActions(|_: &ActionsOf<RootProbe>| {
+                    panic!("rejected initialization must remain uncommitted")
+                })
+            },
+        )
+        .await;
+
+        let Err(SpawnError::HostRejected {
+            behavior,
+            initialization,
+            error: ClaimError::AddressInUse(address),
+            control,
+            user,
+            descendants,
+        }) = rejection
+        else {
+            panic!("reservation refusal must preserve the exact uncommitted root")
+        };
+        assert_eq!(address, MailAddr::APPLICATION_ROOT);
+        assert_eq!(behavior.terminal_marker, 19);
+        assert_eq!(initialization.sends, NoSends);
+        assert!(initialization.creates.is_empty());
+        assert!(matches!(initialization.become_, behavior::Step::Stop(_)));
+        assert!(control.is_empty());
+        assert!(user.is_empty());
+        assert_eq!(descendants, ());
+        assert!(addresses.resolve(&MailAddr::APPLICATION_ROOT).is_none());
+        drop(reservation);
+    }
+
+    #[tokio::test]
     async fn owned_child_task_returns_final_behavior_and_complete_residual() {
-        let child = spawn_owned_with(
+        let mut child = spawn_owned_with(
             ActorSpace::new(),
             Config::new(2),
             MailAddr(1),
@@ -987,10 +1198,12 @@ mod tests {
             |_, _, _, _| ObserveInertActions(ignore_root_actions),
         )
         .await
-        .expect("the child must publish after initialization commitment");
+        .expect("the child must transfer private commitment before publication");
 
+        child.acknowledge_binding();
+        assert!(child.binding.is_none());
         let outcome = child.task.finish().await;
-        let IncarnationOutcome::Completed {
+        let ActorExecutionOutcome::Completed {
             behavior,
             residual:
                 LocalResidual::Retired {
@@ -998,7 +1211,6 @@ mod tests {
                     ingress,
                     activation_tasks,
                     descendants,
-                    owner_cancellation,
                 },
             completion,
         } = outcome
@@ -1012,19 +1224,68 @@ mod tests {
         assert!(ingress.control.is_empty());
         assert!(ingress.user.is_empty());
         assert!(activation_tasks.is_empty());
-        assert!(owner_cancellation.is_none());
         assert_eq!(descendants, ());
         assert_eq!(completion, Completion::Stopped);
     }
 
     #[tokio::test]
+    async fn abandoned_private_binding_returns_untouched_initialization() {
+        let addresses = ActorSpace::new();
+        let mut child = spawn_owned_with(
+            addresses.clone(),
+            Config::new(2),
+            MailAddr(1),
+            RootProbe { terminal_marker: 0 },
+            |_, _, _, _| ObserveInertActions(ignore_root_actions),
+        )
+        .await
+        .expect("reservation and private commitment must succeed");
+
+        assert!(addresses.resolve(&MailAddr(1)).is_none());
+        let binding = child
+            .binding
+            .take()
+            .expect("private binding awaits its owner");
+        drop(binding);
+        let outcome = child.task.finish().await;
+        let ActorExecutionOutcome::ActivationFailed {
+            behavior,
+            residual:
+                LocalResidual::Uncommitted {
+                    initialization,
+                    ingress,
+                    activation_tasks,
+                    descendants,
+                },
+            error: LocalActivationRejection::BindingAbandoned,
+        } = outcome
+        else {
+            panic!("abandonment must return the exact uncommitted child and actions")
+        };
+
+        assert_eq!(behavior.terminal_marker, 19);
+        assert_eq!(initialization.sends, NoSends);
+        assert!(initialization.creates.is_empty());
+        assert!(matches!(initialization.become_, behavior::Step::Stop(_)));
+        assert!(ingress.control.is_empty());
+        assert!(ingress.user.is_empty());
+        assert!(activation_tasks.is_empty());
+        assert_eq!(descendants, ());
+        assert!(addresses.resolve(&MailAddr(1)).is_none());
+        let termination = child.actor.termination().await;
+        assert_eq!(termination, Err(Crash::EnvironmentFailed));
+        let replay = child.actor.termination().await;
+        assert_eq!(replay, termination);
+    }
+
+    #[tokio::test]
     async fn projected_child_retirement_preserves_origin_state_and_descendants() {
-        let descendant_origin = ActorOrigin::<RootProbe>::child(MailAddr(2), 0);
+        let descendant_origin = ChildOrigin::<RootProbe, ProbeChildRole>::new(MailAddr(2), 0);
         let descendant = ProbeTerminal::Probe {
             origin: descendant_origin,
             terminal: ActorRetirement::Cancelled,
         };
-        let child = spawn_owned_with(
+        let mut child = spawn_owned_with(
             ActorSpace::new(),
             Config::new(2),
             MailAddr(1),
@@ -1035,8 +1296,10 @@ mod tests {
             },
         )
         .await
-        .expect("the child must publish after initialization commitment");
-        let child_origin = ActorOrigin::<RootProbe, Here>::child(MailAddr(1), 0);
+        .expect("the child must transfer private commitment before publication");
+        child.acknowledge_binding();
+        assert!(child.binding.is_none());
+        let child_origin = ChildOrigin::<RootProbe, ProbeChildRole>::new(MailAddr(1), 0);
 
         let terminal = ProjectedTask::project(child.task, child_origin)
             .finish()
@@ -1056,7 +1319,7 @@ mod tests {
             panic!("the projected child must preserve its completed disposition")
         };
 
-        assert_eq!(origin, child_origin.into_declared_root());
+        assert_eq!(origin, child_origin);
         assert_eq!(behavior.terminal_marker, 19);
         let settlement_status = settlements.settlement_status();
         assert_eq!(settlement_status, SettlementStatus::Accepted);

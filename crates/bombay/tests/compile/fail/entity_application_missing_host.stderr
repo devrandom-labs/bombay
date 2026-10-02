@@ -1,7 +1,7 @@
 error[E0277]: the actor system does not host actor protocol `Account` locally
-  --> tests/compile/fail/entity_application_missing_host.rs:33:18
+  --> tests/compile/fail/entity_application_missing_host.rs:34:18
    |
-33 |     type Hosts = MissingAccountSpace;
+34 |     type Hosts = MissingAccountSpace;
    |                  ^^^^^^^^^^^^^^^^^^^ missing local actor protocol
    |
    = note: add an `ActorSpace<Account>` and implement `Hosts<Account>` for the actor-space product

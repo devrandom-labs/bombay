@@ -1,5 +1,6 @@
 //! Static application assembly and local capability interpretation.
 
+use core::convert::Infallible;
 use core::fmt;
 use core::future::Future;
 use core::marker::PhantomData;
@@ -7,7 +8,7 @@ use std::collections::HashMap;
 use std::io;
 #[cfg(feature = "axum")]
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, Mutex, PoisonError, Weak};
 use std::time::Instant;
 
 use behavior::{
@@ -15,22 +16,30 @@ use behavior::{
     BirthNodeAppend, Births, ChildCons, ChildCreationOutcome, ChildDelivery, ChildDeliveryReason,
     ChildHead, ChildInput, ChildInputIngress, ChildInputReason, ChildNamespaceExhausted,
     ChildOccurrenceProduct, ChildOccurrenceShape, ChildOccurrences, ChildProduct, ChildTail,
-    Children, ClassifySettlement, CreateChild, CreationCorrelation, CreationId, CreationKind,
-    CreationRejection, CreationSequence, Creations, Delivery, EstablishChild, EstablishedCreation,
-    EventIngress, ExactDeliveryReason, Here, InjectEvent, InterpretItem, InterpreterFault,
-    ItemSettlement, LogicalDeliveryReason, Never, NoChildren, ParentReportReason, Protocol,
-    ReportToParent, ResolveChildOccurrence, ResolvedChild, ResolvedChildPosition, RoutedCreation,
-    SourceAdmission,
+    Children, ClassifySettlement, CommittedChild, CreateChild, CreationCorrelation, CreationId,
+    CreationKind, CreationRejection, CreationSequence, Creations, Delivery, EstablishChild,
+    EstablishedActor, EstablishedCreation, EstablishedDelivery, EstablishedRecipient, EventIngress,
+    ExactDeliveryReason, Here, Ingress, InjectEvent, InterpretItem, InterpreterFault,
+    ItemSettlement, LogicalDeliveryReason, Never, NoBirths, NoChildren, ParentReportReason,
+    Protocol, Recipient, RecoverEvent, ReportToParent, ResolveChildOccurrence, ResolvedChild,
+    ResolvedChildPosition, RetirementBirths, RoutedCreation, SourceAdmission,
+};
+use behavior_actors::atomic::{
+    ActivationPlan, ActivationStartRejection, AssignWorker, Assignment, AssignmentReceipt,
+    BeginActivation, CustomerDelivery, DiagnosticAccepted, DiagnosticAction, InitializeWorker,
+    PrepareWorkers, ProxyControl, ProxyControlAdmission, ProxyInputReceipt, ProxyOperation,
+    StableProxy, WorkerActivation, WorkerInitializationOutcome, WorkerInitializationReport,
+    WorkerPreparation, WorkerPreparationStarted, WorkerSource,
 };
 use behavior_actors::{
     CancelObservation, ChildShutdownRejection, ChildStopped, CreationResolved,
-    EstablishedObservation, InstallShutdownPlan, InterpretEstablishedObservation,
-    InterpretEstablishedShutdown, ObservationId, ObservationOperation, ObservationRejection,
-    ObserveChild, ObserveCreation, ObserveEstablished, ObserveEstablishedCreation, ObservePeer,
-    PeerObservationRejection, PeerStopped, ReportShutdownPlan, ReportTerminalOutcome,
-    ScheduleAfter, ScheduleAfterRejection, ScheduleAt, ScheduleAtRejection, ShutdownChild,
-    ShutdownEstablished, ShutdownId, ShutdownRejection, ShutdownRequested, TimerElapsed,
-    TimerScheduled,
+    EstablishedObservation, EstablishedShutdownResolved, InstallShutdownPlan,
+    InterpretEstablishedObservation, InterpretEstablishedShutdown, ObservationId,
+    ObservationOperation, ObservationRejection, ObserveChild, ObserveCreation, ObserveEstablished,
+    ObserveEstablishedCreation, ObservePeer, PeerObservationRejection, PeerStopped, ReplyDelivery,
+    ReportShutdownPlan, ReportTerminalOutcome, ScheduleAfter, ScheduleAfterRejection, ScheduleAt,
+    ScheduleAtRejection, ShutdownChild, ShutdownEstablished, ShutdownId, ShutdownRejection,
+    ShutdownRequested, TimerElapsed, TimerScheduled,
 };
 use bombay_address::ClaimError;
 use communication::{ControlClosed, ControlSender};
@@ -40,9 +49,8 @@ use crate::actor_interface::{ActorInterface, ExtractLocalEndpoint};
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::Application;
 use crate::child_bindings::{
-    ChildBindingAt, CreationBinding, CreationBindingAt, HostChildAt, NestedBindings,
-    NestedChildBindings, NoChildBindings, OccurrenceBindings, RetireChildTasks,
-    RuntimeChildBindings, RuntimeChildSpaces,
+    ChildBindingAt, ChildBindings, CreationBinding, NestedBindings, NestedChildBindings,
+    NoChildBindings, RetireChildTasks, RuntimeChildBindings,
 };
 use crate::entity::{
     EntityAdmission, EntityApplicationFamilies, EntityDefinition, EntityFamilyAt,
@@ -50,17 +58,21 @@ use crate::entity::{
 };
 use crate::interpret::{ActionInterpreter, RetireCapabilities};
 use crate::launch::{
-    ActorSpace, OwnedTask, ProjectedTask, SpawnError, spawn_owned_with, spawn_root_with,
+    ActorSpace, OwnedTask, ProjectedTask, RootActor, SpawnError, spawn_owned_with, spawn_root_with,
 };
-use crate::local::{ActivationTasks, ActorRef, CapabilityRetirement, CommitActions, Termination};
-use crate::observation::{FactQueue, LocalPeerObservations};
+use crate::local::{
+    ActivationTasks, ActorRef, CapabilityRetirement, CommitActions, InstalledActor, Termination,
+    request_actor_shutdown,
+};
+use crate::observation::{TerminationObservations, observe_peer};
 use crate::reports::{
     LocalParentReports, LocalTerminalReports, ParentReporting, TerminalReportTransaction,
 };
-use crate::terminal::{ActorOrigin, ActorRetirement, LocalOutcome, ProjectTerminal};
+use crate::terminal::{ActorRetirement, ChildOrigin, LocalOutcome, ProjectTerminal, RootOrigin};
 use crate::termination::TerminalReportDisposition;
 use crate::time::LocalTimers;
 use crate::topology::{HostedActorSpaces, Hosts, ResolveLogical};
+use crate::worker_preparation::{WorkerPreparationSource, settle_worker_preparation};
 
 const DEFAULT_USER_CAPACITY: usize = 1_024;
 
@@ -84,11 +96,43 @@ type ApplicationBirthNode<Members> =
 type BindingTerminal<Bindings> = <Bindings as RetireChildTasks>::Root;
 type RootOriginProduct<Root> = ChildOccurrences<RootBirthNode<Root>, RootTerminalOriginMapper>;
 
+pub trait AppendApplicationBirths<Tail>: BirthMode
+where
+    Self::Child: BirthNodeAppend<Tail>,
+    Tail: BirthNodeAppend<Never>,
+{
+    type Output: BirthMode<Child = <Self::Child as BirthNodeAppend<Tail>>::Output>;
+}
+
+impl<Tail> AppendApplicationBirths<Tail> for NoBirths
+where
+    Never: BirthNodeAppend<Tail>,
+    Tail: BirthNodeAppend<Never>,
+{
+    type Output = RetirementBirths<<Never as BirthNodeAppend<Tail>>::Output>;
+}
+
+impl<Head, Tail> AppendApplicationBirths<Tail> for Births<Head>
+where
+    Head: BirthNodeAppend<Tail>,
+    Tail: BirthNodeAppend<Never>,
+{
+    type Output = Births<<Head as BirthNodeAppend<Tail>>::Output>;
+}
+
+impl<Head, Tail> AppendApplicationBirths<Tail> for RetirementBirths<Head>
+where
+    Head: BirthNodeAppend<Tail>,
+    Tail: BirthNodeAppend<Never>,
+{
+    type Output = RetirementBirths<<Head as BirthNodeAppend<Tail>>::Output>;
+}
+
 type RootCapabilities<Actor, Spaces, Terminal, Origins> = ApplicationCapabilities<
     Actor,
     HostedActorSpaces<Spaces>,
     NoParent,
-    OccurrenceBindings<Actor, Terminal>,
+    ChildBindings<Actor, Terminal>,
     Origins,
 >;
 type RootInterpreter<Actor, Spaces, Terminal, Origins> =
@@ -103,12 +147,12 @@ where
     pub(crate) allocations: ApplicationAddresses,
     pub(crate) control: ControlSender<C::Event>,
     pub(crate) timers: LocalTimers<C::Event>,
-    pub(crate) facts: FactQueue<MailAddr, C::Event>,
+    pub(crate) observations: TerminationObservations<MailAddr, C::Event>,
     pub(crate) terminal_reports: LocalTerminalReports,
 }
 
 /// Failure at the complete local application boundary.
-pub enum RunError<RootError = Never> {
+pub enum RunError<RootError = Never, RootTerminal = Never> {
     /// Tokio could not construct the application executor.
     Runtime(io::Error),
     /// The root address source rejected allocation.
@@ -121,15 +165,15 @@ pub enum RunError<RootError = Never> {
     Panicked,
     /// The executor cancelled the root task before activation.
     Cancelled,
-    /// The root stopped before publishing its live reference.
-    Ended(bombay_engine::Completion),
+    /// The committed root retired before publication; its exact terminal is retained.
+    Unpublished(RootTerminal),
     /// The private running application was initialized more than once.
     InitializedTwice,
     /// No collision-free creator-local nonce remained for an application actor.
     NonceExhausted,
 }
 
-impl<RootError> fmt::Debug for RunError<RootError> {
+impl<RootError, RootTerminal> fmt::Debug for RunError<RootError, RootTerminal> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
             Self::Runtime(_) => "Runtime",
@@ -138,14 +182,14 @@ impl<RootError> fmt::Debug for RunError<RootError> {
             Self::HostRejected(_) => "HostRejected",
             Self::Panicked => "Panicked",
             Self::Cancelled => "Cancelled",
-            Self::Ended(_) => "Ended",
+            Self::Unpublished(_) => "Unpublished",
             Self::InitializedTwice => "InitializedTwice",
             Self::NonceExhausted => "NonceExhausted",
         })
     }
 }
 
-impl<RootError> fmt::Display for RunError<RootError> {
+impl<RootError, RootTerminal> fmt::Display for RunError<RootError, RootTerminal> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
             Self::Runtime(_) => "Bombay could not construct its Tokio runtime",
@@ -154,14 +198,14 @@ impl<RootError> fmt::Display for RunError<RootError> {
             Self::HostRejected(_) => "the actor host rejected root initialization",
             Self::Panicked => "root initialization panicked",
             Self::Cancelled => "root initialization was cancelled",
-            Self::Ended(_) => "the root ended before publishing activation",
+            Self::Unpublished(_) => "the committed root retired before publication",
             Self::InitializedTwice => "the running application was initialized more than once",
             Self::NonceExhausted => "application actor nonce allocation was exhausted",
         })
     }
 }
 
-impl<RootError> std::error::Error for RunError<RootError> {
+impl<RootError, RootTerminal> std::error::Error for RunError<RootError, RootTerminal> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Runtime(error) => Some(error),
@@ -171,26 +215,48 @@ impl<RootError> std::error::Error for RunError<RootError> {
 }
 
 /// A live application's typed root and capability projections.
-pub struct ApplicationHandle<P: Protocol, Families = ()> {
+pub struct ApplicationHandle<P: Protocol, Event, Families = ()> {
     root: ActorRef<P>,
+    shutdown_control: Weak<ControlSender<Event>>,
     allocations: ApplicationAddresses,
     families: Families,
 }
 
-impl<P: Protocol, Families: Clone> Clone for ApplicationHandle<P, Families> {
+impl<P, Event, Families> fmt::Debug for ApplicationHandle<P, Event, Families>
+where
+    P: Protocol,
+    P::Addr: fmt::Debug,
+{
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("ApplicationHandle")
+            .field("root", &self.root)
+            .field("families_type", &core::any::type_name::<Families>())
+            .finish_non_exhaustive()
+    }
+}
+
+impl<P: Protocol, Event, Families: Clone> Clone for ApplicationHandle<P, Event, Families> {
     fn clone(&self) -> Self {
         Self {
             root: self.root.clone(),
+            shutdown_control: self.shutdown_control.clone(),
             allocations: self.allocations.clone(),
             families: self.families.clone(),
         }
     }
 }
 
-impl<P: Protocol, Families> ApplicationHandle<P, Families> {
-    fn new(root: ActorRef<P>, allocations: ApplicationAddresses, families: Families) -> Self {
+impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
+    fn new(
+        root: ActorRef<P>,
+        shutdown_control: Weak<ControlSender<Event>>,
+        allocations: ApplicationAddresses,
+        families: Families,
+    ) -> Self {
         Self {
             root,
+            shutdown_control,
             allocations,
             families,
         }
@@ -209,9 +275,10 @@ impl<P: Protocol, Families> ApplicationHandle<P, Families> {
 
     /// Project lifecycle authority without exposing topology ownership.
     #[must_use]
-    pub fn lifecycle(&self) -> ApplicationLifecycle<P> {
+    pub fn lifecycle(&self) -> ApplicationLifecycle<P, Event> {
         ApplicationLifecycle {
             root: self.root.clone(),
+            control: self.shutdown_control.clone(),
         }
     }
 
@@ -251,31 +318,55 @@ impl<P: Protocol, Families> ApplicationHandle<P, Families> {
 }
 
 /// Explicit application lifecycle authority, separate from actor messaging.
-pub struct ApplicationLifecycle<P: Protocol> {
+pub struct ApplicationLifecycle<P: Protocol, Event> {
     root: ActorRef<P>,
+    control: Weak<ControlSender<Event>>,
 }
 
-impl<P: Protocol> Clone for ApplicationLifecycle<P> {
+impl<P, Event> fmt::Debug for ApplicationLifecycle<P, Event>
+where
+    P: Protocol,
+    P::Addr: fmt::Debug,
+{
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("ApplicationLifecycle")
+            .field("root", &self.root)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<P: Protocol, Event> Clone for ApplicationLifecycle<P, Event> {
     fn clone(&self) -> Self {
         Self {
             root: self.root.clone(),
+            control: self.control.clone(),
         }
     }
 }
 
-impl<P: Protocol> ApplicationLifecycle<P> {
+impl<P: Protocol, Event> ApplicationLifecycle<P, Event> {
     /// Request shutdown through the root lifecycle lane.
     ///
     /// # Errors
     ///
     /// Returns the exact rejection when the root is already stopping or has
     /// already stopped.
-    pub fn request_shutdown(&self) -> Result<(), ShutdownRejection> {
-        self.root.request_shutdown()
+    pub fn request_shutdown(&self) -> Result<(), ShutdownRejection>
+    where
+        Event: InjectEvent<ShutdownRequested, Here>,
+    {
+        if self.root.termination_observation().try_get().is_some() {
+            return Err(ShutdownRejection::AlreadyStopped);
+        }
+        let Some(control) = self.control.upgrade() else {
+            return Err(self.root.shutdown_rejection());
+        };
+        request_actor_shutdown(&self.root, &control, Ingress::new())
     }
 
     /// Observe termination of the exact root incarnation.
-    pub fn termination(&self) -> impl Future<Output = Termination<P::Addr>> + use<P> {
+    pub fn termination(&self) -> impl Future<Output = Termination<P::Addr>> + use<P, Event> {
         self.root.termination()
     }
 }
@@ -285,7 +376,7 @@ impl<P: Protocol> ApplicationLifecycle<P> {
 #[derive(Debug, thiserror::Error)]
 pub enum AxumRunError<RootTerminal, RootError = Never> {
     #[error(transparent)]
-    Application(#[from] RunError<RootError>),
+    Application(#[from] RunError<RootError, RootTerminal>),
     #[error("Bombay could not bind the Axum listener at {address}")]
     Bind {
         address: SocketAddr,
@@ -301,6 +392,7 @@ pub enum AxumRunError<RootTerminal, RootError = Never> {
 }
 
 /// Explicit advanced composition of one root and its logical protocol spaces.
+#[derive(Debug)]
 pub struct App<Root, Spaces, Families = ()> {
     root: Root,
     spaces: Spaces,
@@ -374,37 +466,110 @@ where
 {
     type Error;
 
-    fn project(address: MailAddr, outcome: LocalOutcome<Actor, Vec<Terminal>>) -> Terminal;
+    fn project_retirement(
+        address: MailAddr,
+        retirement: ActorRetirement<Actor, Terminal>,
+    ) -> Terminal;
 
-    fn startup_error(error: SpawnError<Actor, Vec<Terminal>>) -> RunError<Self::Error>;
+    fn project(address: MailAddr, outcome: LocalOutcome<Actor, Vec<Terminal>>) -> Terminal {
+        Self::project_retirement(address, ActorRetirement::from_local(outcome))
+    }
+
+    fn startup_error(
+        address: MailAddr,
+        error: SpawnError<Actor, Vec<Terminal>>,
+    ) -> RunError<Self::Error, Terminal>;
 }
 
 impl<Actor, Terminal> RootProjection<Actor, Terminal> for DirectRoot
 where
     Actor: behavior::BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    Terminal: ProjectTerminal<ActorOrigin<Actor, Here>, ActorRetirement<Actor, Terminal>>,
+    Terminal: ProjectTerminal<RootOrigin<Actor>, ActorRetirement<Actor, Terminal>>,
 {
     type Error = Actor::Error;
 
-    fn project(address: MailAddr, outcome: LocalOutcome<Actor, Vec<Terminal>>) -> Terminal {
-        Terminal::project(
-            ActorOrigin::<Actor, Here>::root(address),
-            ActorRetirement::from_local(outcome),
-        )
+    fn project_retirement(
+        address: MailAddr,
+        retirement: ActorRetirement<Actor, Terminal>,
+    ) -> Terminal {
+        Terminal::project(RootOrigin::<Actor>::new(address), retirement)
     }
 
-    fn startup_error(error: SpawnError<Actor, Vec<Terminal>>) -> RunError<Self::Error> {
+    fn startup_error(
+        address: MailAddr,
+        error: SpawnError<Actor, Vec<Terminal>>,
+    ) -> RunError<Self::Error, Terminal> {
         match error {
             SpawnError::AllocationRejected { reason, .. } => RunError::AllocationRejected(reason),
             SpawnError::InitializationRejected { error, .. } => {
                 RunError::InitializationRejected(error)
             }
+            panicked @ SpawnError::InitializationPanicked { .. } => RunError::Unpublished(
+                Self::project_retirement(address, panicked.into_retirement()),
+            ),
             SpawnError::HostRejected { error, .. } => RunError::HostRejected(error),
+            unpublished @ (SpawnError::BindingAbandoned { .. } | SpawnError::Unpublished(_)) => {
+                RunError::Unpublished(Self::project_retirement(
+                    address,
+                    unpublished.into_retirement(),
+                ))
+            }
             SpawnError::Panicked => RunError::Panicked,
             SpawnError::Cancelled => RunError::Cancelled,
-            SpawnError::Ended(completion) => RunError::Ended(completion),
         }
     }
+}
+
+async fn launch_application_root<Actor, Spaces, Terminal, Origins>(
+    spaces: Spaces,
+    root: Actor,
+    allocations: ApplicationAddresses,
+) -> Result<RootActor<Actor, Vec<Terminal>>, SpawnError<Actor, Vec<Terminal>>>
+where
+    Actor: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+    BehaviorMessage<Actor>: Send + 'static,
+    Actor::Sends: Send + 'static,
+    Actor::Error: Send + 'static,
+    <Actor::Birth as BirthMode>::Child:
+        ChildOccurrenceProduct<RuntimeChildBindings<Terminal>> + Send + 'static,
+    Spaces: Hosts<Actor::Protocol> + Send + Sync + 'static,
+    ChildBindings<Actor, Terminal>: Default + RetireChildTasks<Root = Terminal> + Send + 'static,
+    RootInterpreter<Actor, Spaces, Terminal, Origins>:
+        CommitActions<Actor, Retired = Vec<Terminal>> + Send + 'static,
+    <Actor as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
+    Terminal: Send + 'static,
+{
+    let roots = <Spaces as Hosts<Actor::Protocol>>::space(&spaces).clone();
+    let actor_spaces = Arc::new(HostedActorSpaces(spaces));
+    let address = MailAddr::APPLICATION_ROOT;
+    spawn_root_with(
+        roots,
+        communication::Config::new(DEFAULT_USER_CAPACITY),
+        address,
+        root,
+        move |control, terminal_reports, timers, observations| {
+            ActionInterpreter::new(ApplicationCapabilities::<
+                Actor,
+                HostedActorSpaces<Spaces>,
+                NoParent,
+                ChildBindings<Actor, Terminal>,
+                Origins,
+            >::new_with_bindings(
+                ApplicationCapabilityInputs {
+                    address,
+                    actor_spaces,
+                    allocations,
+                    control,
+                    timers,
+                    observations,
+                    terminal_reports,
+                },
+                ChildBindings::<Actor, Terminal>::default(),
+            ))
+        },
+    )
+    .await
 }
 
 trait LaunchSystem<Actor, Terminal, Origins, Projection>
@@ -416,7 +581,7 @@ where
     fn launch(
         self,
         root: Actor,
-    ) -> impl Future<Output = Result<Terminal, RunError<Self::RootError>>> + Send;
+    ) -> impl Future<Output = Result<Terminal, RunError<Self::RootError, Terminal>>> + Send;
 
     fn launch_with<Families, Boundary, BoundaryFuture, Output>(
         self,
@@ -424,10 +589,11 @@ where
         allocations: ApplicationAddresses,
         families: Families,
         boundary: Boundary,
-    ) -> impl Future<Output = Result<(Output, Terminal), RunError<Self::RootError>>> + Send
+    ) -> impl Future<Output = Result<(Output, Terminal), RunError<Self::RootError, Terminal>>> + Send
     where
         Families: Clone + Send + 'static,
-        Boundary: FnOnce(ApplicationHandle<Actor::Protocol, Families>) -> BoundaryFuture + Send,
+        Boundary: FnOnce(ApplicationHandle<Actor::Protocol, Actor::Event, Families>) -> BoundaryFuture
+            + Send,
         BoundaryFuture: Future<Output = Output> + Send,
         Output: Send;
 
@@ -439,7 +605,7 @@ where
         router: Router,
     ) -> impl Future<Output = Result<Terminal, AxumRunError<Terminal, Self::RootError>>> + Send
     where
-        Router: FnOnce(ApplicationHandle<Actor::Protocol>) -> axum::Router + Send;
+        Router: FnOnce(ApplicationHandle<Actor::Protocol, Actor::Event>) -> axum::Router + Send;
 }
 
 impl<Actor, Spaces, Terminal, Origins, Projection>
@@ -450,13 +616,10 @@ where
     BehaviorMessage<Actor>: Send + 'static,
     Actor::Sends: Send + 'static,
     Actor::Error: Send + 'static,
-    <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal>>
-        + ChildOccurrenceProduct<RuntimeChildSpaces>
-        + Send
-        + 'static,
+    <Actor::Birth as BirthMode>::Child:
+        ChildOccurrenceProduct<RuntimeChildBindings<Terminal>> + Send + 'static,
     Spaces: Hosts<Actor::Protocol> + Send + Sync + 'static,
-    OccurrenceBindings<Actor, Terminal>:
-        Default + RetireChildTasks<Root = Terminal> + Send + 'static,
+    ChildBindings<Actor, Terminal>: Default + RetireChildTasks<Root = Terminal> + Send + 'static,
     RootInterpreter<Actor, Spaces, Terminal, Origins>:
         CommitActions<Actor, Retired = Vec<Terminal>> + Send + 'static,
     <Actor as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
@@ -465,13 +628,13 @@ where
 {
     type RootError = <Projection as RootProjection<Actor, Terminal>>::Error;
 
-    async fn launch(self, root: Actor) -> Result<Terminal, RunError<Self::RootError>> {
+    async fn launch(self, root: Actor) -> Result<Terminal, RunError<Self::RootError, Terminal>> {
         <Spaces as LaunchSystem<Actor, Terminal, Origins, Projection>>::launch_with(
             self,
             root,
             ApplicationAddresses::new(),
             (),
-            |_: ApplicationHandle<Actor::Protocol>| async {},
+            |_: ApplicationHandle<Actor::Protocol, Actor::Event>| async {},
         )
         .await
         .map(|((), terminal)| terminal)
@@ -483,50 +646,27 @@ where
         allocations: ApplicationAddresses,
         families: Families,
         boundary: Boundary,
-    ) -> Result<(Output, Terminal), RunError<Self::RootError>>
+    ) -> Result<(Output, Terminal), RunError<Self::RootError, Terminal>>
     where
         Families: Clone + Send + 'static,
-        Boundary: FnOnce(ApplicationHandle<Actor::Protocol, Families>) -> BoundaryFuture + Send,
+        Boundary: FnOnce(ApplicationHandle<Actor::Protocol, Actor::Event, Families>) -> BoundaryFuture
+            + Send,
         BoundaryFuture: Future<Output = Output> + Send,
         Output: Send,
     {
-        let roots = <Spaces as Hosts<Actor::Protocol>>::space(&self).clone();
-        let actor_spaces = Arc::new(HostedActorSpaces(self));
         let interface_allocations = allocations.clone();
         let address = MailAddr::APPLICATION_ROOT;
-        let root = spawn_root_with(
-            roots,
-            communication::Config::new(DEFAULT_USER_CAPACITY),
-            address,
-            root,
-            {
-                let actor_spaces = actor_spaces.clone();
-                move |control, terminal_reports, timers, facts| {
-                    ActionInterpreter::new(ApplicationCapabilities::<
-                        Actor,
-                        HostedActorSpaces<Spaces>,
-                        NoParent,
-                        OccurrenceBindings<Actor, Terminal>,
-                        Origins,
-                    >::new_with_bindings(
-                        ApplicationCapabilityInputs {
-                            address,
-                            actor_spaces,
-                            allocations,
-                            control,
-                            timers,
-                            facts,
-                            terminal_reports,
-                        },
-                        OccurrenceBindings::<Actor, Terminal>::default(),
-                    ))
-                }
-            },
-        )
-        .await
-        .map_err(Projection::startup_error)?;
+        let root =
+            launch_application_root::<Actor, Spaces, Terminal, Origins>(self, root, allocations)
+                .await
+                .map_err(|error| Projection::startup_error(address, error))?;
 
-        let application = ApplicationHandle::new(root.actor, interface_allocations, families);
+        let application = ApplicationHandle::new(
+            root.actor,
+            root.shutdown_control,
+            interface_allocations,
+            families,
+        );
         let output = boundary(application).await;
         let terminal = Projection::project(address, root.task.finish().await);
         Ok((output, terminal))
@@ -540,49 +680,21 @@ where
         router: Router,
     ) -> Result<Terminal, AxumRunError<Terminal, Self::RootError>>
     where
-        Router: FnOnce(ApplicationHandle<Actor::Protocol>) -> axum::Router + Send,
+        Router: FnOnce(ApplicationHandle<Actor::Protocol, Actor::Event>) -> axum::Router + Send,
     {
         let listener = tokio::net::TcpListener::bind(address)
             .await
             .map_err(|source| AxumRunError::Bind { address, source })?;
-        let roots = <Spaces as Hosts<Actor::Protocol>>::space(&self).clone();
-        let actor_spaces = Arc::new(HostedActorSpaces(self));
         let allocations = ApplicationAddresses::new();
         let interface_allocations = allocations.clone();
         let root_address = MailAddr::APPLICATION_ROOT;
-        let root = spawn_root_with(
-            roots,
-            communication::Config::new(DEFAULT_USER_CAPACITY),
-            root_address,
-            root,
-            {
-                let actor_spaces = actor_spaces.clone();
-                move |control, terminal_reports, timers, facts| {
-                    ActionInterpreter::new(ApplicationCapabilities::<
-                        Actor,
-                        HostedActorSpaces<Spaces>,
-                        NoParent,
-                        OccurrenceBindings<Actor, Terminal>,
-                        Origins,
-                    >::new_with_bindings(
-                        ApplicationCapabilityInputs {
-                            address: root_address,
-                            actor_spaces,
-                            allocations,
-                            control,
-                            timers,
-                            facts,
-                            terminal_reports,
-                        },
-                        OccurrenceBindings::<Actor, Terminal>::default(),
-                    ))
-                }
-            },
-        )
-        .await
-        .map_err(Projection::startup_error)?;
+        let root =
+            launch_application_root::<Actor, Spaces, Terminal, Origins>(self, root, allocations)
+                .await
+                .map_err(|error| Projection::startup_error(root_address, error))?;
 
-        let application = ApplicationHandle::new(root.actor, interface_allocations, ());
+        let application =
+            ApplicationHandle::new(root.actor, root.shutdown_control, interface_allocations, ());
         let lifecycle = application.lifecycle();
         let server_shutdown = lifecycle.termination();
         let serve = axum::serve(listener, router(application.clone()))
@@ -619,7 +731,7 @@ where
     /// # Errors
     ///
     /// Returns the exact runtime-construction or root-startup failure.
-    pub fn run<Terminal>(self) -> Result<Terminal, RunError<Root::Error>>
+    pub fn run<Terminal>(self) -> Result<Terminal, RunError<Root::Error, Terminal>>
     where
         Spaces: LaunchSystem<
                 Root,
@@ -644,7 +756,7 @@ where
     pub fn run_with<Terminal, Boundary, BoundaryFuture, Output>(
         self,
         boundary: Boundary,
-    ) -> Result<(Output, Terminal), RunError<Root::Error>>
+    ) -> Result<(Output, Terminal), RunError<Root::Error, Terminal>>
     where
         Spaces: LaunchSystem<
                 Root,
@@ -653,7 +765,7 @@ where
                 DirectRoot,
                 RootError = Root::Error,
             >,
-        Boundary: FnOnce(ApplicationHandle<Root::Protocol>) -> BoundaryFuture + Send,
+        Boundary: FnOnce(ApplicationHandle<Root::Protocol, Root::Event>) -> BoundaryFuture + Send,
         BoundaryFuture: Future<Output = Output> + Send,
         Output: Send,
     {
@@ -676,7 +788,7 @@ where
     pub fn run_axum<Terminal>(
         self,
         address: SocketAddr,
-        router: impl FnOnce(ApplicationHandle<Root::Protocol>) -> axum::Router + Send,
+        router: impl FnOnce(ApplicationHandle<Root::Protocol, Root::Event>) -> axum::Router + Send,
     ) -> Result<Terminal, AxumRunError<Terminal, Root::Error>>
     where
         Spaces: LaunchSystem<
@@ -726,7 +838,7 @@ where
             Terminal,
             <Families as EntityApplicationFamilies<Spaces>>::Shutdowns,
         ),
-        RunError<Root::Error>,
+        RunError<Root::Error, Terminal>,
     >
     where
         Arc<Spaces>: LaunchSystem<
@@ -739,6 +851,7 @@ where
         Boundary: FnOnce(
                 ApplicationHandle<
                     Root::Protocol,
+                    Root::Event,
                     <Families as EntityApplicationFamilies<Spaces>>::Receptionists,
                 >,
             ) -> BoundaryFuture
@@ -829,10 +942,10 @@ enum ApplicationStagingError {
     NonceExhausted,
 }
 
-fn stage_application<Root, Members>(
+fn stage_application<Root, Members, Terminal>(
     root: Root,
     members: Members,
-) -> Result<ApplicationBehavior<Root, ApplicationProduct<Members>>, RunError<Root::Error>>
+) -> Result<ApplicationBehavior<Root, ApplicationProduct<Members>>, RunError<Root::Error, Terminal>>
 where
     Root: Behavior,
     Members: StageApplicationChildren,
@@ -874,13 +987,14 @@ where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     Product: ChildProduct<MailAddr>,
     RootBirthNode<Root>: BirthNodeAppend<Product::Choice>,
+    Root::Birth: AppendApplicationBirths<Product::Choice>,
 {
     type Protocol = Root::Protocol;
     type Event = Root::Event;
     type Sends = Root::Sends;
     type Ph = Never;
     type Error = ApplicationDefinitionError<Root::Error>;
-    type Birth = Births<<RootBirthNode<Root> as BirthNodeAppend<Product::Choice>>::Output>;
+    type Birth = <Root::Birth as AppendApplicationBirths<Product::Choice>>::Output;
 
     fn init(&mut self, _: behavior::InitializationTurn) -> behavior::BehaviorActed<Self> {
         let actions =
@@ -930,45 +1044,52 @@ where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     Product: ChildProduct<MailAddr>,
     RootBirthNode<Root>: BirthNodeAppend<Product::Choice>,
+    Root::Birth: AppendApplicationBirths<Product::Choice>,
     ApplicationBehavior<Root, Product>: BehaviorSettlements<
             Protocol = Root::Protocol,
             Event = Root::Event,
             Sends = Root::Sends,
             Ph = Never,
             Error = ApplicationDefinitionError<Root::Error>,
-            Birth = Births<<RootBirthNode<Root> as BirthNodeAppend<Product::Choice>>::Output>,
+            Birth = <Root::Birth as AppendApplicationBirths<Product::Choice>>::Output,
             Settlements: ClassifySettlement + Send + 'static,
         >,
     Terminal: ProjectTerminal<
-            ActorOrigin<Root, Here>,
+            RootOrigin<Root>,
             ActorRetirement<ApplicationBehavior<Root, Product>, Terminal>,
         >,
 {
     type Error = Root::Error;
 
-    fn project(
+    fn project_retirement(
         address: MailAddr,
-        outcome: LocalOutcome<ApplicationBehavior<Root, Product>, Vec<Terminal>>,
+        retirement: ActorRetirement<ApplicationBehavior<Root, Product>, Terminal>,
     ) -> Terminal {
-        Terminal::project(
-            ActorOrigin::<Root, Here>::root(address),
-            ActorRetirement::from_local(outcome),
-        )
+        Terminal::project(RootOrigin::<Root>::new(address), retirement)
     }
 
     fn startup_error(
+        address: MailAddr,
         error: SpawnError<ApplicationBehavior<Root, Product>, Vec<Terminal>>,
-    ) -> RunError<Self::Error> {
+    ) -> RunError<Self::Error, Terminal> {
         match error {
             SpawnError::AllocationRejected { reason, .. } => RunError::AllocationRejected(reason),
             SpawnError::InitializationRejected { error, .. } => match error {
                 ApplicationDefinitionError::Root(error) => RunError::InitializationRejected(error),
                 ApplicationDefinitionError::InitializedTwice => RunError::InitializedTwice,
             },
+            panicked @ SpawnError::InitializationPanicked { .. } => RunError::Unpublished(
+                Self::project_retirement(address, panicked.into_retirement()),
+            ),
             SpawnError::HostRejected { error, .. } => RunError::HostRejected(error),
+            unpublished @ (SpawnError::BindingAbandoned { .. } | SpawnError::Unpublished(_)) => {
+                RunError::Unpublished(Self::project_retirement(
+                    address,
+                    unpublished.into_retirement(),
+                ))
+            }
             SpawnError::Panicked => RunError::Panicked,
             SpawnError::Cancelled => RunError::Cancelled,
-            SpawnError::Ended(completion) => RunError::Ended(completion),
         }
     }
 }
@@ -981,7 +1102,7 @@ where
     type Origins;
     type Projection;
 
-    fn compose(self, root: Root) -> Result<Self::Actor, RunError<Root::Error>>;
+    fn compose<Terminal>(self, root: Root) -> Result<Self::Actor, RunError<Root::Error, Terminal>>;
 }
 
 impl<Root> ComposeApplication<Root> for ()
@@ -992,7 +1113,7 @@ where
     type Origins = StructuralOrigins<Root::Base>;
     type Projection = DirectRoot;
 
-    fn compose(self, root: Root) -> Result<Self::Actor, RunError<Root::Error>> {
+    fn compose<Terminal>(self, root: Root) -> Result<Self::Actor, RunError<Root::Error, Terminal>> {
         Ok(root)
     }
 }
@@ -1002,12 +1123,13 @@ where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     (Role, Actor, Tail): DeclaredApplicationChildren,
     RootBirthNode<Root>: BirthNodeAppend<ApplicationBirthNode<(Role, Actor, Tail)>>,
+    Root::Birth: AppendApplicationBirths<ApplicationBirthNode<(Role, Actor, Tail)>>,
 {
     type Actor = ApplicationBehavior<Root, ApplicationProduct<(Role, Actor, Tail)>>;
     type Origins = ApplicationOrigins<Root, (Role, Actor, Tail)>;
     type Projection = DeclaredRoot;
 
-    fn compose(self, root: Root) -> Result<Self::Actor, RunError<Root::Error>> {
+    fn compose<Terminal>(self, root: Root) -> Result<Self::Actor, RunError<Root::Error, Terminal>> {
         stage_application(root, self)
     }
 }
@@ -1027,7 +1149,7 @@ where
     ///
     /// Returns the exact root initialization or local runtime failure that
     /// prevented the application from reaching its retirement boundary.
-    pub fn run<Terminal>(self) -> Result<Terminal, RunError<Root::Error>>
+    pub fn run<Terminal>(self) -> Result<Terminal, RunError<Root::Error, Terminal>>
     where
         ActorSpace<Root::Protocol>: LaunchSystem<
                 Members::Actor,
@@ -1060,7 +1182,7 @@ where
     pub fn run_with<Terminal, Boundary, BoundaryFuture, Output>(
         self,
         boundary: Boundary,
-    ) -> Result<(Output, Terminal), RunError<Root::Error>>
+    ) -> Result<(Output, Terminal), RunError<Root::Error, Terminal>>
     where
         ActorSpace<Root::Protocol>: LaunchSystem<
                 Members::Actor,
@@ -1069,7 +1191,10 @@ where
                 Members::Projection,
                 RootError = Root::Error,
             >,
-        Boundary: FnOnce(ApplicationHandle<Root::Protocol>) -> BoundaryFuture + Send,
+        Boundary: FnOnce(
+                ApplicationHandle<Root::Protocol, <Members::Actor as Behavior>::Event>,
+            ) -> BoundaryFuture
+            + Send,
         BoundaryFuture: Future<Output = Output> + Send,
         Output: Send,
     {
@@ -1103,7 +1228,10 @@ where
     pub fn run_axum<Terminal>(
         self,
         address: SocketAddr,
-        router: impl FnOnce(ApplicationHandle<Root::Protocol>) -> axum::Router + Send,
+        router: impl FnOnce(
+            ApplicationHandle<Root::Protocol, <Members::Actor as Behavior>::Event>,
+        ) -> axum::Router
+        + Send,
     ) -> Result<Terminal, AxumRunError<Terminal, Root::Error>>
     where
         ActorSpace<Root::Protocol>: LaunchSystem<
@@ -1154,7 +1282,7 @@ where
     Child::Error: Send + 'static,
     <Child::Birth as BirthMode>::Child: Send + 'static,
     <Child as BehaviorSettlements>::Settlements: Send + 'static,
-    Terminal: ProjectTerminal<ActorOrigin<Owner, Position>, ActorRetirement<Child, Terminal>>
+    Terminal: ProjectTerminal<ChildOrigin<Owner, Position>, ActorRetirement<Child, Terminal>>
         + Send
         + 'static,
 {
@@ -1163,7 +1291,7 @@ where
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<Child, Terminal> {
-        ProjectedTask::project(task, ActorOrigin::<Owner, Position>::child(address, nonce))
+        ProjectedTask::project(task, ChildOrigin::<Owner, Position>::new(address, nonce))
     }
 }
 
@@ -1230,7 +1358,7 @@ where
     RootChild::Error: Send + 'static,
     <RootChild::Birth as BirthMode>::Child: Send + 'static,
     <RootChild as BehaviorSettlements>::Settlements: Send + 'static,
-    Terminal: ProjectTerminal<ActorOrigin<Root::Base, Absolute>, ActorRetirement<RootChild, Terminal>>
+    Terminal: ProjectTerminal<ChildOrigin<Root::Base, Absolute>, ActorRetirement<RootChild, Terminal>>
         + Send
         + 'static,
 {
@@ -1241,7 +1369,7 @@ where
     ) -> ProjectedTask<RootChild, Terminal> {
         ProjectedTask::project(
             task,
-            ActorOrigin::<Root::Base, Absolute>::child(address, nonce),
+            ChildOrigin::<Root::Base, Absolute>::new(address, nonce),
         )
     }
 }
@@ -1282,14 +1410,14 @@ where
     <Child::Birth as BirthMode>::Child: Send + 'static,
     <Child as BehaviorSettlements>::Settlements: Send + 'static,
     Terminal:
-        ProjectTerminal<ActorOrigin<Root, Role>, ActorRetirement<Child, Terminal>> + Send + 'static,
+        ProjectTerminal<ChildOrigin<Root, Role>, ActorRetirement<Child, Terminal>> + Send + 'static,
 {
     fn task(
         task: OwnedTask<Child, Vec<Terminal>>,
         address: MailAddr,
         nonce: u64,
     ) -> ProjectedTask<Child, Terminal> {
-        ProjectedTask::project(task, ActorOrigin::<Root, Role>::child(address, nonce))
+        ProjectedTask::project(task, ChildOrigin::<Root, Role>::new(address, nonce))
     }
 }
 
@@ -1347,8 +1475,7 @@ pub(crate) struct ApplicationCapabilities<
     address: MailAddr,
     control: ControlSender<C::Event>,
     timers: LocalTimers<C::Event>,
-    facts: FactQueue<MailAddr, C::Event>,
-    peers: Option<LocalPeerObservations<C::Protocol, C::Event>>,
+    observations: TerminationObservations<MailAddr, C::Event>,
     next_child_route: u64,
     child_bindings: Bindings,
     activation_tasks: ActivationTasks<C::Event>,
@@ -1374,8 +1501,7 @@ where
             address: inputs.address,
             control: inputs.control,
             timers: inputs.timers,
-            facts: inputs.facts,
-            peers: None,
+            observations: inputs.observations,
             next_child_route: 0,
             child_bindings,
             activation_tasks: ActivationTasks::new(),
@@ -1401,8 +1527,7 @@ where
             address: self.address,
             control: self.control,
             timers: self.timers,
-            facts: self.facts,
-            peers: self.peers,
+            observations: self.observations,
             next_child_route: self.next_child_route,
             child_bindings: self.child_bindings,
             activation_tasks: self.activation_tasks,
@@ -1413,11 +1538,11 @@ where
         }
     }
 
-    fn return_fact<Fact, Path>(&self, fact: Fact)
+    fn inject_control_event<Control, Path>(&self, control: Control)
     where
-        C::Event: InjectEvent<Fact, Path>,
+        C::Event: InjectEvent<Control, Path>,
     {
-        let event = C::Event::inject_at(fact);
+        let event = C::Event::inject_at(control);
         match self.control.send(event) {
             Ok(()) => {}
             Err(ControlClosed(_)) => {
@@ -1432,11 +1557,7 @@ impl<C, N, P, Bindings, Origins> TerminalReportTransaction
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
-    fn begin_terminal_reports(&self) {
-        self.terminal_reports.begin();
-    }
-
-    fn finish_terminal_reports(&self, disposition: TerminalReportDisposition) {
+    fn finish_terminal_reports(&mut self, disposition: TerminalReportDisposition) {
         self.terminal_reports.finish(disposition);
     }
 }
@@ -1510,8 +1631,6 @@ where
     P: Send,
     Position: 'static,
     Bindings: ChildBindingAt<Position, Child = Child, Root = BindingTerminal<Bindings>>
-        + CreationBindingAt<Position>
-        + HostChildAt<Position, Child>
         + NestedChildBindings<Child>
         + RetireChildTasks
         + Send,
@@ -1520,7 +1639,7 @@ where
         + Send
         + 'static,
     <Child as BehaviorSettlements>::Settlements: ClassifySettlement + Send + 'static,
-    Child::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+    Child::Event: Send + 'static,
     BehaviorMessage<Child>: Send + 'static,
     Child::Sends: Send + 'static,
     Child::Error: Send + 'static,
@@ -1532,7 +1651,7 @@ where
         ApplicationCapabilities<
             Child,
             N,
-            LocalParentReports<C::Event, Child, Position>,
+            LocalParentReports<C::Event, Child, C::Birth>,
             NestedBindings<Bindings, Child>,
             StructuralOrigins<Child::Base>,
         >,
@@ -1577,7 +1696,7 @@ where
             communication::Config::new(DEFAULT_USER_CAPACITY),
             address,
             child,
-            move |control, terminal_reports, timers, facts| {
+            move |control, terminal_reports, timers, observations| {
                 ActionInterpreter::new(
                     ApplicationCapabilities::<
                         Child,
@@ -1592,39 +1711,46 @@ where
                             allocations,
                             control,
                             timers,
-                            facts,
+                            observations,
                             terminal_reports,
                         },
                         NestedBindings::<Bindings, Child>::default(),
                     )
                     .with_parent(
-                        LocalParentReports::<C::Event, Child, Position>::new(id, parent),
+                        LocalParentReports::<C::Event, Child, C::Birth>::new(id, parent),
                     ),
                 )
             },
         )
         .await;
         match installed {
-            Ok(installed) => {
+            Ok(mut installed) => {
                 let endpoint = installed.actor.clone();
-                let previous = self
-                    .child_bindings
-                    .bind(route, endpoint.clone(), installed.control);
-                assert!(
-                    previous.is_none(),
-                    "one routed creation binds each child route once"
-                );
+                let control = installed.control.clone();
+                let binding = installed
+                    .binding
+                    .take()
+                    .expect("fresh child installation awaits one binding acknowledgement");
                 let task = Origins::task(installed.task, address, route);
-                self.child_bindings.retain_task(task);
-                self.child_bindings
-                    .record_creation(id, CreationBinding::Established { route, kind });
-                ItemSettlement::Accepted(ChildCreationOutcome::Established {
-                    established: EstablishedCreation::installed(
-                        id,
+                self.child_bindings.record_creation(
+                    id,
+                    CreationBinding::Established {
                         kind,
-                        endpoint.established_recipient(),
-                    ),
-                })
+                        endpoint: endpoint.clone(),
+                        control: installed.control,
+                        task,
+                    },
+                );
+                let acknowledgement = binding.send(());
+                assert!(
+                    acknowledgement.is_ok(),
+                    "the privately committed child awaits its recorded binding"
+                );
+                let actor =
+                    EstablishedActor::<Child>::issued(InstalledActor::new(endpoint, control));
+                ItemSettlement::Accepted(ChildCreationOutcome::Established(CommittedChild::new(
+                    id, kind, actor,
+                )))
             }
             Err(SpawnError::AllocationRejected { behavior, reason }) => {
                 self.child_bindings
@@ -1649,6 +1775,21 @@ where
                 ItemSettlement::Accepted(ChildCreationOutcome::InitializationRejected {
                     creation: routed_creation(id, kind, route, behavior),
                     error,
+                })
+            }
+            Err(SpawnError::InitializationPanicked {
+                behavior,
+                control,
+                user,
+                descendants,
+            }) => {
+                assert!(control.is_empty());
+                assert!(user.is_empty());
+                assert!(descendants.is_empty());
+                self.child_bindings
+                    .record_creation(id, CreationBinding::Rejected);
+                ItemSettlement::Accepted(ChildCreationOutcome::InitializationPanicked {
+                    creation: routed_creation(id, kind, route, behavior),
                 })
             }
             Err(SpawnError::HostRejected {
@@ -1676,8 +1817,28 @@ where
                     reason,
                 })
             }
-            Err(SpawnError::Panicked | SpawnError::Cancelled | SpawnError::Ended(_)) => {
-                panic!("child establishment failed outside its recoverable settlement boundary")
+            Err(SpawnError::BindingAbandoned {
+                behavior,
+                initialization,
+                control,
+                user,
+                descendants,
+            }) => {
+                assert!(control.is_empty());
+                assert!(user.is_empty());
+                assert!(descendants.is_empty());
+                self.child_bindings
+                    .record_creation(id, CreationBinding::Rejected);
+                ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
+                    creation: routed_creation(id, kind, route, behavior),
+                    initialization,
+                    reason: CreationRejection::EnvironmentFailed,
+                })
+            }
+            Err(SpawnError::Panicked | SpawnError::Cancelled | SpawnError::Unpublished(_)) => {
+                unreachable!(
+                    "private child commitment either returns its owned task or a precommit rejection"
+                )
             }
         }
     }
@@ -1716,7 +1877,7 @@ where
 }
 
 impl<C, N, P, Bindings, Origins, Target, RootEvent, Path>
-    InterpretItem<behavior::EstablishedDelivery<Target>, RootEvent, Path>
+    InterpretItem<EstablishedDelivery<Target>, RootEvent, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
@@ -1726,16 +1887,215 @@ where
 {
     async fn interpret_item(
         &mut self,
-        delivery: behavior::EstablishedDelivery<Target>,
-    ) -> ItemSettlement<behavior::EstablishedDelivery<Target>, (), ExactDeliveryReason, Never> {
-        let behavior::EstablishedDelivery { to, message } = delivery;
+        delivery: EstablishedDelivery<Target>,
+    ) -> ItemSettlement<EstablishedDelivery<Target>, (), ExactDeliveryReason, Never> {
+        let EstablishedDelivery { to, message } = delivery;
         let endpoint = to.clone().interpret(&mut ExtractLocalEndpoint);
         match endpoint.send_from(self.address, message).await {
             Ok(()) => ItemSettlement::Accepted(()),
             Err(error) => ItemSettlement::Rejected {
-                item: behavior::EstablishedDelivery::new(to, error.into_message()),
+                item: EstablishedDelivery::new(to, error.into_message()),
                 reason: ExactDeliveryReason::ClosedRecipient,
             },
+        }
+    }
+}
+
+fn reunite_customer_delivery<Target, Leaf, Reason>(
+    settlement: ItemSettlement<Leaf, (), Reason, Never>,
+    restore: impl FnOnce(Leaf) -> CustomerDelivery<Target>,
+    classify: impl FnOnce(Reason) -> ReplyDelivery<LogicalDeliveryReason, ExactDeliveryReason>,
+) -> ItemSettlement<
+    CustomerDelivery<Target>,
+    (),
+    ReplyDelivery<LogicalDeliveryReason, ExactDeliveryReason>,
+    Never,
+>
+where
+    Target: Protocol<Addr = MailAddr>,
+{
+    match settlement {
+        ItemSettlement::Accepted(()) => ItemSettlement::Accepted(()),
+        ItemSettlement::Rejected { item, reason } => ItemSettlement::Rejected {
+            item: restore(item),
+            reason: classify(reason),
+        },
+        ItemSettlement::Blocked { prerequisite, .. } => match prerequisite {},
+        ItemSettlement::Corrupt { item, fault } => ItemSettlement::Corrupt {
+            item: restore(item),
+            fault,
+        },
+    }
+}
+
+impl<C, N, Parent, Bindings, Origins, Target, RootEvent, Path>
+    InterpretItem<CustomerDelivery<Target>, RootEvent, Path>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Target: Protocol<Addr = MailAddr>,
+    Target::Msg: Send,
+    Self: InterpretItem<Delivery<Target>, RootEvent, Path>
+        + InterpretItem<EstablishedDelivery<Target>, RootEvent, Path>
+        + Send,
+{
+    async fn interpret_item(
+        &mut self,
+        customer_delivery: CustomerDelivery<Target>,
+    ) -> ItemSettlement<
+        CustomerDelivery<Target>,
+        (),
+        ReplyDelivery<LogicalDeliveryReason, ExactDeliveryReason>,
+        Never,
+    > {
+        match customer_delivery {
+            CustomerDelivery::Logical { delivery } => reunite_customer_delivery(
+                self.interpret_item(delivery).await,
+                |delivery| CustomerDelivery::Logical { delivery },
+                ReplyDelivery::Logical,
+            ),
+            CustomerDelivery::Established { delivery } => reunite_customer_delivery(
+                self.interpret_item(delivery).await,
+                |delivery| CustomerDelivery::Established { delivery },
+                ReplyDelivery::Established,
+            ),
+            CustomerDelivery::RejectedLogical { delivery, customer } => reunite_customer_delivery(
+                self.interpret_item(delivery).await,
+                |delivery| CustomerDelivery::RejectedLogical { delivery, customer },
+                ReplyDelivery::Logical,
+            ),
+            CustomerDelivery::RejectedEstablished { delivery, customer } => {
+                reunite_customer_delivery(
+                    self.interpret_item(delivery).await,
+                    |delivery| CustomerDelivery::RejectedEstablished { delivery, customer },
+                    ReplyDelivery::Established,
+                )
+            }
+        }
+    }
+}
+
+impl<C, N, Parent, Bindings, Origins, Target, RootEvent, Path>
+    InterpretItem<DiagnosticAction<Recipient<Target>, Target::Msg>, RootEvent, Path>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Target: Protocol<Addr = MailAddr>,
+    Target::Msg: Send,
+    Self: InterpretItem<Delivery<Target>, RootEvent, Path> + Send,
+{
+    async fn interpret_item(
+        &mut self,
+        action: DiagnosticAction<Recipient<Target>, Target::Msg>,
+    ) -> ItemSettlement<
+        DiagnosticAction<Recipient<Target>, Target::Msg>,
+        DiagnosticAccepted<Target::Msg>,
+        LogicalDeliveryReason,
+        Never,
+    > {
+        match action {
+            DiagnosticAction::Terminal { diagnostic } => {
+                ItemSettlement::Accepted(DiagnosticAccepted::terminal(diagnostic))
+            }
+            DiagnosticAction::Deliver { route, diagnostic } => {
+                match self.interpret_item(Delivery::new(route, diagnostic)).await {
+                    ItemSettlement::Accepted(()) => {
+                        ItemSettlement::Accepted(DiagnosticAccepted::delivered())
+                    }
+                    ItemSettlement::Rejected {
+                        item: Delivery { to, message },
+                        reason,
+                    } => ItemSettlement::Rejected {
+                        item: DiagnosticAction::deliver(to, message),
+                        reason,
+                    },
+                    ItemSettlement::Blocked { prerequisite, .. } => match prerequisite {},
+                    ItemSettlement::Corrupt {
+                        item: Delivery { to, message },
+                        fault,
+                    } => ItemSettlement::Corrupt {
+                        item: DiagnosticAction::deliver(to, message),
+                        fault,
+                    },
+                }
+            }
+        }
+    }
+}
+
+impl<C, N, Parent, Bindings, Origins, Target, RootEvent, Path>
+    InterpretItem<DiagnosticAction<EstablishedRecipient<Target>, Target::Msg>, RootEvent, Path>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Target: Protocol<Addr = MailAddr>,
+    Target::Msg: Send,
+    Self: InterpretItem<EstablishedDelivery<Target>, RootEvent, Path> + Send,
+{
+    async fn interpret_item(
+        &mut self,
+        action: DiagnosticAction<EstablishedRecipient<Target>, Target::Msg>,
+    ) -> ItemSettlement<
+        DiagnosticAction<EstablishedRecipient<Target>, Target::Msg>,
+        DiagnosticAccepted<Target::Msg>,
+        ExactDeliveryReason,
+        Never,
+    > {
+        match action {
+            DiagnosticAction::Terminal { diagnostic } => {
+                ItemSettlement::Accepted(DiagnosticAccepted::terminal(diagnostic))
+            }
+            DiagnosticAction::Deliver { route, diagnostic } => {
+                match self
+                    .interpret_item(EstablishedDelivery::new(route, diagnostic))
+                    .await
+                {
+                    ItemSettlement::Accepted(()) => {
+                        ItemSettlement::Accepted(DiagnosticAccepted::delivered())
+                    }
+                    ItemSettlement::Rejected {
+                        item: EstablishedDelivery { to, message },
+                        reason,
+                    } => ItemSettlement::Rejected {
+                        item: DiagnosticAction::deliver(to, message),
+                        reason,
+                    },
+                    ItemSettlement::Blocked { prerequisite, .. } => match prerequisite {},
+                    ItemSettlement::Corrupt {
+                        item: EstablishedDelivery { to, message },
+                        fault,
+                    } => ItemSettlement::Corrupt {
+                        item: DiagnosticAction::deliver(to, message),
+                        fault,
+                    },
+                }
+            }
+        }
+    }
+}
+
+impl<C, N, Parent, Bindings, Origins, Diagnostic, RootEvent, Path>
+    InterpretItem<DiagnosticAction<Infallible, Diagnostic>, RootEvent, Path>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Diagnostic: Send,
+    Self: Send,
+{
+    async fn interpret_item(
+        &mut self,
+        action: DiagnosticAction<Infallible, Diagnostic>,
+    ) -> ItemSettlement<
+        DiagnosticAction<Infallible, Diagnostic>,
+        DiagnosticAccepted<Diagnostic>,
+        Never,
+        Never,
+    > {
+        match action {
+            DiagnosticAction::Deliver { route, .. } => match route {},
+            DiagnosticAction::Terminal { diagnostic } => {
+                ItemSettlement::Accepted(DiagnosticAccepted::terminal(diagnostic))
+            }
         }
     }
 }
@@ -1748,8 +2108,8 @@ where
     Target: Protocol<Addr = MailAddr>,
     Target::Msg: Send,
     ResolvedChild<C, Occurrence>: Behavior<Protocol = Target>,
-    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>
-        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>,
+    Bindings:
+        ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>,
     Self: Send,
 {
     async fn interpret_item(
@@ -1761,8 +2121,8 @@ where
         ChildDeliveryReason,
         CreationCorrelation<Target, Occurrence>,
     > {
-        let route = match self.child_bindings.creation(delivery.creation) {
-            Some(CreationBinding::Established { route, .. }) => route,
+        let actor = match self.child_bindings.creation(delivery.creation) {
+            Some(CreationBinding::Established { endpoint, .. }) => endpoint.clone(),
             Some(CreationBinding::Rejected) => {
                 let prerequisite = CreationCorrelation::new(delivery.creation);
                 return ItemSettlement::Blocked {
@@ -1776,12 +2136,6 @@ where
                     reason: ChildDeliveryReason::MissingBinding,
                 };
             }
-        };
-        let Some(actor) = self.child_bindings.endpoint(route) else {
-            return ItemSettlement::Rejected {
-                item: delivery,
-                reason: ChildDeliveryReason::MissingBinding,
-            };
         };
         let ChildDelivery {
             creation, message, ..
@@ -1803,11 +2157,10 @@ where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>
         + ResolveChildOccurrence<Occurrence, Child = Child>,
     Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Child::Event: InjectEvent<ShutdownRequested, Here>,
     Child::Event: ChildInputIngress<Source, Input> + Send,
     Input: Send,
-    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = Child>
-        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>
-        + Send,
+    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = Child> + Send,
     Self: Send,
 {
     async fn interpret_item(
@@ -1819,8 +2172,8 @@ where
         ChildInputReason,
         CreationCorrelation<Child::Protocol, Occurrence>,
     > {
-        let route = match self.child_bindings.creation(input.creation) {
-            Some(CreationBinding::Established { route, .. }) => route,
+        let control = match self.child_bindings.creation(input.creation) {
+            Some(CreationBinding::Established { control, .. }) => control.clone(),
             Some(CreationBinding::Rejected) => {
                 let prerequisite = CreationCorrelation::new(input.creation);
                 return ItemSettlement::Blocked {
@@ -1835,12 +2188,6 @@ where
                 };
             }
         };
-        let Some(control) = self.child_bindings.control(route) else {
-            return ItemSettlement::Rejected {
-                item: input,
-                reason: ChildInputReason::MissingBinding,
-            };
-        };
         let event = Child::Event::child_input(input.input);
         match control.send(event) {
             Ok(()) => ItemSettlement::Accepted(()),
@@ -1848,6 +2195,187 @@ where
                 unreachable!("an owned child control lane outlives its parent binding")
             }
         }
+    }
+}
+
+impl<C, N, Parent, Bindings, Origins, Worker, Plan> ProxyControlAdmission<Worker, Plan>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>
+        + ResolveChildOccurrence<ChildHead, Child = StableProxy<Worker, Plan>>,
+    Worker: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Plan: ActivationPlan,
+    StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
+    <StableProxy<Worker, Plan> as Behavior>::Event: ChildInputIngress<StableProxy<Worker, Plan>, ProxyControl<Worker, Plan>>
+        + RecoverEvent<ProxyControl<Worker, Plan>, Here>,
+    Bindings: ChildBindingAt<ResolvedChildPosition<C, ChildHead>, Child = StableProxy<Worker, Plan>>
+        + Send,
+    Self: Send,
+{
+    fn admit_proxy_control(
+        &mut self,
+        creation: CreationId,
+        request: ProxyControl<Worker, Plan>,
+    ) -> ItemSettlement<
+        ProxyControl<Worker, Plan>,
+        EstablishedActor<StableProxy<Worker, Plan>>,
+        ChildInputReason,
+        Never,
+    > {
+        let Some(CreationBinding::Established {
+            endpoint, control, ..
+        }) = self.child_bindings.creation(creation)
+        else {
+            return ItemSettlement::Rejected {
+                item: request,
+                reason: ChildInputReason::MissingBinding,
+            };
+        };
+        let actor = EstablishedActor::<StableProxy<Worker, Plan>>::issued(InstalledActor::new(
+            endpoint.clone(),
+            control.clone(),
+        ));
+        let event = <StableProxy<Worker, Plan> as Behavior>::Event::child_input(request);
+        match control.send(event) {
+            Ok(()) => ItemSettlement::Accepted(actor),
+            Err(ControlClosed(event)) => {
+                let request = <StableProxy<Worker, Plan> as Behavior>::Event::recover(event)
+                    .unwrap_or_else(|_| unreachable!("the proxy control event was just injected"));
+                ItemSettlement::Rejected {
+                    item: request,
+                    reason: ChildInputReason::ClosedControlLane,
+                }
+            }
+        }
+    }
+}
+
+impl<C, N, Parent, Bindings, Origins, Worker, Plan, RootEvent, Path>
+    InterpretItem<ProxyOperation<Here, Worker, Plan>, RootEvent, Path>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Worker: Behavior<Protocol: Protocol<Addr = MailAddr>> + Send,
+    Plan: ActivationPlan,
+    StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
+    EstablishedActor<StableProxy<Worker, Plan>>: Send,
+    Self: ProxyControlAdmission<Worker, Plan> + Send,
+{
+    async fn interpret_item(
+        &mut self,
+        operation: ProxyOperation<Here, Worker, Plan>,
+    ) -> ItemSettlement<
+        ProxyOperation<Here, Worker, Plan>,
+        ProxyInputReceipt<Worker, Plan>,
+        ChildInputReason,
+        Never,
+    > {
+        operation.settle(self)
+    }
+}
+
+impl<C, N, Parent, Bindings, Origins, Target, Job, RootEvent, Path>
+    InterpretItem<AssignWorker<Target, Job>, RootEvent, Path>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Target: Protocol<Addr = MailAddr, Msg = Assignment<Job>>,
+    Job: Send,
+    Self: InterpretItem<behavior::EstablishedDelivery<Target>, RootEvent, Path> + Send,
+{
+    async fn interpret_item(
+        &mut self,
+        assignment: AssignWorker<Target, Job>,
+    ) -> ItemSettlement<AssignWorker<Target, Job>, AssignmentReceipt, ExactDeliveryReason, Never>
+    {
+        assignment.settle(self).await
+    }
+}
+
+impl<C, N, Parent, Bindings, Origins, Worker, Plan, Path>
+    InterpretItem<InitializeWorker<Worker, Plan>, C::Event, Path>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    C::Event: InjectEvent<WorkerInitializationReport<Worker, Plan>, Path>,
+    Worker: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Worker::Protocol: Protocol<Addr = MailAddr>,
+    BehaviorMessage<Worker>: Send,
+    Plan: Send,
+    Self: Send,
+{
+    async fn interpret_item(
+        &mut self,
+        request: InitializeWorker<Worker, Plan>,
+    ) -> ItemSettlement<InitializeWorker<Worker, Plan>, (), Never, Never> {
+        let worker = request.target().interpret(&mut ExtractLocalEndpoint);
+        let outcome = match worker.termination_observation().try_get() {
+            Some(termination) => WorkerInitializationOutcome::Stopped(ChildStopped::new(
+                request.worker().creation(),
+                termination,
+                Instant::now(),
+            )),
+            None => WorkerInitializationOutcome::ReadyForActivation,
+        };
+        self.inject_control_event::<_, Path>(request.resolve(outcome));
+        ItemSettlement::Accepted(())
+    }
+}
+
+impl<C, N, Parent, Bindings, Origins, Worker, Plan, Path>
+    InterpretItem<BeginActivation<Worker, Plan>, C::Event, Path>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    C::Event: InjectEvent<WorkerActivation<Worker, Plan>, Path> + Send + 'static,
+    Worker: Behavior<Protocol: Protocol<Addr = MailAddr>> + 'static,
+    BehaviorMessage<Worker>: Send,
+    Plan: ActivationPlan + 'static,
+    Self: Send,
+{
+    async fn interpret_item(
+        &mut self,
+        request: BeginActivation<Worker, Plan>,
+    ) -> ItemSettlement<BeginActivation<Worker, Plan>, (), ActivationStartRejection, Never> {
+        self.inject_control_event::<_, Path>(request.started());
+        let control = self.control.clone();
+        self.activation_tasks.spawn(async move {
+            let event = C::Event::inject_at(request.activate().await);
+            control.send(event).map_err(|ControlClosed(event)| event)
+        });
+        ItemSettlement::Accepted(())
+    }
+}
+
+impl<C, N, P, Bindings, Origins, Source, Role, Worker, Plan, RootEvent, Path>
+    InterpretItem<PrepareWorkers<Source, Role, Worker, Plan>, RootEvent, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    C::Event: InjectEvent<WorkerPreparation<Source, Role, Worker, Plan>, Path> + Send + 'static,
+    Source:
+        WorkerSource<Role, Worker, Plan> + WorkerPreparationSource<Role, Worker, Plan> + 'static,
+    Role: Send + Sync + 'static,
+    Worker: Behavior + Send + 'static,
+    Plan: ActivationPlan + 'static,
+    Self: Send,
+{
+    async fn interpret_item(
+        &mut self,
+        request: PrepareWorkers<Source, Role, Worker, Plan>,
+    ) -> ItemSettlement<
+        PrepareWorkers<Source, Role, Worker, Plan>,
+        WorkerPreparationStarted,
+        Never,
+        Never,
+    > {
+        let (receipt, starting) = request.start();
+        let control = self.control.clone();
+        self.activation_tasks.spawn(async move {
+            let event = C::Event::inject_at(settle_worker_preparation(starting).await);
+            control.send(event).map_err(|ControlClosed(event)| event)
+        });
+        ItemSettlement::Accepted(receipt)
     }
 }
 
@@ -1938,8 +2466,8 @@ where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>> + ResolveChildOccurrence<Occurrence>,
     ChildProtocol: Protocol<Addr = MailAddr>,
     ResolvedChild<C, Occurrence>: Behavior<Protocol = ChildProtocol>,
-    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>
-        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>,
+    Bindings:
+        ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>,
     C::Event: InjectEvent<CreationResolved<MailAddr>, Path>,
     Self: Send,
 {
@@ -1953,17 +2481,13 @@ where
         CreationCorrelation<ChildProtocol, Occurrence>,
     > {
         match self.child_bindings.creation(request.creation) {
-            Some(CreationBinding::Established { route, kind }) => {
-                let Some(actor) = self.child_bindings.endpoint(route) else {
-                    return ItemSettlement::Corrupt {
-                        item: request,
-                        fault: InterpreterFault::MissingCapability,
-                    };
-                };
-                self.return_fact::<_, Path>(CreationResolved::installed(
+            Some(CreationBinding::Established { endpoint, kind, .. }) => {
+                let address = endpoint.address();
+                let kind = *kind;
+                self.inject_control_event::<_, Path>(CreationResolved::installed(
                     request.creation,
                     kind,
-                    actor.address(),
+                    address,
                 ));
                 ItemSettlement::Accepted(())
             }
@@ -1979,40 +2503,39 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, ChildProtocol, Occurrence, Path>
-    InterpretItem<ObserveEstablishedCreation<ChildProtocol, Occurrence>, C::Event, Path>
+impl<C, N, P, Bindings, Origins, Child, Occurrence, Path>
+    InterpretItem<ObserveEstablishedCreation<Child, Occurrence>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
-    C: Behavior<Protocol: Protocol<Addr = MailAddr>> + ResolveChildOccurrence<Occurrence>,
-    ChildProtocol: Protocol<Addr = MailAddr>,
-    ResolvedChild<C, Occurrence>: Behavior<Protocol = ChildProtocol>,
-    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>
-        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>,
-    C::Event: InjectEvent<EstablishedCreation<ChildProtocol, Occurrence>, Path>,
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>
+        + ResolveChildOccurrence<Occurrence, Child = Child>,
+    Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = Child>,
+    C::Event: InjectEvent<EstablishedCreation<Child, Occurrence>, Path>,
     Self: Send,
 {
     async fn interpret_item(
         &mut self,
-        request: ObserveEstablishedCreation<ChildProtocol, Occurrence>,
+        request: ObserveEstablishedCreation<Child, Occurrence>,
     ) -> ItemSettlement<
-        ObserveEstablishedCreation<ChildProtocol, Occurrence>,
+        ObserveEstablishedCreation<Child, Occurrence>,
         (),
         Never,
-        CreationCorrelation<ChildProtocol, Occurrence>,
+        CreationCorrelation<Child::Protocol, Occurrence>,
     > {
         match self.child_bindings.creation(request.creation) {
-            Some(CreationBinding::Established { route, kind }) => {
-                let Some(actor) = self.child_bindings.endpoint(route) else {
-                    return ItemSettlement::Corrupt {
-                        item: request,
-                        fault: InterpreterFault::MissingCapability,
-                    };
-                };
-                self.return_fact::<_, Path>(EstablishedCreation::installed(
-                    request.creation,
-                    kind,
-                    actor.established_recipient(),
+            Some(CreationBinding::Established {
+                endpoint,
+                control,
+                kind,
+                ..
+            }) => {
+                let actor = EstablishedActor::<Child>::issued(InstalledActor::new(
+                    endpoint.clone(),
+                    control.clone(),
                 ));
+                let child = CommittedChild::new(request.creation, *kind, actor);
+                self.inject_control_event::<_, Path>(EstablishedCreation::installed(child));
                 ItemSettlement::Accepted(())
             }
             Some(CreationBinding::Rejected) => ItemSettlement::Blocked {
@@ -2040,12 +2563,11 @@ where
         &mut self,
         request: ObservePeer<MailAddr>,
     ) -> ItemSettlement<ObservePeer<MailAddr>, (), PeerObservationRejection, Never> {
-        let result = self
-            .peers
-            .get_or_insert_with(|| {
-                LocalPeerObservations::new(self.actor_spaces.space().clone(), self.facts.clone())
-            })
-            .observe::<Path>(request);
+        let result = observe_peer::<C::Protocol, C::Event, Path>(
+            self.actor_spaces.space(),
+            request,
+            &mut self.observations,
+        );
         match result {
             Ok(()) => ItemSettlement::Accepted(()),
             Err(_) => ItemSettlement::Rejected {
@@ -2064,8 +2586,8 @@ where
     ChildProtocol: Protocol<Addr = MailAddr>,
     C::Event: InjectEvent<ChildStopped<MailAddr>, Path> + Send + 'static,
     ResolvedChild<C, Occurrence>: Behavior<Protocol = ChildProtocol>,
-    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>
-        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>,
+    Bindings:
+        ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>,
     Self: Send,
 {
     async fn interpret_item(
@@ -2077,8 +2599,8 @@ where
         Never,
         CreationCorrelation<ChildProtocol, Occurrence>,
     > {
-        let route = match self.child_bindings.creation(request.child) {
-            Some(CreationBinding::Established { route, .. }) => route,
+        let child = match self.child_bindings.creation(request.child) {
+            Some(CreationBinding::Established { endpoint, .. }) => endpoint.clone(),
             Some(CreationBinding::Rejected) => {
                 return ItemSettlement::Blocked {
                     prerequisite: CreationCorrelation::new(request.child),
@@ -2092,13 +2614,7 @@ where
                 };
             }
         };
-        let Some(child) = self.child_bindings.endpoint(route) else {
-            return ItemSettlement::Corrupt {
-                item: request,
-                fault: InterpreterFault::MissingCapability,
-            };
-        };
-        self.facts
+        self.observations
             .insert_child::<Path>(request.child, child.termination_observation());
         ItemSettlement::Accepted(())
     }
@@ -2112,8 +2628,8 @@ where
         + ResolveChildOccurrence<Occurrence, Child = Child>,
     C::Event: InjectEvent<ChildStopped<MailAddr>, Path> + Send + 'static,
     Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = Child>
-        + CreationBindingAt<ResolvedChildPosition<C, Occurrence>>,
+    Child::Event: InjectEvent<ShutdownRequested, Here>,
+    Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = Child>,
     Self: Send,
 {
     async fn interpret_item(
@@ -2125,8 +2641,10 @@ where
         ChildShutdownRejection,
         CreationCorrelation<Child::Protocol, Occurrence>,
     > {
-        let route = match self.child_bindings.creation(request.child) {
-            Some(CreationBinding::Established { route, .. }) => route,
+        let (child, control) = match self.child_bindings.creation(request.child) {
+            Some(CreationBinding::Established {
+                endpoint, control, ..
+            }) => (endpoint.clone(), control.clone()),
             Some(CreationBinding::Rejected) => {
                 return ItemSettlement::Blocked {
                     prerequisite: CreationCorrelation::new(request.child),
@@ -2140,15 +2658,9 @@ where
                 };
             }
         };
-        let Some(child) = self.child_bindings.endpoint(route) else {
-            return ItemSettlement::Corrupt {
-                item: request,
-                fault: InterpreterFault::MissingCapability,
-            };
-        };
-        match child.request_shutdown() {
+        match request_actor_shutdown(&child, &control, request.ingress) {
             Ok(()) => {
-                self.facts
+                self.observations
                     .insert_child::<Path>(request.child, child.termination_observation());
                 ItemSettlement::Accepted(())
             }
@@ -2256,7 +2768,7 @@ where
         if observations.contains_key(&id) {
             drop(observations);
             self.capabilities
-                .return_fact::<_, Path>(EstablishedObservation::rejected(
+                .inject_control_event::<_, Path>(EstablishedObservation::rejected(
                     id,
                     ObservationOperation::Start,
                     ObservationRejection::IdAlreadyBound,
@@ -2284,7 +2796,7 @@ where
             }
         });
         self.capabilities
-            .return_fact::<_, Path>(EstablishedObservation::<Target>::started(id));
+            .inject_control_event::<_, Path>(EstablishedObservation::<Target>::started(id));
     }
 
     fn cancel(&mut self, id: ObservationId) {
@@ -2299,16 +2811,19 @@ where
                 match cancellation.send(()) {
                     Ok(()) | Err(()) => {}
                 }
-                self.capabilities
-                    .return_fact::<_, Path>(EstablishedObservation::<Target>::cancelled(id));
+                self.capabilities.inject_control_event::<_, Path>(
+                    EstablishedObservation::<Target>::cancelled(id),
+                );
             }
-            None => self
-                .capabilities
-                .return_fact::<_, Path>(EstablishedObservation::rejected(
-                    id,
-                    ObservationOperation::Cancel,
-                    ObservationRejection::NotObserved,
-                )),
+            None => {
+                self.capabilities.inject_control_event::<_, Path>(
+                    EstablishedObservation::rejected(
+                        id,
+                        ObservationOperation::Cancel,
+                        ObservationRejection::NotObserved,
+                    ),
+                );
+            }
         }
     }
 }
@@ -2361,10 +2876,10 @@ where
     fn shutdown(
         &mut self,
         _id: ShutdownId,
-        endpoint: ActorRef<Child::Protocol>,
-        _ingress: behavior::Ingress<ShutdownRequested, Here>,
+        installed: InstalledActor<Child>,
+        ingress: behavior::Ingress<ShutdownRequested, Here>,
     ) -> Result<(), ShutdownRejection> {
-        endpoint.request_shutdown()
+        installed.request_shutdown(ingress)
     }
 }
 
@@ -2373,8 +2888,9 @@ impl<C, N, P, Bindings, Origins, Child, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    C::Event: InjectEvent<EstablishedShutdownResolved<Child::Protocol>, Path> + Send + 'static,
     Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    Child::Event: InjectEvent<ShutdownRequested, Here>,
+    Child::Event: InjectEvent<ShutdownRequested, Here> + Send,
     BehaviorMessage<Child>: Send,
     Self: Send,
 {
@@ -2383,7 +2899,20 @@ where
         request: ShutdownEstablished<Child, Here>,
     ) -> ItemSettlement<ShutdownEstablished<Child, Here>, ShutdownId, ShutdownRejection, Never>
     {
-        request.settle(self)
+        let shutdown = request.id;
+        let settlement = request.settle(self);
+        let resolution = match &settlement {
+            ItemSettlement::Accepted(_) => EstablishedShutdownResolved::accepted(shutdown),
+            ItemSettlement::Rejected { reason, .. } => {
+                EstablishedShutdownResolved::rejected(shutdown, *reason)
+            }
+            ItemSettlement::Blocked { prerequisite, .. } => match *prerequisite {},
+            ItemSettlement::Corrupt { .. } => {
+                unreachable!("exact shutdown settlement cannot create interpreter corruption")
+            }
+        };
+        self.inject_control_event::<_, Path>(resolution);
+        settlement
     }
 }
 
@@ -2400,12 +2929,28 @@ where
     type Event = C::Event;
     type Descendants = Vec<BindingTerminal<Bindings>>;
 
+    async fn next_local_event(&mut self) -> Self::Event {
+        tokio::select! {
+            biased;
+            termination_event = self.observations.next() => termination_event,
+            task = self.activation_tasks.next_event() => task,
+        }
+    }
+
+    fn next_deadline(&mut self) -> Option<Instant> {
+        self.timers.next_deadline()
+    }
+
+    fn pop_due(&mut self, now: Instant) -> Option<Self::Event> {
+        self.timers.pop_due(now)
+    }
+
     async fn retire(self) -> CapabilityRetirement<Self::Event, Self::Descendants> {
         let Self {
-            peers,
             child_bindings,
             activation_tasks,
             exact_observations,
+            terminal_reports,
             ..
         } = self;
         let cancellations = {
@@ -2423,10 +2968,394 @@ where
             }
         }
         let descendants = child_bindings.retire_child_tasks().await;
-        drop((peers, exact_observations));
+        terminal_reports.retire();
+        drop(exact_observations);
         CapabilityRetirement {
             activation_tasks,
             descendants,
         }
+    }
+}
+
+#[cfg(test)]
+mod atomic_interpretation_contract {
+    use core::convert::Infallible;
+    use core::future::Future;
+    use core::pin::pin;
+    use core::task::{Context, Poll, Waker};
+    use std::sync::Arc;
+    use std::time::{Duration, Instant};
+
+    use behavior::{
+        Actions, ActiveTurn, Behavior, BehaviorActed, EstablishedRecipient, EventIngress, Here,
+        InjectEvent, InterpretItem, MessageProtocol, Never, NoBirths, Recipient, SourceAdmission,
+        User, UserEvent,
+    };
+    use behavior_actors::atomic::{
+        AssignWorker, Assignment, BeginActivation, CustomerDelivery, DiagnosticAction,
+        ImmediateActivation, InitializeWorker, ProxyOperation, StableProxy,
+    };
+    use behavior_actors::{
+        EstablishedObservation, InterpretEstablishedObservation, ObservationId, ScheduleAt,
+        TimerElapsed, TimerGeneration, TimerId,
+    };
+    use communication::{Config, Received, mailbox_channel};
+    use tokio::sync::oneshot;
+
+    use super::{
+        ApplicationCapabilities, ApplicationCapabilityInputs, EstablishedObservationInterpreter,
+        NoChildBindings,
+    };
+    use crate::ActorSpace;
+    use crate::actor;
+    use crate::actor_interface::{ActorInterface, ExtractLocalEndpoint};
+    use crate::address::{ApplicationAddresses, MailAddr};
+    use crate::child_bindings::ChildBindings;
+    use crate::interpret::{ActionInterpreter, RetireCapabilities};
+    use crate::local::CommitActions;
+    use crate::observation::TerminationObservations;
+    use crate::reports::LocalTerminalReports;
+    use crate::time::LocalTimers;
+    use crate::topology::HostedActorSpaces;
+
+    struct Worker;
+
+    #[actor(message = Never)]
+    impl Worker {}
+
+    type Proxy = StableProxy<Worker, ImmediateActivation>;
+
+    struct ProxyParent;
+
+    #[actor(
+        message = Never,
+        births = { service: Proxy },
+        creation_settlements = retain_for_retirement,
+    )]
+    impl ProxyParent {}
+
+    struct SourceActor;
+
+    struct SourceOwner;
+
+    type ObservationProtocol = MessageProtocol<MailAddr, Never>;
+
+    enum SourceControlEvent {
+        SourceInput(u64),
+        Observation(EstablishedObservation<ObservationProtocol>),
+        Timer(TimerElapsed),
+    }
+
+    impl UserEvent for SourceControlEvent {
+        type Addr = MailAddr;
+        type Message = Never;
+
+        fn user(_: Self::Addr, message: Self::Message) -> Self {
+            match message {}
+        }
+
+        fn into_user(self) -> Result<User<Self::Addr, Self::Message>, Self> {
+            Err(self)
+        }
+    }
+
+    impl EventIngress<SourceOwner, u64> for SourceControlEvent {
+        fn ingress(input: u64) -> Self {
+            Self::SourceInput(input)
+        }
+    }
+
+    impl InjectEvent<EstablishedObservation<ObservationProtocol>, Here> for SourceControlEvent {
+        fn inject_at(report: EstablishedObservation<ObservationProtocol>) -> Self {
+            Self::Observation(report)
+        }
+    }
+
+    impl InjectEvent<TimerElapsed, Here> for SourceControlEvent {
+        fn inject_at(elapsed: TimerElapsed) -> Self {
+            Self::Timer(elapsed)
+        }
+    }
+
+    impl Behavior for SourceActor {
+        type Protocol = MessageProtocol<MailAddr, Never>;
+        type Event = SourceControlEvent;
+        type Sends = Vec<Never>;
+        type Ph = Never;
+        type Error = Never;
+        type Birth = NoBirths;
+
+        fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
+            match event {
+                SourceControlEvent::SourceInput(_)
+                | SourceControlEvent::Observation(_)
+                | SourceControlEvent::Timer(_) => Ok(Actions::cont()),
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn source_admission_places_the_exact_input_on_the_actor_control_lane() {
+        let (control, mailbox_owner, mailbox_ref, mut receiver) =
+            mailbox_channel::<SourceControlEvent, User<MailAddr, Never>>(Config::new(1));
+        let (terminal_sender, terminal_receiver) = oneshot::channel();
+        let inputs = ApplicationCapabilityInputs::<SourceActor, ()> {
+            address: MailAddr::APPLICATION_ROOT,
+            actor_spaces: Arc::new(()),
+            allocations: ApplicationAddresses::new(),
+            control,
+            timers: LocalTimers::new(),
+            observations: TerminationObservations::new(),
+            terminal_reports: LocalTerminalReports::new(terminal_sender),
+        };
+        let mut capabilities = ApplicationCapabilities::<SourceActor, ()>::new_with_bindings(
+            inputs,
+            NoChildBindings::default(),
+        );
+        let admitted = SourceAdmission::<SourceControlEvent, SourceOwner, u64>::admit_source(
+            &mut capabilities,
+            47,
+        )
+        .await;
+        assert_eq!(admitted, Ok(()));
+
+        let mut next_event = pin!(receiver.recv());
+        let mut context = Context::from_waker(Waker::noop());
+        let admitted_control = next_event.as_mut().poll(&mut context);
+        assert!(matches!(
+            admitted_control,
+            Poll::Ready(Some(Received::Control(SourceControlEvent::SourceInput(47))))
+        ));
+        drop(mailbox_owner);
+        drop(mailbox_ref);
+        drop(terminal_receiver);
+    }
+
+    #[tokio::test]
+    async fn exact_observation_start_and_cancel_publish_distinct_control_events() {
+        let (control, mailbox_owner, mailbox_ref, mut receiver) =
+            mailbox_channel::<SourceControlEvent, User<MailAddr, Never>>(Config::new(2));
+        let (terminal_sender, terminal_receiver) = oneshot::channel();
+        let inputs = ApplicationCapabilityInputs::<SourceActor, ()> {
+            address: MailAddr::APPLICATION_ROOT,
+            actor_spaces: Arc::new(()),
+            allocations: ApplicationAddresses::new(),
+            control,
+            timers: LocalTimers::new(),
+            observations: TerminationObservations::new(),
+            terminal_reports: LocalTerminalReports::new(terminal_sender),
+        };
+        let mut capabilities = ApplicationCapabilities::<SourceActor, ()>::new_with_bindings(
+            inputs,
+            NoChildBindings::default(),
+        );
+        let interface = ActorInterface::new((), ApplicationAddresses::new());
+        let external = interface
+            .external::<ObservationProtocol>()
+            .expect("the observed external actor is established");
+        let endpoint = external.recipient().interpret(&mut ExtractLocalEndpoint);
+        let mut interpreter = EstablishedObservationInterpreter::<_, Here>::new(&mut capabilities);
+        let observation = ObservationId(41);
+
+        interpreter.observe(observation, endpoint);
+        {
+            let mut started_event = pin!(receiver.recv());
+            let mut context = Context::from_waker(Waker::noop());
+            let started = started_event.as_mut().poll(&mut context);
+            assert!(matches!(
+                started,
+                Poll::Ready(Some(Received::Control(SourceControlEvent::Observation(
+                    EstablishedObservation::Started { id, .. }
+                )))) if id == observation
+            ));
+        }
+
+        interpreter.cancel(observation);
+        {
+            let mut cancelled_event = pin!(receiver.recv());
+            let mut context = Context::from_waker(Waker::noop());
+            let cancelled = cancelled_event.as_mut().poll(&mut context);
+            assert!(matches!(
+                cancelled,
+                Poll::Ready(Some(Received::Control(SourceControlEvent::Observation(
+                    EstablishedObservation::Cancelled { id, .. }
+                )))) if id == observation
+            ));
+        }
+        drop(external);
+        drop(mailbox_owner);
+        drop(mailbox_ref);
+        drop(terminal_receiver);
+    }
+
+    #[test]
+    fn application_timer_deadlines_and_elapsed_events_cross_both_ports() {
+        let (control, mailbox_owner, mailbox_ref, receiver) =
+            mailbox_channel::<SourceControlEvent, User<MailAddr, Never>>(Config::new(1));
+        let (terminal_sender, terminal_receiver) = oneshot::channel();
+        let inputs = ApplicationCapabilityInputs::<SourceActor, ()> {
+            address: MailAddr::APPLICATION_ROOT,
+            actor_spaces: Arc::new(()),
+            allocations: ApplicationAddresses::new(),
+            control,
+            timers: LocalTimers::new(),
+            observations: TerminationObservations::new(),
+            terminal_reports: LocalTerminalReports::new(terminal_sender),
+        };
+        let mut capabilities = ApplicationCapabilities::<SourceActor, ()>::new_with_bindings(
+            inputs,
+            NoChildBindings::default(),
+        );
+        let first_deadline = Instant::now() + Duration::from_secs(1);
+        let first_id = TimerId(7);
+        let first_generation = TimerGeneration(2);
+        capabilities
+            .timers
+            .schedule_at::<Here>(ScheduleAt::new(first_id, first_generation, first_deadline))
+            .expect("the first timer is scheduled");
+        assert_eq!(
+            RetireCapabilities::next_deadline(&mut capabilities),
+            Some(first_deadline)
+        );
+        let first_elapsed = RetireCapabilities::pop_due(&mut capabilities, first_deadline);
+        assert!(matches!(
+            first_elapsed,
+            Some(SourceControlEvent::Timer(TimerElapsed { id, generation }))
+                if id == first_id && generation == first_generation
+        ));
+
+        let second_deadline = first_deadline + Duration::from_secs(1);
+        let second_id = TimerId(8);
+        let second_generation = TimerGeneration(3);
+        capabilities
+            .timers
+            .schedule_at::<Here>(ScheduleAt::new(
+                second_id,
+                second_generation,
+                second_deadline,
+            ))
+            .expect("the second timer is scheduled");
+        let mut interpreter = ActionInterpreter::new(capabilities);
+        assert_eq!(
+            <ActionInterpreter<_> as CommitActions<SourceActor>>::next_deadline(&mut interpreter),
+            Some(second_deadline)
+        );
+        let second_elapsed = <ActionInterpreter<_> as CommitActions<SourceActor>>::pop_due(
+            &mut interpreter,
+            second_deadline,
+        );
+        assert!(matches!(
+            second_elapsed,
+            Some(SourceControlEvent::Timer(TimerElapsed { id, generation }))
+                if id == second_id && generation == second_generation
+        ));
+        drop(mailbox_owner);
+        drop(mailbox_ref);
+        drop(receiver);
+        drop(terminal_receiver);
+    }
+
+    #[test]
+    fn local_application_interprets_exact_worker_assignment() {
+        type WorkerProtocol = MessageProtocol<crate::MailAddr, Assignment<u64>>;
+
+        fn require<Capabilities>()
+        where
+            Capabilities:
+                InterpretItem<AssignWorker<WorkerProtocol, u64>, <Worker as Behavior>::Event, Here>,
+        {
+        }
+
+        require::<ApplicationCapabilities<Worker, (), super::NoParent, NoChildBindings>>();
+    }
+
+    #[test]
+    fn local_application_interprets_complete_customer_delivery() {
+        type CustomerProtocol = MessageProtocol<crate::MailAddr, u64>;
+        type Spaces = HostedActorSpaces<ActorSpace<CustomerProtocol>>;
+
+        fn require<Capabilities>()
+        where
+            Capabilities: InterpretItem<CustomerDelivery<CustomerProtocol>, <Worker as Behavior>::Event, Here>,
+        {
+        }
+
+        require::<ApplicationCapabilities<Worker, Spaces, super::NoParent, NoChildBindings>>();
+    }
+
+    #[test]
+    fn local_application_interprets_routed_and_terminal_diagnostics() {
+        type DiagnosticProtocol = MessageProtocol<crate::MailAddr, u64>;
+        type Spaces = HostedActorSpaces<ActorSpace<DiagnosticProtocol>>;
+
+        fn require<Capabilities>()
+        where
+            Capabilities: InterpretItem<
+                    DiagnosticAction<Recipient<DiagnosticProtocol>, u64>,
+                    <Worker as Behavior>::Event,
+                    Here,
+                > + InterpretItem<
+                    DiagnosticAction<EstablishedRecipient<DiagnosticProtocol>, u64>,
+                    <Worker as Behavior>::Event,
+                    Here,
+                > + InterpretItem<DiagnosticAction<Infallible, u64>, <Worker as Behavior>::Event, Here>,
+        {
+        }
+
+        require::<ApplicationCapabilities<Worker, Spaces, super::NoParent, NoChildBindings>>();
+    }
+
+    #[test]
+    fn local_application_interprets_exact_worker_initialization() {
+        type Proxy = StableProxy<Worker, ImmediateActivation>;
+
+        fn require<Capabilities>()
+        where
+            Capabilities: InterpretItem<
+                    InitializeWorker<Worker, ImmediateActivation>,
+                    <Proxy as Behavior>::Event,
+                    Here,
+                >,
+        {
+        }
+
+        require::<ApplicationCapabilities<Proxy, (), super::NoParent, NoChildBindings>>();
+    }
+
+    #[test]
+    fn local_application_interprets_exact_worker_activation() {
+        fn require<Capabilities>()
+        where
+            Capabilities: InterpretItem<
+                    BeginActivation<Worker, ImmediateActivation>,
+                    <Proxy as Behavior>::Event,
+                    Here,
+                >,
+        {
+        }
+
+        require::<ApplicationCapabilities<Proxy, (), super::NoParent, NoChildBindings>>();
+    }
+
+    #[test]
+    fn local_application_interprets_exact_proxy_operation() {
+        fn require<Capabilities>()
+        where
+            Capabilities: InterpretItem<
+                    ProxyOperation<Here, Worker, ImmediateActivation>,
+                    <ProxyParent as Behavior>::Event,
+                    Here,
+                >,
+        {
+        }
+
+        require::<
+            ApplicationCapabilities<
+                ProxyParent,
+                (),
+                super::NoParent,
+                ChildBindings<ProxyParent, Never>,
+            >,
+        >();
     }
 }

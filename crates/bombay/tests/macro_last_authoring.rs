@@ -7,7 +7,7 @@
 //! plain closure inference is not a complete named-effect replacement.
 
 use bombay::behavior::{
-    ActiveTurn, Behavior, BehaviorBase, BirthMode, NoBirths, SendEffects, SendsFor, Stopped, User,
+    ActiveTurn, Behavior, BehaviorBase, BirthMode, NoBirths, SendEffects, SendsFor, User,
     delegate_transition, initialize,
 };
 use bombay::prelude::*;
@@ -38,7 +38,7 @@ mod owner {
     #[bombay::behavior::behavior(
         addr = MailAddr,
         message = CounterMessage,
-        sends = { values: Vec<Delivery<CounterValue>> },
+        sends = pub(crate) { values: Vec<Delivery<CounterValue>> },
         error = CounterOverflow,
     )]
     impl Counter {
@@ -73,7 +73,7 @@ mod facade {
     }
 
     #[bombay::actor(
-        sends = { values: Vec<Delivery<CounterValue>> },
+        sends = pub(crate) { values: Vec<Delivery<CounterValue>> },
         error = CounterOverflow,
     )]
     impl Counter {
@@ -246,31 +246,29 @@ fn owning_and_explicit_forms_have_the_same_initialization_and_domain_error() {
     let owner_init = initialize(&mut owner).expect("default initialization succeeds");
     let facade_init = initialize(&mut facade).expect("default initialization succeeds");
     let explicit_init = initialize(&mut explicit).expect("default initialization succeeds");
-    assert_eq!(owner_init.become_, Step::Continue);
-    assert_eq!(facade_init.become_, owner_init.become_);
-    assert_eq!(explicit_init.become_, owner_init.become_);
-    assert!(owner_init.sends.values.is_empty());
-    assert!(facade_init.sends.values.is_empty());
-    assert!(explicit_init.sends.is_empty());
+    let expected_init: Actions<MailAddr, Never, Vec<Delivery<CounterValue>>, NoBirths> =
+        Actions::cont();
+    let owner_init_values = owner_init.map_sends(|sends| sends.values);
+    let facade_init_values = facade_init.map_sends(|sends| sends.values);
+    assert!(owner_init_values == expected_init);
+    assert!(facade_init_values == expected_init);
+    assert!(explicit_init == expected_init);
 
-    assert!(matches!(
-        owner.receive(MailAddr(1), CounterMessage::Increment),
-        Err(CounterOverflow)
-    ));
-    assert!(matches!(
-        delegate_transition(
-            &mut facade,
-            User::new(MailAddr(1), CounterMessage::Increment),
-        ),
-        Err(CounterOverflow)
-    ));
-    assert!(matches!(
-        delegate_transition(
-            &mut explicit,
-            User::new(MailAddr(1), CounterMessage::Increment),
-        ),
-        Err(CounterOverflow)
-    ));
+    let owner_overflow = owner.receive(MailAddr(1), CounterMessage::Increment);
+    assert!(matches!(owner_overflow, Err(CounterOverflow)));
+    let facade_overflow = delegate_transition(
+        &mut facade,
+        User::new(MailAddr(1), CounterMessage::Increment),
+    );
+    let explicit_overflow = delegate_transition(
+        &mut explicit,
+        User::new(MailAddr(1), CounterMessage::Increment),
+    );
+    assert!(matches!(facade_overflow, Err(CounterOverflow)));
+    assert!(matches!(explicit_overflow, Err(CounterOverflow)));
+    assert_eq!(owner.value, u64::MAX);
+    assert_eq!(facade.value, u64::MAX);
+    assert_eq!(explicit.value, u64::MAX);
 }
 
 #[test]
@@ -279,19 +277,27 @@ fn owning_and_explicit_forms_preserve_increment_reply_and_stop() {
     let mut facade = facade::Counter { value: 0 };
     let mut explicit = ExplicitCounter { value: 0 };
 
-    let _ = owner
+    let owner_increment = owner
         .receive(MailAddr(1), CounterMessage::Increment)
         .expect("increment succeeds");
-    let _ = delegate_transition(
+    let facade_increment = delegate_transition(
         &mut facade,
         User::new(MailAddr(1), CounterMessage::Increment),
     )
     .expect("increment succeeds");
-    let _ = delegate_transition(
+    let explicit_increment = delegate_transition(
         &mut explicit,
         User::new(MailAddr(1), CounterMessage::Increment),
     )
     .expect("increment succeeds");
+    let expected_increment: Actions<MailAddr, Never, Vec<Delivery<CounterValue>>, NoBirths> =
+        Actions::cont();
+    let owner_increment_values = owner_increment.map_sends(|sends| sends.values);
+    let facade_increment_values = facade_increment.map_sends(|sends| sends.values);
+    assert!(owner_increment_values == expected_increment);
+    assert!(facade_increment_values == expected_increment);
+    assert!(explicit_increment == expected_increment);
+    assert_eq!((owner.value, facade.value, explicit.value), (1, 1, 1));
 
     let recipient = Recipient::global(MailAddr(2));
     let owner_read = owner
@@ -308,17 +314,13 @@ fn owning_and_explicit_forms_preserve_increment_reply_and_stop() {
     )
     .expect("read succeeds");
 
-    let owner_delivery = &owner_read.sends.values[0];
-    let facade_delivery = &facade_read.sends.values[0];
-    let explicit_delivery = &explicit_read.sends[0];
-    assert_eq!(owner_delivery.message, 1);
-    assert_eq!(facade_delivery.message, owner_delivery.message);
-    assert_eq!(facade_delivery.to, owner_delivery.to);
-    assert_eq!(explicit_delivery.message, owner_delivery.message);
-    assert_eq!(explicit_delivery.to, owner_delivery.to);
-    assert_eq!(owner_read.become_, Step::Continue);
-    assert_eq!(facade_read.become_, owner_read.become_);
-    assert_eq!(explicit_read.become_, owner_read.become_);
+    let expected_read: Actions<MailAddr, Never, Vec<Delivery<CounterValue>>, NoBirths> =
+        Actions::send(vec![Delivery::new(recipient, 1)]);
+    let owner_read_values = owner_read.map_sends(|sends| sends.values);
+    let facade_read_values = facade_read.map_sends(|sends| sends.values);
+    assert!(owner_read_values == expected_read);
+    assert!(facade_read_values == expected_read);
+    assert!(explicit_read == expected_read);
 
     let owner_stop = owner
         .receive(MailAddr(1), CounterMessage::Stop)
@@ -329,9 +331,13 @@ fn owning_and_explicit_forms_preserve_increment_reply_and_stop() {
     let explicit_stop =
         delegate_transition(&mut explicit, User::new(MailAddr(1), CounterMessage::Stop))
             .expect("stop succeeds");
-    assert_eq!(owner_stop.become_, Step::Stop(Stopped));
-    assert_eq!(facade_stop.become_, owner_stop.become_);
-    assert_eq!(explicit_stop.become_, owner_stop.become_);
+    let expected_stop: Actions<MailAddr, Never, Vec<Delivery<CounterValue>>, NoBirths> =
+        Actions::stop();
+    let owner_stop_values = owner_stop.map_sends(|sends| sends.values);
+    let facade_stop_values = facade_stop.map_sends(|sends| sends.values);
+    assert!(owner_stop_values == expected_stop);
+    assert!(facade_stop_values == expected_stop);
+    assert!(explicit_stop == expected_stop);
 }
 
 #[test]
@@ -362,11 +368,14 @@ fn plain_builder_is_static_but_cannot_name_general_send_or_birth_products() {
             }
         });
 
-    let _ = delegate_transition(
+    let increment = delegate_transition(
         &mut counter,
         User::new(MailAddr(1), CounterMessage::Increment),
     )
     .expect("increment succeeds");
+    let expected_increment: Actions<MailAddr, Never, Vec<Delivery<CounterValue>>, NoBirths> =
+        Actions::cont();
+    assert!(increment == expected_increment);
     let actions = delegate_transition(
         &mut counter,
         User::new(
@@ -377,8 +386,9 @@ fn plain_builder_is_static_but_cannot_name_general_send_or_birth_products() {
     .expect("read succeeds");
 
     assert_eq!(counter.base().value, 1);
-    assert_eq!(actions.sends[0].message, 1);
-    assert_eq!(actions.become_, Step::Continue);
+    let expected_read: Actions<MailAddr, Never, Vec<Delivery<CounterValue>>, NoBirths> =
+        Actions::send(vec![Delivery::new(Recipient::global(MailAddr(2)), 1)]);
+    assert!(actions == expected_read);
 }
 
 #[test]

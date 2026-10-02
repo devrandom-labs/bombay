@@ -5,9 +5,11 @@
 
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::task::Wake;
+use std::sync::mpsc;
+use std::task::{Poll, Wake};
 use std::time::Duration;
 
+use super::wait_for_thread_registrations;
 use crate::observe::ObservationSpace;
 use crate::observe::test_support::{CountWake, DropProbe};
 
@@ -33,35 +35,48 @@ fn panicking_waker_must_not_strand_other_waiters() {
     let mut subject = space.subject(1).expect("first registration succeeds");
 
     let obs1 = space.observe(&1).expect("subject retained");
-    assert!(!obs1.register_waker(&std::task::Waker::from(Arc::new(PanicWake))));
+    let readiness = obs1.register_waker(&std::task::Waker::from(Arc::new(PanicWake)));
+    assert_eq!(readiness, Poll::Pending);
 
     let obs2 = space.observe(&1).expect("subject retained");
     let (good_waker, good_probe) = CountWake::waker();
-    assert!(!obs2.register_waker(&good_waker));
+    let readiness = obs2.register_waker(&good_waker);
+    assert_eq!(readiness, Poll::Pending);
 
     let obs3 = space.observe(&1).expect("subject retained");
-    let waiter = std::thread::spawn(move || obs3.wait());
+    let registration = obs3.clone();
+    let (outcome_sender, outcome_receiver) = mpsc::sync_channel(1);
+    let waiter = std::thread::spawn(move || {
+        let outcome = obs3.wait();
+        outcome_sender
+            .send(outcome)
+            .expect("outcome receiver remains live");
+    });
     let handle = waiter.thread().clone();
-    // Ensure the waiter is registered AND parked before completion, so the
-    // stranding is deterministic (not masked by the post-registration
-    // recheck seeing COMPLETED).
-    std::thread::sleep(Duration::from_millis(50));
+    wait_for_thread_registrations(&registration, &[handle.id()]);
 
     // The completing thread itself must tolerate the panic path; catch it
     // here so the test can assert on the other waiters.
     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         subject.complete(42);
     }));
-    drop(panic); // whether complete propagates the panic is not the issue
-
-    std::thread::sleep(Duration::from_millis(100));
-    let stranded = !waiter.is_finished();
-    handle.unpark(); // cleanup: break any park so the thread can finish
-    assert_eq!(waiter.join().expect("waiter thread panicked"), 42);
     assert!(
-        !stranded,
-        "a parked waiter was stranded by an earlier waker's panic"
+        panic.is_err(),
+        "the panicking waker must propagate its panic"
     );
+
+    let outcome = match outcome_receiver.recv_timeout(Duration::from_secs(5)) {
+        Ok(outcome) => outcome,
+        Err(timeout) => {
+            handle.unpark();
+            waiter
+                .join()
+                .expect("waiter thread panicked during cleanup");
+            panic!("a parked waiter was stranded by an earlier waker's panic: {timeout}");
+        }
+    };
+    waiter.join().expect("waiter thread panicked");
+    assert_eq!(outcome, 42);
     assert_eq!(
         good_probe.count(),
         1,
@@ -79,10 +94,12 @@ fn waiters_before_the_panicking_one_are_woken() {
 
     let obs1 = space.observe(&2).expect("subject retained");
     let (good_waker, good_probe) = CountWake::waker();
-    assert!(!obs1.register_waker(&good_waker));
+    let readiness = obs1.register_waker(&good_waker);
+    assert_eq!(readiness, Poll::Pending);
 
     let obs2 = space.observe(&2).expect("subject retained");
-    assert!(!obs2.register_waker(&std::task::Waker::from(Arc::new(PanicWake))));
+    let readiness = obs2.register_waker(&std::task::Waker::from(Arc::new(PanicWake)));
+    assert_eq!(readiness, Poll::Pending);
 
     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         subject.complete(7);
@@ -96,33 +113,23 @@ fn waiters_before_the_panicking_one_are_woken() {
     );
 }
 
-/// The documented wait_timeout self-healing after a stranded drain: a
-/// `wait_timeout` waiter registered AFTER the panicking waker is skipped
-/// by the aborted drain (never unparked), but its deadline elapse wakes it
-/// (`park_until` returns true on a timed-out park) and the loop's COMPLETED
-/// recheck then resolves it to the published outcome — documented in Batch
-/// 10, now pinned by a test.
+/// A timed waiter skipped by a panicking drain reads the published outcome
+/// after an independent unpark. The wake is causal; deadline timing does not
+/// determine the registration order.
 #[test]
-fn wait_timeout_waiter_self_heals_after_panicking_drain() {
+fn wait_timeout_waiter_recovers_after_panicking_drain() {
     for round in 0..20_u64 {
         let space = ObservationSpace::<u8, u64>::new();
         let mut subject = space.subject(1).expect("first registration succeeds");
 
         let obs_panic = space.observe(&1).expect("subject retained");
-        assert!(!obs_panic.register_waker(&std::task::Waker::from(Arc::new(PanicWake))));
+        let readiness = obs_panic.register_waker(&std::task::Waker::from(Arc::new(PanicWake)));
+        assert_eq!(readiness, Poll::Pending);
 
-        let barrier = Arc::new(std::sync::Barrier::new(2));
-        let waiter = {
-            let obs = space.observe(&1).expect("subject retained");
-            let barrier = Arc::clone(&barrier);
-            std::thread::spawn(move || {
-                barrier.wait();
-                obs.wait_timeout(Duration::from_millis(200))
-            })
-        };
-        barrier.wait();
-        // Ensure the waiter is registered and parked before the drain.
-        std::thread::sleep(Duration::from_millis(20));
+        let observation = space.observe(&1).expect("subject retained");
+        let registration = observation.clone();
+        let waiter = std::thread::spawn(move || observation.wait_timeout(Duration::from_secs(5)));
+        wait_for_thread_registrations(&registration, &[waiter.thread().id()]);
 
         let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             subject.complete(42);
@@ -132,10 +139,12 @@ fn wait_timeout_waiter_self_heals_after_panicking_drain() {
             "the waker's panic propagates (round {round})"
         );
 
+        waiter.thread().unpark();
+        let outcome = waiter.join().expect("waiter panicked");
         assert_eq!(
-            waiter.join().expect("waiter panicked"),
+            outcome,
             Some(42),
-            "a stranded wait_timeout waiter must self-heal to the outcome (round {round})"
+            "a skipped timed waiter must recover the outcome (round {round})"
         );
     }
 }
@@ -150,7 +159,8 @@ fn state_after_panicking_drain_stays_consistent() {
     let mut subject = space.subject(3).expect("first registration succeeds");
 
     let obs = space.observe(&3).expect("subject retained");
-    assert!(!obs.register_waker(&std::task::Waker::from(Arc::new(PanicWake))));
+    let readiness = obs.register_waker(&std::task::Waker::from(Arc::new(PanicWake)));
+    assert_eq!(readiness, Poll::Pending);
 
     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         subject.complete(probe);
@@ -158,8 +168,10 @@ fn state_after_panicking_drain_stays_consistent() {
     drop(panic);
 
     let (completion_waker, _) = crate::observe::test_support::CountWake::waker();
-    assert!(
-        obs.register_waker(&completion_waker),
+    let readiness = obs.register_waker(&completion_waker);
+    assert_eq!(
+        readiness,
+        Poll::Ready(()),
         "outcome must be published even if the drain panicked"
     );
     drop(obs);

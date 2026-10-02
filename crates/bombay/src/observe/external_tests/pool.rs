@@ -4,6 +4,7 @@
 
 use std::sync::Barrier;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::task::Poll;
 use std::thread;
 use std::time::Duration;
 
@@ -86,17 +87,20 @@ fn stale_waiter_slot_reuse_is_clean() {
     let subject = space.subject(5).expect("first registration succeeds");
     let obs = space.observe(&5).expect("subject retained");
     // Leave HAS_WAITER set with an empty registry (zero-timeout wait).
-    assert_eq!(obs.wait_timeout(Duration::ZERO), None);
+    let timeout = obs.wait_timeout(Duration::ZERO);
+    assert_eq!(timeout, None);
     // Leave a direct waker registration with no owner behind.
     let (stale_waker, stale_probe) = CountWake::waker();
-    assert!(!obs.register_waker(&stale_waker));
+    let readiness = obs.register_waker(&stale_waker);
+    assert_eq!(readiness, Poll::Pending);
     drop(obs);
     drop(subject); // unobserved: pooled with a stale registration
 
     let mut second = space.subject(5).expect("retired key is registrable");
     let (waker, probe) = CountWake::waker();
     let obs2 = space.observe(&5).expect("replacement retained");
-    assert!(!obs2.register_waker(&waker));
+    let readiness = obs2.register_waker(&waker);
+    assert_eq!(readiness, Poll::Pending);
     second.complete(77);
 
     assert_eq!(
@@ -317,12 +321,13 @@ fn pending_into_outcome_consumes_registered_waker_silently() {
         let subject = space.subject(1).expect("first registration succeeds");
         let obs = space.observe(&1).expect("subject retained");
         let (waker, probe) = CountWake::waker();
-        assert!(!obs.register_waker(&waker), "pending: registration stored");
+        let readiness = obs.register_waker(&waker);
+        assert_eq!(readiness, Poll::Pending, "pending: registration stored");
         drop(subject); // retire without completing
 
+        let pending_outcome = obs.into_outcome();
         assert_eq!(
-            obs.into_outcome(),
-            None,
+            pending_outcome, None,
             "a pending generation has no outcome (round {round})"
         );
         // The observation, slot, and its waker entry are gone; nothing can
@@ -347,7 +352,8 @@ fn completed_into_outcome_fires_waker_then_moves_outcome() {
         let mut subject = space.subject(1).expect("first registration succeeds");
         let obs = space.observe(&1).expect("subject retained");
         let (waker, probe) = CountWake::waker();
-        assert!(!obs.register_waker(&waker), "pending: registration stored");
+        let readiness = obs.register_waker(&waker);
+        assert_eq!(readiness, Poll::Pending, "pending: registration stored");
 
         subject.complete(round);
         assert_eq!(
@@ -357,8 +363,9 @@ fn completed_into_outcome_fires_waker_then_moves_outcome() {
         );
         drop(subject); // retired; the generation outlives via obs
 
+        let completed_outcome = obs.into_outcome();
         assert_eq!(
-            obs.into_outcome(),
+            completed_outcome,
             Some(round),
             "into_outcome must move the completed outcome (round {round})"
         );
@@ -413,8 +420,10 @@ fn same_waker_registered_1000_times_fires_once() {
     let observation = space.observe(&7).expect("subject retained");
     let (waker, probe) = CountWake::waker();
     for _ in 0..1000 {
-        assert!(
-            !observation.register_waker(&waker),
+        let readiness = observation.register_waker(&waker);
+        assert_eq!(
+            readiness,
+            Poll::Pending,
             "repeated registration must stay deduped"
         );
     }
@@ -437,7 +446,8 @@ fn recycled_slot_waiter_traffic_stays_exactly_once() {
         let probes: Vec<_> = (0..4).map(|_| CountWake::waker()).collect();
         for (waker, _) in &probes {
             let obs = space.observe(&round).expect("subject retained");
-            assert!(!obs.register_waker(waker));
+            let readiness = obs.register_waker(waker);
+            assert_eq!(readiness, Poll::Pending);
         }
         subject.complete(u64::from(round));
         for (i, (_, probe)) in probes.iter().enumerate() {

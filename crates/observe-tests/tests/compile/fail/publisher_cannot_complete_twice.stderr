@@ -1,0 +1,15 @@
+error[E0382]: use of moved value: `publisher`
+ --> tests/compile/fail/publisher_cannot_complete_twice.rs:6:5
+  |
+4 |     let (publisher, _) = pair::<u64>();
+  |          --------- move occurs because `publisher` has type `Publisher<u64>`, which does not implement the `Copy` trait
+5 |     publisher.complete(1);
+  |               ----------- `publisher` moved due to this method call
+6 |     publisher.complete(2);
+  |     ^^^^^^^^^ value used here after move
+  |
+note: `Publisher::<O>::complete` takes ownership of the receiver `self`, which moves `publisher`
+ --> src/../../bombay/src/observe/mod.rs
+  |
+  |     pub fn complete(self, outcome: O) {
+  |                     ^^^^

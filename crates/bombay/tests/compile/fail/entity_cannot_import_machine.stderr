@@ -1,0 +1,11 @@
+error[E0432]: unresolved import `bombay_machine`
+ --> tests/compile/fail/entity_cannot_import_machine.rs:1:5
+  |
+1 | use bombay_machine::Decision;
+  |     ^^^^^^^^^^^^^^ use of unresolved module or unlinked crate `bombay_machine`
+  |
+help: there is a crate or module with a similar name
+  |
+1 - use bombay_machine::Decision;
+1 + use bombay_engine::Decision;
+  |

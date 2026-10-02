@@ -1,15 +1,14 @@
 //! Mechanical derives for Bombay's concrete local runtime composition.
 
-use std::collections::BTreeMap;
-
 use proc_macro::TokenStream;
 use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
+use syn::punctuated::Punctuated;
 use syn::{
-    Data, DeriveInput, Error, Fields, FnArg, GenericArgument, Ident, ImplItem, ItemImpl,
-    PathArguments, Result, Token, Type, braced, parse_macro_input, parse_quote,
+    Attribute, Data, DeriveInput, Error, Fields, FnArg, Ident, ImplItem, ItemImpl, Meta, Result,
+    Token, Type, Variant, Visibility, braced, parse_macro_input, parse_quote,
 };
 
 fn crate_path(found: FoundCrate) -> TokenStream2 {
@@ -68,16 +67,35 @@ impl Parse for ActorArgs {
                     let ty: Type = input.parse()?;
                     forwarded.push(quote!(error = #ty));
                 }
-                "sends" | "births" => {
+                "sends" => {
+                    let visibility: Visibility = input.parse()?;
                     if input.peek(syn::token::Brace) {
                         let content;
                         braced!(content in input);
                         let fields: TokenStream2 = content.parse()?;
-                        forwarded.push(quote!(#key = { #fields }));
+                        forwarded.push(quote!(sends = #visibility { #fields }));
+                    } else {
+                        if !matches!(visibility, Visibility::Inherited) {
+                            return Err(input.error("send-product visibility requires named lanes"));
+                        }
+                        let ty: Type = input.parse()?;
+                        forwarded.push(quote!(sends = #ty));
+                    }
+                }
+                "births" => {
+                    if input.peek(syn::token::Brace) {
+                        let content;
+                        braced!(content in input);
+                        let fields: TokenStream2 = content.parse()?;
+                        forwarded.push(quote!(births = { #fields }));
                     } else {
                         let ty: Type = input.parse()?;
-                        forwarded.push(quote!(#key = #ty));
+                        forwarded.push(quote!(births = #ty));
                     }
+                }
+                "creation_settlements" => {
+                    let disposition: Ident = input.parse()?;
+                    forwarded.push(quote!(creation_settlements = #disposition));
                 }
                 "addr" => {
                     return Err(Error::new_spanned(
@@ -193,7 +211,7 @@ fn actor_signature(
                 clippy::needless_pass_by_value,
                 clippy::unnecessary_wraps,
                 clippy::unused_self,
-                reason = "Bombay's actor facade supplies the owning Behavior fold boundary"
+                reason = "Behavior requires an owned message, mutable receiver, and fallible fold signature"
             )]
         });
         Ok((addr, message))
@@ -224,44 +242,9 @@ fn actor_signature(
     }
 }
 
-fn actor_space_protocol(field: &syn::Field) -> syn::Result<Option<&Type>> {
-    let Type::Path(field_type) = &field.ty else {
-        return Ok(None);
-    };
-    let Some(segment) = field_type.path.segments.last() else {
-        return Ok(None);
-    };
-    if segment.ident != "ActorSpace" {
-        return Ok(None);
-    }
-    let PathArguments::AngleBracketed(arguments) = &segment.arguments else {
-        return Err(Error::new_spanned(
-            &field.ty,
-            "ActorSpace must name exactly one hosted protocol",
-        ));
-    };
-    let mut types = arguments.args.iter().filter_map(|argument| match argument {
-        GenericArgument::Type(protocol) => Some(protocol),
-        _ => None,
-    });
-    let Some(protocol) = types.next() else {
-        return Err(Error::new_spanned(
-            &field.ty,
-            "ActorSpace must name exactly one hosted protocol",
-        ));
-    };
-    if types.next().is_some() || arguments.args.len() != 1 {
-        return Err(Error::new_spanned(
-            &field.ty,
-            "ActorSpace must name exactly one hosted protocol",
-        ));
-    }
-    Ok(Some(protocol))
-}
-
-/// Derive the exact `Hosts<P>` implementation for every named
-/// `ActorSpace<P>` field in an application-owned product.
-#[proc_macro_derive(ActorSpaces)]
+/// Derive `Hosts<P>` for each field explicitly marked `#[actor_space(P)]`.
+/// Rust checks the declared field type and rejects duplicate protocol impls.
+#[proc_macro_derive(ActorSpaces, attributes(actor_space))]
 pub fn actor_spaces(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     expand_actor_spaces(&input)
@@ -274,7 +257,10 @@ pub fn actor_spaces(input: TokenStream) -> TokenStream {
 /// Each variant must contain exactly the named fields `origin` and `terminal`.
 /// The derive adds no terminal policy; it only maps each declared pair to its
 /// owning variant through Bombay's `ProjectTerminal` trait.
-#[proc_macro_derive(TerminalProjection, attributes(application_actor))]
+#[proc_macro_derive(
+    TerminalProjection,
+    attributes(application_actor, structural_child, declared_child)
+)]
 pub fn terminal_projection(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     expand_terminal_projection(&input)
@@ -295,42 +281,55 @@ fn expand_terminal_projection(input: &DeriveInput) -> syn::Result<TokenStream2> 
 
     for variant in &data.variants {
         let (origin, terminal) = terminal_projection_fields(&variant.fields)?;
-        let (owner, role) = actor_origin_arguments(origin)?;
-        let retiring_actor = actor_retirement_actor(terminal)?;
         let variant_name = &variant.ident;
         let mut generics = input.generics.clone();
-        let application_actor = variant
-            .attrs
-            .iter()
-            .any(|attribute| attribute.path().is_ident("application_actor"));
-        let (source, declared_origin) = if let Some(role) = role {
-            if application_actor || is_structural_child(role) {
-                (quote!(#bombay::ActorOrigin<#owner, #role>), quote!(origin))
-            } else {
+        let (source, declared_origin, projected_terminal) = match origin_projection(variant)? {
+            OriginProjection::ApplicationChild | OriginProjection::StructuralChild => (
+                quote!(#origin),
+                quote!({
+                    let _: u64 = origin.nonce();
+                    origin
+                }),
+                quote!(terminal),
+            ),
+            OriginProjection::DeclaredChild(attribute) => {
+                let arguments =
+                    attribute.parse_args_with(Punctuated::<Type, Token![,]>::parse_terminated)?;
+                let [owner, role, actor] = arguments
+                    .iter()
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .map_err(|_| {
+                        Error::new_spanned(
+                            attribute,
+                            "declared_child requires owner, role, and actor types",
+                        )
+                    })?;
                 generics.make_where_clause().predicates.push(parse_quote!(
-                    #role: #bombay::behavior::ChildRole<#owner, Child = #retiring_actor>
+                    #role: #bombay::behavior::ChildRole<#owner, Child = #actor>
                 ));
                 (
-                    quote! {
-                        #bombay::ActorOrigin<
-                            #owner,
-                            <#role as #bombay::behavior::ChildRole<#owner>>::Position
-                        >
-                    },
-                    quote!(origin.into_declared_child()),
+                    quote!(#bombay::ChildOrigin<#owner, <#role as #bombay::behavior::ChildRole<#owner>>::Position>),
+                    quote!({
+                        let declared: #bombay::ChildOrigin<#owner, #role> = origin.into_declared_child();
+                        let declared: #origin = declared;
+                        declared
+                    }),
+                    quote!({
+                        let exact: #bombay::ActorRetirement<#actor, Self> = terminal;
+                        exact
+                    }),
                 )
             }
-        } else {
-            if application_actor {
-                return Err(Error::new_spanned(
-                    variant,
-                    "application_actor requires an ActorOrigin<Owner, Role> field",
-                ));
-            }
-            (
-                quote!(#bombay::ActorOrigin<#owner, #bombay::behavior::Here>),
-                quote!(origin.into_declared_root()),
-            )
+            OriginProjection::Root => (
+                quote!(#origin),
+                quote!({
+                    let root: #bombay::RootOrigin<_> = origin;
+                    let declared: #origin = root;
+                    declared
+                }),
+                quote!(terminal),
+            ),
         };
         let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
         projections.push(quote! {
@@ -340,7 +339,7 @@ fn expand_terminal_projection(input: &DeriveInput) -> syn::Result<TokenStream2> 
                 fn project(origin: #source, terminal: #terminal) -> Self {
                     Self::#variant_name {
                         origin: #declared_origin,
-                        terminal,
+                        terminal: #projected_terminal,
                     }
                 }
             }
@@ -350,94 +349,45 @@ fn expand_terminal_projection(input: &DeriveInput) -> syn::Result<TokenStream2> 
     Ok(quote!(#(#projections)*))
 }
 
-fn is_structural_child(role: &Type) -> bool {
-    let Type::Path(role) = role else {
-        return false;
-    };
-    role.path
-        .segments
-        .last()
-        .is_some_and(|segment| segment.ident == "ChildHead" || segment.ident == "ChildTail")
+enum OriginProjection<'a> {
+    Root,
+    ApplicationChild,
+    StructuralChild,
+    DeclaredChild(&'a Attribute),
 }
 
-fn actor_retirement_actor(terminal: &Type) -> syn::Result<&Type> {
-    let Type::Path(terminal) = terminal else {
-        return Err(Error::new_spanned(
-            terminal,
-            "terminal must be ActorRetirement<Actor, Root, EffectError>",
-        ));
-    };
-    let Some(segment) = terminal.path.segments.last() else {
-        return Err(Error::new_spanned(terminal, "terminal type path is empty"));
-    };
-    if segment.ident != "ActorRetirement" {
-        return Err(Error::new_spanned(
-            terminal,
-            "terminal must be ActorRetirement<Actor, Root, EffectError>",
-        ));
+fn origin_projection(variant: &Variant) -> Result<OriginProjection<'_>> {
+    let mut projection = None;
+    for attribute in &variant.attrs {
+        let selected = if attribute.path().is_ident("application_actor") {
+            if !matches!(&attribute.meta, Meta::Path(_)) {
+                return Err(Error::new_spanned(
+                    attribute,
+                    "application_actor takes no arguments",
+                ));
+            }
+            OriginProjection::ApplicationChild
+        } else if attribute.path().is_ident("structural_child") {
+            if !matches!(&attribute.meta, Meta::Path(_)) {
+                return Err(Error::new_spanned(
+                    attribute,
+                    "structural_child takes no arguments",
+                ));
+            }
+            OriginProjection::StructuralChild
+        } else if attribute.path().is_ident("declared_child") {
+            OriginProjection::DeclaredChild(attribute)
+        } else {
+            continue;
+        };
+        if projection.replace(selected).is_some() {
+            return Err(Error::new_spanned(
+                attribute,
+                "choose one child-origin source marker",
+            ));
+        }
     }
-    let PathArguments::AngleBracketed(arguments) = &segment.arguments else {
-        return Err(Error::new_spanned(
-            terminal,
-            "ActorRetirement requires an actor, root terminal, and optional effect error",
-        ));
-    };
-    let types = arguments
-        .args
-        .iter()
-        .filter_map(|argument| match argument {
-            GenericArgument::Type(ty) => Some(ty),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-    match types.as_slice() {
-        [actor, _] if arguments.args.len() == 2 => Ok(actor),
-        [actor, _, _] if arguments.args.len() == 3 => Ok(actor),
-        _ => Err(Error::new_spanned(
-            terminal,
-            "ActorRetirement requires an actor, root terminal, and optional effect error",
-        )),
-    }
-}
-
-fn actor_origin_arguments(origin: &Type) -> syn::Result<(&Type, Option<&Type>)> {
-    let Type::Path(origin) = origin else {
-        return Err(Error::new_spanned(
-            origin,
-            "origin must be ActorOrigin<Owner> or ActorOrigin<Owner, Role>",
-        ));
-    };
-    let Some(segment) = origin.path.segments.last() else {
-        return Err(Error::new_spanned(origin, "origin type path is empty"));
-    };
-    if segment.ident != "ActorOrigin" {
-        return Err(Error::new_spanned(
-            origin,
-            "origin must be ActorOrigin<Owner> or ActorOrigin<Owner, Role>",
-        ));
-    }
-    let PathArguments::AngleBracketed(arguments) = &segment.arguments else {
-        return Err(Error::new_spanned(
-            origin,
-            "ActorOrigin requires an owner and optional role",
-        ));
-    };
-    let types = arguments
-        .args
-        .iter()
-        .filter_map(|argument| match argument {
-            GenericArgument::Type(ty) => Some(ty),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-    match types.as_slice() {
-        [owner] if arguments.args.len() == 1 => Ok((owner, None)),
-        [owner, role] if arguments.args.len() == 2 => Ok((owner, Some(role))),
-        _ => Err(Error::new_spanned(
-            origin,
-            "ActorOrigin requires an owner and optional role",
-        )),
-    }
+    Ok(projection.unwrap_or(OriginProjection::Root))
 }
 
 fn terminal_projection_fields(fields: &Fields) -> syn::Result<(&Type, &Type)> {
@@ -483,25 +433,35 @@ fn expand_actor_spaces(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let bombay = bombay_crate()?;
     let name = &input.ident;
     let (impl_generics, type_generics, where_clause) = input.generics.split_for_impl();
-    let mut protocols = BTreeMap::new();
     let mut implementations = Vec::new();
 
     for field in &fields.named {
-        let Some(protocol) = actor_space_protocol(field)? else {
+        let Some(attribute) = field
+            .attrs
+            .iter()
+            .find(|attribute| attribute.path().is_ident("actor_space"))
+        else {
             continue;
         };
-        let field_name = field.ident.as_ref().expect("named fields have identifiers");
-        let key = quote!(#protocol).to_string();
-        if let Some(previous) = protocols.insert(key, field_name) {
+        if field
+            .attrs
+            .iter()
+            .filter(|attribute| attribute.path().is_ident("actor_space"))
+            .count()
+            != 1
+        {
             return Err(Error::new_spanned(
-                field_name,
-                format!("duplicate hosted protocol; it is already hosted by field `{previous}`"),
+                field,
+                "one actor_space protocol per field",
             ));
         }
+        let protocol: Type = attribute.parse_args()?;
+        let field_name = field.ident.as_ref().expect("named fields have identifiers");
         implementations.push(quote! {
             impl #impl_generics #bombay::Hosts<#protocol> for #name #type_generics #where_clause {
                 fn space(&self) -> &#bombay::ActorSpace<#protocol> {
-                    &self.#field_name
+                    let space: &#bombay::ActorSpace<#protocol> = &self.#field_name;
+                    space
                 }
             }
         });

@@ -1,5 +1,5 @@
 use bombay::prelude::*;
-use bombay::behavior::{Behavior, ChildRoute, ObserveChild, ObserveCreation, ShutdownChild};
+use bombay::behavior::{Behavior, CreationSequence};
 
 struct Worker;
 
@@ -16,6 +16,7 @@ struct System;
     addr = MailAddr,
     message = Never,
     births = { workers: Worker },
+    creation_settlements = retain_for_retirement,
 )]
 impl System {
     fn receive(&mut self, _: MailAddr, message: Never) -> BehaviorActed<Self> {
@@ -32,24 +33,20 @@ where
 
 fn main() {
     accepts_child::<System, _>(SystemChild::Workers, Worker);
-    let route = ChildRoute::<Worker, SystemChildrenWorkers>::new(7);
-    let delivery = ChildDelivery::<Worker, SystemChildrenWorkers>::at(route, 9);
-    let creation_observation = ObserveCreation::<MailAddr, SystemChildrenWorkers>::at(route);
-    let child_observation = ObserveChild::<MailAddr, SystemChildrenWorkers>::at(route);
-    let shutdown = ShutdownChild::<Worker, SystemChildrenWorkers>::at(route);
+    let mut sequence = CreationSequence::new();
+    let creation = sequence
+        .issue()
+        .expect("the worker creation ID exists");
+    let delivery = ChildDelivery::<Worker, SystemChildrenWorkers>::after(creation, 9);
     let creations = Children::<MailAddr>::new()
-        .create(route.birth(Worker))
-        .into_creates()
-        .expect("one declared child route cannot collide");
+        .child(creation, Worker)
+        .into_creates();
     let staged = creations
         .into_iter()
         .next()
         .expect("the worker creation is retained");
 
-    assert_eq!(delivery.nonce, route.nonce());
+    assert_eq!(delivery.creation, creation);
     assert_eq!(delivery.message, 9);
-    assert_eq!(staged.nonce, route.nonce());
-    assert_eq!(creation_observation.nonce, route.nonce());
-    assert_eq!(child_observation.nonce, route.nonce());
-    assert_eq!(shutdown.nonce, route.nonce());
+    assert_eq!(staged.id(), creation);
 }

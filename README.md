@@ -5,16 +5,9 @@ mailboxes, address spaces, observation, timers, and task hierarchy. Ordinary
 downstream examples live under [`examples/`](examples/README.md).
 
 The optional `axum` feature consumes the same typed external boundary used by
-CLI, tests, and embedded clients:
-
-```rust,ignore
-Application::new(root()).run_axum(address, |application| {
-    let interface = application.interface(Api {
-        orders: application.root().established_recipient(),
-    });
-    order_http::router(interface, application.lifecycle())
-})?;
-```
+CLI, tests, and embedded clients. The [Axum example](examples/axum/src/main.rs)
+and its [HTTP integration tests](examples/axum/src/http.rs) execute that
+boundary.
 
 `ActorInterface<Api>` contains only the application-defined static product of
 exported exact actor capabilities plus external-customer creation. Lifecycle
@@ -22,40 +15,25 @@ authority is projected separately. No actor is wrapped in an HTTP state mutex,
 no target address is fabricated as the sender, and no dynamic registry is
 introduced.
 
-Bombay is the complete application and runtime layer over closed,
+Bombay is an application and local runtime layer over closed,
 deterministic Behaviors and the reusable templates owned by Behavior Actors.
 Applications describe actors, topology, routing, supervision, timers, and
 shutdown through Bombay. The foundational Behavior API remains available for
-power users; Bombay supplies actor policy and local execution.
+power users; Behavior Actors owns reusable policy and Bombay supplies local
+execution. Full catalogue policy verification, multicore public runners,
+durable execution and distributed hosting are not complete in this checkout.
 
-The intended functional boundary is:
-
-```rust,ignore
-let terminal: ApplicationTerminal<_> = Application::new(root()).run()?;
-inspect_terminal(terminal);
-```
+The [application topology example](examples/application-topology/src/main.rs)
+executes the ordinary root boundary and inspects its typed terminal.
 
 `ApplicationTerminal` is an application-owned `#[derive(TerminalProjection)]`
 sum. It retains the exact final state, runtime origin, descendant terminals,
 and completion or failure for every declared actor.
 
 Framework-neutral boundaries receive the activated application handle without
-constructing a runtime or boxing a future:
-
-```rust,ignore
-let (output, terminal): (_, ApplicationTerminal<_>) =
-    Application::new(root()).run_with(|application| async move {
-    let interface = application.interface(Api {
-        service: application.root().established_recipient(),
-    });
-    let lifecycle = application.lifecycle();
-    boundary(interface).await?;
-    lifecycle
-        .request_shutdown()
-        .expect("the live root accepts its first shutdown request");
-    })?;
-inspect_terminal(terminal);
-```
+constructing a runtime or boxing a future. The [run_with tests](crates/bombay/tests/run_with.rs)
+compile and execute this boundary with exact output, shutdown, and terminal
+custody.
 
 Returning from the boundary does not stop the actor. The handle names shutdown
 authority separately from root delivery: `application.lifecycle()` is the one
@@ -64,25 +42,13 @@ incarnation fact. A boundary-owned `Result<T, E>` is returned unchanged rather
 than folded into `RunError`.
 
 An interface establishes a real typed external actor rather than inventing a
-raw sender address:
+raw sender address. The [external actor tests](crates/bombay/tests/actor_interface.rs)
+execute the exact send, reply, and rejected-payload path.
 
-```rust,ignore
-let mut caller = interface.external::<Replies>()?;
-caller
-    .send(
-        &interface.api().service,
-        Command::Get {
-            reply_to: caller.recipient(),
-        },
-    )
-    .await?;
-let reply = caller.receive().await?;
-```
-
-The external actor owns one fresh claimed `MailAddr`, one cloneable exact reply
+The external actor owns one fresh allocated `MailAddr`, one cloneable exact reply
 capability, and one affine receiver. `send` supplies that address as truthful
 `User::from`; rejected admission returns the exact message. Dropping the
-external actor closes admission, releases its lease, and never retargets a
+external actor closes admission and never retargets a
 stale exact recipient.
 
 Activated references can also issue an opaque
@@ -131,13 +97,8 @@ including `bombay::supervision`, `bombay::routing`, and `bombay::timing`.
 Behavior Actors supplies the reusable actor templates and their policy laws;
 Bombay adds no compatibility catalogue or aggregate abstraction.
 The ordinary prelude adds one static composition trait, so wrapper policies are
-selected directly from a behavior value:
-
-```rust,ignore
-let root = service
-    .with_receive_timeout(TimerId(1), Duration::from_secs(30), expire)
-    .stop_on_shutdown();
-```
+selected directly from a behavior value. The [actor-template example](examples/actor-templates/src/main.rs)
+executes a receive-timeout policy followed by shutdown policy.
 
 The inferred value is exactly the existing
 `StopOnShutdown<ReceiveTimeout<Service>>`; method order remains part of the
@@ -183,6 +144,13 @@ embedded execution, or another executor.
 
 ## Current status
 
+The [source-backed completion inventory](docs/prd-backlog/README.md) separates
+implemented local behavior, missing integration and unverified claims. The
+[failure contracts](docs/prd-backlog/failure-contracts.md) define proposed
+distributed acceptance properties, not guarantees already supplied by this
+release. Zenoh is the selected production networking direction; Mnesis-backed
+durability and downstream Selo identity integration remain planned work.
+
 The direct Driver and lower lifecycle layers exist. Communication 0.1.2's
 affine mailbox admission owner, Bombay's private affine Observe import, and the
 actor-owned TimerQueue are integrated. The redundant runtime-stop channel,
@@ -202,6 +170,9 @@ communication remains explicit in `Actions`.
 
 ## Documentation
 
+- [Completion requirements and PRD groups](docs/prd-backlog/README.md)
+- [Stack evidence and documentation status](docs/prd-backlog/evidence.md)
+- [Failure rules and properties](docs/prd-backlog/failure-contracts.md)
 - [User-facing API](docs/user-facing-api.md)
 - [Runtime capability interfaces](docs/runtime-capability-interfaces.md)
 - [Module boundaries](docs/module-boundaries.md)

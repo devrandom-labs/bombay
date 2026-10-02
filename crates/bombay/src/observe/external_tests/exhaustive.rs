@@ -5,6 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use std::task::Poll;
 
 use crate::observe::test_support::{CountWake, DropProbe};
 use crate::observe::{Observation, ObservationSpace, Subject};
@@ -367,8 +368,9 @@ fn exhaustive_double_retire_orders() {
                 if key == first || key == second {
                     assert!(result.is_err(), "retired key {key} observable");
                 } else {
+                    let live_observation = result.expect("live key observable");
                     assert_eq!(
-                        result.expect("live key observable").try_get(),
+                        live_observation.try_get(),
                         Some(u64::from(key)),
                         "live key {key} outcome wrong after retiring {first},{second}"
                     );
@@ -382,7 +384,7 @@ fn exhaustive_double_retire_orders() {
 /// W=register_waker, X=retire, D=drop one obs} to depth 6 (6^6 = 46656) —
 /// the strongest non-sampled coverage of the register_waker / drain
 /// protocol. A waker is REGISTERED exactly when its observation's
-/// generation is still pending (register_waker returns `false`); once
+/// generation is still pending (`register_waker` returns `Poll::Pending`); once
 /// registered, it must fire EXACTLY ONCE iff that generation eventually
 /// completes, and never otherwise — including when the slot dies (pooled
 /// and reset, or consumed) before completing. Observation resolution is
@@ -430,10 +432,15 @@ fn check_waker_history(history: &[char]) {
                 if let Some((e, obs)) = observations.last() {
                     let (waker, probe) = CountWake::waker();
                     let is_pending = !completed.contains(e);
+                    let readiness = obs.register_waker(&waker);
+                    let expected = if is_pending {
+                        Poll::Pending
+                    } else {
+                        Poll::Ready(())
+                    };
                     assert_eq!(
-                        !obs.register_waker(&waker),
-                        is_pending,
-                        "{history:?}: register_waker completion flag diverged for epoch {e}"
+                        readiness, expected,
+                        "{history:?}: register_waker readiness diverged for epoch {e}"
                     );
                     if is_pending {
                         registered.push((*e, probe));

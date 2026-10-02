@@ -1,12 +1,13 @@
 use core::convert::Infallible;
-use core::future::Future;
+use core::future::{Future, poll_fn};
+use core::pin::pin;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::Notify;
 
 use bombay::entity::{
     Activated, ActivationId, AdmissionFailure, DirectoryConfig, EntityId, EntityRuntime,
-    FenceFailure, LocalEntityRuntime, Refusal, RetirementMode,
+    EntityShutdown, FenceFailure, LocalEntityRuntime, Passivation, Refusal, RetirementMode,
 };
 
 #[derive(Clone, Default)]
@@ -46,9 +47,15 @@ impl LocalEntityRuntime<u64, u64> for RecordingRuntime {
     type Endpoint = u64;
     type Lease = u64;
     type ActivationError = Infallible;
+    type Task = tokio::task::JoinHandle<()>;
+    type TaskFailure = tokio::task::JoinError;
 
-    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) {
-        drop(tokio::spawn(task));
+    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
+        tokio::spawn(task)
+    }
+
+    async fn join(task: &mut Self::Task) -> Result<(), Self::TaskFailure> {
+        task.await
     }
 
     async fn activate(
@@ -94,7 +101,10 @@ async fn family_shutdown_closes_admission_drains_every_slot_and_joins_tasks() {
 
     let shutdown = entities.shutdown().await;
 
-    assert_eq!(shutdown.represented, 2);
+    assert!(matches!(
+        shutdown,
+        EntityShutdown::Settled { represented: 2 }
+    ));
     assert_eq!(
         observations.trace(),
         RuntimeTrace {
@@ -104,8 +114,9 @@ async fn family_shutdown_closes_admission_drains_every_slot_and_joins_tasks() {
             retirements: 2,
         }
     );
+    let shutdown_refusal = entities.admit((), EntityId::new(89), 13).await;
     assert!(matches!(
-        entities.admit((), EntityId::new(89), 13).await,
+        shutdown_refusal,
         Err(AdmissionFailure::Refused {
             command: 13,
             reason: Refusal::Shutdown,
@@ -113,11 +124,125 @@ async fn family_shutdown_closes_admission_drains_every_slot_and_joins_tasks() {
     ));
 }
 
+#[tokio::test]
+async fn family_shutdown_has_one_result_owner() {
+    let entities =
+        EntityRuntime::new(DirectoryConfig::default(), RecordingRuntime::default()).unwrap();
+    let first = entities.shutdown().await;
+    assert!(matches!(first, EntityShutdown::Settled { represented: 0 }));
+
+    let repeated = tokio::spawn(async move { entities.shutdown().await }).await;
+    let repeated = repeated.expect("a second caller receives a disposition");
+    assert!(matches!(repeated, EntityShutdown::AlreadyClaimed));
+}
+
+#[tokio::test]
+async fn cancelled_shutdown_returns_task_custody_to_the_family() {
+    let observations = RecordingRuntime::default();
+    let activation_started = Arc::new(Notify::new());
+    let release_activation = Arc::new(Notify::new());
+    let entities = EntityRuntime::new(
+        DirectoryConfig::default(),
+        GatedRuntime {
+            inner: observations.clone(),
+            activation_started: Arc::clone(&activation_started),
+            release_activation: Arc::clone(&release_activation),
+            delivery_gate: DeliveryGate::Immediate,
+            retirement_disposition: RetirementDisposition::Complete,
+            join_gate: JoinGate::Immediate,
+        },
+    )
+    .unwrap();
+    let admission = tokio::spawn({
+        let entities = entities.clone();
+        async move { entities.admit((), EntityId::new(41), 7).await }
+    });
+    activation_started.notified().await;
+
+    let (closure, closed) = tokio::sync::oneshot::channel();
+    let shutdown = tokio::spawn({
+        let entities = entities.clone();
+        async move {
+            let mut transaction = pin!(entities.shutdown());
+            let mut closure = Some(closure);
+            poll_fn(|context| {
+                let outcome = transaction.as_mut().poll(context);
+                if let Some(closure) = closure.take() {
+                    closure
+                        .send(())
+                        .expect("the shutdown observer remains present");
+                }
+                outcome
+            })
+            .await
+        }
+    });
+    closed.await.unwrap();
+    shutdown.abort();
+    let cancellation = shutdown.await.expect_err("the first shutdown was canceled");
+    assert!(cancellation.is_cancelled());
+
+    release_activation.notify_one();
+    admission.await.unwrap().unwrap();
+    let retry = entities.shutdown().await;
+    assert!(matches!(retry, EntityShutdown::Settled { represented: 1 }));
+    assert_eq!(
+        observations.trace(),
+        RuntimeTrace {
+            activations: 1,
+            deliveries: vec![7],
+            fences: 1,
+            retirements: 1,
+        }
+    );
+}
+
 #[derive(Clone)]
 struct GatedRuntime {
     inner: RecordingRuntime,
     activation_started: Arc<Notify>,
     release_activation: Arc<Notify>,
+    delivery_gate: DeliveryGate,
+    retirement_disposition: RetirementDisposition,
+    join_gate: JoinGate,
+}
+
+struct GatedTask {
+    handle: tokio::task::JoinHandle<()>,
+    join_gate: JoinGate,
+}
+
+#[derive(Clone)]
+enum JoinGate {
+    Immediate,
+    BlockOnce {
+        entered: Arc<Notify>,
+        phase: Arc<Mutex<JoinPhase>>,
+    },
+}
+
+enum JoinPhase {
+    Pending,
+    Entered,
+}
+
+#[derive(Clone)]
+enum DeliveryGate {
+    Immediate,
+    Blocked {
+        started: Arc<Notify>,
+        release: Arc<Notify>,
+    },
+}
+
+#[derive(Clone)]
+enum RetirementDisposition {
+    Complete,
+    Panic,
+    Cancel {
+        started: Arc<Notify>,
+        task: Arc<Mutex<Option<tokio::task::AbortHandle>>>,
+    },
 }
 
 impl LocalEntityRuntime<u64, u64> for GatedRuntime {
@@ -125,9 +250,39 @@ impl LocalEntityRuntime<u64, u64> for GatedRuntime {
     type Endpoint = u64;
     type Lease = u64;
     type ActivationError = Infallible;
+    type Task = GatedTask;
+    type TaskFailure = tokio::task::JoinError;
 
-    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) {
-        drop(tokio::spawn(task));
+    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
+        let scheduled = tokio::spawn(task);
+        if let RetirementDisposition::Cancel { task, .. } = &self.retirement_disposition {
+            *task.lock().unwrap() = Some(scheduled.abort_handle());
+        }
+        GatedTask {
+            handle: scheduled,
+            join_gate: self.join_gate.clone(),
+        }
+    }
+
+    async fn join(task: &mut Self::Task) -> Result<(), Self::TaskFailure> {
+        let pause = match &task.join_gate {
+            JoinGate::Immediate => None,
+            JoinGate::BlockOnce { entered, phase } => {
+                let mut phase = phase.lock().unwrap();
+                match *phase {
+                    JoinPhase::Pending => {
+                        *phase = JoinPhase::Entered;
+                        Some(Arc::clone(entered))
+                    }
+                    JoinPhase::Entered => None,
+                }
+            }
+        };
+        if let Some(entered) = pause {
+            entered.notify_one();
+            core::future::pending::<()>().await;
+        }
+        (&mut task.handle).await
     }
 
     async fn activate(
@@ -150,6 +305,10 @@ impl LocalEntityRuntime<u64, u64> for GatedRuntime {
     }
 
     async fn deliver(&self, _: Self::Endpoint, (): Self::Origin, command: u64) -> Result<(), u64> {
+        if let DeliveryGate::Blocked { started, release } = &self.delivery_gate {
+            started.notify_one();
+            release.notified().await;
+        }
         self.inner.state.deliveries.lock().unwrap().push(command);
         Ok(())
     }
@@ -161,6 +320,14 @@ impl LocalEntityRuntime<u64, u64> for GatedRuntime {
 
     async fn retire(&self, _: EntityId<u64>, _: ActivationId, _: Self::Lease, _: RetirementMode) {
         self.inner.state.retirements.fetch_add(1, Ordering::Release);
+        match &self.retirement_disposition {
+            RetirementDisposition::Complete => {}
+            RetirementDisposition::Panic => panic!("retirement task failed"),
+            RetirementDisposition::Cancel { started, .. } => {
+                started.notify_one();
+                core::future::pending::<()>().await;
+            }
+        }
     }
 }
 
@@ -175,6 +342,9 @@ async fn shutdown_settles_an_installed_activation_before_draining_and_joining() 
             inner: observations.clone(),
             activation_started: Arc::clone(&activation_started),
             release_activation: Arc::clone(&release_activation),
+            delivery_gate: DeliveryGate::Immediate,
+            retirement_disposition: RetirementDisposition::Complete,
+            join_gate: JoinGate::Immediate,
         },
     )
     .unwrap();
@@ -191,18 +361,232 @@ async fn shutdown_settles_an_installed_activation_before_draining_and_joining() 
     });
     tokio::task::yield_now().await;
 
+    let shutdown_refusal = entities.admit((), EntityId::new(73), 11).await;
     assert!(matches!(
-        entities.admit((), EntityId::new(73), 11).await,
+        shutdown_refusal,
         Err(AdmissionFailure::Refused {
             command: 11,
             reason: Refusal::Shutdown,
         })
     ));
     assert!(!shutdown.is_finished());
+    let repeated = entities.shutdown().await;
+    assert!(matches!(repeated, EntityShutdown::AlreadyClaimed));
 
     release_activation.notify_one();
     admission.await.unwrap().unwrap();
-    assert_eq!(shutdown.await.unwrap().represented, 1);
+    let shutdown = shutdown.await.unwrap();
+    assert!(matches!(
+        shutdown,
+        EntityShutdown::Settled { represented: 1 }
+    ));
+    assert_eq!(
+        observations.trace(),
+        RuntimeTrace {
+            activations: 1,
+            deliveries: vec![7],
+            fences: 1,
+            retirements: 1,
+        }
+    );
+}
+
+#[tokio::test]
+async fn shutdown_claims_passivation_before_pending_delivery_settles() {
+    let observations = RecordingRuntime::default();
+    let activation_started = Arc::new(Notify::new());
+    let release_activation = Arc::new(Notify::new());
+    let delivery_started = Arc::new(Notify::new());
+    let release_delivery = Arc::new(Notify::new());
+    let entities = EntityRuntime::new(
+        DirectoryConfig::default(),
+        GatedRuntime {
+            inner: observations.clone(),
+            activation_started: Arc::clone(&activation_started),
+            release_activation: Arc::clone(&release_activation),
+            delivery_gate: DeliveryGate::Blocked {
+                started: Arc::clone(&delivery_started),
+                release: Arc::clone(&release_delivery),
+            },
+            retirement_disposition: RetirementDisposition::Complete,
+            join_gate: JoinGate::Immediate,
+        },
+    )
+    .unwrap();
+    let entity_id = EntityId::new(41);
+    let admission = tokio::spawn({
+        let entities = entities.clone();
+        async move { entities.admit((), entity_id, 7).await }
+    });
+    activation_started.notified().await;
+    release_activation.notify_one();
+    delivery_started.notified().await;
+
+    let (closure, closed) = tokio::sync::oneshot::channel();
+    let shutdown = tokio::spawn({
+        let entities = entities.clone();
+        async move {
+            let mut transaction = pin!(entities.shutdown());
+            let mut closure = Some(closure);
+            poll_fn(|context| {
+                let outcome = transaction.as_mut().poll(context);
+                if let Some(closure) = closure.take() {
+                    closure
+                        .send(())
+                        .expect("the shutdown observer remains present");
+                }
+                outcome
+            })
+            .await
+        }
+    });
+    closed.await.unwrap();
+
+    let passivation = entities.passivate(&entity_id);
+    assert_eq!(passivation, Passivation::ShuttingDown);
+
+    release_delivery.notify_one();
+    admission.await.unwrap().unwrap();
+    let shutdown = shutdown.await.unwrap();
+    assert!(matches!(
+        shutdown,
+        EntityShutdown::Settled { represented: 1 }
+    ));
+    assert_eq!(
+        observations.trace(),
+        RuntimeTrace {
+            activations: 1,
+            deliveries: vec![7],
+            fences: 1,
+            retirements: 1,
+        }
+    );
+}
+
+#[tokio::test]
+async fn family_shutdown_preserves_retirement_task_failure() {
+    let observations = RecordingRuntime::default();
+    let release_activation = Arc::new(Notify::new());
+    let entities = EntityRuntime::new(
+        DirectoryConfig::default(),
+        GatedRuntime {
+            inner: observations,
+            activation_started: Arc::new(Notify::new()),
+            release_activation: Arc::clone(&release_activation),
+            delivery_gate: DeliveryGate::Immediate,
+            retirement_disposition: RetirementDisposition::Panic,
+            join_gate: JoinGate::Immediate,
+        },
+    )
+    .unwrap();
+    release_activation.notify_one();
+    entities.admit((), EntityId::new(41), 7).await.unwrap();
+
+    let shutdown = tokio::spawn(async move { entities.shutdown().await });
+    let outcome = shutdown
+        .await
+        .expect("shutdown returns the owned task failure");
+    let EntityShutdown::TaskFailed {
+        represented,
+        mut failures,
+    } = outcome
+    else {
+        panic!("retirement task panic must be returned");
+    };
+    assert_eq!(represented, 1);
+    assert_eq!(failures.len(), 1);
+    let failure = failures.pop().expect("one failed retirement task");
+    let panic = failure
+        .try_into_panic()
+        .expect("the retirement task panicked");
+    let message = panic
+        .downcast::<&'static str>()
+        .expect("the original panic message is retained");
+    assert_eq!(*message, "retirement task failed");
+}
+
+#[tokio::test]
+async fn family_shutdown_preserves_cancelled_retirement_task() {
+    let retirement_started = Arc::new(Notify::new());
+    let retirement_task = Arc::new(Mutex::new(None));
+    let release_activation = Arc::new(Notify::new());
+    let entities = EntityRuntime::new(
+        DirectoryConfig::default(),
+        GatedRuntime {
+            inner: RecordingRuntime::default(),
+            activation_started: Arc::new(Notify::new()),
+            release_activation: Arc::clone(&release_activation),
+            delivery_gate: DeliveryGate::Immediate,
+            retirement_disposition: RetirementDisposition::Cancel {
+                started: Arc::clone(&retirement_started),
+                task: Arc::clone(&retirement_task),
+            },
+            join_gate: JoinGate::Immediate,
+        },
+    )
+    .unwrap();
+    release_activation.notify_one();
+    entities.admit((), EntityId::new(41), 7).await.unwrap();
+
+    let shutdown = tokio::spawn(async move { entities.shutdown().await });
+    retirement_started.notified().await;
+    let task = retirement_task
+        .lock()
+        .unwrap()
+        .take()
+        .expect("the retirement task was scheduled");
+    task.abort();
+    let outcome = shutdown.await.expect("shutdown retains cancellation");
+    let EntityShutdown::TaskFailed {
+        represented,
+        mut failures,
+    } = outcome
+    else {
+        panic!("canceled retirement task must be returned");
+    };
+    assert_eq!(represented, 1);
+    assert_eq!(failures.len(), 1);
+    let failure = failures.pop().expect("one canceled retirement task");
+    assert!(failure.is_cancelled());
+}
+
+#[tokio::test]
+async fn cancelled_join_preserves_the_original_family_drain_count() {
+    let join_entered = Arc::new(Notify::new());
+    let release_activation = Arc::new(Notify::new());
+    let observations = RecordingRuntime::default();
+    let entities = EntityRuntime::new(
+        DirectoryConfig::default(),
+        GatedRuntime {
+            inner: observations.clone(),
+            activation_started: Arc::new(Notify::new()),
+            release_activation: Arc::clone(&release_activation),
+            delivery_gate: DeliveryGate::Immediate,
+            retirement_disposition: RetirementDisposition::Complete,
+            join_gate: JoinGate::BlockOnce {
+                entered: Arc::clone(&join_entered),
+                phase: Arc::new(Mutex::new(JoinPhase::Pending)),
+            },
+        },
+    )
+    .unwrap();
+    release_activation.notify_one();
+    entities.admit((), EntityId::new(41), 7).await.unwrap();
+
+    let shutdown = tokio::spawn({
+        let entities = entities.clone();
+        async move { entities.shutdown().await }
+    });
+    join_entered.notified().await;
+    shutdown.abort();
+    let cancellation = shutdown.await.expect_err("the first join was canceled");
+    assert!(cancellation.is_cancelled());
+
+    let resumed = entities.shutdown().await;
+    assert!(matches!(
+        resumed,
+        EntityShutdown::Settled { represented: 1 }
+    ));
     assert_eq!(
         observations.trace(),
         RuntimeTrace {
@@ -233,9 +617,15 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingRuntime {
     type Endpoint = ();
     type Lease = ();
     type ActivationError = Infallible;
+    type Task = tokio::task::JoinHandle<()>;
+    type TaskFailure = tokio::task::JoinError;
 
-    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) {
-        drop(tokio::spawn(task));
+    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
+        tokio::spawn(task)
+    }
+
+    async fn join(task: &mut Self::Task) -> Result<(), Self::TaskFailure> {
+        task.await
     }
 
     async fn activate(
@@ -294,5 +684,9 @@ async fn runtime_admission_returns_the_exact_move_only_command() {
     assert_eq!(drops.load(Ordering::Relaxed), 0);
     drop(command);
     assert_eq!(drops.load(Ordering::Relaxed), 1);
-    assert_eq!(entities.shutdown().await.represented, 1);
+    let shutdown = entities.shutdown().await;
+    assert!(matches!(
+        shutdown,
+        EntityShutdown::Settled { represented: 1 }
+    ));
 }

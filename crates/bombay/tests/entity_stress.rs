@@ -64,7 +64,10 @@ fn hot_entity_resolves_every_concurrent_dispatch() {
     let directory = Arc::new(Directory::new(DirectoryConfig::default()).unwrap());
     let entity_id = EntityId::new(1);
     let bootstrap = Bootstrap::default();
-    directory.interpret(directory.dispatch(entity_id, 0).unwrap().output, &bootstrap);
+    directory.interpret(
+        directory.dispatch(entity_id, 0).unwrap().decision,
+        &bootstrap,
+    );
     let activation_id = bootstrap.0.lock().unwrap().unwrap();
     directory.interpret(
         directory.activation_succeeded(&entity_id, activation_id, 1, 1),
@@ -88,7 +91,7 @@ fn hot_entity_resolves_every_concurrent_dispatch() {
                     let output = directory
                         .dispatch(EntityId::new(1), command)
                         .unwrap()
-                        .output;
+                        .decision;
                     directory.interpret(output, interpreter.as_ref());
                 }
             })
@@ -134,7 +137,7 @@ fn many_independent_entities_progress_across_shards() {
             thread::spawn(move || {
                 for sequence in 0..PER_THREAD {
                     let id = worker * PER_THREAD + sequence;
-                    let output = directory.dispatch(EntityId::new(id), id).unwrap().output;
+                    let output = directory.dispatch(EntityId::new(id), id).unwrap().decision;
                     directory.interpret(output, interpreter.as_ref());
                 }
             })

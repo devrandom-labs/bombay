@@ -10,6 +10,8 @@
 #![no_main]
 
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
+use std::task::Poll;
 
 use libfuzzer_sys::fuzz_target;
 use observe::{Observation, ObservationSpace, Subject};
@@ -41,13 +43,13 @@ fuzz_target!(|data: &[u8]| {
                 }
             }
             1 => {
-                if let Some(subject) = subjects.get_mut(&key) {
-                    if !completed.contains_key(&key) {
-                        let epoch = epochs[&key];
-                        let value = encode(epoch, key);
-                        subject.complete(value);
-                        completed.insert(key, value);
-                    }
+                if let Some(subject) = subjects.get_mut(&key)
+                    && let Entry::Vacant(completion) = completed.entry(key)
+                {
+                    let epoch = epochs[&key];
+                    let value = encode(epoch, key);
+                    subject.complete(value);
+                    completion.insert(value);
                 }
             }
             2 => {
@@ -94,9 +96,20 @@ fuzz_target!(|data: &[u8]| {
                 }
             }
             6 => {
-                if let Some((_, _, obs)) = observations.last() {
+                if let Some((k, e, obs)) = observations.last() {
                     let (waker, _) = observe::probe::CountWake::waker();
-                    let _ = obs.register_waker(&waker);
+                    let published = if subjects.contains_key(k) && epochs[k] == *e {
+                        completed.contains_key(k)
+                    } else {
+                        retired.get(&(*k, *e)).is_some_and(Option::is_some)
+                    };
+                    let readiness = obs.register_waker(&waker);
+                    let expected = if published {
+                        Poll::Ready(())
+                    } else {
+                        Poll::Pending
+                    };
+                    assert_eq!(readiness, expected, "register_waker readiness diverged");
                 }
             }
             _ => {

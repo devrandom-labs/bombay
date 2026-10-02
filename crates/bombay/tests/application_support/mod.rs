@@ -1,7 +1,7 @@
 use core::fmt;
 
 use bombay::behavior::{BehaviorSettlements, Never, Protocol};
-use bombay::prelude::{ActorOrigin, ActorRetirement, Completion, MailAddr, TerminalProjection};
+use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin, TerminalProjection};
 
 #[derive(TerminalProjection)]
 pub(crate) enum RootTerminal<R>
@@ -9,7 +9,7 @@ where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     Root {
-        origin: ActorOrigin<R>,
+        origin: RootOrigin<R>,
         terminal: ActorRetirement<R, Self>,
     },
 }
@@ -25,7 +25,7 @@ where
 
 pub(crate) fn into_root<R>(
     terminal: RootTerminal<R>,
-) -> (ActorOrigin<R>, ActorRetirement<R, RootTerminal<R>>)
+) -> (RootOrigin<R>, ActorRetirement<R, RootTerminal<R>>)
 where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
@@ -33,6 +33,10 @@ where
     (origin, terminal)
 }
 
+#[allow(
+    dead_code,
+    reason = "integration tests compile their shared support independently"
+)]
 pub(crate) fn assert_completed<R>(terminal: RootTerminal<R>)
 where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
@@ -52,7 +56,6 @@ where
         panic!("the application root must retain its completed terminal state")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), None);
     drop(behavior);
     assert_eq!(settlements.len(), 1);
     assert!(control.is_empty());

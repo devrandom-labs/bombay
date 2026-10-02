@@ -1,31 +1,73 @@
-//! For learning Behavior Actors' bounded FIFO pool construction and initial
-//! worker topology. The pool owns role order, activation capacity, backlog,
-//! interruption, retirement, and recovery policy; its worker owns assignment
-//! completion through the `pool_worker` contract.
-//!
-//! Bombay does not yet expose an application `PrepareWorkers` capability, so
-//! this example stops at the pure Behavior boundary instead of recreating the
-//! removed 0.13 pool runtime or losing replacement custody.
+//! Run one bounded FIFO pool through Bombay's concrete local application.
+//! The pool owns admission, assignment, completion, and orderly worker drain.
 
 mod worker;
 
+use core::convert::Infallible;
+
 use bombay::atomic::{
-    ActivationPolicy, ActorDrainPolicy, BacklogCapacity, DiagnosticDisposition, Interruption,
-    OrderedRoles, PoolFailureReaction, PoolRecovery, WorkerSubmission, fifo,
+    ActivationPolicy, ActorDrainPolicy, Assignment, BacklogCapacity, DiagnosticDisposition,
+    FifoCommand, FifoOutcome, FifoPool, ImmediateActivation, Interruption, OrderedRoles,
+    PoolFailureReaction, PoolRecovery, SubmissionId, WorkerSubmission, fifo,
 };
-use bombay::behavior::{CreationKind, Never, Step};
-use bombay::prelude::Activate as _;
-use worker::SearchWorker;
+use bombay::behavior::{ChildHead, MessageProtocol, Never};
+use bombay::prelude::{
+    ActorRetirement, ChildOrigin, Completion, Exit, MailAddr, RootOrigin, StopOnShutdown,
+    TerminalProjection,
+};
+use bombay::{ActorSpace, ActorSpaces, App};
+use worker::{SearchJob, SearchResult, SearchWorker};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum WorkerRole {
     Primary,
 }
 
-fn assert_initial_pool_plan() {
+type SearchPool = FifoPool<
+    WorkerRole,
+    SearchWorker,
+    ImmediateActivation,
+    Never,
+    Infallible,
+    SearchJob,
+    SearchResult,
+>;
+type WorkerProtocol = MessageProtocol<MailAddr, Assignment<SearchJob>>;
+type PoolProtocol =
+    MessageProtocol<MailAddr, FifoCommand<MailAddr, WorkerRole, SearchJob, SearchResult>>;
+type CustomerProtocol = MessageProtocol<MailAddr, FifoOutcome<WorkerRole, SearchJob, SearchResult>>;
+
+#[derive(ActorSpaces)]
+struct SearchSpaces {
+    #[actor_space(PoolProtocol)]
+    pool: ActorSpace<PoolProtocol>,
+    #[actor_space(WorkerProtocol)]
+    workers: ActorSpace<WorkerProtocol>,
+    #[actor_space(CustomerProtocol)]
+    customers: ActorSpace<CustomerProtocol>,
+}
+
+#[allow(
+    clippy::large_enum_variant,
+    reason = "the projection retains the exact unboxed pool and worker terminals"
+)]
+#[derive(TerminalProjection)]
+enum SearchTerminal {
+    Pool {
+        origin: RootOrigin<SearchPool>,
+        terminal: ActorRetirement<SearchPool, Self>,
+    },
+    #[structural_child]
+    Worker {
+        origin: ChildOrigin<SearchPool, ChildHead>,
+        terminal: ActorRetirement<StopOnShutdown<SearchWorker>, Self>,
+    },
+}
+
+fn search_pool() -> SearchPool {
     let roles =
-        OrderedRoles::new(WorkerRole::Primary, []).expect("the one-role worker roster is distinct");
-    let pool = fifo(
+        OrderedRoles::new(WorkerRole::Primary, []).expect("the single search role is unique");
+    fifo(
         |_: &WorkerRole| Ok::<_, Never>(WorkerSubmission::immediate(SearchWorker)),
         roles,
         ActivationPolicy::new(1).expect("one activation is positive capacity"),
@@ -35,36 +77,112 @@ fn assert_initial_pool_plan() {
         ActorDrainPolicy::WaitForActorGraph,
         DiagnosticDisposition::terminate(),
     )
-    .unwrap_or_else(|_| panic!("the declared search worker is prepared"));
-    let initialized = pool
-        .initialize()
-        .unwrap_or_else(|_| panic!("the FIFO pool initializes its direct worker"));
+    .unwrap_or_else(|_| panic!("the declared search worker is prepared"))
+}
 
-    assert_eq!(initialized.actions.creates.len(), 1);
-    let worker = initialized
-        .actions
-        .creates
-        .iter()
+fn run_search_pool() {
+    let spaces = SearchSpaces {
+        pool: ActorSpace::new(),
+        workers: ActorSpace::new(),
+        customers: ActorSpace::new(),
+    };
+    let (termination, terminal): (_, SearchTerminal) = App::new(search_pool(), spaces)
+        .run_with(|application| async move {
+            let interface = application.interface(application.root().established_recipient());
+            let mut customer = interface
+                .external::<CustomerProtocol>()
+                .expect("the search customer is established");
+            let reply = customer.recipient();
+            customer
+                .send(
+                    interface.api(),
+                    FifoCommand::submit(
+                        SubmissionId::new(7),
+                        SearchJob {
+                            document: String::from("bombay behavior"),
+                            needle: 'b',
+                        },
+                        reply,
+                    ),
+                )
+                .await
+                .expect("the pool accepts the search submission");
+            let accepted = customer
+                .receive()
+                .await
+                .expect("the pool reports accepted admission")
+                .message;
+            let (submission, job) = accepted
+                .into_accepted()
+                .unwrap_or_else(|_| panic!("the first customer outcome accepts the job"));
+            assert_eq!(submission, SubmissionId::new(7));
+            let completed = customer
+                .receive()
+                .await
+                .expect("the worker returns its search result")
+                .message;
+            assert_eq!(completed.role(), Some(&WorkerRole::Primary));
+            let (completed_job, result) = completed
+                .into_completed()
+                .unwrap_or_else(|_| panic!("the second customer outcome completes the job"));
+            assert_eq!(completed_job, job);
+            assert_eq!(result.matches, 3);
+            customer
+                .send(interface.api(), FifoCommand::shutdown())
+                .await
+                .expect("the pool accepts orderly shutdown");
+            application.lifecycle().termination().await
+        })
+        .unwrap_or_else(|_| panic!("the pool runs its worker and shuts down"));
+    assert_eq!(termination, Ok(Exit::Normal));
+    assert_search_terminal(terminal);
+}
+
+fn assert_search_terminal(terminal: SearchTerminal) {
+    let SearchTerminal::Pool { origin, terminal } = terminal else {
+        panic!("the application returns the pool root");
+    };
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let ActorRetirement::Completed {
+        descendants,
+        completion,
+        ..
+    } = terminal
+    else {
+        panic!("the pool completes after its worker graph");
+    };
+    assert_eq!(completion, Completion::Stopped);
+    assert_eq!(descendants.len(), 1);
+    let SearchTerminal::Worker { origin, terminal } = descendants
+        .into_iter()
         .next()
-        .expect("the primary role owns one worker creation");
-    let creation = worker.id();
-    assert_eq!(worker.kind(), CreationKind::Birth);
-    assert_eq!(initialized.actions.sends.worker_observations.len(), 1);
-    let observation = &initialized.actions.sends.worker_observations[0];
-    assert_eq!(observation.child, creation);
-    assert_eq!(initialized.actions.become_, Step::Continue);
+        .expect("the primary role retains one worker")
+    else {
+        panic!("the declared child is the search worker");
+    };
+    assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let ActorRetirement::Completed {
+        completion,
+        descendants,
+        ..
+    } = terminal
+    else {
+        panic!("orderly shutdown completes the exact worker");
+    };
+    assert_eq!(completion, Completion::Stopped);
+    assert!(descendants.is_empty());
 }
 
 fn main() {
-    assert_initial_pool_plan();
+    run_search_pool();
 }
 
 #[cfg(test)]
 mod tests {
-    use super::assert_initial_pool_plan;
+    use super::run_search_pool;
 
     #[test]
-    fn fifo_initialization_preserves_role_order_and_correlation() {
-        assert_initial_pool_plan();
+    fn fifo_search_completes_and_drains_its_worker() {
+        run_search_pool();
     }
 }

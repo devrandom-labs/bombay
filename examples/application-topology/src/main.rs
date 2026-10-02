@@ -58,7 +58,7 @@ struct DocumentSystem;
 
 #[bombay::actor(
     message = Never,
-    sends = {
+    sends = pub(crate) {
         indexing: Vec<ChildDelivery<Indexer, DocumentSystemChildrenIndexer>>,
         journaling: Vec<ChildDelivery<Journal, DocumentSystemChildrenJournal>>,
     },
@@ -66,6 +66,7 @@ struct DocumentSystem;
         indexer: ManagedIndexer,
         journal: ManagedJournal,
     },
+    creation_settlements = retain_for_retirement,
 )]
 impl DocumentSystem {
     #[allow(
@@ -103,15 +104,17 @@ where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     Root {
-        origin: ActorOrigin<R>,
+        origin: RootOrigin<R>,
         terminal: ActorRetirement<R, Self>,
     },
+    #[declared_child(DocumentSystem, DocumentSystemChildrenIndexer, ManagedIndexer)]
     Indexer {
-        origin: ActorOrigin<DocumentSystem, DocumentSystemChildrenIndexer>,
+        origin: ChildOrigin<DocumentSystem, DocumentSystemChildrenIndexer>,
         terminal: ActorRetirement<ManagedIndexer, Self>,
     },
+    #[declared_child(DocumentSystem, DocumentSystemChildrenJournal, ManagedJournal)]
     Journal {
-        origin: ActorOrigin<DocumentSystem, DocumentSystemChildrenJournal>,
+        origin: ChildOrigin<DocumentSystem, DocumentSystemChildrenJournal>,
         terminal: ActorRetirement<ManagedJournal, Self>,
     },
 }
@@ -124,7 +127,8 @@ fn main() {
     let (termination, terminal): (_, ApplicationTerminal<_>) = Application::new(application)
         .run_with(|application| async move {
             let lifecycle = application.lifecycle();
-            assert_eq!(lifecycle.request_shutdown(), Ok(()));
+            let shutdown = lifecycle.request_shutdown();
+            assert_eq!(shutdown, Ok(()));
             lifecycle.termination().await
         })
         .expect("the named child topology activates and shuts down in declared phase order");
@@ -154,7 +158,6 @@ where
         panic!("phased shutdown must preserve the completed application root")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), None);
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
@@ -167,12 +170,16 @@ where
     for descendant in descendants {
         match descendant {
             ApplicationTerminal::Indexer { origin, terminal } => {
-                assert_eq!(indexer.replace(assert_indexer(terminal)), None);
-                assert_eq!(origin.nonce(), Some(INDEXER_NONCE));
+                let indexed_documents = assert_indexer(terminal);
+                let previous_indexer = indexer.replace(indexed_documents);
+                assert_eq!(previous_indexer, None);
+                assert_eq!(origin.nonce(), INDEXER_NONCE);
             }
             ApplicationTerminal::Journal { origin, terminal } => {
-                assert_eq!(journal.replace(assert_journal(terminal)), None);
-                assert_eq!(origin.nonce(), Some(JOURNAL_NONCE));
+                let journal_entry = assert_journal(terminal);
+                let previous_journal = journal.replace(journal_entry);
+                assert_eq!(previous_journal, None);
+                assert_eq!(origin.nonce(), JOURNAL_NONCE);
             }
             ApplicationTerminal::Root { .. } => {
                 panic!("a child retirement cannot project as another root")

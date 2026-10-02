@@ -15,6 +15,7 @@ use behavior_actors::{
 /// is supplied explicitly by the application.
 pub trait ActorExt: Behavior + Sized {
     /// Stash selected messages and replay them according to `route`.
+    #[must_use]
     fn with_stash(self, route: fn(&BehaviorMessage<Self>) -> StashRoute) -> Stash<Self>
     where
         Self: Behavior<Ph = Never>,
@@ -23,6 +24,7 @@ pub trait ActorExt: Behavior + Sized {
     }
 
     /// React once after the relative delay.
+    #[must_use]
     fn with_one_shot(
         self,
         id: TimerId,
@@ -33,6 +35,7 @@ pub trait ActorExt: Behavior + Sized {
     }
 
     /// React after each relative interval while the behavior continues.
+    #[must_use]
     fn with_periodic(
         self,
         id: TimerId,
@@ -43,6 +46,7 @@ pub trait ActorExt: Behavior + Sized {
     }
 
     /// React once at an optional absolute deadline.
+    #[must_use]
     fn with_deadline(
         self,
         id: TimerId,
@@ -53,6 +57,7 @@ pub trait ActorExt: Behavior + Sized {
     }
 
     /// React after one idle period, rearmed by successful user messages.
+    #[must_use]
     fn with_receive_timeout(
         self,
         id: TimerId,
@@ -63,6 +68,7 @@ pub trait ActorExt: Behavior + Sized {
     }
 
     /// Stop normally when this wrapper receives the typed shutdown request.
+    #[must_use]
     fn stop_on_shutdown(self) -> StopOnShutdown<Self> {
         StopOnShutdown::new(self)
     }

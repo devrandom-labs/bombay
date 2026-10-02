@@ -45,12 +45,17 @@ fn actor_facade_preserves_the_owning_fold_and_enters_exact_templates() {
     let mut actor = ActorCounter { value: 3 };
     let mut owning = OwnerCounter { value: 3 };
 
+    let actor_initialization = bombay::behavior::initialize(&mut actor).infallible();
+    let owning_initialization = bombay::behavior::initialize(&mut owning).infallible();
+    assert_eq!(actor_initialization, Actions::cont());
+    assert_eq!(owning_initialization, actor_initialization);
+
     let actor_actions = delegate_transition(&mut actor, User::new(MailAddr(1), 4)).infallible();
     let owning_actions = delegate_transition(&mut owning, User::new(MailAddr(1), 4)).infallible();
 
     assert_eq!(actor.value, owning.value);
-    assert_eq!(actor_actions.become_, owning_actions.become_);
-    assert!(actor_actions.sends == owning_actions.sends);
+    assert_eq!(actor_actions, Actions::cont());
+    assert_eq!(owning_actions, actor_actions);
 
     let actor = ActorCounter { value: 0 };
     let fluent = actor

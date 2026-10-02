@@ -21,7 +21,7 @@ struct Counter;
 #[bombay::behavior::behavior(
     addr = MailAddr,
     message = Never,
-    sends = { values: Vec<Delivery<CounterValue>> },
+    sends = pub(crate) { values: Vec<Delivery<CounterValue>> },
 )]
 impl Counter {
     #[allow(

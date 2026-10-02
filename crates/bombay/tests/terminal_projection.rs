@@ -2,8 +2,8 @@ use bombay::ProjectTerminal;
 use bombay::actors::ActorExt;
 use bombay::behavior::{Actions, BehaviorActed, ChildRole, Never};
 use bombay::prelude::{
-    ActorOrigin, ActorRetirement, Application, Completion, MailAddr, StopOnShutdown,
-    TerminalProjection,
+    ActorRetirement, Application, ChildOrigin, Completion, MailAddr, RootOrigin, RunError,
+    StopOnShutdown, TerminalProjection,
 };
 
 struct Root;
@@ -20,11 +20,14 @@ impl Root {
     }
 }
 
+type RootLocation = RootOrigin<StopOnShutdown<Root>>;
+type RootDeparture = ActorRetirement<StopOnShutdown<Root>, ApplicationTerminal>;
+
 #[derive(TerminalProjection)]
 enum ApplicationTerminal {
     Root {
-        origin: ActorOrigin<StopOnShutdown<Root>>,
-        terminal: ActorRetirement<StopOnShutdown<Root>, Self>,
+        origin: RootLocation,
+        terminal: RootDeparture,
     },
 }
 
@@ -41,18 +44,24 @@ struct Parent;
         primary: Worker,
         replica: Worker,
     },
+    creation_settlements = retain_for_retirement,
 )]
 impl Parent {}
+
+type PrimaryOrigin = ChildOrigin<Parent, ParentChildrenPrimary>;
+type WorkerRetirement = ActorRetirement<Worker, RoleTerminal>;
 
 #[allow(dead_code)]
 #[derive(TerminalProjection)]
 enum RoleTerminal {
+    #[declared_child(Parent, ParentChildrenPrimary, Worker)]
     Primary {
-        origin: ActorOrigin<Parent, ParentChildrenPrimary>,
-        terminal: ActorRetirement<Worker, Self>,
+        origin: PrimaryOrigin,
+        terminal: WorkerRetirement,
     },
+    #[declared_child(Parent, ParentChildrenReplica, Worker)]
     Replica {
-        origin: ActorOrigin<Parent, ParentChildrenReplica>,
+        origin: ChildOrigin<Parent, ParentChildrenReplica>,
         terminal: ActorRetirement<Worker, Self>,
     },
 }
@@ -69,12 +78,12 @@ fn equal_child_types_project_from_their_distinct_generated_role_positions() {
     type ReplicaPosition = <ParentChildrenReplica as ChildRole<Parent>>::Position;
 
     accepts_projection::<
-        ActorOrigin<Parent, PrimaryPosition>,
+        ChildOrigin<Parent, PrimaryPosition>,
         ActorRetirement<Worker, RoleTerminal>,
         RoleTerminal,
     >();
     accepts_projection::<
-        ActorOrigin<Parent, ReplicaPosition>,
+        ChildOrigin<Parent, ReplicaPosition>,
         ActorRetirement<Worker, RoleTerminal>,
         RoleTerminal,
     >();
@@ -82,9 +91,10 @@ fn equal_child_types_project_from_their_distinct_generated_role_positions() {
 
 #[test]
 fn derive_preserves_the_exact_runtime_origin_and_retirement() {
-    let terminal: ApplicationTerminal = Application::new(Root.stop_on_shutdown())
-        .run()
-        .expect("the stopping root activates");
+    let terminal: ApplicationTerminal = match Application::new(Root.stop_on_shutdown()).run() {
+        Err(RunError::Unpublished(terminal)) => terminal,
+        _ => panic!("the initialization stop must retain an unpublished terminal"),
+    };
     let ApplicationTerminal::Root {
         origin,
         terminal:
@@ -101,7 +111,6 @@ fn derive_preserves_the_exact_runtime_origin_and_retirement() {
     };
 
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), None);
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert!(descendants.is_empty());
@@ -114,6 +123,9 @@ fn projection_shape_is_compile_checked() {
     cases.compile_fail("tests/compile/fail/terminal_projection_incomplete_variant.rs");
     cases.compile_fail("tests/compile/fail/terminal_projection_duplicate_pair.rs");
     cases.compile_fail("tests/compile/fail/terminal_projection_wrong_role.rs");
+    cases.compile_fail("tests/compile/fail/terminal_projection_wrong_actor.rs");
     cases.compile_fail("tests/compile/fail/application_actor_projection_requires_attribute.rs");
     cases.compile_fail("tests/compile/fail/terminal_origin_cannot_change_role.rs");
+    cases.compile_fail("tests/compile/fail/child_origin_cannot_be_root.rs");
+    cases.compile_fail("tests/compile/fail/root_origin_cannot_be_child.rs");
 }

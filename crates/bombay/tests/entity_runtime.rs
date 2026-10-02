@@ -1,12 +1,14 @@
+use std::any::Any;
 use std::convert::Infallible;
 use std::future::Future;
 use std::hash::{Hash, Hasher};
+use std::mem;
 use std::pin::{Pin, pin};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::task::{Context, Poll, Wake, Waker};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use bombay::entity::{
     Activated, ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, DrainStage, EntityId,
@@ -39,11 +41,13 @@ struct TestRuntime {
 }
 
 struct TestRuntimeState {
+    event_gate: Mutex<()>,
+    event_changed: Condvar,
     activations: AtomicUsize,
     activation_completions: AtomicUsize,
     activation_failures: AtomicUsize,
-    fail_activation: AtomicBool,
-    fail_delivery: AtomicBool,
+    activation_failure: Mutex<Option<()>>,
+    delivery_rejection: Mutex<Option<()>>,
     delivered: Mutex<Vec<u64>>,
     activation_gate: Mutex<Option<Arc<ActivationGate>>>,
     delivery_gate: Mutex<Option<Arc<ActivationGate>>>,
@@ -58,11 +62,13 @@ impl TestRuntime {
     fn new() -> Self {
         Self {
             state: Arc::new(TestRuntimeState {
+                event_gate: Mutex::new(()),
+                event_changed: Condvar::new(),
                 activations: AtomicUsize::new(0),
                 activation_completions: AtomicUsize::new(0),
                 activation_failures: AtomicUsize::new(0),
-                fail_activation: AtomicBool::new(false),
-                fail_delivery: AtomicBool::new(false),
+                activation_failure: Mutex::new(None),
+                delivery_rejection: Mutex::new(None),
                 delivered: Mutex::new(Vec::new()),
                 activation_gate: Mutex::new(None),
                 delivery_gate: Mutex::new(None),
@@ -76,14 +82,37 @@ impl TestRuntime {
     }
 }
 
+impl TestRuntimeState {
+    fn wait_for_runtime_fact(&self, observed: impl Fn(&Self) -> bool) {
+        let mut event_gate = self.event_gate.lock().unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !observed(self) {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            assert!(!remaining.is_zero(), "runtime fact was not observed");
+            (event_gate, _) = self
+                .event_changed
+                .wait_timeout(event_gate, remaining)
+                .unwrap();
+        }
+    }
+}
+
 impl<I: Send + 'static> LocalEntityRuntime<I, u64> for TestRuntime {
     type Origin = ();
     type Endpoint = u64;
     type Lease = u64;
     type ActivationError = ();
+    type Task = Option<thread::JoinHandle<()>>;
+    type TaskFailure = Box<dyn Any + Send>;
 
-    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) {
-        thread::spawn(move || block_on(task));
+    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
+        Some(thread::spawn(move || block_on(task)))
+    }
+
+    async fn join(task: &mut Self::Task) -> Result<(), Self::TaskFailure> {
+        task.take()
+            .expect("the exact lifecycle task is joined once")
+            .join()
     }
 
     async fn activate(
@@ -96,16 +125,21 @@ impl<I: Send + 'static> LocalEntityRuntime<I, u64> for TestRuntime {
         if let Some(gate) = gate {
             gate.wait().await;
         }
-        self.state
-            .activation_completions
-            .fetch_add(1, Ordering::Release);
-        if self.state.fail_activation.load(Ordering::Relaxed) {
-            return Err(());
+        {
+            let _event_gate = self.state.event_gate.lock().unwrap();
+            self.state
+                .activation_completions
+                .fetch_add(1, Ordering::Release);
+            self.state.event_changed.notify_all();
         }
-        Ok(Activated {
-            endpoint: activation_id.get().get(),
-            lease: activation_id.get().get(),
-        })
+        let activation_failure = *self.state.activation_failure.lock().unwrap();
+        match activation_failure {
+            Some(error) => Err(error),
+            None => Ok(Activated {
+                endpoint: activation_id.get().get(),
+                lease: activation_id.get().get(),
+            }),
+        }
     }
 
     fn activation_failed(&self, _: EntityId<I>, _: ActivationId, (): Self::ActivationError) {
@@ -119,10 +153,13 @@ impl<I: Send + 'static> LocalEntityRuntime<I, u64> for TestRuntime {
         if let Some(gate) = gate {
             gate.wait().await;
         }
-        if self.state.fail_delivery.load(Ordering::Relaxed) {
+        let delivery_rejection = *self.state.delivery_rejection.lock().unwrap();
+        if let Some(()) = delivery_rejection {
             Err(command)
         } else {
+            let _event_gate = self.state.event_gate.lock().unwrap();
             self.state.delivered.lock().unwrap().push(command);
+            self.state.event_changed.notify_all();
             Ok(())
         }
     }
@@ -146,8 +183,10 @@ impl<I: Send + 'static> LocalEntityRuntime<I, u64> for TestRuntime {
         _: Self::Lease,
         retirement: RetirementMode,
     ) {
+        let _event_gate = self.state.event_gate.lock().unwrap();
         self.state.retirement_modes.lock().unwrap().push(retirement);
         self.state.retirements.fetch_add(1, Ordering::Release);
+        self.state.event_changed.notify_all();
     }
 }
 
@@ -169,9 +208,17 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingMoveOnlyRuntime {
     type Endpoint = ();
     type Lease = ();
     type ActivationError = Infallible;
+    type Task = Option<thread::JoinHandle<()>>;
+    type TaskFailure = Box<dyn Any + Send>;
 
-    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) {
-        thread::spawn(move || block_on(task));
+    fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
+        Some(thread::spawn(move || block_on(task)))
+    }
+
+    async fn join(task: &mut Self::Task) -> Result<(), Self::TaskFailure> {
+        task.take()
+            .expect("the exact lifecycle task is joined once")
+            .join()
     }
 
     async fn activate(
@@ -284,15 +331,18 @@ impl Hash for GatedId {
 }
 
 struct ActivationGate {
-    open: AtomicBool,
-    waker: Mutex<Option<Waker>>,
+    phase: Mutex<ActivationGatePhase>,
+}
+
+enum ActivationGatePhase {
+    Closed(Option<Waker>),
+    Open,
 }
 
 impl ActivationGate {
     fn closed() -> Arc<Self> {
         Arc::new(Self {
-            open: AtomicBool::new(false),
-            waker: Mutex::new(None),
+            phase: Mutex::new(ActivationGatePhase::Closed(None)),
         })
     }
 
@@ -301,8 +351,12 @@ impl ActivationGate {
     }
 
     fn open(&self) {
-        self.open.store(true, Ordering::Release);
-        if let Some(waker) = self.waker.lock().unwrap().take() {
+        let waker = match mem::replace(&mut *self.phase.lock().unwrap(), ActivationGatePhase::Open)
+        {
+            ActivationGatePhase::Closed(waker) => waker,
+            ActivationGatePhase::Open => None,
+        };
+        if let Some(waker) = waker {
             waker.wake();
         }
     }
@@ -314,15 +368,12 @@ impl Future for GateFuture {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Self::Output> {
-        if self.0.open.load(Ordering::Acquire) {
-            Poll::Ready(())
-        } else {
-            *self.0.waker.lock().unwrap() = Some(context.waker().clone());
-            if self.0.open.load(Ordering::Acquire) {
-                Poll::Ready(())
-            } else {
+        match &mut *self.0.phase.lock().unwrap() {
+            ActivationGatePhase::Closed(waker) => {
+                *waker = Some(context.waker().clone());
                 Poll::Pending
             }
+            ActivationGatePhase::Open => Poll::Ready(()),
         }
     }
 }
@@ -342,10 +393,7 @@ fn application_admission_is_one_asynchronous_operation() {
 #[test]
 fn failed_delivery_returns_the_original_command() {
     let actor_runtime = TestRuntime::new();
-    actor_runtime
-        .state
-        .fail_delivery
-        .store(true, Ordering::Relaxed);
+    *actor_runtime.state.delivery_rejection.lock().unwrap() = Some(());
     let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime).unwrap();
 
     let failure = block_on(entities.admit((), EntityId::new(9), 77)).unwrap_err();
@@ -387,24 +435,19 @@ fn failed_delivery_returns_one_exact_move_only_command() {
 fn failed_activation_returns_the_command_and_eventually_allows_retry() {
     let actor_runtime = TestRuntime::new();
     let observations = actor_runtime.clone();
-    actor_runtime
-        .state
-        .fail_activation
-        .store(true, Ordering::Relaxed);
+    *actor_runtime.state.activation_failure.lock().unwrap() = Some(());
     let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime).unwrap();
     let entity_id = EntityId::new(11);
 
+    let activation_refusal = block_on(entities.admit((), entity_id, 81));
     assert!(matches!(
-        block_on(entities.admit((), entity_id, 81)),
+        activation_refusal,
         Err(AdmissionFailure::Refused {
             command: 81,
             reason: Refusal::Unavailable,
         })
     ));
-    observations
-        .state
-        .fail_activation
-        .store(false, Ordering::Relaxed);
+    *observations.state.activation_failure.lock().unwrap() = None;
     let mut command = 82;
     for _ in 0..1_000 {
         match block_on(entities.admit((), entity_id, command)) {
@@ -435,20 +478,13 @@ fn canceling_admission_does_not_cancel_shared_activation_or_deliver_command() {
     let waker = Waker::from(Arc::new(ThreadWake(thread::current())));
     let mut context = Context::from_waker(&waker);
 
-    assert!(admission.as_mut().poll(&mut context).is_pending());
+    let pending = admission.as_mut().poll(&mut context);
+    assert!(pending.is_pending());
     drop(admission);
     gate.open();
-    for _ in 0..100 {
-        if observations
-            .state
-            .activation_completions
-            .load(Ordering::Acquire)
-            == 1
-        {
-            break;
-        }
-        thread::sleep(Duration::from_millis(1));
-    }
+    observations
+        .state
+        .wait_for_runtime_fact(|state| state.activation_completions.load(Ordering::Acquire) == 1);
 
     assert_eq!(observations.state.activations.load(Ordering::Relaxed), 1);
     assert_eq!(
@@ -475,16 +511,14 @@ fn dropping_active_admission_does_not_retract_owned_delivery() {
     let mut admission = Box::pin(entities.admit((), entity_id, 2));
     let waker = Waker::from(Arc::new(ThreadWake(thread::current())));
     let mut context = Context::from_waker(&waker);
-    assert!(admission.as_mut().poll(&mut context).is_pending());
+    let pending = admission.as_mut().poll(&mut context);
+    assert!(pending.is_pending());
 
     drop(admission);
     gate.open();
-    for _ in 0..100 {
-        if observations.state.delivered.lock().unwrap().len() == 2 {
-            break;
-        }
-        thread::sleep(Duration::from_millis(1));
-    }
+    observations
+        .state
+        .wait_for_runtime_fact(|state| state.delivered.lock().unwrap().len() == 2);
 
     assert_eq!(*observations.state.delivered.lock().unwrap(), [1, 2]);
 }
@@ -493,10 +527,8 @@ fn dropping_active_admission_does_not_retract_owned_delivery() {
 fn passivation_reports_not_active_for_unknown_entity() {
     let entities = EntityRuntime::new(DirectoryConfig::default(), TestRuntime::new()).unwrap();
 
-    assert_eq!(
-        entities.passivate(&EntityId::new(99)),
-        Passivation::NotActive
-    );
+    let passivation = entities.passivate(&EntityId::new(99));
+    assert_eq!(passivation, Passivation::NotActive);
 }
 
 #[test]
@@ -509,25 +541,21 @@ fn repeated_passivation_reports_already_passivating() {
     let entity_id = EntityId::new(7);
     block_on(entities.admit((), entity_id, 1)).unwrap();
 
-    assert_eq!(entities.passivate(&entity_id), Passivation::Begun);
-    assert_eq!(
-        entities.passivate(&entity_id),
-        Passivation::AlreadyPassivating
-    );
+    let first_passivation = entities.passivate(&entity_id);
+    assert_eq!(first_passivation, Passivation::Begun);
+    let repeated_passivation = entities.passivate(&entity_id);
+    assert_eq!(repeated_passivation, Passivation::AlreadyPassivating);
 
     fence_gate.open();
-    for _ in 0..100 {
-        if observations.state.retirements.load(Ordering::Acquire) == 1 {
-            break;
-        }
-        thread::sleep(Duration::from_millis(1));
-    }
+    observations
+        .state
+        .wait_for_runtime_fact(|state| state.retirements.load(Ordering::Acquire) == 1);
     assert_eq!(observations.state.fences.load(Ordering::Relaxed), 1);
     assert_eq!(observations.state.retirements.load(Ordering::Relaxed), 1);
 }
 
 #[test]
-fn passivation_reports_superseded_after_incarnation_replacement() {
+fn passivation_gate_serializes_competing_calls() {
     let gate = HashGate::new();
     let entity_id = EntityId::new(GatedId {
         value: 8,
@@ -535,6 +563,8 @@ fn passivation_reports_superseded_after_incarnation_replacement() {
     });
     let actor_runtime = TestRuntime::new();
     let observations = actor_runtime.clone();
+    let fence_gate = ActivationGate::closed();
+    *actor_runtime.state.fence_gate.lock().unwrap() = Some(Arc::clone(&fence_gate));
     let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime).unwrap();
     block_on(entities.admit((), entity_id.clone(), 1)).unwrap();
 
@@ -546,40 +576,17 @@ fn passivation_reports_superseded_after_incarnation_replacement() {
         racing_runtime.passivate(&racing_id)
     });
     gate.wait_until_blocked();
-
-    assert_eq!(entities.passivate(&entity_id), Passivation::Begun);
-    for _ in 0..1_000 {
-        if observations.state.retirements.load(Ordering::Acquire) != 0 {
-            break;
-        }
-        thread::yield_now();
-    }
-    assert_eq!(observations.state.retirements.load(Ordering::Acquire), 1);
-    let mut command = 2;
-    let mut replacement_activated = false;
-    for _ in 0..1_000 {
-        match block_on(entities.admit((), entity_id.clone(), command)) {
-            Ok(()) => {
-                replacement_activated = true;
-                break;
-            }
-            Err(AdmissionFailure::Refused {
-                command: returned, ..
-            }) => {
-                command = returned;
-                thread::yield_now();
-            }
-            Err(failure) => panic!("unexpected replacement admission failure: {failure}"),
-        }
-    }
-    assert!(
-        replacement_activated,
-        "replacement activation did not complete"
-    );
-
     gate.release();
-    assert_eq!(passivation.join().unwrap(), Passivation::Superseded);
-    assert_eq!(observations.state.activations.load(Ordering::Acquire), 2);
+    let disposition = passivation.join().unwrap();
+    assert_eq!(disposition, Passivation::Begun);
+    let repeated_passivation = entities.passivate(&entity_id);
+    assert_eq!(repeated_passivation, Passivation::AlreadyPassivating);
+    fence_gate.open();
+    observations
+        .state
+        .wait_for_runtime_fact(|state| state.retirements.load(Ordering::Acquire) == 1);
+    assert_eq!(observations.state.retirements.load(Ordering::Acquire), 1);
+    assert_eq!(observations.state.activations.load(Ordering::Acquire), 1);
 }
 
 #[test]
@@ -590,13 +597,11 @@ fn passivation_fences_and_retires_the_exact_incarnation() {
     let entity_id = EntityId::new(6);
     block_on(entities.admit((), entity_id, 1)).unwrap();
 
-    assert_eq!(entities.passivate(&entity_id), Passivation::Begun);
-    for _ in 0..100 {
-        if observations.state.retirements.load(Ordering::Acquire) == 1 {
-            break;
-        }
-        thread::sleep(Duration::from_millis(1));
-    }
+    let passivation = entities.passivate(&entity_id);
+    assert_eq!(passivation, Passivation::Begun);
+    observations
+        .state
+        .wait_for_runtime_fact(|state| state.retirements.load(Ordering::Acquire) == 1);
     assert_eq!(observations.state.fences.load(Ordering::Relaxed), 1);
     assert_eq!(observations.state.retirements.load(Ordering::Relaxed), 1);
     assert_eq!(observations.state.activations.load(Ordering::Relaxed), 1);
@@ -618,13 +623,11 @@ fn fence_failures_preserve_the_forced_retirement_stage() {
         let entity_id = EntityId::new(10);
         block_on(entities.admit((), entity_id, 1)).unwrap();
 
-        assert_eq!(entities.passivate(&entity_id), Passivation::Begun);
-        for _ in 0..1_000 {
-            if observations.state.retirements.load(Ordering::Acquire) != 0 {
-                break;
-            }
-            thread::yield_now();
-        }
+        let passivation = entities.passivate(&entity_id);
+        assert_eq!(passivation, Passivation::Begun);
+        observations
+            .state
+            .wait_for_runtime_fact(|state| state.retirements.load(Ordering::Acquire) == 1);
 
         assert_eq!(
             observations

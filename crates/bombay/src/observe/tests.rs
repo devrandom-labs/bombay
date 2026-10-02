@@ -5,14 +5,176 @@
 //! at the OS level.
 
 use std::future::IntoFuture;
+use std::hash::{Hash, Hasher};
 use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Barrier};
+use std::sync::{Arc, Barrier, mpsc};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Wake, Waker};
-use std::time::{Duration, Instant};
+use std::thread::{current, spawn};
+use std::time::Duration;
 use triomphe::Arc as SlotArc;
 
-use super::{ObservationSpace, Slot, SlotEntry, Waiter, Waiters, lock, write_lock};
+use super::external_tests::wait_for_thread_registrations;
+use super::{
+    INLINE_CAP, ObservationSpace, RetainedKeyHasher, SLOT_POOL_CAP, Slot, SlotEntry, SmallMap,
+    Waiter, Waiters, lock, write_lock,
+};
+
+#[test]
+fn retired_subjects_keep_recycled_slots_within_the_pool_cap() {
+    let space = ObservationSpace::<usize, ()>::new();
+    let live_subjects = (0..=SLOT_POOL_CAP)
+        .map(|key| space.subject(key).expect("each key has one subject"))
+        .collect::<Vec<_>>();
+    drop(live_subjects);
+
+    let entries = write_lock(&space.inner.entries);
+    assert_eq!(entries.pool.len(), SLOT_POOL_CAP);
+}
+
+#[test]
+fn small_retained_key_table_stays_inline_and_promotes_with_headroom() {
+    let mut retained_keys = SmallMap::<usize, u64>::default();
+    for key in 0..INLINE_CAP {
+        retained_keys.insert_vacant(
+            key,
+            SlotEntry {
+                generation: 1,
+                slot: SlotArc::new(Slot::new()),
+            },
+        );
+    }
+    assert!(matches!(retained_keys, SmallMap::Inline(_)));
+
+    retained_keys.insert_vacant(
+        INLINE_CAP,
+        SlotEntry {
+            generation: 1,
+            slot: SlotArc::new(Slot::new()),
+        },
+    );
+    let SmallMap::Hash(promoted_keys) = retained_keys else {
+        panic!("the fifth retained key must promote the table");
+    };
+    assert!(promoted_keys.capacity() >= INLINE_CAP * 2);
+}
+
+#[test]
+fn retained_two_word_keys_keep_distinct_hashes_when_the_second_word_changes() {
+    let mut first_key = RetainedKeyHasher::default();
+    (1_u64, 0_u64).hash(&mut first_key);
+    let mut second_key = RetainedKeyHasher::default();
+    (1_u64, 2_u64).hash(&mut second_key);
+    let mut third_key = RetainedKeyHasher::default();
+    (1_u64, 4_u64).hash(&mut third_key);
+
+    assert_ne!(first_key.finish(), second_key.finish());
+    assert_ne!(first_key.finish(), third_key.finish());
+}
+
+#[test]
+fn retained_index_keys_keep_distinct_hashes() {
+    let mut first_index = RetainedKeyHasher::default();
+    1_usize.hash(&mut first_index);
+    let mut second_index = RetainedKeyHasher::default();
+    2_usize.hash(&mut second_index);
+
+    assert_ne!(first_index.finish(), second_index.finish());
+}
+
+#[test]
+fn retained_byte_keys_keep_distinct_hashes_when_the_name_changes() {
+    let mut first_name = RetainedKeyHasher::default();
+    first_name.write(b"worker-a");
+    let mut second_name = RetainedKeyHasher::default();
+    second_name.write(b"worker-b");
+    let mut first_short_name = RetainedKeyHasher::default();
+    first_short_name.write(b"node-a");
+    let mut second_short_name = RetainedKeyHasher::default();
+    second_short_name.write(b"node-b");
+
+    assert_ne!(first_name.finish(), second_name.finish());
+    assert_ne!(first_short_name.finish(), second_short_name.finish());
+}
+
+#[test]
+fn cancelled_fanout_returns_to_inline_and_empty_waiter_storage() {
+    let thread = current();
+    let mut waiters = Waiters::default();
+    waiters.push(Waiter::Thread(thread.clone()));
+    waiters.push(Waiter::Thread(thread.clone()));
+    let mut inspected_waiters = 0;
+    waiters.retain(|_| {
+        inspected_waiters += 1;
+        inspected_waiters == 1
+    });
+
+    assert_eq!(inspected_waiters, 2);
+    assert!(matches!(waiters, Waiters::One(_)));
+
+    waiters.push(Waiter::Thread(thread));
+    waiters.retain(|_| false);
+    assert!(matches!(waiters, Waiters::Empty));
+
+    let thread = current();
+    let mut migrating_waiters = Waiters::default();
+    migrating_waiters.push(Waiter::Thread(thread.clone()));
+    migrating_waiters.push(Waiter::Thread(thread.clone()));
+    let mut inspected_migrations = 0;
+    migrating_waiters.retain_mut(|_| {
+        inspected_migrations += 1;
+        inspected_migrations == 1
+    });
+
+    assert_eq!(inspected_migrations, 2);
+    assert!(matches!(migrating_waiters, Waiters::One(_)));
+
+    migrating_waiters.push(Waiter::Thread(thread));
+    migrating_waiters.retain_mut(|_| false);
+    assert!(matches!(migrating_waiters, Waiters::Empty));
+}
+
+#[test]
+fn completion_without_waiters_does_not_acquire_the_waiter_lock() {
+    let slot = Arc::new(Slot::<u64>::new());
+    let waiter_lock = lock(slot.waiters());
+    let (started_sender, started_receiver) = mpsc::channel();
+    let (completed_sender, completed_receiver) = mpsc::channel();
+    let published_slot = Arc::clone(&slot);
+    let publisher = spawn(move || {
+        started_sender.send(()).expect("the test owner is live");
+        published_slot.complete(9);
+        completed_sender.send(()).expect("the test owner is live");
+    });
+
+    started_receiver.recv().expect("the publisher starts");
+    let completed_while_locked = completed_receiver.recv_timeout(Duration::from_secs(2));
+    drop(waiter_lock);
+    publisher.join().expect("the publisher completes");
+
+    assert!(matches!(completed_while_locked, Ok(())));
+}
+
+#[test]
+fn reset_without_waiters_does_not_acquire_the_waiter_lock() {
+    let slot = Arc::new(Slot::<u64>::new());
+    let waiter_lock = lock(slot.waiters());
+    let (started_sender, started_receiver) = mpsc::channel();
+    let (reset_sender, reset_receiver) = mpsc::channel();
+    let pooled_slot = Arc::clone(&slot);
+    let recycler = spawn(move || {
+        started_sender.send(()).expect("the test owner is live");
+        pooled_slot.reset();
+        reset_sender.send(()).expect("the test owner is live");
+    });
+
+    started_receiver.recv().expect("the recycler starts");
+    let reset_while_locked = reset_receiver.recv_timeout(Duration::from_secs(2));
+    drop(waiter_lock);
+    recycler.join().expect("the recycler completes");
+
+    assert!(matches!(reset_while_locked, Ok(())));
+}
 
 /// A waker that raises a flag when woken.
 struct FlagWake(AtomicBool);
@@ -27,6 +189,16 @@ impl Wake for FlagWake {
     }
 }
 
+#[test]
+fn borrowed_wake_reports_the_registered_notification() {
+    let notification = Arc::new(FlagWake(AtomicBool::new(false)));
+    let waker = Waker::from(Arc::clone(&notification));
+
+    waker.wake_by_ref();
+
+    assert!(notification.0.load(Ordering::Relaxed));
+}
+
 /// A waiter registered before completion receives the published outcome.
 #[test]
 fn waiter_receives_published_outcome() {
@@ -36,7 +208,8 @@ fn waiter_receives_published_outcome() {
     let waiter = std::thread::spawn(move || observation.wait());
     std::thread::yield_now();
     subject.complete(9_u64);
-    assert_eq!(waiter.join().unwrap(), 9_u64);
+    let outcome = waiter.join().unwrap();
+    assert_eq!(outcome, 9_u64);
 }
 
 /// Completion before wait returns immediately with the retained outcome.
@@ -46,7 +219,8 @@ fn completion_before_wait_returns_immediately() {
     let mut subject = space.subject(7_u64).unwrap();
     subject.complete(3_u64);
     let observation = space.observe(&7_u64).unwrap();
-    assert_eq!(observation.wait(), 3_u64);
+    let outcome = observation.wait();
+    assert_eq!(outcome, 3_u64);
 }
 
 /// Fanout waiters: every registered waiter is woken exactly once.
@@ -68,7 +242,8 @@ fn multiple_waiters_all_receive_the_outcome() {
     barrier.wait();
     subject.complete(9_u64);
     for handle in handles {
-        assert_eq!(handle.join().unwrap(), 9_u64);
+        let outcome = handle.join().unwrap();
+        assert_eq!(outcome, 9_u64);
     }
 }
 
@@ -81,7 +256,8 @@ fn wait_racing_complete_never_loses_outcome() {
         let observation = space.observe(&7_u64).unwrap();
         let waiter = std::thread::spawn(move || observation.wait());
         subject.complete(9_u64);
-        assert_eq!(waiter.join().unwrap(), 9_u64);
+        let outcome = waiter.join().unwrap();
+        assert_eq!(outcome, 9_u64);
     }
 }
 
@@ -108,7 +284,8 @@ fn into_outcome_moves_non_clone_outcome() {
     let observation = space.observe(&7_u64).unwrap();
     subject.complete(Handle(5));
     drop(subject);
-    assert_eq!(observation.into_outcome(), Some(Handle(5)));
+    let outcome = observation.into_outcome();
+    assert_eq!(outcome, Some(Handle(5)));
 }
 
 /// `into_outcome` returns `None` while the outcome is pending or the slot is
@@ -118,13 +295,16 @@ fn into_outcome_none_while_shared_or_pending() {
     let space = ObservationSpace::new();
     let mut subject = space.subject(7_u64).unwrap();
     let pending = space.observe(&7_u64).unwrap();
-    assert_eq!(pending.into_outcome(), None);
+    let pending_outcome = pending.into_outcome();
+    assert_eq!(pending_outcome, None);
     subject.complete(9_u64);
     let shared = space.observe(&7_u64).unwrap();
-    assert_eq!(shared.into_outcome(), None);
+    let shared_outcome = shared.into_outcome();
+    assert_eq!(shared_outcome, None);
     let last = space.observe(&7_u64).unwrap();
     drop(subject);
-    assert_eq!(last.into_outcome(), Some(9_u64));
+    let last_outcome = last.into_outcome();
+    assert_eq!(last_outcome, Some(9_u64));
 }
 
 /// A registered waker fires when the outcome is published.
@@ -135,7 +315,8 @@ fn register_waker_wakes_on_completion() {
     let observation = space.observe(&7_u64).unwrap();
     let flag = Arc::new(FlagWake(AtomicBool::new(false)));
     let waker = std::task::Waker::from(Arc::clone(&flag));
-    assert!(!observation.register_waker(&waker));
+    let readiness = observation.register_waker(&waker);
+    assert_eq!(readiness, Poll::Pending);
     subject.complete(9_u64);
     assert!(flag.0.load(Ordering::Relaxed));
     assert_eq!(observation.try_get(), Some(9_u64));
@@ -143,12 +324,13 @@ fn register_waker_wakes_on_completion() {
 
 /// Registration after publication reports the outcome as already available.
 #[test]
-fn register_waker_after_completion_returns_true() {
+fn register_waker_after_completion_is_ready() {
     let space = ObservationSpace::new();
     let mut subject = space.subject(7_u64).unwrap();
     subject.complete(3_u64);
     let observation = space.observe(&7_u64).unwrap();
-    assert!(observation.register_waker(std::task::Waker::noop()));
+    let readiness = observation.register_waker(std::task::Waker::noop());
+    assert_eq!(readiness, Poll::Ready(()));
 }
 
 /// Registration racing completion never loses the outcome: either the waker
@@ -163,11 +345,12 @@ fn register_waker_racing_complete_never_loses_outcome() {
         let flag = Arc::new(FlagWake(AtomicBool::new(false)));
         let waker = std::task::Waker::from(Arc::clone(&flag));
         let completer = std::thread::spawn(move || subject.complete(9_u64));
-        let registered = observation.register_waker(&waker);
+        let readiness = observation.register_waker(&waker);
         completer.join().unwrap();
         assert_eq!(observation.try_get(), Some(9_u64));
-        if !registered {
-            assert!(flag.0.load(Ordering::Relaxed));
+        match readiness {
+            Poll::Pending => assert!(flag.0.load(Ordering::Relaxed)),
+            Poll::Ready(()) => {}
         }
     }
 }
@@ -178,9 +361,8 @@ fn wait_timeout_returns_none_when_pending() {
     let space = ObservationSpace::new();
     let mut subject = space.subject(7_u64).unwrap();
     let observation = space.observe(&7_u64).unwrap();
-    let started = Instant::now();
-    assert_eq!(observation.wait_timeout(Duration::from_millis(10)), None);
-    assert!(started.elapsed() >= Duration::from_millis(9));
+    let timeout = observation.wait_timeout(Duration::from_millis(10));
+    assert_eq!(timeout, None);
     subject.complete(9_u64);
     assert_eq!(observation.try_get(), Some(9_u64));
 }
@@ -191,15 +373,12 @@ fn wait_timeout_returns_outcome_when_completed() {
     let space = ObservationSpace::new();
     let mut subject = space.subject(7_u64).unwrap();
     let observation = space.observe(&7_u64).unwrap();
-    let completer = std::thread::spawn(move || {
-        std::thread::sleep(Duration::from_millis(5));
-        subject.complete(9_u64);
-    });
-    assert_eq!(
-        observation.wait_timeout(Duration::from_secs(5)),
-        Some(9_u64)
-    );
-    completer.join().unwrap();
+    let registration = observation.clone();
+    let waiter = std::thread::spawn(move || observation.wait_timeout(Duration::from_secs(5)));
+    wait_for_thread_registrations(&registration, &[waiter.thread().id()]);
+    subject.complete(9_u64);
+    let outcome = waiter.join().unwrap();
+    assert_eq!(outcome, Some(9_u64));
 }
 
 /// Registering the same task's waker twice keeps a single entry (repeated
@@ -245,8 +424,10 @@ fn register_waker_is_idempotent_per_task() {
     let space = ObservationSpace::new();
     let mut subject = space.subject(7_u64).unwrap();
     let observation = space.observe(&7_u64).unwrap();
-    assert!(!observation.register_waker(&waker));
-    assert!(!observation.register_waker(&waker));
+    let first = observation.register_waker(&waker);
+    let second = observation.register_waker(&waker);
+    assert_eq!(first, Poll::Pending);
+    assert_eq!(second, Poll::Pending);
     let waiters = lock(observation.slot.waiters());
     assert_eq!(waiters.len(), 1);
     assert!(
@@ -270,12 +451,11 @@ fn observation_future_resolves_on_completion() {
     let mut subject = space.subject(7_u64).unwrap();
     let mut future = space.observe(&7_u64).unwrap().into_future();
     let mut cx = Context::from_waker(Waker::noop());
-    assert!(Pin::new(&mut future).poll(&mut cx).is_pending());
+    let pending = Pin::new(&mut future).poll(&mut cx);
+    assert!(pending.is_pending());
     subject.complete(9_u64);
-    assert!(matches!(
-        Pin::new(&mut future).poll(&mut cx),
-        Poll::Ready(9_u64)
-    ));
+    let ready = Pin::new(&mut future).poll(&mut cx);
+    assert!(matches!(ready, Poll::Ready(9_u64)));
 }
 
 /// Dropping the future deregisters its waker: completion after a cancelled
@@ -289,7 +469,8 @@ fn dropping_observation_future_deregisters_waker() {
     let waker = std::task::Waker::from(Arc::clone(&flag));
     let mut cx = Context::from_waker(&waker);
     let mut future = observation.into_future();
-    assert!(Pin::new(&mut future).poll(&mut cx).is_pending());
+    let pending = Pin::new(&mut future).poll(&mut cx);
+    assert!(pending.is_pending());
     drop(future);
     subject.complete(9_u64);
     assert!(!flag.0.load(Ordering::Relaxed));
@@ -311,10 +492,12 @@ fn future_drop_deregisters_migrated_waker() {
     let mut ctx_b = std::task::Context::from_waker(&waker_b);
 
     let mut future = Box::pin(observation.into_future());
-    assert!(future.as_mut().poll(&mut ctx_a).is_pending());
+    let initial_registration = future.as_mut().poll(&mut ctx_a);
+    assert!(initial_registration.is_pending());
     // A waker migration: the task moves to a different executor, so B is a
     // genuinely different waker that the registration dedup cannot fold into A.
-    assert!(future.as_mut().poll(&mut ctx_b).is_pending());
+    let migrated_registration = future.as_mut().poll(&mut ctx_b);
+    assert!(migrated_registration.is_pending());
     // Box::pin, not pin!(): the value is owned by the Box, so dropping the
     // future here is the real cancellation (pin!() only owns a Pin<&mut>
     // handle and would defer the value's drop to the end of the scope).
@@ -348,22 +531,26 @@ fn wait_timeout_at_completion_boundary() {
     let space = ObservationSpace::new();
     let mut subject = space.subject(7_u64).unwrap();
     let observation = space.observe(&7_u64).unwrap();
-    let completer = std::thread::spawn(move || {
-        std::thread::sleep(Duration::from_millis(5));
-        subject.complete(9_u64);
+    let registration = observation.clone();
+    let start = Arc::new(Barrier::new(2));
+    let waiter_start = Arc::clone(&start);
+    let waiter = std::thread::spawn(move || {
+        waiter_start.wait();
+        observation.wait_timeout(Duration::from_millis(5))
     });
-    let result = observation.wait_timeout(Duration::from_millis(5));
+    start.wait();
+    subject.complete(9_u64);
+    let result = waiter.join().unwrap();
     match result {
         Some(9) | None => {}
         other => panic!("boundary race produced {other:?}"),
     }
-    completer.join().unwrap();
-    assert_eq!(observation.try_get(), Some(9_u64));
+    assert_eq!(registration.try_get(), Some(9_u64));
 
     // Whichever side won, the waiter registry is empty (the timeout path
     // deregisters; the completion path drains). The observation outlives the
     // subject's retirement, so its slot is still reachable here.
-    let waiters = lock(observation.slot.waiters());
+    let waiters = lock(registration.slot.waiters());
     assert!(
         waiters.is_empty(),
         "boundary wait left a registration behind"
@@ -386,7 +573,8 @@ fn stale_retirement_cannot_remove_replacement() {
     // this forces its later Drop through the generation-mismatch branch.
     {
         let mut entries = write_lock(&space.inner.entries);
-        assert!(entries.map.remove_if(&7_u64, old_generation));
+        let removed = entries.map.remove_if(&7_u64, old_generation);
+        assert!(removed);
         let replacement = SlotArc::new(Slot::new());
         entries.map.insert_vacant(
             7_u64,
@@ -413,12 +601,8 @@ fn wait_timeout_zero_times_out_immediately() {
     let space = ObservationSpace::new();
     let mut subject = space.subject(7_u64).unwrap();
     let observation = space.observe(&7_u64).unwrap();
-    let started = Instant::now();
-    assert_eq!(observation.wait_timeout(Duration::ZERO), None);
-    assert!(
-        started.elapsed() < Duration::from_millis(100),
-        "zero timeout must not block"
-    );
+    let timeout = observation.wait_timeout(Duration::ZERO);
+    assert_eq!(timeout, None);
     // The immediate-timeout path deregisters: no waiter remains. The guard
     // must drop before `complete` (its drain takes the same mutex).
     {

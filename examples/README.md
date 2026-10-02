@@ -81,28 +81,28 @@ src/main.rs  actors, named topology, phased shutdown, and exact terminal custody
 
 ## `supervision`
 
-A timed domain worker under the selected fixed `Supervise` template. Restart
-strategy, permanence, budget, window, delayed backoff, topology, and terminal
-failure reaction are explicit inputs. The executable proves one replacement,
-restart-budget denial, complete lifecycle retention, typed terminal reporting,
-and custody of the stable proxy plus both worker incarnations. Bombay adds no
-supervisor wrapper or alternate lifecycle contract.
+An executable `FixedSupervisor` example. It constructs the owner-defined
+recovery policy, stops the first worker, observes its replacement, requests
+supervisor shutdown, and checks exact root, proxy, and both worker terminals.
+Its focused pure initialization test separately checks creation/observation
+correlation before the runtime interprets either action.
+See [supervision requirements](../docs/prd-backlog/local-runtime.md#sup--live-supervisors-and-stable-proxies).
 
 ```text
-src/main.rs  worker policy, supervisor construction, lifecycle trace, and terminal tree
+src/main.rs  worker policy, live replacement, shutdown, and terminal custody
 ```
 
 ## `worker-pool`
 
-A one-worker bounded pool with explicit backlog capacity, retry interruption,
-permanent restart, restart budget/window/timing, assignment ownership, and a
-typed external reply protocol. The executable observes ordered acceptance and
-completion before graceful application shutdown. The worker test asserts the
-complete selected `ReportToParent<PoolCompletion<_>>` action lane directly.
+An executable FIFO pool example. The worker computes a typed search result;
+the binary admits one job, checks its correlated customer outcomes, sends the
+pool's own shutdown command, and verifies exact root and worker retirement.
+Queue saturation, interruption, failure, and keyed-pool obligations remain in the
+[pool requirements](../docs/prd-backlog/local-runtime.md#pool--live-worker-pools).
 
 ```text
-src/main.rs  pool policy, external customer, ordered replies, and terminal custody
-src/worker.rs domain job/result, assignment fold, and pure action oracle
+src/main.rs  FIFO policy, live submission, customer outcome, and ordered shutdown
+src/worker.rs domain job/result and pure assignment fold
 ```
 
 ## `axum`
@@ -118,9 +118,9 @@ graceful server termination—while the unit tests retain the smaller boundary
 oracles.
 
 The transport path creates one real external actor per admitted request. Its
-fresh claimed address becomes the foundational `User::from`; the target is no
+fresh allocated address becomes the foundational `User::from`; the target is no
 longer fabricated as the sender. The router receives `ActorInterface<OrderApi>`
-and a separate `ApplicationLifecycle<OrderBook>`, so ordinary order admission
+and a separate `ApplicationLifecycle<OrderBook, OrderBookEvent>`, so ordinary order admission
 cannot acquire shutdown or topology authority.
 
 ```text
@@ -130,7 +130,8 @@ src/http.rs         Router, static gateway, handlers, and HTTP tests
 src/main.rs         single-root Bombay application, bind address, and `run_axum`
 ```
 
-Run them through the pinned shell:
+Run them through the pinned shell. Supervision executes worker replacement and
+retirement; the worker-pool command executes the FIFO path described above:
 
 ```text
 nix develop -c cargo run --locked -p bombay-example-counter

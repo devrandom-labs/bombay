@@ -17,7 +17,7 @@ type OrderBookRoot = StopOnShutdown<order_book::OrderBook>;
 #[derive(TerminalProjection)]
 pub(crate) enum OrderBookTerminal {
     Root {
-        origin: ActorOrigin<OrderBookRoot>,
+        origin: RootOrigin<OrderBookRoot>,
         terminal: ActorRetirement<OrderBookRoot, Self>,
     },
 }
@@ -64,7 +64,6 @@ pub(crate) fn assert_application_stopped(terminal: OrderBookTerminal) {
         panic!("the application must preserve the root's completed terminal state")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), None);
     drop(behavior);
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);

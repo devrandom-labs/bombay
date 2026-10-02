@@ -79,7 +79,7 @@ fn activating_hot_key() -> Duration {
         let output = directory
             .dispatch(EntityId::new(1), command)
             .unwrap()
-            .output;
+            .decision;
         directory.interpret(output, &discard);
     }
     started.elapsed()
@@ -89,7 +89,7 @@ fn active_hot_key() -> Duration {
     let directory = Arc::new(Directory::new(config(64)).unwrap());
     let discard = Discard::new();
     let entity_id = EntityId::new(1);
-    directory.interpret(directory.dispatch(entity_id, 0).unwrap().output, &discard);
+    directory.interpret(directory.dispatch(entity_id, 0).unwrap().decision, &discard);
     let activation_id =
         ActivationId::new(NonZeroU64::new(discard.activation.load(Ordering::Relaxed)).unwrap());
     let resolve = Resolve {
@@ -101,7 +101,7 @@ fn active_hot_key() -> Duration {
     );
     let started = Instant::now();
     for command in 0..ITERATIONS {
-        let output = directory.dispatch(entity_id, command).unwrap().output;
+        let output = directory.dispatch(entity_id, command).unwrap().decision;
         directory.interpret(output, &resolve);
     }
     started.elapsed()
@@ -115,7 +115,7 @@ fn independent_keys() -> Duration {
         let output = directory
             .dispatch(EntityId::new(command), command)
             .unwrap()
-            .output;
+            .decision;
         directory.interpret(output, &discard);
     }
     started.elapsed()
@@ -140,7 +140,7 @@ fn contended_active_key() -> Duration {
     let directory = Arc::new(Directory::new(config(THREADS)).unwrap());
     let discard = Discard::new();
     let entity_id = EntityId::new(1);
-    directory.interpret(directory.dispatch(entity_id, 0).unwrap().output, &discard);
+    directory.interpret(directory.dispatch(entity_id, 0).unwrap().decision, &discard);
     let activation_id =
         ActivationId::new(NonZeroU64::new(discard.activation.load(Ordering::Relaxed)).unwrap());
     let resolve = Arc::new(Resolve {
@@ -162,7 +162,7 @@ fn contended_active_key() -> Duration {
                     let output = directory
                         .dispatch(EntityId::new(1), command + worker as u64)
                         .unwrap()
-                        .output;
+                        .decision;
                     directory.interpret(output, resolve.as_ref());
                 }
             })

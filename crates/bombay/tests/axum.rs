@@ -10,7 +10,7 @@ use bombay::prelude::*;
 
 mod application_support;
 
-use application_support::{RootTerminal, assert_completed};
+use application_support::{RootTerminal, into_root};
 
 struct Root;
 
@@ -22,7 +22,7 @@ impl Root {
         reason = "the Behavior initialization contract returns its exact error type"
     )]
     fn init(&mut self) -> BehaviorActed<Self> {
-        Ok(Actions::stop())
+        Ok(Actions::cont())
     }
 
     #[allow(
@@ -45,13 +45,34 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
             move |application| {
                 assert_eq!(application.root().address(), MailAddr(0));
                 observed.fetch_add(1, Ordering::SeqCst);
+                let shutdown = application.lifecycle().request_shutdown();
+                assert_eq!(shutdown, Ok(()));
+                let repeated = application.lifecycle().request_shutdown();
+                assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
                 Router::new()
             },
         )
         .expect("a normally stopping root gracefully stops Axum");
 
     assert_eq!(calls.load(Ordering::SeqCst), 1);
-    assert_completed(terminal);
+    let (origin, retirement) = into_root(terminal);
+    let ActorRetirement::Completed {
+        settlements,
+        control,
+        user,
+        descendants,
+        completion,
+        ..
+    } = retirement
+    else {
+        panic!("the shutdown request must complete the published root")
+    };
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    assert_eq!(settlements.len(), 1);
+    assert!(control.is_empty());
+    assert!(user.is_empty());
+    assert!(descendants.is_empty());
+    assert_eq!(completion, Completion::Stopped);
 }
 
 #[test]

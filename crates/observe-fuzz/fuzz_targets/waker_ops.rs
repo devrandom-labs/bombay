@@ -18,6 +18,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::task::Poll;
 
 use libfuzzer_sys::fuzz_target;
 use observe::probe::{CountWake, DropProbe};
@@ -86,10 +87,15 @@ fuzz_target!(|data: &[u8]| {
                 if let Some((k, e, obs)) = observations.last() {
                     let is_pending = !completed.contains(&(*k, *e));
                     let (waker, probe) = CountWake::waker();
+                    let readiness = obs.register_waker(&waker);
+                    let expected = if is_pending {
+                        Poll::Pending
+                    } else {
+                        Poll::Ready(())
+                    };
                     assert_eq!(
-                        !obs.register_waker(&waker),
-                        is_pending,
-                        "register_waker completion flag diverged for key {k} epoch {e}"
+                        readiness, expected,
+                        "register_waker readiness diverged for key {k} epoch {e}"
                     );
                     if is_pending {
                         wakers.push((*k, *e, probe));

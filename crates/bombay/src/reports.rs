@@ -1,40 +1,47 @@
 //! Runtime-owned translation of structural parent-report requests.
 
-use std::sync::Arc;
-
 use behavior::{Behavior, ChildReport, CreationId, EventIngress};
 use behavior_actors::ReportTerminalOutcome;
 use communication::{ControlClosed, ControlSender};
+use tokio::sync::oneshot;
 
 use crate::address::MailAddr;
 use crate::local::Termination;
 use crate::termination::{TerminalReportDisposition, TerminationSelection};
 
 pub(crate) trait TerminalReportTransaction {
-    fn begin_terminal_reports(&self);
-    fn finish_terminal_reports(&self, disposition: TerminalReportDisposition);
+    fn finish_terminal_reports(&mut self, disposition: TerminalReportDisposition);
 }
 
 pub(crate) struct LocalTerminalReports {
-    selection: Arc<TerminationSelection<MailAddr>>,
+    selection: TerminationSelection<MailAddr>,
+    report: oneshot::Sender<Termination<MailAddr>>,
 }
 
 impl LocalTerminalReports {
-    pub(crate) const fn new(selection: Arc<TerminationSelection<MailAddr>>) -> Self {
-        Self { selection }
+    pub(crate) const fn new(report: oneshot::Sender<Termination<MailAddr>>) -> Self {
+        Self {
+            selection: TerminationSelection::new(),
+            report,
+        }
     }
 
-    pub(crate) fn begin(&self) {
-        self.selection.begin();
-    }
-
-    pub(crate) fn finish(&self, disposition: TerminalReportDisposition) {
+    pub(crate) fn finish(&mut self, disposition: TerminalReportDisposition) {
         self.selection.finish(disposition);
     }
 
-    pub(crate) fn report_outcome(&self, report: ReportTerminalOutcome<MailAddr>) {
+    pub(crate) fn report_outcome(&mut self, report: ReportTerminalOutcome<MailAddr>) {
         let outcome: Termination<MailAddr> = report.outcome;
         self.selection.select(outcome);
+    }
+
+    pub(crate) fn retire(self) {
+        if let TerminationSelection::Selected(outcome) = self.selection {
+            match self.report.send(outcome) {
+                Ok(()) => {}
+                Err(_) => unreachable!("the incarnation retirement owns the report receiver"),
+            }
+        }
     }
 }
 

@@ -17,6 +17,7 @@ impl Protocol for Payments {
 
 #[derive(ActorSpaces)]
 struct Actors {
+    #[actor_space(Orders)]
     orders: ActorSpace<Orders>,
 }
 

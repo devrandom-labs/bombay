@@ -1,7 +1,6 @@
-//! Actor-local delivery of peer and child termination facts.
+//! Actor-local delivery of peer and child termination observations.
 
 use std::hash::Hash;
-use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Instant;
 
 use behavior::{Address, CreationId, InjectEvent, Protocol};
@@ -10,66 +9,53 @@ use core::future::{Future, IntoFuture, poll_fn};
 use core::pin::Pin;
 use core::task::Poll;
 
-use crate::launch::LocalAddresses;
+use crate::launch::ActorSpace;
 use crate::local::Termination;
 use crate::observe::{Observation, ObservationFuture};
 
 #[derive(Clone, Copy)]
-enum FactSource<A: Address> {
+enum TerminationSource<A: Address> {
     Peer(A),
     Child(CreationId),
 }
 
-type InjectFact<A, E> = fn(FactSource<A>, Termination<A>) -> E;
+type InjectTermination<A, E> = fn(TerminationSource<A>, Termination<A>) -> E;
 
-struct PendingFact<A: Address, E> {
+struct PendingTermination<A: Address, E> {
     future: ObservationFuture<Termination<A>>,
-    source: FactSource<A>,
-    inject: InjectFact<A, E>,
+    source: TerminationSource<A>,
+    inject: InjectTermination<A, E>,
 }
 
-struct FactState<A: Address, E> {
-    pending: Vec<PendingFact<A, E>>,
+/// Pending observations owned by one actor's capability interpreter.
+/// Among observations ready at one poll, the earliest registration is delivered first.
+pub(crate) struct TerminationObservations<A: Address, E> {
+    pending: Vec<PendingTermination<A, E>>,
 }
 
-/// Pending capability facts polled by the actor's single Environment spine.
-pub(crate) struct FactQueue<A: Address, E> {
-    state: Arc<Mutex<FactState<A, E>>>,
-}
-
-impl<A: Address, E> Clone for FactQueue<A, E> {
-    fn clone(&self) -> Self {
-        Self {
-            state: Arc::clone(&self.state),
-        }
-    }
-}
-
-impl<A, E> FactQueue<A, E>
+impl<A, E> TerminationObservations<A, E>
 where
     A: Address,
 {
     pub(crate) fn new() -> Self {
         Self {
-            state: Arc::new(Mutex::new(FactState {
-                pending: Vec::new(),
-            })),
+            pending: Vec::new(),
         }
     }
 
-    pub(crate) fn insert_peer<Path>(&self, address: A, observation: Observation<Termination<A>>)
+    pub(crate) fn insert_peer<Path>(&mut self, address: A, observation: Observation<Termination<A>>)
     where
         E: InjectEvent<PeerStopped<A>, Path>,
     {
         self.insert(
             observation,
-            FactSource::Peer(address),
+            TerminationSource::Peer(address),
             inject_peer::<A, E, Path>,
         );
     }
 
     pub(crate) fn insert_child<Path>(
-        &self,
+        &mut self,
         creation: CreationId,
         observation: Observation<Termination<A>>,
     ) where
@@ -77,33 +63,31 @@ where
     {
         self.insert(
             observation,
-            FactSource::Child(creation),
+            TerminationSource::Child(creation),
             inject_child::<A, E, Path>,
         );
     }
 
     fn insert(
-        &self,
+        &mut self,
         observation: Observation<Termination<A>>,
-        source: FactSource<A>,
-        inject: InjectFact<A, E>,
+        source: TerminationSource<A>,
+        inject: InjectTermination<A, E>,
     ) {
-        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
-        state.pending.push(PendingFact {
+        self.pending.push(PendingTermination {
             future: observation.into_future(),
             source,
             inject,
         });
     }
 
-    pub(crate) async fn next(&self) -> E {
+    pub(crate) async fn next(&mut self) -> E {
         poll_fn(|context| {
-            let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
-            for index in 0..state.pending.len() {
+            for index in 0..self.pending.len() {
                 if let Poll::Ready(outcome) =
-                    Pin::new(&mut state.pending[index].future).poll(context)
+                    Pin::new(&mut self.pending[index].future).poll(context)
                 {
-                    let pending = state.pending.swap_remove(index);
+                    let pending = self.pending.remove(index);
                     return Poll::Ready((pending.inject)(pending.source, outcome));
                 }
             }
@@ -113,23 +97,23 @@ where
     }
 }
 
-fn inject_peer<A, E, Path>(source: FactSource<A>, outcome: Termination<A>) -> E
+fn inject_peer<A, E, Path>(source: TerminationSource<A>, outcome: Termination<A>) -> E
 where
     A: Address,
     E: InjectEvent<PeerStopped<A>, Path>,
 {
-    let FactSource::Peer(address) = source else {
+    let TerminationSource::Peer(address) = source else {
         unreachable!("peer fact mapper receives only peer sources");
     };
     E::inject_at(PeerStopped::new(address, outcome))
 }
 
-fn inject_child<A, E, Path>(source: FactSource<A>, outcome: Termination<A>) -> E
+fn inject_child<A, E, Path>(source: TerminationSource<A>, outcome: Termination<A>) -> E
 where
     A: Address,
     E: InjectEvent<ChildStopped<A>, Path>,
 {
-    let FactSource::Child(creation) = source else {
+    let TerminationSource::Child(creation) = source else {
         unreachable!("child fact mapper receives only child sources");
     };
     E::inject_at(ChildStopped::new(creation, outcome, Instant::now()))
@@ -141,47 +125,31 @@ pub(crate) enum ObservationError<A> {
     Unknown(A),
 }
 
-/// Observations installed by one actor for one concrete peer protocol.
-pub(crate) struct LocalPeerObservations<P: Protocol, E>
+/// Register an exact peer observation in the actor-owned fact queue.
+pub(crate) fn observe_peer<P, E, Path>(
+    peers: &ActorSpace<P>,
+    request: ObservePeer<P::Addr>,
+    observations: &mut TerminationObservations<P::Addr, E>,
+) -> Result<(), ObservationError<P::Addr>>
 where
     P::Addr: Hash,
-{
-    peers: LocalAddresses<P>,
-    facts: FactQueue<P::Addr, E>,
-}
-
-impl<P, E> LocalPeerObservations<P, E>
-where
     P: Protocol,
-    P::Addr: Hash,
+    P::Addr: Send + Sync + 'static,
+    P::Msg: Send,
+    E: InjectEvent<PeerStopped<P::Addr>, Path> + Send + 'static,
 {
-    pub(crate) fn new(peers: LocalAddresses<P>, facts: FactQueue<P::Addr, E>) -> Self {
-        Self { peers, facts }
-    }
-
-    pub(crate) fn observe<Path>(
-        &mut self,
-        request: ObservePeer<P::Addr>,
-    ) -> Result<(), ObservationError<P::Addr>>
-    where
-        P::Addr: Hash + Send + Sync + 'static,
-        P::Msg: Send,
-        E: InjectEvent<PeerStopped<P::Addr>, Path> + Send + 'static,
-    {
-        let peer = self
-            .peers
-            .resolve(&request.peer)
-            .ok_or(ObservationError::Unknown(request.peer))?;
-        let observation = peer.termination_observation();
-        let address = request.peer;
-        self.facts.insert_peer::<Path>(address, observation);
-        Ok(())
-    }
+    let peer = peers
+        .resolve(&request.peer)
+        .ok_or(ObservationError::Unknown(request.peer))?;
+    let observation = peer.termination_observation();
+    observations.insert_peer::<Path>(request.peer, observation);
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use std::convert::Infallible;
+    use std::task::{Context, Waker};
 
     use behavior::{Actions, Behavior, BehaviorActed, InitializationTurn, Never, NoBirths, User};
     use behavior_actors::{Exit, StopOnShutdown};
@@ -240,7 +208,7 @@ mod tests {
 
     #[tokio::test]
     async fn observation_captures_the_exact_resolved_generation() {
-        let peers = crate::launch::LocalAddresses::<<Peer as Behavior>::Protocol>::new();
+        let peers = ActorSpace::<<Peer as Behavior>::Protocol>::new();
         let peer = crate::launch::launch_inert(
             peers.clone(),
             Config::new(2),
@@ -250,36 +218,40 @@ mod tests {
         )
         .await
         .unwrap();
-        let facts = FactQueue::<MailAddr, ObserverEvent>::new();
-        let mut observations = LocalPeerObservations::new(peers, facts.clone());
+        let mut observations = TerminationObservations::<MailAddr, ObserverEvent>::new();
+        observe_peer::<_, _, behavior::Here>(
+            &peers,
+            ObservePeer::new(MailAddr(2)),
+            &mut observations,
+        )
+        .unwrap();
+        peer.actor.send_from(MailAddr(1), ()).await.unwrap();
 
-        observations
-            .observe::<behavior::Here>(ObservePeer::new(MailAddr(2)))
-            .unwrap();
-        peer.send_from(MailAddr(1), ()).await.unwrap();
-
+        let stopped = observations.next().await;
         assert_eq!(
-            facts.next().await,
+            stopped,
             ObserverEvent::Stopped(PeerStopped::new(MailAddr(2), Ok(Exit::Normal),))
         );
-        drop(observations);
     }
 
     #[tokio::test]
     async fn unknown_peer_is_an_error() {
-        let peers = crate::launch::LocalAddresses::<<Peer as Behavior>::Protocol>::new();
-        let mut observations =
-            LocalPeerObservations::new(peers, FactQueue::<MailAddr, ObserverEvent>::new());
+        let peers = ActorSpace::<<Peer as Behavior>::Protocol>::new();
+        let mut observations = TerminationObservations::new();
 
         assert_eq!(
-            observations.observe::<behavior::Here>(ObservePeer::new(MailAddr(9))),
+            observe_peer::<_, ObserverEvent, behavior::Here>(
+                &peers,
+                ObservePeer::new(MailAddr(9)),
+                &mut observations
+            ),
             Err(ObservationError::Unknown(MailAddr(9)))
         );
     }
 
     #[tokio::test]
     async fn structural_observations_of_one_peer_are_multiplicity_preserving() {
-        let peers = crate::launch::LocalAddresses::<<Peer as Behavior>::Protocol>::new();
+        let peers = ActorSpace::<<Peer as Behavior>::Protocol>::new();
         let peer = crate::launch::launch_inert(
             peers.clone(),
             Config::new(2),
@@ -289,52 +261,77 @@ mod tests {
         )
         .await
         .unwrap();
-        let facts = FactQueue::<MailAddr, LayeredObserverEvent>::new();
-        let mut observations = LocalPeerObservations::new(peers, facts.clone());
+        let mut observations = TerminationObservations::<MailAddr, LayeredObserverEvent>::new();
+        observe_peer::<_, _, behavior::Here>(
+            &peers,
+            ObservePeer::new(MailAddr(2)),
+            &mut observations,
+        )
+        .unwrap();
+        observe_peer::<_, _, behavior::Inside<behavior::Here>>(
+            &peers,
+            ObservePeer::new(MailAddr(2)),
+            &mut observations,
+        )
+        .unwrap();
+        peer.actor.send_from(MailAddr(1), ()).await.unwrap();
 
-        observations
-            .observe::<behavior::Here>(ObservePeer::new(MailAddr(2)))
-            .unwrap();
-        observations
-            .observe::<behavior::Inside<behavior::Here>>(ObservePeer::new(MailAddr(2)))
-            .unwrap();
-        peer.send_from(MailAddr(1), ()).await.unwrap();
+        let first = observations.next().await;
+        let second = observations.next().await;
+        assert_eq!(
+            first,
+            LayeredObserverEvent::Outer(PeerStopped::new(MailAddr(2), Ok(Exit::Normal)))
+        );
+        assert_eq!(
+            second,
+            LayeredObserverEvent::Inner(PeerStopped::new(MailAddr(2), Ok(Exit::Normal)))
+        );
+    }
 
-        let first = facts.next().await;
-        let second = facts.next().await;
-        assert!(matches!(
-            (&first, &second),
-            (
-                LayeredObserverEvent::Outer(PeerStopped {
-                    outcome: Ok(Exit::Normal),
-                    ..
-                }),
-                LayeredObserverEvent::Inner(PeerStopped {
-                    outcome: Ok(Exit::Normal),
-                    ..
-                })
-            ) | (
-                LayeredObserverEvent::Inner(PeerStopped {
-                    outcome: Ok(Exit::Normal),
-                    ..
-                }),
-                LayeredObserverEvent::Outer(PeerStopped {
-                    outcome: Ok(Exit::Normal),
-                    ..
-                })
-            )
-        ));
+    #[tokio::test]
+    async fn simultaneously_ready_facts_follow_registration_after_wait_cancellation() {
+        let mut observations = TerminationObservations::<MailAddr, ObserverEvent>::new();
+        let (first_publisher, first_observation) = crate::observe::pair();
+        let (second_publisher, second_observation) = crate::observe::pair();
+        let (third_publisher, third_observation) = crate::observe::pair();
+
+        observations.insert_peer::<behavior::Here>(MailAddr(1), first_observation);
+        observations.insert_peer::<behavior::Here>(MailAddr(2), second_observation);
+        observations.insert_peer::<behavior::Here>(MailAddr(3), third_observation);
+
+        let mut waiting = Box::pin(observations.next());
+        let waker = Waker::noop();
+        let mut context = Context::from_waker(waker);
+        let pending = waiting.as_mut().poll(&mut context);
+        assert!(pending.is_pending());
+        drop(waiting);
+
+        first_publisher.complete(Ok(Exit::Normal));
+        second_publisher.complete(Ok(Exit::Normal));
+        third_publisher.complete(Ok(Exit::Normal));
+
+        let first = observations.next().await;
+        let second = observations.next().await;
+        let third = observations.next().await;
+        assert_eq!(
+            [first, second, third],
+            [
+                ObserverEvent::Stopped(PeerStopped::new(MailAddr(1), Ok(Exit::Normal))),
+                ObserverEvent::Stopped(PeerStopped::new(MailAddr(2), Ok(Exit::Normal))),
+                ObserverEvent::Stopped(PeerStopped::new(MailAddr(3), Ok(Exit::Normal))),
+            ]
+        );
     }
 
     #[test]
     fn inserting_a_fact_with_spare_queue_capacity_does_not_allocate() {
         let first = crate::observe::pair::<Termination<MailAddr>>().1;
         let second = crate::observe::pair::<Termination<MailAddr>>().1;
-        let facts = FactQueue::<MailAddr, ObserverEvent>::new();
+        let mut observations = TerminationObservations::<MailAddr, ObserverEvent>::new();
 
-        facts.insert_peer::<behavior::Here>(MailAddr(1), first);
-        let allocations = crate::incarnation::tests::allocations_during(|| {
-            facts.insert_peer::<behavior::Here>(MailAddr(2), second);
+        observations.insert_peer::<behavior::Here>(MailAddr(1), first);
+        let allocations = crate::actor_execution::tests::allocations_during(|| {
+            observations.insert_peer::<behavior::Here>(MailAddr(2), second);
         });
 
         assert_eq!(allocations, 0, "one allocation remains per pending fact");

@@ -34,22 +34,22 @@ pub use application_runtime::{
 };
 pub use bombay_engine::{Completion, SettlementFailure};
 pub use bombay_macros::{ActorSpaces, TerminalProjection, actor};
+mod actor_execution;
+mod actor_outcome;
 mod address;
 mod application;
 mod application_runtime;
 mod child_bindings;
 pub mod entity;
-mod incarnation;
 mod interpret;
 mod launch;
 mod local;
 mod observation;
 #[allow(
     dead_code,
-    reason = "the complete imported Observe algebra remains verified while Bombay narrows its private production consumers"
+    reason = "Bombay uses pair publication while this same private source retains the separately verified keyed Observe API"
 )]
 mod observe;
-mod outcome;
 mod reports;
 mod retirement;
 mod terminal;
@@ -57,14 +57,16 @@ mod termination;
 pub mod testing;
 mod time;
 mod topology;
+mod worker_preparation;
 
-pub(crate) use incarnation::Incarnation;
+pub(crate) use actor_execution::ActorExecution;
+pub(crate) use actor_outcome::ActorExecutionOutcome;
 pub use launch::ActorSpace;
-pub use local::{ActorRef, SendError};
-pub(crate) use outcome::IncarnationOutcome;
+pub use local::{ActorRef, InstalledActor, SendError};
 pub(crate) use retirement::Retirement;
-pub use terminal::{ActorOrigin, ActorRetirement, ProjectTerminal};
+pub use terminal::{ActorRetirement, ChildOrigin, ProjectTerminal, RootOrigin};
 pub use topology::Hosts;
+pub use worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
 
 /// Conventional imports for Bombay applications.
 pub mod prelude {
@@ -81,9 +83,10 @@ pub mod prelude {
         EntityMetrics, EntityRef,
     };
     pub use crate::{
-        ActorInterface, ActorOrigin, ActorRef, ActorRetirement, Application, ApplicationBehavior,
-        ApplicationHandle, ApplicationLifecycle, Completion, ExternalActor, ExternalActorError,
-        ExternalTarget, MailAddr, RunError, SettlementFailure, TerminalProjection,
+        ActorInterface, ActorRef, ActorRetirement, Application, ApplicationBehavior,
+        ApplicationHandle, ApplicationLifecycle, ChildOrigin, Completion, ExternalActor,
+        ExternalActorError, ExternalTarget, MailAddr, RootOrigin, RunError, SettlementFailure,
+        TerminalProjection,
     };
     pub use behavior_actors::{
         Activate, Crash, Exit, Machine, MachineError, Move, ShutdownRejection, StopOnShutdown,

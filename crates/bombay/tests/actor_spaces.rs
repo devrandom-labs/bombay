@@ -16,33 +16,35 @@ impl Protocol for Payments {
 }
 
 #[derive(Default, ActorSpaces)]
-struct LocalActors {
+struct OrderPaymentSpaces {
+    #[actor_space(Orders)]
     orders: ActorSpace<Orders>,
     label: &'static str,
+    #[actor_space(Payments)]
     payments: ActorSpace<Payments>,
 }
 
-fn hosted<P>(actors: &LocalActors) -> &ActorSpace<P>
+fn hosted_space<P>(spaces: &OrderPaymentSpaces) -> &ActorSpace<P>
 where
     P: Protocol<Addr = MailAddr>,
-    LocalActors: Hosts<P>,
+    OrderPaymentSpaces: Hosts<P>,
 {
-    actors.space()
+    spaces.space()
 }
 
 #[test]
 fn derive_selects_each_protocols_exact_named_space() {
-    let actors = LocalActors::default();
+    let spaces = OrderPaymentSpaces::default();
 
     assert!(core::ptr::eq(
-        hosted::<Orders>(&actors),
-        core::ptr::from_ref(&actors.orders)
+        hosted_space::<Orders>(&spaces),
+        core::ptr::from_ref(&spaces.orders)
     ));
     assert!(core::ptr::eq(
-        hosted::<Payments>(&actors),
-        core::ptr::from_ref(&actors.payments)
+        hosted_space::<Payments>(&spaces),
+        core::ptr::from_ref(&spaces.payments)
     ));
-    assert_eq!(actors.label, "");
+    assert_eq!(spaces.label, "");
 }
 
 #[test]
@@ -62,6 +64,8 @@ fn actor_spaces_compile_contract() {
     cases.pass("tests/compile/pass/behavior_facade_named_children.rs");
     cases.pass("tests/compile/pass/behavior_root_authoring.rs");
     cases.compile_fail("tests/compile/fail/actor_spaces_duplicate.rs");
+    cases.compile_fail("tests/compile/fail/actor_spaces_alias_duplicate.rs");
+    cases.compile_fail("tests/compile/fail/actor_spaces_wrong_field.rs");
     cases.compile_fail("tests/compile/fail/actor_spaces_tuple.rs");
     cases.compile_fail("tests/compile/fail/actor_spaces_missing_host.rs");
 }

@@ -24,7 +24,8 @@ fn pair_completion_racing_observation_never_loses_outcome() {
             }
         });
         publisher.complete(42);
-        assert_eq!(observer.join().unwrap(), 42);
+        let outcome = observer.join().unwrap();
+        assert_eq!(outcome, 42);
     });
 }
 
@@ -38,8 +39,10 @@ fn pair_completion_wakes_all_blocking_observers() {
         let second = thread::spawn(move || second.wait());
         yield_now();
         publisher.complete(9);
-        assert_eq!(first.join().unwrap(), 9);
-        assert_eq!(second.join().unwrap(), 9);
+        let first_outcome = first.join().unwrap();
+        assert_eq!(first_outcome, 9);
+        let second_outcome = second.join().unwrap();
+        assert_eq!(second_outcome, 9);
     });
 }
 
@@ -102,7 +105,8 @@ fn observe_racing_complete_never_loses_outcome() {
             }
         });
         subject.complete(42_u64);
-        assert_eq!(observer.join().unwrap(), 42_u64);
+        let outcome = observer.join().unwrap();
+        assert_eq!(outcome, 42_u64);
     });
 }
 
@@ -169,7 +173,8 @@ fn waiter_wakes_with_outcome() {
         let observer = thread::spawn(move || observation.wait());
         yield_now();
         subject.complete(9_u64);
-        assert_eq!(observer.join().unwrap(), 9_u64);
+        let outcome = observer.join().unwrap();
+        assert_eq!(outcome, 9_u64);
     });
 }
 
@@ -234,8 +239,10 @@ fn multiple_waiters_all_wake() {
         let second_waiter = thread::spawn(move || second.wait());
         yield_now();
         subject.complete(9_u64);
-        assert_eq!(first_waiter.join().unwrap(), 9_u64);
-        assert_eq!(second_waiter.join().unwrap(), 9_u64);
+        let first_outcome = first_waiter.join().unwrap();
+        assert_eq!(first_outcome, 9_u64);
+        let second_outcome = second_waiter.join().unwrap();
+        assert_eq!(second_outcome, 9_u64);
     });
 }
 
@@ -247,7 +254,8 @@ fn waiter_after_completion_returns_immediately() {
         let mut subject = space.subject(7_u64).unwrap();
         subject.complete(4_u64);
         let observation = space.observe(&7_u64).unwrap();
-        assert_eq!(observation.wait(), 4_u64);
+        let outcome = observation.wait();
+        assert_eq!(outcome, 4_u64);
     });
 }
 
@@ -281,6 +289,7 @@ fn wait_timeout_wakes_with_outcome() {
             thread::spawn(move || observation.wait_timeout(std::time::Duration::from_secs(1)));
         yield_now();
         subject.complete(9_u64);
-        assert_eq!(observer.join().unwrap(), Some(9_u64));
+        let outcome = observer.join().unwrap();
+        assert_eq!(outcome, Some(9_u64));
     });
 }

@@ -104,7 +104,8 @@ fn loom_pooled_slot_reuse_with_waiters() {
             thread::spawn(move || observation.wait())
         };
         first.complete(100);
-        assert_eq!(waiter_a.join().expect("waiter A panicked"), 100);
+        let outcome = waiter_a.join().expect("waiter A panicked");
+        assert_eq!(outcome, 100);
         drop(first);
 
         // Generation B reuses the pooled slot (single-slot pool, LIFO).
@@ -114,7 +115,8 @@ fn loom_pooled_slot_reuse_with_waiters() {
             thread::spawn(move || observation.wait())
         };
         second.complete(200);
-        assert_eq!(waiter_b.join().expect("waiter B panicked"), 200);
+        let outcome = waiter_b.join().expect("waiter B panicked");
+        assert_eq!(outcome, 200);
     });
 }
 
@@ -134,7 +136,8 @@ fn loom_future_resolves_racing_completion() {
             subject.complete(42);
         });
 
-        assert_eq!(poller.join().expect("poller panicked"), 42);
+        let outcome = poller.join().expect("poller panicked");
+        assert_eq!(outcome, 42);
         completer.join().expect("completer panicked");
     });
 }
@@ -151,7 +154,8 @@ fn loom_affine_publication_racing_await_moves_outcome() {
         let poller = thread::spawn(move || loom::future::block_on(observation));
         let completer = thread::spawn(move || publisher.complete(MoveOnly(42)));
 
-        assert_eq!(poller.join().expect("poller panicked"), MoveOnly(42));
+        let outcome = poller.join().expect("poller panicked");
+        assert_eq!(outcome, MoveOnly(42));
         completer.join().expect("completer panicked");
     });
 }
@@ -294,8 +298,10 @@ fn loom_two_waiters_both_woken() {
         };
         subject.complete(7);
 
-        assert_eq!(waiter_a.join().expect("waiter A panicked"), 7);
-        assert_eq!(waiter_b.join().expect("waiter B panicked"), 7);
+        let outcome_a = waiter_a.join().expect("waiter A panicked");
+        assert_eq!(outcome_a, 7);
+        let outcome_b = waiter_b.join().expect("waiter B panicked");
+        assert_eq!(outcome_b, 7);
     });
 }
 
@@ -312,7 +318,8 @@ fn loom_wait_timeout_completed_path() {
             thread::spawn(move || observation.wait_timeout(core::time::Duration::from_secs(1)))
         };
         subject.complete(11);
-        assert_eq!(waiter.join().expect("waiter panicked"), Some(11));
+        let outcome = waiter.join().expect("waiter panicked");
+        assert_eq!(outcome, Some(11));
     });
 }
 

@@ -10,6 +10,8 @@ impl Protocol for First {
 
 struct Second;
 
+type FirstSpace = ActorSpace<First>;
+
 impl Protocol for Second {
     type Addr = MailAddr;
     type Msg = u8;
@@ -17,8 +19,10 @@ impl Protocol for Second {
 
 #[derive(ActorSpaces)]
 struct Actors {
-    renamed_first_field: ActorSpace<First>,
+    #[actor_space(First)]
+    renamed_first_field: FirstSpace,
     ignored_configuration: u16,
+    #[actor_space(Second)]
     second: bombay::ActorSpace<Second>,
 }
 

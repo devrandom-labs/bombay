@@ -1,0 +1,8 @@
+error[E0271]: type mismatch resolving `<MailAddr as EndpointAddress>::Installed<Secondary> == InstalledActor<Primary>`
+  --> tests/compile/fail/installed_actor_wrong_behavior.rs:44:5
+   |
+44 |     EstablishedActor::issued(installed)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `InstalledActor<Primary>`, found `InstalledActor<Secondary>`
+   |
+   = note: expected struct `InstalledActor<Primary>`
+              found struct `InstalledActor<Secondary>`

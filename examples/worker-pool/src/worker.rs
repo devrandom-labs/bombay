@@ -1,17 +1,16 @@
-use behavior_actors::atomic::pool_worker;
-use bombay::atomic::Assignment;
+use bombay::atomic::{Assignment, pool_worker};
 use bombay::behavior::Actions;
 use bombay::prelude::MailAddr;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct SearchJob {
-    document: String,
-    needle: char,
+    pub(crate) document: String,
+    pub(crate) needle: char,
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct SearchResult {
-    matches: usize,
+    pub(crate) matches: usize,
 }
 
 pub(crate) struct SearchWorker;

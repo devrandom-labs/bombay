@@ -10,7 +10,9 @@ impl Protocol for Orders {
 
 #[derive(ActorSpaces)]
 struct Actors {
+    #[actor_space(Orders)]
     primary: ActorSpace<Orders>,
+    #[actor_space(Orders)]
     duplicate: ActorSpace<Orders>,
 }
 

@@ -78,8 +78,8 @@ static COUNT_WAKE_VTABLE: RawWakerVTable = RawWakerVTable::new(
 
 unsafe fn count_wake_clone(data: *const ()) -> RawWaker {
     // SAFETY: `data` is a live `Arc<CountWake>` pointer owned by the waker
-    // being cloned; the ManuallyDrop borrow is forgotten, so the refcount
-    // gains exactly one for the returned RawWaker.
+    // being cloned; forgetting the reconstructed Arc after cloning leaves
+    // exactly one new reference for the returned RawWaker.
     let probe = unsafe { Arc::<CountWake>::from_raw(data.cast::<CountWake>()) };
     let cloned = Arc::clone(&probe);
     std::mem::forget(probe);
@@ -95,7 +95,7 @@ unsafe fn count_wake_wake(data: *const ()) {
 
 unsafe fn count_wake_wake_by_ref(data: *const ()) {
     // SAFETY: `data` is a borrowed `Arc<CountWake>` pointer; the
-    // ManuallyDrop borrow is forgotten so the refcount is unchanged.
+    // reconstructed Arc is forgotten after use, so the refcount is unchanged.
     let probe = unsafe { Arc::<CountWake>::from_raw(data.cast::<CountWake>()) };
     probe.wakes.fetch_add(1, Ordering::SeqCst);
     std::mem::forget(probe);
@@ -147,8 +147,8 @@ static THREAD_WAKE_VTABLE: RawWakerVTable = RawWakerVTable::new(
 
 unsafe fn thread_wake_clone(data: *const ()) -> RawWaker {
     // SAFETY: `data` is a live `Arc<ThreadWake>` pointer owned by the
-    // waker being cloned; the ManuallyDrop borrow is forgotten, so the
-    // refcount gains exactly one for the returned RawWaker.
+    // waker being cloned; forgetting the reconstructed Arc after cloning
+    // leaves exactly one new reference for the returned RawWaker.
     let probe = unsafe { Arc::<ThreadWake>::from_raw(data.cast::<ThreadWake>()) };
     let cloned = Arc::clone(&probe);
     std::mem::forget(probe);
@@ -164,7 +164,7 @@ unsafe fn thread_wake_wake(data: *const ()) {
 
 unsafe fn thread_wake_wake_by_ref(data: *const ()) {
     // SAFETY: `data` is a borrowed `Arc<ThreadWake>` pointer; the
-    // ManuallyDrop borrow is forgotten so the refcount is unchanged.
+    // reconstructed Arc is forgotten after use, so the refcount is unchanged.
     let probe = unsafe { Arc::<ThreadWake>::from_raw(data.cast::<ThreadWake>()) };
     probe.thread.unpark();
     std::mem::forget(probe);

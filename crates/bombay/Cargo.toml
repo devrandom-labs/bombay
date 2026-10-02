@@ -23,7 +23,6 @@ behavior-actors = { workspace = true }
 bombay-engine = { workspace = true }
 bombay-macros = { path = "../bombay-macros" }
 bombay-address = { workspace = true }
-bombay-machine = { workspace = true }
 communication = { workspace = true }
 parking_lot = { workspace = true }
 thiserror = { workspace = true }
@@ -33,9 +32,7 @@ triomphe = { workspace = true }
 axum = { workspace = true, optional = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["macros"] }
 trybuild = "1"
-bombay-machine = { workspace = true }
 dhat = "0.3"
 loom = "0.7.2"
 proptest = { workspace = true }
@@ -52,8 +49,4 @@ harness = false
 
 [[bench]]
 name = "entity_lifecycle"
-harness = false
-
-[[bench]]
-name = "machine_executor"
 harness = false

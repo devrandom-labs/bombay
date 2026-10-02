@@ -1,5 +1,6 @@
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 use std::num::{NonZeroU64, NonZeroUsize};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Barrier, Mutex};
 use std::thread;
@@ -97,8 +98,8 @@ fn custom_hasher_collisions_preserve_distinct_slots_and_exact_removal() {
     let first = EntityId::new(1);
     let second = EntityId::new(2);
 
-    directory.interpret(directory.dispatch(first, 11).unwrap().output, &runtime);
-    directory.interpret(directory.dispatch(second, 22).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(first, 11).unwrap().decision, &runtime);
+    directory.interpret(directory.dispatch(second, 22).unwrap().decision, &runtime);
     assert_eq!(directory.len(), 2);
     let (first_activation, second_activation) = match runtime.0.lock().unwrap().as_slice() {
         [Action::Start(first), Action::Start(second)] => (*first, *second),
@@ -129,7 +130,7 @@ fn custom_hasher_collisions_preserve_distinct_slots_and_exact_removal() {
     directory.interpret(directory.terminated(&first, first_activation), &runtime);
 
     assert_eq!(directory.len(), 1);
-    directory.interpret(directory.dispatch(second, 33).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(second, 33).unwrap().decision, &runtime);
     let actions = runtime.0.lock().unwrap();
     assert!(
         actions
@@ -194,7 +195,7 @@ fn active_dispatch_hashes_for_shard_and_table() {
         LocalDirectory::<CountingId, u64, u64, u64>::new(DirectoryConfig::default()).unwrap();
     let runtime = CountingRecorder::default();
     directory.interpret(
-        directory.dispatch(entity_id.clone(), 1).unwrap().output,
+        directory.dispatch(entity_id.clone(), 1).unwrap().decision,
         &runtime,
     );
     let activation_id = runtime.0.lock().unwrap().unwrap();
@@ -202,6 +203,7 @@ fn active_dispatch_hashes_for_shard_and_table() {
         directory.activation_succeeded(&entity_id, activation_id, 1, 1),
         &runtime,
     );
+    assert!(!directory.is_empty());
 
     hashes.store(0, Ordering::Relaxed);
     let _output = directory.dispatch(entity_id, 2).unwrap();
@@ -229,7 +231,7 @@ fn concurrent_first_dispatches_share_one_bounded_activation() {
                 directory
                     .dispatch(EntityId::new(7), command as u64)
                     .unwrap()
-                    .output
+                    .decision
             })
         })
         .collect();
@@ -266,7 +268,7 @@ fn draining_closes_admission_before_fence_execution() {
     let directory = Directory::new(DirectoryConfig::default()).unwrap();
     let runtime = Recorder::default();
     let entity_id = EntityId::new(9);
-    let claimed = directory.dispatch(entity_id, 1).unwrap().output;
+    let claimed = directory.dispatch(entity_id, 1).unwrap().decision;
     directory.interpret(claimed, &runtime);
     let Action::Start(activation_id) = runtime.0.lock().unwrap()[0] else {
         panic!("activation not started");
@@ -278,7 +280,7 @@ fn draining_closes_admission_before_fence_execution() {
         &runtime,
     );
     directory.interpret(directory.begin_drain(&entity_id, activation_id), &runtime);
-    directory.interpret(directory.dispatch(entity_id, 4).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 4).unwrap().decision, &runtime);
 
     let actions = runtime.0.lock().unwrap();
     assert!(matches!(actions[2], Action::Fence(id) if id == activation_id));
@@ -306,7 +308,7 @@ fn exact_termination_removes_the_matching_slot() {
     let directory = Directory::new(DirectoryConfig::default()).unwrap();
     let runtime = Recorder::default();
     let entity_id = EntityId::new(4);
-    directory.interpret(directory.dispatch(entity_id, 1).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
     let Action::Start(activation_id) = runtime.0.lock().unwrap()[0] else {
         panic!("activation not started");
     };
@@ -370,8 +372,14 @@ fn reentrant_delivery_resolution_appends_fence_to_current_interpreter() {
     let directory = Arc::new(Directory::new(DirectoryConfig::default()).unwrap());
     let recorder = Recorder::default();
     let entity_id = EntityId::new(8);
-    directory.interpret(directory.dispatch(entity_id, 10).unwrap().output, &recorder);
-    directory.interpret(directory.dispatch(entity_id, 11).unwrap().output, &recorder);
+    directory.interpret(
+        directory.dispatch(entity_id, 10).unwrap().decision,
+        &recorder,
+    );
+    directory.interpret(
+        directory.dispatch(entity_id, 11).unwrap().decision,
+        &recorder,
+    );
     let Action::Start(activation_id) = recorder.0.lock().unwrap()[0] else {
         panic!("activation not started");
     };
@@ -391,12 +399,83 @@ fn reentrant_delivery_resolution_appends_fence_to_current_interpreter() {
     );
 }
 
+#[derive(Default)]
+struct PanickingDelivery {
+    attempts: AtomicUsize,
+    delivered: Mutex<Vec<(DispatchId, u64)>>,
+}
+
+impl EffectInterpreter<u64, u64, u64, u64> for PanickingDelivery {
+    fn start_activation(&self, _: EntityId<u64>, _: ActivationId) {
+        panic!("activation was already installed");
+    }
+
+    fn deliver(
+        &self,
+        _: EntityId<u64>,
+        _: ActivationId,
+        dispatch_id: DispatchId,
+        _: u64,
+        command: u64,
+    ) {
+        let attempt = self.attempts.fetch_add(1, Ordering::SeqCst);
+        assert_ne!(attempt, 0, "first delivery consumer failed");
+        self.delivered.lock().unwrap().push((dispatch_id, command));
+    }
+
+    fn reject(&self, _: DispatchId, _: u64, _: Refusal) {
+        panic!("admitted command was rejected");
+    }
+
+    fn enqueue_fence(&self, _: EntityId<u64>, _: ActivationId, _: u64) {
+        panic!("no drain was requested");
+    }
+
+    fn retire(&self, _: EntityId<u64>, _: ActivationId, _: u64, _: RetirementMode) {
+        panic!("no retirement was requested");
+    }
+}
+
+#[test]
+fn panicking_effect_consumer_drops_only_its_output_and_resumes_order() {
+    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let entity_id = EntityId::new(9);
+    let bootstrap = Recorder::default();
+    directory.interpret(
+        directory.dispatch(entity_id, 0).unwrap().decision,
+        &bootstrap,
+    );
+    let Action::Start(activation_id) = bootstrap.0.lock().unwrap()[0] else {
+        panic!("activation not started");
+    };
+    directory.interpret(
+        directory.activation_succeeded(&entity_id, activation_id, 2, 3),
+        &bootstrap,
+    );
+    let first = directory.dispatch(entity_id, 10).unwrap();
+    let second = directory.dispatch(entity_id, 11).unwrap();
+    let consumer = PanickingDelivery::default();
+
+    let panicked = catch_unwind(AssertUnwindSafe(|| {
+        directory.interpret(first.decision, &consumer);
+    }))
+    .is_err();
+    assert!(panicked);
+
+    directory.interpret(second.decision, &consumer);
+    assert_eq!(consumer.attempts.load(Ordering::SeqCst), 2);
+    assert_eq!(
+        consumer.delivered.lock().unwrap().as_slice(),
+        &[(second.dispatch_id, 11)]
+    );
+}
+
 #[test]
 fn forced_retirement_preserves_the_exact_failure_stage() {
     let directory = Directory::new(DirectoryConfig::default()).unwrap();
     let runtime = Recorder::default();
     let entity_id = EntityId::new(12);
-    directory.interpret(directory.dispatch(entity_id, 1).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
     let Action::Start(activation_id) = runtime.0.lock().unwrap()[0] else {
         panic!("activation not started");
     };
@@ -430,7 +509,7 @@ fn stale_termination_cannot_remove_the_live_incarnation() {
     let directory = Directory::new(DirectoryConfig::default()).unwrap();
     let runtime = Recorder::default();
     let entity_id = EntityId::new(13);
-    directory.interpret(directory.dispatch(entity_id, 1).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
     let Action::Start(activation_id) = runtime.0.lock().unwrap()[0] else {
         panic!("activation not started");
     };
@@ -444,7 +523,7 @@ fn stale_termination_cannot_remove_the_live_incarnation() {
     );
 
     assert_eq!(directory.len(), 1);
-    directory.interpret(directory.dispatch(entity_id, 9).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 9).unwrap().decision, &runtime);
     assert!(
         runtime
             .0
@@ -460,8 +539,8 @@ fn failed_activation_rejects_waiters_and_allows_fresh_activation() {
     let directory = Directory::new(DirectoryConfig::default()).unwrap();
     let runtime = Recorder::default();
     let entity_id = EntityId::new(21);
-    directory.interpret(directory.dispatch(entity_id, 1).unwrap().output, &runtime);
-    directory.interpret(directory.dispatch(entity_id, 2).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 2).unwrap().decision, &runtime);
     let Action::Start(failed) = runtime.0.lock().unwrap()[0] else {
         panic!("activation not started");
     };
@@ -481,7 +560,7 @@ fn failed_activation_rejects_waiters_and_allows_fresh_activation() {
     }
     assert!(directory.is_empty());
 
-    directory.interpret(directory.dispatch(entity_id, 3).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 3).unwrap().decision, &runtime);
     let actions = runtime.0.lock().unwrap();
     let Some(Action::Start(replacement)) = actions.last() else {
         panic!("replacement activation not started");
@@ -498,9 +577,9 @@ fn bounded_activation_waiters_reject_excess_with_busy() {
     .unwrap();
     let runtime = Recorder::default();
     let entity_id = EntityId::new(24);
-    directory.interpret(directory.dispatch(entity_id, 1).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
 
-    directory.interpret(directory.dispatch(entity_id, 2).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 2).unwrap().decision, &runtime);
 
     let actions = runtime.0.lock().unwrap();
     assert_eq!(actions.len(), 2);
@@ -513,7 +592,7 @@ fn graceful_retirement_waits_for_fence_acknowledgement() {
     let directory = Directory::new(DirectoryConfig::default()).unwrap();
     let runtime = Recorder::default();
     let entity_id = EntityId::new(23);
-    directory.interpret(directory.dispatch(entity_id, 1).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
     let Action::Start(activation_id) = runtime.0.lock().unwrap()[0] else {
         panic!("activation not started");
     };
@@ -572,7 +651,7 @@ fn activate_and_reserve(
     runtime: &Recorder,
     entity_id: EntityId<u64>,
 ) -> (ActivationId, DispatchId) {
-    directory.interpret(directory.dispatch(entity_id, 1).unwrap().output, runtime);
+    directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, runtime);
     let Action::Start(activation_id) = runtime.0.lock().unwrap()[0] else {
         panic!("activation not started");
     };
@@ -584,7 +663,7 @@ fn activate_and_reserve(
         directory.delivery_resolved(&entity_id, activation_id, None),
         runtime,
     );
-    directory.interpret(directory.dispatch(entity_id, 2).unwrap().output, runtime);
+    directory.interpret(directory.dispatch(entity_id, 2).unwrap().decision, runtime);
     let reserved = {
         let actions = runtime.0.lock().unwrap();
         let Some(Action::Deliver(dispatch_id, 2)) = actions.last() else {
@@ -652,7 +731,7 @@ fn retiring_rejects_dispatch_and_retires_stale_activation() {
     let directory = Directory::new(DirectoryConfig::default()).unwrap();
     let runtime = Recorder::default();
     let entity_id = EntityId::new(27);
-    directory.interpret(directory.dispatch(entity_id, 1).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
     let Action::Start(activation_id) = runtime.0.lock().unwrap()[0] else {
         panic!("activation not started");
     };
@@ -670,7 +749,7 @@ fn retiring_rejects_dispatch_and_retires_stale_activation() {
         &runtime,
     );
 
-    directory.interpret(directory.dispatch(entity_id, 9).unwrap().output, &runtime);
+    directory.interpret(directory.dispatch(entity_id, 9).unwrap().decision, &runtime);
     let stale = activation(activation_id.get().get() + 1);
     directory.interpret(
         directory.activation_succeeded(&entity_id, stale, 8, 9),

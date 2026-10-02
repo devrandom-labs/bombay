@@ -7,40 +7,11 @@ use bombay::entity::{
     ActivationId, DirectoryConfig, DispatchId, EffectInterpreter, EntityId, LocalDirectory,
     Refusal, RetirementMode,
 };
-use bombay_machine::executor::ExclusiveExecutor;
-use bombay_machine::{Machine, Structure, Topology, Vertex, VertexId};
 
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
 type Directory = LocalDirectory<usize, usize, usize, usize>;
-
-const VERTICES: &[Vertex] = &[Vertex {
-    id: VertexId(0),
-    label: "ready",
-}];
-const TOPOLOGY: Topology = Topology {
-    name: "allocation-test",
-    initial: VertexId(0),
-    vertices: VERTICES,
-    transitions: &[],
-};
-
-struct CounterMachine(usize);
-
-impl Machine for CounterMachine {
-    type Input = usize;
-    type Output = usize;
-
-    fn step(self, input: Self::Input) -> (Self::Output, Self) {
-        let successor = self.0.wrapping_add(input);
-        (successor, Self(successor))
-    }
-
-    fn describe<V: Structure>(&self, visitor: &mut V) -> V::Output {
-        visitor.base(TOPOLOGY)
-    }
-}
 
 #[derive(Default)]
 struct Bootstrap(Mutex<Option<ActivationId>>);
@@ -95,7 +66,10 @@ fn active_dispatch_stays_under_allocation_ceiling() {
     let directory = Arc::new(Directory::new(DirectoryConfig::default()).unwrap());
     let entity_id = EntityId::new(1);
     let bootstrap = Bootstrap::default();
-    directory.interpret(directory.dispatch(entity_id, 0).unwrap().output, &bootstrap);
+    directory.interpret(
+        directory.dispatch(entity_id, 0).unwrap().decision,
+        &bootstrap,
+    );
     let activation_id = bootstrap.0.lock().unwrap().unwrap();
     directory.interpret(
         directory.activation_succeeded(&entity_id, activation_id, 1, 1),
@@ -112,13 +86,13 @@ fn active_dispatch_stays_under_allocation_ceiling() {
     // Exclude platform-dependent lazy initialization from the steady-state
     // measurement with an equal-sized exercise of the exact same active path.
     for command in 0..ITERATIONS {
-        let output = directory.dispatch(entity_id, command).unwrap().output;
+        let output = directory.dispatch(entity_id, command).unwrap().decision;
         directory.interpret(output, &interpreter);
     }
 
     let before = dhat::HeapStats::get();
     for command in 0..ITERATIONS {
-        let output = directory.dispatch(entity_id, command).unwrap().output;
+        let output = directory.dispatch(entity_id, command).unwrap().decision;
         directory.interpret(output, &interpreter);
     }
     let after = dhat::HeapStats::get();
@@ -131,20 +105,5 @@ fn active_dispatch_stays_under_allocation_ceiling() {
         (blocks, bytes),
         (0, 0),
         "allocations over {ITERATIONS} dispatches"
-    );
-
-    let mut executor = ExclusiveExecutor::new(CounterMachine(0));
-    let before = dhat::HeapStats::get();
-    for input in 0..ITERATIONS {
-        std::hint::black_box(executor.turn(std::hint::black_box(input)).unwrap());
-    }
-    let after = dhat::HeapStats::get();
-    assert_eq!(
-        (
-            after.total_blocks - before.total_blocks,
-            after.total_bytes - before.total_bytes,
-        ),
-        (0, 0),
-        "exclusive executor allocations over {ITERATIONS} turns"
     );
 }

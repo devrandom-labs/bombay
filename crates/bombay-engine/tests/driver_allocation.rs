@@ -98,7 +98,8 @@ fn one_complete_driver_execution_allocates_one_settlement_queue() {
         ImmediateEnvironment(Some(User::new(MailAddr(1), 1))),
     );
     let before = ALLOCATIONS.load(Ordering::Relaxed);
-    assert_eq!(block_on(driver.run()).disposition, Ok(Completion::Stopped));
+    let retirement = block_on(driver.run());
+    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
     let allocations = ALLOCATIONS.load(Ordering::Relaxed) - before;
     assert_eq!(allocations, 1, "Driver allocated {allocations} times");
 }

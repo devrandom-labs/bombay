@@ -30,7 +30,7 @@ struct ReplyError;
 struct SenderAware;
 
 #[bombay::actor(
-    sends = { replies: Vec<Delivery<Reply>> },
+    sends = pub(crate) { replies: Vec<Delivery<Reply>> },
     error = ReplyError,
 )]
 impl SenderAware {
@@ -56,6 +56,7 @@ struct Parent;
         primary: Child,
         fallback: Child,
     },
+    creation_settlements = retain_for_retirement,
 )]
 impl Parent {}
 

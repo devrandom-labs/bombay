@@ -140,9 +140,9 @@ checksum = "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06"
 
 [[package]]
 name = "bombay-address"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e1516fea69ddb6d885c69e1e2f41d889f0a9b176cc1927fb6348b0646cb2cb1"
+checksum = "8dfc2197b4156cc87c4021a2fa0e8767a5efb009c98d4238c4147714840fc1dc"
 dependencies = [
  "loom",
  "parking_lot",
@@ -150,9 +150,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior"
-version = "0.16.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e5233e9c39f7cd2e1429c54c4f3e2feb9e96fdc17a5cdac6758c83d47f04ed5"
+checksum = "10ebe68552dcb07f48c5af0af4ef0cafbbf4f9743a4a58845879768d712f9846"
 dependencies = [
  "bombay-behavior-macros",
  "thiserror",
@@ -160,9 +160,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-actors"
-version = "0.16.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c12bd73d6db4eeba6d43f9964337df75120e5243d294a681fb733330c2c6118"
+checksum = "84d5b21b694fd9c86a9e0cdba72e15e478181ba0977e3b10dc34f476f16e5c2b"
 dependencies = [
  "bombay-behavior",
  "bombay-behavior-macros",
@@ -171,9 +171,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-macros"
-version = "0.11.6"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71fc97fe76dda9bbfba12f60f93165618770beff4a23c7a91ac9935da192ec03"
+checksum = "c6f66dda26895533be22286fe4a062b43a524cac5ea2a3cc1a956b6c0d38a4bc"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -254,23 +254,14 @@ name = "bombay-example-supervision"
 version = "0.1.0"
 dependencies = [
  "bombay-rs",
+ "tokio",
 ]
 
 [[package]]
 name = "bombay-example-worker-pool"
 version = "0.1.0"
 dependencies = [
- "bombay-behavior-actors",
  "bombay-rs",
-]
-
-[[package]]
-name = "bombay-machine"
-version = "0.1.0"
-dependencies = [
- "loom",
- "thiserror",
- "trybuild",
 ]
 
 [[package]]
@@ -280,7 +271,14 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn 2.0.119",
+ "syn 3.0.5",
+]
+
+[[package]]
+name = "bombay-renamed-downstream"
+version = "0.0.0"
+dependencies = [
+ "bombay-rs",
 ]
 
 [[package]]
@@ -293,7 +291,6 @@ dependencies = [
  "bombay-behavior-actors",
  "bombay-communication",
  "bombay-engine",
- "bombay-machine",
  "bombay-macros",
  "bombay-timers",
  "dhat",
@@ -854,6 +851,7 @@ dependencies = [
  "proptest",
  "thiserror",
  "triomphe",
+ "trybuild",
 ]
 
 [[package]]

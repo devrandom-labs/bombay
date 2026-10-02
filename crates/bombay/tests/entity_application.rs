@@ -11,10 +11,10 @@ use bombay::behavior::{
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DirectoryError, DrainFailure, DrainStage,
     EntityActivationError, EntityAdmission, EntityCapacity, EntityDefinition, EntityId, EntityRef,
-    Passivation, Refusal,
+    EntityShutdown, Passivation, Refusal,
 };
 use bombay::{
-    ActorOrigin, ActorRetirement, ActorSpace, ActorSpaces, App, MailAddr, TerminalProjection,
+    ActorRetirement, ActorSpace, ActorSpaces, App, ChildOrigin, MailAddr, TerminalProjection,
 };
 use tokio::sync::Semaphore;
 
@@ -29,7 +29,6 @@ const HYDRATION_REFUSAL: u64 = 13;
 const LAUNCH_REFUSAL: u64 = 14;
 const FORCED_RETIREMENT: u64 = 23;
 const STOP_ACCOUNT: u64 = 67;
-const PROFILE_CHILD_NONCE: u64 = 1;
 
 enum RootCommand {
     Admit(EntityRef<Profiles>, u64),
@@ -38,7 +37,7 @@ enum RootCommand {
 struct Root;
 
 #[bombay::actor(
-    sends = { entity_admissions: InterpreterRequests<EntityAdmission<Profiles>> },
+    sends = pub(crate) { entity_admissions: InterpreterRequests<EntityAdmission<Profiles>> },
 )]
 #[allow(
     clippy::unnecessary_wraps,
@@ -99,6 +98,7 @@ struct Profile {
 
 #[bombay::actor(
     births = { worker: StopOnShutdown<ProfileWorker> },
+    creation_settlements = retain_for_retirement,
 )]
 #[allow(
     clippy::needless_pass_by_value,
@@ -110,8 +110,6 @@ impl Profile {
     fn init(&mut self) -> BehaviorActed<Self> {
         let mut creations = CreationSequence::new();
         let worker = creations.issue().expect("the first creation ID exists");
-        let worker_nonce = worker.get();
-        assert_eq!(worker_nonce, PROFILE_CHILD_NONCE);
         Ok(Actions::create(Creations::one(CreateChild::birth(
             worker,
             ProfileWorker.stop_on_shutdown(),
@@ -126,8 +124,9 @@ impl Profile {
 
 #[derive(TerminalProjection)]
 enum ProfileTerminal {
+    #[declared_child(Profile, ProfileChildrenWorker, StopOnShutdown<ProfileWorker>)]
     Worker {
-        origin: ActorOrigin<Profile, ProfileChildrenWorker>,
+        origin: ChildOrigin<Profile, ProfileChildrenWorker>,
         terminal: ActorRetirement<StopOnShutdown<ProfileWorker>, Self>,
     },
 }
@@ -315,9 +314,13 @@ impl Protocol for Replies {
 
 #[derive(ActorSpaces)]
 struct Spaces {
+    #[actor_space(Root)]
     root: ActorSpace<Root>,
+    #[actor_space(Account)]
     accounts: ActorSpace<Account>,
+    #[actor_space(Profile)]
     profiles: ActorSpace<Profile>,
+    #[actor_space(ProfileWorker)]
     profile_workers: ActorSpace<ProfileWorker>,
 }
 
@@ -396,37 +399,31 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
             );
             require_admitted(first_admission, "first account");
             require_admitted(second_admission, "second account");
-            require_admitted(caller.send(&interface.api().3, 73).await, "profile");
+            let profile_admission = caller.send(&interface.api().3, 73).await;
+            require_admitted(profile_admission, "profile");
 
-            assert_unavailable(
-                caller.send(&accounts.entity(CAPACITY_REFUSAL), 47).await,
-                47,
-            );
-            assert_eq!(
-                application.passivate_entity(AccountsRole, &FIRST_ACCOUNT),
-                Passivation::Begun
-            );
-            assert_eq!(
-                application.passivate_entity(AccountsRole, &SECOND_ACCOUNT),
-                Passivation::Begun
-            );
+            let capacity_refusal = caller.send(&accounts.entity(CAPACITY_REFUSAL), 47).await;
+            assert_unavailable(capacity_refusal, 47);
+            let first_passivation = application.passivate_entity(AccountsRole, &FIRST_ACCOUNT);
+            assert_eq!(first_passivation, Passivation::Begun);
+            let second_passivation = application.passivate_entity(AccountsRole, &SECOND_ACCOUNT);
+            assert_eq!(second_passivation, Passivation::Begun);
             Arc::clone(&retirements_completed)
                 .acquire_many_owned(2)
                 .await
                 .expect("both passivated accounts retire")
                 .forget();
-            assert_unavailable(
-                caller.send(&accounts.entity(HYDRATION_REFUSAL), 53).await,
-                53,
-            );
-            assert_unavailable(caller.send(&accounts.entity(LAUNCH_REFUSAL), 59).await, 59);
-            require_admitted(caller.send(&first, 61).await, "reactivated account");
+            let hydration_refusal = caller.send(&accounts.entity(HYDRATION_REFUSAL), 53).await;
+            assert_unavailable(hydration_refusal, 53);
+            let launch_refusal = caller.send(&accounts.entity(LAUNCH_REFUSAL), 59).await;
+            assert_unavailable(launch_refusal, 59);
+            let reactivation_admission = caller.send(&first, 61).await;
+            require_admitted(reactivation_admission, "reactivated account");
             let forced = accounts.entity(FORCED_RETIREMENT);
-            require_admitted(caller.send(&forced, STOP_ACCOUNT).await, "stopping account");
-            assert_eq!(
-                application.passivate_entity(AccountsRole, &FORCED_RETIREMENT),
-                Passivation::Begun
-            );
+            let stop_admission = caller.send(&forced, STOP_ACCOUNT).await;
+            require_admitted(stop_admission, "stopping account");
+            let forced_passivation = application.passivate_entity(AccountsRole, &FORCED_RETIREMENT);
+            assert_eq!(forced_passivation, Passivation::Begun);
             Arc::clone(&retirements_completed)
                 .acquire_owned()
                 .await
@@ -441,8 +438,14 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
 
     let (ProfilesRole, (profile_shutdown, profile_metrics), tail) = shutdowns;
     let (AccountsRole, (account_shutdown, account_metrics), ()) = tail;
-    assert_eq!(profile_shutdown.represented, 1);
-    assert_eq!(account_shutdown.represented, 1);
+    assert!(matches!(
+        profile_shutdown,
+        EntityShutdown::Settled { represented: 1 }
+    ));
+    assert!(matches!(
+        account_shutdown,
+        EntityShutdown::Settled { represented: 1 }
+    ));
     assert_eq!(profile_metrics.activations, 1);
     assert_eq!(account_metrics.activations, 4);
     assert_eq!(account_metrics.hydration_failures, 1);
@@ -473,7 +476,7 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
     } = descendants
         .pop()
         .expect("the profile retains its child terminal");
-    assert_eq!(origin.nonce(), Some(PROFILE_CHILD_NONCE));
+    assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     match child_retirement {
         ActorRetirement::OwnerCancelled { .. } => {}
         _ => panic!("the profile child must preserve owner-cancellation custody"),

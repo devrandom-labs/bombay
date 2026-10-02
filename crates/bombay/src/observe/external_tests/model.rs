@@ -319,11 +319,13 @@ fn apply(campaign: &mut Campaign, op: Op) {
                 .model
                 .outcome_of(handle.key, handle.epoch)
                 .is_some();
-            assert_eq!(
-                handle.observation.register_waker(&waker),
-                completed,
-                "register_waker completion flag diverged"
-            );
+            let readiness = handle.observation.register_waker(&waker);
+            let expected = if completed {
+                Poll::Ready(())
+            } else {
+                Poll::Pending
+            };
+            assert_eq!(readiness, expected, "register_waker readiness diverged");
             if !completed {
                 campaign
                     .registrations

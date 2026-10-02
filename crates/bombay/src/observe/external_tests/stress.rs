@@ -6,13 +6,15 @@
 //! (publishers complete every generation before retiring it).
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::mpsc;
 use std::sync::{Arc, Barrier};
-use std::task::Wake;
+use std::task::{Poll, Wake};
 use std::thread;
 use std::time::Duration;
 
+use super::wait_for_thread_registrations;
 use crate::observe::test_support::{CountWake, DropProbe, ThreadWake};
-use crate::observe::{ObservationSpace, Subject};
+use crate::observe::{Observation, ObservationSpace, Subject};
 
 /// SplitMix64: deterministic, seedable, dependency-free.
 struct Rng(u64);
@@ -97,11 +99,8 @@ fn stress_publishers_observers_value_integrity() {
                 // Guaranteed first read: the completed seed on key 2 is
                 // retained for the whole run, so this resolves immediately
                 // regardless of scheduling.
-                assert_eq!(
-                    space.observe(&2).expect("seed retained").wait(),
-                    u64::MAX,
-                    "seed generation must resolve to its value"
-                );
+                let seed = space.observe(&2).expect("seed retained").wait();
+                assert_eq!(seed, u64::MAX, "seed generation must resolve to its value");
                 reads += 1;
                 // Loop until both publishers finish: every registered
                 // generation completes before its publisher retires, so the
@@ -129,7 +128,7 @@ fn stress_publishers_observers_value_integrity() {
                         2 => {
                             // Cancellation storm: register and immediately drop.
                             let (waker, _probe) = CountWake::waker();
-                            let _ = observation.register_waker(&waker);
+                            let _readiness = observation.register_waker(&waker);
                         }
                         _ => {
                             // Blocking wait with a safety net: every captured
@@ -247,10 +246,8 @@ fn stress_zero_timeout_boundary() {
         barrier.wait();
         thread::yield_now();
         subject.complete(round);
-        assert!(
-            waiter.join().expect("waiter panicked"),
-            "waiter never observed the completion"
-        );
+        let observed = waiter.join().expect("waiter panicked");
+        assert!(observed, "waiter never observed the completion");
     }
 }
 
@@ -268,7 +265,7 @@ fn stress_reentrant_wake_drops_observation() {
         fn wake(self: Arc<Self>) {
             self.fires.fetch_add(1, Ordering::SeqCst);
             // Re-enter: dropping the victim observation during the drain.
-            let _ = self.victim.lock().expect("victim lock").take();
+            drop(self.victim.lock().expect("victim lock").take());
         }
     }
 
@@ -281,7 +278,8 @@ fn stress_reentrant_wake_drops_observation() {
             victim: std::sync::Mutex::new(Some(victim)),
             fires: AtomicUsize::new(0),
         });
-        assert!(!obs.register_waker(&std::task::Waker::from(reentrant.clone())));
+        let readiness = obs.register_waker(&std::task::Waker::from(reentrant.clone()));
+        assert_eq!(readiness, Poll::Pending);
         subject.complete(round);
         assert_eq!(
             reentrant.fires.load(Ordering::SeqCst),
@@ -340,8 +338,10 @@ fn stress_spurious_unpark_injection() {
         }
         subject.complete(round);
         injector.join().expect("injector panicked");
-        assert_eq!(waiter_a.join().expect("waiter A panicked"), round);
-        assert_eq!(waiter_b.join().expect("waiter B panicked"), round);
+        let outcome_a = waiter_a.join().expect("waiter A panicked");
+        assert_eq!(outcome_a, round);
+        let outcome_b = waiter_b.join().expect("waiter B panicked");
+        assert_eq!(outcome_b, round);
     }
 }
 
@@ -360,11 +360,13 @@ fn stress_reentrant_wake_reregistration_no_loop() {
             self.fires.fetch_add(1, Ordering::SeqCst);
             let guard = self.obs.lock().expect("obs lock");
             if let Some(obs) = guard.as_ref() {
-                // Reentrant registration mid-drain: must return `true`
-                // (already completed) without registering again.
+                // Reentrant registration mid-drain must report readiness
+                // without requiring another wake.
                 let (waker, _) = CountWake::waker();
-                assert!(
-                    obs.register_waker(&waker),
+                let readiness = obs.register_waker(&waker);
+                assert_eq!(
+                    readiness,
+                    Poll::Ready(()),
                     "re-registration must see COMPLETED"
                 );
             }
@@ -379,7 +381,8 @@ fn stress_reentrant_wake_reregistration_no_loop() {
             obs: std::sync::Mutex::new(Some(space.observe(&1).expect("subject retained"))),
             fires: AtomicUsize::new(0),
         });
-        assert!(!obs.register_waker(&std::task::Waker::from(re.clone())));
+        let readiness = obs.register_waker(&std::task::Waker::from(re.clone()));
+        assert_eq!(readiness, Poll::Pending);
         subject.complete(round);
         assert_eq!(
             re.fires.load(Ordering::SeqCst),
@@ -416,7 +419,8 @@ fn stress_subject_thread_migration() {
         })
         .join()
         .expect("migration thread 2 panicked");
-        assert_eq!(waiter.join().expect("waiter panicked"), round);
+        let outcome = waiter.join().expect("waiter panicked");
+        assert_eq!(outcome, round);
         thread::spawn(move || drop(subject))
             .join()
             .expect("migration thread 3 panicked");
@@ -433,7 +437,8 @@ fn stress_registration_flood_wakes_each_once() {
     let probes: Vec<_> = (0..WAKERS).map(|_| CountWake::waker()).collect();
     for (waker, _) in &probes {
         let obs = space.observe(&7).expect("subject retained");
-        assert!(!obs.register_waker(waker));
+        let readiness = obs.register_waker(waker);
+        assert_eq!(readiness, Poll::Pending);
     }
     subject.complete(99);
     for (i, (_, probe)) in probes.iter().enumerate() {
@@ -443,8 +448,8 @@ fn stress_registration_flood_wakes_each_once() {
 
 /// Raw-API waker registration racing completion: the waiter thread calls
 /// `register_waker` directly (no future), then blocks on `park`.
-/// `register_waker` returning `false` is a promise: "registered, you WILL
-/// be woken". The completion drain must fire the waker whether the
+/// `register_waker` returning `Poll::Pending` promises that the caller will
+/// be woken. The completion drain must fire the waker whether the
 /// registration won or lost the race. A lost wake strands the parked
 /// waiter; the `recv_timeout` watchdog turns that into a hard failure
 /// (and `Ok(None)` would catch a wake fired before the publication was
@@ -465,16 +470,22 @@ fn stress_register_waker_racing_completion_no_lost_wake() {
         let observation = space.observe(&key).expect("live generation");
         let barrier = Arc::new(Barrier::new(2));
         let (tx, rx) = std::sync::mpsc::channel();
+        let (registration_sender, registration_receiver) = mpsc::sync_channel(1);
         let waiter = {
             let barrier = Arc::clone(&barrier);
             thread::spawn(move || {
                 barrier.wait();
                 let (waker, _) = ThreadWake::waker();
-                if observation.register_waker(&waker) {
-                    // Already published: nothing registered, read directly.
-                    tx.send(observation.try_get()).expect("send failed");
-                    return;
+                match observation.register_waker(&waker) {
+                    Poll::Ready(()) => {
+                        tx.send(observation.try_get()).expect("send failed");
+                        return;
+                    }
+                    Poll::Pending => {}
                 }
+                registration_sender
+                    .send(())
+                    .expect("registration receiver remains live");
                 // Registered: block until the completion drain unparks us.
                 // A lost wakeup strands this park forever -> watchdog.
                 std::thread::park();
@@ -482,19 +493,21 @@ fn stress_register_waker_racing_completion_no_lost_wake() {
             })
         };
         barrier.wait();
-        // Bias one round in four toward the registered-then-completed
-        // ordering (registration wins the race); the rest race freely.
+        // One round in four proves registered-then-completed ordering; the
+        // others race freely.
         if round % 4 == 0 {
-            thread::sleep(Duration::from_millis(1));
+            registration_receiver
+                .recv_timeout(Duration::from_secs(10))
+                .expect("waker registration did not finish");
         }
         subject.complete(round);
         match rx.recv_timeout(Duration::from_secs(10)) {
             Ok(Some(outcome)) => assert_eq!(outcome, round, "wrong outcome (round {round})"),
             Ok(None) => panic!(
-                "register_waker returned false but the outcome was not readable after the wake (round {round})"
+                "register_waker was pending but the outcome was not readable after the wake (round {round})"
             ),
             Err(_) => panic!(
-                "register_waker returned false but no wake arrived: waiter stranded (round {round})"
+                "register_waker was pending but no wake arrived: waiter stranded (round {round})"
             ),
         }
         waiter.join().expect("waiter panicked");
@@ -617,19 +630,22 @@ fn stress_mixed_waiter_drain_all_resolved() {
                 let (waker, probe) = CountWake::waker();
                 thread::spawn(move || {
                     barrier.wait();
-                    // Either the registration won (false: will be woken) or
-                    // the completion won (true: already published) — both
-                    // legal; the outcome must be readable either way.
-                    if !observation.register_waker(&waker) {
-                        // Spin until the waker fires, then read. A lost
-                        // wake strands this loop; the deadline fails it.
-                        let deadline = std::time::Instant::now() + Duration::from_secs(10);
-                        while probe.count() == 0 {
-                            if std::time::Instant::now() > deadline {
-                                panic!("registered waker never fired");
+                    // Either registration wins and promises a wake, or
+                    // completion wins and reports readiness. The outcome must
+                    // be readable either way.
+                    match observation.register_waker(&waker) {
+                        Poll::Pending => {
+                            // Spin until the waker fires, then read. A lost
+                            // wake strands this loop; the deadline fails it.
+                            let deadline = std::time::Instant::now() + Duration::from_secs(10);
+                            while probe.count() == 0 {
+                                if std::time::Instant::now() > deadline {
+                                    panic!("registered waker never fired");
+                                }
+                                thread::yield_now();
                             }
-                            thread::yield_now();
                         }
+                        Poll::Ready(()) => {}
                     }
                     observation
                         .try_get()
@@ -642,19 +658,21 @@ fn stress_mixed_waiter_drain_all_resolved() {
         subject.complete(round);
 
         for waiter in thread_waiters {
-            assert_eq!(waiter.join().expect("thread waiter panicked"), round);
+            let outcome = waiter.join().expect("thread waiter panicked");
+            assert_eq!(outcome, round);
         }
         for waiter in timeout_waiters {
+            let outcome = waiter.join().expect("timeout waiter panicked");
             assert_eq!(
-                waiter.join().expect("timeout waiter panicked"),
+                outcome,
                 Some(round),
                 "timeout waiter must resolve to the exact outcome"
             );
         }
         for waiter in waker_waiters {
+            let outcome = waiter.join().expect("waker waiter panicked");
             assert_eq!(
-                waiter.join().expect("waker waiter panicked"),
-                round,
+                outcome, round,
                 "waker waiter must resolve to the exact outcome"
             );
         }
@@ -735,9 +753,9 @@ fn stress_same_key_contention_exactly_one_winner() {
 
         // The pre-race observation resolves to the pre-race value, never
         // the winner's.
+        let observed = observer.wait();
         assert_eq!(
-            observer.wait(),
-            round,
+            observed, round,
             "round {round}: pre-race observer resolved to the winner's generation"
         );
         // The winner's subject dropped when its contender thread ended:
@@ -767,54 +785,78 @@ fn stress_duplicate_waiter_entry_stale_token_self_heals() {
                 Err(_) => thread::yield_now(),
             }
         };
-        let handle_a = {
-            let obs = space.observe(&key).expect("live generation");
-            thread::spawn(move || obs.wait_timeout(Duration::from_secs(5)))
-        };
+        let registration = space.observe(&key).expect("live generation");
+        let observation_a = registration.clone();
+        let (first_outcome_sender, first_outcome_receiver) = mpsc::sync_channel(1);
+        let (second_observation_sender, second_observation_receiver) =
+            mpsc::sync_channel::<Observation<u64>>(1);
+        let handle_a = thread::spawn(move || {
+            let first_outcome = observation_a.wait_timeout(Duration::from_secs(5));
+            first_outcome_sender
+                .send(first_outcome)
+                .expect("first outcome receiver remains live");
+            let second_observation = second_observation_receiver
+                .recv()
+                .expect("second generation is supplied");
+            second_observation.wait_timeout(Duration::from_secs(5))
+        });
+        wait_for_thread_registrations(&registration, &[handle_a.thread().id()]);
         let handle_b = {
             let obs = space.observe(&key).expect("live generation");
             thread::spawn(move || obs.wait_timeout(Duration::from_secs(5)))
         };
-        // Let both register (A then B), so A's entry is not last.
-        thread::sleep(Duration::from_millis(10));
+        wait_for_thread_registrations(
+            &registration,
+            &[handle_a.thread().id(), handle_b.thread().id()],
+        );
         handle_a.thread().unpark(); // spurious wake for A
-        thread::sleep(Duration::from_millis(10)); // A re-registers (dup entry)
+        wait_for_thread_registrations(
+            &registration,
+            &[
+                handle_a.thread().id(),
+                handle_b.thread().id(),
+                handle_a.thread().id(),
+            ],
+        );
         subject.complete(round);
 
+        let outcome_a = first_outcome_receiver
+            .recv_timeout(Duration::from_secs(5))
+            .expect("waiter A did not receive the first generation");
         assert_eq!(
-            handle_a.join().expect("waiter A panicked"),
+            outcome_a,
             Some(round),
             "A must resolve despite its duplicate entry (round {round})"
         );
+        let outcome_b = handle_b.join().expect("waiter B panicked");
         assert_eq!(
-            handle_b.join().expect("waiter B panicked"),
+            outcome_b,
             Some(round),
             "B must resolve exactly once (round {round})"
         );
-        // The waiter threads consumed their observations; the generation
-        // can retire.
+        // The first generation has no observers and can retire.
+        drop(registration);
         drop(subject); // retire
 
-        // Phase 2: A's stale token (from the duplicate entry's unpark) is
-        // queued. A new generation's wait must still resolve exactly: the
-        // stale token causes at most one spurious park, which the loop's
-        // recheck heals.
+        // A's extra unpark token is queued on the SAME thread. The next
+        // generation must resolve after that token causes a spurious wake.
         let mut subject2 = loop {
             match space.subject(key) {
                 Ok(subject) => break subject,
                 Err(_) => thread::yield_now(),
             }
         };
-        let handle_a2 = {
-            let obs = space.observe(&key).expect("live generation");
-            thread::spawn(move || obs.wait_timeout(Duration::from_secs(5)))
-        };
-        thread::sleep(Duration::from_millis(10));
+        let second_registration = space.observe(&key).expect("live generation");
+        second_observation_sender
+            .send(second_registration.clone())
+            .expect("waiter A remains live");
+        wait_for_thread_registrations(&second_registration, &[handle_a.thread().id()]);
         subject2.complete(round + 100);
+        let outcome = handle_a.join().expect("waiter A panicked");
         assert_eq!(
-            handle_a2.join().expect("waiter A2 panicked"),
+            outcome,
             Some(round + 100),
-            "a stale unpark token must not corrupt the next generation's wait (round {round})"
+            "A's stale unpark token must not corrupt the next generation's wait (round {round})"
         );
     }
 }
@@ -853,7 +895,8 @@ fn stress_wait_inside_wake_during_drain() {
             fires: AtomicUsize::new(0),
             value: std::sync::Mutex::new(None),
         });
-        assert!(!wait_obs.register_waker(&std::task::Waker::from(reentrant.clone())));
+        let readiness = wait_obs.register_waker(&std::task::Waker::from(reentrant.clone()));
+        assert_eq!(readiness, Poll::Pending);
         // A second waiter (the drain must still resolve it after the
         // reentrant wait).
         let barrier = Arc::new(Barrier::new(2));
@@ -877,9 +920,9 @@ fn stress_wait_inside_wake_during_drain() {
             Some(round),
             "the in-drain wait must resolve to the exact outcome (round {round})"
         );
+        let outcome = other.join().expect("other waiter panicked");
         assert_eq!(
-            other.join().expect("other waiter panicked"),
-            round,
+            outcome, round,
             "the drain must still resolve the other waiter (round {round})"
         );
     }
@@ -918,7 +961,8 @@ fn stress_wait_timeout_inside_wake_during_drain() {
             fires: AtomicUsize::new(0),
             value: std::sync::Mutex::new(None),
         });
-        assert!(!wait_obs.register_waker(&std::task::Waker::from(reentrant.clone())));
+        let readiness = wait_obs.register_waker(&std::task::Waker::from(reentrant.clone()));
+        assert_eq!(readiness, Poll::Pending);
         subject.complete(round);
         assert_eq!(
             reentrant.fires.load(Ordering::SeqCst),
@@ -967,7 +1011,8 @@ fn stress_into_outcome_inside_wake_during_drain_refused() {
             fires: AtomicUsize::new(0),
             taken: std::sync::Mutex::new(None),
         });
-        assert!(!taker_obs.register_waker(&std::task::Waker::from(reentrant.clone())));
+        let readiness = taker_obs.register_waker(&std::task::Waker::from(reentrant.clone()));
+        assert_eq!(readiness, Poll::Pending);
         subject.complete(round);
         assert_eq!(
             reentrant.fires.load(Ordering::SeqCst),
@@ -1027,9 +1072,9 @@ fn stress_pinned_pending_timeout_never_fabricates() {
         };
         barrier.wait();
         churn.complete(round);
+        let outcome = waiter.join().expect("waiter panicked");
         assert_eq!(
-            waiter.join().expect("waiter panicked"),
-            None,
+            outcome, None,
             "a retired-pending generation must never fabricate an outcome (round {round})"
         );
         assert_eq!(

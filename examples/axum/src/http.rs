@@ -6,10 +6,13 @@ use axum::{
     http::StatusCode,
     routing::{delete, post},
 };
+use bombay::behavior::Behavior;
 use bombay::prelude::*;
 
 use crate::domain::PlaceOrder;
 use crate::order_book::{OrderBook, OrderMessage};
+
+type OrderBookEvent = <StopOnShutdown<OrderBook> as Behavior>::Event;
 
 struct HttpReplies;
 
@@ -32,7 +35,7 @@ trait OrderCommands: Clone + Send + Sync + 'static {
 #[derive(Clone)]
 struct LiveOrderCommands {
     interface: ActorInterface<OrderApi>,
-    lifecycle: ApplicationLifecycle<OrderBook>,
+    lifecycle: ApplicationLifecycle<OrderBook, OrderBookEvent>,
 }
 
 impl OrderCommands for LiveOrderCommands {
@@ -62,7 +65,7 @@ struct ApiState<C> {
 
 pub(crate) fn router(
     interface: ActorInterface<OrderApi>,
-    lifecycle: ApplicationLifecycle<OrderBook>,
+    lifecycle: ApplicationLifecycle<OrderBook, OrderBookEvent>,
 ) -> Router {
     router_with(LiveOrderCommands {
         interface,

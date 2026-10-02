@@ -1,4 +1,6 @@
+use std::error::Error;
 use std::future::Future;
+use std::io;
 use std::pin::pin;
 use std::sync::{
     Arc,
@@ -23,6 +25,20 @@ use application_support::{
 };
 
 const TEST_BOUNDARY: MailAddr = MailAddr(u64::MAX);
+
+#[test]
+fn run_error_describes_its_exact_public_failure_variant() {
+    let failure = RunError::<Never, Never>::Panicked;
+    assert_eq!(format!("{failure:?}"), "Panicked");
+    assert_eq!(failure.to_string(), "root initialization panicked");
+}
+
+#[test]
+fn run_error_retains_the_executor_construction_source() {
+    let failure = RunError::<Never, Never>::Runtime(io::Error::other("executor unavailable"));
+    let source = failure.source().expect("the executor failure has a source");
+    assert_eq!(source.to_string(), "executor unavailable");
+}
 
 #[derive(Debug, PartialEq, Eq)]
 enum RootCommand {
@@ -86,8 +102,7 @@ impl WaitsForApplicationShutdown {
 struct ReportsTerminalOutcome;
 
 #[bombay::actor(
-    message = Never,
-    sends = { terminal_outcome: InterpreterRequests<ReportTerminalOutcome<MailAddr>> },
+    sends = pub(crate) { terminal_outcome: InterpreterRequests<ReportTerminalOutcome<MailAddr>> },
 )]
 impl ReportsTerminalOutcome {
     #[allow(
@@ -96,10 +111,49 @@ impl ReportsTerminalOutcome {
         reason = "the generated foundational fold fixes the controlled-error boundary"
     )]
     fn init(&mut self) -> BehaviorActed<Self> {
+        Ok(Actions::cont())
+    }
+
+    #[allow(
+        clippy::unused_self,
+        clippy::unnecessary_wraps,
+        reason = "the generated foundational fold fixes the controlled-error boundary"
+    )]
+    fn receive(&mut self, command: RootCommand) -> BehaviorActed<Self> {
+        let RootCommand::Stop = command;
         Ok(ReportsTerminalOutcomeActions::send_terminal_outcome(
             Actions::stop(),
             ReportTerminalOutcome::new(Ok(Exit::LinkDied(MailAddr(19)))),
         ))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ContinuingReportCommand {
+    Report,
+    Stop,
+}
+
+struct ContinuingTerminalReport;
+
+#[bombay::actor(
+    sends = pub(crate) { terminal_outcome: InterpreterRequests<ReportTerminalOutcome<MailAddr>> },
+)]
+impl ContinuingTerminalReport {
+    #[allow(
+        clippy::unnecessary_wraps,
+        reason = "the generated foundational fold fixes the controlled-error boundary"
+    )]
+    fn receive(&mut self, command: ContinuingReportCommand) -> BehaviorActed<Self> {
+        match command {
+            ContinuingReportCommand::Report => {
+                Ok(ContinuingTerminalReportActions::send_terminal_outcome(
+                    Actions::cont(),
+                    ReportTerminalOutcome::new(Ok(Exit::LinkDied(MailAddr(19)))),
+                ))
+            }
+            ContinuingReportCommand::Stop => Ok(Actions::stop()),
+        }
     }
 }
 
@@ -113,8 +167,7 @@ struct ReportsSupervisionOutcome {
 }
 
 #[bombay::actor(
-    message = Never,
-    sends = { terminal_outcome: InterpreterRequests<ReportTerminalOutcome<MailAddr>> },
+    sends = pub(crate) { terminal_outcome: InterpreterRequests<ReportTerminalOutcome<MailAddr>> },
 )]
 impl ReportsSupervisionOutcome {
     #[allow(
@@ -122,17 +175,37 @@ impl ReportsSupervisionOutcome {
         reason = "the generated foundational fold fixes the controlled-error boundary"
     )]
     fn init(&mut self) -> BehaviorActed<Self> {
+        match self.commitment {
+            ReportCommitment::Stop => Ok(Actions::cont()),
+            ReportCommitment::Continue => {
+                let denial = RestartDenial::BudgetExceeded {
+                    restarts_in_window: 2,
+                    replacements_requested: 1,
+                    maximum_restarts: 2,
+                };
+                Ok(ReportsSupervisionOutcomeActions::send_terminal_outcome(
+                    Actions::cont(),
+                    ReportTerminalOutcome::new(Ok(Exit::SupervisionFailed(
+                        SupervisionFailureReason::RestartDenied(denial),
+                    ))),
+                ))
+            }
+        }
+    }
+
+    #[allow(
+        clippy::unnecessary_wraps,
+        reason = "the generated fold has a controlled-error boundary"
+    )]
+    fn receive(&mut self, command: RootCommand) -> BehaviorActed<Self> {
+        let RootCommand::Stop = command;
         let denial = RestartDenial::BudgetExceeded {
             restarts_in_window: 2,
             replacements_requested: 1,
             maximum_restarts: 2,
         };
-        let actions = match self.commitment {
-            ReportCommitment::Stop => Actions::stop(),
-            ReportCommitment::Continue => Actions::cont(),
-        };
         Ok(ReportsSupervisionOutcomeActions::send_terminal_outcome(
-            actions,
+            Actions::stop(),
             ReportTerminalOutcome::new(Ok(Exit::SupervisionFailed(
                 SupervisionFailureReason::RestartDenied(denial),
             ))),
@@ -162,7 +235,7 @@ enum FinalizationCommand {
 }
 
 #[bombay::actor(
-    sends = { notices: Vec<EstablishedDelivery<FinalizationNotice>> },
+    sends = pub(crate) { notices: Vec<EstablishedDelivery<FinalizationNotice>> },
 )]
 impl FinalizationProbe {
     fn receive(&mut self, command: FinalizationCommand) -> BehaviorActed<Self> {
@@ -270,12 +343,14 @@ fn live_boundary_receives_root_once_and_returns_its_exact_value() {
         Application::new(Root.stop_on_shutdown())
             .run_with(move |application| async move {
                 observed.fetch_add(1, Ordering::SeqCst);
+                assert_eq!(application.root().address(), MailAddr::APPLICATION_ROOT);
                 application
                     .root()
                     .send_from(TEST_BOUNDARY, RootCommand::Stop)
                     .await
                     .expect("the live root admits its stop command");
-                let _ = application.lifecycle().termination().await;
+                let termination = application.lifecycle().termination().await;
+                assert_eq!(termination, Ok(Exit::Normal));
                 application
                     .root()
                     .send_from(TEST_BOUNDARY, RootCommand::Stop)
@@ -310,16 +385,18 @@ fn boundary_owned_error_remains_an_unaggregated_output() {
 #[test]
 fn run_is_the_unit_boundary_specialization() {
     let terminal: ApplicationTerminal<_> =
-        Application::new(StopsDuringInitialization.stop_on_shutdown())
-            .run()
-            .expect("the direct run observes normal root termination");
+        match Application::new(StopsDuringInitialization.stop_on_shutdown()).run() {
+            Err(RunError::Unpublished(terminal)) => terminal,
+            _ => panic!("the direct run must retain the unpublished terminal"),
+        };
     assert_completed_root(terminal);
-    let (output, terminal): (_, ApplicationTerminal<_>) =
-        Application::new(StopsDuringInitialization.stop_on_shutdown())
+    let terminal: ApplicationTerminal<_> =
+        match Application::new(StopsDuringInitialization.stop_on_shutdown())
             .run_with(|_| async { 41_u8 })
-            .expect("the generic boundary observes the same normal termination");
-
-    assert_eq!(output, 41);
+        {
+            Err(RunError::Unpublished(terminal)) => terminal,
+            _ => panic!("the generic boundary must withhold the unpublished root"),
+        };
     assert_completed_root(terminal);
 }
 
@@ -329,28 +406,35 @@ fn application_handle_separates_shutdown_request_from_exact_termination() {
         Application::new(WaitsForApplicationShutdown.stop_on_shutdown())
             .run_with(|application| async move {
                 assert_eq!(application.root().address(), MailAddr(0));
+                let handle_description = format!("{application:?}");
+                assert!(handle_description.contains("ApplicationHandle"));
+                assert!(handle_description.contains("MailAddr(0)"));
+                assert!(handle_description.contains("families_type"));
 
                 let lifecycle = application.lifecycle();
+                let lifecycle_description = format!("{lifecycle:?}");
+                assert!(lifecycle_description.contains("ApplicationLifecycle"));
+                assert!(lifecycle_description.contains("MailAddr(0)"));
                 let mut termination = pin!(lifecycle.termination());
                 {
                     let waker = Waker::noop();
                     let mut context = Context::from_waker(waker);
-                    assert!(matches!(
-                        termination.as_mut().poll(&mut context),
-                        Poll::Pending
-                    ));
+                    let pending = termination.as_mut().poll(&mut context);
+                    assert!(matches!(pending, Poll::Pending));
                 }
 
-                assert_eq!(lifecycle.request_shutdown(), Ok(()));
-                assert_eq!(
-                    lifecycle.request_shutdown(),
-                    Err(ShutdownRejection::AlreadyStopping)
-                );
-                termination.await
+                let accepted = lifecycle.request_shutdown();
+                assert_eq!(accepted, Ok(()));
+                let repeated = lifecycle.request_shutdown();
+                assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+                let result = termination.await;
+                let stopped = lifecycle.request_shutdown();
+                (result, stopped)
             })
             .expect("the requested application shutdown terminates normally");
 
-    assert_eq!(termination, Ok(Exit::Normal));
+    assert_eq!(termination.0, Ok(Exit::Normal));
+    assert_eq!(termination.1, Err(ShutdownRejection::AlreadyStopped));
     assert_completed_root(terminal);
 }
 
@@ -358,10 +442,37 @@ fn application_handle_separates_shutdown_request_from_exact_termination() {
 fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
     let (termination, terminal): (_, ApplicationTerminal<_>) =
         Application::new(ReportsTerminalOutcome.stop_on_shutdown())
-            .run_with(|application| async move { application.lifecycle().termination().await })
+            .run_with(|application| async move {
+                application
+                    .root()
+                    .send_from(TEST_BOUNDARY, RootCommand::Stop)
+                    .await
+                    .unwrap();
+                application.lifecycle().termination().await
+            })
             .expect("the reported terminal outcome commits before the root stops");
 
     assert_eq!(termination, Ok(Exit::LinkDied(MailAddr(19))));
+    assert_completed_root(terminal);
+}
+
+#[test]
+fn continuing_report_cannot_select_the_later_stop_outcome() {
+    let (termination, terminal): (_, ApplicationTerminal<_>) =
+        Application::new(ContinuingTerminalReport.stop_on_shutdown())
+            .run_with(|application| async move {
+                let root = application.root();
+                root.send_from(TEST_BOUNDARY, ContinuingReportCommand::Report)
+                    .await
+                    .expect("the first report action is admitted");
+                root.send_from(TEST_BOUNDARY, ContinuingReportCommand::Stop)
+                    .await
+                    .expect("the later stop action is admitted");
+                application.lifecycle().termination().await
+            })
+            .expect("the later stop publishes its own normal outcome");
+
+    assert_eq!(termination, Ok(Exit::Normal));
     assert_completed_root(terminal);
 }
 
@@ -378,7 +489,14 @@ fn supervision_report_selects_the_typed_failure_publication_before_stop() {
         }
         .stop_on_shutdown(),
     )
-    .run_with(|application| async move { application.lifecycle().termination().await })
+    .run_with(|application| async move {
+        application
+            .root()
+            .send_from(TEST_BOUNDARY, RootCommand::Stop)
+            .await
+            .unwrap();
+        application.lifecycle().termination().await
+    })
     .expect("the supervision failure commits before the root stops");
 
     assert_eq!(
@@ -400,7 +518,10 @@ fn supervision_report_from_a_continuing_action_cannot_override_later_shutdown() 
     )
     .run_with(|application| async move {
         let lifecycle = application.lifecycle();
-        assert_eq!(lifecycle.request_shutdown(), Ok(()));
+        let shutdown = lifecycle.request_shutdown();
+        assert_eq!(shutdown, Ok(()));
+        let repeated = lifecycle.request_shutdown();
+        assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         lifecycle.termination().await
     })
     .expect("the continuing report is discarded before the later shutdown action");
@@ -427,13 +548,15 @@ fn run_delegates_shutdown_to_the_explicit_root_policy() {
             )
             .await
             .expect("the root accepts its finalization observer");
-        assert!(matches!(
-            observer.receive().await.map(|event| event.message),
-            Some(FinalizationEvent::Ready)
-        ));
-        assert_eq!(lifecycle.request_shutdown(), Ok(()));
+        let ready = observer.receive().await.map(|event| event.message);
+        assert!(matches!(ready, Some(FinalizationEvent::Ready)));
+        let shutdown = lifecycle.request_shutdown();
+        assert_eq!(shutdown, Ok(()));
+        let repeated = lifecycle.request_shutdown();
+        assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let finalization = observer.receive().await.map(|event| event.message);
-        assert_eq!(lifecycle.termination().await, Ok(Exit::Normal));
+        let termination = lifecycle.termination().await;
+        assert_eq!(termination, Ok(Exit::Normal));
         finalization
     })
     .expect("the explicit finalization policy receives shutdown and terminates normally");
@@ -446,10 +569,12 @@ fn activation_failure_does_not_invoke_the_boundary() {
     let calls = Arc::new(AtomicUsize::new(0));
     let observed = Arc::clone(&calls);
 
-    let result: Result<(_, ApplicationTerminal<_>), RunError<InitializationFailure>> =
-        Application::new(RejectsInitialization.stop_on_shutdown()).run_with(move |_| async move {
-            observed.fetch_add(1, Ordering::SeqCst);
-        });
+    let result: Result<
+        (_, ApplicationTerminal<_>),
+        RunError<InitializationFailure, ApplicationTerminal<_>>,
+    > = Application::new(RejectsInitialization.stop_on_shutdown()).run_with(move |_| async move {
+        observed.fetch_add(1, Ordering::SeqCst);
+    });
 
     assert!(matches!(
         result,
@@ -486,7 +611,6 @@ fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
         panic!("the root behavior failure must remain an exact typed terminal")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(origin.nonce(), None);
     assert!(settlements.is_empty());
     assert!(control.is_empty());
     assert!(user.is_empty());
@@ -503,7 +627,8 @@ fn application_delegates_to_the_explicit_single_space_app() {
                     .send_from(TEST_BOUNDARY, RootCommand::Stop)
                     .await
                     .expect("the ordinary application admits its stop command");
-                let _ = application.lifecycle().termination().await;
+                let termination = application.lifecycle().termination().await;
+                assert_eq!(termination, Ok(Exit::Normal));
                 application
                     .root()
                     .send_from(TEST_BOUNDARY, RootCommand::Stop)
@@ -521,7 +646,8 @@ fn application_delegates_to_the_explicit_single_space_app() {
                     .send_from(TEST_BOUNDARY, RootCommand::Stop)
                     .await
                     .expect("the explicit application admits its stop command");
-                let _ = application.lifecycle().termination().await;
+                let termination = application.lifecycle().termination().await;
+                assert_eq!(termination, Ok(Exit::Normal));
                 application
                     .root()
                     .send_from(TEST_BOUNDARY, RootCommand::Stop)
@@ -539,8 +665,10 @@ fn application_delegates_to_the_explicit_single_space_app() {
 #[test]
 fn run_with_protocol_is_compile_checked() {
     let cases = trybuild::TestCases::new();
+    cases.pass("tests/compile/pass/shutdown_authority.rs");
     cases.compile_fail("tests/compile/fail/run_with_wrong_root_protocol.rs");
     cases.compile_fail("tests/compile/fail/actor_ref_has_no_shutdown.rs");
+    cases.compile_fail("tests/compile/fail/application_lifecycle_wrong_event.rs");
     cases.compile_fail("tests/compile/fail/application_handle_has_no_direct_lifecycle.rs");
     cases.compile_fail("tests/compile/fail/app_local_is_not_an_ordinary_path.rs");
 }

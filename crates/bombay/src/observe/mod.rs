@@ -130,26 +130,6 @@ fn recover<T>(error: PoisonError<T>) -> T {
     error.into_inner()
 }
 
-/// Park until woken or the deadline passes; returns whether the deadline has
-/// not yet passed. Under loom, park without a timeout (the model has no
-/// clock, and the registration protocol is what matters).
-#[cfg(not(loom))]
-fn park_until(deadline: Instant) -> bool {
-    let now = Instant::now();
-    if now >= deadline {
-        return false;
-    }
-    park_timeout(deadline - now);
-    true
-}
-
-/// Park until woken (loom variant; no clock).
-#[cfg(loom)]
-fn park_until() -> bool {
-    park();
-    true
-}
-
 /// Completion-state bits for [`Slot`].
 const COMPLETED: usize = 1 << 0;
 const HAS_WAITER: usize = 1 << 1;
@@ -436,51 +416,46 @@ impl<O> Slot<O> {
     /// owner from the previous physical entry under the same lock. Shared
     /// task wakers remain deduplicated and sibling ownership remains counted,
     /// while the migrating future leaves no stale registration behind.
-    fn update_future_waker(&self, previous: Option<&Waker>, next: &Waker) -> bool {
+    fn update_future_waker(&self, previous: Option<&Waker>, next: Waker) -> Option<Waker> {
         if self.state.load(Ordering::Acquire) & COMPLETED != 0 {
-            return true;
+            return None;
         }
         self.state.fetch_or(HAS_WAITER, Ordering::SeqCst);
         let mut waiters = lock(self.waiters());
         if self.state.load(Ordering::SeqCst) & COMPLETED != 0 {
-            return true;
+            return None;
         }
-        if previous.is_some_and(|waker| waker.will_wake(next)) {
-            return false;
+        if previous.is_some_and(|waker| waker.will_wake(&next)) {
+            return Some(next);
         }
 
-        let mut joined_existing = false;
-        for waiter in waiters.iter_mut() {
-            if let Waiter::Waker { waker, ownership } = waiter
-                && waker.will_wake(next)
-            {
-                match ownership {
-                    WakerOwnership::Futures(future_owners) => {
-                        *future_owners = future_owners
-                            .checked_add(1)
-                            .expect("waker registration count overflowed");
-                    }
-                    WakerOwnership::Persistent { future_owners } => {
-                        *future_owners = future_owners
-                            .checked_add(1)
-                            .expect("waker registration count overflowed");
-                    }
+        let joined_ownership = waiters.iter_mut().find_map(|waiter| match waiter {
+            Waiter::Waker { waker, ownership } if waker.will_wake(&next) => Some(ownership),
+            Waiter::Thread(_) | Waiter::Waker { .. } => None,
+        });
+        match joined_ownership {
+            Some(ownership) => match ownership {
+                WakerOwnership::Futures(future_owners) => {
+                    *future_owners = future_owners
+                        .checked_add(1)
+                        .expect("waker registration count overflowed");
                 }
-                joined_existing = true;
-                break;
-            }
-        }
-        if !joined_existing {
-            waiters.push(Waiter::Waker {
+                WakerOwnership::Persistent { future_owners } => {
+                    *future_owners = future_owners
+                        .checked_add(1)
+                        .expect("waker registration count overflowed");
+                }
+            },
+            None => waiters.push(Waiter::Waker {
                 waker: next.clone(),
                 ownership: WakerOwnership::Futures(NonZeroUsize::MIN),
-            });
+            }),
         }
 
         if let Some(previous) = previous {
             Self::remove_future_waker_owner(&mut waiters, previous);
         }
-        false
+        Some(next)
     }
 
     /// Remove one future's logical ownership of its current waker.
@@ -490,15 +465,18 @@ impl<O> Slot<O> {
     }
 
     fn remove_future_waker_owner(waiters: &mut Waiters, target: &Waker) {
-        let mut removed = false;
+        let mut remaining_target = Some(target);
         waiters.retain_mut(|waiter| {
             let Waiter::Waker { waker, ownership } = waiter else {
                 return true;
             };
-            if removed || !waker.will_wake(target) {
+            let Some(target) = remaining_target else {
+                return true;
+            };
+            if !waker.will_wake(target) {
                 return true;
             }
-            removed = true;
+            remaining_target = None;
             match ownership {
                 WakerOwnership::Futures(future_owners) => {
                     if let Some(remaining) = future_owners
@@ -854,16 +832,8 @@ where
 /// consumed by [`Publisher::complete`]. Dropping it before completion does not
 /// synthesize an outcome; captured observations remain pending until dropped.
 ///
-/// ```ignore
-/// let (publisher, _) = observe::pair::<u64>();
-/// let duplicate = publisher.clone();
-/// ```
-///
-/// ```ignore
-/// let (publisher, _) = observe::pair::<u64>();
-/// publisher.complete(1);
-/// publisher.complete(2);
-/// ```
+/// The isolated Observe compile fixtures prove that publication authority
+/// cannot be cloned or used after consuming completion.
 #[must_use = "dropping an incomplete publisher leaves its observations pending"]
 pub struct Publisher<O> {
     slot: Arc<Slot<O>>,
@@ -905,19 +875,8 @@ pub fn pair<O>() -> (Publisher<O>, Observation<O>) {
 /// The observation remains pending until it is cancelled, matching [`pair`]'s
 /// incomplete-publication semantics.
 ///
-/// ```ignore
-/// # async fn example() {
-/// struct MoveOnly(&'static str);
-/// let (publisher, observation) = observe::affine_pair();
-/// publisher.complete(MoveOnly("owned"));
-/// assert_eq!(observation.await.0, "owned");
-/// # }
-/// ```
-///
-/// ```ignore
-/// let (_, observation) = observe::affine_pair::<u64>();
-/// let duplicate = observation.clone();
-/// ```
+/// The isolated Observe integration test executes a move-only outcome through
+/// this future, and its compile fixture rejects an attempted clone.
 pub fn affine_pair<O>() -> (Publisher<O>, AffineObservation<O>) {
     let slot = Arc::new(Slot::new());
     (
@@ -1059,7 +1018,10 @@ impl<O: Clone> Observation<O> {
             drop(waiters);
             #[cfg(not(loom))]
             {
-                if !park_until(deadline) {
+                let Some(remaining) = deadline
+                    .checked_duration_since(Instant::now())
+                    .filter(|remaining| !remaining.is_zero())
+                else {
                     // Deregister: the deadline passed while we were
                     // registered.
                     let mut waiters = lock(self.slot.waiters());
@@ -1067,11 +1029,12 @@ impl<O: Clone> Observation<O> {
                         |waiter| !matches!(waiter, Waiter::Thread(t) if t.id() == thread_id),
                     );
                     return None;
-                }
+                };
+                park_timeout(remaining);
             }
             #[cfg(loom)]
             {
-                park_until();
+                park();
             }
         }
     }
@@ -1094,25 +1057,24 @@ impl<O> Observation<O> {
         unsafe { slot.try_take_outcome() }
     }
 
-    /// Register a waker to be woken when the outcome is published, for
-    /// async adapters. Returns `true` when the outcome is already published
-    /// (in which case nothing is registered and the caller can read the
-    /// outcome directly).
+    /// Register a waker to be woken when the outcome is published, for async
+    /// adapters. Returns [`Poll::Pending`] when the outcome is pending and
+    /// this call establishes the wake obligation, or [`Poll::Ready`] when the
+    /// outcome is already published and the caller can read it directly.
     ///
     /// The waker may be woken spuriously and more than once; callers must
     /// re-read the outcome (via [`Observation::try_get`] or
     /// [`Observation::into_outcome`]) after a wake.
-    #[must_use]
-    pub fn register_waker(&self, waker: &Waker) -> bool {
+    pub fn register_waker(&self, waker: &Waker) -> Poll<()> {
         if self.slot.state.load(Ordering::Acquire) & COMPLETED != 0 {
-            return true;
+            return Poll::Ready(());
         }
         self.slot.state.fetch_or(HAS_WAITER, Ordering::SeqCst);
         let mut waiters = lock(self.slot.waiters());
         if self.slot.state.load(Ordering::SeqCst) & COMPLETED != 0 {
             // We may still be registered; a later drain produces only a
             // spurious wake, which callers must tolerate.
-            return true;
+            return Poll::Ready(());
         }
         // Registering a waker that will_wake an already-registered one is
         // idempotent (the std-endorsed pattern behind `Waker::clone_from`):
@@ -1130,14 +1092,14 @@ impl<O> Observation<O> {
                         future_owners: future_owners.get(),
                     };
                 }
-                return false;
+                return Poll::Pending;
             }
         }
         waiters.push(Waiter::Waker {
             waker: waker.clone(),
             ownership: WakerOwnership::Persistent { future_owners: 0 },
         });
-        false
+        Poll::Pending
     }
 }
 
@@ -1168,9 +1130,9 @@ impl<O> FutureRegistration<O> {
         // clone panics, the previous registration and local bookkeeping stay
         // unchanged.
         let next = cx.waker().clone();
-        if self.slot.update_future_waker(self.waker.as_ref(), &next) {
+        let Some(next) = self.slot.update_future_waker(self.waker.as_ref(), next) else {
             return;
-        }
+        };
         let previous = self.waker.replace(next);
         drop(previous);
     }
@@ -1237,10 +1199,7 @@ impl<O: Clone> IntoFuture for Observation<O> {
 /// in that slot; task migration replaces the old registration rather than
 /// accumulating stale wakers.
 ///
-/// ```ignore
-/// let (_, observation) = observe::affine_pair::<String>();
-/// let duplicate = observation.clone();
-/// ```
+/// The isolated Observe compile fixture rejects cloning this unique future.
 #[must_use = "dropping an affine observation cancels its wait"]
 pub struct AffineObservation<O> {
     registration: FutureRegistration<O>,
