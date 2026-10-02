@@ -804,6 +804,28 @@ Reviewer `/root/task_custody_research` and `/root` independently read these
 current paths; this is source evidence, not a newly executed regression or
 acceptance of the missing result-custody implementation.
 
+The same read-only audit identifies these missing actual-application witnesses;
+ordinary tuple comparisons do not substitute for them:
+
+| Boundary | Required observable custody |
+| --- | --- |
+| Public execution never polled | Original root, declarations, family definitions, Spaces identity and uninvoked callback return untouched. No public execution future exists yet. |
+| Startup waiter dropped after spawn | Uninvoked callback and exact cleanup results survive; existing reservation cleanup still completes. |
+| Pure initialization rejection | Callback invocation count zero, original callback capture and exact recoverable rejection returned together. Existing tests prove only no invocation. |
+| Invoked work Pending, execution dropped | Affine work future released exactly once; root, child and native Entity cleanup and result receipts survive. Also test an already-stopped root while work stays Pending, preserving XO-07. |
+| Work completed, execution dropped during root/family join | Original move-only output, including an application Result::Err payload, survives without inventing a runtime failure. |
+| Root rejection after family installation | Uninvoked callback, actual root rejection and actual family shutdown/metrics products coexist; do not claim an untouched whole application. |
+
+Current run_with_entities awaits installed.shutdown but discards its product
+through outcome.map on root rejection. Completed output remains in the same
+future across that shutdown. Current callback/future/output bounds are Send
+without `'static`; lifetime decisions may not be inferred from spawn bounds.
+ARC-011 cleanup requests and ARC-012 restored Entity task records remain valid
+and must be preserved. These witnesses depend on accepted application/task
+interfaces and the unresolved borrowed-value discharge rule; none was executed
+or accepted by this source audit. Source SHA-256:
+`0b8e2c1c475ab46c50c451082b8d67dadb0a138e1d3ee8ccca9129ee7b7f57c4`.
+
 ## Borrowed output and receiverless cleanup comparison (2026-10-02)
 
 The frozen `bombay-receiverless-cleanup-custody-c7app_dl` comparison uses actual
