@@ -173,3 +173,55 @@ task count, exact cleanup timing, panic and sibling custody, compile
 diagnostics, expected production/public-surface delta, focused debug/release
 results, original-defect failure, and independent reviewer signature. The
 coordinator must choose one concrete representation before WP-TASK edits.
+
+## Current sibling-custody defect and ordinary comparison (2026-10-02)
+
+Fresh evidence uses the current 0.20.0 owning contracts and registry-selected
+Communication 0.1.3, with the canonical manifest/lock hashes recorded in EXEC
+section 20. The earlier sender-drop and deferred-capability descriptions above
+remain historical: current cancellation authority requests retirement on Drop,
+and the actor task settles capability work before returning. Preserve those ARC
+fixes. Current `owned_outcome` still resumes an activation-task panic inside the
+projection task; `ProjectedTask::retire` then panics on its actual JoinError.
+The real ordered `ChildBinding` retirement stops there and discards an
+independently completed sibling result.
+
+The actual-source witness independently observes that discarded sibling's whole
+retirement: exact ChildOrigin, state 19, accepted Stop settlement, empty ingress,
+Stopped completion and the original descendant Vec allocation. Its intended
+no-unwind assertion fails after compilation in both debug and optimized builds,
+one test each. The first child's already-destroyed values are not recoverable.
+The application projector remains total; this is a runtime failure, not a
+deliberately panicking caller projection.
+
+An ordinary comparison destructures the two existing ProjectedTasks in their
+owning test module, awaits both actual cancellation/join operations without an
+early return, and retains standard Result values beside existing creation ID,
+kind, endpoint, control and ChildOrigin in tuples. It keeps the original owned
+JoinError and complete sibling retirement. One test passes in each profile;
+formatting and strict Clippy pass. No production repair, public role/product
+selection or task-count reduction is claimed.
+
+Frozen directories under the recorded scratch root are
+`bombay-projected-child-custody-yrdixc4k` and
+`bombay-projected-result-custody-38n60dk4`. Original receipt SHA-256:
+`538c106b8c41fa64f2ee1665e628b504b489421d05fa70839d4ac2db32eb4165`;
+original patch:
+`24e1d2196cb1332a5a32252dd08880bc970143a11f0449513a18a08fbe764dfc`.
+Comparison receipt:
+`abd4f32a48e517a3a1f6f9d0a53379de9ee8608709474f779eddc333ea1a16fa`;
+comparison patch:
+`083c977d0e635d16c2f1a398379abda82114b36e166d5a1a0452f4df45f9b993`.
+Receipts record source hashes, exact pinned-Nix commands and profile logs.
+Both stages touch only launch.rs tests: original +243 / -1, comparison
++267 / -1; production and public types zero. These are separate research
+snapshots, not cumulative retained test growth.
+
+Independent reviewer `/root/observation_research` read both complete patches,
+current source and authenticated all six original and eight comparison
+artifacts. It signs these bounded defect/feasibility claims only. The historical
+defect witness awaits discarded-result publication before checking failure;
+a repaired implementation that retains the sibling would keep that publisher
+alive. Adapt the final regression to observe successful result custody directly
+rather than waiting for discard. Public births/roles, all sibling cleanup,
+projection timing and failure provenance remain required. DG-PROJECTION is open.
