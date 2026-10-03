@@ -898,3 +898,55 @@ execution-drop counterpart and composed startup repair remain required. No
 canonical production, public API, native failure, recursive projection or full
 decision gate is accepted. The current public runner already has the correct
 normal work-before-family order.
+
+## Recovering uninvoked work during startup (2026-10-03)
+
+Immutable original receipt
+3c37c26c0f75d0b3f213f05b0ae78ed9423f03e65575c920e688c79a5f553c1b
+and independent original review
+c8fe870fdc5b787eb6b177e3c8633dfc2e505aa5118c4c9c91a89e574846d9e9
+establish the private paired kernel's input-loss defect. An actual original
+LocalEnvironment endpoint acknowledgement holds startup pending. Dropping that
+same execution destroys both original, still-uninvoked work inputs. The controller
+releases the original acknowledgement and joins cleanup before the two Weak
+observations fail: neither input has a remaining owner. Both compiled profiles
+fail the intended custody law, rather than a compiler or setup error.
+
+Successor receipt
+688ee1eed10873da19f3323da78d5745ec759a36998077f7933069a9a04e378c
+and independent non-author review
+ee33b8e6af6b2fdd37ef12771d830722f5ebee6885bb72b15b1642e01d3b7da0
+accept the bounded ordinary comparison. The existing sole publication guard
+now retains its original WorkCustody and sender across startup. Before polling,
+Unstarted owns the untouched application and work. After application consumption,
+NotInvoked owns the original work and consuming Invoke; the application is no
+longer untouched. Option<RecvError> retains an actually acquired error when one
+exists. Pending startup drop supplies None, while the separate full actor result
+owns the actual cancellation cause. Every private adapter preserves that distinction.
+
+The returned work and nonstatic Invoke retain both sole original Arc allocations
+and a borrowed slice. A genuine new run consumes this exact pair through its new
+application handle; allocation, contents and borrow remain exact. Both values
+release once at final surrender. The original and retry roots retain their Wait
+state and complete terminal lanes. Releasing the original acknowledgement may
+allow admitted activation before cancellation; no stronger no-publication law
+is invented. Invocation consumes the inputs, so their recovery after invocation
+panic is not promised by this comparison.
+
+Nineteen positive/restored tests pass in both profiles. Explicitly discharging
+NotInvoked instead of publishing it makes the same post-cleanup custody assertion
+fail in both. Strict package lib/tests Clippy and workspace formatting pass through
+pinned Nix; the complete 104-line retry trace has one fulfilled local lint
+expectation. Earlier compiler and lint vetoes remain excluded from final claims.
+Reviewer and coordinator authenticate 345 sources, 40 artifacts and all 179 lock
+records, including 165 external records; neither claims a fresh Rust rerun.
+Coordinator inspection is 21a22e5b2c01e7b8e2590463f3c3a2cb0803c763c3ae5530e3f563354b601432.
+
+Measured with the author's default unified-diff attribution, the increment is
+tests +160/-27/net133; against the immutable original it is +92/-31/net61.
+Independent autojunk-disabled attribution is +158/-25/net133 and +89/-28/net61
+respectively. Production, new types and variants are zero; inherited conditional
+launch production remains +60/-7/net53. Families are unit in this fork. Composition
+with the separately reviewed active-family permission repair, actual family caller
+drop, public API, native/outer join failures and recursive projection remain open.
+No canonical Rust retention or full decision gate follows from this evidence.
