@@ -183,7 +183,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +6484 / -93 / net 6391
+documentation: +6577 / -93 / net 6484
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
@@ -440,3 +440,35 @@ not unretained prototypes or full EXEC acceptance. Subsequent
 semantic implementation and final PR still require their complete gates.
 The completed private target cache was removed to free disk space; original
 source, frozen receipts and logs were preserved.
+
+### Isolated publication repair checkpoint
+
+Receipt 8e8ae06474c178b036a21baee928eca124f531fff2b01fa7a178011682662aae
+indexes all 53 command records, source hashes and logs in
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-publication-port-execution-2wsmhhm3.
+The final source is the historical typed foundation plus the reviewed publication
+increment; current canonical preservation and full EXEC acceptance are separate.
+Commands run from that stage's workspace through the pinned canonical Nix shell:
+
+```sh
+nix develop /Users/joel/Code/devrandom/bombay -c env -u RUSTFLAGS CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1 CARGO_TARGET_DIR=/tmp/bombay-api-private-composition-target cargo test --locked --workspace --all-features
+nix develop /Users/joel/Code/devrandom/bombay -c env -u RUSTFLAGS CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1 CARGO_TARGET_DIR=/tmp/bombay-api-private-composition-target cargo test --locked --workspace --all-features --release
+nix develop /Users/joel/Code/devrandom/bombay -c env -u RUSTFLAGS CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1 CARGO_TARGET_DIR=/tmp/bombay-api-private-composition-target cargo clippy --locked -p bombay-rs -p bombay-engine --all-targets --all-features -- -D warnings
+nix develop /Users/joel/Code/devrandom/bombay -c env -u RUSTFLAGS CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1 CARGO_TARGET_DIR=/tmp/bombay-api-private-composition-target cargo fmt --all -- --check
+```
+
+All four final commands exit zero. Workspace tests pass 432/432 across 61
+summaries in each profile; focused Local and Engine custody suites pass 31 and
+14 respectively. Exact compile-fixture commands pass in both profiles. Ten
+compiled intended mutation failures, followed by restored positives, are bound
+by the same receipt. The earlier interrupted broad run is explicitly excluded.
+The old impure Driver fixture's execution supplies no semantic acceptance.
+
+Remote research commit 5df5b8ede3b001db4649f524ae7154c6c3b28d0f matches all
+345 final source hashes. Its first focused foundation commit is 8399e7f.
+`git ls-remote origin refs/heads/research/exec-publication-retirement` confirms
+the final commit. Canonical commit 181b88c is also pushed. Both worktrees contain
+zero untracked paths at this checkpoint; canonical production remains net133
+and public types +0/-0. Research generated corpus and verification artifacts
+stay outside the canonical source tree and remain authenticated in the receipt.
+Neither remote branch has full EXEC review, CI or merge acceptance.

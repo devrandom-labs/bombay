@@ -2720,3 +2720,20 @@ incremental and inherited deltas, intended diagnostics/counterfactuals and
 restoration; use pinned Nix in both profiles and obtain independent non-author
 review before any retention. Pending native-panic exception and owning
 observation/rejected-source scope questions remain blocked independently.
+
+## 39. Publication repair research checkpoint (2026-10-03)
+
+The complete 16-path publication repair passes independent bounded review and
+both-profile verification; [task custody](execution-ownership/task-custody.md#reviewed-publication-repair-and-remote-checkpoint)
+records the exact sources, ownership law, mutations and remaining requirements.
+It adds net21 production lines to the historical typed foundation, zero public
+types, and uses only existing approved paths. It has not replaced current
+canonical production. Fresh incremental integration must preserve completed
+shutdown, scheduling, measurement and pure Driver regressions before retention.
+
+The user requests remote pushes at every focused commit. The canonical
+[EXEC branch](https://github.com/devrandom-labs/bombay/tree/exec-prd-backlog)
+and the separately marked research branch are pushed; verification.md records
+their exact commits. Research publication does not advance a decision gate,
+feature status or merge requirement. EXEC remains active; owning observation,
+native-panic and rejected-source questions remain independently blocked.

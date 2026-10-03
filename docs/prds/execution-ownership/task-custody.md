@@ -1748,3 +1748,47 @@ Address primitive exposes no guard or callback to control that interval;
 no new production hook or atomic physical-publication promise is introduced.
 Original visibility, generic suffix and shared envelope requirements remain
 distinct. No completed whole gate or current-canonical integration is claimed.
+
+### Reviewed publication repair and remote checkpoint
+
+Final isolated receipt
+8e8ae06474c178b036a21baee928eca124f531fff2b01fa7a178011682662aae
+freezes the complete 16-path repair, patch
+cf4e521765670738df1fba1f19ed5ce7383fe0eedf1298c16b4897b762588332.
+Independent nonauthor reviews
+5315c1b8897267832b951edad541210603f3a7c317d84e43be2dad02775f26ac and
+2d4014a4bebe5a5316be250b353f15000331c72f82c2048e1988b53259c56a18,
+and coordinator inspection
+0ca7cbabc14d86197235e302358eec3eac48aeb9b560518a5186a01686571297
+accept the bounded experiment. All 345 sources, 115 artifacts and 436 archive
+files authenticate; 91 inherited generated corpus files remain unchanged.
+Metadata supplement fa89636920d5d0450822f12cd646db6399bf89e10a483d507150a31985ce8cac
+binds the unchanged 179-package/165-external selection and actual test names.
+
+Both profiles pass the final 31 Local tests, 14 generic custody tests and 432
+workspace tests across 61 summaries. Static denial fixtures, strict owning
+all-target/all-feature Clippy and formatting pass. Five compiled counterfactuals
+fail for the intended laws in both profiles: original publication omission,
+ignored retirement request, repeated publication, erased retained settlement
+and closed cancellation receiver. Exact restored positives pass. The interrupted
+first broad run remains nonpassing; it is neither an inversion nor CI evidence.
+Exact commands and logs are indexed in verification.md.
+
+The original request moves once through the existing publication port into
+Completion. Pending publication remains with the retiring environment; the
+Driver keeps the original settlement suffix and obtains no subsequent event.
+Sender absence permits publication; Empty keeps the receiver open for a later
+accepted request. No production owner, type, field, variant or trait is added.
+Against immutable foundation 4760, this increment is production +25/-4/net21,
+tests +550/-28/net522, documentation +73/-32/net41; public types +0/-0.
+The inherited foundation's net396 production lines remain separately measured.
+
+At the user's request, each focused commit is pushed. Remote
+[research/exec-publication-retirement](https://github.com/devrandom-labs/bombay/tree/research/exec-publication-retirement)
+preserves foundation commit 8399e7f and exact final experiment commit
+5df5b8ede3b001db4649f524ae7154c6c3b28d0f; all 345 final source hashes match.
+This branch is a research backup, based on historical commit 1f70594. Its older
+Driver fixtures are not current pure-fold evidence. The canonical EXEC branch
+preserves the newer shutdown, scheduling, measurement and pure Driver fixes.
+Fresh incremental integration and root/child/Entity cancellation witnesses are
+still required; this accepts no full EV-06, DG-TASK, public API or merge gate.
