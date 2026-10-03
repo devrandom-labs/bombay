@@ -865,3 +865,36 @@ neither reviewer nor coordinator claims a fresh Rust rerun. Increment is tests
 Excluded compiler/warning attempts remain separately identified. A repaired pass
 with the same progressing controller and actual caller-drop counterpart remains
 required. No repair, kernel retention, public API or full gate is accepted.
+
+## Partial active-family ordering repair (2026-10-03)
+
+Author receipt
+53968a38e4553ff6eece155147cb571c3fb874e70b032abdd4547e9216be6378
+and independent non-author review
+1d88f7b4654e620b0f9179348d4260c827835f1519293f1a28fdef57c0395b87
+accept the bounded normal-family repair comparison. The same original controller,
+real allocated caller, pure actors and complete root/work/family oracles remain
+unchanged. Cleanup now waits for the original application's work permission
+before joining the root and shutting down installed families. Root completion
+cannot grant that permission. The owning work future occupies an inner lexical
+scope; normal work completion publishes its result before permitting cleanup.
+The existing reverse acknowledgement still proves that cleanup finished.
+
+The original second Vec is now admitted while work remains pending and appears
+unchanged in the sole Entity's final state. The full callbacks, seven metrics,
+root Wait disposition and typed lanes, work allocation and borrowed slice are
+checked after joining. Restoring the exact original source makes this same
+controller fail its admission law after cleanup in both profiles. Sixteen
+positive/restored tests pass in each profile; strict default-package all-target
+Clippy and workspace formatting pass through pinned Nix.
+
+The increment is tests +11/-1/net10, production zero and new types zero.
+Inherited conditional launch production remains +60/-7/net53. Reviewer and
+coordinator authenticate 345 sources, 20 artifacts and 179 locked packages,
+including 165 external packages; neither claims a fresh Rust rerun. Coordinator
+inspection is 03c43687255906f2bdf39f1379ce4719d428b448171cc33da91d5115f2c6482a.
+This fork still loses uninvoked work during pending startup. The admitted-family
+execution-drop counterpart and composed startup repair remain required. No
+canonical production, public API, native failure, recursive projection or full
+decision gate is accepted. The current public runner already has the correct
+normal work-before-family order.
