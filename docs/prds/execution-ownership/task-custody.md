@@ -1146,3 +1146,106 @@ retirement-last ordering is not asserted by the replacement ledger.
 The aggregate-drift review reopens minimization: research-mechanic actor/host
 names and a plan sum duplicating `Option<(port, occurrence)>` must be corrected
 in a separately frozen successor. Full task/application gates remain open.
+
+
+### Live-failure ownership model for next experiment (2026-10-03)
+
+This is a pre-edit model, pending independent review and fresh selected-version
+regression; it accepts no new public interface. The existing actual
+capability-source witness proves that joining failure as unwind destroys
+recoverable actor custody, while joining all results preserves it.
+
+Use the existing Engine request parameter with one Bombay-private closed sum:
+owner cancellation owns its original request; capability failure owns the first
+acquired `JoinError`. `CommitActions` and `RetireCapabilities` return ordinary
+`Result<Event, JoinError>` at their existing local-input seam. A local failure
+becomes the exact Driver Break request. Engine gains no Tokio dependency or
+actor policy. Preserve owner-first acquisition and the existing inner source
+arbitration, including their recorded fairness limits.
+
+`ActivationTasks` joins all remaining work and returns the ordinary product of
+exact returned events and later join failures. No first-error return, resumed
+unwind or second joining framework is needed. Each available failure transfers
+once: the acquired failure stays in the primary retirement request; later
+failures coexist with the actual actor outcome. An accepted unread cancellation
+request remains distinct, after closing and draining its original receiver.
+Neither a late failure nor an unread request rewrites the actual terminal cause.
+
+Expected isolated owning paths are existing `local.rs`, `interpret.rs`,
+`application_runtime.rs`, `launch.rs`, `terminal.rs`, and `termination.rs`.
+Re-use `ActivationTasks`, `LocalResidual`, `ActorExecutionOutcome`, the generic
+Driver request and existing total terminal projection. Private new request
+alternatives own genuinely distinct original values; no actor state machine,
+public task owner, generic failure wrapper or new event algebra is proposed.
+Estimate production net 90–160 lines before full consumer migration; line
+counts are diagnostics under the user's amended checkpoint. Public field and
+variant changes, any necessary public owner-request value, complete caller
+syntax and cumulative file/type surface must be measured before retention.
+
+Compare live acquisition, late failure after each existing actor outcome,
+joint-ready cancellation/failure, closed sender, returned control-lane events,
+remaining-task join barriers and total projection. Original-defect and precise
+first-error/misclassification inversions must compile and fail in both profiles;
+then restore and pass. Existing completed local-runtime regressions remain.
+Aggregate-drift review must justify every surviving result field, explicitly
+exclude duplicate failure causes or request markers, and trace every current
+consumer before this model can become production. Full DG-TASK remains open.
+
+### Current live-failure regression and bounded repair stage
+
+Independent reviewer `/root/contract_inventory` signs the fresh selected-0.21
+original-defect witness in `bombay-live-capability-selected-a1qq4i4w`:
+receipt `9c9855184464be0d066ad1be2ec7bd3e693e8eeab011aa7d3ee26436ec114db1`,
+patch `3218d05f1956fafb938fc2e7c26ed19748605c3f482ed76f926a450acbd4064e`.
+All 25 selected source paths remain identical to the prior source freeze;
+134 test lines in the existing application-runtime module introduce the fault.
+The actual observation task panics in nominal event injection outside every
+Behavior fold. Acquisition resumes that panic through the actual local Driver;
+the separately owned actor's original vector is lost instead of returned.
+Both profiles compile and fail at the intended actor-custody expectation;
+strict lint and formatting pass. The destroyed event inside the panicking task
+is expressly outside recoverable custody. This accepts the original witness,
+not a repaired runtime or full task gate.
+
+The bounded repair will reuse the six existing owning paths listed above.
+Independent review confirms the ordinary result/request model is eligible for
+the experiment. The accepted-but-unread `OwnerCancellation` has no fields,
+allocation identity or issuing authority; its sender owns authority. An explicit
+exhaustive transformation `OwnerCancellation => ()` into a named
+`unread_owner_cancellation: Option<()>` preserves that occurrence without a new
+public wrapper. Closing and draining the receiver must precede that transfer;
+an acquired primary cancellation must never populate the same field.
+All existing startup and public projections must preserve first and later
+failures. Publication before asynchronous joining and projection-task sibling
+loss remain separately required seams; this bounded repair cannot accept them.
+
+### Independently reviewed comparison successors
+
+Root signs the corrected handoff comparison's receipt
+`e7e7f12c10f202390a91ad02f21b7c663d184945ef688f6a4bdcf0e218826b5a`
+and patch `4bee2b266e8f5d13b58ddbbfbeb87f0e02ee6d487419763017a2744ca8662e8a`.
+The outer verifier now acknowledges only after its startup/outcome assertions;
+the caller awaits that acknowledgement in both retention dispositions. A
+deliberate verifier panic fails both profiles with the acknowledgement, whereas
+the same fault without it passes, proving the prior false-positive mechanism.
+Production remains +60 / -7 / net 53; tests add 307 lines. Full 225 library tests
+pass in both profiles, as do strict lint/format checks. Three compiled ownership
+mutations fail in both profiles and exact restoration passes. This historical
+0.20 comparison checks retained payload allocation and observed finish traces;
+the retained state's finish field and actual 0.21 source-retirement composition
+require the separately frozen successor. Full application integration is open.
+
+Root also signs the distilled acquisition fuzz successor receipt
+`33c13ec97a470b3b4cd259bb9035018cdc32dced3b8a0994718695eeda25d76f`
+and incremental patch
+`1309c143ca9bc7d61b7f4e7adaf8f05ad1c3b93abb737a237a5eb126e853a6ca`.
+Domain names replace research-mechanic names; ordinary
+`Option<(AcquisitionPort, usize)>` removes the redundant acquisition-plan sum.
+The existing fuzz path changes +432 / -217 / net 215 versus the original host.
+All other selected source paths are unchanged. Three deterministic tests and
+both compiled Driver-arm inversions execute in each profile, exact restoration
+passes, strict lint/format passes and the pinned campaign completes 10,000 runs.
+The aggregate source freeze retains production net 64, test net 1059, 25 changed
+tracked paths and 267 non-build untracked evidence/corpus paths. All bounded
+limitations in the preceding acquisition review still apply; this does not
+prove async recovery, chronological retirement ordering or full DG-TASK.

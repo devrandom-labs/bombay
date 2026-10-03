@@ -778,3 +778,22 @@ patch `06ae67a3ac6285a3634b68e2168f71f9ebdca64a24c4db26a763f9be3ba20125`,
 receipt `bbf79875dc049592ee4d51ed9ced3ec5f371811088c06cb3324684ce86206c7b`.
 Owning Monitor request custody, both relevant wrapper orders, the actual
 cancellation emitter, admission ordering and completion races remain open.
+### Selected numeric cancellation algebra comparison (2026-10-03)
+
+Independent reviewer `/root` reads the complete 263-line nominal observer,
+verification script and compiler/test logs and authenticates all 53 artifacts.
+Receipt `1625d5eb321d5341be88b199dd8c4046831dc2cc3477381a5dc14b9a4bd6affe`,
+patch `78c4b4355b276adf83e572eca67cd8951de9c3edf12cdbdb109c9e4812f38d89`.
+Existing `SendLayer` and `InterpreterRequests` express cancellation with an
+independent typed acknowledgement lane using ordinary nominal Behavior code.
+Both Cancelled and Cancel/NotObserved rows check every Actions lane; initial
+observation preserves the exact endpoint allocation. Debug/release tests,
+strict lint and formatting pass. Wrong protocol/path produce E0308/E0277;
+missing cancellation/recovery methods produce E0599 in both profiles.
+
+This is legacy numeric Copy-request evidence only: retaining one copy while
+interpreting another proves no affine cancellation custody. The actual selected
+interpreter transfers only the ID and declares no rejection in its settlement
+type. Whole rejected request recovery, exact relationship membership, races,
+retired Monitor recovery and DG-OBSERVATION remain open. No owning/canonical
+production or public API changes are retained by this comparison.
