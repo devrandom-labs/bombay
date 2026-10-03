@@ -43,7 +43,11 @@ replacement-role preparation, and source retention after per-worker rejection.
 They do not exercise bounded admission or running blocking work, so EV-24
 remains open.
 
-## Bounded candidate and ownership equation
+## Historical bounded candidate and ownership equation
+
+The semaphore-in-source candidate below is rejected by the later selected
+state-purity policy. Its 0.17.0 outer-rejection description is also superseded
+by fresh selected-port evidence below; retain it only as research history.
 
 The smallest candidate is a concrete worker-preparation source holding its
 real domain input and an `Arc<Semaphore>` representing a fixed positive number
@@ -206,10 +210,29 @@ public types and canonical retained source delta zero.
 DG-WORK remains open. Shutdown with both an admitted queued operation and a
 running operation is unproved: the second operation here is rejected.
 Consuming original-input recovery through FIFO's opaque diagnostic remains a
-user decision. More fundamentally, the source contains semaphore and receiver
+selected requirement, still without an owning consuming API proof. More
+fundamentally, the source contains semaphore and receiver
 resources in Behavior state, contradicting AGENTS.md's state prohibition and
 this record's proposed source construction. No I/O occurs inside the folds,
-but that does not satisfy the stronger state rule. The user must resolve that
-conflict before this fixture can count as semantic acceptance or select a
-production composition. Runtime destruction, panic, installed worker graph
+but that does not satisfy the stronger state rule. The selected policy below
+rejects this fixture as semantic acceptance or a production composition.
+Runtime destruction, panic, installed worker graph
 and remaining DG-TASK dependencies also remain open.
+
+## Selected state purity and rejected-input policy (2026-10-02)
+
+Under the user's authorization to adopt recommendations, retain AGENTS.md's
+prohibition on channels and runtime resources in Behavior state. A Behavior
+owns semantic inputs and emits typed requests; Bombay's owning interpreter
+owns permits, channels and concrete operation execution. No opaque-source
+exception is selected. The current bounded source violates that law even
+though its folds do no I/O. An ordinary-Rust comparison must establish the
+smallest owning source/interpreter contract before a new API or service is
+eligible; no such contract is inferred from this policy choice.
+
+Rejected operation inputs must be recoverable by consumption for retry, with
+their exact original contents and ownership. Merely retaining them inside an
+opaque diagnostic is insufficient. Core/Actors owns reusable diagnostic
+custody; Bombay owns concrete execution. Verify the existing consumers and
+smallest owning extraction law before changing that interface. Independent
+review and the full required witness table remain mandatory.

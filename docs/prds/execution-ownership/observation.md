@@ -629,3 +629,14 @@ Independent reviewer `/root/contract_inventory` authenticated all 29 artifacts,
 read the full diff and verified 171 unchanged sources and the lock. It signs
 bounded request/grant consistency only. Tests +33 / -3 / net 30; production,
 public types and canonical source delta zero. The preceding wider limits remain.
+
+## Selected completed-relationship disposition (2026-10-02)
+
+Under the user's authorization to adopt recommendations, Stopped preserves
+the exact relationship identity, actual outcome and notification timestamp.
+Completion retires and releases that relationship's cancellation permission:
+there is no live member left to cancel. Do not redundantly retain an actionable
+grant or erase relationship provenance. A stale grant cannot consume a later
+registration reusing the same numeric ID. Full completion/cancellation/reuse
+traces and independently reviewed owning producers remain required; this law
+selects no public type or new observation primitive.

@@ -991,7 +991,7 @@ inputs. Owning contract comparisons and independent review remain required.
 Caller disappearance also needs a researched ownership equation for
 receiverless exact values and who progresses root/child and Entity cleanup.
 [Application work disposition](execution-ownership/task-custody.md#application-work-disposition-2026-10-02)
-is user-selected; borrowed-result discharge timing remains unresolved.
+and its caller-owned discharge timing are user-selected.
 Capability-task panic currently drops typed residual custody. The user
 selected the core law: preserve the complete actor outcome and all available
 task failures in a typed result, joining remaining capability work before
@@ -1001,8 +1001,9 @@ comparison and original loss are recorded in task-custody.md. Representation,
 live acquisition, projection and public interfaces remain independently gated.
 The later receipt discussion selected separate wait and result custody:
 cancelling a wait preserves the retained receipt; surrendering the last
-receipt relinquishes custody, with explicit exactly-once release after
-cleanup joins. No implicit global store is selected. Application callback
+receipt relinquishes custody under the selected
+[caller-owned discharge rule](execution-ownership/task-custody.md#selected-caller-owned-discharge-and-acquisition-policy-2026-10-02).
+No implicit global store is selected. Application callback
 and Entity integration still need their complete ownership witnesses.
 
 DG-OBSERVATION product-law amendment: after the comparative explanation, the

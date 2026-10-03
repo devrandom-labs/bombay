@@ -822,7 +822,7 @@ future across that shutdown. Current callback/future/output bounds are Send
 without `'static`; lifetime decisions may not be inferred from spawn bounds.
 ARC-011 cleanup requests and ARC-012 restored Entity task records remain valid
 and must be preserved. These witnesses depend on accepted application/task
-interfaces and the unresolved borrowed-value discharge rule; none was executed
+interfaces and the selected borrowed-value discharge rule; none was executed
 or accepted by this source audit. Source SHA-256:
 `0b8e2c1c475ab46c50c451082b8d67dadb0a138e1d3ee8ccca9129ee7b7f57c4`.
 
@@ -838,8 +838,9 @@ An omitted-join inversion fails its intended root-release assertion in both
 profiles; it does not prove a permanently aborted cleanup task.
 
 This last disposition releases completed work output before cleanup joins.
-It therefore does **not** satisfy the selected complete-result discharge timing
-in EXEC section 16. Retaining a caller-borrowed output beyond disappearance of
+It therefore did **not** satisfy the original complete-result discharge timing;
+the later selected caller-owned discharge rule below explicitly amends it.
+Retaining a caller-borrowed output beyond disappearance of
 all caller-owned futures/receivers needs a lifetime proof; do not silently add
 `'static`, permit earlier discharge or call this full DG-TASK acceptance.
 
@@ -881,12 +882,14 @@ artifacts and the complete trace, signing this bounded characterization only.
 One existing local.rs test module, +109 / -31, production/public types zero.
 Its old Communication 0.1.2/source770d baseline is not fresh integration proof.
 
-The primary observer cause when both requests are ready remains a user decision.
+The primary observer cause when both requests are ready is cancellation-first,
+as selected in the later policy amendment below.
 Keeping existing cancellation priority needs no readiness probe; the full result
 must still retain the failure. Preferring ready failures requires consuming
 completed task results and retaining any ordinary events encountered, since
 JoinSet has no nonconsuming failure peek. Such a probe cannot claim a globally
-earliest failure or atomic readiness snapshot. Neither policy is selected here.
+earliest failure or atomic readiness snapshot. This frozen witness predates
+selection and does not itself prove integrated observer-cause behavior.
 
 ## Exact final cancellation admission (2026-10-02)
 
@@ -907,7 +910,8 @@ The receipt records exact pinned-Nix commands: two close/replay tests and one
 reviewer `/root` read the complete patch and selected oneshot source/tests,
 authenticated all twenty-five artifacts and both dependency source hashes.
 This accepts only the primitive comparison. Every actor outcome still needs
-integration retaining unread accepted requests; no arbitration rule is selected.
+integration retaining unread accepted requests; the later policy amendment
+selects arbitration without claiming that this primitive witness proves it.
 One local.rs test module, +66 / -2; production/public types zero. The historical
 source770d/Communication 0.1.2 baseline does not prove current-lock integration.
 
@@ -933,5 +937,30 @@ denial compiles to E0597 and restored positives pass. Independent reviewer
 ownership/denial, accepting only those bounded claims. Extension +27 / -8
 test lines in application_runtime.rs; production/public types zero. The
 historical 426/source770d/Communication 0.1.2 baseline remains explicit.
-The user must resolve borrowed-result discharge timing before its dependent
-public execution design; this comparison does not choose that policy.
+The later caller-owned discharge amendment resolves that timing. This frozen
+comparison remains bounded ownership/compiler evidence, not public API acceptance.
+
+## Selected caller-owned discharge and acquisition policy (2026-10-02)
+
+The user authorized the recommendations and instructed Bombay to choose
+evidence-backed recommendations for subsequent policy decisions. This does
+not waive explicit change-budget checkpoints or independent design review.
+
+Completed application output remains exact while its receiver exists. Dropping
+its last receiver explicitly releases that caller-owned output immediately;
+static actor/child/family cleanup continues, joins, then releases its own
+undeliverable results exactly once. The same rule applies to an uninvoked
+callback and other borrowed application inputs retained by caller-owned
+custody. Do not move them into longer-lived cleanup or strengthen existing
+Send bounds to `'static`. A surviving receiver must preserve its original
+values, including the untouched-input and startup-rejection cases.
+This amends the earlier all-values-after-cleanup timing; there is no new
+global owner or retention policy. Actual integrated witnesses remain required.
+
+When owner cancellation and a capability failure are both ready at acquisition,
+keep cancellation-first primary cause, preserving the acquired failure in the
+full typed result. This reports the source actually selected; it asserts no
+physical event chronology and requires no consuming failure-readiness probe.
+Available failures still retire only their owning live actor when selected;
+already completed actor outcomes are not rewritten. Existing source priority
+and fairness limits remain subject to XO-36 and independent verification.
