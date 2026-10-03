@@ -7,6 +7,7 @@
 //! once, and only then requests another event. It contains no template,
 //! routing, mailbox, scheduling, identity, retry, or machine-topology policy.
 
+use core::ops::ControlFlow;
 use std::collections::VecDeque;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -26,11 +27,14 @@ pub type ActionsOf<B> = Actions<
 
 /// The factual reason one Driver execution completed successfully.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Completion {
+pub enum Completion<Request = Never> {
     /// The Behavior explicitly selected [`Step::Stop`].
     Stopped,
     /// The environment permanently exhausted its event source.
     Exhausted,
+    /// The environment requested retirement before another event fold.
+    /// This fact neither claims Behavior stop, source exhaustion, nor completed cleanup.
+    RetirementRequested(Request),
 }
 
 /// Why the Driver could not finish custody of a complete action settlement.
@@ -113,7 +117,7 @@ async fn drive_active<B, E, ActivationError>(
     behavior: &mut B,
     environment: &mut E,
     settlements: &mut VecDeque<SettlementTurn<E::Settlement>>,
-) -> Result<Completion, DriverError<B::Error, ActivationError>>
+) -> Result<Completion<E::RetirementRequest>, DriverError<B::Error, ActivationError>>
 where
     B: Behavior<Ph = Never>,
     E: ActiveEnvironment<B>,
@@ -139,10 +143,15 @@ where
             }
             Some((index, SettlementTurn::AwaitSource(residual))) => {
                 settlements.insert(index, SettlementTurn::Offer(residual));
-                environment
-                    .next_source()
-                    .await
-                    .ok_or(DriverError::Settlement(SettlementFailure::SourceClosed))?
+                match environment.next_source().await {
+                    ControlFlow::Continue(Some(event)) => event,
+                    ControlFlow::Continue(None) => {
+                        return Err(DriverError::Settlement(SettlementFailure::SourceClosed));
+                    }
+                    ControlFlow::Break(request) => {
+                        return Ok(Completion::RetirementRequested(request));
+                    }
+                }
             }
             Some((_, SettlementTurn::Retained(_))) => {
                 unreachable!("retained settlements do not progress through source admission")
@@ -154,8 +163,11 @@ where
                     continue;
                 }
                 ExecutionPhase::Active => match environment.next().await {
-                    Some(event) => event,
-                    None => return Ok(Completion::Exhausted),
+                    ControlFlow::Continue(Some(event)) => event,
+                    ControlFlow::Continue(None) => return Ok(Completion::Exhausted),
+                    ControlFlow::Break(request) => {
+                        return Ok(Completion::RetirementRequested(request));
+                    }
                 },
             },
         };
@@ -186,13 +198,13 @@ where
 /// disposition or erased behind a runtime-neutral wrapper.
 #[must_use = "final behavior and environment custody must be retained or explicitly discharged"]
 #[derive(Debug, PartialEq, Eq)]
-pub struct DriverRetirement<B, R, E> {
+pub struct DriverRetirement<B, R, E, Request = Never> {
     /// Final concrete Behavior state after its last attempted fold.
     pub behavior: B,
     /// Exact state returned by prepared or active environment retirement.
     pub residual: R,
     /// Factual completion or failure that selected retirement.
-    pub disposition: Result<Completion, E>,
+    pub disposition: Result<Completion<Request>, E>,
 }
 
 /// An uninitialized, affine Driver execution.
@@ -230,7 +242,10 @@ where
     /// The returned disposition preserves the exact Behavior error when
     /// initialization or a turn fails, or the exact environment error when
     /// local action commitment fails.
-    pub async fn run(self) -> DriverRetirement<B, E::Residual, DriverError<B::Error, E::Error>> {
+    pub async fn run(
+        self,
+    ) -> DriverRetirement<B, E::Residual, DriverError<B::Error, E::Error>, E::RetirementRequest>
+    {
         let Self {
             behavior,
             environment,

@@ -539,9 +539,17 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
     let RecoveryTerminal::Root { terminal, .. } = terminal else {
         panic!("the root returns its terminal");
     };
-    let ActorRetirement::Completed { descendants, .. } = terminal else {
+    let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
+        descendants,
+        ..
+    } = terminal
+    else {
         panic!("the root completes its drain");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(descendants.len(), 1, "shutdown must suppress replacement");
 }
 
@@ -590,13 +598,37 @@ fn source_task_failure_terminates_the_active_pool() {
                 .expect("a failed source task terminates the active pool")
         })
         .unwrap_or_else(|_| panic!("the pool reports source task failure"));
-    assert_eq!(termination, Err(Crash::Panicked));
+    assert_eq!(termination, Err(Crash::CapabilityFailed));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     let RecoveryTerminal::Root { origin, terminal } = terminal else {
         panic!("the failed source returns its root terminal");
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert!(matches!(terminal, ActorRetirement::Panicked));
+    let ActorRetirement::CapabilityFailed {
+        behavior,
+        settlements,
+        control,
+        user,
+        descendants,
+        error,
+        capability_failures,
+        unread_owner_cancellation,
+    } = terminal
+    else {
+        panic!("the failed source retains available pool state and the exact capability cause");
+    };
+    assert!(error.is_panic());
+    let description = error
+        .into_panic()
+        .downcast::<&str>()
+        .expect("the original source panic remains owned");
+    assert_eq!(*description, "the replacement source failed");
+    assert!(control.is_empty());
+    assert!(user.is_empty());
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
+    assert_eq!(descendants.len(), 1);
+    drop((behavior, settlements, descendants));
 }
 
 fn assert_recovered_pool_terminal(terminal: RecoveryTerminal) {
@@ -605,6 +637,8 @@ fn assert_recovered_pool_terminal(terminal: RecoveryTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         descendants,
         completion,
         ..
@@ -612,6 +646,8 @@ fn assert_recovered_pool_terminal(terminal: RecoveryTerminal) {
     else {
         panic!("the pool completes after its worker graph");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 2);
     let mut worker_nonces = Vec::new();
@@ -622,6 +658,8 @@ fn assert_recovered_pool_terminal(terminal: RecoveryTerminal) {
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         worker_nonces.push(origin.nonce());
         let ActorRetirement::Completed {
+            capability_failures,
+            unread_owner_cancellation,
             completion,
             descendants,
             ..
@@ -629,6 +667,8 @@ fn assert_recovered_pool_terminal(terminal: RecoveryTerminal) {
         else {
             panic!("each worker completes rather than being cancelled");
         };
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
         assert_eq!(completion, Completion::Stopped);
         assert!(descendants.is_empty());
     }

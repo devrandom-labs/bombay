@@ -1,3 +1,4 @@
+use core::ops::ControlFlow;
 use std::cell::Cell;
 use std::convert::Infallible;
 use std::rc::Rc;
@@ -44,16 +45,19 @@ impl ClassifySettlement for Settlement {
 impl ActiveEnvironment<SendNotSync> for Env {
     type Settlement = Settlement;
     type Residual = ();
+    type RetirementRequest = Never;
 
-    async fn next(&mut self) -> Option<<SendNotSync as Behavior>::Event> {
-        self.local.set(1);
-        self.event
-            .take()
-            .map(|value| User::new(MailAddr(1), value))
+    async fn next(&mut self) -> ControlFlow<Never, Option<<SendNotSync as Behavior>::Event>> {
+        ControlFlow::Continue({
+            self.local.set(1);
+            self.event.take().map(|value| User::new(MailAddr(1), value))
+        })
     }
 
-    async fn next_source(&mut self) -> Option<<SendNotSync as Behavior>::Event> {
-        None
+    async fn next_source(
+        &mut self,
+    ) -> ControlFlow<Never, Option<<SendNotSync as Behavior>::Event>> {
+        ControlFlow::Continue(None)
     }
 
     async fn apply(&mut self, _: ActionsOf<SendNotSync>) -> Interpretation<Self::Settlement> {
@@ -77,14 +81,13 @@ impl Environment<SendNotSync> for Env {
     type Settlement = Settlement;
     type Error = Infallible;
     type Residual = ();
+    type RetirementRequest = Never;
 
     async fn activate(
         self,
         _: ActionsOf<SendNotSync>,
-    ) -> Result<
-        (Self::Active, Interpretation<Self::Settlement>),
-        (Self::Error, Self::Residual),
-    > {
+    ) -> Result<(Self::Active, Interpretation<Self::Settlement>), (Self::Error, Self::Residual)>
+    {
         Ok((self, Interpretation::Complete(Settlement)))
     }
 

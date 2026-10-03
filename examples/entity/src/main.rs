@@ -210,6 +210,8 @@ where
         origin,
         terminal:
             ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 settlements,
                 control,
                 user,
@@ -221,6 +223,8 @@ where
     else {
         panic!("the application root must stop normally")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
@@ -237,6 +241,8 @@ fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
         .iter()
         .map(|retirement| {
             let ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 behavior,
                 settlements,
                 ..
@@ -244,6 +250,8 @@ fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
             else {
                 panic!("each account incarnation must retire normally")
             };
+            assert!(capability_failures.is_empty());
+            assert!(unread_owner_cancellation.is_none());
             let settlement_status = settlements.settlement_status();
             assert_eq!(settlement_status, SettlementStatus::Accepted);
             behavior.base().balance

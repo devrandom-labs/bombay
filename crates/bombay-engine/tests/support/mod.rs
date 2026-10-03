@@ -1,4 +1,5 @@
 use core::future::Future;
+use core::ops::ControlFlow;
 
 use behavior::{
     Behavior, ClassifySettlement, Interpretation, Never, SettlementStatus, SourceCustody,
@@ -46,6 +47,7 @@ where
     type Settlement = TestSettlement<E::Error>;
     type Error = core::convert::Infallible;
     type Residual = E::Residual;
+    type RetirementRequest = Never;
 
     async fn activate(
         mut self,
@@ -70,16 +72,17 @@ where
 {
     type Settlement = TestSettlement<E::Error>;
     type Residual = E::Residual;
+    type RetirementRequest = Never;
 
-    fn next(&mut self) -> impl Future<Output = Option<B::Event>> {
-        self.0.next()
+    async fn next(&mut self) -> ControlFlow<Never, Option<B::Event>> {
+        ControlFlow::Continue(self.0.next().await)
     }
 
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn next_source(&mut self) -> Option<B::Event> {
+    async fn next_source(&mut self) -> ControlFlow<Never, Option<B::Event>> {
         unreachable!("the test adapter never admits a source result")
     }
 

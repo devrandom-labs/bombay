@@ -144,6 +144,8 @@ fn assert_search_terminal(terminal: SearchTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         descendants,
         completion,
         ..
@@ -151,6 +153,8 @@ fn assert_search_terminal(terminal: SearchTerminal) {
     else {
         panic!("the pool completes after its worker graph");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
     let SearchTerminal::Worker { origin, terminal } = descendants
@@ -162,6 +166,8 @@ fn assert_search_terminal(terminal: SearchTerminal) {
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         completion,
         descendants,
         ..
@@ -169,6 +175,8 @@ fn assert_search_terminal(terminal: SearchTerminal) {
     else {
         panic!("orderly shutdown completes the exact worker");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert!(descendants.is_empty());
 }

@@ -599,6 +599,8 @@ fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     let (
         origin,
         ActorRetirement::BehaviorFailed {
+            capability_failures,
+            unread_owner_cancellation,
             behavior: _behavior,
             settlements,
             control,
@@ -610,6 +612,8 @@ fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     else {
         panic!("the root behavior failure must remain an exact typed terminal")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(settlements.len(), 0);
     assert_eq!(control.len(), 0);

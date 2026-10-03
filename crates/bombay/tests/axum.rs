@@ -57,6 +57,8 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
     assert_eq!(calls.load(Ordering::SeqCst), 1);
     let (origin, retirement) = into_root(terminal);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         settlements,
         control,
         user,
@@ -67,6 +69,8 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
     else {
         panic!("the shutdown request must complete the published root")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(settlements.len(), 1);
     assert_eq!(control.len(), 0);

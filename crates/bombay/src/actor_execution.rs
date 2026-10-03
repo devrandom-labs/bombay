@@ -29,7 +29,7 @@ impl<B, E, R> ActorExecution<B, E, R>
 where
     B: Behavior<Ph = Never>,
     E: Environment<B>,
-    R: Retirement<B, E::Residual, B::Error, E::Error>,
+    R: Retirement<B, E::Residual, B::Error, E::Error, E::RetirementRequest>,
 {
     /// Consume and execute this incarnation exactly once.
     ///
@@ -38,25 +38,27 @@ where
     /// before the terminal guard publishes their classification.
     pub async fn run(self) -> R::Output {
         let Self { driver, retirement } = self;
-        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error>::new(retirement);
+        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error, E::RetirementRequest>::new(
+            retirement,
+        );
         let outcome = driver.run().await.into();
         terminal.complete(outcome)
     }
 }
 
-struct Terminal<R, B, Residual, BehaviorError, ActivationError>
+struct Terminal<R, B, Residual, BehaviorError, ActivationError, Request>
 where
-    R: Retirement<B, Residual, BehaviorError, ActivationError>,
+    R: Retirement<B, Residual, BehaviorError, ActivationError, Request>,
 {
     retirement: Option<R>,
-    driver_state: PhantomData<fn(B, Residual)>,
+    driver_state: PhantomData<fn(B, Residual, Request)>,
     failure_types: PhantomData<fn(BehaviorError, ActivationError)>,
 }
 
-impl<R, B, Residual, BehaviorError, ActivationError>
-    Terminal<R, B, Residual, BehaviorError, ActivationError>
+impl<R, B, Residual, BehaviorError, ActivationError, Request>
+    Terminal<R, B, Residual, BehaviorError, ActivationError, Request>
 where
-    R: Retirement<B, Residual, BehaviorError, ActivationError>,
+    R: Retirement<B, Residual, BehaviorError, ActivationError, Request>,
 {
     const fn new(retirement: R) -> Self {
         Self {
@@ -68,7 +70,7 @@ where
 
     fn complete(
         mut self,
-        outcome: ActorExecutionOutcome<B, Residual, BehaviorError, ActivationError>,
+        outcome: ActorExecutionOutcome<B, Residual, BehaviorError, ActivationError, Request>,
     ) -> R::Output {
         self.retirement
             .take()
@@ -77,10 +79,10 @@ where
     }
 }
 
-impl<R, B, Residual, BehaviorError, ActivationError> Drop
-    for Terminal<R, B, Residual, BehaviorError, ActivationError>
+impl<R, B, Residual, BehaviorError, ActivationError, Request> Drop
+    for Terminal<R, B, Residual, BehaviorError, ActivationError, Request>
 where
-    R: Retirement<B, Residual, BehaviorError, ActivationError>,
+    R: Retirement<B, Residual, BehaviorError, ActivationError, Request>,
 {
     fn drop(&mut self) {
         let Some(retirement) = self.retirement.take() else {
@@ -97,6 +99,7 @@ where
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use core::ops::ControlFlow;
     use std::alloc::{GlobalAlloc, Layout, System};
     use std::cell::Cell;
     use std::fs;
@@ -247,17 +250,21 @@ pub(crate) mod tests {
     }
 
     impl ActiveEnvironment<ProbeBehavior> for ProbeEnvironment {
+        type RetirementRequest = Never;
         type Settlement = ActionSettlementOf<ProbeBehavior>;
         type Residual = ();
 
-        fn next(&mut self) -> impl Future<Output = Option<<ProbeBehavior as Behavior>::Event>> {
+        fn next(
+            &mut self,
+        ) -> impl Future<Output = ControlFlow<Never, Option<<ProbeBehavior as Behavior>::Event>>>
+        {
             let response = self.response;
             async move {
-                match response {
+                ControlFlow::Continue(match response {
                     EnvironmentResponse::Wait => pending::<Option<User<MailAddr, ()>>>().await,
                     EnvironmentResponse::OneEvent => Some(User::new(MailAddr(1), ())),
                     EnvironmentResponse::Exhaust | EnvironmentResponse::RejectActivation => None,
-                }
+                })
             }
         }
 
@@ -265,8 +272,10 @@ pub(crate) mod tests {
             clippy::unused_async_trait_impl,
             reason = "Defer trait-port work and owned inputs until the future is polled."
         )]
-        async fn next_source(&mut self) -> Option<<ProbeBehavior as Behavior>::Event> {
-            None
+        async fn next_source(
+            &mut self,
+        ) -> ControlFlow<Never, Option<<ProbeBehavior as Behavior>::Event>> {
+            ControlFlow::Continue(None)
         }
 
         async fn apply(
@@ -299,6 +308,7 @@ pub(crate) mod tests {
 
     impl Environment<ProbeBehavior> for ProbeEnvironment {
         type Active = Self;
+        type RetirementRequest = Never;
         type Settlement = <ProbeBehavior as BehaviorSettlements>::Settlements;
         type Error = EnvironmentFailure;
         type Residual = ();

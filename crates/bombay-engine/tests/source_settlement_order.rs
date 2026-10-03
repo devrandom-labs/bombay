@@ -1,28 +1,38 @@
+use core::ops::ControlFlow;
 use std::collections::VecDeque;
 use std::convert::Infallible;
-use std::sync::{Arc, Mutex};
 
-use behavior::{Actions, Behavior, BehaviorActed, EventLayer, MailAddr, Never, NoBirths, User};
+use behavior::{
+    Actions, Behavior, BehaviorActed, Creations, EventLayer, MailAddr, Never, NoBirths, Step, User,
+};
 use behavior::{ClassifySettlement, Interpretation, SettlementStatus, SourceCustody};
 use bombay_engine::{ActionsOf, ActiveEnvironment, Completion, Driver, Environment};
 
 type SettlementEvent = EventLayer<u8, User<MailAddr, ()>>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Fact {
+enum ExecutionEvent {
     Committed(u8),
+    Continued,
+    Stopped,
     RequestedSource,
     RequestedOrdinary,
-    FoldedReturned(u8),
-    FoldedOrdinary,
+    DeliveredSource(u8),
+    DeliveredOrdinary,
     Retired,
 }
 
-struct SettlementBehavior {
-    facts: Arc<Mutex<Vec<Fact>>>,
+struct SettlementActor {
+    delivered_inputs: Vec<SettlementInput>,
 }
 
-impl Behavior for SettlementBehavior {
+#[derive(Debug, PartialEq, Eq)]
+enum SettlementInput {
+    Source(u8),
+    Ordinary,
+}
+
+impl Behavior for SettlementActor {
     type Protocol = behavior::MessageProtocol<MailAddr, ()>;
     type Event = SettlementEvent;
     type Sends = Vec<u8>;
@@ -37,16 +47,16 @@ impl Behavior for SettlementBehavior {
     fn transition(&mut self, _: behavior::ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
         match event {
             EventLayer::Owned(1) => {
-                self.facts.lock().unwrap().push(Fact::FoldedReturned(1));
+                self.delivered_inputs.push(SettlementInput::Source(1));
                 Ok(Actions::send(vec![2]))
             }
             EventLayer::Owned(2) => {
-                self.facts.lock().unwrap().push(Fact::FoldedReturned(2));
+                self.delivered_inputs.push(SettlementInput::Source(2));
                 Ok(Actions::cont())
             }
             EventLayer::Owned(other) => panic!("unexpected settlement {other}"),
             EventLayer::Inner(_) => {
-                self.facts.lock().unwrap().push(Fact::FoldedOrdinary);
+                self.delivered_inputs.push(SettlementInput::Ordinary);
                 Ok(Actions::stop())
             }
         }
@@ -56,7 +66,18 @@ impl Behavior for SettlementBehavior {
 struct SettlementEnvironment {
     source: VecDeque<SettlementEvent>,
     ordinary: Option<SettlementEvent>,
-    facts: Arc<Mutex<Vec<Fact>>>,
+    execution_trace: Vec<ExecutionEvent>,
+}
+
+impl SettlementEnvironment {
+    fn take_source(&mut self) -> Option<SettlementEvent> {
+        let event = self.source.pop_front();
+        if let Some(EventLayer::Owned(value)) = &event {
+            self.execution_trace
+                .push(ExecutionEvent::DeliveredSource(*value));
+        }
+        event
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -68,30 +89,36 @@ impl ClassifySettlement for Settlement {
     }
 }
 
-impl ActiveEnvironment<SettlementBehavior> for SettlementEnvironment {
+impl ActiveEnvironment<SettlementActor> for SettlementEnvironment {
     type Settlement = Settlement;
-    type Residual = ();
+    type Residual = Vec<ExecutionEvent>;
+    type RetirementRequest = Never;
 
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn next(&mut self) -> Option<SettlementEvent> {
-        if let Some(event) = self.ordinary.take() {
-            self.facts.lock().unwrap().push(Fact::RequestedOrdinary);
-            return Some(event);
-        }
-        self.facts.lock().unwrap().push(Fact::RequestedSource);
-        self.source.pop_front()
+    async fn next(&mut self) -> ControlFlow<Never, Option<SettlementEvent>> {
+        ControlFlow::Continue({
+            if let Some(event) = self.ordinary.take() {
+                self.execution_trace.push(ExecutionEvent::RequestedOrdinary);
+                self.execution_trace.push(ExecutionEvent::DeliveredOrdinary);
+                return ControlFlow::Continue(Some(event));
+            }
+            self.execution_trace.push(ExecutionEvent::RequestedSource);
+            self.take_source()
+        })
     }
 
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn next_source(&mut self) -> Option<SettlementEvent> {
-        self.facts.lock().unwrap().push(Fact::RequestedSource);
-        self.source.pop_front()
+    async fn next_source(&mut self) -> ControlFlow<Never, Option<SettlementEvent>> {
+        ControlFlow::Continue({
+            self.execution_trace.push(ExecutionEvent::RequestedSource);
+            self.take_source()
+        })
     }
 
     #[expect(
@@ -100,12 +127,18 @@ impl ActiveEnvironment<SettlementBehavior> for SettlementEnvironment {
     )]
     async fn apply(
         &mut self,
-        actions: ActionsOf<SettlementBehavior>,
+        actions: ActionsOf<SettlementActor>,
     ) -> Interpretation<Self::Settlement> {
         let mut settlements = VecDeque::new();
         for value in actions.sends {
-            self.facts.lock().unwrap().push(Fact::Committed(value));
+            self.execution_trace.push(ExecutionEvent::Committed(value));
             settlements.push_back(value);
+        }
+        assert_eq!(actions.creates, Creations::empty());
+        match actions.become_ {
+            Step::Continue => self.execution_trace.push(ExecutionEvent::Continued),
+            Step::Stop(behavior::Stopped) => self.execution_trace.push(ExecutionEvent::Stopped),
+            Step::Goto(never) => match never {},
         }
         Interpretation::Complete(Settlement(settlements))
     }
@@ -127,41 +160,52 @@ impl ActiveEnvironment<SettlementBehavior> for SettlementEnvironment {
 
     fn publish(&mut self) {}
 
-    async fn retire(self, settlements: Vec<Self::Settlement>) {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer owned retirement trace transfer until the future is polled."
+    )]
+    async fn retire(mut self, settlements: Vec<Self::Settlement>) -> Self::Residual {
         assert_eq!(settlements, [Settlement(VecDeque::new())]);
-        self.facts.lock().unwrap().push(Fact::Retired);
+        self.execution_trace.push(ExecutionEvent::Retired);
+        self.execution_trace
     }
 }
 
-impl Environment<SettlementBehavior> for SettlementEnvironment {
+impl Environment<SettlementActor> for SettlementEnvironment {
     type Active = Self;
     type Settlement = Settlement;
     type Error = Infallible;
-    type Residual = ();
+    type Residual = Vec<ExecutionEvent>;
+    type RetirementRequest = Never;
 
     async fn activate(
         mut self,
-        actions: ActionsOf<SettlementBehavior>,
+        actions: ActionsOf<SettlementActor>,
     ) -> Result<(Self::Active, Interpretation<Self::Settlement>), (Self::Error, Self::Residual)>
     {
         let interpretation = ActiveEnvironment::apply(&mut self, actions).await;
         Ok((self, interpretation))
     }
 
-    async fn retire(self) {}
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer owned retirement trace transfer until the future is polled."
+    )]
+    async fn retire(self) -> Self::Residual {
+        self.execution_trace
+    }
 }
 
 #[tokio::test]
 async fn transitive_source_results_settle_before_ordinary_input() {
-    let facts = Arc::new(Mutex::new(Vec::new()));
     let retirement = Driver::new(
-        SettlementBehavior {
-            facts: facts.clone(),
+        SettlementActor {
+            delivered_inputs: Vec::new(),
         },
         SettlementEnvironment {
             source: VecDeque::new(),
             ordinary: Some(EventLayer::Inner(User::new(MailAddr(9), ()))),
-            facts: facts.clone(),
+            execution_trace: Vec::new(),
         },
     )
     .run()
@@ -169,17 +213,29 @@ async fn transitive_source_results_settle_before_ordinary_input() {
 
     assert_eq!(retirement.disposition, Ok(Completion::Stopped));
     assert_eq!(
-        *facts.lock().unwrap(),
+        retirement.behavior.delivered_inputs,
         [
-            Fact::Committed(1),
-            Fact::RequestedSource,
-            Fact::FoldedReturned(1),
-            Fact::Committed(2),
-            Fact::RequestedSource,
-            Fact::FoldedReturned(2),
-            Fact::RequestedOrdinary,
-            Fact::FoldedOrdinary,
-            Fact::Retired,
+            SettlementInput::Source(1),
+            SettlementInput::Source(2),
+            SettlementInput::Ordinary
+        ]
+    );
+    assert_eq!(
+        retirement.residual,
+        [
+            ExecutionEvent::Committed(1),
+            ExecutionEvent::Continued,
+            ExecutionEvent::RequestedSource,
+            ExecutionEvent::DeliveredSource(1),
+            ExecutionEvent::Committed(2),
+            ExecutionEvent::Continued,
+            ExecutionEvent::RequestedSource,
+            ExecutionEvent::DeliveredSource(2),
+            ExecutionEvent::Continued,
+            ExecutionEvent::RequestedOrdinary,
+            ExecutionEvent::DeliveredOrdinary,
+            ExecutionEvent::Stopped,
+            ExecutionEvent::Retired,
         ]
     );
 }

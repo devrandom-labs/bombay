@@ -1,3 +1,4 @@
+use core::ops::ControlFlow;
 use std::convert::Infallible;
 use std::future::Future;
 use std::hint::black_box;
@@ -43,23 +44,26 @@ struct Immediate(Ingress);
 impl ActiveEnvironment<OneTurn> for Immediate {
     type Settlement = Vec<Never>;
     type Residual = Vec<Self::Settlement>;
+    type RetirementRequest = Never;
 
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn next(&mut self) -> Option<<OneTurn as Behavior>::Event> {
-        match std::mem::replace(&mut self.0, Ingress::Exhausted) {
-            Ingress::Pending => Some(User::new(MailAddr(1), 1)),
-            Ingress::Exhausted => None,
-        }
+    async fn next(&mut self) -> ControlFlow<Never, Option<<OneTurn as Behavior>::Event>> {
+        ControlFlow::Continue({
+            match std::mem::replace(&mut self.0, Ingress::Exhausted) {
+                Ingress::Pending => Some(User::new(MailAddr(1), 1)),
+                Ingress::Exhausted => None,
+            }
+        })
     }
 
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn next_source(&mut self) -> Option<<OneTurn as Behavior>::Event> {
+    async fn next_source(&mut self) -> ControlFlow<Never, Option<<OneTurn as Behavior>::Event>> {
         unreachable!("the benchmark has no source-returning actions")
     }
 
@@ -98,6 +102,7 @@ impl Environment<OneTurn> for Immediate {
     type Settlement = Vec<Never>;
     type Error = Infallible;
     type Residual = Vec<Self::Settlement>;
+    type RetirementRequest = Never;
 
     async fn activate(
         mut self,

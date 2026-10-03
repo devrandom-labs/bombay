@@ -1,3 +1,4 @@
+use core::ops::ControlFlow;
 use std::convert::Infallible;
 
 use behavior::{
@@ -40,14 +41,13 @@ impl Environment<Definition> for Prepared {
     type Settlement = Settlement;
     type Error = Infallible;
     type Residual = ();
+    type RetirementRequest = Never;
 
     async fn activate(
         self,
         _: ActionsOf<Definition>,
-    ) -> Result<
-        (Self::Active, Interpretation<Self::Settlement>),
-        (Self::Error, Self::Residual),
-    > {
+    ) -> Result<(Self::Active, Interpretation<Self::Settlement>), (Self::Error, Self::Residual)>
+    {
         Ok((Active, Interpretation::Complete(Settlement)))
     }
 
@@ -57,13 +57,14 @@ impl Environment<Definition> for Prepared {
 impl ActiveEnvironment<Definition> for Active {
     type Settlement = Settlement;
     type Residual = ();
+    type RetirementRequest = Never;
 
-    async fn next(&mut self) -> Option<<Definition as Behavior>::Event> {
-        None
+    async fn next(&mut self) -> ControlFlow<Never, Option<<Definition as Behavior>::Event>> {
+        ControlFlow::Continue(None)
     }
 
-    async fn next_source(&mut self) -> Option<<Definition as Behavior>::Event> {
-        None
+    async fn next_source(&mut self) -> ControlFlow<Never, Option<<Definition as Behavior>::Event>> {
+        ControlFlow::Continue(None)
     }
 
     async fn apply(&mut self, _: ActionsOf<Definition>) -> Interpretation<Self::Settlement> {

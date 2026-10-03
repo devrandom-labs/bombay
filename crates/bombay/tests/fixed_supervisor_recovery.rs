@@ -301,6 +301,8 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         completion,
         descendants,
         ..
@@ -308,6 +310,8 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
     else {
         panic!("the supervisor returns completed terminal custody")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 2);
     for descendant in descendants {
@@ -316,6 +320,8 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
         };
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let ActorRetirement::Completed {
+            capability_failures,
+            unread_owner_cancellation,
             completion,
             descendants,
             ..
@@ -323,6 +329,8 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
         else {
             panic!("each proxy completes after its workers")
         };
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
         assert_eq!(completion, Completion::Stopped);
         assert_eq!(descendants.len(), 2);
         for descendant in descendants {
@@ -331,6 +339,8 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
             };
             assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
             let ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 completion,
                 descendants,
                 ..
@@ -338,6 +348,8 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
             else {
                 panic!("each worker completes its retirement")
             };
+            assert!(capability_failures.is_empty());
+            assert!(unread_owner_cancellation.is_none());
             assert_eq!(completion, Completion::Stopped);
             assert!(descendants.is_empty());
         }
@@ -421,12 +433,18 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
     assert_rejected_preparation_retirement(terminal);
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one complete ordered supervisor tree trace checks exact terminal diagnostics and every retained child cause"
+)]
 fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
     let SupervisorTerminal::Root { origin, terminal } = terminal else {
         panic!("the application returns its supervisor root")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         completion,
         descendants,
         settlements,
@@ -435,6 +453,8 @@ fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
     else {
         panic!("the supervisor keeps terminal custody after rejection")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 2);
     let mut diagnostics = settlements
@@ -467,9 +487,17 @@ fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
             panic!("the supervisor retains each stable proxy")
         };
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::OwnerCancelled { descendants, .. } = terminal else {
+        let ActorRetirement::OwnerCancelled {
+            capability_failures,
+            unread_owner_cancellation,
+            descendants,
+            ..
+        } = terminal
+        else {
             panic!("the terminal diagnostic cancels each proxy's owner task")
         };
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
         assert_eq!(descendants.len(), 1);
         let SupervisorTerminal::Worker { origin, terminal } = descendants
             .into_iter()
@@ -481,15 +509,26 @@ fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let retirement = match terminal {
             ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 completion,
                 descendants,
                 ..
             } => {
+                assert!(capability_failures.is_empty());
+                assert!(unread_owner_cancellation.is_none());
                 assert_eq!(completion, Completion::Stopped);
                 assert!(descendants.is_empty());
                 WorkerRetirement::Completed
             }
-            ActorRetirement::OwnerCancelled { descendants, .. } => {
+            ActorRetirement::OwnerCancelled {
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            } => {
+                assert!(capability_failures.is_empty());
+                assert!(unread_owner_cancellation.is_none());
                 assert!(descendants.is_empty());
                 WorkerRetirement::OwnerCancelled
             }

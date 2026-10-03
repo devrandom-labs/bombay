@@ -44,6 +44,8 @@ where
     let (
         origin,
         ActorRetirement::Completed {
+            capability_failures,
+            unread_owner_cancellation,
             behavior,
             settlements,
             control,
@@ -55,6 +57,8 @@ where
     else {
         panic!("the application root must retain its completed terminal state")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     drop(behavior);
     assert_eq!(settlements.len(), 1);

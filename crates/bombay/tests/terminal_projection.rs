@@ -99,6 +99,8 @@ fn derive_preserves_the_exact_runtime_origin_and_retirement() {
         origin,
         terminal:
             ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 control,
                 user,
                 descendants,
@@ -109,6 +111,8 @@ fn derive_preserves_the_exact_runtime_origin_and_retirement() {
     else {
         panic!("the derive must preserve the exact root terminal")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
 
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(control.len(), 0);

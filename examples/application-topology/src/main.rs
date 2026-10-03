@@ -146,6 +146,8 @@ where
         origin,
         terminal:
             ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 settlements,
                 control,
                 user,
@@ -157,6 +159,8 @@ where
     else {
         panic!("phased shutdown must preserve the completed application root")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
@@ -195,6 +199,8 @@ where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         behavior,
         settlements,
         control,
@@ -205,6 +211,8 @@ where
     else {
         panic!("the indexer must complete its explicit shutdown")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert_eq!(control.len(), 0);
@@ -219,6 +227,8 @@ where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         behavior,
         settlements,
         control,
@@ -229,6 +239,8 @@ where
     else {
         panic!("the journal must complete its explicit shutdown")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert_eq!(control.len(), 0);

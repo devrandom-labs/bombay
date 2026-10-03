@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::future::Future;
+use std::ops::ControlFlow;
 
 use behavior::{
     Actions, Behavior, BehaviorActed, ClassifySettlement, Creations, Interpretation, MailAddr,
@@ -156,6 +157,7 @@ enum SettlementCustody {
 impl Environment<CustodyBehavior> for PreparedEnvironment {
     type Active = ActiveCustodyEnvironment;
     type Settlement = ActionSettlement;
+    type RetirementRequest = Never;
     type Error = &'static str;
     type Residual = Residual;
 
@@ -210,23 +212,28 @@ impl Environment<CustodyBehavior> for PreparedEnvironment {
 
 impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
     type Settlement = ActionSettlement;
+    type RetirementRequest = Never;
     type Residual = Residual;
 
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn next(&mut self) -> Option<<CustodyBehavior as Behavior>::Event> {
-        self.events
-            .pop_front()
-            .map(|event| User::new(MailAddr(7), event))
+    async fn next(&mut self) -> ControlFlow<Never, Option<<CustodyBehavior as Behavior>::Event>> {
+        ControlFlow::Continue(
+            self.events
+                .pop_front()
+                .map(|event| User::new(MailAddr(7), event)),
+        )
     }
 
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn next_source(&mut self) -> Option<<CustodyBehavior as Behavior>::Event> {
+    async fn next_source(
+        &mut self,
+    ) -> ControlFlow<Never, Option<<CustodyBehavior as Behavior>::Event>> {
         let message = match self.settlement_custody {
             SettlementCustody::FirstSourceAdmitted => {
                 self.settlement_custody = SettlementCustody::RetainTransitive;
@@ -238,7 +245,7 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
             }
             _ => panic!("source input was requested without an admitted settlement"),
         };
-        Some(User::new(MailAddr(7), message))
+        ControlFlow::Continue(Some(User::new(MailAddr(7), message)))
     }
 
     #[expect(

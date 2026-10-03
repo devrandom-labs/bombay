@@ -465,6 +465,8 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
         .take()
         .expect("the profile definition receives its exact retirement");
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         behavior,
         mut descendants,
         ..
@@ -472,6 +474,8 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
     else {
         panic!("the profile must retire normally")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(behavior.base().admissions, 2);
     assert_eq!(descendants.len(), 1);
     let ProfileTerminal::Worker {
@@ -482,7 +486,14 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
         .expect("the profile retains its child terminal");
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     match child_retirement {
-        ActorRetirement::OwnerCancelled { .. } => {}
+        ActorRetirement::OwnerCancelled {
+            capability_failures,
+            unread_owner_cancellation,
+            ..
+        } => {
+            assert!(capability_failures.is_empty());
+            assert!(unread_owner_cancellation.is_none());
+        }
         _ => panic!("the profile child must preserve owner-cancellation custody"),
     }
 

@@ -113,6 +113,8 @@ fn root_returns_only_after_owning_ordered_direct_child_terminals() {
         origin,
         terminal:
             ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 behavior: _,
                 settlements,
                 control,
@@ -124,6 +126,8 @@ fn root_returns_only_after_owning_ordered_direct_child_terminals() {
     else {
         panic!("the root must preserve its completed state and child custody")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(control.len(), 0);
     assert_eq!(user.len(), 0);
@@ -138,6 +142,8 @@ fn root_returns_only_after_owning_ordered_direct_child_terminals() {
             origin,
             terminal:
                 ActorRetirement::OwnerCancelled {
+                    capability_failures,
+                    unread_owner_cancellation,
                     behavior: _,
                     settlements,
                     control,
@@ -148,6 +154,8 @@ fn root_returns_only_after_owning_ordered_direct_child_terminals() {
         else {
             panic!("parent retirement must preserve each exact child cancellation")
         };
+        assert_eq!(capability_failures.len(), 0);
+        assert!(unread_owner_cancellation.is_none());
         assert_eq!(control.len(), 0);
         assert_eq!(user.len(), 0);
         assert_eq!(settlements.len(), 0);
@@ -175,6 +183,8 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
         origin,
         terminal:
             ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 behavior: _,
                 settlements,
                 control,
@@ -186,6 +196,8 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
     else {
         panic!("the application root must retain its declared child")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(control.len(), 0);
     assert_eq!(user.len(), 0);
@@ -201,6 +213,8 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
                 origin,
                 terminal:
                     ActorRetirement::OwnerCancelled {
+                        capability_failures,
+                        unread_owner_cancellation,
                         behavior: _,
                         settlements,
                         control,
@@ -208,6 +222,8 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
                         descendants,
                     },
             } => {
+                assert_eq!(capability_failures.len(), 0);
+                assert!(unread_owner_cancellation.is_none());
                 assert_eq!(control.len(), 0);
                 assert_eq!(user.len(), 0);
                 assert_eq!(settlements.len(), 0);
@@ -219,6 +235,8 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
                 origin,
                 terminal:
                     ActorRetirement::OwnerCancelled {
+                        capability_failures,
+                        unread_owner_cancellation,
                         behavior: _,
                         settlements,
                         control,
@@ -226,6 +244,8 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
                         descendants,
                     },
             } => {
+                assert_eq!(capability_failures.len(), 0);
+                assert!(unread_owner_cancellation.is_none());
                 assert_eq!(control.len(), 0);
                 assert_eq!(user.len(), 0);
                 assert_eq!(settlements.len(), 0);
@@ -401,6 +421,8 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
         origin,
         terminal:
             ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 behavior,
                 settlements,
                 control,
@@ -412,6 +434,8 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
     else {
         panic!("the root must retain its completed retirement")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let Some(report) = behavior.base().birth_report.as_ref() else {
         panic!("the child report must reach the root as a typed input")
@@ -432,6 +456,8 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
             origin,
             terminal:
                 ActorRetirement::OwnerCancelled {
+                    capability_failures,
+                    unread_owner_cancellation,
                     settlements,
                     control,
                     user,
@@ -443,6 +469,8 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
     else {
         panic!("the root must retain its exact child retirement")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     let child_address = origin.address();
     assert_ne!(child_address, MailAddr::APPLICATION_ROOT);
     assert_eq!(settlements.len(), 1);
@@ -457,6 +485,8 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
             origin,
             terminal:
                 ActorRetirement::OwnerCancelled {
+                    capability_failures,
+                    unread_owner_cancellation,
                     settlements,
                     control,
                     user,
@@ -468,6 +498,8 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
     else {
         panic!("the child must retain its exact grandchild retirement")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_ne!(origin.address(), child_address);
     match settlements.as_slice() {
         [] => {}
@@ -553,6 +585,8 @@ fn panicking_child_returns_exact_uncommitted_creation() {
         origin,
         terminal:
             ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 settlements,
                 descendants,
                 completion,
@@ -563,6 +597,8 @@ fn panicking_child_returns_exact_uncommitted_creation() {
     else {
         panic!("the parent must complete after settling the rejected creation")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(completion, Completion::Stopped);
     assert!(descendants.is_empty());

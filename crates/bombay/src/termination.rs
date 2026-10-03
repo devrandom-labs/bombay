@@ -5,9 +5,9 @@ use bombay_engine::Completion;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::error::TryRecvError;
 
+use crate::ActorExecutionOutcome;
 use crate::local::Termination;
 use crate::observe::Publisher;
-use crate::{ActorExecutionOutcome, Retirement};
 
 #[derive(Clone, Copy)]
 pub(crate) enum TerminalReportDisposition {
@@ -73,6 +73,10 @@ impl<A: behavior::Address> TerminationPublication<A> {
                 completion: Completion::Exhausted,
                 ..
             } => Ok(Exit::Collected),
+            ActorExecutionOutcome::Completed {
+                completion: Completion::RetirementRequested(never),
+                ..
+            } => match *never {},
             ActorExecutionOutcome::BehaviorFailed { .. } => Err(Crash::Failed),
             ActorExecutionOutcome::InitializationPanicked { .. }
             | ActorExecutionOutcome::Panicked => Err(Crash::Panicked),
@@ -92,7 +96,7 @@ impl<A: behavior::Address> TerminationPublication<A> {
                 }
             },
             ActorExecutionOutcome::Completed {
-                completion: Completion::Exhausted,
+                completion: Completion::Exhausted | Completion::RetirementRequested(_),
                 ..
             }
             | ActorExecutionOutcome::BehaviorFailed { .. }
@@ -105,20 +109,12 @@ impl<A: behavior::Address> TerminationPublication<A> {
         self.publisher.complete(termination);
     }
 
+    pub(crate) fn publish_capability_failure(self) {
+        self.publisher.complete(Err(Crash::CapabilityFailed));
+    }
+
     pub(crate) fn publish_owner_cancellation(self) {
         self.publisher.complete(Err(Crash::Cancelled));
-    }
-}
-
-impl<A, B, Residual, BehaviorError, Activation> Retirement<B, Residual, BehaviorError, Activation>
-    for TerminationPublication<A>
-where
-    A: behavior::Address,
-{
-    type Output = ();
-
-    fn retire(self, outcome: ActorExecutionOutcome<B, Residual, BehaviorError, Activation>) {
-        self.publish(&outcome);
     }
 }
 
@@ -199,14 +195,16 @@ mod tests {
             Err(termination) => panic!("retirement must own the report receiver: {termination:?}"),
         }
 
-        Retirement::retire(
-            TerminationPublication::new(publisher, selected),
-            ActorExecutionOutcome::<(), (), (), ()>::Completed {
-                behavior: (),
-                residual: (),
-                completion: Completion::Stopped,
-            },
-        );
+        TerminationPublication::new(publisher, selected).publish(&ActorExecutionOutcome::<
+            (),
+            (),
+            (),
+            (),
+        >::Completed {
+            behavior: (),
+            residual: (),
+            completion: Completion::Stopped,
+        });
 
         assert_eq!(observed.wait(), selected_termination);
     }

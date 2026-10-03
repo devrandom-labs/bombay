@@ -197,6 +197,8 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         descendants,
         completion,
         ..
@@ -204,6 +206,8 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     else {
         panic!("the supervisor completes after its proxy tree");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
     let SupervisorTerminal::Proxy { origin, terminal } = descendants
@@ -215,6 +219,8 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         descendants,
         completion,
         ..
@@ -222,6 +228,8 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     else {
         panic!("the supervisor completes its proxy during shutdown");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
     let SupervisorTerminal::Worker { origin, terminal } = descendants
@@ -233,6 +241,8 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         completion,
         descendants,
         ..
@@ -240,6 +250,8 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     else {
         panic!("the proxy completes its worker during shutdown");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert!(descendants.is_empty());
 }

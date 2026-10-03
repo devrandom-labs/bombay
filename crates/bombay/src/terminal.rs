@@ -8,10 +8,14 @@ use behavior::{
 use bombay_address::ClaimError;
 use bombay_engine::{ActionsOf, Completion, SettlementFailure};
 
+use tokio::task::JoinError;
+
 use crate::ActorExecutionOutcome;
 use crate::address::MailAddr;
 use crate::interpret::ActionSettlementOf;
-use crate::local::{LocalActivationRejection, LocalResidual};
+use crate::local::{
+    LocalActivationRejection, LocalResidual, LocalRetirementRequest, OwnerCancellation,
+};
 
 pub(crate) type LocalOutcome<B, Descendants> = ActorExecutionOutcome<
     B,
@@ -24,6 +28,7 @@ pub(crate) type LocalOutcome<B, Descendants> = ActorExecutionOutcome<
     >,
     <B as Behavior>::Error,
     LocalActivationRejection<BehaviorAddr<B>>,
+    LocalRetirementRequest,
 >;
 
 /// Exact allocated address of the application's root actor retirement.
@@ -156,7 +161,12 @@ pub trait ProjectTerminal<Origin, Terminal> {
 /// Complete retirement of one local actor.
 ///
 /// Every variant either retains final owned state or names the executor event
-/// that made such custody unavailable.
+/// that made such custody unavailable. `CapabilityFailed` owns the first task
+/// failure acquired as the primary cause. `capability_failures` retains other
+/// task failures joined during cleanup without changing that cause.
+/// `unread_owner_cancellation` records an accepted owner request not acquired by
+/// execution. Its unit carries every field of the private zero-field request;
+/// the report conveys no further cancellation authority.
 #[must_use = "the exact actor retirement must be inspected or explicitly discharged"]
 pub enum ActorRetirement<BehaviorState, Root>
 where
@@ -172,12 +182,16 @@ where
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
+        capability_failures: Vec<JoinError>,
+        unread_owner_cancellation: Option<()>,
     },
     InitializationPanicked {
         behavior: BehaviorState,
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
+        capability_failures: Vec<JoinError>,
+        unread_owner_cancellation: Option<()>,
     },
     HostRejected {
         behavior: BehaviorState,
@@ -186,6 +200,8 @@ where
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
+        capability_failures: Vec<JoinError>,
+        unread_owner_cancellation: Option<()>,
     },
     BindingAbandoned {
         behavior: BehaviorState,
@@ -193,6 +209,8 @@ where
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
+        capability_failures: Vec<JoinError>,
+        unread_owner_cancellation: Option<()>,
     },
     Completed {
         behavior: BehaviorState,
@@ -200,6 +218,8 @@ where
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
+        capability_failures: Vec<JoinError>,
+        unread_owner_cancellation: Option<()>,
         completion: Completion,
     },
     BehaviorFailed {
@@ -208,6 +228,8 @@ where
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
+        capability_failures: Vec<JoinError>,
+        unread_owner_cancellation: Option<()>,
         error: BehaviorState::Error,
     },
     EffectsFailed {
@@ -217,6 +239,8 @@ where
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
+        capability_failures: Vec<JoinError>,
+        unread_owner_cancellation: Option<()>,
     },
     OwnerCancelled {
         behavior: BehaviorState,
@@ -224,6 +248,19 @@ where
         control: Vec<BehaviorState::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
         descendants: Vec<Root>,
+        capability_failures: Vec<JoinError>,
+        unread_owner_cancellation: Option<()>,
+    },
+    /// Live execution acquired this exact capability task failure as its primary cause.
+    CapabilityFailed {
+        behavior: BehaviorState,
+        settlements: Vec<ActionSettlementOf<BehaviorState>>,
+        control: Vec<BehaviorState::Event>,
+        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
+        descendants: Vec<Root>,
+        error: JoinError,
+        capability_failures: Vec<JoinError>,
+        unread_owner_cancellation: Option<()>,
     },
     Panicked,
     Cancelled,
@@ -242,52 +279,64 @@ where
         else {
             unreachable!("the completed terminal projection received another outcome")
         };
-        match residual {
-            LocalResidual::OwnerCancelled {
+        let LocalResidual::Retired {
+            settlements,
+            ingress,
+            activation_tasks,
+            descendants,
+            capability_failures,
+            unread_owner_cancellation,
+        } = residual
+        else {
+            unreachable!("a completed local Environment cannot remain uncommitted");
+        };
+        assert!(
+            activation_tasks.is_empty(),
+            "terminal projection follows activation-task settlement"
+        );
+        match completion {
+            Completion::Stopped => Self::Completed {
+                behavior,
                 settlements,
-                ingress,
-                activation_tasks,
+                control: ingress.control,
+                user: ingress.user,
                 descendants,
-                cancellation: _,
-            } => {
-                assert!(
-                    activation_tasks.is_empty(),
-                    "terminal projection follows activation-task settlement"
-                );
-                assert_eq!(
-                    completion,
-                    Completion::Exhausted,
-                    "owner cancellation exhausts the active Environment"
-                );
-                Self::OwnerCancelled {
+                capability_failures,
+                unread_owner_cancellation,
+                completion: Completion::Stopped,
+            },
+            Completion::Exhausted => Self::Completed {
+                behavior,
+                settlements,
+                control: ingress.control,
+                user: ingress.user,
+                descendants,
+                capability_failures,
+                unread_owner_cancellation,
+                completion: Completion::Exhausted,
+            },
+            Completion::RetirementRequested(LocalRetirementRequest::OwnerCancellation(
+                OwnerCancellation,
+            )) => Self::OwnerCancelled {
+                behavior,
+                settlements,
+                control: ingress.control,
+                user: ingress.user,
+                descendants,
+                capability_failures,
+                unread_owner_cancellation,
+            },
+            Completion::RetirementRequested(LocalRetirementRequest::CapabilityFailed(error)) => {
+                Self::CapabilityFailed {
                     behavior,
                     settlements,
                     control: ingress.control,
                     user: ingress.user,
                     descendants,
+                    error,
+                    capability_failures,
+                    unread_owner_cancellation,
                 }
-            }
-            LocalResidual::Retired {
-                settlements,
-                ingress,
-                activation_tasks,
-                descendants,
-            } => {
-                assert!(
-                    activation_tasks.is_empty(),
-                    "terminal projection follows activation-task settlement"
-                );
-                Self::Completed {
-                    behavior,
-                    settlements,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    completion,
-                }
-            }
-            LocalResidual::Prepared { .. } | LocalResidual::Uncommitted { .. } => {
-                unreachable!("a completed local Environment cannot remain uncommitted")
             }
         }
     }
@@ -305,6 +354,8 @@ where
                     LocalResidual::Prepared {
                         ingress,
                         descendants,
+                        capability_failures,
+                        unread_owner_cancellation,
                         ..
                     },
                 error,
@@ -314,6 +365,8 @@ where
                 control: ingress.control,
                 user: ingress.user,
                 descendants,
+                capability_failures,
+                unread_owner_cancellation,
             },
             ActorExecutionOutcome::BehaviorFailed {
                 behavior,
@@ -322,6 +375,8 @@ where
                         settlements,
                         ingress,
                         descendants,
+                        capability_failures,
+                        unread_owner_cancellation,
                         ..
                     },
                 error,
@@ -331,6 +386,8 @@ where
                 control: ingress.control,
                 user: ingress.user,
                 descendants,
+                capability_failures,
+                unread_owner_cancellation,
                 error,
             },
             ActorExecutionOutcome::InitializationPanicked {
@@ -339,6 +396,8 @@ where
                     LocalResidual::Prepared {
                         ingress,
                         descendants,
+                        capability_failures,
+                        unread_owner_cancellation,
                         ..
                     },
             } => Self::InitializationPanicked {
@@ -346,6 +405,8 @@ where
                 control: ingress.control,
                 user: ingress.user,
                 descendants,
+                capability_failures,
+                unread_owner_cancellation,
             },
             ActorExecutionOutcome::ActivationFailed {
                 behavior,
@@ -354,6 +415,8 @@ where
                         initialization,
                         ingress,
                         descendants,
+                        capability_failures,
+                        unread_owner_cancellation,
                         ..
                     },
                 error,
@@ -365,6 +428,8 @@ where
                     control: ingress.control,
                     user: ingress.user,
                     descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
                 },
                 LocalActivationRejection::BindingAbandoned => Self::BindingAbandoned {
                     behavior,
@@ -372,6 +437,8 @@ where
                     control: ingress.control,
                     user: ingress.user,
                     descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
                 },
             },
             ActorExecutionOutcome::SettlementFailed {
@@ -381,6 +448,8 @@ where
                         settlements,
                         ingress,
                         descendants,
+                        capability_failures,
+                        unread_owner_cancellation,
                         ..
                     },
                 error,
@@ -391,6 +460,8 @@ where
                 control: ingress.control,
                 user: ingress.user,
                 descendants,
+                capability_failures,
+                unread_owner_cancellation,
             },
             ActorExecutionOutcome::Panicked => Self::Panicked,
             ActorExecutionOutcome::Cancelled => Self::Cancelled,
@@ -398,29 +469,16 @@ where
                 residual: LocalResidual::Uncommitted { .. },
                 ..
             }
-            | ActorExecutionOutcome::BehaviorFailed {
-                residual: LocalResidual::OwnerCancelled { .. },
-                ..
-            }
             | ActorExecutionOutcome::ActivationFailed {
-                residual:
-                    LocalResidual::Retired { .. }
-                    | LocalResidual::OwnerCancelled { .. }
-                    | LocalResidual::Prepared { .. },
+                residual: LocalResidual::Retired { .. } | LocalResidual::Prepared { .. },
                 ..
             }
             | ActorExecutionOutcome::SettlementFailed {
-                residual:
-                    LocalResidual::Uncommitted { .. }
-                    | LocalResidual::Prepared { .. }
-                    | LocalResidual::OwnerCancelled { .. },
+                residual: LocalResidual::Uncommitted { .. } | LocalResidual::Prepared { .. },
                 ..
             }
             | ActorExecutionOutcome::InitializationPanicked {
-                residual:
-                    LocalResidual::Uncommitted { .. }
-                    | LocalResidual::Retired { .. }
-                    | LocalResidual::OwnerCancelled { .. },
+                residual: LocalResidual::Uncommitted { .. } | LocalResidual::Retired { .. },
                 ..
             } => unreachable!("the local Environment returned an impossible residual phase"),
         }
@@ -470,5 +528,278 @@ mod tests {
         assert!(diagnostic.contains("ChildOrigin"));
         assert!(diagnostic.contains("MailAddr(7)"));
         assert!(diagnostic.contains("nonce: 13"));
+    }
+}
+
+#[cfg(test)]
+mod capability_retirement_projection {
+    use std::panic::panic_any;
+
+    use behavior::{
+        Actions, ActiveTurn, BehaviorActed, MessageProtocol, Never, NoBirths, NoSends, Step, User,
+    };
+    use communication::Drained;
+
+    use super::{ActorRetirement, LocalOutcome};
+    use crate::ActorExecutionOutcome;
+    use crate::MailAddr;
+    use crate::local::{
+        ActivationTasks, LocalActivationRejection, LocalResidual, LocalRetirementRequest,
+        OwnerCancellation,
+    };
+    use bombay_engine::Completion;
+
+    struct RetiringActor {
+        values: Vec<u64>,
+    }
+
+    impl behavior::Behavior for RetiringActor {
+        type Protocol = MessageProtocol<MailAddr, Never>;
+        type Event = User<MailAddr, Never>;
+        type Sends = NoSends;
+        type Ph = Never;
+        type Error = Never;
+        type Birth = NoBirths;
+
+        fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
+            match event.message {}
+        }
+    }
+
+    #[derive(Debug, PartialEq, Eq)]
+    enum RetirementCause {
+        InitializationPanicked,
+        BindingAbandoned,
+        Stopped,
+        OwnerCancellation,
+        CapabilityFailed,
+    }
+
+    #[tokio::test]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one complete typed projection trace observes all three residual phases and their separate primary causes"
+    )]
+    async fn every_residual_phase_preserves_later_failure_and_unread_owner_in_public_retirement() {
+        for cause in [
+            RetirementCause::InitializationPanicked,
+            RetirementCause::BindingAbandoned,
+            RetirementCause::Stopped,
+            RetirementCause::OwnerCancellation,
+            RetirementCause::CapabilityFailed,
+        ] {
+            let values = vec![77, 177];
+            let allocation = values.as_ptr();
+            let panic_values = Box::new(vec![88_u64, 188]);
+            let panic_allocation = panic_values.as_ptr();
+            let mut tasks = ActivationTasks::new();
+            tasks.spawn(async move { panic_any(panic_values) });
+            let behavior = RetiringActor { values };
+            let ingress = Drained {
+                control: Vec::new(),
+                user: Vec::new(),
+            };
+            let residual = match cause {
+                RetirementCause::InitializationPanicked => LocalResidual::Prepared {
+                    ingress,
+                    activation_tasks: tasks,
+                    descendants: vec![99],
+                    capability_failures: Vec::new(),
+                    unread_owner_cancellation: Some(()),
+                },
+                RetirementCause::BindingAbandoned => LocalResidual::Uncommitted {
+                    initialization: Actions::cont(),
+                    ingress,
+                    activation_tasks: tasks,
+                    descendants: vec![99],
+                    capability_failures: Vec::new(),
+                    unread_owner_cancellation: Some(()),
+                },
+                RetirementCause::Stopped
+                | RetirementCause::OwnerCancellation
+                | RetirementCause::CapabilityFailed => LocalResidual::Retired {
+                    settlements: Vec::new(),
+                    ingress,
+                    activation_tasks: tasks,
+                    descendants: vec![99],
+                    capability_failures: Vec::new(),
+                    unread_owner_cancellation: match cause {
+                        RetirementCause::OwnerCancellation => None,
+                        _ => Some(()),
+                    },
+                },
+            };
+            let residual = residual.settle_activation_tasks().await;
+            let outcome: LocalOutcome<RetiringActor, Vec<u64>> = match cause {
+                RetirementCause::InitializationPanicked => {
+                    ActorExecutionOutcome::InitializationPanicked { behavior, residual }
+                }
+                RetirementCause::BindingAbandoned => ActorExecutionOutcome::ActivationFailed {
+                    behavior,
+                    residual,
+                    error: LocalActivationRejection::BindingAbandoned,
+                },
+                RetirementCause::Stopped => ActorExecutionOutcome::Completed {
+                    behavior,
+                    residual,
+                    completion: Completion::Stopped,
+                },
+                RetirementCause::OwnerCancellation => ActorExecutionOutcome::Completed {
+                    behavior,
+                    residual,
+                    completion: Completion::RetirementRequested(
+                        LocalRetirementRequest::OwnerCancellation(OwnerCancellation),
+                    ),
+                },
+                RetirementCause::CapabilityFailed => {
+                    let primary = tokio::spawn(async { panic_any(Box::new(vec![66_u64, 166])) })
+                        .await
+                        .expect_err("the primary task failure is retained");
+                    ActorExecutionOutcome::Completed {
+                        behavior,
+                        residual,
+                        completion: Completion::RetirementRequested(
+                            LocalRetirementRequest::CapabilityFailed(primary),
+                        ),
+                    }
+                }
+            };
+            let (behavior, control, user, descendants, mut failures, unread) =
+                match ActorRetirement::from_local(outcome) {
+                    ActorRetirement::InitializationPanicked {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        capability_failures,
+                        unread_owner_cancellation,
+                    } => {
+                        assert_eq!(cause, RetirementCause::InitializationPanicked);
+                        (
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            capability_failures,
+                            unread_owner_cancellation,
+                        )
+                    }
+                    ActorRetirement::BindingAbandoned {
+                        behavior,
+                        initialization,
+                        control,
+                        user,
+                        descendants,
+                        capability_failures,
+                        unread_owner_cancellation,
+                    } => {
+                        assert_eq!(cause, RetirementCause::BindingAbandoned);
+                        assert_eq!(initialization.sends, NoSends);
+                        assert!(initialization.creates.is_empty());
+                        assert!(matches!(initialization.become_, Step::Continue));
+                        (
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            capability_failures,
+                            unread_owner_cancellation,
+                        )
+                    }
+                    ActorRetirement::Completed {
+                        behavior,
+                        settlements,
+                        control,
+                        user,
+                        descendants,
+                        completion,
+                        capability_failures,
+                        unread_owner_cancellation,
+                    } => {
+                        assert_eq!(cause, RetirementCause::Stopped);
+                        assert_eq!(completion, Completion::Stopped);
+                        assert_eq!(settlements.len(), 0);
+                        (
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            capability_failures,
+                            unread_owner_cancellation,
+                        )
+                    }
+                    ActorRetirement::OwnerCancelled {
+                        behavior,
+                        settlements,
+                        control,
+                        user,
+                        descendants,
+                        capability_failures,
+                        unread_owner_cancellation,
+                    } => {
+                        assert_eq!(cause, RetirementCause::OwnerCancellation);
+                        assert_eq!(settlements.len(), 0);
+                        (
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            capability_failures,
+                            unread_owner_cancellation,
+                        )
+                    }
+                    ActorRetirement::CapabilityFailed {
+                        behavior,
+                        settlements,
+                        control,
+                        user,
+                        descendants,
+                        error,
+                        capability_failures,
+                        unread_owner_cancellation,
+                    } => {
+                        assert_eq!(cause, RetirementCause::CapabilityFailed);
+                        assert_eq!(settlements.len(), 0);
+                        let primary = error
+                            .into_panic()
+                            .downcast::<Box<Vec<u64>>>()
+                            .expect("the exact acquired primary panic value remains separate");
+                        assert_eq!(**primary, [66, 166]);
+                        (
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            capability_failures,
+                            unread_owner_cancellation,
+                        )
+                    }
+                    _ => panic!(
+                        "the selected primary cause was changed during exact public projection"
+                    ),
+                };
+            assert_eq!(behavior.values, [77, 177]);
+            assert_eq!(behavior.values.as_ptr(), allocation);
+            assert_eq!(control.len(), 0);
+            assert_eq!(user.len(), 0);
+            assert_eq!(descendants, [99]);
+            assert_eq!(
+                unread,
+                match cause {
+                    RetirementCause::OwnerCancellation => None,
+                    _ => Some(()),
+                }
+            );
+            assert_eq!(failures.len(), 1);
+            let failure = failures
+                .pop()
+                .expect("one exact late failure survives every projection");
+            let payload = failure
+                .into_panic()
+                .downcast::<Box<Vec<u64>>>()
+                .expect("the late original panic value remains owned");
+            assert_eq!(payload.as_ptr(), panic_allocation);
+            assert_eq!(**payload, [88, 188]);
+        }
     }
 }

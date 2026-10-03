@@ -70,6 +70,8 @@ where
         origin,
         terminal:
             ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 behavior,
                 settlements,
                 control,
@@ -81,6 +83,8 @@ where
     else {
         panic!("the application must preserve the root's completed terminal state")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     drop(behavior);
     let settlement_status = settlements.settlement_status();

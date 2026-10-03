@@ -1,5 +1,6 @@
 //! Exact terminal classification for one Driver execution.
 
+use behavior::Never;
 use bombay_engine::{Completion, DriverError, DriverRetirement, SettlementFailure};
 
 /// Every factual way one incarnation can terminate.
@@ -8,12 +9,12 @@ use bombay_engine::{Completion, DriverError, DriverRetirement, SettlementFailure
 /// Panic and cancellation are classified by the incarnation because they are
 /// properties of executing the Driver future, not Behavior decisions.
 #[derive(Debug, PartialEq, Eq)]
-pub enum ActorExecutionOutcome<B, R, BehaviorError, ActivationError> {
+pub enum ActorExecutionOutcome<B, R, BehaviorError, ActivationError, Request = Never> {
     /// The Driver returned successfully for the stated reason.
     Completed {
         behavior: B,
         residual: R,
-        completion: Completion,
+        completion: Completion<Request>,
     },
     /// Behavior initialization or one Behavior fold failed.
     BehaviorFailed {
@@ -41,12 +42,12 @@ pub enum ActorExecutionOutcome<B, R, BehaviorError, ActivationError> {
     Cancelled,
 }
 
-impl<B, R, BehaviorError, ActivationError>
-    From<DriverRetirement<B, R, DriverError<BehaviorError, ActivationError>>>
-    for ActorExecutionOutcome<B, R, BehaviorError, ActivationError>
+impl<B, R, BehaviorError, ActivationError, Request>
+    From<DriverRetirement<B, R, DriverError<BehaviorError, ActivationError>, Request>>
+    for ActorExecutionOutcome<B, R, BehaviorError, ActivationError, Request>
 {
     fn from(
-        retirement: DriverRetirement<B, R, DriverError<BehaviorError, ActivationError>>,
+        retirement: DriverRetirement<B, R, DriverError<BehaviorError, ActivationError>, Request>,
     ) -> Self {
         let DriverRetirement {
             behavior,

@@ -1,6 +1,7 @@
 //! Ordered, statically dispatched interpretation of complete actor actions.
 
 use std::time::Instant;
+use tokio::task::JoinError;
 
 use behavior::{
     ActionSettlement, BehaviorAddr, BehaviorSettlements, CreationSettlements, InterpretCreations,
@@ -24,7 +25,9 @@ pub(crate) trait RetireCapabilities {
     type Event;
     type Descendants;
 
-    fn next_local_event(&mut self) -> impl core::future::Future<Output = Self::Event> + Send;
+    fn next_local_event(
+        &mut self,
+    ) -> impl core::future::Future<Output = Result<Self::Event, JoinError>> + Send;
 
     fn next_deadline(&mut self) -> Option<Instant>;
 
@@ -85,7 +88,7 @@ where
             .await
     }
 
-    async fn next_local_event(&mut self) -> B::Event {
+    async fn next_local_event(&mut self) -> Result<B::Event, JoinError> {
         self.capabilities.next_local_event().await
     }
 
