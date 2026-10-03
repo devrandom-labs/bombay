@@ -306,9 +306,9 @@ visitor cannot return the original owned shared role.
 
 Current producers replace the original source rejection with SourceStateCorrupt
 when source restoration fails. Thus successful Some(Source) extraction is not a
-current lawful producer trace and must not be fabricated as proof. Reachability
-of that replacement needs a separate authentic witness or invariant; this
-accessor does not repair or authorize original-error erasure. Existing opaque
+current lawful producer trace and must not be fabricated as proof. The selected
+source invariant below resolves reachability; this accessor does not repair or
+authorize original-error erasure. Existing opaque
 correlation allocation is not itself evidence of nondeterministic behavior:
 heap allocation is permitted, and no paired lawful consumer trace establishes
 a contract-visible mismatch. No alpha-renaming law is assumed.
@@ -352,3 +352,29 @@ or complete replacement lineage. Executor destruction, panic, final receiver,
 family cleanup and consuming opaque-diagnostic extraction remain unproved.
 Inherited runtime-containing SearchWorkshop fixtures remain excluded.
 No production retention or full DG-WORK/EV-24 acceptance is claimed.
+
+## Selected source-restoration invariant (2026-10-03)
+
+Read-only record
+`ed38cbfba6cf726679ce0777c2bf72a7b56ca332e2ec643fb0c872bc0da4284a`
+examines all six restoration calls in Actors 0.21.1 and its two preparation
+issuers. Nine selected source/test hashes authenticate. Claiming the sole
+available source moves its slot to AwaitingReturn before issuing an affine
+request; another role waits. Matching terminal start/return consumes the
+original expectation before restoration. Shutdown retains that same occurrence,
+marks it Drained before restoration, and issues no new preparations. Foreign,
+early, repeated or post-stop inputs cannot restore the source.
+
+Within safe publicly constructed pools and successful folds, each restoration
+therefore sees AwaitingReturn. No lawful occupied-source restoration trace is
+established; the hypothetical SourceStateCorrupt branch does not justify a
+production repair. This is a source invariant, not a new executable regression
+or optimized replay proof. It excludes forged private state and resumption
+after panic. Coordinator authenticated the nine owners and read the actual
+claim/restore operations, six call sites and live/draining receipt acceptance.
+
+A lawful source rejection restores Source into the pool and retains the original
+typed reason in its diagnostic, with returned_source None. Consuming that reason
+is the separate proposed extraction law. It does not transfer the pool-owned
+Source or establish an external retry policy. No new source-state model, public
+type, owning edit or full gate acceptance follows from this inspection.
