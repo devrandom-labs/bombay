@@ -1531,9 +1531,19 @@ Thus a queued request and a failed send to the departed startup receiver must
 not be described as preventing the actor's endpoint publication. Cancellation
 acquisition, endpoint publication and caller receipt are distinct operations.
 
-The user was asked whether cancellation winning during startup must prevent
-endpoint visibility, or whether admitted startup may complete before joined
-cleanup removes it. No answer or PRD amendment is assumed. An actual publication
-trace using the existing runtime notice is being prepared; dependent EV-06 and
-publication-policy acceptance remain blocked. Independent input-custody and
-family-lifetime comparisons continue without claiming this stronger law.
+The user selected **prevent publication when cancellation wins**. Section 8.2
+now requires the actor to remain invisible when owner cancellation wins before
+publication, while preserving already accepted effects and exact remaining
+values through joined cleanup. This is deliberate Bombay policy, not a new
+Behavior-fold law. It applies to the shared local root, child and Entity
+construction boundary.
+
+An actual original-publication trace using the existing runtime notice is being
+prepared. That trace must preserve the complete Address-owned resolved endpoint
+snapshot; resolution does not return a bare ActorRef. The first compiler veto
+and failed source are frozen separately. No policy fix or acceptance is claimed
+from the original positive trace. The precise cancellation/publication winning
+boundary, typed disposition, ordinary-Rust comparison and independent review
+remain required before implementation or EV-06 acceptance. A queued request,
+request acquisition, publication and startup delivery are not interchangeable
+evidence. Independent input-custody and family-lifetime comparisons continue.

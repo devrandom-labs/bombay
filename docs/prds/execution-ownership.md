@@ -358,7 +358,7 @@ an execution-state enum. Reuse ownership and existing sum/product types first.
 | Situation | Required behavior and authority |
 | --- | --- |
 | Before task spawn | No actor task exists; caller owns all prepared inputs. Dropping them cannot publish a successful activation. |
-| Spawned, awaiting activation | Startup owner retains cancellation and task custody. Dropping the activation waiter cannot abandon the spawned task. |
+| Spawned, awaiting activation | Startup owner retains cancellation and task custody. Dropping the activation waiter cannot abandon the spawned task. When owner cancellation wins before publication, the actor must remain invisible; already accepted effects and exact remaining values still cross joined cleanup. |
 | Active, acquiring input | Owner cancellation can request retirement; ordinary shutdown is still a Behavior policy request. A sender closing is not automatically equivalent to either. |
 | Awaiting source input/custody or effect completion | Cancellation law must be explicit at each await; do not assume the ordinary inbox select handles it. Partial accepted effects remain factual. |
 | Retirement requested | No new Behavior turn after the owning Driver contract ends execution. Close admission and retain queued payloads under existing Communication laws. |
