@@ -203,3 +203,51 @@ Production bound migration, wrapper deletion, full application/birth consumers,
 noncooperative Entity retirement, forced family cleanup and metrics remain
 open. topology.rs is unchanged and outside the approved edit scope.
 DG-WRAPPERS is not accepted by this bounded comparison.
+
+## Direct timer comparison on the selected release (2026-10-03)
+
+Section 38's ordinary-Rust comparison uses the actual selected TimerQueue and
+existing LocalTimers, with typed request functions in the approved
+application_runtime.rs test module. time.rs remains unchanged. The comparison
+preserves absolute ordering, replacement, Behavior generation, event injection
+paths, relative deadlines and complete overflow rejection. Relative comparison
+recovers the wrapper's actual clock sample; separately sampled clocks are not
+assumed equal. Constructed exhaustion errors prove rejection algebra only.
+The selected owner's actual generation/sequence exhaustion and failed
+replacement tests pass in both pinned-Nix profiles without forging private state.
+
+Predecessor receipt
+092dc9e21201562c52ad642829b8c2bf57f83286a584acfc4ec482b89f08f1bb
+and independent review
+90a87f6be88461557188ca8c8ea04c3f83f84bd2aa992366ec33086d1a4cf39c
+accept bounded evidence. That predecessor acquires a nonempty timer only through
+RetireCapabilities; its CommitActions check observes an empty queue. It therefore
+does not prove both nonempty acquisition ports.
+
+Successor receipt
+178744fbb8c4c25ed76c55ed07c33142d3f623ca956db5c391d2285372b34bb9
+closes that limitation with two distinct original requests in the same queue.
+RetireCapabilities and CommitActions each acquire a real due event, preserving
+complete receipts, deadlines, event lanes and the direct queue's key/at/value.
+Both are followed by replay checks. Incremental patch
+e5b232a9e85e7ee7fb362578df2de2864c3f8676cf766d836fe45d1688bcf89e
+adds +50/-2/net48 test lines; the complete comparison is +435/-5/net430 tests
+in one existing file, with zero production lines, public types or new unsafe.
+Tests are exempt from production condensation.
+
+Six author positives and restorations pass in each pinned-Nix profile. Omitting
+the second acquired fact after actual queue removal fails the intended assertion
+in both profiles. This is a counterfactual inversion, not an original defect.
+Strict workspace all-target Clippy and formatting pass. Predecessor static
+wrong-path/non-Clone denials and three semantic inversions remain inherited
+evidence, not successor reruns. Excluded preliminary insertion and length-lint
+failures remain in the immutable artifacts.
+
+Independent nonauthor review
+c81d4f766641ad72714b55e2000405a048dcf60a1e65a4af5c988ca2402b0068
+accepts the bounded successor. It authenticates 38 artifacts and both 345-file
+inventories, with 344 files unchanged. The coordinator separately authenticates
+those artifacts, inventories and signed review, and reads both complete patches.
+Neither reviewer nor coordinator claims a fresh Rust rerun. No source is retained
+in the canonical tree. Actual Driver retirement, complete source arbitration,
+production migration and full DG-WRAPPERS acceptance remain open.
