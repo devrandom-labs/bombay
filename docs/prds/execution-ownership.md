@@ -1528,3 +1528,73 @@ inversion and full owner CI are still required.
 The user explicitly authorized the three test paths. The corrected allowance
 is 67 cumulative paths with the same limits; remaining gate/review/verification
 requirements still apply.
+
+### Frozen owning cause contract and verification
+
+The isolated owning branch `exec-capability-failure` starts at selected
+`804b2bf25325a523884ec49d8a4ae6d2d2b6e9da`. Seven existing paths change:
+production +3 / -0 / net 3; tests +56 / -4 / net 52; documentation +12 / -0;
+public API +0 / -0 types and one breaking exhaustive enum variant; untracked
+zero. The approved 67-path forecast includes the later generated release
+metadata, not 67 currently edited files. Cumulative source/shutdown/delivered
+Communication/actual cause forecast is 64 + 1 + 49 + 3 = 117 net production.
+
+Patch SHA-256:
+`3d17ddb24d53853c6c5bbe7e0e44ea607bee67bb1c9e7030390af0a1cbaebbfe`;
+receipt `146baefa350ba42f14ca6dfd68e6d260634315b796d4c5a184df4a7b44d08030`
+authenticates the seven sources and 15 verification artifacts. The existing
+Crash sum gains CapabilityFailed; no new state, interpreter, routing, authority,
+wrapper, generic bound or policy input is added. Templates conserve that same
+cause through their existing explicit policy paths. Public syntax is the
+existing TerminalOutcome with Err(Crash::CapabilityFailed), not a second result
+or repeated cause label. Aggregate control states, subordinate products and
+transition branches remain unchanged. Normalized lifecycle/capability and EXEC
+cause/disposition laws were cross-checked; no arrival history, coordinated
+flags, inferred provenance or structural caller syntax is introduced. Drift
+checkpoint disposition: pass for this bounded shared cause contract only.
+
+Before production, the standalone consumer of selected Actors 0.20.0 cannot
+name the required variant: E0599 in debug and optimized checks. This is static
+expressivity evidence, not an original runtime regression. The actual original
+capability panic/custody loss remains in the task decision record. For semantic
+inversion, changing only existing production propagation emission to reclassify
+CapabilityFailed as EnvironmentFailed causes the complete-outcome regression
+to fail with intended compiled assertion exit 101 in both profiles. The exact
+source is restored and all nine focused lifecycle tests pass in both profiles,
+including duplicate-fact rejection in optimized execution.
+
+Pinned-Nix verification against this unchanged candidate:
+
+- cargo test --locked --workspace: 946 tests pass, including documentation.
+- cargo nextest run --locked --workspace: 857 pass, zero skipped.
+- focused actors lifecycle debug/optimized: nine each pass.
+- optimized FIFO recovery, crash-policy composition and independent terminal
+  sequence model: one each passes.
+- cargo fmt --all -- --check and strict workspace/all-target Clippy: exit 0.
+- interpreter dependency graph check: one local version per owning crate.
+- external interpreter debug/optimized: 18 each pass using the owner's pinned
+  1.95 compiler inside Bombay's pinned Nix invocation.
+- nix flake check -L: all ten compatible Darwin checks pass, including build,
+  tests, lint, documentation, formatting, dependency audit/policy and package
+  inspection. Other architectures are verified by their required CI lanes.
+
+The initial external interpreter run with Bombay's Rust 1.96 failed only an
+existing E0599 text snapshot ("associated item" versus "constant"). It is
+excluded from semantic evidence. No fixture or acceptance criterion was
+weakened; the owning pinned toolchain used by its CI passes unchanged fixtures.
+The unchanged candidate also passes the owning fuzz build through pinned Nix
+(exit 0). Final independent reviewer `/root/contract_inventory` authenticated
+the complete patch, all seven sources and all 15 frozen receipt artifacts,
+including its own source/consumer review, and signed this bounded contract.
+The source commit is `09a4cdc365dce63c5a2fa3b3d7d29c1dbf58fc62`;
+[owning PR 78](https://github.com/devrandom-labs/bombay-behavior/pull/78) targets
+main with an explicit semver-breaking label. Its
+[independent review](https://github.com/devrandom-labs/bombay-behavior/pull/78#pullrequestreview-5398261097)
+is posted as COMMENTED through the shared GitHub account, transparently naming
+the non-author agent; it is not a separate GitHub principal approval. The
+current branch rules require a PR, Nix Flake Check and resolved review threads,
+with zero separate approving reviews. All required and repository CI gates
+remain mandatory before merge. Current exact-head CI is running; no source
+merge or published coupled release is claimed. This does not implement
+Bombay's failure acquisition, actor retirement or full result custody and does
+not close DG-TASK, feature acceptance or delivery.
