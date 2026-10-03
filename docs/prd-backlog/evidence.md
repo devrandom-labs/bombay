@@ -30,14 +30,21 @@ is held, without starting a replacement, and preserves exact source custody.
 
 | Owner | Selected contract inspected | Consequence |
 | --- | --- | --- |
-| Behavior | bombay-behavior 0.20.0, registry VCS revision `804b2bf25325a523884ec49d8a4ae6d2d2b6e9da` | Owns Actions and the typed capability algebra. Exact revision's AGENTS.md applies. |
-| Behavior Actors | bombay-behavior-actors 0.20.0, same revision | Owns existing supervision, pools and template policies. |
+| Behavior | bombay-behavior 0.21.0, registry VCS revision `5f9185c9a66bdb80216b63f89a5c42fa02becaa0` | Owns Actions and the typed capability algebra. Exact revision's AGENTS.md applies. |
+| Behavior Actors | bombay-behavior-actors 0.21.0, same revision | Owns existing supervision, pools and template policies. |
 | Behavior macros | bombay-behavior-macros 0.13.0, registry VCS revision `3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8` | Owns syntax generation; Bombay must not replace its semantics. |
 | Address | bombay-address 0.3.0 | Owns local claims/leases and opaque resolution; its process-local representation is not a wire address. |
-| Communication | bombay-communication 0.1.2 | Owns bounded user delivery, separate control delivery, closure and payload recovery. |
+| Communication | bombay-communication 0.1.3 | Owns bounded user delivery, separate control delivery, closure and payload recovery. |
 | Observe | Private Bombay implementation | Owns completion publication and waiting; is not a missing external dependency. |
 | Timers | 0.1.0 patched to `13e884da7ab41781f52337b0038060e375b00ee0` | Owns volatile actor scheduling/generations, not persistent reminders. |
 | Tokio | 1.53.1 in this lockfile | Ordinary runners select current-thread execution; multithread execution needs deliberate integration. |
+
+Selected-contract table refreshed on 2026-10-03 for EXEC. The earlier dated
+0.20.0 execution observations below remain historical evidence. Behavior
+Actors 0.21.0 adds the reviewed distinct live capability-failure cause; Bombay's
+full failure custody implementation remains pending. See the
+[EXEC release record](../prds/execution-ownership.md#21-live-capability-failure-cause-checkpoint-2026-10-02)
+for publication, source and verification evidence.
 
 Sources: [Cargo.lock](../../Cargo.lock), [workspace manifest](../../Cargo.toml),
 [Bombay manifest](../../crates/bombay/Cargo.toml). Behavior source was read from

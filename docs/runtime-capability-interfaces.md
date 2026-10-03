@@ -16,8 +16,8 @@ Selo or Mnesis. The new document's proposed distributed contracts are not
 implemented capabilities or additions to the current Engine port.
 
 The selected dependency graph uses the immutable Behavior Core and Actors
-0.20.0 registry releases from
-`804b2bf25325a523884ec49d8a4ae6d2d2b6e9da` and Behavior Macros 0.13.0
+0.21.0 registry releases from
+`5f9185c9a66bdb80216b63f89a5c42fa02becaa0` and Behavior Macros 0.13.0
 from `3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8`. Behavior owns the direct
 `Behavior -> Actions` fold, closed typed action products, total interpretation,
 source-settlement custody, explicit generated creation-settlement disposition,
@@ -66,15 +66,15 @@ and order activation and retirement across the primitive capabilities.
 
 ## Exact audited dependency set
 
-The selected artifacts were refreshed on 2026-09-30 against this workspace's
+The selected artifacts were refreshed on 2026-10-03 against this workspace's
 lockfile, not against adapters or remembered APIs.
 
 | Capability | Exact source used by Bombay | Current owner |
 |---|---|---|
-| Behavior | crates.io `bombay-behavior 0.20.0`, checksum `10ebe68552dcb07f48c5af0af4ef0cafbbf4f9743a4a58845879768d712f9846`, plus `bombay-behavior-macros 0.13.0`, checksum `c6f66dda26895533be22286fe4a062b43a524cac5ea2a3cc1a956b6c0d38a4bc` | pure `Behavior -> Actions` algebra, named interpreter requests, total typed settlement products, exact source custody, explicit generated creation-settlement policy, static `DispatchBirth`/`InstallBirth`, and stable protocol/birth/event composition |
-| Behavior Actors | crates.io `bombay-behavior-actors 0.20.0`, checksum `84d5b21b694fd9c86a9e0cdba72e15e478181ba0977e3b10dc34f476f16e5c2b` | reusable actor templates and their topology, supervision, shutdown, timing, terminal-disposition, routing, discovery, persistence, workflow, and operations policies over the same foundational algebra |
+| Behavior | crates.io `bombay-behavior 0.21.0`, checksum `5b03af3448d25805c27bd37517479f632160fd81932ce60d6a73be22cac5d0a1`, plus `bombay-behavior-macros 0.13.0`, checksum `c6f66dda26895533be22286fe4a062b43a524cac5ea2a3cc1a956b6c0d38a4bc` | pure `Behavior -> Actions` algebra, named interpreter requests, total typed settlement products, exact source custody, explicit generated creation-settlement policy, static `DispatchBirth`/`InstallBirth`, and stable protocol/birth/event composition |
+| Behavior Actors | crates.io `bombay-behavior-actors 0.21.0`, checksum `16c7a7d39ab3c10bb074f3e23330df39247d2284c89de2c0d2e107d2a59e7287` | reusable actor templates and their topology, supervision, shutdown, timing, terminal-disposition, routing, discovery, persistence, workflow, and operations policies over the same foundational algebra |
 | Address | crates.io `bombay-address 0.3.0`, checksum `8dfc2197b4156cc87c4021a2fa0e8767a5efb009c98d4238c4147714840fc1dc` | exclusive non-resolvable reservation, exact publication lease and retirement, opaque resolution |
-| Communication | crates.io checksum `fc3d06aaf88ef9fe5392506d13e208c2141e6978563e1b802b97b489b1a071e2`, package `bombay-communication 0.1.2` | two-lane mailbox, delivery, backpressure, affine user-admission retirement |
+| Communication | crates.io checksum `eb0dc8a057efce6e387c9bc24955ffb020b2c138c5ce6b10c1f6c211d32ad268`, package `bombay-communication 0.1.3` | two-lane mailbox, delivery, backpressure, affine user-admission retirement |
 | Observe | Bombay-private import of semantic commit `b3b5f36a3b514713012086dfc72f5327d15fe2b2` plus exact Loom-bound fix `ef2ea13e65889aa3bf713822041e032020e98d73` from `feat/affine-observation` | keyed exact-generation facts plus shared and affine unkeyed publication pairs; no separately published actor API |
 | Timers | Git `bombay-timers 0.1.0` at exact revision `13e884da7ab41781f52337b0038060e375b00ee0` | single-owner generation-safe timer queue |
 
@@ -278,12 +278,13 @@ The implementation has extensive unit, edge, teardown-oracle, allocation,
 leak, stress, property, and Loom coverage. Bombay must reuse these semantics,
 not wrap them in Tokio channels.
 
-The selected Communication 0.1.2 does not fully implement its affine admission
-contract: a surviving pre-close send permits a new post-close send to acquire
-admission. [EXEC's owning prerequisite](prds/execution-ownership.md#19-communication-admission-prerequisite-2026-10-02)
-records independently reproduced original failures and the bounded correction
-under review. The laws here describe the required contract; they do not claim
-that this selected defect is repaired or that EXEC is accepted.
+Communication 0.1.2 allowed a surviving pre-close send to keep admission open
+for a new post-close send. The selected 0.1.3 corrects that defect while retaining
+already accepted messages and returning exact rejected payloads. Both the
+original failure and released correction are verified through actual ActorRef
+in debug and optimized builds; see
+[EXEC's delivery record](prds/execution-ownership.md#20-communication-correction-checkpoint-2026-10-02).
+That prerequisite correction does not accept the remaining EXEC laws.
 
 ### Affine user-admission retirement
 

@@ -3,8 +3,8 @@
 This is the accepted normative contract for `bombay-engine` and its Bombay
 runtime integration. Every `D-*` identifier is mandatory.
 
-The selected contract is Behavior Core and Actors 0.20.0 at
-`804b2bf25325a523884ec49d8a4ae6d2d2b6e9da` and Macros 0.13.0 at
+The selected contract is Behavior Core and Actors 0.21.0 at
+`5f9185c9a66bdb80216b63f89a5c42fa02becaa0` and Macros 0.13.0 at
 `3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8`.
 The owner supplies one direct `Behavior -> Actions` fold, ordered creations,
 named send interpretation, total action settlements, and typed source custody.

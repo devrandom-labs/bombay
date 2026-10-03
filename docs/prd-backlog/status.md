@@ -19,7 +19,7 @@ verification and accepted decisions. No product row below claims completion.
 
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
-| EXEC1 | blocked; independent execution implementation and research continue | External: verified Behavior Actors exact observation-relationship cancellation authority, distinct live capability-failure terminal cause and selected version | DIST1 | [Execution ownership PRD](../prds/execution-ownership.md): caller-owned async hosting and multicore concurrency with serialized actor turns; fresh original observation/capability-custody failures reproduced; selected numeric-ID observation lacks the required exact authority; Communication admission correction is reviewed, CI-verified, published as 0.1.3 and selected with passing narrow regressions; the selected live capability-failure cause also needs the owning terminal contract; owning fixes and decision gates remain required. |
+| EXEC1 | blocked; independent execution implementation and research continue | External: verified Behavior Actors exact observation-relationship cancellation authority | DIST1 | [Execution ownership PRD](../prds/execution-ownership.md): caller-owned async hosting and multicore concurrency with serialized actor turns; fresh original observation/capability-custody failures reproduced; selected numeric-ID observation lacks the required exact authority; Communication admission correction is reviewed, CI-verified, published as 0.1.3 and selected with passing narrow regressions; the distinct live capability-failure cause is reviewed, released in Behavior Actors 0.21.0 and selected with passing workspace/Driver verification; Bombay failure custody and remaining owning fixes/decision gates remain required. |
 | NET1 | blocked | External: immutable Zenoh/codec selection and verified typed extension contract | PLACE1, DIST1, SELO1 | [Networking](networking.md): two-process request/reply, exact versus ambiguous delivery, bounded queues and static routing; exercise the same law with Zenoh and a deterministic faulting test host. |
 | AUTH1 | candidate | — | PLACE1, DIST1, SELO1 | [Identity](identity-and-placement.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. |
 | PLACE1 | blocked | NET1, AUTH1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. |
@@ -63,8 +63,8 @@ EXEC research. They are evidence locations, not a fresh test certification.
 | ARC-020, TEST-008 | Minimal retained module ownership and separate revision-bound actor-template inventory. | [Module map](../module-boundaries.md), [public API audit](../public-api-audit.md), [template manifest](../driver-template-manifest.json). |
 | TEST-020 | Corrected Linux fuzz shell and unconditional artifact-upload failures; CI run 36985076274 passed both bounded campaigns and uploads. | [CI workflow](../../.github/workflows/checks.yml), [Driver campaign](../../crates/bombay-engine/fuzz/verify-causal-turns.sh); exact historical receipt remains in Git. |
 
-Behavior Core/Actors 0.20.0 release revision is
-`804b2bf25325a523884ec49d8a4ae6d2d2b6e9da`; Macros 0.13.0 revision is
+Behavior Core/Actors 0.21.0 release revision is
+`5f9185c9a66bdb80216b63f89a5c42fa02becaa0`; Macros 0.13.0 revision is
 `3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8`. The Driver and template
 manifests retain revision-bound evidence. Earlier EXEC notes selected 0.17.0:
 their hashes, source inventories and open representation experiments are
