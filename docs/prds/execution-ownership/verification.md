@@ -127,12 +127,31 @@ The separate fuzz graph selects the same Core and actual local Engine version. B
 The complete canonical Bombay delta follows; owning repository delivery has
 its separate complete ten-path record in the shutdown decision record.
 
+## Fresh canonical nextest verification (2026-10-03)
+
+At clean canonical 56683b34d6c14b99591986fa503c7cb66076b890, the required
+ordinary workspace nextest run passes all 421 binary tests, with zero skipped:
+
+```text
+nix --option eval-cache false develop -c env -u RUSTFLAGS CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/bombay-exec-canonical-nextest-target cargo nextest run --locked --workspace -j 2
+```
+
+The target is fresh. All 345 tracked inputs remain byte-identical through the
+run; the working tree has no tracked or untracked changes. Input manifest
+1a067a8ee2e9c02421f22de82f400625be493731eeb5220b4d6493003a7013f4
+and receipt 9593376725ae619cd75caa8564b1d38cd7de8217500a8ab7789fe648ec30a519
+bind the exact command, unchanged sources, terminal exit zero and complete log
+at /tmp/bombay-exec-canonical-nextest.log. This supplements the earlier Cargo
+workspace/doctest verification; nextest does not run doctests or the hook-only
+measurement witnesses. It does not verify unretained semantic comparisons,
+final EXEC acceptance or remote CI.
+
 <!-- exec-research-counts -->
 
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +5674 / -87 / net 5587
+documentation: +5727 / -87 / net 5640
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67

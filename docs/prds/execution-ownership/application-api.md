@@ -333,7 +333,9 @@ consolidation is still required. Entity ordinary-error shutdown products and
 dropped execution/startup results retain the separately witnessed losses.
 
 The independently reviewed source-retirement correction remains an isolated
-comparison. The early ownership handoff is still under independent review. Neither selects this public async API
+comparison. The lower ownership handoff has independent bounded review,
+recorded in task-custody.md; its complete application integration remains open.
+Neither selects this public async API
 or implements its complete root/family/result ownership. Keep DG-API open
 until those owners and the exact inferred consuming signatures, executor
 preconditions, returned values and consumer migration are accepted. No new
@@ -622,3 +624,35 @@ are not proven by this kernel. Initial script aborts that expected a later
 assertion remain excluded; earlier actual Weak zero-versus-one failures are
 qualified as the intended custody violation. No canonical source retention
 or full DG-API/DG-TASK approval is claimed.
+
+## Normal family lifetime correction required (2026-10-03)
+
+Independent source-order review
+50634326607c231f783d472b86bea17c704ef1d30123b2875dd3230dbfbfeeb2
+and model 81274a2e7c8f0ddcaa12684e8ff3c2b06b1988d60942ef1948eb91c453bfffa6
+identify a concrete limitation of the frozen 94af0ee ordinary API prototype.
+Canonical launch_with awaits application work before joining the root;
+run_with_entities then calls installed.shutdown. The prototype's independent
+cleanup instead joins the root and immediately shuts families down, while
+caller work can remain pending. EntityRuntime::shutdown closes admission at
+its owning boundary. A still-running callback can therefore lose a family it
+is legitimately using when only the unrelated root has finished.
+
+XO-07 and XO-10 require the existing normal order. Do not reinterpret early
+root termination as authority to cancel work or close families. Early internal
+root joining and early family shutdown are distinct; neither is accepted by
+the earlier zero-incarnation or caller-drop witnesses. Their bounded syntax,
+untouched-input and result-custody evidence remains valid within its stated scope.
+The cleanup acknowledgement currently points toward execution after cleanup;
+it is not a work-completion signal authorizing cleanup.
+
+The reviewer and coordinator read the actual kernel, canonical runners,
+installed-family product and Entity shutdown boundary. Twelve source/document
+hashes are authenticated. This is source evidence, not a newly executed race
+or original-defect regression. Before kernel retention, add an actual admitted
+Entity family witness: root naturally ends while work remains pending; normal
+family admission stays usable until work completes. Preserve the counterpart
+where execution drop releases unfinished work and retained cleanup joins.
+Compare ordinary ownership transfers before introducing any signal or product;
+no additional owner, public type, policy or canonical production edit is selected.
+Full API and active-family acceptance remain open.
