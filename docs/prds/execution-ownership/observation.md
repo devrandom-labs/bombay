@@ -640,3 +640,43 @@ grant or erase relationship provenance. A stale grant cannot consume a later
 registration reusing the same numeric ID. Full completion/cancellation/reuse
 traces and independently reviewed owning producers remain required; this law
 selects no public type or new observation primitive.
+
+## Actual public producer and Monitor comparison (2026-10-02)
+
+The frozen `bombay-observation-public-issuance-2ndrnl12` comparison modifies
+four copied owning source paths and exercises them through a separate external
+consumer. Consuming the complete non-Clone Observe request issues its typed
+authority after the trusted host registers the exact endpoint. Issuance is
+outside the Behavior fold by documented contract; the type system does not
+prove that execution context. Actual Monitor emits its original whole request
+once. A delayed genuine Started for an earlier attempt is rejected before
+acceptance, retaining the full report and authority. Retrying consumes the
+original rejected request, preserves its endpoint allocation and uses a fresh
+sequence correlation. There is no public old-correlation constructor.
+
+Receipt `4de969687708dd85d36019b5ce6cbfe45def43e15e9528b76037ef0d92169066`;
+patch `0b3062799cf74a5e8b175730de4422c780f347cf12cf45b388e0b1310f9fecae`.
+Archive-equivalence appendix
+`eb5946d6b3799208299ef65d52b92dc68ac0897b96de4a9ba27b49a9612f21a7`
+proves all 168 other Rust files unchanged against the selected 172-file archive.
+The external consumer uses an exact 19-package subset of the selected 58-package
+graph. One positive/restored test passes per profile; owning/consumer strict
+Clippy and fmt pass. Four external denials establish protocol mismatch,
+private-field rebranding, repeated consuming issuance and wrong acknowledgement
+protocol. A borrowing issuer permits repeated issuance; removing the actual
+Monitor correlation guard fails the intended runtime assertion in both profiles.
+
+Independent reviewer `/root/task_custody_research` read the full five-path diff,
+authenticated all 57 receipt artifacts, final sources/manifests and the archive
+appendix, and signs only those bounded claims. The earlier source snapshot
+omits the final outside-fold documentation and is not the authoritative source.
+Owning research +257 / -13 / net 244 plus external consumer 243 = net 487 Rust
+lines, with three exported research types: ObservationRequests,
+ObservationAuthority and ObservationRelationship. Canonical production/public
+delta remains zero; these are not merely private test stand-ins.
+
+Stopped, Cancelled and Rejected reports still use numeric identity in this
+probe. Grant release, cancellation acknowledgement/removal, owning feature-suite
+migration, real Bombay consumers, branch/exhaustion/race coverage and full
+DG-OBSERVATION remain open. The selected completed-relationship law above is
+resolved; its implementation is still required.

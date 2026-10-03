@@ -1523,5 +1523,8 @@ tests +51 / -2 / net 49, documentation +10 / -0 across four tracked paths,
 untracked zero. Focused debug/release each pass nine tests, fmt and strict
 all-target owning Clippy pass. Review requires cause wording to describe live
 acquisition as primary cause, without claiming physical failure chronology;
-inversion and full owner CI are still required. Further owning production
-edits and the added coverage paths await this concrete scope authorization.
+inversion and full owner CI are still required.
+
+The user explicitly authorized the three test paths. The corrected allowance
+is 67 cumulative paths with the same limits; remaining gate/review/verification
+requirements still apply.

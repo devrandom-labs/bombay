@@ -83,7 +83,8 @@ Remaining original-defect witnesses, ordinary-Rust prototypes, all XO/EV mapping
 independent review, full repository checks, benchmark, minimization and delivery
 remain mandatory. User-requested comparative research is underway for source
 cancellation, caller disappearance, capability failure and observation identity.
-The user selected exact relationship cancellation authority and capability-failure conservation; representation gates remain open. No other proposed policy is selected from a recommendation alone.
+The user selected exact relationship cancellation authority and capability-failure conservation; representation gates remain open. Later selected policies and the user’s authorization to choose subsequent
+recommendations are recorded in the owning decision records.
 
 ## Independent research review
 
@@ -130,7 +131,7 @@ its separate complete ten-path record in the shutdown decision record.
 production: +0 / -0 / net 0
 tests:      +0 / -0 / net 0
 public API: +0 types / -0 types
-documentation: +2408 / -12 / net 2396
+documentation: +2519 / -12 / net 2507
 manifest/lock: +3 / -3 / net 0
 changed tracked and untracked paths: 13
 ```

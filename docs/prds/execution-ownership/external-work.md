@@ -236,3 +236,39 @@ opaque diagnostic is insufficient. Core/Actors owns reusable diagnostic
 custody; Bombay owns concrete execution. Verify the existing consumers and
 smallest owning extraction law before changing that interface. Independent
 review and the full required witness table remain mandatory.
+
+## Pure source and runtime-owned execution comparison (2026-10-02)
+
+`bombay-pure-worker-context-o0f15uv1` replaces the earlier runtime-containing
+source fixture for bounded state-purity and queued-work evidence. IndexSource
+owns only the original Vec; runtime IndexInterpreter owns the semaphore,
+operation and JoinSet and interprets existing Core InterpretItem and Actors
+PrepareWorkers requests. Existing source/accept/reject ownership methods
+express this advanced interpreter path without changing the owning source
+algebra. No I/O or runtime resource enters Behavior state.
+
+A runtime with one blocking worker starts the first operation before accepting
+the second into its queue. Both exact inputs and permits remain owned; joining
+stays Pending until each corresponding operation is released. Closing admission
+does not destroy either admitted operation. Both original allocations return.
+Direct async execution uses the same owning products. Saturated and closed
+requests return exact inputs. Full nine-lane FIFO actions, creations and next
+state are checked using actually issued observation correlations.
+
+Receipt `e723a62f5bd4cd268bec7d9dd758602819236cfe792354598ce3a5ff5e18221a`;
+patch `1582812db193b3b1a740f2cc01c6f7d1cbf880f4727ab6e14ff0526784ff4ac8`;
+source `d9f82f67f0ea8acbaeb40e51542b881726ece433ae22968a8697e13fe247d947`.
+Seven tests and restored positives pass in both pinned-Nix profiles; fmt and
+strict Clippy pass. Increased capacity and omitted join each cause the intended
+compiled assertion failure in both profiles. Independent reviewers
+`/root/task_custody_research` and `/root/observation_research` read the complete
+patch and authenticated all 32 artifacts and the selected owning ports.
+Their signatures cover this comparison only; infrastructure failures and the
+superseded assertion containing a consuming read are excluded.
+
+Existing test module +374 / -44 / net 330; production, public types and
+canonical source delta zero. This custom interpreter is not integrated into
+standard ApplicationCapabilities, whose current source bound supplies no
+runtime-owned context input. Actual actor capability retirement, native
+families, multiple roles, previous-incarnation lineage and consuming opaque
+diagnostic extraction remain unproved. DG-WORK and EV-24 remain open.

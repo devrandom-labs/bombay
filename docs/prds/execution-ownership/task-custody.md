@@ -964,3 +964,34 @@ physical event chronology and requires no consuming failure-readiness probe.
 Available failures still retire only their owning live actor when selected;
 already completed actor outcomes are not rewritten. Existing source priority
 and fairness limits remain subject to XO-36 and independent verification.
+
+## Actual application work comparison (2026-10-02)
+
+The isolated `bombay-application-work-custody-95xkrvff` comparison exercises
+actual Application fields and private LaunchSystem::launch_with against the
+current Communication 0.1.3 lock. Dropping pending caller work releases its
+borrowed future immediately; existing root cancellation and address retirement
+still occur. A completed move-only output, including its borrowed slice,
+survives loss of the execution waiter through a separate affine receiver.
+Dropping the last receiver releases that output immediately while static root
+cleanup continues. Normal completion retains the complete root retirement;
+shutdown settlement asserts both send lanes, creations and remaining custody.
+
+Receipt SHA-256:
+`f87e3043e9f32a8cbc503ea24b3a60d5ed1e82b8c61226bc1a9daf1dd8cd278c`;
+patch `66112e9dd43e7cfdf1b0f1f7a191ca58796cba4b545a8c1f5a2b50db1e1cfc78`;
+source `b1ce728a305091ae57cb68cc8eaa5f8cafaa1df49f830dd80e2f6f9da219dc15`.
+Two tests pass and restored positives pass in each pinned-Nix profile; fmt and
+strict Clippy pass. Retaining unfinished work fails the intended drop-count
+assertion in both profiles. Returning the completed output directly through
+the original execution frame reproduces its loss on execution drop in both.
+Reviewer `/root` read the complete patch and authenticated all 31 recorded
+artifacts independently of author `/root/task_custody_research`. This approves
+these bounded observations, not DG-TASK or the public application API.
+
+The callback explicitly publishes output to the separate receiver before
+returning unit: that workaround is not the proposed public API. Actual root
+join-result custody after execution drop, child and native Entity-family
+cleanup, callback rejection/Err payloads and an already-stopped root with
+unfinished application work remain unproved. Existing tests +254 / -10 /
+net 244; production, public types and canonical source delta zero.
