@@ -1946,7 +1946,7 @@ in `flake.lock`. Nixpkgs, Crane, other inputs, selected Cargo dependencies and
 the separately pinned Miri/fuzz nightly are unchanged. No new language feature
 or architecture is selected merely by upgrading the compiler.
 
-Measured three-path candidate: configuration +9 / -11 / net -2;
+Measured initial pin-only three-path candidate: configuration +9 / -11 / net -2;
 production/tests/public types zero. Stable manifest hash:
 `sha256-zm3dyIY2T414ZRR3EhLOvptzG6gta4WZUcawzMUWtqI=`.
 Fenix revision: `c8ed30fa2e75f7191a0fb8398a4a84dd009d12fc`.
@@ -2065,7 +2065,9 @@ tracked/untracked measurement and independent review of the final source.
 
 ## 29. Complete compiler consumer and owning macro checkpoint
 
-Status: concrete proposed expansion; not authorized or applied. After section 28,
+Status: user-authorized seven-path expansion to 113 following explicit approval
+of this exact compiler consumer and owning macro/release proposal. Independent
+review and all retention/delivery gates remain required. After section 28,
 all-feature workspace tests pass again in debug and optimized builds and strict
 optimized library Clippy passes. Full all-target lint discovery now reaches
 application consumers and finds additional sites. Preserve this distinction:
@@ -2130,3 +2132,32 @@ configuration +19 / -14 / net 5; public types zero. Its complete source hashes,
 patch and tracked-path measurement are frozen in rust-199-current-measurement.json;
 scratch scripts/logs/proposed patches remain separate untracked evidence and
 must enter the final complete receipt. Canonical production is unchanged.
+
+The approved consumer patch is applied only in the isolated candidate. One
+initial expectation used a nonexistent lint name; correct it to
+clippy::manual_assert_eq and preserve the original complete transition equality.
+That compiler rejection is excluded from semantic and original-defect evidence.
+The corrected comparison passes formatting, all-target/all-feature strict Clippy
+and all-feature workspace tests in both profiles on actual Rust 1.99. The
+experimental Cargo patch selects only the changed macro source; all other
+dependency versions remain unchanged. This is not a published dependency or
+canonical toolchain acceptance. The unchanged minimum 1.96 also builds the
+annotated Bombay library and equivalent atomic renames successfully.
+
+Owning macro commit `41f9d425aa245064a2b64eca81bbc4484d948f26` changes only the
+eight generator lines. Original published expansion fails the targeted strict
+1.99 lint in both profiles; corrected expansion passes both. Owning workspace
+nextest reports all 857 tests passed; formatting and all-target/all-feature
+strict Clippy pass through the pinned 1.96 shell. The authoritative owning Nix
+flake check passes all seven aarch64-darwin checks; other architectures require
+the PR's CI. Complete one-path source receipt:
+`6d0f4095a7387f09e3c9c4c5e380678c187bf89128b089a1459ac27e8ec73fdb`.
+Production +8 / -8 / net 0; tests +0 / -0; public types +0 / -0;
+zero untracked owner paths. Evidence is stored separately from the owner tree.
+
+Focused owning [PR 80](https://github.com/devrandom-labs/bombay-behavior/pull/80)
+targets main at that exact head. Independent final review and CI are pending;
+no merge or publication is claimed. The approved compiler candidate still
+requires registry release selection, final complete source/delta receipt and
+independent review before canonical retention. Full EXEC semantic gates,
+correctness-first module extraction and Bombay delivery remain open.
