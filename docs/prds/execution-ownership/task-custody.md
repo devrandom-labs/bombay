@@ -1513,3 +1513,27 @@ question is answered; source analysis and other authorized experiments continue.
 This does not claim recovery of values destroyed inside user code, support for
 panic=abort/foreign exceptions, or safe discharge when the payload's destructor
 itself panics. Cleanup-before-discharge needs an observable ownership proof.
+
+## Startup publication scope requiring clarification (2026-10-03)
+
+EV-06 requires "no success publication" for drop before spawn and during
+activation. Section 8.2 explicitly prohibits successful activation before spawn;
+its spawned-startup row requires retained cancellation and task custody. The
+reviewed startup-input comparison proves recovery and joined retirement, not
+absence of publication during an already admitted activation.
+
+Current Driver::drive_active publishes after initialization settlements finish,
+before acquiring its first ordinary event. LocalEnvironment's private commitment
+acknowledgement precedes action commitment; its publish method publishes the
+address lease and calls the endpoint notice without checking queued cancellation.
+The separate typed-source retirement comparison retains this publication path.
+Thus a queued request and a failed send to the departed startup receiver must
+not be described as preventing the actor's endpoint publication. Cancellation
+acquisition, endpoint publication and caller receipt are distinct operations.
+
+The user was asked whether cancellation winning during startup must prevent
+endpoint visibility, or whether admitted startup may complete before joined
+cleanup removes it. No answer or PRD amendment is assumed. An actual publication
+trace using the existing runtime notice is being prepared; dependent EV-06 and
+publication-policy acceptance remain blocked. Independent input-custody and
+family-lifetime comparisons continue without claiming this stronger law.
