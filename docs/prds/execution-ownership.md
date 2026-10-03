@@ -2187,6 +2187,44 @@ resolve. The release skill preflight passes packaged-consumer verification for
 Core/Actors 0.21.1 and Macros 0.13.1; the authoritative owning Nix check passes
 all ten local Darwin checks. Source/patch/log receipt SHA-256:
 `28b8c1b34b0dcc94fdaaae4d3755632ae398aac747e2c4c6721c4929b84f160d`.
-Independent review, exact-head CI, merge and actual publication remain required.
+Independent release reviewer /root/contract_inventory approved exact head
+([review 5399435924](https://github.com/devrandom-labs/bombay-behavior/pull/81#pullrequestreview-5399435924)); final review receipt SHA-256
+`0f2a6c19a55a7ccf069539980625d7655c2490c6f1c7704dfe96d5df46c6c1fa`.
+Root lock changes four local versions, including unpublished inherited Testkit;
+each nested graph changes exactly the three published local packages.
+All fourteen exact-head checks passed in CI run 37104305190. Reviewed release
+PR 81 merged as `5ca96444f0a66e9a013b6989e3e53d345cbabf65`; normal main
+CI run 37104928777 must pass before publication runs. Actual registry/tags and
+downstream selection remain pending.
 Both README installation constraints remain 0.21 and correctly include 0.21.1.
 No release source semantics change.
+
+
+Main CI 37104928777 and normal release workflow 37105423987 both succeeded
+at merge `5ca96444f0a66e9a013b6989e3e53d345cbabf65`. Actual registry
+archives and annotated release tags are verified:
+
+| Package | Published version | Registry checksum |
+| --- | --- | --- |
+| bombay-behavior-macros | 0.13.1 | fdbea4c696f3bed02965835fd253087d696a25bf206e229e174bd2882fc2638c |
+| bombay-behavior | 0.21.1 | b82e4373287b71f2f90a2a16c62da9f6bebb8dd282df5a0b4b6e4aaa9a5d411c |
+| bombay-behavior-actors | 0.21.1 | 444670302a1b8e34b9f721ed0f071383d0f27f100e26e8365bf7c14d39195639 |
+
+All package VCS metadata and annotated tags resolve to that merge. Each packaged
+Rust file is byte-equivalent to its actual owning source: two macro, twenty-eight
+Core and 172 Actors files. The exact selected revision’s full AGENTS was reread
+and is unchanged from the previous verified release. Core/Actors Rust semantics
+are unchanged; the only owning syntax change is the eight macro initializers.
+Canonical Bombay still selects 0.21.0 and Rust 1.96 while final verification is
+pending. The isolated 1.99 candidate restores the original registry manifests/
+lock before selecting the published versions; the experimental macro path patch
+is not retained. Current contract pointers and each independent lock graph must
+match the final selection before canonical compiler acceptance.
+
+The first published-candidate verification attempt is excluded: concurrent
+in-source evidence creation caused a Nix file-set evaluation failure, and the
+parallel flake check exhausted disk during compilation. Neither is a Rust
+semantic failure. Preserve both original logs, place new evidence outside the
+source tree, and rerun Cargo checks sequentially before the full Nix gate.
+Compiler acceptance remains blocked until the final frozen checks and independent
+review pass.

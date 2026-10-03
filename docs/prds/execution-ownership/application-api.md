@@ -385,3 +385,55 @@ failure/projection custody remain required. The unstarted callback's concrete
 captured allocation/drop oracle also remains to strengthen. Existing actor
 executor and capability errors are intentionally excluded from this comparison;
 its unwraps establish no recoverability law for those errors.
+
+## Independent idle-family comparison review (2026-10-03)
+
+Root read the complete incremental family patch, actual paired kernel and all
+eleven caller tests, authenticated 23 receipt artifacts and the 195-source
+inventory, and reran all eleven tests in both profiles through pinned Nix.
+Both fresh runs pass. Independent review receipt:
+`/tmp/bombay-family-root-review.json`, SHA-256
+`32a091e0487c0a0d1d526fcd3e878a418821d2825d91b4ca338b198cf97ba69f`.
+Frozen family source receipt SHA-256:
+`ce21a1a6c40716964aeb4965d9ba9bf8206269b833b77cd7142cb11d142c1fff`.
+
+The actual installed family and actor join have one cleanup owner; its completion
+acknowledgement follows installed.shutdown. Original uninvoked callback, borrowed
+completed output, root result and full nominal family shutdown/metrics product
+coexist at the separate receiver. All six recorded omission failures compile
+and fail at runtime in both profiles; the earlier E0282 mutant is excluded.
+The cleanup-handle omission proves publication loss, not failure to join.
+Current ordinary callback policy remains unchanged under XO-07.
+
+This bounded review accepts the incremental comparison only. It covers an idle
+family with zero represented entities. Active NativeEntity retirement, a delayed
+family completion barrier, arbitrary non-Send child declarations, borrowed custom
+installed-family contracts and integrated HTTP ownership still need proof. The
+family kernel removes an unconditional I:Send bound; legacy paired/blocking
+wrappers retain it and therefore do not establish the complete public surface.
+No production or public interface is retained and no full gate is approved.
+
+## Independent HTTP bind-custody comparison review (2026-10-03)
+
+Root read the complete incremental HTTP patch, ordinary binder, actual public
+run_axum witness and both verification scripts, authenticated all sixteen logs/
+artifacts plus five manifest pins, and reran the original and comparison tests
+in both profiles through pinned Nix. The original public bind path fails the
+intended custody assertion in both profiles after reporting AddrInUse: it
+releases the uninvoked router’s captured allocation. The comparison’s thirteen
+tests pass in both profiles. Independent receipt SHA-256:
+`8289e476433c20411dde6181149c56f2e65f0d17a82b240217b18af3488ef563`.
+
+A first shared-target comparative run reused the preceding original fourteen-
+test binary and is excluded. Refreshing only the comparison source timestamp
+forced a fresh compile; source bytes remained exactly frozen. No artifact
+reuse is treated as semantic comparative evidence. The E0283 preliminary Router
+inference error also remains excluded.
+
+The ordinary binder returns the exact I/F/io::Error and retry uses the same
+paired execution core. Its preparation future still loses inputs if dropped
+during binding and is not integrated with the paired result receiver or serving
+the recovered listener. The unchanged public serve witness independently checks
+complete root origin/terminal; it is not proof of integrated HTTP drop ownership.
+This bounded review selects no public surface or production repair and approves
+no full gate.

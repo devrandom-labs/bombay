@@ -870,3 +870,43 @@ The correction selects policy, not an API or gate approval. Producer/consumer
 tests must prove whole rejection recovery, serial retry, new-key construction,
 consumed accepted originals, failed Started publication custody and stale
 accepted-report rejection in both profiles before retaining any implementation.
+
+## Independent owning-model checkpoint (2026-10-03)
+
+Nonauthor reviewer /root/task_custody_research authenticated thirteen selected
+source hashes and all five complete proposal records. Its review SHA-256 is
+`6f431a54af2389b9b84a58883263edd8bc9a4415a3fe810c50e3c703166319ec`.
+Disposition: corrections required before lowering; no API/scope/gate approval.
+The three proposed semantic responsibilities are distinct, but the old JSON
+allowance is historical: current proposed expansion would be 113 to 124 paths
+and three new public types, presently unauthorized. The reserve-before-move
+constructor and latest retry law remain uncompiled hypotheses.
+
+The reviewer’s complete proposed target-state rows/counts are frozen as
+state-refinement.json, SHA-256
+`24ba95462fa63720215bf28282a78707978fa2d6263a57065c151d75dca80b58`.
+Its failed-Started alternatives are in publication-refinement.md, SHA-256
+`c294a0e2f77a92cfa24994a3b4d6a366b6cb2bbde6529d825ef22e52f51b4325`.
+They are hypotheses requiring actual source/ordinary Rust and minimization
+proof, not retained state declarations. Allocation identity must use strong
+pointer identity; derived Arc value equality would collapse equal IDs/origins.
+Constructor purity is a semantic obligation, not a compiler denial.
+
+Under the user’s recommendation authority, first compare explicit failed-Started
+cleanup: retain the actual returned Started/Authority, remove only its exact
+committed member and release its unpolled shared wait/cancellation endpoints.
+Never reconstruct rejected Observe or report Stopped/Cancelled from that
+cleanup. The existing observation capability task should admit Started before
+polling target completion, including conversion in that task so an available
+JoinError has truthful task provenance. This needs source/producer evidence
+and independent review; current synchronous inject_control_event instead
+unwinds the actor on conversion/control-send panic. No new observer-retired
+reason, task framework or fourth public type is selected.
+
+Current Communication 0.1.3 returns exact ControlClosed(event) only after its
+consumer is gone; closing user admission is a separate operation. Current shared
+ObservationFuture releases only its own waker registration on drop and does not
+affinely consume another observer’s terminal. Older future-cancellation defect
+comments describe the historical bug; current source and preserved regressions
+are the authority. Generic event conversion remains potentially panicking:
+values destroyed inside it cannot be promised back.
