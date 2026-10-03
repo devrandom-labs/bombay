@@ -2237,3 +2237,82 @@ lines, including these annotations; the final complete per-line measurement
 and receipt must use actual conditional ownership. No new type or semantic
 operation is introduced by those annotations. The user waived line-count
 approvals; the approved 113-path/zero-added-public-type scope still applies.
+
+Final published-dependency Cargo checks now pass on the isolated Rust 1.99
+candidate: compiler identity, Cargo formatting, Nix formatting, locked workspace
+build, all-target/all-feature strict Clippy in both profiles, and all-feature
+workspace tests in both profiles. Evidence is outside the source tree at
+`/tmp/bombay-rust-199-published-final`. Source inventory SHA-256
+`f53da2bf09885317ee6e416905960689a8efaee18bee063553556c14acdecf53`
+records all 345 archived tracked paths, 53 changed paths inside the approved
+113-path set, and all 75 isolated untracked evidence paths. The 21-check Nix
+gate and final independent source/delta review remain pending. Canonical
+selection is unchanged; no compiler or semantic gate is approved by these
+intermediate results.
+
+## 30. Complete minimal-feature compiler diagnostic scope (2026-10-03)
+
+The final full Nix gate fails the existing no-default-features child-authoring
+check. Rust 1.99 still rejects the unchanged invalid program with E0277, but
+reports an additional complete E0277 diagnostic that its distinct non-axum
+snapshot lacks. Existing axum-enabled fixture/snapshot is already approved
+and passed; do not conflate their diagnostics or weaken either check.
+
+Propose adding exactly one existing path to the approved allowance, 113 to 114:
+`bombay/crates/bombay/tests/compile/fail/application_child_must_be_behavior.stderr`.
+Concrete expected patch: tests +22 / -0 / net 22; production +0 / -0;
+public types +0 / -0. The invalid `.rs` program, test selection and compiler
+bound remain unchanged. Exact proposed snapshot SHA-256:
+`e31df5eb30192c9268cd12f27e4cc445e4646798c8cd87640a0972a9dae20f18`.
+Original failed gate and complete actual compiler output are preserved outside
+the tree. Current isolated 53-path measurement: production +138 / -13 / net 125;
+tests +411 / -58 / net 353; documentation +44 / -44 / net 0;
+configuration +32 / -27 / net 5; no new public types. Independent conditional
+measurement SHA-256 `0a25d2d200367071f6a894062561f8a87e5d6a68c09867f556b8070632224a16`.
+The source inventory includes all 75 untracked isolated evidence paths. The
+proposed snapshot is external evidence until explicit file-scope authorization.
+After approval, rerun both feature configurations and all 21 Nix checks, freeze
+the new complete source/delta, and obtain independent final compiler review.
+No toolchain or full EXEC acceptance is claimed from the twelve successful
+checks before that gate failure; cancelled checks remain unpassed.
+
+User explicitly approved section 30’s one-file expansion on 2026-10-03.
+The allowance is now 114 cumulative paths, with zero added public types;
+line-count approvals remain waived. Apply only the recorded 22-line expected
+diagnostic, then obtain fresh complete verification and independent review.
+
+## 31. Preserve selected Loom atomic compatibility (2026-10-03)
+
+The remaining Entity Loom gate reveals that the standard-library try_update
+rename cannot be used on the selected Loom 0.7.2 AtomicU64. Its actual owning
+source and atomic_int tests provide fetch_update only. Preserve the exact
+ordering, checked increment and returned previous-value law. Within the already
+approved directory.rs path, compare conditional selection of the existing
+function item: Loom fetch_update under bombay_entity_loom and std try_update
+otherwise, with one unchanged closure/call. No duplicated algorithm, wrapper,
+public type, dependency update or deprecated-warning suppression is required.
+Expected production increment approximately four net lines; no new test paths.
+The failed compiled Loom invocation is preserved as compiler-compatibility
+evidence, not an original semantic runtime-defect witness. Actual pinned-Nix
+Loom checks and normal strict lint must both pass before retaining this change.
+Final complete source hashes, conditional counts and independent review must
+be refreshed; earlier source inventory f53da2bf remains historical.
+
+The first conditional function-item comparison requires the closure argument’s
+already-owned u64 type to be explicit (E0282); record that inference cost, not
+a new architectural requirement. Preserve its failed build/full-gate logs and
+refresh the source freeze after this ordinary annotation. No semantic runtime
+regression is claimed for that compiler veto.
+
+Final typed function-item source freezes all 345 tracked paths, 54 changed
+paths and 75 untracked isolated evidence files. Inventory SHA-256:
+`af836ddc4fade1bbfbd87ee0cc95b485512df9504a352103f2eb93a772844199`.
+Independent recomputation SHA-256:
+`3d7eab9aedb75babcc57c25ae34358aa9d7fe8502b5dfedec57a7708286d6998`.
+Measured candidate delta: production +150 / -18 / net 132; tests +433 / -58 /
+net 375; documentation +44 / -44 / net 0; configuration +32 / -27 / net 5;
+zero new public types. All 54 source paths are within the approved 114-path
+allowance. The function-item comparison changes directory.rs by +13 / -6 /
+net 7 from the archived original; its single typed closure preserves the exact
+existing order/result/checked-increment law. Final checks and independent
+compiler acceptance remain pending; no canonical source is changed.

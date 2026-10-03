@@ -473,3 +473,21 @@ repair. Native retirement-future drop still requires ownership transfer even
 without the wait. Recursive child/failure integration, universal public API,
 initial non-Send declarations and exact undeliverable static-result destruction
 remain open; no full decision gate is approved.
+
+## Independent absent-work comparison corrections (2026-10-03)
+
+Nonauthor /root/contract_inventory authenticated all 31 artifacts and the
+345-path workspace inventory of the frozen absent-work comparison. Independent
+review receipt `/tmp/bombay-work-absence-independent-review.json`, SHA-256
+`9c525ba1e312b2a6f614da52801ad7558b7f36401bb01529f519ec1b5c17df2f`.
+It accepts only bounded absence/natural-root/pre-poll custody evidence and
+requires two corrections before retention. The optional-work kernel discards
+startup Err in its None arm, and the absence adapter removes the corresponding
+Result distinction. Preserve the real startup Result with coexisting absent
+work/root/family results; no unreachable or success substitution is lawful.
+The declared LedgerChild also embeds a runtime destructor-audit cell in Behavior
+state. Remove that instrument, keep pure domain Rc<Vec>, and observe ownership
+externally. Its role is unit; the evidence proves an uninstalled non-Send child
+declaration, not a non-Send role or installation. Preserve the original frozen
+source/receipt and establish a corrected successor with original-defect failures
+and independent review. No production or full gate is accepted.
