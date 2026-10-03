@@ -1904,3 +1904,59 @@ no effect inside Behavior folds. Reuse the native definition, existing task,
 ActorRetirement and Entity lifecycle types. Do not expose private authority to
 make an integration fixture reach it. Original-fail/comparison-pass in both
 profiles and independent review remain required before any production proposal.
+
+## 25. Actual child-binding result comparison checkpoint
+
+Status: proposed one additional existing test owner, 90 to 91 cumulative paths.
+Add only cfg(test) evidence in `crates/bombay/src/child_bindings.rs`; the already
+approved `launch.rs` supplies a test-only ordinary function consuming its actual
+private projection task and returning the original standard Result. No
+production visibility, public type, traversal trait or production edit is
+authorized by this proposal. Estimated tests +260 / -20 / net 240.
+
+The previously reviewed actual projection fault preserves neither the original
+JoinError nor later sibling results. This comparison puts actual installed tasks
+into the existing established binding product, then consumes creation order,
+original creation ID/kind/endpoint/control and every original join result in a
+closed per-occurrence product. It compares complete available custody against
+the existing formatter/early-panic path. Original failure, positive, compiled
+inversion, exact restoration and strict checks are required in both profiles.
+
+Current bindings do not store the original ChildOrigin/route nonce; CreationId
+cannot substitute for it. Original typed origins retained independently by the
+test caller demonstrate feasibility only. Standard birth integration, member
+origin ownership and recursive descendant output remain required separately;
+this test expansion does not authorize or accept that production amendment.
+Preedit receipt:
+`72706eaa394acc8f48913a42ef1c5361cc625ad0a1cd8877b72a98b59ed9d719`.
+The signed projection baseline adds 387 test lines; the separate native Entity
+comparison adds 214. Neither is silently composed into this experiment.
+
+## 26. User-requested stable Rust pin checkpoint
+
+Status: concrete isolated candidate; proposed three additional existing paths.
+Together with section 25 the authorized union would increase from 90 to 94.
+The user requested updating Nix for the latest Rust. Official release and actual
+distribution manifest identify stable 1.99.0, released 2026-10-01, compiler
+`b940084d7` dated 2026-09-28. The isolated candidate updates `rust-toolchain.toml`,
+the matching manifest hash in `flake.nix`, and only Fenix/its rust-analyzer source
+in `flake.lock`. Nixpkgs, Crane, other inputs, selected Cargo dependencies and
+the separately pinned Miri/fuzz nightly are unchanged. No new language feature
+or architecture is selected merely by upgrading the compiler.
+
+Measured three-path candidate: configuration +9 / -11 / net -2;
+production/tests/public types zero. Stable manifest hash:
+`sha256-zm3dyIY2T414ZRR3EhLOvptzG6gta4WZUcawzMUWtqI=`.
+Fenix revision: `c8ed30fa2e75f7191a0fb8398a4a84dd009d12fc`.
+Canonical remains on 1.96.0 while existing research freezes finish. Toolchain
+installation, new-shell compiler identity and workspace build/test/fmt/strict
+Clippy remain required before retaining the pin. Earlier frozen evidence keeps
+its actual compiler version; integrated EXEC verification must use the final pin.
+No existing diagnostic or gate is waived if the new compiler exposes a failure.
+
+Measured current canonical delta before these four proposed paths:
+production +0 / -0 / net 0; tests +4 / -4 / net 0;
+documentation +3618 / -63 / net 3555; manifest/lock +13 / -13 / net 0;
+public types +0 / -0; 23 tracked paths, zero untracked. The retained owning
+corrections remain production net 52, test/benchmark net 549, 48 paths across
+repositories. Isolated candidates keep their separate complete receipts.
