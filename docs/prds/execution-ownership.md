@@ -321,7 +321,7 @@ Rules for accepting the layout:
 | LocalTerminalReports | Try direct use of the existing report-selection owner. Retain a separate value only if its restricted authority is real and tested, not merely forwarding methods. |
 | HostedActorSpaces / ResolveLogical | Compare direct existing Hosts composition with the current adapter. Delete the adapter only if logical resolution's selected policy and static denials are preserved. |
 | FactState / FactQueue | Rename to observation domain language. Remove storage-only wrapping if it owns no independent invariant; DG-OBSERVATION first resolves relationship ownership. |
-| LocalTimers | Keep one TimerQueue. Compare direct borrowing from its actor owner against current serialized shared views. Do not replace its mutex with unsafe or a dynamic context merely to reduce allocation. |
+| LocalTimers | Keep one TimerQueue. Current source owns it directly, without a mutex or shared view. Compare direct borrowing with the existing typed timer interpretation; preserve event injection and overflow/rejection laws. No unsafe or dynamic context for allocation reduction. |
 | OwnedTask / ProjectedTask / ActivationTasks | DG-TASK and DG-PROJECTION must specify authority, cleanup timing and failure custody before deciding representation or task count. |
 | Entity task group | Preserve its different family admission/shutdown-claim law. Similar JoinHandle storage does not justify a universal task-group trait. |
 
