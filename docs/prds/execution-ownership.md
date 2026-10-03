@@ -1863,3 +1863,43 @@ inversions, full workspace checks, all producer/consumer contracts and independe
 review remain mandatory. This bounded repair does not accept raw executor-error
 erasure, projection-panic sibling loss, publication/join timing, full family
 cleanup or DG-TASK. Those required seams remain in scope.
+
+
+## 24. Native Entity retirement witness checkpoint
+
+Status: proposed one-path test-only expansion; dependent edits await user
+approval. Section 23 authorizes the named 89-path union. The actual native
+lease owner `crates/bombay/src/entity/bombay.rs` is outside that inventory;
+its existing owning tests need private access to the original actor task and
+cancellation authority. Expanding the union to **90** permits the original
+failure witness and ordinary same-lease comparison there. It authorizes no
+production change, new public type, visibility widening or Entity lifecycle
+redesign. Expected test increment: 200–400 lines, measured after formatting;
+line-count checkpoints remain waived.
+
+Current retained complete change record: canonical Bombay production +0 / -0 /
+net 0; tests +4 / -4 / net 0; public types +0 / -0; 23 changed tracked paths,
+zero untracked. Delivered owning corrections add production +65 / -13 / net 52,
+test/benchmark net 549; the retained cross-repository union remains 48 paths.
+The separately frozen live-capability candidate measures production +313 /
+-59 / net 254 and tests +749 / -73 / net 676 across 23 incremental Rust paths;
+no public types. It is not retained and its source-port review successor is
+still being verified. Other isolated stages retain their separate receipts.
+
+Source-derived blocker: native Entity retire requests Behavior shutdown, awaits
+`actor.termination()`, then invokes its already-owned `task.retire()`.
+An actor can accept shutdown without choosing Stop; acceptance is not completion.
+Entity `RetirementMode::Graceful` means successful fence acknowledgement proved
+command processing, not that the actor obeyed a shutdown request. `Forced`
+retains failed-drain provenance. Neither mode makes that pre-cancellation wait
+safe. No unexecuted failure or universal deadlock is claimed.
+
+Witness law: preserve the actual selected lease retirement mode and exact queued
+shutdown request while exercising an actor that continues after shutdown.
+Compare the original pending retirement with invoking the same existing owner
+cancellation/join authority, inspecting the complete actual retirement and lease
+release. Use barriers and observed Pending, no timeout as a semantic deadline,
+no effect inside Behavior folds. Reuse the native definition, existing task,
+ActorRetirement and Entity lifecycle types. Do not expose private authority to
+make an integration fixture reach it. Original-fail/comparison-pass in both
+profiles and independent review remain required before any production proposal.
