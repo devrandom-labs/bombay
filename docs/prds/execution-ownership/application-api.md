@@ -507,3 +507,32 @@ observed externally. Its role remains unit and installation remains unproved.
 Incremental change is cfg tests +93 / -59 / net 34, no production/public/private
 new types. This internal error is not the selected final public RunError shape;
 full API/task gates remain open. Original flawed receipts remain historical.
+
+## Current-selected work ownership comparison (2026-10-03)
+
+The corrected private paired execution/receiver comparison now runs against
+canonical Rust 1.99 and published Core/Actors 0.21.1, Macros 0.13.1 and
+Communication 0.1.3. Author receipt SHA-256:
+`3f875c553908b3163a588c1f934716892ec9d725c8bc543bc487e09fcdf68d7b`.
+Root independently authenticated all 399 frozen files and reran all twenty
+cases in debug and release through pinned Nix. Both pass. Reintroducing the
+output's unnecessary `Send` bound fails with E0277 in both profiles; omitting
+completed-output publication compiles and fails the exact Rc custody assertion
+in both. Restored source passes all twenty again. Independent review receipt
+`/tmp/bombay-current-work-bounds-root-review.json`, SHA-256:
+`4f23ec28d57a0a217439bb04fcc06f7c904fbf5f3687686fd7daa77b8defe826`.
+
+Application work stays with its caller: callback, invocation, future and output
+need no work-side `Send` bound. Existing root/installed-family cleanup retains
+its executor requirements. Completed Rc output and borrowed values survive
+execution drop at the separate receiver; unfinished work drops immediately;
+final receiver surrender releases output. Pure actor state and complete root/
+idle-family reports remain observable. Existing legacy adapters are unchanged.
+
+This accepts bounded ordinary-Rust evidence, not a public API or full DG-API.
+The isolated two-path comparison includes 53 net production lines of previously
+reviewed startup support and 1,547 transplanted test lines; no new public types.
+Sixteen historical private fixture declarations are new relative to canonical,
+not novel relative to the prior probe. Family-definition `Send` minimality,
+capability/outer-executor failure integration, recursive graph results and full
+HTTP serving remain open. No canonical semantic implementation is retained here.

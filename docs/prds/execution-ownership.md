@@ -1753,6 +1753,12 @@ reviewable. File/public-type limits, verified ownership, pre-edit law/model
 provenance, independent design review and every acceptance/delivery gate remain
 required. This changes permission handling, not semantic scope or correctness.
 
+The user further clarified: "we need to condense code, but tests are exempted."
+Production minimization remains required: reuse existing owners and remove
+unnecessary machinery. Tests are exempt from condensation; retain the witnesses,
+inversions and complete observations needed to prove correctness. This does not
+waive file/public-type checkpoints or any verification requirement.
+
 Canonical published selection verification passes all-feature workspace
 414 tests/61 result summaries in each profile, strict all-target Clippy and
 formatting. Fresh Driver evidence executes every canonical law's positive,
