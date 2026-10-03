@@ -1786,3 +1786,71 @@ Current selected artifact hashes after verification:
 - Cargo.lock: `747f92160972f773c68d624517c456765f6c793bd21fb4faf4f4ec131420e8b1`
 - crates/bombay-engine/fuzz/Cargo.toml: `1b63701694923a4c6410e7b11d34d932c2a3de9c08077dbfa89486273286bf54`
 - crates/bombay-engine/fuzz/Cargo.lock: `8f0fad594c8bd6837adf143c012735fe45ebf4d1ca6b185135fab59f70ea42dc`
+
+## 23. Complete live-capability repair surface checkpoint
+
+Status: proposed file-scope expansion; production implementation waits for
+authorization. The user removed line-count permission checkpoints in section
+22; line estimates below require no separate approval. The original request
+still expressly requires a concrete checkpoint before enlarging file/public
+surface. This stage repairs the independently reproduced current-version loss
+of surviving actor state when a background capability operation panics.
+
+Current canonical Bombay measurement against the original clean baseline:
+production +0 / -0 / net 0; tests +4 / -4 / net 0; public types +0 / -0;
+23 changed tracked paths, zero untracked paths. The delivered owning fixes add
+production +65 / -13 / net 52 and test/benchmark net 549 across Communication's
+ten and Behavior's fifteen distinct paths. Together with canonical Bombay this
+is 48 changed repository-qualified paths; section 22's earlier 38-path count
+predates the complete published dependency selection. Isolated source-retirement
+and handoff comparisons are measured separately, not claimed as retained code.
+
+The scope reviewer reconstructs the exact previously authorized union of 69
+repository-qualified paths. The complete repair stage needs 23 source/consumer
+paths: six production owners, with five already authorized, and seventeen
+existing examples/test consumers. Eighteen additional paths make the proposed
+authorized union **87**. Pre-edit scope receipt SHA-256:
+`92cf6fc7e7422b3c505503bc1e29268e2e7d2b952f58bdf1d01f38909e050aab`.
+No source edits precede this checkpoint.
+
+Additional existing paths:
+
+- `crates/bombay/src/interpret.rs`
+- `crates/bombay/tests/application_support/mod.rs`
+- `crates/bombay/tests/application_terminal_custody.rs`
+- `crates/bombay/tests/axum.rs`
+- `crates/bombay/tests/entity_application.rs`
+- `crates/bombay/tests/fifo_pool_recovery.rs`
+- `crates/bombay/tests/fifo_pool_runtime.rs`
+- `crates/bombay/tests/fixed_supervisor_recovery.rs`
+- `crates/bombay/tests/fixed_supervisor_runtime.rs`
+- `crates/bombay/tests/run_with.rs`
+- `crates/bombay/tests/terminal_projection.rs`
+- `examples/actor-templates/src/main.rs`
+- `examples/application-topology/src/main.rs`
+- `examples/axum/src/main.rs`
+- `examples/counter/src/main.rs`
+- `examples/entity/src/main.rs`
+- `examples/supervision/src/main.rs`
+- `examples/worker-pool/src/main.rs`
+
+The six owners are existing local, interpretation, application-runtime, launch,
+terminal and termination modules. The private ordinary Result/Driver-request
+model and smallest failing regression are in task-custody.md. Reuse the existing
+ActivationTasks join set, LocalResidual, generic Driver completion, total terminal
+projection and concrete actor state. Delete first-error settlement return and
+the subsequent inner-result/unwind path. Estimate net 180–300 production lines
+and 350–650 test/example lines, measured after formatting; these are estimates.
+Add/remove zero public types. The existing ActorRetirement gains CapabilityFailed
+with its original first JoinError and available state; owned alternatives retain
+later failures and one accepted unread cancellation occurrence without duplicate
+causes. AllocationRejected remains untouched.
+
+Every consumer must explicitly check or discharge these coexisting values.
+In particular, the pool recovery regression must stop calling a background
+operation failure an actor panic. Existing source/ARC regressions, complete
+startup projections, both profiles, original-fail/repair-pass and compiled
+inversions, full workspace checks, all producer/consumer contracts and independent
+review remain mandatory. This bounded repair does not accept raw executor-error
+erasure, projection-panic sibling loss, publication/join timing, full family
+cleanup or DG-TASK. Those required seams remain in scope.

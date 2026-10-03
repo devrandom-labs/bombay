@@ -1249,3 +1249,38 @@ The aggregate source freeze retains production net 64, test net 1059, 25 changed
 tracked paths and 267 non-build untracked evidence/corpus paths. All bounded
 limitations in the preceding acquisition review still apply; this does not
 prove async recovery, chronological retirement ordering or full DG-TASK.
+
+### Independently reviewed selected-version handoff successor
+
+Root signs the bounded 0.21 handoff successor in
+`bombay-startup-handoff-021-oq10i1vf`, receipt
+`030a8ad54694d4e6b855c4d70b231d2f07801a95300742cef434a328cb73eceb`,
+incremental patch
+`4d714744a81421b3e5295d6c72645a5e1fc12186b3c8c9552edfddb01dafccda`.
+The complete patch is
+`026d70b50bda0891aaa33ceeb19bd66a97289db0c7445b4efd9654e9bf1aeffa`.
+Root reads the full handoff and test patch, three executing verification scripts
+and profile logs, authenticates all 64 artifacts and 26 source hashes, and
+compares every other source with the independently signed selected-version
+source freeze. No fresh reviewer execution is claimed.
+
+The production extraction remains exactly the signed ordinary four-value
+handoff: +60 / -7 / net 53. The 299 added test lines now assert the retained
+RootFinish field as well as original payload allocation, every residual field,
+startup closure, and both explicit receipt dispositions. Cancellation is the
+actual `Completion::RetirementRequested(OwnerCancellation)`; no duplicate
+residual cause or false exhaustion remains. Both profiles pass 229 Bombay
+library tests and thirteen Engine source-custody tests; strict lint in both
+profiles and formatting pass. Three compiled custody inversions fail in each
+profile, then exact restoration passes. The acknowledged verifier fault fails
+with its intended closed receipt; omitting the acknowledgement wait makes that
+same fault falsely pass in each profile. Constructor absence is only E0432
+static evidence, not a runtime regression.
+
+Whole isolated delta: production +301 / -184 / net 117; tests/fuzz/fixtures
++1261 / -118 / net 1143; documentation +29 / -29; manifests +13 / -13;
+26 changed tracked paths and no new public types. External evidence files are
+separately inventoried by the receipt. The newer acquisition fuzz successor
+remains separate. The three actual application-loss regressions remain unfixed;
+this accepts the lower ownership seam and its current composition, not full
+Application, family, task-failure, projection or DG-TASK acceptance.
