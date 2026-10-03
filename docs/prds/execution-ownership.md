@@ -2585,3 +2585,43 @@ The supporting record contains gate coverage, exact verification and limits.
 DG-SHUTDOWN is accepted; all other decisions, broader static-denial coverage,
 combined-source verification, minimization and reviewed PR/green CI/merge
 remain required. Module extraction still follows the semantic repairs.
+
+## 36. Retain reviewed actor scheduling witness (2026-10-03)
+
+Before this transfer, the complete canonical delta is production +167/-34/net
+133; tests +2103/-536/net 1567; documentation +5218/-85/net 5133;
+manifest/lock +36/-31/net 5; public types +0/-0; 67 tracked paths and zero
+untracked. The 114-path authorization covers both proposed source paths and
+the existing decision records. No file/public-type expansion is required.
+
+Retain only the independently reviewed EV-25 witness in launch.rs (+769 test
+lines, zero production Rust) and its Cargo.toml support (+2/-2 configuration
+lines). Existing Tokio task ownership, one consumed Driver per actor, typed
+InterpreterRequests and complete terminal products are reused. No actor,
+effect, executor, public type or semantic runtime wrapper is added. Tokio's
+multi-thread feature becomes available to the workspace build; the public
+application runners continue selecting their existing current-thread scheduler.
+The tokio_unstable configuration enables explicit test instrumentation only.
+This does not select the still-open public runner API or its defaults.
+
+The original serial-only behavior is simulated by the compiled shared async
+mutex counterfactual: the intended overlap oracle fails one versus two in both
+profiles after both actors retire. Restored tests pass in both profiles.
+The full source, original selected Tokio implementation and test contracts,
+actual task identities and complete outcome traces were reviewed. Author
+receipt 557366e26d6ff739cec05804c2a1965667198f1def73de7f017dffba9f0fbf66,
+independent non-author review
+3fe673a5e4fb4112bd4c00aafc641798b9197383fd9101df4361e8c0e8d88536
+and coordinator fresh receipt
+6a16748e0c962ad33d5da7ce5c7e4f96affb60111e667b3551a9c5e63f3b227f
+bind this bounded evidence. Verification.md records exact commands and limits.
+
+Transfer only Cargo.toml SHA-256
+c1745977239f9f0419ff9e1309c7dfcc3c8adbbabb1b3d144797fdf29d194ad6
+and launch.rs SHA-256
+cdfc667acd1a6f548a82ed7e987acd7d61750e3db6358fdac9ad698a6b87e0f2.
+Preserve the accepted shutdown, ARC and pure Driver changes. Retention remains
+subject to verifying those exact bytes in the canonical tree. EV-30 still
+requires throughput and before/after allocation/task counts on the actual
+projection graph; all remaining design, ownership, extraction, minimization,
+full verification and reviewed-delivery requirements remain open.
