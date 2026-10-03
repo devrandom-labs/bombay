@@ -2,8 +2,8 @@
 
 **Historical baseline:** The 0.17.0 selection, names and copied-algorithm replay
 below describe the 2026-09-29 research snapshot. Current EXEC selects Core/Actors
-0.20.0 and Macros 0.13.0; PRD section 16 and `verification.md` record the fresh
-baseline. Current polling uses `TerminationObservations` and ordered vector
+0.21.0 and Macros 0.13.0; PRD sections 21–22 and `verification.md` record
+the reviewed dependency selection and fresh verification. Current polling uses `TerminationObservations` and ordered vector
 removal. The separate established-observation map/task still exists. Its races
 need witnesses against the actual compiled interpreter, not the old replay.
 No gate is accepted by this reconciliation.
@@ -15,7 +15,8 @@ production edits or assert that Bombay integration tests have passed.
 
 ## Selected contract and current owner
 
-The current `Cargo.lock` selects registry `bombay-behavior 0.17.0` and
+At the dated historical snapshot, `Cargo.lock` selected registry
+`bombay-behavior 0.17.0` and
 `bombay-behavior-actors 0.17.0`; both registry archives' `.cargo_vcs_info.json`
 records `435560ce7bea8ad3330ee2d42e5034f837a80602`. I read that revision's
 complete `AGENTS.md`. Address is registry `0.2.0`, Communication is registry
@@ -739,3 +740,41 @@ The independent non-author reviewer read the whole pure test and authenticated
 21 artifacts, four manifest/lock records and all selected source files. The
 bounded original witness is signed; it does not prove actual Cancel emission,
 runtime races, a repaired positive or full observation acceptance.
+
+The same original reaction witness is freshly verified against selected
+Core/Actors 0.21.0: `bombay-observation-cancel-rejection-selected-pb8ia_rv`,
+receipt `2c1ecafabf85e49425359c3872eae1db1053d5f5fe588fb4f60540bfd01a3fb2`.
+The unchanged 200-line test and all 200 published Core/Actors source files
+match reviewed release `5f9185c9a66bdb80216b63f89a5c42fa02becaa0`; its
+complete instructions were read and authenticate. Debug/release compile
+and fail the identical reaction law; lint/format pass. The independent
+non-author reviewer signs all 26 artifacts and exact source comparison.
+Only the exercised consumer graph changes Core/Actors package tuples.
+The copied published Actors development lock also changes unrelated developer
+dependencies; that graph is not exercised by this external witness and is
+not claimed unchanged. Preliminary wrong-directory commands are excluded.
+No repaired positive, actual cancellation schedule or full gate is claimed.
+
+
+### Actual retired-wrapper ownership comparison (2026-10-03)
+
+The corrected ordinary-Rust consumer `bombay-retired-observer-settlement-4jhhrgsv`
+executes the real synchronous Application boundary and compares
+`ActorExt::stop_on_shutdown` with its owning constructor. Both return the
+original move-only vector, allocation and root origin through full
+`ActorRetirement::Completed`, including the complete stop settlement and empty
+control/user/descendant lanes. This is constructor-value custody, not recovery
+of an actual Monitor's rejected observation/cancellation requests.
+
+The external fixture is 112 lines with no canonical production or public-type
+change. Two tests pass in each profile; both consuming-access attempts fail in
+each profile with the intended E0624/E0507 diagnostics. Strict lint and format
+checks pass through pinned Nix. Independent reviewer `/root` read the complete
+fixture and authenticated 49 artifacts, 50 unchanged canonical source hashes
+and all 62 external dependency tuples against the selected root lock. The
+review signs this bounded comparison only. Frozen source SHA-256
+`f6812a5d12f5d203d3d36dbe8372326323ed0767bdcd6db4988a54448daa29d0`,
+patch `06ae67a3ac6285a3634b68e2168f71f9ebdca64a24c4db26a763f9be3ba20125`,
+receipt `bbf79875dc049592ee4d51ed9ced3ec5f371811088c06cb3324684ce86206c7b`.
+Owning Monitor request custody, both relevant wrapper orders, the actual
+cancellation emitter, admission ordering and completion races remain open.

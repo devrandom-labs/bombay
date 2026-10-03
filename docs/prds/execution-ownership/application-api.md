@@ -313,3 +313,31 @@ patch and log hash and accepted the bounded failure/feasibility claim. Its revie
 rejects treating the probe variant spelling as the required law. Truthful final
 names, staging/allocation/host/declared-root custody, coexistence with family
 outcomes and independent design-gate acceptance remain required.
+
+## Current selected runner reconciliation (2026-10-03)
+
+Core/Actors now select the verified 0.21.0 registry release at
+`5f9185c9a66bdb80216b63f89a5c42fa02becaa0`; Macros 0.13.0, Address 0.3.0,
+Communication 0.1.3 and the exact Timers patch remain selected. Earlier
+0.17.0/0.20.0 source signatures and probes above are dated research, not
+current dependency authority. Canonical source still has seven synchronous
+public runner constructions. Ordinary Application/App signatures and exact
+startup errors remain unchanged by the dependency selection.
+
+Current `LaunchSystem::launch_with` obtains the root through the shared
+`launch_application_root`, awaits user work, then joins and projects the root.
+HTTP also uses that same root transaction after binding its listener; its
+server coordination body remains separate. Thus the earlier description
+of duplicated root construction is obsolete, while HTTP coordination
+consolidation is still required. Entity ordinary-error shutdown products and
+dropped execution/startup results retain the separately witnessed losses.
+
+The independently reviewed source-retirement correction remains an isolated
+comparison. The early ownership handoff is still under independent review. Neither selects this public async API
+or implements its complete root/family/result ownership. Keep DG-API open
+until those owners and the exact inferred consuming signatures, executor
+preconditions, returned values and consumer migration are accepted. No new
+runner spelling, type or compatibility contract is inferred from compilation.
+
+Current canonical runtime source SHA-256:
+`0b8e2c1c475ab46c50c451082b8d67dadb0a138e1d3ee8ccca9129ee7b7f57c4`.

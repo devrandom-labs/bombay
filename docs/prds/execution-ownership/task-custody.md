@@ -2,8 +2,9 @@
 
 **Frozen research snapshot:** The ARC-011 change on 2026-10-01 resolved the
 startup/finish waiter and activation-task settlement failures described below.
-Current 0.20.0 source and tests, with the retained typed projection task, are
-recorded in `docs/prd-backlog/status.md` under ARC-011. Failure candidates and
+The retained typed projection task and its regressions are recorded under
+ARC-011 in `docs/prd-backlog/status.md`. Current EXEC selects Core/Actors
+0.21.0; PRD sections 21–22 record the reviewed release and fresh verification. Failure candidates and
 source descriptions below apply to the earlier 0.17.0 snapshot only.
 
 Status: **open research; no representation accepted and no production edit
@@ -1077,3 +1078,71 @@ each prior-source hunk exactly once. The recurring-source witness observes
 16 progress steps with a timed escape; it does not prove an unbounded fairness
 or joining deadline. The review does
 not accept live capability failure, application result ownership or full DG-TASK.
+
+### Published-version source comparison (2026-10-03)
+
+The isolated `bombay-source-retirement-021-q5lj9xhe` successor preserves the
+previous freeze and changes only verified dependency/configuration and Driver
+version bindings. Frozen patch
+`dbc42f8bff3eec65663f960a46ca83950d3cbd15dfc6090e837602da5664d4dc`,
+receipt `bfc2b67ad1dc8f936ac0fe06219f051060df35c7837313d3ce2e39047fe13d78`.
+Twenty-five tracked paths change against the same 3f51 baseline, total
++1245 / -337 / net 908; owning production remains the signed 64-net-line
+correction. Fresh workspace/all-feature verification passes 418 tests and
+61 summaries in each profile, strict Clippy and formatting. All four saved
+source/projection mutations compile and fail in both profiles; a saved
+executing script records exact restoration, followed by all focused positive
+filters passing. The actual selected-version nightly fuzz build and 10,000-run
+campaign pass. The independent non-author reviewer authenticates all 25 source hashes and
+22 artifacts, reads the saved mutation script and signs selected-version
+equivalence and the bounded acquired-request law. Complete classification:
+production +241 / -177 / net 64; tests/benchmarks/fuzz/fixtures
++962 / -118 / net 844; documentation +29 / -29 / net 0; manifests/locks
++13 / -13 / net 0; public types +0 / -0. Complete archive enumeration also
+finds 145 non-build untracked files: 46 preserved historical evidence files,
+25 current evidence files and 74 generated fuzz inputs. No additional
+untracked Rust or manifests exist. Build outputs are explicitly excluded.
+The current fuzzer's RetirementRequest=Never exercises earlier causal laws;
+it does not generate the new acquired-retirement Break case. An actual
+typed-request generator and distinguishing fuzz inversion remain required.
+These results do not claim full application/task ownership
+or canonical source retention; earlier copied probe artifacts stay historical.
+
+
+### Acquired-request fuzz evidence and minimization review (2026-10-03)
+
+The isolated successor `bombay-acquired-retirement-fuzz-mx4me6fo` extends the
+existing causal-turn target with actual move-only requests on both ordinary
+and source acquisition. The host retains the original boxed request or
+transfers it once into `Completion::RetirementRequested`; complete actor
+state is compared with delivered inputs, and original pending settlement
+allocations, payloads, order and unoffered remainder are checked against an
+independent commit/discharge ledger. The Behavior owns only pure state.
+
+Independent reviewer `/root` read the complete target, incremental patch and
+executing inversion script, authenticated all 25 changed-source hashes and
+29 artifact hashes, and compared the other 24 sources with the prior freeze.
+Three deterministic tests pass in each profile. Mutating both actual Driver
+acquisition arms to destroy the request and return Exhausted produces two
+intended compiled failures in each profile; exact source restoration precedes
+three passing tests in each profile. Strict lint/format checks and the pinned
+nightly 10,000-run campaign pass. Receipt SHA-256
+`c689a3314b56e73a70ce116dc3e0d48143ccd98d73b5b124ccedc43607c0cf43`,
+incremental patch `d2d4738f5fba91a7c09d0f39ec7076b61e43e7cd472c37ce85e04884bd408e8d`,
+source `482f1c35c90cdd022549c753c01a6564c468fa1e9aa3800711537fe9d097e06e`.
+One existing test/fuzz path changes +392 / -169 / net 223; production and
+public types remain zero. The aggregate isolated delta is production
++241 / -177 / net 64; tests/benchmarks/fuzz/fixtures +1305 / -238 / net 1067;
+documentation +29 / -29; manifests/locks +13 / -13; 25 changed tracked paths
+and 204 non-build untracked paths (71 prior records, 30 current records,
+103 corpus inputs). No additional untracked Rust or manifests exist.
+
+This signs bounded acquisition evidence, not canonical retention. Arming-only
+cases exclude a false acquired-request result; they do not prove the exact
+alternate terminal cause. Pending-future drop proves release, not asynchronous
+recovery. Replaying both ports on the same host after explicit queue discharge
+proves affine request nonreplay, not a restarted Driver. Chronological
+retirement-last ordering is not asserted by the replacement ledger.
+The aggregate-drift review reopens minimization: research-mechanic actor/host
+names and a plan sum duplicating `Option<(port, occurrence)>` must be corrected
+in a separately frozen successor. Full task/application gates remain open.
