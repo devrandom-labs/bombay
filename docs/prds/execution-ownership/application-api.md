@@ -341,3 +341,47 @@ runner spelling, type or compatibility contract is inferred from compilation.
 
 Current canonical runtime source SHA-256:
 `0b8e2c1c475ab46c50c451082b8d67dadb0a138e1d3ee8ccca9129ee7b7f57c4`.
+
+## Independently reviewed paired-work comparison (2026-10-03)
+
+The signed selected-version startup handoff is now independently reviewed in
+the task record. Its isolated successor compares an inherent
+`Application::execution_with(work)` with the same ordinary free function;
+both return separate opaque Send execution/result futures. Construction owns
+the untouched inputs before polling. The original callback, its work future and
+output can borrow caller values without acquiring a `'static` requirement.
+Actual root construction uses the same existing startup/cancellation/raw-join
+transaction; no second actor loop or runtime wrapper is introduced.
+
+Five tests pass in both pinned-Nix profiles: original unpolled Application;
+original advanced App address-space identity; initialization Stop with the
+uninvoked callback and complete retirement; immediate borrowed pending-work
+release with independently retained root result; and exact completed borrowed
+output retained or explicitly surrendered. A surviving execution owner still
+owns executable inputs when its result receiver is surrendered. Receiver drop
+does not grant authority to revoke that live execution; undeliverable values
+are released once when their owner attempts result transfer.
+
+Three comparison inversions erase untouched inputs, the uninvoked callback or
+completed output; each compiles and fails in both profiles. The fourth mutation
+merely disables the pending-work destructor's observation counter. It proves
+instrument sensitivity, not a work-ownership inversion: the work future still
+drops. Exact restored positives, strict library/test Clippy and formatting pass.
+
+Increment: tests +480 / -0 / net 480 in one already approved existing path;
+production/public types zero. Receipt:
+`e47e3bd21a0fab41217cfd387689bb516a696b1741c8818d37490b32897317ec`;
+patch `f7d461d40093aa997c74433cb0b65454be50dccc2415896f90fd4b8b516abbb7`;
+inspected source `3dc6e3722a915c8d9200badeb4a886efe2d62092911cce2b3d7755e8b8a9112e`.
+Independent reviewer `/root` read the complete patch and verifier script,
+authenticated 20 stage artifacts and all 414 nonbuild archive hashes, checked
+the unchanged foundation/source prefix and both-profile positive, mutation and
+restoration logs. This is bounded source/artifact acceptance without fresh
+independent Rust execution, not DG-API or a public runner selection.
+
+Callback Err/panic, stopped-root/pending-work ordering, blocking runtime
+ownership, HTTP, installed families, heterogeneous births and integrated
+failure/projection custody remain required. The unstarted callback's concrete
+captured allocation/drop oracle also remains to strengthen. Existing actor
+executor and capability errors are intentionally excluded from this comparison;
+its unwraps establish no recoverability law for those errors.
