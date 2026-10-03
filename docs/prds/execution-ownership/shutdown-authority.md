@@ -7,8 +7,9 @@ shutdown borrow their existing exact control senders. The 0.17.0 contract and
 erased representation below are the dated pre-change experiment; current
 selection and gates are recorded in `../../prd-backlog/status.md`.
 
-Date: 2026-09-29. Gate: `DG-SHUTDOWN` remains **open**. This record is evidence
-for `WP-SHUTDOWN-DESIGN`, not an accepted API or permission to edit production.
+Historical experiment date: 2026-09-29; the gate was open for that contract.
+Current signed acceptance is recorded below. The historical experiment was
+evidence for `WP-SHUTDOWN-DESIGN`, not production permission.
 It covers `XO-24` through `XO-30` and the proposed `EV-13` through `EV-15` and
 `EV-26` witnesses in [the EXEC PRD](../execution-ownership.md).
 
@@ -390,13 +391,77 @@ replacement and external admission witnesses cover the narrow gate's required
 ownership paths. Standard emitted birth, a separate live observer and complete
 application execution are not additional DG-SHUTDOWN requirements.
 
-Review remains open: four new launch callbacks currently do nothing, and four
-retired-result checks omit the existing activation-task field. Complete those
-observations, inspect the original repeated rejection, and use module-scope
-imports before freezing the corrected candidate. The acknowledgement contains
+The preliminary review identified four no-op launch callbacks and four
+retired-result checks omitting activation tasks. The accepted successor below
+corrects both, inspects the repeated original rejection and uses module-scope
+imports. The acknowledgement contains
 only the shutdown ID, rejection reason where applicable, and protocol marker;
 there is no target payload to recover or add. Preliminary coordinator review
 `8404b10e39bcbf246773e22375f775e4fc9e60452bbf3124587b4de84e051d74`
 records these findings without gate acceptance or canonical source retention.
-Independent review and fresh verification of the corrected source remain
-required. Production stays lean; tests are exempt from condensation.
+That preliminary artifact accepts no gate; the corrected source has the
+separate signatures and verification below. Tests remain exempt from
+production condensation.
+
+
+## Accepted static shutdown authority (2026-10-03)
+
+DG-SHUTDOWN is accepted for the exact correction in EXEC section 35.
+Author /root/contract_inventory's corrected receipt
+`ec8e3b3588f367ca62b06d18f9c7d0af5dc56219e63ec920e364ad513e9140d0`
+binds the complete patch
+`345f8f080d8e3bcaa1f51f93aa4987c9130607013a789df65c2cf2449f886c76`.
+Coordinator /root's signature is
+`88a267147f9b28a1fd278251b948818655a8f2cf5ddf194e19a657805551c386`;
+independent non-author reviewer /root/observation_research's signature is
+`6e11212d317fd1918ef295fcac67e3dfd46a9dfc863863e2e680d01ba3dc1e50`.
+Both bind the two complete source hashes recorded in section 35, all 345 source
+hashes and 71 artifacts; 343 files remain equal to the candidate's baseline.
+
+| Required law | Accepted evidence |
+| --- | --- |
+| XO-24–25 / EV-13 | Existing ActorRef is messaging-only; concrete InstalledActor<B> and weak ApplicationLifecycle<P,E> retain exact typed control. Two behaviors sharing a protocol have different event types; existing generic Ingress carries the selected shutdown path without erasure. |
+| XO-26–27 / EV-14 | Joined old root and installed actor generations cannot close actual replacements at the same address. AlreadyStopping and AlreadyStopped replay does not admit a second shutdown input. |
+| XO-28–30 / EV-15 | A pre-close permit completes and its original non-Clone LedgerSubmission drains before closure; first-polled post-close submission returns the original allocation. ExternalActor owns admission/receipt without Behavior shutdown authority. |
+| Established capability transfer | The actual factory commits each child and returns its concrete capability; an unrelated interpreter with NoChildBindings shuts down those exact targets. Target and acknowledgement ingress are independently typed. |
+
+Every action lane is observed outside Behavior, all retained activation-task
+lanes are checked, and successful child terminals preserve original state and
+settlement products. Returned shutdown requests preserve their original ID,
+concrete target and ingress. The acknowledgement contains only ID/reason and
+its static protocol marker. Original constructor routes are inspected as
+inputs; no CreationId or generation is guessed from sequence arithmetic.
+
+All Rust commands use the pinned shell. Author verification runs restored
+focused shutdown tests (seven per profile: five new, two inherited preservation
+cases), all-feature workspace tests (421 tests / 61 result summaries per
+profile), strict workspace/all-target/all-feature Clippy and formatting; all
+exit zero. Four static cohorts per profile reject the original Here defect,
+wrong event, external shutdown and messaging reference used as installed
+capability. Five compiled runtime counterfactuals per profile fail the intended
+admission, single-request, original allocation and stale-generation laws. Static
+compiler rejection is not counted as a killed semantic mutant.
+
+The coordinator independently reran the exact corrected source in an isolated
+worktree with a fresh target. Prefix for the first three commands:
+`nix --option eval-cache false develop -c env CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/bombay-shutdown-root-fresh-target`.
+
+```sh
+cargo test --locked -p bombay-rs --lib shutdown -- --nocapture
+cargo test --locked -p bombay-rs --release --lib shutdown -- --nocapture
+cargo clippy --locked -p bombay-rs --lib --tests -- -D warnings
+nix --option eval-cache false develop -c cargo fmt --all -- --check
+```
+
+Both focused runs pass seven tests; Clippy and formatting exit zero. The
+independent reviewer inspected authenticated source and logs and claims no
+separate fresh execution. No owning primitive, public method or constructor
+changes. Source delta: production +17 / -16 / net 1; tests +922 / -0; public
+types +0 / -0. The earlier incomplete receipt and review remain historical.
+
+The admission fixture's manually published observation is separate from the
+real joined actor-generation witnesses. Advanced factory commitment does not
+claim a whole public Application, standard emitted-birth integration or Entity
+family policy. Those are not additional shutdown-gate requirements. Broader
+EV-26 denials, other EXEC decisions, combined retained verification, final
+minimization and reviewed PR/CI/merge remain open.

@@ -439,7 +439,8 @@ entry alone is not proof of a delivered notification.
 
 ## 9. Decision gates: exact experiments and stop conditions
 
-All gates below are **open** in this PRD. The coordinator must record evidence
+DG-SHUTDOWN is **accepted** for the exact source and signatures in section 35;
+all other gates below remain **open**. The coordinator must record evidence
 before changing a gate to accepted. A gate is not accepted because a worker
 produced a compiling patch or because another agent assumed its answer.
 
@@ -471,7 +472,7 @@ Approval of a design record does not waive repository surface checkpoints.
 | --- | --- | --- |
 | DG-API | Compare ordinary async inherent methods plus a blocking convenience against an ordinary free function driving the same future. Compare existing Tokio builder input versus a closed Bombay mode value only if a real semantic distinction requires one. Exercise Application, advanced App, Entity families and HTTP with inferred types. | Exact signatures, errors, defaults, nested-runtime behavior, runtime feature selection, migration table and valid public examples. No runtime wrapper/trait chosen in advance. No public runner implementation until accepted. |
 | DG-TASK | Reproduce dropped startup, dropped application work, dropped finish, source-wait cancellation and dropped retirement. Compare improving existing task ownership with transferring cleanup to a specifically owned execution task. Enumerate panic, failed spawn, closed cancellation sender and runtime destruction. | Ownership graph and transfer table with no unowned task at any await/drop. Define who can still join and observe cleanup after the application future is gone, without promising synchronous async cleanup. No async public release before acceptance. |
-| DG-SHUTDOWN | Compile-only witnesses for ordinary root shutdown, established child shutdown, external actors, reused addresses and two behavior implementations of one protocol. Compare existing concrete capabilities before changing an owning primitive. | Static target/authority representation, invalid-use denials and admission-close trace. If impossible under locked contracts, exact upstream requirement and affected work blocked. No erased fallback. |
+| DG-SHUTDOWN | Compile-only witnesses for ordinary root shutdown, established child shutdown, external actors, reused addresses and two behavior implementations of one protocol. Compare existing concrete capabilities before changing an owning primitive. | **Accepted:** [signed current-contract evidence](execution-ownership/shutdown-authority.md#accepted-static-shutdown-authority-2026-10-03), section 35. Static target/authority representation, invalid-use denials and admission-close trace. If impossible under locked contracts, exact upstream requirement and affected work blocked. No erased fallback. |
 | DG-OBSERVATION | Deterministically exercise immediate completion, cancel/completion races and reused IDs. Compare existing actor-owned polling with independent-task design, including returned-event custody. | One owner and linearization point for each relationship operation; prescribed outcome table passes. Any retained task/map has an independent responsibility. No assumed generation token or extra observation framework. |
 | DG-PROJECTION | Compare current eager projection task with projecting in the existing actor completion/join path. Use a child that terminates while the parent continues and a capability completion requiring later settlement. Inject projection panic. | Exact cleanup timing, terminal conversion/custody and panic classification; task-count change measured. Do not remove a task if this delays required cleanup or changes failure semantics. |
 | DG-WRAPPERS | For every section-7 candidate, try direct existing values/methods with the same two meaningful consumers where available. Inspect locality, authority, diagnostics and type bounds. | Retain/delete/reshape table with individual reasons and regressions. No blanket removal of wrappers, no blanket retention of aliases, no universal capability trait. |
@@ -2541,3 +2542,46 @@ owning invariant before choosing a repair; do not manufacture impossible
 Some(Source) rejection traces. No additional ownership path is implicitly
 authorized for that separate finding. This scope checkpoint is requested and
 pending; dependent owning source edits remain blocked.
+
+
+## 35. Accepted static shutdown correction (2026-10-03)
+
+Before retaining production, the current complete canonical delta is production
++150 / -18 / net 132; tests +1181 / -536 / net 645; public types +0 / -0;
+67 changed tracked paths, zero untracked. Existing authorization covers 114
+repository-qualified paths and zero new public types; line-count checkpoints
+are waived and tests are exempt from condensation. This stage uses only the
+already approved local.rs and application_runtime.rs source paths plus existing
+PRD/support/backlog records. No scope expansion is needed.
+
+The remaining blocker is Bombay's fixed Here shutdown ingress despite the
+selected owning request supporting the target's exact generic ingress.
+A factory-committed nested target fails on the original implementation with
+three E0277 and three E0308 diagnostics in each profile. The correction forwards
+existing TargetPath through InstalledActor, request_actor_shutdown and the two
+existing capability interpretation implementations. Target ingress and the
+observer's acknowledgement ingress remain independent. Existing concrete
+endpoint/control ownership, Ingress/InjectEvent, shutdown request/rejection and
+mailbox admission are reused; no runtime owner, channel, trait or public type
+is added or removed.
+
+Expected retained source delta, measured by Git against the fresh selected
+baseline: production +17 / -16 / net 1; tests +922 / -0; public types +0 / -0.
+This is a net-positive correctness correction, not production reduction. The
+complete baseline-relative tracked/untracked delta remains in verification.md.
+
+Author /root/contract_inventory's frozen receipt is
+`ec8e3b3588f367ca62b06d18f9c7d0af5dc56219e63ec920e364ad513e9140d0`;
+complete patch `345f8f080d8e3bcaa1f51f93aa4987c9130607013a789df65c2cf2449f886c76`.
+Coordinator /root signs acceptance
+`88a267147f9b28a1fd278251b948818655a8f2cf5ddf194e19a657805551c386`.
+Independent non-author reviewer /root/observation_research signs
+`6e11212d317fd1918ef295fcac67e3dfd46a9dfc863863e2e680d01ba3dc1e50`.
+Both inspect local.rs SHA-256
+`c173623b1fd28edd2678ca4e5c60091007802df400c1b6aa2da7ac25e6744e5d`
+and application_runtime.rs
+`ebb679fe18c2afc493c392e4f38259a2c6d502ea46eaeadea5e0a822504a0357`.
+The supporting record contains gate coverage, exact verification and limits.
+DG-SHUTDOWN is accepted; all other decisions, broader static-denial coverage,
+combined-source verification, minimization and reviewed PR/green CI/merge
+remain required. Module extraction still follows the semantic repairs.
