@@ -369,3 +369,34 @@ Fresh registry-selected actual Bombay interoperability passes in both profiles;
 EXEC section 20 records its independent review, canonical dependency selection
 and workspace checks. This owning delivery does not mark EXEC or DG-SHUTDOWN
 complete.
+
+## Current selected-contract review (2026-10-03)
+
+The current candidate uses the published Core/Actors 0.21.1 contract at
+`5ca96444f0a66e9a013b6989e3e53d345cbabf65`, Communication 0.1.3 and pinned
+Rust 1.99.0. The historical protocol-only authority gap above is not the
+current contract: `InstalledActor<B>` already carries the concrete actor's
+control authority. The remaining correction propagates the existing typed
+`TargetPath` through shutdown interpretation, independently of the observer's
+acknowledgement path. It adds no authority, channel or public type.
+
+Candidate receipt `285df7c0c82e4faf2fb2b174090babbd45d92051aae2a0c1b3d73b6f5c84eb8b`
+binds two already approved files: production +17 / -16 / net 1; tests +831 /
+-0; public types +0 / -0. The root coordinator independently authenticated
+345 source hashes, 87 artifacts and 343 unchanged baseline files, then read
+the complete changes and selected owning shutdown contracts. The actual
+factory commitment, transferred capability, root weak control, same-address
+replacement and external admission witnesses cover the narrow gate's required
+ownership paths. Standard emitted birth, a separate live observer and complete
+application execution are not additional DG-SHUTDOWN requirements.
+
+Review remains open: four new launch callbacks currently do nothing, and four
+retired-result checks omit the existing activation-task field. Complete those
+observations, inspect the original repeated rejection, and use module-scope
+imports before freezing the corrected candidate. The acknowledgement contains
+only the shutdown ID, rejection reason where applicable, and protocol marker;
+there is no target payload to recover or add. Preliminary coordinator review
+`8404b10e39bcbf246773e22375f775e4fc9e60452bbf3124587b4de84e051d74`
+records these findings without gate acceptance or canonical source retention.
+Independent review and fresh verification of the corrected source remain
+required. Production stays lean; tests are exempt from condensation.
