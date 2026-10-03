@@ -146,12 +146,42 @@ workspace/doctest verification; nextest does not run doctests or the hook-only
 measurement witnesses. It does not verify unretained semantic comparisons,
 final EXEC acceptance or remote CI.
 
+## Full native Nix checks (2026-10-03)
+
+Clean canonical bd4bcce3c2c6a7be80cd84bb73ae95871db0c14a passes all 21
+declared aarch64-darwin checks, with terminal exit zero:
+
+```text
+nix --option eval-cache false flake check --max-jobs 1 --cores 2 --print-build-logs
+```
+
+All 345 tracked inputs remain unchanged through completion. Receipt
+e0c0c1c5efd9abfb37af4522c4e1a6553dfb3255dd80f45b4d2b97cd78b72360
+at /tmp/bombay-exec-canonical-flake-verification.json binds the input manifest,
+complete log, all 21 output paths and their registered Nix metadata. Cargo
+1.99.0 (5f94df478) is observed in the build log. The earlier no-build evaluation
+is recorded separately and is not counted as verification execution.
+
+The checks cover release workspace build/tests, documentation and doctests,
+strict lint/formatting, both child feature configurations, Entity/Observe Loom,
+Driver/actor law evidence, unwind/abort boundaries, coverage and executable
+example checks. Axum's deterministic package tests run; its long-running server
+is not started by that gate. Owner coverage reports 128/136 Driver lines,
+547/563 actor-execution lines, 46/51 actor-outcome lines and 502/525 Observe
+lines, exceeding their configured floors. These are the tool's reported line
+counts, not a new claim of complete production-branch coverage.
+
+The retained canonical tree passes these repository checks. Unretained semantic
+repairs, the normal-family lifetime correction, full EXEC decision gates,
+other platforms and required remote PR review/CI remain outstanding. Passing
+this run does not authorize retaining an unaccepted interface or merging EXEC.
+
 <!-- exec-research-counts -->
 
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +5727 / -87 / net 5640
+documentation: +5757 / -87 / net 5670
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
