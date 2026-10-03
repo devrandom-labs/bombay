@@ -2625,3 +2625,44 @@ subject to verifying those exact bytes in the canonical tree. EV-30 still
 requires throughput and before/after allocation/task counts on the actual
 projection graph; all remaining design, ownership, extraction, minimization,
 full verification and reviewed-delivery requirements remain open.
+
+## 37. Retain reviewed measurement tests (2026-10-03)
+
+Before this transfer, the complete canonical delta is production +167/-34/net
+133; tests +2872/-536/net 2336; documentation +5308/-87/net 5221;
+manifest/lock +38/-33/net 5; public types +0/-0; 67 tracked paths and zero
+untracked. Existing authorization covers both source paths and these records.
+Production condensation applies; tests are exempt. No scope expansion is needed.
+
+Retain only the reviewed launch.rs and actor_execution.rs test changes: net
+402 additional test lines, zero production lines, public types or new unsafe
+operations. Existing Tokio poll hooks, allocator, typed work interpreter and
+complete actor retirement products are reused. Cargo configuration is already
+retained by section 36; no new benchmark target or production wrapper is added.
+
+The workload admits the original requests before a shared asynchronous start
+gate. Allocation snapshots follow that await, so each measured operation stays
+within one task poll. Counting distinguishes disabled, counting and overflow;
+unwinding releases the measurement scope. Actual actor task IDs select actor
+poll counts. Construction, joined cleanup and actor polling are separate scopes;
+off-poll runtime allocations are excluded. The explicit ignored release test
+measures two roots, not the required parent-and-child projection graph.
+
+Author receipt e7ecabfec28cf5a7e38056ae5c4a67fe07aa9f7d60fed6a5062d18df87cf12bf
+and independent non-author review
+7c89c9e31befabafe28261993ec1e8bce45bebaebce8a5763c6b29923d21724c
+bind the exact sources and six compiled, intended counterfactual failures in
+both profiles. The coordinator independently reruns owning tests, the release
+measurement, ordinary-build strict Clippy and formatting before transfer.
+Earlier unapproved panic-payload inspection, ordinary-build dead code and the
+missing shared start gate are rejected predecessors, not accepted evidence.
+The final test observes the opaque task error without extracting its payload.
+
+Transfer only launch.rs SHA-256
+84364e2378ec8515e4f7076706880b4bae962714223c471c46463b0e165fccca
+and actor_execution.rs SHA-256
+380c0c077a47c6a43c61eb57006d5f26b4f7ef9789078846cbf5911f2d1c5e08,
+preserving their production prefixes, accepted EV-25 witness, shutdown, ARC
+and pure Driver regressions. Verify the exact canonical bytes after transfer.
+This stage does not accept full EV-30, native panic custody, projection,
+public runner selection, module extraction or final minimization.
