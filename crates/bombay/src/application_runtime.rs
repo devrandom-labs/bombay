@@ -2950,31 +2950,32 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Child> InterpretEstablishedShutdown<Child, Here>
+impl<C, N, Parent, Bindings, Origins, Child, TargetPath>
+    InterpretEstablishedShutdown<Child, TargetPath>
     for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    Child::Event: InjectEvent<ShutdownRequested, Here>,
+    Child::Event: InjectEvent<ShutdownRequested, TargetPath>,
 {
     fn shutdown(
         &mut self,
         _id: ShutdownId,
         installed: InstalledActor<Child>,
-        ingress: behavior::Ingress<ShutdownRequested, Here>,
+        ingress: behavior::Ingress<ShutdownRequested, TargetPath>,
     ) -> Result<(), ShutdownRejection> {
         installed.request_shutdown(ingress)
     }
 }
 
-impl<C, N, P, Bindings, Origins, Child, Path>
-    InterpretItem<ShutdownEstablished<Child, Here>, C::Event, Path>
+impl<C, N, P, Bindings, Origins, Child, Path, TargetPath>
+    InterpretItem<ShutdownEstablished<Child, TargetPath>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: InjectEvent<EstablishedShutdownResolved<Child::Protocol>, Path> + Send + 'static,
     Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    Child::Event: InjectEvent<ShutdownRequested, Here> + Send,
+    Child::Event: InjectEvent<ShutdownRequested, TargetPath> + Send,
     BehaviorMessage<Child>: Send,
     Self: Send,
 {
@@ -2984,8 +2985,8 @@ where
     )]
     async fn interpret_item(
         &mut self,
-        request: ShutdownEstablished<Child, Here>,
-    ) -> ItemSettlement<ShutdownEstablished<Child, Here>, ShutdownId, ShutdownRejection, Never>
+        request: ShutdownEstablished<Child, TargetPath>,
+    ) -> ItemSettlement<ShutdownEstablished<Child, TargetPath>, ShutdownId, ShutdownRejection, Never>
     {
         let shutdown = request.id;
         let settlement = request.settle(self);
@@ -3445,5 +3446,633 @@ mod atomic_interpretation_contract {
                 ChildBindings<ProxyParent, Never>,
             >,
         >();
+    }
+}
+
+#[cfg(test)]
+mod installed_shutdown_contract {
+    use behavior::{
+        Actions, ActiveTurn, Become, Behavior, BehaviorActed, BehaviorBase, ChildCreationOutcome,
+        ChildHead, CreateChild, CreationKind, CreationSequence, EstablishChild, EventLayer, Here,
+        Ingress, Inside, InterpretItem, ItemSettlement, MessageProtocol, Never, NoBirths, NoSends,
+        RoutedCreation, Step, Stopped, User, delegate_transition,
+    };
+    use behavior_actors::{
+        EstablishedShutdownResolved, Exit, ShutdownEstablished, ShutdownId, ShutdownRejection,
+        ShutdownRequested, StopOnShutdown,
+    };
+    use bombay_engine::Completion;
+    use communication::{Config, mailbox_channel};
+    use core::future::Future;
+    use core::pin::pin;
+    use core::task::{Context, Poll, Waker};
+    use std::sync::{Arc, Mutex};
+    use tokio::sync::oneshot;
+
+    use super::{
+        ApplicationCapabilities, ApplicationCapabilityInputs, ApplicationLifecycle, NoParent,
+        StructuralOrigins,
+    };
+    use crate::ActorExecutionOutcome;
+    use crate::ActorSpace;
+    use crate::actor;
+    use crate::actor_interface::{ActorInterface, ExtractLocalEndpoint};
+    use crate::address::{ApplicationAddresses, MailAddr};
+    use crate::child_bindings::{ChildBinding, NoChildBindings, RetireChildTasks};
+    use crate::launch::launch_inert;
+    use crate::local::LocalResidual;
+    use crate::observation::TerminationObservations;
+    use crate::reports::LocalTerminalReports;
+    use crate::terminal::{ActorRetirement, ChildOrigin, ProjectTerminal};
+    use crate::time::LocalTimers;
+
+    struct ShutdownLedger {
+        entries: Vec<u64>,
+        received: Vec<User<MailAddr, Vec<u64>>>,
+    }
+    #[actor]
+    impl ShutdownLedger {
+        fn receive(&mut self, from: MailAddr, entries: Vec<u64>) -> BehaviorActed<Self> {
+            self.received.push(User::new(from, entries));
+            Ok(Actions::cont())
+        }
+    }
+    type DirectLedger = StopOnShutdown<ShutdownLedger>;
+    type NestedLedger = StopOnShutdown<DirectLedger>;
+    type LedgerProtocol = ShutdownLedger;
+
+    #[derive(Default)]
+    struct ShutdownObserver {
+        resolutions: Vec<(ShutdownId, Result<(), ShutdownRejection>)>,
+    }
+    impl Behavior for ShutdownObserver {
+        type Protocol = MessageProtocol<MailAddr, Never>;
+        type Event = EventLayer<EstablishedShutdownResolved<LedgerProtocol>, User<MailAddr, Never>>;
+        type Sends = NoSends;
+        type Ph = Never;
+        type Error = Never;
+        type Birth = NoBirths;
+        fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
+            match event {
+                EventLayer::Owned(EstablishedShutdownResolved::Accepted { id, .. }) => {
+                    self.resolutions.push((id, Ok(())));
+                }
+                EventLayer::Owned(EstablishedShutdownResolved::Rejected { id, reason, .. }) => {
+                    self.resolutions.push((id, Err(reason)));
+                }
+                EventLayer::Inner(user) => match user.message {},
+            }
+            Ok(Actions::cont())
+        }
+    }
+    impl BehaviorBase for ShutdownObserver {
+        type Base = Self;
+        fn base(&self) -> &Self {
+            self
+        }
+    }
+    enum ShutdownChildren {
+        Direct {
+            origin: ChildOrigin<ShutdownObserver, ChildHead>,
+            retirement: ActorRetirement<DirectLedger, Self>,
+        },
+        Nested {
+            origin: ChildOrigin<ShutdownObserver, ChildHead>,
+            retirement: ActorRetirement<NestedLedger, Self>,
+        },
+    }
+    impl
+        ProjectTerminal<
+            ChildOrigin<ShutdownObserver, ChildHead>,
+            ActorRetirement<DirectLedger, Self>,
+        > for ShutdownChildren
+    {
+        fn project(
+            origin: ChildOrigin<ShutdownObserver, ChildHead>,
+            retirement: ActorRetirement<DirectLedger, Self>,
+        ) -> Self {
+            Self::Direct { origin, retirement }
+        }
+    }
+    impl
+        ProjectTerminal<
+            ChildOrigin<ShutdownObserver, ChildHead>,
+            ActorRetirement<NestedLedger, Self>,
+        > for ShutdownChildren
+    {
+        fn project(
+            origin: ChildOrigin<ShutdownObserver, ChildHead>,
+            retirement: ActorRetirement<NestedLedger, Self>,
+        ) -> Self {
+            Self::Nested { origin, retirement }
+        }
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep complete commitment, typed transfer, and both original terminal products in one trace."
+    )]
+    async fn committed_distinct_event_targets_transfer_to_unrelated_shutdown_interpreter() {
+        let allocations = ApplicationAddresses::new();
+        let (direct_control, direct_owner, direct_mailbox, direct_receiver) =
+            mailbox_channel::<<ShutdownObserver as Behavior>::Event, User<MailAddr, Never>>(
+                Config::new(1),
+            );
+        let (direct_terminal, direct_report) = oneshot::channel();
+        let mut direct_creator = ApplicationCapabilities::<
+            ShutdownObserver,
+            (),
+            NoParent,
+            ChildBinding<
+                ChildHead,
+                DirectLedger,
+                ShutdownChildren,
+                NoChildBindings<ShutdownChildren>,
+            >,
+            StructuralOrigins<ShutdownObserver>,
+        >::new_with_bindings(
+            ApplicationCapabilityInputs {
+                address: MailAddr(501),
+                actor_spaces: Arc::new(()),
+                allocations: allocations.clone(),
+                control: direct_control,
+                timers: LocalTimers::new(),
+                observations: TerminationObservations::new(),
+                terminal_reports: LocalTerminalReports::new(direct_terminal),
+            },
+            ChildBinding::default(),
+        );
+        let (nested_control, nested_owner, nested_mailbox, nested_receiver) =
+            mailbox_channel::<<ShutdownObserver as Behavior>::Event, User<MailAddr, Never>>(
+                Config::new(1),
+            );
+        let (nested_terminal, nested_report) = oneshot::channel();
+        let mut nested_creator = ApplicationCapabilities::<
+            ShutdownObserver,
+            (),
+            NoParent,
+            ChildBinding<
+                ChildHead,
+                NestedLedger,
+                ShutdownChildren,
+                NoChildBindings<ShutdownChildren>,
+            >,
+            StructuralOrigins<ShutdownObserver>,
+        >::new_with_bindings(
+            ApplicationCapabilityInputs {
+                address: MailAddr(503),
+                actor_spaces: Arc::new(()),
+                allocations,
+                control: nested_control,
+                timers: LocalTimers::new(),
+                observations: TerminationObservations::new(),
+                terminal_reports: LocalTerminalReports::new(nested_terminal),
+            },
+            ChildBinding::default(),
+        );
+        let mut creations = CreationSequence::new();
+        let direct_id = creations.issue().expect("direct child identity");
+        let nested_id = creations.issue().expect("nested child identity");
+        let direct_entries = vec![11, 13];
+        let direct_allocation = direct_entries.as_ptr();
+        let direct = EstablishChild::<ChildHead, DirectLedger>::establish_child(
+            &mut direct_creator,
+            RoutedCreation::new(
+                CreateChild::birth(
+                    direct_id,
+                    StopOnShutdown::new(ShutdownLedger {
+                        entries: direct_entries,
+                        received: Vec::new(),
+                    }),
+                ),
+                0,
+            ),
+        )
+        .await;
+        let ItemSettlement::Accepted(direct) = direct else {
+            panic!("actual direct child commitment")
+        };
+        let ChildCreationOutcome::Established(committed) = &direct else {
+            panic!("actual committed direct child")
+        };
+        assert_eq!(committed.id(), direct_id);
+        assert_eq!(committed.kind(), CreationKind::Birth);
+        let direct = direct
+            .into_actor()
+            .unwrap_or_else(|_| panic!("original direct installed authority"));
+        let nested_entries = vec![17, 19];
+        let nested_allocation = nested_entries.as_ptr();
+        let nested = EstablishChild::<ChildHead, NestedLedger>::establish_child(
+            &mut nested_creator,
+            RoutedCreation::new(
+                CreateChild::birth(
+                    nested_id,
+                    StopOnShutdown::new(StopOnShutdown::new(ShutdownLedger {
+                        entries: nested_entries,
+                        received: Vec::new(),
+                    })),
+                ),
+                1,
+            ),
+        )
+        .await;
+        let ItemSettlement::Accepted(nested) = nested else {
+            panic!("actual nested child commitment")
+        };
+        let ChildCreationOutcome::Established(committed) = &nested else {
+            panic!("actual committed nested child")
+        };
+        assert_eq!(committed.id(), nested_id);
+        assert_eq!(committed.kind(), CreationKind::Birth);
+        let nested = nested
+            .into_actor()
+            .unwrap_or_else(|_| panic!("original nested installed authority"));
+        let direct_endpoint = direct.recipient().interpret(&mut ExtractLocalEndpoint);
+        let nested_endpoint = nested.recipient().interpret(&mut ExtractLocalEndpoint);
+        let (observer_control, observer_owner, observer_mailbox, mut observer_receiver) =
+            mailbox_channel::<<ShutdownObserver as Behavior>::Event, User<MailAddr, Never>>(
+                Config::new(1),
+            );
+        let (observer_terminal, observer_report) = oneshot::channel();
+        let mut observer = ApplicationCapabilities::<
+            ShutdownObserver,
+            (),
+            NoParent,
+            NoChildBindings,
+        >::new_with_bindings(
+            ApplicationCapabilityInputs {
+                address: MailAddr(509),
+                actor_spaces: Arc::new(()),
+                allocations: ApplicationAddresses::new(),
+                control: observer_control,
+                timers: LocalTimers::new(),
+                observations: TerminationObservations::new(),
+                terminal_reports: LocalTerminalReports::new(observer_terminal),
+            },
+            NoChildBindings::default(),
+        );
+        let direct_request = ShutdownEstablished::new(
+            ShutdownId(23),
+            direct.clone(),
+            Ingress::<ShutdownRequested, Here>::new(),
+        );
+        let accepted =
+            InterpretItem::<_, <ShutdownObserver as Behavior>::Event, Here>::interpret_item(
+                &mut observer,
+                direct_request,
+            )
+            .await;
+        assert!(matches!(accepted, ItemSettlement::Accepted(ShutdownId(23))));
+        let nested_request = ShutdownEstablished::new(
+            ShutdownId(29),
+            nested.clone(),
+            Ingress::<ShutdownRequested, Inside<Here>>::new(),
+        );
+        let accepted =
+            InterpretItem::<_, <ShutdownObserver as Behavior>::Event, Here>::interpret_item(
+                &mut observer,
+                nested_request,
+            )
+            .await;
+        assert!(matches!(accepted, ItemSettlement::Accepted(ShutdownId(29))));
+        let direct_stopped = direct_endpoint.termination().await;
+        let nested_stopped = nested_endpoint.termination().await;
+        assert_eq!(direct_stopped, Ok(Exit::Normal));
+        assert_eq!(nested_stopped, Ok(Exit::Normal));
+        for id in [31, 37] {
+            let request = ShutdownEstablished::new(
+                ShutdownId(id),
+                nested.clone(),
+                Ingress::<ShutdownRequested, Inside<Here>>::new(),
+            );
+            let rejected =
+                InterpretItem::<_, <ShutdownObserver as Behavior>::Event, Here>::interpret_item(
+                    &mut observer,
+                    request,
+                )
+                .await;
+            let ItemSettlement::Rejected { item, reason } = rejected else {
+                panic!("exact stopped nested request")
+            };
+            assert_eq!(item.id, ShutdownId(id));
+            let rejected_endpoint = item
+                .actor()
+                .recipient()
+                .interpret(&mut ExtractLocalEndpoint);
+            assert_eq!(rejected_endpoint.address(), nested_endpoint.address());
+            let rejected_terminal = rejected_endpoint.termination().await;
+            assert_eq!(rejected_terminal, Ok(Exit::Normal));
+            assert_eq!(reason, ShutdownRejection::AlreadyStopped);
+            let retry =
+                InterpretItem::<_, <ShutdownObserver as Behavior>::Event, Here>::interpret_item(
+                    &mut observer,
+                    item,
+                )
+                .await;
+            let ItemSettlement::Rejected { item, reason } = retry else {
+                panic!("replayed original stopped request")
+            };
+            assert_eq!(item.id, ShutdownId(id));
+            assert_eq!(reason, ShutdownRejection::AlreadyStopped);
+            let replayed_endpoint = item
+                .actor()
+                .recipient()
+                .interpret(&mut ExtractLocalEndpoint);
+            assert_eq!(replayed_endpoint.address(), nested_endpoint.address());
+            let replayed_terminal = replayed_endpoint.termination().await;
+            assert_eq!(replayed_terminal, Ok(Exit::Normal));
+        }
+        let mut resolution_ledger = ShutdownObserver::default();
+        for _ in 0..6 {
+            let event = observer_receiver
+                .recv_control()
+                .await
+                .expect("one complete immediate resolution");
+            let actions = delegate_transition(&mut resolution_ledger, event).unwrap();
+            assert!(actions.creates.is_empty());
+            assert!(matches!(actions.sends, NoSends));
+            assert!(matches!(actions.become_, Step::Continue));
+        }
+        assert_eq!(
+            resolution_ledger.resolutions,
+            [
+                (ShutdownId(23), Ok(())),
+                (ShutdownId(29), Ok(())),
+                (ShutdownId(31), Err(ShutdownRejection::AlreadyStopped)),
+                (ShutdownId(31), Err(ShutdownRejection::AlreadyStopped)),
+                (ShutdownId(37), Err(ShutdownRejection::AlreadyStopped)),
+                (ShutdownId(37), Err(ShutdownRejection::AlreadyStopped))
+            ]
+        );
+        let direct_retired = direct_creator.child_bindings.retire_child_tasks().await;
+        let nested_retired = nested_creator.child_bindings.retire_child_tasks().await;
+        let [ShutdownChildren::Direct { origin, retirement }] = direct_retired.as_slice() else {
+            panic!("one original direct result")
+        };
+        assert_eq!(origin.address(), direct_endpoint.address());
+        assert_eq!(origin.nonce(), 0);
+        let ActorRetirement::Completed {
+            behavior,
+            settlements,
+            control,
+            user,
+            descendants,
+            completion,
+        } = retirement
+        else {
+            panic!("direct completed result")
+        };
+        assert_eq!(behavior.base().entries, [11, 13]);
+        assert_eq!(behavior.base().entries.as_ptr(), direct_allocation);
+        assert_eq!(behavior.base().received.len(), 0);
+        assert_eq!(*completion, Completion::Stopped);
+        assert!(control.is_empty() && user.is_empty() && descendants.is_empty());
+        assert_eq!(settlements.len(), 1);
+        assert!(settlements[0].creations.is_empty());
+        assert!(matches!(settlements[0].sends.owned, NoSends));
+        assert!(matches!(settlements[0].sends.inner, NoSends));
+        assert!(matches!(settlements[0].become_, Step::Stop(_)));
+        let [ShutdownChildren::Nested { origin, retirement }] = nested_retired.as_slice() else {
+            panic!("one original nested result")
+        };
+        assert_eq!(origin.address(), nested_endpoint.address());
+        assert_eq!(origin.nonce(), 1);
+        let ActorRetirement::Completed {
+            behavior,
+            settlements,
+            control,
+            user,
+            descendants,
+            completion,
+        } = retirement
+        else {
+            panic!("nested completed result")
+        };
+        assert_eq!(behavior.base().entries, [17, 19]);
+        assert_eq!(behavior.base().entries.as_ptr(), nested_allocation);
+        assert_eq!(behavior.base().received.len(), 0);
+        assert_eq!(*completion, Completion::Stopped);
+        assert!(control.is_empty() && user.is_empty() && descendants.is_empty());
+        assert_eq!(settlements.len(), 1);
+        assert!(settlements[0].creations.is_empty());
+        assert!(matches!(settlements[0].sends.owned, NoSends));
+        assert!(matches!(settlements[0].sends.inner.owned, NoSends));
+        assert!(matches!(settlements[0].sends.inner.inner, NoSends));
+        assert!(matches!(settlements[0].become_, Step::Stop(_)));
+        drop((
+            direct_owner,
+            direct_mailbox,
+            direct_receiver,
+            direct_report,
+            nested_owner,
+            nested_mailbox,
+            nested_receiver,
+            nested_report,
+            observer_owner,
+            observer_mailbox,
+            observer_report,
+        ));
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep both joined incarnations and stale-view observations in one trace."
+    )]
+    async fn old_root_lifecycle_cannot_close_actual_same_address_replacement() {
+        let actors = ActorSpace::<LedgerProtocol>::new();
+        let address = MailAddr(541);
+        let old_actions = Arc::new(Mutex::new(Vec::<Become<Never>>::new()));
+        let recording = Arc::clone(&old_actions);
+        let old = launch_inert(
+            actors.clone(),
+            Config::new(1),
+            address,
+            StopOnShutdown::new(ShutdownLedger {
+                entries: vec![43],
+                received: Vec::new(),
+            }),
+            move |actions| {
+                assert!(actions.creates.is_empty());
+                assert!(matches!(actions.sends.owned, NoSends));
+                assert!(matches!(actions.sends.inner, NoSends));
+                recording
+                    .lock()
+                    .expect("complete action observation")
+                    .push(actions.become_);
+            },
+        )
+        .await
+        .unwrap_or_else(|_| panic!("old root launch"));
+        let lifecycle = ApplicationLifecycle {
+            root: old.actor.clone(),
+            control: old.shutdown_control.clone(),
+        };
+        let repeated_lifecycle = lifecycle.clone();
+        let accepted = lifecycle.request_shutdown();
+        let repeated = repeated_lifecycle.request_shutdown();
+        assert_eq!(accepted, Ok(()));
+        assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+        let old_termination = lifecycle.termination().await;
+        assert_eq!(old_termination, Ok(Exit::Normal));
+        let old_result = old.task.finish().await;
+        let ActorExecutionOutcome::Completed {
+            behavior,
+            residual:
+                LocalResidual::Retired {
+                    settlements,
+                    ingress,
+                    descendants,
+                    activation_tasks,
+                },
+            completion,
+        } = old_result
+        else {
+            panic!("joined old root")
+        };
+        assert_eq!(behavior.base().entries, [43]);
+        assert_eq!(behavior.base().received.len(), 0);
+        assert!(ingress.control.is_empty() && ingress.user.is_empty());
+        assert_eq!(descendants, ());
+        assert!(activation_tasks.is_empty());
+        assert_eq!(completion, Completion::Stopped);
+        assert_eq!(settlements.len(), 1);
+        assert!(settlements[0].creations.is_empty());
+        assert!(matches!(settlements[0].sends.owned, NoSends));
+        assert!(matches!(settlements[0].sends.inner, NoSends));
+        assert!(matches!(settlements[0].become_, Step::Stop(_)));
+        assert_eq!(
+            *old_actions.lock().expect("old full actions"),
+            [Step::Continue, Step::Stop(Stopped)]
+        );
+        let absent = actors.resolve(&address);
+        assert!(absent.is_none());
+        assert!(lifecycle.control.upgrade().is_none());
+        let fresh_actions = Arc::new(Mutex::new(Vec::<Become<Never>>::new()));
+        let recording = Arc::clone(&fresh_actions);
+        let fresh = launch_inert(
+            actors.clone(),
+            Config::new(1),
+            address,
+            StopOnShutdown::new(ShutdownLedger {
+                entries: vec![47],
+                received: Vec::new(),
+            }),
+            move |actions| {
+                assert!(actions.creates.is_empty());
+                assert!(matches!(actions.sends.owned, NoSends));
+                assert!(matches!(actions.sends.inner, NoSends));
+                recording
+                    .lock()
+                    .expect("complete action observation")
+                    .push(actions.become_);
+            },
+        )
+        .await
+        .unwrap_or_else(|_| panic!("fresh root claim"));
+        let fresh_lifecycle = ApplicationLifecycle {
+            root: fresh.actor.clone(),
+            control: fresh.shutdown_control.clone(),
+        };
+        let old_request = lifecycle.request_shutdown();
+        let replay = repeated_lifecycle.request_shutdown();
+        assert_eq!(old_request, Err(ShutdownRejection::AlreadyStopped));
+        assert_eq!(replay, Err(ShutdownRejection::AlreadyStopped));
+        let mut fresh_termination = pin!(fresh_lifecycle.termination());
+        let mut context = Context::from_waker(Waker::noop());
+        let waiting = Future::poll(fresh_termination.as_mut(), &mut context);
+        assert!(matches!(waiting, Poll::Pending));
+        let values = vec![53, 59];
+        let allocation = values.as_ptr();
+        let delivered = fresh.actor.send_from(MailAddr(61), values).await;
+        assert!(delivered.is_ok());
+        let new_request = fresh_lifecycle.request_shutdown();
+        assert_eq!(new_request, Ok(()));
+        let stopped = fresh_termination.await;
+        assert_eq!(stopped, Ok(Exit::Normal));
+        let retired = fresh.task.finish().await;
+        let ActorExecutionOutcome::Completed {
+            behavior,
+            residual:
+                LocalResidual::Retired {
+                    settlements,
+                    ingress,
+                    descendants,
+                    activation_tasks,
+                },
+            completion,
+        } = retired
+        else {
+            panic!("whole joined replacement")
+        };
+        assert_eq!(behavior.base().entries, [47]);
+        assert!(activation_tasks.is_empty());
+        assert_eq!(completion, Completion::Stopped);
+        assert_eq!(ingress.control.len(), 0);
+        assert_eq!(descendants, ());
+        let mut expected_actions = vec![Step::Continue; 1 + behavior.base().received.len()];
+        expected_actions.push(Step::Stop(Stopped));
+        assert_eq!(
+            *fresh_actions.lock().expect("fresh full actions"),
+            expected_actions
+        );
+        let mut originals = behavior.base().received.iter().chain(ingress.user.iter());
+        let original = originals.next().expect("one admitted original user input");
+        assert_eq!(original.from, MailAddr(61));
+        assert_eq!(original.message, [53, 59]);
+        assert_eq!(original.message.as_ptr(), allocation);
+        assert!(originals.next().is_none());
+        assert_ne!(settlements.len(), 0);
+        let final_turn = settlements.len() - 1;
+        for (turn, settlement) in settlements.into_iter().enumerate() {
+            assert!(settlement.creations.is_empty());
+            assert!(matches!(settlement.sends.owned, NoSends));
+            assert!(matches!(settlement.sends.inner, NoSends));
+            match settlement.become_ {
+                Step::Continue => assert!(turn < final_turn),
+                Step::Stop(_) => assert_eq!(turn, final_turn),
+            }
+        }
+        let absent = actors.resolve(&address);
+        assert!(absent.is_none());
+        let fresh_replay = fresh_lifecycle.request_shutdown();
+        assert_eq!(fresh_replay, Err(ShutdownRejection::AlreadyStopped));
+        let old_replay = lifecycle.request_shutdown();
+        assert_eq!(old_replay, Err(ShutdownRejection::AlreadyStopped));
+    }
+
+    #[tokio::test]
+    async fn external_customer_owns_admission_without_behavior_shutdown() {
+        let interface = ActorInterface::new((), ApplicationAddresses::new());
+        let mut external = interface
+            .external::<LedgerProtocol>()
+            .expect("real external endpoint");
+        let endpoint = external.recipient().interpret(&mut ExtractLocalEndpoint);
+        let values = vec![127, 131];
+        let allocation = values.as_ptr();
+        let accepted = endpoint.send_from(MailAddr(137), values).await;
+        assert!(accepted.is_ok());
+        external.close_admission();
+        let values = vec![139, 149];
+        let allocation_rejected = values.as_ptr();
+        let rejected = endpoint.send_from(MailAddr(151), values).await;
+        let original = rejected
+            .expect_err("external owner closed admission")
+            .into_message();
+        assert_eq!(original, [139, 149]);
+        assert_eq!(original.as_ptr(), allocation_rejected);
+        let admitted = external
+            .receive()
+            .await
+            .expect("exact admitted external message");
+        assert_eq!(admitted.from, MailAddr(137));
+        assert_eq!(admitted.message, [127, 131]);
+        assert_eq!(admitted.message.as_ptr(), allocation);
+        let exhausted = external.receive().await;
+        assert!(exhausted.is_none());
+        drop(external);
+        let terminal = endpoint.termination().await;
+        assert_eq!(terminal, Ok(Exit::Normal));
     }
 }

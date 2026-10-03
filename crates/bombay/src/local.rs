@@ -17,8 +17,8 @@ use crate::observe::{Observation, Publisher, affine_pair};
 use crate::time::LocalTimers;
 use behavior::{
     Behavior, BehaviorAddr, BehaviorMessage, BehaviorSettlements, ClassifySettlement,
-    EstablishedRecipient, Here, Ingress, InjectEvent, Interpretation, Never, Protocol,
-    SourceCustody, User, UserEvent,
+    EstablishedRecipient, Ingress, InjectEvent, Interpretation, Never, Protocol, SourceCustody,
+    User, UserEvent,
 };
 use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested};
 use bombay_address::{AddressSpace, ClaimError, Lease, Reservation};
@@ -445,24 +445,24 @@ where
         self.recipient.clone()
     }
 
-    pub(crate) fn request_shutdown(
+    pub(crate) fn request_shutdown<TargetPath>(
         &self,
-        ingress: Ingress<ShutdownRequested, Here>,
+        ingress: Ingress<ShutdownRequested, TargetPath>,
     ) -> Result<(), ShutdownRejection>
     where
-        B::Event: InjectEvent<ShutdownRequested, Here>,
+        B::Event: InjectEvent<ShutdownRequested, TargetPath>,
     {
         request_actor_shutdown(&self.recipient, &self.control, ingress)
     }
 }
 
-pub(crate) fn request_actor_shutdown<P: Protocol, E>(
+pub(crate) fn request_actor_shutdown<P: Protocol, E, TargetPath>(
     recipient: &ActorRef<P>,
     control: &ControlSender<E>,
-    ingress: Ingress<ShutdownRequested, Here>,
+    ingress: Ingress<ShutdownRequested, TargetPath>,
 ) -> Result<(), ShutdownRejection>
 where
-    E: InjectEvent<ShutdownRequested, Here>,
+    E: InjectEvent<ShutdownRequested, TargetPath>,
 {
     if recipient.termination.try_get().is_some() {
         return Err(ShutdownRejection::AlreadyStopped);
@@ -2092,5 +2092,299 @@ mod tests {
         assert_eq!(fence, Err(crate::entity::FenceFailure::Acknowledgement));
         let termination = actor.actor.termination().await;
         assert_eq!(termination, Err(Crash::Panicked));
+    }
+}
+
+#[cfg(test)]
+mod shutdown_admission_contract {
+    use super::{ActorRef, Admission, InstalledActor, LocalResidual};
+    use crate::ActorExecutionOutcome;
+    use crate::ActorSpace;
+    use crate::actor;
+    use crate::address::MailAddr;
+    use crate::launch::launch_inert_entity;
+    use crate::observe;
+    use behavior::{
+        Actions, Become, Behavior, BehaviorActed, BehaviorBase, EventLayer, Here, Ingress, Inside,
+        Never, NoSends, Step, Stopped, User,
+    };
+    use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested, StopOnShutdown};
+    use bombay_engine::Completion;
+    use communication::{Config, Received, mailbox_channel};
+    use core::future::Future;
+    use core::pin::pin;
+    use core::task::{Context, Poll, Waker};
+    use std::sync::{Arc, Mutex};
+
+    #[derive(Debug)]
+    struct LedgerSubmission {
+        entries: Vec<u64>,
+    }
+
+    #[derive(Default)]
+    struct DeliveryLedger {
+        received: Vec<User<MailAddr, LedgerSubmission>>,
+    }
+    #[actor]
+    impl DeliveryLedger {
+        fn receive(&mut self, from: MailAddr, values: LedgerSubmission) -> BehaviorActed<Self> {
+            self.received.push(User::new(from, values));
+            Ok(Actions::cont())
+        }
+    }
+    #[tokio::test]
+    async fn installed_shutdown_preserves_preclose_permit_and_rejects_later_original() {
+        type Target = StopOnShutdown<DeliveryLedger>;
+        let (control, owner, mailbox, mut receiver) = mailbox_channel::<
+            <Target as Behavior>::Event,
+            User<MailAddr, LedgerSubmission>,
+        >(Config::new(1));
+        let admission = Arc::new(Admission::new(owner));
+        let (publication, observation) = observe::pair();
+        let endpoint = ActorRef::<DeliveryLedger>::external(
+            MailAddr(571),
+            mailbox,
+            Arc::downgrade(&admission),
+            observation,
+        );
+        let installed = InstalledActor::<Target>::new(endpoint.clone(), control);
+        let prefix = LedgerSubmission {
+            entries: vec![67, 71],
+        };
+        let prefix_allocation = prefix.entries.as_ptr();
+        let sent = endpoint.send_from(MailAddr(73), prefix).await;
+        assert!(sent.is_ok());
+        let second = LedgerSubmission {
+            entries: vec![79, 83],
+        };
+        let second_allocation = second.entries.as_ptr();
+        let sent = endpoint.send_from(MailAddr(89), second).await;
+        assert!(sent.is_ok());
+        let values = LedgerSubmission {
+            entries: vec![97, 101],
+        };
+        let allocation = values.entries.as_ptr();
+        let mut acquired = pin!(endpoint.send_from(MailAddr(103), values));
+        let mut context = Context::from_waker(Waker::noop());
+        let pending = acquired.as_mut().poll(&mut context);
+        assert!(matches!(pending, Poll::Pending));
+        let shutdown = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
+        assert_eq!(shutdown, Ok(()));
+        let postclose = LedgerSubmission {
+            entries: vec![107, 109],
+        };
+        let postclose_allocation = postclose.entries.as_ptr();
+        let mut later = pin!(endpoint.send_from(MailAddr(113), postclose));
+        let attempted = later.as_mut().poll(&mut context);
+        let Poll::Ready(rejected) = attempted else {
+            panic!("postclose admission must reject immediately")
+        };
+        let original = rejected
+            .expect_err("first-polled postclose delivery cannot acquire admission")
+            .into_message();
+        assert_eq!(original.entries, [107, 109]);
+        assert_eq!(original.entries.as_ptr(), postclose_allocation);
+        let replay = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
+        assert_eq!(replay, Err(ShutdownRejection::AlreadyStopping));
+        let requested = receiver
+            .recv_control()
+            .await
+            .expect("one original shutdown input");
+        assert!(matches!(requested, EventLayer::Owned(ShutdownRequested)));
+        let first = receiver.recv().await;
+        let Some(Received::User(first)) = first else {
+            panic!("first admitted original")
+        };
+        assert_eq!(first.from, MailAddr(73));
+        assert_eq!(first.message.entries, [67, 71]);
+        assert_eq!(first.message.entries.as_ptr(), prefix_allocation);
+        let second = receiver.recv().await;
+        let Some(Received::User(second)) = second else {
+            panic!("second admitted original")
+        };
+        assert_eq!(second.from, MailAddr(89));
+        assert_eq!(second.message.entries, [79, 83]);
+        assert_eq!(second.message.entries.as_ptr(), second_allocation);
+        let admitted = acquired.await;
+        assert!(admitted.is_ok());
+        let third = receiver.recv().await;
+        let Some(Received::User(third)) = third else {
+            panic!("preclose permit must finish before terminal marker")
+        };
+        assert_eq!(third.from, MailAddr(103));
+        assert_eq!(third.message.entries, [97, 101]);
+        assert_eq!(third.message.entries.as_ptr(), allocation);
+        let terminal = receiver.recv().await;
+        assert!(matches!(terminal, Some(Received::UserLaneClosed)));
+        publication.complete(Ok(Exit::Normal));
+        let stopped = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
+        let repeated = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
+        assert_eq!(stopped, Err(ShutdownRejection::AlreadyStopped));
+        assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopped));
+        drop(installed);
+        let exhausted = receiver.recv().await;
+        assert!(exhausted.is_none());
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep both owned lease incarnations, full results, and replay trace together."
+    )]
+    async fn installed_shutdown_cannot_retarget_actual_distinct_event_replacement() {
+        type Direct = StopOnShutdown<DeliveryLedger>;
+        type Nested = StopOnShutdown<Direct>;
+        let actors = ActorSpace::<DeliveryLedger>::new();
+        let address = MailAddr(593);
+        let old_actions = Arc::new(Mutex::new(Vec::<Become<Never>>::new()));
+        let recording = Arc::clone(&old_actions);
+        let old = launch_inert_entity(
+            actors.clone(),
+            Config::new(2),
+            address,
+            StopOnShutdown::new(DeliveryLedger::default()),
+            move |actions| {
+                assert!(actions.creates.is_empty());
+                assert!(matches!(actions.sends.owned, NoSends));
+                assert!(matches!(actions.sends.inner, NoSends));
+                recording
+                    .lock()
+                    .expect("complete action observation")
+                    .push(actions.become_);
+            },
+        )
+        .await
+        .unwrap_or_else(|_| panic!("old installed incarnation"));
+        let installed = InstalledActor::<Direct>::new(old.actor.clone(), old.control.clone());
+        let requested = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
+        let replay = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
+        assert_eq!(requested, Ok(()));
+        assert_eq!(replay, Err(ShutdownRejection::AlreadyStopping));
+        let terminal = old.actor.termination().await;
+        assert_eq!(terminal, Ok(Exit::Normal));
+        let retired = old.task.finish().await;
+        let ActorExecutionOutcome::Completed {
+            behavior,
+            residual:
+                LocalResidual::Retired {
+                    settlements,
+                    ingress,
+                    descendants,
+                    activation_tasks,
+                },
+            completion,
+        } = retired
+        else {
+            panic!("whole old owned result")
+        };
+        assert!(activation_tasks.is_empty());
+        assert_eq!(completion, Completion::Stopped);
+        assert_eq!(behavior.base().received.len(), 0);
+        assert_eq!(ingress.control.len(), 0);
+        assert_eq!(ingress.user.len(), 0);
+        assert_eq!(descendants, ());
+        assert_eq!(settlements.len(), 1);
+        assert!(settlements[0].creations.is_empty());
+        assert!(matches!(settlements[0].sends.owned, NoSends));
+        assert!(matches!(settlements[0].sends.inner, NoSends));
+        assert!(matches!(settlements[0].become_, Step::Stop(_)));
+        assert_eq!(
+            *old_actions.lock().expect("old full actions"),
+            [Step::Continue, Step::Stop(Stopped)]
+        );
+        let absent = actors.resolve(&address);
+        assert!(absent.is_none());
+        let fresh_actions = Arc::new(Mutex::new(Vec::<Become<Never>>::new()));
+        let recording = Arc::clone(&fresh_actions);
+        let fresh = launch_inert_entity(
+            actors.clone(),
+            Config::new(2),
+            address,
+            StopOnShutdown::new(StopOnShutdown::new(DeliveryLedger::default())),
+            move |actions| {
+                assert!(actions.creates.is_empty());
+                assert!(matches!(actions.sends.owned, NoSends));
+                assert!(matches!(actions.sends.inner.owned, NoSends));
+                assert!(matches!(actions.sends.inner.inner, NoSends));
+                recording
+                    .lock()
+                    .expect("complete action observation")
+                    .push(actions.become_);
+            },
+        )
+        .await
+        .unwrap_or_else(|_| panic!("actual same-address nested replacement"));
+        let replacement = InstalledActor::<Nested>::new(fresh.actor.clone(), fresh.control.clone());
+        let stale = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
+        let stale_replay = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
+        assert_eq!(stale, Err(ShutdownRejection::AlreadyStopped));
+        assert_eq!(stale_replay, Err(ShutdownRejection::AlreadyStopped));
+        let values = LedgerSubmission {
+            entries: vec![157, 163],
+        };
+        let allocation = values.entries.as_ptr();
+        let sent = fresh.actor.send_from(MailAddr(167), values).await;
+        assert!(sent.is_ok());
+        let committed = fresh.actor.fence().await;
+        assert!(committed.is_ok());
+        let mut publication = pin!(fresh.actor.termination());
+        let mut context = Context::from_waker(Waker::noop());
+        let pending = publication.as_mut().poll(&mut context);
+        assert!(matches!(pending, Poll::Pending));
+        let requested =
+            replacement.request_shutdown(Ingress::<ShutdownRequested, Inside<Here>>::new());
+        let repeated =
+            replacement.request_shutdown(Ingress::<ShutdownRequested, Inside<Here>>::new());
+        assert_eq!(requested, Ok(()));
+        assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+        let stopped = publication.await;
+        assert_eq!(stopped, Ok(Exit::Normal));
+        let retired = fresh.task.finish().await;
+        let ActorExecutionOutcome::Completed {
+            behavior,
+            residual:
+                LocalResidual::Retired {
+                    settlements,
+                    ingress,
+                    descendants,
+                    activation_tasks,
+                },
+            completion,
+        } = retired
+        else {
+            panic!("whole replacement owned result")
+        };
+        assert!(activation_tasks.is_empty());
+        assert_eq!(completion, Completion::Stopped);
+        assert_eq!(ingress.control.len(), 0);
+        assert_eq!(ingress.user.len(), 0);
+        assert_eq!(descendants, ());
+        assert_eq!(
+            *fresh_actions.lock().expect("fresh full actions"),
+            [Step::Continue, Step::Continue, Step::Stop(Stopped)]
+        );
+        assert_eq!(behavior.base().received.len(), 1);
+        let original = &behavior.base().received[0];
+        assert_eq!(original.from, MailAddr(167));
+        assert_eq!(original.message.entries, [157, 163]);
+        assert_eq!(original.message.entries.as_ptr(), allocation);
+        let final_turn = settlements.len() - 1;
+        for (turn, settlement) in settlements.into_iter().enumerate() {
+            assert!(settlement.creations.is_empty());
+            assert!(matches!(settlement.sends.owned, NoSends));
+            assert!(matches!(settlement.sends.inner.owned, NoSends));
+            assert!(matches!(settlement.sends.inner.inner, NoSends));
+            match settlement.become_ {
+                Step::Continue => assert!(turn < final_turn),
+                Step::Stop(_) => assert_eq!(turn, final_turn),
+            }
+        }
+        let stale_replay = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
+        let final_replay =
+            replacement.request_shutdown(Ingress::<ShutdownRequested, Inside<Here>>::new());
+        assert_eq!(stale_replay, Err(ShutdownRejection::AlreadyStopped));
+        assert_eq!(final_replay, Err(ShutdownRejection::AlreadyStopped));
+        let absent = actors.resolve(&address);
+        assert!(absent.is_none());
     }
 }

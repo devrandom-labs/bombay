@@ -130,9 +130,9 @@ its separate complete ten-path record in the shutdown decision record.
 <!-- exec-research-counts -->
 
 ```text
-production: +150 / -18 / net 132
-tests: +1181 / -536 / net 645
-documentation: +5149 / -85 / net 5064
+production: +167 / -34 / net 133
+tests: +2103 / -536 / net 1567
+documentation: +5175 / -85 / net 5090
 manifest/lock: +36 / -31 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
@@ -206,3 +206,29 @@ record stays external because that path is outside the approved 114 allowance.
 Semantic gates, exact destinations, compiler visibility, differential extraction
 and independent gate acceptance remain open. No Rust command, file move or
 new public type is claimed by this inventory work.
+
+
+## Retained static shutdown correction (2026-10-03)
+
+EXEC section 35 and the shutdown decision record contain the signed
+DG-SHUTDOWN acceptance. Only the two reviewed source files were transferred,
+byte-identical to their accepted hashes. Canonical transfer receipt:
+`a8d9e995ece32689220794d62f9e921e4911c70684099641b51388b89df859d3`.
+Existing ARC regressions and the retained pure Driver repair remain unchanged.
+
+Canonical focused verification uses the pinned prefix
+`nix --option eval-cache false develop -c env CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/bombay-shutdown-root-fresh-target` with:
+
+```sh
+cargo test --locked -p bombay-rs --lib shutdown -- --nocapture
+cargo test --locked -p bombay-rs --release --lib shutdown -- --nocapture
+```
+
+Both exit zero with seven tests (five new, two inherited preservation cases).
+The identical source's independent fresh Clippy/formatting and author full
+all-feature workspace verification are recorded in the signed shutdown record;
+no duplicate canonical full-workspace run is claimed here. Final combined
+EXEC verification remains required. Complete baseline-relative counts above
+include these source/test changes and all tracked/untracked documentation.
+Current test-module starts were rechecked after the production-line change;
+classification uses local.rs line 1164 and application_runtime.rs line 3069.
