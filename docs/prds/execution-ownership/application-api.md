@@ -536,3 +536,41 @@ Sixteen historical private fixture declarations are new relative to canonical,
 not novel relative to the prior probe. Family-definition `Send` minimality,
 capability/outer-executor failure integration, recursive graph results and full
 HTTP serving remain open. No canonical semantic implementation is retained here.
+
+## Minimum uninstalled-family input comparison (2026-10-03)
+
+The successor tests the private optional kernel's Families:Send predicate.
+Installation consumes the original family inputs synchronously before the
+first startup await. Only the installed family owner crosses into cleanup;
+its owning Send requirement and explicit static lifetime remain unchanged.
+Receptionist, shutdown, EntityDefinition and legitimate role bounds also stay
+unchanged. Every supported sealed concrete family product is already Send;
+this is generic-bound minimization, not support for a non-Send Entity definition.
+
+Author receipt
+cdd1f7652701c4de96294f19a1ad6e22a10db444a5821c3248fbadc4baed5e94
+binds application_runtime.rs
+b28c7d6ab4d76cc6fd12d77faddfc20b679aff51740df15ca51b341b98ed5c07
+and incremental patch
+9fcb91faf33ce133e1d2fdebef695e708091c3a066f02c988ced1c07387b32bc.
+All twenty cases pass in both profiles through pinned Nix; the original extra
+bound and its restoration produce intended E0277 diagnostics in both.
+An additional compile-only generic body verifies both returned futures remain
+Send when their actual caller captures are Send, without Families:Send or
+spawning arbitrary application work. Final strict Clippy and formatting pass.
+These uninvoked generic probes are static evidence, not runtime custody tests.
+
+The incremental cfg(test) delta is +72/-2/net70; production and public types
+remain zero. Two generic probe bodies and one borrowed trait predicate add
+three private functions. The complete historical workspace still inherits
+53 net startup-support production lines and 1,617 test lines; it is not the
+current canonical tree and must never be transferred wholesale.
+
+Coordinator inspection
+2bd3d7c9ce83bb151f02087bae271e32ecbb34805d305e18712c6fb1e8e7ba5f
+authenticates 345 sources and 42 artifacts and reads the complete incremental
+patch, optional kernel, actual sealed installation contracts and pre-edit
+model. It does not include a fresh coordinator Rust rerun. Independent review
+is pending; no source retention, public API selection or full DG-API acceptance
+is claimed. The nominal family has zero admitted incarnations; active family
+cleanup remains a separate required integration.
