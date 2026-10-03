@@ -1594,7 +1594,87 @@ is posted as COMMENTED through the shared GitHub account, transparently naming
 the non-author agent; it is not a separate GitHub principal approval. The
 current branch rules require a PR, Nix Flake Check and resolved review threads,
 with zero separate approving reviews. All required and repository CI gates
-remain mandatory before merge. Current exact-head CI is running; no source
-merge or published coupled release is claimed. This does not implement
+remain mandatory before merge. All 14 current exact-head checks pass, including required Nix Flake Check
+and aggregate Mutation Gate. Earlier label-triggered CI was cancelled by the
+replacement run and is excluded. Review threads are empty; merge state was
+CLEAN. PR 78 merged at `705d03754b0640f5565b10aa37bc2b22462045bf`
+on 2026-10-03, and its main CI run 37085358333 passes.
+Generated [release PR 79](https://github.com/devrandom-labs/bombay-behavior/pull/79)
+selects Core/Actors 0.21.0 and correctly names the breaking addition. Its
+initial head `4e56cab332416813fcfbb72d4eaf39b564c4488f` still needs
+the three separate workspace locks, README installation versions and coupled
+Core changelog corrected within the authorized metadata paths. The release
+PR also needs its explicit semver-breaking label. Exact-head skill preflight,
+independent review and all passing CI remain required before release merge.
+No publication or Bombay dependency selection is claimed. This does not implement
 Bombay's failure acquisition, actor retirement or full result custody and does
 not close DG-TASK, feature acceptance or delivery.
+
+## 22. Fuzz prerequisites and early actor ownership checkpoint (2026-10-03)
+
+Status: proposed; dependent production/configuration edits remain blocked
+pending explicit user authorization. The current allowance is 67 cumulative
+paths, 150 net production lines and zero new public types. Other full EXEC
+gates and later scope remain required; this stage does not defer or accept them.
+
+Complete retained/candidate delivery delta across canonical Bombay and the
+Communication/Behavior owning branches: production +65 / -13 / net 52;
+tests/benchmarks +558 / -9 / net 549; public types +0 / -0, one existing
+public enum variant added; 38 tracked repository-qualified paths, zero
+untracked files. Canonical Bombay's complete documentation/manifest delta is
+in the verification footer. Communication delivery is merged/published;
+Behavior's source PR is merged, its eight-path release metadata is currently
+review/CI work. Isolated research artifacts have separate recorded measurements
+and are not claimed as retained production.
+
+The already-approved source correction forecasts 64 net production lines,
+and nested shutdown 1; with retained 52 this is 117. Current source comparison
+passes all-feature workspace 418 tests/61 summaries in both profiles, strict
+Clippy and formatting. Independent review found the separate fuzz header
+invalid and redundant nested async expressions in advanced hosts. The corrected
+header, direct ordinary expressions and excluded-fixture formatting are now
+verified; the diagnostic snapshot changes only the two shifted source line
+numbers, preserving both E0599 phase denials. That existing snapshot path is
+already in section 17's approved manifest. Its standalone Completion inference
+cost is explicitly accepted: unannotated Completion::Stopped requires a type
+annotation; Driver-derived values infer the exact request. Do not claim a
+default preserves the former unannotated spelling.
+
+The separate fuzz check now reaches an additional prerequisite: its tracked
+Cargo.lock still records local Engine 0.1.0 while the actual owning manifest
+is 0.2.1. After the independently verified coupled Behavior release, its
+manifest must also select that same Core version. Required new paths:
+
+- crates/bombay-engine/fuzz/Cargo.toml
+- crates/bombay-engine/fuzz/Cargo.lock
+
+These add no production line or public type; update only the verified owning
+versions/necessary locked graph, inspect the actual delta and run the separate
+pinned-Nix fuzz build/check. Proposed corrected allowance: **69 cumulative
+paths**, including both previously omitted configuration consumers.
+
+The three original application/startup custody failures in the task record
+prove an independent owning handoff gap. A read-only ordinary-Rust proposal
+extracts the existing actor construction into a plain function returning its
+coexisting original cancellation authority, startup receiver, control and
+raw actor join handle before startup.await. Existing child/Entity startup
+wrappers reconstruct their existing OwnedTask; a static join owner conserves
+actual startup and full actor results while caller values stay caller-owned.
+Reuse the current actor task, Environment/Driver, startup notice, cancellation
+request and Tokio JoinHandle; introduce no grant clone, service, result cell,
+public type or alternate actor loop.
+
+Bounded first comparison: launch.rs production forecast +62 / -18 / net 44;
+application_runtime.rs test-only, at most 180 additional comparison test lines.
+This proves the owning handoff and actual static join composition, rather than
+claiming complete LaunchSystem/public-runner/Entity implementation. All required
+scope stays pending until implemented and accepted. The full internal
+LaunchSystem integration separately forecasts +124 / -34 / net 90 and requires
+its own measured stage before implementation. No 80-line full-fix claim is made.
+
+Proposed cumulative ceiling for the bounded handoff stage: **161 net production
+lines** (117 approved forecast + 44), still zero new public types and at most
+69 paths. Preserve ARC-011/012 regressions, establish exact original-fail /
+repair-pass and distinguishing inversions in both profiles, verify all owning
+consumers, and obtain independent review before retaining the representation.
+Any excess or new semantic/public surface requires another concrete checkpoint.

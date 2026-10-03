@@ -995,3 +995,43 @@ join-result custody after execution drop, child and native Entity-family
 cleanup, callback rejection/Err payloads and an already-stopped root with
 unfinished application work remain unproved. Existing tests +254 / -10 /
 net 244; production, public types and canonical source delta zero.
+
+## Actual original application/startup custody failures (2026-10-03)
+
+`bombay-application-result-loss-1n_9k0i1` adds three original-only witnesses
+against current Communication 0.1.3 and unchanged production. After actual
+LaunchSystem work starts, execution drop still cancels the actor and retires
+its address under ARC-011, but the separate full-root-result receiver closes
+without the result. Actual pure initialization rejection retains reason 61
+and never calls the borrowed callback, but releases its original captured
+allocation instead of returning the uninvoked callback. During gated actual
+startup, dropping its waiter retains existing capability retirement and address
+reservation cleanup, yet loses the complete unpublished startup result.
+
+The last witness deliberately uses existing RootProbe's initialization Stop.
+Its outcome remains Stopped even if an owner request was queued but unread.
+It proves no universal ban on temporary publication during continuing
+initialization. Full state/settlement/ingress/descendant recovery assertions
+after receive are intentionally unreachable on the original defect; they are
+not passing conservation evidence. No callback-output publication workaround,
+native-family integration, heterogeneous children, unpolled public application
+or partial-stage-input recovery is claimed.
+
+Receipt `dcbbc2cca4566aa54465a8d0f1da69408330e2648071612a735ca68fbd2bf8df`;
+patch `01debdf71f4402d2f7a50a37eb4a4526ec28b253b2ed1b53f406076933962f8f`.
+Both pinned-Nix profiles compile and fail all three intended runtime assertions
+(exit 101); formatting and strict Clippy pass. The earlier generic-owner E0284
+compiler failure is excluded. Independent reviewer `/root` read the complete
+patch and receipt, authenticated all 20 artifacts, unchanged production
+prefixes and intended failure logs, and signs original-defect evidence only.
+Tests +291 / -2 / net 289, two existing paths; production/public/canonical zero.
+
+The smallest ordinary ownership split must happen before startup.await: the
+caller retains the original affine cancellation authority, while static
+cleanup owns the existing startup receiver and raw actor join handle. A
+borrowed wait on an owning Tokio JoinHandle preserves its output when that
+wait is dropped; final handle surrender releases an undeliverable result
+only after its task finishes. Caller callback/work/output retain their
+existing nonstatic bounds and separate immediate-discharge law. No extra
+result cell, cloned cancellation authority or global retention owner is
+justified. This is a proposed composition, not a verified repair.
