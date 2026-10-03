@@ -132,7 +132,7 @@ its separate complete ten-path record in the shutdown decision record.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +5469 / -87 / net 5382
+documentation: +5545 / -87 / net 5458
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
@@ -366,3 +366,26 @@ above. Logs are /tmp/bombay-measurement-canonical-debug.log and
 source bytes pass the coordinator's owning execution tests, Clippy and
 formatting recorded above. The complete tracked/untracked measurement at this
 checkpoint remains in the change record, including documentation and config.
+
+### Canonical workspace verification after measurement retention
+
+At 77da777, all four ordinary-build commands exit zero through pinned Nix:
+
+```sh
+nix --option eval-cache false develop -c env -u RUSTFLAGS CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/bombay-measurement-root-target cargo build --locked --workspace
+nix --option eval-cache false develop -c env -u RUSTFLAGS CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/bombay-measurement-root-target cargo test --locked --workspace
+nix --option eval-cache false develop -c env -u RUSTFLAGS CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/bombay-measurement-root-target cargo clippy --locked --workspace --all-targets -- -D warnings
+nix --option eval-cache false develop -c cargo fmt --all -- --check
+```
+
+The test log contains 61 successful summaries and 422 passing tests, including
+current examples, renamed dependency, macros, compile fixtures and retained
+Driver/runtime regressions. Hook-only measurement tests have the separate
+verification above. The source manifest and exact command/log hashes are in
+/tmp/bombay-measurement-canonical-workspace-verification.json. This verifies the
+retained branch (receipt SHA-256
+94d640b9f4b292e5cd9c62468d0f6d5a3707e2faad7bb61d439e8e8d43f1f95a),
+not unretained prototypes or full EXEC acceptance. Subsequent
+semantic implementation and final PR still require their complete gates.
+The completed private target cache was removed to free disk space; original
+source, frozen receipts and logs were preserved.

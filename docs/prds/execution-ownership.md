@@ -2666,3 +2666,56 @@ preserving their production prefixes, accepted EV-25 witness, shutdown, ARC
 and pure Driver regressions. Verify the exact canonical bytes after transfer.
 This stage does not accept full EV-30, native panic custody, projection,
 public runner selection, module extraction or final minimization.
+
+## 38. Remaining ordinary-Rust comparisons (2026-10-03)
+
+The current canonical surface remains production +167/-34/net133, tests
++3295/-557/net2738 and public types +0/-0 across 67 tracked paths, with zero
+untracked. Existing 114-path authorization covers the isolated source paths
+below and these decision records; tests are exempt from production condensation.
+No canonical production expansion or new public type is selected by this stage.
+
+DG-API model 47b472a78ccef21fd721287c3c6d33c424a3d02520f3dfa6a308f7175381b03a
+compares private inherent and free conveniences over one existing paired
+execution/result kernel, including genuine absent work, borrowed/Rc output,
+unstarted inputs and typed nested-runtime preflight. Current canonical has no
+such kernel or synchronous startup handoff. Conditional supplement
+d55f62a284a3d49688f5130a468c54a057087e617be918d08dbf909101cc098f
+therefore reuses only the previously reviewed launch handoff (+60/-7/net53)
+in an isolated current-source archive; new API probes remain cfg tests in
+application_runtime.rs. This net-positive inherited foundation is separately
+measured and is not production reduction or canonical retention. Original
+spawn-body and retained shutdown/EV-25/measurement suffixes must remain exact.
+No native-panic inspection is imported. Heterogeneous live children, advanced
+App, active Entity, meaningful HTTP, complete failure results and public
+migration remain required; simple kernel syntax does not accept DG-API.
+
+DG-WRAPPERS timer model
+91decce65a65696d41fc5ce5f75296e19e3ad65e43b1e2175101ddfb814706e8
+compares existing LocalTimers with direct TimerQueue and ordinary typed request
+functions in the approved application_runtime.rs test module only. Forecast
+300–450 test lines; production/public/new unsafe zero. time.rs is outside the
+approved path inventory and remains unchanged. Preserve path injection,
+original rejections, one queue, generation/replacement/order and both acquisition
+ports. Independently sampled clocks are not equal; compare deadline bounds or
+recover the wrapper's sample using its actual deadline and request duration.
+Publicly constructed exhaustion errors prove algebra only. Actual owner unit
+tests have the lawful private-counter exhaustion seam; Bombay must not forge
+private state or invent a setter. No new timer-retirement policy is selected.
+
+DG-PROJECTION bounds model
+8b305224e3354a0f58457631f900f8879e973a9005bd5886c267be81fcffa34b
+proposes 60–100 compile-only test lines in existing launch.rs. Explicit existing
+outcome/residual types can avoid an incidental storage bound only when each
+producer's genuine settlement product remains exact. Universal child Member
+does not supply that selector; a shared settlement type is not a general
+heterogeneous repair. Test identity in both directions and the intended missing
+bound diagnostic. Concrete recursive/Vec comparisons require an accessible
+genuine parent/pool/grandchild fixture; nested decorators are insufficient.
+No trait, constructor, public shape, timing or new mapper is selected.
+
+These are isolated comparisons, not accepted gates. Freeze sources, actual
+incremental and inherited deltas, intended diagnostics/counterfactuals and
+restoration; use pinned Nix in both profiles and obtain independent non-author
+review before any retention. Pending native-panic exception and owning
+observation/rejected-source scope questions remain blocked independently.
