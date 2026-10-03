@@ -1621,3 +1621,29 @@ they are not semantic failure evidence. This pre-edit approves only that bounded
 original experiment, not a production repair, current-source integration,
 EV-06 or DG-TASK acceptance. Canonical production remains net133 with zero new
 public types and 67 tracked/zero untracked paths under the approved 114-path scope.
+
+### Executed original visibility regression
+
+Final receipt 85e533d7cce96834072666ac5da2a6711fa4b9d6737437ec8f8d31160d9a2f20,
+nonauthor review
+ca05f5c7a0d258fad725e8f42380804757164a7faa4ec013482cd8b0159cae3d
+and coordinator inspection
+332958824e113cc59bc4fa9bd30068a06914547a624c57311bb4eeb9058687b7
+accept the bounded original defect evidence. Both debug and optimized builds
+compile and fail at the final forbidden-visibility oracle after the same Driver
+has joined its complete retirement. The original ActorRef and complete resolved
+snapshot prove publication occurred; final lease removal does not excuse it.
+Both direct sender-absence and postpublication-cancellation contrasts pass in
+both profiles. Pinned-Nix strict package library/tests Clippy and workspace
+formatting pass. The receipt retains all eight verification command arguments,
+source hashes and logs.
+
+The formatted cfg delta is +246/-2/net244 in one existing file, with no
+production, public/private type, field, variant, wrapper or unsafe additions.
+All 345 sources and 23 artifacts authenticate; 344 foundation sources and the
+179-package/165-external lock remain exact. The earlier Debug-convenience and
+assertion-style vetoes remain separately frozen and excluded from runtime proof.
+This is immutable typed-source research, not current canonical integration.
+The candidate publication port, generic retained-suffix proof, overlapping cut,
+launched cancellation authority and root/child/Entity consumers remain required;
+EV-06 and DG-TASK stay open.
