@@ -1647,3 +1647,58 @@ This is immutable typed-source research, not current canonical integration.
 The candidate publication port, generic retained-suffix proof, overlapping cut,
 launched cancellation authority and root/child/Entity consumers remain required;
 EV-06 and DG-TASK stay open.
+
+### Complete publication experiment pre-edit
+
+The original visibility failure above justifies an isolated comparison of the
+existing publication port returning `ControlFlow<Self::RetirementRequest, ()>`.
+Corrected complete text receipt
+ec8830e93639ce5dcee59e4484e6112e56f371181f8a822f660624590ab1a6d3
+freezes patch
+968881fcb2d1a004cf6feb316c7128a278e96a2adf29ddacc7726c07554ba903.
+Independent eligibility reviews
+0b6a8599488da4a217611eb604aeb29edc5d090b61e035a33c17dfcc41035f5a
+and d884e02f6d9571ba3ba8004957eae800df47269259fb0e919ca421ee26230275,
+and coordinator inspection
+309701e4a10f071e53d3233e98c862715d4dd24bdda5bc10795ff9542cf32506
+authenticate all 345 baseline/proposed sources and 25 artifacts. The predecessor
+documentation and command objections are resolved; its 13 Rust/diagnostic texts
+are unchanged. This accepts experiment eligibility only, not the final boundary,
+public API, retained production, EV-06 or DG-TASK.
+
+All 15 proposed paths are within the authorized 114-path allowance: Engine's
+driver/environment, driver benchmark, causal-turn fuzz target, phase-authority
+Rust/diagnostic fixtures, send-not-sync fixture, property/source-order/support/
+terminal-custody tests; Bombay's local and actor-execution files; and the existing
+Driver-law and capability-interface documents. Against immutable typed foundation
+4760, the forecast is production +25/-4/net21, tests +448/-21/net427,
+documentation +73/-32/net41, public types +0/-0. There are no new production
+types, fields, variants, traits, owners or runtime services. The three test-only
+request slots represent successive prepared, active and residual custody.
+Inherited foundation production net396 is separate from this increment; this
+is not a measured current-canonical overlay.
+
+Engine reuses its associated retirement request, Completion, retained settlement
+queue and affine retirement barrier. Bombay reuses its original cancellation
+receiver and pending Address reservation/publication. An acquired request moves
+directly into retirement; Continue alone enables ordinary input. Generic Engine
+tests must preserve the original request allocation and complete retained suffix.
+Local tests must prevent actual visibility and preserve complete joined cleanup;
+sender absence and later cancellation remain valid contrasts. Both profiles must
+pass, while restoring the original Local defect, ignoring generic Break,
+publishing twice after Break, and erasing the retained suffix must each fail after
+joined retirement. Actual selected-compiler diagnostics, strict Clippy and
+formatting must pass. All Rust commands use pinned Nix with unset RUSTFLAGS,
+one build job, disabled incremental compilation and an exclusive target cache.
+
+Only the designated experiment author writes this isolated composition.
+Equivalent import, formatting and assertion corrections retain their diagnostic
+and exact correction; semantic, ownership, type, bound, policy or scope changes
+stop for review. Final evidence requires a nonauthor review. No historical whole
+file may replace current production: independently reviewed preservation map
+0d9140a356714a7716e86a831c1f9fc12092fc86fddbc9222ceaa2f2b8d27785
+and review aa2c27d13dfb8c82ee160667200db08ba3374a7ad0c033f13848dfb9e888e1a1
+identify current shutdown, compiler, EV-25/EV-30 and pure Driver witnesses that a
+future incremental overlay must preserve. Canonical production remains net133,
+zero new public types and 67 tracked/zero untracked paths. Shared root, child,
+Entity and overlapping-publication witnesses remain required.
