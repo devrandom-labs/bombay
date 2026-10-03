@@ -1789,8 +1789,10 @@ Current selected artifact hashes after verification:
 
 ## 23. Complete live-capability repair surface checkpoint
 
-Status: proposed file-scope expansion; production implementation waits for
-authorization. The user removed line-count permission checkpoints in section
+Status: user-authorized complete 89-path expansion. The user explicitly
+approved both the initial request and its corrected complete inventory;
+the corrected 89-path allowance governs this stage. The user removed
+line-count permission checkpoints in section
 22; line estimates below require no separate approval. The original request
 still expressly requires a concrete checkpoint before enlarging file/public
 surface. This stage repairs the independently reproduced current-version loss
@@ -1805,13 +1807,20 @@ is 48 changed repository-qualified paths; section 22's earlier 38-path count
 predates the complete published dependency selection. Isolated source-retirement
 and handoff comparisons are measured separately, not claimed as retained code.
 
-The scope reviewer reconstructs the exact previously authorized union of 69
-repository-qualified paths. The complete repair stage needs 23 source/consumer
+The scope reviewer reconstructs the named 69-path inventory, then finds two
+already updated research records missing from it: abstraction-disposition.md
+and terminal-projection.md. No explicit added-file checkpoint was located for
+them. The complete accounted union is 71; those two records must be included
+in this authorization rather than deleted or omitted from measurement. The complete repair stage needs 23 source/consumer
 paths: six production owners, with five already authorized, and seventeen
-existing examples/test consumers. Eighteen additional paths make the proposed
-authorized union **87**. Pre-edit scope receipt SHA-256:
+existing examples/test consumers. Eighteen additional repair paths make the proposed
+authorized union **89**, including the two earlier omitted records. Pre-edit scope receipt SHA-256:
 `92cf6fc7e7422b3c505503bc1e29268e2e7d2b952f58bdf1d01f38909e050aab`.
-No source edits precede this checkpoint.
+The initial scope receipt
+incorrectly claimed 69/87 as the complete union; reconciliation receipt
+`65cfc16d09f062cfc7eeb51ddf0db3365aa039efa631e65c0eac70432bd70df1`
+corrects it without changing that frozen evidence. No production source edits
+precede this checkpoint.
 
 Additional existing paths:
 

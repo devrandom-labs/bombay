@@ -257,3 +257,41 @@ registration/traversal remains unproved. Fixture names RejectedProjectionActor,
 RejectedRole and Rejected incorrectly imply typed rejection when the child
 stopped normally and projection panicked. Correct naming and minimization
 before retention. No public representation, arbitration or gate is approved.
+
+
+## Selected-version heterogeneous custody review (2026-10-03)
+
+The frozen `bombay-heterogeneous-projection-k6c6l431` comparison uses selected
+Core/Actors 0.21.0 and Communication 0.1.3, layered on the independently reviewed
+startup handoff. Its generated Catalog declares two distinct child types and
+real ChildRole positions. Actual ChildBindings records hold both established
+children; the first caller projection deliberately panics after receiving its
+completed actor, while the second actor's interpreter cleanup remains gated.
+
+The original traversal returns a parent panic before the sibling finishes,
+replaces the original panic payload with formatted text, and loses the later
+full retirement. The original regression compiles and fails for that exact
+payload oracle in debug and optimized builds. The ordinary comparison joins
+both actual handles into a closed product of standard Results beside each
+role's existing origin, creation identity, kind, endpoint and control. It
+preserves the original JoinError, task identity and String allocation, plus
+the sibling's original state allocation and complete retirement. One positive
+passes in each profile. Restoring the original formatted-panic discharge fails
+in both profiles; restored positives, formatting and strict Clippy pass.
+
+Receipt: `0b6356646f4785f4bd09a0f5de2ecab73b86368b347e119323c05fd538806fee`.
+Test-only patch: `93ca12f8ac01486d78298903424a973506d677fdc32cc4384aebed88e71c5d15`.
+Increment: one existing launch.rs path, tests +387 / -0 / net 387;
+production and new public types zero. Initial declaration-order blocking runs
+are excluded: the corrected generated role order places the faulting child
+before the gated sibling without changing any owning arbitration contract.
+
+Independent reviewer `/root` read the complete patch, verifier scripts and
+profile logs, authenticated all 43 artifacts and 26 source hashes, and checked
+25 unchanged source paths plus the complete launch.rs baseline prefix against
+the signed selected-version handoff. This signs only the bounded defect and
+ordinary ownership comparison. There is no fresh reviewer execution, live
+Catalog Driver, standard establish_child integration, recursive descendant
+model, retained public result representation or full DG-PROJECTION acceptance.
+Values destroyed inside the faulty caller projection cannot be recovered.
+Joining leaf results alone does not satisfy the required recursive scope.
