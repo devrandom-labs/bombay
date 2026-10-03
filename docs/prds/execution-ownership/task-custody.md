@@ -1571,3 +1571,53 @@ launch net53 remains separate. Both inspections authenticate 345 sources,
 neither reran Rust. The queued request is not an acquired cancellation or an
 accepted winning boundary. This proves current visibility, not a repair or
 EV-06 acceptance; the typed publication decision and its regression remain open.
+
+## Publication decision and original-regression pre-edit (2026-10-03)
+
+Ordinary-Rust comparison receipt
+2d903c93486c96638c829c37fac1547eaea2f5f423de92c8e39024f65940731c
+and independent review
+a9d0bb540fc7aab41f1e2343d94565c4ca3b021a59c3d8243d2582e4aee9c993
+identify a candidate existing-port amendment:
+`publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()>`.
+The Driver would enter its active phase only on Continue; Break would preserve
+the original request through its existing retirement disposition. Bombay would
+check its original cancellation receiver before publishing the reservation.
+An absent sender permits publication; an empty receiver remains available for
+later cancellation. A hidden publication skip through the unit-returning port
+would misrepresent the Driver phase. A separate check-and-publish port adds an
+avoidable split decision. No additional type, field or runtime owner is proposed.
+
+The proposed winning boundary is the receiver's acquire snapshot within the
+synchronous publication call. A request accepted before that call must win.
+An overlapping send after an empty snapshot may lose this decision and remains
+an exact later cancellation request. This does not claim atomic ordering between
+the oneshot sender and physical Address publication. The paper three-owner patch
+is +20/-4/net16 production lines, not an executed or complete consumer migration.
+Generic Engine custody, shared root/child/Entity consumers and the overlapping
+boundary still need witnesses and review before selecting this amendment.
+
+Corrected original-only test draft
+993e98f46d4a3f328a8de1d3b8bd2464f44d0585a5013dfcae217dcb961d63f5
+has independent eligibility review
+4062edff6782f2267cf8a08f2b4711bb3025a2d2e0d5e6f367babab62982eb7a
+and coordinator inspection
+a148d3116e5a2322b1b12540766278bc047f2426eece442c92a02229e17b6124.
+Its one existing local test module changes +207/-2/net205 lines; production,
+public/private types, fields, variants and wrappers are unchanged. All 345
+immutable typed-source 4760 inputs and six draft artifacts authenticate. The
+earlier import-style objection and its original draft remain preserved.
+The actual Driver test accepts the original request before releasing commitment,
+joins its complete retirement, then checks the notice's complete ActorRef and
+Resolved snapshot for forbidden visibility. Two direct-port contrasts preserve
+the complete accepted initialization settlement and check sender absence and
+later cancellation. The full Driver's Exhausted source explicitly discharges
+its initialization receipt; this row claims no retained receipt suffix.
+
+Run the unchanged original in debug and optimized pinned-Nix builds: the
+visibility regression must fail at its final oracle, and both contrasts must
+pass. Compiler vetoes require separate frozen source and diagnostic corrections;
+they are not semantic failure evidence. This pre-edit approves only that bounded
+original experiment, not a production repair, current-source integration,
+EV-06 or DG-TASK acceptance. Canonical production remains net133 with zero new
+public types and 67 tracked/zero untracked paths under the approved 114-path scope.
