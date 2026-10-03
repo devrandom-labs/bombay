@@ -131,10 +131,55 @@ its separate complete ten-path record in the shutdown decision record.
 
 ```text
 production: +150 / -18 / net 132
-tests: +568 / -61 / net 507
-documentation: +4522 / -71 / net 4451
+tests: +1181 / -536 / net 645
+documentation: +4694 / -71 / net 4623
 manifest/lock: +36 / -31 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 66
 untracked paths: 0
 ```
+
+## Pure Driver test repair (2026-10-03)
+
+Pre-retention record: the existing approved driver_law.rs contains four invalid
+fixtures that publish observations from inside Behavior folds or carry runtime
+observers in actor state. Replace them with pure state and actual host traces;
+keep the 29 existing test names and all eight Driver law families. Expected
+change: that one existing test path, tests +621 / -483 / net 138; production
++0 / -0 / net 0; public API +0 types / -0 types. Reuse the actual Driver,
+TestEnvironment, complete Actions and typed creation identities. No runtime
+contract, initialization-panic payload repair or full EXEC gate is accepted.
+
+Author freeze: source `3e5a2a3527d7ad9b19022a18dd7ec42467b3daeae9dc3aff94e1c7d100c7badf`,
+receipt `8754468ef11d6537a5e24bd65b2b4f26bed5d894dbe948b8677cc86a20313e20`,
+patch `2481b039140ea14e866e37f127c41fdce9d670462135064d2c26b9a311483322`.
+Independent reviewer /root/observation_research read the complete source, patch,
+mutations and logs, authenticated 345 sources and 118 artifacts, and verified
+that all other 344 baseline files remain unchanged. Signed review
+`f532e3cb23c2586234b34714da266e3e9421631df504f0bd4ddf7463d8b1b31c`
+accepts bounded test retention only; it includes no reviewer Rust execution.
+The author executed all 29 tests in both profiles, strict focused Clippy,
+formatting and all eight Driver evidence families successfully. Runtime
+inversions fail for the intended law in both profiles. The distinct E0499
+comparison proves static exclusion of overlapping mutable borrows, not a
+runtime mutation. Creation traces preserve actual issued IDs/kinds and original
+box allocations; Box is Clone, so this is original-allocation evidence, not a
+compile-time no-Clone proof or proof of actual child establishment.
+
+Integrator read the repaired folds, host observations and typed-creation
+comparison, transferred the exact signed source, and independently ran:
+
+```sh
+nix develop -c cargo test --locked -p bombay-engine --test driver_law
+nix develop -c cargo test --locked -p bombay-engine --release --test driver_law
+nix develop -c cargo clippy --locked -p bombay-engine --test driver_law -- -D warnings
+nix develop -c cargo fmt --all -- --check
+nix develop -c bash crates/bombay-engine/tests/driver-law-evidence.sh --output /tmp/bombay-driver-purity-retained-laws
+```
+
+All exit 0 on the retained exact source. Both profiles pass 29 tests; all eight
+law families pass positives/boundaries and kill their intended inversions.
+Actual execution adds `--option eval-cache false` to Nix and uses a dedicated
+Cargo target with incremental compilation disabled. Transfer receipt
+`26b774b6525083beab4e9726cbe592d8f11db4a68dd31f3361052770784e3df7` binds the actual commands' logs and final source.
+This retains the test repair only. Complete EXEC gates remain open.
