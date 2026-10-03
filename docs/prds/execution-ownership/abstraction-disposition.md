@@ -162,3 +162,40 @@ time.rs `62251d2c58943d353ca02d075af0d593783226ada219bc734c23a6e3661c72b0`;
 reports.rs `9cd827bcb64bfa2ab217ef4da7d4158447b8b752086e8ff3fc1ce1aca44c55bf`.
 Other current source anchors are in verification.md. This is read-only evidence;
 production, tests and public types remain unchanged.
+
+## Direct Hosts comparison on the selected release (2026-10-03)
+
+`bombay-direct-hosts-0_rmhopj`, based on canonical 1feefcf, selects published
+Core/Actors 0.21.1 and Macros 0.13.1 under pinned Rust 1.99. Ordinary
+`hosts.space().resolve(&address)` compiles in actual application and native
+Entity consumers without another wrapper or support type. Existing wrapper
+delivery is compared with that direct expression.
+
+Application delivery captures the exact endpoint before awaiting capacity.
+An admitted send stays on its old generation after lease release and a fresh
+claim at the same address. Unknown and closed destinations return the whole
+original delivery and Vec allocation. Native Entity hydration, activation,
+binding acknowledgment, fencing, delivery and graceful retirement return the
+complete pure actor ledger, original allocations and terminal residual lanes.
+Both resolution routes disappear after retirement; captured endpoints reject
+the exact payloads. Native address reuse is not covered by the Entity fixture.
+
+Receipt `dd63bde0c90e0dc8c78913f40e20d3e572b1b41b05bcf5914209010321fae97f`;
+patch `fa131bbcb789bd14d055bceab1afe7ba91ee90ce3545708626710402411e4187`.
+Two approved test modules: +373 / -6 / net 367; production/public types zero.
+Independent nonauthor review
+`302f67838c581fdd6c351090d2ac2d7672f87c6f41ef0d4cd7efaa7ba95eac4a`
+authenticates all 345 sources and 74 artifacts, reads complete fixtures and
+selected Address/Communication contracts, and accepts bounded research only.
+Coordinator separately authenticated those sources and artifacts; no fresh
+coordinator or reviewer Rust execution is claimed for this experiment.
+
+Author positives and restorations pass two tests in each pinned-Nix profile;
+formatting and strict package all-target Clippy pass. Re-resolving an admitted
+send or copying its payload fails the intended runtime assertions in both
+profiles. Missing Hosts produces E0277; wrong protocol/payload produces E0308.
+These are counterfactual inversions and static denials, not original defects.
+Production bound migration, wrapper deletion, full application/birth consumers,
+noncooperative Entity retirement, forced family cleanup and metrics remain
+open. topology.rs is unchanged and outside the approved edit scope.
+DG-WRAPPERS is not accepted by this bounded comparison.

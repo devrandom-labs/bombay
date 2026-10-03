@@ -312,3 +312,43 @@ accessor does not repair or authorize original-error erasure. Existing opaque
 correlation allocation is not itself evidence of nondeterministic behavior:
 heap allocation is permitted, and no paired lawful consumer trace establishes
 a contract-visible mismatch. No alpha-renaming law is assumed.
+
+## Actual actor retirement comparison (2026-10-03)
+
+`bombay-index-actor-retirement-_di13ptd` extends the pure-source comparison
+through a real actor and its existing LocalEnvironment retirement path.
+IndexDepot owns only typed requests, start receipts and returned values;
+IndexCapabilities owns execution resources. Two original FIFO-issued requests
+enter the existing typed source lane. One blocking operation runs and the
+second queues on a one-worker executor. The same actor retirement future stays
+Pending until both operations finish; both original Vec allocations survive.
+
+The complete returned actor state and residual are checked: two start receipts,
+OwnerCancellation, two exact late control returns, and empty remaining request,
+settlement, user, task, failure, descendant and unread-cancellation lanes.
+Both FIFO owners accept their own actual correlations and original results;
+all nine action lanes are checked. Admission permits return and the retired
+endpoint disappears. This uses the existing advanced test-host boundary,
+not a new EXEC work service or a selected public Application context interface.
+
+Receipt `16be541f9191ff8da74560d69383ce6b41b7bf293eef3c7bb6211ae4b4ca5a69`;
+patch `5348baff645154112395d0d1fe0c0f0a273b98accb90510ce26801871ae22222`.
+One approved test module: +776 / -44 / net 732; production/public types zero.
+Independent nonauthor review
+`a60408bc54743b249f252d1e40ec5d4d1c785169665f55c92a27bd307c5c100f`
+authenticates 345 sources, 51 artifacts and seven selected owners. It signs
+the new witness only, not the reviewer's inherited core implementation.
+Omitting the task owner or discarding late returns causes intended compiled
+failures in both profiles; these are composition inversions, not reproductions
+of an original runtime defect. Formatting and strict Clippy pass.
+
+Coordinator receipt
+`3c8810b79765ce4e7d66baf428fbeb8aad7f6835808bfc365fe1fa29213bcb38`
+authenticates the freeze and records fresh pinned-Nix debug/release positives.
+The `index` filter runs four tests: three work witnesses and one existing
+Observe hashing test. Both profiles pass all four. Coordinator did not rerun
+the mutations. Simulated FIFO endpoints do not prove an installed child graph
+or complete replacement lineage. Executor destruction, panic, final receiver,
+family cleanup and consuming opaque-diagnostic extraction remain unproved.
+Inherited runtime-containing SearchWorkshop fixtures remain excluded.
+No production retention or full DG-WORK/EV-24 acceptance is claimed.
