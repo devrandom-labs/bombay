@@ -656,3 +656,35 @@ where execution drop releases unfinished work and retained cleanup joins.
 Compare ordinary ownership transfers before introducing any signal or product;
 no additional owner, public type, policy or canonical production edit is selected.
 Full API and active-family acceptance remain open.
+
+## Owned executor comparison prerequisites (2026-10-03)
+
+Read-only model
+fbdff97186cbc92acc1cdc43fdf0d16bf3652fa4377eca6b0578666db2572a5a
+compares caller-owned Tokio Builder/Runtime with one private convenience driving
+the same execution/result pair. Coordinator pre-edit review
+3f9eaf7300c5cf226dd4d5f57918b6de43e37da26ba9d1dc5c283883131ef309
+authenticates forty source hashes and 165 external locked dependency tuples.
+This permits an isolated cfg-test comparison, not public API selection,
+canonical production retention, independent final approval or DG-API acceptance.
+
+Selected Tokio block_on accepts borrowed futures and their concrete results
+without Send/static bounds. Actor tasks keep their existing requirements.
+The proposed convenience builds before constructing the pair and returns the
+original application, work, Builder and actual io::Error on construction failure.
+Selected current-thread construction propagates the I/O-driver error before
+creating its blocking pool and consuming random seeds. Mio's Darwin kqueue and
+Linux epoll selectors require file descriptors. A child-only descriptor limit
+can therefore supply an authentic error experiment; it has not yet run.
+Owning Poll/Waker tests cover construction and closure, not this failed-build
+custody law. Worker-spawn panics are not returned build errors.
+
+The comparison must separately check package-default and axum features, both
+schedulers, original-input retry after a real build error, and the current
+public runner's input loss. Compilation and executable launches use pinned Nix;
+only the already compiled child lowers its own limit. No fabricated error,
+parent limit change, native payload inspection or enabled-driver inference is
+authorized. Conditional inherited production remains +60/-7/net53 and inherited
+tests remain 846 lines; new comparison source is cfg-only in the approved owning
+file. Family ordering, native exceptions, HTTP and the final public error and
+migration contracts remain open.
