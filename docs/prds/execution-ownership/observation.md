@@ -651,9 +651,10 @@ authority after the trusted host registers the exact endpoint. Issuance is
 outside the Behavior fold by documented contract; the type system does not
 prove that execution context. Actual Monitor emits its original whole request
 once. A delayed genuine Started for an earlier attempt is rejected before
-acceptance, retaining the full report and authority. Retrying consumes the
-original rejected request, preserves its endpoint allocation and uses a fresh
-sequence correlation. There is no public old-correlation constructor.
+acceptance, retaining the full report and authority. This historical comparison consumes a rejected request into its original inputs
+and constructs a new request with fresh correlation. It does not prove that
+resubmitting the whole original is statically forbidden; see the selected
+retry correction below. There is no public old-correlation constructor.
 
 Receipt `4de969687708dd85d36019b5ce6cbfe45def43e15e9528b76037ef0d92169066`;
 patch `0b3062799cf74a5e8b175730de4422c780f347cf12cf45b388e0b1310f9fecae`.
@@ -836,3 +837,36 @@ hashes, and checked the complete production prefix against the selected registry
 source. It signs only that bounded source/custody gap; no fresh reviewer
 execution, production correction, public authority or full observation gate.
 The ordinary same-map admission/retirement comparison is still required.
+
+## Selected unaccepted retry and new-request distinction (2026-10-03)
+
+Under the user’s instruction to choose recommendations, preserve one exact
+never-accepted original through rejection and serial resubmission. That original
+keeps its correlation. Constructing a new request consumes the original into its
+inputs, explicitly releases the old correlation and derives a fresh scope.
+Successful relationship admission consumes the original permanently and creates
+a fresh accepted identity; failed Started publication must preserve that actual
+Started value and its authority, never reconstruct a rejected original. A
+rejected cancellation retains the same grant and exact accepted identity.
+
+This corrects the historical claim that every retry necessarily has a fresh key.
+Returning the same owned effect type permits serial resubmission in ordinary
+Rust. Affine ownership proves one simultaneous original, not a static ban on
+resending it. Neither current Core ItemSettlement nor the proposed whole-request
+return port supplies such a ban. No honest older accepted Started can exist for
+an original that has never been accepted; genuinely new requests still reject
+delayed Started with old correlation. This preserves the selected exact-request
+and exact-relationship distinctions without introducing a permanent history or
+a second emission-permission type.
+
+Read-only selected source review:
+`original-request-retry-review.md`, SHA-256
+`c16241ce39d4846c7ef7fba92455633a44428411de66d2627bc813a4c830c05c`.
+The selected Actors 0.21.0 observe request owns its recipient but transfers only
+ID/endpoint to its interpreter; action-item settlement is Accepted(unit), and
+protocol Rejected currently retains only ID/operation/reason. Whole-original
+rejection is therefore a required owning contract change, not current behavior.
+The correction selects policy, not an API or gate approval. Producer/consumer
+tests must prove whole rejection recovery, serial retry, new-key construction,
+consumed accepted originals, failed Started publication custody and stale
+accepted-report rejection in both profiles before retaining any implementation.

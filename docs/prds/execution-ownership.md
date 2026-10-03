@@ -2149,15 +2149,44 @@ eight generator lines. Original published expansion fails the targeted strict
 1.99 lint in both profiles; corrected expansion passes both. Owning workspace
 nextest reports all 857 tests passed; formatting and all-target/all-feature
 strict Clippy pass through the pinned 1.96 shell. The authoritative owning Nix
-flake check passes all seven aarch64-darwin checks; other architectures require
+flake check passes all ten aarch64-darwin checks; other architectures require
 the PR's CI. Complete one-path source receipt:
 `6d0f4095a7387f09e3c9c4c5e380678c187bf89128b089a1459ac27e8ec73fdb`.
 Production +8 / -8 / net 0; tests +0 / -0; public types +0 / -0;
 zero untracked owner paths. Evidence is stored separately from the owner tree.
 
 Focused owning [PR 80](https://github.com/devrandom-labs/bombay-behavior/pull/80)
-targets main at that exact head. Independent final review and CI are pending;
-no merge or publication is claimed. The approved compiler candidate still
+was independently approved by /root/contract_inventory at that exact head
+([review 5399361168](https://github.com/devrandom-labs/bombay-behavior/pull/80#pullrequestreview-5399361168)). All fourteen checks passed, including owning
+Nix, eight mutation shards and their aggregate, CodeQL, API audit and dependency
+policy. It merged as `92ed7c9b59fc008f851e7bff0c8c0733b1005b65`.
+Independent receipt SHA-256:
+`3ec6523927d23258e78a1d3b7b9c8c80621410c7a4e0d26e40afe76bcaa66404`.
+The original receipt mistakenly counted seven local Darwin checks; its log
+contains ten. Original evidence is unchanged; immutable correction/merge receipt
+SHA-256 `bf4bd81817ce682d2985081bb57c935418a2eb753e0419125b23f4a831767427`
+authenticates that correction. Passing main CI run 37103572686 triggered normal
+release run 37103992018, which opened
+[release PR 81](https://github.com/devrandom-labs/bombay-behavior/pull/81).
+Registry publication is pending. The generated head
+`dadc1becde47d0787b770fb19a30e21bf34b61fa` announces Macros 0.13.1 and
+Core/Actors 0.21.1 but leaves the shared package/dependency versions at 0.21.0;
+three nested locks also fail `--locked` preflight. Repair these existing approved
+manifest/lock paths to match the generated candidate versions, then rerun the
+complete preflight, owning Nix gate, CI and independent release review. The approved compiler candidate still
 requires registry release selection, final complete source/delta receipt and
 independent review before canonical retention. Full EXEC semantic gates,
 correctness-first module extraction and Bombay delivery remain open.
+
+
+Release PR 81 correction is pushed at
+`0e2756a9b0eda4002854140190ce2dbf306ba7fa`. The complete release diff has
+nine existing paths: configuration +21 / -21 / net 0; changelogs +18 / -0;
+production/test/public types zero; untracked zero. All four locked graphs now
+resolve. The release skill preflight passes packaged-consumer verification for
+Core/Actors 0.21.1 and Macros 0.13.1; the authoritative owning Nix check passes
+all ten local Darwin checks. Source/patch/log receipt SHA-256:
+`28b8c1b34b0dcc94fdaaae4d3755632ae398aac747e2c4c6721c4929b84f160d`.
+Independent review, exact-head CI, merge and actual publication remain required.
+Both README installation constraints remain 0.21 and correctly include 0.21.1.
+No release source semantics change.
