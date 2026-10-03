@@ -797,3 +797,42 @@ interpreter transfers only the ID and declares no rejection in its settlement
 type. Whole rejected request recovery, exact relationship membership, races,
 retired Monitor recovery and DG-OBSERVATION remain open. No owning/canonical
 production or public API changes are retained by this comparison.
+
+
+## Actual control-admission retirement gap (2026-10-03)
+
+The selected Communication 0.1.3 permits an in-flight control send to pass its
+consumer-liveness check, then publish after Consumer.drain has collected the
+queue. That send returns Ok; the later raw tail Drop releases its payload.
+Communication documents its own tail discharge, so this is not an allegation
+of an upstream raw Drop-contract defect. Bombay's stronger exact-terminal
+custody law cannot rely on that send/drain pair without additional ownership
+ordering. Tokio's uninterrupted Ready-poll continuation alone does not serialize
+an OS-thread retirement against admission.
+
+Frozen `bombay-observation-control-retirement-hcuhwdoc` exercises actual
+ControlSender.send, Consumer.drain and tail Drop under existing Loom primitives,
+with an original move-only Box allocation and once-discharge ledger. Bounded
+exploration (two preemptions, at most 10,000 permutations) finds a compiled
+failure in both profiles: successful send, empty drained control custody,
+exactly one payload discharge. It is a source-operation counterexample, not
+an actual Bombay map/Driver integration witness or an exhaustive passing model.
+
+One already authorized Communication source path adds 71 cfg(test) lines;
+production and public types zero. Receipt:
+`b72b8dff2a44d052ccda6c3cfe4e5d3420ca79399604aacd1313919482ebbe51`.
+Patch: `aca22ec320fde2dcd98cdaa833ea74e2204f578a52eaca62927702077ea55296`.
+All 14 packaged Rust sources match selected release 272a234; only appended
+owning tests differ. Formatting, scoped Loom library/integration Clippy and
+normal all-target Clippy pass. The initial all-async-target Loom lint selected
+fixtures whose recv API is unavailable under Loom; its E0599 is excluded as a
+command-selection failure, not semantic regression evidence. The cfg(test,loom)
+unit test's compilation is proved by its actual failing executions; do not
+infer unit-test lint coverage from library-only Clippy selection.
+
+Independent reviewer `/root` read the complete patch, scripts and profile logs,
+authenticated 13 artifacts, 54 owning files and all 14 selected packaged Rust
+hashes, and checked the complete production prefix against the selected registry
+source. It signs only that bounded source/custody gap; no fresh reviewer
+execution, production correction, public authority or full observation gate.
+The ordinary same-map admission/retirement comparison is still required.
