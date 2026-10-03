@@ -1,9 +1,11 @@
 # EXEC verification evidence
 
-Status: baseline research; all decision gates remain open. No integrated EXEC
-acceptance, independent gate approval, Bombay delivery PR or passing delivery CI is
-claimed. The selected baseline is `2fccedf6eb636ac22143e7e01de7e784f96e2b4e`,
-with the exact lock and manifest hashes in PRD section 16.
+Status: staged EXEC evidence. DG-SHUTDOWN is independently accepted; the
+remaining decision gates are open. No full EXEC acceptance, Bombay delivery PR
+or passing delivery CI is claimed. The historical baseline is
+`2fccedf6eb636ac22143e7e01de7e784f96e2b4e`, with its original lock and manifest
+hashes in PRD section 16. Later selected contracts and retained evidence are
+recorded below and in the PRD.
 
 ## Fresh preservation commands (2026-10-02)
 
@@ -181,7 +183,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +5864 / -87 / net 5777
+documentation: +5906 / -87 / net 5819
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67

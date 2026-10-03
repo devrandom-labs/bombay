@@ -763,3 +763,43 @@ of ordinary configured Builder products; only the actual original-public termina
 projection enum is new private surface. No canonical runner retention, public
 default/API selection, active-family lifetime, native exception, HTTP, recursive
 projection or full DG-API approval is claimed.
+
+## Suspended caller work ownership comparison (2026-10-03)
+
+Author receipt
+dd95694b1c043da530c727b9fa6d0668c3bb8949205ef38c8d3c9e7cbf790fd3
+and independent non-author review
+75ff14815d467dffae0424ac36c227b54a0a205ef037ce9dbc354a57c56790dc
+verify actual owning caller-future destruction after its work becomes pending.
+The initialized inner lexical scope owns the original work future. Its destruction
+precedes the original cancellation authority and then cleanup permission closure.
+An actual second OS thread observes the released work and joins the original actor.
+Normal completion retains cancellation authority until the reverse join
+acknowledgement; completed output survives subsequent caller surrender.
+
+Work occupies an owned lexical local in the boxed test caller's async frame;
+there is no separate Box allocation for work, no additional Send/static/Unpin
+bound and no new wrapper. This proves neither physical stack placement nor an
+allocation-free application. Original output allocation/content and borrowed
+slice pointer/content remain exact. Returned roots retain Wait disposition,
+entries/allocation and complete typed terminal lanes. Actor origin follows the
+original owning spawn and join, not allocation identity.
+
+The borrowed-pin counterfactual keeps work outside the caller. After caller drop,
+the receiving thread observes that work still lives. The controller then releases
+the original work and joins actor and thread before the intended assertion fails
+in both profiles. Eighteen positive/restored Rust tests pass in each profile;
+two three-case loops execute six actual actors. Strict package lib/tests Clippy
+and workspace formatting pass through pinned Nix. This is an ownership inversion,
+not an original public-runner defect. Reviewer and coordinator authenticate
+345 sources, 22 artifacts and 165 external locked packages; neither claims a
+fresh Rust rerun.
+
+The new increment is tests +197/-0/net197, production zero, public/private types
+and variants zero. Its unchanged 217-line tuple predecessor is independently
+reviewed as 675eef5a8b784536daa82c4a02754f63a21aba97ec1c0fd8c417fbd8a240cbe6;
+the separate inherited launch handoff remains +60/-7/net53. No canonical Rust
+is retained here. Pre-first-poll capture destruction, startup, uninvoked work,
+native/destructor panic, live-family ordering and forward-permission minimality
+remain unproved by these tests. No kernel repair, public API, durable executor-loss
+guarantee or full decision gate is selected.
