@@ -99,7 +99,7 @@ revision; that exact source, its tests, and its documentation were inspected.
 | Who owns task execution and ordering? | Bombay | own executor tasks, capability instances, Driver turns, child task ownership, activation and retirement order | policy disguised as task plumbing |
 
 The current runtime retains one `ActorSpace<P>` per locally hosted protocol for
-logical resolution. The selected Behavior 0.20 exact established capabilities bypass that
+logical resolution. The selected Behavior exact established capabilities bypass that
 lookup for established internal delivery. Logical recipients at discovery,
 external ingress, stable-name, and transport boundaries continue to use
 Address; roles and routes never become storage identities.
