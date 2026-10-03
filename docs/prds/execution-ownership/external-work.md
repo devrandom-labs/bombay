@@ -378,3 +378,45 @@ typed reason in its diagnostic, with returned_source None. Consuming that reason
 is the separate proposed extraction law. It does not transfer the pool-owned
 Source or establish an external retry policy. No new source-state model, public
 type, owning edit or full gate acceptance follows from this inspection.
+
+## Completion versus executor destruction (2026-10-03)
+
+`bombay-index-runtime-destruction-6d6ienie` adds one test to the preceding pure
+source/interpreter comparison. Awaited completion preserves both original Vec
+allocations through typed worker returns. `shutdown_timeout(Duration::ZERO)`
+and `shutdown_background` instead return while the first blocking operation
+remains gated and the second queues. Both source wrappers return their actual
+cancelled JoinErrors. After releasing the first operation, the second runs on
+the sole BUSY blocking worker despite shutdown. Tokio's separate IDLE shutdown
+drain can cancel queued work; this witness establishes only its controlled BUSY
+schedule, not a universal queue policy or preemption guarantee.
+
+Each admitted operation temporarily owns its original Vec in a sole immutable
+Arc and publishes only Weak to the host. Temporary strong observations end
+before gate release. With no surviving waiter after cancellation, original
+payloads are discharged by the actual worker-stop acknowledgment; this does
+not claim retention until that acknowledgment. Normal Arc unwrapping instead
+moves the original Vec into the typed result. No extra result owner preserves
+values artificially, and no runtime resource enters Behavior state.
+
+Receipt `0ce223e2a55d2cd6e0934d53cf680acf842d4575adf9ecef6b60eee7e3e4d219`;
+patch `be3d79e987c9506a530d5e6fa60dcc1a6c1883d273101903bef3e29717e6ebf9`.
+One approved test module: +248 / -1 / net 247; production/public types zero.
+Nonauthor coordinator review
+`d67cea0542e0d96e94a3453549860bd24cd7f49d573522b32ddfbf22805ef7f3`
+authenticates 345 sources, 36 artifacts and five selected Tokio source/test
+files, reads the full patch and ownership model, and records a fresh pinned-Nix
+positive in each profile. Author preservation/restoration passes five tests per
+profile: four work witnesses plus one existing Observe hashing test. Formatting
+and strict Clippy pass. Substituting a cloned input compiles and fails the exact
+allocation oracle in both profiles after all gates are released. This is a
+counterfactual composition inversion, not an original production defect.
+
+Immutable scope correction
+`60a2a57a0a2ea589d2687ec61c3bbc29df73c49298287c54a6a0879fd7af8823`
+clarifies that the destruction test checks permits, not actor endpoints.
+Ordinary runtime Drop can wait indefinitely for noncooperative blocking work;
+it is not tested while these gates remain held. No joined actor/family cleanup,
+final receiver custody or successful retirement is claimed after executor loss.
+Consuming diagnostic recovery and other complete acceptance evidence remain
+open. No full DG-WORK/EV-24 or canonical implementation retention follows.
