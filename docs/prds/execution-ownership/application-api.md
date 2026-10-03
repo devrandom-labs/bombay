@@ -580,3 +580,45 @@ artifacts and original/restored diagnostics; it includes no fresh Rust rerun.
 No source retention, public API selection or full DG-API acceptance is claimed.
 The nominal family has zero admitted incarnations; active family cleanup remains
 a separate required integration.
+
+## Ordinary inherent/free execution comparison (2026-10-03)
+
+The isolated current-source archive at 77da777 compares private inherent and
+free conveniences over the same paired execution/result kernel. The current
+public run().await fails solely because its Result is not a Future (E0277 in
+both profiles). No new actor loop, public interface, runtime/mode product or
+unconditional work Send/static bound is introduced. A synchronous constructor
+creates original-input custody before the first poll; conveniences await that
+same pair. Genuine absence does not supply a dummy work callback.
+
+Author receipt
+94af0ee1be427dc18e04c4170560b1af0209eacf20ea763b593e3055bcec9a1e,
+patch 5f079fe64d660d6e59a7da6f41f2f02bf5764c8d79cff12b538bbd4782c2453a,
+and independent non-author review
+7d894979703eb461d8ebb97f0195ba88d7c2592e320ab2ac2ec6d3d4c333d0e9
+bind eleven positive/restored cases in each profile and four compiled custody/
+preflight counterfactuals failing in both. Strict formatting and package Clippy
+pass. The reviewer reads the entire module, guards, inherited handoff, tests,
+mutations and scripts and authenticates 345 inputs, 54 artifacts and 165 locked
+external tuples; no fresh reviewer Rust rerun is claimed.
+
+The conditional foundation is the separately reviewed launch handoff:
+production +60/-7/net53. New API code is 846 cfg(test) lines, zero production
+or public types. Current spawn-body, shutdown, EV-25/measurement suffixes and
+the application production prefix remain exact. No old whole file is copied
+to canonical. Original Rc/borrowed work error output, unstarted application/
+work, normal root retirement and owner cancellation retain complete available
+lanes and original allocations. Cold non-Send child and advanced App declarations
+are preserved without claiming installed non-Send actors. Nested blocking
+preflight returns the original builder/application/work before construction.
+
+This accepts bounded comparison only. Receiver retry/drop with surviving
+execution, root completion while callback stays pending, automatic Send,
+full owned blocking lifetime, actual build errors/modes/drivers/defaults,
+heterogeneous live children, advanced installed graph, meaningful HTTP and
+active Entity remain required. Foundation actor/capability/cleanup failure,
+native payload custody, recursive provenance and exact public result/migration
+are not proven by this kernel. Initial script aborts that expected a later
+assertion remain excluded; earlier actual Weak zero-versus-one failures are
+qualified as the intended custody violation. No canonical source retention
+or full DG-API/DG-TASK approval is claimed.
