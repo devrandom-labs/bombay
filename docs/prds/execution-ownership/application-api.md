@@ -950,3 +950,29 @@ launch production remains +60/-7/net53. Families are unit in this fork. Composit
 with the separately reviewed active-family permission repair, actual family caller
 drop, public API, native/outer join failures and recursive projection remain open.
 No canonical Rust retention or full decision gate follows from this evidence.
+
+## Combined startup and family comparison pre-edit (2026-10-03)
+
+Corrected pre-edit receipt
+381bb996b0aedae55122b7052a220493cce6051ab0e1d7667ccd63a82a56a8c8,
+independent eligibility review
+fa0bb4f783c3d942caf093789c5f7a365b979296883af4f5f4d2cf38a0fa4d41
+and coordinator review
+5d679be53643fd29a6d5c855a25884643e3e4ee8fb21bf09842b0f758aa6946b
+permit the external cfg-only composition experiment. It combines the same
+publication guard, forward work permission, owned lexical work scope and reverse
+join acknowledgement. The two previously signed kernels remain immutable.
+The initial proposal omitted the existing pure ReplaceEntries command branch;
+independent review required correction before implementation. The successor
+reuses that exact five-line branch and reports one additional private command
+variant relative to the startup fixture, with no new state field or type.
+
+One existing approved application-runtime test module is proposed; unformatted
+delta is +534/-6/net528 tests, production/public types zero. All nineteen startup
+cases and the original normal-family controller remain; the twenty-first case
+admits a real Entity input inside caller-owned pending work, drops that same
+execution, and joins the exact cancelled root and gracefully stopped family
+before checking work release, state, complete lanes, callbacks and metrics.
+Final formatted measurement, both-profile verification/inversions and independent
+final review remain required. No canonical source transfer, full DG-API/DG-TASK,
+startup publication policy, native failure or recursive result gate is approved.

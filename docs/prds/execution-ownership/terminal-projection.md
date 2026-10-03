@@ -478,3 +478,30 @@ A universal Member E0276 denial is still uncompiled. No new trait, macro, blanke
 Behavior bound, producer contract, source edit or public type is selected. Native
 failure ownership, deferred primary projection, task minimization and full
 DG-PROJECTION remain open; no fresh Rust execution is claimed.
+
+## Concrete recursive comparison pre-edit (2026-10-03)
+
+Pre-edit 203b3a60afd30e765ba2587f155bc6aca682e328ded252441ae3de018c9a6f2e,
+independent review
+9a997f8bd7cc8c732bf8ca16a1547f9da5427a02d10a3acfb0b41a96630f82d7
+and coordinator review
+9aa7ff767da2da79f295a2a852185fab6752c613c4d3bd49bcd141acbf7596ad
+permit one external launch.rs cfg-only ordinary-Rust comparison: four pure
+actors, a concrete recursive sum and the existing total ProjectTerminal
+constructors. Leaf and Branch have different settlement products; Branch creates
+a real grandchild through standard installation. Caller acceptance/rejection
+owns the whole already-constructed tree only after all results return.
+
+The selected source explicitly discharges accepted report units and exhausts
+empty creation settlements. Nonempty creation receipts remain in the final
+typed lanes. Private child binding acknowledgement precedes initialization
+effects and publication; a parent report cannot prove early publication.
+Receipt/origin address correlation does not prove endpoint generation identity.
+The opaque issuer and original nonce remain owned without invented getters.
+
+Expected unformatted delta is +368/-0 tests, production/public types zero,
+seven private domain definitions and no new trait. The required iterator advance
+was moved outside its assertion before eligibility. Positive/inverted runtime
+traces, static denials, exact formatted freeze and final independent review
+remain required. No raw task-error recovery, deferred primary projection,
+task deletion, canonical retention or full DG-PROJECTION is selected.
