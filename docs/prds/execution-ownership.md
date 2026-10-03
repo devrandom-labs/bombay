@@ -1434,3 +1434,94 @@ values are respectively
 `26f34b25512d8130c5fe14c71da45ac8ea0aae8d09745860cf0b3b829612f45c`.
 These verify released dependency selection and preserve existing local fixes;
 all EXEC design gates and final delivery remain required.
+
+## 21. Distinct capability-failure vocabulary checkpoint (2026-10-02)
+
+Status: **user authorized** by the explicit response "Authorize the bounded
+expansion". This permits the scope below, not self-approval of its design gates.
+The user's authorization to adopt recommendations resolves policy decisions,
+not this repository's explicit change-budget checkpoint. Section 20 permits
+52 cumulative paths, 150 net production lines and zero new public types for
+the named source/shutdown/Communication stage. The task's live-failure policy
+needs an additional owning Behavior Actors vocabulary change.
+
+Measured delivered source across repositories remains Communication
+production +62 / -13 / net 49, tests/benchmarks +502 / -5 / net 497, new public
+types zero. Canonical Bombay production/tests/public types remain zero;
+manifest/lock +3 / -3 / net 0, thirteen tracked paths and no untracked files.
+Its current complete documentation measurement is in verification.md.
+Source-retirement net 64 and nested-shutdown net 1 remain isolated, not retained.
+
+The original actual capability failure resumes unwinding and loses recoverable
+actor/sibling results, as authenticated in task-custody.md and
+terminal-projection.md. Selected Crash has no distinct operation-failure cause;
+using EnvironmentFailed, Panicked or Cancelled would erase the selected
+distinction. Reuse the existing Crash sum, TerminalOutcome, ReportTerminalOutcome
+and owning monitor/propagation templates; add no new actor law, result wrapper
+or public type. The proposed variant is CapabilityFailed, describing a
+capability task failure acquired while its actor is live. Actual typed failures
+and actor state remain Bombay's responsibility. The variant cannot stand in
+for the unimplemented task-custody correction or rewrite completed outcomes.
+
+Proposed expanded allowance: **64 cumulative paths**, adding these twelve
+Behavior repository paths to the approved 52-path inventory:
+
+- crates/actors/src/termination.rs
+- crates/actors/src/lifecycle/termination_propagation.rs
+- crates/actors/src/lifecycle/termination_monitor.rs
+- docs/established-capabilities.md
+- Cargo.toml
+- Cargo.lock
+- README.md
+- crates/actors/CHANGELOG.md
+- crates/behavior/CHANGELOG.md
+- tests/interpreter-contract/Cargo.lock
+- crates/behavior-macros/tests/fixtures/Cargo.lock
+- crates/behavior-testkit/fuzz/Cargo.lock
+
+Allow at most **6 net owning production lines**, **120 net owning test lines**,
+one additional existing-enum variant and zero new public types. The cumulative
+150-net-production-line ceiling remains: source 64 + shutdown 1 + delivered
+Communication 49 + proposed allowance 6 = 120. These are pre-edit bounds, not
+measurements or design-gate approval. Complete action/replay conservation tests,
+compiled distinguishing inversions, exact-profile verification, independent
+review and full owning consumer/document audit remain required.
+
+The two package manifests inherit the owning workspace version; no independent
+manifest edit is forecast. Adding an exhaustive public enum variant is a
+breaking API change. The release stage must inspect generated coupled versions,
+update all four workspace locks and README, pass the invoked Behavior release
+skill's exact-head preflight, CI and review, and verify both actual published
+archives/tags. Bombay's already-authorized manifest/lock paths then select the
+verified release and revalidate its exact instructions/sources and consumers.
+No release version, PR, merge or publication is asserted by this proposal.
+Observation authority, consuming diagnostics, runtime interpreter inputs and
+full application/task implementation require their separate measured scope;
+this narrow allowance does not silently authorize those expansions.
+
+### Complete consumer audit and three-path correction
+
+Independent reviewer `/root/contract_inventory` audited all current owning
+source, documentation, benchmark, macro, fixture and fuzz consumers. Three
+existing coverage suites also need the new cause in their exhaustive lists:
+
+- crates/actors/tests/fifo_pool.rs
+- crates/behavior-testkit/tests/compositions.rs
+- crates/behavior-testkit/tests/terminal_outcome_sequences.rs
+
+The last is the independent terminal-outcome generator/model. Generic Err(_)
+policy consumers already accept the full cause; specific Failed fixtures and
+CreationRejection::EnvironmentFailed are not exhaustive Crash inventories.
+No other required changed path was found. The original twelve-path forecast
+missed these current coverage consumers; they cannot be omitted to fit it.
+
+Proposed correction: **67 cumulative paths**, retaining the approved 6-net
+production/120-net-test owning caps, 150 cumulative production ceiling,
+zero new public types and exactly one new public enum variant. Before this
+correction, the owning uncommitted candidate measures production +3 / -0,
+tests +51 / -2 / net 49, documentation +10 / -0 across four tracked paths,
+untracked zero. Focused debug/release each pass nine tests, fmt and strict
+all-target owning Clippy pass. Review requires cause wording to describe live
+acquisition as primary cause, without claiming physical failure chronology;
+inversion and full owner CI are still required. Further owning production
+edits and the added coverage paths await this concrete scope authorization.

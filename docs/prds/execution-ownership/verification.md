@@ -130,7 +130,7 @@ its separate complete ten-path record in the shutdown decision record.
 production: +0 / -0 / net 0
 tests:      +0 / -0 / net 0
 public API: +0 types / -0 types
-documentation: +2317 / -12 / net 2305
+documentation: +2408 / -12 / net 2396
 manifest/lock: +3 / -3 / net 0
 changed tracked and untracked paths: 13
 ```
