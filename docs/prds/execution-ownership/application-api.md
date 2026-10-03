@@ -724,3 +724,42 @@ receipt or destructor count is fabricated. Families remain unit in this evidence
 The signed normal-family ordering blocker remains, and no canonical kernel,
 public result API, native failure, recursive-origin, HTTP or full gate acceptance
 follows from this bounded comparison.
+
+## Owned executor failure and retry evidence (2026-10-03)
+
+Corrected author receipt
+7ecbeff3a71678e185136b2cb0ec589c2026d0958328583641b3a8fd974f040d
+and independent non-author review
+db3815bc9fa899653583f22efd432963530fd8c190cab393e00116fa1ae55134
+verify the ordinary caller-built and private inherent blocking comparison.
+Both use the same paired core, current-thread or explicitly two-worker Tokio,
+and borrowed work/Rc results without additional Send/static bounds. The selected
+package-default and axum feature configurations are checked separately.
+
+A compiled child lowers only its own descriptor limit. The original public
+runner encounters a real returned RunError::Runtime with EMFILE and then fails
+the original uninvoked-closure custody law in both profiles. The candidate returns
+the actual io::Error and original application, work and Builder; after releasing
+descriptors, those inputs retry successfully. Matching raw OS codes establishes
+failure provenance, not identity between the separate File and runtime errors.
+Both new returned roots explicitly retain their Wait disposition as well as
+entries/allocation and complete inherited terminal lanes. Actual typed Finish
+callbacks let pure disposition corruption fail that previously omitted field
+after cleanup joins, including the real failed-build/retry journey.
+
+Default thirteen and axum fourteen positive/restored tests pass in each profile;
+the axum parent genuinely launches the ignored child entrypoint. Original public
+failure, ignored-builder and preflight-omission inversions fail as intended in
+both profiles. The additional two disposition-corruption cases fail in both.
+Strict default/axum package Clippy and formatting pass. All 345 sources,
+44 artifacts, 165 external dependency tuples and restored child executable
+hashes authenticate; neither reviewer nor coordinator claims a fresh Rust rerun.
+
+Correction is tests +18/-4/net14. The complete executor increment over inherited
+846 tests is +309/-1/net308, with zero new production/public types/unsafe;
+aggregate conditional tests are 1,154 lines. The separate conditional launch
+handoff remains +60/-7/net53. The scheduler selector enum was removed in favor
+of ordinary configured Builder products; only the actual original-public terminal
+projection enum is new private surface. No canonical runner retention, public
+default/API selection, active-family lifetime, native exception, HTTP, recursive
+projection or full DG-API approval is claimed.
