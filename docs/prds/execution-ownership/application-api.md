@@ -11,6 +11,23 @@ interface or authorization for production edits. Owner: WP-API-DESIGN; reviewer
 must differ from this record's author. PRD requirements: XO-01–12, XO-37–39,
 XO-43–45. Evidence and dependent task contracts remain under review.
 
+## Current execution direction (2026-10-03)
+
+The user requires multicore, multithreaded execution as the ordinary actor path.
+Each standard actor is an independently scheduled Send task; its own state turns
+remain sequential. Caller-owned execution uses the caller's Tokio workers.
+Owned execution should default to Tokio's multithread scheduler, using existing
+Tokio configuration rather than a Bombay scheduler or execution-mode wrapper.
+Explicit current-thread hosting remains a required semantic comparison.
+
+The existing public runner API is deliberately being replaced. Its seven
+single-thread conveniences do not constrain the accepted replacement or require
+compatibility twins. Migrate all affected callers, examples and diagnostics to
+one accepted spelling. Preserve core actor laws, exact owned results and the
+completed runtime fixes. Exact signatures, errors, configuration, ownership,
+ordinary-Rust comparisons and independent DG-API acceptance remain required;
+this direction alone approves no untested public interface.
+
 ## Selected contract and current consumer syntax
 
 At the recorded baseline, `Cargo.lock` selects `bombay-behavior` and

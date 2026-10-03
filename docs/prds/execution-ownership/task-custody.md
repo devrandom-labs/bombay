@@ -1702,3 +1702,49 @@ identify current shutdown, compiler, EV-25/EV-30 and pure Driver witnesses that 
 future incremental overlay must preserve. Canonical production remains net133,
 zero new public types and 67 tracked/zero untracked paths. Shared root, child,
 Entity and overlapping-publication witnesses remain required.
+
+### Publication consumer correction and overlap pre-edit
+
+The first 15-path experiment passes focused Local and Engine custody tests,
+four compiled inversions with restored positives in both profiles, actual
+compile fixtures, strict Clippy and formatting. Immutable first-scope receipt
+02521099975be601be178acad70b93283ee8fa229fa1d8fcdf2880e7a86da88d
+preserves those sources and logs. Its broader workspace run is **nonpassing**:
+an inherited application controller requests cancellation before publication,
+awaits startup success, and therefore cannot release its cleanup gate. The
+experiment's own blocked process was terminated; that exit is neither a passing
+gate nor an intended assertion failure.
+
+Exact controller draft a19ecfd4adaf4022c7698e2af7742cc6c34975339b3b36252234402c7142440c,
+independent review
+036946323c08fd4756a859569542f813e9cc20b8ebc8b975634ef49ad84d59c5
+and coordinator inspection
+07dec7e7a29d6bacf2b2ea24ea3440364c4dfd1ee1f790833fa4cc49af4bd035
+justify extending this isolated experiment to one additional existing approved
+path, application_runtime.rs, for +6/-7/net-1 test lines. Production and public
+types remain unchanged. Cancel and initial Stop retain their original startup
+receiver beside the joined result; only ordinary Stop awaits startup success.
+The existing cleanup owner releases its gate before joining and obtains the
+actual startup rejection afterward. All exact outcome assertions remain.
+The 16-path stage remains within the approved 114-path task scope; no user
+surface checkpoint is crossed. Broad verification must be rerun in both profiles.
+
+The additional direct-port overlap test draft
+7b186879089bbfef4c008d82b013f33ef5ab51bae400492be91cb9f8ce85fee6
+has independent eligibility review
+9f297bb12bbaf17c646528bf70136d8f887081745ca9a1c12ef1671118ff0dc3
+and the same coordinator inspection. It adds 94 test lines in the already
+assigned local.rs. The existing synchronous publication callback sends the
+original cancellation during publication and retains the complete endpoint,
+resolved snapshot and admission result. Accepted requests cross actual next;
+rejected requests remain owned and skip that wait. Both paths retire the exact
+initialization before their final oracle. Closing the receiver at publication
+must therefore fail admission after cleanup without hanging. Run positive,
+inverted and restored cases in both profiles before final independent review.
+
+This proves a publication-first overlapping call, not the narrower interval
+between the receiver snapshot and physical lease installation. The concrete
+Address primitive exposes no guard or callback to control that interval;
+no new production hook or atomic physical-publication promise is introduced.
+Original visibility, generic suffix and shared envelope requirements remain
+distinct. No completed whole gate or current-canonical integration is claimed.

@@ -23,11 +23,12 @@ ARC-020 later renamed the private actor execution and outcome symbols; the
 snapshot names below remain historical, and `docs/module-boundaries.md` records
 the current source paths.
 
-**Status: selected for execution (2026-10-02); current contract verification
-and decision gates are the first work stage. Production implementation is gated
-by the decision records below.** This is
-not a claim that the proposed Rust API compiles or that the runtime satisfies
-the required cancellation laws today.
+**Status: active.** Selected contracts are verified; DG-SHUTDOWN and its scoped
+repair are accepted. Other decision gates remain open. Current work proves
+cancellation and exact result ownership through isolated, independently reviewed
+experiments. Their passing checks do not imply acceptance of the full public API
+or cancellation contract. Semantic blockers precede the required module
+extraction, final minimization, reviewed PR and passing-CI merge.
 
 This PRD replaces the earlier conversational criterion that EXEC must produce
 a net reduction in production lines. Model quality is the acceptance criterion:
