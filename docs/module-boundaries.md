@@ -95,7 +95,7 @@ tree:
 | `local.rs` | prepared/live Environment and external typed reference | only `ActorRef` and exact-payload `SendError` escape the private module |
 | `launch.rs` | share the concrete root/owned spawn transaction, request owner cancellation on abandoned waits, and settle actor-owned activation tasks inside the spawned incarnation task | only the `ActorSpace<P>` alias is public |
 | `observe/` | actor-independent exact publication and shared/affine waiting | private to Bombay; its ordinary tests run in Bombay, while the isolated test package compiles the same source for Loom and for fuzz/performance dependencies |
-| `interpret.rs` | statically dispatch complete named action lanes and classify concrete runtime interpretation failure | only the flat `EffectInterpretationError` sum is public; traversal and interpreters remain private |
+| `interpret.rs` | statically dispatch complete named action lanes through Behavior's owning interpretation and settlement types | traversal and interpreters remain crate-private; root `Completion` and `SettlementFailure` exports belong to Engine |
 | `observation.rs` | own the actor's pending peer and child termination facts in registration order and inject their typed Behavior events | private; the application capability product owns its single queue |
 | `time.rs` | own the actor's `TimerQueue` and adapt due entries into typed events | private; the application capability product owns its single queue |
 | `terminal.rs` | preserve exact root and child origin provenance and typed actor retirement | public `RootOrigin<Owner>`, `ChildOrigin<Owner, Role>`, `ActorRetirement`, and `ProjectTerminal`; root origins have no nonce and child origins require one |

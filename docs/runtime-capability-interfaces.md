@@ -214,12 +214,14 @@ Bombay's current exact-capability implementation has `MailAddr` select
 `ActorRef<P>` as its established endpoint, every activated reference can issue
 an opaque `EstablishedRecipient<P>`, and exact delivery uses that reference
 directly without destination `Hosts<P>` evidence or Address lookup. Logical
-delivery remains unchanged. Exact observation and cancellation also use the
-endpoint's retained Bombay-private termination observation through the existing
-actor-local fact queue; observer IDs, immediate resolution, cancellation, and
-terminal consumption share one authoritative queue state. Same-action creation
-results, child shutdown, and Entity lifecycle integration remain owned by their
-existing concrete Bombay interpreters and bindings.
+delivery remains unchanged. Exact observation uses the endpoint's retained
+Bombay-private termination observation. The current interpreter registers
+observer IDs in a shared cancellation map and spawns activation tasks;
+peer/child observations instead use the actor-owned TerminationObservations
+queue. A single authority for exact registration, cancellation, completion and
+ID reuse is the pending EXEC DG-OBSERVATION target, not the current implementation.
+Same-action creation results, child shutdown, and Entity lifecycle integration
+remain owned by their existing concrete Bombay interpreters and bindings.
 
 ## Address
 

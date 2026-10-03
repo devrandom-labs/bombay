@@ -187,8 +187,12 @@ Independent nonauthor review
 `302f67838c581fdd6c351090d2ac2d7672f87c6f41ef0d4cd7efaa7ba95eac4a`
 authenticates all 345 sources and 74 artifacts, reads complete fixtures and
 selected Address/Communication contracts, and accepts bounded research only.
-Coordinator separately authenticated those sources and artifacts; no fresh
-coordinator or reviewer Rust execution is claimed for this experiment.
+Coordinator separately authenticated those sources and artifacts, read the
+complete final patch and reran both positives in a fresh isolated target under
+pinned Nix: two tests pass in each profile. Receipt
+`414badbf688b8079dd79970df82da3b0f9c3c99e0bc0a516e2fc6ca8eba23afd`
+binds those commands/logs. No coordinator mutation rerun or reviewer Rust
+execution is claimed.
 
 Author positives and restorations pass two tests in each pinned-Nix profile;
 formatting and strict package all-target Clippy pass. Re-resolving an admitted
