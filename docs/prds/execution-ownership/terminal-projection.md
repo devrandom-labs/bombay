@@ -449,3 +449,32 @@ are inaccessible in the current launch fixture, so proposed concrete recursive
 and Vec-mismatch rows were not attempted. Nested shutdown decorators were
 explicitly rejected as recursive evidence. Producer integration, provenance,
 public shape, cleanup timing and full DG-PROJECTION remain open.
+
+## Selected recursive producer equation (2026-10-03)
+
+Read-only model ee20ac913bb86e16ccd6c4fad072c82ac18c5e5ad251fb07bb758e78571e0aa0,
+receipt fc1e075a2823cd4d1673bd5ef174d54a74c0f7600b6d5b13989673da13224d6b
+and independent non-author review
+fcea34f9133b7e4018cd77b1f000ddb7257bdd117751128a35ac52650f3919cc
+reconcile the selected producer and universal child shape. Actual EstablishChild
+knows its concrete BehaviorSettlements proof before launch, but returns Core's
+creation receipt. The universal Member requires only Behavior; no raw retirement
+selector or settlement proof passes through that contract. Current child bindings
+store already-projected Root tasks and retire them in per-occurrence creation
+order followed by the tail, without establishing global chronology.
+
+Existing concrete recursive terminal enums can inject each whole
+already-constructed ActorRetirement and typed ChildOrigin through the existing
+total ProjectTerminal constructor. Each concrete arm selects its own settlement
+product. This preserves that constructor's inputs, not the original raw task
+Result or JoinError already classified by owned_outcome. It neither deletes the
+eager projection task nor proves that failed branches retain their origins and
+all siblings join. Actual heterogeneous standard births with different settlement
+products and a grandchild must be compared before selecting this representation.
+
+Reviewer and coordinator authenticate fifteen selected source hashes; the prior
+72fcf52 evidence supplies the actual two missing settlement-bound E0277 diagnostics.
+A universal Member E0276 denial is still uncompiled. No new trait, macro, blanket
+Behavior bound, producer contract, source edit or public type is selected. Native
+failure ownership, deferred primary projection, task minimization and full
+DG-PROJECTION remain open; no fresh Rust execution is claimed.
