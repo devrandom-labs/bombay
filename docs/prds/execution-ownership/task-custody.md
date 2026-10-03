@@ -1284,3 +1284,69 @@ separately inventoried by the receipt. The newer acquisition fuzz successor
 remains separate. The three actual application-loss regressions remain unfixed;
 this accepts the lower ownership seam and its current composition, not full
 Application, family, task-failure, projection or DG-TASK acceptance.
+
+
+## Independently reviewed selected-version failure repair (2026-10-03)
+
+The isolated `bombay-live-capability-source-port-yw_7gpby` repair uses selected
+Core/Actors 0.21.0 and Communication 0.1.3. It composes the signed source-retirement
+baseline with the actual observation-conversion failure witness; startup handoff
+and the later fuzz successor are not integrated into this freeze.
+
+One acquired primary cause owns either the original owner request or the actual
+first JoinError through Driver completion. Later capability events and failures
+are joined into existing residual fields without rewriting that cause. The
+standard `(Vec<Event>, Vec<JoinError>)` settlement product replaces first-error
+return; the inner Result/unwind pipeline is deleted. Accepted unread owner
+cancellation is closed/drained before asynchronous cleanup and exhaustively
+transformed from its private zero-field value into one `Option<()>` report.
+Primary owner cancellation has no duplicate unread occurrence. Existing public
+retirement variants preserve these coexisting fields; CapabilityFailed retains
+its original failure and available actor state. AllocationRejected is unchanged.
+
+The original actual Driver observation failure now retains the actor's original
+Vec allocation and first task failure. Both actual local acquisition ports
+return that failure once; a second poll cannot reacquire it. The direct source
+port test does not fabricate an admitted Driver source operation. Joint-ready
+owner priority, late failures after owner retirement, all-task join barriers,
+original move-only events/panic values, all three residual phases and distinct
+public causes are separately exercised. Coarse publication remains before late
+capability joins; late failures do not rewrite factual completion.
+
+The six production owners and seventeen test/example consumers remain inside
+section 23's authorized paths. Increment over the source/witness baseline:
+production +313 / -59 / net 254; tests +859 / -73 / net 786; new public types zero.
+The additional source-port/naming successor changes tests only, net 110.
+Whole workspace/all-feature tests pass 423 tests across 61 summaries in each
+profile. Five production inversions compile and fail with intended exit 101 in
+both profiles: original unwind, early join return, unread omission, coarse cause
+collapse and source failure misclassified as closure. Exact source restoration,
+233 owning library tests and one pool regression pass in both profiles;
+formatting and strict workspace/all-target/all-feature Clippy pass.
+
+Receipt: `44d70fa26b14f70a7baa1b5567dc2efc50f28212e91ee3ecdc8e127a3f525846`.
+Complete patch: `b0d26d8b2d3f74e2336f864eaa211d934f4a11c8673c1a43319abfcddc36d15d`.
+Successor patch: `76c35cfee2b5e628bf1d5f4152c9b6efc434134f5f40b696d18fd566783cdf7a`.
+The prior receipt's narrative library count 231 was a typo; its authenticated
+logs report 232. The successor reports 233 and leaves the prior freeze untouched.
+
+Independent reviewer `/root` inspected the complete patches, six owners,
+seventeen consumers, both scripts, mutation/profile logs and ownership proof,
+and authenticated all 23 source hashes and 34 artifacts. Fresh independent
+pinned-Nix executions of `cargo test --locked -p bombay-rs --lib capability_failure`
+and the same command with `--release` pass five focused tests each. Review
+receipt: `1eeb575027266895d6648229ff6811948005fe76e9f60eeaa3b82e270b467836`;
+fresh log hashes: `5d646fab06e5c93393d6e4ea1ba02c086c9e9987d17385f6eb6b4aeee8d282ac`
+and `78a48b04e8fce0b8e575e7665a5c1a91c5f26876dc26393409d8d6023453c1f3`.
+This accepts the bounded model and evidence, not full DG-TASK or production
+retention. Outer actor executor-error custody, projection sibling faults,
+application receivers, notification admission and family cleanup remain required.
+
+Standard precommit rejection branches may assert empty late-failure/unread fields
+because the actual standard factory supplies fresh default bindings and empty
+activation tasks, and rejection precedes action commitment. `new_with_bindings`
+itself accepts caller-supplied bindings; it does not impose that absence on
+advanced interpreters. The sole unexposed cancellation sender is not requested
+on the completed rejection-return path and remains owned through joining.
+Dropping that startup waiter is a separate handoff seam. Generic SpawnError and
+ActorRetirement preserve nonempty fields rather than adopting a discard default.

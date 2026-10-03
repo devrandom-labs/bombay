@@ -1867,8 +1867,9 @@ cleanup or DG-TASK. Those required seams remain in scope.
 
 ## 24. Native Entity retirement witness checkpoint
 
-Status: proposed one-path test-only expansion; dependent edits await user
-approval. Section 23 authorizes the named 89-path union. The actual native
+Status: user-authorized one-path test-only expansion to 90. The user explicitly
+approved adding the existing native Entity test owner. Section 23 authorizes
+the preceding named 89-path union. The actual native
 lease owner `crates/bombay/src/entity/bombay.rs` is outside that inventory;
 its existing owning tests need private access to the original actor task and
 cancellation authority. Expanding the union to **90** permits the original
