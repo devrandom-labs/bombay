@@ -2832,3 +2832,52 @@ contracts, exact source/files/delta and both-profile original/inversion checks
 before implementation. The current section-40 isolated experiment continues
 without adding these new contracts to its source. Released owning fixes must be
 independently reviewed and selected before their dependent Bombay gate closes.
+
+## 42. Owning rejected-work and native-custody pre-edit checkpoint
+
+Canonical 8994099 is clean. Its complete measurement, archived under SHA-256
+db62bf6c3b787106ead6dcef02408b06c67c6c7ddad10d70ea4c384621d1bf60,
+is production +167/-34/net133, tests +3295/-557/net2738, documentation
++6790/-93/net6697, manifest/lock +38/-33/net5, public types +0/-0,
+67 tracked and zero untracked paths. These paper proposals change no source.
+
+The selected Actors 0.21.1 diagnostic owns an original source rejection that a
+consumer cannot take back through its public interface. The four-path proposal
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-fifo-consuming-preedit-qa1pr961
+freezes one consuming method on FifoDiagnostic and one private RoleName Arc
+transfer. Its proposed production is +39/-1/net38, tests +357/-3/net354,
+public types +0/-0. All four existing owner paths are in the approved 129-path
+manifest. The existing diagnostic, worker attempt, stopped-child report and
+pool recovery policy remain the owners; no wrapper, new error, actor policy,
+trait or runtime service is proposed. This is a net-positive capability addition.
+
+Receipt 1e086e84c62a7cf7a3d76de2633b21c10b39270ebb937887e24d8fcbb1ba7ba2
+and patch a69e8dc3db2e265b0cf59cb8a23da55840594138d6ecde563b6ae520043a351b
+bind the complete original/proposed texts. The coordinator authenticated all
+31 artifacts, 15 selected git5ca sources, ten registry equivalents and four
+original files. The proposed smallest witness follows the actual pure FIFO
+creation, initialization, activation and preparation trace before consuming the
+diagnostic. It observes all nine send lanes, the original shared role, actual
+worker-attempt token, whole stopped-child report and original move-only reason.
+A genuine other-cause witness must receive the original diagnostic unchanged.
+The existing restoration law makes returned_source None in this successful
+rejection path; a fabricated Some source is not acceptance evidence.
+
+Before source execution, independent exact-source review and the selected
+Behavior aggregate-drift checkpoint must pass. Then preserve missing-method
+compiler failure as static interface-gap evidence, run both-profile focused
+tests and intended compiled inversions with restored positives, and complete
+owning formatting, strict lints, nextest and Nix gates. No test or gate has run
+on this paper patch. Its full command plan, ownership comparison, scope and
+remaining runtime obligations are in the frozen model; EV-24 and DG-WORK
+remain open. Future owning implementation uses an exact clean git5ca archive,
+never the older local Behavior checkout.
+
+The separate native-payload model retains Rust's existing panic box in four
+existing cause branches. Its +29/-11/net18 four-file lower component and no
+new nominal types are coherent, but incomplete: the actual child-creation
+consumer still needs a genuine final owner for both its returned child and the
+native payload, and equality/pattern consumers remain unmigrated. The
+[task record](execution-ownership/task-custody.md#native-initialization-lower-model-review)
+records authenticated coordinator and independent review. No partial native
+implementation, full gate acceptance or canonical retention follows.

@@ -1845,3 +1845,40 @@ contract. First compare preserving the already caught payload, which may remove
 that secondary failure before any unavailable-child receipt is needed. Actual
 original pre-Start failure remains required if an owning receipt amendment is
 proposed. A conditional source gap cannot license that amendment by itself.
+
+### Native initialization lower-model review
+
+The frozen paper model at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-native-initialization-ownership-text-k4w07jig
+has receipt 761a51bb2ae1dffab3ba39c7ae71f49ae83044bf46ab7568db8a1decffe9719a,
+combined patch 1f78ec19325f8e1318ea0d98104903d7ff8c4a99e95ca49ad8ccfeb229f9a75c
+and authority clarification
+d3e8787acbb22a240a9e736383504ef3a04a3db645fac8668d54569539cfaa08.
+The coordinator authenticated 15 artifacts, four immutable current-39 base
+sources, three standard-library owner artifacts and 18 constructor/equality
+consumer rows, and reconstructed the combined four-file diff byte-for-byte.
+The individual actor_outcome patch is preserved as an intermediate import-order
+draft; the combined patch and final texts are authoritative.
+
+Existing DriverError, ActorExecutionOutcome, SpawnError and ActorRetirement
+initialization-panic branches pass the original Rust-owned box through the
+existing retirement waits. No extra catch, task, nominal type, alias, payload
+inspection, dynamic routing or Behavior-state owner is proposed. Removing
+DriverError/ActorExecutionOutcome equality derives is a real breaking surface:
+an arbitrary native payload has no truthful equality law. The complete consumer
+scan identifies review sites; it does not claim those sites are migrated.
+
+The lower component is production +29/-11/net18 in four approved existing
+files, public types +0/-0. Independent review
+78f0b4e38785cac44d2d17c0c69cfdc076a75f8eb8ec38875a0dabb8bf8568e5 and
+coordinator /tmp/bombay-native-lower-root-model-review.json,
+SHA-256 896517f31989701ec71f2e6d4aac63311d5df4423320685bb894a10e64f5d58d,
+agree only that this lower ownership comparison is coherent. Execution and
+retention remain blocked on the actual child consumer: its existing Core report
+returns the original Child, while the runtime must separately retain the native
+payload and distinguish it from an outer task failure through all remaining
+joins. Unit rejected bindings and Vec<Root> do not yet express that complete
+result. No field-erasing pattern, fabricated lifecycle fact or partial root-only
+fix is accepted. Full pattern/equality/constructor/docs migrations and the
+original6096 omission witness in both profiles remain required. Source edits
+and Rust commands for this model are zero; DG-TASK/DG-PROJECTION remain open.
