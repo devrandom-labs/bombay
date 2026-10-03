@@ -680,3 +680,62 @@ probe. Grant release, cancellation acknowledgement/removal, owning feature-suite
 migration, real Bombay consumers, branch/exhaustion/race coverage and full
 DG-OBSERVATION remain open. The selected completed-relationship law above is
 resolved; its implementation is still required.
+
+### Typed terminal relationship comparison (2026-10-03)
+
+The isolated `bombay-observation-terminal-receipts-tqxrij1w` successor freezes
+receipt SHA-256 `6581478c2305ff9158a2b04ed22b0f09cb2cc3fbd406e4e72c807315f03feccc`,
+complete patch `db86b71dd17bcdc97b4740998f3ab7581dcdf937fa24d878c0b1ca8b82310bc4`
+and successor patch `012e68c7d42ae7d65e759c1a4305354b98863d3948a446a2e29d33645ce46be4`.
+Four owning research paths measure +283 / -15 / net 268, with 270 external
+consumer lines: 538 net research lines and three exported probe types.
+Canonical production/public surface remains unchanged.
+
+`Started` derives its ID from the affine authority; the independently
+settable numeric header is removed. `Stopped` owns the protocol-bound,
+cloneable, nonauthorizing relationship plus the original outcome and time.
+Manual relationship Clone needs no protocol Clone bound. Authority cannot
+be cloned or moved twice. The candidate preserves whole rejected requests
+and transfers permission once into cancellation. Two tests pass in each
+profile; nine static denials in each profile prove wrong-protocol receipts,
+private rebranding, duplicate permission use and the obsolete header cannot
+compile. The original 487-line representation permits the identical clone
+and header callers in both profiles: this is a compiler comparison, not
+a runtime defect regression. Feature-library/consumer strict lint and
+formatting pass.
+
+The non-author contract reviewer read the complete protocol/consumer changes
+and authenticated all 115 artifact hashes and 168 unchanged source files.
+The bounded protocol comparison is independently signed. Monitor and export
+consumers remain byte-identical to the earlier comparison; their correlated
+optional fields, terminal races, actual cancellation discharge, member
+removal and heterogeneous storage remain unresolved. No full observation
+gate is accepted. Final minimization must remove or justify the authority's
+extra protocol marker: its relationship already carries that invariant brand.
+
+### Actual cancellation-rejection witness (2026-10-03)
+
+The isolated `bombay-observation-cancel-rejection-5qpc5jsw` original witness
+freezes receipt `698c9bb9a79237ae879d1a443f96a477e5d957170519185334a56e78ce25bb5c`,
+patch `9e660cbb58b57793f1711b816bbe617664a10d9b2d257e40127c3f6362c6b9e4`
+and external source `1b5575622b01041029b5f380f9413794c672347b6a511833d40f91ac99274305`.
+It adds one external 200-line pure test; owning production/public types and
+canonical delta remain zero. All 172 Actors Rust files and the owning manifest
+match selected registry 0.20.0 at 804b2bf; external dependency graphs preserve
+all 58/19 locked tuples. This is explicitly historical original evidence;
+current 0.21.0 verification remains necessary.
+
+Complete initialization Actions transfer the exact endpoint, followed by
+Started, complete cancellation-NotObserved rejection Actions and an exact
+Stopped(Panicked, notification time). Original Monitor enters Rejected and
+returns the Stopped report unchanged in UnexpectedReport without invoking
+the selected required terminal reaction. Both profiles compile and fail that
+reaction oracle (101); strict lint and formatting pass. This proves suppressed
+reaction and phase misclassification under the selected policy, not payload
+erasure: the exact terminal report remains owned in the error. The initial
+invalid Stop pattern is a compiler veto, excluded from regression evidence.
+
+The independent non-author reviewer read the whole pure test and authenticated
+21 artifacts, four manifest/lock records and all selected source files. The
+bounded original witness is signed; it does not prove actual Cancel emission,
+runtime races, a repaired positive or full observation acceptance.

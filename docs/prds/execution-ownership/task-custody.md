@@ -1035,3 +1035,45 @@ only after its task finishes. Caller callback/work/output retain their
 existing nonstatic bounds and separate immediate-discharge law. No extra
 result cell, cloned cancellation authority or global retention owner is
 justified. This is a proposed composition, not a verified repair.
+
+### Current-lock source correction successor (2026-10-03)
+
+The isolated `bombay-source-retirement-current-8wipthay` successor starts from
+`3f51c53536d6d4825526e35e0448caed75d824a5`, preserving canonical work.
+Selected root manifest/lock hashes remain
+`2c5f9bfebcb5cf6db87874995debbbcceac14dbce6886485978b4665acc56c76` /
+`1ca7df546ffd2db7406810a32d745c1fe70b891189c42b8a020daa242c6710b4`.
+The current frozen patch is
+`296d2b10fe55d3ce319aeeb94ad7863279ffa0201a31d0721d08bbb0c43e1afe`;
+receipt `94d55e011b5df52123690d890ad127e177e3c57b0d7ee5c0f5f3183af1b48058`.
+It removes prohibited test vocabulary and redundant nested async expressions
+from advanced consumers, fixes the fuzz crate attribute order, formats excluded
+fixtures and updates only the two diagnostic line numbers. The separate fuzz
+lock changes local Engine 0.1.0 to its actual 0.2.1 owning version. Nineteen
+actual changed paths are frozen; all-path patch +1200 / -292 / net 908 includes
+tests and that one-line lock replacement. Independent hunk classification
+measures production +241 / -177 / net 64; tests/benchmarks/fixtures/fuzz
++958 / -114 / net 844; lock +1 / -1 / net 0; public types +0 / -0.
+Complete archive enumeration finds 19 changed tracked paths, no missing paths,
+and 45 untracked evidence files (logs, patches and records), with no untracked
+Rust or manifests. Disposable build outputs are excluded explicitly. This
+complete isolated delta is distinct from canonical Bombay's working-tree delta.
+
+All-feature workspace verification passes 418 tests and 61 result summaries
+in each profile. Strict workspace/all-target Clippy, workspace formatting and
+explicit excluded-fixture/fuzz formatting pass. Current-lock inversions restore
+actual omission of owner acquisition, recurring-source cancellation starvation,
+Driver request-to-exhaustion collapse and public projection misclassification.
+All four cohorts compile and fail the intended law in both profiles (eight
+exit-101 runs); exact source hashes are restored afterward. The inversion
+receipt is `a9cb6ef7964d47ea622a977ec23585d85b527f1ff6f60df4efa1e3555527fedd`.
+All three focused source filters pass after restoration in both profiles.
+The restored separate locked fuzz check passes; an earlier check overlapped
+inversion editing and is excluded. Actual nightly fuzz build and a 10,000-run causal_turns campaign pass through
+the pinned fuzz shell. They are bounded generated-sequence evidence, not
+an exhaustive proof. The independent reviewer signs this precise source-only
+successor after authenticating the three saved mutation patches and matching
+each prior-source hunk exactly once. The recurring-source witness observes
+16 progress steps with a timed escape; it does not prove an unbounded fairness
+or joining deadline. The review does
+not accept live capability failure, application result ownership or full DG-TASK.

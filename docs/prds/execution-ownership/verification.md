@@ -119,9 +119,10 @@ source freeze and independent review are required before retention.
 
 ## Complete change measurement
 
-This stage updates project records and selects published Communication 0.1.3.
-Production Rust and tests remain unchanged; manifest/lock changes measure
-+3 / -3 / net 0. Baseline has no inherited tracked or untracked delta.
+This stage updates project records and selects published Communication 0.1.3
+and Behavior Core/Actors 0.21.0. Production Rust remains unchanged. Four test
+bindings now identify the verified selected version; no test law changes.
+The separate fuzz graph selects the same Core and actual local Engine version. Baseline has no inherited tracked or untracked delta.
 The complete canonical Bombay delta follows; owning repository delivery has
 its separate complete ten-path record in the shutdown decision record.
 
@@ -129,9 +130,9 @@ its separate complete ten-path record in the shutdown decision record.
 
 ```text
 production: +0 / -0 / net 0
-tests:      +0 / -0 / net 0
+tests:      +4 / -4 / net 0
 public API: +0 types / -0 types
-documentation: +2709 / -12 / net 2697
-manifest/lock: +3 / -3 / net 0
-changed tracked and untracked paths: 13
+documentation: +2975 / -60 / net 2915
+manifest/lock: +13 / -13 / net 0
+changed tracked and untracked paths: 23
 ```

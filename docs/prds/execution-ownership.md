@@ -1599,22 +1599,39 @@ and aggregate Mutation Gate. Earlier label-triggered CI was cancelled by the
 replacement run and is excluded. Review threads are empty; merge state was
 CLEAN. PR 78 merged at `705d03754b0640f5565b10aa37bc2b22462045bf`
 on 2026-10-03, and its main CI run 37085358333 passes.
-Generated [release PR 79](https://github.com/devrandom-labs/bombay-behavior/pull/79)
-selects Core/Actors 0.21.0 and correctly names the breaking addition. Its
-initial head `4e56cab332416813fcfbb72d4eaf39b564c4488f` still needs
-the three separate workspace locks, README installation versions and coupled
-Core changelog corrected within the authorized metadata paths. The release
-PR also needs its explicit semver-breaking label. Exact-head skill preflight,
-independent review and all passing CI remain required before release merge.
-No publication or Bombay dependency selection is claimed. This does not implement
+[Release PR 79](https://github.com/devrandom-labs/bombay-behavior/pull/79)
+selects Core/Actors 0.21.0. Its corrected exact head
+`81b70a40b5a1aad289c7e18df225c3ef7fc0dec2` reconciles all four workspace
+locks, README installation versions and both coupled changelogs. The bundled
+release-skill preflight passes (log SHA-256
+`6a45b6a36472a7ca9aecec3f99f65ca800360cb65c771d68bd00724d511ec754`);
+all ten local Darwin Nix checks and all 14 exact-head remote checks pass.
+The eight-path metadata patch is frozen at SHA-256
+`477668fe7a39f3ab5da821a77e38034bdd4ae3c7ec2ae5262a98bc6787f427ac`,
+with receipt `39fd48f41f2296e7d05bb914f7f9340e82cb15a067f535b10eecd5270240c5f6`.
+Its independent non-author
+[review](https://github.com/devrandom-labs/bombay-behavior/pull/79#pullrequestreview-5398414526)
+uses the disclosed shared account, not a separate GitHub principal approval.
+With no unresolved threads and CLEAN merge state, the authorized release PR
+merged at `5f9185c9a66bdb80216b63f89a5c42fa02becaa0` on 2026-10-03.
+Main CI run 37087541543 passes. Verified-commit Release run 37087999908
+passes. Both registry archives and tags identify the same reviewed merge.
+Core 0.21.0 checksum is
+`5b03af3448d25805c27bd37517479f632160fd81932ce60d6a73be22cac5d0a1`;
+Actors 0.21.0 checksum is
+`16c7a7d39ab3c10bb074f3e23330df39247d2284c89de2c0d2e107d2a59e7287`.
+Published source comparison and fresh owning verification precede Bombay
+selection; that selection is not yet claimed.
+This does not implement
 Bombay's failure acquisition, actor retirement or full result custody and does
 not close DG-TASK, feature acceptance or delivery.
 
 ## 22. Fuzz prerequisites and early actor ownership checkpoint (2026-10-03)
 
-Status: proposed; dependent production/configuration edits remain blocked
-pending explicit user authorization. The current allowance is 67 cumulative
-paths, 150 net production lines and zero new public types. Other full EXEC
+Status: user explicitly authorized the bounded expansion. The allowance is
+69 cumulative paths, 165 net production lines and zero new public types.
+The prior 67-path/150-line and initial 69-path/161-line limits are superseded
+only for this bounded stage. Other full EXEC
 gates and later scope remain required; this stage does not defer or accept them.
 
 Complete retained/candidate delivery delta across canonical Bombay and the
@@ -1623,8 +1640,8 @@ tests/benchmarks +558 / -9 / net 549; public types +0 / -0, one existing
 public enum variant added; 38 tracked repository-qualified paths, zero
 untracked files. Canonical Bombay's complete documentation/manifest delta is
 in the verification footer. Communication delivery is merged/published;
-Behavior's source PR is merged, its eight-path release metadata is currently
-review/CI work. Isolated research artifacts have separate recorded measurements
+Behavior's source and eight-path release metadata PRs are merged; registry
+publication is verified, with Bombay selection pending. Isolated research artifacts have separate recorded measurements
 and are not claimed as retained production.
 
 The already-approved source correction forecasts 64 net production lines,
@@ -1664,17 +1681,108 @@ Reuse the current actor task, Environment/Driver, startup notice, cancellation
 request and Tokio JoinHandle; introduce no grant clone, service, result cell,
 public type or alternate actor loop.
 
-Bounded first comparison: launch.rs production forecast +62 / -18 / net 44;
-application_runtime.rs test-only, at most 180 additional comparison test lines.
+Bounded first comparison: launch.rs measured direct-argument proposal +55 / -7 / net 48;
+application_runtime.rs test-only, at most 280 additional comparison test lines.
+The user explicitly authorized this expansion from 180 after the formatted
+complete draft measured 236 lines and the remaining truthful custody checks
+forecast at most 280; production/files/public type limits are unchanged.
 This proves the owning handoff and actual static join composition, rather than
 claiming complete LaunchSystem/public-runner/Entity implementation. All required
 scope stays pending until implemented and accepted. The full internal
 LaunchSystem integration separately forecasts +124 / -34 / net 90 and requires
 its own measured stage before implementation. No 80-line full-fix claim is made.
 
-Proposed cumulative ceiling for the bounded handoff stage: **161 net production
-lines** (117 approved forecast + 44), still zero new public types and at most
+Proposed cumulative ceiling for the bounded handoff stage: **165 net production
+lines** (117 approved forecast + 48), still zero new public types and at most
 69 paths. Preserve ARC-011/012 regressions, establish exact original-fail /
 repair-pass and distinguishing inversions in both profiles, verify all owning
 consumers, and obtain independent review before retaining the representation.
 Any excess or new semantic/public surface requires another concrete checkpoint.
+
+The initial 44-line handoff forecast did not survive pinned-rustfmt measurement:
+the final direct existing-argument form measures +55 / -7 / net 48. A tuple
+form measures +50 / -7 / net 43 but makes input names less explicit without
+proving another ownership benefit. Retain direct named inputs. The user
+explicitly authorized the four-line expansion to 165 net production lines,
+with 69 cumulative paths and zero new public types unchanged. The isolated
+bounded handoff comparison may proceed within that allowance; full application
+integration remains unaccepted.
+
+### Published Behavior dependency selection pre-edit record
+
+Verified Release run 37087999908 succeeds at the reviewed release merge.
+Both registry archives pass checksum comparison and all 200 published Rust
+files (Core 28, Actors 172) exactly match that commit. Both annotated tags
+resolve to it. Its complete AGENTS.md was reread; SHA-256 remains
+`2b7a9195b27f073fec18426da43e9840f8ef668f333b9ad55934f520a37ae226`.
+The source/owning tests and complete seven-path cause change are verified in
+section 21; release changes add metadata only. Existing primitive selections
+and patches remain unchanged. Actors owns the distinct public stop reason;
+Bombay still owns detection, retirement and typed task failures.
+
+Before the canonical edit: root Cargo.toml will require Core/Actors 0.21.0;
+Cargo.lock will select only those verified package versions/checksums. Expected
+manifest/lock +6 / -6 / net 0, production/test/public types zero. Reuse all
+existing owners; no runtime or API change is included. Update the already
+authorized capability contract record to the actual selected artifacts,
+including its stale Communication 0.1.2 entry. The separate source-candidate
+fuzz graph selects the same verified Core in its separately authorized paths.
+Current root manifest/lock hashes before this edit are recorded above.
+Audit every current version consumer; retain explicitly dated earlier evidence
+as history. Verify the resulting actual locked graphs and all-feature workspace
+tests, formatting and strict lint through pinned Nix. An unexpected dependency
+or new consumer contract blocks retention rather than being inferred.
+
+The selected-version consumer audit also finds current Driver law/template
+manifests and their four test assertions still pinned to 0.20.0. Their already
+authorized files require only revision/version binding replacement: no new
+Driver law or template policy. The production delta remains zero; test binding
+changes are +4 / -4 / net 0. Fresh current-revision Driver positive, boundary
+and mutation evidence must be run before retaining the updated evidence IDs.
+The initial 0.21 workspace build failed for disk exhaustion and is excluded;
+only a completed rerun can count. Earlier dated acceptance remains historical.
+
+### User revision of line-count checkpoints (2026-10-03)
+
+The user explicitly instructed: "just go on! lines are lines" after the
+additional test-line checkpoint. This supersedes the requirement to request
+further permission solely for production or test line-count increases.
+The previous 165/280 bounds remain stage estimates; measure actual additions,
+deletions and scope at every checkpoint and keep stages independently
+reviewable. File/public-type limits, verified ownership, pre-edit law/model
+provenance, independent design review and every acceptance/delivery gate remain
+required. This changes permission handling, not semantic scope or correctness.
+
+Canonical published selection verification passes all-feature workspace
+414 tests/61 result summaries in each profile, strict all-target Clippy and
+formatting. Fresh Driver evidence executes every canonical law's positive,
+terminal/phase cases and mutations against the actual selected revision;
+receipt SHA-256 `adebd3c77a3214fc42bccbf302d6e0bc3ff77e8f45569ac99d3bbbbeb8da370b`.
+The initial disk-exhausted build is excluded. This accepts dependency binding,
+not the unimplemented EXEC runtime laws. Before updating the separately
+authorized canonical fuzz manifest/lock, preserve their hashes below; change
+only Core 0.20.0 to 0.21.0 and local Engine 0.1.0 to actual 0.2.1. These
+configuration changes add no production code, test code or public types.
+- crates/bombay-engine/fuzz/Cargo.toml: `9b5246f90fc0123463fadeba70d8dcb052ffba8617dcc4264c8fcb278761d7cb`
+- crates/bombay-engine/fuzz/Cargo.lock: `50735c06931635877c64ccd69622eef8f1bb9191bd3bd4833c7d0430aa9d130e`
+
+The non-author contract reviewer signs the published dependency selection's
+13-path patch `6d07d585c7c88a1f7e3840ba6c2e61bc139e0e269eaeb5844678252edc882f75`
+and receipt `98faab71b286398b2b804a9b6ea9e3706224b66299f03263792f1977c960a883`.
+It authenticates all files/logs, independently compares all 200 published
+Rust files and peels both GitHub tags. Root lock changes only Core/Actors;
+fuzz lock changes only Core and local Engine. The fresh Driver run proves
+16 positive/terminal cases and eight killed mutations; full run SHA-256
+`3cd7634f2930d3a80d56e93b01a388ec17aee71acca96f5842d2eed3b1ca1469`.
+Appending that already-reviewed run hash produces receipt
+`3c4a034ce5da9c159ba48598d9c1e74059d141ded435bdfe78174adeb065e9de`.
+The corrected capability document explicitly distinguishes historical 0.1.2
+admission failure from selected 0.1.3 repair. The backlog no longer lists
+the released stop-reason vocabulary as an unresolved external prerequisite.
+Full EXEC runtime and observation ownership remain blocked on their gates.
+
+Current selected artifact hashes after verification:
+- Cargo.toml: `a570253873f7b3ba12838719ebdcbf3ad7e217d6cecfe75bb16dc8a9f2664cb4`
+- Cargo.lock: `747f92160972f773c68d624517c456765f6c793bd21fb4faf4f4ec131420e8b1`
+- crates/bombay-engine/fuzz/Cargo.toml: `1b63701694923a4c6410e7b11d34d932c2a3de9c08077dbfa89486273286bf54`
+- crates/bombay-engine/fuzz/Cargo.lock: `8f0fad594c8bd6837adf143c012735fe45ebf4d1ca6b185135fab59f70ea42dc`
