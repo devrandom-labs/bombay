@@ -2881,3 +2881,49 @@ native payload, and equality/pattern consumers remain unmigrated. The
 [task record](execution-ownership/task-custody.md#native-initialization-lower-model-review)
 records authenticated coordinator and independent review. No partial native
 implementation, full gate acceptance or canonical retention follows.
+
+## 43. Reviewed rejected-work experiment assignment
+
+The section-42 paper proposal is superseded for execution by the exact four
+texts at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-fifo-guidance-preedit-5mcx840o.
+Receipt a7040edabff7da9844ee0fe1961c051b4847be8d7bd412c71776df03e43ab2e2
+and patch 93297220b2f67cad2a1f43d0114808211e30cfdf256957dababf8d54271df8ba
+remove four speculative lint-expectation lines and update existing diagnostic
+guidance. Proposed production is +39/-3/net36, tests +357/-3/net354,
+public types +0/-0 and one new consuming method; paths remain the same four
+approved owner files. Earlier forecasts and paper patches remain preserved.
+The corrected aggregate record proves unchanged five control states, 27 outer
+transition arms and ten diagnostic causes. Generic arguments and test enums
+are excluded from production-state counts; the 36-sum inventory is scoped to
+five named production files, not the entire imported actor catalogue.
+
+Independent review da6dbcd34a63190674781728f58d2cc56b122fe74e838d6159952b585479ed5d
+and coordinator review 4393ec3b706b6f8509814378cf12290a5ad44afc92525369d7766bbae2548922
+authenticate all 59 final artifacts and the complete source comparison. They
+authorize only the bounded owning experiment, not EV-24/DG-WORK acceptance.
+The section-11.1 assignment is frozen under SHA-256
+2b461be9c10d701b2d1e1575f1c0aaa1c480d388ba14ab0c2f03dc9ad7ad0ff7
+in /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-fifo-source-recovery-pqnw9sy8/records/assignment.json.
+The coordinator alone writes its four isolated files; canonical Rust, the
+older owning checkout and all other 802 archived inputs remain untouched.
+
+The clean selected git5ca archive contains 806 files, manifest
+665bf715839f825b6899a3e4eb265097f499c2a0ccd9707f223ba6092e33bf60,
+selected AGENTS 2b7a9195b27f073fec18426da43e9840f8ef668f333b9ad55934f520a37ae226
+and Cargo.lock d9ad5f7cf92f7eba1324220a8b4ad23ce19acff867c8f19a27f1d138f4010686.
+First apply only the two regression consumers and record original E0599 in
+both profiles. Then apply the two production texts, run exact focused positives
+and meaningful inversions/restored positives in both profiles, and run owning
+strict/fmt/nextest/Nix gates. Static missing-method or Clone-bound denials are
+compiler evidence, never runtime failures; zero selected tests are not a pass.
+
+Every Rust command explicitly enters Bombay's pinned shell from that owning
+archive, with incremental compilation disabled, one build job and the fresh
+exclusive /tmp/bombay-fifo-source-recovery-target. Record actual Rust/Cargo
+versions and command results. The owning Nix gate truthfully uses its own
+selected Rust 1.95 derivations, separately from the outer Rust 1.99 shell;
+no toolchain configuration change is proposed. An unexpected ownership,
+signature, bound, wrapper, policy or file requirement reopens the model.
+Current combined EXEC Nix verification has resource priority; this experiment's
+Cargo work waits until it finishes. No Rust result or production retention is
+claimed by this assignment.
