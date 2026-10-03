@@ -132,7 +132,7 @@ its separate complete ten-path record in the shutdown decision record.
 ```text
 production: +150 / -18 / net 132
 tests: +1181 / -536 / net 645
-documentation: +4940 / -81 / net 4859
+documentation: +4963 / -81 / net 4882
 manifest/lock: +36 / -31 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
@@ -183,3 +183,26 @@ Actual execution adds `--option eval-cache false` to Nix and uses a dedicated
 Cargo target with incremental compilation disabled. Transfer receipt
 `26b774b6525083beab4e9726cbe592d8f11db4a68dd31f3361052770784e3df7` binds the actual commands' logs and final source.
 This retains the test repair only. Complete EXEC gates remain open.
+
+## Current module inventory reconciliation (2026-10-03)
+
+Read-only nonauthor source review
+`5e3d12baa770f7a77a7b9c117b3ec7971d911af623fc01e59043568f5606c0f5`
+binds canonical 458440a and the selected published 0.21.1/0.13.1 release.
+Its lexical index `3c5cef1bf246c7414b29f993179bf11d73a96f0a94a3900f5281ef3f9b4204e7`
+covers 24 source files, 706 production declarations/methods, 209 impl groups
+and 262 product-member rows; generated token templates are tagged separately.
+Exports, macros, consumer references and tests have separate inventories.
+These counts describe an inspection aid, not a compiler-resolved visibility
+graph or accepted destination map. The complete source remains authoritative.
+
+Coordinator authenticated all 43 bound artifacts and confirmed the 24 Rust
+files remain byte-identical. Factual corrections to the approved current module
+and capability guides are retained: installed-capability exports, absent
+interpretation error, current exact-observation map/tasks versus peer/child
+queue, and independent registrations rather than mandatory tasks per consumer.
+No execution semantics changed. Replacement of the historical module decision
+record stays external because that path is outside the approved 114 allowance.
+Semantic gates, exact destinations, compiler visibility, differential extraction
+and independent gate acceptance remain open. No Rust command, file move or
+new public type is claimed by this inventory work.
