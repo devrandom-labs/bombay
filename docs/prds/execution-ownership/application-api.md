@@ -688,3 +688,39 @@ authorized. Conditional inherited production remains +60/-7/net53 and inherited
 tests remain 846 lines; new comparison source is cfg-only in the approved owning
 file. Family ordering, native exceptions, HTTP and the final public error and
 migration contracts remain open.
+
+## Receiver retry and surrender comparison (2026-10-03)
+
+Corrected author receipt
+0614a4dd00d6679fc9d1ca8234cd1c4d12d1efc8ec4d86c27ad47e45a8d75ad8
+and independent non-author review
+04e281673898aa99d6cb0d8fbe4d942023d06c15eb54e1c97444075bd2bc57b7
+accept bounded receiver evidence. The same pinned result future survives dropping
+a borrowed await. Completed borrowed work and its original Vec allocation return
+on retry. Dropping the final owning receiver releases an available work result
+once; surviving pending execution work continues, and its later undeliverable
+result releases once at the closed publisher. Root completion alone does not
+cancel work. Completing or surrendering that work retains the same normally
+completed root rather than rewriting it as owner-cancelled.
+
+The initial review required checking the returned actor's disposition field.
+The corrected three received branches now observe its actual Wait variant;
+the inherited oracle covers entries, allocation and complete remaining lanes.
+Selected actor macros add no hidden instance state; StopOnShutdown owns only
+its inner actor. Allocation identity is not an actor-origin proof. A fourth
+counterfactual corrupts disposition during the actual pure Finish transition
+and fails the new assertion after work release and cleanup join in both profiles.
+All four counterfactuals compile and fail their intended runtime assertions;
+fifteen restored positives pass in each profile. Strict package Clippy and
+formatting pass. These are research counterfactuals, not original public receiver
+bugs: the current public runner has no result receiver.
+
+Both reviewer and coordinator authenticate 345 sources and 39 artifacts; neither
+claims a fresh Rust rerun. The receiver increment is tests +271/-1/net270,
+production zero and public types zero. Aggregate conditional tests are 1,116
+lines; inherited launch production remains +60/-7/net53. After receiver surrender,
+Normal termination and execution joining are observed; no unavailable full root
+receipt or destructor count is fabricated. Families remain unit in this evidence.
+The signed normal-family ordering blocker remains, and no canonical kernel,
+public result API, native failure, recursive-origin, HTTP or full gate acceptance
+follows from this bounded comparison.
