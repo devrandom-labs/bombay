@@ -295,3 +295,40 @@ Catalog Driver, standard establish_child integration, recursive descendant
 model, retained public result representation or full DG-PROJECTION acceptance.
 Values destroyed inside the faulty caller projection cannot be recovered.
 Joining leaf results alone does not satisfy the required recursive scope.
+
+## Actual established-binding extraction review (2026-10-03)
+
+The authorized section 25 successor, bombay-established-binding-results-yaujv51z,
+puts both original ProjectedTasks inside the actual ChildBindings before either
+comparison. A test-only ordinary function in that owner consumes creation order
+and each original ID, kind, endpoint, control and task. The launch owner returns
+each original Result of projected terminal or JoinError; the caller joins both
+occurrences into its closed typed product. No production prefix changes.
+
+Receipt `ceda20e758abb0610260f225bc3b0a6a49ddd2e15dae53aa09217c32ac58b378`;
+incremental patch
+`658e82e0efc3c623ca09b760b1b735df1fdbbf98add23b928ede8421fec3cbf9`.
+Two existing test paths: +111 / -38 / net 73; production/public types zero.
+The original formatter/early-return regression fails in both profiles. The
+ordinary comparison and restored positives pass; all 230 preservation tests,
+formatting and strict Clippy pass in both applicable profiles on pinned 1.96.
+Three compiled inversions fail in both profiles: original first-error discharge,
+creation-kind substitution and original declared-origin substitution.
+
+Independent reviewer /root authenticated 27 source hashes and 37 artifacts,
+read the full fixture, incremental patch, owner, scripts and failure logs, and
+checked both production prefixes. Fresh reviewer executions independently
+reproduce original exit 101 and positive exit 0 in debug and optimized builds.
+Review receipt
+`1a11bd3c215cd128e580986c288ae0679c0a7f83815bcabbea13563204c36b45`.
+This accepts bounded evidence only; DG-PROJECTION and retained production remain
+open. Original origins are still separately caller-owned constructor inputs
+(109/113), distinct from creation identities (1/2). They are not yet stored by
+production bindings. Full control/endpoint identity retention relies on original
+owned-field movement; only endpoint addresses have an independent observable
+comparison. Results are post-projection and cannot recover values destroyed
+inside a faulty projector. Actual bindings may also hold Rejected replay markers;
+this two-established-child fixture does not authorize discarding those markers
+without their owning policy or duplicating their independently owned payloads.
+Standard birth integration, live parent execution, caller disappearance and
+recursive raw actor results remain required.

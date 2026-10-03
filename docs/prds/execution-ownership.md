@@ -2013,7 +2013,9 @@ abort and later compiled strict-lint failure remain separate evidence.
 
 ## 28. Remaining Rust 1.99 lint compatibility checkpoint
 
-Status: concrete proposed expansion; not authorized or applied. The strict
+Status: user-authorized expansion to 106 paths and the narrow child-binding
+production annotation, following explicit approval of this exact proposal.
+The patch remains isolated until verified and independently reviewed. The strict
 all-target/all-feature Clippy discovery identifies four additional existing
 paths, raising the approved cumulative union from 102 to 106:
 
@@ -2060,3 +2062,71 @@ the additional sites without lint suppression. After authorization, require
 strict Clippy, formatting and affected checks, unchanged deferred-execution
 semantics, a 1.96 compatibility build for the renamed atomic calls, complete
 tracked/untracked measurement and independent review of the final source.
+
+## 29. Complete compiler consumer and owning macro checkpoint
+
+Status: concrete proposed expansion; not authorized or applied. After section 28,
+all-feature workspace tests pass again in debug and optimized builds and strict
+optimized library Clippy passes. Full all-target lint discovery now reaches
+application consumers and finds additional sites. Preserve this distinction:
+passing library checks does not mean the compiler upgrade is accepted.
+
+Four additional existing Bombay paths require the same cold-operation lint
+expectations or observational assertion spelling:
+
+- crates/bombay/tests/entity_runtime.rs
+- crates/bombay/tests/entity_family.rs
+- crates/bombay/tests/template_application.rs
+- examples/axum/src/http.rs
+
+Three additional existing owning Behavior paths are required for the generator
+correction and reviewed published release:
+
+- crates/behavior-macros/src/lib.rs
+- crates/behavior-macros/Cargo.toml
+- crates/behavior-macros/CHANGELOG.md
+
+Proposed union: 106 to 113; zero added/removed public types and no new source
+files. All other measured consumers and release locks/manifests are already in
+the approved union. Release-plz selects the actual package/version changes;
+do not invent the final release diff or treat an unpublished patch as the
+selected contract. No file extraction is included in this compatibility stage.
+
+Measured concrete Bombay proposal: production +24 / -4 / net 20;
+tests +125 / -26 / net 99 across fifteen existing paths, including the four new
+paths above. The production additions are five method-local expectations in
+existing examples; replacements preserve empty-lane assertions. A redundant
+test import is removed. Complete typed action equality assertions retain their
+existing PartialEq contract with a local expectation rather than adding Debug
+requirements to owning types. Consumer patch SHA-256:
+`9469e1e43127990dd6e8b3bef4748cca408cf5c81d7d191808412324f21300b1`.
+
+Selected Macros 0.13.0 VCS revision is
+`3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8`; actual registry lib.rs SHA-256 is
+`a4ba22289ed01515dcace9b34af5464ee88ea5f04ccd800c2a5e854134787e6a`,
+also byte-identical at selected Core/Actors 0.21.0 revision. The exact generator
+has eight field/value repetitions. Standard Rust field shorthand uses the same
+Ident and owned expression: change only fields: fields, prior_fields:
+prior_fields and field: field to their shorthand. Preserve later-field
+expressions, interpretation order, concrete types, static bounds and every
+Complete/Corrupt/Admitted/Closed alternative. Measured generator proposal:
+production +8 / -8 / net 0, no algebra, interface or type changes. Patch SHA-256:
+`b88511fb608bb6603092c7010ec40bb45e72daec761dbe34c617cf9c7128d8ee`.
+
+The same generated warning appears in multiple unrelated applications on Rust
+1.99. Fix the generator once rather than adding caller exceptions. Independent
+reviewer /root/contract_inventory verified all eight exact sites and recommended
+this owning correction. Existing macro crate-resolution, renaming/hygiene,
+compile-pass/fail and complete multi-lane interpretation/custody regressions
+must pass. Actual 1.99 downstream strict lint must fail with original selected
+generation and pass with the correction. Full owning CI, independent review,
+reviewed merge, registry publication and actual downstream lock selection remain
+required; a local patch is experimental evidence only.
+
+Current isolated compiler candidate before this proposal: 27 tracked source,
+snapshot and configuration paths; production +23 / -10 / net 13;
+tests/benchmarks/snapshots +373 / -27 / net 346;
+configuration +19 / -14 / net 5; public types zero. Its complete source hashes,
+patch and tracked-path measurement are frozen in rust-199-current-measurement.json;
+scratch scripts/logs/proposed patches remain separate untracked evidence and
+must enter the final complete receipt. Canonical production is unchanged.
