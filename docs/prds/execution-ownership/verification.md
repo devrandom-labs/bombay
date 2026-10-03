@@ -119,9 +119,10 @@ source freeze and independent review are required before retention.
 
 ## Complete change measurement
 
-This stage updates project records and selects published Communication 0.1.3
-and Behavior Core/Actors 0.21.0. Production Rust remains unchanged. Four test
-bindings now identify the verified selected version; no test law changes.
+The canonical tree now selects Rust 1.99.0, published Communication 0.1.3,
+Behavior Core/Actors 0.21.1 and Macros 0.13.1. EXEC section 32 records the
+independently reviewed compiler compatibility and allocation-test correction.
+Actor ownership repairs remain separate, unretained candidates.
 The separate fuzz graph selects the same Core and actual local Engine version. Baseline has no inherited tracked or untracked delta.
 The complete canonical Bombay delta follows; owning repository delivery has
 its separate complete ten-path record in the shutdown decision record.
@@ -129,11 +130,11 @@ its separate complete ten-path record in the shutdown decision record.
 <!-- exec-research-counts -->
 
 ```text
-production: +0 / -0 / net 0
-tests: +4 / -4 / net 0
-documentation: +4364 / -63 / net 4301
-manifest/lock: +13 / -13 / net 0
+production: +150 / -18 / net 132
+tests: +568 / -61 / net 507
+documentation: +4478 / -71 / net 4407
+manifest/lock: +36 / -31 / net 5
 public API: +0 types / -0 types
-changed tracked paths: 23
+changed tracked paths: 66
 untracked paths: 0
 ```

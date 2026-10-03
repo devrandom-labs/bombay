@@ -2387,3 +2387,95 @@ All 345 selected source hashes are checked; only the allocation-test path
 differs from the typed predecessor. The 54 changed source paths remain within
 the approved 114-path allowance. Final combined verification and independent
 acceptance are pending; canonical production remains unchanged.
+
+Final independent compiler acceptance authorizes retaining this bounded stage,
+not any EXEC semantic/design gate. Review SHA-256:
+`f4da28e858c9d8d51cc835830a6c5f423bc236c209590ca0b3e1f378f69297b0`.
+It binds the separate nonauthor allocation review
+`94b9b905e0f5ab6a5833c7f9fb1d3bc6fdf09d4dd287a1d2462f99bea4ac1527`,
+all eight completed Cargo commands (receipt
+`22863b8cd555c61015841a44fdad95afe597d31066d5c88e532a20ce6c9e08e0`)
+and all 21 native Nix checks (receipt
+`569843befb092fe2e44c1744ae71b6cc07784880e8b042ee72d2de13b902d42d`).
+The complete source and evidence freeze remains unchanged after verification
+(postcheck receipt
+`3d4b623c3d02863cd63724f2fa434a7ce713f344f3c91c8aa2e674f65bdf6849`).
+Other declared platforms require remote CI; this is not a claim that those
+platforms or full EXEC acceptance passed.
+
+Canonical retention authenticates all 54 destination files before copying,
+preserves unrelated existing records, and verifies every transferred hash.
+Transfer receipt SHA-256:
+`fa87ba5b7ea7b6a7a6abf5e017bb23ec406f04829763d502e9c7d50231e44aca`.
+The retained selection is stable Rust 1.99.0, Core/Actors 0.21.1 and Macros
+0.13.1 at release revision `5ca96444f0a66e9a013b6989e3e53d345cbabf65`.
+Registry checksums are Core
+`b82e4373287b71f2f90a2a16c62da9f6bebb8dd282df5a0b4b6e4aaa9a5d411c`,
+Actors `444670302a1b8e34b9f721ed0f071383d0f27f100e26e8365bf7c14d39195639`,
+and Macros `fdbea4c696f3bed02965835fd253087d696a25bf206e229e174bd2882fc2638c`.
+All 202 packaged Rust files authenticate the release source; Core/Actors
+bytes match 0.21.0, and Macros changes only the reviewed eight syntax lines.
+The complete selected 760-line AGENTS.md remains unchanged, SHA-256
+`2b7a9195b27f073fec18426da43e9840f8ef668f333b9ad55934f520a37ae226`.
+Timers remains the only patch; no experimental macro path patch is retained.
+Current dependency pointers and executable manifests move together; dated
+research, source hashes and earlier compiler failures remain historical.
+
+The retained candidate measures production +150 / -18 / net 132; tests
++568 / -61 / net 507; configuration +32 / -27 / net 5; zero new public
+types. Measurement SHA-256:
+`5c4bf46d6d57bf1107472a1dc2a2083e675a057935dcfb68fb94eabaab80d50f`.
+Cold trait futures retain execution timing and exact rejected inputs; no
+actor law is reconstructed for compiler convenience. Actor ownership repairs,
+full decision gates, module extraction, final minimization and reviewed Bombay
+PR delivery remain required.
+
+## 33. Exact observation ownership scope proposal (2026-10-03)
+
+Current approved cumulative scope is 114 paths and zero new public types.
+The retained compiler changes are committed as `f950fdf` (compiler and selected
+release) and `5576d7b` (allocation-test correction). Canonical production is
++150 / -18 / net 132; tests +568 / -61 / net 507; public types +0 / -0.
+The complete tracked/untracked delta is in verification.md; source-condensation
+preference exempts tests, and line-count approvals remain waived.
+
+The observation repair proposes 11 additional existing Behavior files, giving
+125 cumulative paths, and at most three direct public owners:
+ObservationSequence owns deterministic request identity derivation;
+ObservationRelationship<P> owns the accepted relationship identity and its
+protocol; ObservationAuthority<P> owns one cancellation permission. This
+replaces reusable numeric cancellation IDs with exact, protocol-matched
+authority and preserves original rejected requests. Bombay interprets these
+requests; Behavior Actors owns their reusable protocol and template policy.
+
+Additional existing files (relative to the Behavior repository):
+
+- crates/actors/src/lib.rs
+- crates/actors/src/protocol/established.rs
+- crates/actors/src/protocol/mod.rs
+- crates/actors/src/shutdown.rs
+- crates/actors/tests/established_capabilities.rs
+- crates/actors/tests/interpreter_request_settlement.rs
+- crates/behavior-testkit/fuzz/fuzz_targets/catalogue_sequences.rs
+- crates/behavior-testkit/tests/exact_termination_model.rs
+- docs/adapter-contract.md
+- docs/engineering/public-surface-inventory.md
+- docs/engineering/template-law-audit.md
+
+The 32-path observation stage reuses 21 already approved files; these eleven
+are its complete additional set. Current manifest SHA-256:
+`ac72a749eab838d7535f04f3a624fffc3d48f04b070747ce81ee76ae46d44303`.
+The prior independently reconciled model checkpoint
+`4cac787e009a6cd5623294be7528e76e406197fea474a297ec62f6ef7e53704d`
+contains all five abstraction answers and selected source hashes; its dated
+113-to-124 arithmetic is superseded only by this 114-to-125 reconciliation.
+The private ordinary-Rust reservation comparison and independent review in
+observation.md establish bounded feasibility, not three-owner minimality or
+actual producer/Monitor correctness. Selected 0.21.1 owning Rust sources are
+byte-identical to that 0.21.0 research baseline.
+
+No new owning source or public type is authorized by this proposal. Budget
+permission would allow the exact owner repair and its consumers, tests and
+release; complete ordinary-Rust comparisons, actual rejection/publication
+races, protocol denials, independent gates and minimization remain mandatory.
+No fourth public type, registry or duplicate actor contract is proposed.

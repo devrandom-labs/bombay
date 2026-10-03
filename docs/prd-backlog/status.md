@@ -63,9 +63,9 @@ EXEC research. They are evidence locations, not a fresh test certification.
 | ARC-020, TEST-008 | Minimal retained module ownership and separate revision-bound actor-template inventory. | [Module map](../module-boundaries.md), [public API audit](../public-api-audit.md), [template manifest](../driver-template-manifest.json). |
 | TEST-020 | Corrected Linux fuzz shell and unconditional artifact-upload failures; CI run 36985076274 passed both bounded campaigns and uploads. | [CI workflow](../../.github/workflows/checks.yml), [Driver campaign](../../crates/bombay-engine/fuzz/verify-causal-turns.sh); exact historical receipt remains in Git. |
 
-Behavior Core/Actors 0.21.0 release revision is
-`5f9185c9a66bdb80216b63f89a5c42fa02becaa0`; Macros 0.13.0 revision is
-`3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8`. The Driver and template
+Behavior Core/Actors 0.21.1 release revision is
+`5ca96444f0a66e9a013b6989e3e53d345cbabf65`; Macros 0.13.1 revision is
+`5ca96444f0a66e9a013b6989e3e53d345cbabf65`. The Driver and template
 manifests retain revision-bound evidence. Earlier EXEC notes selected 0.17.0:
 their hashes, source inventories and open representation experiments are
 historical until their PRD explicitly reconciles them with the current owners.

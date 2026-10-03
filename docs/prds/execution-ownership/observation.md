@@ -2,7 +2,7 @@
 
 **Historical baseline:** The 0.17.0 selection, names and copied-algorithm replay
 below describe the 2026-09-29 research snapshot. Current EXEC selects Core/Actors
-0.21.0 and Macros 0.13.0; PRD sections 21–22 and `verification.md` record
+0.21.1 and Macros 0.13.1; PRD section 32 and `verification.md` record
 the reviewed dependency selection and fresh verification. Current polling uses `TerminationObservations` and ordered vector
 removal. The separate established-observation map/task still exists. Its races
 need witnesses against the actual compiled interpreter, not the old replay.
@@ -940,3 +940,16 @@ brands/inference, fold determinism, failed-Started producer custody and the full
 Monitor/state minimization remain required. The exact current file expansion is
 114 to 125 with three added public types, still unauthorized. No full gate or
 new public API is selected by this comparison.
+
+Independent root review of the earlier same-guard Communication comparison
+authenticates its 53 unchanged source files and all 20 recorded artifacts.
+The complete patch, mutation, actual control-send/drain/drop source and scripts
+show that the mutex guards admission through actual send against retirement
+and drain. Exact payload values, allocation identity, both drained lanes and
+one discharge are observed; unlocking before send fails custody in both
+profiles, and restored runs pass. Review SHA-256:
+`86dcd3cc028357cab509db75ba95ae3e1c3bcd93d01f383a790a67eed47fd89e`.
+Acceptance covers this bounded mechanism comparison only, using authenticated
+original pinned-1.96 logs without a fresh reviewer run. It does not establish
+actual ObservationFuture, protocol membership, cancellation authority, source
+interpreter repair or full DG-OBSERVATION acceptance.
