@@ -1350,3 +1350,44 @@ advanced interpreters. The sole unexposed cancellation sender is not requested
 on the completed rejection-return path and remains owned through joining.
 Dropping that startup waiter is a separate handoff seam. Generic SpawnError and
 ActorRetirement preserve nonempty fields rather than adopting a discard default.
+
+## Independently reviewed native Entity lease comparison (2026-10-03)
+
+The section 24 authorized test-only comparison uses the exact original native
+Entity lease and signed 0.21.0 startup-handoff baseline. The actual native fence
+acknowledges before Graceful retirement; that disposition does not assert actor
+shutdown. Original retirement admits ShutdownRequested, then polls Pending
+before acquiring its available cancellation authority. Dropping that waiter
+allows existing task cleanup to cancel the actor and return its resident permit,
+but loses the exact result intended for the surviving definition callback.
+The compiled original oracle fails with exit 101 in both profiles.
+
+The ordinary comparison consumes the same activation's original affine lease,
+omitting only the pre-owner termination wait. It retains the original state Vec
+allocation, OwnerCancelled cause, one queued ShutdownRequested, all empty
+settlement/user/descendant lanes, entity and activation IDs, and resident release.
+The retained state is released once after explicit receiver discharge. It passes
+both profiles; dispatching the comparison back to the original native method
+compiles and fails the same oracle in both. Exact restoration passes, as do 230
+preservation tests per profile, formatting and strict owning-library/test Clippy.
+The deliberately failing original witness is selected separately and excluded
+only by name from preservation runs.
+
+Increment: one approved existing path, tests +214 / -0 / net 214;
+production and public types zero. Receipt:
+`29a85dba1088af18677c429a7627582e8219b9a7d10b862185f24a7a585dc495`;
+incremental patch:
+`86ec62c9751b6797eaa9bd2f0be8439e88b2ff4baa5b85260d6cb4056297344b`.
+Independent reviewer `/root` read the complete test patch, native owner, both
+scripts and all profile/mutation/restoration/preservation logs, authenticated
+27 source hashes and 43 artifacts, and verified the unchanged original source
+prefix. Review receipt:
+`c547591913232c5d7134844fb1f49288ec802429beb6db8d7b97a80596ddfe23`.
+This is source/artifact review without a fresh independent Rust execution.
+
+This accepts bounded failure/comparison evidence, not production retention or
+full DG-TASK. Removing the wait alone does not prove callback custody when the
+native retirement future is dropped during its task join. Actual installed
+family/Directory cleanup, that surviving callback owner, forced disposition and
+failure/projection integration remain required. The actual metrics.retired call
+is preserved, but the family-owned private metric snapshot is not asserted here.
