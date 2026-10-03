@@ -332,3 +332,48 @@ this two-established-child fixture does not authorize discarding those markers
 without their owning policy or duplicating their independently owned payloads.
 Standard birth integration, live parent execution, caller disappearance and
 recursive raw actor results remain required.
+
+## Standard-birth recursive comparison (2026-10-03)
+
+The current selected-version comparison uses actual standard establish_child
+bindings: a live parent owns two genuine FIFO branches, each with an actual
+worker grandchild. One branch finishes while the parent remains live; the other
+branch's cleanup is gated. Actual parent interpreter retirement, rather than
+its coarse termination observation, determines when to release the sibling.
+
+The original traversal panics on the first failed terminal projection, erases
+its original failure and loses the parent result. The ordinary comparison
+consumes existing bindings and joins their original handles into standard
+Results. It keeps the original JoinError and panic String allocation and
+contents, waits for the sibling, and returns normal recursive terminals. Exactly
+one actually acquired child-completion report remains accounted for in returned
+parent state or retirement ingress. Accepted unit shutdown receipts follow
+the owning explicit discharge policy; they are not fabricated as retained
+payloads. Behavior state and folds remain pure; runtime gates belong to the host.
+
+Corrected successor receipt
+`42e3c77949a7f4cd87648f71f6a2bf1c100709c3ee44feac6727d79701cd1a5e`;
+full patch `08e730a59778789b64ae565d1adcc43faee4a9cbc0838bfb5447331cd9e9cfb6`.
+Three approved existing paths, tests +990 / -0 / net 990; production and public
+types zero. The successor fixes two weak oracles: allocation/length alone did
+not prove original panic contents, and report comparisons did not require a
+report to exist. Compiled content substitution and report omission each fail
+for the intended assertion in both profiles; restored positives pass.
+
+Independent reviewer /root read the full parent fixture and consuming owner
+methods, authenticated 345 sources, 30 successor artifacts and 57 predecessor
+artifacts, and independently reran two positives and the original defect in
+both profiles using a fresh dedicated cache and pinned Nix Rust 1.99. Positives
+exit 0; originals compile and exit 101 at the parent-result conservation law.
+Review receipt `1e50466d60163cc5b0d338103f814d0dbfec375886097d6461cf72e79cee9a78`
+accepts bounded evidence only. No public or retained repair is approved.
+
+DG-PROJECTION remains open: failed-branch origin is separately host-owned rather
+than part of its returned Result; nested branch FIFO settlement checks establish
+acceptance but not full opaque pool state and all nested lanes. Current nested
+retirement cannot express a grandchild's projector failure. Heterogeneous role
+products, dropped-parent ownership, recursive raw actor failures and projection
+minimization remain required. Values destroyed inside a consuming user projector
+cannot be recovered. Preliminary compile failures, interrupted runs, a wrong
+coarse-parent timing assumption and a completed-future repoll failure are
+excluded; none is counted as original-defect evidence.

@@ -1391,3 +1391,85 @@ native retirement future is dropped during its task join. Actual installed
 family/Directory cleanup, that surviving callback owner, forced disposition and
 failure/projection integration remain required. The actual metrics.retired call
 is preserved, but the family-owned private metric snapshot is not asserted here.
+
+## Initialization panic payload custody (2026-10-03)
+
+Current Engine `Driver::run` acquires the original panic value from
+`catch_unwind`, then its `Err(_)` arm discards that value and returns only
+`DriverError::InitializationPanicked`. Bombay's initialization result keeps
+the actor and retirement fields but cannot recover the discarded payload.
+Engine owns this capture boundary; Bombay owns preservation through its result
+projection. This is distinct from Bombay's outer Tokio `JoinError` erasure.
+
+The root-authored isolated witness uses a pure actor with an original immutable
+Arc ledger and an initialization count. Initialization transfers that ledger
+into `panic_any`. Actual Driver retirement returns the partially mutated actor,
+the correct panic classification and exactly one prepared-environment retirement,
+but loses the acquired ledger. The original ownership assertion compiles and
+fails in debug and release. An ordinary Rust `catch_unwind` Result over the same
+owning initialization and environment retirement retains the exact concrete
+payload, Arc/Vec allocation, contents and actor state; both profiles pass.
+Replacing that payload with a new empty ledger compiles and fails the ownership
+oracle in both; exact restoration passes. Strict owning-test lint and formatting
+pass through pinned Nix. External Weak observations prove liveness/release, not
+destructor chronology or a destructor count.
+
+Frozen comparison receipt SHA-256:
+`6096fe45c45827e9c765a02ac6b2b0324da211c88ec050e8d3272d1b2fb07fdc`;
+patch SHA-256:
+`8101286c1a8fdf49d11fd53b204cc152cd03ad2b2763b854e42cd7d68c73de44`.
+One already authorized existing test path, tests +115 / -0 / net 115,
+production/public types zero. Bounded independent review is recorded below.
+No public error representation, production repair or full gate is selected. The older impure
+fixtures in that same file are excluded from this evidence and have a separate
+correction stage; passing their existing assertions is not purity proof.
+
+Nonauthor `/root/task_custody_research` authenticated all 345 copied source
+files and 18 artifacts, read the actual Driver and prepared-environment owner,
+and independently reproduced the original failure and ordinary positive in
+both profiles with a fresh pinned-Nix cache. Bounded review receipt SHA-256:
+`c14d186a52da73024b49f6b1a2373a65ddc0a0b563fec1032e091a2346c6bd12`.
+This establishes loss and preservation feasibility only. Arbitrary original
+panic payloads cannot inherit the current error's `PartialEq`/`Eq` promises
+without a separate interface comparison; no equality or payload-erasure policy
+is silently selected.
+
+## Current combined custody repair review (2026-10-03)
+
+The isolated composition combines the typed Driver retirement request,
+synchronous transfer of the four original startup owners and join-all capability
+failure custody against current published dependencies. Final patch SHA-256:
+`28f99d7ed39cd4c44777e1454333eda3586e77d4ba1f14e882ae596642be5475`;
+author receipt SHA-256:
+`4760d9ae2ca3555094abd6d6dac07367f4095d08511fad04e27b27f2a6ed6d23`;
+scope supplement SHA-256:
+`cf799f388ea56bd1bace3b60f5505d539691ab153fa1b6eec03375c0aa4f0305`.
+
+Nonauthor `/root/task_custody_research` authenticated all 345 source files,
+91 generated untracked corpus inputs, 890 external artifacts and 202 selected
+published Rust sources. Its fresh dedicated pinned-Nix cache passes 254 owning
+library/integration/Engine tests in each profile. Review receipt SHA-256:
+`fa122fceb6c3957d6855ab4b677bbc7ab99716ab92d0a5105db842599f45d702`.
+A preceding reused-cache compiler failure is excluded; unchanged source rebuilt
+cleanly. The reviewer inspected the original regressions, exact restoration and
+compiled inversions, including move-only source retirement, transitive source
+chains, startup waiter drop, all available capability failures and returned
+events, and accepted unread cancellation custody.
+
+The author ran the production composition's full workspace in both profiles:
+426 tests across 61 summaries pass. Subsequent test-only source-fuzz and pure
+trace/property successors pass their focused checks in both profiles; production
+and the other 342 source files match the whole-workspace freeze. The final
+composition has not been relabeled as a new whole-workspace run. The actual
+acquired-request fuzzer passes a fresh 10,000-run campaign. Twelve core inversion
+cohorts plus its two-source-arm Break inversion and the pure source-priority
+inversion fail at intended compiled assertions in both profiles and restore.
+
+Scope: 37 already authorized existing paths; production +617 / -221 / net 396,
+tests +2721 / -408 / net 2313, new public types zero. The corpus and external
+receipts are inventoried research evidence, not newly proposed retained paths.
+This accepts bounded composition evidence, not full DG-TASK or canonical
+semantic retention. Outer actor JoinError and initialization panic payload
+custody, recursive projection, complete application/Entity family delivery,
+observation ownership, current documentation and final consumer migrations
+remain required before their affected gates close.
