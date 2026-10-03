@@ -158,7 +158,12 @@ where
             }
             None => match phase {
                 ExecutionPhase::Initializing => {
-                    environment.publish();
+                    match environment.publish() {
+                        ControlFlow::Continue(()) => {}
+                        ControlFlow::Break(request) => {
+                            return Ok(Completion::RetirementRequested(request));
+                        }
+                    }
                     phase = ExecutionPhase::Active;
                     continue;
                 }

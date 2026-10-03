@@ -73,6 +73,7 @@ struct Residual {
     remaining_events: Vec<u64>,
     publication: Publication,
     retirements: usize,
+    publication_request: Option<Box<[u64]>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -131,6 +132,7 @@ struct PreparedEnvironment {
     initialization_settlement: SettlementPlan,
     active_settlement: SettlementPlan,
     settlement_custody: SettlementCustody,
+    publication_request: Option<Box<[u64]>>,
 }
 
 struct ActiveCustodyEnvironment {
@@ -139,6 +141,7 @@ struct ActiveCustodyEnvironment {
     active_settlement: SettlementPlan,
     settlement_custody: SettlementCustody,
     publication: Publication,
+    publication_request: Option<Box<[u64]>>,
 }
 
 #[derive(Clone, Copy)]
@@ -157,7 +160,7 @@ enum SettlementCustody {
 impl Environment<CustodyBehavior> for PreparedEnvironment {
     type Active = ActiveCustodyEnvironment;
     type Settlement = ActionSettlement;
-    type RetirementRequest = Never;
+    type RetirementRequest = Box<[u64]>;
     type Error = &'static str;
     type Residual = Residual;
 
@@ -182,6 +185,7 @@ impl Environment<CustodyBehavior> for PreparedEnvironment {
                     remaining_events: self.events.into(),
                     publication: Publication::Withheld,
                     retirements: 0,
+                    publication_request: self.publication_request,
                 },
             ));
         }
@@ -193,6 +197,7 @@ impl Environment<CustodyBehavior> for PreparedEnvironment {
                 active_settlement: self.active_settlement,
                 settlement_custody: self.settlement_custody,
                 publication: Publication::Withheld,
+                publication_request: self.publication_request,
             },
             interpretation,
         ))
@@ -206,20 +211,23 @@ impl Environment<CustodyBehavior> for PreparedEnvironment {
             remaining_events: self.events.into(),
             publication: Publication::Withheld,
             retirements: 1,
+            publication_request: self.publication_request,
         })
     }
 }
 
 impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
     type Settlement = ActionSettlement;
-    type RetirementRequest = Never;
+    type RetirementRequest = Box<[u64]>;
     type Residual = Residual;
 
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn next(&mut self) -> ControlFlow<Never, Option<<CustodyBehavior as Behavior>::Event>> {
+    async fn next(
+        &mut self,
+    ) -> ControlFlow<Self::RetirementRequest, Option<<CustodyBehavior as Behavior>::Event>> {
         ControlFlow::Continue(
             self.events
                 .pop_front()
@@ -233,7 +241,7 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
     )]
     async fn next_source(
         &mut self,
-    ) -> ControlFlow<Never, Option<<CustodyBehavior as Behavior>::Event>> {
+    ) -> ControlFlow<Self::RetirementRequest, Option<<CustodyBehavior as Behavior>::Event>> {
         let message = match self.settlement_custody {
             SettlementCustody::FirstSourceAdmitted => {
                 self.settlement_custody = SettlementCustody::RetainTransitive;
@@ -298,11 +306,15 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
         }
     }
 
-    fn publish(&mut self) {
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
+        if let Some(request) = self.publication_request.take() {
+            return ControlFlow::Break(request);
+        }
         self.publication = match self.publication {
             Publication::Withheld => Publication::Published,
             Publication::Published | Publication::Repeated => Publication::Repeated,
         };
+        ControlFlow::Continue(())
     }
 
     fn retire(self, settlements: Vec<Self::Settlement>) -> impl Future<Output = Self::Residual> {
@@ -313,6 +325,7 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
             remaining_events: self.events.into(),
             publication: self.publication,
             retirements: 1,
+            publication_request: self.publication_request,
         })
     }
 }
@@ -334,6 +347,7 @@ fn driver(
             initialization_settlement,
             active_settlement,
             settlement_custody,
+            publication_request: None,
         },
     )
 }
@@ -343,10 +357,11 @@ fn assert_retirement(
         CustodyBehavior,
         Residual,
         DriverError<&'static str, &'static str>,
+        Box<[u64]>,
     >,
     expected_behavior: CustodyBehavior,
     expected_residual: Residual,
-    expected_disposition: Result<Completion, DriverError<&'static str, &'static str>>,
+    expected_disposition: Result<Completion<Box<[u64]>>, DriverError<&'static str, &'static str>>,
 ) {
     let expected = DriverRetirement {
         behavior: expected_behavior,
@@ -388,6 +403,7 @@ async fn stop_returns_final_behavior_and_active_residual() {
             remaining_events: vec![99],
             publication: Publication::Published,
             retirements: 1,
+            publication_request: None,
         },
         Ok(Completion::Stopped),
     );
@@ -424,6 +440,7 @@ async fn exhaustion_returns_final_behavior_and_active_residual() {
             remaining_events: vec![],
             publication: Publication::Published,
             retirements: 1,
+            publication_request: None,
         },
         Ok(Completion::Exhausted),
     );
@@ -460,6 +477,7 @@ async fn behavior_failure_returns_mutated_behavior_and_active_residual() {
             remaining_events: vec![],
             publication: Publication::Published,
             retirements: 1,
+            publication_request: None,
         },
         Err(DriverError::Behavior("transition")),
     );
@@ -496,6 +514,7 @@ async fn initialization_failure_returns_mutated_behavior_and_prepared_residual()
             remaining_events: vec![],
             publication: Publication::Withheld,
             retirements: 1,
+            publication_request: None,
         },
         Err(DriverError::Behavior("initialization")),
     );
@@ -532,6 +551,7 @@ async fn activation_failure_returns_behavior_and_prepared_residual() {
             remaining_events: vec![],
             publication: Publication::Withheld,
             retirements: 0,
+            publication_request: None,
         },
         Err(DriverError::Activation("activation")),
     );
@@ -571,6 +591,7 @@ async fn apply_failure_returns_mutated_behavior_and_active_residual() {
             remaining_events: vec![],
             publication: Publication::Published,
             retirements: 1,
+            publication_request: None,
         },
         Err(DriverError::Settlement(SettlementFailure::Corrupt)),
     );
@@ -607,6 +628,7 @@ async fn retained_source_settlement_reaches_retirement_without_reoffer() {
             remaining_events: vec![],
             publication: Publication::Published,
             retirements: 1,
+            publication_request: None,
         },
         Ok(Completion::Exhausted),
     );
@@ -643,6 +665,7 @@ async fn retained_transitive_head_does_not_hide_an_older_source_residual() {
             remaining_events: vec![],
             publication: Publication::Published,
             retirements: 1,
+            publication_request: None,
         },
         Ok(Completion::Exhausted),
     );
@@ -682,6 +705,7 @@ async fn stopping_turn_corruption_overrides_stop_and_preserves_settlement() {
             remaining_events: vec![99],
             publication: Publication::Published,
             retirements: 1,
+            publication_request: None,
         },
         Err(DriverError::Settlement(SettlementFailure::Corrupt)),
     );
@@ -721,6 +745,7 @@ async fn stopping_turn_rejection_preserves_stop_and_settlement() {
             remaining_events: vec![99],
             publication: Publication::Published,
             retirements: 1,
+            publication_request: None,
         },
         Ok(Completion::Stopped),
     );
@@ -760,6 +785,7 @@ async fn stopping_initialization_rejection_overrides_stop_and_preserves_settleme
             remaining_events: vec![99],
             publication: Publication::Withheld,
             retirements: 1,
+            publication_request: None,
         },
         Err(DriverError::Settlement(SettlementFailure::Rejected)),
     );
@@ -799,7 +825,138 @@ async fn stopping_initialization_corruption_overrides_stop_and_preserves_settlem
             remaining_events: vec![99],
             publication: Publication::Withheld,
             retirements: 1,
+            publication_request: None,
         },
         Err(DriverError::Settlement(SettlementFailure::Corrupt)),
     );
+}
+
+#[tokio::test]
+async fn publication_retirement_preserves_request_and_retained_initialization() {
+    let request = vec![17, 29, 41].into_boxed_slice();
+    let original_request = request.as_ptr();
+    let retirement = Driver::new(
+        CustodyBehavior {
+            value: 4,
+            initialization_failure: None,
+            initialization_decision: InitializationDecision::Continue,
+        },
+        PreparedEnvironment {
+            events: [0, 99].into(),
+            committed: Vec::new(),
+            activation_failure: None,
+            initialization_settlement: SettlementPlan::Accepted,
+            active_settlement: SettlementPlan::Accepted,
+            settlement_custody: SettlementCustody::RetainNext,
+            publication_request: Some(request),
+        },
+    )
+    .run()
+    .await;
+
+    let DriverRetirement {
+        behavior,
+        residual,
+        disposition,
+    } = retirement;
+    assert_eq!(
+        behavior,
+        CustodyBehavior {
+            value: 5,
+            initialization_failure: None,
+            initialization_decision: InitializationDecision::Continue,
+        }
+    );
+    assert_eq!(
+        residual,
+        Residual {
+            phase: ResidualPhase::Active,
+            committed: vec![5],
+            settlements: vec![ActionSettlement::Applied(vec![5])],
+            remaining_events: vec![0, 99],
+            publication: Publication::Withheld,
+            retirements: 1,
+            publication_request: None,
+        }
+    );
+    let request = match disposition {
+        Ok(Completion::RetirementRequested(request)) => request,
+        other => panic!("publication did not return its original retirement request: {other:?}"),
+    };
+    assert_eq!(request.as_ptr(), original_request);
+    assert_eq!(request.as_ref(), [17, 29, 41]);
+    drop(request);
+}
+
+#[tokio::test]
+async fn activation_rejection_preserves_unacquired_publication_request() {
+    let request = vec![17, 29, 41].into_boxed_slice();
+    let original_request = request.as_ptr();
+    let retirement = Driver::new(
+        CustodyBehavior {
+            value: 4,
+            initialization_failure: None,
+            initialization_decision: InitializationDecision::Continue,
+        },
+        PreparedEnvironment {
+            events: [0, 99].into(),
+            committed: Vec::new(),
+            activation_failure: Some("activation"),
+            initialization_settlement: SettlementPlan::Accepted,
+            active_settlement: SettlementPlan::Accepted,
+            settlement_custody: SettlementCustody::RetainNext,
+            publication_request: Some(request),
+        },
+    )
+    .run()
+    .await;
+
+    let DriverRetirement {
+        behavior,
+        residual,
+        disposition,
+    } = retirement;
+    let Residual {
+        phase,
+        committed,
+        settlements,
+        remaining_events,
+        publication,
+        retirements,
+        publication_request,
+    } = residual;
+    let request = publication_request.expect("activation rejection retains unacquired input");
+    assert_eq!(request.as_ptr(), original_request);
+    assert_retirement(
+        DriverRetirement {
+            behavior,
+            residual: Residual {
+                phase,
+                committed,
+                settlements,
+                remaining_events,
+                publication,
+                retirements,
+                publication_request: None,
+            },
+            disposition,
+        },
+        CustodyBehavior {
+            value: 5,
+            initialization_failure: None,
+            initialization_decision: InitializationDecision::Continue,
+        },
+        Residual {
+            phase: ResidualPhase::Prepared,
+            committed: vec![5],
+            settlements: vec![],
+            remaining_events: vec![0, 99],
+            publication: Publication::Withheld,
+            retirements: 0,
+            publication_request: None,
+        },
+        Err(DriverError::Activation("activation")),
+    );
+    assert_eq!(request.as_ref(), [17, 29, 41]);
+    drop(request);
 }

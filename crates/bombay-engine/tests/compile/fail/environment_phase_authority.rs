@@ -78,7 +78,9 @@ impl ActiveEnvironment<Definition> for Active {
         SourceCustody::Exhausted(settlement)
     }
 
-    fn publish(&mut self) {}
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
+        ControlFlow::Continue(())
+    }
 
     async fn retire(self, _: Vec<Self::Settlement>) {}
 }

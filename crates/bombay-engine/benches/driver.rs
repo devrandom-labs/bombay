@@ -86,7 +86,9 @@ impl ActiveEnvironment<OneTurn> for Immediate {
         SourceCustody::Exhausted(settlement)
     }
 
-    fn publish(&mut self) {}
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
+        ControlFlow::Continue(())
+    }
 
     #[expect(
         clippy::unused_async_trait_impl,

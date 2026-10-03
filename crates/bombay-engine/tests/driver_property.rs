@@ -292,8 +292,9 @@ impl ActiveEnvironment<ScriptBehavior> for ScriptEnvironment {
         }
     }
 
-    fn publish(&mut self) {
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
         self.execution_trace.push(ExecutionEvent::Published);
+        ControlFlow::Continue(())
     }
 
     #[expect(

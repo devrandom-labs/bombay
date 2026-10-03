@@ -158,7 +158,9 @@ impl ActiveEnvironment<SettlementActor> for SettlementEnvironment {
         SourceCustody::Admitted(settlement)
     }
 
-    fn publish(&mut self) {}
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
+        ControlFlow::Continue(())
+    }
 
     #[expect(
         clippy::unused_async_trait_impl,

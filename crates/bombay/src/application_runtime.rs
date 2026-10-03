@@ -3878,17 +3878,16 @@ mod root_join_custody {
                 assert!(addresses.resolve(&MailAddr::APPLICATION_ROOT).is_none());
                 let sent = admit.send(());
                 sent.expect("the original actor remains owned");
-                let startup = if let RootFinish::Unpublished = finish {
-                    Some(startup)
-                } else {
-                    let actor = startup.await.expect("continuing root is published");
-                    if let RootFinish::Stop = finish {
+                let startup = match finish {
+                    RootFinish::Cancel | RootFinish::Unpublished => Some(startup),
+                    RootFinish::Stop => {
+                        let actor = startup.await.expect("continuing root is published");
                         let control = control.upgrade().expect("the actor owns control");
                         let sent = control.send(EventLayer::Owned(ShutdownRequested));
                         sent.expect("the root accepts shutdown");
+                        drop(actor);
+                        None
                     }
-                    drop(actor);
-                    None
                 };
                 retirement.await.expect("actual root cleanup begins");
                 let expected_decisions = match finish {

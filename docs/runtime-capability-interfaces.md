@@ -502,8 +502,14 @@ port.
 
 ```text
 pub trait Environment<B: Behavior<Ph = Never>> {
-    type Active: ActiveEnvironment<B, Residual = Self::Residual, Settlement = Self::Settlement>;
+    type Active: ActiveEnvironment<
+        B,
+        Residual = Self::Residual,
+        Settlement = Self::Settlement,
+        RetirementRequest = Self::RetirementRequest,
+    >;
     type Settlement: ClassifySettlement;
+    type RetirementRequest;
     type Error;
     type Residual;
 
@@ -520,10 +526,11 @@ pub trait Environment<B: Behavior<Ph = Never>> {
 
 pub trait ActiveEnvironment<B: Behavior<Ph = Never>> {
     type Settlement: ClassifySettlement;
+    type RetirementRequest;
     type Residual;
 
-    fn next(&mut self) -> impl Future<Output = Option<B::Event>>;
-    fn next_source(&mut self) -> impl Future<Output = Option<B::Event>>;
+    fn next(&mut self) -> impl Future<Output = ControlFlow<Self::RetirementRequest, Option<B::Event>>>;
+    fn next_source(&mut self) -> impl Future<Output = ControlFlow<Self::RetirementRequest, Option<B::Event>>>;
 
     fn apply(
         &mut self,
@@ -535,7 +542,7 @@ pub trait ActiveEnvironment<B: Behavior<Ph = Never>> {
         settlement: Self::Settlement,
     ) -> impl Future<Output = SourceCustody<Self::Settlement>>;
 
-    fn publish(&mut self);
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()>;
 
     fn retire(self, settlements: Vec<Self::Settlement>) -> impl Future<Output = Self::Residual>;
 }
@@ -549,7 +556,10 @@ Its laws are:
    exact settlement with an unpublished active environment. Reservation or
    private binding rejection returns untouched initialization custody.
 3. The Driver settles initialization and admitted source effects before
-   calling `publish`. Only then does Address produce a resolvable lease.
+   calling `publish`. `Continue(())` publishes the exact lease; `Break(request)`
+   transfers the original retirement request without publishing. The Driver
+   retains its complete settlement suffix and proceeds directly to retirement.
+   Bombay alone selects whether its concrete owner request wins this boundary.
 4. `next` acquires ordinary input; `next_source` acquires an admitted control
    result before later ordinary input. Communication, Timers, and typed facts
    remain distinct owned sources.
@@ -557,8 +567,13 @@ Its laws are:
    returns its exact settlement. `offer_next` offers one ordered source result.
 6. `retire(self, settlements)` is the affine completion barrier and preserves
    every retained settlement and owned descendant.
-7. The Driver owns the causal sequence `initialize -> activate -> settle ->
-   publish -> (next -> transition -> apply -> settle)* -> retire`.
+7. The continuing path is `initialize -> activate -> classify -> settle ->
+   publish Continue(()) -> (next -> transition -> apply -> classify -> settle)*
+   -> retire`. Classification precedes source offers. Initialization rejection,
+   corruption or accepted stop, active corruption or stop, source-chain terminal
+   or failure, and any acquired retirement request proceed directly to their
+   retirement barrier with the complete retained custody; they do not require
+   an intervening source offer, publication, or ordinary event.
 
 This trait is generic infrastructure and should stay hidden from ordinary
 application users. It is public only at the framework-extension boundary if a
@@ -663,9 +678,14 @@ retirement.
    reservation and returns untouched `Actions`.
 7. Interpret the complete action set. Retain its exact settlement and retire
    without public publication on rejection, corruption, or an initial stop.
-8. Settle accepted source actions, consume the reservation into the live
-   Address lease, and publish activation success with the exact `ActorRef`.
-9. Enter the mailbox/deadline event loop.
+8. Only for continuing accepted initialization, progress its ordered source
+   custody. A source-chain terminal, failure or acquired retirement request
+   retires with complete custody without publication. Once continuing source
+   custody is quiescent, attempt publication: `Break(request)` retains the
+   original request and retires without publishing; `Continue(())` consumes the
+   reservation into the live Address lease and publishes activation success
+   with the exact `ActorRef`.
+9. Enter the mailbox/deadline event loop only after publication `Continue(())`.
 
 Publishing the address before initialization commits exposes a broken actor;
 publishing activation before the address claim makes the returned reference

@@ -101,7 +101,9 @@ where
         SourceCustody::Exhausted(settlement)
     }
 
-    fn publish(&mut self) {}
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
+        ControlFlow::Continue(())
+    }
 
     async fn retire(self, settlements: Vec<Self::Settlement>) -> Self::Residual {
         drop(settlements);

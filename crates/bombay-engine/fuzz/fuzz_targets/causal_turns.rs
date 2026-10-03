@@ -399,8 +399,9 @@ impl ActiveEnvironment<SettlementActor> for SettlementEnvironment {
         }
     }
 
-    fn publish(&mut self) {
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
         self.trace.lock().unwrap().publications += 1;
+        ControlFlow::Continue(())
     }
 
     async fn retire(mut self, settlements: Vec<Self::Settlement>) -> Self::Residual {

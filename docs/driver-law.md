@@ -43,8 +43,10 @@ text can refine them but cannot create another mandatory law implicitly.
   transfers the complete initialization
   `Actions` once to `Environment::activate`; activation failure returns its exact
   prepared residual. The resulting settlement is classified before ordinary
-  ingress, and the active environment is published exactly once only after no
-  initialization settlement can make further source progress.
+  ingress. After no initialization settlement can make further source progress,
+  publication returns `Continue(())` or transfers an exact retirement request.
+  Only `Continue(())` publishes the active environment and permits ordinary input;
+  `Break(request)` retains the settlement suffix and retires without publication.
 - **D-TURN-1 — One causal turn at a time.** The Driver obtains at most one event,
   folds the current Behavior synchronously exactly once, installs that
   successor state, and applies the complete returned `Actions` exactly once
@@ -344,8 +346,10 @@ trait Environment<B: Behavior<Ph = Never>> {
         B,
         Residual = Self::Residual,
         Settlement = Self::Settlement,
+        RetirementRequest = Self::RetirementRequest,
     >;
     type Settlement: ClassifySettlement;
+    type RetirementRequest;
     type Error;
     type Residual;
 
@@ -359,10 +363,11 @@ trait Environment<B: Behavior<Ph = Never>> {
 
 trait ActiveEnvironment<B: Behavior<Ph = Never>> {
     type Settlement: ClassifySettlement;
+    type RetirementRequest;
     type Residual;
 
-    async fn next(&mut self) -> Option<B::Event>;
-    async fn next_source(&mut self) -> Option<B::Event>;
+    async fn next(&mut self) -> ControlFlow<Self::RetirementRequest, Option<B::Event>>;
+    async fn next_source(&mut self) -> ControlFlow<Self::RetirementRequest, Option<B::Event>>;
     async fn apply(
         &mut self,
         actions: ActionsOf<B>,
@@ -371,7 +376,7 @@ trait ActiveEnvironment<B: Behavior<Ph = Never>> {
         &mut self,
         settlement: Self::Settlement,
     ) -> SourceCustody<Self::Settlement>;
-    fn publish(&mut self);
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()>;
     async fn retire(
         self,
         settlements: Vec<Self::Settlement>,
@@ -408,9 +413,10 @@ The universal Driver remains limited to:
 obtain B::Event
     -> fold the Behavior once
     -> pass the complete ActionsOf<B> to its active environment
-    -> retain the complete Interpretation settlement
-    -> offer ordered results back to their typed sources
-    -> repeat
+    -> retain and classify the complete Interpretation settlement and stop verdict
+    -> if terminal: retire with the complete settlement without offering its sources
+    -> otherwise progress ordered results back to their typed sources
+    -> repeat only while the continuing source chain remains live
 ```
 
 ## Execution law
@@ -419,18 +425,27 @@ The Driver performs this sequence and no other:
 
 ```text
 initialize the owned Behavior exactly once
+    -> if initialization fails or panics: retire the prepared environment and return
     -> consume Environment::activate with the complete initialization actions
-    -> receive the only ActiveEnvironment and exact initialization settlement
-    -> resolve live-return custody or retain the product for retirement
-    -> publish the installed environment
-    -> if terminal: retire and return Behavior + residual + disposition
-    -> otherwise:
-        obtain exactly one event
-        -> fold it exactly once
-        -> interpret the complete successful actions into one total settlement
-        -> resolve live-return custody or retain the product for retirement
-        -> if terminal: retire and return Behavior + residual + disposition
-        -> otherwise repeat
+    -> if activation fails: return its exact error and prepared residual
+    -> receive the unpublished ActiveEnvironment and exact initialization settlement
+    -> classify initialization settlement and its stop verdict
+        rejected, corrupt, or accepted Stop -> retain settlement and retire
+        accepted Continue -> progress ordered initialization source custody
+    -> any source-chain terminal, failure, or retirement request -> retain custody and retire
+    -> only after continuing initialization source custody becomes quiescent:
+        attempt publication once
+        Break(request) -> retain original request and settlement suffix, retire
+        Continue(()) -> installed environment is published; ordinary input is permitted
+    -> obtain exactly one ordinary event, or retire on exhaustion/request
+    -> fold the event exactly once; a Behavior error retires without invented Actions
+    -> interpret complete successful Actions into one total settlement
+    -> classify that settlement and its stop verdict before offering sources
+        corrupt, or accepted/rejected Stop -> retain settlement and retire
+        accepted/rejected Continue -> progress ordered source custody
+    -> each source-admitted event follows the same fold/apply/classify rule
+    -> any source-chain terminal, failure, or retirement request -> retain custody and retire
+    -> only after continuing source custody becomes quiescent: obtain the next ordinary event
 ```
 
 The Driver never obtains the next ordinary event until interpretation and all
@@ -459,14 +474,20 @@ stop because successful initialization was never established.
 
 Bombay root activation and child birth must commit initialization before
 publishing a new address generation. The prepared environment owns this
-transaction, and successful publication is required before it returns the
-active environment. The Driver still exposes only one consuming operation:
+reservation and initialization commitment. Successful activation returns the
+unpublished active environment and its exact settlement. The Driver first
+classifies that initialization and resolves its continuing source custody;
+only then may publication return `Continue(())`. A terminal initialization,
+source-chain failure or request, or publication `Break(request)` retires without
+publication. The Driver still exposes only one consuming operation:
 
 ```text
 consume Driver::run
     -> initialize exactly once
     -> Environment::activate(initialization actions)
-    -> terminal completion, or request the first event
+    -> classify initialization and progress only a continuing source chain
+    -> terminal/error/request retirement, or publication Continue(())
+    -> only after Continue(()): request the first ordinary event
 ```
 
 The concrete environment may acknowledge its first successful local commitment

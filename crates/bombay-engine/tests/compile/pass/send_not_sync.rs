@@ -71,7 +71,9 @@ impl ActiveEnvironment<SendNotSync> for Env {
         SourceCustody::Exhausted(settlement)
     }
 
-    fn publish(&mut self) {}
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
+        ControlFlow::Continue(())
+    }
 
     async fn retire(self, _: Vec<Self::Settlement>) {}
 }

@@ -28,7 +28,7 @@ use communication::{
     Config, Consumer, ControlSender, Drained, MailboxOwner, MailboxRef, Received, UserClosed,
     mailbox_channel,
 };
-use tokio::sync::oneshot;
+use tokio::sync::oneshot::{self, error::TryRecvError};
 use tokio::task::{JoinError, JoinSet};
 
 pub(crate) type Termination<A> = Result<Exit<A>, behavior_actors::Crash>;
@@ -1147,7 +1147,17 @@ where
         self.interpreter.offer_next(settlement).await
     }
 
-    fn publish(&mut self) {
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
+        if let Some(receiver) = self.owner_cancellation.as_mut() {
+            match receiver.try_recv() {
+                Ok(request) => {
+                    self.owner_cancellation = None;
+                    return ControlFlow::Break(LocalRetirementRequest::OwnerCancellation(request));
+                }
+                Err(TryRecvError::Closed) => self.owner_cancellation = None,
+                Err(TryRecvError::Empty) => {}
+            }
+        }
         let publication = core::mem::replace(&mut self.publication, Publication::Published);
         match publication {
             Publication::Pending {
@@ -1164,6 +1174,7 @@ where
                 unreachable!("the Driver publishes one installed incarnation exactly once")
             }
         }
+        ControlFlow::Continue(())
     }
 
     async fn retire(self, settlements: Vec<Self::Settlement>) -> Self::Residual {
@@ -1211,14 +1222,16 @@ mod tests {
     use behavior::{
         ActionItem, Actions, BehaviorActed, EventLayer, Here, InitializationTurn, InterpretItem,
         InterpreterFault, InterpreterRequest, InterpreterRequests, ItemSettlement, MessageProtocol,
-        Never, NoBirthProtocols, NoBirths, NoReturnToEmitter, Own, SettlementStatus, User,
+        Never, NoBirthProtocols, NoBirths, NoReturnToEmitter, Own, SettledItem, SettlementStatus,
+        Step, User,
     };
     use behavior_actors::{Crash, Exit, StopOnShutdown};
     use communication::{Config, mailbox_channel};
 
     use crate::observe::pair;
     use crate::{ActorExecutionOutcome, MailAddr};
-    use bombay_engine::Completion;
+    use bombay_engine::{Completion, Driver, DriverRetirement};
+    use tokio::sync::oneshot::error::TryRecvError;
 
     use super::*;
 
@@ -1802,6 +1815,350 @@ mod tests {
         assert_eq!(replay, terminal);
     }
 
+    #[tokio::test]
+    async fn ready_owner_request_prevents_actual_address_publication() {
+        let address = MailAddr(43);
+        let addresses = AddressSpace::new();
+        let notice_addresses = addresses.clone();
+        let (termination_publisher, termination) = pair();
+        let (owner, cancellation) = oneshot::channel();
+        let (entered, commit_entered) = oneshot::channel();
+        let (release_commit, release) = oneshot::channel();
+        let (notice, mut published) = oneshot::channel();
+        let environment = ActivationEnvironment::prepare(
+            address,
+            addresses.clone(),
+            Config::new(2),
+            termination,
+            cancellation,
+            move |_, _, _| GatedInitializationInterpreter {
+                disposition: InitializationDisposition::Accepted,
+                entered: Some(entered),
+                release: Some(release),
+                retirement_task: None,
+            },
+        )
+        .publish_with(move |actor| {
+            let resolved = notice_addresses.resolve(&address);
+            let sent = notice.send((actor, resolved));
+            sent.expect("the complete publication observer remains owned");
+        });
+        let execution = tokio::spawn(Driver::new(ActivationProbe, environment).run());
+        commit_entered
+            .await
+            .expect("actual Driver initialization enters runtime interpretation");
+        let before_commit = addresses.resolve(&address);
+        let admitted = owner.send(OwnerCancellation);
+        let released = release_commit.send(());
+        // All runtime gates are released before the joined outcome or final oracle.
+        released.expect("the original commit gate remains owned");
+        let DriverRetirement {
+            behavior: ActivationProbe,
+            disposition,
+            residual,
+        } = execution
+            .await
+            .expect("the original Driver remains independently joined");
+        let LocalResidual::Retired {
+            settlements,
+            ingress,
+            activation_tasks,
+            descendants,
+            capability_failures,
+            unread_owner_cancellation,
+        } = residual
+        else {
+            panic!("actual interpreted activation retires through its owning port");
+        };
+        let publication = published.try_recv();
+        let after_retirement = addresses.resolve(&address);
+        let Ok(()) = admitted else {
+            panic!("the earlier original request was accepted, not a closed sender");
+        };
+        assert!(before_commit.is_none());
+        assert!(matches!(
+            disposition,
+            Ok(Completion::RetirementRequested(
+                LocalRetirementRequest::OwnerCancellation(OwnerCancellation)
+            ))
+        ));
+        assert_eq!(settlements.len(), 0);
+        assert!(ingress.control.is_empty() && ingress.user.is_empty());
+        assert!(activation_tasks.is_empty());
+        assert_eq!(descendants, RetirementCustody(23));
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
+        assert!(after_retirement.is_none());
+        match &publication {
+            Ok((actor, Some(resolved))) => {
+                assert_eq!(actor.address(), address);
+                assert_eq!(resolved.address(), address);
+            }
+            Ok((_, None)) => panic!("the notice must preserve actual Address visibility"),
+            Err(TryRecvError::Closed) => {}
+            Err(TryRecvError::Empty) => panic!("joined retirement must discharge pending notice"),
+        }
+        drop(termination_publisher);
+        assert!(
+            matches!(publication, Err(TryRecvError::Closed)),
+            "an owner request admitted before publication must keep the incarnation invisible"
+        );
+    }
+
+    #[tokio::test]
+    async fn disarmed_owner_sender_still_allows_actual_publication() {
+        let address = MailAddr(43);
+        let addresses = AddressSpace::new();
+        let notice_addresses = addresses.clone();
+        let (termination_publisher, termination) = pair();
+        let (owner, cancellation) = oneshot::channel();
+        let (entered, commit_entered) = oneshot::channel();
+        let (release_commit, release) = oneshot::channel();
+        let (notice, mut published) = oneshot::channel();
+        let environment = ActivationEnvironment::prepare(
+            address,
+            addresses.clone(),
+            Config::new(2),
+            termination,
+            cancellation,
+            move |_, _, _| GatedInitializationInterpreter {
+                disposition: InitializationDisposition::Accepted,
+                entered: Some(entered),
+                release: Some(release),
+                retirement_task: None,
+            },
+        )
+        .publish_with(move |actor| {
+            let resolved = notice_addresses.resolve(&address);
+            let sent = notice.send((actor, resolved));
+            sent.expect("the complete publication observer remains owned");
+        });
+        drop(owner);
+        let mut behavior = ActivationProbe;
+        let initialization =
+            behavior::initialize(&mut behavior).expect("the original pure initialization succeeds");
+        let activation = tokio::spawn(environment.activate(initialization));
+        commit_entered
+            .await
+            .expect("actual interpretation reached its runtime gate");
+        let before_commit = addresses.resolve(&address);
+        let released = release_commit.send(());
+        released.expect("the actual initialization still owns its gate");
+        let activated = activation
+            .await
+            .expect("the exact activation task is joined");
+        let Ok((mut active, interpretation)) = activated else {
+            panic!("the actual accepted initialization returns its local owner");
+        };
+        let status = interpretation.settlement_status();
+        let settlement = interpretation.into_settlement();
+        let [SettledItem::Attempted(ItemSettlement::Accepted(InitializationReceipt(23)))] =
+            settlement.sends.as_slice()
+        else {
+            panic!("the complete original initialization send receipt is retained before offering");
+        };
+        assert!(settlement.creations.is_empty());
+        assert!(matches!(settlement.become_, Step::Continue));
+        let publication_result = active.publish();
+        let visible = addresses.resolve(&address);
+        let residual = active.retire(vec![settlement]).await;
+        let absent = addresses.resolve(&address);
+        match &publication_result {
+            ControlFlow::Continue(()) => {}
+            ControlFlow::Break(_) => panic!("this contrast must publish before actual retirement"),
+        }
+        let publication = published.try_recv();
+        let Ok((actor, Some(resolved))) = publication else {
+            panic!("actual publication returns both original actor and complete resolved snapshot");
+        };
+        assert_eq!(actor.address(), address);
+        assert_eq!(resolved.address(), address);
+        assert!(before_commit.is_none());
+        assert!(visible.is_some());
+        assert!(absent.is_none());
+        assert_eq!(status, SettlementStatus::Accepted);
+        assert_retired_initialization(residual, SettlementStatus::Accepted);
+        drop(termination_publisher);
+    }
+
+    #[tokio::test]
+    async fn request_after_actual_publication_remains_admissible() {
+        let address = MailAddr(43);
+        let addresses = AddressSpace::new();
+        let notice_addresses = addresses.clone();
+        let (termination_publisher, termination) = pair();
+        let (owner, cancellation) = oneshot::channel();
+        let (entered, commit_entered) = oneshot::channel();
+        let (release_commit, release) = oneshot::channel();
+        let (notice, mut published) = oneshot::channel();
+        let environment = ActivationEnvironment::prepare(
+            address,
+            addresses.clone(),
+            Config::new(2),
+            termination,
+            cancellation,
+            move |_, _, _| GatedInitializationInterpreter {
+                disposition: InitializationDisposition::Accepted,
+                entered: Some(entered),
+                release: Some(release),
+                retirement_task: None,
+            },
+        )
+        .publish_with(move |actor| {
+            let resolved = notice_addresses.resolve(&address);
+            let sent = notice.send((actor, resolved));
+            sent.expect("the complete publication observer remains owned");
+        });
+        let mut behavior = ActivationProbe;
+        let initialization =
+            behavior::initialize(&mut behavior).expect("the original pure initialization succeeds");
+        let activation = tokio::spawn(environment.activate(initialization));
+        commit_entered
+            .await
+            .expect("actual interpretation reached its runtime gate");
+        let before_commit = addresses.resolve(&address);
+        let released = release_commit.send(());
+        released.expect("the actual initialization still owns its gate");
+        let activated = activation
+            .await
+            .expect("the exact activation task is joined");
+        let Ok((mut active, interpretation)) = activated else {
+            panic!("the actual accepted initialization returns its local owner");
+        };
+        let status = interpretation.settlement_status();
+        let settlement = interpretation.into_settlement();
+        let [SettledItem::Attempted(ItemSettlement::Accepted(InitializationReceipt(23)))] =
+            settlement.sends.as_slice()
+        else {
+            panic!("the complete original initialization send receipt is retained before offering");
+        };
+        assert!(settlement.creations.is_empty());
+        assert!(matches!(settlement.become_, Step::Continue));
+        let publication_result = active.publish();
+        let visible = addresses.resolve(&address);
+        let admitted = owner.send(OwnerCancellation);
+        let acquired = active.next().await;
+        let residual = active.retire(vec![settlement]).await;
+        let absent = addresses.resolve(&address);
+        match &publication_result {
+            ControlFlow::Continue(()) => {}
+            ControlFlow::Break(_) => panic!("this contrast must publish before actual retirement"),
+        }
+        let publication = published.try_recv();
+        let Ok((actor, Some(resolved))) = publication else {
+            panic!("actual publication returns both original actor and complete resolved snapshot");
+        };
+        assert_eq!(actor.address(), address);
+        assert_eq!(resolved.address(), address);
+        let Ok(()) = admitted else {
+            panic!("publication must retain the original later cancellation port");
+        };
+        assert!(matches!(
+            acquired,
+            ControlFlow::Break(LocalRetirementRequest::OwnerCancellation(OwnerCancellation))
+        ));
+        assert!(before_commit.is_none());
+        assert!(visible.is_some());
+        assert!(absent.is_none());
+        assert_eq!(status, SettlementStatus::Accepted);
+        assert_retired_initialization(residual, SettlementStatus::Accepted);
+        drop(termination_publisher);
+    }
+
+    #[tokio::test]
+    async fn owner_request_during_publication_remains_available_to_local_environment() {
+        let address = MailAddr(43);
+        let addresses = AddressSpace::new();
+        let notice_addresses = addresses.clone();
+        let (termination_publisher, termination) = pair();
+        let (owner, cancellation) = oneshot::channel();
+        let (entered, commit_entered) = oneshot::channel();
+        let (release_commit, release) = oneshot::channel();
+        let (notice, mut published) = oneshot::channel();
+        let environment = ActivationEnvironment::prepare(
+            address,
+            addresses.clone(),
+            Config::new(2),
+            termination,
+            cancellation,
+            move |_, _, _| GatedInitializationInterpreter {
+                disposition: InitializationDisposition::Accepted,
+                entered: Some(entered),
+                release: Some(release),
+                retirement_task: None,
+            },
+        )
+        .publish_with(move |actor| {
+            let resolved = notice_addresses.resolve(&address);
+            let admitted = owner.send(OwnerCancellation);
+            let sent = notice.send((actor, resolved, admitted));
+            let Ok(()) = sent else {
+                panic!("the complete publication observer remains owned");
+            };
+        });
+        let mut behavior = ActivationProbe;
+        let initialization =
+            behavior::initialize(&mut behavior).expect("the original pure initialization succeeds");
+        let activation = tokio::spawn(environment.activate(initialization));
+        commit_entered
+            .await
+            .expect("actual interpretation reached its runtime gate");
+        let before_commit = addresses.resolve(&address);
+        let released = release_commit.send(());
+        released.expect("the actual initialization still owns its gate");
+        let activated = activation
+            .await
+            .expect("the exact activation task is joined");
+        let Ok((mut active, interpretation)) = activated else {
+            panic!("the actual accepted initialization returns its local owner");
+        };
+        let status = interpretation.settlement_status();
+        let settlement = interpretation.into_settlement();
+        let [SettledItem::Attempted(ItemSettlement::Accepted(InitializationReceipt(23)))] =
+            settlement.sends.as_slice()
+        else {
+            panic!("the complete original initialization send receipt is retained before offering");
+        };
+        assert!(settlement.creations.is_empty());
+        assert!(matches!(settlement.become_, Step::Continue));
+        let publication_result = active.publish();
+        let visible = addresses.resolve(&address);
+        let publication = published.try_recv();
+        let Ok((actor, resolved, admitted)) = publication else {
+            panic!("the actual synchronous notice returns before publication completes");
+        };
+        let acquired = match &admitted {
+            Ok(()) => Some(active.next().await),
+            Err(_) => None,
+        };
+        let residual = active.retire(vec![settlement]).await;
+        let absent = addresses.resolve(&address);
+        assert!(absent.is_none());
+        assert_eq!(status, SettlementStatus::Accepted);
+        assert_retired_initialization(residual, SettlementStatus::Accepted);
+        match &publication_result {
+            ControlFlow::Continue(()) => {}
+            ControlFlow::Break(_) => panic!("this contrast must publish before actual retirement"),
+        }
+        let Some(resolved) = resolved else {
+            panic!("actual publication returns both original actor and complete resolved snapshot");
+        };
+        assert_eq!(actor.address(), address);
+        assert_eq!(resolved.address(), address);
+        let Ok(()) = admitted else {
+            panic!("publication must retain the original later cancellation port");
+        };
+        assert!(matches!(
+            acquired,
+            Some(ControlFlow::Break(
+                LocalRetirementRequest::OwnerCancellation(OwnerCancellation)
+            ))
+        ));
+        assert!(before_commit.is_none());
+        assert!(visible.is_some());
+        drop(termination_publisher);
+    }
+
     fn assert_retired_initialization(
         residual: LocalResidual<
             ActionsOf<ActivationProbe>,
@@ -1865,10 +2222,16 @@ mod tests {
         let committed_visibility = address_visibility(&addresses, address);
         let status = interpretation.settlement_status();
         let settlement = interpretation.into_settlement();
-        active.publish();
+        let publication_result = active.publish();
         let published_visibility = address_visibility(&addresses, address);
         let residual = active.retire(vec![settlement]).await;
         let retired_visibility = address_visibility(&addresses, address);
+        match &publication_result {
+            ControlFlow::Continue(()) => {}
+            ControlFlow::Break(_) => {
+                panic!("accepted initialization must publish before retirement")
+            }
+        }
 
         assert_eq!(pending_visibility, AddressVisibility::Absent);
         assert_eq!(committed_visibility, AddressVisibility::Absent);

@@ -111,7 +111,12 @@ pub trait ActiveEnvironment<B: Behavior<Ph = Never>> {
     ) -> impl Future<Output = SourceCustody<Self::Settlement>>;
 
     /// Publish the installed incarnation after initialization custody resolves.
-    fn publish(&mut self);
+    ///
+    /// `Continue(())` reports publication and permits ordinary input acquisition.
+    /// `Break(request)` transfers the original retirement request without publication.
+    /// The Driver retains the complete settlement suffix, retires the environment,
+    /// and never calls publication or acquires another event after that request.
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()>;
 
     /// Finish retiring resources owned by this execution before ordinary return.
     ///
