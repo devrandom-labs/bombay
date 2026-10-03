@@ -194,6 +194,10 @@ impl Environment<ScriptBehavior> for ScriptEnvironment {
     type Error = &'static str;
     type Residual = Vec<Fact>;
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn activate(
         mut self,
         actions: ActionsOf<ScriptBehavior>,
@@ -211,6 +215,10 @@ impl Environment<ScriptBehavior> for ScriptEnvironment {
         }
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn retire(mut self) -> Self::Residual {
         self.facts.push(Fact::PreparedRetired);
         self.facts
@@ -221,6 +229,10 @@ impl ActiveEnvironment<ScriptBehavior> for ScriptEnvironment {
     type Settlement = ScriptSettlement;
     type Residual = Vec<Fact>;
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<ScriptBehavior as Behavior>::Event> {
         self.facts.push(Fact::RequestedOrdinary);
         self.ordinary
@@ -228,11 +240,19 @@ impl ActiveEnvironment<ScriptBehavior> for ScriptEnvironment {
             .map(|turn| EventLayer::Inner(User::new(MailAddr(7), turn)))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next_source(&mut self) -> Option<<ScriptBehavior as Behavior>::Event> {
         self.facts.push(Fact::RequestedSource);
         self.source.pop_front().map(EventLayer::Owned)
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         actions: ActionsOf<ScriptBehavior>,
@@ -240,6 +260,10 @@ impl ActiveEnvironment<ScriptBehavior> for ScriptEnvironment {
         self.commit(actions)
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn offer_next(
         &mut self,
         mut settlement: Self::Settlement,
@@ -261,6 +285,10 @@ impl ActiveEnvironment<ScriptBehavior> for ScriptEnvironment {
         self.facts.push(Fact::Published);
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn retire(mut self, settlements: Vec<Self::Settlement>) -> Self::Residual {
         self.facts.push(Fact::Retired(
             settlements

@@ -8,7 +8,7 @@ error[E0382]: use of moved value: `publisher`
 6 |     publisher.complete(2);
   |     ^^^^^^^^^ value used here after move
   |
-note: `Publisher::<O>::complete` takes ownership of the receiver `self`, which moves `publisher`
+note: `observe::Publisher::<O>::complete` takes ownership of the receiver `self`, which moves `publisher`
  --> src/../../bombay/src/observe/mod.rs
   |
   |     pub fn complete(self, outcome: O) {

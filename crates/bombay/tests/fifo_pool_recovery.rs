@@ -93,6 +93,10 @@ impl WorkerPreparationSource<WorkerRole, RecoverableWorker, ImmediateActivation>
         }))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn prepare_next(
         &mut self,
         _: &WorkerRole,

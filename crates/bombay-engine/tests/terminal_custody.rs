@@ -159,6 +159,10 @@ impl Environment<CustodyBehavior> for PreparedEnvironment {
     type Error = &'static str;
     type Residual = Residual;
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn activate(
         mut self,
         actions: ActionsOf<CustodyBehavior>,
@@ -208,12 +212,20 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
     type Settlement = ActionSettlement;
     type Residual = Residual;
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<CustodyBehavior as Behavior>::Event> {
         self.events
             .pop_front()
             .map(|event| User::new(MailAddr(7), event))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next_source(&mut self) -> Option<<CustodyBehavior as Behavior>::Event> {
         let message = match self.settlement_custody {
             SettlementCustody::FirstSourceAdmitted => {
@@ -229,6 +241,10 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
         Some(User::new(MailAddr(7), message))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         actions: ActionsOf<CustodyBehavior>,
@@ -238,6 +254,10 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
         settle_actions(committed, self.active_settlement)
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn offer_next(
         &mut self,
         settlement: Self::Settlement,

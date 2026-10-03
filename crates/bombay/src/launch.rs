@@ -925,6 +925,10 @@ where
         core::future::pending().await
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn retire(self) -> CapabilityRetirement<B::Event, Self::Retired> {
         CapabilityRetirement::without_activations(())
     }
@@ -966,6 +970,10 @@ where
         core::future::pending().await
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn retire(self) -> CapabilityRetirement<B::Event, Self::Retired> {
         CapabilityRetirement::without_activations(self.retirement)
     }
@@ -1139,8 +1147,8 @@ mod tests {
         assert_eq!(behavior.terminal_marker, 19);
         let settlement_status = settlements.settlement_status();
         assert_eq!(settlement_status, SettlementStatus::Accepted);
-        assert!(ingress.control.is_empty());
-        assert!(ingress.user.is_empty());
+        assert_eq!(ingress.control.len(), 0);
+        assert_eq!(ingress.user.len(), 0);
         assert!(activation_tasks.is_empty());
         assert_eq!(descendants, ());
         assert_eq!(completion, Completion::Stopped);
@@ -1181,8 +1189,8 @@ mod tests {
         assert_eq!(initialization.sends, NoSends);
         assert!(initialization.creates.is_empty());
         assert!(matches!(initialization.become_, behavior::Step::Stop(_)));
-        assert!(control.is_empty());
-        assert!(user.is_empty());
+        assert_eq!(control.len(), 0);
+        assert_eq!(user.len(), 0);
         assert_eq!(descendants, ());
         assert!(addresses.resolve(&MailAddr::APPLICATION_ROOT).is_none());
         drop(reservation);
@@ -1221,8 +1229,8 @@ mod tests {
         assert_eq!(behavior.terminal_marker, 19);
         let settlement_status = settlements.settlement_status();
         assert_eq!(settlement_status, SettlementStatus::Accepted);
-        assert!(ingress.control.is_empty());
-        assert!(ingress.user.is_empty());
+        assert_eq!(ingress.control.len(), 0);
+        assert_eq!(ingress.user.len(), 0);
         assert!(activation_tasks.is_empty());
         assert_eq!(descendants, ());
         assert_eq!(completion, Completion::Stopped);
@@ -1267,8 +1275,8 @@ mod tests {
         assert_eq!(initialization.sends, NoSends);
         assert!(initialization.creates.is_empty());
         assert!(matches!(initialization.become_, behavior::Step::Stop(_)));
-        assert!(ingress.control.is_empty());
-        assert!(ingress.user.is_empty());
+        assert_eq!(ingress.control.len(), 0);
+        assert_eq!(ingress.user.len(), 0);
         assert!(activation_tasks.is_empty());
         assert_eq!(descendants, ());
         assert!(addresses.resolve(&MailAddr(1)).is_none());
@@ -1334,8 +1342,8 @@ mod tests {
         assert_eq!(behavior.terminal_marker, 19);
         let settlement_status = settlements.settlement_status();
         assert_eq!(settlement_status, SettlementStatus::Accepted);
-        assert!(control.is_empty());
-        assert!(user.is_empty());
+        assert_eq!(control.len(), 0);
+        assert_eq!(user.len(), 0);
         assert_eq!(descendants.len(), 1);
         let ProbeTerminal::Probe {
             origin,

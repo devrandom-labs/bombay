@@ -29,3 +29,25 @@ note: required by a bound in `bombay::Application::<Root, Members>::child`
 ...
    |         Actor: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Application::<Root, Members>::child`
+
+error[E0277]: the trait bound `NotBehavior: behavior::Behavior` is not satisfied
+  --> tests/compile/fail/application_child_must_be_behavior_feature_unified.rs:12:13
+   |
+12 |     let _ = bombay::Application::new(Root).child(Workers, NotBehavior);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `behavior::Behavior` is not implemented for `NotBehavior`
+  --> tests/compile/fail/application_child_must_be_behavior_feature_unified.rs:9:1
+   |
+ 9 | struct NotBehavior;
+   | ^^^^^^^^^^^^^^^^^^
+   = help: the following other types implement trait `behavior::Behavior`:
+             Acknowledgements<A, K, P, Route>
+             ApplicationBehavior<Root, Product>
+             Buffer<A, T, TargetRoute, ReplyRoute>
+             Cache<A, K, V, Route>
+             CircuitBreaker<A, Route>
+             Configuration<A, C, Route>
+             Correlator<A, K, V, Route>
+             Deadline<B>
+           and $N others

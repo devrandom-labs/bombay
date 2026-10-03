@@ -72,6 +72,10 @@ impl ActiveEnvironment<SettlementBehavior> for SettlementEnvironment {
     type Settlement = Settlement;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<SettlementEvent> {
         if let Some(event) = self.ordinary.take() {
             self.facts.lock().unwrap().push(Fact::RequestedOrdinary);
@@ -81,11 +85,19 @@ impl ActiveEnvironment<SettlementBehavior> for SettlementEnvironment {
         self.source.pop_front()
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next_source(&mut self) -> Option<SettlementEvent> {
         self.facts.lock().unwrap().push(Fact::RequestedSource);
         self.source.pop_front()
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         actions: ActionsOf<SettlementBehavior>,
@@ -98,6 +110,10 @@ impl ActiveEnvironment<SettlementBehavior> for SettlementEnvironment {
         Interpretation::Complete(Settlement(settlements))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn offer_next(
         &mut self,
         mut settlement: Self::Settlement,

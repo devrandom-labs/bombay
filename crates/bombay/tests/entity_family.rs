@@ -58,6 +58,10 @@ impl LocalEntityRuntime<u64, u64> for RecordingRuntime {
         task.await
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn activate(
         &self,
         _: EntityId<u64>,
@@ -75,11 +79,19 @@ impl LocalEntityRuntime<u64, u64> for RecordingRuntime {
         match error {}
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn deliver(&self, _: Self::Endpoint, (): Self::Origin, command: u64) -> Result<(), u64> {
         self.state.deliveries.lock().unwrap().push(command);
         Ok(())
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn fence(&self, _: Self::Endpoint) -> Result<(), FenceFailure> {
         self.state.fences.fetch_add(1, Ordering::Release);
         Ok(())
@@ -313,6 +325,10 @@ impl LocalEntityRuntime<u64, u64> for GatedRuntime {
         Ok(())
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn fence(&self, _: Self::Endpoint) -> Result<(), FenceFailure> {
         self.inner.state.fences.fetch_add(1, Ordering::Release);
         Ok(())
@@ -628,6 +644,10 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingRuntime {
         task.await
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn activate(
         &self,
         _: EntityId<u64>,
@@ -643,6 +663,10 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingRuntime {
         match error {}
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn deliver(
         &self,
         (): Self::Endpoint,
@@ -652,6 +676,10 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingRuntime {
         Err(command)
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn fence(&self, (): Self::Endpoint) -> Result<(), FenceFailure> {
         Ok(())
     }

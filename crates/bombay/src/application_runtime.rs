@@ -312,7 +312,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
                 <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Behavior,
                 <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Terminal,
             >,
-    {
+{
         self.entities(role).passivate(id)
     }
 }
@@ -520,6 +520,10 @@ where
     }
 }
 
+#[expect(
+    clippy::result_large_err,
+    reason = "Return exact rejected actor inputs and retirement values without an extra allocation."
+)]
 async fn launch_application_root<Actor, Spaces, Terminal, Origins>(
     spaces: Spaces,
     root: Actor,
@@ -1571,6 +1575,10 @@ where
     Bindings: Send,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         creations: Creations<CreateChild<MailAddr, New>>,
@@ -1610,6 +1618,10 @@ where
     Input: Send,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn admit_source(&mut self, input: Input) -> Result<(), Input> {
         let event = C::Event::ingress(input);
         match self.control.send(event) {
@@ -2082,6 +2094,10 @@ where
     Diagnostic: Send,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         action: DiagnosticAction<Infallible, Diagnostic>,
@@ -2163,6 +2179,10 @@ where
     Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = Child> + Send,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         input: ChildInput<Child, Source, Input, Occurrence>,
@@ -2261,6 +2281,10 @@ where
     EstablishedActor<StableProxy<Worker, Plan>>: Send,
     Self: ProxyControlAdmission<Worker, Plan> + Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         operation: ProxyOperation<Here, Worker, Plan>,
@@ -2304,6 +2328,10 @@ where
     Plan: Send,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: InitializeWorker<Worker, Plan>,
@@ -2333,6 +2361,10 @@ where
     Plan: ActivationPlan + 'static,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: BeginActivation<Worker, Plan>,
@@ -2360,6 +2392,10 @@ where
     Plan: ActivationPlan + 'static,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: PrepareWorkers<Source, Role, Worker, Plan>,
@@ -2386,6 +2422,10 @@ where
     C::Event: InjectEvent<TimerElapsed, Path>,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ScheduleAt,
@@ -2434,6 +2474,10 @@ where
     C::Event: InjectEvent<TimerElapsed, Path>,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ScheduleAfter,
@@ -2471,6 +2515,10 @@ where
     C::Event: InjectEvent<CreationResolved<MailAddr>, Path>,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ObserveCreation<ChildProtocol, Occurrence>,
@@ -2514,6 +2562,10 @@ where
     C::Event: InjectEvent<EstablishedCreation<Child, Occurrence>, Path>,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ObserveEstablishedCreation<Child, Occurrence>,
@@ -2559,6 +2611,10 @@ where
     N: Hosts<C::Protocol>,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ObservePeer<MailAddr>,
@@ -2590,6 +2646,10 @@ where
         ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = ResolvedChild<C, Occurrence>>,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ObserveChild<ChildProtocol, Occurrence>,
@@ -2632,6 +2692,10 @@ where
     Bindings: ChildBindingAt<ResolvedChildPosition<C, Occurrence>, Child = Child>,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ShutdownChild<Child, Occurrence>,
@@ -2684,6 +2748,10 @@ where
     Report: Send,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ReportToParent<Report>,
@@ -2700,6 +2768,10 @@ where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ReportTerminalOutcome<MailAddr>,
@@ -2717,6 +2789,10 @@ where
     Plan: Send,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ReportShutdownPlan<Plan>,
@@ -2838,6 +2914,10 @@ where
     C::Event: InjectEvent<EstablishedObservation<Target>, Path> + Send + 'static,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ObserveEstablished<Target>,
@@ -2857,6 +2937,10 @@ where
     C::Event: InjectEvent<EstablishedObservation<Target>, Path> + Send + 'static,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: CancelObservation<Target>,
@@ -2894,6 +2978,10 @@ where
     BehaviorMessage<Child>: Send,
     Self: Send,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn interpret_item(
         &mut self,
         request: ShutdownEstablished<Child, Here>,

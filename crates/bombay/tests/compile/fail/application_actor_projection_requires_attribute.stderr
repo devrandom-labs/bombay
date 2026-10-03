@@ -2,7 +2,7 @@ error[E0308]: mismatched types
   --> tests/compile/fail/application_actor_projection_requires_attribute.rs:18:10
    |
 18 | #[derive(TerminalProjection)]
-   |          ^^^^^^^^^^^^^^^^^^ expected `RootOrigin<_>`, found `ChildOrigin<StopOnShutdown<Root>, ...>`
+   |          ^^^^^^^^^^^^^^^^^^ expected `RootOrigin<_>`, found `ChildOrigin<StopOnShutdown<Root>, _>`
    |
    = note: expected struct `RootOrigin<_>`
               found struct `ChildOrigin<StopOnShutdown<Root>, Lifecycle>`
@@ -12,7 +12,7 @@ error[E0308]: mismatched types
   --> tests/compile/fail/application_actor_projection_requires_attribute.rs:18:10
    |
 18 | #[derive(TerminalProjection)]
-   |          ^^^^^^^^^^^^^^^^^^ expected `ChildOrigin<StopOnShutdown<Root>, ...>`, found `RootOrigin<_>`
+   |          ^^^^^^^^^^^^^^^^^^ expected `ChildOrigin<StopOnShutdown<Root>, _>`, found `RootOrigin<_>`
 ...
 21 |         origin: ChildOrigin<StopOnShutdown<Root>, Lifecycle>,
    |                 -------------------------------------------- expected due to this

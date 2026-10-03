@@ -53,6 +53,10 @@ impl OrderCommands for LiveOrderCommands {
             })
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn shutdown(&self) -> Result<(), ()> {
         self.lifecycle.request_shutdown().map_err(|_| ())
     }
@@ -133,6 +137,10 @@ mod tests {
     }
 
     impl OrderCommands for RecordingCommands {
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn place(&self, order: PlaceOrder) -> Result<(), PlaceOrder> {
             self.orders
                 .lock()
@@ -141,6 +149,10 @@ mod tests {
             Ok(())
         }
 
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn shutdown(&self) -> Result<(), ()> {
             Ok(())
         }
@@ -183,10 +195,18 @@ mod tests {
     struct RejectingCommands;
 
     impl OrderCommands for RejectingCommands {
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn place(&self, order: PlaceOrder) -> Result<(), PlaceOrder> {
             Err(order)
         }
 
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn shutdown(&self) -> Result<(), ()> {
             Err(())
         }

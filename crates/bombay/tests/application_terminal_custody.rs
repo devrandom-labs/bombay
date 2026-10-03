@@ -125,8 +125,8 @@ fn root_returns_only_after_owning_ordered_direct_child_terminals() {
         panic!("the root must preserve its completed state and child custody")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
+    assert_eq!(control.len(), 0);
+    assert_eq!(user.len(), 0);
     assert_eq!(settlements.len(), 1);
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 2);
@@ -148,9 +148,9 @@ fn root_returns_only_after_owning_ordered_direct_child_terminals() {
         else {
             panic!("parent retirement must preserve each exact child cancellation")
         };
-        assert!(control.is_empty());
-        assert!(user.is_empty());
-        assert!(settlements.is_empty());
+        assert_eq!(control.len(), 0);
+        assert_eq!(user.len(), 0);
+        assert_eq!(settlements.len(), 0);
         assert!(descendants.is_empty());
         addresses.push(origin.address());
         nonces.push(origin.nonce());
@@ -187,8 +187,8 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
         panic!("the application root must retain its declared child")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
+    assert_eq!(control.len(), 0);
+    assert_eq!(user.len(), 0);
     assert_eq!(settlements.len(), 1);
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 2);
@@ -208,9 +208,9 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
                         descendants,
                     },
             } => {
-                assert!(control.is_empty());
-                assert!(user.is_empty());
-                assert!(settlements.is_empty());
+                assert_eq!(control.len(), 0);
+                assert_eq!(user.len(), 0);
+                assert_eq!(settlements.len(), 0);
                 assert!(descendants.is_empty());
                 let previous_background = background.replace(origin);
                 assert_eq!(previous_background, None);
@@ -226,9 +226,9 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
                         descendants,
                     },
             } => {
-                assert!(control.is_empty());
-                assert!(user.is_empty());
-                assert!(settlements.is_empty());
+                assert_eq!(control.len(), 0);
+                assert_eq!(user.len(), 0);
+                assert_eq!(settlements.len(), 0);
                 assert!(descendants.is_empty());
                 let previous_audit = audit.replace(origin);
                 assert_eq!(previous_audit, None);
@@ -425,7 +425,7 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
         vec![SettlementStatus::Accepted, SettlementStatus::Accepted]
     );
     assert!(control.is_empty());
-    assert!(user.is_empty());
+    assert_eq!(user.len(), 0);
     assert_eq!(completion, Completion::Stopped);
     let [
         NestedTerminal::Child {
@@ -450,8 +450,8 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
         settlements[0].settlement_status(),
         SettlementStatus::Accepted
     );
-    assert!(control.is_empty());
-    assert!(user.is_empty());
+    assert_eq!(control.len(), 0);
+    assert_eq!(user.len(), 0);
     let [
         NestedTerminal::Grandchild {
             origin,
@@ -479,8 +479,8 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
         }
         _ => panic!("the grandchild cannot interpret more than its initialization"),
     }
-    assert!(control.is_empty());
-    assert!(user.is_empty());
+    assert_eq!(control.len(), 0);
+    assert_eq!(user.len(), 0);
     assert!(descendants.is_empty());
 }
 

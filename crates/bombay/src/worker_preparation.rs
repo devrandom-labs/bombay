@@ -58,6 +58,10 @@ where
     Worker: Behavior + Send,
     Plan: ActivationPlan,
 {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn prepare_first(
         &mut self,
         _: &Role,
@@ -65,6 +69,10 @@ where
         match *self {}
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn prepare_next(&mut self, _: &Role) -> Result<WorkerSubmission<Worker, Plan>, Never> {
         match *self {}
     }
@@ -278,6 +286,10 @@ mod tests {
             }
         }
 
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn prepare_next(
             &mut self,
             role: &SearchRole,

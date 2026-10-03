@@ -323,6 +323,10 @@ mod tests {
         type HydrationError = Never;
         type Terminal = Never;
 
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn hydrate(
             &self,
             _: EntityId<Self::Id>,

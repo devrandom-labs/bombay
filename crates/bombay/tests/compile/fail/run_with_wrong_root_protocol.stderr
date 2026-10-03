@@ -9,8 +9,8 @@ error[E0631]: type mismatch in function arguments
    |                                                       |
    |                                                       required by a bound introduced by this call
    |
-   = note: expected function signature `fn(bombay::ApplicationHandle<Root, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>>) -> _`
-              found function signature `fn(bombay::ApplicationHandle<Other, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>>) -> _`
+   = note: expected function signature `fn(ApplicationHandle<Root, EventLayer<ShutdownRequested, User<MailAddr, Never>>>) -> _`
+              found function signature `fn(ApplicationHandle<Other, EventLayer<ShutdownRequested, User<MailAddr, Never>>>) -> _`
 note: required by a bound in `bombay::application_runtime::<impl bombay::Application<Root, Members>>::run_with`
   --> src/application_runtime.rs
    |

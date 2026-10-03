@@ -19,10 +19,6 @@ note: the enum `SlotEffect` is defined here
   |
   | pub(crate) use lifecycle::{SlotEffect, SlotEffectBatch};
   |                            ^^^^^^^^^^
-help: import `SlotEffect` directly
-  |
-2 |     ActivatingSlot, ActiveSlot, DrainingSlot, SlotDecision, bombay::entity::lifecycle::SlotEffect, SlotEffectBatch,
-  |                                                             +++++++++++++++++++++++++++
 
 error[E0603]: struct `SlotEffectBatch` is private
  --> tests/compile/fail/entity_lifecycle_representation_is_private.rs:2:73
@@ -35,7 +31,3 @@ note: the struct `SlotEffectBatch` is defined here
   |
   | pub(crate) use lifecycle::{SlotEffect, SlotEffectBatch};
   |                                        ^^^^^^^^^^^^^^^
-help: import `SlotEffectBatch` directly
-  |
-2 |     ActivatingSlot, ActiveSlot, DrainingSlot, SlotDecision, SlotEffect, bombay::entity::lifecycle::SlotEffectBatch,
-  |                                                                         +++++++++++++++++++++++++++

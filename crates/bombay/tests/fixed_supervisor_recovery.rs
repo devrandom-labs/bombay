@@ -51,6 +51,10 @@ impl ActivationPlan for ActivationNotice {
     type Ready = ();
     type Rejection = Never;
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn activate(self) -> Result<Self::Ready, Self::Rejection> {
         self.activated
             .send(self.role)
@@ -88,6 +92,10 @@ impl WorkerSource<WorkerRole, ManagedWorker, ActivationNotice> for Workshop {
 }
 
 impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Workshop {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn prepare_first(
         &mut self,
         role: &WorkerRole,
@@ -105,6 +113,10 @@ impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Wo
         ))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn prepare_next(
         &mut self,
         role: &WorkerRole,

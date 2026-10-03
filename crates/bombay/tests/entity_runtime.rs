@@ -109,6 +109,10 @@ impl<I: Send + 'static> LocalEntityRuntime<I, u64> for TestRuntime {
         Some(thread::spawn(move || block_on(task)))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn join(task: &mut Self::Task) -> Result<(), Self::TaskFailure> {
         task.take()
             .expect("the exact lifecycle task is joined once")
@@ -215,12 +219,20 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingMoveOnlyRuntime {
         Some(thread::spawn(move || block_on(task)))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn join(task: &mut Self::Task) -> Result<(), Self::TaskFailure> {
         task.take()
             .expect("the exact lifecycle task is joined once")
             .join()
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn activate(
         &self,
         _: EntityId<u64>,
@@ -236,6 +248,10 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingMoveOnlyRuntime {
         match error {}
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn deliver(
         &self,
         (): Self::Endpoint,
@@ -245,6 +261,10 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingMoveOnlyRuntime {
         Err(command)
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn fence(&self, (): Self::Endpoint) -> Result<(), FenceFailure> {
         Ok(())
     }

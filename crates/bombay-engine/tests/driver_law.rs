@@ -68,6 +68,10 @@ impl TestActions<Probe> for Env {
     type Error = u64;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<Probe as Behavior>::Event> {
         self.facts.lock().unwrap().push(Fact::Next);
         self.events
@@ -75,6 +79,10 @@ impl TestActions<Probe> for Env {
             .map(|value| User::new(MailAddr(1), value))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(&mut self, effect: bombay_engine::ActionsOf<Probe>) -> Result<(), Self::Error> {
         let Actions { sends, .. } = effect;
         let mut committed = Vec::new();
@@ -248,12 +256,20 @@ impl TestActions<StatefulDecision> for StatefulDecisionEnv {
     type Error = Infallible;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<StatefulDecision as Behavior>::Event> {
         self.events
             .pop_front()
             .map(|value| User::new(MailAddr(1), value))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         actions: bombay_engine::ActionsOf<StatefulDecision>,
@@ -297,10 +313,18 @@ impl TestActions<StatefulDecision> for FailingStateEnv {
     type Error = &'static str;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<StatefulDecision as Behavior>::Event> {
         self.event.take().map(|value| User::new(MailAddr(1), value))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         _actions: bombay_engine::ActionsOf<StatefulDecision>,
@@ -414,10 +438,18 @@ impl TestActions<ClosedInputBehavior> for ClosedInputEnv {
     type Error = Infallible;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<ClosedEvent> {
         self.events.pop_front()
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         actions: bombay_engine::ActionsOf<ClosedInputBehavior>,
@@ -483,12 +515,20 @@ impl TestActions<ExclusiveFold> for ExclusiveFoldEnv {
     type Error = Infallible;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<ExclusiveFold as Behavior>::Event> {
         self.0
             .pop_front()
             .map(|value| User::new(MailAddr(1), value))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         _actions: bombay_engine::ActionsOf<ExclusiveFold>,
@@ -570,12 +610,20 @@ impl TestActions<Probe> for AlternateProbeEnv {
     type Error = Infallible;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<Probe as Behavior>::Event> {
         self.0
             .pop_front()
             .map(|value| User::new(MailAddr(2), value))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         _actions: bombay_engine::ActionsOf<Probe>,
@@ -722,9 +770,17 @@ impl TestActions<InitFailure> for EmptyEnv {
     type Error = Infallible;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<InitFailure as Behavior>::Event> {
         None
     }
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         _actions: bombay_engine::ActionsOf<InitFailure>,
@@ -774,10 +830,18 @@ impl TestActions<InitPanic> for InitializationPanicEnvironment {
     type Error = Infallible;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<InitPanic as Behavior>::Event> {
         None
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(&mut self, _: bombay_engine::ActionsOf<InitPanic>) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -898,9 +962,17 @@ impl TestActions<SendNotSync> for MoveEnv {
     type Error = Infallible;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<SendNotSync as Behavior>::Event> {
         self.0.take().map(|value| User::new(MailAddr(1), value))
     }
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         _actions: bombay_engine::ActionsOf<SendNotSync>,
@@ -935,6 +1007,10 @@ impl TestActions<Probe> for PendingEnv {
     async fn next(&mut self) -> Option<<Probe as Behavior>::Event> {
         std::future::pending().await
     }
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         _actions: bombay_engine::ActionsOf<Probe>,
@@ -992,6 +1068,10 @@ impl TestActions<Probe> for PendingInputEnv {
         }
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         _actions: bombay_engine::ActionsOf<Probe>,
@@ -1182,10 +1262,18 @@ impl TestActions<PanicBehavior> for PanicEnv {
     type Error = Infallible;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<PanicBehavior as Behavior>::Event> {
         self.next.fetch_add(1, Ordering::SeqCst);
         Some(User::new(MailAddr(1), 1))
     }
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         _actions: bombay_engine::ActionsOf<PanicBehavior>,
@@ -1238,12 +1326,20 @@ impl TestActions<SelfSender> for SelfSendEnv {
     type Error = Infallible;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<SelfSender as Behavior>::Event> {
         self.transcript.lock().unwrap().push("next");
         self.events
             .pop_front()
             .map(|value| User::new(MailAddr(1), value))
     }
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         effect: bombay_engine::ActionsOf<SelfSender>,
@@ -1340,10 +1436,18 @@ impl TestActions<CompleteActions> for CompleteEnvironment {
     type Error = Infallible;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<CompleteActions as Behavior>::Event> {
         panic!("initial stop must prevent ingress")
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         actions: bombay_engine::ActionsOf<CompleteActions>,
@@ -1456,6 +1560,10 @@ impl TestActions<CreationScopeBehavior> for CreationScopeEnv {
     type Error = Infallible;
     type Residual = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<CreationResultEvent> {
         let result = self.result.take();
         if let Some(CreationResultEvent::Results(nonces)) = &result {
@@ -1467,6 +1575,10 @@ impl TestActions<CreationScopeBehavior> for CreationScopeEnv {
         result
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(
         &mut self,
         actions: bombay_engine::ActionsOf<CreationScopeBehavior>,

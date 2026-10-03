@@ -270,6 +270,10 @@ impl EntityDefinition for Profiles {
     type HydrationError = Never;
     type Terminal = ProfileTerminal;
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn hydrate(&self, _: EntityId<Self::Id>) -> Result<Self::Behavior, Self::HydrationError> {
         Ok(Profile { admissions: 0 }.stop_on_shutdown())
     }

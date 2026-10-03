@@ -611,9 +611,9 @@ fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
         panic!("the root behavior failure must remain an exact typed terminal")
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert!(settlements.is_empty());
-    assert!(control.is_empty());
-    assert!(user.is_empty());
+    assert_eq!(settlements.len(), 0);
+    assert_eq!(control.len(), 0);
+    assert_eq!(user.len(), 0);
     assert!(descendants.is_empty());
 }
 

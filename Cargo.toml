@@ -31,8 +31,8 @@ repository = "https://github.com/devrandom-labs/bombay"
 tokio = { version = "1.47", default-features = false }
 # The pure Behavior algebra (Actions/Envelope/Create/the capability stack) —
 # depended on, never copied.
-behavior = { package = "bombay-behavior", version = "0.21.0" }
-behavior-actors = { package = "bombay-behavior-actors", version = "0.21.0" }
+behavior = { package = "bombay-behavior", version = "0.21.1" }
+behavior-actors = { package = "bombay-behavior-actors", version = "0.21.1" }
 bombay-engine = { version = "0.2.1", path = "crates/bombay-engine" }
 bombay-address = "0.3.0"
 communication = { package = "bombay-communication", version = "0.1.3" }

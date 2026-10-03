@@ -261,6 +261,10 @@ pub(crate) mod tests {
             }
         }
 
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn next_source(&mut self) -> Option<<ProbeBehavior as Behavior>::Event> {
             None
         }

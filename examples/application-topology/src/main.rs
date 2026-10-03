@@ -207,8 +207,8 @@ where
     };
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
+    assert_eq!(control.len(), 0);
+    assert_eq!(user.len(), 0);
     assert!(descendants.is_empty());
     assert_eq!(completion, Completion::Stopped);
     behavior.base().indexed_documents
@@ -231,8 +231,8 @@ where
     };
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
+    assert_eq!(control.len(), 0);
+    assert_eq!(user.len(), 0);
     assert!(descendants.is_empty());
     assert_eq!(completion, Completion::Stopped);
     behavior
@@ -246,7 +246,6 @@ where
 #[cfg(test)]
 mod tests {
     use bombay::behavior::Step;
-    use bombay::prelude::Activate as _;
 
     use super::*;
 

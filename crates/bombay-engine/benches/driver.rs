@@ -44,6 +44,10 @@ impl ActiveEnvironment<OneTurn> for Immediate {
     type Settlement = Vec<Never>;
     type Residual = Vec<Self::Settlement>;
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next(&mut self) -> Option<<OneTurn as Behavior>::Event> {
         match std::mem::replace(&mut self.0, Ingress::Exhausted) {
             Ingress::Pending => Some(User::new(MailAddr(1), 1)),
@@ -51,14 +55,26 @@ impl ActiveEnvironment<OneTurn> for Immediate {
         }
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next_source(&mut self) -> Option<<OneTurn as Behavior>::Event> {
         unreachable!("the benchmark has no source-returning actions")
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn apply(&mut self, _: ActionsOf<OneTurn>) -> Interpretation<Self::Settlement> {
         Interpretation::Complete(Vec::new())
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn offer_next(
         &mut self,
         settlement: Self::Settlement,
@@ -68,6 +84,10 @@ impl ActiveEnvironment<OneTurn> for Immediate {
 
     fn publish(&mut self) {}
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn retire(self, settlements: Vec<Self::Settlement>) -> Self::Residual {
         settlements
     }
@@ -87,6 +107,10 @@ impl Environment<OneTurn> for Immediate {
         Ok((self, interpretation))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn retire(self) -> Self::Residual {
         Vec::new()
     }

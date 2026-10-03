@@ -39,13 +39,10 @@ impl RetainedKeyHasher {
 
 impl Hasher for RetainedKeyHasher {
     fn write(&mut self, bytes: &[u8]) {
-        let mut chunks = bytes.chunks_exact(8);
-        for chunk in &mut chunks {
-            self.add(u64::from_le_bytes(
-                chunk.try_into().expect("chunk is 8 bytes"),
-            ));
+        let (chunks, tail) = bytes.as_chunks::<8>();
+        for chunk in chunks {
+            self.add(u64::from_le_bytes(*chunk));
         }
-        let tail = chunks.remainder();
         if !tail.is_empty() {
             let mut padded = [0_u8; 8];
             padded[..tail.len()].copy_from_slice(tail);

@@ -237,6 +237,10 @@ fn every_fluent_method_returns_its_existing_owner_type() {
 }
 
 #[test]
+#[expect(
+    clippy::manual_assert_eq,
+    reason = "Compare complete typed transitions without adding Debug requirements to their owning types."
+)]
 fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
     let delay = Duration::from_millis(1);
     let fluent = TimerRoot

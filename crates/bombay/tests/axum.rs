@@ -69,8 +69,8 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(settlements.len(), 1);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
+    assert_eq!(control.len(), 0);
+    assert_eq!(user.len(), 0);
     assert!(descendants.is_empty());
     assert_eq!(completion, Completion::Stopped);
 }

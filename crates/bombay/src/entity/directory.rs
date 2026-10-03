@@ -650,12 +650,19 @@ where
 /// counters — every identity is an opaque token, and all slot state it later
 /// names is synchronized by the shard and executor mutexes instead.
 fn allocate(sequence: &AtomicU64) -> Option<NonZeroU64> {
-    sequence
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-            current.checked_add(1)
-        })
-        .ok()
-        .and_then(NonZeroU64::new)
+    #[cfg(bombay_entity_loom)]
+    let advance_sequence = AtomicU64::fetch_update;
+    #[cfg(not(bombay_entity_loom))]
+    let advance_sequence = AtomicU64::try_update;
+
+    advance_sequence(
+        sequence,
+        Ordering::Relaxed,
+        Ordering::Relaxed,
+        |current: u64| current.checked_add(1),
+    )
+    .ok()
+    .and_then(NonZeroU64::new)
 }
 
 /// Reduce an event addressed to an absent entry on an unallocated slot.

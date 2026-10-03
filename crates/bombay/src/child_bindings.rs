@@ -213,6 +213,10 @@ pub(crate) trait RetireChildTasks {
 impl<Root> RetireChildTasks for NoChildBindings<Root> {
     type Root = Root;
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn retire_child_tasks(self) -> Vec<Self::Root> {
         Vec::new()
     }

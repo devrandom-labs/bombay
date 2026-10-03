@@ -1190,7 +1190,7 @@ mod tests {
         tasks.spawn(async { Ok(()) });
         assert!(!tasks.is_empty());
         let completed = tasks.settle().await.expect("the task completes normally");
-        assert!(completed.is_empty());
+        assert_eq!(completed.len(), 0);
     }
 
     struct ActivationTaskPanic;
@@ -1363,6 +1363,10 @@ mod tests {
     impl InterpretItem<InitializationRequest, ActivationEvent, Here>
         for GatedInitializationInterpreter
     {
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn interpret_item(
             &mut self,
             item: InitializationRequest,
@@ -1414,6 +1418,10 @@ mod tests {
             actions.interpret::<Self, ActivationEvent, Here>(self).await
         }
 
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn offer_next(
             &mut self,
             settlement: ActionSettlementOf<ActivationProbe>,
@@ -1421,6 +1429,10 @@ mod tests {
             SourceCustody::Exhausted(settlement)
         }
 
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn retire(self) -> CapabilityRetirement<ActivationEvent, Self::Retired> {
             let mut activation_tasks = ActivationTasks::new();
             if let Some(task) = self.retirement_task {

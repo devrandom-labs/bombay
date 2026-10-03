@@ -75,6 +75,10 @@ where
         self.0.next()
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn next_source(&mut self) -> Option<B::Event> {
         unreachable!("the test adapter never admits a source result")
     }
@@ -83,6 +87,10 @@ where
         interpret(self.0.apply(actions).await)
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn offer_next(
         &mut self,
         settlement: Self::Settlement,

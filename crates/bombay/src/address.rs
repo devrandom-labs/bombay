@@ -79,7 +79,7 @@ impl ApplicationAddresses {
 
     pub(crate) fn allocate(&self) -> Result<MailAddr, AllocationRejection> {
         self.next
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |address| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |address| {
                 address.checked_add(1)
             })
             .map(MailAddr)
