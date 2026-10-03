@@ -377,3 +377,39 @@ minimization remain required. Values destroyed inside a consuming user projector
 cannot be recovered. Preliminary compile failures, interrupted runs, a wrong
 coarse-parent timing assumption and a completed-future repoll failure are
 excluded; none is counted as original-defect evidence.
+
+## Constructor-input origin custody comparison (2026-10-03)
+
+An additional ordinary-Rust comparison uses two actual actors with distinct
+generated child roles. Its closed per-role product retains creation metadata
+and `Result<Terminal, (original typed ChildOrigin, original JoinError)>`.
+The success terminal owns its origin once; only failure needs the separate
+origin. Both eager projection results are joined before caller code directly
+constructs its concrete failure variant. Original error identity/panic kind
+and the complete successful sibling, including its original Vec allocation,
+remain available. No native payload inspection or downcast is introduced.
+
+Receipt `783cae988f6031aa769639ffd1f1d75bb33bbc85e05679734ba61d0b7acdcd09`;
+incremental patch
+`b352f96bbc6c9e491357a66249ae909100a86c67fcaf6bcd4a1bbe4fbb2ad875`.
+Independent non-author review
+`9840d13575d7c1a74f23e3ec40f1e5e5b2098d6b331b71bac1d4e85f677b774d`
+authenticates all 345 sources and 49 artifacts. Coordinator read the complete
+330-line append, source contracts and intended diagnostics and independently
+authenticated those hashes; no coordinator Rust rerun is claimed. Production
+and public-type delta is zero. The candidate remains isolated and unretained.
+
+Positive and restored origin comparison and inherited normal recursive case
+pass in both profiles. Substituting the original origin compiles and fails its
+typed equality in both profiles. Originless output, wrong declared role and
+recursive closed product are three E0308 static denials; these are interface
+limits, not executable repairs. Formatting and strict lint pass.
+
+This reserves explicitly supplied constructor routes beside the tasks. It does
+not fix actual standard creation's origin storage; the Catalog topology is not
+a running parent. Primary projection remains eager and a panicking consuming
+projector can destroy its inputs. A single Pending poll of a newly spawned
+joining task does not establish that it reached a particular await; the real
+unreleased sibling gate and consuming join-all source support the bounded
+cleanup claim. Many occurrences, recursive failure shape, dropped-parent
+custody and the deferred-primary alternative remain open under DG-PROJECTION.

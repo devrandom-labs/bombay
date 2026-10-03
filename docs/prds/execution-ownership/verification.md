@@ -132,7 +132,7 @@ its separate complete ten-path record in the shutdown decision record.
 ```text
 production: +167 / -34 / net 133
 tests: +2872 / -536 / net 2336
-documentation: +5270 / -85 / net 5185
+documentation: +5307 / -86 / net 5221
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
@@ -235,7 +235,7 @@ classification uses local.rs line 1164 and application_runtime.rs line 3069.
 
 ## Fresh independent actor scheduling evidence (2026-10-03)
 
-The isolated EV-25 candidate adds 769 test lines in launch.rs and changes two
+The reviewed EV-25 stage adds 769 test lines in launch.rs and changes two
 configuration lines (+2/-2) in Cargo.toml; production Rust and public types
 remain unchanged. Tests are exempt from production condensation. The workspace
 Tokio feature enables multi-thread support for this evidence; current public
@@ -248,8 +248,8 @@ Independent non-author review:
 Coordinator fresh verification receipt:
 `6a16748e0c962ad33d5da7ce5c7e4f96affb60111e667b3551a9c5e63f3b227f`.
 The fresh worktree starts at c70d0a3 and preserves the accepted shutdown sources.
-Only the candidate configuration and launch.rs were copied. Canonical source
-has not been changed by this comparison.
+Only the candidate configuration and launch.rs were copied into that review
+worktree. Canonical source remained unchanged until the transfer below.
 
 The coordinator read the full candidate and selected Tokio poll-hook source.
 Actual actor task IDs, distinct worker IDs and complete typed retirement traces

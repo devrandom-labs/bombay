@@ -560,7 +560,7 @@ explicit test-host control, never timing-sensitive sleeps as the race oracle.
 | EV-22 | HTTP bind failure starts no actor/builds no router; router built once; root termination shuts down server; serving failure retains error plus terminal. | XO-37–39 |
 | EV-23 | Timer replacement/stale expiry/overflow traces unchanged; no second timer queue. | XO-40 |
 | EV-24 | External work saturation rejects with original input; accepted work's completion and cancellation/shutdown are truthful, including work that cannot be stopped. | XO-41–42, DG-WORK |
-| EV-25 | Two actors perform overlapping runtime work on distinct workers; independent instrumentation sees no concurrent fold of one actor. A serial-only mutation fails. | EXEC-02, EXEC-04 |
+| EV-25 | Two actors perform overlapping runtime work on distinct workers; independent instrumentation sees no concurrent fold of one actor. A serial-only mutation fails. **Verified and retained:** section 36 and verification record; public runner API remains governed by DG-API. | EXEC-02, EXEC-04 |
 | EV-26 | Compile denials for !Send actor/effect, wrong protocol, wrong child role, forged shutdown, duplicated affine ownership, and forbidden ordinary Driver controls. | XO-05, XO-24–30, XO-45 |
 | EV-27 | Public examples, renamed dependency fixture, macros and external consumer compile with selected API; no private structural path leaks. | DG-API, DG-MODULES |
 | EV-28 | Before/after differential traces prove wrapper/module consolidation preserves initialization, actions, return custody, admission, configured defaults and terminal order. | XO-12, DG-WRAPPERS, DG-MODULES |
