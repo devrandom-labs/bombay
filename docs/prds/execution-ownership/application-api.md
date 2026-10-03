@@ -976,3 +976,30 @@ before checking work release, state, complete lanes, callbacks and metrics.
 Final formatted measurement, both-profile verification/inversions and independent
 final review remain required. No canonical source transfer, full DG-API/DG-TASK,
 startup publication policy, native failure or recursive result gate is approved.
+
+## Reviewed combined startup and family custody (2026-10-03)
+
+Final receipt 969972145f75a55dfe1a09dd9455f4ec9e75dd7972316a2d554cb3d961e3d914
+and nonauthor review
+6b63fc91c9051263b330ccc3487cb3f680cff183fa40d9d071236d25a70aa7c6
+accept this bounded composition. Source is
+41b5729cd3d0f37a3a25511815fa9837bd06de1231bdf73ca903b57adeefe3cc.
+All 21 positive and restored tests pass in debug and optimized builds; all
+three compiled ownership inversions fail in both after gates close and cleanup
+joins. Pinned-Nix strict package lib/tests Clippy and workspace formatting pass.
+
+The sole existing guard preserves uninvoked work and its consuming callback
+through startup. Forward work permission prevents family shutdown while normal
+work remains pending after root completion. Dropping the owning execution
+releases its actual pending work, then retained cleanup joins the original
+cancelled root and gracefully stopped native family. The surviving receiver
+preserves original allocations, complete terminal lanes, callback collections
+and metrics. No independent generation identity is inferred from opaque IDs.
+
+Coordinator and reviewer authenticate 345 sources, 33 artifacts and the unchanged
+179-package lock, including 165 external packages. Default diff attributes tests
++632/-9/net623; independent autojunk-disabled attribution is +631/-8/net623.
+Production/public changes are zero; conditional inherited launch net53 remains
+separate. Neither reviewer reran Rust. Startup visibility, active-family final
+receiver surrender, native failures, recursive projection and the public API
+remain open. This evidence is not full gate acceptance or canonical retention.

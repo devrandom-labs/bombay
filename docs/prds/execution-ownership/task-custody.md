@@ -1547,3 +1547,27 @@ boundary, typed disposition, ordinary-Rust comparison and independent review
 remain required before implementation or EV-06 acceptance. A queued request,
 request acquisition, publication and startup delivery are not interchangeable
 evidence. Independent input-custody and family-lifetime comparisons continue.
+
+## Executed original startup-publication trace (2026-10-03)
+
+Receipt cb56782405b7be914d65ecb2cfd70e2beccf7bdb25a4773b633783884441edc2,
+nonauthor review
+85936370b0b96f277c6d237580be3126dd5af9dc2979d2926bece015ef3ad21a
+and coordinator inspection
+290c787c010492c7faca5cd5f2f2d42d0c69260fe1c255cae82d34df72901fe3
+accept diagnostic evidence only. The same execution is dropped before releasing
+its original private commitment acknowledgement. Actual publication subsequently
+captures a visible complete Address-owned Resolved snapshot, and the original
+startup sender returns its exact ActorRef through Err. The retained result then
+joins the original cancelled Wait root, preserving its original allocation and
+complete terminal lanes. Final Address resolution is absent.
+
+All 20 tests pass in both profiles, with pinned-Nix strict default package
+all-targets Clippy and workspace formatting passing. Earlier compiler and lint
+vetoes are excluded. The cfg-only increment is +94/-6/net88; new production,
+public types, private types and variants are zero. The inherited conditional
+launch net53 remains separate. Both inspections authenticate 345 sources,
+30 artifacts and the unchanged 179-package lock with 165 external packages;
+neither reran Rust. The queued request is not an acquired cancellation or an
+accepted winning boundary. This proves current visibility, not a repair or
+EV-06 acceptance; the typed publication decision and its regression remain open.

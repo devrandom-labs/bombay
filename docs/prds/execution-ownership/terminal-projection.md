@@ -505,3 +505,39 @@ was moved outside its assertion before eligibility. Positive/inverted runtime
 traces, static denials, exact formatted freeze and final independent review
 remain required. No raw task-error recovery, deferred primary projection,
 task deletion, canonical retention or full DG-PROJECTION is selected.
+
+## Reviewed constructed recursive retirement comparison (2026-10-03)
+
+Receipt 64df30ef2e8df9061faf5636bcb249ae577b5378cc21cae314bcf4f26b1a25d3
+freezes final source
+6f084686c37f12eda0d4f7993eacead89eb7ac961e72a7c95c84e9f3aa1d7343.
+Nonauthor review ce5ec7a8cacf3198cf8c186bea284a59fa3625fe02ffd90292e42a6017f068dc
+is qualified by immutable correction
+a6d5016b4ecc378554ab947ce438e74f3ff60fd9350a457fb900c24b74bf942d:
+its original source field named a historical snapshot. The supplement rebinds
+the actual final source and all corrected verification artifacts; the historical
+snapshot's logs do not certify the final experiment. Coordinator inspection is
+8699b55aee4968849ad31304927d0ed6cc65450c4eea4599ab8bafb471b3746d.
+
+The actual standard application returns the root, two children with different
+settlement products and a real grandchild. Four existing total constructors
+move their complete typed origins and already-constructed ActorRetirement values
+into one recursive closed sum. Subsequent caller acceptance and rejection both
+retain that tree. Full state, original allocations, structural child order,
+creation receipt correlations and every remaining typed lane are checked after
+the application joins. Accepted report units are explicitly discharged by their
+owning contract. Endpoint interpretation and iterator advancement occur before
+observational assertions; opaque IDs support no invented identity oracle.
+
+Both-profile positives/restorations pass. Four static-denial cohorts produce
+eight expected failures; three runtime counterfactuals produce six intended
+failures after complete application return. These clone the Leaf allocation in
+its pure initialization, corrupt retained creation kind, or erase the joined
+grandchild. Strict package all-targets Clippy and workspace formatting pass
+through pinned Nix. Earlier compiler failures and pre-correction assertions are
+excluded. Both reviewers authenticate 345 sources, 91 artifacts, 14 selected
+owners and the unchanged 179-package lock, including 165 external packages;
+neither reran Rust. Formatted cfg tests are +564/-0; production/public changes
+are zero. Eager projection tasks and upstream raw JoinError loss remain. This
+accepts bounded feasibility, not deferred projection, task deletion or the full
+gate.
