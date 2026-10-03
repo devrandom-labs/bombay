@@ -1907,7 +1907,8 @@ profiles and independent review remain required before any production proposal.
 
 ## 25. Actual child-binding result comparison checkpoint
 
-Status: proposed one additional existing test owner, 90 to 91 cumulative paths.
+Status: user-authorized one additional existing test owner. The explicit
+four-file approval for sections 25–26 raises the cumulative allowance to 94.
 Add only cfg(test) evidence in `crates/bombay/src/child_bindings.rs`; the already
 approved `launch.rs` supplies a test-only ordinary function consuming its actual
 private projection task and returning the original standard Result. No
@@ -1934,8 +1935,9 @@ comparison adds 214. Neither is silently composed into this experiment.
 
 ## 26. User-requested stable Rust pin checkpoint
 
-Status: concrete isolated candidate; proposed three additional existing paths.
-Together with section 25 the authorized union would increase from 90 to 94.
+Status: user-authorized three additional existing configuration paths.
+Together with section 25 the authorized union is 94. Retention still requires
+passing toolchain verification; initial compatibility failures are below.
 The user requested updating Nix for the latest Rust. Official release and actual
 distribution manifest identify stable 1.99.0, released 2026-10-01, compiler
 `b940084d7` dated 2026-09-28. The isolated candidate updates `rust-toolchain.toml`,
@@ -1960,3 +1962,101 @@ documentation +3618 / -63 / net 3555; manifest/lock +13 / -13 / net 0;
 public types +0 / -0; 23 tracked paths, zero untracked. The retained owning
 corrections remain production net 52, test/benchmark net 549, 48 paths across
 repositories. Isolated candidates keep their separate complete receipts.
+
+## 27. Rust 1.99 compatibility checkpoint
+
+Status: user-authorized eight additional existing paths, 94 to 102. The user
+explicitly approved the compatibility files after inspecting this proposal.
+The initial shell
+identifies Rust/Cargo 1.99.0 and builds the workspace. Rustfmt changes one brace
+indentation in the already approved application_runtime.rs, production +1 / -1 /
+net 0. Seven compile-failure snapshots differ while their intended rejection
+remains: type excerpt abbreviation, shorter qualified signatures, removal of
+misleading private-import suggestions, publisher qualification and one additional
+missing-Behavior-bound diagnostic. Preserve every complete actual diagnostic;
+do not weaken the rejected programs or erase their static checks.
+
+The seven additional snapshot paths are:
+
+- crates/bombay/tests/compile/fail/actor_spaces_wrong_field.stderr
+- crates/bombay/tests/compile/fail/application_child_must_be_behavior_feature_unified.stderr
+- crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr
+- crates/bombay/tests/compile/fail/entity_lifecycle_representation_is_private.stderr
+- crates/bombay/tests/compile/fail/run_with_wrong_root_protocol.stderr
+- crates/bombay/tests/compile/fail/application_actor_projection_requires_attribute.stderr
+- crates/observe-tests/tests/compile/fail/publisher_cannot_complete_twice.stderr
+
+The eighth path is crates/bombay/src/observe/mod.rs. Clippy 1.99 rejects the
+existing constant chunks_exact(8) spelling. The proposed ordinary as_chunks::<8>()
+expresses the same ordered eight-byte hashing and exact remainder, removing the
+unnecessary slice-to-array conversion/expect. It changes no hash algorithm,
+observation state, public interface or Behavior contract. Measured proposal:
+production +4 / -7 / net -3; snapshots +30 / -16 / net 14; public types zero.
+Hasher patch SHA-256:
+`31840dac2ae9dcfa43de4e28a409d432d8623a15eff8a17a345db3deb43ff115`.
+Diagnostic proposal SHA-256:
+`b1700c006059a1191af58d11c409c634617e671b329a3bd16654f00f55aff12c`.
+The authorized source and snapshots are applied only in the isolated candidate;
+canonical source remains unchanged. All-feature workspace tests pass in debug
+and optimized builds. Strict Clippy finds additional compatibility sites below;
+the compiler upgrade is not accepted yet.
+
+The initial Clippy attempt aborts before analysis because Fenix's macOS
+combination cannot find install_name_tool, silently ignoring its failed compiler
+library-path adjustment. The actual selected Fenix source and Nix build log
+establish this packaging defect. In already approved flake.nix, adding the
+existing Darwin cctools package to the toolchain derivation's native build inputs
+lets the same path-adjustment script run; actual cargo clippy --version then
+succeeds as 1.99. This is a packaging correction, not an actor runtime abstraction.
+No global library-path override or gate suppression is selected. The original
+abort and later compiled strict-lint failure remain separate evidence.
+
+## 28. Remaining Rust 1.99 lint compatibility checkpoint
+
+Status: concrete proposed expansion; not authorized or applied. The strict
+all-target/all-feature Clippy discovery identifies four additional existing
+paths, raising the approved cumulative union from 102 to 106:
+
+- crates/bombay-engine/tests/driver_allocation.rs
+- crates/bombay/src/address.rs
+- crates/bombay/src/entity/directory.rs
+- crates/bombay/src/worker_preparation.rs
+
+The existing test-only child_bindings.rs permission also needs a narrow
+amendment for one method-local lint expectation in its unchanged production
+NoChildBindings implementation. This authorizes no descendant ownership change.
+The other twelve paths are already approved; their complete before-source hashes
+and proposed patch are frozen in rust-199-lint-proposal.json and
+rust-199-lint-proposal.patch in the isolated toolchain candidate. Patch SHA-256:
+`abcb8b2d455916c5933f640062eeab4d9c57d017b3274d412355327eaa90a5ab`.
+
+Measured proposed patch, before application or rustfmt:
+production +18 / -2 / net 16; tests/benchmarks +343 / -11 / net 332;
+public types +0 / -0; sixteen existing paths, no new source files.
+These are annotations and equivalent spellings, not new runtime capabilities.
+The production additions are four method/function-local lint expectations;
+the two replacements rename atomic fetch_update to try_update with identical
+closures, orderings and owned results. Actual Rust 1.99 standard-library source
+marks try_update stable since 1.95 and delegates fetch_update directly to it:
+<https://github.com/rust-lang/rust/blob/b940084d7eb6a299eb4bfeb8e34901bc051e7ac4/library/core/src/sync/atomic.rs>.
+The declared 1.96 minimum and separately pinned nightly therefore need not move.
+
+Ordinary-Rust comparison: eagerly evaluating a trait-port body and wrapping its
+result in ready changes mutation, panic and input-release timing. Returning an
+async move body preserves timing but repeats signatures and syntax without a
+new domain capability. Preserve the existing cold async method and use a
+method-local unused_async_trait_impl expectation with an explicit reason; stale
+expectations remain denied. For the existing large SpawnError, retain exact
+by-value rejection rather than introducing allocation or changing the public
+error to satisfy a size heuristic. Empty-lane assertions report length zero
+without requiring new PartialEq/Debug bounds. No blanket lint allowance is
+proposed. Reviewer /root/contract_inventory independently recommended this
+bounded comparison; full upgrade review and passing verification remain open.
+
+Original evidence: rust-199-final-verification.json records compiler, Nix
+formatting, Rust formatting, workspace build and all-feature tests in both
+profiles passing; strict Clippy exits 101. rust-199-clippy-discovery.log records
+the additional sites without lint suppression. After authorization, require
+strict Clippy, formatting and affected checks, unchanged deferred-execution
+semantics, a 1.96 compatibility build for the renamed atomic calls, complete
+tracked/untracked measurement and independent review of the final source.
