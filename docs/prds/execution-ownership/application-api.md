@@ -648,8 +648,8 @@ it is not a work-completion signal authorizing cleanup.
 
 The reviewer and coordinator read the actual kernel, canonical runners,
 installed-family product and Entity shutdown boundary. Twelve source/document
-hashes are authenticated. This is source evidence, not a newly executed race
-or original-defect regression. Before kernel retention, add an actual admitted
+hashes are authenticated. This review is source evidence; the later compiled
+original regression below is distinct. Kernel retention requires an actual admitted
 Entity family witness: root naturally ends while work remains pending; normal
 family admission stays usable until work completes. Preserve the counterpart
 where execution drop releases unfinished work and retained cleanup joins.
@@ -803,3 +803,65 @@ is retained here. Pre-first-poll capture destruction, startup, uninvoked work,
 native/destructor panic, live-family ordering and forward-permission minimality
 remain unproved by these tests. No kernel repair, public API, durable executor-loss
 guarantee or full decision gate is selected.
+
+## Partial cleanup permission and startup-input gap (2026-10-03)
+
+Read-only model b894062ebba64f7a31c7652c38ba56d3d720e599af6df5adcd0e74717a2e3f8e
+and independent review
+c41d89efabf9736e99555cf6e31bd1ed3c68aeae6a76d1c71a73974fb70e23a2
+compare a forward affine work-completion permission with the existing reverse
+join acknowledgement. Root termination cannot substitute for completed work;
+the reverse acknowledgement proves cleanup finished and cannot authorize it
+to start. The original cancellation authority and returned root outcome retain
+the actual cause. Receiver surrender supplies neither permission nor cancellation.
+The unapplied cfg draft is +11/-1/net10, with no new types or source changes;
+it is eligible for comparison, not established minimal complete composition.
+
+A separate source-proven gap prevents complete repair: after the untouched-input
+guard is consumed, execution can wait for startup while retaining uninvoked
+F/Invoke. Dropping execution destroys those recoverable inputs and closes their
+publisher; the result receiver reports absent output. No actual RecvError was
+obtained, and the original application was already consumed. Neither inventing
+that error nor claiming untouched application inputs is truthful. An actual
+gated-startup original regression and ordinary owning-publication comparison are
+required before selecting a result representation or retaining the repair.
+Native invocation failure and full API gates remain separate obligations.
+
+## Original active-family lifetime regression (2026-10-03)
+
+Author receipt
+a8ba645a22257cafb88b080aaf2727305c9d2b1badd64b543250443214f3692a
+and independent non-author review
+60f1ac340eda3f8c5ba46c135c1df54626e6ae6ed60dca3f4f7130c9957affd1
+establish the proposed private paired kernel's original lifetime defect.
+A genuinely allocated external caller admits the first payload to a native Entity
+before finishing the unrelated root. Borrowed application work remains pending.
+After the actual raw root task finishes, the controller acknowledges one real
+cleanup poll; that poll closes family admission. The second command then returns
+its exact original Vec allocation/content with Refusal::Shutdown.
+
+The controller releases work and joins root and family before checking the
+complete trace and failing the intended admission law in both profiles. The sole
+Entity retires with the exact first payload; the returned root preserves all state
+and typed lanes, work retains its original output allocation/borrow, all five
+definition callback lanes are consumed and all seven family metrics are checked.
+The actual issued ActivationId remains in its full callback row; no predicted
+identity or unavailable earlier-ID comparison is claimed. Admission alone is not
+processing evidence: the final family state supplies that evidence.
+
+The AbortHandle observes completion and never aborts; the affine raw join remains
+with cleanup. Selected Tokio's unconstrained poll and verified default feature
+configuration prevent a cooperative-budget deferral from masking this boundary.
+Poll::Ready or Pending acknowledgement is accepted; neither is the final oracle.
+The current canonical public runner already preserves work-before-family-shutdown.
+This regression concerns the proposed private paired kernel.
+
+Both compiled originals exit 101 at the intended post-cleanup assertion. Fifteen
+inherited positives pass in each profile with the original regression excluded;
+strict package all-target Clippy and workspace formatting pass through pinned Nix.
+All 345 sources, 19 artifacts and 179 locked packages (165 external) authenticate;
+neither reviewer nor coordinator claims a fresh Rust rerun. Increment is tests
++414/-7/net407, production/public types zero; inherited launch remains +60/-7/net53.
+Excluded compiler/warning attempts remain separately identified. A repaired pass
+with the same progressing controller and actual caller-drop counterpart remains
+required. No repair, kernel retention, public API or full gate is accepted.
