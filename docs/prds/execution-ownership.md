@@ -2316,3 +2316,74 @@ allowance. The function-item comparison changes directory.rs by +13 / -6 /
 net 7 from the archived original; its single typed closure preserves the exact
 existing order/result/checked-increment law. Final checks and independent
 compiler acceptance remain pending; no canonical source is changed.
+
+## 32. Attribute coverage allocation counts before changing the oracle (2026-10-03)
+
+The typed compiler candidate passes all eight Cargo checks. Its full Nix gate
+passes fifteen named checks, including both child feature modes and actual
+Entity Loom, but fails owner coverage: the unchanged one-settlement-queue
+allocation test measures six allocations against its required one. Five checks
+are cancelled and must still run. Do not subtract five, skip the test, or relax
+the allocation law based on an instrumentation hypothesis. Preserve the actual
+complete coverage log at typed-owner-coverage-failure.log outside the tree.
+
+The original global counter covers all threads and includes construction, poll
+and the successful retirement assertion. Authorize only diagnostic research
+in the already approved engine/tests/driver_allocation.rs test path: fixed
+allocation slots, const nonallocating thread-local closed measurement phases
+and before/after snapshots may establish source attribution. No new unsafe,
+production code, public types or test threshold changes. Expected approximately
+100 test lines; root-approved preedit receipt SHA-256:
+`e98e9afb230405576a4988f84b607e3d0c2670c8c71455158dbe41dea8c1ce10`.
+Original/diagnostic and normal/actual coverage comparisons must run through the
+pinned 1.99 shell and keep the one-allocation assertion. Other-thread/Outside
+classification alone cannot claim an exact thread identity. Final compiler
+acceptance remains blocked until the attribution, any justified smallest repair,
+complete source/delta freeze, all gates and independent review pass.
+
+The five cancelled independent Nix checks subsequently pass. Forty-eight
+focused original/diagnostic comparisons pass, as do the exact diagnostic owner
+coverage and one exact unedited original owner-coverage rerun. The historical
+six-allocation provenance remains unknown; lack of reproduction is not a
+diagnosis. Provenance receipt SHA-256:
+`dad223d2d0088a93e0ac06a6f8a93421c037f4cc6add6800ff9571f574c852c1`.
+
+Before retaining the test, compare a deterministic attribution witness in the
+same approved test path: five real retained allocations on another scoped
+thread during the measured interval make the global oracle misattribute work
+to Driver. A const thread-local closed Idle/Active counter can keep Driver’s
+one-allocation requirement without subtraction. Include future construction
+and polling, finish before assertion/spawn/join overhead, release/join the worker
+before assertions, and require an extra same-thread allocation inversion to
+fail with two. No new unsafe, production or public types; expected approximately
+90 test lines. Root-approved preedit receipt SHA-256:
+`f6582dd44b1a2ed2d20c6a634bf824883ffc7b3c226a45d3d80d3276f8da9988`.
+This proves the measurement flaw if the comparisons pass; it does not identify
+the historical six allocations. Independent review, complete final source/delta
+and actual all-gate rerun remain required before canonical compiler acceptance.
+
+The user clarified that production code must be condensed while tests are
+exempt from that condensation requirement. Keep meaningful regressions and
+inversions; this does not change correctness gates or authorize additional
+files or public types.
+
+The final isolated allocation correction changes one approved test path by
++135 / -3 / net 132, with no production, public-type or unsafe additions.
+Its checked thread-local counter has an absorbing Overflowed state: overflow
+cannot wrap into a plausible count, and rejection occurs outside allocation.
+The deterministic five-other-thread witness, same-thread extra-allocation
+inversion and numeric overflow inversion compile and fail for their intended
+laws in both profiles; all three restored positives pass normal and LLVM
+coverage in both profiles. Strict lint, formatting and exact owner coverage
+pass. Receipt SHA-256:
+`88eb0a57a5ac1732fd88a9dc5e0e963713aad968c875e0c6f17f913f07a019f0`.
+The numeric boundary test does not claim physically performing usize::MAX
+allocations. Historical six-allocation provenance remains unknown.
+
+Combine only this frozen test correction with the frozen compiler candidate
+for independent review and final gates. Combined inventory SHA-256:
+`93a57d98d376a049e53a942e68164777c8ee42ac9f669d47608df890542f27fe`.
+All 345 selected source hashes are checked; only the allocation-test path
+differs from the typed predecessor. The 54 changed source paths remain within
+the approved 114-path allowance. Final combined verification and independent
+acceptance are pending; canonical production remains unchanged.

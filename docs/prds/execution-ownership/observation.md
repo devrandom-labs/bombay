@@ -910,3 +910,33 @@ affinely consume another observer’s terminal. Older future-cancellation defect
 comments describe the historical bug; current source and preserved regressions
 are the authority. Generic event conversion remains potentially panicking:
 values destroyed inside it cannot be promised back.
+
+## Independent private reservation comparison (2026-10-03)
+
+Root read the complete private comparison, actual current request interpreter,
+constructor/branch tests, mutations and pinned-Nix commands/logs; authenticated
+52 artifacts, all 184 baseline files (183 unchanged) and 237 complete inventory
+hashes. Independent review SHA-256:
+`d8e87e4c130060d27b2186efdfa30c90e92f11f1f2d8d4b4f849a342f58a06b4`.
+Source receipt SHA-256:
+`49a625eddb75130967bf788580304dadee2f5deea352075bf966e914f8b9bffa`;
+complete delta supplement SHA-256:
+`1bc517eb7d9ae13cae5f1967a5ed354b64a15f30631371f1b8c82b67a4134a84`.
+
+Three final/restored tests pass in debug and optimized profiles. Unchecked
+ordinal wrap compiles and fails the intended exhaustion law in both profiles;
+reusing a consumed private scope receives E0382 in both. The existing real
+ObserveEstablished transfers the exact passive endpoint once. Three standard
+Err round trips preserve the same original product for serial retry. These are
+ordinary-product feasibility, not actual protocol rejection or acceptance.
+A separate private correlation tuple is not wired into current numeric-only
+requests or Started reports. Further namespace capacity is explicitly discharged
+when its private scope is consumed.
+
+This accepts bounded private evidence only: tests +153 / -3 / net 150; no
+production/public/canonical change. The original Monitor witness is unchanged
+and intentionally filtered from these positives. Public construction, protocol
+brands/inference, fold determinism, failed-Started producer custody and the full
+Monitor/state minimization remain required. The exact current file expansion is
+114 to 125 with three added public types, still unauthorized. No full gate or
+new public API is selected by this comparison.

@@ -491,3 +491,19 @@ externally. Its role is unit; the evidence proves an uninstalled non-Send child
 declaration, not a non-Send role or installation. Preserve the original frozen
 source/receipt and establish a corrected successor with original-defect failures
 and independent review. No production or full gate is accepted.
+
+The corrected absent-work successor is independently accepted as bounded
+research by /root/contract_inventory. Source receipt SHA-256:
+`3372d34c028ea17ea763539fee58ab34a678f404e491bb098a2d04fb5a79d074`;
+independent review SHA-256:
+`eebf9658888820927524605c62709eb7c3930b2846455efd35aebc8cd3725b43`.
+The reviewer authenticated all 345 copied files, 46 artifacts and three exact
+mutations. All fifteen final/restored tests pass in both profiles; startup-error
+erasure, missing original-input publication and early owner drop each compile
+and fail the intended law in both profiles. Formatting and strict lint pass.
+Actual RecvError is kept once beside None/Some original work and complete root/
+family reports, including mandatory adapters; pure Rc<Vec> child ownership is
+observed externally. Its role remains unit and installation remains unproved.
+Incremental change is cfg tests +93 / -59 / net 34, no production/public/private
+new types. This internal error is not the selected final public RunError shape;
+full API/task gates remain open. Original flawed receipts remain historical.
