@@ -132,7 +132,7 @@ its separate complete ten-path record in the shutdown decision record.
 ```text
 production: +167 / -34 / net 133
 tests: +2103 / -536 / net 1567
-documentation: +5175 / -85 / net 5090
+documentation: +5218 / -85 / net 5133
 manifest/lock: +36 / -31 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
@@ -232,3 +232,46 @@ EXEC verification remains required. Complete baseline-relative counts above
 include these source/test changes and all tracked/untracked documentation.
 Current test-module starts were rechecked after the production-line change;
 classification uses local.rs line 1164 and application_runtime.rs line 3069.
+
+## Fresh independent actor scheduling evidence (2026-10-03)
+
+The isolated EV-25 candidate adds 769 test lines in launch.rs and changes two
+configuration lines (+2/-2) in Cargo.toml; production Rust and public types
+remain unchanged. Tests are exempt from production condensation. The workspace
+Tokio feature enables multi-thread support for this evidence; current public
+application runners still select the current-thread scheduler.
+
+Author receipt:
+`557366e26d6ff739cec05804c2a1965667198f1def73de7f017dffba9f0fbf66`.
+Independent non-author review:
+`3fe673a5e4fb4112bd4c00aafc641798b9197383fd9101df4361e8c0e8d88536`.
+Coordinator fresh verification receipt:
+`6a16748e0c962ad33d5da7ce5c7e4f96affb60111e667b3551a9c5e63f3b227f`.
+The fresh worktree starts at c70d0a3 and preserves the accepted shutdown sources.
+Only the candidate configuration and launch.rs were copied. Canonical source
+has not been changed by this comparison.
+
+The coordinator read the full candidate and selected Tokio poll-hook source.
+Actual actor task IDs, distinct worker IDs and complete typed retirement traces
+prove overlapping runtime work. Exclusive task polling, together with the one
+consumed Driver and exclusive mutable Behavior, proves exclusive actor folds.
+The overlap includes test-host permission waits; it does not measure simultaneous
+CPU instructions. Both author serial-only counterfactuals compile and fail the
+same intended overlap assertion (one versus two), after cleanup; the earlier
+mutex type error is excluded.
+
+Fresh pinned-Nix commands use
+`nix --option eval-cache false develop -c env CARGO_INCREMENTAL=0 RUSTFLAGS='--cfg tokio_unstable' CARGO_TARGET_DIR=/tmp/bombay-actor-overlap-root-target`:
+
+```sh
+cargo test --locked -p bombay-rs --lib independent_actor_execution -- --nocapture
+cargo test --locked -p bombay-rs --lib --release independent_actor_execution -- --nocapture
+cargo clippy --locked -p bombay-rs --lib --tests -- -D warnings
+```
+
+Each test command passes two tests; Clippy exits zero. Workspace formatting
+also passes through the pinned Nix shell. Logs and exact commands are bound by
+the coordinator receipt. This is bounded scheduling evidence, not selection of
+a public runner API or acceptance of EV-30. Throughput and before/after task
+and allocation measurements, including the actual projection graph, remain
+required. Canonical production remains net +133 lines with zero new public types.
