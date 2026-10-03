@@ -1504,12 +1504,14 @@ values. Restricting arbitrary panic_any values to a known actor error changes
 the required recovery law. Whole-error Clone/PartialEq/Eq promises also need
 review before any original arbitrary payload is added.
 
-Selected Behavior instructions prohibit introducing Any/trait objects. A narrow
-policy question is pending: permit passive ownership and transfer of Rust's
-native unwind payload in Engine/Bombay, outside Behavior state and algebra.
+Selected Behavior instructions prohibit introducing Any/trait objects. The user
+explicitly approves in EXEC section 41 passive ownership and transfer
+of Rust's native unwind payload in Engine/Bombay, outside Behavior state and
+algebra.
 No dynamic domain dispatch, downcast routing, erased actor result or catch-all
-protocol is proposed. Dependent implementation remains blocked until that
-question is answered; source analysis and other authorized experiments continue.
+protocol is proposed. Implementation still requires an exact reviewed pre-edit
+model and complete
+custody verification; the representation-policy blocker is resolved.
 This does not claim recovery of values destroyed inside user code, support for
 panic=abort/foreign exceptions, or safe discharge when the payload's destructor
 itself panics. Cleanup-before-discharge needs an observable ownership proof.
@@ -1830,3 +1832,16 @@ the author cannot accept its own gates. An unexpected ownership, cause/order,
 public state/type, bound, consumer, native representation or out-of-scope path
 stops dependent implementation. Equivalent import/format/assertion corrections
 retain their exact diagnostic evidence and may not invent architecture.
+
+### Native ownership permission and minimal next witness
+
+EXEC section 41 records explicit user approval of passive native panic custody.
+The earlier payload-loss regression remains the original-defect evidence. The
+secondary-destructor proposal fe8a7488ffe3e9ecd093bada76eab671e7bfe0ffd92a106eabd3237ee1489ab2
+has independent bounded review
+424b54fb3a28618d036085029d6ccdbd6d3385682c859f5d276657274bae882d;
+it is preserved as unexecuted characterization, not a new required production
+contract. First compare preserving the already caught payload, which may remove
+that secondary failure before any unavailable-child receipt is needed. Actual
+original pre-Start failure remains required if an owning receipt amendment is
+proposed. A conditional source gap cannot license that amendment by itself.

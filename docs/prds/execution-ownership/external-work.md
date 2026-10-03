@@ -420,3 +420,11 @@ it is not tested while these gates remain held. No joined actor/family cleanup,
 final receiver custody or successful retirement is claimed after executor loss.
 Consuming diagnostic recovery and other complete acceptance evidence remain
 open. No full DG-WORK/EV-24 or canonical implementation retention follows.
+
+## Owning-scope approval (2026-10-03)
+
+EXEC section 41 records explicit user approval of sections 33–34 together:
+129 existing repository-qualified paths and at most three observation-owned
+public types. Scope permission resolves the budget blocker; it does not select
+a model, accept this gate or waive exact current-owner verification, ordinary
+Rust comparisons, original-defect/inversion evidence or independent review.

@@ -740,6 +740,8 @@ Forbidden implementation shortcuts:
   mailbox, timer service, observation cell, or generic runtime object.
 - Trait objects, erased futures, Any/TypeId/downcasts, unsafe lifetime/type
   escapes, serialized local control, or untyped callbacks hiding target types.
+  Section 41 records the explicit user exception for passive custody of Rust
+  native panic payloads in Engine/Bombay outside Behavior state and protocols.
   Standard library Error::source's required trait-object return is not a new
   runtime dispatch abstraction; do not "fix" it by breaking the Error contract.
 - Boolean phase/authority/provenance state, structural role strings, inferred
@@ -2493,9 +2495,9 @@ proposal; receipt SHA-256:
 `e7653e84f69f7e6283461bc856a612e92895a8c15477bc002cb266ff63b6bf97`.
 Its immutable private-comparison authentication supplement is
 `2a10b2fee623fcf54e4f48369f08fdea6d46f182197f8624b55a644cf99ec11c`.
-Neither approves three-owner minimality or full DG-OBSERVATION. Explicit user
-file/public-type checkpoint authorization is requested and pending; independent
-source-retirement/startup/capability repair continues within the existing scope.
+Neither approves three-owner minimality or full DG-OBSERVATION. The user
+explicitly authorizes this scope together with section 34 in section 41;
+semantic acceptance and independently reviewed implementation remain required.
 
 ## 34. Consuming rejected-work recovery scope proposal (2026-10-03)
 
@@ -2541,8 +2543,9 @@ consumer checks remain before retention. Source-restoration error replacement
 is a separate conservation concern: establish authentic reachability or its
 owning invariant before choosing a repair; do not manufacture impossible
 Some(Source) rejection traces. No additional ownership path is implicitly
-authorized for that separate finding. This scope checkpoint is requested and
-pending; dependent owning source edits remain blocked.
+authorized for that separate finding. The user explicitly authorizes this scope
+together with section 33 in section 41;
+independently reviewed implementation and semantic acceptance remain required.
 
 
 ## 35. Accepted static shutdown correction (2026-10-03)
@@ -2798,3 +2801,34 @@ Native-payload permission, observation authority, rejected-work recovery,
 recursive projection, final public API, family integration and full decision
 acceptance remain open. No canonical production retention, module extraction,
 full EXEC acceptance, CI or merge is authorized by this experiment alone.
+
+## 41. Approved owning repairs and native panic custody (2026-10-03)
+
+The user explicitly selects “Approve both recommended fixes” for the exact
+sections 33–34 proposal: 114 to 129 existing repository-qualified paths, with
+at most three new public types owned by the observation repair. They also select
+“Allow the narrow panic-custody exception”: Engine/Bombay may passively retain
+and return Rust's original native panic payload outside Behavior state and
+protocols. This exception permits ownership conservation, not dynamic message
+routing, erased actor results, a catch-all protocol or a second effect language.
+Selected Behavior instructions otherwise continue applying without relaxation.
+
+The union of the previously approved 114 paths, eleven observation paths and
+four rejected-work paths has exactly 129 members. Immutable current manifest
+/tmp/bombay-exec-authorized-129-paths.json has SHA-256
+8baa93d480323f57eb0b0168e336c3d8c7cf1e40c8143e85831c3f3a51a5b8db.
+ObservationSequence, ObservationRelationship<P> and ObservationAuthority<P>
+remain the three proposed public owners; ordinary-Rust comparisons must still
+prove their necessity and minimality. Rejected-work recovery adds an operation
+to its existing owning diagnostic, not a wrapper or public type. Line ceilings
+remain waived; file/public-type checkpoints and independent gates remain.
+
+At approval, canonical production remains +167/-34/net133; tests
++3295/-557/net2738; documentation +6725/-93/net6632; manifest/lock
++38/-33/net5; public types +0/-0 across 67 tracked and zero untracked paths.
+These authorizations do not retain source or accept a decision gate. Each owning
+stage still freezes the smallest defect, complete ownership equation, selected
+contracts, exact source/files/delta and both-profile original/inversion checks
+before implementation. The current section-40 isolated experiment continues
+without adding these new contracts to its source. Released owning fixes must be
+independently reviewed and selected before their dependent Bombay gate closes.

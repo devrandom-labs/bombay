@@ -953,3 +953,11 @@ Acceptance covers this bounded mechanism comparison only, using authenticated
 original pinned-1.96 logs without a fresh reviewer run. It does not establish
 actual ObservationFuture, protocol membership, cancellation authority, source
 interpreter repair or full DG-OBSERVATION acceptance.
+
+## Owning-scope approval (2026-10-03)
+
+EXEC section 41 records explicit user approval of sections 33–34 together:
+129 existing repository-qualified paths and at most three observation-owned
+public types. Scope permission resolves the budget blocker; it does not select
+a model, accept this gate or waive exact current-owner verification, ordinary
+Rust comparisons, original-defect/inversion evidence or independent review.
