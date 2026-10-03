@@ -413,3 +413,39 @@ joining task does not establish that it reached a particular await; the real
 unreleased sibling gate and consuming join-all source support the bounded
 cleanup claim. Many occurrences, recursive failure shape, dropped-parent
 custody and the deferred-primary alternative remain open under DG-PROJECTION.
+
+## Exact settlement-bound comparison (2026-10-03)
+
+The existing generic ActorExecutionOutcome and LocalResidual can store an
+explicit settlement type with only B:Behavior. Current LocalOutcome selects
+B::Settlements, so actual launched actors still need BehaviorSettlements.
+Three uninvoked generic functions prove expanded storage, both-way identity
+when Settlements=S, and the existing OwnedTask requirement. They do not run
+actors or establish cleanup. Restoring only B:Behavior on the OwnedTask probe
+produces the intended Sends/Birth E0277 diagnostics in both profiles; restoring
+the genuine bound compiles. Formatting and strict package Clippy pass.
+
+Author receipt
+72fcf52b16cddb2b1ba64c49cff831f370e580ed03cc0732bde6c60ce272ea9f,
+patch 225ee1ed3f1b5090fce9340540ca6af216bc48b56822d8d5edb9616a0a5f2f7e
+and source c91ae7d6bcbbdc1f2629e13e54728fbdaaf6adb623c1b93c4c67806907737b5c
+bind 57 cfg(test) lines in launch.rs; production/public delta zero, 345 sources,
+344 unchanged and no untracked source. Nonauthor coordinator review
+a898d5987d5499cd5b23a0790ccea18014aae556895e1c59aabfe2492ed7b147
+reads the entire patch and actual source contracts, authenticates all sources
+and 38 artifacts and accepts only this bounded compiler evidence. No fresh
+reviewer Rust execution or canonical transfer is claimed. Initial warning-only
+receipt 736cc39974af824332297b5f2d5209d603eabc6a9a02c5b9531bfb81587052ce
+and the subsequent lint failure remain excluded predecessors. Narrow fulfilled
+lint expectations identify uninvoked probes and the deliberately expanded type;
+no new alias hides that type.
+
+This removes an incidental type-expression obstacle, not the recursive output
+contract. ChildOccurrenceShape::Member is universal over Child:Behavior and
+has no per-child settlement selector. One supplied S cannot represent arbitrary
+heterogeneous children. Current RetireChildTasks returns Vec<Root>; it has no
+existing associated raw recursive output. Actual parent/pool/grandchild types
+are inaccessible in the current launch fixture, so proposed concrete recursive
+and Vec-mismatch rows were not attempted. Nested shutdown decorators were
+explicitly rejected as recursive evidence. Producer integration, provenance,
+public shape, cleanup timing and full DG-PROJECTION remain open.

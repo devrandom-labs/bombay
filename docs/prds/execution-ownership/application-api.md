@@ -339,8 +339,11 @@ until those owners and the exact inferred consuming signatures, executor
 preconditions, returned values and consumer migration are accepted. No new
 runner spelling, type or compatibility contract is inferred from compilation.
 
-Current canonical runtime source SHA-256:
-`0b8e2c1c475ab46c50c451082b8d67dadb0a138e1d3ee8ccca9129ee7b7f57c4`.
+Current canonical runtime source SHA-256 after the accepted static shutdown
+correction:
+`ebb679fe18c2afc493c392e4f38259a2c6d502ea46eaeadea5e0a822504a0357`.
+The earlier inspected 0b8e2c1c source above remains historical; the public
+synchronous runner behavior described here is unchanged by that correction.
 
 ## Independently reviewed paired-work comparison (2026-10-03)
 
