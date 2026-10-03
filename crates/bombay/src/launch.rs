@@ -1362,11 +1362,16 @@ mod tests {
 
 #[cfg(all(test, tokio_unstable))]
 mod independent_actor_execution {
+    use crate::actor_execution::tests::{
+        allocations_during, begin_allocations, current_allocations, finish_allocations,
+    };
     use std::collections::HashMap;
     use std::convert::Infallible;
     use std::future::pending;
+    use std::hint::black_box;
     use std::sync::{Arc, Mutex, mpsc};
     use std::thread::{self, ThreadId};
+    use std::time::Instant;
 
     use crate::actors::ActorExt;
     use behavior::{
@@ -1381,7 +1386,8 @@ mod independent_actor_execution {
     use bombay_engine::{ActionsOf, Completion};
     use communication::Config;
     use tokio::runtime::Builder;
-    use tokio::sync::Mutex as WorkMutex;
+    use tokio::sync::oneshot;
+    use tokio::sync::{Barrier as WorkBarrier, Mutex as WorkMutex};
     use tokio::task::Id;
 
     use super::{LocalOutcome, spawn_root_with};
@@ -2126,5 +2132,328 @@ mod independent_actor_execution {
         let execution = execute_actor_pair(WorkAdmission::Serialized(Arc::new(WorkMutex::new(()))));
         let overlap = verify_actor_pair(execution);
         assert_eq!(overlap, 1);
+    }
+    #[derive(Clone, Copy)]
+    enum WorkAllocation {
+        Original,
+        Additional,
+    }
+
+    struct MeasuredWork {
+        start: Option<Arc<WorkBarrier>>,
+        completion: Option<oneshot::Sender<()>>,
+        expected: usize,
+        allocation: WorkAllocation,
+        observations: Vec<(usize, usize)>,
+    }
+
+    impl InterpretItem<ComputeWork, WorkEvent, Inside<Here>> for MeasuredWork {
+        async fn interpret_item(
+            &mut self,
+            work: ComputeWork,
+        ) -> ItemSettlement<ComputeWork, ComputedWork, Never, Never> {
+            if let Some(start) = self.start.take() {
+                start.wait().await;
+            }
+            // An awaited gate may resume in another poll; snapshot only now.
+            let before = current_allocations();
+            match self.allocation {
+                WorkAllocation::Original => {}
+                WorkAllocation::Additional => {
+                    let original = Box::new(black_box(137_u64));
+                    black_box(&original);
+                    drop(original);
+                }
+            }
+            let sum = work.values.iter().sum();
+            for _ in 0..256 {
+                let repeated: u64 = black_box(&work.values).iter().sum();
+                black_box(repeated);
+            }
+            let after = current_allocations();
+            self.observations.push((before, after));
+            ItemSettlement::Accepted(ComputedWork {
+                values: work.values,
+                sum,
+            })
+        }
+    }
+
+    impl CommitActions<HostedComputingActor> for MeasuredWork {
+        type Retired = Vec<(usize, usize)>;
+        async fn commit(
+            &mut self,
+            actions: ActionsOf<HostedComputingActor>,
+        ) -> Interpretation<ActionSettlementOf<HostedComputingActor>> {
+            actions.interpret::<_, WorkEvent, Here>(self).await
+        }
+        async fn offer_next(
+            &mut self,
+            settlement: ActionSettlementOf<HostedComputingActor>,
+        ) -> SourceCustody<ActionSettlementOf<HostedComputingActor>> {
+            let custody =
+                SourceSettlementCustody::<Self, WorkEvent>::offer_next_to_source(settlement, self)
+                    .await;
+            if self.observations.len() == self.expected
+                && let Some(completion) = self.completion.take()
+            {
+                let delivered = completion.send(());
+                assert!(delivered.is_ok());
+            }
+            custody
+        }
+        async fn next_local_event(&mut self) -> WorkEvent {
+            pending().await
+        }
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "The owned work receipts retire through the runtime port."
+        )]
+        async fn retire(self) -> CapabilityRetirement<WorkEvent, Self::Retired> {
+            CapabilityRetirement::without_activations(self.observations)
+        }
+    }
+
+    #[derive(Default)]
+    struct TaskMeasurements {
+        spawned: Vec<Id>,
+        polls: HashMap<Id, (usize, usize)>,
+    }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep measured region boundaries and whole joined originals visible together."
+    )]
+    fn measure_actor_work(allocation: WorkAllocation, requests: usize) -> (usize, usize) {
+        let measurements = Arc::new(Mutex::new(TaskMeasurements {
+            spawned: Vec::with_capacity(8),
+            polls: HashMap::with_capacity(8),
+        }));
+        let spawned = Arc::clone(&measurements);
+        let returned = Arc::clone(&measurements);
+        let runtime = Builder::new_multi_thread()
+            .worker_threads(2)
+            .on_task_spawn(move |task| spawned.lock().unwrap().spawned.push(task.id()))
+            .on_before_task_poll(|_| begin_allocations())
+            .on_after_task_poll(move |task| {
+                // Disable counting before host instrumentation allocates or locks.
+                let count = finish_allocations().expect("finite actor-poll allocation count");
+                let mut measurements = returned.lock().unwrap();
+                let totals = measurements.polls.entry(task.id()).or_default();
+                totals.0 = totals
+                    .0
+                    .checked_add(count)
+                    .expect("finite measurement total");
+                totals.1 += 1;
+            })
+            .build()
+            .unwrap();
+        let addresses = AddressSpace::new();
+        let start = Arc::new(WorkBarrier::new(3));
+        let mut actors = Vec::with_capacity(2);
+        let mut completed_work = Vec::with_capacity(2);
+        let construction = allocations_during(|| {
+            for address in [MailAddr(1019), MailAddr(1021)] {
+                let (completion, completed) = oneshot::channel();
+                let first_work = Arc::clone(&start);
+                completed_work.push(completed);
+                let actor = runtime
+                    .block_on(spawn_root_with(
+                        addresses.clone(),
+                        Config::new(requests + 1),
+                        address,
+                        ComputingActor {
+                            initialization_count: 0,
+                            commands: Vec::with_capacity(requests + 1),
+                        }
+                        .stop_on_shutdown(),
+                        move |_, _, _, _| MeasuredWork {
+                            start: Some(first_work),
+                            completion: Some(completion),
+                            expected: requests,
+                            allocation,
+                            observations: Vec::with_capacity(requests),
+                        },
+                    ))
+                    .unwrap();
+                actors.push(actor);
+            }
+        });
+        let ids: Vec<_> = actors.iter().map(|actor| actor.task.task.id()).collect();
+        assert_ne!(ids[0], ids[1]);
+        let mut originals = Vec::with_capacity(requests * 2);
+        let mut submissions = Vec::with_capacity(requests * 2);
+        for actor in 0..2 {
+            for ordinal in 0..requests {
+                let values: Vec<_> = (0..1024).map(|value| value + ordinal as u64).collect();
+                originals.push((
+                    actor,
+                    ordinal,
+                    values.as_ptr() as usize,
+                    values.iter().sum::<u64>(),
+                ));
+                submissions.push((actor, values));
+            }
+        }
+        let started = Instant::now();
+        runtime.block_on(async {
+            for (actor, values) in submissions {
+                let sent = actors[actor]
+                    .actor
+                    .send_from(MailAddr(1031), WorkCommand::Compute(values))
+                    .await;
+                assert!(sent.is_ok());
+            }
+            // Every original typed input is admitted before the shared start.
+            start.wait().await;
+            for completed in completed_work {
+                let completed = completed.await;
+                assert!(completed.is_ok());
+            }
+        });
+        let elapsed = started.elapsed();
+        let mut outcomes = Vec::with_capacity(2);
+        let cleanup = allocations_during(|| {
+            runtime.block_on(async {
+                for actor in actors {
+                    let sent = actor
+                        .actor
+                        .send_from(MailAddr(1033), WorkCommand::Finish)
+                        .await;
+                    assert!(sent.is_ok());
+                    outcomes.push(actor.task.finish().await);
+                }
+            });
+        });
+        // Joining can wake before its after-poll hook; runtime drop completes it.
+        drop(runtime);
+        let mut work_allocations = 0;
+        for (actor, outcome) in outcomes.into_iter().enumerate() {
+            let ActorExecutionOutcome::Completed {
+                behavior,
+                residual:
+                    LocalResidual::Retired {
+                        settlements,
+                        ingress,
+                        activation_tasks,
+                        descendants,
+                    },
+                completion,
+            } = outcome
+            else {
+                panic!("whole measured actor retirement")
+            };
+            assert_eq!(completion, Completion::Stopped);
+            assert_eq!(behavior.base().initialization_count, 1);
+            assert_eq!(behavior.base().commands.len(), requests + 1);
+            assert_eq!(
+                &behavior.base().commands[..requests],
+                vec![MailAddr(1031); requests]
+            );
+            assert_eq!(behavior.base().commands[requests], MailAddr(1033));
+            assert!(ingress.control.is_empty() && ingress.user.is_empty());
+            assert!(activation_tasks.is_empty());
+            assert_eq!(descendants.len(), requests);
+            for &(before, after) in &descendants {
+                let expected = match allocation {
+                    WorkAllocation::Original => 0,
+                    WorkAllocation::Additional => 1,
+                };
+                assert_eq!(
+                    after - before,
+                    expected,
+                    "interpreted allocation was not attributed to its actual actor poll"
+                );
+                work_allocations += after - before;
+            }
+            assert_eq!(settlements.len(), requests + 1);
+            let mut returned = Vec::with_capacity(requests);
+            for settlement in settlements {
+                assert!(settlement.creations.is_empty());
+                assert_eq!(settlement.sends.owned, NoSends);
+                match settlement.become_ {
+                    Step::Continue => {
+                        assert_eq!(settlement.sends.inner.len(), 1);
+                        for work in settlement.sends.inner {
+                            let SettledItem::Attempted(ItemSettlement::Accepted(work)) = work
+                            else {
+                                panic!("complete original work receipt")
+                            };
+                            returned.push(work);
+                        }
+                    }
+                    Step::Stop(_) => assert!(settlement.sends.inner.is_empty()),
+                    Step::Goto(never) => match never {},
+                }
+            }
+            assert_eq!(returned.len(), requests);
+            for (turn, work) in returned.into_iter().enumerate() {
+                // Driver retains the newest settlement at the front.
+                let ordinal = requests - 1 - turn;
+                let (_, _, pointer, sum) = originals[actor * requests + ordinal];
+                assert_eq!(work.values.as_ptr() as usize, pointer);
+                assert_eq!(
+                    work.values,
+                    (0..1024)
+                        .map(|value| value + ordinal as u64)
+                        .collect::<Vec<_>>()
+                );
+                assert_eq!(work.sum, sum);
+            }
+        }
+        let measurements = measurements.lock().unwrap();
+        for id in &ids {
+            assert!(measurements.spawned.contains(id));
+        }
+        let actor_allocations: usize = ids.iter().map(|id| measurements.polls[id].0).sum();
+        let actor_polls: usize = ids.iter().map(|id| measurements.polls[id].1).sum();
+        println!(
+            "workers=2 actor_ids={ids:?} observed_spawned_ids={:?} requests={} elapsed={elapsed:?} requests_per_second={} controller_construction={construction} controller_joined_cleanup={cleanup} selected_actor_polls={actor_polls} selected_actor_poll_allocations={actor_allocations} interpreted_work_allocations={work_allocations}; timing includes typed delivery/shared async batch-start/custody completion; runtime construction/off-poll worker allocations and host reporting excluded; no whole-runtime total",
+            measurements.spawned,
+            requests * 2,
+            f64::from(u32::try_from(requests * 2).expect("measured workload fits u32"))
+                / elapsed.as_secs_f64()
+        );
+        (work_allocations, actor_allocations)
+    }
+
+    #[test]
+    fn interpreted_allocations_belong_to_actual_actor_polls() {
+        let original = measure_actor_work(WorkAllocation::Original, 4);
+        let additional = measure_actor_work(WorkAllocation::Additional, 4);
+        assert_eq!(original.0, 0);
+        assert_eq!(additional.0, 8);
+    }
+
+    #[test]
+    #[ignore = "Explicit scoped execution measurement, not an ordinary test or full EV30 benchmark."]
+    fn measure_independent_actor_throughput_and_scoped_allocations() {
+        let measurement = measure_actor_work(WorkAllocation::Original, 128);
+        assert_eq!(measurement.0, 0);
+    }
+    #[test]
+    fn task_poll_allocation_measurement_finishes_after_future_panic() {
+        let observed = Arc::new(Mutex::new(Vec::with_capacity(4)));
+        let returned = Arc::clone(&observed);
+        let runtime = Builder::new_multi_thread()
+            .worker_threads(2)
+            .on_before_task_poll(|_| begin_allocations())
+            .on_after_task_poll(move |task| {
+                let count = finish_allocations();
+                returned.lock().unwrap().push((task.id(), count));
+            })
+            .build()
+            .unwrap();
+        let task = runtime.spawn(async { panic!("measured task future panicked") });
+        let id = task.id();
+        let joined = runtime.block_on(task);
+        drop(runtime);
+        let failure = joined.expect_err("original task panic");
+        assert!(failure.is_panic());
+        assert_eq!(failure.id(), id);
+        let observed = observed.lock().unwrap();
+        assert_eq!(observed.len(), 1);
+        assert_eq!(observed[0].0, id);
+        assert!(observed[0].1.is_ok());
     }
 }

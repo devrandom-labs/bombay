@@ -101,6 +101,8 @@ pub(crate) mod tests {
     use std::cell::Cell;
     use std::fs;
     use std::future::{Future, pending};
+    use std::hint::black_box;
+    use std::panic::catch_unwind;
     use std::path::PathBuf;
     use std::pin::pin;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -119,20 +121,76 @@ pub(crate) mod tests {
 
     struct CountingAllocator;
 
+    #[derive(Clone, Copy)]
+    enum AllocationMeasurement {
+        Disabled,
+        Counting(usize),
+        Overflow,
+    }
+
     thread_local! {
-        static COUNT_ALLOCATIONS: Cell<bool> = const { Cell::new(false) };
-        static ALLOCATIONS: Cell<usize> = const { Cell::new(0) };
+        static ALLOCATION_MEASUREMENT: Cell<AllocationMeasurement> = const { Cell::new(AllocationMeasurement::Disabled) };
+    }
+
+    fn record_allocation() {
+        ALLOCATION_MEASUREMENT.with(|measurement| {
+            let next = match measurement.get() {
+                AllocationMeasurement::Disabled => AllocationMeasurement::Disabled,
+                AllocationMeasurement::Counting(count) => match count.checked_add(1) {
+                    Some(count) => AllocationMeasurement::Counting(count),
+                    None => AllocationMeasurement::Overflow,
+                },
+                AllocationMeasurement::Overflow => AllocationMeasurement::Overflow,
+            };
+            measurement.set(next);
+        });
+    }
+
+    pub(crate) fn begin_allocations() {
+        ALLOCATION_MEASUREMENT.with(|measurement| match measurement.get() {
+            AllocationMeasurement::Disabled => measurement.set(AllocationMeasurement::Counting(0)),
+            AllocationMeasurement::Counting(_) | AllocationMeasurement::Overflow => {
+                panic!("allocation measurement already owns this thread")
+            }
+        });
+    }
+
+    /// Err means the successful-allocation count overflowed.
+    pub(crate) fn finish_allocations() -> Result<usize, ()> {
+        ALLOCATION_MEASUREMENT.with(|measurement| {
+            match measurement.replace(AllocationMeasurement::Disabled) {
+                AllocationMeasurement::Counting(count) => Ok(count),
+                AllocationMeasurement::Overflow => Err(()),
+                AllocationMeasurement::Disabled => {
+                    panic!("allocation measurement does not own this thread")
+                }
+            }
+        })
+    }
+
+    #[cfg(tokio_unstable)]
+    pub(crate) fn current_allocations() -> usize {
+        ALLOCATION_MEASUREMENT.with(|measurement| match measurement.get() {
+            AllocationMeasurement::Counting(count) => count,
+            AllocationMeasurement::Disabled | AllocationMeasurement::Overflow => {
+                panic!("current poll has no finite allocation count")
+            }
+        })
+    }
+
+    struct AllocationRelease;
+
+    impl Drop for AllocationRelease {
+        fn drop(&mut self) {
+            ALLOCATION_MEASUREMENT.set(AllocationMeasurement::Disabled);
+        }
     }
 
     unsafe impl GlobalAlloc for CountingAllocator {
         unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
             let pointer = unsafe { System.alloc(layout) };
             if !pointer.is_null() {
-                COUNT_ALLOCATIONS.with(|enabled| {
-                    if enabled.get() {
-                        ALLOCATIONS.set(ALLOCATIONS.get() + 1);
-                    }
-                });
+                record_allocation();
             }
             pointer
         }
@@ -144,11 +202,7 @@ pub(crate) mod tests {
         unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
             let pointer = unsafe { System.alloc_zeroed(layout) };
             if !pointer.is_null() {
-                COUNT_ALLOCATIONS.with(|enabled| {
-                    if enabled.get() {
-                        ALLOCATIONS.set(ALLOCATIONS.get() + 1);
-                    }
-                });
+                record_allocation();
             }
             pointer
         }
@@ -156,11 +210,7 @@ pub(crate) mod tests {
         unsafe fn realloc(&self, pointer: *mut u8, layout: Layout, size: usize) -> *mut u8 {
             let pointer = unsafe { System.realloc(pointer, layout, size) };
             if !pointer.is_null() {
-                COUNT_ALLOCATIONS.with(|enabled| {
-                    if enabled.get() {
-                        ALLOCATIONS.set(ALLOCATIONS.get() + 1);
-                    }
-                });
+                record_allocation();
             }
             pointer
         }
@@ -170,11 +220,34 @@ pub(crate) mod tests {
     static ALLOCATOR: CountingAllocator = CountingAllocator;
 
     pub(crate) fn allocations_during(operation: impl FnOnce()) -> usize {
-        ALLOCATIONS.set(0);
-        COUNT_ALLOCATIONS.set(true);
+        begin_allocations();
+        let release = AllocationRelease;
         operation();
-        COUNT_ALLOCATIONS.set(false);
-        ALLOCATIONS.get()
+        let count = finish_allocations().expect("successful-allocation count overflowed");
+        drop(release);
+        count
+    }
+
+    #[test]
+    fn allocation_measurement_retains_overflow_and_releases_panicked_scope() {
+        ALLOCATION_MEASUREMENT.set(AllocationMeasurement::Counting(usize::MAX));
+        let original = Box::new(black_box(17_u64));
+        black_box(&original);
+        let count = finish_allocations();
+        assert_eq!(count, Err(()));
+        assert_eq!(*original, 17);
+        drop(original);
+        let failed = catch_unwind(|| allocations_during(|| panic!("measured source panic")));
+        assert!(failed.is_err());
+        let mut original = None;
+        let count = allocations_during(|| original = Some(Box::new(black_box(23_u64))));
+        assert_eq!(count, 1);
+        assert_eq!(original.as_deref(), Some(&23));
+        begin_allocations();
+        let nested = catch_unwind(begin_allocations);
+        assert!(nested.is_err());
+        let count = finish_allocations();
+        assert!(count.is_ok());
     }
 
     #[derive(Debug, PartialEq, Eq)]

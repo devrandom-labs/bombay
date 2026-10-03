@@ -131,8 +131,8 @@ its separate complete ten-path record in the shutdown decision record.
 
 ```text
 production: +167 / -34 / net 133
-tests: +2872 / -536 / net 2336
-documentation: +5308 / -87 / net 5221
+tests: +3295 / -557 / net 2738
+documentation: +5428 / -87 / net 5341
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
@@ -287,3 +287,82 @@ and optimized builds. Logs are `/tmp/bombay-actor-overlap-canonical-debug.log`
 and `/tmp/bombay-actor-overlap-canonical-release.log`. These are the same reviewed
 source bytes; fresh source Clippy and formatting above already passed.
 The final combined workspace/Nix gates remain required.
+
+## Reviewed execution measurement tests (2026-10-03)
+
+PRD section 37 records the pre-edit scope. The retained addition is 402 net
+test lines across two already approved source paths: zero production lines,
+new public types or new unsafe operations. The original production prefixes
+and all accepted EV-25 bodies are unchanged. Author receipt
+e7ecabfec28cf5a7e38056ae5c4a67fe07aa9f7d60fed6a5062d18df87cf12bf,
+independent non-author review
+7c89c9e31befabafe28261993ec1e8bce45bebaebce8a5763c6b29923d21724c,
+and coordinator fresh review
+c9305571684e6e70307c54b6bd0d1fafe5dae9e6273bc78265addbc10cd32520
+bind the exact sources, selected dependencies, commands and logs.
+
+The coordinator independently passes four scheduling/measurement tests in
+each profile, eleven owning execution tests in each profile, the explicitly
+ignored release measurement, ordinary-build strict Clippy and workspace
+formatting. All Rust commands run through the pinned Nix shell. Hook commands
+use this prefix:
+
+```sh
+nix --option eval-cache false develop -c env CARGO_INCREMENTAL=0 RUSTFLAGS='--cfg tokio_unstable' CARGO_TARGET_DIR=/tmp/bombay-measurement-root-target
+```
+
+Exact Cargo arguments:
+
+```sh
+cargo test --locked -p bombay-rs --lib independent_actor_execution -- --nocapture
+cargo test --locked -p bombay-rs --lib --release independent_actor_execution -- --nocapture
+cargo test --locked -p bombay-rs --lib actor_execution::tests -- --nocapture
+cargo test --locked -p bombay-rs --lib --release actor_execution::tests -- --nocapture
+cargo test --locked -p bombay-rs --lib --release measure_independent_actor_throughput_and_scoped_allocations -- --ignored --nocapture
+```
+
+Ordinary-build Clippy explicitly removes RUSTFLAGS and uses the same target:
+
+```sh
+nix --option eval-cache false develop -c env -u RUSTFLAGS CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/bombay-measurement-root-target cargo clippy --locked -p bombay-rs --lib --tests -- -D warnings
+nix --option eval-cache false develop -c cargo fmt --all -- --check
+```
+
+The final async gate starts work after all original requests are admitted.
+Snapshots after the await remain within one task poll. The selected Barrier
+implementation releases its short synchronous lock before awaiting; its owning
+tests cover rendezvous and Send. Because cancellation is unsafe for reuse, an
+interrupted measurement abandons the fresh gate rather than retrying it.
+Disabled, counting and overflow are distinct; unwinding clears ownership.
+Original allocation, panic-scope release and overflow inversions each compile
+and fail the intended assertion in both profiles before exact restoration.
+
+The coordinator's release sample processes 256 requests on two actor tasks in
+3.40175 ms; construction is 40 allocations, joined cleanup zero, seven actor
+polls contain 550 allocations, and interpreted work adds zero. These are scoped
+counts and one timing sample, not a performance floor or whole-runtime total.
+Timing includes typed delivery, shared start and settlement completion.
+Off-poll worker allocation and reporting are excluded. Two roots with no
+children cannot satisfy the required actual projection-graph comparison.
+
+The earlier native-payload inspection was removed, ordinary-build dead code
+was independently reproduced as Clippy exit 101 and corrected, and the missing
+shared start was corrected before retention. Their frozen predecessor receipts
+aa4d7a97d2c19b1393d427d8d1dbdc5e7aaa094175100f42f35c6f0f2f4b148a
+and 57508049d11ad79b33dfdb9e74ef5d9d25f5bf9dba13a01b56b869babf22dd5b
+remain rejected evidence. The retained panic test keeps the actual opaque
+JoinError and task identity; native payload conservation remains undecided.
+
+Canonical transfer receipt
+04d3279ea40d03cd3eb90cdb97ffe4e0bc508a48d165a46792b5aa97accf3e32
+binds launch.rs 84364e2378ec8515e4f7076706880b4bae962714223c471c46463b0e165fccca
+and actor_execution.rs 380c0c077a47c6a43c61eb57006d5f26b4f7ef9789078846cbf5911f2d1c5e08.
+Final combined verification and full EV-30 remain required.
+
+The exact transferred canonical sources pass four tests (one measurement
+ignored) in each profile using the two independent_actor_execution commands
+above. Logs are /tmp/bombay-measurement-canonical-debug.log and
+/tmp/bombay-measurement-canonical-release.log; both exit zero. The same exact
+source bytes pass the coordinator's owning execution tests, Clippy and
+formatting recorded above. The complete tracked/untracked measurement at this
+checkpoint remains in the change record, including documentation and config.
