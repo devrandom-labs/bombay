@@ -2479,3 +2479,12 @@ permission would allow the exact owner repair and its consumers, tests and
 release; complete ordinary-Rust comparisons, actual rejection/publication
 races, protocol denials, independent gates and minimization remain mandatory.
 No fourth public type, registry or duplicate actor contract is proposed.
+
+Independent budget review accepts this exact arithmetic and source ownership
+proposal; receipt SHA-256:
+`e7653e84f69f7e6283461bc856a612e92895a8c15477bc002cb266ff63b6bf97`.
+Its immutable private-comparison authentication supplement is
+`2a10b2fee623fcf54e4f48369f08fdea6d46f182197f8624b55a644cf99ec11c`.
+Neither approves three-owner minimality or full DG-OBSERVATION. Explicit user
+file/public-type checkpoint authorization is requested and pending; independent
+source-retirement/startup/capability repair continues within the existing scope.
