@@ -28,7 +28,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/devrandom-labs/bombay"
 
 [workspace.dependencies]
-tokio = { version = "1.47", default-features = false }
+tokio = { version = "1.47", default-features = false, features = ["rt-multi-thread"] }
 # The pure Behavior algebra (Actions/Envelope/Create/the capability stack) —
 # depended on, never copied.
 behavior = { package = "bombay-behavior", version = "0.21.1" }
@@ -58,4 +58,4 @@ all = { level = "deny", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 
 [workspace.lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)', 'cfg(bombay_entity_loom)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)', 'cfg(bombay_entity_loom)', 'cfg(tokio_unstable)'] }

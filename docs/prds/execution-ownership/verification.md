@@ -131,9 +131,9 @@ its separate complete ten-path record in the shutdown decision record.
 
 ```text
 production: +167 / -34 / net 133
-tests: +2103 / -536 / net 1567
-documentation: +5218 / -85 / net 5133
-manifest/lock: +36 / -31 / net 5
+tests: +2872 / -536 / net 2336
+documentation: +5270 / -85 / net 5185
+manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
 untracked paths: 0
@@ -275,3 +275,15 @@ the coordinator receipt. This is bounded scheduling evidence, not selection of
 a public runner API or acceptance of EV-30. Throughput and before/after task
 and allocation measurements, including the actual projection graph, remain
 required. Canonical production remains net +133 lines with zero new public types.
+
+### Canonical scheduling transfer
+
+The two reviewed files are now retained at their exact accepted hashes;
+transfer receipt
+`b5886a88223f89ecd52559543ef2811d717f6001cd4d25bb4c942499e70bb27a`
+preserves the complete original launch.rs prefix and accepted shutdown sources.
+Both canonical scheduling commands above pass two tests, exit zero, in debug
+and optimized builds. Logs are `/tmp/bombay-actor-overlap-canonical-debug.log`
+and `/tmp/bombay-actor-overlap-canonical-release.log`. These are the same reviewed
+source bytes; fresh source Clippy and formatting above already passed.
+The final combined workspace/Nix gates remain required.

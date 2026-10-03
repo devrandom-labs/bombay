@@ -1359,3 +1359,772 @@ mod tests {
         assert_eq!(completion, Completion::Stopped);
     }
 }
+
+#[cfg(all(test, tokio_unstable))]
+mod independent_actor_execution {
+    use std::collections::HashMap;
+    use std::convert::Infallible;
+    use std::future::pending;
+    use std::sync::{Arc, Mutex, mpsc};
+    use std::thread::{self, ThreadId};
+
+    use crate::actors::ActorExt;
+    use behavior::{
+        ActionItem, Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, Here,
+        InitializationTurn, Inside, InterpretItem, Interpretation, InterpreterRequest,
+        InterpreterRequests, ItemSettlement, MessageProtocol, Never, NoBirthProtocols, NoBirths,
+        NoReturnToEmitter, NoSends, Own, SendEffects, SettledItem, SourceCustody,
+        SourceSettlementCustody, Step, User,
+    };
+    use behavior_actors::StopOnShutdown;
+    use bombay_address::AddressSpace;
+    use bombay_engine::{ActionsOf, Completion};
+    use communication::Config;
+    use tokio::runtime::Builder;
+    use tokio::sync::Mutex as WorkMutex;
+    use tokio::task::Id;
+
+    use super::{LocalOutcome, spawn_root_with};
+    use crate::interpret::ActionSettlementOf;
+    use crate::local::{CapabilityRetirement, CommitActions, LocalResidual};
+    use crate::{ActorExecutionOutcome, MailAddr};
+
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+    enum WorkOwner {
+        Oak,
+        Ash,
+    }
+
+    #[derive(Debug)]
+    enum WorkCommand {
+        Compute(Vec<u64>),
+        Finish,
+    }
+
+    #[derive(Debug)]
+    struct ComputeWork {
+        values: Vec<u64>,
+    }
+
+    #[derive(Debug)]
+    struct ComputedWork {
+        values: Vec<u64>,
+        sum: u64,
+    }
+
+    impl InterpreterRequest for ComputeWork {
+        type ReturnToEmitter = NoReturnToEmitter;
+        type LogicalProtocols = NoBirthProtocols;
+    }
+
+    impl ActionItem for ComputeWork {
+        type Accepted = ComputedWork;
+        type Rejection = Never;
+        type Prerequisite = Never;
+
+        fn retain_accepted(work: ComputedWork) -> Option<ComputedWork> {
+            Some(work)
+        }
+    }
+
+    struct ComputingActor {
+        initialization_count: usize,
+        commands: Vec<MailAddr>,
+    }
+
+    impl BehaviorBase for ComputingActor {
+        type Base = Self;
+
+        fn base(&self) -> &Self {
+            self
+        }
+    }
+
+    impl Behavior for ComputingActor {
+        type Protocol = MessageProtocol<MailAddr, WorkCommand>;
+        type Event = User<MailAddr, WorkCommand>;
+        type Sends = InterpreterRequests<ComputeWork>;
+        type Ph = Never;
+        type Error = Infallible;
+        type Birth = NoBirths;
+
+        fn init(&mut self, _: InitializationTurn) -> BehaviorActed<Self> {
+            self.initialization_count += 1;
+            Ok(Actions::cont())
+        }
+
+        fn transition(&mut self, _: ActiveTurn, user: Self::Event) -> BehaviorActed<Self> {
+            self.commands.push(user.from);
+            match user.message {
+                WorkCommand::Compute(values) => {
+                    let mut actions: ActionsOf<Self> = Actions::cont();
+                    actions.sends.send::<_, Own>(ComputeWork { values });
+                    Ok(actions)
+                }
+                WorkCommand::Finish => Ok(Actions::stop()),
+            }
+        }
+    }
+
+    type HostedComputingActor = StopOnShutdown<ComputingActor>;
+    type WorkEvent = <HostedComputingActor as Behavior>::Event;
+
+    #[derive(Clone)]
+    enum WorkAdmission {
+        Independent,
+        Serialized(Arc<WorkMutex<()>>),
+    }
+
+    #[derive(Debug)]
+    enum ExecutionObservation {
+        PollStarted {
+            task: Id,
+            ordinal: u64,
+            worker: ThreadId,
+        },
+        PollReturned {
+            task: Id,
+            ordinal: u64,
+            worker: ThreadId,
+        },
+        SourceOffered {
+            owner: WorkOwner,
+            retained_work: usize,
+        },
+        WaitingForCommand(WorkOwner),
+        WorkEntered {
+            owner: WorkOwner,
+            worker: ThreadId,
+            allocation: usize,
+            length: usize,
+        },
+        WorkReturned(WorkOwner),
+        PollViolation(Id),
+        TaskTerminated(Id),
+    }
+
+    enum PollOwnership {
+        Returned { next: u64 },
+        Running { ordinal: u64, worker: ThreadId },
+    }
+
+    struct PollAdmission {
+        task: Id,
+        permit: mpsc::Receiver<()>,
+    }
+
+    struct ActorPolls {
+        tasks: HashMap<Id, PollOwnership>,
+        admission: Option<PollAdmission>,
+        observations: mpsc::Sender<ExecutionObservation>,
+    }
+
+    impl ActorPolls {
+        fn begin(&mut self, task: Id) -> Option<mpsc::Receiver<()>> {
+            let worker = thread::current().id();
+            let ordinal = match self.tasks.remove(&task) {
+                None => 0,
+                Some(PollOwnership::Returned { next }) => next,
+                Some(PollOwnership::Running { .. }) => {
+                    drop(
+                        self.observations
+                            .send(ExecutionObservation::PollViolation(task)),
+                    );
+                    0
+                }
+            };
+            self.tasks
+                .insert(task, PollOwnership::Running { ordinal, worker });
+            drop(self.observations.send(ExecutionObservation::PollStarted {
+                task,
+                ordinal,
+                worker,
+            }));
+            if self
+                .admission
+                .as_ref()
+                .is_some_and(|admission| admission.task == task)
+            {
+                self.admission.take().map(|admission| admission.permit)
+            } else {
+                None
+            }
+        }
+
+        fn finish(&mut self, task: Id) {
+            match self.tasks.remove(&task) {
+                Some(PollOwnership::Running { ordinal, worker }) => {
+                    self.tasks
+                        .insert(task, PollOwnership::Returned { next: ordinal + 1 });
+                    drop(self.observations.send(ExecutionObservation::PollReturned {
+                        task,
+                        ordinal,
+                        worker,
+                    }));
+                }
+                None | Some(PollOwnership::Returned { .. }) => {
+                    drop(
+                        self.observations
+                            .send(ExecutionObservation::PollViolation(task)),
+                    );
+                }
+            }
+        }
+    }
+
+    struct WorkRelease(Vec<mpsc::Sender<()>>);
+
+    impl Drop for WorkRelease {
+        fn drop(&mut self) {
+            for release in &self.0 {
+                let _gate_release = release.send(());
+            }
+        }
+    }
+
+    struct WorkInterpreter {
+        owner: WorkOwner,
+        admission: WorkAdmission,
+        work_permit: mpsc::Receiver<()>,
+        observations: mpsc::Sender<ExecutionObservation>,
+        waiting_notice: Option<mpsc::Sender<ExecutionObservation>>,
+    }
+
+    impl InterpretItem<ComputeWork, WorkEvent, Inside<Here>> for WorkInterpreter {
+        async fn interpret_item(
+            &mut self,
+            work: ComputeWork,
+        ) -> ItemSettlement<ComputeWork, ComputedWork, Never, Never> {
+            let _exclusive_work = match &self.admission {
+                WorkAdmission::Independent => None,
+                WorkAdmission::Serialized(admission) => Some(admission.lock().await),
+            };
+            drop(self.observations.send(ExecutionObservation::WorkEntered {
+                owner: self.owner,
+                worker: thread::current().id(),
+                allocation: work.values.as_ptr() as usize,
+                length: work.values.len(),
+            }));
+            // The runtime owns this gate. No fold contains or calls it.
+            let _work_permission = self.work_permit.recv();
+            let sum = work.values.iter().sum();
+            drop(
+                self.observations
+                    .send(ExecutionObservation::WorkReturned(self.owner)),
+            );
+            ItemSettlement::Accepted(ComputedWork {
+                values: work.values,
+                sum,
+            })
+        }
+    }
+
+    impl CommitActions<HostedComputingActor> for WorkInterpreter {
+        type Retired = ();
+
+        async fn commit(
+            &mut self,
+            actions: ActionsOf<HostedComputingActor>,
+        ) -> Interpretation<ActionSettlementOf<HostedComputingActor>> {
+            actions.interpret::<_, WorkEvent, Here>(self).await
+        }
+
+        async fn offer_next(
+            &mut self,
+            settlement: ActionSettlementOf<HostedComputingActor>,
+        ) -> SourceCustody<ActionSettlementOf<HostedComputingActor>> {
+            let custody =
+                SourceSettlementCustody::<Self, WorkEvent>::offer_next_to_source(settlement, self)
+                    .await;
+            match &custody {
+                SourceCustody::Exhausted(settlement) | SourceCustody::Retained(settlement) => {
+                    // All source lanes are checked before the next-port notice.
+                    match &settlement.become_ {
+                        Step::Continue => {}
+                        Step::Goto(never) => match *never {},
+                        Step::Stop(_) => panic!("a stop settlement was offered while active"),
+                    }
+                    assert!(settlement.creations.is_empty());
+                    assert_eq!(settlement.sends.owned, NoSends);
+                    drop(self.observations.send(ExecutionObservation::SourceOffered {
+                        owner: self.owner,
+                        retained_work: settlement.sends.inner.len(),
+                    }));
+                }
+                SourceCustody::Admitted(_) | SourceCustody::Closed(_) => {
+                    panic!("computation has no emitter source input")
+                }
+            }
+            custody
+        }
+
+        async fn next_local_event(&mut self) -> WorkEvent {
+            if let Some(notice) = self.waiting_notice.take() {
+                drop(notice.send(ExecutionObservation::WaitingForCommand(self.owner)));
+            }
+            pending().await
+        }
+
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Keep retirement on the polled runtime port."
+        )]
+        async fn retire(self) -> CapabilityRetirement<WorkEvent, ()> {
+            CapabilityRetirement::without_activations(())
+        }
+    }
+
+    struct ActorPairExecution {
+        observations: Vec<ExecutionObservation>,
+        oak_task: Id,
+        ash_task: Id,
+        oak_outcome: LocalOutcome<HostedComputingActor, ()>,
+        ash_outcome: LocalOutcome<HostedComputingActor, ()>,
+        oak_allocation: usize,
+        ash_allocation: usize,
+        ash_work_poll: u64,
+    }
+
+    fn observe_until(
+        observation_receiver: &mpsc::Receiver<ExecutionObservation>,
+        observations: &mut Vec<ExecutionObservation>,
+        accepted: impl Fn(&ExecutionObservation) -> bool,
+    ) {
+        loop {
+            let observation = observation_receiver
+                .recv()
+                .expect("the owning runtime observation lane closed");
+            if let ExecutionObservation::TaskTerminated(task) = &observation {
+                panic!("actor task {task} terminated before its required host observation");
+            }
+            let matches = accepted(&observation);
+            observations.push(observation);
+            if matches {
+                return;
+            }
+        }
+    }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep the actual actor ownership, source frontier, and deterministic releases in one trace."
+    )]
+    fn execute_actor_pair(admission: WorkAdmission) -> ActorPairExecution {
+        let (observation_sender, observation_receiver) = mpsc::channel();
+        let polls = Arc::new(Mutex::new(ActorPolls {
+            tasks: HashMap::new(),
+            admission: None,
+            observations: observation_sender.clone(),
+        }));
+        let before_polls = Arc::clone(&polls);
+        let after_polls = Arc::clone(&polls);
+        let terminated = observation_sender.clone();
+        let runtime = Builder::new_multi_thread()
+            .worker_threads(2)
+            .on_before_task_poll(move |task| {
+                let permit = before_polls.lock().unwrap().begin(task.id());
+                if let Some(permit) = permit {
+                    let _poll_permission = permit.recv();
+                }
+            })
+            .on_after_task_poll(move |task| after_polls.lock().unwrap().finish(task.id()))
+            .on_task_terminate(move |task| {
+                drop(terminated.send(ExecutionObservation::TaskTerminated(task.id())));
+            })
+            .build()
+            .unwrap();
+        let (oak_release, oak_permit) = mpsc::channel();
+        let (ash_release, ash_permit) = mpsc::channel();
+        let (poll_release, poll_permit) = mpsc::channel();
+        // This guard is declared after Runtime, so unwinding releases every
+        // blocked host/hook before Runtime::drop joins its workers.
+        let release = WorkRelease(vec![
+            oak_release.clone(),
+            ash_release.clone(),
+            poll_release.clone(),
+        ]);
+        let addresses = AddressSpace::new();
+        let oak = runtime
+            .block_on(spawn_root_with(
+                addresses.clone(),
+                Config::new(4),
+                MailAddr(71),
+                ComputingActor {
+                    initialization_count: 0,
+                    commands: vec![],
+                }
+                .stop_on_shutdown(),
+                {
+                    let observations = observation_sender.clone();
+                    let admission = admission.clone();
+                    move |_, _, _, _| WorkInterpreter {
+                        owner: WorkOwner::Oak,
+                        admission,
+                        work_permit: oak_permit,
+                        waiting_notice: Some(observations.clone()),
+                        observations,
+                    }
+                },
+            ))
+            .unwrap();
+        let ash = runtime
+            .block_on(spawn_root_with(
+                addresses.clone(),
+                Config::new(4),
+                MailAddr(73),
+                ComputingActor {
+                    initialization_count: 0,
+                    commands: vec![],
+                }
+                .stop_on_shutdown(),
+                {
+                    let observations = observation_sender.clone();
+                    move |_, _, _, _| WorkInterpreter {
+                        owner: WorkOwner::Ash,
+                        admission,
+                        work_permit: ash_permit,
+                        waiting_notice: Some(observations.clone()),
+                        observations,
+                    }
+                },
+            ))
+            .unwrap();
+        let oak_task = oak.task.task.id();
+        let ash_task = ash.task.task.id();
+        let mut observations = vec![];
+        // Startup has already offered the complete initialization. Observe
+        // the actual pending next port and its enclosing poll return too.
+        let mut waiting_actors = Vec::new();
+        let mut returned_actor_polls = Vec::new();
+        while !(waiting_actors.contains(&WorkOwner::Oak)
+            && waiting_actors.contains(&WorkOwner::Ash)
+            && returned_actor_polls.contains(&oak_task)
+            && returned_actor_polls.contains(&ash_task))
+        {
+            let observation = observation_receiver.recv().unwrap();
+            match &observation {
+                ExecutionObservation::WaitingForCommand(owner) => waiting_actors.push(*owner),
+                ExecutionObservation::PollReturned { task, .. }
+                    if (*task == oak_task && waiting_actors.contains(&WorkOwner::Oak))
+                        || (*task == ash_task && waiting_actors.contains(&WorkOwner::Ash)) =>
+                {
+                    returned_actor_polls.push(*task);
+                }
+                ExecutionObservation::TaskTerminated(task) => {
+                    panic!("actor {task} terminated before its initial source boundary")
+                }
+                _ => {}
+            }
+            observations.push(observation);
+        }
+        let oak_values = vec![17, 23, 31];
+        let ash_values = vec![43, 47, 61];
+        let oak_allocation = oak_values.as_ptr() as usize;
+        let ash_allocation = ash_values.as_ptr() as usize;
+        runtime
+            .block_on(
+                oak.actor
+                    .send_from(MailAddr(79), WorkCommand::Compute(oak_values)),
+            )
+            .unwrap();
+        observe_until(&observation_receiver, &mut observations, |observation| {
+            matches!(
+                observation,
+                ExecutionObservation::WorkEntered {
+                    owner: WorkOwner::Oak,
+                    ..
+                }
+            )
+        });
+        polls.lock().unwrap().admission = Some(PollAdmission {
+            task: ash_task,
+            permit: poll_permit,
+        });
+        // Queue the whole typed User before letting its exact task poll run.
+        runtime
+            .block_on(
+                ash.actor
+                    .send_from(MailAddr(83), WorkCommand::Compute(ash_values)),
+            )
+            .unwrap();
+        observe_until(
+            &observation_receiver,
+            &mut observations,
+            |observation| matches!(observation, ExecutionObservation::PollStarted { task, .. } if *task == ash_task),
+        );
+        let ash_work_poll = match observations.last().unwrap() {
+            ExecutionObservation::PollStarted { ordinal, .. } => *ordinal,
+            _ => unreachable!(),
+        };
+        let _poll_release = poll_release.send(());
+        observe_until(
+            &observation_receiver,
+            &mut observations,
+            |observation| match observation {
+                ExecutionObservation::WorkEntered {
+                    owner: WorkOwner::Ash,
+                    ..
+                } => true,
+                ExecutionObservation::PollReturned { task, ordinal, .. } => {
+                    *task == ash_task && *ordinal == ash_work_poll
+                }
+                _ => false,
+            },
+        );
+        let _oak_release = oak_release.send(());
+        match observations.last() {
+            Some(ExecutionObservation::WorkEntered {
+                owner: WorkOwner::Ash,
+                ..
+            }) => {}
+            Some(ExecutionObservation::PollReturned { .. }) => {
+                observe_until(&observation_receiver, &mut observations, |observation| {
+                    matches!(
+                        observation,
+                        ExecutionObservation::WorkEntered {
+                            owner: WorkOwner::Ash,
+                            ..
+                        }
+                    )
+                });
+            }
+            _ => unreachable!("the exact work poll produced a different observation"),
+        }
+        let _ash_release = ash_release.send(());
+        runtime
+            .block_on(oak.actor.send_from(MailAddr(89), WorkCommand::Finish))
+            .unwrap();
+        runtime
+            .block_on(ash.actor.send_from(MailAddr(97), WorkCommand::Finish))
+            .unwrap();
+        let oak_outcome = runtime.block_on(oak.task.finish());
+        let ash_outcome = runtime.block_on(ash.task.finish());
+        drop(release);
+        drop(runtime);
+        observations.extend(observation_receiver.try_iter());
+        ActorPairExecution {
+            observations,
+            oak_task,
+            ash_task,
+            oak_outcome,
+            ash_outcome,
+            oak_allocation,
+            ash_allocation,
+            ash_work_poll,
+        }
+    }
+
+    fn verify_retirement(
+        outcome: LocalOutcome<HostedComputingActor, ()>,
+        allocation: usize,
+        values: &[u64],
+        origins: &[MailAddr],
+    ) {
+        let ActorExecutionOutcome::Completed {
+            behavior,
+            residual:
+                LocalResidual::Retired {
+                    settlements,
+                    ingress,
+                    activation_tasks,
+                    descendants,
+                },
+            completion,
+        } = outcome
+        else {
+            panic!("the actual actor did not complete its retirement")
+        };
+        assert_eq!(completion, Completion::Stopped);
+        assert_eq!(behavior.base().initialization_count, 1);
+        assert_eq!(behavior.base().commands, origins);
+        assert!(ingress.control.is_empty());
+        assert!(ingress.user.is_empty());
+        assert!(activation_tasks.is_empty());
+        assert_eq!(descendants, ());
+        assert_eq!(settlements.len(), 2);
+        let mut settlements = settlements.into_iter();
+        let stopped = settlements.next().unwrap();
+        assert!(stopped.creations.is_empty());
+        assert_eq!(stopped.sends.owned, NoSends);
+        assert!(stopped.sends.inner.is_empty());
+        assert!(matches!(stopped.become_, Step::Stop(_)));
+        let computed = settlements.next().unwrap();
+        assert!(computed.creations.is_empty());
+        assert_eq!(computed.sends.owned, NoSends);
+        assert_eq!(computed.become_, Step::Continue);
+        assert_eq!(computed.sends.inner.len(), 1);
+        let SettledItem::Attempted(ItemSettlement::Accepted(work)) =
+            computed.sends.inner.into_iter().next().unwrap()
+        else {
+            panic!("the complete computation receipt was lost")
+        };
+        assert_eq!(work.values, values);
+        assert_eq!(work.values.as_ptr() as usize, allocation);
+        let expected_sum: u64 = values.iter().sum();
+        assert_eq!(work.sum, expected_sum);
+    }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Verify the complete independent poll, work, and terminal trace together."
+    )]
+    fn verify_actor_pair(execution: ActorPairExecution) -> usize {
+        let ActorPairExecution {
+            observations,
+            oak_task,
+            ash_task,
+            oak_outcome,
+            ash_outcome,
+            oak_allocation,
+            ash_allocation,
+            ash_work_poll,
+        } = execution;
+        assert_ne!(oak_task, ash_task);
+        let mut active = HashMap::new();
+        let mut ordinals = HashMap::new();
+        let mut entered = Vec::new();
+        let mut maximum_overlap = 0;
+        let mut worker_owners = HashMap::new();
+        let mut initial_offers = HashMap::new();
+        let mut work_offers = HashMap::new();
+        let mut waiting_notices = HashMap::new();
+        let mut terminations = Vec::new();
+        for observation in &observations {
+            match observation {
+                ExecutionObservation::PollStarted {
+                    task,
+                    ordinal,
+                    worker,
+                } => {
+                    let previous = active.insert(*task, (*ordinal, *worker));
+                    assert_eq!(previous, None, "one actor task was polled concurrently");
+                    let expected = ordinals.entry(*task).or_insert(0);
+                    assert_eq!(*ordinal, *expected);
+                }
+                ExecutionObservation::PollReturned {
+                    task,
+                    ordinal,
+                    worker,
+                } => {
+                    let started = active.remove(task);
+                    assert_eq!(started, Some((*ordinal, *worker)));
+                    ordinals.insert(*task, ordinal + 1);
+                }
+                ExecutionObservation::SourceOffered {
+                    owner,
+                    retained_work,
+                } => {
+                    assert!(*retained_work <= 1);
+                    if *retained_work == 0 {
+                        assert!(!worker_owners.contains_key(owner));
+                        *initial_offers.entry(*owner).or_insert(0) += 1;
+                    } else {
+                        *work_offers.entry(*owner).or_insert(0) += 1;
+                    }
+                }
+                ExecutionObservation::WorkEntered {
+                    owner,
+                    worker,
+                    allocation,
+                    length,
+                } => {
+                    let task = match owner {
+                        WorkOwner::Oak => oak_task,
+                        WorkOwner::Ash => ash_task,
+                    };
+                    assert_eq!(active.get(&task).map(|(_, worker)| worker), Some(worker));
+                    if *owner == WorkOwner::Ash {
+                        assert!(
+                            active
+                                .get(&task)
+                                .is_some_and(|(ordinal, _)| *ordinal >= ash_work_poll)
+                        );
+                    }
+                    assert_eq!(*length, 3);
+                    assert_eq!(
+                        *allocation,
+                        match owner {
+                            WorkOwner::Oak => oak_allocation,
+                            WorkOwner::Ash => ash_allocation,
+                        }
+                    );
+                    let prior_worker = worker_owners.insert(*owner, *worker);
+                    assert_eq!(
+                        prior_worker, None,
+                        "one original work request entered twice"
+                    );
+                    entered.push(*owner);
+                    maximum_overlap = maximum_overlap.max(entered.len());
+                }
+                ExecutionObservation::WorkReturned(owner) => {
+                    let index = entered.iter().position(|entered| entered == owner).unwrap();
+                    entered.remove(index);
+                }
+                ExecutionObservation::WaitingForCommand(owner) => {
+                    assert_eq!(initial_offers.get(owner), Some(&1));
+                    *waiting_notices.entry(*owner).or_insert(0) += 1;
+                }
+                ExecutionObservation::TaskTerminated(task) => terminations.push(*task),
+                ExecutionObservation::PollViolation(task) => {
+                    panic!("invalid task poll ownership: {task}")
+                }
+            }
+        }
+        assert!(active.is_empty());
+        assert_eq!(entered, []);
+        assert_eq!(worker_owners.len(), 2);
+        assert_eq!(ordinals.len(), 2);
+        for owner in [WorkOwner::Oak, WorkOwner::Ash] {
+            assert_eq!(initial_offers.get(&owner), Some(&1));
+            assert_eq!(work_offers.get(&owner), Some(&1));
+            assert_eq!(waiting_notices.get(&owner), Some(&1));
+        }
+        let actor_terminations = terminations
+            .iter()
+            .filter(|task| **task == oak_task || **task == ash_task)
+            .collect::<Vec<_>>();
+        assert_eq!(actor_terminations.len(), 2);
+        assert!(actor_terminations.contains(&&oak_task));
+        assert!(actor_terminations.contains(&&ash_task));
+        // Task hooks do not count folds. The stronger implication uses the
+        // sole consumed Driver, whose exclusive mutable Behavior is owned by
+        // this exact actor task for initialization and every event fold.
+        verify_retirement(
+            oak_outcome,
+            oak_allocation,
+            &[17, 23, 31],
+            &[MailAddr(79), MailAddr(89)],
+        );
+        verify_retirement(
+            ash_outcome,
+            ash_allocation,
+            &[43, 47, 61],
+            &[MailAddr(83), MailAddr(97)],
+        );
+        maximum_overlap
+    }
+
+    #[test]
+    fn independent_actors_overlap_runtime_work_on_distinct_workers() {
+        let execution = execute_actor_pair(WorkAdmission::Independent);
+        let workers = execution
+            .observations
+            .iter()
+            .filter_map(|observation| match observation {
+                ExecutionObservation::WorkEntered { worker, .. } => Some(*worker),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let overlap = verify_actor_pair(execution);
+        assert_eq!(overlap, 2, "independent actor runtime work was serialized");
+        assert_eq!(workers.len(), 2);
+        assert_ne!(workers[0], workers[1]);
+    }
+
+    #[test]
+    fn shared_work_serialization_is_observable_without_a_deadline() {
+        let execution = execute_actor_pair(WorkAdmission::Serialized(Arc::new(WorkMutex::new(()))));
+        let overlap = verify_actor_pair(execution);
+        assert_eq!(overlap, 1);
+    }
+}
