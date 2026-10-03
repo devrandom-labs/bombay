@@ -183,7 +183,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +6577 / -93 / net 6484
+documentation: +6692 / -93 / net 6599
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
@@ -472,3 +472,19 @@ zero untracked paths at this checkpoint; canonical production remains net133
 and public types +0/-0. Research generated corpus and verification artifacts
 stay outside the canonical source tree and remain authenticated in the receipt.
 Neither remote branch has full EXEC review, CI or merge acceptance.
+
+### Current-source repair verification plan
+
+EXEC section 40 is the pre-edit checkpoint. All commands in
+proposed-command-argv.json, SHA-256
+6059632777c06e6136db95a70d97db907c6aeb24cf30ea936019cf9644e71b1e,
+are unexecuted forecasts. The exact file is in the proposal directory linked by
+task-custody.md. It specifies focused debug/release regressions before broadening,
+12 foundation and five publication mutation cohorts with both-profile intended
+failures and restored positives, static denials, current preservation tests,
+ordinary/hook builds, all-feature workspace/strict/fmt, stable acquisition tests,
+fresh 10,000-run selected-nightly fuzzing and full Nix gates on actual final source.
+The acquisition campaign does not cover publication Break or unbounded fairness.
+Neither historical passing totals nor the remote research checkpoint certify
+this new combined source. Actual archive, command/log/source hashes, final full
+tracked/untracked measurement and independent review remain required.

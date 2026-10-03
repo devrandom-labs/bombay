@@ -1792,3 +1792,41 @@ Driver fixtures are not current pure-fold evidence. The canonical EXEC branch
 preserves the newer shutdown, scheduling, measurement and pure Driver fixes.
 Fresh incremental integration and root/child/Entity cancellation witnesses are
 still required; this accepts no full EV-06, DG-TASK, public API or merge gate.
+
+### Current-source repair pre-edit contract
+
+EXEC section 40 selects the isolated current-source repair experiment, not full
+DG-TASK acceptance. The exact proposal directory is
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-current-execution-assignment-j_m5mg1o.
+Its preedit-receipt.json SHA-256 is
+3ee12e8b83085b16c44b5b9916625dd6dfecd7a17918e54587b843a8d77cade0;
+proposed.patch is
+e02da633f382714b47779b7a2452e2f1e395fe97be13cef9a0d21a6508aae8c7;
+execution-assignment.json is
+f0bee5931fe5662abe825927a0c6401fdb87aafc38a3c334fe282ea2e9762090.
+The assignment contains every section 11.1 field, sole-writer ownership, exact
+ports, complete custody traces, dependencies, stop conditions and pinned argv.
+The coordinator authenticated all 52 artifacts, all 345 virtual source entries
+and clean application of every patch preimage to canonical 986447e. The fresh
+execution archive must preserve newer unrelated documents; virtual181+39 is
+explicitly a proposal, not a claim about that later execution snapshot.
+
+Independent review is
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-current-overlay-eligible-7giz4kg1/review.json,
+SHA-256 0ee660c60b0c93b19e9440814829510e6a2098a9f24988bfd38502a554405b36.
+Coordinator receipt /tmp/bombay-current-execution-root-preedit-review.json has
+SHA-256 ed29af0de8291d159cbbff6b3edc05c315fd34198cde460ce437de83b8841308.
+Final changes from the prior proposal add the missing module-scope task import
+and remove one duplicated panic assertion before cleanup; all production text
+is unchanged from its reviewed predecessor. Every available settlement lane,
+allocation, accepted message, descendant, source event, first/late error and
+unread cancellation occurrence remains part of the complete result oracle.
+
+Only contract_inventory writes the 39 isolated paths and the exclusive
+/tmp/bombay-api-private-composition-target cache with incremental disabled and
+one build job. Canonical source and shared records remain coordinator-owned.
+Observation and task-custody researchers independently review handoff evidence;
+the author cannot accept its own gates. An unexpected ownership, cause/order,
+public state/type, bound, consumer, native representation or out-of-scope path
+stops dependent implementation. Equivalent import/format/assertion corrections
+retain their exact diagnostic evidence and may not invent architecture.

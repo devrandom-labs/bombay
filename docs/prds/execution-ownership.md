@@ -2737,3 +2737,64 @@ and the separately marked research branch are pushed; verification.md records
 their exact commits. Research publication does not advance a decision gate,
 feature status or merge requirement. EXEC remains active; owning observation,
 native-panic and rejected-source questions remain independently blocked.
+
+## 40. Current-source execution repair experiment (2026-10-03)
+
+Before source edits, canonical 986447e is clean: production +167/-34/net133;
+tests +3295/-557/net2738; documentation +6577/-93/net6484; manifest/lock
++38/-33/net5; public types +0/-0; 67 tracked and zero untracked paths relative
+to 2fccedf. The previous complete measurement is archived under SHA-256
+1ed0e777d2bd35752972c9e2c60f8cf3fe58eb95ee23fa6acd0abe45d1f3d212.
+The user requests consolidation on exec-prd-backlog for one reviewed final PR,
+with each focused checkpoint pushed. Historical research is a backup, not a
+second retained implementation or gate acceptance.
+
+The isolated experiment combines the reviewed typed retirement foundation and
+publication repair with current source. The original defects are available actor
+state lost when capability-task joining unwinds, and successful publication after
+an already queued owner cancellation. Their smallest runtime witnesses join
+cleanup before observing exact state/error custody and absence of publication.
+Engine owns the affine acquisition/publication decision; Bombay owns concrete
+cancellation, original task errors, joining, retirement and result interpretation.
+Existing Driver, Environment, ActivationTasks, LocalResidual, startup handoff,
+shutdown TargetPath and typed terminal products are reused. No second actor law,
+executor, mailbox, observation primitive or runtime object is introduced.
+
+The exact 39-path patch is recorded in the authenticated proposed-text manifest:
+11 Engine source/test/benchmark/fuzz paths, nine Bombay source paths, ten Bombay
+consumer test paths, seven existing examples and two normative runtime/Driver
+documents. Its forecast is production +640/-225/net415, tests
++3279/-429/net2850, documentation +73/-32/net41 and public types +0/-0.
+This is net-positive capability code. The cumulative Bombay path union becomes
+84; every path is within the previously approved 114 repository-qualified paths.
+The user's line-count waiver applies; file/public-type checkpoints remain.
+Existing associated types, signatures, variants and result fields change and
+require complete consumer migration despite zero new nominal public types.
+
+[Task custody](execution-ownership/task-custody.md#current-source-repair-pre-edit-contract)
+records the exact text, source qualification, preservation obligations and
+complete section 11.1 assignment. Independent eligibility review
+0ee660c60b0c93b19e9440814829510e6a2098a9f24988bfd38502a554405b36 and
+coordinator review
+ed29af0de8291d159cbbff6b3edc05c315fd34198cde460ce437de83b8841308
+authorize only this bounded isolated experiment after this pre-edit record.
+Archive the resulting clean canonical commit, apply only the exact 39-path patch,
+preserve all 306 unrelated current inputs and hash all 345 actual sources before
+Rust verification. Historical mixed-document manifests are qualified rather than
+silently rebound to the new archive. The worker never edits canonical files.
+
+Preserve accepted shutdown, ARC, EV-25, EV-30 preparation, compiler/allocator
+and pure Driver regressions. Run focused debug/release laws first, then genuine
+original defects, intended compiled inversions and restored positives, current
+static denials/consumers, hook and ordinary builds, full workspace/strict/fmt,
+fresh generated acquisition tests/fuzzing and final Nix repository gates.
+Actual command outcomes and final tracked/untracked gross/net deltas remain
+required. No Rust verification has yet run on the combined current source.
+
+Newly imported native panic inspection is excluded; opaque original JoinError
+and genuine producer task IDs preserve the independently observable error law.
+Receiving-side ID custody is not producer identity or native payload conservation.
+Native-payload permission, observation authority, rejected-work recovery,
+recursive projection, final public API, family integration and full decision
+acceptance remain open. No canonical production retention, module extraction,
+full EXEC acceptance, CI or merge is authorized by this experiment alone.
