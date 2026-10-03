@@ -2228,3 +2228,12 @@ semantic failure. Preserve both original logs, place new evidence outside the
 source tree, and rerun Cargo checks sequentially before the full Nix gate.
 Compiler acceptance remains blocked until the final frozen checks and independent
 review pass.
+
+Independent final compiler classification found an error in the intermediate
+production aggregates in sections 28–29: cold-trait lint annotations outside
+`cfg(test)` were counted as tests. Preserve the earlier frozen measurements as
+historical, explicitly superseded counts. Current source has 125 net production
+lines, including these annotations; the final complete per-line measurement
+and receipt must use actual conditional ownership. No new type or semantic
+operation is introduced by those annotations. The user waived line-count
+approvals; the approved 113-path/zero-added-public-type scope still applies.

@@ -437,3 +437,39 @@ the recovered listener. The unchanged public serve witness independently checks
 complete root origin/terminal; it is not proof of integrated HTTP drop ownership.
 This bounded review selects no public surface or production repair and approves
 no full gate.
+
+## Independent active-family comparison review (2026-10-03)
+
+Root read the complete two-path incremental comparison, native laws and
+publication mutants, authenticated 195 source hashes, six manifest hashes and
+39 artifacts, then reran all twelve family tests in both profiles through pinned
+Nix. Both fresh runs pass. Frozen source receipt SHA-256:
+`d668deffc8c85b9f51bf9aaa73bd6e78ea893f2f39aed8586e1c9813295fd309`.
+Independent review receipt `/tmp/bombay-active-family-root-review.json`, SHA-256:
+`b333f61ca93f836d36eb8fb1e4013843f9cddf8a5331e95825656e2372d2d61c`.
+
+Actual Directory/NativeEntity activation admits a genuine ledger command through
+a pure fold. A runtime-definition callback holds the exact retirement report
+and delays family completion. Dropped execution preserves completed borrowed
+output at the independent receiver; the result stays pending until that callback
+finishes, then returns output, root retirement and the complete family role/
+shutdown/seven-metric product. Receiver surrender releases output once while
+surviving execution still joins cleanup. Two publication-loss inversions compile
+and fail their intended assertions in both profiles. They prove publication
+custody, not a family-join omission law.
+
+A separate pure Vec-owning actor reproduces the original Native pre-owner-wait
+loss: dropping the actual pending retirement future cleans up the task but loses
+the definition callback result. Both original runs fail the custody assertion;
+ordinary original-lease retirement preserves the exact Vec/queued shutdown and
+all typed remainder lanes in both profiles. The integrated cooperative actor
+can instead stop gracefully under the original wait; no original integrated
+deadlock is claimed.
+
+This accepts bounded research only. Delta is tests +470 / -7 / net 463 plus
+two source lines for a conditional test-only wait substitution/comment; no
+non-test behavior or public types change. That substitution is not a production
+repair. Native retirement-future drop still requires ownership transfer even
+without the wait. Recursive child/failure integration, universal public API,
+initial non-Send declarations and exact undeliverable static-result destruction
+remain open; no full decision gate is approved.
