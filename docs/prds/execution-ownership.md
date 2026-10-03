@@ -2927,3 +2927,50 @@ signature, bound, wrapper, policy or file requirement reopens the model.
 Current combined EXEC Nix verification has resource priority; this experiment's
 Cargo work waits until it finishes. No Rust result or production retention is
 claimed by this assignment.
+
+## 44. Current execution evidence and terminal-test correction
+
+The actual section-40 isolated source is frozen in
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-current-execution-u0cah2y1/blocked-nix-freeze-records.
+Receipt 6a9ebddc843464e9d1dd660df174c39fd71f59efc10ccf7ce2c46aa270ff62ee
+binds 345 tracked inputs, 39 changed/306 preserved, and 84 separately hashed
+generated corpus files. Actual production is +640/-225/net415, tests
++3288/-432/net2856, documentation +73/-32/net41, public types +0/-0.
+Focused commands, 17 original/inversion cohorts with 34 intended runtime
+failures and 34 restored positives across both profiles, full workspace
+438 tests/61 summaries per profile, normal/hook strict/fmt and a corrected
+explicit-bin fuzz campaign have genuine recorded results. Zero-test fuzz
+attempts are excluded. Mutation results bind the preformat source; equivalent
+app formatting and two inherited hook return signatures are separately bound.
+
+The final Nix check failed with ENOSPC during coverage compilation, not a
+semantic result. Preserve that exit-1 log and receipt unchanged. Removing only
+the verified idle 9.4-GB derived Cargo cache recovered space; source/log/corpus
+evidence stayed outside it. The recovery receipt is
+65fda6598c05d7bf4e62b6942190676497b3e6d7ff6eeb2ef0e297e87565bfe1.
+One Nix-only rerun uses a distinct log and the same source; its result is pending.
+
+Independent review beb184d9fabf339e6722334d0aae1f3cc35914abb627c2e9866d4faf6bc9cd79
+authenticated all 188 artifacts, actual sources, selected contracts and result
+counts, but found two new native-payload inspection assertions in terminal.rs.
+They already existed in the earlier reviewed paper; they are a missed review
+condition, not execution drift. The earlier opaque-only qualification is false
+for these cases. Section 41 permits passive native custody, not inspection in
+this bounded experiment. No source retention follows from its passing tests.
+
+The exact one-file cfg successor at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-terminal-opaque-correction-d3ijk_z6
+has model 2eb9bf5769979063619d23414fa24b1041f4cab0bb6edd8ad6d545b970b88bb1
+and patch 75ca6045810623840b13e5561182b690af7ae937e1a618ac4b79053436acec42.
+It removes both inspections, captures genuine producer task identities and
+checks original opaque errors after their joins. All five residual causes,
+original actor allocation, complete lanes, descendants and unread cancellation
+checks remain. Production and public-type deltas are zero; tests +20/-14/net6,
+with no extra file. Independent exact-source review
+253a9592eccefece4acf545a0f8240155a28dc92ed66551bc0abb81ce284350d
+and the coordinator's recorded review authorize only this isolated correction.
+The designated section-40 writer applies it after the predecessor Nix run ends,
+runs focused debug/release and relevant projection inversion/restores, then
+required broad/source-bound checks. The predecessor Nix result cannot certify
+this successor. All remaining native, projection, observation, application and
+full decision gates stay open.
