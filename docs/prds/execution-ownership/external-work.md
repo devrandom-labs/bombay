@@ -272,3 +272,43 @@ standard ApplicationCapabilities, whose current source bound supplies no
 runtime-owned context input. Actual actor capability retirement, native
 families, multiple roles, previous-incarnation lineage and consuming opaque
 diagnostic extraction remain unproved. DG-WORK and EV-24 remain open.
+
+## Selected opaque-diagnostic extraction proposal (2026-10-03)
+
+Actual selected FIFO diagnostics retain a source rejection privately and expose
+only borrowed role/debug information. An existing approved Bombay test-file
+compile comparison reaches E0616 when attempting to consume that private cause;
+this establishes the extraction gap, not runtime acceptance. Receipt
+`da8194e1820e449e9d3e7e3a7b09a99c9407e8fb602445ed7c268cdada864542`.
+Source-purity
+violations in the inherited fixture remain excluded from semantic evidence.
+
+Read-only proposal `40266ce8032d49faf4caebd89768b91d2a865f70e75867af8b482171a704be24`
+and external draft `0074f8a4cbf30df8de5e19efcfa72701dd727da8b75e1d3f3041822490c6c2f7`
+compare a consuming existing method with a broad cause enum and visitors. The
+method's successful standard Result tuple moves the original shared role Arc,
+previous WorkerAttempt, whole ChildStopped, actually returned Source option and
+typed SourceRejection; every other complete diagnostic returns original Self.
+It adds no state, protocol, wrapper or public type, and no Role Clone bound.
+Proposed two production files: +39 / -1 / net 38; one public method. The two
+owning test files make four additional existing upstream paths, all outside
+the currently authorized 114. No owning edits are authorized or made.
+
+Independent bounded proposal review
+`1b9b3c56b8f731068cd42e6128ae98eb05331840e523ef0318fb6c5384f40384`
+authenticates five proposal artifacts and nine selected owner files and accepts
+branch-local ownership completeness only. Caller syntax, inference, lint,
+complete actual FIFO traces, original-input/role allocations, nonmatching
+diagnostic return, inversions and all affected consumers remain required before
+API retention. The visitor adds a callback without a demonstrated ownership
+need; panicking after tuple extraction can also destroy values. A borrowed-role
+visitor cannot return the original owned shared role.
+
+Current producers replace the original source rejection with SourceStateCorrupt
+when source restoration fails. Thus successful Some(Source) extraction is not a
+current lawful producer trace and must not be fabricated as proof. Reachability
+of that replacement needs a separate authentic witness or invariant; this
+accessor does not repair or authorize original-error erasure. Existing opaque
+correlation allocation is not itself evidence of nondeterministic behavior:
+heap allocation is permitted, and no paired lawful consumer trace establishes
+a contract-visible mismatch. No alpha-renaming law is assumed.

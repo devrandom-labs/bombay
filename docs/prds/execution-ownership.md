@@ -2494,3 +2494,50 @@ Its immutable private-comparison authentication supplement is
 Neither approves three-owner minimality or full DG-OBSERVATION. Explicit user
 file/public-type checkpoint authorization is requested and pending; independent
 source-retirement/startup/capability repair continues within the existing scope.
+
+## 34. Consuming rejected-work recovery scope proposal (2026-10-03)
+
+Current approved scope remains 114 repository-qualified paths and zero new
+public types. Current canonical baseline delta, including tracked/untracked
+files, is production +150 / -18 / net 132; tests +1181 / -536 / net 645;
+public API +0 types / -0 types; 66 changed tracked paths, zero untracked.
+The complete documentation/configuration delta remains in verification.md.
+Tests are exempt from production-code condensation; line-count approvals are
+waived. File/public-type checkpoints still apply.
+
+DG-WORK requires consuming recovery of the exact original rejected input. The
+selected owning FIFO diagnostic has no such operation. The reviewed read-only
+proposal in external-work.md adds a method to the existing diagnostic: matching
+SourceRejected transfers its original shared role, previous attempt, stopped
+report, returned-source option and typed rejection in a standard Result tuple.
+Every other original diagnostic returns unchanged. Existing ownership moves
+express the law; no new wrapper, state, error family or public type is proposed.
+Two production files: +39 / -1 / net 38; one public method. No production
+deletion or condensation credit is claimed for this net-positive addition.
+
+Additional existing Behavior files:
+
+- crates/actors/src/atomic/fifo_pool/protocol.rs — consuming diagnostic method;
+- crates/actors/src/atomic/roster.rs — private original shared-role transfer;
+- crates/actors/tests/fifo_pool/recovery.rs — genuine source rejection, exact
+  input/metadata ownership and unaffected recovery;
+- crates/actors/tests/fifo_pool/correlation.rs — consuming caller inference,
+  nonmatching original diagnostic return and exact correlation.
+
+This proposes 114 to 118 approved cumulative paths. The independent observation
+proposal remains pending separately; accepting both would yield 129, not two
+competing task allowances. Existing approved release/configuration/testkit/docs
+paths remain available for owning consumer verification and reviewed release.
+The authorization is confined to these four paths and zero new public types.
+No final owning API or full DG-WORK acceptance is implied.
+
+Independent proposal review
+`1b9b3c56b8f731068cd42e6128ae98eb05331840e523ef0318fb6c5384f40384`
+accepts branch-local ownership completeness only. Required actual caller,
+nonmatching-cause, original-defect/inversion, both-profile, purity, lint and
+consumer checks remain before retention. Source-restoration error replacement
+is a separate conservation concern: establish authentic reachability or its
+owning invariant before choosing a repair; do not manufacture impossible
+Some(Source) rejection traces. No additional ownership path is implicitly
+authorized for that separate finding. This scope checkpoint is requested and
+pending; dependent owning source edits remain blocked.

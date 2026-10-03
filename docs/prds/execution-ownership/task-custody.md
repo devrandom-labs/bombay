@@ -1473,3 +1473,43 @@ semantic retention. Outer actor JoinError and initialization panic payload
 custody, recursive projection, complete application/Entity family delivery,
 observation ownership, current documentation and final consumer migrations
 remain required before their affected gates close.
+
+## Native panic ownership boundary (2026-10-03)
+
+Fresh read-only audit of current Engine/Bombay and selected Core/Actors traces
+the caught initialization payload through both root and child paths. Existing
+root SpawnError, ActorRetirement and RunError alternatives can forward that
+original value directly. Completion observers can still publish a classification
+while the full result retains custody. Current rejected-child bindings are
+different: they store no task or full result, and child creation transfers the
+surviving actor into Core's classification report. An independent runtime owner
+for the original child panic is not present and must be proved, not assumed.
+
+Audit receipt `2a7787a2aecd8a090464fa1c5bd826a2c8cfdd8000540c2409b1c6c2a9d7e587`;
+immutable scope correction
+`2d1354b6fc3aeb65ffcbab660498e78d86056ab34832697f8eff8c6deffee507`
+adds the omitted repository qualifier to its original path comparison: all six
+minimal owner paths and eight direct consumer paths are already authorized.
+Integrator authenticated 22 current files, eight selected sources and the
+selected complete AGENTS hash. Production/tests/public changes are zero.
+This is ownership analysis, not interface or gate approval.
+
+Exact Rust 1.99 source shows catch_unwind returns the native thread Result,
+whose failure owns Box<dyn Any + Send>. Merely spelling thread::Result does not
+remove that underlying representation. Tokio's existing JoinError is an already
+accepted opaque runtime failure owner, but its panic-payload constructor is
+private; it cannot directly receive the captured initialization payload.
+Resuming unwinding without a separate owner loses available actor/residual
+values. Restricting arbitrary panic_any values to a known actor error changes
+the required recovery law. Whole-error Clone/PartialEq/Eq promises also need
+review before any original arbitrary payload is added.
+
+Selected Behavior instructions prohibit introducing Any/trait objects. A narrow
+policy question is pending: permit passive ownership and transfer of Rust's
+native unwind payload in Engine/Bombay, outside Behavior state and algebra.
+No dynamic domain dispatch, downcast routing, erased actor result or catch-all
+protocol is proposed. Dependent implementation remains blocked until that
+question is answered; source analysis and other authorized experiments continue.
+This does not claim recovery of values destroyed inside user code, support for
+panic=abort/foreign exceptions, or safe discharge when the payload's destructor
+itself panics. Cleanup-before-discharge needs an observable ownership proof.
