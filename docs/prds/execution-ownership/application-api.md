@@ -11,22 +11,20 @@ interface or authorization for production edits. Owner: WP-API-DESIGN; reviewer
 must differ from this record's author. PRD requirements: XO-01–12, XO-37–39,
 XO-43–45. Evidence and dependent task contracts remain under review.
 
-## Current execution direction (2026-10-03)
+## Execution discussion and PRD authority (2026-10-03)
 
-The user requires multicore, multithreaded execution as the ordinary actor path.
-Each standard actor is an independently scheduled Send task; its own state turns
-remain sequential. Caller-owned execution uses the caller's Tokio workers.
-Owned execution should default to Tokio's multithread scheduler, using existing
-Tokio configuration rather than a Bombay scheduler or execution-mode wrapper.
-Explicit current-thread hosting remains a required semantic comparison.
+After discussing multicore execution and the existing public API, the user
+directed execution to follow the PRD exactly and treat those thoughts as context.
+That discussion selects no additional API, scheduler default or acceptance law.
+The PRD already requires independently executing actors on multiple Tokio workers,
+serialized turns within each actor, caller-owned execution, and equivalent actor
+laws under current-thread and multithread owned execution.
 
-The existing public runner API is deliberately being replaced. Its seven
-single-thread conveniences do not constrain the accepted replacement or require
-compatibility twins. Migrate all affected callers, examples and diagnostics to
-one accepted spelling. Preserve core actor laws, exact owned results and the
-completed runtime fixes. Exact signatures, errors, configuration, ownership,
-ordinary-Rust comparisons and independent DG-API acceptance remain required;
-this direction alone approves no untested public interface.
+Exact signatures, defaults, errors, configuration, compatibility and migration
+remain DG-API decisions established through the required ordinary-Rust comparisons
+and independent acceptance. Preserve exact owned results and completed runtime
+fixes. The existing seven single-thread conveniences remain migration evidence,
+not a selected replacement or justification for compatibility twins.
 
 ## Selected contract and current consumer syntax
 

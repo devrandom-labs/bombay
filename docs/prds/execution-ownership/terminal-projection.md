@@ -541,3 +541,32 @@ neither reran Rust. Formatted cfg tests are +564/-0; production/public changes
 are zero. Eager projection tasks and upstream raw JoinError loss remain. This
 accepts bounded feasibility, not deferred projection, task deletion or the full
 gate.
+
+## Root and child projection ownership reconciliation (2026-10-03)
+
+Read-only model receipt
+f04e40b210741c5ecf97ee72bf78a8520d2dc3e4e8895b80cc20e194c4fc9ab6
+and independent review
+f3f58790fd8b0b994e00efc55547ac8534b5e43ca37f456cc43dd6bb317eb4c0
+separate two requirements that must not be conflated. Root primary conversion
+can retain the concrete raw result at its existing factory proof until the caller
+requests conversion. A child task can return a homogeneous application terminal
+without requiring settlement proofs on every shared occurrence member.
+Removing its separate projection task therefore is not blocked merely by the
+universal member's weaker bound.
+
+The child factory must still recover the complete original startup rejection:
+the same actor join currently supplies that state and initialization custody
+when its startup receiver closes. Mapping that join to the application terminal
+would remove this recovery unless an explicit typed transport preserves it.
+Available original task errors and role origins must survive, and all siblings
+must join before arbitrary root primary conversion. Full unprojected child
+storage is a stronger alternative with a separate missing output selector;
+it is not implied by root primary deferral alone. No transport, task deletion,
+new interface, native-panic exception or full DG-PROJECTION is accepted here.
+Coordinator inspection
+3ef65f07ea81a53ec92fa29ad63cd98bb51e974c77f09d26d0a64446ffa7e29b
+and the independent review bind 33 selected, historical canonical and typed-source
+inputs; no Rust command or source edit ran for this model. The next comparison
+must provide the concrete factory amendment and consumer delta rather than
+repeat already-established compile-only syntax.
