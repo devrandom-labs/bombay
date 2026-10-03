@@ -570,3 +570,36 @@ and the independent review bind 33 selected, historical canonical and typed-sour
 inputs; no Rust command or source edit ran for this model. The next comparison
 must provide the concrete factory amendment and consumer delta rather than
 repeat already-established compile-only syntax.
+
+## Factory transport comparison and remaining fault proof
+
+Read-only component receipt
+7c676c4c1e2346410fa370330cb77a026230a4c534a3aced46d4044773ce448f,
+independent review
+9c5418e9289314f9e54da1ebf4856fbfb16ededd818735e0efabc3f082c94497 and
+coordinator inspection
+f1faa1aed7003ffca27f072aef35b9a9fc29909d1e3dcc95fa8a20a10e8b966f
+bind five artifacts and 15 source inputs. Immutable supplement
+941a9f0f1245473d0d6c80affd6d7c8ea7c2a4987fbc5fdaff84448d5d1e2c33
+corrects the earlier model's inherited 33-input count and qualifies reachability.
+Historical canonical document hashes authenticate against Git181; later docs
+are not silently rebound to those bytes. No source or Rust command changed.
+
+An ordinary consuming function can convert settled child retirement inside the
+existing actor task; the paper component alone adds net5 production lines and
+removes zero tasks. Changing its raw result also requires explicit custody for
+whole startup rejection. A branch-specific rejection channel and Option terminal
+are hypotheses: original Start/ACK must prove that an established child cannot
+return the delivered-rejection alternative, and waiter drop must retain a join
+owner. No new transport, bound or public result is accepted by this comparison.
+
+Ordinary initialization panic retains the actual partially changed child under
+the selected Driver and cannot prove an unavailable-child receipt gap. The
+separate payload-destructor characterization proposal tests whether a second
+panic can escape before Start; it remains unexecuted. Any owning creation-receipt
+change first requires genuine reachability and exact available provenance.
+Recursive caller conversion can destroy values it consumes while panicking;
+outer task error and origin cannot reconstruct those values. Deferred primary
+conversion, eager child cleanup, exact remaining custody, all-sibling joining
+and actual projection-task counts must be proven together. The full candidate
+remains ineligible; DG-PROJECTION stays open without invented receipt vocabulary.
