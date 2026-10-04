@@ -481,6 +481,14 @@ binds 87 artifacts and all 806 sources. Independent nonauthor review
 accepts bounded owning-contract retention and upstream delivery. The isolated
 Git worktree matches every final source; 802 original inputs remain unchanged.
 [Behavior PR #82](https://github.com/devrandom-labs/bombay-behavior/pull/82)
-targets main at 1a1c21dfbbaecd3f869246354b6be7d1c090974c. GitHub review,
-complete CI, merge, release and Bombay's locked selection remain pending.
-This is not full EV-24/DG-WORK acceptance or canonical Bombay retention.
+was independently approved by `trivejoel` at exact head
+1a1c21dfbbaecd3f869246354b6be7d1c090974c; review receipt
+2695cb59a8537aa992811f7a32164b2438faa927fa301be4b92cf17e8e27ff17.
+All fourteen GitHub checks passed, including eight mutation shards, their
+aggregate, Nix, the published API audit, advisories and CodeQL.
+[CI run 37166077533](https://github.com/devrandom-labs/bombay-behavior/actions/runs/37166077533)
+binds that head. The reviewed PR merged on 2026-10-04 at
+52c3130d39117ccb772a72e2898b658b3a7815c8. Immutable reviewed-merge receipt
+d62ae25b6e83bb9bc0b7e2cbae59773a884053e2471ab71a11edc3f6450c03bf
+records the actual API responses. Release and Bombay's locked selection remain
+pending. This is not full EV-24/DG-WORK acceptance or canonical Bombay retention.

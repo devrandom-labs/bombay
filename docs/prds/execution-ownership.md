@@ -3066,6 +3066,8 @@ interface denial, compiled inversions, 859-test run, ten owning Nix checks,
 measurement and nonauthor review are recorded in
 [external-work.md](execution-ownership/external-work.md).
 [Behavior PR #82](https://github.com/devrandom-labs/bombay-behavior/pull/82)
-is open at 1a1c21dfbbaecd3f869246354b6be7d1c090974c. Upstream review/CI,
-merge/publication, selected dependency verification and full EXEC gates remain
-required. The earlier compiler and strict-lint nonpasses remain preserved.
+merged after independent review and all fourteen GitHub checks passed at
+1a1c21dfbbaecd3f869246354b6be7d1c090974c; merge commit
+52c3130d39117ccb772a72e2898b658b3a7815c8. Publication, selected dependency
+verification and full EXEC gates remain required. The earlier compiler and
+strict-lint nonpasses remain preserved.
