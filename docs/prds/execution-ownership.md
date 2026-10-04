@@ -3337,3 +3337,142 @@ source binding precede compilation. Preserve current documents rather than
 copying outdated proposed gate outcomes. The full observation and EXEC
 gates, final interface/ownership decisions, module extraction and delivery
 remain open.
+
+## 51. Bounded current-source observation runtime execution assignment
+
+After section50's actual38-path transfer and approved runner correction,
+replace only application_runtime.rs with section48's exact reviewed whole
+observation proposal. Fresh preedit8ab7b3a711848aeff72c115d67d27de6905faee8dc9662349b6281ea3232b507
+binds its6ca901 before bytes, proposed after bytes and real manifest inputs.
+Incremental production +87/-57/net30; tests +750/-52/net698; no new
+Bombay public nominal types. All three source/manifest paths and two
+resolver-produced locks are already approved. Reuse the existing typed lanes,
+actor-owned activation tasks, exact relationship map and returned-event
+custody. No additional runtime service, queue or task owner is authorized.
+
+Only the isolated root and standalone Engine-fuzz manifests select actual
+local Core/Actors source as applicable. Root retains Timer13e; standalone
+Engine fuzz has no Timer dependency. Cargo must produce both real locks and
+metadata, proving coherent local Core/Actors/Macro selection and preserving
+all other selected packages. This is an unreleased source experiment, not
+a new registry contract. Preserve current guidance and documents; do not copy
+outdated proposed gate outcomes. Current canonical runtime remains intact.
+
+The actual changed catalogue fuzz target was outside the workspace formatting
+check and fails its explicit pinned rustfmt check. Before further owner
+checks, apply only independently reviewed single-target formatting proposal
+5957d5c3dd2465466024890b54f934b3bd61943133e31619bb6311f72df0c961,
+review3922d27c610222e56698dbd42bf5bb7fb2ce30141d88364d15a28aa4d71bbce8:
+tests +99/-36/net63, no executable semantic changes, production, public
+types or extra repository paths. Raw formatter output and rejected unused
+header/module extraction drafts remain preserved. The installed_control
+module and all other fuzz sources remain untouched. Rebind all806 source
+inputs after this single approved-file formatting change. Full native,
+downstream, inversion, minimization and independent gate reviews remain open.
+
+## 52. Delegated decisions and current runtime test corrections
+
+The user directs: “do not ask me anymore questions, just choose the
+recommended stuff always and continue working.” This later EXEC instruction
+delegates recommended choices and replaces further permission questions.
+Continue recording measured scope checkpoints and concrete proposed changes
+before edits; select the recommended expansion rather than asking again.
+It does not replace independent review, accept an unproved gate, weaken
+acceptance criteria or permit invented contracts. Keep incomplete choices
+source-backed and explicit while continuing independent work.
+
+Before correcting the actual eight-error downstream nonpass, assign only
+the independently reviewed existing application-runtime test path. Exact
+correction0afaf032a0201ea3fc1ee371cd8ec09402d8943320c44ffc2c89c6dea1a54d79
+at runtime-compiler-text-3x165b9l changes +73/-27/net46 cfg-test lines,
+zero executable production semantics, public types or extra paths. Reuse
+existing task settlement, whole terminal messages, live reply endpoints
+and lexical pinned-future scopes. Do not derive ActorRef equality, add
+ActivationTasks methods or weaken the retained-value oracle.
+
+Then apply its exact source-bound full-retirement successor
+b505b7b2d524e6ec002aee8f92c5c6112068f7dd47bd782f61c99d6d9574526a,
+reviewe93cc0631ad0928ca6f87e19c7d5b08c55d783ab84ddb54c88ca7eb00e8c5283.
+The incremental +176/-9/net167 test proposal includes two cfg-only producer
+lines outside the test module; it adds no runtime state, type, queue, owner
+or production semantics. Reuse the existing deterministic conversion gate,
+real StopOnShutdown/Monitor, LocalEnvironment, Driver, LocalResidual
+settlement and ActorRetirement conversion. Standard retirement returns the
+whole authoritative event through Completed.control; the advanced-host
+closed Consumer row separately proves the actual ControlClosed(E) boundary.
+No synthetic completed actor or closure is permitted. Run both profiles and
+exact event-discard/projection inversions with joined cleanup before oracles.
+Full observation, task, application, model and interface acceptance remain open.
+
+The first test correction exposes two further E0599 diagnostics (actual
+b2f287ee7e3c02f0da48d4eefa2ef4dbb3ea441626c2f1f43d94554ab9f098a4):
+the fixture assumes ActorRef::send, while verified owning local.rs574
+provides send_from with the same original source/message equation. Apply
+only the exact two-call test successor
+6fa2b7a5602a7916d218499f53a9eff40265887c3189e624250f5e020938fa5e,
+review33a5efd633950f7789276d530c439e4835869fe2edec6cda0a6f2fed5d4508f0.
+Tests +2/-2/net0, no production/public/path changes; preserve both nonpass
+receipts and use the correspondingly rebased EV20 suffix. Compile first
+and then run the actual runtime witnesses; neither a compile/list nor a
+TEXT eligibility review establishes semantic acceptance.
+
+The actual predecessor runtime now passes all15 focused tests in debug
+and optimized builds (488f0d91d93c8d5c71c470a2c4d8b0a66b77fdb86898837aa938244f76d0af9b;
+830aa1d7fbbfb6e4c5aef31dc3dbe0e8287f649e9f5da3d335fdedb6a4ca9d73).
+Four test warnings remain. Before further execution, assign exact strict
+correction cac92116cc23d25444e897b2b3088b55d0a91aa4afb0b58b8983016b923af2c7:
+tests +10/-4/net6, production +0/-0/net0, public types +0/-0,
+no additional paths. It explicitly discharges unit gate results and releases
+the original unused Observe publishers after joins. Independent review
+bb2c118b81b23f3542637b82706b92b78bb5c11dd2878fd99ca6b49f1fa37482
+authenticates both this correction and the unchanged full-retirement suffix
+71e95a7b3f2f12928463ee2fb6451c0ba2bfcce1dc309b9fd1a2aec0770311a5.
+Apply them sequentially to the frozen643db8 source, then bind actual
+post-format bytes before both-profile runtime checks and inversions.
+
+## 53. Continuous observation model assignment
+
+Before changing the two already approved owner test paths, assign the
+independently reviewed qualified continuous model/fuzz proposal
+ac7eb7015c5612551e98e9397f0b53074c5252263a5aa599ae005c359e060457,
+review bb2c118b81b23f3542637b82706b92b78bb5c11dd2878fd99ca6b49f1fa37482.
+Owner predecessor806-file manifest is
+d5c25e8d74113427aff6da0098abfb49b27f28c8435aed973cd9cf34e230aaeb.
+Existing exact_termination_model test: +249/-110/net139; existing catalogue
+fuzz target: +237/-130/net107. Total tests +486/-240/net246; production
++0/-0/net0; public types +0/-0; no additional paths. Reuse the existing
+monitor, whole typed observation requests/reports and exact endpoint values.
+Two private zero-state interpreter probes return original rejected requests;
+they introduce no production framework or I/O within Behavior folds.
+
+Compare the five documented complete lifetimes with independent facts after
+every step, including foreign and replayed reports. The rejected-start retry
+consumes the failed monitor and reconstructs it using its original subject
+and whole unaccepted request; the other four traces retain one monitor.
+The bounded64-index corpus is not sequence exhaustion or arbitrary ten-state
+exhaustiveness. Run focused tests in both profiles, retain four omission
+inversions and restorations, strict changed-target lint/format checks and
+actual continuous fuzz execution. Rebind source manifests and repeat affected
+full-owner checks after this test change; earlier receipts stay attached to
+their actual source epochs. Full observation and EXEC acceptance remain open.
+
+## 54. Native family original-failure assignment
+
+Before any native repair, execute only the independently reviewed original
+controller b6beb03211c9880ecdb65960caa3db3d170801c1233f50219bc162c2d97535d8,
+review7070e8c3d79b160cdf8be169c2e606066d1259e0ce1e18113ca9a84dd93e588c.
+Freeze all345 tracked inputs at actual canonical50df97b. Add the313-line
+cfg-only probe in the existing application-runtime path: production
++0/-0/net0, public types +0/-0, no additional repository paths. It uses
+two real sealed native families, accepted original actor commands, actual
+sequential shutdown and a caller-provided identity Clone panic. Preserve
+the whole available root and already joined head-family fault; no synthetic
+JoinError, fake family authority or actor-fold I/O is permitted.
+
+Expected original failure is the finite final custody oracle after cleanup
+task and host thread joins and fixture-runtime destruction. Destruction is
+not a returned tail report or joined shutdown proof. The bounded controller
+does not yet assert every activation ID and forced callback row; record that
+limit rather than claiming complete callback provenance. Run both profiles;
+compiler failures are distinct from the intended custody failure. Preserve
+original receipts before any equivalent test correction or owning repair.

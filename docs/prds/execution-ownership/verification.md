@@ -184,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +7736 / -97 / net 7639
+documentation: +8014 / -97 / net 7917
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -697,3 +697,142 @@ files and fuzz lock. Original E0277 remains preserved; an unobserved
 drop_non_drop lint is not claimed. These are bounded five-report alphabet
 checks, not exhaustive ten-state sequence verification. Fresh native owning
 checks and full downstream observation acceptance remain required.
+
+### Actual actor profiles and first downstream observation compiler boundary
+
+Corrected actor-law runner debug receipt
+972b6276339a0e8ac0f4dbe4fb5f31fba3b8e89f9255e5c66cb85220c033b885
+and optimized receipt
+1dc76a2a7dc9892b3dd94b4f8692649d1131bd3240cdb8b48878f091e0559dfa
+retain all15 actual Cargo commands per profile: five positive references
+exit0, eight compiled runtime inversions exit101 at their exact named
+oracle, and two affine E0382 denials exit101. Optimized assignment
+8136244e592f0d9481741e0ebe6dae51f83bd1ac20790c9812573b57bd98b088
+adds --release at all three actual Cargo command sites in a temporary
+345-input copy; every optimized command/log proves its actual profile.
+Nonauthor provenance reviews f54c5cd4feeb42ad2b8a3a98ae330a14b7229d03e8f0892b05bf57c5f92a7599
+and df748813e3a634e00fc16167f10e96a81bc375bc7f792f2aae15dd28296a7aa3
+authenticate these outcomes without approving the reviewer's authored core.
+All345 source-root inputs remain unchanged during each runner; its private
+mutation copies are restored by the recorded runner before disposal. No
+full execution gate is accepted.
+
+Actual offline Cargo metadata resolution, receipt
+47393f2fa58871902a8503a9b2afea574c20f0fc3fc67837ef34a12319a52cea,
+selects one local Core0.21.2, Actors0.21.2 and Macro0.13.1 in the
+workspace; standalone Engine fuzz selects its actual Core/Macro dependency
+pair. Both real locks preserve every other complete package record, including
+root Timer13e. Source-path experiments are explicit; no registry release is
+asserted. Root source and all806 owner inputs remain bound separately.
+
+First downstream compile/list receipt
+e416234b4c2ee5aadaee5b6912fc55fe4e390b9ad9c338aec0746927f1fe8cce
+is nonpass, exit101 with eight cfg-test diagnostics. Two assume a nonexistent
+ActivationTasks::len, two assume ActorRef-based recipient equality, and four
+retain the hidden pin! future borrow beyond drop of its Pin reference.
+No runtime witness executed. Keep the complete original diagnostics. Correct
+tests using existing task settlement, a real endpoint delivery oracle and
+lexical borrow scopes; do not originate new production methods, equality
+implementations, generic bounds or weaken custody assertions from these
+compiler errors. Dependent downstream acceptance remains blocked.
+
+The final owning native source epoch
+d5c25e8d74113427aff6da0098abfb49b27f28c8435aed973cd9cf34e230aaeb
+passes all ten actual aarch64-darwin native checks, receipt
+a787c2db4725ab88815a2f15e760dd4e8270d9261faa65f5c3bb0a5eac4f2ab7:
+865 nextest tests, zero skipped, and107 doctests. The owning native pin is
+Rust1.95; Bombay's verification pin remains Rust1.99. This is fresh owner
+verification after permanent static documentation and single-target fuzz
+formatting, not full downstream observation or EXEC acceptance.
+
+Final formatted-source dedicated catalogue checks, receipt
+87fb37a72d23d8462e0ee3cd9b3ef286f5649cf2f4da0c8e37c1766a1729115a,
+pass explicit rustfmt, strict changed-fuzzer Clippy and10,000 actual
+pinned-nightly fuzz runs. All806 primary source hashes remain d5c25-bound.
+This qualifies the earlier workspace-only formatting check without silently
+formatting other fuzz targets. Continuous one-monitor sequence coverage
+remains a separate required observation-model obligation.
+
+Nonauthor final native/resolver review
+d3eb82c82412dad08f2352f09c2c4e4b1c829efc5760f4a456f0db09bcf7ed4e
+and final targeted fuzz review
+7025ac2b03d8366a1ae815d9d32619986c18b28d914557a7825c09570964c6aa
+authenticate those results and the two real locks. Native filtered source
+contains397 primary-manifest files plus one generated cache Rust file:
+crates/behavior-testkit/fuzz/target/aarch64-apple-darwin/release/build/thiserror/ce207f63c17d7219/out/private.rs,
+SHA c2ecb9a0205121ce129c369a8ba8abdab85c8658153dabff7b6b2b0d5a57c065.
+This exact thiserror build output is outside the actor/module target closure;
+it is not one of the806 primary inputs or a new reviewed owner source. Tooling may
+scan it; no never-read claim is made. Preserve this source-closure qualification.
+
+Before the requested research backup update, complete owning change record
+f10bd32ebd3bbf18440efa5cb3c8b980f5f0cbcc24dbfb07f9653a8dc9ef1919
+measures13 existing paths against EDC: production source +710/-187/net523,
+tests +1240/-305/net935, documentation +96/-12/net84, manifests0,
+three observation-only public nominal types added and none removed. Production
+source counts include doctest/documentation comments in production files;
+this is new capability source, not code reduction. Source-owned backup
+preedit7dacb00feb5ab8f56ae64d0406310268a7c082fe2fc8fdb11209db84a7aa6b77
+changes only the two already approved protocol/fuzzer files from d873.
+All other804 primary bytes remain preserved. Root may update the reviewed
+research backup after authenticating this final measurement; no upstream
+PR, release, canonical selection or full observation gate is accepted.
+
+### Current complete observation-retirement and continuous model witnesses
+
+The reviewed owner research backup was actually pushed to
+research/exec-observation-ownership at0f0d9384ff711f850d332d50dca7b42abcf26373.
+Receipt19d495f0596eef230e62c813a0f56ce82be90699df5e22d789eef2b9093de94f
+and independent5a9391a4f1a5ae52bc44a1cf32b1fe5efddd092f5106c97aca40c9e47a1f76ea
+authenticate the complete806-source d5c epoch,13-path measurement and actual
+remote head. This is a research backup; no owning observation PR or release
+is claimed. Later continuous tests are a separate source epoch.
+
+The user delegates recommended decisions without further questions (PRD52).
+Root applies independently reviewed strict cfg correction and full EV20
+suffix sequentially, receiptb3439c77d5128e7640615533e39af601f789658d76e1b7323d1212fa7428076b.
+Actual pinned formatting changes only assigned source paths. The resulting
+345-file runtime manifest is
+c51cb99c986cff12ba568a5f5e6edd03d3d8f354d8771be575290a03fe1ddd3e.
+Full15-test group passes without warnings in both actual profiles:
+debug371497517e38b3a5b9a8934e96d4b12c7e52dbf05f3dc09d1a8e0e98342bd313;
+optimized787ecd666bc931189f2911af672109f85d11c831f5d047ccc255722f36eab4ec.
+The deterministic controller now exercises real advanced ControlClosed(E)
+and a real StopOnShutdown/Monitor Driver retirement. Original acquired
+Stopped survives LocalResidual task settlement and Completed.control, with
+whole relationship, outcome, timestamp and complete retained action lanes.
+These are actual runtime results; synchronous Started/rejection closure
+remains a distinct open custody question.
+
+Actual two semantic omissions discard the failed-send event or erase
+Completed.control. All four omitted runs compile, then fail the intended
+finite0-versus1 custody oracle in debug and optimized builds. All four
+restored runs pass. Receipt
+f721833a4ad522fa25fe8f735e88c014123fb82a12a7a59f33816f7a8cc72422
+binds all actual commands/logs and full345-source restoration;806 owner
+inputs remain unchanged. Every actor/gate/activation task is joined before
+these final assertions. An initial orchestration TypeError executed zero
+Cargo calls and is preserved separately as excluded-script-type-error-
+verification (68bf91c9caa37b777003c72c415e4a12822e16dd14fc2f2a695bbfde187d72f6);
+it is no semantic nonpass or acceptance evidence. Independent outcome
+review is pending; no full observation or EXEC gate is accepted.
+
+The qualified continuous proposal changes exactly the two approved owner
+test paths, receipt68a0b395e46d55272875b222fd157361cab5386c503426265b561d34738291db.
+After pinned formatting, all806 source inputs bind manifest
+b542bd82e4ed1fd7eb8af1c84d2ed31a6ce8018c2bd207608457634117868787.
+Both actual model tests pass in each profile:
+debug1b8d5a72ca4c7ce5c2332d8c532571c6ab47c33394a0d8a20083afa1243ec61d;
+optimizedd27360578ae3c68693f974c1c759c39124ddf856e4e03985f66fb49b59301250.
+The oracle follows five complete normative lifetimes, checks every original
+fact after each step, and explicitly reconstructs only a never-accepted
+request for serial retry. It does not assert arbitrary ten-state exhaustion.
+Fresh source-bound omissions, strict checks, continuous fuzz and affected
+full-owner checks remain required before accepting the extended model.
+
+Native family original controller assignment11dde98f750db6481b46ba1a879b1296c3ea4f847c4db1e6e809ad12d5e3d0bb
+freezes all345 canonical50df inputs and adds only the independently reviewed
+313-line cfg probe (PRD54). Its source reachability review7070e8c authenticates
+the actual sealed family product, represented-ID clone fault and final custody
+oracle; complete callback provenance is explicitly excluded. Actual execution
+results follow separately, and no repair or joined family success is implied.
