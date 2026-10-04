@@ -184,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +8656 / -97 / net 8559
+documentation: +8814 / -97 / net 8717
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -976,3 +976,13 @@ fourteen latest passing checks, authenticated main rules and resolved threads,
 and merge58895153640bb8bdc037c480dcec48a2ba57afa7. Superseded cancelled CI
 is excluded. Verified-main release/publication and selected dependency checks
 are pending. This proves upstream delivery, not a full Bombay decision gate.
+
+
+[EXEC section65](../execution-ownership.md#65-actual-observation-release-preflight-checkpoint-2026-10-04)
+records actual corrected release preflight, ten local Nix checks, independent
+exact-head approval and all14 passing checks. Behavior PR85 merged at
+1fc8fb55ae9c84ac77fbda293c7da63aea2c853b; publication remains pending.
+[Section66](../execution-ownership.md#66-current-typed-observation-polling-comparison-assignment)
+records the compile-only polling comparison: intended static denials and
+restorations pass in both profiles, with the original harness false rejection
+and actual strict-lint nonpass preserved separately. No full gate is accepted.

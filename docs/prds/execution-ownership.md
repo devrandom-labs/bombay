@@ -3869,3 +3869,123 @@ evidence includes dropped/reclaimed shutdown, noncooperative actors, both
 callbacks failing, nonleaf child failures, retained root results and live
 reactivation. Original failures, finite inversions/restorations, both profiles,
 strict checks and complete affected consumers remain required; no scope is deferred.
+
+## 65. Actual observation release preflight checkpoint (2026-10-04)
+
+Verified-main CI37191851810 passes at588951; the ensuing release workflow
+37192282605 passes and generates [Behavior PR85](https://github.com/devrandom-labs/bombay-behavior/pull/85)
+at exact heada364d557113e4b0ff20333acad1c3e4ab8ae0608. Actual candidate versions
+are Core/Actors0.22.0, Macros0.13.1. Actors records the breaking observation
+contract; Core follows the existing shared workspace version. The release
+skill's bundled preflight runs through Bombay's pinned Nix shell and fails
+under receiptbfd5257b4ad3129675545d54022effc9872a1f9df3bf00697fba72ea68cba9fa:
+three separate workspace locks still select0.21.2 and fail actual locked
+metadata, and both README dependencies still select0.21. The untouched
+806-input archive39e61333 and full nonpass logf2eb37b9 remain preserved.
+
+Before repair, select recommended proposalca42596dbcfb7771901f3702d19a55db20c626270829687f20a5404fb533fae1
+under section52. Six already approved owner paths: README, Core and Actors
+changelogs, macro fixture lock, testkit fuzz lock and interpreter-contract lock.
+Documentation +10/-2/net8; production/tests/public types +0/-0. Generate the
+three actual locks with Cargo offline metadata, permitting only owning
+workspace-version substitutions; no unrelated registry update or collapsed
+workspace is allowed. Complete release scope is eight existing paths after
+the three generated version/changelog paths are included. No allowance grows.
+
+Independent review must authenticate the complete actual repair and exact
+release head. Rerun bundled packaged-consumer/lock preflight, owning Nix gate,
+all current-head CI and independent review before merge. Then follow the
+verified-main publication workflow and verify registry archives/tags before
+canonical dependency selection. A generated release version is not publication.
+
+
+Actual corrected release evidence: lock repair bd339344 changes only the six
+local Core/Actors version records. All806 corrected inputs bind a75cf19a;
+complete eight-path record a40835b5 measures documentation +16/-2/net14,
+manifest/locks +12/-12/net0, production/tests/public types0/0, zero untracked.
+Bundled preflight5502ddde passes all four workspace locks and packaged archive
+consumer. Four inherited unused fixture warnings remain qualified. Actual
+owning Nix b011fa28 passes all ten local checks,865 nextest tests and107
+doctests; its host packaging diagnostic and advisory warnings are preserved.
+Independent actual review dd065cbb authenticates the repair and archive checks.
+
+Pushed head8645fa38d44464ac5279803cd741457a9b9df830 has independent
+[approval5405394957](https://github.com/devrandom-labs/bombay-behavior/pull/85#pullrequestreview-5405394957),
+review d01de922. Generated PR-body changelogs are aligned to the actual0.22.0
+entries without changing source; independent receipt86e3db64 authenticates
+that edit. Exact-head gates59fe2d05 authenticate all14 passing latest checks,
+resolved review threads, actual main rules and distinct review identity.
+CI [37193330855](https://github.com/devrandom-labs/bombay-behavior/actions/runs/37193330855),
+CodeQL37193330851 and cargo-deny37193330850 pass. PR85 actually merged at
+1fc8fb55ae9c84ac77fbda293c7da63aea2c853b, receipt04b59dfd. Verified-main
+CI/publication and registry verification remain pending. Canonical selection
+is still0.21.2; upstream release delivery does not accept a Bombay gate.
+
+
+## 66. Current typed observation polling comparison assignment
+
+Choose the recommended isolated compile-only comparison under section52.
+Proposal2f7a8a75b099e4c7838e6f88be41fb0b66e330766643fe1d6785154755c6c8e4
+and independent3474da81d4e44568916950838d9c9691cf5c98d2e0c63a1dd3c73fcd36a4ab45
+bind twelve exact current sources, the complete117-line cfg positive and
+three separate denial additions. The one existing observation.rs test path
+expands the recorded allowance138 to139; production +0/-0/net0, public
+nominal types +0/-0, two private fixture protocols, no new runtime owner.
+Canonical pre-edit recorde05cd623 remains production net133, tests net2738,
+documentation net8559, manifests net5, public types0/0,69 tracked paths,
+zero untracked. No source change or scope expansion is hidden in a probe.
+
+Ordinary fixed-protocol storage retains the actual typed relationship,
+observation future, revocation receiver and monomorphized report function.
+Two protocol lists and repeated-protocol acknowledgement paths must compile.
+Each isolated intended E0308 then rejects a foreign row, foreign typed report
+or reconstruction from a bare source. These are local static limits, not proof
+that ordinary Rust cannot express heterogeneous polling. The existing generic
+interpreter has no target-storage projection; existing host requirements
+exclude exact recipients. Registration order, revocation, returned-event
+custody and capability-panic ownership must remain explicit in any rewrite.
+
+Apply only to a fresh copy of the tested345-input two-owner runtime and retain
+its exact806-input owner. Format, bind every actual input and verify both real
+locks with locked metadata. Run positive compile tests first in both profiles,
+then the three separate denials with complete diagnostics and positive restores.
+Strict lint failures remain distinct from static denials. No runtime polling,
+cancellation trace, allocation total, scheduler selection or full gate approval
+is inferred from these compile-only rows. Acquisition qualification66797821
+binds actual ActivationTasks::next_event: custom live acquisition can return E;
+terminal-only statements apply to the verified standard retirement lifetime.
+
+
+Actual comparison94eb9765 records positives and three intended E0308 denials
+with positive restoration in both profiles. Initial harness rejection of the
+bare-source denial was incorrect: rustc prints the exact expected relationship
+versus bare source and call, but omits the enclosing function name. Preserved
+original harness/rows and correction27ce3ae4 distinguish that script error
+from the valid static denial. All345 runtime inputs restore; all806 owner
+inputs remain unchanged. Formatting passes. Strict lint fails on exactly two
+complexity diagnostics and one unused underscore binding; no clean-lint claim.
+
+Before changing the test source, choose lint proposal6fc3a0af: tests
++14/-5/net9, production/public types0/0, same existing path. Two declaration-
+specific expectations retain the compared four-value native product without
+adding an alias or wrapper. Standard black_box consumes instantiated function
+values; explicit drop releases empty lists. The original strict failure remains
+preserved. Require independent eligibility, both-profile positives and actual
+strict/fmt checks after this equivalent test-only correction.
+
+
+Independent outcome/eligibility8c1de037 authenticates the original static rows,
+actual nonpass and narrow successor. The corrected cfg-only source211ed655
+passes both-profile positives, strict workspace all-target Clippy and formatting,
+receipt b212204073041986069fe55efc51553511274b7ad1a02fa26441f532a19a5c47.
+All345 inputs remain bound and806 owner inputs unchanged. Independent final
+review67956f02 authenticates these results and the complete canonical delta.
+The six static denials bind the predecessor; the equivalent lint successor
+reruns positives, strict lint and format. Only root locked metadata is freshly
+executed: Engine-fuzz metadata is inherited and its lock unchanged. This is a
+typed storage comparison; it does not establish a replacement runtime scheduler.
+
+
+The [current observation record](execution-ownership/observation.md#current-scheduling-selection-for-integration)
+records the recommended retained-task composition and nonauthor source-model
+review27d7ebb0. Full DG-OBSERVATION signatures and selected integration remain open.

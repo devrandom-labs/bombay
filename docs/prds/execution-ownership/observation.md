@@ -1124,3 +1124,31 @@ owns the source, review, CI, rule and merge receipts. Earlier backup statements
 above describe their historical checkpoints. Publication and fresh selected
 source verification are pending; canonical dependencies remain0.21.2/EDC.
 Current typed polling/task comparison and complete runtime gate remain open.
+
+
+## Current scheduling selection for integration
+
+The compile-only comparison in EXEC section66 proves ordinary fixed-protocol
+storage is possible. Choose the tested existing capability task for integration,
+not a new scheduler framework. Author recommendationaab6a908 binds twelve
+current source inputs; nonauthor /root review27d7ebb09908a4f169d6489894d2e5bba49ae33ff5b350120985a77d713a9eb9
+checks those actual inputs, the final comparison and its acquisition qualification.
+This is scoped model acceptance, not full DG-OBSERVATION acceptance.
+
+The task owns the captured completion future, typed relationship and revocation
+receiver. The shared membership owner chooses cancellation or completion exactly
+once. Conversion runs outside that guard; a later admission recheck retains the
+whole returned event after closure. Existing ActivationTasks preserves that
+returned event and available task failures. Running conversion inline would move
+its panic to a different owner unless an equivalent boundary is proved. Values
+consumed and destroyed inside a panicking conversion cannot be reconstructed.
+
+A fixed tuple does not supply arbitrary Target/Path storage to the current generic
+interpreter. InjectEvent proves inclusion, not enumeration or storage projection;
+existing logical-host requirements exclude exact recipients. A replacement needs
+complete registration-order, cancellation, admission, retirement and panic proofs.
+This does not assert ordinary Rust cannot express one. Keep the existing ordered
+peer/child source queue and the exact relationship task's distinct responsibilities.
+No new wrapper, trait, scheduler, buffer or runtime policy is selected. Allocation
+and throughput savings are not inferred from source-level task counts. Fresh
+published-source verification, integrated ownership and full gate signatures remain.
