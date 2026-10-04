@@ -179,12 +179,34 @@ repairs, the normal-family lifetime correction, full EXEC decision gates,
 other platforms and required remote PR review/CI remain outstanding. Passing
 this run does not authorize retaining an unaccepted interface or merging EXEC.
 
+Current isolated native consumer c39d5606 passes full workspace/all-target/
+all-feature strict and formatting. Subsequent full debug workspace execution
+in native-workspace-regression-9ogp6ocv (logbd307415) stops in Engine's existing
+law_manifest guard: its unconditional `dyn Any` ban contradicts EXEC section74's
+approved intrinsic Rust panic-payload exception. Engine compile1, allocation3,
+Driver29 and property2 pass; law_manifest passes8/fails1. Later workspace suites
+are unexecuted. Correct the narrow guard with a forbidden-erasure inversion;
+neither quality receipt is full CI, runtime acceptance or Bombay delivery.
+All345 source hashes remain exact; canonical selection is unchanged.
+
+The narrow guard successor subsequently passes both-profile controls, strict
+and formatting. Full native debug reruns preserve two later nonpasses:
+logb05d9661 at the stale repeated pure-panic oracle, then logbeec3b76 at the
+Entity integration test's stale Completed-only retirement oracle after all259
+Bombay unit tests pass. The replay control passes in both profiles. Selected
+source-bound corrections and their independent reviews are in EXEC section86;
+complete current workspace, family test and strict results remain pending.
+The subsequent family focused-stagea1029c6c passes its complete one-test
+controller in both profiles with all345 inputs exact; full workspace and
+combined strict/final format remain pending at that checkpoint.
+These isolated outcomes do not replace canonical CI or full EXEC acceptance.
+
 <!-- exec-research-counts -->
 
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +9640 / -97 / net 9543
+documentation: +10222 / -97 / net 10125
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69

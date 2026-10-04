@@ -4630,3 +4630,487 @@ controller has six compile errors before runtime. Birth/product/root projection
 spellings require source-derived correction. Optimized execution, Driver/Parent,
 strict checks and final formatting remain unexecuted; no semantic negative or
 native witness is counted.
+
+Before the next test-only edit, choose whole source46544662, independent
+00298427. The selected macro's source folds declared children into reverse
+structural positions: Worker is Head, PanickingChild is Tail<Head>. Correct
+only sum injection, exact root failure product and result patterns; keep the
+actual request order (panicking child, then survivor) and declared roles.
+Observe both actual StopOnShutdown SendLayer fields. Tests +12/-11/net1;
+production/public/types/state0, same approved path within151. The author's
+message forecast +13/-12 is superseded by its exact frozen patch +12/-11.
+Original native allocation, actual origin and complete lanes remain required.
+Canonical pre-edit7cd4f003:69 tracked/zero untracked, production net133,
+tests net2738, public0/0. Require an actual compiled witness in both profiles;
+source eligibility alone accepts no native/task/projection gate.
+
+## 78. Ordinary narrow-loan comparison checkpoint
+
+Before source edits select full rebased TEXT1263ddfc, independent83b894f1
+and semantic review985b4107, under section52. Six test controllers compare
+both real template orders: all three normal outcomes, interruption before
+lower input transfer (Some original input), and a demonstrated consuming
+callback (None after that callback). Mandatory assignment receipt and private
+proxy authority remain outside the narrow loan; whole-custody replacement is
+not presented as safe. Unknown reusable-host None has no selected disposition.
+No generic repair or application destruction is inferred from that unknown case.
+
+Existing operation.rs stays inside151 approved paths. Proposed tests +466/-0;
+production/public0, two private test input enums, two existing mock alternatives,
+two narrow host methods, no new field. All806 source inputs bind actual90b7,
+805 unrelated inputs and six existing complete bodies are unchanged. The
+removed vacuous Endpoint drops stay removed. Require ten ordinary controls
+in both profiles, continued original-defect failures, strict owning checks,
+formatting, source-bound inversions and exact restoration. Await/Pending,
+Ready-reply destruction, generic host progress, Source/Actions/macros and
+Engine/raw closure remain required before a Core contract may be selected.
+
+Canonical pre-edit6a645b64:69 tracked/zero untracked, production
++167/-34/net133, tests +3295/-557/net2738, public0/0. This is isolated ordinary
+Rust comparison evidence, not new production machinery or gate acceptance.
+
+Actual narrow comparison26e90bc9 passes ten controls in each profile, while
+both original probes still fail the intended original-authority count in both.
+Strict checking then rejects one drop_non_drop call on the concrete resource-free
+Option<ProxyControl<Worker(u8),ImmediateActivation>>; final formatting and new
+inversions remain unexecuted. Before edits choose whole-source729cff7c,
+independentcd169961: delete only that vacuous call (tests +0/-1/net-1,
+production/public/state/path0). Preserve the exact recovered Start/worker and
+all actual receipt, token, native and host releases. No generic control discharge,
+lint allowance or additional wrapper is selected. Require both profiles and
+strict/fmt against the corrected source; no Core/full gate follows.
+
+Native actual1eecd831 passes the new witness and all29 Driver laws in debug;
+optimized supplemente4c8b22b passes the same1/29 against exact345 inputs.
+Library-test compilation then stops28 existing test-consumer errors before
+Parent runtime. Before test edits select full four-file TEXTcdf84356,
+independent9dd7265b: tests +40/-25/net15, production/public/state0, all four
+paths already within151. Match both original descendant Vec and exact failure
+product, retain the real Parent's complete child result and separately check
+its failure Vec, reuse actual StructuralOrigins and SourceCycle retired tuple,
+and match five joined Results as Ok without altering their full outcomes.
+No scalar .0 erasure, new alias, synthetic unit/default or weakened assertion.
+Require both profiles, preservation controls, complete consumer strict/fmt;
+raw failure cleanup, full family joining, Core and projection gates stay open.
+
+Before the finite native loss simulation choose source-bound7ebcf2a8 with
+oracle qualificationdde9390a, independent993597c0. Apply it to its exact345
+8ugo foundation; its original Driver is byte-identical to proposal49e0f963,
+and the test uses corrected child positions. The earlier line848 forecast is
+qualified to actual841. Temporarily destroy the original caught native cause
+and substitute a unit Box solely as an explicitly invalid counterfactual.
+Production +4/-1/net3 is temporary and must restore, no public/state/path
+expansion. The full original child/Core diagnostic and joined surviving sibling
+are checked before original payload liveness must fail1-vs-0 in both profiles;
+then exact source restoration must pass. Parent fixture compilation and strict
+remain unresolved in that foundation; this does not waive their later checks.
+
+## 79. HTTP coexisting-result correction checkpoint
+
+Actual native consumer8eb25ed7 passes native1, Driver29 and Parent2 in both
+profiles, then all-feature strict checking finds the remaining HTTP caller
+passing a raw joined Result to normal projection. No final format or complete
+static/full gate follows from those focused passes. Using the compiler's
+suggested early return would also discard the already completed serving result.
+
+Before production edits select full three-file TEXTb5fa231b, independent
+e6ada1fd, under section52. Scope0715149c confirms all three existing paths
+(application_runtime.rs, public-api-audit.md, user-facing-api.md) inside151;
+no path expansion. Add one flat variant to existing AxumRunError carrying the
+original JoinError together with the complete serve Result. A private ordinary
+acquisition function performs that actual conservation cut and is tested directly;
+its five necessity answers and inline/inherent alternatives are in the model.
+Successful actor output, subsequent static projection and Serve-with-terminal
+remain unchanged. No new nominal type, bound, task, framework or default terminal.
+
+Proposed production +23/-1/net22 (including three source rustdoc lines),
+tests +92/-0/net92, documentation +8/-1/net7; public nominal types0/0,
+one existing public enum variant and one private function. This adds production
+capability, not code reduction. Canonical pre-edit2da0a17c:69 tracked/zero
+untracked paths, production +167/-34/net133, tests +3295/-557/net2738,
+public nominal0/0. Require focused both-profile tests, original-fact inversions,
+strict full consumers and formatting. The tests use real Tokio task failures,
+original opaque allocation and genuine listener-bind failure, but supplied
+serving outcomes do not prove actual Axum serving failure/liveness or root
+cleanup. Those, projection panic, raw descendant custody and Core remain open.
+
+## 80. Native strict-equivalence checkpoint
+
+HTTP/source experiment lmb passes native1, Driver29, Parent2 and both HTTP
+case-cut tests in each profile. Full strict checking then vetoes23 native Entity
+lint sites; final format checking remains unexecuted. Before source edits choose
+whole five-file TEXTeea1791d, independent46fb150a. All five paths are already
+inside scope151. Retain exact coexisting static products with eleven justified
+declaration-local complexity expectations and two indivisible-owner length
+expectations; each must actually be fulfilled by strict checking. No alias,
+wrapper or new architecture is added to satisfy compiler output.
+
+The selected closed shutdown result proves requested.err() equivalent. Explicit
+owned slot/id releases preserve the original reverse parameter discharge order
+at the same synchronous return cut and leave all task captures/callers unchanged.
+Two post-join unwrap checks become let-else; the existing consuming rejection
+operation becomes associated because it owns no self state. Complete source,
+selected instructions, individual reasons and original23 diagnostics are frozen.
+Expected production +61/-17/net44; tests/public types/state/bounds/new symbols0.
+This is positive production growth, including scoped explanations, not reduction.
+Canonical pre-editf25efb4d:69 tracked/zero untracked, production net133,
+tests net2738, public nominal0/0. Require both-profile preservation checks,
+full strict/default/feature consumers and formatting. Full family/raw/projection,
+HTTP liveness and Core gates remain open; no retained production gate is approved.
+
+## 81. Ready/unconsumed-input ordinary comparison checkpoint
+
+Before test edits select complete TEXTabc1db82, independente59a0667, under
+section52. The deliberately invalid advanced host returns a normal Ready reply
+without consuming its borrowed original input. A total ordinary finalizer
+retains both actual facts; it neither calls this native panic nor fabricates
+Corrupt/Closed. A separate actual rejection control proves the unchanged normal
+finish after future disposal. This is a comparison for the new loan seam, not
+a reproduced failure in the standard valid host or selected retirement policy.
+
+The existing operation file stays within151. Tests +152/-1/net151, four
+private test functions, production/public/state/types0. All806 inputs bind
+actual7ffaba69, with805 unrelated inputs unchanged. Require both-profile
+controllers, ten existing controls and original-loss probes, scoped strict/fmt,
+source-bound guard inversion and exact restore. Native future-destructor/Pending
+cuts and complete public lifetime/macro/Source/Engine equations remain open.
+Canonical pre-editf25efb4d:69 tracked/zero untracked, production net133,
+tests net2738, public nominal0/0; no Core source contract or full gate selected.
+
+## 82. Cold-future and definite-reply corrections
+
+Actual native strict successor dc1f3f42 authenticates all345 inputs: native1,
+Driver29, Parent2 and HTTP2 pass in both profiles; strict then stops only two
+Entity test-fixture diagnostics. Before edits choose complete TEXT1cc87852,
+independent rootb52aee41, under section52. The existing entity_runtime.rs path
+is already in132/151; tests +15/-9/net6, production/public/state/bounds0.
+Use async fn for the existing cold retirement body and two justified method-local
+unused_async_trait_impl expectations. Recording, notification and completion
+stay at first poll; no eager ready, fabricated suspension or new owner. Require
+actual Entity fixture coverage and retained controls in both profiles, fulfilled
+strict expectations and full format checking. This accepts source equivalence
+for execution, not a retirement or full task gate.
+
+Actual Ready comparison f7235497 authenticates806 inputs: two original losses
+in each profile fail their intended runtime count; ten inherited controls and
+two Ready/unconsumed-input controls pass in each. Strict stops two unread None
+initializations, not a semantic test failure. Before source edits choose full
+TEXT0009b07e with foundation qualification18b224e9 for independent review.
+Use ordinary definite assignment for the reply outside its future's scope;
+Ready initializes the original reply before disposal, while Pending diverges.
+Delete only the unnecessary Option/expect spelling. Tests +4/-6/net-2;
+production/public/types/state/path0. Require independent eligibility, both
+profiles, strict/fmt and the finite guard inversion with exact restoration.
+Generic Ready-destructor/Pending, Core/macro/Source/Engine/raw closure remains
+open. Canonical pre-editb8c7939e:69 tracked/zero untracked, production
++167/-34/net133, tests +3295/-557/net2738, public nominal0/0.
+
+Ready correction independiente089841ca authenticates the complete proposed
+bytes and unchanged ownership observations. Choose it for bounded execution
+under section52. Its exact corrected-byte guard counterfactual removes only
+the original-input-presence guard; the invalid-host controller must release
+all normal/host/witness owners before failing its unfinalized-result oracle.
+Both profiles must fail at that runtime oracle and exact restoration must pass.
+No compile/setup failure is negative semantic evidence.
+
+The first proposed Entity async spelling is vetoed by actual compilation:
+it implicitly captures the ignored non-Sync identity reference. Do not add a
+Sync bound. Preserve the original explicit future capture set; the equivalent
+source recommendation and its source-only review do not establish this stronger
+compiler promise. A corrected narrow spelling and independent review are
+required before successor execution. No native/Entity runtime pass is claimed
+from that stopped invocation.
+
+Actual capture vetoc87acf33 precedes all runtime checks. Before further test
+edits choose complete correction4c3c59ed, independent root75e6147a:
+restore the original explicit future and its exact capture set. A method-local
+manual_async_fn expectation explains why the shorter spelling violates the
+existing Send-only identity contract; the second cold-method expectation stays.
+Tests +11/-9/net2 against the rejected draft, production/types/bounds/state0.
+No additional path or restriction. Require both-profile fixture/preservation
+cohorts and fulfilled strict expectations; no new semantic law is invented.
+
+Corrected Ready actual200cc4f5 passes both profiles, strict and formatting.
+Before temporary source mutation choose independente089841ca exact full guard
+patch against actualf79cc090; temporary tests +0/-3/net-3, production/public/
+state/path0. Preserve all806 inputs, require intended runtime failure after
+explicit discharge and restore all bytes after each profile. These are bounded
+ordinary comparison controls; no Core production repair or complete gate.
+
+Latest bounded actual receipts and the independently reviewed recommended
+malformed-interpreter disposition are recorded once in
+[task custody](execution-ownership/task-custody.md#current-executed-preservation-comparisons).
+DG-TASK, Core contract selection, prepared activation and complete raw receiving
+remain open. The later capability-work audit must distinguish library-owned
+recoverable metadata/tail from application inputs already legitimately consumed
+inside arbitrary panicking work; it cannot promise impossible recovery.
+
+## 83. Exhaustive consumer census and conservation inversions
+
+Read-only actual census9942aee8 checks all59 targets individually:48 pass,
+11 fail, with all345 sources exact. This prevents a first failing crate target
+from hiding remaining diagnostics; it is not a workspace pass. Before source
+edits choose complete nine-file spelling TEXT0be04616, independent rootfd896a37,
+under section52. All paths already lie within151. It incorporates the earlier
+q8 supervisor spelling once. Expected production examples +12/-0/net12; tests
++77/-9/net68; public types, generic/API shape, state and bounds0. Preserve exact
+coexisting products with justified field-local expectations, complete indivisible
+controllers, required initializer Result and cold retirement futures. Ordinary
+len0 and Copy identity observations stay equivalent. Require every expectation
+to be fulfilled; no alias, wrapper, fabricated await or new architecture.
+The two incomplete example migrations remain separate source-design work.
+Canonical pre-edite5040121:69 tracked/zero untracked; production
++167/-34/net133, tests +3295/-557/net2738, public nominal0/0.
+
+Before temporary HTTP source mutations choose full TEXT11aad22c, independent
+root2e8a15cb. Current frozen345 source binds unchanged application_runtime
+668ccb0f; each mutation must restore all345 bytes. Simulated lossy early return
+keeps original JoinError but discards completed serving result (+1/-1/net0);
+separate misclassification replaces genuine IO rejection with success
+(+4/-1/net3). These are invalid conservation counterfactuals, not claimed
+historical compiled source replay. Existing controller joins the real task and
+releases original native/IO owners before the intended final oracle in both
+profiles; exact restore must pass. No tests/public types/state/path expansion.
+Actual Axum serving failure/liveness, projection panic, descendant cleanup and
+complete native/Core gates remain required.
+
+Before example edits choose whole two-file TEXT52f4aa32, independent rootca75c173.
+Correct the existing concrete Journal-head/Indexer-tail failure product using
+selected macro/source occurrence law; preserve declarations, request order and
+shutdown policy, and observe both full failure Vecs before existing tree oracles.
+For the Entity example remove the newly added single-use ChildFailures generic:
+its actual root has NoBirths and exact unit failure product; the Accounts family
+has a separate owner. Preserve earlier inferred caller syntax and observe unit
+explicitly. Production +8/-4/net4, tests0, private generic parameters-1,
+public/private nominal types, state and bounds0. Both existing files inside151.
+This is scoped correction of the recorded native conservation law, not new
+generic architecture from compiler output. Require both actual examples in
+both profiles, complete strict/fmt and preservation cohorts; no full gate.
+
+## 84. Combined-test lint checkpoint and live-example qualification
+
+Actual nine-file successor860a39ad passes45 preservation cases per profile,
+then combined lib-test compilation reveals seven additional lint diagnostics.
+The earlier individual-target census did not cover this assembly. Before edits
+select full test-only TEXT3c988e5b, independent root2f4ece78, under section52.
+Both existing paths remain inside151. Remove one unused cfg import, retain two
+complete typed notification products with field-local expectations, replace
+three Copy identity clones, and explain the existing indivisible conversion
+controller. Tests +15/-4/net11; production/public types/state/bounds0. Require
+actual both-profile conversion/HTTP controls and fulfilled combined strict
+checking; no full gate follows from source eligibility.
+
+Canonical pre-edit6defb107:69 tracked/zero untracked paths; production
++167/-34/net133, tests +3295/-557/net2738, public nominal types0/0.
+Actual example successor254744f0 authenticates all345 inputs: formatting and
+live topology pass, while the live Entity example compiles and fails its
+account-retirement oracle. Later profile, preservation and strict commands
+were not executed. The source-only example review establishes neither live
+semantic correctness nor acceptance; diagnose this failure before retention.
+
+Before correcting the example oracle select full TEXTae250d35, independent
+root6622ac20, against the exact stopped345 inputs. Native Entity retirement
+already fences, requests shutdown and retires the same cancellation/join owner;
+successful fencing does not promise that natural stopping wins. Observe both
+existing dispositions: Completed/Stopped with empty control, or OwnerCancelled
+with the original sole ShutdownRequested and consumed owner request. Observe
+the complete accepted settlements, unit child failures, empty capability/user/
+descendant lanes and exact balances; keep full original results in the record.
+Production example +37/-13/net24; tests/public types/state/bounds0, same existing
+path inside151. The original log alone does not reveal the returned variant.
+Require live both-profile execution and strict/fmt; preserve any further failure
+rather than widening the oracle or inventing a stronger runtime promise.
+
+Actual successorb1cd5830 compiles topology but rejects the example's assumed
+Bombay export of ShutdownRequested; no Entity runtime check ran. The earlier
+source-only oracle review missed this path and is qualified accordingly.
+Before correction choose complete rootTEXTab4f8bf3, independent c8c98297:
+restore the existing ActorExt import and match the sole Owned control directly.
+StopOnShutdown<Account> fixes that payload to the owning fieldless unit struct,
+so [Owned(_)] observes exactly the same singleton without adding an export or
+dependency. Production +2/-2/net0; tests/public/state/path0. Both live profiles,
+fulfilled combined lint expectations and final strict/fmt remain required.
+
+Actual live successor passes both examples and45 preservation cases per profile.
+Strict then stops one new descendant-empty assertion; final format is unexecuted.
+Before edits select the equivalent zero Vec length observation, +1/-1/net0
+production example, no types/state/bounds/path change. It preserves the full
+original result and observes exactly the same count without adding Debug/Eq
+bounds. Source-only review and complete consumer strict/fmt remain required.
+
+Actual count successor a2d2c58e passes the Entity example in both profiles;
+strict then reaches topology's complete terminal-product field. Before edits
+choose TEXTa239ec79, independent root4394742a: one justified field-local
+complexity expectation, production example +4/-0/net4; tests/types/state/bounds0,
+same existing path152. Preserve the complete Journal-head/Indexer-tail failure
+product; no alias or wrapper. Require fulfilled full consumer strict and format.
+
+## 85. Later capability-work comparison checkpoint
+
+Select bounded activation TEXT46101fdf with producer qualificatione43ec587,
+independent nonauthora37b95e7, under section52. Scopefe56ebc9 expands151→152
+for existing Behavior Actors atomic/worker/activation.rs only. Canonical
+pre-edit77ed2e2f:69 tracked/zero untracked paths; production net133, tests
+net2738, public nominal types0/0. Conditional nominal allowance5 stays unchanged.
+Tests +175/-0/net175 before formatting, five private fixtures, production/
+public/state0. Authenticate the complete806 owning archive before application;
+the four worker owners are byte-identical in selected0.21.2 and isolated0.22.
+
+The original actual activation task must lose recoverable library-owned permit/
+correlation metadata after raw join and original native-cause discharge. The
+ordinary outside owner must preserve its exact permit, correlation and endpoint,
+join before observation and explicitly discharge all returned values. Application
+inputs already consumed inside arbitrary work are not promised recoverable.
+These use actual issued grants with a test endpoint, not live worker installation.
+Require both profiles, original runtime failure, strict/fmt; complete receiving,
+Pending/destructor and full capability-task gates remain open.
+
+Separately select grouped OneForAll preparation TEXT39da68de, independent
+2b8614aa, for subsequent bounded execution. Its existing Bombay worker_preparation
+path already lies in152: no additional file expansion. Tests +381/-0/net381,
+four private fixtures, production/public0. Freshly bind the assigned current
+345 archive rather than claiming integration from historical lmb. Genuine
+FixedSupervisor recovery supplies first/remaining roles; FIFO's empty tail does
+not prove grouped preservation. Observe library-owned prepared prefix/current/
+tail/source after joining actual failing preparation, compare borrowing, and
+require original-allocation inversion/restoration in both profiles. Test-host
+commitments do not prove live installation or complete runtime custody transport.
+
+Actual activation21a52424 formats all806 exact inputs, then E0609 rejects two
+fixture accesses through opaque EstablishedRecipient. No runtime negative or
+positive follows. Before correction select full TEXT05ebad10, independent
+8516919d: reuse existing WorkerRecipient with the owning InterpretEstablished
+transfer. Record original ownership before temporary Weak upgrade, then observe
+the actual transferred endpoint and release it with the original permit/cause.
+Tests +16/-2/net14; no types, fields, public authority, bounds or path expansion.
+The original negative stays unchanged. Require both-profile actual selectors,
+strict/fmt; no claim of recoverable metadata transport from this local comparison.
+
+Actual grouped preparation5c48d410 authenticates345 formatted inputs, then five
+owning API compiler errors stop before any controller executes. Creations must
+use its existing product, initialization receipts their actual event injection,
+and ReplyDeliveries its complete concrete lanes. Correct those fixture assumptions
+through existing APIs; do not invent wrappers, bounds or semantic state. The
+source-only eligibility is qualified; no runtime negative/positive follows.
+
+Before grouped fixture edits choose complete TEXTd65cc216 with root nonauthor
+review: use existing Creations::one/FromIterator, Active::transition for its
+exact whole event, and ReplyDeliveries::as_slice for the entire ordered lane.
+The lane contains Logical/Established alternatives, not two invented fields.
+Tests +7/-7/net0; production/types/fields/bounds/path0. Preserve all original
+source/prefix/current/tail and complete lane oracles; require actual both-profile
+selectors, strict/fmt and original allocation inversion. No receiving repair.
+
+Actual grouped successor9af5d949 proves both original runtime losses, the
+ordinary outside-owner comparison and all five existing controls in both
+profiles; strict stops at nine cfg-only diagnostics. No final formatting or
+allocation inversion follows. Before further edits select full equivalent
+TEXTd5551242 for nonauthor review: tests +32/-34/net-2; production, types,
+fields, variants, bounds and paths0. Preserve cold polling, original ownership
+and complete traces; use only existing APIs and fulfilled local expectations.
+Require source eligibility before application and fresh both-profile semantic
+checks, strict/fmt and the original-allocation inversion.
+
+Nonauthor source review3807c5fe authenticates all345 inputs and the exact nine
+diagnostics. The concrete source and roles justify the same cold async capture;
+no additional generic bounds or competing composition. This establishes only
+bounded execution eligibility; any further compiler veto must remain recorded.
+
+Actual quality successor4f2fb9fa retains both original runtime losses and all
+six positive controls per profile, then strict stops only prepare_first's cold
+async trait operation. Before edits choose rootTEXT08f8ab78 for nonauthor
+review: tests +4/-0/net4; production/types/fields/bounds/paths0. Its existing
+body must remain exact; the original worker is consumed on first poll, so eager
+ready substitution would change the law. Require fulfilled local expectation,
+fresh strict/fmt and exact original-allocation inversion/restoration.
+
+Nonauthor annotation reviewbb89d813 authenticates all345 source inputs and
+the unchanged cold body. Append-only qualification9f186b6a explicitly rejects
+using the existing Weak-to-same-Weak pointer assertion as independent allocation
+evidence. The original-allocation inversion remains open: observe actual retained
+contents/counts, join, release cause/pending, then assert independent snapshots.
+The declaration-only quality check cannot accept that stronger law.
+
+Before additional activation test edits choose TEXT2dd7b3c4 with nonauthor
+reviewf9763f6c under section52. All806 inputs match actual86763e58. The existing
+original endpoint controller fails intentionally; it does not independently
+prove the later correlation oracle. Add one separate original correlation-loss
+controller, tests +25/-0/net25, no production/types/fields/paths. Two finite
+fixture inversions substitute an actually issued same-worker correlation or an
+equal-content fresh endpoint allocation. Each intended oracle follows actual
+join and full returned-tuple discharge; restore all806 bytes after each.
+Require debug/optimized failures and positive restorations, strict/fmt. These
+test-host comparisons do not prove live installation or full result transport.
+Canonical pre-edit73d0ac39:69 tracked/zero untracked paths; production
++167/-34/net133, tests +3295/-557/net2738, public nominal0/0.
+
+Latest completed component and consumer-quality results are recorded once in
+[task custody](execution-ownership/task-custody.md#current-executed-preservation-comparisons).
+Scope152 does not select a new Core carrier or accept any remaining design gate.
+
+## 86. Intrinsic-panic guard reconciliation checkpoint
+
+Full isolated workspace debug execution bd307415 stops the existing Engine
+law_manifest guard at its unconditional dyn Any ban; earlier Engine suites pass
+as recorded in verification. Before edits select full TEXT49220f55, independent
+root e4b65b4f, under section52. Existing law_manifest.rs/driver.rs lie in152.
+Permit only the three exact intrinsic Rust panic payload declarations inside
+the owning DriverError. Retain the guard for all other enum/prefix/suffix uses,
+downcast/type_id, erased routing and forbidden authority. This reconciles the
+explicit section74 exception, without widening it to actor state or protocols.
+
+Tests +23/-1/net22; retained production/public types0. Temporary anonymous
+erased reference const +2/-0/net2 outside that enum must compile and fail the
+remaining-erasure oracle in both profiles, then all345 bytes must restore and
+nine owning law controls pass. No new runtime state or public type. The textual
+guard retains its existing spelling limitations; it is not an exhaustive AST
+proof. Require scoped strict/fmt and subsequent full workspace verification.
+Canonical pre-edit8e688f2c:69 tracked/zero untracked paths, production net133,
+tests net2738, public nominal0/0. No semantic gate or Bombay delivery acceptance.
+
+Actual28b85140 proves both forbidden-erasure runtime failures, exact restoration
+and all nine guard controls before/after in both profiles, then strict stops the
+complete audit's106-line body. Before edits select TEXT6ec70cce with root
+nonauthor review: one fulfilled declaration-local length expectation, tests
++4/-0/net4, production/types/functions/bounds/path0. Guard body and both original/
+mutant Driver sources remain exact; bind inherited inversions precisely. Require
+fresh nine controls in both profiles, strict/fmt and complete workspace rerun.
+
+Actual guarda835e864 passes all nine controls in both profiles, owning all-target
+strict and fmt. Evidence authentication9f0be910 binds all345 bytes and the precise
+unchanged guard body/Driver to inherited28b inversions; those inversions were
+not rerun for the declaration-only expectation. The strict command has no
+all-features flag. This is bounded quality evidence, not a full gate.
+
+The full debug workspace successor logb05d9661 passes the Engine guards, then
+reaches Bombay's259 runtime tests:258 pass and one replay oracle still expects
+a pure transition panic to unwind its task. Its original purpose remains exact
+classification/drop count on repeated abnormal exits. Before test edits choose
+whole rootTEXT5ac18f18 with nonauthor review2e14371d under section52. Existing
+actor_execution.rs is inside152. Tests +22/-11/net11; production, public types,
+fields, bounds and paths0. Preserve both real panic tasks and both real aborted
+tasks: complete result slice must contain two TransitionPanicked with their
+original surviving state/residual, followed by two Cancelled; two active
+retirements and four environment drops/classifications. Native payloads remain
+opaque in the original records. Existing owning callback checks drop ordering.
+Require both-profile replay, full current workspace rerun, strict/fmt; no failure
+is relabelled as passing and no production policy is inferred from the test.
+
+Actual replay successor passes its one focused control in both profiles, then
+full debug logbeec3b76 passes all259 Bombay unit tests and preceding integration
+suites before entity_application's Completed-only profile assertion fails.
+Optimized full workspace, strict and final format are unexecuted. Before test
+edits select full TEXT7b9efe7b with root nonauthor reviewf79794ba under section52.
+Existing entity_application.rs lies in152; tests +81/-18/net63, production/
+types/fields/bounds/paths0. The owning graceful policy promises the fence, then
+same-lease shutdown admission/cancellation/join; it does not promise natural
+stopping. Observe exact Completed/Stopped or OwnerCancelled with their distinct
+control/unread-request lanes. Preserve both original family products/metrics,
+all admissions/refusals, child origin/terminal and complete typed failures.
+The original log does not identify its returned variant. Require live test in
+both profiles, full workspace rerun, strict/fmt; full delivery/gates remain open.
+
+Actual native family focused-stagea1029c6c authenticates all345 formatted
+inputs and the one complete two-family test passing in both profiles. Full
+workspace, combined strict and final formatting are still running/unexecuted
+at this checkpoint; no full native or EXEC acceptance follows.

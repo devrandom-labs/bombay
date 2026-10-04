@@ -2071,3 +2071,79 @@ counts. Each exact restore passes all four normal/lexical controls. All806
 inputs match the frozen baseline, with805 unchanged throughout. These tests
 prove the comparisons detect incorrect authority; they do not repair Core's
 consuming interpreter contract or close the task gate.
+
+### Current executed preservation comparisons
+
+These are isolated source experiments; canonical Cargo.lock still selects
+Core/Actors0.21.2. No complete task, projection or application gate follows.
+Every command inherits pinned Nix Rust1.99, with one exclusive Cargo target.
+The following actual receipts contain exact argv, source/input and log hashes;
+all runtime negatives compiled and failed their intended ownership oracle.
+
+| Experiment | Actual evidence | Result and independent review |
+| --- | --- | --- |
+| Narrow loan, real ProxyOperation/AssignWorker | 7fee71fd | Ten controls per profile, four original losses, strict/fmt passing, all806 exact; nonauthor8a49bb4c. Original metadata stays outside consuming lower input. |
+| Native original-payload loss simulation | 66b869ba | Two post-cleanup liveness failures, two exact restored passes/fmt, all345 exact; nonauthorc5cb3a69. Explicitly invalid payload substitution, not original-source replay. |
+| HTTP coexisting completed results | 2b1d85bd | Native1/Driver29/Parent2/HTTP2 per profile pass; strict stops23 Entity diagnostics, finalfmt unexecuted. Supplied serve outcomes do not prove Axum serving failure/liveness. |
+| HTTP conservation counterfactuals | 8c506c7f | Four intended runtime failures in both profiles and four exact restored passes/fmt; all345 restored. Actual evidence review3f83b2ee qualifies its source-author role. Explicit loss/misclassification simulations, not historical replay or live serving/cleanup proof. |
+| Native strict successor | dc1f3f42 | Same34 cases per profile pass; strict stops two fixture diagnostics. Full345 hashes exact. Author log authentication877f3711 is not independent design acceptance. |
+| Complete native consumer lint assembly | c39d5606 | Full workspace/all-target/all-feature strict and fmt pass, all345 exact; actual authentication9dace613 qualifies source-author role. Both live examples and45 preservation cases per profile bind88ba6f32/a2d2c58e through unchanged source; the last edit is only a field expectation. This is consumer quality evidence, not Core/cleanup/projection acceptance. |
+| Ready/unconsumed input | 200cc4f5; guard inversion83410476 | Ten inherited plus two Ready controls per profile, four original-loss negatives, strict/fmt passing; two omitted-guard runtime failures after full discharge and restored controls/fmt, all806 exact. Source correction reviewed089841ca; actual evidence independently reviewed23019365. |
+| Later activation work | 86763e58 | Two original endpoint0-vs-1 runtime failures after actual task join/native discharge; borrowed original permit/correlation/endpoint control1 and inherited Ready2 per profile; owning strict/fmt pass, all806 exact. Actual evidence review3102387e. Original later correlation-count oracle is unreachable after first failure; no independent negative proof for it. |
+| Independent activation correlation and allocation | b7ed2651 | Two independently reached original correlation-loss failures and four finite correlation/endpoint substitutions fail their exact final oracle after joins/discharge; six borrowed/restored passes, strict/fmt pass, all806 exact. Actual authentication2b1036ac. This supplies the independent negative absent from86763e58; it remains a test-endpoint comparison, not live installation or complete result transport. |
+| Grouped OneForAll preparation quality | 4b356486; runtime4f2fb9fa | Two original five-allocation losses and six positives per profile bind the unchanged body; declaration-only successor strict/fmt pass, all345 exact. Source reviewbb89d813 and qualification9f186b6a leave the independent prepared-allocation inversion open. A Weak-to-same-Weak pointer comparison is no additional identity evidence. |
+| Intrinsic panic erasure guard | a835e864 | Nine controls in both profiles, owning all-target strict and fmt pass; all345 exact. Authentication9f0be910 binds unchanged guard body and Driver to inherited28b forbidden-erasure failures/restorations. Allows only three existing intrinsic panic declarations; no actor-state/protocol erasure exception. Full workspace successor remains nonpassing at the stale replay oracle, logb05d9661. |
+
+Authoritative receipt paths:
+
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-activation-independent-inversions-p9ukvgbb/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-activation-inversions-actual-independent-pht_6r1c/review.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-grouped-cold-quality-execution-cfb70e29/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-grouped-quality-execution-ltzexbig/strict-stop-qualified.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-grouped-allocation-review-qualification-cve6wlwa/review-qualification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-driver-guard-quality-execution-r8aeqfps/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-driver-guard-actual-authentication-giv80bd7/review.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-narrow-control-execution-p06568fk/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-native-current-inversion-execution-hh63juv8/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-axum-custody-execution-lmb0a21l/strict-stop-qualified.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-axum-current-inversion-execution-uipzbxff/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-axum-inversions-actual-review-4a81of1p/review.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-native-lint-execution-kiwtz5ax/strict-stop-qualified.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-native-terminal-quality-final-n0qqv3ei/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-native-final-strict-authentication-aj6ska7q/review.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-ready-definite-execution-9tnfoghh/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-ready-guard-inversion-xa2e0fqv/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-ready-actual-independent-ypmxe6xi/review.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-activation-transfer-execution-e8bm_ntw/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-activation-actual-independent-eqyduhji/review.json
+
+The Ready comparison acquires the complete actual reply into a definitely
+assigned outer local before the lending future is destroyed. If the deliberately
+invalid host leaves the original input untouched, total finish retains that
+input, original private authority and actual reply together. It does not infer
+actual admission, native panic, Corrupt or SourceClosed. The normal returned-input
+control observes exact original rejection. No Pending or panicking-destructor
+guarantee, generic host completion or public Core port has been proved here.
+
+### Recommended malformed-interpreter retirement
+
+Select the recommended actor-local disposition under EXEC section52, with
+independent model review00f6ef34 of d1f4e513 and50a4b738. A proven malformed
+normal Ready reply retires only its owning actor through the existing
+SettlementFailed/EnvironmentFailed route, with the distinct
+SettlementFailure::InterpreterContractFailed reason. The exact custody and
+actual reply remain in the typed residual beside earlier rows and untouched
+tail; remaining owned work is joined. Native HostExecutionPanicked remains
+distinct and preserves its original opaque Rust cause. Parents and peers keep
+their own policies. This is a deliberate Bombay policy, not an Agha law.
+
+This selects a recommended disposition for subsequent comparison, not a Core
+representation or complete source gate. Nested Result and the proposed flat
+InterpretationFailure require complete caller/minimization comparison. Nine
+associated declaration occurrences, five added methods and two nominal types
+are lower bounds, not a complete surface forecast. Source total finish must
+distinguish no acquired reply from an acquired empty reply, retain all current/
+tail/reply combinations and never call a nonempty suffix Exhausted. Prepared
+activation, active Engine equality, exact source placement, all macro/leaves
+and raw root/child/Entity transport remain required. Mixed historical models
+are not current integrated source eligibility.
