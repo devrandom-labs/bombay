@@ -261,7 +261,7 @@ exercise diagnostics and generated-path hygiene. The
 owning macro.
 
 Effects are authored with Behavior's named semantic send products and
-typed `SendAlgebra::send`. Heterogeneous children use Behavior's closed
+typed `SendEffects::send`. Heterogeneous children use Behavior's closed
 `Children` / `ChildChoice` creation algebra. Application code does not
 implement product traversal, runtime interpreters, or Bombay capability
 protocols.
@@ -407,7 +407,7 @@ Users never manually construct or implement:
 - creation, delivery, observation, timer, report, or shutdown interpreters;
 - supervision loops, worker scheduling, restart machinery, or shutdown
   traversal;
-- `SendAlgebra`, `SendInput`, creation dispatch, or product-routing
+- `SendEffects`, `SendInput`, creation dispatch, or product-routing
   implementations already supplied generically.
 
 ## Stable Entity references

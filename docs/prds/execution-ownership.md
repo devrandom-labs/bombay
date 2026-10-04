@@ -3125,7 +3125,8 @@ authenticates the seven proposal artifacts, all 345 actual inputs and all ten
 unique source replacements. It finds the unchanged eight mutation bodies,
 five positive selectors and runtime/affine assignments eligible only after the
 file checkpoint. No script execution, semantic approval or source retention
-follows. User scope approval remains pending; the actual runner is unchanged.
+follows. At this recorded source epoch, user scope approval remained pending and the
+actual runner was unchanged; section 47 records the later approval.
 
 ## 46. Published source-recovery dependency selection
 
@@ -3205,9 +3206,9 @@ Complete prospective patch and source bindings are at
 proposal 21b87d4d75868b09337b37c929de1770832a44b6f6c04f582c084493860d5b7d.
 Independent authentication 001023e0bdb154964791bc2091eceae3d75d2182a2731ff449d4fec7c054eec5
 accepts the current-name correction and authenticates the prior nonauthor
-actor-script review without self-approving that authored script. Explicit user
-checkpoint approval precedes edits. Until that reconciliation, dependent new
-sending examples remain blocked; independent transport research continues.
+actor-script review without self-approving that authored script. The original proposal required explicit user checkpoint approval before edits.
+The authorization below resolves that file checkpoint; semantic acceptance
+still requires its independent gates.
 
 ## 48. Reviewed isolated observation experiment assignment
 
@@ -3274,3 +3275,65 @@ oracles; the old-completion admission barrier precedes replacement cancellation.
 Run each exact selector separately in both profiles through pinned Nix. Freeze
 the actual fresh archive rather than treating the proposal's two later evidence
 documents as Git-428 bytes. No repaired result or canonical retention is granted.
+
+## 49. Approved guidance and runner checkpoint (2026-10-04)
+
+The user explicitly approves the one-script request and both presentations of
+the replacing three-file section-47 request. The operative cumulative allowance
+is 132 repository-qualified paths, adding exactly the existing actor execution
+law script, AGENTS.md and docs/user-facing-api.md. The approval does not add
+three paths twice or change the three observation-only public-type slots.
+Line limits remain waived; every semantic and independent review gate remains.
+
+The measured canonical predecessor eda5d2e5bdb26966727411bd05ae3449de88dbb38ccd70d48fc6c470cfebfdda
+records production +167/-34/net133, tests +3295/-557/net2738, documentation
++7606/-93/net7513, manifests +38/-33/net5, public types +0/-0, 67 tracked
+changed paths and no untracked paths. This predates the new evidence append.
+Apply exactly the reviewed four-literal guidance patch (section47 proposal
+21b87d4d75868b09337b37c929de1770832a44b6f6c04f582c084493860d5b7d):
+AGENTS and the current API guide use the selected Core SendEffects name.
+Documentation delta +4/-4/net0; runtime and public types do not change.
+
+The actor-runner +16/-7/net9 proposal remains c6385da8e65b8d3e2ddde65bd781d4dc8a6116978299226fb36742ae29bad0d6. Apply and verify it first against the frozen isolated six-parameter ownership candidate. Canonical still has the five-parameter constructor, so do not migrate the script ahead of its owning semantic implementation. Preserve all ten checks and earlier nonpass evidence. Dependent ordinary sending witnesses may now use the reconciled selected contract; no semantic gate is accepted merely by this scope authorization.
+
+## 50. Fresh current-source observation runtime prerequisite
+
+The 132-path approval unblocks the guidance-dependent ordinary sending
+witnesses. Before source edits, freeze the actual 345 tracked canonical
+working-tree inputs (dd2416d plus its recorded evidence/guidance changes),
+then transfer only the previously nonauthor-reviewed 38 current-execution
+source paths. Fresh source-owned assignment
+9efae1ec2cf843ba585aaafaa27d302ec5891bda65003b42cb47b3f9c6c1f45a
+at observation-runtime-current-7_7tgvif rebinds every source before/after
+hash to section48's 79b776/aa4bdd transfer review. Current manifests, locks,
+all authoritative documents and the approved guidance remain the canonical
+versions; original selected dependencies and completed semantic regressions
+remain intact. No current40 footer or historical source epoch is substituted
+for this actual baseline.
+
+Expected incremental overlay: production +645/-227/net418; tests
++3289/-432/net2857; 38 already approved source paths, zero new public types.
+All fuzz target source is classified as tests. The first unused draft count
+that classified causal_turns fuzz source as production is archived and
+rejected before edits. This is a measured experimental addition, not code
+reduction or accepted semantic integration. Reuse current Driver ports,
+local composition, actor task/outcome, terminal and retirement owners and
+existing application/example/test consumers. Native failure transport and
+family-fault authority proposals remain outside this assignment.
+
+After that transfer, apply the exact approved one-script c6385da8 proposal
+to the isolated six-parameter actor execution only; script +16/-7/net9,
+zero runtime/public-type changes. Reproduce all five positive references,
+eight runtime inversions and two affine denials, in both actual profiles,
+with exact source restoration. No helper assertion or compile veto may
+replace an intended runtime failure. The original failed runner receipt is
+retained. This prerequisite execution does not accept the reviewer's
+authored full execution gate or authorize canonical runner retention.
+
+Only after the fresh transfer may the section48 reviewed observation
+interpreter/test body replace its exact current40 application-runtime base;
+real resolver-produced coherent Core/Actors local-patch locks and full
+source binding precede compilation. Preserve current documents rather than
+copying outdated proposed gate outcomes. The full observation and EXEC
+gates, final interface/ownership decisions, module extraction and delivery
+remain open.

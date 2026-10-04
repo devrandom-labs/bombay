@@ -184,10 +184,10 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +7606 / -93 / net 7513
+documentation: +7736 / -97 / net 7639
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
-changed tracked paths: 67
+changed tracked paths: 69
 untracked paths: 0
 ```
 
@@ -634,3 +634,66 @@ remain unchanged. Source-comment line delta is -9 net, classified with
 production-source lines. No checker exemption or full acceptance is granted.
 The external static consumers above are complete library modules with visible
 module-scope imports, rather than embedded rustdoc/fixture snippets.
+
+Corrected native owning-pin verification now passes all ten checks, including
+the actual documentation import/error-code scripts: receipt
+54dea9c78d6eddb95c12c9e1822a8f3931b58b9f777a4d236856878763b32bfe,
+806-input manifest fdc4407efabbc4283ba0b1019913b18689c960549fba0dc88c81fb7b12432ac0.
+Independent review 59402109995d5eed31a844413f2cbad3331403cda776d299fc8f067e88f7164d
+authenticates all ten actual outputs and 397 filtered-store source files;
+evaluated versus actually built main derivations are explicitly distinguished.
+Focused import-rule and 93-doctest runs in both profiles also pass (e41d75168a6481d2a40e4d52125fcc770ce698dac704d45250523b5a4111abc2).
+The original nonpass remains preserved. The candidate is remotely backed up,
+without merge or acceptance, on Behavior's research/exec-observation-ownership
+at d873151ddb80c7c8f4c0558a0cdac5f8c82c0915; backup receipt
+4078ddfbc7540cfb3621dd63b79426fa6c4af8cdf0b565db83b94e3d8dec0985
+binds all 806 worktree bytes to the verified candidate.
+
+The changed catalogue fuzz target's first actual build fails E0277 at its
+Debug-dependent outcome assertion; bounded receipt
+f5d951432c737fc305fe3991748f488bc2b9e383f798c7580fd3236b03734241.
+An actual original strict-fuzz run under 1.99 fails the same constraint
+(61c000c557fb1872556ed6140f3e2cbfeecf2a8193de064bba1ba7cbf319a9ae);
+the fake RuntimeAddr lacks Debug, not an owning Exit contract. This compiler
+veto is not a semantic mutant kill. Lexical disposal of its returned fake
+recipient is a separately source-identified lint risk, not yet an observed
+strict failure.
+
+Before edits, the next bounded test-only assignment is the exact fuzz
+correction c6955d3e9cb4f3efa44090113027edd78c9ee120d911ecf1c6a181c05bc618c3
+and permanent static-documentation coverage
+8602f70a54ca507f0a34ababd87de31409809de959dea87ba29f282ad6f8abf4,
+with nonauthor eligibility 256acc8db8af105bbf0d732cc0ba96a07681b546567daa426a59918ac1756179.
+Only two already approved paths change; executable implementation and public
+types do not grow. Fuzz tests change +2/-3/net-1, preserving full outcome
+equality and the lexical returned owner. Rustdoc source changes +99/-2/net97:
+retain four observation denials, strengthen two to shared-address protocols,
+and add the five missing denials plus nine positive controls. There are ten
+negative snippets in the whole file because its unrelated shutdown denial
+remains intact. These comments count as production-source lines in the
+measurement. Both pinned-toolchain doctests/checkers, strict fuzz, bounded
+fuzz, source restoration and independent outcome review remain required.
+
+### Current-source observation prerequisite transfer and bounded fuzz verification
+
+Section50's actual345-file isolated baseline and38 source rows received
+nonauthor transfer review 1fced6cbf47124108f68cafe7c951f932fa0267d72d8bcf4e7137d79d903333f.
+Root applied only those38 approved sources and the section49 approved actor
+runner correction. Receipt d95e7eb8c62d962e417985245e2a9839c00c5c1af9458ef399c280f0fe1b2381
+authenticates all345 resulting inputs, exactly39 changed paths, and the exact
+6ca901 application-runtime prerequisite. Current manifests, locks and guidance
+remain unchanged in that isolated archive. Canonical runtime files remain
+preserved. This is bounded experiment transfer, not design-gate acceptance.
+
+The owning observation source epoch 5b0311726b9e95d623717bb688d3adc4de88bb92e443f0f19fcab65302b32e39
+passes both107-doctest suites, the import checker, strict changed-fuzzer lint
+and workspace formatting; receipt f6dd0adcadbca6f10c5de36a7b73fde1ad5b6e4816ccb91f938621bd55acd50d.
+Actual pinned-nightly catalogue fuzz execution rebuilds the instrumented target
+and completes10,000 runs, exit0; receipt47ff317769a7827046d4d758815e16ccb42e654c848c781a9262e99c615f1181.
+All806 source inputs are unchanged during execution. Nonauthor review
+83e5f9431b153a999622c75077cd0da3d1ea7bf401fb55b66dd1a55e66dd7d39
+authenticates the actual logs, two reviewed changed sources, unchanged other804
+files and fuzz lock. Original E0277 remains preserved; an unobserved
+drop_non_drop lint is not claimed. These are bounded five-report alphabet
+checks, not exhaustive ten-state sequence verification. Fresh native owning
+checks and full downstream observation acceptance remain required.

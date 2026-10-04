@@ -176,11 +176,11 @@ different revision is evidence only, never the selected build contract.
 Derive effect handling from the exact locked Behavior and Behavior Actors APIs
 and tests.
 
-- Use named semantic send structs and typed `SendAlgebra::send`.
+- Use named semantic send structs and typed `SendEffects::send`.
 - Use Behavior's existing `InstallBirth`/`DispatchBirth` and closed child
   products for creation.
 - Do not add positional effect traversal or mutate nested lanes directly.
-- Do not handwrite application `SendAlgebra`, `SendInput`, `RouteSends`,
+- Do not handwrite application `SendEffects`, `SendInput`, `RouteSends`,
   `ObservesCreations`, or product-routing errors when generic interpretation
   covers the leaves.
 - Keep only application delivery routers that select genuine external
