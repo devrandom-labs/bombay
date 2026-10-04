@@ -373,7 +373,7 @@ complete.
 
 ## Current selected-contract review (2026-10-03)
 
-The current candidate uses the published Core/Actors 0.21.1 contract at
+The reviewed section-32 candidate uses the published Core/Actors 0.21.1 contract at
 `5ca96444f0a66e9a013b6989e3e53d345cbabf65`, Communication 0.1.3 and pinned
 Rust 1.99.0. The historical protocol-only authority gap above is not the
 current contract: `InstalledActor<B>` already carries the concrete actor's

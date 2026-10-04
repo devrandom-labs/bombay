@@ -490,13 +490,13 @@ aggregate, Nix, the published API audit, advisories and CodeQL.
 binds that head. The reviewed PR merged on 2026-10-04 at
 52c3130d39117ccb772a72e2898b658b3a7815c8. Immutable reviewed-merge receipt
 d62ae25b6e83bb9bc0b7e2cbae59773a884053e2471ab71a11edc3f6450c03bf
-records the actual API responses. Release and Bombay's locked selection remain
-pending. This is not full EV-24/DG-WORK acceptance or canonical Bombay retention.
+records the actual API responses. Publication and fresh selected-source
+verification are recorded below; selected-build and full EXEC gates remain open. This is not full EV-24/DG-WORK acceptance or canonical Bombay retention.
 
 The owning release [Behavior PR #83](https://github.com/devrandom-labs/bombay-behavior/pull/83)
 merged after independent review and all fourteen checks passed at exact head
 44000b862127293dcc8eb01fc448337fd81c4881. Merge commit:
-edc2d466a50df7cd396f891e3da31fc9e3747bbd. Candidate Core/Actors versions
+edc2d466a50df7cd396f891e3da31fc9e3747bbd. Published Core/Actors versions
 are 0.21.2; Macros remains 0.13.1. Original generated-head preflight fails
 on three stale isolated workspace locks. Only their six local version entries
 changed; third-party selections and both README installation requirements are
@@ -509,5 +509,16 @@ binds its 397 files. Independent review
 1455b10f414eed733c7077a797ff2812691ca057cbb09f1aa307882944fb7994
 authenticates source, locks, versions and results.
 [Release-head CI](https://github.com/devrandom-labs/bombay-behavior/actions/runs/37167325568)
-is green. Verified-main CI, actual publication, registry/tags and fresh Bombay
-selection remain pending. This release merge does not close full DG-WORK.
+is green. [Verified-main CI](https://github.com/devrandom-labs/bombay-behavior/actions/runs/37167753677)
+and [automatic publication](https://github.com/devrandom-labs/bombay-behavior/actions/runs/37168163742)
+also pass at the release merge. Both published package VCS records and release
+tags resolve to that exact merge. Core checksum:
+67210103f2be49efc2ecbcf42f478f2beac07da5e4e722e4a74bc58b533c16f8;
+Actors checksum:
+2c7d8a69c8d713ae7b35887a5fcddc868a3ef948e4947ee9049cc58f057fc2fb.
+Fresh independent receipt eea124f8edbd12367dd107dc63029a532db3ccc472b9db93c2f96056d9db6f64
+authenticates all 216 packaged files, their original archives and all neighboring
+selected contracts. Core Rust is unchanged; Actors changes only the reviewed
+four FIFO source/test paths. Bombay workspace and fuzz locks now select this
+release without changing third-party selections; EXEC section 46 records the
+separate selected-build checkpoint. This release does not close full DG-WORK.

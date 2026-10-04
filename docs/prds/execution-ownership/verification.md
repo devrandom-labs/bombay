@@ -122,8 +122,9 @@ source freeze and independent review are required before retention.
 ## Complete change measurement
 
 The canonical tree now selects Rust 1.99.0, published Communication 0.1.3,
-Behavior Core/Actors 0.21.1 and Macros 0.13.1. EXEC section 32 records the
-independently reviewed compiler compatibility and allocation-test correction.
+Behavior Core/Actors 0.21.2 and Macros 0.13.1. EXEC section 46 records fresh
+published-source verification and the pending selected-build checks. Section 32
+retains its original independently reviewed compiler and allocation evidence.
 Actor ownership repairs remain separate, unretained candidates.
 The separate fuzz graph selects the same Core and actual local Engine version. Baseline has no inherited tracked or untracked delta.
 The complete canonical Bombay delta follows; owning repository delivery has
@@ -183,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +7204 / -93 / net 7111
+documentation: +7342 / -93 / net 7249
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
@@ -488,3 +489,47 @@ The acquisition campaign does not cover publication Break or unbounded fairness.
 Neither historical passing totals nor the remote research checkpoint certify
 this new combined source. Actual archive, command/log/source hashes, final full
 tracked/untracked measurement and independent review remain required.
+
+## Published 0.21.2 selection verification (2026-10-04)
+
+EXEC section 46 selects published Core/Actors 0.21.2 at edc2d466; Macros
+0.13.1 remains at 5ca. Source snapshot 289f19d81a90b4bc02c7e6a5d226b66fded01684959c47cfeaa7dac409416841
+binds all 345 tracked inputs through twenty successful commands and all 21
+native Nix checks. Index ae9359e60a8c7a4b625e01c39df8abc2a29dbc0f92c414791ce2f88b6c392d20
+records exact argv, terminal status, complete logs and source hashes under
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-published-0212-selected-svcvi7k2.
+
+Five focused suites pass in both profiles: manifest 9, shutdown 7, FIFO
+recovery 5, child terminal custody 4 and application execution 15. Full
+all-feature workspace tests pass 422/422 across 61 summaries per profile;
+nextest passes 421 with zero skipped. Build, ordinary strict all-target lint,
+formatting and warning-denied documentation pass. Actual `tokio_unstable`
+strict lint and four concurrency/allocation tests pass in both profiles; the
+ignored benchmark is not run. An earlier command using a nonexistent cfg is
+preserved and excluded as hook evidence.
+
+`nix --option eval-cache false flake check --max-jobs 1 --cores 2 --print-build-logs`
+exits zero with all 21 aarch64-darwin outputs registered. Receipt
+458710363ec177a58005d01e0dc7da793266099cdbeec7981da23e9bff3082c9
+and filtered-source binding f61d2f48ff04e6b2759d1ee5b9f14c3e4352f9a300b38cf30a0f24852f7461cf
+authenticate all 319 actual Nix input files against that snapshot. Other
+platforms and remote CI are not verified by this native run.
+
+All eight Driver laws pass their positives, boundaries and mutations in that
+debug Nix run. Optimized receipt 1325497f66ec070b1a3a02175cd1c3b0633581f74d654220ef7a1fe952250856
+binds the separate eight-law run, two command-only `--release` additions and
+restoration of all 345 inputs. Actual optimized log and overlay establish the
+profile; generated receipt command fields remain canonical references. Their
+equal artifact bytes alone do not prove both executions. The existing actor
+runner also exits zero, but its receipt retains stale hardcoded revision 804b;
+it is excluded as fresh selected actor metadata evidence. Section 45's pending
+runner correction and full EXEC gates remain required.
+
+Independent selection review 50599b880e2e7a2f80b3a00f52257e20faa82951f4547c029646232d071d74e6
+and coordinator authentication 41586baf6fe0824e5f3b6e122041d20d2f5e600822e5fea334b0d651bf1e41d5
+accept the bounded selection and twenty completed commands. Independent
+optimized-law review f9f3f005b14272fd42671d5662c1a10fee21dc3c2a86b38858a12e3db0395d5d
+and Nix supplement 53a3cd5eee1d57fe62cd417bb07241a30e36adeb313faf7258ade5a3447e7662
+authenticate those final results with the same qualifications. Subsequent
+evidence-only record updates do not alter tested Rust, manifests or locks.
+This is preservation and selection evidence, not acceptance of ownership repairs.

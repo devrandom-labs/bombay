@@ -150,9 +150,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior"
-version = "0.21.1"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b82e4373287b71f2f90a2a16c62da9f6bebb8dd282df5a0b4b6e4aaa9a5d411c"
+checksum = "67210103f2be49efc2ecbcf42f478f2beac07da5e4e722e4a74bc58b533c16f8"
 dependencies = [
  "bombay-behavior-macros",
  "thiserror",
@@ -160,9 +160,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-actors"
-version = "0.21.1"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "444670302a1b8e34b9f721ed0f071383d0f27f100e26e8365bf7c14d39195639"
+checksum = "2c7d8a69c8d713ae7b35887a5fcddc868a3ef948e4947ee9049cc58f057fc2fb"
 dependencies = [
  "bombay-behavior",
  "bombay-behavior-macros",

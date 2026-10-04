@@ -16,8 +16,8 @@ Selo or Mnesis. The new document's proposed distributed contracts are not
 implemented capabilities or additions to the current Engine port.
 
 The selected dependency graph uses the immutable Behavior Core and Actors
-0.21.1 registry releases from
-`5ca96444f0a66e9a013b6989e3e53d345cbabf65` and Behavior Macros 0.13.1
+0.21.2 registry releases from
+`edc2d466a50df7cd396f891e3da31fc9e3747bbd` and Behavior Macros 0.13.1
 from `5ca96444f0a66e9a013b6989e3e53d345cbabf65`. Behavior owns the direct
 `Behavior -> Actions` fold, closed typed action products, total interpretation,
 source-settlement custody, explicit generated creation-settlement disposition,
@@ -71,8 +71,8 @@ lockfile, not against adapters or remembered APIs.
 
 | Capability | Exact source used by Bombay | Current owner |
 |---|---|---|
-| Behavior | crates.io `bombay-behavior 0.21.1`, checksum `b82e4373287b71f2f90a2a16c62da9f6bebb8dd282df5a0b4b6e4aaa9a5d411c`, plus `bombay-behavior-macros 0.13.1`, checksum `fdbea4c696f3bed02965835fd253087d696a25bf206e229e174bd2882fc2638c` | pure `Behavior -> Actions` algebra, named interpreter requests, total typed settlement products, exact source custody, explicit generated creation-settlement policy, static `DispatchBirth`/`InstallBirth`, and stable protocol/birth/event composition |
-| Behavior Actors | crates.io `bombay-behavior-actors 0.21.1`, checksum `444670302a1b8e34b9f721ed0f071383d0f27f100e26e8365bf7c14d39195639` | reusable actor templates and their topology, supervision, shutdown, timing, terminal-disposition, routing, discovery, persistence, workflow, and operations policies over the same foundational algebra |
+| Behavior | crates.io `bombay-behavior 0.21.2`, checksum `67210103f2be49efc2ecbcf42f478f2beac07da5e4e722e4a74bc58b533c16f8`, plus `bombay-behavior-macros 0.13.1`, checksum `fdbea4c696f3bed02965835fd253087d696a25bf206e229e174bd2882fc2638c` | pure `Behavior -> Actions` algebra, named interpreter requests, total typed settlement products, exact source custody, explicit generated creation-settlement policy, static `DispatchBirth`/`InstallBirth`, and stable protocol/birth/event composition |
+| Behavior Actors | crates.io `bombay-behavior-actors 0.21.2`, checksum `2c7d8a69c8d713ae7b35887a5fcddc868a3ef948e4947ee9049cc58f057fc2fb` | reusable actor templates and their topology, supervision, shutdown, timing, terminal-disposition, routing, discovery, persistence, workflow, and operations policies over the same foundational algebra |
 | Address | crates.io `bombay-address 0.3.0`, checksum `8dfc2197b4156cc87c4021a2fa0e8767a5efb009c98d4238c4147714840fc1dc` | exclusive non-resolvable reservation, exact publication lease and retirement, opaque resolution |
 | Communication | crates.io checksum `eb0dc8a057efce6e387c9bc24955ffb020b2c138c5ce6b10c1f6c211d32ad268`, package `bombay-communication 0.1.3` | two-lane mailbox, delivery, backpressure, affine user-admission retirement |
 | Observe | Bombay-private import of semantic commit `b3b5f36a3b514713012086dfc72f5327d15fe2b2` plus exact Loom-bound fix `ef2ea13e65889aa3bf713822041e032020e98d73` from `feat/affine-observation` | keyed exact-generation facts plus shared and affine unkeyed publication pairs; no separately published actor API |

@@ -2,7 +2,7 @@
 
 **Historical baseline:** The 0.17.0 selection, names and copied-algorithm replay
 below describe the 2026-09-29 research snapshot. Current EXEC selects Core/Actors
-0.21.1 and Macros 0.13.1; PRD section 32 and `verification.md` record
+0.21.2 and Macros 0.13.1; PRD section 46 and `verification.md` record
 the reviewed dependency selection and fresh verification. Current polling uses `TerminationObservations` and ordered vector
 removal. The separate established-observation map/task still exists. Its races
 need witnesses against the actual compiled interpreter, not the old replay.

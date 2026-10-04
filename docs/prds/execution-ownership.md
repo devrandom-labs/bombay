@@ -3126,3 +3126,85 @@ unique source replacements. It finds the unchanged eight mutation bodies,
 five positive selectors and runtime/affine assignments eligible only after the
 file checkpoint. No script execution, semantic approval or source retention
 follows. User scope approval remains pending; the actual runner is unchanged.
+
+## 46. Published source-recovery dependency selection
+
+Core/Actors 0.21.2 are published from reviewed release merge
+edc2d466a50df7cd396f891e3da31fc9e3747bbd. Both release tags resolve to that
+commit; main CI 37167753677 and automatic Release 37168163742 succeeded.
+Independent fresh verification eea124f8edbd12367dd107dc63029a532db3ccc472b9db93c2f96056d9db6f64
+authenticates all 216 packaged files, 200 Rust files, archive checksums and
+actual VCS metadata. Core Rust is unchanged; Actors changes only the reviewed
+four FIFO source/test files. Macros 0.13.1, Address 0.3.0, Communication 0.1.3
+and the selected Timers 13e patch are freshly authenticated and unchanged.
+The exact complete 760-line owning instructions remain byte-identical under
+SHA-256 2b7a9195b27f073fec18426da43e9840f8ef668f333b9ad55934f520a37ae226.
+
+Ownership remains Core algebra; Actors FIFO recovery/diagnostic policy;
+Bombay interpretation and retirement; each existing resource owns its exact
+primitive. The consuming method unblocks public diagnostic recovery only.
+Observation authority, native failure custody, real child/family work witnesses
+and full decision/minimization gates remain open. Old locked-source inventories
+and experimental receipts keep their original revisions.
+
+Concrete selection uses the twenty existing approved paths in the supporting
+selection record: workspace/fuzz constraints and locks; owning manifest tests;
+Driver/template manifests; current runtime/API/backlog guidance; and the PRD
+and its affected records. Expected production Rust/public types: zero. The
+three version constraints, four test metadata literals and lock checksum/version
+entries change without updating third-party selections. Current source/evidence
+headers distinguish Core/Actors edc2 from Macros 5ca. Existing immutable law
+results are not silently relabeled; selected law commands must run again.
+Before retention, require exact locked package verification, focused owning
+regressions in debug/optimized builds, strict/default/hook/fmt and required
+source-bound broad checks. Actor runner path130 remains separately blocked on
+its user checkpoint; changing dependencies does not authorize that script.
+
+Exact twenty-path selection record: /tmp/bombay-published-0212-selection-paths.json,
+SHA-256 ec43aa5051ca94dad448d9650912809d93da554e14b0fc22c59fc22cb846029e.
+
+The selected-source commands now pass: twenty checks, full workspace tests in
+both profiles, all eight Driver laws in both profiles and all 21 native Nix
+checks. The [verification record](execution-ownership/verification.md#published-0212-selection-verification-2026-10-04)
+contains exact source/result bindings, nonauthor review and the stale
+actor-receipt qualification. Full EXEC gates remain open.
+
+## 47. Current sending guidance and combined file checkpoint
+
+The selected Core 0.21.2 source exports `SendEffects::send`; it contains no
+`SendAlgebra` trait. Current AGENTS.md and docs/user-facing-api.md nevertheless
+name `SendAlgebra` twice each. This is an instruction/source contradiction,
+not permission to invent an algebra or handwrite product routing. The concrete
+proposed correction changes only those four literals to the existing owning
+name. Historical module-ownership research retains its original spelling.
+No new semantic law, runtime code, trait or public type is proposed.
+
+Complete current canonical measurement 66d8e1662fb953e70e75b2d39397a1ec7ebdc6c5f61df891743167f39be614f4:
+production +167/-34/net133; tests +3295/-557/net2738; documentation
++7252/-93/net7159; manifests/locks +38/-33/net5; public types +0/-0;
+67 changed tracked paths and zero untracked paths. This measurement precedes
+the evidence-only additions recording the final selected checks here.
+
+Concrete three-path expansion replaces section 45's still-unanswered 130-path
+request. Proposed allowance: 129 to 132 repository-qualified paths, adding:
+
+- `bombay/crates/bombay/tests/actor-execution-law-evidence.sh`;
+- `bombay/AGENTS.md`;
+- `bombay/docs/user-facing-api.md`.
+
+The runner proposal remains the exact independently reviewed section-45 patch
+(verification script +16/-7/net9). It applies first to the frozen isolated
+six-parameter ownership candidate, not the canonical five-parameter constructor
+ahead of integration. The guidance correction is +4/-4/net0 documentation.
+Production Rust/public-type delta is zero; the three observation-only nominal
+type slots and all existing acceptance gates remain unchanged. No line limit
+is reintroduced. Neither the runner nor guidance has been edited.
+
+Complete prospective patch and source bindings are at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-current-send-guidance-checkpoint-num73kij;
+proposal 21b87d4d75868b09337b37c929de1770832a44b6f6c04f582c084493860d5b7d.
+Independent authentication 001023e0bdb154964791bc2091eceae3d75d2182a2731ff449d4fec7c054eec5
+accepts the current-name correction and authenticates the prior nonauthor
+actor-script review without self-approving that authored script. Explicit user
+checkpoint approval precedes edits. Until that reconciliation, dependent new
+sending examples remain blocked; independent transport research continues.

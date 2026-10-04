@@ -4,7 +4,7 @@
 startup/finish waiter and activation-task settlement failures described below.
 The retained typed projection task and its regressions are recorded under
 ARC-011 in `docs/prd-backlog/status.md`. Current EXEC selects Core/Actors
-0.21.1; PRD section 32 records the reviewed release and fresh verification. Failure candidates and
+0.21.2; PRD section 46 records the reviewed release and fresh source verification. Failure candidates and
 source descriptions below apply to the earlier 0.17.0 snapshot only.
 
 Status: **open research; no representation accepted and no production edit

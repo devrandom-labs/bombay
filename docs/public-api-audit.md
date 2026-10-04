@@ -1,7 +1,7 @@
 # Retained public API audit
 
 This is ARC-020's post-deletion inventory for the selected Behavior Core and
-Actors 0.21.1, Macros 0.13.1, Address 0.3.0, Communication 0.1.3, private
+Actors 0.21.2, Macros 0.13.1, Address 0.3.0, Communication 0.1.3, private
 Observe, and patched Timers revision in `Cargo.lock`. It covers Bombay-owned
 items reachable from the `bombay`, `bombay::entity`, `bombay::actors`, and
 `bombay_engine` roots. Re-exported Behavior and Behavior Actors families retain

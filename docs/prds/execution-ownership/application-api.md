@@ -331,7 +331,7 @@ outcomes and independent design-gate acceptance remain required.
 
 ## Current selected runner reconciliation (2026-10-03)
 
-Core/Actors now select the verified 0.21.1 registry release at
+The section-32 snapshot selected the verified 0.21.1 registry release at
 `5ca96444f0a66e9a013b6989e3e53d345cbabf65`; Macros 0.13.1, Address 0.3.0,
 Communication 0.1.3 and the exact Timers patch remain selected. Earlier
 0.17.0/0.20.0 source signatures and probes above are dated research, not

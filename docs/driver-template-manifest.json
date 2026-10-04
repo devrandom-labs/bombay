@@ -2,8 +2,8 @@
   "schema": 3,
   "owner": {
     "package": "bombay-behavior-actors",
-    "version": "0.21.1",
-    "revision": "5ca96444f0a66e9a013b6989e3e53d345cbabf65"
+    "version": "0.21.2",
+    "revision": "edc2d466a50df7cd396f891e3da31fc9e3747bbd"
   },
   "engine_contract": "universal Behavior execution only",
   "inventory_contract": "Public Behavior compositions and actor-owned capability types from the exact locked source; lanes name typed boundaries rather than copying their semantics into Engine.",
