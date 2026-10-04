@@ -5523,3 +5523,107 @@ production +187/-52/net135, integration tests +476/-0/net476, three paths,
 public nominal0/0 and one existing type root export. No full gate or canonical
 retention follows. The fixed c29 epoch is the next paired-work comparison
 baseline; original compile/ordering nonpasses remain preserved separately.
+
+
+## 94. Borrowed source settlement custody checkpoint
+
+Under section52 select the recommended bounded source-owner comparison before
+any source mutation. The actual blocker is destruction of acquired receipts or
+untouched source remainder when an admission callback/future unwinds or is
+cancelled. Keep Core's source algebra in Core, actor-template producers in
+Behavior Actors, Engine's affine port in Engine, and installed custody in Bombay.
+A direct borrowed offer over existing owning products is preferred to another
+source service, task, erased container or parallel effect algebra. Both children
+must already belong to the parent before any custom callback; a missing or
+malformed reply must not become an invented Exhausted or SourceClosed fact.
+
+Delegated cumulative scope156→161 adds exactly these existing owning paths:
+
+- behavior/crates/actors/src/composition/delivery_route.rs
+- behavior/crates/actors/src/lifecycle/shutdown_coordinator.rs
+- behavior/crates/behavior/src/effects/actions.rs
+- behavior/crates/behavior/src/effects/mod.rs
+- behavior/crates/behavior/src/lib.rs
+
+The other ten proposal paths already belong to scope156. Scope receipt a5704873
+also reserves precisely two additional conditional public nominal slots:
+SourceProgress for this source cut and ApplicationOutcome for section95;
+allowance5→7 does not claim seven retained types. Canonical remains production
++167/-34/net133, tests +3295/-557/net2738, public nominal0/0,69 tracked/zero
+untracked, pre-edit4ed515d3 against2fccedf6. No production line cap applies.
+
+Uncompiled complete TEXT02f39b19 measures production +590/-351/net239,
+cfg tests +43/-69/net-26 over fifteen source paths. It proposes SourceProgress
+(+1/-0 public nominal), five associated custody declarations, one existing
+SettlementFailure alternative and seven existing retirement custody fields.
+Installed-only Send/static bounds belong only at the existing task transfer.
+Cold borrowed source construction must retain its lifetime; no global static,
+Sync or caller-work bound follows from the installed requirement.
+
+Nonauthor420cf72e withholds eligibility for two concrete source defects: the
+application replacement removed the real creation route-reservation interpreter
+and original SourceAdmission header; total creation finish incorrectly calls
+intact nonempty/rejected/corrupt custody Exhausted. Restore the exact existing
+creation block and modify only its genuine admission implementation; classify
+finish using the same actual empty-Settled distinction as prepare. Freeze a
+whole corrected successor, independently review it, and measure its actual
+replacement delta before applying. Neither predecessor is compiler-eligible.
+The actual runtime foundation has346 inputs, including the existing public
+receiving test; its stale345 prose is historical metadata, not a migration.
+
+Require genuine direct finish/prepare differential, malformed custody, native
+panic/pending-drop and source retirement witnesses with original failures,
+finite inversions and exact restores in both profiles. Authenticate actual
+Core/Actors/Macros patched source and lock graph before building; a local patch
+is not the published0.22 contract. Migrate every owning adapter/generated
+product and consumer, prove cold borrow and exact installed transfer denials,
+and complete owning strict/fmt and full affected verification. Existing source
+cut does not repair normal ActionItem/current-receipt or descendant joining
+laws. All those requirements remain open, not deferred from EXEC.
+
+## 95. Caller-local work and independent receiving checkpoint
+
+Treat paired UNIT execution as a separate ordinary-Rust comparison on the fixed
+section93 c29 epoch. Proposed App::execute_with would return an execution future and
+an independently retained result future; actual Tokio owns the actor/cleanup,
+while caller-local Work, WorkFuture and Output keep their original lifetimes
+without Send/static requirements. Existing synchronous actor handoff and raw
+join stay authoritative. Compare the previous private paired ownership equation
+against this concrete public consumer before selecting a full API.
+
+Uncompiled TEXT379755db changes three already allowed paths:
+application_runtime.rs +251/-2/net249 production; lib.rs +1/-1/net0;
+completed_application_receiving.rs +443/-2/net441 tests. Total production
++252/-3/net249; public ApplicationOutcome +1/-0, private custody sum and affine
+publication guard +2/-0. The conditional slot is reserved in section94; no
+further file expansion. This is candidate capability growth, not reduction.
+Canonical pre-edit4ed515d3 remains the complete unchanged record above.
+
+The public sum expresses unstarted exact inputs, begun/uninvoked callable,
+completed output or invoked unfinished disposition alongside actual cleanup.
+The private pre-cleanup sum does not fabricate an actor result; its existing
+publication guard owns the single transfer across execution drop. The result
+receiver owns acquired output across borrowed waiting; final receiver drop
+explicitly discharges undeliverable values while retained cleanup joins.
+Reuse existing actor owners/channels and remove caller-side phase reconstruction;
+introduce no second actor contract, boxed work future or primary projection task.
+
+Nonauthora281f18c withholds eligibility: WorkFuture may return original Output
+then panic during its lexical Drop, before the draft transfers Output into the
+publication guard. Already acquired Output is consequently destroyed. Install
+Completed(original Output) and its original sender in that same existing guard
+inside the work scope, before WorkFuture disposal; normal disposal or unwind
+then publishes through that one guard. Freeze and independently review the
+complete corrected successor before copying any source. No panic catcher,
+extra wrapper or stronger bound is justified by this defect.
+
+Require a genuine Ready-then-Drop-panic work future, caller custody of the
+original opaque Rust cause, exact original output plus actual joined root,
+and explicit one-time discharge observations. Keep all thirteen proposed
+healthy controllers and add the defect regression; prove intended original
+failure, finite substitutions and restores in both profiles, then strict/fmt
+and exact formatted delta. Authenticate all346 c29 inputs and real lock tuples.
+Full family failure-prefix preservation, declared paired execution, HTTP,
+raw descendant joins, normal current receipts, full API migration, task
+minimization and every affected independent gate remain required. Neither
+scope delegation nor source review accepts those gates or retains this draft.

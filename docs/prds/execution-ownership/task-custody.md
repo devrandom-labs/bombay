@@ -2162,3 +2162,16 @@ Actualc29d1c42/independenta523ca87 binds all346 inputs, named default/Axum lint
 and format. Full family/cleanup panic custody, paired borrowed work/receiver
 ownership and task/projection gates remain open. This is bounded research
 evidence; canonical source is unchanged.
+
+
+## Next source and work ownership checkpoints (EXEC sections94–95)
+
+Independent reviews420cf72e and a281f18c withhold the complete source-offering
+and public paired-work drafts. Core must preserve intact retirement custody
+and the actual creation reservation interpreter; caller execution must acquire
+completed output into its existing publication owner before disposing work.
+The proposed source port and paired work result remain uncompiled. Their exact
+change records and delegated path/type budgets live in sections94–95; no gate
+or canonical production selection follows. Corrected whole-source successors,
+genuine original/inversion/restoration controls, and preservation of existing
+runtime regressions remain prerequisites for source application.

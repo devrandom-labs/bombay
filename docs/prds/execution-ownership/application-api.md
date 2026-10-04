@@ -1093,3 +1093,15 @@ Paired caller-local work/receiving, root versus cleanup task failure custody,
 full family/HTTP source closure, final public signatures and complete consumer
 migration remain required. The initial594 test's pre-discharge reason match
 was reviewed and corrected before execution; it was never passing evidence.
+
+
+## Proposed paired UNIT receiving (EXEC section95)
+
+TEXT379755db introduces a candidate App::execute_with; it is absent from the
+actual c29 public baseline. The four inherited and nine proposed new controls
+are source plans, not runtime passes. Nonauthora281f18c rejects the draft's
+completed-output transfer timing: lexical work disposal can panic after Ready
+and erase the original output. Reuse its same affine publication owner before
+that disposal, then independently review and execute a corrected successor.
+The exact public equation, abstraction answers, budgets and full pending family,
+declared-member and HTTP obligations are recorded once in EXEC section95.

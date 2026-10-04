@@ -246,7 +246,7 @@ checks; full task/API and other decision gates remain open.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +10791 / -97 / net 10694
+documentation: +10932 / -97 / net 10835
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -1116,3 +1116,15 @@ custody and complete task/API/projection acceptance remain open.
 record the original generic-source loss, ordinary controls, actual Core closure
 ordering inversion, both-profile failures/restorations and exact source binding.
 This evidence selects no public interruption contract or full gate.
+
+
+### Source and paired work pre-edit records (EXEC sections94–95)
+
+Factual nonauthorb8be2a7f authenticates corrected PRD878cfe72 and scopea5704873:
+156→161 paths adds exactly five existing Core/Actors owning files; conditional
+public nominal allowance5→7 reserves SourceProgress and ApplicationOutcome.
+Canonical pre-edit4ed515d3 retains69 tracked/zero untracked paths, production
+net133, tests net2738 and public nominal0/0. This scope delegation does not
+approve source, retain a public type or accept a semantic gate. Source reviews
+420cf72e and a281f18c require correction before execution. Their immutable
+proposals and future controller plans supply no compiler or runtime pass.
