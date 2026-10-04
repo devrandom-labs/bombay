@@ -236,15 +236,17 @@ This proves the bounded allocation comparison, not live installation or a gate.
 Completed receiving cfg-quality0e2d8d9e subsequently runs owning --lib --tests
 all-feature strict101 and formatting0 on current ea6's other344 exact inputs.
 Three test-only diagnostics remain explicit; earlier library-only strict
-does not establish cfg quality. Section91 corrected mutations are source-eligible; both actual public compilation
-attempts remain NONPASS and the privacy model is reopened. No runtime test executes.
+does not establish cfg quality. Historical section91 public compilation attempts
+remain NONPASS and execute no runtime tests. Later inferred-actor receiving and
+exact-reason comparisons in sections92–93 pass their bounded runtime/strict
+checks; full task/API and other decision gates remain open.
 
 <!-- exec-research-counts -->
 
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +10536 / -97 / net 10439
+documentation: +10791 / -97 / net 10694
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -1027,6 +1029,36 @@ c687c07c717f601262df0bb9099f3e4a61040bf49345173c9aece43b3b35ac0f
 binds all345 restored source inputs and preserves the first strict nonpass and
 mutation warning. The rejected downcasting text remains unexecuted. These
 private tests add no public API and do not accept a full execution gate.
+
+### Public completed-result receiving quality
+
+EXEC section92's actual public controls/inversions/restores are source-bound
+to the clean346-input quality successor1eaca071, independently reviewed364980a6.
+Four public controls per profile, four intended finite allocation failures and
+four exact restores execute atjn3ly450; no fresh runtime run is claimed for
+the declaration-only successor. Fresh named lib/test default/Axum strict and
+format pass. The first compile/privacy/equality/lint nonpasses remain immutable.
+Production +185/-51/net134 and tests +464/-0/net464 versus nativeea6 are
+isolated research deltas, not the canonical change record. Full cleanup/caller
+work receiving, reason export, HTTP/families, migration and decision gates remain
+open. Actual receipt and review:
+
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-public-fixture-quality-execution-l5x1x4gm/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-public-receiving-clean-actual-independent-15h_k5db/review.json
+
+### Public exact startup reason
+
+EXEC section93 actualc29d1c42 and independenta523ca87 authenticate four
+public controls/profile, sole pre-export E0432/profile, actual compiled
+misclassification failure and exact restored pass/profile, default/Axum
+named-target strict and fmt. Complete row/value discharge precedes the final
+negative reason oracle. All346 inputs are restored, other344 unchanged.
+This publishes one existing closed error name with zero new nominal types.
+Full API/cleanup/family/HTTP/migration gates remain open. Exact commands and
+source/log manifests are retained in:
+
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-public-composed-error-execution-x1c8lmu2/verification.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-composed-error-actual-independent-nez1yw1q/review.json
 
 ### Observation prerequisite merged
 

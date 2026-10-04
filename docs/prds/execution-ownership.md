@@ -5357,3 +5357,169 @@ pre-format +60/+240 estimate is not the actual formatted delta. No line cap
 or gate approval is inferred from that estimate. Canonical full record57ec4a8b
 remains production +167/-34/net133, tests +3295/-557/net2738, public nominal0/0,
 69 tracked/zero untracked paths; the rejected source is not canonical retention.
+
+## 92. Inferred public actor receiving checkpoint
+
+Under section52 select TEXT76a1bca1 with nonauthor5777a661 before source edits.
+The actual b2c277c4 external call cannot use a private associated actor in its
+return. Keep the pre-existing two constructions: unit members return Root;
+declared members return public ApplicationBehavior with their actual child
+product. A method-local Actor parameter exposes that actual value through the
+existing ComposeApplication actor equality, with inferred caller syntax.
+No private trait visibility, public nominal type, stronger semantic bound,
+new trait, wrapper, task or associated type is introduced. Two concrete inherent
+implementations would repeat the same runner; this existing equality applies
+those same two constructions once. Keep unrelated consumers intact.
+
+The four private projection cfg attributes follow their exclusively Axum-owned
+call sites. Expected incremental production +13/-8/net5 in application_runtime.rs;
+tests +114/-3/net111 in the already allowed completed_application_receiving.rs.
+One private test terminal enum records the actual declared root/child roles.
+Both paths lie within156; conditional public allowance remains5. Canonical
+pre-editef19c167 retains69 tracked/zero untracked paths, production
++167/-34/net133, tests +3295/-557/net2738 and public nominal +0/-0.
+
+Require actual four-controller debug/optimized runs, finite explicit-drop
+output/role substitutions and exact restores, default and Axum owning lint
+and formatting. The actual parent has346 inputs, not the model paragraph's
+stale345 count; independent review authenticates all346. Declared refusal
+retains a genuine original unstarted child, with no successful child installation
+claim. Its full nested startup error is retained but remains externally
+unnameable; public reason inspection, paired caller-local work/receiving, cleanup
+failure closure, complete migration and every affected full gate remain open.
+The failed parent source/logs remain immutable and are not canonical retention.
+
+Actual actor-equality compilecd42a96f returns101 before tests: twenty-seven
+E0271/E0277 diagnostics repeat the existing root protocol/Never phase identity
+that Rust does not derive on the new local Actor parameter; one import is
+Axum-only. Freeze root TEXTff54db89 before edits: production +4/-2/net2,
+tests/types/paths0. Spell the already normative ComposeApplication::Actor
+Protocol=Root::Protocol, Ph=Never equality on that same Actor and gate only
+LocalOutcome's exclusively Axum import. Both existing constructors satisfy
+these identities; no additional semantic restriction or actor policy is invented.
+Require independent source/provenance review before a fresh successor execution.
+The failed source and exact diagnostics remain intact and NONPASS.
+
+Nonauthor c9ac2c2b approves ff54's existing equation/import correction before
+source mutation. Canonical pre-edit3125f456 retains69/0 paths, production
+net133, tests net2738, public nominal0/0. Use a fresh immutable successor with
+all four public controllers unchanged, preserving the failed parent separately.
+
+The ff54 successor executes all four public controls in debug and optimized
+builds, then four intended finite allocation failures and four exact restored
+passes. Each counterfact runs one test after actual root/family cleanup; public
+declared refusal keeps the original unstarted child through result surrender.
+All346 restored source inputs/other344 remain exact. Actual owning strict58d4729f
+returns101 at five declaration diagnostics: complete result type complexity and
+large exact startup custody. Axum strict and final format remain unexecuted.
+
+Before quality edits freeze root TEXT74247f87: three declaration-local fulfilled
+expectations, production +14/-0/net14, runtime bodies/tests/types/paths0. Keep
+complete original unboxed retirement and work products; introduce no wrapper,
+alias, box, bound or semantic policy from lint output. Require nonauthor review
+and fresh owning default/Axum quality plus format, binding inherited exact
+runtime bodies without claiming a new runtime run. One earlier wrong temporary
+script path stopped before experiment commands; exclude it as orchestration
+metadata rather than a semantic outcome. Full receiving/API gates remain open.
+
+Before the declaration-only quality edit, nonauthor3fb1d129 approves74247f87
+and authenticates all available controls/inversions/restores on346 inputs.
+Canonical pre-edit95c38ad4 retains69/0 paths, production net133, tests net2738,
+public nominal0/0. Fresh quality must cover both default and Axum without
+changing any executable body; inherit exact runtime rows explicitly.
+
+Actual declaration-quality successor strict1e0f9b50 returns101 only for the
+public test's async hydration and complete declared terminal product. Freeze
+two declaration-local fulfilled expectations before edits: test +8/-0/net8,
+production/runtime bodies/types/paths0. Preserve hydration construction at poll
+time and the exact existing full actor/child-failure product; neither introduce
+a wrapper nor move work to invocation time. Require independent source review,
+fresh default/Axum owning lint and format; inherited four public runtime controls
+and allocation inversions remain exact, not newly executed. Parent346 source
+inputs and actual NONPASS are immutable.
+
+Before the fixture declarations, nonauthor6db135e4 authenticatesaaa71116 and
+all346 parent sources, confirming exactly eight test declaration lines and
+unchanged poll timing/body/typing. Canonical pre-edit21287d3e retains69/0 paths,
+production net133, tests net2738, public nominal0/0. Copy the actual parent to a
+fresh successor; source-bound runtime results are inherited without rerunning.
+
+Fresh fixture-quality receipt1eaca071 passes owning default/Axum strict lint
+and formatting; all346 restored inputs remain exact, other345 unchanged from
+its quality parent. Production bodies are byte-equivalent to actual jn3ly450;
+four public controls per profile plus four finite allocation failures and four
+restores are inherited explicitly. Final formatted full delta and nonauthor
+actual-source authentication remain required before using this bounded epoch.
+Declared startup reason inspection, paired caller-local work/receiving, full
+cleanup failures and consumer migration remain open; no full gate is accepted.
+
+Nonauthor364980a6 authenticates the fresh quality receipt and inherited actual
+runtime rows without claiming reruns. Full formatted delta versus nativeea6:
+production +185/-51/net134, tests +464/-0/net464, public nominal0/0, two
+source paths; all other344 native inputs and existing cfg suffix are exact.
+This is a fixed bounded research baseline, not complete API/TASK acceptance.
+
+## 93. Existing startup error public inspection checkpoint
+
+Under section52 select TEXT594162b6 before edits: publish the existing
+ApplicationDefinitionError root name and exhaustively inspect its original
+Root(error) versus InitializedTwice alternatives through the genuine declared
+application refusal. Exact existing error ownership survives already, but an
+external caller cannot name its hidden owning-module type. Keep ComposeApplication
+and its module private. An extra getter/wrapper would duplicate the closed sum;
+opening the entire module would expose unrelated machinery. The existing root
+re-export expresses that same authoritative sum once, with no new type or state.
+
+Expected lib.rs +2/-1/net1 production; completed_application_receiving.rs
++8/-2/net6 tests before formatting. One existing public nominal export is added,
+zero new public nominal types, methods, traits, bounds or source paths. Both
+paths remain within156. Source is bound to all346 l5 quality inputs; the model's
+last345 count is stale and must be explicitly corrected by review. Canonical
+complete pre-edit record must remain measured. Require independent source review
+before mutation, actual four public controls in debug and optimized builds,
+finite original-reason misclassification failure/restoration in each, and owning
+default/Axum strict plus format. Preserve the original exact failure reason,
+unstarted child and complete retirement together. This neither selects a new
+error contract nor accepts paired work, full cleanup or any full gate.
+
+The section93 verification also compiles that same public reason consumer
+against the unchanged pre-export lib and requires its intended E0432 missing
+root name; this static denial is not a runtime conservation failure. Exact
+finite TEXT39a40aa6 then maps the actual pure root initialization error to
+InitializedTwice after explicitly discharging that error. Its public exhaustive
+match must fail at the intended original-reason oracle in both profiles; exact
+source restores must pass. No counterfact remains in production.
+
+Independent pre-edit review finds the draft reason match precedes remaining
+whole-row oracles and result surrender. Freeze a narrow replacement before
+source insertion: keep the original full result through every existing field,
+count and child-content observation; copy only its existing Copy refusal into
+that same existing closed error sum for the final observational match, after
+explicit full-result release and all release-count assertions. No new type,
+state, bound or production mechanism. The initial594 source remains unexecuted;
+require independent approval of this corrected final oracle before any mutant.
+
+Corrected final-oracle TEXT1a8ca6a0 measures lib +2/-1/net1 and tests
++13/-3/net10 versus clean1eaca; new nominal types/bounds/paths0, one existing
+error export. Its exact346 baseline and finite39a producer remain required
+independent review inputs before application.
+
+Before corrected error-export source insertion, nonauthord3816aa1 approves
+1a8ca6a0 plus unchanged39a producer inversion. Canonical pre-edit9599b35a
+retains69/0 paths, production net133, tests net2738, public nominal0/0. Use a
+fresh346-input successor; original594 and its withheld negative ordering remain
+unexecuted. Current reason/test correction remains separate from full API gates.
+
+Actual error-observability receiptc29d1c42 passes all four public controls in
+each profile. Before export, the same consumer has exactly its intended E0432
+in both; that is static usability evidence. The real init-producer substitution
+compiles then fails the final reason match after every lane/original-value
+observation, whole result surrender and zero release counts, in both profiles.
+Both exact restores pass; default/Axum owning strict and fmt pass. All346 inputs
+are exact, other344 unchanged from1eaca. Nonauthora523ca87 authenticates each
+log and source binding. Post-format incremental lib +2/-1/net1, test +16/-4/net12
+replaces the pre-format10-test estimate. Full delta versus nativeea6:
+production +187/-52/net135, integration tests +476/-0/net476, three paths,
+public nominal0/0 and one existing type root export. No full gate or canonical
+retention follows. The fixed c29 epoch is the next paired-work comparison
+baseline; original compile/ordering nonpasses remain preserved separately.

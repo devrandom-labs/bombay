@@ -1048,3 +1048,48 @@ Immutable rejected-source records:
 
 - /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-public-completed-receiving-execution-4ruorwn7/execution-stop.json
 - /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-public-receiving-carrier-execution-yb9lv2qk/execution-stop.json
+
+## Executed public completed-result acquisition (EXEC section92)
+
+The first two failed compile stages remain immutable. Ordinary method-level
+Actor inference uses the existing private composition equality and its existing
+root-protocol/Never identities; it exposes the exact public actual actor value
+without publishing the private construction trait. Actual jn3ly450 executes
+four public controllers in each profile, including genuine declared-child
+refusal: original completed work, independent family shutdown, original root
+and unstarted child remain recoverable. Four finite substitutions fail after
+actual joins; four exact restorations pass. Existing projected consumers remain
+unmigrated. The full initialization reason is retained but not yet nameable.
+
+Fresh quality1eaca071 passes named-target default/Axum strict and fmt. Nonauthor
+364980a6 authenticates every log and all346 current inputs, inheriting the exact
+runtime bodies rather than claiming new runtime execution. Against nativeea6:
+production +185/-51/net134, new tests +464/-0/net464, public nominal0/0.
+The full result products need fourteen declaration expectation lines; eight test
+declaration lines preserve poll timing and avoid forwarding wrappers. All
+original nonpasses remain recorded. This bounded acquisition comparison is
+accepted as research evidence and a fixed next baseline; DG-API remains open
+for caller-local paired receiving, complete cleanup failures, HTTP/families,
+exact final surface and every affected consumer. No canonical implementation
+or full gate acceptance is inferred.
+
+## Exact public startup reason (EXEC section93)
+
+The existing ApplicationDefinitionError root re-export exposes the authoritative
+closed error already owned by ApplicationBehavior. Its module and private
+composition trait remain private; no getter, wrapper or new type is introduced.
+The same declared-child public controller cannot import the name before export
+(E0432 in each profile), then passes with the exact Root(Initialization) reason
+and original unstarted child together. A real init-producer misclassification
+to InitializedTwice fails only after complete row/result discharge; both-profile
+exact restores pass. Four controls/profile, default/Axum named strict and fmt
+pass under actualc29d1c42 and independenta523ca87. All346 source inputs/344
+unrelated inputs authenticate. Incremental formatted production +2/-1/net1,
+tests +16/-4/net12; one existing nominal export, zero new types. Full nativeea6
+comparison is production net135, integration476 across three paths.
+
+This closes the bounded nameability objection for the fixed research epoch.
+Paired caller-local work/receiving, root versus cleanup task failure custody,
+full family/HTTP source closure, final public signatures and complete consumer
+migration remain required. The initial594 test's pre-discharge reason match
+was reviewed and corrected before execution; it was never passing evidence.

@@ -2150,3 +2150,15 @@ tail/reply combinations and never call a nonempty suffix Exhausted. Prepared
 activation, active Engine equality, exact source placement, all macro/leaves
 and raw root/child/Entity transport remain required. Mixed historical models
 are not current integrated source eligibility.
+
+### Public completed-result acquisition and reason custody
+
+EXEC sections92–93 record four external controls per profile preserving original
+work output, family result, root and declared unstarted child. Finite allocation
+substitutions fail after actual joins; exact restores pass. The existing closed
+startup error is now public through its owning root name. Its real producer
+misclassification fails after full result surrender, with exact restored passes.
+Actualc29d1c42/independenta523ca87 binds all346 inputs, named default/Axum lint
+and format. Full family/cleanup panic custody, paired borrowed work/receiver
+ownership and task/projection gates remain open. This is bounded research
+evidence; canonical source is unchanged.
