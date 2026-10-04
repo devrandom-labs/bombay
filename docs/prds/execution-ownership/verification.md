@@ -184,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +9114 / -97 / net 9017
+documentation: +9279 / -97 / net 9182
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -1007,3 +1007,14 @@ parent witnesses retain their intended failures in both profiles with strict
 lint and formatting passing. A newly source-confirmed earlier-receipt loss
 keeps full conservation acceptance open; outside-owner cleanup alone is
 insufficient. Historical failures and EDC outcomes remain separately preserved.
+
+
+[Sections71–72](../execution-ownership.md#72-retained-row-isolation-and-ordinary-ownership-comparison)
+record full registry workspace checks in both profiles, the original Core
+receipt-loss witness, corrected outside-owner positives and semantic inversions,
+and the ordinary lexical ownership comparison. The
+[task custody record](task-custody.md#executed-preservation-outside-a-panicking-interpretation)
+keeps their exact scopes and ownership map. The earlier failed assertion6874
+concerned the explicitly discharged delivery unit, not the retained prior row.
+Original failed command results remain preserved. Current-turn Core receipt
+custody and complete task/API/projection acceptance remain open.

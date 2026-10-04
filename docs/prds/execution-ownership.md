@@ -4254,8 +4254,8 @@ nested trybuild and inherited unused-Timer-patch warnings stay qualified.
 All345 metadata-variant inputs remain exact. Canonical selection is unchanged.
 
 The bounded outside-owner positive stops honestly: atomic15 controls pass in
-both profiles; parent debug startup passes, active fails its prior-settlement
-count (expected1, actual0) after the other cleanup/custody observations.
+both profiles; parent debug startup passes, active fails its inner delivery-receipt
+count (expected1, actual0) after the earlier settlement-row check passed.
 Stopped receipt916570d4 preserves the runner, formatted345 inputs and log.
 Do not call this a complete positive or remove that oracle. Reconcile the exact
 offer/retention path against current source before selecting a correction.
@@ -4267,3 +4267,106 @@ positive passing. Formatting yields142 added test lines, production/public0;
 strict selected-package all-target/all-feature lint and full formatting pass.
 All805 other owning inputs are exact. Require nonauthor actual-result review;
 no repaired positive, creation/suffix witness or full conservation acceptance.
+
+
+## 72. Retained-row isolation and ordinary ownership comparison
+
+Before isolated source edits, preserve canonical checkpoint97f9ab67:69 tracked,
+zero untracked paths; production +167/-34/net133, tests +3295/-557/net2738,
+public types0/0. The reviewed evidence commit7a81e16 is pushed to the work branch.
+
+Select existing-path Engine controlb6be80f5, independent1f58dd00: +49/-0 tests,
+zero production/public/nominal types. It checks a genuinely Retained earlier row
+after active host panic, separately from the then-failing Parent delivery oracle.
+Require both profiles, omitted-catch and cleared-prior-row inversions, exact
+restores and source binding. This does not justify removing the Parent oracle.
+
+Host continuation05bd2bd3 authenticates pure-transition and uncaught-retirement
+controls in both profiles; optimized Parent again fails its delivery count1/0.
+Strict lint rejects one identical match body, formatting passes. Select equivalent
+spelling9dcc5024 for independent eligibility: one existing launch.rs production
+path +2/-2/net0, zero fields/types/policy changes. Merge the same coarse observer
+patterns; retain the original full result. No full gate or production retention.
+
+Select ordinary Core ownership comparisonae2a0913 for independent eligibility:
+one already approved test path +187/-0 tests, zero production/public types,
+four private fixture types/eight owned fields or payloads/four variants.
+Keep the inherited142-line original witness exact. Compare the complete vector
+trace against ordinary leaf calls; preserve the actual earlier receipt and move-only
+untouched tail outside the consumed leaf future. Require allocation inversions,
+both profiles, strict lint and formatting, then independently review actual results.
+The allowance remains140; neither this comparison nor a broad host catch
+selects a new Core failure contract. Creation-prefix and source-offer custody
+still require their own complete evidence.
+
+Independent e7946421 makes the ordinary comparison, equivalent production match
+merge and excluded diagnostic eligible. Select diagnostic6cda889c before its
+source write: temporary existing Driver +14/-1/net13, no retained production
+delta or public types. Trace actual offer alternatives and existing queue lengths
+only; use a fresh isolated345-input copy, leave the Parent oracle intact, record
+the result as diagnostic scheduling evidence and restore the original Driver.
+It supplies no semantic acceptance, quality or performance result.
+
+Retained control actual5f72958f passes its positive and both semantic omissions
+in both profiles, with debug restores passing. Strict lint rejects two existing
+property-test missing semicolons; subsequent formatting was not run. Select
+exact test-only successor120455f7 for independent eligibility: +2/-2/net0 in
+one already approved path, no production or public type change.
+
+The earlier description of failure6874 was wrong: frozen application_runtime.rs
+line6865 checked prior.len()==1 and passed; line6874 checked the inner delivery
+receipt count. Diagnostic066fabc7 observes Retained/publish/apply with queue1,
+then the unchanged failing delivery oracle. All345 inputs were restored.
+Selected Core ActionItem::retain_accepted defaults to None, and Vec source
+offering explicitly releases the successful EstablishedDelivery unit receipt.
+Independent correction9c0c63a4 qualifies the earlier review descriptions; their
+nonpassing command results and original sources remain exact.
+Before the next source edit, select test-only correction1c49309d: existing
+application-runtime path +4/-5/net-1, no production/public types. Expect the
+explicitly discharged send lane empty; preserve the earlier settlement count1,
+complete creation receipt and every actor/child/native/background-work oracle.
+Require independent eligibility and both-profile positives/inversions. This
+corrects an invalid retention expectation; it does not waive current-turn
+interpretation custody or other conservation requirements.
+
+The first ordinary comparison stopped at E0277: plain Vec<LedgerCommand> does
+not implement selected InterpretSends. Receipt1cde2824 records compile failure,
+not a semantic negative; none of that runner's later checks ran. Before source
+edits select minimal existing named-lane correctiona1d94ff9, independent57fb6531:
++2/-2/net0 tests, no trait/type/state additions. Import InterpreterRequests and
+wrap the original commands; use its actual generic interpretation implementation.
+
+Quality successor0d6bc305 passes all15 Engine terminal tests in both profiles,
+then strict lint identifies two remaining terminal-test semicolons. Before
+further source edits select9192f15c, independentd303d55c: +4/-4/net0 tests
+in two already approved Engine test files. Terminal's two sites are observed
+lint failures; Driver law's equivalent two sites are source-audited. No production,
+public type or policy change; require actual integrated strict/fmt evidence.
+
+Corrected Parent receipt2ba8965f passes Parent2/pure-transition1/atomic15
+controls in both profiles; five semantic inversions each fail at their intended
+runtime assertion in both profiles and restore successfully. Independent2a1324fd
+checks the exact sites: prior deletion6865, payload deletion6714, cleanup
+omissions6716 and pure classification722. An earlier zero-test selector was
+rejected by the count guard (excluded1f1d643f); no proof rests on that run.
+
+Quality1522 passes Engine15 and Parent2 each profile, then strict compilation
+finds28 E0308 calls to the new private comparator with different existing error
+types. Before edits select51af8e23, independent5355cc4d: one approved Driver
+test path +11/-5/net6, no production/API types or bounds. Compare the actual
+Behavior and activation error types separately; preserve every caller/oracle.
+The complete strict/fmt pass remains required, and full conservation is open.
+
+Ordinary actualad602d4b passes two ordinary and three inherited positive
+controls in each profile; original strengthening still fails as intended.
+Three allocation/trace inversions fail and restore in each profile; selected
+Core all-target/all-feature strict lint and formatting pass. Independent86068e4c
+checks all806 sources, exact allocation/trace assertions and unchanged805 inputs.
+The supporting task-custody record owns the detailed scoped result.
+
+Before further source edits select root cfg spelling proposaldd243873 for
+independent eligibility: two approved files +15/-15/net0 tests, no production,
+public types or semantic fields. Preserve poll-time effects by returning an
+async block; use equivalent full disjunction patterns and let-else bindings.
+The preceding strict101 identifies these three spelling vetoes; Driver-law
+profiles and final formatting were not executed by that stopped runner.

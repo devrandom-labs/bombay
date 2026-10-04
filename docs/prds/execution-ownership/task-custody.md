@@ -1925,3 +1925,54 @@ Four private nominal types and two test protocol/template aliases express the
 comparison; no public runner, family cleanup, recursive child transport or
 HTTP API is selected. Startup before-publication, panic custody, heterogeneous
 children and complete independent API/task acceptance remain required.
+
+
+### Executed preservation outside a panicking interpretation
+
+Selected Core/Actors0.22.0 source is published1fc8fb55. The isolated local
+comparison borrows the prepared interpreter or active Driver owners while
+polling the current operation. After an unwind, it drops that future without
+repolling, then retires the same owners. The original native payload remains
+with the returned failure, outside Behavior state and protocols.
+
+| Boundary | Ownership kept outside the failed future | Subsequent responsibility |
+| --- | --- | --- |
+| Initialization commitment | Prepared environment, reservation, child bindings and capability tasks | Release reservation; retire and join original accepted work |
+| Active operation | Mutable Behavior, active environment and prior causal settlements | Retire environment; return original state, child results and completed work |
+| Pure transition | Partially mutated Behavior | Preserve distinct transition cause; use the same retirement barrier |
+
+Original8d3a2db6 establishes both outside-parent losses in both profiles.
+Corrected positive2ba8965f preserves complete original parent/child allocations,
+completed capability event, original opaque panic allocation, typed creation
+identity/role/address and the earlier creation settlement. Parent2, pure1 and
+atomic15 controls pass in each profile. Five cuts independently remove prepared
+or active capture, native payload, prior settlements or pure-cause distinction:
+all ten intended runtime failures and ten restorations execute after finite
+cleanup. Independent2a1324fd binds345 restored sources and actual failure sites.
+These are scoped ownership results, not complete task or projection acceptance.
+
+The failed predecessor6874 expected a successful delivery unit receipt to
+remain. The earlier prior-row assertion6865 passed. Selected
+ActionItem::retain_accepted and Vec source offering explicitly discharge that
+unit; the actual BirthsCommitted delivery is observed independently. The
+corrected test preserves the full retained creation row and every other custody
+oracle. Diagnostic066fabc7 is excluded scheduling evidence and restores all
+inputs; correction9c0c63a4 identifies the earlier mistaken report descriptions.
+
+Ordinary comparisonad602d4b uses existing InterpreterRequests and plain leaf
+calls. Both complete traces match; keeping an earlier receipt and move-only
+later command outside the consumed leaf preserves their original allocations.
+Both ordinary tests and three inherited controls pass in both profiles; three
+allocation/trace cuts fail and restore in each profile. Selected Core strict
+all-target/all-feature lint and formatting pass; independent86068e4c binds all
+806 sources and exact failure sites. It preserves the unchanged original
+reusable-interpretation loss witness, which still fails in both profiles.
+
+Reusable Actions, SendLayer and item iteration hold earlier facts across later
+awaits. The broad runtime capture cannot preserve those inner owners. Nested
+AssignWorker also owns its correlation receipt across a lower delivery wait;
+a universal unavailable-item marker would erase it. Full task acceptance still
+requires a reviewed typed interruption remainder, complete creation/source
+offer custody, native initialization/child transport and final application,
+family and receiver-lifetime integration. No partial owner is substituted for
+those required facts.
