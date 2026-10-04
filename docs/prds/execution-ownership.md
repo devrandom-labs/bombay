@@ -742,6 +742,8 @@ Forbidden implementation shortcuts:
   escapes, serialized local control, or untyped callbacks hiding target types.
   Section 41 records the explicit user exception for passive custody of Rust
   native panic payloads in Engine/Bombay outside Behavior state and protocols.
+  Section 74 selects the narrow terminal interpreter-port extension under
+  delegated section 52; typed semantic remainders remain mandatory.
   Standard library Error::source's required trait-object return is not a new
   runtime dispatch abstraction; do not "fix" it by breaking the Error contract.
 - Boolean phase/authority/provenance state, structural role strings, inferred
@@ -4441,3 +4443,63 @@ inputs match the original822e manifest; its strict/format outcomes apply those
 same bytes without a claimed rerun. The supporting task record owns the full
 scoped result. Both original loss witnesses still require a repaired owning
 contract; no full source, task or API gate is accepted.
+
+## 74. Terminal-only native cause and ordinary Result comparison
+
+Before any new owning source retention, select the recommended bounded exception
+under delegated section52. Core interpreter-facing terminal returns and source
+custody, and their statically typed forwarding implementations, may passively
+retain the original intrinsic Rust panic box beside the complete typed remainder.
+The native cause stays outside Behavior state/errors, Actions, events, protocols
+and routing. No inspection, downcast, reconstruction, synthetic cause or erased
+semantic remainder is permitted. A reusable frame losing its receipt or untouched
+input remains a defect; it cannot declare that value unavailable. The permission
+adds no source, nominal type, live protocol variant or accepted gate.
+
+Authored exception152ac40d (proposal1267ea5f) is independently authenticated by
+root reviewafcae386 against all14 exact inputs. The selected Core.21.2 and
+published.22 sending/actions bytes are identical; canonical still selects.21.2.
+Section41's prior Engine/Bombay permission remains its historical original scope.
+
+The qualified ordinary Result modelb9289ca1, predecessor85b96a66/d0f92afe and
+independentcf35b997 remain comparison evidence only. Minimum three public
+associated-type additions and changed terminal return contracts are substantial
+surface even with zero new nominal types. No creation association is selected:
+pure child init failure remains the normal InitializationPanicked diagnostic
+plus separate runtime native custody, with parent policy independent. Current
+leaf transfer, creation partials, Engine/raw retirement, complete macro/consumer
+migration and real two-template comparison still block source implementation.
+
+Pre-edit canonical record1e7e92a0:69 tracked/zero untracked paths; production
++167/-34/net133, tests +3295/-557/net2738, public types0/0. Current cumulative
+allowance remains141 paths. This record changes documentation only; no Core
+production repair, release, full decision acceptance or Bombay PR delivery.
+
+## 75. Real two-template comparison checkpoint
+
+Before source edits select qualified full TEXTe15cd9ff, independent063f39da,
+under delegated section52. Expand141 to142 cumulative paths for the existing
+owning behavior/crates/actors/src/atomic/stable_proxy/operation.rs. The original
+packet93d6491c remains immutable; its displayed package path is qualified to
+this actual Git path, and four native results now discharge before assertions.
+Expected unformatted tests +377/-2/net375; production/public types0/0. Add two
+private decision/trace enums, two fields to the existing test host and three
+InterpretItem implementations delegating to the actual owning settle methods.
+No Behavior, protocol, getter, visibility expansion, new routing or source API.
+
+Execute six isolated bodies against the published.22 release's exact806 inputs:
+two normal SendLayer controls and two ordinary lexical controls, each using
+real ProxyOperation and AssignWorker in both orders; two separately selected
+original-only ignored probes must compile and fail the intended final original
+proxy-allocation oracle in both profiles. The assignment receipt is checked by
+its actual AssignedJob correlation; no fictional receipt Weak is claimed.
+Lexical controls hold original receipts/token outside the lower consuming call;
+they never reconstruct destroyed controls/messages or fabricate success.
+Then require source-bound inversions, exact restorations, selected owning strict
+checks and full formatting. Any diagnostic veto needs an exact reviewed successor.
+No repaired Core contract or complete template/custody gate is accepted here.
+
+Pre-edit canonicalfbbab43d:69 tracked/zero untracked paths, production
++167/-34/net133, tests +3295/-557/net2738, public types0/0. This source allowance
+is for the bounded comparison only. Section74's exception does not select a
+production signature, partial carrier, macro migration or complete leaf law.

@@ -2005,3 +2005,22 @@ original quality checks apply to those restored bytes; no rerun is claimed.
 The temporary Core edit is restored, with zero retained production change.
 This demonstrates the ownership cut without selecting new live receipt states,
 source-unavailability markers or a public interruption interface.
+
+
+### Terminal-only native cause recommendation
+
+EXEC section74 records delegated selection of exception152ac40d, independently
+authenticated by rootafcae386. Only the intrinsic original panic box may remain
+opaque in terminal interpreter/source returns, beside complete typed custody;
+no native cause enters Behavior state/errors, Actions, events or protocols.
+Ordinary Result requires no new nominal wrapper. The complete wording is frozen
+in /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-core-native-exception-proposal-ghjs_zby/proposal.md
+(SHA1267ea5f3f32074ee37c562a7c7841db27f6478722dcff46a5ed65b38e18ecd8).
+
+Qualified modelb9289ca1 authenticates the precise source-port spelling and
+trait-associated names. Independentcf35b997 accepts a bounded ordinary comparison,
+withholds implementation eligibility, and requires complete original leaf
+remainders, creation/Engine/raw transfer and consumers. Normal child init failure
+remains its exact normal diagnostic with separate runtime cause; parent policy
+may continue. No forced parent terminal Err is selected. No Core source or full
+TASK gate is accepted by this exception or model.
