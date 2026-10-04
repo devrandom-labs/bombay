@@ -3792,3 +3792,80 @@ approval, full EXEC acceptance and the final Bombay PR remain required.
 
 Qualification preeditd7797065923c08ca14925ee1993744b084e543d89d486699ed8712b196b6f3f9
 binds the exact current owner document and proposed text before its edit.
+
+## 63. Reviewed observation prerequisite delivery (2026-10-04)
+
+[Behavior PR84](https://github.com/devrandom-labs/bombay-behavior/pull/84)
+merged at58895153640bb8bdc037c480dcec48a2ba57afa7. Independent reviewer
+trivejoel approved exact head9a2464ceb40940b2d25dfbc175325422570a3969,
+[review5405175477](https://github.com/devrandom-labs/bombay-behavior/pull/84#pullrequestreview-5405175477),
+source-bound receipte9b284525b5b4daee318fc5c1af6d6d803e08cadfc8051afee77cbfeda466448.
+All806 committed blobs matched the qualified tested owner archive4a550904.
+
+Before merge, receiptb18117f4736cf07baa31f5a0c34ed58791dea715f81c0bb59a964f46332d6083
+authenticated the exact head, distinct reviewer identity, all14 latest checks,
+resolved review threads and actual main rules. Required Nix Flake Check and
+all current CI/mutation jobs passed in [run37190887352](https://github.com/devrandom-labs/bombay-behavior/actions/runs/37190887352);
+CodeQL37190886602 and cargo-deny37190886592 also passed at that head.
+The superseded label-triggered cancelled run37190886613 remains excluded.
+Merge receipt4399a343a893bb727041f3acb29ae916a06844b7fee1bf82400b258f6b53fde9
+records actual merged state and commit. Main CI37191851810 and the ensuing
+verified-main release are pending; canonical Core/Actors remain0.21.2/EDC.
+
+This delivers the owning relationship contract only. Release/registry/source
+verification, canonical integration, current typed scheduler comparison and
+full independent DG-OBSERVATION acceptance remain required. EXEC stays active;
+there is no final Bombay PR or merged EXEC claim.
+
+## 64. Conditional native retirement scope checkpoint (2026-10-04)
+
+Select the recommended scope under section52 before any candidate production
+edit. Corrected complete TEXTf16a413deefc9c1fec188c6719bd5aa775fb36a86531db93df860ecef245a5c0
+binds clean canonicaldb068 and all345 inputs. Its fourteen existing paths are
+entity source files bombay/directory/family/runtime/mod and lifecycle/mod,
+three entity integration tests, two Entity compile-fail sources, public-api-audit,
+runtime-capability-interfaces and examples/entity/src/main.rs. Six existing
+paths expand the previous132-path allowance to138: entity/family.rs,
+entity/lifecycle/mod.rs, entity/runtime.rs, entity/mod.rs and the two
+compile-fail sources entity_application_missing_host.rs and
+entity_application_role_exchange.rs. Refresh their existing error snapshots
+only after actual compiler diagnostics and a separately measured checkpoint.
+
+Proposed native production +583/-316/net267; tests +387/-73/net314;
+documentation +36/-4/net32; example +14/-12/net2; public types +1/-0,
+EntityRetirementFailure. The historical original-family cfg controller is
+an incremental +141/-42/net99 in the already approved application-runtime
+path; its old production prefix must not replace current code. Canonical
+pre-edit recordd2fc9509 remains production +167/-34/net133, tests
++3295/-557/net2738, documentation +8560/-97/net8463, manifests
++38/-33/net5, public types +0/-0,69 tracked and zero untracked paths.
+These measurements do not classify positive production growth as reduction.
+
+Reuse the existing Directory, Slot, EntityTaskGroup, native lease and runtime
+port. The original full-family controllera7f43ec1 fails its final joint
+root/head custody oracle in both profiles after finite cleanup. The proposal
+drains original keys without user Clone/Hash/Eq, retains every pending effect
+and returned failure in the existing cleanup owner, and distinguishes an
+unavailable full actor result from joined settlement. A raw actor error is
+explicitly consumed by the existing application callback; unavailable
+descendant cleanup is never inferred from that error.
+
+Choose the narrow catch amendment: synchronous catches surround only
+application shutdown conversion, forced notification and final notification,
+with the affine lease outside each call. They preserve original opaque Rust
+payloads without inspection. Forced notification stays before shutdown/join;
+final notification stays after join with resident capacity held and before
+the retired metric. Metrics and permit release follow the attempted callback.
+This successor corrects rejected6aae timing changes; it does not add generic
+panic recovery or promise values destroyed inside user code can be recovered.
+
+Independent conditional review605371d0609fc44a4ec5da3d4f3c0c28cf7e1b075dd5c596433a0e4215933bea
+authenticates all32 artifacts,345 baseline hashes and fourteen proposed
+texts. It accepts the corrected model conditionally, not execution eligibility
+or any gate. The raw actor/child result prerequisite91f2 is incomplete and
+uncompiled. Complete current factory/root/public/static consumers, independent
+combined review and exact source binding must precede execution. Required
+evidence includes dropped/reclaimed shutdown, noncooperative actors, both
+callbacks failing, nonleaf child failures, retained root results and live
+reactivation. Original failures, finite inversions/restorations, both profiles,
+strict checks and complete affected consumers remain required; no scope is deferred.

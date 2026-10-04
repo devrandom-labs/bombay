@@ -1114,3 +1114,13 @@ in both profiles, receipt1a742ac74fc72a392aedfad98821d07354e6ad06961b1253eaf40e8
 Independent final outcome review67d76a403b50864c940f3d61a4dda08f54b7c32b1d081b0bf1782f17dd2314b7
 accepts the bounded inversions. Minimization, gate signatures and owning
 reviewed delivery remain required; canonical dependencies have not selected this candidate.
+
+## Owning contract delivered; runtime gate remains open
+
+[Behavior PR84](https://github.com/devrandom-labs/bombay-behavior/pull/84)
+merged58895153640bb8bdc037c480dcec48a2ba57afa7 after independent exact-head
+approval5405175477 and all14 latest checks passed. [EXEC section63](../execution-ownership.md#63-reviewed-observation-prerequisite-delivery-2026-10-04)
+owns the source, review, CI, rule and merge receipts. Earlier backup statements
+above describe their historical checkpoints. Publication and fresh selected
+source verification are pending; canonical dependencies remain0.21.2/EDC.
+Current typed polling/task comparison and complete runtime gate remain open.

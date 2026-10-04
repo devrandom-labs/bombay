@@ -184,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +8560 / -97 / net 8463
+documentation: +8656 / -97 / net 8559
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -967,3 +967,12 @@ c687c07c717f601262df0bb9099f3e4a61040bf49345173c9aece43b3b35ac0f
 binds all345 restored source inputs and preserves the first strict nonpass and
 mutation warning. The rejected downcasting text remains unexecuted. These
 private tests add no public API and do not accept a full execution gate.
+
+### Observation prerequisite merged
+
+[EXEC section63](../execution-ownership.md#63-reviewed-observation-prerequisite-delivery-2026-10-04)
+records actual Behavior PR84 delivery: independent exact-head approval,
+fourteen latest passing checks, authenticated main rules and resolved threads,
+and merge58895153640bb8bdc037c480dcec48a2ba57afa7. Superseded cancelled CI
+is excluded. Verified-main release/publication and selected dependency checks
+are pending. This proves upstream delivery, not a full Bombay decision gate.
