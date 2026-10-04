@@ -3261,3 +3261,16 @@ This transfer approval does not accept the reviewer's authored execution gate.
 Canonical sources and both physical worktrees remain preserved. The section-47
 guidance/runner checkpoint still blocks dependent new sending examples. EV20's
 advanced-host closure boundary and all full EXEC gates remain open.
+
+Fresh original runtime-race assignment: apply only the independently reviewed
+cfg-test patch 49baeb362ab18d1b3211d1263dbdd52550c07b74caf37ecf8ba331c9128aca80
+to an isolated fresh canonical archive; original source receipt
+6b6a0161c6ec8de4b410a1bd63b5680e55775c0825f18b1cae9b072703ee278f,
+review 0160c4b1754d9638e5f543148762d4b4f892e0e6995e6c871ab335d800b1cae5.
+Only the already approved application-runtime path changes: +3 net cfg syntax
+around the unchanged original task algorithm and +182 net test lines, zero
+public types. Both controllers join cleanup before their complete report
+oracles; the old-completion admission barrier precedes replacement cancellation.
+Run each exact selector separately in both profiles through pinned Nix. Freeze
+the actual fresh archive rather than treating the proposal's two later evidence
+documents as Git-428 bytes. No repaired result or canonical retention is granted.

@@ -184,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +7452 / -93 / net 7359
+documentation: +7606 / -93 / net 7513
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 67
@@ -533,3 +533,104 @@ and Nix supplement 53a3cd5eee1d57fe62cd417bb07241a30e36adeb313faf7258ade5a3447e7
 authenticate those final results with the same qualifications. Subsequent
 evidence-only record updates do not alter tested Rust, manifests or locks.
 This is preservation and selection evidence, not acceptance of ownership repairs.
+
+## Observation static and pure-law experiment (2026-10-04)
+
+The isolated owning source is the exact 806-file archive of published EDC plus
+the section-48 reviewed 13-path proposal and reviewed test corrections. Final
+input manifest: 67984d169c06b85dde4468ede5494a8d9eebe388a123c791d334445cffda5783.
+Bombay canonical runtime, its working tree and the physical Behavior checkout
+remain preserved. All commands execute inside Bombay's pinned Rust 1.99 Nix
+shell; the full actual argv, logs, exits, source hashes and profile switches
+are retained in the following receipts. These results accept bounded evidence
+only; they do not accept DG-OBSERVATION or full EXEC.
+
+The command boundary is `nix --option eval-cache false develop -c env
+CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2
+CARGO_TARGET_DIR=/tmp/bombay-api-private-composition-target python3`; the
+coordinator alone executes each receipt's subprocess commands. Pure tests
+unset RUSTFLAGS; static consumers set RUSTFLAGS=-Dwarnings.
+
+Pure controller: `cargo test --manifest-path <owning>/Cargo.toml --locked
+-p bombay-behavior-actors --test established_capabilities`, with and without
+`--release`, passes all 18 tests each. Receipt
+5326cbc56ffcae3044303a6d2ed5cbdd2710dbb9d564224aabd1542c5ca9489c.
+The exact selected test for each mutation is
+`exact_monitor_retains_cancel_rejection_and_reacts_once_in_both_arrival_orders`
+with `-- --exact`. Four unique source omissions remove Started correlation,
+make rejected cancellation terminal, lose terminal phase after completion,
+or accept terminal replay. Each compiles and fails its intended runtime oracle
+in both profiles (eight exit101); restoring the original file passes the
+selector in both profiles (eight exit0). Every restoration authenticates all
+806 source inputs, not only the mutated file. Receipt
+950281c43941b15c69335e211ec178d69259f1c6282778ff75d832f261eb01f2; independent
+review c6bd6866cd37e0d4fe7083adde76008d68ed7cf3472ca8669036c1ccc895c28e.
+
+External static consumer: `cargo check --manifest-path <consumer>/Cargo.toml
+--locked --offline --message-format=json`, with and without `--release`.
+Each positive precedes its corresponding denial, preserving exact source
+bytes. All 18 positives exit0 with no compiler diagnostics under -Dwarnings;
+all 18 denials exit101 with only the expected error-code family:
+
+| Constraint | Expected compiler denial |
+| --- | --- |
+| Stopped report protocol | E0308 |
+| Cancellation protocol | E0308 |
+| Read-only relationship used as cancellation permission | E0308 |
+| Cancellation authority used twice | E0382 |
+| Accepted observation request issued twice | E0382 |
+| Observation sequence cloned | E0599 |
+| Observation sequence transferred twice | E0382 |
+| Cancellation reply lane missing | E0277 |
+| Inner observation reply lane missing | E0277 |
+
+The last denial has two instances of the same intended missing-lane bound.
+An actual initial `cargo check --offline --message-format=json` resolves the
+consumer lock from the copied owner lock; all 17 shared registry tuples retain
+their versions and checksums. Core and Actors are coherent path dependencies
+on the same owning archive; Macro 0.13.1 is that archive's unchanged source.
+Actual receipt 83985498c79b2a8ab7d49725c00cc0a2afd40a0f7af7538a4af17c02b2b00614
+and nonauthor review c1c28943d6ba3b1de94de4d174c5f417962de14407cc142c97838814f6403c27
+authenticate all 36 checks. Evidence originally executed under
+/tmp/nix-shell.JcaCRb/bombay-observation-static-actual-6mc69knc; byte-identical
+preservation under the observation-static-preserved-thsk75xa artifact retains
+those actual paths (receipt 6a0dda2414c88af0e77a22ae7c18cd7eb29ed7d071f784953ad24c108fa8afa8).
+No rerun at the preserved path is claimed.
+
+The actual owning change record is 9e34a7017f64823295fa4a5753a9be11d602aa2e9a95b3b963fed57745224cba:
+production +622/-187/net435; tests +1180/-307/net873; documentation
++96/-12/net84; 13 existing changed paths; public nominal types +3/-0.
+This isolated library measurement is separate from the complete canonical
+Bombay working-tree footer above. Full owning checks and consumer audit are
+in progress. Runtime/controller integration, wrapper recovery, EV20, fuzz,
+minimization and independent full decision-gate review remain open.
+
+The full owning workspace subsequently passes under the same frozen 806 inputs:
+`cargo test --manifest-path <owning>/Cargo.toml --workspace --locked` in debug
+and with `--release`, followed by `cargo clippy --manifest-path
+<owning>/Cargo.toml --workspace --all-targets --locked -- -D warnings` and
+`cargo fmt --manifest-path <owning>/Cargo.toml --all -- --check`. All four exit0; each profile passes 958 tests including documentation tests.
+Receipt adb78e2ce162fd56f94a50ea66093dd03cd764e8484142b041e279ccd4284caa.
+This is Bombay's pinned 1.99 toolchain evidence. The owner's pinned-toolchain
+Nix gates, published-doc checks, consumer audit, fuzz and full review are still
+required before release or dependent acceptance.
+
+The first native owning-pin run is nonpassing: ten actual flake checks, nine
+pass and the documentation gate fails only its nine-import rustdoc rule.
+Nextest passes all 865 tests with zero skips; all 93 doctests pass. This is a
+documentation-gate failure, not a doctest failure. Receipt
+d549a8c5d9f41b0e45f253e7b48d3d8634d8102e2073716f86397bec8b3a3cba
+and its original log are preserved separately.
+
+Before edits, bounded corrective assignment is the exact source-bound
+nine-import removal in four compile-fail snippets: proposal
+9b95bac8d1b77d734ec64a41b18b9675bea62e807f674851ef4af7138c3d99fc,
+patch ef8c979fe28bd0a7e236b3f8ca96b893db5af6038b5cc910e5fa0da5c14a887e,
+independent eligibility c19813c48bc1fd07e2e8cb99b506e8e7ba473945c68484f81aec7228bc6f58b5.
+Only the already approved owning established-protocol path changes; semantic
+implementation and public-type delta are zero. Fully qualified external names
+replace the imports; the four invalid operations, bounds and E0308/E0382 laws
+remain unchanged. Source-comment line delta is -9 net, classified with
+production-source lines. No checker exemption or full acceptance is granted.
+The external static consumers above are complete library modules with visible
+module-scope imports, rather than embedded rustdoc/fixture snippets.

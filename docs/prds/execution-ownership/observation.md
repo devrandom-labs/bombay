@@ -1018,3 +1018,43 @@ no repaired suite or gate is accepted. Log f8ebe77bfa10bafc3e34866f9baf54a1edebe
 and nonauthor source diagnosis 9797a887558b2ce63addbe9083a6694b90e7efa89d0f40d8afc076ded314ef90
 bind the failure. The existing ordinary-Rust comparison already expresses both
 real acknowledgement lanes; its exact fixture correction still needs review.
+
+The reviewed emitter correction b7142405ca0ceb48e75b7b5eadeaf84de907340e2c1cb4a110343c472b82d091
+now passes the actual library, capability, settlement and model suites in both
+profiles: 195 tests per profile, receipt 0e011f97c4642144d1f9822de9633ea70414e96949d19a06c45332ff25045f9c.
+It restores the existing ordinary two-report-layer composition without adding
+a type, trait or bound. A separately reviewed lexical recipient-disposal
+correction resolves the sole strict lint failure; model tests in both profiles,
+workspace all-target strict lint and formatting pass under receipt
+e93ef5eae2c8990ccababea7f1299cd11ec44fd3728f0e0992e45e64d2a430bb.
+The independent supplements retain the earlier compiler/lint failures.
+
+Fresh original runtime races now compile and fail their intended ordered-report
+oracles after joined cleanup in both profiles. Receipt
+543157977cd265e5a60988605ac0d4e76c98a20c06358c09681ef8be0c565e3c
+also records passing strict lint/formatting after an equivalent test-only
+nested pattern correction. These logs prove the expected-law failure, not a
+printed transcript of every unexpected payload. Nonauthor review
+e13cef5b9fb3f82eed626aca90116ba11d1236526886f3307433f021ba64770a
+authenticates the actual source and results.
+
+The next bounded assignment is the same review's source-owned static/pure
+stage: receipt 8b2611052c271d04fcc2e79e2741f53b397b2504f0d3e7c1588b4c17ab0d6e0c,
+actual formatted emitter base preserved, 18 separate positive/denial sources
+and four exact Monitor omission patches. Only the existing capability test
+receives +41 net test lines; production and public-type delta are zero. Add
+the whole foreign Started/replay oracle before running its omissions. Check
+each positive before its intended denial, then run pure originals/inversions
+and restorations in both profiles through pinned Nix. A different-ID row also
+changes branch and cannot prove an independent ID-only guard. Static diagnostics
+and omission results remain unexecuted; no full gate acceptance is inferred.
+
+The [actual static/pure verification checkpoint](verification.md#observation-static-and-pure-law-experiment-2026-10-04)
+records all 36 compiler checks, eight intended omission failures and eight
+passing restorations, independent nonauthor dispositions, full 958-test
+workspace runs in both profiles, and strict lint/formatting. All 806 source
+inputs remain authenticated. The actual formatted owner change is net435
+production lines across 13 paths, with exactly three observation-only public
+nominal types; this replaces the unformatted size forecast for measurement.
+This accepts bounded evidence. Runtime integration, real wrapper recovery,
+EV20, model/fuzz, minimization and the complete independent gate remain open.
