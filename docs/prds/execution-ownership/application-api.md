@@ -1018,3 +1018,33 @@ Production/public changes are zero; conditional inherited launch net53 remains
 separate. Neither reviewer reran Rust. Startup visibility, active-family final
 receiver surrender, native failures, recursive projection and the public API
 remain open. This evidence is not full gate acceptance or canonical retention.
+
+## Public completed-result receiving comparison (EXEC section91)
+
+Disposition: **reopen; no retention**. Source433 with independent69ff and
+corrected finite mutantecf8/d97 proposes raw ordinary products before consuming
+primary projection. Original1638 proves real completed-output/family-result loss
+in both profiles. Its three external source controllers are not passing evidence.
+
+Actual compile89f26399 stops at a missing outer Result::Ok embedding for the
+pre-install runtime-construction io::Error law. The minimal carrier successor
+b1e36a77/29c565dc preserves timing and the whole result product, but actual
+compileb2c277c4 then rejects the public Application::run_with call because its
+return exposes private ComposeApplication::Actor. No test executes in either
+compile stage. The failed public model supplies no new visibility permission,
+stronger bound or acceptable privacy suppression. Its current other344 inputs
+are byte-identical to the complete native verificationea6 foundation; old
+projected consumers remain present and unmigrated.
+
+Compare ordinary method-level inference over the actual actor with its existing
+composition equality against concrete inherent composition, using genuine unit
+and declared-member callers. The public result must preserve its actual root
+origin, complete composed state and exact child failure product without exposing
+private construction machinery. Exact owned products remain the law; no wrapper,
+new public trait or type erasure is selected. Raw actor/family cleanup failures,
+caller-local borrowed work, paired receiving and complete migration remain open.
+
+Immutable rejected-source records:
+
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-public-completed-receiving-execution-4ruorwn7/execution-stop.json
+- /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-public-receiving-carrier-execution-yb9lv2qk/execution-stop.json

@@ -224,12 +224,27 @@ orchestration evidence, not a semantic failure. Strict covers only the library
 with all features; cfg tests still need owning lint execution. Formatting passes.
 No public receiving repair or live-family/cleanup failure gate follows.
 
+Final grouped quality403f21fc passes actual owning --lib --tests strict and
+formatting. Independent88e282a2 authenticates all345 inputs/344 unchanged and
+precisely inherits the unchanged runtime bodies: separate original/control,
+finite prepared-worker allocation replacement and exact restoration in both
+profiles, plus five existing controls per profile. Its four-line fulfilled
+length expectation changes no executable body. The initial broad-selector log
+was overwritten and remains excluded; retained old strict101 is not relabeled.
+This proves the bounded allocation comparison, not live installation or a gate.
+
+Completed receiving cfg-quality0e2d8d9e subsequently runs owning --lib --tests
+all-feature strict101 and formatting0 on current ea6's other344 exact inputs.
+Three test-only diagnostics remain explicit; earlier library-only strict
+does not establish cfg quality. Section91 corrected mutations are source-eligible; both actual public compilation
+attempts remain NONPASS and the privacy model is reopened. No runtime test executes.
+
 <!-- exec-research-counts -->
 
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +10371 / -97 / net 10274
+documentation: +10536 / -97 / net 10439
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69

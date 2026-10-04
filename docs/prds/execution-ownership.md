@@ -5239,3 +5239,121 @@ Behavior Actors pure producer with test commitment endpoints, not live actor
 installation or full gate acceptance. Complete canonical measurements retain
 69 tracked/zero untracked paths, production +167/-34/net133, tests
 +3295/-557/net2738 and public nominal0/0.
+
+The reviewed four-document checkpoint21353338/01bdc6cf was committed and pushed
+as f8f28bf. It retains no new production source or semantic gate acceptance.
+Before further isolated test-source copies, bind completed receiving1638's exact
+formatted application module to ea6's current other344 inputs and run actual
+owning --lib --tests strict lint. This reuses the section88 comparison without
+new tests, fields, bounds, paths, production semantics or public types. Its
+library-only strict result does not cover cfg tests; keep any new veto explicit.
+Canonical measurement2727cda5 remains69 tracked/zero untracked paths,
+production net133, tests net2738 and public nominal0/0.
+
+Actual grouped allocation controls and finite substitutions complete in both
+profiles, with original counts0 and substituted counts[1,0,1,1,1] failing after
+joined cleanup. Owning cfg-test strict stops solely at the117-line complete
+trace; final format is unexecuted. Before edits select root TEXTfa2092b4 with
+nonauthor reviewf707aafc under section52: one fulfilled declaration-local length
+expectation, tests +4/-0/net4, production/types/bounds/paths0. All runtime bodies
+remain exact; bind the available original/control/inversion/restoration rows
+precisely and require fresh owning cfg strict/fmt. The initial broad selector
+included the designated negative; its log was accidentally overwritten when
+narrowing the selector. Exclude that unavailable historical row from evidence;
+retain its digest/diagnosis as unsupported orchestration metadata. Available
+separate one-test failures and narrow five-test controls remain authenticated.
+Canonical pre-editfcca618f retains69/0 paths, production net133, tests net2738,
+public nominal0/0. No full gate is accepted.
+
+Completed receiving cfg-quality0e2d8d9e returns strict101/format0. The three
+test-only vetoes concern cold async hydration, the large existing complete
+startup error and an immediately invoked comparison closure. This supersedes
+the earlier unexecuted cfg-lint checkpoint without relabeling it as passing.
+Do not box the original error, change effect timing or invent production
+plumbing for these diagnostics. The public receiving comparison remains
+separately source-reviewed and unexecuted; canonical source is unchanged.
+
+## 91. Public completed-result receiving comparison checkpoint
+
+Under section52 select the reviewed bounded ordinary-product comparison433e8bbe
+with nonauthor review69ff0a67. Original receiving1638 proves completed work is
+lost beside primary terminal conversion panic and real installed family shutdown
+is lost beside root startup refusal, in both profiles. The proposed production
+change is +97/-37/net60 in existing application_runtime.rs; tests +240/-0/net240
+in one new owning integration target, completed_application_receiving.rs.
+Public nominal types +0/-0; three existing return equations deliberately change.
+Reuse RootOrigin, ActorRetirement, JoinError, actual ChildBindings retirement
+products, installed family shutdown and existing private projection/launch ports.
+No new wrapper, task, trait, erased routing or storage service is introduced.
+
+The caller acquires completed work, actual source-owned root role and raw joined
+retirement before its consuming primary conversion. Actual root startup refusal
+and actual family shutdown coexist in an ordinary product. Raw join failure
+returns no fabricated retirement. Keep the legacy Send bounds and all eighteen
+existing projected-consumer files/forty-four occurrences intact in this design
+stage; this is a three-controller public comparison, not the complete paired
+receiver/nonSend API, declared-member normalization, HTTP or full gate approval.
+
+Choose delegated file scope155→156 before source edits for the new integration
+target. Conditional public allowance remains5. Scope artifact 366f3d6217c5bd9aa325aeedf22bb6137538fe2f8f6ac70acda872786efe74b7
+is stored at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-public-receiving-prerecord-jyh4toxj/scope.json.
+Canonical pre-edit7fd35561:69 tracked/zero untracked paths; production
++167/-34/net133, tests +3295/-557/net2738, public nominal +0/-0.
+
+Require the immutable explicit-drop corrections and independent supplemental
+review of both finite equal-byte allocation replacements before source insertion.
+Use current native ea6's other344 exact inputs, not a historical whole-tree copy.
+Run all three public controllers, both corrected finite counterfacts and exact
+restores in debug and optimized profiles, named-target strict lint and formatting.
+A compiler veto reopens the comparison; it does not authorize invented bounds,
+visibility or plumbing. Complete migration and semantic acceptance remain open.
+
+Before insertion, corrected mutant supplementecf8da34 and nonauthor d97b09aa
+close69ff's two finite-source blockers. Both separate a fresh equal-content
+allocation, explicitly release the original, then bind the replacement before
+the final post-join custody oracle. Production433 and its three public
+controllers remain exact. The receiver ownership correction preserves live
+execution-owned inputs/work when only the result receiver departs. Declared
+root origin and combined actor retirement have an existing lawful source pair,
+but this comparison contains no declared-member execution witness. Official Rust
+[naming](https://rust-lang.github.io/api-guidelines/naming.html) and
+[interoperability](https://rust-lang.github.io/api-guidelines/interoperability.html)
+guidelines were checked; the change reuses existing domain owners and conversions.
+
+Actual public receiving compile89f26399 returns101 before any test executes:
+one E0308 identifies the missing outer Result carrier in run_with_entities.
+The pre-edit law already specifies runtime-construction io::Error outside the
+installed-family/root product. Freeze root TEXTb1e36a77: +2/-2/net0 production
+lines, no public types, bounds, paths or state. Wrap that actual existing product
+in Result::Ok without changing its fields, ordering or fallibility. Independent
+review is required before source mutation; the rejected compile remains
+NONPASS and supplies no original-defect or passing runtime evidence.
+
+Before the exact carrier correction, nonauthor29c565dc approves b1e36a77's
+existing Ok embedding. Canonical pre-edit2038513b retains69/0 paths, production
+net133, tests net2738 and public nominal0/0. Preserve the rejected346-input
+source and logs; run a fresh successor for the same section91 controls.
+
+The fresh carrier successor compiles the production library but public target
+compilationb2c277c4 returns101: Application::run_with exposes private
+ComposeApplication::Actor, so even the actual unit-members external controller
+cannot call it. No runtime test executes. Two private-interface warnings and
+Axum-only projection dead-code warnings remain. This reopens the public model;
+do not widen the private composition trait, suppress privacy or claim external
+usability from source review. The advanced App equations are not disproved by
+this diagnostic, but the complete three-controller candidate is not retained.
+
+The next ordinary-Rust comparison must expose the actual actor retirement
+without exposing its private construction proof, through both genuine unit and
+declared-member consumers. Evaluate a method-level actual actor parameter with
+the existing composition equality versus concrete inherent composition; explain
+the two semantic substitutions and inferred caller syntax before any production
+change. No new interface follows from the compiler alone. The failed346-input
+source and actual log remain immutable; canonical production remains unchanged.
+
+Post-format rejected carrier candidate measures production +160/-45/net115
+and tests +344/-0/net344, public nominal0/0 over346 source inputs; its expected
+pre-format +60/+240 estimate is not the actual formatted delta. No line cap
+or gate approval is inferred from that estimate. Canonical full record57ec4a8b
+remains production +167/-34/net133, tests +3295/-557/net2738, public nominal0/0,
+69 tracked/zero untracked paths; the rejected source is not canonical retention.
