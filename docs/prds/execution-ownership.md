@@ -4199,3 +4199,71 @@ and successful control observations, original-law versus proposed strengthening
 distinction, fixture/field/variant measurements and independent eligibility before
 any edit. Full creation-prefix and untouched-suffix proofs remain separate
 requirements. No full conservation gate or owning production API is selected.
+
+## 71. Scoped failure-custody comparisons before source edits
+
+Use the delegated recommendation in section52. Canonical checkpointd5305c8d
+records69 tracked/zero untracked paths: production +167/-34/net133,
+tests +3295/-557/net2738, public types0/0. Preserve that complete record.
+
+Select Core original-only preedit963de2c1 for independent execution eligibility:
+one existing total_interpretation.rs test path, +137/-0 tests, production/public
+types0/0. Expand the repository-qualified allowance139→140 for that exact path.
+It preserves all806 owning inputs except this measured cfg addition; accepted
+Arc custody is observed without copying, not claimed statically affine. The
+positive returns the complete original settlement. The negative checks earlier
+receipt retention while the caught caller-owned future still exists, then
+explicitly releases the original native result. This is a proposed Bombay
+conservation strengthening, not a promise to resume a panicked Core future.
+Require nonauthor eligibility and compiled intended failures in both profiles;
+no owning production contract or repaired positive is selected.
+
+Separately select outside-owner preeditd85c3db4/supplementd23caf28 for independent
+eligibility:16 already approved paths, unformatted production +129/-10/net119,
+tests +255/-135/net120, docs +56/-6/net50; zero new nominal types, tasks or crates.
+Reuse Local/Driver borrowing, existing retirement, causal queue and outcome sums.
+Original8d3a establishes both outside-parent loss cases in both profiles. Proposed
+positive checks complete parent/child/capability custody and prior initialization
+settlement, distinguishing pure-transition panic from host panic. Existing sums
+gain native causes; opaque payloads cannot truthfully implement equality.
+Mutation correctiona1318224 retains the original control_liveness binding;
+its excluded predecessor would fail compilation rather than the custody law.
+Require complete source binding, original-to-positive comparison and finite
+semantic inversions before retention. Aggregate disposition remains reopen:
+current-turn receipts/suffix, pure-init payload and raw/native-child custody
+remain required. Apply neither experiment to canonical production yet.
+
+Independent784cde52 authenticates the complete16-path outside-owner proposal,
+all345 foundation inputs,179/165 packages and corrected prepared mutant.
+Choose a fresh isolated assignment for its exact compared sources. No full gate
+or production retention is approved. A settlement already moved into a failed
+offer is another required reusable-owner custody case; retaining the remaining
+causal queue does not prove that removed settlement survives.
+
+Core nonauthor4832ed24 authenticates the corrected137-line whole witness and
+all806 owning inputs. Assign fresh isolated copy18095bae; format the test,
+verify the two existing controls and genuine new positive, then require the
+intended original count failure in both profiles. Run selected-package strict
+all-target/all-feature lint and full owning formatting; bind all805 unchanged
+inputs. Scope140 applies only to this test, with no owning production amendment.
+
+Fresh registry workspace tests pass in both profiles, actual07586489/697935da,
+independent32f2411c:61 Cargo success summaries and444 reported cases each.
+These are source-bound .22 integration checks, not unique law/fixture counts;
+nested trybuild and inherited unused-Timer-patch warnings stay qualified.
+All345 metadata-variant inputs remain exact. Canonical selection is unchanged.
+
+The bounded outside-owner positive stops honestly: atomic15 controls pass in
+both profiles; parent debug startup passes, active fails its prior-settlement
+count (expected1, actual0) after the other cleanup/custody observations.
+Stopped receipt916570d4 preserves the runner, formatted345 inputs and log.
+Do not call this a complete positive or remove that oracle. Reconcile the exact
+offer/retention path against current source before selecting a correction.
+Later planned checks and inversions were not executed by this stopped runner.
+
+Core original-only actual8b45f4f4 compiles the intended receipt-count failure in
+both profiles, with both existing controls and the genuine complete-product
+positive passing. Formatting yields142 added test lines, production/public0;
+strict selected-package all-target/all-feature lint and full formatting pass.
+All805 other owning inputs are exact. Require nonauthor actual-result review;
+no repaired positive, creation/suffix witness or full conservation acceptance.
