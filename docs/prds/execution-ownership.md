@@ -3008,4 +3008,28 @@ identity witness. The legacy FIFO fixture also cannot certify the pure-fold
 DG-WORK gate. Proposal patch
 cd33bb326f34389c70691456ef4b901f06b61cec71b1ea7ffd0550e99c49fb40
 is +1/-6/net-5 cfg test lines, zero production/public types, in the same approved
-39-path source. Review and focused verification remain required before editing.
+39-path source. It is independently eligible only for that narrow classification
+witness, under review 86d40a4542c93388557cbaa15144fc5242ae9496ea883a2b9bde960278d28458.
+Driver command review f9bb4ebdce989f2e3d4eabe1ea059b344798b74cfb18b421f9e6609d7ac27086
+also accepts only the exact capture change, pending actual verification.
+
+The terminal successor passes its focused identity tests, intended projection
+inversion and restored positives in both profiles, full 438 tests/61 summaries
+in each profile, normal/hook strict lints and formatting. Receipt
+31982f70baae37e813bbe7e0bd3f5fb732875ba780b66336985162481eb4a779
+binds complete source manifest
+5517dc3de09ee325040bd445a5bb750f865b746883521929e13ddc41040d3c22.
+Its formatter adds one equivalent cfg line; actual terminal increment is
++22/-15/net7 test lines, zero production/public types. These results do not
+certify either subsequent correction.
+
+The exact two-path successor assignment is frozen in the existing isolated
+records under SHA-256
+0d6f1c0af9c915c055a639cecf10096aad98517daf5e0195caa4c9cab1772bfe.
+The designated writer first freezes the predecessor, then applies only the
+reviewed FIFO test and Driver command changes. Required results are focused
+FIFO positive/cause-inversion/restoration in both profiles, original/fixed
+Driver named-killer evidence, all Driver laws, source-bound strict/fmt and
+complete Nix checks. The Driver script is an additional already approved path:
+actual isolated changed paths become 40, not 39; all remain within the approved
+129-path manifest. Production Rust and public-type deltas remain zero.
