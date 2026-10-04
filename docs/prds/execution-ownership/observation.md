@@ -892,8 +892,8 @@ proof, not retained state declarations. Allocation identity must use strong
 pointer identity; derived Arc value equality would collapse equal IDs/origins.
 Constructor purity is a semantic obligation, not a compiler denial.
 
-Under the user’s recommendation authority, first compare explicit failed-Started
-cleanup: retain the actual returned Started/Authority, remove only its exact
+Historical failed-Started hypothesis (superseded by the receiver-lifetime
+review below): under the then-current recommendation authority, compare cleanup: retain the actual returned Started/Authority, remove only its exact
 committed member and release its unpolled shared wait/cancellation endpoints.
 Never reconstruct rejected Observe or report Stopped/Cancelled from that
 cleanup. The existing observation capability task should admit Started before
@@ -1058,3 +1058,24 @@ production lines across 13 paths, with exactly three observation-only public
 nominal types; this replaces the unformatted size forecast for measurement.
 This accepts bounded evidence. Runtime integration, real wrapper recovery,
 EV20, model/fuzz, minimization and the complete independent gate remain open.
+
+## Current synchronous receiver-lifetime decision
+
+The failed-Started rollback and extra returned-event storage proposals above
+were source hypotheses. They are not the selected standard-runtime repair.
+Frozen proof7b680acd5dcda150d63a197e433b9840dc5528e1d70f3816db06853fec459ae5
+and independent review81c8203f3e329cfcbe204c159cde6a511bc24e7812f8fcb28955652bb48eb733
+inspect all three concrete constructors, activation-error/prepared/active
+retirement branches, and exports. The exact interpreter is private. Its
+matching Communication Consumer remains owned through commit and effect
+offering, and interpreter retirement precedes mailbox draining. Closing user
+admission does not remove that Consumer. The private cfg advanced-host case
+can force synchronous closure, but is not a supported public composition.
+
+Select the smaller existing composition: omit proposed buffer52c3da0 and
+failed-Started rollback machinery. This does not discard the asynchronous
+failed-send law: EV20 still preserves the whole acquired terminal through
+real ControlClosed(E), task settlement, and ActorRetirement::Completed.control.
+Generic conversion panic still retains available task failure; values
+destroyed inside the panicking conversion cannot be promised back. This
+bounded lifetime decision does not accept the complete observation gate.

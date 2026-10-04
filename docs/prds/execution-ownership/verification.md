@@ -184,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +8014 / -97 / net 7917
+documentation: +8171 / -97 / net 8074
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -836,3 +836,68 @@ freezes all345 canonical50df inputs and adds only the independently reviewed
 the actual sealed family product, represented-ID clone fault and final custody
 oracle; complete callback provenance is explicitly excluded. Actual execution
 results follow separately, and no repair or joined family success is implied.
+
+### Reviewed observation and native-family execution results
+
+EV20 outcomes and both-profile continuous model positives receive independent
+review841ee7a34015c9ca71e61acb80a91bf4894ee4f6cbf3e58b0f9162b1315c0865.
+The four compiled event/projection omissions fail their intended finite
+oracles, and all four restored runs pass after joined cleanup. The earlier
+orchestration TypeError is excluded, not a semantic failure.
+
+Current continuous model inversions0e201754c55f3ed4d217fe5557aeac265e4f5b29ae0f84f90d30f8e8fd36b1d2
+contain eight compiled intended failures and eight restored passes across
+both profiles, with all806 primary inputs restored. Independent review
+3745dbf8b3d8c8c92d27a13a6a573d24905dd7a676f150348344815284f9cd8f
+authenticates these results and actual10,000-run continuous fuzz campaign
+a88c3eab714aded950c6f485f490de3be148467d1d7a8ef53fe7b0dd2e2a5790.
+The campaign uses a copied seed corpus; no crash artifact is produced.
+This is bounded execution, not arbitrary alphabet or sequence exhaustion.
+
+Affected full-owner native checks9b73950e05a6447b57eec823e71d4ab9f39c4ca9dac4b87bc41e322f0ad41fc0
+pass all ten checks:865 executable tests with zero skips and107 rustdoc
+tests. Root-pinned owner/fuzz strict and corresponding formatting pass;
+continuous-strict receiptd897b4f32449c67c33d928cb0e74af81d8fa0da45c31a2f1fbe5b79b1cd6e5f8
+retains the distinct46-diagnostic downstream strict failure. Six equivalent
+test-length expectations and one field-local complexity annotation address
+that failure without new runtime semantics. Updated source manifest
+2ed4be1bc45af3a90698385d2eebad1acabf0326999a27ff512f1fd64deabcde
+then passes15 focused tests in each profile, workspace all-target strict
+Clippy and formatting, receipt100e20786c06d1a5bc6559fcd33df1127653f5296b76a71d0b1ca11f983f3868.
+Independent81c8203f3e329cfcbe204c159cde6a511bc24e7812f8fcb28955652bb48eb733
+authenticates actual commands, equivalent successor, and unchanged other
+344 inputs. Earlier inversions retain their actual source-epoch binding.
+
+The stronger native-family original controllera7f43ec19404db80a9f16c20d87570d7eb0eae6a63a359c725a8e2e31afdf5df
+compiles and fails the final joint root/head-result custody oracle in both
+profiles, without warnings, after available prefix/callback observations
+and fixture cleanup. Original controllerc9201176e9b6d9c7ad64b72d338a06490240c6d199473fb138bd1dc3d24b9865
+and its independent76054474451a0dc266e8797ef69c8ae9da14ac480d164194f75e38097b2d6aa0
+remain preserved. Independent e9da06b76767db7ee090c219d22de2086ef48949d6ece98412e6673183b7c87a
+authenticates stronger native results and full-owner native checks.
+The logs prove joint custody failure; they do not identify which individual
+Weak is absent. Runtime destruction is not successful joined family shutdown.
+The native defect remains uncorrected; no complete observation/EXEC gate,
+canonical runtime integration, owning observation release or final PR is claimed.
+
+The paired external public/private consumers execute in both profiles against
+the current345/806-source epochs, receipt
+a8e1e8b4090d4dfb6ab298c876bc8ffbad30ae99b34b204134a7045cca298eba.
+Distinct package names force actual positive compilation; both negatives
+produce only E0603. Independent142f4eb7b1d434275d6999da6b39f385f40a3438402c649ad3a9eb5529e6e4a6
+and source supplementa37d57e703ffa3dd53398722d3b29f8be72ca2446d9e00ee5835c21afb5b8846
+authenticate source/metadata/locks and the identical selected patch graph.
+An earlier same-name/version fixture reused a fresh positive cache artifact
+for the negative candidate; excluded receipte3c4382216ce684a81dfb826717172517113847ef2ebca8627f9582a6cf985e0
+preserves that non-witness. It is not a successful privacy denial.
+
+The complete continuous owner source is now backed up remotely at
+95b3b4c4d9ff46b02a399553d6d5a595be16ab53 on research/exec-observation-ownership,
+receipt51d03f23ac1e45855045672d77893212c7db83f1504fae1f30b86d01d1f13770. All806 primary bytes
+match the tested b542 epoch. The actual commit changes two existing test
+paths (+742/-242/net500), including pinned formatting; earlier +486/-240
+was the pre-format proposal, not the final commit delta. The reviewed complete
+EDC-relative13-path recordf9fb07d0539945bbc0fb468f02a7891eddee3d572ff06054840065cc82af3d09
+remains production-source +710/-187/net523, tests +1752/-317/net1435,
+documentation +96/-12/net84, public nominal types +3/-0. No upstream
+observation PR/release or final gate acceptance is implied by this backup.

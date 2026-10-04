@@ -3476,3 +3476,74 @@ does not yet assert every activation ID and forced callback row; record that
 limit rather than claiming complete callback provenance. Run both profiles;
 compiler failures are distinct from the intended custody failure. Preserve
 original receipts before any equivalent test correction or owning repair.
+
+The original native controller compiles and fails its intended final joint
+root/head-result custody oracle in both actual profiles (combined receipt
+c9201176e9b6d9c7ad64b72d338a06490240c6d199473fb138bd1dc3d24b9865;
+independent76054474451a0dc266e8797ef69c8ae9da14ac480d164194f75e38097b2d6aa0).
+Before repeating it, apply the independently reviewed test-only observational
+successor1a338e95da137f8cce5db6cb9d812da4fc14f44e8f65890699e4929d7493e206,
+review681005ffb1983f028d82ed576afece2373d2dfc748ae4bad4ad5268339d7acb4:
+tests +62/-17/net45, production +0/-0/net0, public types +0/-0,
+no additional paths. The projector becomes pure total construction; the
+caller observes the original returned root before shutdown. Inspect every
+available callback collection and correlate the actual head activation
+identity with any forced fence failure. The last issued identity remains
+unavailable before its Clone panic; no guessed ID or getter is introduced.
+The original finite final joint-loss oracle remains; logs must not invent
+which individual Weak is absent. No native repair or joined success is claimed.
+
+## 55. Equivalent runtime strict-check correction
+
+Actual strict all-target checks find46 diagnostics in the isolated runtime
+(receiptb2f67c0e1f8dd394bc61a5d4ec5a3541914b26e7ffdfe2361ed51a93901c5e31).
+Owner workspace/fuzzer strict and all corresponding format checks pass.
+Preserve the complete nonpass. Before changing the sole already approved
+application-runtime path, select reviewed equivalent proposal
+73e7f8c2e1770d159c7bf1f25ff15c6919d288c67de08c3b98c6b86a07371a4f,
+independent14dc74a385828c019815d88389abec6d25f4ff1610b358f3ab23adf2a403cc29.
+Production source +4/-0/net4 is one field-local complexity annotation;
+executable semantics remain unchanged. Tests +102/-71/net31; public types
++0/-0, no new fields, variants or additional paths. This annotation increase
+is not production code reduction. No alias or forwarding wrapper is added.
+
+Reuse existing unconditional relationship Debug for ordinary equality
+assertions, lexical guard/future scopes, explicit unit discharge and truthful
+binding names. Six narrow test-length expectations keep each complete
+contested lifetime and cleanup together before its custody oracle; no broad
+lint suppression or semantic exception is introduced. Actual equality
+operands, whole facts, joins and order remain unchanged. Format only the
+assigned source, bind all345 post-format inputs, rerun15 focused tests in
+both profiles and complete strict all-target checks. Earlier source-bound
+inversions remain preserved and must receive equivalent-successor review.
+No synchronous event-storage hypothesis is selected by this lint correction.
+
+## 56. Public observation-interpreter boundary witness
+
+Before testing source proof7b680acd5dcda150d63a197e433b9840dc5528e1d70f3816db06853fec459ae5,
+assign an isolated external-consumer comparison against the current reviewed
+runtime archive. Production +0/-0/net0, public types +0/-0, no additional
+repository paths. The positive consumer uses the actual exported MailAddr;
+the paired negative imports private application_runtime. Both profiles must
+produce a successful positive and the intended E0603 privacy denial, with
+real resolver-produced locks and the same local Core/Actors and exact Timer
+patches. Bind actual source inputs and preserve compiler diagnostics. This
+is one privacy witness, not proof of the complete receiver-lifetime law;
+independent source review remains required. The proposed extra returned-event
+buffer remains unselected.
+
+## 57. Continuous observation remote backup checkpoint
+
+Select the recommended backup of the already reviewed and executed continuous
+model/fuzzer successor. Before copying the two existing test paths into the
+clean owning research branch at0f0d9384ff711f850d332d50dca7b42abcf26373,
+record74356251977849cfc25dd18ba3d1d394a1c92da53764d7229147fab4c499db1d
+binds every proposed byte and preserves the other804 primary inputs. Complete
+EDC-relative13-path measurementf9fb07d0539945bbc0fb468f02a7891eddee3d572ff06054840065cc82af3d09:
+production +710/-187/net523; tests +1752/-317/net1435; documentation
++96/-12/net84; public nominal types +3/-0; no new paths. The production
+source includes rustdoc/static fixtures, as the reviewed classifier specifies.
+This checkpoint adds tests only; it does not claim production reduction,
+canonical dependency selection, an owning PR or gate acceptance. Independent
+measurement review precedes the copy/commit/push. The two-owner ordinary-Rust
+minimization comparison remains separate and unselected.
