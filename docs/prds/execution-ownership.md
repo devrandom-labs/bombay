@@ -3033,3 +3033,39 @@ Driver named-killer evidence, all Driver laws, source-bound strict/fmt and
 complete Nix checks. The Driver script is an additional already approved path:
 actual isolated changed paths become 40, not 39; all remain within the approved
 129-path manifest. Production Rust and public-type deltas remain zero.
+
+The capture-only successor's Nix run still fails: trybuild subprocess output
+also splits the progress marker. Nine checks passed, eleven were canceled and
+the Driver runner failed; receipt
+a7f31f0f45639f08dacfa23882a6921a08adaeac2ef29849bedbb8736a3aaadc
+preserves the exact 40-path source and genuine named surface-test failure.
+Its standalone original Driver rerun happened to pass, which confirms output
+ordering is nondeterministic; it does not invalidate either genuine Nix failure.
+
+The narrowly reviewed final parser instead requires the exact sole named test
+in libtest's final failure list, zero passes, one failure, zero ignored/measured
+tests and no later test-result summary. Nonzero status and the production
+compile-failure veto remain. It uses the runner's existing Perl dependency;
+no semantic test, manifest or owning Driver changes. Exact patch
+be3e1122d96993be2143e26a8d735724c0f0e73f84de7ed33d448e98618c7524
+adds +3/-1/net2 verification-script lines in the same approved path.
+Independent review cd4bb016febc1a7cb861b00fabd32f81b2882c215f1356a6c051715c4145a827
+authenticates both genuine captured outputs and fourteen pinned-shell parser
+replays: two accepted, twelve false/missing/wrong results rejected. These are
+parser checks, not Rust semantic inversion evidence or a stdout-forgery theorem.
+The designated writer's final-footer assignment is frozen under SHA-256
+f48d71ddd1e75a06690a726d0bc45568de633808bf4ddf87ed234c0b8ff2ef32
+in the existing isolated records. It requires all actual Driver laws in debug and optimized commands,
+restoration of the exact retained script after its temporary release-command
+overlay, then source-bound strict/fmt and complete Nix verification. All prior
+nonpasses remain preserved; no full EXEC gate or canonical retention follows.
+
+Section 43's owning experiment is now implemented, verified and independently
+accepted for its bounded upstream delivery. The exact final sources, original
+interface denial, compiled inversions, 859-test run, ten owning Nix checks,
+measurement and nonauthor review are recorded in
+[external-work.md](execution-ownership/external-work.md).
+[Behavior PR #82](https://github.com/devrandom-labs/bombay-behavior/pull/82)
+is open at 1a1c21dfbbaecd3f869246354b6be7d1c090974c. Upstream review/CI,
+merge/publication, selected dependency verification and full EXEC gates remain
+required. The earlier compiler and strict-lint nonpasses remain preserved.

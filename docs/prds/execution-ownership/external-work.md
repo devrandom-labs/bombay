@@ -428,3 +428,59 @@ EXEC section 41 records explicit user approval of sections 33–34 together:
 public types. Scope permission resolves the budget blocker; it does not select
 a model, accept this gate or waive exact current-owner verification, ordinary
 Rust comparisons, original-defect/inversion evidence or independent review.
+
+## Owning consuming recovery experiment
+
+EXEC section 43 assigns the exact four-file selected git5ca experiment at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-fifo-source-recovery-pqnw9sy8.
+It adds one consuming method to the existing opaque diagnostic, returning its
+original shared role, worker attempt, whole stopped fact, available source and
+source-rejection reason. Every other diagnostic returns unchanged as `Self`.
+No new semantic owner, recovery policy, public type or role-cloning bound is
+added. This is an Actors API addition; Bombay interprets the existing work.
+
+The first original-source runs also missed the existing `Activate` import;
+they are preserved but excluded from isolated interface evidence. Independent
+review 88bd06b03e4d8d9b8cb9442d4d017f415b0aafcac0bb2a7f3e1b35ab6a34ecd3
+qualified that test-only import. The repeated original-source commands then
+fail solely for the absent consuming method in both profiles. After the exact
+reviewed production patch, both focused consumers pass in each profile.
+Four deliberate changes compile and fail their intended tests in both profiles:
+regenerated worker authority, changed stop time, cloned returned allocation and
+erased nonmatching reason. The allocation change is a caller-composition
+inversion, not an original library defect. A separate role-`Clone` constraint
+fails statically. All five inversions restore to passing tests in both profiles.
+
+Actual source manifest
+728f4f44dbc45b08e476652b79a9fa1d1819c53af20c7b331f6c73da3a82a0f0
+binds all 806 inputs: four changed, 802 unchanged, no lock/configuration change.
+Measurement 9e1545245301aeededf426ef099e546e3c4a40eee5fecea4b3cf0069b11e6c8d
+records production +39/-3/net36, tests +444/-7/net437, public types +0/-0 and
+one new public method. Formatting passes. Strict Clippy then rejects two new
+unreachable `let-else` branches for the existing `Infallible` diagnostic route;
+its exit-101 log remains a nonpass and nextest did not run. The original nonpass remains preserved. Independent review
+cd71b26553962601920e08b4476f2a24b4345df22e45effa7eec5cc60861e1dd
+accepted the two-test correction: exhaustively match the existing empty route.
+It adds no production, bound, lint suppression or path.
+
+The final 806-input source manifest is
+c0c3a6ad7fb6fd3efbb6647fb2947711dc0f4b4b3efd5d7e6ca5dc5adfdb1feb;
+final four-path patch
+d0ec1263b7526997ca3b8ac4ec4a7145a134fb250434a18142903ade833dfbe3.
+Actual production is +39/-3/net36, tests +446/-7/net439, public types +0/-0;
+one public consuming method is added. All four focused profile commands,
+formatting and strict all-target Actors Clippy pass. Nextest passes 859 tests,
+zero skipped. All ten owning Nix checks pass; command receipt
+9588819ef03465496a0cc2a3d11c4f5c5a0eba3b78df1467dec0c983ec030c85
+records the pinned Bombay shell and the owning derivations' Rust 1.95.
+No toolchain, lock or configuration changed.
+
+Final receipt 379de0d01b3c4fbfc52d804b25244858bdbc2cf4fb45dc335a618581a2c0649e
+binds 87 artifacts and all 806 sources. Independent nonauthor review
+4937b3f4ab6f26fa6bf7368ab4356d4b959ce25d8f5722e2399cfc6a3614c443
+accepts bounded owning-contract retention and upstream delivery. The isolated
+Git worktree matches every final source; 802 original inputs remain unchanged.
+[Behavior PR #82](https://github.com/devrandom-labs/bombay-behavior/pull/82)
+targets main at 1a1c21dfbbaecd3f869246354b6be7d1c090974c. GitHub review,
+complete CI, merge, release and Bombay's locked selection remain pending.
+This is not full EV-24/DG-WORK acceptance or canonical Bombay retention.
