@@ -492,3 +492,22 @@ binds that head. The reviewed PR merged on 2026-10-04 at
 d62ae25b6e83bb9bc0b7e2cbae59773a884053e2471ab71a11edc3f6450c03bf
 records the actual API responses. Release and Bombay's locked selection remain
 pending. This is not full EV-24/DG-WORK acceptance or canonical Bombay retention.
+
+The owning release [Behavior PR #83](https://github.com/devrandom-labs/bombay-behavior/pull/83)
+merged after independent review and all fourteen checks passed at exact head
+44000b862127293dcc8eb01fc448337fd81c4881. Merge commit:
+edc2d466a50df7cd396f891e3da31fc9e3747bbd. Candidate Core/Actors versions
+are 0.21.2; Macros remains 0.13.1. Original generated-head preflight fails
+on three stale isolated workspace locks. Only their six local version entries
+changed; third-party selections and both README installation requirements are
+unchanged. Exact-head bundled preflight, packaged consumer and all ten owning
+Nix checks pass, with 859 nextest passes and zero skipped. Local receipt
+6ffd7211c0d272b4fd1c6030a4fc9f1828e8e6f903c9afaad347f2d67f3c59b3
+binds all 806 sources; actual filtered Nix-source receipt
+6e897f2727497c98efe75d3285621726f73094d80e738d736725530039441bbc
+binds its 397 files. Independent review
+1455b10f414eed733c7077a797ff2812691ca057cbb09f1aa307882944fb7994
+authenticates source, locks, versions and results.
+[Release-head CI](https://github.com/devrandom-labs/bombay-behavior/actions/runs/37167325568)
+is green. Verified-main CI, actual publication, registry/tags and fresh Bombay
+selection remain pending. This release merge does not close full DG-WORK.
