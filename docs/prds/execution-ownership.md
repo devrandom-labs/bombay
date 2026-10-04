@@ -3208,3 +3208,56 @@ accepts the current-name correction and authenticates the prior nonauthor
 actor-script review without self-approving that authored script. Explicit user
 checkpoint approval precedes edits. Until that reconciliation, dependent new
 sending examples remain blocked; independent transport research continues.
+
+## 48. Reviewed isolated observation experiment assignment
+
+DG-OBSERVATION remains open. The coordinator and independent nonauthor accept
+only bounded experiment eligibility for the complete corrected proposal:
+receipt 553ed6ddbf6541e10cd724b984aaa6bce8512ee6734424cd2bf6eb48eb6fd59e,
+patch d9a3dff81907f454304abe47a6aa5dbd67cb40f71a630bdf69ff84004e3a57a3,
+review 757feaa15908b4b1bef3eeb9dfdf4dc0925242b2cdc937729d5c12db42dd527b.
+Both cleanup-before-oracle defects, the unsupported Started rollback claim and
+the premature H18 pass label are corrected. No repaired execution is claimed.
+
+The smallest freshly reverified original law is cancellation NotObserved
+followed by exact Stopped: the selected Monitor suppresses its required terminal
+reaction. The unchanged independent test compiles and fails that runtime oracle
+in both profiles against actual registry 0.21.2; strict lint and formatting pass.
+Receipt 9b444189ac3f0cb0f22d9d94fd3ab867393871069efc5868e2778353a5743344
+and nonauthor review eac9961abbd56f3fc9f0c17ad4727020ef09bc777c77d61b40577f63b7884f35
+bind this original proof, not a repaired positive. Fresh original runtime races
+remain separately required.
+
+Root is the sole writer/executor of the owning isolated archive, selected EDC
+with 806 authenticated inputs (receipt a889e19b2d21f856a51d22cfbd8c3e114b8b753f1683d514c43dbd7b28f8c182).
+Only the proposal's nine owning Rust paths and four owning documentation paths
+may change: established protocol and exports, termination Monitor, shutdown
+consuming recovery, established-capability/request-settlement tests, exact
+termination model and catalogue fuzz target, plus their four current contract
+documents. Expected owning production delta before formatting is +313 net lines;
+the complete downstream-inclusive forecast is +602/-259/net343 production,
++1626/-376/net1250 tests and three observation-only public nominal types.
+All 31 forecast delivery paths fit the existing approved 129-path allowance.
+No Core/macro change, new runtime service or fourth public owner is permitted.
+
+Reuse the existing Actions lanes, Monitor and shutdown wrappers, static
+interpreter ports, Observe primitives and actor-owned capability tasks. Sequence
+owns external request correlation; Authority owns one cancellation attempt;
+Relationship owns its accepted read-only identity. The complete assignment and
+law-to-source proposal are frozen beside the receipt. Root runs formatting,
+focused owner tests in both profiles, exact static denials and runtime/pure
+omission inversions through Bombay's pinned Nix shell before broadening. Every
+inversion must reach cleanup and fail the intended oracle; restoration must
+pass. Resolver-produced patch locks, all consumers, model/fuzz, complete owner
+and downstream checks and nonauthor outcome review remain required. A compiler
+contract mismatch stops implementation instead of originating new machinery.
+
+The separately reviewed 38-path current-execution prerequisite overlay is
+79b776705c63630a8b1fa38ef03dca534df6c9a17a559d11a0deba7dfbfe9f52,
+review aa4bdd483af3e6332176446d5c3da779929161596209047cb8ad13de21746c61.
+It preserves current manifests/locks/guidance and accepted semantic oracles;
+ownership-signature migrations are explicit, not byte-identical whole modules.
+This transfer approval does not accept the reviewer's authored execution gate.
+Canonical sources and both physical worktrees remain preserved. The section-47
+guidance/runner checkpoint still blocks dependent new sending examples. EV20's
+advanced-host closure boundary and all full EXEC gates remain open.

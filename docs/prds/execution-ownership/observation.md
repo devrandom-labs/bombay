@@ -1003,3 +1003,18 @@ The physical Behavior checkout and canonical Bombay sources remain preserved.
 Fresh source-owned downstream overlay and real resolver-produced local-patch
 locks must precede execution. Historical receipts retain their original source
 epochs; full DG-OBSERVATION and EXEC acceptance remain open.
+
+The final text-only successor qualifies H18 and imports `core::mem` at module
+scope: receipt 553ed6ddbf6541e10cd724b984aaa6bce8512ee6734424cd2bf6eb48eb6fd59e,
+review 757feaa15908b4b1bef3eeb9dfdf4dc0925242b2cdc937729d5c12db42dd527b.
+Its production forecast is net343; other surface allowances are unchanged.
+EXEC section 48 records the bounded isolated execution assignment. Formatting
+changed only seven proposed Rust texts; the 806-file formatted input manifest
+is 024db42321773db43d95c24f58198711f372fb1644b5f79c72e121daf04d6c08.
+The actual owning library suite passes 170 tests. The next established-capability
+test compilation fails E0277 at its cancellation aggregate: its outer request
+lane lacks the corresponding real reply layer. Execution stopped at this veto;
+no repaired suite or gate is accepted. Log f8ebe77bfa10bafc3e34866f9baf54a1edebe24c3ee87995160426cfb2cd9d7a
+and nonauthor source diagnosis 9797a887558b2ce63addbe9083a6694b90e7efa89d0f40d8afc076ded314ef90
+bind the failure. The existing ordinary-Rust comparison already expresses both
+real acknowledgement lanes; its exact fixture correction still needs review.
