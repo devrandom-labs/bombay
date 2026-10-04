@@ -184,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +8932 / -97 / net 8835
+documentation: +9046 / -97 / net 8949
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -998,3 +998,12 @@ records fifteen existing controls passing in each profile and the first
 original parent run: active-turn ownership loss reaches its intended final
 oracle; initialization fails an earlier incorrect mailbox-barrier assumption
 and is excluded as defect proof. No optimized original or repaired pass follows.
+
+
+[Sections69–70](../execution-ownership.md#69-registry-verification-and-exact-metadata-follow-up)
+record fresh registry focused checks and exact declaration-only metadata updates
+with passing manifest/law-runner/strict/format outcomes. The corrected original
+parent witnesses retain their intended failures in both profiles with strict
+lint and formatting passing. A newly source-confirmed earlier-receipt loss
+keeps full conservation acceptance open; outside-owner cleanup alone is
+insufficient. Historical failures and EDC outcomes remain separately preserved.

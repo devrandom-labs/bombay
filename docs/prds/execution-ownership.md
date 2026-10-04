@@ -4095,3 +4095,107 @@ the failed source, harness and all rows. The original harness also incorrectly
 checks panic messages only in stdout; its successor must inspect both channels.
 A later nonexistent-resume launch exits2 without running Rust verification and
 provides no semantic evidence.
+
+
+Before the corrected cfg edit, choose capacity proposale0900fce: the actual
+formatted original source gains +26/-7/net19 test lines in the same approved
+file; production/public/nominal types and enum alternatives0/0. The existing
+Occupied notice gains its explicit u8 value. Config::new(2) admits both original
+11/13 notices before parent spawn; child verification precedes all three FIFO
+receives. Complete child custody and unread-cancellation assertions remain.
+Require independent eligibility, both-profile intended original failures and
+source-bound positive controls; retain the invalid predecessor.
+
+
+Documentation checkpoint: two already approved observation/backlog paths need
+current publication wording. Replace pending-publication claims with section67's
+verified0.22.0 delivery; canonical selection remains pending. Condense the
+backlog's historical chronology into current prerequisites and link the PRD's
+authoritative evidence. Documentation only; production/tests/public types0/0,
+no additional cumulative path. Independent review remains required.
+
+
+Actual corrected source d9098483 reaches both intended final ownership failures
+in each profile, receipt379a6452; independent f26948fe authenticates all345
+inputs and finite cleanup. Positives fifteen each and formatting pass. Strict
+lint101 reports nine cfg style diagnostics, separately preserved. Before any
+style edit, choose f0abf877: +10/-7/net3 unformatted tests in the same file,
+production/public/path delta0. Three local expectations retain native products
+and one complete cleanup controller; explicit rejected-value drops, concrete
+Creations default and full empty-lane assertions introduce no new model.
+Require formatting/source binding, both-profile original failures and strict
+checks; this is not a repaired positive or full gate.
+
+The proposed borrowing catch preserves outside actor/child/task owners, but
+selected Actions::interpret also holds accepted creation receipts while awaiting
+sends; SendLayer holds accepted inner receipts while converting the outer report.
+A broad caught poll destroys those earlier receipts in reusable futures, outside
+the user callback. Bindings, external report and child terminal preserve different
+facts, not these receipts. This is an explicit conservation blocker requiring
+a narrower fault/owning-contract comparison; the outside-owner experiment cannot
+accept full DG-TASK or conceal it as user-destroyed information.
+
+
+## 69. Registry verification and exact metadata follow-up
+
+Actual isolated registry receiptc949b1a4 passes existing observation15, Local25,
+Engine terminal14 and root-join1 tests in each profile, plus strict two-crate
+all-target/all-feature Clippy and formatting. All345 inputs remain exact.
+Independent5c0b2115 authenticates these rows. The original Local count forecast31
+was incorrect; Cargo's25 actual names match source exactly. Preserve the initial
+script rejection and correctioncb020fe2/review26a0e764; no semantic failure.
+
+Before metadata edits, choose that review's separate three-path proposal: Driver
+law manifest +27/-27, template manifest +2/-2, existing law_manifest test +4/-4;
+all net0, production/public types0/0, no additional approved path. Change only
+Core/Actors version declarations to0.22.0 and owning revision to published1fc8fb55.
+Macro0.13.1 and its distinct source remain unchanged. Future selected gate
+declarations do not relabel historical EDC receipts, logs, mutants or toolchain
+bytes. Require independent source/inventory eligibility, fresh manifest checks
+and actual law-runner evidence before claiming any selected0.22 gate. Apply only
+to a fresh isolated copy; canonical dependencies and manifests remain0.21.2.
+
+The first parent cfg style-successor9b0b9592 preserves both intended original
+failures in both profiles and fifteen positive controls each, with formatting0.
+Strict101 now identifies two remaining rejected-value style errors; no strict
+pass is claimed. Before further cfg edits, choose exact proposala1cf0c30:
++6/-8/net-2 tests, zero production/public/new paths. Use the existing origin's
+Debug in the unreachable setup error and exhaustively inspect the recovered
+Inspect command; add no type, derive or bound. Preserve all predecessor rows
+and require both-profile original laws and actual strict/fmt passes.
+
+
+Actual final original source372dc7de preserves both intended ownership failures
+in both profiles, positives fifteen each, strict workspace Clippy0 and formatting0,
+receipt8d3a2db6. Independent3f3ea9b5 authenticates the complete source and rows.
+An excluded missing-script launch exited2 before verification; its separate
+receipt records the corrected invocation. The style predecessor's two remaining
+vetoes and the initial nine diagnostics remain preserved, not rewritten as passes.
+
+Metadata-only assignment11aa86f2 applies the reviewed three-path change in a
+fresh isolated345-input copy. Actual receipt6e7885e7 passes both-profile manifest
+tests, the existing Driver and actor-execution law runners, strict all-workspace
+all-target/all-feature Clippy and formatting. Both generated law receipts name
+selected1fc8fb55; all345 assigned inputs remain unchanged after verification.
+The runners execute their existing debug command plan, not newly optimized
+mutations. Historical EDC outcomes remain exact. Independent actual outcome
+review and later full selected integration are still required.
+
+
+## 70. Prior interpretation receipt custody finding
+
+Source/model4216c4cc and nonauthor3f3ea9b5 confirm three reusable owning scopes:
+Actions holds completed creations across sends; SendLayer holds accepted inner
+results across outer interpretation; interpret_items holds accepted vector prefix
+and untouched suffix across the next item. A later native conversion unwind
+destroys these outside the application callback. An external borrowed poll catch
+therefore proves outside-owner cleanup only. Current ItemSettlement cannot
+truthfully express native interruption of a consumed item; invented rejection,
+Accepted, MissingCapability, CorruptTraversal or reconstructed inputs are forbidden.
+
+The proposed ordinary-Rust original-only SendLayer snippet is not an executable
+assignment. Require complete selected owning test text/imports, genuine receipt
+and successful control observations, original-law versus proposed strengthening
+distinction, fixture/field/variant measurements and independent eligibility before
+any edit. Full creation-prefix and untouched-suffix proofs remain separate
+requirements. No full conservation gate or owning production API is selected.

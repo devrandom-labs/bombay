@@ -1121,9 +1121,10 @@ reviewed delivery remain required; canonical dependencies have not selected this
 merged58895153640bb8bdc037c480dcec48a2ba57afa7 after independent exact-head
 approval5405175477 and all14 latest checks passed. [EXEC section63](../execution-ownership.md#63-reviewed-observation-prerequisite-delivery-2026-10-04)
 owns the source, review, CI, rule and merge receipts. Earlier backup statements
-above describe their historical checkpoints. Publication and fresh selected
-source verification are pending; canonical dependencies remain0.21.2/EDC.
-Current typed polling/task comparison and complete runtime gate remain open.
+above describe their historical checkpoints. At that checkpoint, publication and selected-source verification were pending.
+Section67 records subsequently published and authenticated0.22.0 sources.
+Canonical dependencies remain0.21.2/EDC; integrated ownership and the complete
+runtime gate remain open.
 
 
 ## Current scheduling selection for integration
@@ -1151,4 +1152,4 @@ This does not assert ordinary Rust cannot express one. Keep the existing ordered
 peer/child source queue and the exact relationship task's distinct responsibilities.
 No new wrapper, trait, scheduler, buffer or runtime policy is selected. Allocation
 and throughput savings are not inferred from source-level task counts. Fresh
-published-source verification, integrated ownership and full gate signatures remain.
+compiled registry integration, canonical selection and full gate signatures remain.
