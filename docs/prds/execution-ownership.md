@@ -2928,6 +2928,16 @@ Current combined EXEC Nix verification has resource priority; this experiment's
 Cargo work waits until it finishes. No Rust result or production retention is
 claimed by this assignment.
 
+The first original-source runs failed with both the missing recovery method
+and a missing import of the already implemented `Activate` trait. Their exit
+101 logs are preserved, but are not isolated interface-gap evidence. The
+test-only import proposal at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-fifo-activate-import-preedit-5qoth8zc
+is +1/-1/net0 test lines, zero production/public types, in an approved path.
+Independent review must qualify it before repeating the original-source
+checks. The corrected controller rejects every missing method except
+`into_source_rejection`; production remains unchanged until that proof passes.
+
 ## 44. Current execution evidence and terminal-test correction
 
 The actual section-40 isolated source is frozen in
@@ -2948,7 +2958,20 @@ semantic result. Preserve that exit-1 log and receipt unchanged. Removing only
 the verified idle 9.4-GB derived Cargo cache recovered space; source/log/corpus
 evidence stayed outside it. The recovery receipt is
 65fda6598c05d7bf4e62b6942190676497b3e6d7ff6eeb2ef0e297e87565bfe1.
-One Nix-only rerun uses a distinct log and the same source; its result is pending.
+The Nix-only rerun completed coverage, then exited 1 in the Driver law-evidence
+runner. The duplicate-initialization mutation compiled and the exact named
+test rejected two initializations instead of one. `--nocapture` interleaved
+panic output between its test-name prefix and `FAILED`; the runner wrongly
+classified this as failure outside the named test. Log SHA-256
+3c4cce088b666e633cc21f4d0ceeccc7487b770b3ffb0e767e8078dc1f5b9c51
+remains a nonpass; canceled later checks are not passes. The one-line command
+proposal at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-driver-evidence-capture-preedit-p448euso
+removes only `--nocapture` from the mutation invocation. Its patch
+411b6bdf9c6136c1401ae61ff7e483f0fe727c0509701aea126d3befc8b9228c
+preserves the exact named test, compile-failure veto, nonzero status and
+named-`FAILED` checks. It needs independent review and original/fixed execution;
+no semantic assertion or manifest change is proposed.
 
 Independent review beb184d9fabf339e6722334d0aae1f3cc35914abb627c2e9866d4faf6bc9cd79
 authenticated all 188 artifacts, actual sources, selected contracts and result
@@ -2974,3 +2997,15 @@ runs focused debug/release and relevant projection inversion/restores, then
 required broad/source-bound checks. The predecessor Nix result cannot certify
 this successor. All remaining native, projection, observation, application and
 full decision gates stay open.
+
+A further residue scan found one new FIFO test payload inspection, also
+ineligible under the opaque-only experiment. The proposed receiving-side
+correction removes the inspection and retains the original opaque task error
+until explicit discharge. Its independent lifecycle cause, preparation count
+and full available-result assertions remain. It proves classification and
+cleanup, not producer task identity; the terminal tests provide the separate
+identity witness. The legacy FIFO fixture also cannot certify the pure-fold
+DG-WORK gate. Proposal patch
+cd33bb326f34389c70691456ef4b901f06b61cec71b1ea7ffd0550e99c49fb40
+is +1/-6/net-5 cfg test lines, zero production/public types, in the same approved
+39-path source. Review and focused verification remain required before editing.
