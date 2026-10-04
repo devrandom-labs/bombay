@@ -5114,3 +5114,128 @@ Actual native family focused-stagea1029c6c authenticates all345 formatted
 inputs and the one complete two-family test passing in both profiles. Full
 workspace, combined strict and final formatting are still running/unexecuted
 at this checkpoint; no full native or EXEC acceptance follows.
+
+## 87. Nominal Entity-role diagnostic checkpoint
+
+The four-document evidence checkpoint passed independent reviewc266af5c and
+was committed/pushed as a693cc1 on exec-prd-backlog. It retains no new semantic
+source and is not the required final PR, CI or delivery.
+
+Full native debug successor logb6d85a3f passes the complete two-family control,
+then entity_authoring fails only its role-exchange compiler snapshot. Actual
+E0308 still denies exchanging Accounts and Profiles; the owning source location
+and gutter are126, while the expectation says124. No other diagnostic differs.
+Before edits select whole rootTEXTc27d2320 for nonauthor review under section52.
+Scope0fd12bdb expands152→153 for the one existing expected-error file
+bombay/crates/bombay/tests/compile/fail/entity_application_role_exchange.stderr.
+Expected tests +2/-2/net0; production/types/fields/bounds0; conditional public
+allowance5 stays unchanged. Preserve the full actual denial rather than bless
+unrelated errors. Require all three authoring static denials in both profiles,
+complete workspace rerun and combined strict/fmt. The original broad result
+remains nonpassing; optimized broad verification has not run.
+
+Canonical pre-edit0bf206a0:69 tracked/zero untracked paths, production
++167/-34/net133, tests +3295/-557/net2738, public nominal0/0. Detailed complete
+measurement and source-bound expected-error eligibility remain separate from
+full design acceptance. EXEC remains active.
+
+Nonauthor source reviewfec48a41 authenticates all345 inputs, the exact emitted
+diagnostic and the unchanged fixture at126. It selects only the bounded static
+snapshot correction; actual verification and full acceptance remain required.
+
+Actual expected-error successor passes all three static denials in both profiles,
+then full debug log02975964 passes later Entity directory/error suites and
+eight of nine family tests. The final move-only admission controller supplies
+entity9 but incorrectly expects entity41 at shutdown; this is a test oracle
+defect, not evidence of a production identity defect. Before edits select full
+rootTEXT38c8a8ef with nonauthor review7df356e2 under section52. Existing
+entity_family.rs lies in153. Tests +4/-3/net1 including final newline;
+production/types/fields/bounds/paths0. Reuse the actual supplied Copy EntityId
+for admission and the one-row shutdown observation; preserve the rejected
+command's exact allocation/value and drop0→explicit discharge→drop1 checks.
+The unexecuted Clone spelling is excluded by the actual Copy owner. Require
+all nine family controls in both profiles, full workspace rerun and strict/fmt.
+Canonical pre-editadf873f3:69 tracked/zero untracked paths, production net133,
+tests net2738, public nominal0/0. Full EXEC acceptance remains open.
+
+## 88. Complete receiving comparison checkpoint
+
+The no-fail-fast census0ceb2bfd completes debug/release, combined strict and
+format checks on all345 exact native inputs. Both test commands fail three
+targets: entity_public_surface's private-representation diagnostic, run_with's
+startup-refusal oracle, and terminal_projection's two diagnostics. Strict fails
+four test-only empty-lane assertion spellings; format passes. These are failures,
+not full verification acceptance. The final family-key controller passes all
+nine controls in both profiles before that census.
+
+Before isolated comparison edits choose whole task TEXT3af9887a with nonauthor
+source review195571d1 under section52. Existing application_runtime.rs lies
+inside153; bind its exact f5ade9a0 baseline and preserve the current other344
+inputs. Expected tests +274/-0/net274, seven private fixture types/four cases;
+production/public types/fields/bounds/new paths0. The original public path
+loses already completed work beside a consuming terminal conversion panic;
+the family path obtains real sealed-family shutdown and then discards it beside
+root refusal. Compare ordinary products over those same actual owners. Neither
+test invents actor task failure or an active family incarnation. Require both
+original runtime failures, both preservation controls, two finite allocation
+inversions, exact restores, strict/fmt in both profiles. No receiving API or
+semantic gate is accepted by this bounded test stage.
+
+Canonical pre-editd1e4d3e2:69 tracked/zero untracked paths, production
++167/-34/net133, tests +3295/-557/net2738, public nominal0/0. Keep current native
+source and candidate results separate from retained canonical source and delivery.
+
+## 89. Complete native verification reconciliation checkpoint
+
+Before edits choose observation TEXT570a1a9c with nonauthor root reviewda9a8860
+under section52. Both actual census profiles emit exactly the three selected
+complete diagnostic blocks. Preserve the denied private imports, duplicate
+projection and wrong role; retain E0432/E0603/E0119/E0277. Change only those
+expected diagnostics and four equivalent zero-length test predicates. Expected
+tests +21/-26/net-5 across four existing files; production/public types0.
+No broader test blessing, visibility change, extra bound or semantic policy.
+
+Delegated scopee229ce1f expands153→155 for these existing files:
+crates/bombay/tests/compile/fail/terminal_projection_duplicate_pair.stderr and
+crates/bombay/tests/compile/fail/terminal_projection_wrong_role.stderr. The
+lifecycle diagnostic and entity_application.rs already lie inside153. The
+conditional public allowance stays5. Require both-profile public-surface,
+projection and real two-family controls, complete workspace rerun and strict/fmt.
+This does not correct or accept run_with's distinct startup-refusal oracle.
+
+Canonical pre-edite06e9a08:69 tracked/zero untracked paths, production
++167/-34/net133, tests +3295/-557/net2738, public nominal0/0. Actual census
+NONPASS remains recorded; all outstanding semantic gates and delivery remain open.
+
+Before the distinct startup-oracle edit select root TEXTc0d3a9ef with nonauthor
+review58c571c7 under section52. Existing run_with.rs lies inside155. Tests
++26/-4/net22 before format; production/types/bounds/paths0. DirectRoot's current
+startup_error preserves the full refusal through Unpublished. Match the whole
+InitializationRejected retirement, original error47 and surviving unit behavior,
+actual root role, empty control/user/descendant/capability lanes, unit child
+failure product and absent unread cancellation. Keep the original application
+work and its uninvoked-count0 oracle. The failed old predicate does not identify
+the returned variant. Require all15 owning controls in both profiles and full
+workspace/strict/fmt; canonical pre-edit79638e73 retains69 paths, production
+net133, tests net2738, public nominal0/0. No production or gate approval follows.
+
+## 90. Grouped preparation allocation checkpoint
+
+Before edits select root TEXT650b0655 with nonauthor reviewf7e9f96a and exact
+finite mutationd954e456 authenticated by ee12ac43 under section52. Existing
+worker_preparation.rs lies inside155. Expected tests +21/-25/net-4 before format;
+production/public types/fields/bounds/paths0. Remove the tautological pointer
+comparison of an upgraded Weak with itself. After the actual task joins,
+capture original allocation contents/counts and genuine source/current-role
+pointers; explicitly release the cause and full pending preparation before all
+final assertions. The sole pending owner must retain the original prepared
+worker, source and role prefix/current/tail. Replacing the first prepared worker
+with fresh equal bytes must fail the final original-count vector after cleanup.
+
+Keep the original grouped-panic law and all pure producer controls unchanged.
+Require original/ordinary controls, finite substitution and exact restoration
+in both profiles, owning cfg-test strict and formatting. This remains a real
+Behavior Actors pure producer with test commitment endpoints, not live actor
+installation or full gate acceptance. Complete canonical measurements retain
+69 tracked/zero untracked paths, production +167/-34/net133, tests
++3295/-557/net2738 and public nominal0/0.

@@ -201,12 +201,35 @@ controller in both profiles with all345 inputs exact; full workspace and
 combined strict/final format remain pending at that checkpoint.
 These isolated outcomes do not replace canonical CI or full EXEC acceptance.
 
+The complete native census0ceb2bfd then ran both profiles with no-fail-fast:
+each returned101 with exactly three failed targets and451 Cargo-reported passes.
+The source-bound reconciliation in EXEC sections87–89 corrects only existing
+test oracles and expected errors; original failures remain recorded. Successor
+ea6ef627 runs public-surface2, terminal-projection3, two-family1 and run_with15
+controls in each profile, then complete workspace tests in each profile,
+all-target/all-feature strict lint and formatting, all exit0. The broad logs
+report454 passes/61 Cargo summaries per profile, zero failures/ignored; nested
+trybuild summaries are not additional semantic-law counts. All345 inputs remain
+exact,340 unchanged from the census foundation. Authenticationee12ac43 binds
+the logs and prior nonauthor source reviews. Canonical dependencies/source are
+unchanged; this is isolated native verification, not remote CI or EXEC completion.
+
+Actual completed receiving comparison1638aca4 has four original runtime
+failures, four ordinary controls, four allocation-substitution failures and four
+restores across both profiles. Each selector executes exactly one test after
+the actual root/family owners join. Authentication894dd36f binds all345 restored
+inputs,344 unchanged, and the original0vs1 oracles. The Python mutation-selector
+stop occurred before any family source mutation or Cargo invocation; it is
+orchestration evidence, not a semantic failure. Strict covers only the library
+with all features; cfg tests still need owning lint execution. Formatting passes.
+No public receiving repair or live-family/cleanup failure gate follows.
+
 <!-- exec-research-counts -->
 
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +10222 / -97 / net 10125
+documentation: +10371 / -97 / net 10274
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
