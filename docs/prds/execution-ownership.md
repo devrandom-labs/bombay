@@ -3071,3 +3071,58 @@ merged after independent review and all fourteen GitHub checks passed at
 52c3130d39117ccb772a72e2898b658b3a7815c8. Publication, selected dependency
 verification and full EXEC gates remain required. The earlier compiler and
 strict-lint nonpasses remain preserved.
+
+Owning release checkpoint: [Behavior PR #83](https://github.com/devrandom-labs/bombay-behavior/pull/83)
+proposes Core/Actors 0.21.2 at 7358adf32c2760356415fb69b7a004294b29c337.
+The compatible added method is named in the Actors changelog; Macros remains
+0.13.1. The bundled release preflight, executed through Bombay's pinned shell,
+fails because all three isolated workspace locks still name Core/Actors 0.21.1.
+Its exact nonpass log is 2b42b33a25b6e662516b31a7c12ae0563db1b72e85da10dbcf37507d32e48a58.
+The concrete correction updates only these three already approved lock paths
+with pinned offline Cargo metadata, retaining their dependency selections.
+Expected production Rust/public types: zero; expected lock lines: +6/-6.
+After correction, repeat the complete bundled preflight and owning Nix checks,
+obtain independent exact-head review and require all remote checks before merge.
+The release workflow must then publish from verified main; generated versions
+and a merged release PR alone do not establish publication or Bombay selection.
+
+## 45. Actor verification-script scope checkpoint
+
+The final section-44 Nix run exits 1: fifteen checks pass, five are canceled,
+and the actor law runner fails before compiling its first mutation. Final
+receipt ead2bf138b98ed5a88211d71962833daf511a64daffde1c0d9a910db745a5e56
+preserves 283 artifacts, all 345 inputs (40 changed, 305 unchanged) and 84
+corpus files. Production remains +640/-225/net415; tests +3294/-434/net2860,
+documentation +73/-32/net41, public types +0/-0. No full acceptance follows.
+
+Exactly two source targets still expect the old five-parameter, one-line
+terminal constructor. The actual constructor has the retirement-request
+parameter and spans three lines. The other eight targets still match once.
+The complete one-script proposal is frozen at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-actor-law-manifest-preedit-wx14vn_k;
+preedit 69d5fe8a24aa9bf3e4b30edab816ce3e7d76d097109e68544f4f8738b78db254,
+patch c6385da8e65b8d3e2ddde65bd781d4dc8a6116978299226fb36742ae29bad0d6.
+It updates those two targets and their corresponding replacements, reuses the
+reviewed exact final-failure parser, and reads the selected revision from the
+existing Driver manifest instead of retaining a stale independent constant.
+All five positive references, eight runtime inversions and two affine denials
+remain. Verification-script delta is +16/-7/net9; production Rust and public
+types are zero. Root authentication dbfb72369db6d91bda47c8524b56dc1e25c50c38e2de9da59e6ffd9cce40a06d
+binds the complete proposal and unchanged owning source.
+
+The existing path `bombay/crates/bombay/tests/actor-execution-law-evidence.sh`
+is outside the approved 129-path manifest. Proposed allowance: 130 paths,
+adding only that verification script; the three observation-only public-type
+slots remain unchanged. Independent preedit review and explicit user scope
+approval precede any edit or execution of this successor. Required evidence:
+original nonpass, all ten corrected checks in debug and optimized builds,
+exact source restoration, strict/default/hook formatting checks, then complete
+source-bound Nix. No test is skipped or weakened; canceled checks remain open.
+
+Independent nonauthor preedit review
+6c7497b8a02da335c9c607f7887f31b194e66a925b3009c426dd418d5dd8c606
+authenticates the seven proposal artifacts, all 345 actual inputs and all ten
+unique source replacements. It finds the unchanged eight mutation bodies,
+five positive selectors and runtime/affine assignments eligible only after the
+file checkpoint. No script execution, semantic approval or source retention
+follows. User scope approval remains pending; the actual runner is unchanged.
