@@ -5581,6 +5581,44 @@ and complete owning strict/fmt and full affected verification. Existing source
 cut does not repair normal ActionItem/current-receipt or descendant joining
 laws. All those requirements remain open, not deferred from EXEC.
 
+Corrected complete source43f2a45d restores the exact original creation
+interpreter/header, truthful total retirement classification and both earlier
+launch regression observations/signals. Before source copying, nonauthorb0e0b909
+authenticates all806 owner and346 runtime inputs and all fifteen proposed texts.
+Full proposed production +600/-307/net293, cfg tests +73/-66/net7 supersedes
+the rejected239-production/-26-test estimate. New nominal/associated counts
+remain one/five. Eligibility is only the bounded library compiler comparison;
+legacy adapters, exhaustive consumers and complete causal/static witnesses stay
+required before all-target acceptance. Preserve both rejected predecessors.
+
+Root source-graph TEXTbe752a10 proposes three existing Cargo.toml path patches
+(+3/-0 manifest lines) to the exact sibling Core/Actors/Macros sources. Timer13e
+and all unrelated versions/checksums must remain exact. Independently review
+that graph, refresh metadata only through the pinned shell, authenticate the
+actual lock substitutions, then perform locked owning library checks. No local
+source is a newly published contract or canonical dependency selection.
+
+Actual local graph commands succeed and preserve every unrelated package
+record; the initial30c2ddf5 guard stops before library commands because it
+compares macOS /var and /private/var spellings literally. Keep that original
+instrumentation NONPASS. Nonauthor498a8709 independently authenticates actual
+filesystem identity, all179 complete package dictionaries and intended three
+local substitutions; the separate locked library continuation uses those facts.
+
+Actual librarya192368a and nonauthor424c385d authenticate Core0/Actors0,
+Bombay/Engine combined101: eleven native Entity SourceCustody Send diagnostics,
+one borrowed interpreter-future Send diagnostic and three test-only import
+warnings. No runtime, strict/fmt or all-target proof follows. Before copying
+source select TEXT7c155b3a with nonauthor1cb0e5d8: the existing +Send mutable
+progress loan states B::SourceCustody:Send, and the already native static Entity
+Behavior contract states SourceCustody:Send+'static once. Gate only the three
+existing test-only imports. No global cold lifetime, Work, Sync, cloning,
+wrapper or new trait arises from these diagnostics. The four-text correction
+is +9/-3/net6 source; full sixteen-path proposal is production
++605/-306/net299, cfg tests +73/-66/net7. entity/family.rs is already in161;
+nominal/associated counts unchanged. Fresh locked library checks must precede
+all adapter/static/semantic verification; preserve exact12-error predecessor.
+
 ## 95. Caller-local work and independent receiving checkpoint
 
 Treat paired UNIT execution as a separate ordinary-Rust comparison on the fixed
@@ -5627,3 +5665,139 @@ Full family failure-prefix preservation, declared paired execution, HTTP,
 raw descendant joins, normal current receipts, full API migration, task
 minimization and every affected independent gate remain required. Neither
 scope delegation nor source review accepts those gates or retains this draft.
+
+
+Corrected section95 TEXTa6181500 installs completed Output in the same outside
+publication guard before WorkFuture disposal; no extra production owner, box,
+channel, catcher or bound. Nonauthorae5502f3 authenticates all346 inputs, three
+whole files and four finite mutation contexts before source copying. Proposed
+production +253/-3/net250, tests +514/-3/net511 replaces the rejected249/441
+estimate. Public nominal +1/-0, private production nominals +2/-0 remain;
+one private test Future supplies the actual Ready-then-native-Drop-panic law.
+Four inherited plus ten new controllers require fourteen actual passes per
+profile, original-cut and other three intended finite failures with restores,
+then owning strict/fmt and final formatted measurement. This is independently
+eligible UNIT research only; every full gate and migration remains open.
+
+## 96. Acquired action receipt destructor witness checkpoint
+
+Before test copying select TEXTbb22cdb3 with nonauthor727a7fe6 under section52.
+The distinct blocker is current InterpretItem returning its original accepted
+receipt before its own future destructor panics, preventing the complete receipt
+from reaching settle_item's outside consumer. An Option local inside settle_item
+would still unwind; do not mistake that for a complete production repair.
+Compare the actual unchanged owning settle_item with an ordinary caller-owned
+concrete ItemSettlement destination whose scope outlives the attempt.
+
+Only existing behavior/crates/behavior/tests/total_interpretation.rs changes:
++171/-0/net171 test lines, production/public nominal0/0. Four private fixture
+types own the actual request, disposal choice, concrete interpreter and concrete
+future; no production wrapper, task, erased routing or invented failure outcome.
+The path already belongs to cumulative161. Canonical complete pre-edit record
+must remain measured; the witness does not use or select the modified section94
+source algebra. Authenticate all806 unmodified owning0.22 source inputs.
+
+Require exactly one genuine original Ready/Drop failing test, three healthy
+ordinary/borrowed controls, acquired-Ready-surrender finite failure and exact
+restore, separately in debug/optimized builds. Original entry, payload allocation,
+content and opaque native cause are observed independently with external Weak
+custody; discharge the entire attempted receipt and cause before final oracles.
+Run every command through Bombay's exact pinned shell, explicit sole target,
+locked owning graph, qualified selector and one-test count. Strict/fmt follow;
+an unqualified owner shell command is only a plan. A complete receiving-contract
+repair, whole interpreted prefix/tail custody, pending-current input law and
+full owning consumer migration remain required after this bounded comparison.
+
+
+Actual section95 paired compile786dae3b returns101 at one test import only:
+the existing Exit belongs to Behavior Actors and has no Bombay root export.
+No runtime controller executes. Before source correction freeze the exact
+two-import change: tests +2/-2/net0, production/types/paths0. Add Exit to the
+existing owning StopOnShutdown import and remove the wrong root import; do not
+add another public export. Require nonauthor review and a fresh formatted
+successor for the unchanged fourteen controls/four mutations. Keep the failed
+source and log immutable; no positive or original-runtime proof follows.
+
+
+The first actual section96 debug c9fec523 compiles and runs one test, but
+fails at a different oracle: pre-discharge original_count is1, then after all
+known future/interpreter/caught-cause disposal the allocation count remains1
+instead of0. The forecast that it was automatically destroyed is false for
+this compiler/source. Preserve c9 as unexpected NONPASS, not intended defect
+proof; optimized/healthy/mutation/strict/final-format commands did not execute.
+An earlier wrong temporary script path stopped before experiment commands and
+is excluded as orchestration metadata, with no source or semantic effect.
+
+Before corrected witness copying freeze TEXTca587886: same genuine producer
+and actual formatted806-input source, +13/-4/net9 test-oracle lines, production,
+public types and paths0. Require the complete outside entry/pointer/content
+first; preserve original_count1 and final exactly-once discharge0 checks.
+Record pre/post counts and outside observation after all known cleanup.
+Treat surviving but unavailable custody truthfully; do not invent an owner,
+recovered result or Corrupt fact. Require independent source review, all three
+healthy controls and fresh original failures in both profiles, finite acquired
+receipt surrender and exact restores, then strict/fmt. No production repair
+follows from this test-only comparison or the earlier unexpected count.
+
+
+Actual section95 sourcea0825d18 passes fourteen public controllers per profile,
+then four intended finite failures and exact restores per profile. Default
+strict returns101 only for missing public panic documentation; Axum strict
+and final fmt were not executed. Before editing freeze six doc-comment lines
+(+6/-0 source, executable bodies/tests/types/paths0): execution propagates setup
+and work panics; result exposes its actual cleanup-publication invariant panic.
+Do not suppress the diagnostic or infer a new error model. Require independent
+wording/source review, fresh owning default/Axum strict and fmt; explicitly
+inherit byte-equivalent runtime results rather than claim reruns.
+
+
+Before section95 test-quality correction freeze TEXT11ef68234d40cfd6aeb21f9a842af7ec5481752aeb36b559696c4d69fbde8f85 at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-unit-test-quality-text-979tsjtv. Actual ea06 default strict reports only implicit borrowed Vec cloning and an unfulfilled existing too-many-lines expectation; Axum strict and final fmt remain unexecuted. Proposal: the existing borrowed-output observation uses as_slice().to_vec(), and the four-line unnecessary expectation is removed. Tests +1/-5/net-4, production/types/paths0; no changed production body or new bound. Canonical pre-edit complete record af491501 is production +167/-34/net133, tests +3295/-557/net2738, public nominal0/0, 69tracked/0untracked. Require nonauthor review before source copying, fresh debug/release of the changed borrowed-local-work controller and owning default/Axum strict/fmt; inherit the other source-identical runtime results explicitly. Scope161 and all independent full gates remain unchanged.
+
+
+Sections94–96 now have bounded actual evidence, recorded once in
+[the verification record](execution-ownership/verification.md#reviewed-source-library-paired-result-and-current-receipt-checkpoints).
+The corrected source port compiles with the exact local owning graph; legacy
+consumers and semantic/static laws remain required. The paired UNIT result
+candidate passes its runtime/inversion/restoration evidence and owning quality
+checks, with production net288 and tests net674 against c29, three paths and
+one new public type. It remains an isolated candidate, not a selected public API.
+The action-receipt comparison proves outside acquisition is absent despite a
+surviving allocation when the original producer destructor panics. Its earlier
+forecast of automatic destruction is disproven; the old unexpected failure
+remains excluded. Ordinary borrowed acquisition passes and its intentional
+receipt surrender fails, but no production receiving-contract repair follows.
+Continue adapter/source-law closure, declared application and family cleanup,
+normal current/prefix/tail acquisition, HTTP and full consumer migration before
+any affected gate, module extraction, distillation or delivery acceptance.
+
+
+## 97. Reviewed paired-result remote backup checkpoint
+
+Choose the delegated section52 recommendation to preserve the independently
+reviewed actual paired UNIT epoch remotely while full gates remain open. Before
+copying, frozen proposal `caeaf63de40c0b368b92eedcb5c9383e88948b9b36cf6ec8233fe37e2bb31102` at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-paired-remote-prerecord-i8sacidq/proposal.json
+compares all346 actual inputs against research parent5df5b8e. Use a new branch
+research/exec-paired-outcome; preserve the earlier research branch and canonical
+working tree. Every changed path already belongs to the161 allowance.
+
+The snapshot-only source comparison is +2451/-809/net1642 physical production
+source, +8510/-1091/net7419 tests, +3378/-145/net3233 documentation and
++41/-40/net1 configuration, across83 paths. This physical source classifier
+includes rustdoc and cfg-only producer fixtures before module boundaries; it
+is not a retained minimal executable-body measurement. Three public nominals
+are added against this older parent: ChildFailure, EntityRetirementFailure,
+and ApplicationOutcome; the first two already belong to the reviewed native
+baseline. The remaining source law candidate is not copied into this separate
+paired snapshot. Canonical net133/zero public types does not describe this draft.
+
+Add the frozen six-line research notice to existing README.md:84 paths total,
+documentation +6 additional, runtime/source bytes unchanged. Authenticate every
+Rust/config input against actualdd5d and nonauthor7af145 evidence; source-backed
+independent complete-delta review must precede copying/commit/push. This backup
+never retains the candidate in canonical production, accepts a gate, claims
+full workspace success or opens the final delivery PR. Consumer/documentation
+closure and minimization remain required before final selection.
+
+
+Section97 independently reviewed backup now exists at [74903c20](https://github.com/devrandom-labs/bombay/commit/74903c20c74f6f6ccf34bd5fde0129579669db94); remote branch research/exec-paired-outcome matches that exact head. Copy/commit authentication binds all346 tested inputs except the approved README notice; clean346tracked/zero untracked. Independent proposal review2cbca1fa and actual remote receipt `619b3d347a126469e5d1c7ce11393642e2921e5a46db740716135d63a291ded8` at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-paired-remote-prerecord-i8sacidq/remote-receipt.json retain scope and source classification. One inherited blank EOF in Engine fuzz Cargo.toml is preserved with the exact tested snapshot; this backup does not claim a passing whitespace/final repository gate. No new Rust run, canonical API selection, delivery PR or merge follows.

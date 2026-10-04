@@ -246,7 +246,7 @@ checks; full task/API and other decision gates remain open.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +10932 / -97 / net 10835
+documentation: +11173 / -97 / net 11076
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -1128,3 +1128,70 @@ net133, tests net2738 and public nominal0/0. This scope delegation does not
 approve source, retain a public type or accept a semantic gate. Source reviews
 420cf72e and a281f18c require correction before execution. Their immutable
 proposals and future controller plans supply no compiler or runtime pass.
+
+
+## Reviewed source library, paired result and current receipt checkpoints
+
+These are independently reviewed isolated results for EXEC sections94–96.
+All Rust commands ran under Bombay's pinned Nix shell with Rust1.99 and one
+cache writer; the bounded named-package checks do not cover the whole workspace.
+Canonical selection remains Core/Actors0.21.2; only these experiments use the
+verified0.22 graph. None accepts an additional decision gate or delivery.
+
+Source-library successor7c155 has actual receipt
+`452184fe10d84d176f5250b62d7dd3b6f43f1c57b08856f5759ea1ba6a9be8cc`
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-source-library-bounds-execution-jj2xu8ig/verification.json;
+independent review
+`e1915ec12b43482687551d40b2b55d4cf99e50aaf959421d55e76ade9e96c817`.
+All1152 inputs match the predecessor plus sixteen reviewed texts. Locked offline
+metadata identifies the three actual local owning manifests by resolved filesystem
+identity, retains Timer13e and every unrelated package dictionary. This corrects
+the earlier literal /var versus /private/var path test without relabelling its
+NONPASS. Core, Actors, and combined Bombay/Engine `cargo check --offline --locked
+-p <owning package> --lib` each exit0. The full proposal remains production
++605/-306/net299, cfg tests +73/-66/net7; adapter migration, direct source-custody
+controllers, static boundaries, all-target checks and semantic gates are open.
+
+Paired UNIT quality successor has actual receipt
+`dd5d7e2d25f07b92b5f80fab5432af7030f1aa82ed4375fdf750780cd47eac8e`
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-unit-test-quality-execution-ikpfe137/verification.json;
+independent review
+`7af145c7f74d3afd10b0afc468c09426efbf1cc5acb15887775245e14c41d764`.
+The prior actuala082 receipt and da792 review authenticate fourteen controllers,
+four intended finite failures and four exact restores in each profile. The fresh
+successor reruns exactly the changed borrowed-output controller in debug/release:
+`cargo test --locked -p bombay-rs --test completed_application_receiving
+borrowed_local_work_returns_non_send_output_after_root_join [--release] -- --exact`.
+Each runs one and passes. Other thirteen bodies and finite mutations/restores are
+source-identical and explicitly inherited, not rerun. Default and Axum-feature
+`cargo clippy --locked -p bombay-rs [--features axum] --lib --test
+completed_application_receiving -- -D warnings` and `cargo fmt --all -- --check`
+all exit0. All346 inputs and five logs authenticate. Production bodies matcha082;
+six public panic rustdoc lines and the exact two test lint corrections are the
+only quality changes. Full formatted c29-relative delta: production +292/-4/net288
+(including six rustdoc lines), tests +678/-4/net674, three paths, public nominal
++1/-0; private production nominals2 and private test nominal1. Declared application,
+family prefix/fault cleanup, HTTP, raw descendants, full migration and minimization
+remain outside this bounded UNIT evidence and are still required.
+
+Corrected current ActionItem receipt witness has actual receipt
+`81e9dc45679c991ce3f1fe29b24ba6bae79f671f99b1d7113cd22582212aa4d0`
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-current-ready-oracle-execution-_9t41yd4/verification.json;
+independent review
+`2b1dc982cdc5d9b6693dacf158e0c9205e679b82188870967c23ae68227e53f3`.
+All806 inputs authenticate; only the existing total_interpretation test changes.
+The sixteen actual command logs establish three healthy controls per profile,
+original failure per profile at the full outside-entry/allocation/content oracle,
+finite acquired-receipt-surrender failure per profile, and exact restore per
+profile; owning strict and final fmt exit0. Every qualified test runs exactly one.
+Actual original traces say outside=None and original allocation count1 both before
+and after known-owner/cause discharge in debug and optimized builds. This is an
+unavailable/stranded receipt, not automatic destruction; earlierc9 remains an
+unexpected-oracle NONPASS and is never substituted for intended original proof.
+Ordinary outside borrowed acquisition retains the complete entry/allocation/content
+and releases it once; intentional Ready surrender instead reaches count0 versus1.
+Original opaque panic custody is independently discharged before final oracles.
+No production fix is made: normal current receipt, interpreted prefix and untouched
+suffix must still compose through vectors, layers, Actions and Driver retirement.
+A slot inside the unwinding settle_item frame is insufficient; borrowing the later
+source-offer loop cannot repair the earlier receiving boundary.
