@@ -961,3 +961,45 @@ EXEC section 41 records explicit user approval of sections 33–34 together:
 public types. Scope permission resolves the budget blocker; it does not select
 a model, accept this gate or waive exact current-owner verification, ordinary
 Rust comparisons, original-defect/inversion evidence or independent review.
+
+## Complete observation experiment review (2026-10-04)
+
+The full prospective patch now includes both owning library changes and the
+Bombay interpreter, real retired-wrapper consumers, static denials and model/fuzz
+consumers. Its 31 forecast repository-qualified paths fit the approved 129-path
+scope. It adds exactly the three approved observation nominal owners, with no
+fourth issuer, key, error or runtime service. These are external proposed texts;
+no observation production patch is retained or accepted yet.
+
+Independent review b6133fcc733ce9e1ec50086dd1a1df0085a8168ed1fe24de877d18a5f0a2593e
+authenticated the complete initial proposal, but withheld execution eligibility.
+Its unsupported synchronous Started rollback claim and two controllers that
+could fail before cleanup required correction. No green check or author judgment
+overrides that review.
+
+The immutable corrected successor is at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-observation-cleanup-text-2hndjm59.
+Its authoritative receipt is
+64fdfaa11936476fed07e6f5ee8df20fd0bccf997071c2c71fb3a20415287f21;
+the complete patch is
+896d3b25f5a1d6a6b2dff8b3591c3077d62b2c780ae8ac1d4d7960f3c15c4719.
+The coordinator authenticated all 76 named artifacts and the unchanged
+application prerequisite. The corrected controllers retain whole varied results
+and join cleanup before their final oracle. The model now distinguishes the
+source-backed standard synchronous control lifetime from the still-unproved
+advanced-host closure boundary; EV20 remains open. Independent successor review
+and actual original/positive/inversion execution remain required.
+
+Prospective delta: production +601/-259/net342; tests +1626/-376/net1250;
+documentation +141/-12/net129; public nominal types +3/-0. Twenty-three complete
+file texts plus eight resolver/release forecasts make the 31-path proposal.
+These counts describe the prospective experiment, not canonical changes.
+
+The selected owning baseline is an isolated exact archive of published
+Core/Actors 0.21.2 at edc2d466a50df7cd396f891e3da31fc9e3747bbd, with all 806
+files and the complete owning instructions authenticated by archive receipt
+a889e19b2d21f856a51d22cfbd8c3e114b8b753f1683d514c43dbd7b28f8c182.
+The physical Behavior checkout and canonical Bombay sources remain preserved.
+Fresh source-owned downstream overlay and real resolver-produced local-patch
+locks must precede execution. Historical receipts retain their original source
+epochs; full DG-OBSERVATION and EXEC acceptance remain open.
