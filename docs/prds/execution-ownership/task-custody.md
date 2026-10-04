@@ -1976,3 +1976,32 @@ requires a reviewed typed interruption remainder, complete creation/source
 offer custody, native initialization/child transport and final application,
 family and receiver-lifetime integration. No partial owner is substituted for
 those required facts.
+
+### Executed source-tail ownership comparison
+
+The exact owning Core SourceSettlements coroutine retains a current input and
+an untouched iterator suffix across by-value admission. Source conversion can
+unwind through this owner. The advanced generic comparison uses the actual
+SourceActions unattempted product; it does not claim a standard live Driver
+path or an accepted capability receipt. The Clear input genuinely enters
+EventIngress and has no recoverable payload; the later Append owns its original
+allocation. The original same-owned offer loses that untouched input before
+explicit discharge, final count0 rather than1 in both profiles. The failed
+future is dropped once and never repolled.
+
+Actual822e2d62, independentc45ede73, binds all806 inputs and216 added test
+lines in the existing total_interpretation file, production/public0. Open
+admission transfers the whole original input; Closed returns current then tail;
+an ordinary caller keeping the iterator outside the consumed admission preserves
+the exact tail and allocation. Those three controls and five inherited controls
+pass in both profiles, with selected Core strict all-target/all-feature checks
+and full formatting passing. Native results remain opaque.
+
+Actual1d415965, independent170a3bee, authenticates three distinct cuts:
+copy the lexical allocation, omit the lexical tail, and reverse the actual Core
+closure return order. Each fails its intended pointer/full-input oracle in both
+profiles; all six targeted restorations pass and all806 sources are exact. The
+original quality checks apply to those restored bytes; no rerun is claimed.
+The temporary Core edit is restored, with zero retained production change.
+This demonstrates the ownership cut without selecting new live receipt states,
+source-unavailability markers or a public interruption interface.

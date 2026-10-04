@@ -184,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +9279 / -97 / net 9182
+documentation: +9385 / -97 / net 9288
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -1018,3 +1018,9 @@ keeps their exact scopes and ownership map. The earlier failed assertion6874
 concerned the explicitly discharged delivery unit, not the retained prior row.
 Original failed command results remain preserved. Current-turn Core receipt
 custody and complete task/API/projection acceptance remain open.
+
+[Section73](../execution-ownership.md#73-source-tail-inversion-checkpoint) and
+[the source-tail record](task-custody.md#executed-source-tail-ownership-comparison)
+record the original generic-source loss, ordinary controls, actual Core closure
+ordering inversion, both-profile failures/restorations and exact source binding.
+This evidence selects no public interruption contract or full gate.

@@ -4370,3 +4370,74 @@ public types or semantic fields. Preserve poll-time effects by returning an
 async block; use equivalent full disjunction patterns and let-else bindings.
 The preceding strict101 identifies these three spelling vetoes; Driver-law
 profiles and final formatting were not executed by that stopped runner.
+
+The cfg spelling successor stops at strict101 again, actual199d740d: an
+unnecessary stronger Send bound and manual-async spelling conflict; all later
+checks remain unexecuted. Independentd1035009 qualifies the earlier eligibility.
+Before edits select6e9bd909: one approved test path +9/-10/net-1, production/API/
+state0. Restore original idiomatic async retirement with one method-local
+unused-async expectation explaining the essential poll-time effects and panic.
+It adds no state, fake suspension or eager execution. Strict -D warnings and
+expectation fulfillment remain required. The exact four-doc checkpoint7083188e
+was independently revieweda6617fa8, committed96e2971 and pushed.
+
+Cold successor actual706659f7 passes complete strict checks; Driver-law debug
+returns27 passing and two obsolete escaping-panic expectations failing. Before
+edits select24de39f8 for independent eligibility: approved Driver-law test path
++39/-12/net27, production/public/new state0. Return the complete original
+DriverRetirement from the fixture rather than a boolean panic projection. Two
+separate controls inspect exact initialization and turn dispositions, surviving
+actor, unit residual and original acquisition/release counts. Explicitly release
+the opaque turn cause without inspecting it. Native initialization custody is
+still open. Require both full Driver-law profiles, Parent/pure controls, strict
+and formatting; do not label the earlier stopped run passing.
+
+Independent review found the old panic-module imports unused in24de39f8.
+Select exact corrected358f6d7f, independentd6a583b9, before edits:
+tests +39/-13/net26 in that same path; all semantic patterns unchanged.
+
+Integrated actualeba7e639 passes Driver29, Parent2 and pure-transition1 in
+both profiles, full workspace strict checks and formatting, all345 inputs exact.
+Independentdb38a76d accepts this bounded result; the earlier five inversions
+remain unchanged. Full current-turn/native-init/raw-child custody stays open.
+
+Before owning test edits select root source-tail comparison3455d6f6, independent
+d6a70efc: same approved total_interpretation test path +187/-0 tests, production
+/public0, four private fixtures/four fields or payloads/four alternatives.
+Compare actual SourceActions unattempted-input admission with an ordinary caller
+retaining the iterator. This is the advanced generic source port, not a claimed
+standard live Driver path or an accepted-receipt result. Require whole Open/
+Closed and lexical controls; the original same-owned-future cut must expose
+the intended untouched-tail loss in both profiles. Keep native results opaque
+and discharge before assertions; never repoll. Then require focused semantic
+inversions, exact restores, selected Core strict checks and full formatting.
+No source API, unavailable marker, production catch or native exception selected.
+
+## 73. Source-tail inversion checkpoint
+
+Actual822e2d62 and independentc45ede73 authenticate the original source-tail
+count failure in both profiles, three complete source controls and five inherited
+controls passing per profile, selected Core strict checks and full formatting.
+Formatting yields216 added test lines; the187-line forecast was unformatted.
+All805 other owning sources remain exact. This is the advanced unattempted-input
+port, not standard live Driver evidence; the original future is never repolled.
+
+Before any mutation edits, select61f04c54, independentc45ede73, under delegated
+section52: expand140 to141 cumulative paths for the one existing owning Core
+crates/behavior/src/effects/sending.rs closure-order inversion. Its temporary
+production change is +1/-1/net0, no new type/state/API; restore the exact source
+afterward and retain zero production change. Two other inversions use the already
+approved test path: omit the lexical tail and copy its allocation. They must
+fail their intended runtime oracles in both profiles, then restore and pass.
+The closure inversion changes the actual reusable return order, never the
+asserted expected input order. No full gate or production repair is selected.
+Canonical pre-edit record052375b0 remains69 tracked/zero untracked paths:
+production +167/-34/net133, tests +3295/-557/net2738, public types0/0.
+
+Actual1d415965 and independent170a3bee authenticate all three compiled
+inversions in both profiles and six successful targeted restorations. Exact
+failure sites are pointer821, absent tail810 and actual closed-order739. All806
+inputs match the original822e manifest; its strict/format outcomes apply those
+same bytes without a claimed rerun. The supporting task record owns the full
+scoped result. Both original loss witnesses still require a repaired owning
+contract; no full source, task or API gate is accepted.
