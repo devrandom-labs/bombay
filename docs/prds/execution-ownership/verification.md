@@ -184,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +8171 / -97 / net 8074
+documentation: +8560 / -97 / net 8463
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -901,3 +901,69 @@ EDC-relative13-path recordf9fb07d0539945bbc0fb468f02a7891eddee3d572ff06054840065
 remains production-source +710/-187/net523, tests +1752/-317/net1435,
 documentation +96/-12/net84, public nominal types +3/-0. No upstream
 observation PR/release or final gate acceptance is implied by this backup.
+
+### Smaller observation and direct application-work results
+
+Two-owner focused receiptf57e96521b4db7587ab0a5531cb6a2de5f106eeff76faad1b7c4459dfa686432
+passes capabilities, settlements, continuous model and15 actual retirement
+tests in both profiles. Staticd6ba75600e31e1e10b2c86c5ff243864a305b3c111fa355681eba76678a18d4a
+contains36 real checks with distinct package names:18 freshly compiled
+positives and18 intended denials. Model808438ed025556833f4e7613a29a564a3d116cccb24ac27d69f10d2d46534873
+contains eight compiled intended failures and eight restored passes.
+Independent5fa948d003825603b70e83eda227a9276d8c44ee21e3f1f74e7d07509eaa751e
+authenticates those exact source and diagnostic results.
+
+Full workspace receipt e763f220a236e3729004e2e1b3a575eca76fd72d6045c7eefae71b33d0e337d8
+passes owner972 and runtime444 tests in each profile and both strict/format
+suites. Native/fuzz55c9bf52ad4f3586fae86d5f5d94d6e9fa2ef989754b2a03a1575123b255661a
+passes ten owning native checks, changed-target strict lint and10,000 runs;
+308 copied seeds remain and the corpus grows to359, with zero crash artifacts.
+Independent557611d8dcc6514c18846f53a1cd60299185f972b8e8dd46ee27f7cc9465d2de
+binds all logs, native filtered source and restored806/345 inputs. Registry
+unused-patch notices in narrow downstream test graphs are preserved; they
+are distinct from Rust lint failures. The excluded first broad lock resolution
+never reaches semantic tests and does not update selected dependencies.
+
+The actual two-owner code backup2800cca0c89619aeae07594b659318709c128672
+matches all806 tested bytes, remote receipt330bd037192fed6c36349b7f914d68b1731a6b71e0df1aa563e65d1b7ca8fcc1.
+Its exact ten-file commit is +102/-254/net-152. Complete thirteen-path
+measuremente09e7eee70de5b1a1fdd732e2aadf22bba52f33a1818911541fa10c9f5f4f938
+remains net437 production-source,1375 tests and78 documentation lines,
+with two new public nominal types. Independent81572424a9953672057cf6418c67e55e24c2b702fb5bb387aefc73ada3b745c8
+reviews the copy and complete measurement. Previous95b3 remains its parent.
+
+The direct-F private unit comparison passes eight controllers in both profiles,
+strict all-target lint and formatting under696e81dacec63b0a26dd7057fecadb6ddea91b9d03c68b5ad3298105560a9fdc.
+The original seven warnings and thirteen strict diagnostics remain recorded.
+Four mutation cohorts95984e27bb75ebcd8bf408ac10e3a648cbcabf6f0fffde3557a57c054cb0094f
+produce eight intended runtime failures and eight complete eight-test
+restorations. Fifth-mutation E0282 is excluded as semantic evidence;
+explicit existing channel typing then yields two intended post-join failures
+and two complete eight-test restorations under333344ffa7359943cf5dd2ccb9520642efcfa2251aaf08ed369a1fc6001944c6.
+Independent679b3ca73d19c5830e2ab17885c99cda3232abbed94dd246122c0125209c8f4f
+authenticates the first four cohorts and corrected positives. Final independent
+review67d76a403b50864c940f3d61a4dda08f54b7c32b1d081b0bf1782f17dd2314b7
+accepts the corrected fifth outcome and authenticates its retained single
+Copy-origin-drop warning. All345 actual unit inputs are restored;
+no public API or non-unit family acceptance is claimed.
+
+Fresh two-owner runtime custody omissions1a742ac74fc72a392aedfad98821d07354e6ad06961b1253eaf40e8a697f0d15
+produce four intended failures and four passes after actual joined cleanup
+across both profiles. All345 runtime and806 owner inputs are restored.
+The generated patch backup is archived outside source; complete source
+extras are accounted separately. The same independent final outcome review
+accepts these bounded results and source restoration. These fresh results do
+not relabel earlier three-owner receipts
+or accept a full observation/task/EXEC gate.
+
+The two additional application-work panic controllers pass with the original
+native payload retained opaquely by the caller, receipt
+2ddd02ffea4b5ce2d1f0de0501942d2312db68fb41acebe4a817eac616926c4b.
+Ten warning-free positives/restorations pass in both profiles, strict lint and
+formatting pass, and four compiled classification failures occur after real
+joined cleanup. Original external Weak observers prove payload identity and
+release without native payload inspection. Independent
+c687c07c717f601262df0bb9099f3e4a61040bf49345173c9aece43b3b35ac0f
+binds all345 restored source inputs and preserves the first strict nonpass and
+mutation warning. The rejected downcasting text remains unexecuted. These
+private tests add no public API and do not accept a full execution gate.

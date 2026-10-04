@@ -3547,3 +3547,248 @@ This checkpoint adds tests only; it does not claim production reduction,
 canonical dependency selection, an owning PR or gate acceptance. Independent
 measurement review precedes the copy/commit/push. The two-owner ordinary-Rust
 minimization comparison remains separate and unselected.
+
+## 58. Two-owner observation comparison checkpoint
+
+Choose the recommended isolated ordinary-Rust comparison, not canonical
+selection. Complete proposal a73d5c2651bab30ef825a3925b4c498b2e7030a1748795be666f31b871101a3a
+and independent7dc29823a615e375b628259a18b9d9d7e57b1828130e588ce5dd0f61f02de875
+bind ten existing owner paths and the existing Bombay runtime test path:
+production-source +39/-123/net-84; tests +63/-175/net-112; documentation
++16/-22/net-6; public nominal types +0/-1 (three proposed owners become two).
+No new paths, framework, map, state or report alternative. This reduces the
+tested candidate; it does not claim net-negative complete EXEC production.
+
+ObserveEstablished owns one fresh private correlation outside folds; Monitor
+retains that same allocation, and acceptance transfers it into Relationship.
+Authority remains affine cancellation permission. Whole unaccepted retry,
+foreign same-ID/same-endpoint reports, exact membership, stale reuse, protocol
+brand and terminal custody retain their laws. No actual required consumer
+uniquely demonstrates the removed Sequence's deterministic late-recipient
+issuance; the existing creation-observation lane remains unchanged. Two old
+foreign namespace/sibling cases now exercise the same fresh-request law.
+Ordinal exhaustion disappears with the deleted ordinal mechanism.
+
+Preserve tested806 b542 and345 2ed4 epochs and remote95b3. Apply only source-
+bound complete texts to isolated copies, rebasing existing root/Engine-fuzz
+local patch paths to that copied owner. Generate real locks/metadata and prove
+other dependencies unchanged. Pinned formatting precedes source binding. Run
+focused capabilities, continuous model and actual full-retirement group in
+both profiles before broadening; fresh distinct-package positive/negative
+controls, omissions/restores, fuzz, native/strict/rustdoc/full workspace checks
+remain required. The proposed compiler diagnostics are not executed evidence.
+No current-source receiver buffer or public application repair is selected.
+
+The first two-owner harness regenerates the locks and detects unrelated
+registry updates before executing any semantic test. Excluded solver
+receiptf4e97fbb2591856805b7d9a8e28243557269dec49f00db851aa571ceea4d4877
+preserves both actual generated locks and package deltas. Restore the exact
+previous Cargo-generated coherent locks and use actual locked metadata for
+both rebased root and standalone Engine-fuzz paths. This proposal changes
+no dependency version; no unrelated update is accepted. The first run is
+source/solver bookkeeping, not a compiler or semantic comparison result.
+
+## 59. Direct application-work ownership comparison checkpoint
+
+Before appending an isolated cfg-only comparison, choose the complete direct
+FnOnce candidate28828a4dffffc19371eb9dadf3137a64c19d2a50295a26cd8f1285a9a55c8145.
+It replaces the earlier unexecuted Invoke input shim with the actual callable:
+application work, its future and output remain borrowed and non-Send in the
+caller. One existing application-runtime test path gains591 proposed test
+lines; production +0/-0/net0; public types +0/-0; no additional paths.
+Four private domain types distinguish original inputs, uninvoked work,
+completed output and exact joined results; no public runner is selected.
+
+The source-bound345-file prerequisite is2ed4, with the unchanged actual
+application sourcefa3e7f01bedce3ab1f52ef30ed4781d20f9cfc7097f34e1b482d880cdfad35f8.
+Reuse existing spawn_local_execution, affine cancellation authority, startup
+receiver, ApplicationHandle, raw actor join and ActorRetirement::from_local.
+Cleanup owns only static actor values; the callable, work and output never
+enter that task. The caller releases unfinished work before cancellation;
+a retained result future can retry a borrowed wait and receive the whole
+joined result. Final receiver surrender releases undeliverable values once.
+
+Six complete controllers cover unpolled inputs and real retry, startup drop
+and original-callable retry, completed output during a cancelled receipt wait,
+receiver surrender while work remains pending, dropping unfinished work and
+genuine occupied-address rejection with complete actions and a real retry.
+Natural root termination while work remains pending and completed-output
+surrender before cleanup are additional required comparisons, not claimed
+by these six rows. Independent eligibility review precedes execution; actual
+compiler/lint nonpasses must remain distinct from semantic counterexamples.
+No active-family, heterogeneous-child or full API/task gate is accepted here.
+
+Complete canonical pre-checkpoint recorde3dab24b3793d7c116a92de275aa325993e290271c81e4537a3ce5d9519c2cfd:
+production +167/-34/net133; tests +3295/-557/net2738; documentation
++8211/-97/net8114; manifests +38/-33/net5; public types +0/-0;
+69 tracked paths, zero untracked. The latest delegated recommendation
+instruction selects this bounded test comparison; previous threshold records
+and independent acceptance requirements remain authoritative.
+
+Before execution, extend only that cfg comparison with the two complete
+remaining controllers and capture pre-cleanup counts without asserting until
+the actual actor join has returned. Corrected candidate
+cd5491b8c2a67b457f7fd9d5d38de3a519e6f4166a89971a7e3b3751da27d598
+adds693 total test lines in the same path, production/public/path growth zero.
+The unexecuted691-line predecessor's output-omission oracle could assert
+before explicit cleanup; preserve that limitation. Five complete finite
+mutations now accompany the corrected proposal; omitting joined-result
+publication still joins the actor and proves custody, not omitted joining.
+
+The corrected eight-controller comparison passes both actual profiles under
+receiptf506faec3a45e8ae12945204624088dd55e33d63eb9e7336e87670ea622401b9;
+seven compiler warnings remain. Strict checks retain thirteen diagnostics
+under8ea953928a88b0aa6ea9822965794af86e4e1f54a8b39c2fc03383b5aeb17955.
+Actual formatting adds886 cfg lines rather than the693 paper lines. Before
+further source changes, select equivalent proposal
+4bbbfc2d0aa3c83225b4af012e26f82cb1f25f5946ebcd1529be6df704b93bfc:
+tests +39/-13/net26; production/public/path growth zero. Five narrow lint
+expectations keep complete ownership equations and contested lifetimes
+together; unit permissions are explicitly discharged, original spaces are
+borrowed for launch, and both actual termination causes are checked after
+cleanup. No forwarding alias, owner or wrapper is added. Fresh source hashes,
+both-profile positives, strict checks and finite inversions remain required.
+
+Actual corrected checks696e81dacec63b0a26dd7057fecadb6ddea91b9d03c68b5ad3298105560a9fdc
+pass all five commands, including eight warning-free tests in each profile.
+Independent679b3ca73d19c5830e2ab17885c99cda3232abbed94dd246122c0125209c8f4f
+accepts those bounded results and four compiled finite mutation cohorts.
+Partial95984e27bb75ebcd8bf408ac10e3a648cbcabf6f0fffde3557a57c054cb0094f
+retains the fifth mutant's E0282 inference veto, not a semantic kill.
+Before retrying only that mutant, select source-only correction
+1bf8fcdee5903e5c41f5e74c7cb6b9d7cce8a66f3554c6544debb5ac2fa9ee2a,
+review9a98f044114dddcd84d6a7e4e00e30b94cead1d8b07f20f12a7acce5b573714f:
+its cleanup channel spells the exact existing result type. The same original
+actor join and acknowledgement remain; production/public/path growth zero.
+
+
+The corrected fifth mutant now compiles and fails the intended post-join
+custody oracle in both profiles; both complete eight-test restorations pass,
+receipt333344ffa7359943cf5dd2ccb9520642efcfa2251aaf08ed369a1fc6001944c6.
+Independent final outcome review67d76a403b50864c940f3d61a4dda08f54b7c32b1d081b0bf1782f17dd2314b7
+binds this result, the fresh two-owner runtime omissions and all restored inputs.
+The mutant's one Copy-origin-drop warning remains recorded; it is distinct
+from the warning-free corrected positives and the excluded E0282 attempt.
+
+## 60. Smaller observation remote backup checkpoint
+
+Choose the recommended reviewed research backup before copying ten existing
+owner paths to research/exec-observation-ownership at95b3. Actual formatted
+measuremente09e7eee70de5b1a1fdd732e2aadf22bba52f33a1818911541fa10c9f5f4f938
+reproduces every previous thirteen-path classifier row and compares the new
+806-filea061 epoch with the actual publishedEDC source. Whole owner change:
+production-source +628/-191/net437; tests +1688/-313/net1375;
+documentation +90/-12/net78; public nominal types +2/-0; thirteen existing
+paths, zero untracked source paths. Compared with the preserved three-owner
+candidate, this checkpoint removes86 net production-source lines,60 net test
+lines, six net documentation lines and the proposed ObservationSequence type.
+These actual formatted counts supersede the raw comparison estimates in58.
+
+Fresh focused, static, omission/restoration, full workspace, native and fuzz
+results have independent reviews5fa948d003825603b70e83eda227a9276d8c44ee21e3f1f74e7d07509eaa751e
+and557611d8dcc6514c18846f53a1cd60299185f972b8e8dd46ee27f7cc9465d2de.
+Measurement and exact source-copy review must precede the backup. Preserve
+95b3 and its tested three-owner archive; assert all806 proposed bytes after
+copy. This is a concrete code backup, not canonical dependency selection,
+owning PR delivery or full observation/EXEC gate acceptance. No additional
+repository path or runtime receiver buffer is proposed.
+
+## 61. Application-work panic comparison checkpoint
+
+Select the recommended cfg-only supplement before changing the isolated unit
+comparison. Corrected proposal1686eeb0774dfb3173e22d20e94a4a6a94a59aeb64e212914946357a5452f80d
+binds actual application source9a512dca03e4dce1635a7013481ac06b2f1d754bdf506ec0a6c0432c5771120e
+and all345 inputs under e8ff89067ef27dc5ac4c5f3669c67237000c08e99f5dca1dcabade764a1c2c05.
+One existing approved test module: tests +111/-1/net110; production
++0/-0/net0; public types +0/-0; no new private type or repository path.
+The latest user instruction and section52 choose this bounded recommendation;
+independent review and every existing acceptance criterion still apply.
+
+Two caller-controlled tests exercise actual invocation panic and work-future
+poll panic after real startup. The caller catches the original native payload;
+execution Drop initiates cleanup, and the separate result joins the original
+actor before any custody oracle. Consumed work has no invented output or
+recoverable callable. No additional production catch, error, wrapper, task or
+panic-payload duplication is proposed. Rc work and borrowed future values stay
+caller-local. Values destroyed inside application work are not reconstructed.
+
+Preserve the reviewed eight-test source and its actual failures. Bind a fresh
+isolated copy, obtain independent eligibility review, then run ten positives
+in debug and optimized builds, strict all-target lint and formatting. Change
+only the post-join Interrupted classification to Completed with no output;
+the two new tests must reject it after identical joined cleanup in both
+profiles, followed by complete restored positives. This is a composition
+inversion, not an original public-runtime defect. Family, recursive child,
+executor-destruction and complete API/task gate acceptance remain separate.
+
+Independent pre-execution review rejects the unexecuted f0df predecessor:
+its two downcasts exceed section41's passive panic-custody permission and
+cannot supply compile-time source-byte inference. The corrected proposal
+retains each native payload opaquely. Only its original externally retained
+Weak observes sole ownership, allocation/content through a temporary upgrade,
+and final release after that temporary owner and opaque failure are dropped.
+The source literals explicitly select u8. No payload inspection, additional
+catch or exception to the owning rule is selected by this correction.
+
+Independent eligibility review27f3fae0a4deb27ca2e6c2bedd28534323795c2ba35f64b1de593dd7b3537740
+accepts only corrected1686 bounded execution. Rejection review
+22c49fd2decc5f0f49410f28ee0b794386edaf7ef36111fcee0d7727cb9e4943
+preserves both predecessor defects. Fresh assignment
+71d8b5fd2321ba99b0545e4ca024b0e7468533ccee8da9c53f917a845a75072b
+copies only the345 authenticated inputs and changes the one cfg test path;
+all other344 inputs and both actual Cargo locks remain unchanged. Rust
+commands run only through the canonical pinned Nix shell and exclusive cache.
+
+The ten-test supplement passes both profiles, while strict lint preserves
+three no_effect_underscore_binding diagnostics, nonpass
+0bc2cca53faabe2a15f0e261ba15b17b1515469a39854153ad568c3399f6af88.
+Before changing source again, select equivalent three-line correction
+4f3b0f848a7a391a07d8b3f846a0d5b6dc7beab410d87ccf7115c0e534ced2b3,
+independent1214420fcd8673f47b62e1a2540c504690448fa98d49845f3c51594699ff2fb1:
+tests +3/-3/net0, no production/type/path growth or lint suppression.
+Three otherwise unused ownership rebindings become immutable application-input
+checks. These setup checks are distinct from the complete post-join custody
+oracles. Preserve the original formatted source and all nonpassing logs;
+rerun positives, strict checks, inversions and restorations on bound new bytes.
+
+
+Final corrected receipt2ddd02ffea4b5ce2d1f0de0501942d2312db68fb41acebe4a817eac616926c4b
+passes ten warning-free positives/restorations in each profile, strict lint
+and formatting. The classification mutation compiles and produces both
+intended post-join failures per profile; its warning remains recorded.
+Independent outcome reviewc687c07c717f601262df0bb9099f3e4a61040bf49345173c9aece43b3b35ac0f
+authenticates all345 restored inputs and the complete original/corrected logs.
+This accepts only the private comparison, with zero production or public API
+change. It does not promise recovering values consumed inside panicking work.
+
+## 62. Owning observation PR checkpoint
+
+Independent retention review93495b8a274d042b9639f51c6a1070e14f27a52f09c0a7c9c154d29e56b5c0b5
+accepts the two-owner library candidate for an upstream PR, conditional on
+one current-document qualification. This accepts neither Bombay scheduling
+minimization nor the full observation gate: the earlier polling comparison
+used obsolete ID-only authority. A current typed polling comparison or exact
+source/law justification remains required. Inherited unchanged Monitor tests
+with required calls inside assertions are excluded from semantic acceptance;
+the complete reviewed capability, model and runtime oracles supply evidence.
+
+Before editing that one existing owner document, select the recommended
+qualification: adapter-contract.md documentation +3/-2/net1; production
++0/-0/net0; tests +0/-0/net0; public types +0/-0; no additional path.
+Describe request construction outside folds and exact original emission;
+remove the stale claim of deterministic issuance after deleting Sequence.
+All other805 owner inputs must retain their tested a061 bytes. Existing
+thirteen-path measurement becomes documentation net79; production net437,
+tests net1375 and two new public nominal types remain unchanged.
+
+After authenticating the qualified source, commit/push that focused correction
+and open a main-targeting upstream PR with explicit breaking API migration.
+Require independent exact-head review, all owning CI checks and reviewed merge.
+Release only through the existing verified-main workflow and the release skill's
+exact-head packaged-consumer/lock/Nix preflight. Registry publication and fresh
+selected-source verification must precede canonical dependency integration.
+The user delegates these recommended actions under section52; independent
+approval, full EXEC acceptance and the final Bombay PR remain required.
+
+Qualification preeditd7797065923c08ca14925ee1993744b084e543d89d486699ed8712b196b6f3f9
+binds the exact current owner document and proposed text before its edit.

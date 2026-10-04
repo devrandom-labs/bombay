@@ -1882,3 +1882,46 @@ result. No field-erasing pattern, fabricated lifecycle fact or partial root-only
 fix is accepted. Full pattern/equality/constructor/docs migrations and the
 original6096 omission witness in both profiles remain required. Source edits
 and Rust commands for this model are zero; DG-TASK/DG-PROJECTION remain open.
+
+### Executed borrowed application-work comparison
+
+The private unit-family comparison now uses direct FnOnce(ApplicationHandle)
+work, with actual Rc-owned values and a borrowed caller slice in its callable,
+future and output. It reuses standard actor composition and one startup receiver.
+A caller-local Drop publication owns unstarted inputs or uninvoked work;
+invoked work remains lexical, while completed output belongs to the separate
+result future. Static cleanup owns the raw actor join and an explicit permission
+and joined acknowledgement. The cancellation authority remains caller-local
+through the acknowledgement. No borrowed work or output enters a Tokio task.
+
+Eight actual controllers pass in both profiles, including original-input
+retries, actual address rejection, retrying the same borrowed result wait,
+root termination with work still pending, owning work drop and final-receiver
+surrender. After equivalent cfg-only lint corrections, all-target strict lint
+and formatting pass, receipt696e81dacec63b0a26dd7057fecadb6ddea91b9d03c68b5ad3298105560a9fdc.
+Independent679b3ca73d19c5830e2ab17885c99cda3232abbed94dd246122c0125209c8f4f
+binds all345 actual inputs, original diagnostics and the post-join oracles.
+Four counterfactual cuts fail after explicit cleanup in both profiles and
+each complete eight-test restoration passes. The fifth initially fails E0282
+because its omission removes the channel's only type-inference evidence;
+that compiler failure is excluded. Its reviewed explicit existing result type
+correction changes no owner, field, bound or runtime law.
+Both corrected fifth failures and complete restorations are independently
+accepted under67d76a403b50864c940f3d61a4dda08f54b7c32b1d081b0bf1782f17dd2314b7;
+all345 source inputs are restored. The mutation warning remains separate
+from warning-free positives. The application-work panic supplement in EXEC61
+now passes ten warning-free positives/restorations in both profiles, strict
+lint and formatting under2ddd02ffea4b5ce2d1f0de0501942d2312db68fb41acebe4a817eac616926c4b.
+Independentc687c07c717f601262df0bb9099f3e4a61040bf49345173c9aece43b3b35ac0f
+accepts its four compiled post-join classification failures and complete
+source restoration. Actual user-code invocation/poll panic remains with the
+caller as the original opaque Rust payload; the separate result owns exact
+joined actor retirement and truthful interrupted work. No second copy of the
+panic or new production catch is added.
+
+These observations prove allocation retention/release, without inventing
+destructor chronology or a full outcome after its final receiver was surrendered.
+Four private nominal types and two test protocol/template aliases express the
+comparison; no public runner, family cleanup, recursive child transport or
+HTTP API is selected. Startup before-publication, panic custody, heterogeneous
+children and complete independent API/task acceptance remain required.

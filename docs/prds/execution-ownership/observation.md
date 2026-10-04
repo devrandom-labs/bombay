@@ -1079,3 +1079,38 @@ real ControlClosed(E), task settlement, and ActorRetirement::Completed.control.
 Generic conversion panic still retains available task failure; values
 destroyed inside the panicking conversion cannot be promised back. This
 bounded lifetime decision does not accept the complete observation gate.
+
+## Tested smaller relationship comparison
+
+The current isolated candidate removes ObservationSequence. Each whole
+ObserveEstablished request owns a fresh private correlation and its original
+recipient; Monitor keeps the same correlation, and acceptance transfers it
+into the readable Relationship. Authority independently owns affine cancellation
+permission. No second accepted correlation, ordinal, namespace path or issuer
+is retained. Existing creation-observation composition still handles births;
+the consumer audit found no required direct late-recipient issuer uniquely
+served by Sequence. Its historical proposal and tests remain archived.
+
+Actual source epochs are owner806 a0611a5e22469055c732e63bfcc10ad2f758a70c2f5d64a8398abb37ae8fa3e6
+and runtime345 c2343c7276ead22c9e0d31aba7863f77b4b0ee7792f4641c50680da473d535a5.
+Focused positives, nine paired static denials in both profiles, four finite
+model omissions/restorations, full workspace tests in both profiles, strict
+lint/formatting, owning native checks and10,000 continuous fuzz runs pass.
+Independent reviews5fa948d003825603b70e83eda227a9276d8c44ee21e3f1f74e7d07509eaa751e
+and557611d8dcc6514c18846f53a1cd60299185f972b8e8dd46ee27f7cc9465d2de
+bind the actual logs and source, without accepting the full gate. Two old
+namespace/sibling cases now exercise the same fresh-request law; they are
+not counted as independent remaining mechanisms or ordinal-exhaustion tests.
+
+The reviewed research backup is2800cca0c89619aeae07594b659318709c128672,
+on research/exec-observation-ownership. All806 bytes match the tested source;
+remote receipt330bd037192fed6c36349b7f914d68b1731a6b71e0df1aa563e65d1b7ca8fcc1
+and measurement review81572424a9953672057cf6418c67e55e24c2b702fb5bb387aefc73ada3b745c8
+retain the exact ten-file update. The complete EDC-relative owner change is
+net437 production-source lines and two new public nominal types. This is
+smaller than the three-owner candidate, while still net-positive new capability
+code. Fresh runtime custody inversions now compile and detect both omissions
+in both profiles, receipt1a742ac74fc72a392aedfad98821d07354e6ad06961b1253eaf40e8a697f0d15.
+Independent final outcome review67d76a403b50864c940f3d61a4dda08f54b7c32b1d081b0bf1782f17dd2314b7
+accepts the bounded inversions. Minimization, gate signatures and owning
+reviewed delivery remain required; canonical dependencies have not selected this candidate.
