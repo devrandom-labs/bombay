@@ -184,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +8814 / -97 / net 8717
+documentation: +8932 / -97 / net 8835
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -974,15 +974,27 @@ private tests add no public API and do not accept a full execution gate.
 records actual Behavior PR84 delivery: independent exact-head approval,
 fourteen latest passing checks, authenticated main rules and resolved threads,
 and merge58895153640bb8bdc037c480dcec48a2ba57afa7. Superseded cancelled CI
-is excluded. Verified-main release/publication and selected dependency checks
-are pending. This proves upstream delivery, not a full Bombay decision gate.
+is excluded. At that merge-stage checkpoint, verified-main publication and
+selected dependency checks remained pending. Section67 below records their
+subsequent outcomes. Upstream delivery alone accepts no Bombay decision gate.
 
 
 [EXEC section65](../execution-ownership.md#65-actual-observation-release-preflight-checkpoint-2026-10-04)
 records actual corrected release preflight, ten local Nix checks, independent
 exact-head approval and all14 passing checks. Behavior PR85 merged at
-1fc8fb55ae9c84ac77fbda293c7da63aea2c853b; publication remains pending.
+1fc8fb55ae9c84ac77fbda293c7da63aea2c853b; publication was pending at that checkpoint.
 [Section66](../execution-ownership.md#66-current-typed-observation-polling-comparison-assignment)
 records the compile-only polling comparison: intended static denials and
 restorations pass in both profiles, with the original harness false rejection
 and actual strict-lint nonpass preserved separately. No full gate is accepted.
+
+
+[Section67](../execution-ownership.md#67-published-observation-source-and-isolated-selection-checkpoint)
+records passing verified-main CI and automatic publication, authenticated
+Core/Actors0.22.0 archives, and actual isolated root/fuzz registry resolution.
+Canonical selection remains0.21.2; compiled integration and full gate acceptance
+remain open. [Section68](../execution-ownership.md#68-current-parent-conversion-original-defect-assignment)
+records fifteen existing controls passing in each profile and the first
+original parent run: active-turn ownership loss reaches its intended final
+oracle; initialization fails an earlier incorrect mailbox-barrier assumption
+and is excluded as defect proof. No optimized original or repaired pass follows.

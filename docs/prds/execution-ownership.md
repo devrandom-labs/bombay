@@ -3989,3 +3989,109 @@ typed storage comparison; it does not establish a replacement runtime scheduler.
 The [current observation record](execution-ownership/observation.md#current-scheduling-selection-for-integration)
 records the recommended retained-task composition and nonauthor source-model
 review27d7ebb0. Full DG-OBSERVATION signatures and selected integration remain open.
+
+
+## 67. Published observation source and isolated selection checkpoint
+
+Verified-main CI37193852977 passes at release merge1fc8fb55ae9c84ac77fbda293c7da63aea2c853b,
+receipt c3dec6ea. Automatic [Release37194283355](https://github.com/devrandom-labs/bombay-behavior/actions/runs/37194283355)
+passes. Actual registry Core/Actors0.22.0 archives contain216 authenticated files;
+source verification a0367d3a matches every source, test and document to the release
+commit. Both VCS records and annotated release tags resolve to that commit.
+Core checksum8a4e61f7a9c0b51e4878af9c88184f0ddd35213cdf509e4f86020545b4657b3c;
+Actors checksum485786bd46ed862953b5bf40aa4a6c93ca8b85ef97f29d261cc90eb6854fc3c9.
+Core's28 Rust files are unchanged from selected0.21.2. Actors changes exactly
+seven Rust paths for the reviewed observation contract. The complete owning
+instructions retain2b7a9195/760lines/43133bytes. Initial tag validation incorrectly
+expected lightweight tags; its excluded nonpass and corrected annotated-tag rule
+are recorded separately. No package/source failure is inferred from that script error.
+
+Before selection edits, choose recommended isolated plan4a2d89c37c74c4ece7e11ce6214e4957e783a7b71c18b69f4cb1ce34060687d4.
+Four already approved paths in a fresh copy of tested runtime345 c234: root and
+Engine-fuzz manifests/locks. Manifest +3/-7/net-4; production/tests/public types0/0;
+no additional path. Remove only temporary owning Core/Actors path patches, use
+published0.22.0 and preserve the selected Timer Git patch. Real pinned-Nix Cargo
+must resolve both separate graphs, changing only Core/Actors version/source/checksum
+records. Every other package tuple and all other341 source inputs must remain exact.
+Complete lock additions/deletions and package sources are measured after resolution.
+
+Independent current published-source and neighboring-contract verification remains
+a prerequisite to execution. Then run source-bound focused tests in both profiles,
+strict checks and formatting against actual registry packages. Preserve stale
+version-evidence failures separately from semantic failures; any metadata correction
+needs its own measured pre-edit record. This isolated selection changes no canonical
+Rust or dependency. Full gate signatures, canonical integration and final EXEC
+delivery remain required.
+
+
+Actual root Cargo metadata succeeds, but the original selection verifier rejects
+one omitted provenance change: the owning path workspace also supplied Macros
+0.13.1 transitively. The published graph necessarily selects the same verified
+0.13.1 registry archive. Before continuing, amend the four-path plan to permit
+only its registry source/checksum addition, preserving version and dependencies.
+Independent2c08c33a authenticates the complete179-package root comparison:
+Core/Actors plus Macro provenance change; all other176 package tuples and lock
+metadata remain exact. Preserve original script, rows and locks; this is a
+verifier-plan omission, not a semantic or Cargo failure. No extra Macro patch,
+version, source-code change, path or public type is selected. Fuzz resolution,
+actual source binding and compiled integration remain required.
+
+
+Independent published/neighbor prerequisite6cdab55c and source/test-plan
+qualificationbc143dc0 enable the isolated preparation. Real root179 and fuzz31
+package graphs now resolve, then pass locked offline metadata, receipt14e904f8.
+Actual four-path change: manifests +3/-7/net-4; locks +13/-3/net10;
+production/tests/public types0/0. Core/Actors select0.22.0; Macro version0.13.1
+is unchanged. All nonowning package tuples and other341 source inputs are exact.
+Selected cache receipt e122651d authenticates all216 file contents to the actual archives.
+Qualification e57b2388 records root's actual appended --locked --offline flags
+omitted from its metadata row label; the immutable executed script binds them.
+No fresh compile or canonical dependency-selection claim follows from metadata.
+
+## 68. Current parent-conversion original-defect assignment
+
+Before the cfg edit, choose recommended preedit976c4f86a97b09d0c019d70ef8bc5ad9433a35fef23d2bcfe0b6fc9d9991bdf3.
+One already approved application_runtime.rs test path: +504/-0/net504 tests,
+production/public types0/0; six private actor/controller definitions. The exact
+module is b93def2f. Its seventeen contracts bind the current tested two-owner
+runtime and actual0.22.0 registry packages. Independent ad14414b authenticates
+that binding and complete source. The historical502-line three-owner draft
+3e9efcc0/d85fbf30 stays uncompiled; two truthful UserLaneClosed observations
+correct its omitted Communication variants before any execution.
+
+The pure parent creates a real child. The original intended barrier used
+Config::new(1) and one occupied slot to delay delivery until the child's complete
+retirement and eager projector finish. The actual run below refutes that
+ordering assumption because the effective capacity is two. The later actual
+creation-report conversion transfers its full
+report to the host, then panics outside the fold. Test-host admission places an
+independent original value in the existing ActivationTasks owner; it does not
+claim FIFO/SourceActions admission. Initialization and active-turn cases release
+that gate, await the raw parent task and destroy the executor before final
+custody observations. A raw panic is not proof of joined descendants.
+
+Apply only to a fresh copy of the actual resolved345-input registry variant.
+Retain all other344 inputs and package bytes. Run existing positive observation
+controls first in both profiles, then both original parent cases. Expected101
+must be the final available-parent ownership oracle after finite cleanup; a
+compiler, setup, earlier assertion or hang is excluded. Record formatting and
+strict diagnostics separately. The successful-return comparison's typed host
+cause and all prior settlement custody still need the separately reviewed
+borrowing repair; this original assignment accepts no full task/projection/API gate.
+
+
+Actual first source23e97540 compiles. Existing atomic controls pass fifteen tests
+in each profile, logs5f357695/707068cb. Original debug log973660e0 reaches
+the intended final outside-parent ownership failure in the active-turn case.
+The initialization case instead fails its earlier child unread-cancellation
+oracle and then the host acknowledgement. Exclude that case as defect proof;
+no optimized original or repaired positive is claimed. The selected Communication
+0.1.3 documents a minimum effective capacity of two, and channel construction
+uses max(2).next_power_of_two(). The proposed single occupied slot therefore
+did not establish the required ordering. Correct the controller by filling
+both real slots, preserving distinguishable messages and the complete child
+retirement oracle; require independent eligibility before rerunning. Preserve
+the failed source, harness and all rows. The original harness also incorrectly
+checks panic messages only in stdout; its successor must inspect both channels.
+A later nonexistent-resume launch exits2 without running Rust verification and
+provides no semantic evidence.
