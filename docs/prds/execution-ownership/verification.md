@@ -184,7 +184,7 @@ this run does not authorize retaining an unaccepted interface or merging EXEC.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +9466 / -97 / net 9369
+documentation: +9640 / -97 / net 9543
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69

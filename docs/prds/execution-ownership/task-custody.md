@@ -2024,3 +2024,50 @@ remainders, creation/Engine/raw transfer and consumers. Normal child init failur
 remains its exact normal diagnostic with separate runtime cause; parent policy
 may continue. No forced parent terminal Err is selected. No Core source or full
 TASK gate is accepted by this exception or model.
+
+
+### Executed real two-template ordinary comparison
+
+Qualified full TEXTe15cd9ff, independent root063f39da, uses actual ProxyOperation
+and AssignWorker in both standard SendLayer orders. Actual predecessor7a02c15d
+compiled both original count1-vs-2 losses and all four normal/lexical controls in
+both profiles, then strict101 identified four vacuous recipient drops. Choose
+959a725b, independentc689c4e9, deleting only those calls. Corrected actual6ffbdd2d
+and nonauthor50ac9240 authenticate all806 inputs/805 unchanged: four controls pass
+per profile; original probes fail final1221/1507 after future/native/host cleanup;
+selected Actors strict all-target/all-feature checks and owning formatting pass.
+No runtime gate, Core carrier or complete public leaf law is accepted.
+
+Assignment observations consume the entire actual rejected request: original
+move-only payload pointer/content, exact endpoint and AssignedJob receipt
+correlation. Proxy observations consume the whole admitted receipt: original
+witness, issued creation and installed recipient. Lower traces and all remaining
+rows/decisions are exact. Lexical controls keep the prior receipt and original
+current receipt/token outside the consuming lower call, recovering no destroyed
+message/control and fabricating no normal receipt. Original proxy correlation
+allocation is independently observed; assignment has no claimed token Weak.
+
+Full actual receipt:
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-two-template-quality-execution-50gsjhss/verification.json
+(SHA6ffbdd2dc940501330e75bdb993f17c5e33df7a47fbd1b39a8e009febd18598e).
+This is a caller-owned comparison, not an implemented borrowed-host contract.
+Semantic inversions, actual partial types, Core/macro/consumer migration, exact
+public visibility, and Engine/raw transfer remain required. Proxy's existing
+private authority reopens the zero-new-nominal forecast; f71391e0 proposes one
+terminal owner for comparison only, with no selected production abstraction.
+
+Native compiler correction (EXEC section77): actual73cbd4de authenticates345
+inputs and formatting exit0, then compilation exit101 before any witness ran.
+Complete correction3d8f363a, independentce75f7ea, reuses exact failure/origin
+products and leaves native causes in the owning bindings/outcome. Scope expands
+to151 for one existing consumer; production net-7, tests net1, public types0.
+No runtime pass or full task gate follows from source eligibility.
+
+Actual two-template inversions79f17caf, independent06f59c19, execute both
+genuine foreign-assignment and replaced-proxy-authority mutations in debug
+and optimized builds. All four fail at their intended post-cleanup runtime
+assertion (Exact receipt match or original_operation); no compile/setup failure
+counts. Each exact restore passes all four normal/lexical controls. All806
+inputs match the frozen baseline, with805 unchanged throughout. These tests
+prove the comparisons detect incorrect authority; they do not repair Core's
+consuming interpreter contract or close the task gate.

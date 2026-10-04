@@ -4503,3 +4503,130 @@ Pre-edit canonicalfbbab43d:69 tracked/zero untracked paths, production
 +167/-34/net133, tests +3295/-557/net2738, public types0/0. This source allowance
 is for the bounded comparison only. Section74's exception does not select a
 production signature, partial carrier, macro migration or complete leaf law.
+
+
+Actual7a02c15d reaches both original count1-vs-2 failures in both profiles and
+all four normal/lexical controls pass per profile. Strict101 then reports four
+drop_non_drop calls on the passive fixture Endpoint(u64) recipient; formatting
+check and inversions remain unrun. Before edits choose959a725b, independent
+c689c4e9: remove only those four vacuous calls in the same approved file,
+tests +0/-4/net-4, production/public0. Preserve every actual receipt/token/native
+and host discharge and complete trace. No lint allowance, wrapper or bound.
+Formatting the predecessor yielded tests +674/-3/net671; its unformatted
+forecast is not silently reused. Require corrected controls and strict/fmt.
+
+## 76. Bounded native transport and consumer checkpoint
+
+Before candidate production edits select corrected whole TEXT49e0f963,
+independent977868af, under delegated section52. This is a bounded isolated
+caught-init/surviving-sibling and compiler-consumer experiment, not retaining
+full family semantics or accepting a gate. The original48-text proposal's
+production +1042/-664/net378, tests +745/-217/net528, documentation +56/-5/net51
+uses explicit cfg-item ranges. Earlier47-text d9060a96 misclassified launch's
+cfg-only import as the entire test boundary; its aggregate diff stays exact,
+its production/test split is qualified. Source47 and its vetoes stay immutable.
+The successor removes one nonexistent AllocationRejected field and updates the
+existing public Entity guide; it adds no unit/default failure-product shortcut.
+
+Exact scope audite761e7a9 reconstructs current142 paths from manifest6bcd817d
+and sections64/66/71/73/75. All69 current canonical changed paths are covered.
+Union with the48 proposed existing paths is150, adding eight existing files:
+Bombay macro and runtime lib; compile-fail application_actor_projection_requires_attribute,
+discarded_actor_policy_and_terminal, terminal_projection_duplicate_pair,
+terminal_projection_wrong_actor and terminal_projection_wrong_role; and the
+renamed-downstream test. The frozen scope.json owns exact repository paths.
+Two proposed public runtime types are ChildFailure and EntityRetirementFailure;
+the latter has section64's conditional allowance. Select at most five cumulative
+new nominal public owners including the three observation owners; no hidden
+zero-surface claim. This is positive production growth, not code reduction.
+Canonical pre-edit da47f6a6 remains69 tracked/zero untracked paths, production
++167/-34/net133, tests +3295/-557/net2738, public types0/0.
+
+The smallest bounded controller is panicking_child_returns_exact_uncommitted_creation:
+one actual pure-init failure retains original Child in its normal creation
+diagnostic and its opaque native cause separately; a distinct real sibling
+commits, shuts down and joins exactly once. Observe complete parent, ordered
+creation rows, raw child failure product and sibling result before final original
+payload liveness/discharge. Parent policy independently stops/continues; do not
+turn that normal diagnostic into global parent failure. Reuse existing factories,
+origins, bindings, task joins, Directory/Slot/native lease and static products.
+Original-loss simulation4edf804c must destroy the original native cause, fail
+its final independent liveness oracle in both profiles, restore and pass; its
+synthetic replacement is an explicitly invalid counterfactual, never a retained
+runtime law. Independent mutation eligibility must precede its execution.
+
+Require exact345 baseline/source assignment, focused debug/optimized controls,
+strict/default/all-feature consumers, actual static diagnostics and formatting.
+Generic pre-ACK raw JoinError custody, uncaught outer cleanup, current-turn Core
+partial custody, deferred primary/one-task projection and full family joint
+root/head/closed-drain acceptance remain required. Startup model5a3d40a3 states
+that a raw error cannot prove descendant joining. No acceptance, canonical
+source retention, new release or Bombay merge is authorized by this experiment.
+
+
+Actual native formatter stops before any Cargo/test at five malformed cfg tuple
+expressions, qualified receipt0a25c7bf. Earlier excluded2590 incorrectly described
+an invocation failure; it is superseded. Wrong package/Parent names existed only
+in later unexecuted script arguments and were corrected proactively. Before source
+edits select6d34763a, independent7526ac83: five tuple-line deletions in the already
+approved terminal test path, production/public0, tests +0/-5/net-5. Each outer
+pattern already consumes its exact leaf child_failures:(); the returned six-member
+tuple and its six-member binding stay intact. No default or unavailable result.
+The independent reviewer qualifies the prior source-eligibility syntax oversight.
+Require fresh parsing, both profiles, source restores and complete strict/fmt.
+
+Actual two-template quality6ffbdd2d, independent50ac9240, passes four normal/
+lexical controls per profile, selected owning strict checks and full formatting.
+Both original probes still fail final count1-vs-2 after cleanup (1221/1507) in
+both profiles. All806 assigned sources exact,805 other inputs unchanged; semantic
+inversions and repaired ports remain open. The supporting task record owns details.
+
+
+Before mutation edits select92d24743, independentf3de0534 and wording6c0fa98c:
+two complete test-only source inversions in the existing approved operation file.
+Replace the actual assignment consumer with a distinct source-issued correlation,
+or replace the original current proxy authority with genuine owning reserve.
+Keep producers, oracle predicates, expected traces, native handling and cleanup
+unchanged. The separate foreign Assignment was never interpreted, not rejected.
+Require intended runtime assertion101 and four-control restorations in each
+profile, all806 final hashes exact. No production/API/state or path expansion;
+these controls do not implement Core partial custody or accept a gate.
+
+## 77. Native compiler-consumer correction checkpoint
+
+The bounded native test has not run yet. Actual receipt73cbd4de records
+formatting exit0 followed by compilation exit101: eleven errors and three
+warnings. Its 345 formatted inputs authenticate; optimized execution, Driver,
+Parent, strict checks and the final format check remain unexecuted. This is a
+compiler veto, never evidence of a runtime regression failure.
+
+Before source edits, select complete five-file TEXT3d8f363a and independent
+reviewce75f7ea under section52. Scope0715149c expands150 to151 existing paths
+by adding only crates/bombay/src/actor_interface.rs. The other four files were
+already approved. Pass the existing exact ChildFailures associated product to
+three NativeEntityHost consumers, reuse the required StructuralOrigins, and
+correct six shared-borrow Rejected patterns without taking their native causes.
+The termination publisher uses its existing coarse Panicked projection while
+the original owned initialization outcome returns unchanged. Remove unused
+imports and put ChildOrigin in its actual test module. No new type, field,
+variant, bound, default result or runtime policy is selected.
+
+Correction: production +15/-22/net-7; tests +1/-0/net1; public types0/0.
+Canonical pre-edit7b362330 remains69 tracked/zero untracked paths, production
++167/-34/net133, tests +3295/-557/net2738, public types0/0. The native proposal
+remains an isolated experiment with positive cumulative production growth;
+this small correction does not establish overall reduction. Require compilation,
+focused debug/optimized witnesses, original-loss inversion with exact restore,
+consumer checks and formatting. Current-turn Core custody, raw pre-ACK failure,
+outer cleanup, full family joining and projection acceptance remain open.
+
+Actual correlation inversions79f17caf, independent06f59c19, produce the four
+intended runtime failures across both profiles; each exact restore passes all
+four controls. All806 inputs restore exactly. The borrowed/consuming Core
+contract remains unselected; no full gate is approved by these inversions.
+
+Actual successorf408d88a records the next compiler veto: formatting passes and the owning library builds, but the native
+controller has six compile errors before runtime. Birth/product/root projection
+spellings require source-derived correction. Optimized execution, Driver/Parent,
+strict checks and final formatting remain unexecuted; no semantic negative or
+native witness is counted.
