@@ -246,7 +246,7 @@ checks; full task/API and other decision gates remain open.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +11173 / -97 / net 11076
+documentation: +11572 / -97 / net 11475
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -1195,3 +1195,35 @@ No production fix is made: normal current receipt, interpreted prefix and untouc
 suffix must still compose through vectors, layers, Actions and Driver retirement.
 A slot inside the unwinding settle_item frame is insufficient; borrowing the later
 source-offer loop cannot repair the earlier receiving boundary.
+
+
+### Whole action-receipt comparison (EXEC section98)
+
+Actual receipt
+`9980aa9cf2edf960d7612d52ff2897cbb65a04ecdb127a9ddefbbf9eb237b78e`
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-whole-receipt-execution-b70jmotc/verification.json
+and independent review
+`bd86ab4aa6da16061dd1006d5b996b75d336321135b38d342ea46a239861f29e`
+authenticate all806 source files and thirteen command logs. Only the owning
+total_interpretation test changes; the805 other files match the jj2 source-port
+epoch, not the older unmodified owner used for the single-receipt comparison.
+Three healthy controls each run exactly one test and pass in both profiles:
+original whole-product normal completion, ordinary borrowed normal completion,
+and borrowed receipt retention through producer disposal panic.
+
+Original whole-product fault runs exactly one test per profile and fails the
+designated post-disposal outside-product oracle at line644: outside=None,
+remaining original allocation counts [0,1,0,0]. Later original count assertions
+are unexecuted. The ordinary comparison separately preserves accepted prefix,
+current receipt, untouched inner tail and owned sibling, original Step::Goto(19),
+empty real NoBirths creations and original Arc allocation/content. Each available
+value and the original opaque cause is released once after observation.
+
+Pinned owning `cargo clippy --locked -p bombay-behavior --test
+total_interpretation -- -D warnings` and test-only Rustfmt checks exit0; no
+workspace or all-target quality inference follows. Formatted delta againstjj2:
+tests +657/-0/net657, production/public0. Against81e: tests +423/-4/net419.
+Formatting alone is +214/-72/net142; this supersedes the unformatted515-line
+forecast without altering production. Finite inversions/restores, cold/pending,
+malformed/static/real-creation controls, production receiving and initialization
+custody remain required. No additional decision gate is accepted.

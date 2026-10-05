@@ -5801,3 +5801,370 @@ closure and minimization remain required before final selection.
 
 
 Section97 independently reviewed backup now exists at [74903c20](https://github.com/devrandom-labs/bombay/commit/74903c20c74f6f6ccf34bd5fde0129579669db94); remote branch research/exec-paired-outcome matches that exact head. Copy/commit authentication binds all346 tested inputs except the approved README notice; clean346tracked/zero untracked. Independent proposal review2cbca1fa and actual remote receipt `619b3d347a126469e5d1c7ce11393642e2921e5a46db740716135d63a291ded8` at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-paired-remote-prerecord-i8sacidq/remote-receipt.json retain scope and source classification. One inherited blank EOF in Engine fuzz Cargo.toml is preserved with the exact tested snapshot; this backup does not claim a passing whitespace/final repository gate. No new Rust run, canonical API selection, delivery PR or merge follows.
+
+
+## 98. Whole action-receipt acquisition comparison checkpoint
+
+Before copying choose corrected whole-product test TEXT3f3e6042 and nonauthor
+root source reviewf64b9fe6 under section52. Modelc7d9f071 proposes direct ordinary
+borrowed input/receipt destinations: a factual prefix, acquired current receipt,
+and original untouched tail/sibling outside the producer. It introduces no
+new production owner, nominal, trait or erased return. Rejected first TEXTe720
+remains unexecuted: it omitted a module import and used reusable Vec buffer
+addresses instead of Weak-retained Arc allocation identity. Root review924e0260
+requires the actual fixed allocation and cause observations before evidence.
+
+Corrected proposed whole owning test is at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-whole-receipt-allocation-text-n8e7jc__.
+Existing behavior/crates/behavior/tests/total_interpretation.rs only: full jj2
+source-relative tests +515/-0/net515; current81e-relative +280/-3/net277;
+production/public types0/0. Five private test fixtures include four already
+reviewed single-receipt fixtures and one ordered host. The path is within161.
+Canonical complete pre-edit5f5ce332 is production +167/-34/net133, tests
++3295/-557/net2738, public types0/0, 69tracked/zero untracked.
+
+Use the exact jj2 modified owning source graph and locked package versions;
+never replace it with the older unmodified owner used for81e. Format only this
+test file through pinned Rustfmt, preserving every production source byte.
+First run three healthy normal/borrowed whole-product controls and the intended
+original outside-product failure, each exactly one in debug/optimized builds.
+Catch/dispose actual attempts and opaque cause before final oracles. Observe
+original entries, Arc allocations/bytes, prefix/current/tail/untouched sibling,
+empty real NoBirths creations and original Step. Original failure cannot imply
+later unexecuted count assertions passed. Owning strict and test-file formatting
+follow; unformatted/unchecked broader library source is never inferred green.
+
+This is comparison eligibility only. Cold/malformed/static/pending and genuine
+creation cases, finite inversions/restores, full receiving-contract migration,
+and affine initialization receiving remain required. Existing active Driver
+HostExecution catch begins after environment.activate(initialized).await and
+cannot prove activation Ready/Drop custody. SourceProgress is a separate later
+source-offer law and cannot repair this earlier acquisition cut. No affected
+full gate, production retention, module move or delivery is accepted here.
+
+
+## 99. Actual application-family cleanup failure checkpoint
+
+Before source copying select the bounded original-only family controller under
+section52: TEXTbc2b999a, supplemente5983278, nonauthor root source review
+223bc2c770d490ffff3705a1c4f99937f5706fb8054b1920f4dd389669637a18 at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-family-original-root-source-review-uyvsd6py/review.json.
+All346 actual ikp inputs and the complete before/after patch authenticate.
+Existing completed_application_receiving.rs only: tests +181/-0/net181,
+production/public types0/0; one private test fixture with one original native
+panic input. No new path beyond161. Canonical measured6db620b6 before this
+checkpoint: production +167/-34/net133, tests +3295/-557/net2738,
+public nominal0/0, 69tracked/zero untracked.
+
+Use actual public run_with_entities and three real installed zero-incarnation
+families, original application output, genuine joined root and original roles.
+The middle original EntityDefinition destructor supplies the actual opaque
+native fault outside every Behavior fold. Its disposal may precede the caller
+receiving the whole family Ready result; do not claim that current report was
+already acquired. A complete-product absence oracle proves unavailable results,
+not completed tail cleanup or successful never-obtained middle reports.
+
+Require normal exact controller first in debug/optimized builds, then original
+fault exact controller in both profiles failing only the intended post-runtime
+complete-product oracle. Preserve original allocation/cause observations and
+explicitly distinguish unexecuted later assertions. Pinned Nix alone runs all
+commands, locked actual graph, sole target. Format this test file, then owning
+default/Axum strict and formatting checks. A compiler/lint failure is a veto,
+never original semantic proof. Keep every failed source/log immutable.
+
+This test characterizes the real consuming-family cut; it selects no production
+repair and accepts no full gate. Admitted family actors, all remaining joins,
+partial exact current custody, cold declared staging, HTTP and the separate
+application/result receiver remain required. Existing concrete families and
+task owners must express their law without another lifecycle framework.
+
+
+## 100. Source and receiving test scope checkpoint
+
+Choose the explicitly delegated section52 recommendation to expand cumulative
+scope161→168 for seven existing owning test files only. Conditional public
+nominal allowance remains7; this adds no production capability or public type.
+Measured source-consumer TEXTaeb8 had33 paths, production-source +14/-1/net13
+(six rustdoc lines and seven example receiving lines), tests +1227/-298/net929.
+Nonauthor89dee1bc withholds copying for compile/import/lint corrections; retain
+that complete failed source proposal without claiming it ran. The forthcoming
+complete successor must be measured and independently reviewed before copying.
+
+Added existing owning test paths: Behavior custody.rs,
+generated_creation_custody.rs, source_settlement_admission.rs and
+action_interpretation.rs; interpreter-contract source_free_custody.rs and
+source_progression.rs; Actors atomic_request_product.rs. Full prefixed168-path
+manifest and original161 relationship are frozen at
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-source-receiving-test-scope-prerecord-epz8qibg/scope.json,
+SHA927dbbfdd624805eabd17cf83a5744b44e71c73a186f4386625b8eef2aa15b60.
+Actual complete canonical pre-edit6db620b6 remains production net133,
+tests net2738, zero public types, 69tracked/zero untracked; subsequent records
+must include these new documentation changes as well.
+
+Receiving creation evidence must reuse the real existing Runtime reservation
+and EstablishChild producer in action_interpretation.rs, rather than fabricating
+a committed child or duplicating a host. Direct source/cold/pending/malformed
+and static tests must prove the owning concrete contracts, without invented
+non-Send projections already denied by intrinsic bounds. All test-only
+proposals require complete source eligibility and truthful actual commands;
+this scope decision approves neither a production repair nor a semantic gate.
+
+
+## 101. Family witness quality correction and source-consumer eligibility
+
+Actual section99 receipt78e9fadd runs normal and original exactly once per
+profile: normal passes; original compiles and fails the designated complete
+outside-product oracle after runtime and native cause disposal. It proves
+absence of the whole result, with later count assertions unexecuted. Default
+strict returns101 for four test-only diagnostics; Axum strict/final fmt do not
+execute. Preserve the complete actual epoch and its NONPASS quality outcome.
+
+Before copying choose quality-only TEXT2b64aaab, nonauthor root source review
+53645cdb50a5aac14d8e11287f21c19f3acf2681613e355f6e1dcd15acea9f8c
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-family-quality-root-source-review-s542dp26/review.json.
+All346 actual inputs authenticate. Existing test only: +13/-14/net-1,
+production/public0. Equivalent cold async hydrate syntax, module Weak import
+and two method pointers remove three diagnostic causes. One narrow expected
+length diagnostic keeps the indivisible full three-family/discharge trace;
+no manual-async or redundant-closure suppression. Fresh exact normal/original
+both profiles and default/Axum strict/fmt are required; no prior actual quality
+pass is inferred. Scope168 already covers the path.
+
+Source-consumer successor TEXTb1edcfba fixes only four complete test texts,
+correction +11/-12/net-1, production/public0; other29 texts remain byte-exact.
+Full33-path delta againstjj2 is production-source +14/-1/net13,
+tests +1227/-299/net928, no owning executable production change or new nominal.
+Nonauthor review5c5bf6c0a868b16f9de5fcdffe7223484d8bd9f808ac6cd06d076aa922305774
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-source-consumer-correction-independent-i5o8gp1f/review.json
+authenticates83 artifacts and all1152 virtual inputs. Choose bounded copying
+under section52/100, preserving rejected aeb and all remaining law limits.
+
+First run three owning Core source-custody targets in debug/optimized builds,
+then their designated original total-finish regression failures and exact
+restores. The mutation restores unconditional Exhausted only for nonempty
+Original/Offering RetirementCreationSettlement rows; it must fail the actual
+Retained oracle, never compilation or an unrelated check. Keep the whole
+mutated source and restore byte-exact. After those focused laws pass, test
+standalone source contracts and migrated Engine/Actors/runtime consumers;
+fresh actual metadata must authenticate the copied local graph and unchanged
+unrelated package dictionaries. Full workspace, source cancellation/native
+receiving/static laws and all affected independent gates remain open.
+
+
+Actual source-consumer first receipt
+e663ebf99ffdadcf484138b853ce666c8fa8a96a7871b9d82b0d2676874feb84
+authenticates the copied graph and both locked metadata checks. The first
+generated_creation_custody target returns101 before tests: three block-valued
+let-else initializers need parentheses; two source loans cannot infer the
+settlement owner backwards through its associated Custody projection. No
+runtime, optimized, inversion, restoration or downstream result follows.
+Reopen the compiler-friction checkpoint and cluster all such calls before
+editing. No new alias, bound or wrapper may originate from this diagnostic.
+The exact owning settlement must already follow from the recorded interpreter
+law; otherwise return to the model. Keep the actual failed stage immutable.
+
+Actual family quality successor b552bf1f repeats the four intended runtime
+outcomes, but strict rejects await-free async hydration; no fresh quality pass.
+Existing Accounts already owns the exact cold vec77 hydration with its justified
+expectation. The fault-only RetiringAccounts fixture must delegate that unchanged
+owning operation, deleting its duplicate construction. TEXTe7821622 proposes
+only this test method +5/-6/net-1, production/public0. Its production-family
+successor must authenticate these bytes and source review before execution;
+never add a fake await or eager allocation to satisfy the compiler.
+
+
+## 102. Exact family report and disposal-cause receiving comparison
+
+Before production-source copying into an isolated experiment select TEXT
+9987d65d123d27e2ea6e209a9e14c83ddad2dd7c3e4c2cae26d33a0d094001ab
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-family-disposal-finite-text-l24xzjpd/receipt.json,
+with nonauthor source review
+6d4517ef34a6dd6d32d5e4d206e148bf7d4740d5f68da3c6fe7eed0a0fa960e5.
+The smallest original public regression is the section99 family disposal fault
+in both profiles. All346 actual rc5 sources, nineteen proposed artifacts and
+eight prior logs authenticate; the previous strict failure is not relabelled.
+Measured six-path proposal: production family +10/-5/net5, tests +37/-20/net17,
+example +2/-1/net1, documentation +11/-2/net9, new nominal types0. Existing
+Shutdowns association gains one coexisting native disposal fact; no new task,
+channel, wrapper, trait, field or bound. Scope168 already covers all six paths.
+Canonical complete pre-edit253b938a is production net133, tests net2738,
+public nominal0/0, 69tracked/zero untracked.
+
+Borrow the existing installed family until its real shutdown report and metrics
+are acquired. Its tuple retains the original role and untouched tail outside
+the narrow disposal call. Catch disposal of that original installed family,
+keeping its original opaque Rust panic beside the actual report; then shut down
+the original tail. The witness demonstrates the definition destructor as the
+cause; the boundary covers installed-family disposal without inspecting the
+opaque payload or promising an exclusive origin. Reuse EntityRuntime shutdown,
+the existing sealed product, exact root/output and role-indexed results. The
+primitive report is never fabricated. A nominal forwarding product would only
+rename the same facts and delete no machinery, so none is introduced.
+
+Format the changed Rust files in pinned Nix, preserving a complete formatted
+source manifest. Require exact normal/fault controls in debug and optimized
+builds. Execute two reviewed finite counterfactuals independently per profile:
+omit only the disposal catch; replace the original native payload after dropping
+it explicitly. Each must compile and fail its designated post-discharge oracle,
+then restore byte-exact and pass. Omitting the catch is a causal counterfactual,
+not byte-exact restoration of the older consuming shutdown implementation.
+Default/Axum owning strict and full formatting checks follow; legacy public
+runner consumers remain a separately recorded incomplete migration.
+
+This selects an experiment, not canonical production or a full decision gate.
+Internal runtime/claim unwind, admitted-family remaining joins, declared cold
+staging, non-Send paired families, HTTP and complete consumer closure remain
+mandatory. The isolated net5 correction cannot stand in for those outcomes.
+
+
+## 103. Source-offer ownership inference comparison correction
+
+The compiler-friction audit clusters36 reverse-projection offers in four owning
+fixture files. The recorded source law already fixes each original settlement
+and producer type; Custody alone cannot identify that owner. Source progress
+prepare/finish carry the original Self and remain inferred. At the deliberate
+advanced interpreter boundary, naming the exact existing owner on offer is
+appropriate; it creates no semantic type, alias, bound, callback or wrapper.
+The independent audit checks inner/owned reversals, generated products and every
+concrete constructor equation. No ordinary actor author gains a structural path.
+
+Before copying select complete TEXT33df8a4a316b8cc0d8d4833f991c99e544161d2d0c891183f9374fd67271a47a
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-source-consumer-inference-text-meuqv87g/receipt.json,
+and nonauthor44f30f956155e8dd0c7d55194aabdae9ed2af31f0016ee572ba45146a70e64bd.
+All86 artifacts and actual1152 inputs authenticate; only four primary test
+texts differ from b1, other29 byte-exact. Correction +232/-232/net0 tests,
+production/public0. Twenty-eight analogous block let-else forms are parenthesized:
+three actually diagnosed and25 found by source inspection, not additional
+executed errors. After offer-owner/import normalization, remaining token changes
+are exactly those56 parentheses; every operation/assertion is unchanged.
+Full33-path delta remains production-source net13 and tests net928 under168.
+
+Use a fresh archive and repeat section101's focused laws, precise original
+total-finish failures and exact restores before downstream checks. Keep e663
+immutable and do not call its compile failure regression evidence. Fresh compiler
+output may veto an owner equation; it may not justify new architecture. Full
+source receiving/cancellation/static and independent gate acceptance remain open.
+
+
+## 104. Cold, partial and static normal-receiving controls
+
+Before test-source copying select corrected TEXT79dba7873d111459bb4d3125770e46983c224d95aa52f226af45997bac55ee46,
+nonauthor root source reviewbafe0119ed7dbc60729a96b39f0fa861348312bb61aa4b175219ffd085681dbc
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-receiving-caller-root-source-review-ciqyp9a0/review.json.
+All806 actual b70 inputs and complete artifacts authenticate. Rejected2fa
+called a literal later caller panic a host operation; corrected function names,
+model and selectors change no operation. Existing owning total_interpretation
+and action_interpretation tests only: incremental +223/-1/net222,
+full jj2 overlay +879/-0/net879, production/public0. One private Ready/Pending
+fixture distinction and two existing fields own actual producer availability.
+Both paths already belong to168.
+
+Require cold uninvoked inputs, occupied/missing receiving slots, Pending with
+outside prefix/untouched siblings, and both genuine existing creation dispatch
+outcomes acquired before a literal later caller panic. Pending cannot recover
+the current value destroyed inside the consuming host before Ready. Creation
+controls are lexical prefix observations, not creation Ready/Drop, live-child
+join or address freshness proof. Format only the two test files in pinned Nix;
+run each healthy selector exactly once per profile before denials.
+
+Four independent static fixtures must fail for exact receipt shape, concrete
+host path, simultaneous exclusive destination loans and duplicate non-Clone
+input moves. Preserve full diagnostics and restore after each. The finite
+outside-current surrender occurs after the real second Ready/Drop fault was
+caught; require its post-discharge mismatch and exact restored pass per profile.
+It is an invalid outside-owner policy counterfact, not a production mutation.
+Owning two-test strict and test-only formatting follow. Complete production
+receiving/creation/Actions/affine activation remains separately mandatory.
+
+
+## 105. Reviewed family-disposal remote code checkpoint
+
+Under the explicit section52 delegation, before copying choose measured
+proposal4be3781c283d15800ce412a012545bc7bada0a4af2f33baf872bf03d23f46092
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-family-remote-prerecord-4g7mjakx/proposal.json,
+nonauthor factual reviewdf4b4eea8f09462dac463950a25e296fd6223d8ae8718102939a6e0272a0b501.
+Update the clean research/exec-paired-outcome parent74903 only. All346 tested
+family0f419 inputs match except the preserved six-line research README notice;
+six changed paths are within168. Against that parent: physical owning/example
+source +44/-35/net9, tests +327/-4/net323, documentation +11/-2/net9,
+new public nominals0. This includes test formatting and the earlier original
+controller; it is larger than the isolated five-line production repair.
+
+Actual independent reviewd25338b0 authenticates18 command logs, four positive
+exact tests, four intended finite failures and four exact restores, default/Axum
+owning strict and full formatting. Only real root and zero-incarnation families
+are covered; legacy consumers and full family/API gates remain open. Preserve
+canonical source and earlier research branch, authenticate the complete copied
+tree, commit focused source and push; record the exact matching remote head.
+No new Rust run, canonical API selection or final delivery follows from backup.
+
+
+## 106. Exact source-phase diagnostic correction checkpoint
+
+Actual section103 e16f0e49 and nonauthor35042972 authenticate all1152 sources
+and26 logs: three Core targets pass9/9/3 tests in each profile; four original
+total-finish failures reach the precise Retained oracles; four exact restores
+each pass one. Standalone targets pass5/6 debug tests; Engine targets pass
+15/1/2/29/3 debug tests. The next compile harness fails only its expected
+diagnostic snapshot: both same E0599 phase denials, changed source locations
+and Active struct shape. Later release/downstream/strict/fmt do not execute.
+Preserve this NONPASS epoch and distinguish later unexecuted assertions.
+
+Before copying select TEXT72dfc5a6a5490f74dab3057a38559dbd8053f03b9a780a79c1ed36fac05660eb,
+nonauthor4bb40ee9150734f67c98956b68cf0a85058f6b24d337d47068037a6995b24c1b
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-source-phase-stderr-independent-ygmr1kov/review.json.
+One existing environment_phase_authority.stderr, tests +21/-21/net0,
+production/public0 under168; all1151 other inputs exact. Proposed bytes equal
+the entire actual diagnostic segment excluding delimiter lines. Both messages,
+full excerpts/carets and trait candidates remain; static denial is not weakened.
+Fresh debug/optimized compile harness first, then resume only the unexecuted
+named consumers. Explicitly inherit the unchanged Core and original-failure
+evidence; do not rerun it or claim full gates from a snapshot correction.
+
+
+Section105 actual remote checkpoint: six reviewed source paths committed and
+pushed to research/exec-paired-outcome at
+40129a54d9af17652022998d283033d666a12557, parent74903c20c74f6f6ccf34bd5fde0129579669db94.
+Remote receipt638860222ccdff19214cf7bc9966454a995ef416a0b96cee95e51be9bd8f1828
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-family-remote-prerecord-4g7mjakx/remote-receipt.json
+records matching remote head and clean worktree. Copy receipt8f282bbd51c0747a1053431e8fa9fa048a5d7117c532c6db292e3a65fa5fc9d1
+records all346 tested source bytes except the preserved six-line research README
+notice. New six-file whitespace check passes; the inherited fuzz manifest
+blank-at-EOF remains outside that check. Earlier research branch and canonical
+source are preserved. This is code backup, not final Bombay delivery.
+
+Section106 actual successor soslsq04 receipt5377f8bb9905ec5571cd9162fdfd005578dd76ea68131c39bebfd03521ea07b1
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-source-phase-stderr-execution-soslsq04/verification.json:
+metadata and both debug/optimized phase harnesses pass, including all five
+trybuild fixtures. Debug Actors atomic-request-product passes. Next runtime
+unit-test compilation stops with19 errors/four warnings: existing cfg-test
+imports, one old consuming admission call, a retirement assertion's omitted
+actual custody projection, and advanced test-host transport bounds require
+migration. No runtime test or later optimized consumer/quality command executes.
+These diagnostics veto incomplete test migration, not the preserved source law
+or permission to invent architecture. Preserve this NONPASS receipt.
+
+One orchestration invocation before soslsq04 used a nonexistent temporary
+script path and exited2 before any source experiment ran. It is excluded from
+verification evidence; the corrected invocation names the actual created stage.
+
+
+## 107. Truthful family-disposal naming checkpoint
+
+Before source copying choose complete TEXTe0b4976c31161c489b03288ebd20eb6391158fcfa1acc22fc1cc8b693eb0b978
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-family-disposal-naming-text-yxnbkj7d/receipt.json,
+nonauthor naming review770c9108b849b32f5136abda973566c4567e7edc0975d2e33f454bec8a1a12ce
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-family-disposal-naming-independent-4ritxm5w/review.json.
+All346 actual p3 inputs,20 artifacts and six complete before/proposed texts
+authenticate. Use family_disposal_failure to describe the whole installed-family
+disposal catch, including the demonstrated definition destructor. The old name
+could incorrectly imply exclusive definition provenance. No operation, custody,
+shape, bound, panic cause or oracle changes. Existing six paths under168:
+production +5/-5/net0, tests +13/-13/net0, example +2/-2/net0,
+documentation +6/-4/net2, new public types0.
+
+After fresh copying retain actual0f419/d253 evidence only for byte-equivalent
+semantic operations, rerun owning default/Axum strict and formatting, and record
+exact new sources. This naming review does not self-approve the author's earlier
+family semantics. Renamed finite fulltexts preserve actual mutations. No full
+family/API or other semantic gate closes from this bounded correction.
