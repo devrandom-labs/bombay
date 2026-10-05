@@ -6363,3 +6363,145 @@ canonical commit80e52f9, pushed to exec-prd-backlog. Later sections/outcomes
 require their own factual review. The complete change record remains measured
 against the original cumulative base; temporary research trees are not presented
 as retained canonical source or final merged work.
+
+
+## 113. Genuine creation Ready/Drop acquisition comparison
+
+Before copying choose complete test-only packet
+e4ace36625b41dca8fde24920a1a716aedf7b29c48d3c47233f22fe3136f4bf8
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-creation-acquisition-text-h9c58v77/receipt.json. Root independently read and authenticated all
+artifacts and806 original inputs, the whole patch and actual owning production
+delegation; review 595a538a51536b406b2726aa8eec6bae0a257dbcd281333387084b5cada1495b
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-creation-root-independent-o5ci1k6p/review.json. One approved168 path action_interpretation.rs
+adds403 test lines, removes0; production/public/traits0, five private fixture
+nominals. Six imports remain at module scope.
+
+Actual routing and concrete dispatch producers return Ready, then Drop throws
+the original native cause. An ordinary-Rust caller bridge stores the whole
+receipt outside before producer destruction. Compare actual three-row routes
+and Established/InitializationRejected receipts, prior receipt and untouched
+final request; use observed routes, never predicted nonces. Known producer,
+runtime, interpreter and cause disposal precedes the ownership oracle.
+
+Fresh exact806 archive, pinned-format only this test path; run seven healthy
+and three designated original runtime failures per debug/optimized profile,
+two deliberately invalid outside-receipt surrender cases and restores, four
+isolated static denials and restores per profile, owning strict and formatting.
+Compiler/lint veto preserves the actual epoch; no preemptive waiver. Failing
+research selectors need explicit integration disposition. Full production
+receiving, heterogeneous child choice, private activation authority, live child
+tasks and full EXEC gates remain open.
+
+
+## 114. Creation comparison public constructor correction
+
+Section113 actual ofkfl1dc receipt2e47d35007e4a65f0b8920b0e25f67dd9cd45c967d0f0b4cdb8e9a4bfc85f000
+records five commands; version/metadata/format pass, first test compilation stops
+on two E0624 private Creations::from_items calls at formatted632/751. No test
+executes. Preserve actual806 sources and logs; source eligibility was too broad
+about those test constructors and does not override the compiler veto.
+
+Before copying choose complete root constructor-only TEXT49a1f9fb466b696507135b4f1b00ce8f2bf33a45741504fcd69d947b5c66a86f
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-creation-public-batch-text-xq3mh30v/receipt-corrected.json, independently
+reviewed41a910742179238b4c3d76283f9f541672613c1069b8cd03d3ef96bb2963c62e
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-creation-public-batch-independent-s0kgcjka/review.json. Replace two private constructors with existing public
+Creations::one(first).and(current).and(last), in every positive/original/finite/static
+text. All original IDs/kinds/replacement predecessor/children/order and receipt,
+producer, disposal and oracle operations remain byte-exact. Test +10/-10/net0,
+production/public0, same existing168 path. Construction allocation capacity may
+differ; custody observations start afterward. Earlier forecast6cc is preserved
+and corrected to actual physical net0.
+
+Fresh806 archive, resume the complete section113 plan in both profiles from
+its first genuine runtime case, then finite/static/restores/strict/format.
+Any later compiler/lint failure preserves its actual epoch. No original failure
+or full gate is inferred from a compile veto or this source-only correction.
+
+
+## 115. Complete cold declaration and shared paired execution repair
+
+Before production copying choose authored complete successor
+90add6c87620cd790a4a8942a7dbeeda072aa00a23491fe21ee96ff8d8d37029
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-declared-cold-guidance-text-j8s0t102/receipt.json. Root independently read the complete11-path
+source/model/patch and all346 baseline inputs; predecessor reviewe624c90d0dc57320c7dba035ec017e2617ac8d49a7a9e06fddc56b7c9c640d16
+withholds copy for two undefined guide variables and duplicated authoritative
+guidance. Documentation successor resolves those, leaves every Rust/test/example
+and finite mutation exact; review7c0a88c73230e37d08e3d08741740da22cb7c8266c464e40143fe0f38c33e688
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-cold-guidance-root-review-dsr5ranp/review.json.
+
+Measured proposed production +548/-289/net259, tests +232/-19/net213,
+examples +17/-18/net-1, docs +67/-6/net61; one existing private
+ApplicationStagingError promoted to public, no additional trait/module/task/channel.
+All11 paths already in168, conditional public allowance7 unchanged. This is
+net-positive capability code, not cleanup. Section52 recommended-choice delegation
+selects this measured bounded repair; final independent gates/minimization remain.
+
+Exact blocker: original cold Role disposal destroys recoverable child declarations
+and callable before Runtime exists, demonstrated3dc161 original runtime101 in both
+profiles. Reuse tail-first StageApplicationChildren, ComposeApplication, actual
+CreationSequence/Children, existing RunError/ApplicationOutcome/publication owner.
+Keep root/F and completed child tail outside direct Role disposal; native cause
+remains original passive Rust payload. Typed cold failure returns every available
+phase product; executor rejection returns actual complete prepared Actor/F.
+Relocate the sole paired body and reuse it for App and Application; delete
+duplicated inline body, never create another actor/runtime owner.
+
+Execute at exact authenticated native k58 epoch (published Core/Actors0.22,
+Macros0.13.1, Timer13e); unrelated inputs/graph preserved. This independently
+testable cold law precedes normal runtime receiving and does not guess the latter's
+future residual projection. Exact later signature/consumer rebase remains required.
+Fresh346 archive, pinned formatting, focused new/existing controllers and whole
+21-test target both profiles, two finite original/cause-replacement failures and
+exact restores, default/Axum strict and formatting. Compiler/lint veto preserves
+actual epoch. Relocated unit finite controls require exact rebasing; separate
+tail-failure/namespace-exhaustion witnesses, full live family/HTTP/outer actor,
+projection/activation and all-target consumer closure remain required before gates.
+
+
+Section114 actual6xiyghy2 receipt26711dbf03bf70f362d1b199fc743b2082db2910b8d329020c588d05bb972f2a,
+factual nonauthor806040fa6b0ea7f153a67ef80179ab4213e62306c7c2f33ea252f054b487fef1
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-creation-actual-independent-qajw6k3e/review.json,
+authenticates all52 logs and806 final sources equal formatted positive. Seven
+healthy tests per profile pass, three original consuming-library failures per
+profile reach precise post-disposal None versus complete batch or receipts0
+versus2. Earlier native cause identity/content/release and actual host route/
+resolution facts pass; later current/remaining assertions after first mismatch
+are unexecuted in originals, separately established by healthy controls.
+
+Two invalid outside-receipt surrender counterfacts per profile fail precisely,
+each exact restore passes. Four static denials per profile fail at actual receipt
+projection/exclusive loan/original batch move, every exact restoration compiles.
+Owning strict passes. Overall NONPASS remains: full workspace formatting exits1
+on six inherited production paths (Actors delivery_route/shutdown_coordinator,
+Core actions/sending/lib, Macro lib); the owning test has no formatting diff.
+No broad formatting edit is justified before the ongoing owning semantic repair.
+Full source quality closure remains in that complete successor. This genuine
+Ready/Drop fixture still proves no private live child/task/join or complete gate.
+
+
+## 116. Independent normal receiving source vetoes
+
+Independent complete seven-source reviewfc87da5fe07d522ec49f6734547b422bd7fb0705d27a8f4d6de4f581f9f08994
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-normal-receiving-independent-f_rkpda5/review.json
+authenticates22 artifacts, all806 baseline inputs and the full corrected
+c13817f66e944953608c47322d2da34673e4092b751f15734a950611047a20e7
+source proposal. Physical production +1143/-499/net644, two conditional
+public nominals, no tests; library-only proposal is not executable eligibility.
+
+Three source vetoes must be resolved in the complete owning successor: cold
+unattempted child settlement and an already Completed(Complete) shutdown
+result must preserve their exact classification rather than fabricate Corrupt;
+generated lane variables must not collide with actual authored later/progress/
+custody/interpreter fields; old SendSettlements documentation must remain on
+its actual trait rather than attach to the new progress enum. The actual
+enclosing corruption fact classifies its parent and cannot invent child failure.
+Contract accepted the findings. Ordinary-Rust counterexamples and direct-vector/
+finish_items minimization evidence are unexecuted TEXT, not runtime evidence.
+
+Complete Engine/Local lowering, caller/test/documentation migration and fresh
+quality remain prerequisites. Acquired Ready output custody does not imply
+preservation of existing builtin producer's earlier internal facts: AssignWorker
+receipt before delivery, ProxyOperation's private authority, BeginActivation
+activation metadata, PrepareWorkers prepared prefix/tail remain explicit required
+follow-on ownership cuts with genuine witnesses. Independent tasks own disjoint
+repairs; no gate or owning production copy is approved from this source review.

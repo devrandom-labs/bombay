@@ -246,7 +246,7 @@ checks; full task/API and other decision gates remain open.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +11795 / -97 / net 11698
+documentation: +11958 / -97 / net 11861
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -1255,3 +1255,24 @@ exists at the demonstrated cold-staging fault, and the old synchronous normal
 refusal also drops F. Exact cold-error transport remains required. Family
 naming quality and research backup0e70294 preserve prior bounded family semantic
 evidence only; no new runtime family law or final delivery is claimed.
+
+
+### Actual creation producer cleanup comparison
+
+EXEC §§113–114 records test-only exact route and concrete child dispatch
+Ready/Drop comparison, source/compiler correction and independent actual review.
+Receipt26711dbf03bf70f362d1b199fc743b2082db2910b8d329020c588d05bb972f2a,
+review806040fa6b0ea7f153a67ef80179ab4213e62306c7c2f33ea252f054b487fef1,
+authenticates52 logs/all806 sources. Both profiles: seven healthy tests pass;
+three actual consuming-library originals fail only after known producer/host/
+cause disposal at unavailable whole route batch or original child receipt count.
+Two deliberately invalid outside surrender controls fail and restore; four
+isolated type/exclusive-loan/move denials fail and restore; owning strict passes.
+The later original current/tail assertions are unexecuted after first mismatch;
+healthy controls prove exact Established/InitializationRejected/current/tail
+products separately. No inaccessible compiler temporary destruction claim.
+
+Overall NONPASS retained because full owning workspace formatting fails in six
+unchanged inherited production files, with no owning test diff. That closure
+belongs to the already ongoing complete semantic source successor. No private
+activation/child authority, spawned actor join or full Core/EXEC gate accepted.
