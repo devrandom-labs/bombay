@@ -241,14 +241,14 @@ remain NONPASS and execute no runtime tests. Later inferred-actor receiving and
 exact-reason comparisons in sections92–93 pass their bounded runtime/strict
 checks; full task/API and other decision gates remain open.
 
-Current bounded evidence (EXEC §§146–150): observation A actuala70/independent6f837 and event order B actual532ec/independentc123 pass both profiles with genuine original/priority inversions and exact source restorations. Event-order default/Axum strict and full format pass; canonical integration and full-gate signatures remain open. Pool actual085 qualifies all33 individual guards, but its outer Python recording exit1 remains explicit in qualification2f6a/nonauthora14; this is not a clean outer process completion. Tested owning backup41d669e is pushed. Task runnerb678 is prerecorded and unexecuted, with all51 required guards conditional on four independent compiler checks. No full gate is promoted by these bounded receipts.
+Current bounded evidence (EXEC §§146–152): observation A actuala70/independent6f837 and event order B actual532ec/independentc123 pass both profiles with genuine original/priority inversions and exact source restorations; event-order default/Axum strict and full format pass. Pool actual085 qualifies all33 individual guards, with its outer recording failure explicitly preserved; owning backup41d669e is pushed. Task actualca5d/independent4a022 passes normal-library compilation in both profiles; cfg compilation retains one event/effect-path mismatch reported twice, with no runtime credit. The exhaustive-source and original-value custody tests remain under verification. Owning pending-work inspection actual80a/independent957fa passes all27 compiler, content/order, original-getter inversion, restoration, format and strict guards. Its actual physical delta is23 production/77 test lines, two public methods and no public types. All30 static original-access/loan/private-authority guards pass under actuale735/independent6a69; full native joined content remains pending. Canonical dependency integration, complete task/affine custody, seven full gates, minimization and reviewed delivery remain open.
 
 <!-- exec-research-counts -->
 
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +12373 / -97 / net 12276
+documentation: +12434 / -97 / net 12337
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
