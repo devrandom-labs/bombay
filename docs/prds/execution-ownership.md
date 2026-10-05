@@ -7111,3 +7111,533 @@ Before the next Entity comparison select qualified adapter source
 `b72f8025c875ddc77dcaffd0f46a1d601d41974bea49645d330699fbbc90f715`,
 root nonauthor review `9580a6d92109371e80274fbddd0dd6952b02239d514650c686b4317db8b6d11d`.
 One existing family.rs adds278 cfg lines and seven private fixtures; production/public types +0/-0. The real public family/entity/request drives an application-defined ID clone panic; the ordinary method borrows the complete original request through both adapter clones. The counterfactual invokes the actual unchanged consuming production method. Real root/family joins precede exact original request/cause/release observations. Compiler-first execution and both-profile original-defect failures/restores are required; no result is forecast. The deeper EntityRuntime PendingCommand clone before dispatch remains an independent reusable-library custody gap. Neither this comparison nor conditional adapter lowering `3918189e718553ecf93c7d22b0f00eab3e5754602bd84609b63d22da40e2b538` closes it. Same229 approved path allowance; no new public type allowance is consumed.
+
+## 160. Raw-result dependency and combined retirement pre-edit checkpoint
+
+The Entity comparison has two preserved compiler epochs, not runtime proof:
+actual34637 rejects a redundant actor attribute argument; source0201 removes
+that argument using the owning facade's inferred message contract. Its actual
+0b38 still fails both profiles with two E0283 errors. Independent actual/source
+proof9c1bb127 verifies all526 sources and seven command manifests. A no-child
+terminal annotation alone cannot satisfy the unrelated root projection bound.
+
+Smallest ordinary-Rust comparison b83b9ab37fc921b71bfc585a6fe92c81d485bb4fc69e16d335b56cb3f8be3608
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-root-projection-bound-text-b7olxfcz/receipt.json
+moves the existing projection requirement onto methods that actually project.
+The existing RootProjection Error/Owner relation and every mapping body remain
+unchanged. Raw launch_with/run_with_entities do not execute projection and must
+not require it. Root source review2e31f8b0769f3d94ff4cfd1519b735cdeeb32acdde5e89df05c7187242adb492
+permits a compiler-first comparison only. One existing application_runtime.rs:
+expected production +78/-17/net61 before formatting; tests/public nominal types
++0/-0. Reuse DirectRoot, DeclaredRoot, LaunchSystem and exact ActorRetirement;
+no new trait, product, facade, identity projector or second execution path.
+
+Fixture successor cc1cac7c9e4c8746b4076967c795fc6d5d75a096617617bc311bf38f2290ce8e
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-entity-original-no-child-terminal-text-e47b9i6a/receipt.json
+selects the existing Never descendant terminal and unit child-failure product
+for the actual no-birth root. Its own retirement remains inhabited. Two cfg
+annotations change +2/-2/net0 in both positive and original-consuming sources;
+no oracle, behavior, cleanup order or fixture nominal changes. Independent
+4890c70114731b3755fb6a16d464c0ad281944b439a16ede3c3a7f3ee78f11ad
+requires the real projection-bound repair; annotation-only eligibility is denied.
+
+Before source installation require the independent complete runner review,
+pinned versions/full native locked graph, both healthy compiler profiles, real
+Entity controls and original consuming-input failure/restores in both profiles,
+original unused-projector compiler denial with exact restoration, full formatting
+and default/Axum strict checks. Archive complete tracked/untracked inputs and
+every stopped epoch. No production retention or DG-API acceptance follows from
+this bounded comparison. Both existing paths are within the approved229 scope;
+section52 delegates the recommended bounded selection and line limits are waived.
+
+Combined retirement remains a separate uncompiled comparison: Engine source
+ecf4409c with independent753930b1 preserves simultaneous source input/reply and
+their original position in the surviving Driver. Local successor2a8ff198 keeps
+an acquired active activation-panic outcome distinct, exposing the existing
+LocalActivationRejection owner once. Independent008bf0d5 closes that omission
+but withholds source eligibility for missing child-startup fields and forwarding
+partial interpretation as original Actions. Existing rejected-child bindings and
+ChildFailure are the first ordinary owners to compare for the surviving cleanup
+facts. Full normal-library closure precedes compilation; no retry, erased fields,
+fabricated empty values or joined-cleanup claim is permitted. The prepared1152
+owning/runtime archive has not been installed or executed.
+
+## 161. Integrated receiving comparison and acquired-failure order
+
+The native Entity batch closed with receipt37166c834dd91286b16fdafb9ea2889c7d571b952c7046f01100dbba4a726bd2.
+Seven setup/graph/format guards qualify; both compiler profiles fail with sixteen
+errors in the projected Application methods. No Entity runtime, original-defect,
+static-denial or strict check ran. Independent revieweea92cae6dad97983f09e89708c1c79b28399f48b2c8e88b1648cd4206696da3
+authenticates the complete526 archive and actual nine rows. Keep the original
+failure; repair the actual associated-output requirement before rerunning.
+
+The smallest follow-up44a24f6ecfbeab141dd6f2fda2974c12f23abe7cfa5a72be7473a0344fbdc9a8
+names LaunchSystem's existing ChildFailures output in Application::run/run_axum,
+matching their existing run_with law. The same associated-output equality avoids
+forcing the concrete blanket implementation merely to spell the projection input.
+One existing file: expected production +6/-22/net-16 relative to actual37166,
+tests +0/-0, new nominal types/traits/methods/fields zero. Two existing methods
+each gain one generic parameter; record that public cost. The selected526 census
+has no explicit generic callers, but actual inferred compilation remains required.
+Unchanged raw/projected bodies, root ownership, errors and origins are mandatory.
+Repeat the same twenty-four guarded comparison commands after independent source
+and runner review; no wider semantic claim follows.
+
+The child quality continuation6cce5e2a2958cf414dedd77424189b32d3d446187f5c0f222b02adda2e3dd8ca
+has thirteen qualified guards and two rejected diagnostic parsers. The compiler
+actually gives the intended E0277 denials in both profiles; its abbreviated type
+rendering omitted names required by those parsers. Frozen source/span/long-type
+supplement498f8bb5ac5418c2a350ae56b6759b2470ba277e57ae5da7e7fdb8f613b73e8b
+and independent9f9cb0a7b534d8f83f00cf4bf5dfcfb68a4ce4ceb8193e9bf9216351190e9416
+qualify those two actual denials. Preserve the original NONPASS receipt. Earlier
+fifty-one semantic guards are inherited once; finite child comparison now
+qualifies, without accepting the complete task, projection or API gates.
+
+Before the combined normal-library compiler comparison, select complete source
+0c89a4dda51ef261f385bb0c30dab32919d661b12ef36586ab99825e5d90bd91,
+with corrected startup importsf0b17bf00b3d949a5e948bf4b5128572d81982c5c2620d8827e5efa17e786564.
+Ten existing runtime paths preserve the original source position, exact rejected
+child state/actions, primary failure, additional failures, report result and
+retirement failures. Standard pre-ACK extraction uses the private commitment
+boundary proof90d327; it is not a generic empty-state assumption. Complete
+preformat physical delta is +2502/-1454/net1048 before removing three accidental
+cfg imports; this prefix measure includes documentation and must not substitute
+for the final production census. Startup's incremental classified change is
+production +183/-46/net137, tests +7/-21/net-14. New nominal types/traits/aliases
+are zero; startup adds one existing public variant and ten fields. The existing
+LocalActivationRejection becomes public once. Full public-surface minimization
+and consumer verification remain required.
+
+Engine sourceb1e2f2e54fd764b8a827a346b354be50361f56ca4ba02e7a1b3bd46f2981a01f
+passes the exact original source index as the eighth active retirement loan.
+Independent3bc14fa24e55fb489e02fb991eb36508e583816cac1bf0b7d1f13934a16c71e4
+and concrete equation1ad5ca14bcf1047fa1c47566c431e022a872531f78a74972280c6894981bb66d
+identify why a partially acquired source cannot reconstruct that index from a
+flattened remainder. Reuse the existing Driver/Local residual; no extra product.
+
+Independent review also finds an acquired-failure ordering defect: genuine
+activation rejection or source closure precedes a producer's disposal panic,
+but the draft recorded that later panic first. Before correcting the one
+existing Driver file, select sourcec4567d3f82d206382c0e87eab2bb00f99ac73217d5c3474fd744921143466d26
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-engine-failure-acquisition-order-text-g89jmqzs/receipt.json.
+Process the valid original reply before appending the later original native
+failure; preserve malformed simultaneous owners unchanged. Settlement disposal
+still follows producer disposal. Require both-profile activation/source controls
+and the original ordering inversion. Expected incremental production +18/-12/net6;
+new nominal types, variants, methods, fields and traits zero. No test or gate
+acceptance is claimed.
+
+Composition reuses the independently reviewed owning/native ten-file grant
+merge0e68a7cd and full owning414/runtime38a archives. Its actual local-source
+dependency graph must be checked separately from the published native graph.
+The same229 existing-path scope and section52 delegated recommendations apply;
+no new path or nominal type is proposed here. Pinned named formatting, actual
+locked metadata, debug/optimized normal library compilation and Axum compilation
+precede cfg migration and semantic execution. Archive stopped compiler epochs;
+do not manufacture compatibility, successful cleanup or a full gate signature.
+
+Section161 Entity execution37c5f97bb575562b35dd1cfa125a41e667a141952f4e51e325c102becc37cb6f
+closes all twenty-four guards: twenty-two qualify, including both compiler
+profiles, both original unused-projector E0277 denials/restores, both complete
+request controllers and original consuming-request loss/restores per profile,
+and full formatting. Both strict checks fail on the same seven cfg-only
+diagnostics. No strict/full-gate pass is claimed. Before the one existing family
+fixture correction select source4d06a48076f578e9952dc0bf907586d8ba1fdb1488da3d3d6218f21f73dcacd2:
+tests +8/-8/net0, production/public +0/-0. Preserve hydration's polling time;
+equivalent let-else bindings remove wildcard error matches and fictitious Copy
+discharges. Inherit the twenty-two actual guards once; require the nine focused
+version/graph/format/compiler/strict quality guards and independent review.
+
+The independently reviewed normal graph probe19221465949f2833c143d516a02d858c46fa86d3a1a30d23498d70fd86059179
+closed as actualdf872579b34f428e4f8c45f887903756b8af13cbfc909b7be3744693e495ffbd.
+Both exact versions pass; locked metadata refuses the deliberately changed local
+Core/Macro sources. All1152 sources are archived; no format or library compiler
+ran. Nonauthor09466556a1cb0dcd8ecac05b4a8741a9c92767ab9db3ef093ac73361121b707f
+and root outer authenticationfc98dd2e bind the actual probe. Before the separate
+lock update, permit only existing runtime/Cargo.lock to change: run offline
+metadata once without --locked, retaining valid existing package selections,
+then require locked metadata. Do not generate a fresh unrelated dependency
+upgrade. Expected change removes registry custody for the two now-local owners;
+production/tests/public types +0/-0. Measure the actual full lock delta and graph;
+independent actual graph review precedes any contract-dependent compilation.
+
+Normal ten-file source reviewc848471cb882184dc2ce79af48d47b99303d1d59cc362e15460dc481aa002070
+permits the bounded library comparison only. Corrected cfg successorad50aae3
+closes its three reported consumer mismatches; independent09466556a1cb verifies
+the actual source-position tuple, Offering loan and fourth retirement slot.
+Existing Engine terminal-custody proposal171967af2932f2790bbdb3202ab8766d498f8acdc0008b7f8d46868352012b84
+adapts its fifteen existing selectors and adds four acquisition/disposal-order
+controllers with original b1 inversions. One already approved test path:
+tests +360/-97/net263, production/public +0/-0; three private instrumentation
+values, no runtime layer. Whole typed residuals and native custody are required
+after producer disposal, in both profiles. Independent review and actual
+compiler/original-defect proof remain pending; nineteen tests are a forecast.
+
+## 162. Combined build failures and independent Engine continuation
+
+The Entity quality continuation4141afca passes all nine scheduled guards;
+independentaf67b7c1 authenticates its526 sources, selected179-package graph and
+all results. Inherit the earlier22 semantic/static/compiler guards once. This
+qualifies the finite comparison, not full Entity, task or API acceptance.
+
+Local owning lock resolution7ed4ef1c passes four guards. Independent948d7c30
+verifies all1152 sources and the actual179-package graph: only Core/Macro
+registry source/checksum records are removed from existing runtime/Cargo.lock
+(+0/-4); all package versions, dependency lists, other176 package records and
+remaining graph edges/features are unchanged. Selected owning sources remain
+Core/Actors0.22.0 and Macro0.13.1; this is a separate graph from published Core.
+
+Normal formatting first stops at2b00e34e after two passing files: interpret.rs
+contains two excess closing angle characters. Independent5f4bd157 verifies the
+four grammar diagnostics at exactly two sites, unchanged failed source and
+absence of compilation. Source d262261d removes exactly those two characters
+(one production and one cfg line, +1/-1 each; public surface zero).
+Independent74ce8126 and root4e65831e review the corrected remaining-format runner.
+Actual0f94d7ce passes all twelve remaining named formats; all four library
+compilers fail. Default debug/optimized each report70 errors, Axum each72;
+each reports three warnings. Independentdd443590 verifies all actual source
+transitions and logs. Preserve every failure; no runtime or library-pass claim.
+
+Before another library probe, compare only the actual missing hot requirements:
+Entity sourceeb8cba86 adds three production lines to the existing native
+EntityDefinition, including two associated custody Send/'static guarantees;
+independent root036ff0cc identifies the real task-output/directory boundary.
+Application source8c727626 proposes six hot caller declaration hunks (+16/-0,
+including four documentation lines), two existing public execute_with methods
+with those same output guarantees, and no new nominal type or cold work/output
+requirement. Interpreter source65b20479 states forward owning projection
+relations and replaces a recursive Self::Retired proof with the identical
+capability-owned descendant projection; production +7/-4/net3, cfg the same,
+no executable body or public-surface change. Independent37ec753d qualifies the
+bounded interpreter comparison. Full source review, exact composition census,
+pinned compiler results and cold/hot static witnesses remain required.
+
+Correct section161's Engine forecast: sourcea59cc852 adds exact acquired
+Continue(None) custody to its existing private residual; tests +386/-97/net289,
+production/public zero. Independent2ea93f27 qualifies nineteen current tests.
+Exactly three previous-b1 negatives are required; the exhausted-source ordering
+controller is a positive on both versions. The next_source negative first
+observes the complete residual difference; its later cause assertion receives
+no negative credit. Fault-producer placement is separate from malformed semantic
+input/reply preservation. Core, Actors and Engine compile during actual0f94;
+Engine's independent terminal target may proceed while Bombay's library is
+blocked. Both target compilers and current healthy prerequisites precede the
+historical mutations; restore/archive the complete source after every mutation.
+This does not waive the library prerequisite for dependent native runtime tests.
+
+Root ActorExecution fixture comparison15ca7afa changes tests only (+238/-97/net141),
+keeping its complete production prefix and pure folds byte exact. It distinguishes
+failure before/after actual retirement receipt, preserves surviving Driver
+ownership without retry, and measures outer execution allocation overhead
+against the same current Driver. Preserve the historical absolute count1;
+current totals, before/after performance and safe pinning minimization remain
+unproved. Evidence-script selector migration remains required. Backend Entity
+comparison7b9b05d4 (independent61d48cac) proposes three existing paths:
+production +115/-79/net36, tests +198, no public types; retain the whole original
+admission before genuine ID routing. Original/fixed execution and remaining
+hash/equality, cancellation and post-installation laws remain open. Same229
+existing-path scope and delegated recommendations; no new nominal allowance.
+
+## 163. Retirement must not run twice
+
+Engine actual374dc4ee closes its26 scheduled guards:25 qualify, including
+both19-test cohorts, three precise historical negatives in each profile,
+the original exhausted-source positive, complete restoration and formatting.
+Strict Clippy fails on11 library diagnostics; test linting remains unexecuted.
+Actual source audit6b16abc1 authenticates the archive and logs; it is not an
+independent semantic-gate approval. The formatted incremental test delta against
+actual0f94 is +616/-122/net494, production/public zero.
+
+Independent review7ab3f048 identifies a remaining Engine boundary defect:
+after an incomplete retirement returns the original Driver, receiving that
+same Driver again invokes the host's retirement callback again. D-RETIRE-1
+requires no retry; polling the same outstanding operation does not authorize
+constructing another operation. Do not invent a reentrant host contract.
+
+Before production repair, sourcec0c0eede adds two tests to the existing
+terminal_custody target (+141/-0; production/public zero, other1151 inputs
+unchanged from actual374). The control checks one real callback and original
+owner recovery. The regression reinserts that exact returned Driver, checks
+the original value and allocation identity, then drops the complete owner
+before requiring one callback. Prove the current implementation fails with
+two callbacks in debug and optimized builds; compiler/setup failure is not
+defect evidence. Independent source and executable-runner review are required.
+Any production phase distinction requires a separate recorded comparison and
+review after that proof. Existing ownership regressions remain mandatory.
+
+Correct the earlier ActorExecution after-receipt expectation: source7182a9a1
+(independentcfefef55) preserves an already selected normal stop and records
+the later retirement panic as one additional failure. The earlier15ca
+expectation incorrectly promoted cleanup failure to the primary cause. This
+correction changes tests only, retains the original production prefix and
+does not claim panic-payload identity or destructor evidence.
+
+## 164. Remaining native caller constraints
+
+Normal compiler comparison5785294c passes all three named formats and fails
+all four library checks. Each now reports eight errors and three warnings:
+six diagnostics identify the same Entity backend spawn's two missing custody
+Send guarantees; one identifies the interpreter's borrowed source-progress
+future; one identifies the owning Stash callback's changed signature. This
+narrows the earlier70/72 errors without establishing a library pass.
+
+Before another source correction, retain the existing owners and executable
+bodies. Add the actual source-custody Send requirement to the two existing
+normal/cfg CommitActions implementations in interpret.rs (expected production
++1/-0, tests +1/-0, public types zero). Compare the existing native Entity
+backend's two missing Send/'static constraints against its genuine task output.
+Verify the selected owning Stash constructor and all consumer signatures before
+migrating the existing ActorExt method; do not invent a callback adaptation.
+Independent source review, exact measured composition and both compiler
+profiles remain required. All changes stay within the229-path authorization.
+
+Concrete successors are Entity68e1bbac (two private native predicates,
+production +2/-0) and Stash621e79d2 (production +4/-2/net2). The latter changes
+one existing public method signature to the exact owning fn(&Self, &Message)
+route; it adds no public type or method. Its pure constructor and replay law
+already exist in the selected owning library. Migrate every caller and refresh
+the phase-denial diagnostic separately; an obsolete owning import is not
+evidence of the intended static denial.
+
+## 165. Remote backup of owning implementation
+
+Before applying the reviewed research-source transplant4f35c616, root review
+23311d8e authenticates its complete12-path proposal against owning branch
+research/exec-receiving-custody at41d669eb. Copy no historical documentation;
+preserve README and every other794 recorded input. The paths are atomic's
+fifo_pool/mod.rs and protocol.rs, keyed_pool/protocol.rs, mod.rs, pool/worker.rs,
+stable_proxy/mod.rs and state.rs, worker/activation.rs, mod.rs and preparation.rs,
+plus actors/tests/proxy_command_recovery.rs and behavior/tests/custody.rs.
+
+The incremental mixed-source measurement is production +121/-35/net86,
+tests +435/-27/net408 (SequenceMatcher, additions and deletions classified at
+their respective cfg boundaries). It promotes the existing private activation
+correlation to one public WorkerActivationGrant and exposes five methods;
+this is not zero public API growth. These are exact previously recorded
+research sources, not a newly accepted owner or scope expansion. Reuse the
+existing initialization permit, typed activation input, original worker/plan,
+preparation ticket and concrete pending product. No runtime contract is copied
+into the owning library.
+
+The owning library compiles in actual0f94's dependency build; combined Bombay
+and all owning test gates remain open. The original Started-conversion probe
+intentionally contains a failing original-defect oracle: do not claim the
+ordinary full suite passes. Remote backup is not release, distillation or gate
+acceptance. Immediately recheck Git head, clean tree and all806 original
+hashes, apply only the12 reviewed source paths, make focused research commits,
+and push. Runtime's ten overlapping production paths require a separately
+reviewed three-way composition preserving canonical fixes.
+
+## 166. Affine retirement repair comparison
+
+Original-only actual72fb0b7c qualifies all12 scheduled guards. Both target
+compilers, both existing19-test cohorts and one-call owner-recovery controls
+pass. Both original re-entry tests fail at the intended first callback-count
+oracle (two rather than one), after disposing the complete original owner.
+The full1152-source epoch is archived. This establishes the defect; no fix or
+gate is accepted from the original negative.
+
+Before production repair, compare one private variant in existing
+ExecutionPhase distinguishing selected retirement from an attempted operation.
+Set it immediately before either genuine prepared/active retirement callback;
+receiving that same surviving Driver again must return its retained owners
+without reconstructing the callback. Early malformed-input rejection must not
+claim that a callback ran. Update receive_run's current retry wording to this
+law. Expected one existing driver.rs path, up to eight net production lines,
+no new field, wrapper, public type, port or reentrant host policy. Preserve all
+original slots, causes, residuals and settlement order. Independent review and
+debug/optimized21-test cohorts, original inversion and cancellation at this
+operation boundary remain required before acceptance.
+
+## 167. Fixed no-replay result and remaining boundary witnesses
+
+Current no-replay comparison6fe2e7b3 qualifies all14 guards. Debug and optimized
+full21-test cohorts pass; replacing only the Driver with its actual original
+source reproduces the exact two-versus-one callback failure in each profile.
+Both restored21 cohorts pass and all1152 sources are restored/archived.
+Root nonauthor runner review3e3072f9 and source review01153f49 qualify this
+bounded comparison, not a complete semantic gate.
+
+Before the separate pending/prepared witness execution, sourcec6ff18ed
+changes the one existing terminal_custody test file (+178/-16/net162;
+production/public zero, other1151 exact). Its existing closed response gains
+a pending case; no new owner type. Exercise genuine prepared retirement after
+initialization rejection and dropping a genuinely pending active retirement
+future before receiving the same outside Driver again. Observe typed Poll
+results, original owner custody and final release before counting callbacks.
+Require independent source/runner review, both target compilers, current23
+cohorts, both exact original regressions and restored23 cohorts per profile.
+Do not credit later assertions after the first original failure or claim async
+cleanup completion from explicit whole-owner drop.
+
+Native Backend comparisonc55121ea stops after its healthy debug cohort fails:
+the actual Clone-panic custody case passes, but ordinary admission's shutdown
+reports zero remaining represented rows where the fixture expects one. Both target compilers
+and prior seven version/graph/format guards pass; later runtime and original
+inversions are unexecuted. Full526 sources are archived. Research first-cut
+source remains unaccepted: determine whether the missing represented row is an omitted
+required result or an obsolete historical-count expectation before changing its
+oracle. This is separate from the combined local owning graph.
+
+Owning source backup is pushed through6f7e966c0df9dc5b0c44617ad2be1fdc3e09f3bb
+on research/exec-receiving-custody; remote receipt15983d34 verifies all806
+after hashes and a clean tree. Four focused commits preserve the typed grant,
+borrowed preparation observations and custody comparisons. No release or full
+test-suite pass is asserted.
+
+## 168. Forward source proof and Entity test correction
+
+Normal actual5f3ba1ed passes three formats and fails all four library compilers
+with three E0277 diagnostics and three import warnings each. Entity and Stash
+errors are closed at this bounded compiler seam. The remaining interpreter
+diagnostics normalize the source product while checking its retirement method.
+Before another source comparison, evaluate replacing the whole B::SourceCustody
+Send predicate with the actual creation leaf's SourceCustody Send predicate in
+the two existing normal/cfg implementations. Existing settlement Send bounds,
+SendSettlements' already required source-custody Send guarantee and the exact
+forward action-product equation must prove the whole borrowed source remains
+Send. Expected +1/-1 production and +1/-1 tests, net zero, no public types or
+semantic body changes; do not add a redundant second predicate or a wrapper.
+
+Independent Backend actual audit0d119b7c verifies all10 commands and526 source
+maps. The ordinary refusal's original slot is removed and discharged after
+its live notification succeeds; shutdown joins before draining current rows.
+Zero represented rows truthfully describes that current drain. Requested and
+Refused retain the same actual activation identity in the independent trace.
+Before rerunning, correct only the obsolete historical-row expectation in
+the fixed/original/narrow ordinary controller copies. Preserve the exact
+request/refusal trace, returned command pointer/content, retention/release
+checks and Clone-panic controller. Test-only, one existing runtime.rs path;
+production/public zero. Both profiles and precise original custody inversions
+remain required. No new history store or shutdown-count contract is selected.
+
+## 169. Integrated library and cleanup comparison (2026-10-05)
+
+The normal paired library now passes all five scheduled formatting/compiler
+guards in default and Axum debug/optimized builds (actual receipt `2695c065`;
+independent actual review `cc38faca`). This verifies the current forward creation
+source-custody bound. It does not compile the tests or accept a design gate.
+
+The prepared and pending cleanup comparison passes all sixteen scheduled guards
+(actual `72c5758f`). All 23 cleanup tests pass in both profiles, including after
+restoration. Reinstating the original Driver makes both new cases fail at the
+intended second-cleanup-call oracle. The existing private phase correction is
+production +5/−1/net +4; the additional test change is +178/−16/net +162.
+Independent actual review `4e694565` authenticates that bounded result.
+
+The native Entity admission comparison passes all 28 guards, including four
+intended original-defect failures and restored two-test cohorts in both profiles
+(actual `7ccac924`, independent actual review `6feb2ea7`). Its corrected ordinary
+shutdown oracle measures rows still owned after joined cleanup; it does not
+require an already settled row to remain. The separately proposed three-file
+paired-graph transplant (`32a3b5df`) still needs review and compilation.
+
+Next compiler comparison: overlay the independently reviewed three-file test
+migration (`3c49468e`, reviewer `a58d2cda`) and the verified private Driver phase
+on the current normal library. The frozen eight-command runner (`2ccb89da`)
+formats those four existing files and checks default/Axum tests in both profiles.
+This stage is production +5/−1/net +4, tests +1039/−296/net +743, no additional
+public types. Pending23 tests and the Entity transplant remain separate inputs.
+No wrapper, execution policy, or full-gate acceptance is introduced by this
+compiler comparison. Scope remains within the delegated 229-path allowance.
+
+## 170. Engine quality prerequisite
+
+The existing strict Engine check recorded eleven library diagnostics: concrete
+ownership type complexity, incomplete public method documentation, the large
+exact returned Driver, one long causal loop, two nested conditions, and the
+eight independent retirement loans. Before this quality edit, the actual
+Pending23 source remains the semantic baseline.
+
+Proposed scope: two existing Engine files, at most 55 net production lines,
+no tests or public types added. Add truthful error/panic documentation, scope
+explained lint expectations to the exact concrete contracts, and collapse the
+two conditions without changing evaluation order or moving any required effect
+into an assertion. Reuse all existing ownership slots and the single causal
+Driver. Do not add a wrapper, box the incomplete Driver, aggregate its loans,
+or split its causal authority merely to satisfy a lint. Independent source
+review, named formatting, strict checks and all 23 debug/optimized cleanup
+tests must pass before this patch can be retained.
+
+
+## 171. Public test consumers and library-unit compilation
+
+The first combined test check (`fde5badc`) passes four formatting guards but
+all four default/Axum debug/optimized checks stop at public tests omitting newly
+preserved retirement facts. It provides no library-unit compiler result.
+Independent factual audit `b49fb623` confirms those diagnostics.
+
+Before continuing, update exactly three existing public test files to bind and
+observe the nine additional retirement facts once in each owning pattern, plus
+three initialization-failure facts. Preserve their existing terminal, payload,
+child and effect observations. Proposed change: tests +291/−5/net +286;
+production and public types zero. The initial draft `144fccf1` was rejected
+before execution: it repeated one root's assertions and omitted observations
+inside two child arms. Corrected source `6e1c0d77` moves those observations into
+their owning arms without changing the measured scope.
+
+The seven-command comparison `bedab9c4` formats these three files and separately
+compiles library unit tests without running them in default/Axum debug/optimized
+builds. Root must authenticate and review source and runner before installation.
+This deliberately exposes independent unit-port prerequisites; public-test
+compilation and runtime assertions still require continuation. All 1,152 sources,
+command outputs and the terminal source graph must be archived. No design gate
+or runtime law follows from successful compilation alone.
+
+Engine quality comparison `e1a9ca66`, independently reviewed source/runner
+`e12cb5f4`, passes both named formats, strict Engine library Clippy and both full
+23-test cleanup cohorts. Its two-file change is production +47/−9/net +38,
+with no tests or public types added. This does not cover Engine's other consumers
+or strict all-target checks. Independent retirement review `002ea6b7` accepts
+only the private no-replay phase and keeps DG-TASK open: advanced pre-receipt
+retirement panic retains a Driver whose facts cannot yet be inspected or returned;
+no corresponding standard-local defect has been established.
+
+The public-surface inventory `eaac5dc3` and qualification `ba30db72` count eight
+fresh public nominal names and two visibility promotions against the current
+published owner graph. The semantic classification is seven additional owners
+and three exposures, because the grant replaces a private owner; that
+classification does not erase its new public declaration. The selected .21.2
+comparison additionally includes two already published .22 observation names.
+Retaining the entire prospective surface remains subject to §52's delegated
+recommendation, ordinary-Rust comparison and independent minimization; the
+conditional seven-type proposal is not treated as a literal eight-type approval.
+
+
+## 172. Current internal consumers
+
+The seven library-unit guards finish at actual `e5406d96`: three formats pass;
+all four compilers report the same 193 errors in old internal test consumers.
+Their complete source graph and diagnostics are archived. This is a failed
+compiler comparison, with no runtime or gate credit.
+
+Before the next Engine comparison, select the six-file current-quality rebase
+`95b85508`. Tests/bench/fuzz change +448/−171/net +277; production/public types
+zero. Keep the current quality Driver/environment and Pending23 test file exact;
+all other 1,146 sources remain unchanged. The fourteen-command schedule formats
+six files, compiles Engine tests, requires strict all-target Clippy, then runs
+the unchanged law/property/source-order cohorts in debug and optimized builds.
+The separate fuzz workspace receives formatting only; its dependency graph and
+runtime remain open. Original trace oracles stay authoritative. The private test
+host's consuming action callback is not proof of general affine host custody.
+Independent source/runner review is required before installation.
+
+Parallel library test migration is confined to existing owning files and
+previously proven port syntax. Preserve all original typed effect lanes, accepted
+values, joins, replay and generation assertions. A newly required abstraction or
+policy reopens design; compiler diagnostics supply no architectural authority.
+Root's initial five-file draft `b9602724` is rejected before execution for three
+duplicate constructor fields and nonexistent fields in two terminal variants.
+Successor `1a341091` fixes those source mistakes, preserves additional failures
+through the existing complete capability split, and moves test publication out
+of assertions. It still needs nonauthor review and compilation. No production,
+public type, new owner or new effect port is added by that test-only proposal.
+
+
+Engine continuation: actual `96d88e4f` passes six formats and fails the test
+compiler at exactly two existing DriverRetirement patterns missing
+additional_failures. Strict/runtime guards are unexecuted. Before rerunning,
+select `f278a208`: bind and observe that lane once per pattern, disposing the
+original turn panic before assertions. Tests +4/−0/net +4, production/public
+zero, one existing path; preserve all formatted actual inputs and the same
+fourteen-command schedule. Root nonauthor source/runner review precedes execution.
