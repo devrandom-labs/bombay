@@ -246,7 +246,7 @@ checks; full task/API and other decision gates remain open.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +11958 / -97 / net 11861
+documentation: +12034 / -97 / net 11937
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -1276,3 +1276,17 @@ Overall NONPASS retained because full owning workspace formatting fails in six
 unchanged inherited production files, with no owning test diff. That closure
 belongs to the already ongoing complete semantic source successor. No private
 activation/child authority, spawned actor join or full Core/EXEC gate accepted.
+
+
+Builtin correlation before lower receipt has actual receipt
+7deea52a8b225278233de03bebf075e22cef57d267cab2c5689e565235892cb3 at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-library-preready-execution-la2l2hkk/verification.json; independent factual review
+ebf68adbb5994e1a42170812567058ec07a6e9465165959d729f41e562dc6720 at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-library-preready-independent-y9jwum38/review.json. All25 logs and806 positive/final sources authenticated; only owning operation.rs differs from exact199c foundation. Four original compiled101 executions in debug/release reach final receipt absence or private token count1 versus2 after literal lower panic and explicit available-owner discharge. These are final assertions; no later original oracle is presumed executed. Fourteen exact-one ordinary/healthy controls pass, owning strict and owning formatting pass.
+
+Overall NONPASS remains attached: full workspace formatting fails on nine inherited paths (six production owners and three Behavior tests). No broad formatting change, production receipt repair, live actor/task/descendant joining, new normal receiving API or full gate follows from these bounded witnesses. The lower callback explicitly consumes delivery/control; their destruction is distinct from accidental loss of the independent genuine library receipt/private operation authority.
+
+
+Cold setup successor actual1e58467a42a979dbf38d9f4c252c37d02ef4c7f1192b357942b3c2bd57b6b8c0 at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-cold-finite-rebased-execution-83kq02lm/verification.json, independent actual reviewa68dcb6c0427133eb79cc91f451b1cb1960a7d8b26ae4a5e7db437bc02f7913f at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-cold-rebased-actual-independent-m_sf093r/review.json, authenticates346 complete positive/final inputs and all25 logs. Two cold controllers per profile pass; four intended finite failures and four exact restores execute. Catch omission reaches work_released1727 0 versus1 after discharge and earlier native cause assertions; later actor/metadata assertions remain unexecuted. Cause replacement reaches fault_owned1710 Some0 versusSome1, with later assertions unexecuted. Healthy controls establish the complete remaining products separately.
+
+Overall NONPASS remains: all-target strict encounters two stale fixed_supervisor_recovery.rs257/405 tuple consumers. Axum/final formatting do not run in that epoch. Prior stopped4acc obsolete mutation-context application is preserved as execution failure, not semantic regression evidence. Complete source provenance retains original115 proposal,117 quality correction,118 test predicate,120 finite context rebase and each independent review.
+
+The exact reviewed cold source is backed up remotely in research/exec-paired-outcome commit2867d51; its research README notice remains unchanged. Measured eleven-path delta from its prior remote commit is production+483/-259/net224, tests+870/-12/net858, documentation+67/-6/net61, one promoted public type. This backup is not canonical acceptance or main delivery.

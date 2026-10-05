@@ -6505,3 +6505,65 @@ receipt before delivery, ProxyOperation's private authority, BeginActivation
 activation metadata, PrepareWorkers prepared prefix/tail remain explicit required
 follow-on ownership cuts with genuine witnesses. Independent tasks own disjoint
 repairs; no gate or owning production copy is approved from this source review.
+
+
+## 117. Cold repair actual verification and quality correction
+
+Section115 actual i47nsfv3 receipt67bb17e042b19183003ad9cd949aa8b3451fd057b01f31f54fb3d47367113f25,
+factual independent336575aaf664654a389ae9fb2605db760de3386447b3d302b1e054645a85e1cb
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-cold-declared-actual-independent-y0qiurqe/review.json,
+authenticates33 logs and346 final/positive inputs. Five focused controllers and
+complete21-target pass in each profile; four intended finite failures and four
+restores execute. Original direct Role catch omission fails work_released1729
+after earlier native cause checks/disposal; later actor/metadata assertions are
+unexecuted. Original cause replacement fails fault_owned1710; later fields
+unexecuted. Exact healthy controls establish retained/discharged cold values.
+Default all-target strict stops at five library diagnostics; Axum and final
+formatting do not execute. Overall NONPASS stays attached to actual67bb.
+
+Before copying select complete quality TEXTcb1767e396c9869843982d5a8a748e36418b6fed3e7c6e670f6316cad8251f59
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-cold-quality-text-yq4pfkil/receipt.json, root independent source review
+0eeb16ac8c90589ddd1b9a58bab8eb69a10b3835f07659fa48259d6df4b2ce86 at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-cold-quality-root-review-m95018h7/review.json.
+One existing path production +17/-8/net9, tests/public/signatures/bounds0.
+Merge four genuinely impossible Never arm pairs; document exact no-runtime
+application/F/TryCurrentError return; one scoped actual type-complexity expectation
+retains concrete cold/prepared inputs without new alias/wrapper. Same168 scope
+and conditional7 allowance. Fresh346 archive, default/Axum full-target strict
+and full formatting; inherit unchanged semantic/finite evidence explicitly.
+Further genuine diagnostic/consumer failures preserve their stopped epochs;
+no skipped caller or gate reduction is authorized.
+
+
+## 118. Cold test predicate correction before source copy
+
+Section117 quality continuation actuala91a9d0819bc94fb08e48ddc6752efc41d0669b354e6c060ec85f1c21952afe4 preserves five logs and346 inputs. Default all-target strict reaches one test-only single_match_else diagnostic; the five earlier library diagnostics are resolved. Axum/final formatting and new semantic runtime verification remain unexecuted.
+
+Select root-authored test-only TEXT582be1ec08a460d244229a395f3457c7f6639750498d6f28ed211bd6ede40e2b at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-cold-test-predicate-text-u546sl9l/receipt.json. Nonauthor review96afb06d321371b127b9c11300e27095c6401f890ba80813c380efc9c502f032 authenticates all346 foundation inputs, five logs and full before/proposed/patch. One existing approved test path +40/-43/net-3; production/public types/bounds0. Borrow the same retained fault Option for the ordinary local is_none predicate; preserve both complete arm bodies and disposal order. No semantic boolean state or lint waiver.
+
+Before copying, retain the existing168-path/conditional7 allowance. Fresh exact346 archive, pinned formatting, both cold disposal controllers in debug/release, both original finite defects and exact restores, default/Axum all-target strict and full formatting. Preserve every genuine stopped diagnostic epoch; no semantic or gate claim follows from the spelling change.
+
+
+## 119. Original builtin correlation witness before lower receipt
+
+Before source copy select test-only packetdce35b70ad17fb7a974b9465930a452a6609f794bed47974c61c68eabbcba902 at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-library-preready-correlation-text-mtcmw68d/receipt.json; nonauthor root reviewf1dccf8c321a7d69085adf406b651e7da3b85573eca1ca6c54c615921b4d55f9 at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-library-preready-root-review-qijyhbbn/review.json authenticates all806 exact199c owning inputs and seven artifacts. Existing approved operation.rs +189/-0 test lines, production/public/private fixture types0. Same168-path/conditional7 allowance. No production repair or public contract selected by this fixture.
+
+Execute actual AssignWorker::settle (owning pool/assignment.rs) and ProxyOperation::settle originals against the same existing lower host used by ordinary outside-custody comparators. Original delivery failure loses the genuine library receipt; original synchronous admission failure loses the private operation token. Lower delivery/control deliberately consumed by the callback are excluded from recovery. Preserve exact private authority and accepted correlation without fabricating IDs. Original cause and every available known owner are explicitly discharged before final oracles.
+
+Fresh exact806 owner archive; pinned owning format, all four exact selectors debug/release (two deliberate ignored originals must fail their final conservation oracle after compiled native callback failure), healthy accepted/rejected/corrupt and both ordered normal controls, owning strict and formatting. Full source quality remains open; no live actor/child/capability join or complete acceptance follows from the ordinary comparator.
+
+
+## 120. Cold finite defect context rebase before execution
+
+Section118 actual4acc3d5abcb70cd965c77470219f0265a117f3e289940345758104e920790684 preserves seven logs/346 inputs: both debug cold controllers pass, then the inherited mutation context patch fails to apply. No mutant, release, strict or final formatting command ran in that epoch.
+
+Before applying either finite defect select TEXT5ef8cc56f81c1dc9bb084b6c454320a61e9d17ecf44f85546d145a2c05d38d6e at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-cold-finite-rebase-text-fnzwejau/receipt.json and nonauthor review3c691cb9550af978bea7dc62ac60233829bf3540d5b3d46de74af6582bb4d9f2 at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-cold-finite-independent-9u1sf7bb/review.json. Full before/two proposed source/two patches authenticated. Same exact single catch omission and explicit original cause disposal/replacement from67bb, with context/formatting rebased to current source; no production repair or surface expansion. Fresh346 archive; rerun both controllers and both finite originals/restores debug/release, default/Axum all-target strict and full formatting. Every original source epoch remains intact.
+
+
+Section119 actual7deea52a8b225278233de03bebf075e22cef57d267cab2c5689e565235892cb3, independently reviewedebf68adbb5994e1a42170812567058ec07a6e9465165959d729f41e562dc6720, records25 logs/806 exact positive sources. Four intended original conservation failures and fourteen ordinary/healthy controls execute both profiles; owning strict/format pass. Overall NONPASS: nine inherited full-format paths. Original tests end at their precise post-disposal conservation oracle, so no later assertions are inferred. No production repair or gate is accepted. Detailed evidence is in verification.md.
+
+
+## 121. Cold repair research backup checkpoint
+
+Before copying the tested native cold successor into existing research/exec-paired-outcome, full measured delta from clean remote0e702947b55fd29de3d8d1a4dd22880b882b7d94 is at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-cold-remote-measurement-hl2t3hfg/measurement.json, SHA23f98ce453b0ceeffd24c2105a2bc598e85135d3bbfae3737f5200410b06aca2: eleven existing approved paths, production +483/-259/net224, tests +870/-12/net858, documentation +67/-6/net61, public API +1/-0 (promoted existing ApplicationStagingError). No new path; same168-path/conditional7 allowance. This is net-positive capability code. Preserve research README notice exactly and every unrelated remote path.
+
+Exact copied inputs are immutable actual83k receipt1e58467a42a979dbf38d9f4c252c37d02ef4c7f1192b357942b3c2bd57b6b8c0. Independent actuala68dcb6c0427133eb79cc91f451b1cb1960a7d8b26ae4a5e7db437bc02f7913f verifies all346 current sources and logs: cold controllers/finite defects/restores both profiles pass expected outcomes. Overall NONPASS retains two stale supervisor tuple consumers; Axum/final formatting unexecuted. Backup is research preservation, never canonical gate acceptance or production merge. Original complete source reviews and narrow quality/predicate/rebase reviews in §§115/117/118/120 remain required provenance; no unreviewed port included.
