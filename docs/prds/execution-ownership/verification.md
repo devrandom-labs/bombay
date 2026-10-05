@@ -246,7 +246,7 @@ checks; full task/API and other decision gates remain open.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +12034 / -97 / net 11937
+documentation: +12136 / -97 / net 12039
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
