@@ -246,7 +246,7 @@ checks; full task/API and other decision gates remain open.
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +11572 / -97 / net 11475
+documentation: +11795 / -97 / net 11698
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 69
@@ -1227,3 +1227,31 @@ Formatting alone is +214/-72/net142; this supersedes the unformatted515-line
 forecast without altering production. Finite inversions/restores, cold/pending,
 malformed/static/real-creation controls, production receiving and initialization
 custody remain required. No additional decision gate is accepted.
+
+
+The subsequent bounded source-port migration is verified at EXEC106/110:
+actual199c9868 and independent3e29471b authenticate257 runtime tests per
+profile and the remaining optimized standalone/Engine/Actors targets. Exact
+Core laws/original total-finish failures and static phase harnesses are inherited
+from e16/sos; no strict or full source gate is implied. All176 unrelated lock
+package dictionaries and Timer13e remain exact; only the three actual local
+owning source packages are substituted. Published0.22 alone is not this patch.
+
+Normal receiving controls at EXEC104/108/111 pass18 exact healthy tests,
+two deliberate outside-current surrender failures and two restores, four
+precise static denials per profile and their restored positives, owning strict
+and test formatting. Actual85c NONPASS preserved the runner's wrong variable
+oracle; corrected ff7/a1e continuation restores all806 exact positive inputs.
+This is ordinary-Rust/source-derived comparison, not retained production
+receiving or live child/activation proof. Finite surrender is an invalid
+outside-owner policy, not a production mutation.
+
+Original declared staging at EXEC109/112 passes the genuine normal-refusal
+control and reproduces native role-disposal loss in each profile. The first
+negative oracle follows cause/result disposal; later actor-count assertions
+are unexecuted. Four enum-scoped lint-annotation lines then pass fresh quality
+at3aef/0b51, with original runtime evidence explicitly inherited. No runtime
+exists at the demonstrated cold-staging fault, and the old synchronous normal
+refusal also drops F. Exact cold-error transport remains required. Family
+naming quality and research backup0e70294 preserve prior bounded family semantic
+evidence only; no new runtime family law or final delivery is claimed.
