@@ -248,7 +248,7 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +12632 / -97 / net 12535
+documentation: +12662 / -97 / net 12565
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 70
@@ -1295,3 +1295,10 @@ The exact reviewed cold source is backed up remotely in research/exec-paired-out
 
 
 Canonical early Linux CI passes on309f609: [run37301605698](https://github.com/devrandom-labs/bombay/actions/runs/37301605698), Nix Flake Check, Driver/Observe fuzz and Observe Miri; complete log/run receiptfed64c retained in EXEC §154. This does not verify isolated research dependency graphs or complete final reviewed delivery. Source-only module map inventory/nonauthor factual review are recorded in EXEC §156; extraction remains after semantic acceptance.
+
+
+### Child-producing and named-product comparison (EXEC §159 follow-up)
+
+Actual child55 receipt `3dcb716a5c88b7639589618a954a2e5d022fc489951d9c736b714ab612f7e348`
+and nonauthor actual review `a1bd90d9283c1f9a5921df88a7559f7957499633c19eda3a5f7d6f9c3d59349c`
+retain51 qualified rows out of55 and all526 restored sources. Pinned debug/optimized normal and cfg compilation, six healthy tests/profile, seven precise runtime inversions/profile and every positive restore, plus full formatting pass. Both compiler-denial attempts are unqualified E0308; strict default/Axum each retain nine cfg diagnostics. Overall NONPASS remains. The fifteen-command test-only quality/static continuation is prospective; its results and full gates remain open. Unchanged semantic rows will be reused once.
