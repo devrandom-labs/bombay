@@ -241,17 +241,17 @@ remain NONPASS and execute no runtime tests. Later inferred-actor receiving and
 exact-reason comparisons in sections92–93 pass their bounded runtime/strict
 checks; full task/API and other decision gates remain open.
 
-Current bounded evidence (EXEC §§146–154): observation A actuala70/independent6f837 and event order B actual532ec/independentc123 pass both profiles with genuine original/priority inversions and exact source restorations; event-order default/Axum strict and full format pass. Pool actual085 qualifies all33 individual guards, with its outer recording failure explicitly preserved; owning backup41d669e is pushed. Task actual931/independentf0fd qualifies37 of39 commands: both normal/cfg compiles, four healthy controllers and five deliberate original/discharge/cause inversions with exact positive restores in both profiles, plus formatting. Both strict checks fail on the same15 cfg-only diagnostics; quality correction is under verification. General capability/child and complete affine execution remain open. Owning pending-work inspection actual80a/independent957fa passes all27 compiler, content/order, original-getter inversion, restoration, format and strict guards. Its actual physical delta is23 production/77 test lines, two public methods and no public types. All30 static original-access/loan/private-authority guards pass under actuale735/independent6a69; full native joined content remains pending. Canonical dependency integration, complete task/affine custody, seven full gates, minimization and reviewed delivery remain open.
+Current bounded evidence (EXEC §§146–156): observation A actuala70/independent6f837 and event order B actual532ec/independentc123 pass both profiles with genuine original/priority inversions and exact source restorations; event-order default/Axum strict and full format pass. Pool actual085 qualifies all33 individual guards, with its outer recording failure explicitly preserved; owning backup41d669e is pushed. Task actual931/independentf0fd qualifies37 of39 commands: both normal/cfg compiles, four healthy controllers and five deliberate original/discharge/cause inversions with exact positive restores in both profiles, plus formatting. Actualce067/independent20c3 repeats all finite semantic guards; import-only actual38a761/independent61f3 passes seven quality guards, including full format and default/Axum strict, with unchanged tested bodies. General capability/child and complete affine execution remain open. Owning pending-work inspection actual80a/independent957fa passes all27 compiler, content/order, original-getter inversion, restoration, format and strict guards. Its actual physical delta is23 production/77 test lines, two public methods and no public types. All30 static original-access/loan/private-authority guards pass under actuale735/independent6a69; full native joined content remains pending. Canonical dependency integration, complete task/affine custody, seven full gates, minimization and reviewed delivery remain open.
 
 <!-- exec-research-counts -->
 
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +12453 / -97 / net 12356
+documentation: +12558 / -97 / net 12461
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
-changed tracked paths: 69
+changed tracked paths: 70
 untracked paths: 0
 ```
 
@@ -1292,3 +1292,6 @@ Cold setup successor actual1e58467a42a979dbf38d9f4c252c37d02ef4c7f1192b357942b3c
 Overall NONPASS remains: all-target strict encounters two stale fixed_supervisor_recovery.rs257/405 tuple consumers. Axum/final formatting do not run in that epoch. Prior stopped4acc obsolete mutation-context application is preserved as execution failure, not semantic regression evidence. Complete source provenance retains original115 proposal,117 quality correction,118 test predicate,120 finite context rebase and each independent review.
 
 The exact reviewed cold source is backed up remotely in research/exec-paired-outcome commit2867d51; its research README notice remains unchanged. Measured eleven-path delta from its prior remote commit is production+483/-259/net224, tests+870/-12/net858, documentation+67/-6/net61, one promoted public type. This backup is not canonical acceptance or main delivery.
+
+
+Canonical early Linux CI passes on309f609: [run37301605698](https://github.com/devrandom-labs/bombay/actions/runs/37301605698), Nix Flake Check, Driver/Observe fuzz and Observe Miri; complete log/run receiptfed64c retained in EXEC §154. This does not verify isolated research dependency graphs or complete final reviewed delivery. Source-only module map inventory/nonauthor factual review are recorded in EXEC §156; extraction remains after semantic acceptance.

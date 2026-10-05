@@ -1,5 +1,7 @@
 # Module ownership research
 
+Current source-only reconciliation is recorded below; the preceding version-bound snapshot remains historical and is not relabeled. No production move or DG-MODULES acceptance is selected.
+
 **Revision note (2026-10-01):** ARC-001 removed `ShutdownControl`,
 `TypedShutdownControl`, `ShutdownSignalRejection`, and `ActorRef.shutdown`.
 The table below is a dated source inventory, not the current module map. See
@@ -190,3 +192,73 @@ Expected changed source paths for the eventual hierarchy exceed the
 repository's 15-file stop threshold. No production/public-type delta or
 acceptance command result is selected here. This record adds documentation
 only and leaves DG-MODULES open for independent review.
+
+---
+
+# Current module ownership reconciliation
+
+This is an unaccepted source-only DG-MODULES proposal against actual931, not a production move or final gate signature. Semantic verification precedes layout as explicitly selected in EXEC's user-selected implementation order (lines933–940), superseding the earlier layout-first work-package sequence.
+
+The exact retained source epoch is capability-preparation-route-runner-jvm879_s, verification931f3158ea0a8aa2d48c4c856b882d4b9efecbc7335fbed3b74f8b584ef1b84f: all346 Runtime files and180 Actors files individually rehashed. The canonical lock still selects Core/Actors0.21.2, Macros0.13.1, Address0.3.0, Communication0.1.3, Tokio1.53.1 and the sole Timer13e patch. Actual931 uses published registry Core0.22, local research Actors0.22 and the same verified Macros/primitive selections. These are separate build contracts.
+
+The old192-line record is historical: its0.17/0.12 versions, Incarnation/outcome file names, ActorOrigin, old shutdown-control symbols, ignores and projection/task signatures are not current authority. Source hashes in that record are not relabeled. Current concrete task comparison and paired/native research contracts are unretained. In particular, a narrow task comparison's reported81 production lines and canonical cumulative133 production lines describe different baselines/scopes; neither accepts the research symbols nor proves a reduction. Current conditional task storage remains cfg(test), while ordinary production actor/task/raw retirement changes remain their independently version-bound research contracts.
+
+## Complete source inventory
+
+`production-symbol-owners.json` contains755 declaration occurrences across20 production-owning files, including every named type/trait/alias/constant, trait-associated declaration and method found in the exact source, complete headers, impl/trait owner, current visibility, source line/hash, proposed destination and concrete struct/enum members. `module-symbol-owner-map.md` renders every row. `before/` freezes34 full source files, including14 Observe test/support files. Observe's296 fixture declarations are separated in `observe-test-fixture-symbols.json`, not counted as production.
+
+`module-imports-and-root-exports.json` inventories338 import/export statements including the preserved Observe fixture sources. `named-symbol-consumers.json` inventories exact named-token occurrences across all526 Runtime/Actors files and current canonical docs/macros/examples/fixtures. Common names and unresolved method calls are lexical candidates, not static Rust identity proof. `cross-domain-consumer-edges.json` focuses the actual owners and their Entity/macro/application/test/example/benchmark/doc consumers. This inventory does not claim compiler-resolved public API completeness or signature eligibility.
+
+## Proposed existing ownership groups
+
+| Existing owner | Proposed destination | Required preserved fact / current consumers |
+| --- | --- | --- |
+| Application root/role values and App declarations | application/mod.rs | Cold declarations allocate no runtime. Preserve Application/App root names and explicit root/child values. |
+| ApplicationBehavior, StageApplicationChildren, ComposeApplication, exact staging errors and role-origin products | application/composition.rs | Pure initialization and real birth algebra unchanged. Methods that call ProjectedTask projection/spawn belong to execution, not pure declarations. |
+| run/run_with/execute_application_with, LaunchSystem, RootProjection, ApplicationOutcome and caller work/publication ownership | application/execution.rs | Preserve current raw original JoinError and staging/cold/work/output equations; conditional paired outcome remains research. No new launcher or outcome wrapper for a move. |
+| Axum methods/errors/acquire_axum_retirement | application/http.rs | HTTP composes the same execution; original serve/result/root cleanup owner remains intact. No second runtime builder. |
+| ApplicationHandle/ApplicationLifecycle and ActorInterface/ExternalActor/ExternalTarget | application/interface.rs | Keep affine ExternalActor receive ownership, exact rejection and lifecycle restriction distinct from ActorRef. |
+| ActorRef, InstalledActor, SendError, request_actor_shutdown and ExtractLocalEndpoint | local/endpoint.rs | Public messaging/installation facts stay root-curated. Shutdown request remains typed private operation; ExtractLocalEndpoint is used by both external interface and lower delivery. |
+| Admission/AdmissionClosure, LocalIngress/IngressMode, StandardIngress/EntityIngress, EndpointMailbox, LocalInbox and drain | local/ingress.rs | One Communication owner, FIFO control/user acquisition and Entity fence/drain semantics; no second mailbox. |
+| LocalEnvironment/ActiveLocalEnvironment, LocalResidual, LocalActivationRejection, Publication/PublicationNotice | local/environment.rs | Prepared/active phase relation and resource retirement remain together. Do not mechanically split affine native/Ready/drop receiving cuts. |
+| ActivationTasks, OwnerCancellation and closure, OwnedActor/OwnedTask/RootActor/ProjectedTask/OwnerCancellationAuthority, shared spawn transaction | local/execution.rs | Preserve sole root/child/capability joins and original raw errors; no detachment, reconstruction or invented join-all acceptance. |
+| ActorExecution/Terminal and outcome/retirement/terminal-publication conversions | local/execution.rs plus local/termination.rs by authority | ActorExecution owns universal Driver execution; ActorExecutionOutcome/ActorRetirement/ChildFailure preserve typed causes. Exact retirement is distinct from coarse Observe termination. |
+| RuntimeChildBindings and exact occurrence bindings/cursors, structural origin proof | local/children.rs | Creation ordering, original CreationId/kind/route, address/task/endpoint custody and actual typed descendant facts; Entity and application both use this. |
+| ActionInterpreter, RetireCapabilities, ApplicationCapabilityInputs/ApplicationCapabilities, CommitActions/CapabilityRetirement, inert interpretation | local/effects/mod.rs | Concrete actor composition is not application-only. Keep exact owning Behavior traversal; renaming ApplicationCapabilities requires a recorded naming decision, not compiler pressure. |
+| SourceAdmission/EstablishChild/creation interpretation | local/effects/creation.rs using children/execution | Existing route-reservation/Start–record–ACK law stays distinct from child initialization/host/native task gaps. No new birth algebra. |
+| Logical/exact/child/established/source delivery and reunite_customer_delivery | local/effects/delivery.rs | Select genuine endpoint and recover whole rejected payload; public leaf/action input receiving remains its semantic gate. |
+| Current observation types and relationship interpretation | local/effects/observation.rs | Preserve actual independent registration/fact queues and termination sharing; current published0.22 two-owner Observe law is not dated three-owner Sequence. |
+| LocalTimers/TimerError and concrete timer interpretation | local/effects/timers.rs | Existing generation-safe actor-local TimerQueue and current acquisition order; no timer task/service. |
+| ParentReporting/LocalParentReports/LocalTerminalReports/TerminalReportTransaction | local/effects/reports.rs | Preserve exact parent values and action-scoped terminal selection. No forwarding wrapper added just for a file. |
+| Structural origins/projection and Entity admission impl | Existing children/effects owners plus entity/bombay.rs candidate | Current bidirectional edge requires source/coherence proof before moving an impl; no address-access trait merely for layout. |
+| MailAddr/ApplicationAddresses | address.rs | Keep exact non-wrapping allocator and endpoint type dependency; not actor-independent abstraction. |
+| Hosts/HostedActorSpaces/ResolveLogical and ActorSpace | local aggregate existing static proof | Macro and Entity consumers require existing public root paths. Delete nothing solely because it is an alias. |
+| WorkerPreparationSource/WorkerPreparationStart and settle_worker_preparation | Existing public source contract; exact private creation/preparation lane | Preserve source actor/template ownership. Later spawned preparation metadata is not normal action settlement custody. |
+| observe/ | Unchanged private primitive | Exact keyed/pair/affine publication/waiting; isolated Loom/fuzz/test package compiles the same source. No observation primitive split. |
+
+## Actual public and cross-domain boundaries
+
+The current lib.rs is frozen in before/. It exports Application, App, ApplicationBehavior, ApplicationDefinitionError, ApplicationStagingError, ApplicationHandle, ApplicationLifecycle, ApplicationOutcome, RunError and optional AxumRunError; ActorInterface/ExternalActor/ExternalActorError/ExternalTarget; ActorRef/InstalledActor/SendError; ActorSpace/Hosts; RootOrigin/ChildOrigin/ChildFailure/ActorRetirement/ProjectTerminal; MailAddr and preparation types. ApplicationOutcome and ChildFailure are current research root surfaces, not implicitly canonical approval. Engine owns Completion/SettlementFailure. The actors/behavior and prelude surfaces remain curated.
+
+The actual Bombay macro source still spells root ActorRetirement, RootOrigin, ChildOrigin, ProjectTerminal, Hosts and ActorSpace through renamed-crate resolution. TerminalProjection consumes the actual three-parameter ActorRetirement and exact root/child origin proof. ActorSpaces emits Hosts::space returning ActorSpace; it cannot be migrated by changing public qualification implicitly. The actor facade still delegates to Behavior's owning expansion. Private module paths must not become generated public references.
+
+Entity's current native host imports application_runtime::{ApplicationCapabilities,NoParent,StructuralOrigins}, creates ApplicationCapabilityInputs from that module, and calls launch::{OwnedActor,SpawnError,spawn_owned_entity_with}; it also uses local::{ActorRef,CommitActions,request_actor_shutdown}, topology Hosts and exact ActorRetirement. Moving the concrete actor product under local removes this wrong application edge without inventing another product. Conversely, the EntityAdmission InterpretItem impl still names EntityDefinition/NativeEntityHost and calls the current request interpretation with local actor address. Whether that impl belongs in Entity or remains a concrete actor effect integration must be proved with unchanged coherence and the narrow existing concrete address value; no accessor/adapter selected here.
+
+Visibility proposal:
+
+- Preserve every externally nameable root re-export and current exact public associated type. Root paths are part of macro and fixture law, not file layout.
+- Keep endpoint/mailbox/resource fields private. New local child files may need pub(in crate::local) for actual local sibling sharing, not public constructors or exposed raw authority.
+- Application execution and Entity require only existing typed local spawn/result/projection/host operations via pub(crate); their real import sites are inventoried. Do not make every moved field pub(crate).
+- Application composition's pure role structures may stay private to application; executable origin projection impls depend on existing local execution/children. StructuralOrigins cannot be stranded under application because Entity uses it.
+- Pure application/header imports, interpreted child projection and public macro-root paths are distinct: no production forwarding type, bridge trait or new global bound is justified by relocation.
+
+## Minimal extraction proposal after semantic acceptance
+
+1. Freeze the final semantic composition/source graph, including normal action receiving, affine initialization/retirement, capability-task facts and genuine child consumers. Existing focused passes do not accept all those contracts. Update this map by exact changed declarations only; root's pending quality changes are cfg-only and do not change production symbol ownership.
+2. Obtain nonauthor/coordinator DG-MODULES map and visibility disposition. Test the existing Entity-origin/projection boundary and exact external root signatures without new ports. Reopen a semantic gate if a move needs a new ownership interface.
+3. Mechanically extract one existing owner at a time, starting with endpoint/ingress and existing children/termination responsibilities only after their accepted differential baseline. Application extraction follows the unchanged concrete local entry; keep one implementation and one aggregate module form.
+4. Preserve module-level imports, source-bound private mechanism tests, historical original-defect fixtures and precise expected diagnostic content. Module offsets may need reviewed stderr updates; never turn the original negative into a healthy replacement or discard complete effect lanes.
+5. Run focused debug/optimized before/after differential cohorts for pure initialization/ordered sends/births, original rejection values, cold work, cancellation/publication, FIFO/control/user drain, child/order/projection, Entity families and HTTP. Then external renamed-crate/macro/static denial, rustdoc/examples/bench/fuzz and required strict checks against the selected graph.
+6. Record actual complete tracked/untracked delta and exact new file union before moves. Target layout exceeds15 source files. User delegation permits root recommendations but neither current229 research scope nor seven conditional nominal allowance is blanket layout selection. No public type or method addition is forecast for mechanical extraction; actual production line delta is unmeasured until complete source edits, not assumed reduction.
+
+No software source was edited and no Rust/Cargo/Nix/Git/cache/slot command ran. This text changes no production/test/API contract. It freezes an actionable map and remaining exact cross-owner decisions; no DG-MODULES signature, production source eligibility or full feature approval is granted.
