@@ -5,7 +5,7 @@ XO-41–42, EV-24 and DG-WORK. This record identifies an existing typed port and
 the ownership question that must be solved before it can count as the bounded
 external-work witness. It does not select a new general work service.
 The source hashes and 0.17.0 contract below are the 2026-09-29 research
-snapshot. The current lock selects Behavior Core/Actors 0.21.1 and Macros
+snapshot. The current lock selects Behavior Core/Actors 0.21.2 and Macros
 0.13.1; revalidate this open decision against those sources before using its
 candidate. All 19 inventoried actor-owned requests now have typed Bombay
 interpretation, so missing atomic interpreters are no longer its blocker.
