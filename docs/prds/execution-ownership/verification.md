@@ -248,7 +248,7 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 ```text
 production: +167 / -34 / net 133
 tests: +3295 / -557 / net 2738
-documentation: +13192 / -97 / net 13095
+documentation: +13931 / -97 / net 13834
 manifest/lock: +38 / -33 / net 5
 public API: +0 types / -0 types
 changed tracked paths: 70
