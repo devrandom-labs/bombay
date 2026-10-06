@@ -603,3 +603,55 @@ outer task error and origin cannot reconstruct those values. Deferred primary
 conversion, eager child cleanup, exact remaining custody, all-sibling joining
 and actual projection-task counts must be proven together. The full candidate
 remains ineligible; DG-PROJECTION stays open without invented receipt vocabulary.
+
+
+### Required live projection-panic witness
+
+Source successor3b8cc77b/e28bcbbc is independently qualified by
+7f0b75d91fc0: append only its owning cfg(test) module to current App, preserving
+current production/imports. Expected test delta +415/−0, no production/public
+types or additional path. Two real declared children use the existing local
+spawn/child binding/projector path. The first projector transfers its complete
+child retirement then panics with its original opaque payload; parent remains
+live until explicit shutdown and joins the later sibling. All root/child lanes,
+ordered settlements, origins, native task ID/cause and once-only releases are
+checked after join and host disposal. Earlier one-row/empty settlement oracles
+were rejected and corrected; no runtime defect is inferred from those oracles.
+
+Run pinned formatting, the exact healthy witness in debug and release, then
+misclassify only the actual projector JoinError as ActorTaskFailed in each
+profile; it must fail the provenance oracle and pass after immediate restoration.
+No compiler error, timeout or unjoined task counts as the intended inversion.
+This closes the missing live evidence only after actual independent review;
+DG-PROJECTION also requires its recorded task-count/representation disposition.
+
+The first current formation rejects a test pattern (E0308): this one declared
+birth kind yields direct ChildCreationOutcome, not a ChildChoice head sum.
+Remove only the surplus Head pattern/import; the two exact committed rows,
+origins and full receipt oracles remain. This compiler failure is no semantic
+inversion credit and causes no production change.
+
+A second formation rejects alias constructor inference (E0284). Use standard
+Default::default() at the already concretely typed ApplicationCapabilities
+constructor: the complete binding product is specified there. No new bound,
+alias, annotation, wrapper or semantic symbol is introduced.
+
+The corrected current witness9717d228 is now independently qualified:
+healthy debug/release and immediate restored runs each pass one case; both
+sole ProjectionTaskFailed→ActorTaskFailed inversions fail the first provenance
+oracle after all native joins. Classifier514b792f and all348 snapshot paths
+are restored/unchanged. Evidence: `/tmp/bombay-live-projection-current-path.txt`
+points to checks50277823, full streams and restoration; initial debug stream
+is `/tmp/bombay-live-projection-inferred-debug.stdout`. The actual source
+prefix before the added module is byte-exact; this is real projector failure,
+not a constructed JoinError or historical defect claim. Four old unused
+methods and one new unused child-space field still prevent strict credit.
+
+Remove only that unused child-space field/construction: the private child
+binding owns its actual space and this NoSends witness performs no logical
+child resolution. Recheck the changed witness in both profiles. Retain eager
+projection pending required whole-parent/child task/allocation/throughput
+measurement and final representation acceptance. Source counts are two
+Tokio tasks/Task Cells per established child, not total heap-allocation counts;
+ProjectedTask itself adds no Box/Arc/channel. Do not justify the second task
+as actor capability settlement, which the actor task already performs.

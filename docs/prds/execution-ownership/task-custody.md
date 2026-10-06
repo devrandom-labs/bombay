@@ -1,5 +1,67 @@
 # Task custody decision evidence
 
+## Accepted task custody (2026-10-06)
+
+DG-TASK is **accepted** for the selected standard runtime and the inspected final
+execution kernel. This accepts the ownership law; the isolated public API still
+requires DG-API acceptance and integration. Current selection is Core/Actors
+0.22.0 and Macros0.13.1 at81ba2c0d1a8c6fc3d6235349980bf2657463041d.
+The earlier release/source descriptions below are historical evidence.
+
+Independent coordinating reviewer `/root/task_gate_coordinator` signed
+`/tmp/bombay-dg-task-independent-decision.json`,
+SHA632195179b5c45651cfe57f199087ddebf9740568a5a0295e77322f87d609aa4.
+Independent nonauthor reviewer `/root/current_verification_independent_review`
+signed the12-row ownership/transfer audit,
+SHAa3c28372e3ae9297d1323020d59643ca4c52d9f5d0683adb54ba07ac2fcf5030,
+at `/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-outcome-coverage-summary-cause-review-hbes69rl/current-task-custody-closure-review.json`.
+Neither approval was granted by a candidate or decisive-witness author.
+
+The inspected custody/publication/execution kernel is
+SHA6f93199e136f32706fd18c1425e2e77ee6a23910a65c75e516750aa59317b2f8.
+Whole App09218→ca706 changes only the old HTTP cfg-test module; Family784c,
+Engine25635dfe/de90f1b0, Local a2410f21, Launch5079d576 and
+ChildBindings82185b1c are bound in the signed source map. No extra owning
+witness or unresolved transfer remains in this scope.
+
+Accepted law:
+
+- The actor task owns Driver/Environment and joins its capabilities. Cancellation
+  and waiting have distinct authority; dropping a waiter cannot discard join custody.
+- Work stays caller-local. Dropping execution drops unfinished work; completed
+  output survives. Cold and startup-refused execution returns recoverable inputs.
+- Retained cleanup joins root and children, then shuts down families. Root and
+  completed family-head receipts publish before later cleanup can fail.
+- Independent receiving keeps exact available results. Its final surrender
+  explicitly releases undeliverable facts once; independent observations survive.
+- Typed source retirement preserves state, admitted receipts, source position,
+  accepted ingress and unoffered remainder. In-flight interpretation can finish;
+  cancellation never masquerades as source exhaustion or closure.
+- Child retirement is requested before ordered extraction. Each acquired result
+  is retained before the next child; eager child completion settles its own work.
+- Capability failure retires its owning actor and retains the full available actor
+  outcome and all available failures while joining remaining work. Original Rust
+  panic payloads remain outside Behavior state/protocols under the approved exception.
+
+Current receiving30 and Family3 pass debug and optimized builds on the final
+kernel. Exact argv, complete streams and349-source guards are
+`/tmp/bombay-final-api-receiving-result.json` and
+`/tmp/bombay-final-api-family-result.json`; the independent audit authenticates
+all eight streams. Qualified unchanged Engine/Local/Launch/ChildBindings,
+source-cancellation, native34 and Family original/publication inversions are
+reused only within their recorded proof bounds. Supplied `RetirementPanicked`
+proves projection custody, not a live primary-retirement panic.
+
+Drop does not synchronously await cleanup. The selected host must stay alive
+and poll cooperative work. Non-yielding or indefinitely pending operations have
+no universal retirement deadline or preemption guarantee. Host destruction,
+abort, consumed values and panicking destructors can destroy values; a join or
+receiving error cannot invent a completed tail or recover destroyed values.
+These limits are part of the accepted law. API, static controls, minimization,
+quality, final integrated verification and delivery remain separate gates.
+
+## Historical research snapshots
+
 **Frozen research snapshot:** The ARC-011 change on 2026-10-01 resolved the
 startup/finish waiter and activation-task settlement failures described below.
 The retained typed projection task and its regressions are recorded under

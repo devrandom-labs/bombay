@@ -23,8 +23,9 @@ ARC-020 later renamed the private actor execution and outcome symbols; the
 snapshot names below remain historical, and `docs/module-boundaries.md` records
 the current source paths.
 
-**Status: active.** Selected contracts are verified; DG-SHUTDOWN and its scoped
-repair are accepted. Other decision gates remain open. Current work proves
+**Status: active.** Selected contracts are verified; DG-SHUTDOWN and DG-TASK are accepted.
+The task decision covers the inspected final kernel; its public API remains
+unretained pending DG-API. Other decision gates remain open. Current work proves
 cancellation and exact result ownership through isolated, independently reviewed
 experiments. Their passing checks do not imply acceptance of the full public API
 or cancellation contract. Semantic blockers precede the required module
@@ -48,10 +49,10 @@ Stop optional research. Existing work and completed runtime fixes stay preserved
 
 | Requirement / gate | Exact blocker | Valid evidence available | Next action and pass condition |
 | --- | --- | --- | --- |
-| XO-10/11/44, EV-05/07/08: Entity cleanup | A completed root/head can be lost when remaining family cleanup is interrupted. | Runtime selection fixed in056ac7e; both-profile original/fixed native proof. Reviewed ac319 root/head publication correction and complete typed witnesses are prepared. | Run original loss witness, then corrected three controls and root/head publication inversions in both profiles; preserve exact reports/native cause/remaining receive error and once-only release. Migrate affected family consumers. |
+| XO-10/11/44, EV-05/07/08: Entity cleanup | A completed root/head can be lost when remaining family cleanup is interrupted. | Runtime selection fixed in056ac7e; both-profile original/fixed native proof. Reviewed ac319 root/head publication correction and complete typed witnesses are prepared. | Original/fixed controls and root/head inversions pass their intended laws in both profiles and qualify independently (§251). Integrate the reviewed correction, migrate affected family consumers, and verify those consumers; reuse the unchanged native proof. |
 | DG-API; XO-01–12/43–45; EV-01–05 | Final async/owned signatures and complete root/family outcome are not accepted/integrated. | Ordinary-Rust comparisons; receiving30, prepared-input, owned-mode, borrowed-work and caller formations at recorded source epochs. | Select the evidenced spelling with independent review; integrate one execution path/one runtime constructor and migrate callers. Run tests affected by signature/family changes; preserve callback output and unstarted inputs. |
-| DG-TASK; XO-13–22; EV-06–12 | Full live hierarchy custody at every await/drop is not yet accepted. | Engine74, native failure34, receiving30 and existing startup/cancellation/custody tests; approved typed failure and receiver-surrender policies. | Fill only missing live parent/child/capability cleanup witnesses; prove no abandoned owner, exact failure/result custody and joined ordered descendants in both profiles; record reviewed ownership table. |
-| DG-PROJECTION; XO-23; EV-10/12/30 | Eager child cleanup, actual projection panic and task-count disposition need final integrated proof. | Existing projection/custody regressions and constructed conversion comparisons; native failure34. | Exercise real child completion while parent continues and real projection failure; preserve origin/results, compare required progress and measure retained task/allocation counts. Accept exact representation independently. |
+| XO-13–22; EV-06–12: integrate accepted task custody | DG-TASK is accepted; the inspected final application kernel is not yet integrated. | [Signed12-row ownership decision](execution-ownership/task-custody.md#accepted-task-custody-2026-10-06); current receiving30/Family3 pass both profiles; unchanged native/source/child proofs qualify. | Integrate through DG-API, preserve the accepted owner/transfer table and rerun only affected checks. No additional owning experiment is required for this selected model. |
+| DG-PROJECTION; XO-23; EV-10/12/30 | Actual projector panic and eager-progress laws now have qualified native evidence; final task/allocation/throughput measurement and representation disposition remain. | Existing projection/custody regressions and constructed conversion comparisons; native failure34. | Reuse qualified native failure and eager-progress results (terminal-projection record). Rerun the changed fixture, measure the required whole declared-parent/child composition, and independently accept its retained representation. |
 | DG-OBSERVATION; XO-31–36/40; EV-16–21/23 | Final integrated observation/fairness/timer acceptance and current instrumented fuzz remain. | Qualified runtime28, STATIC72, Monitor16; selected Observe/Timer contracts and deterministic race/order inversions. | Reuse unchanged laws; run required current10k instrumented fuzz, affected integrated checks and strict lint. Sign one relationship owner/commit-point/fairness decision; preserve exact rejected notifications. |
 | DG-WORK; XO-41/42; EV-24 | Direct semaphore/FIFO probes do not yet prove the real typed interpreter’s bounded-work law. | Prepared WORK12 source and existing port/rejection/native work comparisons. | Add the smallest real-port saturation/rejected-input/completion/shutdown witness; prove abandoned waiting does not stop running work. Original/inversion and healthy tests pass both profiles; independently accept concrete limit. |
 | XO-37–39; EV-22: HTTP | HTTP integration still needs the final common execution path and complete serving/root result. | Reviewed HTTP source/bind-custody and real HTTP consumer results at recorded epochs. | Integrate/migrate; bind failure activates nothing, router runs once, root stop closes server, serving failure returns its error plus joined root result. Run affected Axum tests both profiles. |
@@ -59,7 +60,7 @@ Stop optional research. Existing work and completed runtime fixes stay preserved
 | DG-WRAPPERS | Individual retained/deleted/reshaped abstractions lack final disposition. | Existing section7 comparisons, direct-owner probes and current consumers. | Finish each five-answer disposition; remove only proven redundant machinery, preserve differential laws and get independent acceptance. |
 | DG-MODULES; EV-27–29 | Approved extraction map and required application/local file separation remain. | Current symbol/import/export inventories and consumer/macro/renamed-crate evidence. | Freeze owner/visibility map, perform mechanical extraction, update affected exports/docs/consumers and prove before/after traces and compile denials. No duplicate implementation. |
 | Selected upstream contract | Integration still selects unreleased Behavior receiving81ba2c0. | Exact selected source/tests/instructions verified; receiving/static/native campaigns qualified. | Deliver reviewed owning PR with passing CI, publish release, select exact published contract and rerun affected integration checks. Finish other rows while this proceeds. |
-| Final verification, minimization, review and delivery | Latest completed CI fails ActorOutcome177/212 at unchanged90% floor; full final gates/reviews/merge absent. | All valid source-bound results above; private test move preserves production/test bodies and floors; DG-SHUTDOWN and EV-25 already accepted. | Run required §10.1 commands, model/fuzz/Miri, actual unchanged-floor coverage and benchmark on integrated source; complete delta/minimization and independent final reviews. Merge PR only after required green checks; record CI/merge and then complete goal. |
+| Final verification, minimization, review and delivery | Local full flake now passes all21 required native-platform checks after the test-only coverage/lint correction and disk-capacity retry. Final API/upstream/extraction integration, final gates/reviews/CI/merge remain. | All valid source-bound results above; private test move preserves production/test bodies and floors; DG-SHUTDOWN and EV-25 already accepted. | Run required §10.1 commands, model/fuzz/Miri, actual unchanged-floor coverage and benchmark on integrated source; complete delta/minimization and independent final reviews. Merge PR only after required green checks; record CI/merge and then complete goal. |
 
 ## 1. Authority and how to execute this document
 
@@ -495,7 +496,7 @@ Approval of a design record does not waive repository surface checkpoints.
 | Gate | Experiments required | Accepted artifact / implementation stop condition |
 | --- | --- | --- |
 | DG-API | Compare ordinary async inherent methods plus a blocking convenience against an ordinary free function driving the same future. Compare existing Tokio builder input versus a closed Bombay mode value only if a real semantic distinction requires one. Exercise Application, advanced App, Entity families and HTTP with inferred types. | Exact signatures, errors, defaults, nested-runtime behavior, runtime feature selection, migration table and valid public examples. No runtime wrapper/trait chosen in advance. No public runner implementation until accepted. |
-| DG-TASK | Reproduce dropped startup, dropped application work, dropped finish, source-wait cancellation and dropped retirement. Compare improving existing task ownership with transferring cleanup to a specifically owned execution task. Enumerate panic, failed spawn, closed cancellation sender and runtime destruction. | Ownership graph and transfer table with no unowned task at any await/drop. Define who can still join and observe cleanup after the application future is gone, without promising synchronous async cleanup. No async public release before acceptance. |
+| DG-TASK | Reproduce dropped startup, dropped application work, dropped finish, source-wait cancellation and dropped retirement. Compare improving existing task ownership with transferring cleanup to a specifically owned execution task. Enumerate panic, failed spawn, closed cancellation sender and runtime destruction. | **Accepted:** [signed selected-runtime/kernel ownership decision](execution-ownership/task-custody.md#accepted-task-custody-2026-10-06). No unowned task at an await/drop; exact available results and failures survive independent receiving. Host/destructor/noncooperative limits are explicit. API acceptance and integration remain separate. |
 | DG-SHUTDOWN | Compile-only witnesses for ordinary root shutdown, established child shutdown, external actors, reused addresses and two behavior implementations of one protocol. Compare existing concrete capabilities before changing an owning primitive. | **Accepted:** [signed current-contract evidence](execution-ownership/shutdown-authority.md#accepted-static-shutdown-authority-2026-10-03), section 35. Static target/authority representation, invalid-use denials and admission-close trace. If impossible under locked contracts, exact upstream requirement and affected work blocked. No erased fallback. |
 | DG-OBSERVATION | Deterministically exercise immediate completion, cancel/completion races and reused IDs. Compare existing actor-owned polling with independent-task design, including returned-event custody. | One owner and linearization point for each relationship operation; prescribed outcome table passes. Any retained task/map has an independent responsibility. No assumed generation token or extra observation framework. |
 | DG-PROJECTION | Compare current eager projection task with projecting in the existing actor completion/join path. Use a child that terminates while the parent continues and a capability completion requiring later settlement. Inject projection panic. | Exact cleanup timing, terminal conversion/custody and panic classification; task-count change measured. Do not remove a task if this delays required cleanup or changes failure semantics. |
@@ -11467,3 +11468,148 @@ Reuse prior34 law/inversion results for these unchanged production/test bodies;
 only the module paths changed. Source review/reuse is independent; numeric
 coverage remains pending in the unchanged CI gate. New test path has no script
 consumer needing migration; historical old selectors remain dated evidence.
+
+## 251. Close interrupted Entity cleanup custody
+
+The remaining law is loss of already acquired root/head facts while tail
+shutdown is pending. Independent source reviewe5ca33e0/95c90256 permits the
+prepared ac319 correction for required verification; existing selected-host
+proof is reused. The source proposal includes its caller-async API/kernel
+prerequisite, not merely the13-line Handle composition. Against installed
+c286/80b5, raw production+935/−391/net544; pinned formatting produces
++1042/−385/net657. All eight authoritative App test intervals remain byte-exact;
+no new public nominal type is added. Existing native2735 is preserved.
+One new concrete Family regression file is expected (formatted positive792
+test lines); three existing consumer files require migration. This stage stays
+within the authorized233-path research allowance and waived line cap.
+
+First run the formatted original two-case fixture against verified Host-fixed
+App67e4/Family80b5, retaining current native2735 and Outcome module move.
+Both profiles must form and fail only after actual host disposal/native join
+facts at the acquired-root/head lifetime law. Then use formatted correction
+App5905f943/Family5d1809ba and full typed fixtureaf27f446: all three controls
+pass both profiles. Delay root publication alone and head publication alone;
+each must fail the intended custody law in both profiles and pass immediately
+after correction restoration. No compiler failure, unrelated panic or timeout
+counts as a semantic failure. Preserve source originals and complete logs;
+restore only owned known states after Cargo processes end. No public API or
+full gate is accepted merely by this temporary experiment. Required consumer
+checks and independent exact-signature decisions follow the native proof.
+
+## 252. Close actual local/CI verification failures
+
+CI37501193396 at7260c63 passes workspace tests but still fails unchanged
+Outcome90% coverage (66/97); other owner floors pass. The private-test move
+was insufficient. Add complete move-only conversion tests for the five
+untested classifications: Completed, BehaviorFailed, ActivationFailed,
+InitializationPanicked and TransitionPanicked. Keep existing four fixtures
+byte-exact and all production/floors unchanged; this is required coverage,
+not a new runtime contract or fabricated live-panic evidence.
+
+Remove unused ParentReportReason from App; make local pin import test-only
+and remove its unused panic imports. Only these existing import declarations
+change, no ownership/behavior/public types. Source paths remain inside the
+authorized233 allowance; exact test delta is measured before retention.
+Run affected Outcome tests both profiles, required strict lint and full local
+`nix flake check -L --keep-going` before the next push. Repeat these because
+the actual broad check failed and module/tests/imports changed.
+
+First local flake attempt stops during dependency substitution with actual
+“no space left on device,” before checking laws. No passing credit. Only the
+task-specific reproducible Cargo debug cache is retired after all Rust
+processes end; repository sources/evidence and optimized artifacts remain.
+Disk recovery record is
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-local-flake-disk-recovery-1mz9c_fv`;
+all three worktree source maps remain identical, available space rises to14GiB.
+
+The five missing conversions are now verified: formatting passes; all ten
+Outcome tests pass in debug/release; changing only initialization-panic
+classification to transition-panic fails the intended provenance oracle in
+both profiles, and restoring production passes all ten immediately. Existing
+production is byte-exact. Tests +384/−1/net383; public types0. Independent
+actual review qualifies these seven commands, not coverage or live task laws.
+Evidence: `/tmp/bombay-outcome-five-local-verification-path.txt` points to
+checks.json, complete streams and restoration; selected source21475b428/e76743938.
+
+Full local `nix flake check -L --keep-going` now finishes with exit1. Frozen
+348-path source map is unchanged. Workspace/all-target tests, build, format,
+documentation, Observe Loom, actor execution law campaign and counter checks
+complete; strict lint fails (97 library diagnostics plus test diagnostics).
+Several concurrent derivations exhaust disk; coverage never reaches its floor
+check. Preserve the completed source-bound results. Fix the diagnosed spelling
+and unused paths within existing ownership laws; retry with bounded build
+parallelism. Logs and exact check-to-derivation map are
+`/tmp/bombay-exec-local-flake-current.{stdout,stderr}` and
+`/tmp/bombay-exec-local-flake-check-paths.json`. No next push until full local
+flake passes; neither floor nor required checks is weakened.
+
+The independently reviewed partial strict/minimization proposal10ae6559
+changes only existing App, launch, local, reports, actor execution, terminal and
+Outcome test-child files. Raw production+868/−961/net−93; tests+121/−137/net−16;
+new public types, aliases, wrappers and generic axes0. Remove only complete
+async-move shells, merge identical full terminal branches, reuse authoritative
+affine receiving methods, delete the unused report forwarder and correct
+closed matches/spelling. Preserve polling/drop order and every retained field.
+This is a partial source proposal requiring nonauthor review and affected
+normal/retirement/cancellation/native projection checks both profiles before
+retention; full strict and local flake remain required. Remaining fixes reuse
+existing test-only methods under cfg(test), exact domain-scoped expectations
+for irreducible owning products/full sums, and item-local spelling. No
+architecture, bound, field erasure, boxing policy or suppression of the floor
+is introduced from diagnostics. All paths remain within233 approved scope.
+
+Independent strict7 source review authenticates all35 artifacts and finds
+34 complete shell reductions (33 App, one Local), preserving cold ordered
+effects and whole typed terminal facts. Current base hashes match before
+qualified hunks are applied; original classifier514b remains untouched.
+Only the verified unused fixture child-space field and construction are
+removed afterward (tests−2, no production). Future frame layout changes
+require affected dropped-waiter/custody/native tests both profiles; no exact
+internal field-drop equivalence or full strict pass is claimed yet.
+
+Actual strict7 verification vetoes its async-function rewrites: 40 E0309
+errors expose newly captured route/event lifetimes. Identical body tokens and
+written bounds were insufficient to prove opaque-future capture equivalence.
+Restore all34 original manual-future forms; add no lifetime/Send bounds. Their
+precise receiving-loan contract justifies only item-scoped manual_async_fn
+expectations. Other independently reviewed terminal merging, loan reuse and
+spelling remain candidates. Rustfmt also rejects two trailing-whitespace
+lines; neither failure earns semantic or strict credit. Candidate118b is
+superseded pending the corrective source and fresh verification.
+
+Corrected complete strict candidateb698e1c0 is independently source-qualified
+after rejecting two duplicate test-body tails in f9f. All34 full original
+manual-future functions, closing braces/newlines and enclosing boundaries now
+match their verified originals. Eleven existing approved paths: the seven
+already listed plus child_bindings, interpret, Entity family and Engine terminal
+custody tests. Corrected raw production+305/−142/net163; tests+90/−57/net33;
+new public types, aliases, wrappers and bounds0. This is net-positive lint
+resolution, not code reduction. Genuine terminal duplication/unused forwarding
+is removed; precise existing-loan, complete-product, unboxed-custody and finite
+controller reasons justify item-scoped lint expectations. No broad suppression
+or gate weakening. Guard current eleven-file hashes before installing hunks,
+then run pinned formatter, strict/default+Axum checks and affected native/custody
+checks in both profiles. All remaining source claims are conditional until those
+actual checks pass.
+
+Corrected complete candidate formats successfully. Strict library checking
+now reports only from_completed101/100 after the real duplicate reduction.
+Independent review qualifies an exact function-only length expectation: retain
+its closed Completion conversion, full fields and original invariant messages;
+a forwarding function would add no law. Add four annotation lines, no new type
+or semantic change. Full test/all-target and Axum lint results remain pending.
+
+Strict checking now reaches integration targets; fixed_supervisor_runtime's
+three-role terminal enum is the next sole diagnostic. Independent source
+review qualifies only its enum-scoped large_enum_variant expectation: keep
+original unboxed root/proxy/worker retirement and exact failures, with no new
+allocation/disposal owner. Test-only +4 annotation lines in an already approved
+changed path; no production/type change. Preserve derive, fields and all tests.
+
+The batched all-target lint run finds36 remaining errors, rather than hiding later targets behind the first failure. Independently qualified receiving177e and final-itemsf64a patches preserve exact fields and controllers: receiving tests+42/−14/net28; other tests+21/−5/net16 and example production+4/−0/net4, public types0. Apply guarded current-source patches only; the first bundled future receiving migration contains an invalid async-attribute placement and is not retained. Its corrected successorc1da awaits independent review. Current debug workspace libraries pass (Bombay282 tests), with three unused test-only consuming methods still warned. Their deletion requires exact reference proof; full strict/default+Axum and both-profile ownership checks remain required. All files are existing approved paths inside233; no new wrapper, bound or ownership policy.
+
+Independent reference review qualifies deletion0b40 of13 wholly unused test-only items: the CommitActions consuming retirement member and ten adapters, plus ProjectedTask consuming retirement and its sole cancellation-authority callee. Retain every borrowed receive/settle path, RetireCapabilities owner, actual OwnedTask retirement and its Entity/local callers. Tests−94; production−3 blank lines; new interface/type/bound0. Current corrected debug owners pass280 library,30 receiving,4 terminal-custody and3 supervisor tests; three now-deleted dead-code warnings remain historical. Apply guarded deletion, format, run full strict default/Axum and release owners, then full single-job local flake before any push. No required check or assertion in an executed controller is removed.
+
+Current guarded strict/default and Axum checks pass after deletion/formatting. Optimized owners pass280 library,30 application receiving,4 terminal-custody and3 supervisor tests, matching debug controls; no Rust warnings remain. Exact commands, streams and348-path source/result map are `/tmp/bombay-strict-final-source-results.json`; debug epoch and three historical unused-method warnings are retained separately. Reuse qualified inversions whose classifiers/controller oracles remain unchanged; full final integrated verification is still required. The next full local flake runs with `--max-jobs 1 --cores 2` to avoid the observed parallel-build disk exhaustion, without changing checks/floors.
+
+Current complete change record (cumulative2fcc baseline;122 tracked paths,0 untracked): production+8770/−2370/net6400; tests+25669/−2150/net23519. This bounded stage adds no public type; cumulative audit retains five added nominal names (three new, two promotions). All existing paths remain inside the authorized233-path conditional research allowance; the line cap is waived. Exact per-path/code/document/manifest counts and SHA bindings: `/tmp/bombay-outcome-joint-pattern-complete-base2fcc-measurement.json`; the independently reviewed whole-cfg-child successor is `/tmp/bombay-outcome-joint-pattern-cfg-bindings/record.json`. These are research-retention counts, not minimization or full-gate acceptance.

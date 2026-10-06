@@ -1,8 +1,7 @@
 # EXEC verification evidence
 
 Status: staged EXEC evidence. DG-SHUTDOWN is independently accepted; the
-remaining decision gates are open. No full EXEC acceptance, Bombay delivery PR
-or passing delivery CI is claimed. The historical baseline is
+remaining decision gates are open. [PR326](https://github.com/devrandom-labs/bombay/pull/326) is the consolidated open integration PR; full EXEC acceptance, passing delivery CI and merge are not claimed. The historical baseline is
 `2fccedf6eb636ac22143e7e01de7e784f96e2b4e`, with its original lock and manifest
 hashes in PRD section 16. Later selected contracts and retained evidence are
 recorded below and in the PRD.
@@ -247,9 +246,9 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 
 ```text
 scope: conditional consolidated research; not distilled or accepted
-production: +8640 / -2361 / net 6279
-tests: +24689 / -2144 / net 22545
-documentation: +17335 / -203 / net 17132
+production: +8770 / -2370 / net 6400
+tests: +25644 / -2150 / net 23494
+documentation: +17531 / -203 / net 17328
 manifest/lock: +51 / -38 / net 13
 public API: +5 types (3 fresh / 2 promotions) / -0 types
 public getters: +2; public retirement variants: +1; application variants: +1; application generics: +1
@@ -1464,3 +1463,13 @@ compiler warnings remain; these results give no strict-Clippy/full-CI credit.
 The separate fourteen-command public-host experiment qualifies application
 Handle transport and both ambient-spawn/wrong-Handle inversions (§249); its
 public API remains unretained. No full gate, minimality or main merge is claimed.
+
+Current strict spelling and unused-test-port stage: pinned full formatting, default workspace/all-target Clippy and HTTP-enabled all-target Clippy pass. Current owning runtime controls pass in both profiles (280 library,30 receiving,4 terminal custody,3 supervisor); the prior workspace-feature-unified library run passed282. These are their actual respective feature graphs, not a changed test inventory. Exact argv/log SHA and current348-path map: `/tmp/bombay-strict-final-source-results.json`, plus debug map `/tmp/bombay-strict-final-owners-debug-result.json`. Three obsolete test-only consuming members/adapters are removed following independent reference review; receiving ports and actual OwnedTask callers remain. The earlier serial full flake’s66/97 coverage failure is superseded by the corrected full run below. Its original result remains `/tmp/bombay-exec-local-flake-serial-result.json`. Compiler-failure lines inside negative law checks are intended evidence, not failed checks. Final integrated gates remain required.
+
+Bounded test correction: one existing `actor_outcome/failure_projection.rs` child, formatted tests+46/−21/net25, production/public types0. All nine original controllers remain; four native/contract cases now use move-only `Drain` owners, with an additive exact rejected-settlement case and one concrete request type across all ten classifier arms. Independent installed-source review SHA7a52d4f33a28c7a32f898460077dc5b105e1f9979123f92754470114f4ce96ac. Pinned debug/release each pass11 tests; focused instrumented coverage now measures95/97 lines, with unchanged97-line denominator and90% floor. Source/log guards and actual command are `/tmp/bombay-outcome-unified-affine-source/healthy-tests.json` and `/tmp/bombay-outcome-unified-coverage-result.json`; initial misplaced-filter command failed before tests and is retained. LLVM takes the maximum covered-line count across generic instances rather than their union; diagnosis SHA54c1180f7ea0f776ac93c504c7bae74762099d1ffc5b4b8e1572967f1de3e806. No production contract, owner source, verifier or floor changes. This focused run grants no other-owner/full-workspace/full-flake credit; retry the complete unchanged local flake before any push.
+
+
+Current full-check result: `nix flake check -L --keep-going --max-jobs 1 --cores 2` passes20/21, with all348 recorded sources unchanged during execution. All four unchanged coverage floors pass: Driver737/818, ActorExecution961/1001, ActorOutcome95/97 and Observe504/525. The sole failed check was Clippy’s duplicate-arm warning in the additive rejected-settlement test; `/tmp/bombay-exec-local-flake-unified-result.json` preserves the actual result and streams. The independently reviewed joint pattern preserves both exact cause/outcome pairs and all original assertions, changes tests+2/−2/net0, and keeps the590-line private test child and production source unchanged (review SHAa4317c057f5ddfe9a38f0b6c662c525cbfe74be7d494078e7f1fa5341081885d). After this correction, pinned `cargo fmt --all -- --check`, `cargo clippy --offline --locked --workspace --all-targets --keep-going -- -D warnings`, and `cargo clippy --offline --locked -p bombay-rs --all-targets --features axum --keep-going -- -D warnings` all pass; exact stdout/stderr are `/tmp/bombay-outcome-joint-pattern-strict-{default,axum}.{stdout,stderr}`. Source intervals and the complete change measurement use `/tmp/bombay-outcome-joint-pattern-cfg-bindings/record.json`. These separate successes do not claim a green full flake; rerun it before any push.
+
+
+Full local checkpoint is green: `nix flake check -L --keep-going --max-jobs 1 --cores 2` exits0 with all21 explicit required aarch64-darwin check successes on the frozen348-source map. `/tmp/bombay-exec-local-flake-disk-retry-result.json` binds exact sources, argv, checks and stdout/stderr. The preceding attempt failed only the panic-unwind compiler’s disk output; its log/result remain separate. Clearing idle task-generated compiler caches left23GiB before retry; no source, contract, check or coverage floor changed. Current branch code is eligible for push; this is not final integrated API/release/extraction verification or main merge. Subsequent edits here/task record/backlog are documentation only; reuse these code/contract checks under the explicit unchanged-code rule and let required CI check the pushed commit.
