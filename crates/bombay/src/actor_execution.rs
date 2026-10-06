@@ -132,7 +132,7 @@ pub(crate) mod tests {
     use std::fs;
     use std::future::{Future, pending};
     use std::hint::black_box;
-    use std::panic::catch_unwind;
+    use std::panic::{AssertUnwindSafe, catch_unwind};
     use std::path::PathBuf;
     use std::pin::pin;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -889,6 +889,57 @@ pub(crate) mod tests {
                 }
             };
         }
+    }
+
+    #[test]
+    fn panic_drops_driver_before_exactly_one_terminal_classification() {
+        let (outcomes, active_retirements, environment_drops, retirements) = probes();
+        let driver_drops_at_retirement = Arc::new(Mutex::new(Vec::new()));
+        let observed = outcomes.clone();
+        let observed_drops = environment_drops.clone();
+        let observed_retirement_drops = driver_drops_at_retirement.clone();
+        let count = retirements.clone();
+        let execution = ActorExecution::new(
+            Driver::new(
+                ProbeBehavior {
+                    mode: Mode::Pending,
+                },
+                ProbeEnvironment {
+                    response: EnvironmentResponse::Wait,
+                    active_retirements: active_retirements.clone(),
+                    environment_drops: environment_drops.clone(),
+                    interpretation: None,
+                    source: None,
+                },
+            ),
+            move |outcome| {
+                let _retirement = count.fetch_add(1, Ordering::SeqCst) + 1;
+                observed_retirement_drops
+                    .lock()
+                    .unwrap()
+                    .push(observed_drops.load(Ordering::SeqCst));
+                observed.lock().unwrap().push(outcome);
+            },
+        );
+        let mut first_poll = None;
+        let unwound: Result<(), _> = catch_unwind(AssertUnwindSafe(|| {
+            let mut future = pin!(execution.run());
+            let mut context = Context::from_waker(Waker::noop());
+            first_poll = Some(future.as_mut().poll(&mut context));
+            panic!("outside the pending incarnation poll");
+        }));
+        let payload = unwound.expect_err("the surrounding native unwind remains with its caller");
+        drop(payload);
+        assert_eq!(first_poll, Some(Poll::Pending));
+        assert_eq!(active_retirements.load(Ordering::SeqCst), 0);
+        assert_eq!(environment_drops.load(Ordering::SeqCst), 1);
+        assert_eq!(retirements.load(Ordering::SeqCst), 1);
+        let observed_drops = driver_drops_at_retirement.lock().unwrap();
+        assert_eq!(observed_drops.as_slice(), &[1]);
+        let observed = outcomes.lock().unwrap();
+        let [ActorExecutionOutcome::Panicked] = observed.as_slice() else {
+            panic!("the pending incarnation retires exactly once as an uncaught unwind");
+        };
     }
 
     #[tokio::test]

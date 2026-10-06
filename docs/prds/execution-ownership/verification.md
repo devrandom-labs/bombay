@@ -248,8 +248,8 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 ```text
 scope: conditional consolidated research; not distilled or accepted
 production: +8602 / -2342 / net 6260
-tests: +23758 / -2104 / net 21654
-documentation: +15993 / -203 / net 15790
+tests: +23871 / -2125 / net 21746
+documentation: +16205 / -203 / net 16002
 manifest/lock: +51 / -38 / net 13
 public API: +5 types (3 fresh / 2 promotions) / -0 types
 public getters: +2; public retirement variants: +1; application variants: +1; application generics: +1
@@ -1324,3 +1324,23 @@ reports and22 actual absences, retaining original typed refusal. Four example
 mains+148/−2/net146 production, six existing test/support files+104/−27/net77,
 public0. Whole formatter and all-target formation pass at the recorded graph;
 existing warnings/full workspace runtime/strict CI and seven gates remain open.
+
+
+### Current observation comparison and verification-script repair (EXEC §§224–225)
+
+Actual158d2500 and independent wholly nonauthor5b0d636d qualify20 passing
+commands and eight intended runtime failures in both profiles, complete source
+restorations and all56 streams. Counts and limits remain in §224:434 passed
+instances,131 distinct runtime/doctest names in total, no current static/model
+inversion/fuzz or whole-gate credit. All808 owning inputs match selected81.
+
+Fresh required Nix check on ba3 fails [run37443466307](https://github.com/devrandom-labs/bombay/actions/runs/37443466307):
+old actor evidence selects zero panic tests, then its first literal mutation
+matches no current source. Full logd6d6f238 preserves the failure; later mutations
+were not executed. Deny/Analyze/aggregate CodeQL pass at this revision, without
+substituting for Nix. Narrow test-only repair ede17299 and external pinned
+formatter6254cb55 now have terminal actual69bdae11 and wholly nonauthor review
+8f89f5ef: both complete scripts and restored owning cohorts pass, with every
+intended inversion/denial reached. EXEC §225 records counts and limits.
+The two-path conditional test backup adds92 net test lines, no runtime code
+or public types; full replacement CI, gates and final delivery remain open.

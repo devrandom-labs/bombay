@@ -1153,3 +1153,17 @@ peer/child source queue and the exact relationship task's distinct responsibilit
 No new wrapper, trait, scheduler, buffer or runtime policy is selected. Allocation
 and throughput savings are not inferred from source-level task counts. Fresh
 compiled registry integration, canonical selection and full gate signatures remain.
+
+
+### Current selected81 prepared-input observation evidence
+
+EXEC §224 actual158d2500 and wholly nonauthor review5b0d636d supersede any
+assumption that older successful runs alone prove the selected81 graph.
+Seven exact native observation controllers and both finite event-order traces
+pass both profiles; four isolated custody/priority defects fail as intended
+in both and whole cohorts pass after restoration. Selected owning Monitor,
+established-capability suite, doctests and independent model pass at the same
+verified808-input epoch. Full paired static diagnostics, four model omissions
+and their restorations, current instrumented10k corpus run, quality/minimization
+and both decision-gate signatures remain open. No universal Completed-empty
+policy, fairness guarantee or arbitrary destructor recovery is inferred.

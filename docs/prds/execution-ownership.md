@@ -10279,3 +10279,181 @@ production row, exact shifted topology suffix and eight App intervals; older
 unavailable baseline documentation bytes retain Root's disclosed measurement.
 Select only the bounded reviewed consumer backup. Final evidence-prose changes
 are documentation-only and included in a fresh complete commit record.
+
+
+## 224. Verify current observation custody and native acquisition order
+
+Reviewed consumer code ba3d3c3 and canonical evidence b7eed90 are pushed;
+draft326 remains unready. Final complete commit records1799c97b/a68fad79
+and canonical4d2d3554 include all tracked/untracked bytes and evidence prose.
+Research118/0: production+8602/−2342/net6260, tests+23758/−2104/net21654,
+documentation+15993/−203/net15790, manifests+51/−38/net13. Canonical70/0
+production167/−34/net133, tests3295/−557/net2738, public0. Seven full gates,
+HOLD, required CI and eventual module extraction remain open.
+
+Prerecord isolated test-only observation comparison374044ac/b0b05a43 against
+App4ae/Local5a96/terminal51e/current receiving30/Entity9a. Reuse exactly the
+existing Monitor, local source/mailbox/observation/timer lanes, affine Driver,
+termination products and original cancellation authority. Healthy App adds18
+complete report/native-failure checks at nine genuine retirement cuts; Local
+uses the previously source-reviewed EV21 finite ordered acquisition witness.
+Combined tests+322/−6/net316, production/public0, two already-scoped files.
+No global Completed-empty assertion or new host/owner/interface. Original
+18-oracle authorship and independent00e8 review remain distinct from Init's
+mechanical rebase and Root's own complete patch/schedule reading.
+
+Pinned external formatter81ef2dae completes0 with all six whole source files
+byte-exact, including four isolated source-omission/priority inversions. Bind
+all347 retained runtime paths and complete selected81 owning workspace before
+28 commands:20 native healthy/inversion/whole-restoration rows both profiles,
+eight owning Monitor/established-capability/doctest/independent-model rows.
+Each native negative must form and run exactly one test, fail at its intended
+post-retirement oracle (5309/5462 or full order3526), then restore the entire
+healthy cohort. Later payload oracles after the first failing assertion earn
+no negative credit. Preserve persisted model seed and untracked inventory.
+
+Root owns finite900-second process supervision, complete streams and source
+entry/exit maps. A timeout, disk/tool/compiler error, empty selector or unrelated
+assertion is NONPASS. Finally restore both entire baseline source graphs even
+on failure. After terminal execution only, hash/preserve the exact linked
+binary/libraries and retire only its already-linked rcgu scratch objects;
+record every path/hash/size. No broad cache removal. These rows do not supply
+missing paired static diagnostics, model inversions,10,000-case fuzz, final
+scope minimization, two independent gate signatures or source retention.
+
+
+The current 28-command observation trial158d2500 completes without timeout and
+restores the entire347-path runtime and808-path owning baseline graphs exactly.
+Atomic16 and Local27 healthy cohorts pass both profiles and after every isolated
+mutation. Four omissions/priority inversions each fail exactly one named test
+in debug and optimized builds: live returned-event5309, Stopped control5462,
+and both complete acquisition-order comparisons3526. Later assertions after
+those first failures receive no inversion credit. Selected81 Monitor3,
+established capabilities18, public doctests12+53, independent model2 pass each
+profile. Native successful test instances258 cover43 distinct names; owning
+successful instances176 include repeated doctests. These counts are bounded
+evidence, not distinct gate counts. All streams are archived; existing warnings
+remain. Fresh nonauthor actual review is pending; no source retention or gate
+acceptance follows.
+
+## 225. Repair the current actor-execution verification script
+
+Fresh PR326 Nix run37443466307/job112202538277 fails with exit22:
+the first script mutation expects the retired driver.run spelling and matches
+zero current source sites. Its earlier panic reference selects zero tests.
+Complete original CI logd6d6f238 is retained; later mutations never executed
+there. Deny37443466205 and Analyze37443466266 pass, as does the aggregate
+CodeQL check. These do not substitute for the failed required Nix check.
+
+Before source edits, select the bounded comparison46433245 under §52 and the
+233-path allowance: two already-scoped existing paths, actor_execution.rs and
+actor-execution-law-evidence.sh; tests+110/−21/net89, production/public types0.
+Reuse the existing Driver, ActorExecution, Terminal, typed outcome conversion
+and exact original five reference selectors/ten mutation IDs. The cfg witness
+polls the actual owned execution to Pending, then catches a genuine outside-fold
+unwind. Its callback records the environment-drop trace without assertions;
+only after the native payload is discharged does the test compare exact
+Panicked/drop-before-retirement/once-only facts. Existing test bodies and normal
+callbacks remain unchanged. No production owner, wrapper or law is introduced.
+
+Root reads the full source patches, full script and qualification plan as a
+nonauthor. Adapt three obsolete mutation sites to current affine receive_run
+ownership and three typed-failure patterns to their existing additional_failures
+fields. Healthy references must run and pass exactly their one named test;
+retain all runtime-kill/static-denial criteria and archive every stream.
+Explicit --release forwards Cargo profile arguments, leaving CI's default
+unchanged. A mechanical successor must compare restored bytes before copying,
+without unconditional touch/backdating. Record its exact source and delta before
+installation. External pinned formatting and exact current-source guards precede
+focused debug/optimized controls and both complete fifteen-row scripts. Actual
+runtime failures must qualify the intended law, not merely any test failure;
+compiler rejection is not runtime inversion credit. Restore the complete source
+graph after every mutation and at final exit. No full DG-TASK or PRD acceptance
+follows; CI remains failed until a new pushed revision actually passes.
+
+
+Fresh wholly nonauthor review5b0d636d qualifies actual158d as bounded current28
+only: all56 streams authenticate, all808 owning inputs equal selected81,
+all source epochs/restorations match. Counts131 distinct names comprise66 runtime
+and65 doctest names,434 successful instances plus eight intended failures.
+The reviewer reads all seven observation controllers, both EV21 traces and
+unchanged independent model. Doctests comprise three executed/nine compile-only/
+53 expected compile-fail per profile, without paired JSON diagnostic credit.
+Current28 has six distinct native Rust warnings; owning Monitor rows retain one
+unfulfilled lint expectation. Earlier consumer11/seven warning counts belong to
+their earlier execution rows. Neither count implies strict quality success.
+Nine syntactic retirement cuts are not nine separately logged invocations.
+Source tests may be selected only as a bounded conditional research backup;
+all remaining36 static checks,16 model inversion/restore rows,current10k fuzz,
+quality/minimization and both full-gate signatures remain required.
+
+
+Mechanical final successor ede17299 binds script8a39 and unchanged cfg witness0f4f.
+Root authenticates every artifact and reads complete mechanical patch: cmp guards
+each restore copy, no touch/backdating, Bash3.2-compatible empty profile expansion
+retains all three exact argv sites. Tests+116/−24/net92, production/public0,
+the same two existing paths. This supersedes raw physical net89, not any law.
+External pinned rustfmt runs on a disposable source copy; source and actual
+nonauthor review precede repository installation and execution.
+
+
+Pinned formatter6254cb55 completes0 byte-exact with ActorExecution0f4f and
+script8a39; no formatting successor. Root runner964a238f freezes six commands:
+exact new pending native unwind debug/release, complete fifteen-row script
+debug/release, entire ActorExecution test cohort debug/release. Original CI
+remains the actual pre-repair negative; each script must qualify five exact
+healthy references, eight named runtime kills and two affine compiler denials.
+All nested streams and exact receipts are archived; an empty selection or
+unrelated compiler/test failure is NONPASS. All347 runtime/808 owning inputs
+are frozen with original bytes; Root installs only the two source-reviewed
+healthy files for the isolated trial and finally restores the complete graph.
+CARGO_NET_OFFLINE=true and every Cargo command runs inside Bombay's pinned Nix
+shell. Finite900-second supervision and terminal linked-object retirement are
+limited as in §224. This trial is not source retention or full-gate acceptance.
+
+
+Independent source reviewb83677ab grants only guarded trial eligibility for
+Script8a39/ActorExecution0f4f and actual formatter6254. Root reads its complete
+review; preserve all existing laws. Correct the external README's arithmetic
+in this authoritative record: four mutation bodies are unchanged, six source
+contexts refreshed. No runtime or full-gate credit. The source and delta remain
+byte-exact. Include the entire existing ActorOutcome cohort in both profiles
+after the scripts so every healthy reference's owning cohort, including the
+settlement control, is executed after final restoration. The finite runner
+now has eight Root commands, SHA 882d3e1cc693392dd5c900ac67bafb24859198f3cd8c8d1ae26a52099727c1af; it retains all
+30 nested script rows plus full restored cohorts, without changing source or
+mutant qualifiers. No source-retention selection precedes actual review.
+
+
+Terminal actual69bdae11 and wholly nonauthor review8f89f5ef qualify the bounded
+eight-command trial. Both complete scripts pass with five exact healthy
+references, eight intended runtime failures and two E0382 denials per profile;
+full restored ActorExecution14 and ActorOutcome1 cohorts pass both profiles.
+There are15 distinct runtime test names,42 successful instances,16 intended
+failures and four static denials. All48 streams/receipts authenticate; final
+347 runtime/808 owning source graphs restore exactly. The reversed-retirement
+mutation first fails the existing callback ordering assertion700, then caller1124
+rejects its consequent panic join; only the first earns ordering credit. The
+three typed-branch panic mutations prove reachability, not arbitrary selective
+field-erasure coverage. Seven healthy Rust warnings remain; no strict-quality
+or replacement full-CI pass is claimed. Nested rows restore their two mutable
+files, without separate full disposable graphs per row.
+
+Select the reviewer's recommended bounded conditional research test backup
+under §196/§225: exact ActorExecution0f4f and script8a39 only, guarded against
+original0586/78b0 bytes. Tests+116/−24/net92; production/public types0, no new
+paths. Fresh pre-backup complete measurementfa006d6d has118 tracked/0untracked,
+production+8602/−2342/net6260, tests+23758/−2104/net21654; secondary baseline
+7eaf627e has92 tracked/0untracked. Rebind the complete post-selection tree and
+record all documentation bytes before the focused commit/push. Preserve the
+original CI failure and every actual stream. This is conditional research
+backup, without canonical HOLD lift, gate signature, final acceptance or merge.
+
+
+Post-selection measurement2b62d730/91c4cf91 retains118/0 and92/0 paths,
+unchanged production6260/6132 and public surface. Tests23871/−2125/net21746
+from2fcc (secondary20825/−1822/net19003); cumulative diff alignment changes
+raw additions/deletions, while this stage's exact net increase remains92.
+Canonical measurement6e14d013 remains70/0, production167/−34/net133,
+tests3295/−557/net2738 and public0. Final checkpoint includes all tracked
+and untracked documentation bytes; this measurement is no acceptance claim.

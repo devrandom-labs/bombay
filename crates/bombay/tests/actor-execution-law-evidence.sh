@@ -9,9 +9,14 @@ fi
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "$script_dir/../../.." && pwd)"
 output_dir=""
+cargo_profile=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --release)
+      cargo_profile=(--release)
+      shift
+      ;;
     --output)
       output_dir="${2:?--output requires a directory}"
       shift 2
@@ -55,9 +60,12 @@ cp "$outcome" "$pristine_outcome"
 : > "$receipt_rows"
 
 restore_sources() {
-  cp "$pristine_actor_execution" "$actor_execution"
-  cp "$pristine_outcome" "$outcome"
-  touch "$actor_execution" "$outcome"
+  if ! cmp -s "$pristine_actor_execution" "$actor_execution"; then
+    cp "$pristine_actor_execution" "$actor_execution"
+  fi
+  if ! cmp -s "$pristine_outcome" "$outcome"; then
+    cp "$pristine_outcome" "$outcome"
+  fi
 }
 
 replace_exact() {
@@ -84,8 +92,18 @@ apply_mutation() {
         '        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error, E::RetirementRequest>::new(
             retirement,
         );
-        let outcome = driver.run().await.into();' \
-        '        let outcome = driver.run().await.into();
+        // The original Driver and terminal capability stay owned until the
+        // completion barrier yields a genuine residual. An incomplete advanced
+        // host cannot trigger a replay of its arbitrary retirement callback.
+        let mut driver = Some(driver);
+        let mut received = None;
+        Driver::receive_run(&mut driver, &mut received).await;' \
+        '        // The original Driver and terminal capability stay owned until the
+        // completion barrier yields a genuine residual. An incomplete advanced
+        // host cannot trigger a replay of its arbitrary retirement callback.
+        let mut driver = Some(driver);
+        let mut received = None;
+        Driver::receive_run(&mut driver, &mut received).await;
         let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error, E::RetirementRequest>::new(
             retirement,
         );'
@@ -95,18 +113,21 @@ apply_mutation() {
         '        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error, E::RetirementRequest>::new(
             retirement,
         );
-        let outcome = driver.run().await.into();
-        terminal.complete(outcome)' \
-        '        struct Reversed<T, D> {
-            terminal: T,
-            driver: D,
-        }
-        let mut reversed = Reversed {
-            terminal: Terminal::<_, B, E::Residual, B::Error, E::Error, E::RetirementRequest>::new(retirement),
-            driver: Box::pin(driver.run()),
-        };
-        let outcome = reversed.driver.as_mut().await.into();
-        reversed.terminal.complete(outcome)'
+        // The original Driver and terminal capability stay owned until the
+        // completion barrier yields a genuine residual. An incomplete advanced
+        // host cannot trigger a replay of its arbitrary retirement callback.
+        let mut driver = Some(driver);
+        let mut received = None;
+        Driver::receive_run(&mut driver, &mut received).await;' \
+        '        let mut driver = Some(driver);
+        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error, E::RetirementRequest>::new(
+            retirement,
+        );
+        // The original Driver and terminal capability stay owned until the
+        // completion barrier yields a genuine residual. An incomplete advanced
+        // host cannot trigger a replay of its arbitrary retirement callback.
+        let mut received = None;
+        Driver::receive_run(&mut driver, &mut received).await;'
       ;;
     discard-abnormal-retirement)
       replace_exact "$actor_execution" \
@@ -123,9 +144,9 @@ apply_mutation() {
       ;;
     duplicate-driver)
       replace_exact "$actor_execution" \
-        '        let outcome = driver.run().await.into();' \
-        '        let outcome = driver.run().await.into();
-        let _ = driver.run().await;'
+        '        let mut driver = Some(driver);' \
+        '        let original_driver = driver;
+        let mut driver = Some(driver);'
       ;;
     duplicate-retirement)
       replace_exact "$actor_execution" \
@@ -171,6 +192,7 @@ apply_mutation() {
         '            Err(DriverError::Behavior(error)) => Self::BehaviorFailed {
                 behavior,
                 residual,
+                additional_failures,
                 error,
             },' \
         '            Err(DriverError::Behavior(_)) => panic!("mutated Behavior failure"),'
@@ -180,6 +202,7 @@ apply_mutation() {
         '            Err(DriverError::Activation(error)) => Self::ActivationFailed {
                 behavior,
                 residual,
+                additional_failures,
                 error,
             },' \
         '            Err(DriverError::Activation(_)) => panic!("mutated activation failure"),'
@@ -189,6 +212,7 @@ apply_mutation() {
         '            Err(DriverError::Settlement(error)) => Self::SettlementFailed {
                 behavior,
                 residual,
+                additional_failures,
                 error,
             },' \
         '            Err(DriverError::Settlement(_)) => panic!("mutated settlement failure"),'
@@ -202,9 +226,24 @@ apply_mutation() {
 
 run_reference() {
   local test_name="$1"
+  local output
+  local status
+
   restore_sources
   printf 'PASS  %s\n' "$test_name"
-  cargo test --locked -p bombay-rs --lib "$test_name" -- --exact
+  set +e
+  output="$(cargo test ${cargo_profile[@]+"${cargo_profile[@]}"} --locked -p bombay-rs --lib "$test_name" -- --exact 2>&1)"
+  status=$?
+  set -e
+  printf '%s\n' "$output" > "$output_dir/reference-${test_name//::/-}.log"
+  if [[ $status -ne 0 ]] || ! NAMED_REFERENCE="$test_name" perl -0ne '
+    exit(/(?:\A|\n)running 1 test\n(?:(?!^test result:).)*^test \Q$ENV{NAMED_REFERENCE}\E \.\.\. ok\n(?:(?!^test result:).)*^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; [0-9]+ filtered out; finished in [^\n]*\n(?:(?!^test result:).)*\z/ms ? 0 : 1);
+  ' <<< "$output"; then
+    printf '%s\n' "$output" >&2
+    printf 'healthy reference did not pass exactly one named test: %s\n' "$test_name" >&2
+    exit 1
+  fi
+  printf '%s\n' "$output"
 }
 
 kill_mutation() {
@@ -217,9 +256,10 @@ kill_mutation() {
   apply_mutation "$inversion"
   printf 'KILL  %s with %s\n' "$inversion" "$killer"
   set +e
-  output="$(cargo test --locked -p bombay-rs --lib "$killer" -- --exact 2>&1)"
+  output="$(cargo test ${cargo_profile[@]+"${cargo_profile[@]}"} --locked -p bombay-rs --lib "$killer" -- --exact 2>&1)"
   status=$?
   set -e
+  printf '%s\n' "$output" > "$output_dir/kill-$inversion.log"
   restore_sources
 
   if [[ $status -eq 0 ]]; then
@@ -254,9 +294,10 @@ deny_mutation() {
   apply_mutation "$inversion"
   printf 'DENY  %s through affine ownership\n' "$inversion"
   set +e
-  output="$(cargo test --locked -p bombay-rs --lib "$replay_test" -- --exact 2>&1)"
+  output="$(cargo test ${cargo_profile[@]+"${cargo_profile[@]}"} --locked -p bombay-rs --lib "$replay_test" -- --exact 2>&1)"
   status=$?
   set -e
+  printf '%s\n' "$output" > "$output_dir/deny-$inversion.log"
   restore_sources
 
   if [[ $status -eq 0 ]]; then
