@@ -5,6 +5,10 @@ use core::hash::Hash;
 use core::mem;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+#[cfg(bombay_entity_loom)]
+use loom::sync::Arc as DirectoryArc;
+#[cfg(not(bombay_entity_loom))]
+use std::sync::Arc as DirectoryArc;
 use std::sync::{Arc, Mutex, PoisonError, Weak};
 
 use crate::observe::{AffineObservation, Observation, Publisher, affine_pair, pair};
@@ -177,12 +181,12 @@ struct Runtime<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure, RetirementFa
             Task,
             TaskFailure,
             (
-                Arc<EntityId<I>>,
-                Arc<Slot<PendingCommand<Origin, C>, Endpoint, Lease>>,
+                DirectoryArc<EntityId<I>>,
+                DirectoryArc<Slot<PendingCommand<Origin, C>, Endpoint, Lease>>,
             ),
             (
-                Arc<EntityId<I>>,
-                Option<Arc<Slot<PendingCommand<Origin, C>, Endpoint, Lease>>>,
+                DirectoryArc<EntityId<I>>,
+                Option<DirectoryArc<Slot<PendingCommand<Origin, C>, Endpoint, Lease>>>,
                 ActivationId,
                 RetirementMode,
                 RetirementFailure,
@@ -737,17 +741,17 @@ where
         self.join_owned(&mut claim).await;
         claim.record_drain(|| self.inner.directory.take_family());
 
-        let rows = claim.rows(|(id, slot)| (Arc::clone(id), Arc::clone(slot)));
+        let rows = claim.rows(|(id, slot)| (DirectoryArc::clone(id), DirectoryArc::clone(slot)));
         // Closed-family transitions consume available leases without user clones.
         // Retained original effect leaves remain in each slot until interpreted.
         for (id, slot) in &rows {
             let retirement = slot.close_family();
             self.inner
-                .interpret_closed_slot(Arc::clone(id), Arc::clone(slot));
+                .interpret_closed_slot(DirectoryArc::clone(id), DirectoryArc::clone(slot));
             if let Some((activation, endpoint, lease, fence)) = retirement {
                 let runtime = Arc::clone(&self.inner);
-                let id = Arc::clone(id);
-                let slot = Arc::clone(slot);
+                let id = DirectoryArc::clone(id);
+                let slot = DirectoryArc::clone(slot);
                 self.inner.spawn_owned(async move {
                     let mode = match fence {
                         Ok(()) => match runtime.port.fence(endpoint).await {
@@ -778,7 +782,7 @@ where
             }
             for (id, slot) in &rows {
                 self.inner
-                    .interpret_closed_slot(Arc::clone(id), Arc::clone(slot));
+                    .interpret_closed_slot(DirectoryArc::clone(id), DirectoryArc::clone(slot));
             }
         }
         drop(rows);
@@ -790,12 +794,12 @@ where
                 .extract_if(.., |(_, original, _, _, _)| {
                     original
                         .as_ref()
-                        .is_some_and(|original| Arc::ptr_eq(original, &slot))
+                        .is_some_and(|original| DirectoryArc::ptr_eq(original, &slot))
                 })
                 .map(|(_, _, activation, mode, failure)| (activation, mode, failure))
                 .collect();
             // No reference to a key escapes a completed lifecycle task or callback.
-            let Ok(id) = Arc::try_unwrap(id) else {
+            let Ok(id) = DirectoryArc::try_unwrap(id) else {
                 panic!("original family key still owned after all task joins");
             };
             entities.push((id, disposition, receipts));
@@ -805,7 +809,7 @@ where
                 slot.is_none(),
                 "mapped retirement failure lost its original family row"
             );
-            let Ok(id) = Arc::try_unwrap(id) else {
+            let Ok(id) = DirectoryArc::try_unwrap(id) else {
                 panic!("transient retirement key still owned after task joins");
             };
             entities.push((id, Ok(()), vec![(activation, mode, failure)]));
@@ -838,12 +842,12 @@ where
             R::Task,
             R::TaskFailure,
             (
-                Arc<EntityId<I>>,
-                Arc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
+                DirectoryArc<EntityId<I>>,
+                DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
             ),
             (
-                Arc<EntityId<I>>,
-                Option<Arc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>>,
+                DirectoryArc<EntityId<I>>,
+                Option<DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>>,
                 ActivationId,
                 RetirementMode,
                 R::RetirementFailure,
@@ -1019,12 +1023,12 @@ where
         let InstalledSlotDecision {
             entity_id, target, ..
         } = decision;
-        let id = Arc::new(entity_id);
+        let id = DirectoryArc::new(entity_id);
         match target {
             InstalledEffectSource::Mapped(slot) => self.interpret_slot(id, slot),
             InstalledEffectSource::Transient(effects) => {
                 for effect in effects {
-                    self.interpret_effect(Arc::clone(&id), None, effect);
+                    self.interpret_effect(DirectoryArc::clone(&id), None, effect);
                 }
             }
         }
@@ -1036,11 +1040,15 @@ where
     )]
     fn interpret_slot(
         self: &Arc<Self>,
-        id: Arc<EntityId<I>>,
-        slot: Arc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
+        id: DirectoryArc<EntityId<I>>,
+        slot: DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
     ) {
         slot.dispatch_pending(&|effect| {
-            self.interpret_effect(Arc::clone(&id), Some(Arc::clone(&slot)), effect);
+            self.interpret_effect(
+                DirectoryArc::clone(&id),
+                Some(DirectoryArc::clone(&slot)),
+                effect,
+            );
         });
         drop(slot);
         drop(id);
@@ -1052,15 +1060,19 @@ where
     )]
     fn interpret_closed_slot(
         self: &Arc<Self>,
-        id: Arc<EntityId<I>>,
-        slot: Arc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
+        id: DirectoryArc<EntityId<I>>,
+        slot: DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
     ) {
         slot.dispatch_pending(&|effect| {
             match effect {
                 SlotEffect::StartActivation { .. } => {
                     // close_family explicitly returned all original unstarted waiters.
                 }
-                effect => self.interpret_effect(Arc::clone(&id), Some(Arc::clone(&slot)), effect),
+                effect => self.interpret_effect(
+                    DirectoryArc::clone(&id),
+                    Some(DirectoryArc::clone(&slot)),
+                    effect,
+                ),
             }
         });
         drop(slot);
@@ -1074,8 +1086,8 @@ where
     )]
     fn interpret_effect(
         self: &Arc<Self>,
-        id: Arc<EntityId<I>>,
-        slot: Option<Arc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>>,
+        id: DirectoryArc<EntityId<I>>,
+        slot: Option<DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>>,
         effect: SlotEffect<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>,
     ) {
         match effect {
@@ -1099,7 +1111,7 @@ where
                             // Install all original command returns before a consuming
                             // user diagnostic callback can fail.
                             slot.submit_owned(SlotEvent::ActivationFailed { activation_id });
-                            runtime.interpret_slot(Arc::clone(&id), slot);
+                            runtime.interpret_slot(DirectoryArc::clone(&id), slot);
                             runtime
                                 .port
                                 .activation_failed((*id).clone(), activation_id, error);
@@ -1216,7 +1228,7 @@ where
                     self.tasks.retain_retired(row, |(_, original, _, _, _)| {
                         original
                             .as_ref()
-                            .is_some_and(|original| Arc::ptr_eq(original, &slot))
+                            .is_some_and(|original| DirectoryArc::ptr_eq(original, &slot))
                     });
                 }
             }
@@ -1236,8 +1248,8 @@ where
     )]
     async fn retire_owned(
         self: &Arc<Self>,
-        id: Arc<EntityId<I>>,
-        slot: Arc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
+        id: DirectoryArc<EntityId<I>>,
+        slot: DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
         activation: ActivationId,
         lease: R::Lease,
         mode: RetirementMode,
@@ -1245,8 +1257,8 @@ where
         let result = self.port.retire(&id, activation, lease, mode).await;
         if let Err(failure) = result {
             self.tasks.retirement_failed((
-                Arc::clone(&id),
-                Some(Arc::clone(&slot)),
+                DirectoryArc::clone(&id),
+                Some(DirectoryArc::clone(&slot)),
                 activation,
                 mode,
                 failure,

@@ -9749,3 +9749,200 @@ net133, tests net2738, zero new public types; this checkpoint changes its
 records only. Pinned workspace cargo fmt --all -- --check and both whitespace
 checks exit0. Final commit-bound recount adds only these evidence lines; all
 original checkpoint snapshots are preserved under distinct filenames.
+
+
+## 217. Make the consolidated code reviewable while completing EXEC
+
+Conditional research repair `71d5c375ec0eb8dbe0f71313e698cfd83b9d8ac3`
+is pushed; canonical record commit `9efb151` is also pushed. Draft
+[PR #326](https://github.com/devrandom-labs/bombay/pull/326) targets main
+and contains the combined code. Nix Flake Check, CodeQL and cargo-deny
+started on that exact head; no completed or passing CI result is claimed.
+The draft remains unready for merge with seven full gates and69-source HOLD
+open. It does not grant canonical retention or replace required independent
+review, minimization, complete verification or delivery evidence.
+
+Preserved final commit-bound change records are consolidated40ab `20b1a622`,
+consolidated2fcc `38ed35a4`, and canonical `6f113f4c`. Their production/test
+totals match §216; only final evidence prose changes documentation counts.
+Subsequent draft/backlog records are measured at their own checkpoint, rather
+than overwriting those immutable snapshots.
+
+
+Exact-head CI triage `bb632f7a` records Nix Flake Check failure
+[37428379878](https://github.com/devrandom-labs/bombay/actions/runs/37428379878),
+Deny success37428379782 and Analyze(rust) success37428379787. The separate
+CodeQL check112154963161 fails with five cryptographic-nonce annotations.
+Those are existing alerts7–11 on main80bcc8 and the PR merge analysis, in
+byte-identical ChildOrigin identity tests; their creator-local correlation
+keys are not cryptographic values. Independent triage and explicit disposition
+remain required; no dismissal or passing aggregate check is claimed.
+
+The Nix failure is four E0308 diagnostics at Entity runtime738,1024,1214,1216:
+the new exact key/slot custody uses standard Arc while LocalDirectory selects
+Loom Arc for its model. Full log SHA5ede1cec is preserved. Keep the existing
+model and native task ownership; compare exact owner-selected pointers before
+a narrow correction. No semantic runtime result follows from compilation.
+
+
+## 218. Keep Entity's model pointer ownership consistent
+
+Original pinned local receipt `d28d65dc` repeats all four intended E0308
+denials in debug and release, with all347 tracked entry/exit sources equal
+and exact final restoration. The existing model target cannot form; it earns
+no runtime-law credit. Preserve complete CI and local diagnostics, not only
+the first error.
+
+Pre-edit complete consolidated checkpoint `af3fd3f3` against2fcc records118
+tracked paths, zero untracked: production+8361/−2340/net6021;
+tests+23512/−2078/net21434; documentation+15477/−203/net15274;
+manifest/lock+51/−38/net13. Public nominal surface remains five, zero removed.
+This current record includes draft/CI/backlog prose and preserves all earlier
+immutable measurements.
+
+Select one-file proposal `8c7a8469`, independently source-reviewed `37ea7c71`,
+for a bounded correction under §52 and the existing233-path allowance. Exact
+LocalDirectory keys and slots must retain the pointer type selected by their
+owning directory; the surrounding native runtime/task group retains standard
+Arc/Weak. Reuse the actual primitives and all37 original operations, with no
+conversion, key-value clone/hash, wrapper, new module, bound or transition.
+Raw production+36/−32/net4; tests+0/−0; public types+0/−0. Formatting may
+change line layout and requires a fresh source binding and measurement.
+
+Ordinary alternatives compared: narrow conditional module-level imports
+versus exposing the directory's existing import or adding a synchronization
+module. The first matches its exact cfg equation without changing directory
+visibility or inventing another owner. Actual Loom0.7.2 source and Arc tests
+confirm new/clone/ptr_eq/try_unwrap. No model flag, test or CI check changes.
+The first source anchor is738, not the earlier erroneous870; there is no
+entity::sync module at this head.
+
+Before conditional backup, run all six unchanged Entity Loom cases in both
+builds, replay original78db static-owner rejection and corrected cases, and
+run unchanged native entity_runtime/entity_family/entity_directory targets
+both profiles. Format through pinned Nix, freeze source/document maps during
+commands, retain every stream, and obtain independent actual qualification.
+These six models exercise LocalDirectory synchronization, not a new model of
+Tokio/task-group execution. Full strict/workspace/Nix/CI and EXEC design gates
+remain open. Prepared/API/observation work is separate and not installed here.
+
+
+Independent CodeQL triage `bb25a1a4` authorizes only alerts7–11 as false
+positives after inspecting the real noncryptographic origin/route consumers.
+Select their explicit reviewed dismissal under §52, preserving the auditable
+comment and API result. Do not change source names, test values, query scope
+or CI requirements. The official [rule](https://codeql.github.com/codeql-query-help/rust/rust-hard-coded-cryptographic-value/)
+targets cryptographic use; these keys are actor correlation values. GitHub's
+[dismissal contract](https://docs.github.com/en/code-security/how-tos/manage-security-alerts/manage-code-scanning-alerts/resolve-alerts)
+records the reason across branches. This is alert triage, not a passing
+CodeQL/Nix result, semantic gate approval or permission to merge.
+
+
+Actual alert receipt `f2d6883f` confirms exactly7–11 dismissed with reason
+false positive and the reviewed concise comment. First request was rejected
+HTTP422 because GitHub allows280 comment characters; preserve that failed
+request and full853-character note, then the separate successful concise
+request. No source or check configuration changed. A fresh current check
+state is still required; no passing aggregate is inferred from dismissal.
+
+Pinned external file-format receipt `b75fa3e0` binds proposed runtime9a11407c:
+only two call layouts/trailing commas differ from rawefe. Formatted production
++44/−32/net12, tests/public0. Earlier stdout attempt97a accidentally included
+the Nix greeting; it is preserved as noneligible external text and was never
+installed. The source-equivalence check initially rejected the formatter's
+trailing commas, then an exact two-hunk comparison qualified their layout.
+Use only9a and obtain independent successor review before installation.
+
+
+Current exact-head GitHub reread after dismissal confirms CodeQL aggregate
+112154963161 now succeeds alongside Analyze and Deny; Nix still fails.
+This head71d evidence does not certify the forthcoming source patch.
+
+Bounded Entity correction collector will freeze all347 tracked sources for
+eleven commands: corrected six models debug/release; original4-E0308 inverse
+both; corrected six-model replay both; all36 native tests (directory16,
+family9,runtime11) both; whole workspace formatting; finally exact original
+source map and all36 native restoration controls both. This separates static
+owner rejection from runtime model evidence. No tracked document is edited
+during the collector; every complete stream and entry/exit map is preserved.
+
+
+Nonauthor qualification `77b0fea6` authenticates both original profiles,
+all four streams and347 recorded source maps, plus exact formatted9a's two
+layout hunks. Subsequent live PRD changes are a separate documentation epoch;
+the other346 current inputs remain exact. Select that eligible successor for
+the bounded eleven-command trial. No passing correction or full gate is
+inferred from the original static denials or formatter.
+
+
+## 219. Preserve the actual prepared actor through borrowed host setup
+
+The original actor-loss witness f449/peer25d7 remains separate from the
+completed Work-only fix. Compare successor `73c9344a`, nonauthor `f27ce595`,
+against exact App2d/fixture29a819. Keep actual (Actor,Spaces) and Work in the
+existing affine publication while public Hosts borrows Spaces; its original
+native panic still reaches the caller. Take the exact actor only next to
+the existing synchronous spawn handoff. Spaces may be changed and declared
+Actor may contain staged children: never reconstruct untouched Self or Root.
+
+Ordinary representation reuses the existing custody sum/publication and
+its Drop, actual nested receiving/join Results, native host and spawn. The
+Prepared alternative owns recoverable actor/Spaces/Work; NotInvoked means
+other setup/startup already owns consumed inputs. Smaller common extraction
+of Work after Prepare removes four net lines versus predecessor522. No new
+owner, nominal type, wrapper, trait, task, channel, allocation call or bound.
+Publicly this adds one variant and one actual-input generic, which require
+full API/consumer review before final acceptance. It is not zero API change.
+
+Before any installation, choose the bounded comparison within existing233
+paths and §52: two existing files, raw production+53/−15/net38,
+tests+146/−3/net143, public types+0/−0. Preserve all nine cfg fragments,
+all29 names,27 unchanged controllers, the original five root observations,
+and the separate Work-only retry. The new30th controller receives actual
+Prepared values/RecvError and retries the same actor, changed Spaces and
+original Work on the same live host, checking complete joined retirement,
+allocation/scope/borrow identity, original native Box and exact releases.
+External pinned formatting and independent successor binding precede trial.
+
+Root inverse `87b5d075`, independently reviewed f27ce, keeps all public
+types/tests intact and restores only the original unprotected actual locals
+during Hosts::space. Work remains protected; successful borrowing reprotects
+the same originals. Its selected negative must reach the unchanged first
+root3589 oracle0-versus1 after native/Work/discharge/live-host prerequisites.
+Whole production rollback would invalidate Prepared formation and cannot
+serve as that semantic inverse. Formation may veto either candidate.
+
+Run whole30 debug/release prerequisites and positives, selected inverse
+both, restored whole30 both, and finally exact retained2d/a819 whole29
+both, with complete frozen maps and streams plus independent actual review.
+Do not credit later assertions after an intended negative. No genuine public
+consuming-Prepare panic was established; Work protection before it is reuse
+of the same owner, not a fabricated new defect. Short consuming handoff,
+runtime destruction and values destroyed inside a consuming user operation
+remain explicit limits. Full API/TASK/Entity/HTTP/OBS and retention gates
+are separate. CI pointer repair stays its own reviewed stage.
+
+
+§218 complete actual `d8694fc0`, independently qualified `94a8d2ba`, covers
+eleven frozen commands: corrected/replayed six models both profiles, original
+four-site static inverse both, all36 native controls with corrected and exact
+restored original both, and pinned whole formatting0. All347 entry/exit and
+final maps match their selected source. Healthy11 warnings remain; this is
+not strict lint or final CI acceptance. Select only runtime9a for conditional
+research backup, preserving Prepared/OBS/API proposals externally and all full
+gates/HOLD. Latest complete pre-backup2fcc record `0d2c5a76`:118 tracked,
+zero untracked; production+8361/−2340/net6021, tests+23512/−2078/net21434,
+documentation+15615/−203/net15412, manifest/lock+51/−38/net13; five public
+nominals, zero removed. Recount after the +44/−32/net12 one-file installation
+and records; preserve the original snapshots.
+
+
+Post-install complete2fcc record `78ba8b36` covers118 tracked, zero untracked:
+production+8373/−2340/net6033, tests+23512/−2078/net21434,
+documentation+15629/−203/net15426, manifest/lock+51/−38/net13; public
+nominals remain five/zero removed. Stage40ab bdf526ca has production net5905.
+Canonical f0ab7b3d remains70 paths, zero untracked, production net133, tests
+net2738, public types0; its changes are records. A separate commit-bound
+recount covers final prose/backlog changes without overwriting these records.
+Entity review count erratum7c6f828b preserves94a and clarifies four passing
+model rows, each exit0; all explicit row/stream evidence stays unchanged.
