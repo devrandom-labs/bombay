@@ -9339,3 +9339,114 @@ correction against actual root patches/lock and both unchanged manifests.
 The45-template/19-request inventories and all verification criteria remain
 unchanged; canonical guide bytes still select the actual0.21.2 contract.
 Pinned whole-workspace formatting and diff whitespace checks pass.
+
+
+## 209. Compare genuine absent work using the existing execution owner
+
+Temporarily compare direct optional source6d05028b with current923e/ff178.
+It reuses the same affine execution/result owner, uses Option<Never> for
+actual no-work axes, supplies no dummy callable/future value, and adds no
+nominal type. Source-only budget is production+268/−124/net144; public
+with-work results also become Option axes, so all25 existing controllers
+need explicit preservation/migration before retaining the candidate.
+Do not combine incompatible async08 bare-output signatures during this trial.
+
+Source fixtureee941 is unexecuted and vetoed: selected ScheduleAfter
+intentionally discharges its accepted receipt before startup publication.
+Nonauthor source tracee616fbc6 proves the owning discharge; no runtime bug
+or retained generation is invented. Corrected fixtured3b7f9fc observes actual
+OneShot elapsed1 and the complete retained Stop row, preserving cold input,
+refused startup, real grant, root identity and every cleanup field. Root
+independently inspected the selected owner cuts and complete correction.
+Two separate public Some(()) denials must follow healthy formation.
+
+Use one private temporary test path within delegated233 paths, preserve the
+complete current source inventory and all pins, format the exact candidate
+and three sources through Nix, bind resulting bytes, then compile/run three
+public tests in both profiles. Original method/await syntax failures earn
+only compiler-gap credit. Restore both original production and exactff178
+in finally, remove the temporary target and rerun all25 original controls
+both builds. Candidate formation/runtime/migration remain unknown and no
+full API, Entity/HTTP or source-retention acceptance is implied.
+
+
+## 210. Verify owned blocking panic custody with the existing pair
+
+Compare the existing Runtime/execution/result composition using test-only
+proposal856a514f on exactff178 and kernel923e. Keep the actual Runtime and
+original receiver outside native execution unwind, then join on that same
+host. Two separate controllers preserve Ready output versus unfinished-work
+Interrupted, original native cause and the complete cancelled-root facts.
+No new carrier, wrapper, service, nominal type or production implementation.
+
+Nonauthor review identifies two source setup corrections: compare only native
+opaque allocation addresses, and use packagebombay-rs with --locked. Root
+successore8404dee corrects those cuts in all three immutable variants and
+retains all original25 controllers. Before any trial, require independent
+eligibility and exact pinned formatter bytes; expected one existing test
+path, approximately133 net test lines, production/public delta zero.
+
+Run both controllers in both builds. Separate one-site inversions put the
+receiver inside the caught whole operation or destroy its actual host before
+receiving on another host. Require the unchanged output/raw-retirement
+oracle to fail for the intended custody cut, not an unrelated compiler issue.
+Restore the exact healthy proposal and replay all27, then originalff178/all25
+both profiles. Current native-disposal evidence and final API/blocking policy
+remain separate. Retire only authenticated already-linked completed codegen
+objects when needed; preserve all source, binaries, libraries and evidence.
+
+
+§209 actual receipt `a88b747b` and independent execution review `2fa576b7`
+authenticate all twelve commands, twenty-four streams, entry source maps and
+exact finally restoration. All three absent-work controllers and their replays
+pass in debug and optimized builds. Four separate Some(()) denials each produce
+one E0308. Original-source formation produces E0599/E0107/E0277, with no runtime
+credit. Finally-restored original25 pass both profiles; candidate25 have not run.
+The candidate adds three warnings (fourteen versus eleven on baseline), so no
+strict-lint pass or API retention is claimed. Actual OneShot elapsed and the
+complete retained Stop row replace the vetoed receipt oracle. No Entity/HTTP,
+advanced-host or inferred minimal spelling acceptance follows. Per-command
+entry maps and a finally map are archived; after-command equality assertions
+are not archived after-map snapshots.
+
+Storage receipt `39f03626` deletes only thirty-two authenticated finished
+codegen objects after linking their retained binaries (995,326,976 bytes).
+Source, libraries, binaries and original evidence remain. This is no semantic
+acceptance or blanket cache clean.
+
+§210 actual receipt `fa14ab45` and nonauthor execution review `e027f44b`
+authenticate ten commands and twenty full streams. Both new controllers and
+all original25 pass together in both profiles, and the restored27 replay passes
+both. Finally-restored exactff178/all25 pass both profiles. Receiver-inside-
+whole-operation inversions preserve original native identity, then fail the
+unchanged Ready-output lifetime oracle in both builds. Destroying the original
+host before receiving on another host fails the complete joined-root pattern
+in both builds; the logs do not identify a particular native join cause, and
+later assertions earn no credit. Production923e and all unrelated source are
+unchanged. Entry maps and exact finally map are preserved, with no invented
+per-command after snapshots or execution-environment metadata.
+
+Retain only the independently qualified healthy test proposal `7fbe2496`:
+one existing integration file, tests +133/−1/net132, production and new public
+or private nominal types zero. This preserves every original controller and
+adds no blocking runner, carrier or policy. Complete tracked/untracked
+measurement, formatting and focused source commit follow; full DG-API/DG-TASK
+acceptance and source-retention HOLD remain separate.
+
+
+Checkpoint snapshot after test-only retention: consolidated research against
+2fcc changes118 tracked paths, zero untracked; production +8363/−2340/net6023,
+tests +23278/−2078/net21200, documentation +15126/−203/net14923,
+manifest/lock +51/−38/net13; public types remain five nominal
+(three fresh/two promotions), zero removed. Full file/hash/classification
+record `cf1dfd83` retains the complete delta, including unchanged owning
+production. Against40ab, record `7a57f885` covers91 tracked paths, zero
+untracked, production net5895 and tests net18457. These are conditional
+research totals, not the final distilled design.
+
+Canonical snapshot `a23eb76a` remains70 tracked paths, zero untracked,
+production +167/−34/net133, tests +3295/−557/net2738 and zero public types;
+its changes in this checkpoint are records only. Pinned workspace formatting
+and both whitespace checks pass. Finished-object receipt `4e3e96d1` retires
+only sixteen linked scratch objects (927,725,544 bytes), retaining the linked
+binary, libraries, source and every original stream.

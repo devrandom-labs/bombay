@@ -3,8 +3,9 @@ use core::mem;
 use core::num::NonZeroUsize;
 use core::pin::{Pin, pin};
 use core::task::{Context, Poll};
+use std::any::Any;
 use std::cell::Cell;
-use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
+use std::panic::{AssertUnwindSafe, catch_unwind, panic_any, resume_unwind};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, PoisonError, Weak};
 
@@ -3341,4 +3342,135 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
     assert_eq!(original_work.strong_count(), 0);
     assert_eq!(original_control_root.strong_count(), 0);
     assert_eq!(original_control_work.strong_count(), 0);
+}
+
+#[test]
+fn owned_blocking_retains_ready_output_native_fault_and_joined_root() {
+    let runtime = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the owning runtime builds");
+    let output = Rc::new(vec![173, 179]);
+    let original_output = Rc::downgrade(&output);
+    let root = Arc::new(vec![31, 37]);
+    let original_root = Arc::downgrade(&root);
+    let payload = Arc::new(vec![181, 191]);
+    let original_payload = Arc::downgrade(&payload);
+    let (execution, result) = {
+        let entered = runtime.enter();
+        let pair = paired_account(root)
+            .execute_with::<AccountConclusion, (), _, _, _>(move |_| ReadyAccountWork {
+                output: Some(output),
+                panic_payload: Some(payload),
+            })
+            .unwrap_or_else(|_| panic!("the owning runtime is entered"));
+        drop(entered);
+        pair
+    };
+    // Only this original receiver is optional: the counterfactual consumes it.
+    let mut result = Some(result);
+    let execution_fault = catch_unwind(AssertUnwindSafe(|| runtime.block_on(execution)));
+    let Err(payload) = execution_fault else {
+        panic!("the original Ready work destructor panics natively");
+    };
+    let output_owned_before_join = original_output.strong_count();
+    assert_eq!(output_owned_before_join, 1);
+    let outcome = runtime.block_on(result.take().expect("the original receiver is retained"));
+    let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        panic!("Ready was acquired before disposal of the work future");
+    };
+    assert_cancelled_account(&cleanup);
+    let Ok((_, Ok(ActorRetirement::OwnerCancelled { behavior, .. }))) = &cleanup else {
+        panic!("the complete retirement oracle already established owner cancellation");
+    };
+    let exact_root = original_root
+        .upgrade()
+        .is_some_and(|original| Arc::ptr_eq(&original, &behavior.base().original));
+    let exact_output = original_output
+        .upgrade()
+        .is_some_and(|original| Rc::ptr_eq(&original, &output));
+    let contents = output.as_slice().to_vec();
+    let cause_owned = original_payload.strong_count();
+    let root_owned = original_root.strong_count();
+    assert!(exact_output);
+    assert!(exact_root);
+    assert_eq!(contents, vec![173, 179]);
+    assert_eq!(cause_owned, 1);
+    assert_eq!(root_owned, 1);
+    drop((output, cleanup));
+    let output_released = original_output.strong_count();
+    let root_released = original_root.strong_count();
+    let cause_still_owned = original_payload.strong_count();
+    drop(payload);
+    let cause_released = original_payload.strong_count();
+    assert_eq!(output_released, 0);
+    assert_eq!(root_released, 0);
+    assert_eq!(cause_still_owned, 1);
+    assert_eq!(cause_released, 0);
+    // The acquired actor fact and native cause have been explicitly discharged.
+    drop(runtime);
+}
+
+#[test]
+fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
+    let runtime = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the owning runtime builds");
+    let work_value = Rc::new(vec![107, 109]);
+    let original_work = Rc::downgrade(&work_value);
+    let root = Arc::new(vec![31, 37]);
+    let original_root = Arc::downgrade(&root);
+    let panic_allocation = Arc::new(vec![197, 199]);
+    let original_allocation = Arc::downgrade(&panic_allocation);
+    // This opaque carrier belongs solely to the native Rust unwind boundary.
+    let payload: Box<dyn Any + Send> = Box::new(panic_allocation);
+    let original_panic = payload.as_ref() as *const (dyn Any + Send) as *const ();
+    let (execution, result) = {
+        let entered = runtime.enter();
+        let pair = paired_account(root)
+            .execute_with::<AccountConclusion, (), _, _, _>(move |_| {
+                let mut payload = Some(payload);
+                poll_fn(move |_| -> Poll<Rc<Vec<u8>>> {
+                    assert_eq!(work_value.as_slice(), &[107, 109]);
+                    let payload = payload.take().expect("the original native panic is owned");
+                    resume_unwind(payload)
+                })
+            })
+            .unwrap_or_else(|_| panic!("the owning runtime is entered"));
+        drop(entered);
+        pair
+    };
+    let execution_fault = catch_unwind(AssertUnwindSafe(|| runtime.block_on(execution)));
+    let Err(payload) = execution_fault else {
+        panic!("the invoked unfinished work panics natively");
+    };
+    let received_panic = payload.as_ref() as *const (dyn Any + Send) as *const ();
+    let same_panic = original_panic == received_panic;
+    let work_released_before_join = original_work.strong_count();
+    let outcome = runtime.block_on(result);
+    let ApplicationOutcome::Interrupted { cleanup } = outcome else {
+        panic!("no output or recoverable uninvoked callable was acquired");
+    };
+    assert_cancelled_account(&cleanup);
+    let Ok((_, Ok(ActorRetirement::OwnerCancelled { behavior, .. }))) = &cleanup else {
+        panic!("the complete retirement oracle already established owner cancellation");
+    };
+    let exact_root = original_root
+        .upgrade()
+        .is_some_and(|original| Arc::ptr_eq(&original, &behavior.base().original));
+    let cause_owned = original_allocation.strong_count();
+    assert!(same_panic);
+    assert!(exact_root);
+    assert_eq!(work_released_before_join, 0);
+    assert_eq!(cause_owned, 1);
+    drop(cleanup);
+    let root_released = original_root.strong_count();
+    let cause_still_owned = original_allocation.strong_count();
+    drop(payload);
+    let cause_released = original_allocation.strong_count();
+    assert_eq!(root_released, 0);
+    assert_eq!(cause_still_owned, 1);
+    assert_eq!(cause_released, 0);
+    drop(runtime);
 }
