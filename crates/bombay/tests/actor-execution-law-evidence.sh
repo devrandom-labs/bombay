@@ -81,14 +81,20 @@ apply_mutation() {
   case "$1" in
     terminal-after-driver)
       replace_exact "$actor_execution" \
-        '        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error>::new(retirement);
+        '        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error, E::RetirementRequest>::new(
+            retirement,
+        );
         let outcome = driver.run().await.into();' \
         '        let outcome = driver.run().await.into();
-        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error>::new(retirement);'
+        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error, E::RetirementRequest>::new(
+            retirement,
+        );'
       ;;
     retirement-before-driver-drop)
       replace_exact "$actor_execution" \
-        '        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error>::new(retirement);
+        '        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error, E::RetirementRequest>::new(
+            retirement,
+        );
         let outcome = driver.run().await.into();
         terminal.complete(outcome)' \
         '        struct Reversed<T, D> {
@@ -96,7 +102,7 @@ apply_mutation() {
             driver: D,
         }
         let mut reversed = Reversed {
-            terminal: Terminal::<_, B, E::Residual, B::Error, E::Error>::new(retirement),
+            terminal: Terminal::<_, B, E::Residual, B::Error, E::Error, E::RetirementRequest>::new(retirement),
             driver: Box::pin(driver.run()),
         };
         let outcome = reversed.driver.as_mut().await.into();
@@ -211,7 +217,7 @@ kill_mutation() {
   apply_mutation "$inversion"
   printf 'KILL  %s with %s\n' "$inversion" "$killer"
   set +e
-  output="$(cargo test --locked -p bombay-rs --lib "$killer" -- --exact --nocapture 2>&1)"
+  output="$(cargo test --locked -p bombay-rs --lib "$killer" -- --exact 2>&1)"
   status=$?
   set -e
   restore_sources
@@ -226,7 +232,9 @@ kill_mutation() {
     printf 'mutation was unviable instead of killed: %s\n' "$inversion" >&2
     exit 1
   fi
-  if ! grep -Fq "test $killer ... FAILED" <<< "$output"; then
+  if ! NAMED_KILLER="$killer" perl -0ne '
+    exit(/(?:\A|\n)failures:\n    \Q$ENV{NAMED_KILLER}\E\n\ntest result: FAILED\. 0 passed; 1 failed; 0 ignored; 0 measured; [0-9]+ filtered out; finished in [^\n]*\n(?:(?!^test result:).)*\z/ms ? 0 : 1);
+  ' <<< "$output"; then
     printf '%s\n' "$output" >&2
     printf 'mutation failed outside its named killer: %s\n' "$inversion" >&2
     exit 1
@@ -290,8 +298,9 @@ deny_mutation duplicate-driver driver
 deny_mutation duplicate-retirement retirement
 
 restore_sources
+behavior_revision="$(jq -r '.behavior.revision' docs/driver-law-manifest.json)"
 jq -s \
-  --arg revision '804b2bf25325a523884ec49d8a4ae6d2d2b6e9da' \
+  --arg revision "$behavior_revision" \
   '{
     schema: 1,
     behavior_revision: $revision,

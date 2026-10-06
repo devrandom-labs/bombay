@@ -21,7 +21,7 @@ impl Root {
 }
 
 type RootLocation = RootOrigin<StopOnShutdown<Root>>;
-type RootDeparture = ActorRetirement<StopOnShutdown<Root>, ApplicationTerminal>;
+type RootDeparture = ActorRetirement<StopOnShutdown<Root>, ApplicationTerminal, ()>;
 
 #[derive(TerminalProjection)]
 enum ApplicationTerminal {
@@ -49,7 +49,7 @@ struct Parent;
 impl Parent {}
 
 type PrimaryOrigin = ChildOrigin<Parent, ParentChildrenPrimary>;
-type WorkerRetirement = ActorRetirement<Worker, RoleTerminal>;
+type WorkerRetirement = ActorRetirement<Worker, RoleTerminal, ()>;
 
 #[allow(dead_code)]
 #[derive(TerminalProjection)]
@@ -62,7 +62,7 @@ enum RoleTerminal {
     #[declared_child(Parent, ParentChildrenReplica, Worker)]
     Replica {
         origin: ChildOrigin<Parent, ParentChildrenReplica>,
-        terminal: ActorRetirement<Worker, Self>,
+        terminal: ActorRetirement<Worker, Self, ()>,
     },
 }
 
@@ -79,12 +79,12 @@ fn equal_child_types_project_from_their_distinct_generated_role_positions() {
 
     accepts_projection::<
         ChildOrigin<Parent, PrimaryPosition>,
-        ActorRetirement<Worker, RoleTerminal>,
+        ActorRetirement<Worker, RoleTerminal, ()>,
         RoleTerminal,
     >();
     accepts_projection::<
         ChildOrigin<Parent, ReplicaPosition>,
-        ActorRetirement<Worker, RoleTerminal>,
+        ActorRetirement<Worker, RoleTerminal, ()>,
         RoleTerminal,
     >();
 }
@@ -99,9 +99,12 @@ fn derive_preserves_the_exact_runtime_origin_and_retirement() {
         origin,
         terminal:
             ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 control,
                 user,
                 descendants,
+                child_failures: (),
                 completion,
                 ..
             },
@@ -109,6 +112,8 @@ fn derive_preserves_the_exact_runtime_origin_and_retirement() {
     else {
         panic!("the derive must preserve the exact root terminal")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
 
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(control.len(), 0);

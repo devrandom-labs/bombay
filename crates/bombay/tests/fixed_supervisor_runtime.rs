@@ -7,10 +7,12 @@ use behavior_actors::atomic::{
     RestartLimit, RestartRelease, StableProxy, Strategy, WorkerSource, WorkerSubmission, fixed,
 };
 use behavior_actors::{Exit, StopOnShutdown};
+use bombay::ProjectTerminal;
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{ChildHead, MessageProtocol, Never};
 use bombay::prelude::{
-    ActorRetirement, ChildOrigin, Completion, MailAddr, RootOrigin, TerminalProjection,
+    ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
+    TerminalProjection,
 };
 use bombay::{ActorSpace, ActorSpaces, App, WorkerPreparationSource, WorkerPreparationStart};
 use tokio::sync::oneshot;
@@ -110,17 +112,39 @@ struct SupervisorSpaces {
 enum SupervisorTerminal {
     Root {
         origin: RootOrigin<RootSupervisor>,
-        terminal: ActorRetirement<RootSupervisor, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the supervisor retirement retains its exact proxy-role child failures and complete terminal"
+        )]
+        terminal: ActorRetirement<
+            RootSupervisor,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<Supervisor, ChildHead>, WorkerProxy>>,
+                (),
+            ),
+        >,
     },
     #[structural_child]
     Proxy {
         origin: ChildOrigin<Supervisor, ChildHead>,
-        terminal: ActorRetirement<WorkerProxy, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the proxy retirement retains its exact worker-role child failures and complete terminal"
+        )]
+        terminal: ActorRetirement<
+            WorkerProxy,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<WorkerProxy, ChildHead>, ProxyWorker>>,
+                (),
+            ),
+        >,
     },
     #[structural_child]
     Worker {
         origin: ChildOrigin<WorkerProxy, ChildHead>,
-        terminal: ActorRetirement<ProxyWorker, Self>,
+        terminal: ActorRetirement<ProxyWorker, Self, ()>,
     },
 }
 
@@ -166,26 +190,31 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
         status: ActorSpace::new(),
         capability: ActorSpace::new(),
     };
-    let (termination, terminal): (_, SupervisorTerminal) =
-        App::new(supervisor.stop_on_shutdown(), spaces)
-            .run_with(move |application| async move {
-                activation_received
-                    .await
-                    .expect("the proxy activates its exact worker");
-                let interface = application.interface(application.root().established_recipient());
-                let caller = interface
-                    .external::<Status>()
-                    .expect("the supervisor caller is established");
-                caller
-                    .send(interface.api(), FixedCommand::shutdown())
-                    .await
-                    .expect("the supervisor accepts shutdown");
-                let lifecycle = application.lifecycle();
-                tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
-                    .await
-                    .expect("the supervisor terminates after shutdown")
-            })
-            .unwrap_or_else(|_| panic!("the supervisor runs its worker and shuts down"));
+    let (termination, root_origin, joined_actor) = App::new(supervisor.stop_on_shutdown(), spaces)
+        .run_with(move |application| async move {
+            activation_received
+                .await
+                .expect("the proxy activates its exact worker");
+            let interface = application.interface(application.root().established_recipient());
+            let caller = interface
+                .external::<Status>()
+                .expect("the supervisor caller is established");
+            caller
+                .send(interface.api(), FixedCommand::shutdown())
+                .await
+                .expect("the supervisor accepts shutdown");
+            let lifecycle = application.lifecycle();
+            tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                .await
+                .expect("the supervisor terminates after shutdown")
+        })
+        .unwrap_or_else(|_| panic!("the supervisor runs its worker and shuts down"));
+    let terminal: SupervisorTerminal = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_orderly_supervisor_terminal(terminal);
@@ -197,6 +226,10 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        child_failures: (child_failures, ()),
+
+        capability_failures,
+        unread_owner_cancellation,
         descendants,
         completion,
         ..
@@ -204,6 +237,9 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     else {
         panic!("the supervisor completes after its proxy tree");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
+    assert!(child_failures.is_empty());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
     let SupervisorTerminal::Proxy { origin, terminal } = descendants
@@ -215,6 +251,10 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        child_failures: (child_failures, ()),
+
+        capability_failures,
+        unread_owner_cancellation,
         descendants,
         completion,
         ..
@@ -222,6 +262,9 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     else {
         panic!("the supervisor completes its proxy during shutdown");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
+    assert!(child_failures.is_empty());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
     let SupervisorTerminal::Worker { origin, terminal } = descendants
@@ -233,6 +276,10 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        child_failures: (),
+
+        capability_failures,
+        unread_owner_cancellation,
         completion,
         descendants,
         ..
@@ -240,6 +287,8 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     else {
         panic!("the proxy completes its worker during shutdown");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert!(descendants.is_empty());
 }

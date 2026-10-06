@@ -5,6 +5,7 @@ mod worker;
 
 use core::convert::Infallible;
 
+use bombay::ProjectTerminal;
 use bombay::atomic::{
     ActivationPolicy, ActorDrainPolicy, Assignment, BacklogCapacity, DiagnosticDisposition,
     FifoCommand, FifoOutcome, FifoPool, ImmediateActivation, Interruption, OrderedRoles,
@@ -12,8 +13,8 @@ use bombay::atomic::{
 };
 use bombay::behavior::{ChildHead, MessageProtocol, Never};
 use bombay::prelude::{
-    ActorRetirement, ChildOrigin, Completion, Exit, MailAddr, RootOrigin, StopOnShutdown,
-    TerminalProjection,
+    ActorRetirement, ChildFailure, ChildOrigin, Completion, Exit, MailAddr, RootOrigin,
+    StopOnShutdown, TerminalProjection,
 };
 use bombay::{ActorSpace, ActorSpaces, App};
 use worker::{SearchJob, SearchResult, SearchWorker};
@@ -55,12 +56,23 @@ struct SearchSpaces {
 enum SearchTerminal {
     Pool {
         origin: RootOrigin<SearchPool>,
-        terminal: ActorRetirement<SearchPool, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the pool retirement retains exact worker origins and complete child failures"
+        )]
+        terminal: ActorRetirement<
+            SearchPool,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<SearchPool, ChildHead>, StopOnShutdown<SearchWorker>>>,
+                (),
+            ),
+        >,
     },
     #[structural_child]
     Worker {
         origin: ChildOrigin<SearchPool, ChildHead>,
-        terminal: ActorRetirement<StopOnShutdown<SearchWorker>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<SearchWorker>, Self, ()>,
     },
 }
 
@@ -86,7 +98,7 @@ fn run_search_pool() {
         workers: ActorSpace::new(),
         customers: ActorSpace::new(),
     };
-    let (termination, terminal): (_, SearchTerminal) = App::new(search_pool(), spaces)
+    let (termination, root_origin, joined_actor) = App::new(search_pool(), spaces)
         .run_with(|application| async move {
             let interface = application.interface(application.root().established_recipient());
             let mut customer = interface
@@ -134,6 +146,12 @@ fn run_search_pool() {
             application.lifecycle().termination().await
         })
         .unwrap_or_else(|_| panic!("the pool runs its worker and shuts down"));
+    let terminal: SearchTerminal = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_search_terminal(terminal);
 }
@@ -144,6 +162,8 @@ fn assert_search_terminal(terminal: SearchTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         descendants,
         completion,
         ..
@@ -151,6 +171,8 @@ fn assert_search_terminal(terminal: SearchTerminal) {
     else {
         panic!("the pool completes after its worker graph");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
     let SearchTerminal::Worker { origin, terminal } = descendants
@@ -162,6 +184,8 @@ fn assert_search_terminal(terminal: SearchTerminal) {
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         completion,
         descendants,
         ..
@@ -169,6 +193,8 @@ fn assert_search_terminal(terminal: SearchTerminal) {
     else {
         panic!("orderly shutdown completes the exact worker");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert!(descendants.is_empty());
 }

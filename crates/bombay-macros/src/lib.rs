@@ -316,7 +316,7 @@ fn expand_terminal_projection(input: &DeriveInput) -> syn::Result<TokenStream2> 
                         declared
                     }),
                     quote!({
-                        let exact: #bombay::ActorRetirement<#actor, Self> = terminal;
+                        let exact: #bombay::ActorRetirement<#actor, Self, _> = terminal;
                         exact
                     }),
                 )

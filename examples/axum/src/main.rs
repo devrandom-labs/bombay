@@ -18,7 +18,7 @@ type OrderBookRoot = StopOnShutdown<order_book::OrderBook>;
 pub(crate) enum OrderBookTerminal {
     Root {
         origin: RootOrigin<OrderBookRoot>,
-        terminal: ActorRetirement<OrderBookRoot, Self>,
+        terminal: ActorRetirement<OrderBookRoot, Self, ()>,
     },
 }
 
@@ -28,23 +28,17 @@ impl fmt::Debug for OrderBookTerminal {
     }
 }
 
-#[allow(
-    clippy::result_large_err,
-    reason = "the exact Axum error retains application terminal custody without boxing"
-)]
-fn main() -> Result<(), AxumRunError<OrderBookTerminal>> {
+fn main() {
     let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 3000);
-    let terminal = Application::new(order_book::OrderBook::default().stop_on_shutdown()).run_axum(
-        address,
-        |application| {
+    let terminal = Application::new(order_book::OrderBook::default().stop_on_shutdown())
+        .run_axum(address, |application| {
             let interface = application.interface(http::OrderApi {
                 orders: application.root().established_recipient(),
             });
             http::router(interface, application.lifecycle())
-        },
-    )?;
+        })
+        .expect("the HTTP application retains exact cold or serving failure custody");
     assert_application_stopped(terminal);
-    Ok(())
 }
 
 pub(crate) fn assert_application_stopped(terminal: OrderBookTerminal) {
@@ -52,6 +46,9 @@ pub(crate) fn assert_application_stopped(terminal: OrderBookTerminal) {
         origin,
         terminal:
             ActorRetirement::Completed {
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
                 behavior,
                 settlements,
                 control,
@@ -63,6 +60,8 @@ pub(crate) fn assert_application_stopped(terminal: OrderBookTerminal) {
     else {
         panic!("the application must preserve the root's completed terminal state")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     drop(behavior);
     let settlement_status = settlements.settlement_status();

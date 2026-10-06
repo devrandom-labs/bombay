@@ -4,12 +4,11 @@
 
 mod counter;
 
+use bombay::ProjectTerminal;
 use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
 
-use crate::counter::{Counter, CounterError, CounterMessage, CounterValue};
-
-type CounterRunError = RunError<CounterError, ApplicationTerminal<StopOnShutdown<Counter>>>;
+use crate::counter::{Counter, CounterMessage, CounterValue};
 
 struct Api {
     counter: EstablishedRecipient<Counter>,
@@ -22,13 +21,13 @@ where
 {
     Root {
         origin: RootOrigin<R>,
-        terminal: ActorRetirement<R, Self>,
+        terminal: ActorRetirement<R, Self, ()>,
     },
 }
 
-fn main() -> Result<(), Box<CounterRunError>> {
-    let ((), terminal) =
-        Application::new(Counter::new().stop_on_shutdown()).run_with(|application| async move {
+fn main() {
+    let ((), origin, retirement) = Application::new(Counter::new().stop_on_shutdown())
+        .run_with(|application| async move {
             let lifecycle = application.lifecycle();
             let interface = application.interface(Api {
                 counter: application.root().established_recipient(),
@@ -56,9 +55,11 @@ fn main() -> Result<(), Box<CounterRunError>> {
             assert_eq!(shutdown, Ok(()));
             let termination = lifecycle.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));
-        })?;
+        })
+        .expect("the counter application retains exact cold or joined failure inputs");
+    let retirement = retirement.expect("the counter root returns its actual retirement");
+    let terminal = <ApplicationTerminal<_> as ProjectTerminal<_, _>>::project(origin, retirement);
     assert_application_stopped(terminal);
-    Ok(())
 }
 
 fn assert_application_stopped<R>(terminal: ApplicationTerminal<R>)
@@ -70,6 +71,9 @@ where
         origin,
         terminal:
             ActorRetirement::Completed {
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
                 behavior,
                 settlements,
                 control,
@@ -81,6 +85,8 @@ where
     else {
         panic!("the application must preserve the root's completed terminal state")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     drop(behavior);
     let settlement_status = settlements.settlement_status();

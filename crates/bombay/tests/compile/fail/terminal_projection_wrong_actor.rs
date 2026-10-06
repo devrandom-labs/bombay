@@ -25,7 +25,7 @@ enum ApplicationTerminal {
     #[declared_child(Parent, ParentChildrenWorker, OtherWorker)]
     Worker {
         origin: ChildOrigin<Parent, ParentChildrenWorker>,
-        terminal: ActorRetirement<OtherWorker, Self>,
+        terminal: ActorRetirement<OtherWorker, Self, ()>,
     },
 }
 

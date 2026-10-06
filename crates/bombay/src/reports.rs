@@ -1,5 +1,7 @@
 //! Runtime-owned translation of structural parent-report requests.
 
+use core::mem;
+
 use behavior::{Behavior, ChildReport, CreationId, EventIngress};
 use behavior_actors::ReportTerminalOutcome;
 use communication::{ControlClosed, ControlSender};
@@ -15,14 +17,14 @@ pub(crate) trait TerminalReportTransaction {
 
 pub(crate) struct LocalTerminalReports {
     selection: TerminationSelection<MailAddr>,
-    report: oneshot::Sender<Termination<MailAddr>>,
+    report: Option<oneshot::Sender<Termination<MailAddr>>>,
 }
 
 impl LocalTerminalReports {
     pub(crate) const fn new(report: oneshot::Sender<Termination<MailAddr>>) -> Self {
         Self {
             selection: TerminationSelection::new(),
-            report,
+            report: Some(report),
         }
     }
 
@@ -35,13 +37,45 @@ impl LocalTerminalReports {
         self.selection.select(outcome);
     }
 
-    pub(crate) fn retire(self) {
-        if let TerminationSelection::Selected(outcome) = self.selection {
-            match self.report.send(outcome) {
-                Ok(()) => {}
-                Err(_) => unreachable!("the incarnation retirement owns the report receiver"),
-            }
+    /// Acquire the original one-shot result outside terminal-report disposal.
+    /// A refused outcome does not recreate the consumed sender.
+    pub(crate) fn receive_retirement(
+        &mut self,
+        publication: &mut Option<Result<(), Termination<MailAddr>>>,
+    ) {
+        if publication.is_some() {
+            return;
         }
+        if matches!(self.selection, TerminationSelection::Selected(_)) && self.report.is_none() {
+            return;
+        }
+        let outcome = match mem::replace(&mut self.selection, TerminationSelection::new()) {
+            TerminationSelection::Selected(outcome) => outcome,
+            unselected => {
+                self.selection = unselected;
+                drop(self.report.take());
+                return;
+            }
+        };
+        let report = self
+            .report
+            .take()
+            .expect("the original selected report owns its sender");
+        *publication = Some(report.send(outcome));
+        if matches!(publication, Some(Err(_))) {
+            unreachable!("the incarnation retirement owns the report receiver");
+        }
+    }
+
+    /// Retirement is complete when the original selection and sender are gone.
+    /// An acquired refusal remains in the outside publication result.
+    pub(crate) fn retirement_complete(&self) -> bool {
+        self.report.is_none() && !matches!(self.selection, TerminationSelection::Selected(_))
+    }
+
+    pub(crate) fn retire(mut self) {
+        let mut publication = None;
+        self.receive_retirement(&mut publication);
     }
 }
 

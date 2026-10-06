@@ -1,15 +1,19 @@
 //! Nominal native Entity definitions, stable references, and family products.
 
+use core::fmt;
 use core::future::Future;
 use core::hash::Hash;
 use core::num::NonZeroUsize;
+use std::any::Any;
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use behavior::{
     ActionItem, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
-    ClassifySettlement, Here, InjectEvent, Inside, InterpreterRequest, LogicalHostRequirements,
-    Never, NoBirthProtocols, NoReturnToEmitter, Protocol,
+    ClassifySettlement, Here, InjectEvent, Inside, InterpretationProgress, InterpreterRequest,
+    ItemSettlement, LogicalHostRequirements, Never, NoBirthProtocols, NoReturnToEmitter, Protocol,
+    finish_item, prepare_item,
 };
 use behavior_actors::ShutdownRequested;
 
@@ -32,6 +36,7 @@ pub trait EntityDefinition: Send + Sync + 'static {
     /// Stable domain identity stored by one Entity reference.
     type Id: Clone + Eq + Hash + Send + Sync + 'static;
     /// Complete authored actor stack for one live incarnation.
+    /// Interpretation and source custody survive in the native task retirement result.
     type Behavior: BehaviorSettlements<
             Protocol: Protocol<Addr = MailAddr, Msg: Send + 'static>,
             Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
@@ -39,6 +44,8 @@ pub trait EntityDefinition: Send + Sync + 'static {
             Error: Send + 'static,
             Birth: BirthMode<Child: Send + 'static>,
             Settlements: ClassifySettlement + Send + 'static,
+            InterpretationCustody: Send + 'static,
+            SourceCustody: Send + 'static,
             Ph = Never,
         > + BehaviorBase
         + LogicalHostRequirements
@@ -50,6 +57,8 @@ pub trait EntityDefinition: Send + Sync + 'static {
     type HydrationError: Send + 'static;
     /// Application terminal sum used by children of the incarnation.
     type Terminal: Send + 'static;
+    /// Exact associated failure product from this behavior's child binding owner.
+    type ChildFailures: Send + 'static;
 
     /// Reconstruct the authored actor state before it becomes routable.
     fn hydrate(
@@ -62,7 +71,12 @@ pub trait EntityDefinition: Send + Sync + 'static {
         &self,
         id: EntityId<Self::Id>,
         activation: ActivationId,
-        failure: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
+        failure: EntityActivationError<
+            Self::HydrationError,
+            Self::Behavior,
+            Self::Terminal,
+            Self::ChildFailures,
+        >,
     );
 
     /// Consume one exact actor-originated admission refusal.
@@ -72,21 +86,83 @@ pub trait EntityDefinition: Send + Sync + 'static {
         failure: AdmissionFailure<BehaviorMessage<Self::Behavior>>,
     );
 
-    /// Consume the exact reason a graceful drain became forced retirement.
+    /// Observe the original identity and consume the exact forced-drain reason.
+    /// Invoked before shutdown conversion and actor join, with the original lease
+    /// held outside the user call. Any key clone performed here is application policy.
     fn forced_retirement(
         &self,
-        id: EntityId<Self::Id>,
+        id: &EntityId<Self::Id>,
         activation: ActivationId,
         failure: DrainFailure,
     );
 
-    /// Consume the final actor state, descendants, and terminal disposition.
+    /// Consume the original acquired actor result while borrowing its identity.
+    /// Normal live retirement invokes this notification before later reactivation.
+    /// Values consumed and destroyed inside a panicking callback are unavailable;
+    /// outside keys, modes, prior results and original callback panics survive.
+    #[expect(
+        clippy::type_complexity,
+        reason = "the consuming notification retains behavior, terminal, child failures and raw actor join failure"
+    )]
     fn retired(
         &self,
-        id: EntityId<Self::Id>,
+        id: &EntityId<Self::Id>,
         activation: ActivationId,
-        retirement: ActorRetirement<Self::Behavior, Self::Terminal>,
+        retirement: Result<
+            ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>,
+            tokio::task::JoinError,
+        >,
     );
+}
+
+/// Available failures after a native actor task has finished and its original
+/// result has been handed to the consuming application retirement notification.
+/// Payloads are original opaque panics from shutdown conversion and independent user callbacks.
+/// A task-unavailable row never claims that descendant cleanup was acquired.
+#[derive(thiserror::Error)]
+pub enum EntityRetirementFailure {
+    /// The raw actor task ended without an acquired full actor retirement.
+    #[error("actor retirement unavailable after actor task join")]
+    ActorRetirementUnavailable {
+        shutdown_request: Option<Box<dyn Any + Send>>,
+        forced: Option<Box<dyn Any + Send>>,
+        retired: Option<Box<dyn Any + Send>>,
+    },
+    /// Original consuming shutdown conversion panicked; later failures coexist.
+    #[error("application shutdown conversion panicked during native retirement")]
+    ShutdownRequestPanicked {
+        shutdown_request: Box<dyn Any + Send>,
+        forced: Option<Box<dyn Any + Send>>,
+        retired: Option<Box<dyn Any + Send>>,
+    },
+    /// The forced-retirement notification panicked; its final notification still ran.
+    #[error("application forced retirement notification panicked")]
+    ForcedRetirementPanicked {
+        forced: Box<dyn Any + Send>,
+        retired: Option<Box<dyn Any + Send>>,
+    },
+    /// The final consuming retirement notification panicked.
+    #[error("application retirement notification panicked")]
+    RetirementPanicked { retired: Box<dyn Any + Send> },
+}
+
+impl fmt::Debug for EntityRetirementFailure {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::ActorRetirementUnavailable { .. } => formatter
+                .debug_struct("ActorRetirementUnavailable")
+                .finish_non_exhaustive(),
+            Self::ShutdownRequestPanicked { .. } => formatter
+                .debug_struct("ShutdownRequestPanicked")
+                .finish_non_exhaustive(),
+            Self::ForcedRetirementPanicked { .. } => formatter
+                .debug_struct("ForcedRetirementPanicked")
+                .finish_non_exhaustive(),
+            Self::RetirementPanicked { .. } => formatter
+                .debug_struct("RetirementPanicked")
+                .finish_non_exhaustive(),
+        }
+    }
 }
 
 /// Independent native activation bounds for one family.
@@ -116,7 +192,7 @@ impl EntityCapacity {
 }
 
 /// Exact phase and fact that prevented native activation.
-pub enum EntityActivationError<Hydration, B, Terminal>
+pub enum EntityActivationError<Hydration, B, Terminal, ChildFailures>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
@@ -125,7 +201,7 @@ where
     /// Domain reconstruction failed before address allocation.
     Hydration(Hydration),
     /// Actor launch failed with exact final state when state existed.
-    Launch(ActorRetirement<B, Terminal>),
+    Launch(ActorRetirement<B, Terminal, ChildFailures>),
 }
 
 /// Fixed-cardinality observations for one native family.
@@ -214,6 +290,7 @@ type ReceptionistFor<D> = EntityReceptionist<
     NativeEntityLease<D>,
     tokio::task::JoinHandle<()>,
     tokio::task::JoinError,
+    EntityRetirementFailure,
 >;
 
 /// Cloneable receptionist for one application-installed native family.
@@ -243,7 +320,7 @@ where
 {
     fn from_runtime(runtime: &InstalledRuntimeFor<D>, definition: Arc<D>) -> Self
     where
-        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
     {
         Self {
             receptionist: runtime.receptionist(),
@@ -262,7 +339,7 @@ where
 
     pub(crate) fn passivate(&self, id: &D::Id) -> Passivation
     where
-        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
     {
         self.receptionist.passivate(&EntityId::new(id.clone()))
     }
@@ -305,7 +382,7 @@ where
         command: BehaviorMessage<D::Behavior>,
     ) -> Result<(), AdmissionFailure<BehaviorMessage<D::Behavior>>>
     where
-        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
     {
         self.entities
             .receptionist
@@ -347,6 +424,38 @@ where
     type Accepted = ();
     type Rejection = Never;
     type Prerequisite = Never;
+    type Custody = (Option<Self>, Option<Self::Reply>);
+    type Input<'a>
+        = &'a mut Option<Self>
+    where
+        Self: 'a;
+    type Reply = ItemSettlement<Self, (), Never, Never>;
+
+    fn prepare_interpretation(
+        progress: &mut Option<InterpretationProgress<Self, Self::Custody, Self::Reply>>,
+    ) {
+        prepare_item::<Self>(progress);
+    }
+
+    fn interpretation_input<'a>(
+        custody: &'a mut Self::Custody,
+    ) -> Option<(Self::Input<'a>, &'a mut Option<Self::Reply>)>
+    where
+        Self: 'a,
+    {
+        let (input, received) = custody;
+        if input.is_some() && received.is_none() {
+            Some((input, received))
+        } else {
+            None
+        }
+    }
+
+    fn finish_interpretation(
+        progress: &mut Option<InterpretationProgress<Self, Self::Custody, Self::Reply>>,
+    ) {
+        finish_item::<Self>(progress);
+    }
 }
 
 #[expect(
@@ -356,13 +465,27 @@ where
 impl<D> EntityAdmission<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
 {
-    pub(crate) async fn interpret(self, origin: MailAddr) {
-        let Self { entity, command } = self;
-        let id = entity.id.clone();
-        if let Err(failure) = entity.admit_from(origin, command).await {
-            entity.entities.definition.admission_refused(id, failure);
+    pub(crate) async fn interpret(input: &mut Option<Self>, origin: MailAddr) {
+        let Some(admission) = input.as_ref() else {
+            return;
+        };
+        let notification_id = admission.entity.id.clone();
+        let admission_id = admission.entity.id.clone();
+        let Some(Self { entity, command }) = input.take() else {
+            return;
+        };
+        if let Err(failure) = entity
+            .entities
+            .receptionist
+            .admit(origin, admission_id, command)
+            .await
+        {
+            entity
+                .entities
+                .definition
+                .admission_refused(notification_id, failure);
         }
     }
 }
@@ -374,6 +497,7 @@ mod application_families_sealed {
 /// Static application family product and its live/shutdown projections.
 pub trait EntityApplicationFamilies<Hosts>: application_families_sealed::Sealed {
     type Receptionists: Clone + Send + 'static;
+    /// Original role-indexed shutdown facts, metrics and native installed-family disposal failure.
     type Shutdowns: Send + 'static;
 }
 
@@ -400,13 +524,17 @@ where
     Hosts: Send + Sync + 'static,
     Role: Clone + Send + 'static,
     D: EntityDefinition<Hosts = Hosts>,
-    Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
     Tail: EntityApplicationFamilies<Hosts>,
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
     type Shutdowns = (
         Role,
-        (EntityShutdown<tokio::task::JoinError>, EntityMetrics),
+        (
+            EntityShutdown<tokio::task::JoinError, EntityRetirementFailure, D::Id>,
+            EntityMetrics,
+            Option<Box<dyn Any + Send>>,
+        ),
         Tail::Shutdowns,
     );
 }
@@ -463,7 +591,7 @@ where
 pub(crate) struct InstalledEntityFamily<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
 {
     runtime: InstalledRuntimeFor<D>,
     entities: Entities<D>,
@@ -473,9 +601,14 @@ where
 impl<D> InstalledEntityFamily<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
 {
-    async fn shutdown(self) -> (EntityShutdown<tokio::task::JoinError>, EntityMetrics) {
+    async fn shutdown(
+        &self,
+    ) -> (
+        EntityShutdown<tokio::task::JoinError, EntityRetirementFailure, D::Id>,
+        EntityMetrics,
+    ) {
         let directory = self.runtime.shutdown().await;
         (directory, self.metrics.snapshot())
     }
@@ -503,7 +636,7 @@ where
     Hosts: Send + Sync + 'static,
     Role: Clone + Send + 'static,
     D: EntityDefinition<Hosts = Hosts>,
-    Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
     Tail: InstallEntityFamilies<Hosts>,
 {
     type Installed = (Role, InstalledEntityFamily<D>, Tail::Installed);
@@ -555,13 +688,17 @@ impl<Role, D, Tail> InstalledEntityFamilies for (Role, InstalledEntityFamily<D>,
 where
     Role: Clone + Send + 'static,
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
     Tail: InstalledEntityFamilies + Send,
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
     type Shutdowns = (
         Role,
-        (EntityShutdown<tokio::task::JoinError>, EntityMetrics),
+        (
+            EntityShutdown<tokio::task::JoinError, EntityRetirementFailure, D::Id>,
+            EntityMetrics,
+            Option<Box<dyn Any + Send>>,
+        ),
         Tail::Shutdowns,
     );
 
@@ -575,8 +712,9 @@ where
 
     async fn shutdown(self) -> Self::Shutdowns {
         let (role, family, tail) = self;
-        let family = family.shutdown().await;
+        let (shutdown, metrics) = family.shutdown().await;
+        let family_disposal_failure = catch_unwind(AssertUnwindSafe(|| drop(family))).err();
         let tail = tail.shutdown().await;
-        (role, family, tail)
+        (role, (shutdown, metrics, family_disposal_failure), tail)
     }
 }

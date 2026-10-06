@@ -3,10 +3,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use behavior_actors::StopOnShutdown;
+use bombay::ProjectTerminal;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
-    Actions, BehaviorActed, BehaviorBase, CreateChild, CreationSequence, Creations,
-    InterpreterRequests, Never, Protocol,
+    Actions, BehaviorActed, BehaviorBase, ChildHead, ClassifySettlement, CreateChild,
+    CreationSequence, Creations, EventLayer, InterpreterRequests, Never, Protocol,
+    SettlementStatus,
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DirectoryError, DrainFailure, DrainStage,
@@ -14,8 +16,10 @@ use bombay::entity::{
     EntityShutdown, Passivation, Refusal,
 };
 use bombay::{
-    ActorRetirement, ActorSpace, ActorSpaces, App, ChildOrigin, MailAddr, TerminalProjection,
+    ActorRetirement, ActorSpace, ActorSpaces, App, ChildFailure, ChildOrigin, MailAddr,
+    TerminalProjection,
 };
+use bombay_engine::Completion;
 use tokio::sync::Semaphore;
 
 mod application_support;
@@ -127,7 +131,7 @@ enum ProfileTerminal {
     #[declared_child(Profile, ProfileChildrenWorker, StopOnShutdown<ProfileWorker>)]
     Worker {
         origin: ChildOrigin<Profile, ProfileChildrenWorker>,
-        terminal: ActorRetirement<StopOnShutdown<ProfileWorker>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<ProfileWorker>, Self, ()>,
     },
 }
 
@@ -137,8 +141,9 @@ enum HydrationFailure {
 }
 
 type AccountActivationFailure =
-    EntityActivationError<HydrationFailure, StopOnShutdown<Account>, Never>;
-type AccountRetirement = ActorRetirement<StopOnShutdown<Account>, Never>;
+    EntityActivationError<HydrationFailure, StopOnShutdown<Account>, Never, ()>;
+type AccountRetirement =
+    Result<ActorRetirement<StopOnShutdown<Account>, Never, ()>, tokio::task::JoinError>;
 type AccountActivationFacts =
     Arc<Mutex<Vec<(EntityId<u64>, ActivationId, AccountActivationFailure)>>>;
 type ForcedRetirementFacts = Arc<Mutex<Vec<(EntityId<u64>, ActivationId, DrainFailure)>>>;
@@ -173,6 +178,7 @@ impl EntityDefinition for Accounts {
     type Hosts = Spaces;
     type HydrationError = HydrationFailure;
     type Terminal = Never;
+    type ChildFailures = ();
 
     async fn hydrate(
         &self,
@@ -224,31 +230,41 @@ impl EntityDefinition for Accounts {
 
     fn forced_retirement(
         &self,
-        id: EntityId<Self::Id>,
+        id: &EntityId<Self::Id>,
         activation: ActivationId,
         failure: DrainFailure,
     ) {
         self.forced_retirements
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .push((id, activation, failure));
+            .push((*id, activation, failure));
     }
 
     fn retired(
         &self,
-        id: EntityId<Self::Id>,
+        id: &EntityId<Self::Id>,
         activation: ActivationId,
         retirement: AccountRetirement,
     ) {
         self.retirements
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .push((id, activation, retirement));
+            .push((*id, activation, retirement));
         self.retirements_completed.add_permits(1);
     }
 }
 
-type ProfileRetirement = ActorRetirement<StopOnShutdown<Profile>, ProfileTerminal>;
+type ProfileRetirement = Result<
+    ActorRetirement<
+        StopOnShutdown<Profile>,
+        ProfileTerminal,
+        (
+            Vec<ChildFailure<ChildOrigin<Profile, ChildHead>, StopOnShutdown<ProfileWorker>>>,
+            (),
+        ),
+    >,
+    tokio::task::JoinError,
+>;
 type ProfileRetirementFact = Arc<Mutex<Option<ProfileRetirement>>>;
 
 struct Profiles {
@@ -269,6 +285,10 @@ impl EntityDefinition for Profiles {
     type Hosts = Spaces;
     type HydrationError = Never;
     type Terminal = ProfileTerminal;
+    type ChildFailures = (
+        Vec<ChildFailure<ChildOrigin<Profile, ChildHead>, StopOnShutdown<ProfileWorker>>>,
+        (),
+    );
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -282,19 +302,27 @@ impl EntityDefinition for Profiles {
         &self,
         _: EntityId<Self::Id>,
         _: ActivationId,
-        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
+        _: EntityActivationError<
+            Self::HydrationError,
+            Self::Behavior,
+            Self::Terminal,
+            Self::ChildFailures,
+        >,
     ) {
     }
 
     fn admission_refused(&self, _: EntityId<Self::Id>, _: AdmissionFailure<u64>) {}
 
-    fn forced_retirement(&self, _: EntityId<Self::Id>, _: ActivationId, _: DrainFailure) {}
+    fn forced_retirement(&self, _: &EntityId<Self::Id>, _: ActivationId, _: DrainFailure) {}
 
     fn retired(
         &self,
-        _: EntityId<Self::Id>,
+        _: &EntityId<Self::Id>,
         _: ActivationId,
-        retirement: ActorRetirement<Self::Behavior, Self::Terminal>,
+        retirement: Result<
+            ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>,
+            tokio::task::JoinError,
+        >,
     ) {
         *self
             .retirement
@@ -370,7 +398,7 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
             DirectoryConfig::default(),
             profile_capacity,
         )?;
-    let ((), terminal, shutdowns): (_, RootTerminal<_>, _) = application
+    let (outcome, shutdowns) = application
         .run_with_entities(move |application| async move {
             let accounts = application.entities(AccountsRole);
             let profiles = application.entities(ProfilesRole);
@@ -439,17 +467,41 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
                 .expect("the actor-originated command enters the root mailbox");
         })
         .expect("the root and both native families settle");
+    let ((), root_origin, joined_actor) = outcome.unwrap_or_else(|failure| {
+        drop(failure);
+        panic!("the actual root starts before application work completes");
+    });
+    let terminal: RootTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
-    let (ProfilesRole, (profile_shutdown, profile_metrics), tail) = shutdowns;
-    let (AccountsRole, (account_shutdown, account_metrics), ()) = tail;
-    assert!(matches!(
-        profile_shutdown,
-        EntityShutdown::Settled { represented: 1 }
-    ));
-    assert!(matches!(
-        account_shutdown,
-        EntityShutdown::Settled { represented: 1 }
-    ));
+    let (ProfilesRole, (profile_shutdown, profile_metrics, profile_family_disposal_failure), tail) =
+        shutdowns;
+    let (AccountsRole, (account_shutdown, account_metrics, account_family_disposal_failure), ()) =
+        tail;
+    assert!(profile_family_disposal_failure.is_none());
+    assert!(account_family_disposal_failure.is_none());
+    let EntityShutdown::Settled {
+        represented,
+        entities,
+    } = profile_shutdown
+    else {
+        panic!("application family must settle");
+    };
+    assert_eq!(represented, 1);
+    assert_eq!(entities, vec![EntityId::new(9)]);
+    let EntityShutdown::Settled {
+        represented,
+        entities,
+    } = account_shutdown
+    else {
+        panic!("application family must settle");
+    };
+    assert_eq!(represented, 1);
+    assert_eq!(entities, vec![EntityId::new(FIRST_ACCOUNT)]);
     assert_eq!(profile_metrics.activations, 1);
     assert_eq!(account_metrics.activations, 4);
     assert_eq!(account_metrics.hydration_failures, 1);
@@ -464,14 +516,62 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
         .unwrap_or_else(PoisonError::into_inner)
         .take()
         .expect("the profile definition receives its exact retirement");
-    let ActorRetirement::Completed {
-        behavior,
-        mut descendants,
-        ..
-    } = profile_retirement
-    else {
-        panic!("the profile must retire normally")
-    };
+    // The family fence drains prior deliveries; it does not select the actor's
+    // winner between shutdown acquisition and same-lease owner cancellation.
+    let (behavior, settlements, user, mut descendants, child_failures, capability_failures) =
+        match profile_retirement {
+            Ok(ActorRetirement::Completed {
+                behavior,
+                settlements,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation: None | Some(()),
+                completion,
+            }) => {
+                assert_eq!(completion, Completion::Stopped);
+                assert_eq!(control.len(), 0);
+                (
+                    behavior,
+                    settlements,
+                    user,
+                    descendants,
+                    child_failures,
+                    capability_failures,
+                )
+            }
+            Ok(ActorRetirement::OwnerCancelled {
+                behavior,
+                settlements,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation,
+            }) => {
+                assert!(unread_owner_cancellation.is_none());
+                // StopOnShutdown owns a fieldless ShutdownRequested singleton.
+                assert!(matches!(control.as_slice(), [EventLayer::Owned(_)]));
+                (
+                    behavior,
+                    settlements,
+                    user,
+                    descendants,
+                    child_failures,
+                    capability_failures,
+                )
+            }
+            _ => panic!("the fenced profile must return its joined state"),
+        };
+    let profile_settlement_status = settlements.settlement_status();
+    assert_eq!(profile_settlement_status, SettlementStatus::Accepted);
+    assert_eq!(user.len(), 0);
+    assert!(capability_failures.is_empty());
+    assert!(child_failures.0.is_empty());
+    assert_eq!(child_failures.1, ());
     assert_eq!(behavior.base().admissions, 2);
     assert_eq!(descendants.len(), 1);
     let ProfileTerminal::Worker {
@@ -482,7 +582,15 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
         .expect("the profile retains its child terminal");
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     match child_retirement {
-        ActorRetirement::OwnerCancelled { .. } => {}
+        ActorRetirement::OwnerCancelled {
+            child_failures: (),
+            capability_failures,
+            unread_owner_cancellation,
+            ..
+        } => {
+            assert!(capability_failures.is_empty());
+            assert!(unread_owner_cancellation.is_none());
+        }
         _ => panic!("the profile child must preserve owner-cancellation custody"),
     }
 
@@ -521,10 +629,45 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
 
     let retirements = retirements.lock().unwrap_or_else(PoisonError::into_inner);
     assert_eq!(retirements.len(), 4);
-    let completed = retirements
-        .iter()
-        .all(|(_, _, retirement)| matches!(retirement, ActorRetirement::Completed { .. }));
-    assert!(completed);
+    for (_, _, retirement) in retirements.iter() {
+        let (settlements, user, descendants, capability_failures) = match retirement {
+            Ok(ActorRetirement::Completed {
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation: None | Some(()),
+                settlements,
+                control,
+                user,
+                descendants,
+                completion,
+                ..
+            }) => {
+                assert_eq!(*completion, Completion::Stopped);
+                assert_eq!(control.len(), 0);
+                (settlements, user, descendants, capability_failures)
+            }
+            Ok(ActorRetirement::OwnerCancelled {
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
+                settlements,
+                control,
+                user,
+                descendants,
+                ..
+            }) => {
+                assert!(unread_owner_cancellation.is_none());
+                assert!(matches!(control.as_slice(), [EventLayer::Owned(_)]));
+                (settlements, user, descendants, capability_failures)
+            }
+            _ => panic!("each fenced account must return its joined state"),
+        };
+        let settlement_status = settlements.settlement_status();
+        assert_eq!(settlement_status, SettlementStatus::Accepted);
+        assert_eq!(user.len(), 0);
+        assert_eq!(descendants.len(), 0);
+        assert!(capability_failures.is_empty());
+    }
     let mut retired_ids = retirements
         .iter()
         .map(|(id, _, _)| *id.get())

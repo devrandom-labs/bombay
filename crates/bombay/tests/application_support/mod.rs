@@ -10,7 +10,7 @@ where
 {
     Root {
         origin: RootOrigin<R>,
-        terminal: ActorRetirement<R, Self>,
+        terminal: ActorRetirement<R, Self, ()>,
     },
 }
 
@@ -25,7 +25,7 @@ where
 
 pub(crate) fn into_root<R>(
     terminal: RootTerminal<R>,
-) -> (RootOrigin<R>, ActorRetirement<R, RootTerminal<R>>)
+) -> (RootOrigin<R>, ActorRetirement<R, RootTerminal<R>, ()>)
 where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
@@ -44,17 +44,40 @@ where
     let (
         origin,
         ActorRetirement::Completed {
+            capability_failures,
+            unread_owner_cancellation,
             behavior,
             settlements,
             control,
             user,
             descendants,
+            child_failures: (),
             completion,
+            interpretation: retirement_interpretation,
+            source: retirement_source,
+            additional_failures: retirement_additional_failures,
+            received_interpretation: retirement_received_interpretation,
+            received_source: retirement_received_source,
+            source_index: retirement_source_index,
+            acquired_ingress: retirement_acquired_ingress,
+            retirement_failures: retirement_native_failures,
+            terminal_report: retirement_terminal_report,
         },
     ) = into_root(terminal)
     else {
         panic!("the application root must retain its completed terminal state")
     };
+    assert!(retirement_interpretation.is_none());
+    assert!(retirement_source.is_none());
+    assert!(retirement_additional_failures.is_empty());
+    assert!(retirement_received_interpretation.is_none());
+    assert!(retirement_received_source.is_none());
+    assert!(retirement_source_index.is_none());
+    assert!(retirement_acquired_ingress.is_none());
+    assert!(retirement_native_failures.is_empty());
+    assert!(retirement_terminal_report.is_none());
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     drop(behavior);
     assert_eq!(settlements.len(), 1);

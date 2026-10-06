@@ -69,7 +69,7 @@ impl<D> target_sealed::Sealed for EntityRef<D> where D: EntityDefinition {}
 impl<D> ExternalTarget for EntityRef<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
 {
     type Message = behavior::BehaviorMessage<D::Behavior>;
     type Error = AdmissionFailure<Self::Message>;

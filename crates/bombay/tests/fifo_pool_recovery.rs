@@ -10,9 +10,11 @@ use behavior_actors::atomic::{
     RestartLimit, RestartRelease, SubmissionId, WorkerSource, WorkerSubmission, fifo, pool_worker,
 };
 use behavior_actors::{Crash, Exit, StopOnShutdown};
+use bombay::ProjectTerminal;
 use bombay::behavior::{Actions, ChildHead, MessageProtocol, Never};
 use bombay::prelude::{
-    ActorRetirement, ChildOrigin, Completion, MailAddr, RootOrigin, TerminalProjection,
+    ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
+    TerminalProjection,
 };
 use bombay::{ActorSpace, ActorSpaces, App, WorkerPreparationSource, WorkerPreparationStart};
 use tokio::sync::{Notify, oneshot};
@@ -136,12 +138,23 @@ struct RecoverySpaces {
 enum RecoveryTerminal {
     Root {
         origin: RootOrigin<Pool>,
-        terminal: ActorRetirement<Pool, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the pool retirement retains exact worker origins and complete child failures"
+        )]
+        terminal: ActorRetirement<
+            Pool,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<Pool, ChildHead>, StopOnShutdown<RecoverableWorker>>>,
+                (),
+            ),
+        >,
     },
     #[structural_child]
     Worker {
         origin: ChildOrigin<Pool, ChildHead>,
-        terminal: ActorRetirement<StopOnShutdown<RecoverableWorker>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<RecoverableWorker>, Self, ()>,
     },
 }
 
@@ -198,7 +211,7 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
     };
     let observed_preparations = Arc::clone(&preparations);
 
-    let (termination, terminal): (_, RecoveryTerminal) = App::new(pool, spaces)
+    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
         .run_with(move |application| async move {
             let interface = application.interface(application.root().established_recipient());
             let mut caller = interface
@@ -274,6 +287,12 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
                 .expect("the pool drains after replacement")
         })
         .unwrap_or_else(|_| panic!("the pool runs both workers and shuts down"));
+    let terminal: RecoveryTerminal = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     assert_recovered_pool_terminal(terminal);
@@ -296,7 +315,7 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
         customers: ActorSpace::new(),
     };
     let observed_preparations = Arc::clone(&preparations);
-    let (termination, terminal): (_, RecoveryTerminal) = App::new(pool, spaces)
+    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
         .run_with(move |application| async move {
             let interface = application.interface(application.root().established_recipient());
             let mut caller = interface
@@ -345,6 +364,12 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
                 .expect("the pool drains both workers after retry")
         })
         .unwrap_or_else(|_| panic!("the interrupted job completes after replacement"));
+    let terminal: RecoveryTerminal = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     assert_recovered_pool_terminal(terminal);
@@ -367,7 +392,7 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
         customers: ActorSpace::new(),
     };
     let observed_preparations = Arc::clone(&preparations);
-    let (termination, terminal): (_, RecoveryTerminal) = App::new(pool, spaces)
+    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
         .run_with(move |application| async move {
             let interface = application.interface(application.root().established_recipient());
             let mut caller = interface
@@ -444,12 +469,22 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
                 .expect("the pool drains after the failed assignment")
         })
         .unwrap_or_else(|_| panic!("the pool returns the failed job and drains"));
+    let terminal: RecoveryTerminal = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     assert_recovered_pool_terminal(terminal);
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one held-source shutdown controller completes cleanup before the full replacement and retirement oracles"
+)]
 fn shutdown_while_worker_source_is_held_avoids_replacement() {
     let preparations = Arc::new(AtomicUsize::new(0));
     let prepared = Arc::new(Notify::new());
@@ -466,7 +501,7 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
         workers: ActorSpace::new(),
         customers: ActorSpace::new(),
     };
-    let (termination, terminal): (_, RecoveryTerminal) = App::new(pool, spaces)
+    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
         .run_with(move |application| async move {
             let interface = application.interface(application.root().established_recipient());
             let mut caller = interface
@@ -534,14 +569,53 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
                 .expect("the pool finishes shutdown after the source returns")
         })
         .unwrap_or_else(|_| panic!("the pool drains after held preparation"));
+    let terminal: RecoveryTerminal = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     let RecoveryTerminal::Root { terminal, .. } = terminal else {
         panic!("the root returns its terminal");
     };
-    let ActorRetirement::Completed { descendants, .. } = terminal else {
+    let ActorRetirement::Completed {
+        child_failures: (child_failures, ()),
+
+        capability_failures,
+        unread_owner_cancellation,
+        descendants,
+        behavior: _,
+        settlements: _,
+        control: _,
+        user: _,
+        completion: _,
+        interpretation: retirement_interpretation,
+        source: retirement_source,
+        additional_failures: retirement_additional_failures,
+        received_interpretation: retirement_received_interpretation,
+        received_source: retirement_received_source,
+        source_index: retirement_source_index,
+        acquired_ingress: retirement_acquired_ingress,
+        retirement_failures: retirement_native_failures,
+        terminal_report: retirement_terminal_report,
+    } = terminal
+    else {
         panic!("the root completes its drain");
     };
+    assert!(retirement_interpretation.is_none());
+    assert!(retirement_source.is_none());
+    assert!(retirement_additional_failures.is_empty());
+    assert!(retirement_received_interpretation.is_none());
+    assert!(retirement_received_source.is_none());
+    assert!(retirement_source_index.is_none());
+    assert!(retirement_acquired_ingress.is_none());
+    assert!(retirement_native_failures.is_empty());
+    assert!(retirement_terminal_report.is_none());
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
+    assert!(child_failures.is_empty());
     assert_eq!(descendants.len(), 1, "shutdown must suppress replacement");
 }
 
@@ -561,7 +635,7 @@ fn source_task_failure_terminates_the_active_pool() {
         workers: ActorSpace::new(),
         customers: ActorSpace::new(),
     };
-    let (termination, terminal): (_, RecoveryTerminal) = App::new(pool, spaces)
+    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
         .run_with(move |application| async move {
             let interface = application.interface(application.root().established_recipient());
             let mut caller = interface
@@ -590,13 +664,59 @@ fn source_task_failure_terminates_the_active_pool() {
                 .expect("a failed source task terminates the active pool")
         })
         .unwrap_or_else(|_| panic!("the pool reports source task failure"));
-    assert_eq!(termination, Err(Crash::Panicked));
+    let terminal: RecoveryTerminal = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
+    assert_eq!(termination, Err(Crash::CapabilityFailed));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     let RecoveryTerminal::Root { origin, terminal } = terminal else {
         panic!("the failed source returns its root terminal");
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert!(matches!(terminal, ActorRetirement::Panicked));
+    let ActorRetirement::CapabilityFailed {
+        child_failures: (child_failures, ()),
+
+        behavior,
+        settlements,
+        control,
+        user,
+        descendants,
+        error,
+        capability_failures,
+        unread_owner_cancellation,
+        interpretation: retirement_interpretation,
+        source: retirement_source,
+        additional_failures: retirement_additional_failures,
+        received_interpretation: retirement_received_interpretation,
+        received_source: retirement_received_source,
+        source_index: retirement_source_index,
+        acquired_ingress: retirement_acquired_ingress,
+        retirement_failures: retirement_native_failures,
+        terminal_report: retirement_terminal_report,
+    } = terminal
+    else {
+        panic!("the failed source retains available pool state and the exact capability cause");
+    };
+    assert!(retirement_interpretation.is_none());
+    assert!(retirement_source.is_none());
+    assert!(retirement_additional_failures.is_empty());
+    assert!(retirement_received_interpretation.is_none());
+    assert!(retirement_received_source.is_none());
+    assert!(retirement_source_index.is_none());
+    assert!(retirement_acquired_ingress.is_none());
+    assert!(retirement_native_failures.is_empty());
+    assert!(retirement_terminal_report.is_none());
+    assert!(error.is_panic());
+    assert!(control.is_empty());
+    assert!(user.is_empty());
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
+    assert!(child_failures.is_empty());
+    assert_eq!(descendants.len(), 1);
+    drop((behavior, settlements, descendants, error));
 }
 
 fn assert_recovered_pool_terminal(terminal: RecoveryTerminal) {
@@ -605,13 +725,41 @@ fn assert_recovered_pool_terminal(terminal: RecoveryTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        child_failures: (child_failures, ()),
+
+        capability_failures,
+        unread_owner_cancellation,
         descendants,
         completion,
-        ..
+        behavior: _,
+        settlements: _,
+        control: _,
+        user: _,
+        interpretation: retirement_interpretation,
+        source: retirement_source,
+        additional_failures: retirement_additional_failures,
+        received_interpretation: retirement_received_interpretation,
+        received_source: retirement_received_source,
+        source_index: retirement_source_index,
+        acquired_ingress: retirement_acquired_ingress,
+        retirement_failures: retirement_native_failures,
+        terminal_report: retirement_terminal_report,
     } = terminal
     else {
         panic!("the pool completes after its worker graph");
     };
+    assert!(retirement_interpretation.is_none());
+    assert!(retirement_source.is_none());
+    assert!(retirement_additional_failures.is_empty());
+    assert!(retirement_received_interpretation.is_none());
+    assert!(retirement_received_source.is_none());
+    assert!(retirement_source_index.is_none());
+    assert!(retirement_acquired_ingress.is_none());
+    assert!(retirement_native_failures.is_empty());
+    assert!(retirement_terminal_report.is_none());
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
+    assert!(child_failures.is_empty());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 2);
     let mut worker_nonces = Vec::new();
@@ -622,13 +770,40 @@ fn assert_recovered_pool_terminal(terminal: RecoveryTerminal) {
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         worker_nonces.push(origin.nonce());
         let ActorRetirement::Completed {
+            child_failures: (),
+
+            capability_failures,
+            unread_owner_cancellation,
             completion,
             descendants,
-            ..
+            behavior: _,
+            settlements: _,
+            control: _,
+            user: _,
+            interpretation: retirement_interpretation,
+            source: retirement_source,
+            additional_failures: retirement_additional_failures,
+            received_interpretation: retirement_received_interpretation,
+            received_source: retirement_received_source,
+            source_index: retirement_source_index,
+            acquired_ingress: retirement_acquired_ingress,
+            retirement_failures: retirement_native_failures,
+            terminal_report: retirement_terminal_report,
         } = terminal
         else {
             panic!("each worker completes rather than being cancelled");
         };
+        assert!(retirement_interpretation.is_none());
+        assert!(retirement_source.is_none());
+        assert!(retirement_additional_failures.is_empty());
+        assert!(retirement_received_interpretation.is_none());
+        assert!(retirement_received_source.is_none());
+        assert!(retirement_source_index.is_none());
+        assert!(retirement_acquired_ingress.is_none());
+        assert!(retirement_native_failures.is_empty());
+        assert!(retirement_terminal_report.is_none());
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
         assert_eq!(completion, Completion::Stopped);
         assert!(descendants.is_empty());
     }

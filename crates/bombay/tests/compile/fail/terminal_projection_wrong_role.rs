@@ -22,7 +22,7 @@ enum ApplicationTerminal {
     #[declared_child(Parent, ParentChildrenReplica, Worker)]
     Replica {
         origin: ChildOrigin<Parent, ParentChildrenReplica>,
-        terminal: ActorRetirement<Worker, Self>,
+        terminal: ActorRetirement<Worker, Self, ()>,
     },
 }
 
@@ -32,7 +32,7 @@ fn require_wrong_role<T>()
 where
     T: ProjectTerminal<
             ChildOrigin<Parent, PrimaryPosition>,
-            ActorRetirement<Worker, ApplicationTerminal>,
+            ActorRetirement<Worker, ApplicationTerminal, ()>,
         >,
 {
 }

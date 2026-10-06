@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
-   --> tests/compile/fail/entity_application_role_exchange.rs:124:33
+   --> tests/compile/fail/entity_application_role_exchange.rs:126:33
     |
-124 |     let _: Entities<Profiles> = application.entities(AccountsRole);
+126 |     let _: Entities<Profiles> = application.entities(AccountsRole);
     |            ------------------   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Entities<Profiles>`, found `Entities<Accounts>`
     |            |
     |            expected due to this

@@ -4,11 +4,12 @@
 //! the shutdown plan, and Bombay only interprets and retains the result.
 
 use bombay::behavior::{
-    BehaviorBase, BehaviorSettlements, Children, ClassifySettlement, CreationSequence, Never,
-    SettlementStatus,
+    BehaviorBase, BehaviorSettlements, ChildHead, ChildTail, Children, ClassifySettlement,
+    CreationSequence, Never, SettlementStatus,
 };
 use bombay::lifecycle::shutdown_after_children;
 use bombay::prelude::*;
+use bombay::{ChildFailure, ProjectTerminal};
 
 const INDEXER_NONCE: u64 = 0;
 const JOURNAL_NONCE: u64 = 1;
@@ -105,17 +106,36 @@ where
 {
     Root {
         origin: RootOrigin<R>,
-        terminal: ActorRetirement<R, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "The root retirement retains both original typed child failure products and their distinct structural origins."
+        )]
+        terminal: ActorRetirement<
+            R,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<DocumentSystem, ChildHead>, ManagedJournal>>,
+                (
+                    Vec<
+                        ChildFailure<
+                            ChildOrigin<DocumentSystem, ChildTail<ChildHead>>,
+                            ManagedIndexer,
+                        >,
+                    >,
+                    (),
+                ),
+            ),
+        >,
     },
     #[declared_child(DocumentSystem, DocumentSystemChildrenIndexer, ManagedIndexer)]
     Indexer {
         origin: ChildOrigin<DocumentSystem, DocumentSystemChildrenIndexer>,
-        terminal: ActorRetirement<ManagedIndexer, Self>,
+        terminal: ActorRetirement<ManagedIndexer, Self, ()>,
     },
     #[declared_child(DocumentSystem, DocumentSystemChildrenJournal, ManagedJournal)]
     Journal {
         origin: ChildOrigin<DocumentSystem, DocumentSystemChildrenJournal>,
-        terminal: ActorRetirement<ManagedJournal, Self>,
+        terminal: ActorRetirement<ManagedJournal, Self, ()>,
     },
 }
 
@@ -124,7 +144,7 @@ fn main() {
         .shutdown_phase(DocumentSystemChild::Indexer)
         .shutdown_phase(DocumentSystemChild::Journal)
         .finish();
-    let (termination, terminal): (_, ApplicationTerminal<_>) = Application::new(application)
+    let (termination, origin, retirement) = Application::new(application)
         .run_with(|application| async move {
             let lifecycle = application.lifecycle();
             let shutdown = lifecycle.request_shutdown();
@@ -134,6 +154,10 @@ fn main() {
         .expect("the named child topology activates and shuts down in declared phase order");
 
     assert_eq!(termination, Ok(Exit::Normal));
+    let terminal = ApplicationTerminal::project(
+        origin,
+        retirement.expect("the original named child topology joined"),
+    );
     assert_terminal_tree(terminal);
 }
 
@@ -146,6 +170,9 @@ where
         origin,
         terminal:
             ActorRetirement::Completed {
+                child_failures: (journal_failures, (indexer_failures, ())),
+                capability_failures,
+                unread_owner_cancellation,
                 settlements,
                 control,
                 user,
@@ -157,6 +184,10 @@ where
     else {
         panic!("phased shutdown must preserve the completed application root")
     };
+    assert_eq!(journal_failures.len(), 0);
+    assert_eq!(indexer_failures.len(), 0);
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
@@ -190,11 +221,14 @@ where
     assert_eq!(journal.as_deref(), Some("topology initialized"));
 }
 
-fn assert_indexer<R>(terminal: ActorRetirement<ManagedIndexer, ApplicationTerminal<R>>) -> usize
+fn assert_indexer<R>(terminal: ActorRetirement<ManagedIndexer, ApplicationTerminal<R>, ()>) -> usize
 where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
+        child_failures: (),
+        capability_failures,
+        unread_owner_cancellation,
         behavior,
         settlements,
         control,
@@ -205,6 +239,8 @@ where
     else {
         panic!("the indexer must complete its explicit shutdown")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert_eq!(control.len(), 0);
@@ -214,11 +250,16 @@ where
     behavior.base().indexed_documents
 }
 
-fn assert_journal<R>(terminal: ActorRetirement<ManagedJournal, ApplicationTerminal<R>>) -> String
+fn assert_journal<R>(
+    terminal: ActorRetirement<ManagedJournal, ApplicationTerminal<R>, ()>,
+) -> String
 where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
+        child_failures: (),
+        capability_failures,
+        unread_owner_cancellation,
         behavior,
         settlements,
         control,
@@ -229,6 +270,8 @@ where
     else {
         panic!("the journal must complete its explicit shutdown")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert_eq!(control.len(), 0);

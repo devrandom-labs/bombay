@@ -12,6 +12,7 @@ use behavior_actors::{
     FinalizeOnShutdown, ReportTerminalOutcome, RestartDenial, ShutdownRequested,
     SupervisionFailureReason,
 };
+use bombay::ProjectTerminal;
 use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, InitializationTurn, InterpreterRequests, NoBirths, User,
 };
@@ -339,26 +340,31 @@ fn live_boundary_receives_root_once_and_returns_its_exact_value() {
     let calls = Arc::new(AtomicUsize::new(0));
     let observed = Arc::clone(&calls);
 
-    let (rejected, terminal): (_, ApplicationTerminal<_>) =
-        Application::new(Root.stop_on_shutdown())
-            .run_with(move |application| async move {
-                observed.fetch_add(1, Ordering::SeqCst);
-                assert_eq!(application.root().address(), MailAddr::APPLICATION_ROOT);
-                application
-                    .root()
-                    .send_from(TEST_BOUNDARY, RootCommand::Stop)
-                    .await
-                    .expect("the live root admits its stop command");
-                let termination = application.lifecycle().termination().await;
-                assert_eq!(termination, Ok(Exit::Normal));
-                application
-                    .root()
-                    .send_from(TEST_BOUNDARY, RootCommand::Stop)
-                    .await
-                    .expect_err("the terminated root rejects the exact command")
-                    .into_message()
-            })
-            .expect("the root terminates normally");
+    let (rejected, root_origin, joined_actor) = Application::new(Root.stop_on_shutdown())
+        .run_with(move |application| async move {
+            observed.fetch_add(1, Ordering::SeqCst);
+            assert_eq!(application.root().address(), MailAddr::APPLICATION_ROOT);
+            application
+                .root()
+                .send_from(TEST_BOUNDARY, RootCommand::Stop)
+                .await
+                .expect("the live root admits its stop command");
+            let termination = application.lifecycle().termination().await;
+            assert_eq!(termination, Ok(Exit::Normal));
+            application
+                .root()
+                .send_from(TEST_BOUNDARY, RootCommand::Stop)
+                .await
+                .expect_err("the terminated root rejects the exact command")
+                .into_message()
+        })
+        .expect("the root terminates normally");
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
     assert_eq!(rejected, RootCommand::Stop);
     assert_completed_root(terminal);
@@ -367,7 +373,7 @@ fn live_boundary_receives_root_once_and_returns_its_exact_value() {
 
 #[test]
 fn boundary_owned_error_remains_an_unaggregated_output() {
-    let (output, terminal): (_, ApplicationTerminal<_>) = Application::new(Root.stop_on_shutdown())
+    let (output, root_origin, joined_actor) = Application::new(Root.stop_on_shutdown())
         .run_with(|application| async move {
             application
                 .root()
@@ -377,6 +383,12 @@ fn boundary_owned_error_remains_an_unaggregated_output() {
             Err::<Never, _>("boundary refused its own work")
         })
         .expect("the root terminates normally");
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
     assert_eq!(output, Err("boundary refused its own work"));
     assert_completed_root(terminal);
@@ -394,7 +406,9 @@ fn run_is_the_unit_boundary_specialization() {
         match Application::new(StopsDuringInitialization.stop_on_shutdown())
             .run_with(|_| async { 41_u8 })
         {
-            Err(RunError::Unpublished(terminal)) => terminal,
+            Err(RunError::Unpublished((origin, retirement))) => {
+                ProjectTerminal::project(origin, retirement)
+            }
             _ => panic!("the generic boundary must withhold the unpublished root"),
         };
     assert_completed_root(terminal);
@@ -402,7 +416,7 @@ fn run_is_the_unit_boundary_specialization() {
 
 #[test]
 fn application_handle_separates_shutdown_request_from_exact_termination() {
-    let (termination, terminal): (_, ApplicationTerminal<_>) =
+    let (termination, root_origin, joined_actor) =
         Application::new(WaitsForApplicationShutdown.stop_on_shutdown())
             .run_with(|application| async move {
                 assert_eq!(application.root().address(), MailAddr(0));
@@ -432,6 +446,12 @@ fn application_handle_separates_shutdown_request_from_exact_termination() {
                 (result, stopped)
             })
             .expect("the requested application shutdown terminates normally");
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
     assert_eq!(termination.0, Ok(Exit::Normal));
     assert_eq!(termination.1, Err(ShutdownRejection::AlreadyStopped));
@@ -440,7 +460,7 @@ fn application_handle_separates_shutdown_request_from_exact_termination() {
 
 #[test]
 fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
-    let (termination, terminal): (_, ApplicationTerminal<_>) =
+    let (termination, root_origin, joined_actor) =
         Application::new(ReportsTerminalOutcome.stop_on_shutdown())
             .run_with(|application| async move {
                 application
@@ -451,6 +471,12 @@ fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
                 application.lifecycle().termination().await
             })
             .expect("the reported terminal outcome commits before the root stops");
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
     assert_eq!(termination, Ok(Exit::LinkDied(MailAddr(19))));
     assert_completed_root(terminal);
@@ -458,7 +484,7 @@ fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
 
 #[test]
 fn continuing_report_cannot_select_the_later_stop_outcome() {
-    let (termination, terminal): (_, ApplicationTerminal<_>) =
+    let (termination, root_origin, joined_actor) =
         Application::new(ContinuingTerminalReport.stop_on_shutdown())
             .run_with(|application| async move {
                 let root = application.root();
@@ -471,6 +497,12 @@ fn continuing_report_cannot_select_the_later_stop_outcome() {
                 application.lifecycle().termination().await
             })
             .expect("the later stop publishes its own normal outcome");
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_completed_root(terminal);
@@ -483,7 +515,7 @@ fn supervision_report_selects_the_typed_failure_publication_before_stop() {
         replacements_requested: 1,
         maximum_restarts: 2,
     };
-    let (termination, terminal): (_, ApplicationTerminal<_>) = Application::new(
+    let (termination, root_origin, joined_actor) = Application::new(
         ReportsSupervisionOutcome {
             commitment: ReportCommitment::Stop,
         }
@@ -498,6 +530,12 @@ fn supervision_report_selects_the_typed_failure_publication_before_stop() {
         application.lifecycle().termination().await
     })
     .expect("the supervision failure commits before the root stops");
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
     assert_eq!(
         termination,
@@ -510,7 +548,7 @@ fn supervision_report_selects_the_typed_failure_publication_before_stop() {
 
 #[test]
 fn supervision_report_from_a_continuing_action_cannot_override_later_shutdown() {
-    let (termination, terminal): (_, ApplicationTerminal<_>) = Application::new(
+    let (termination, root_origin, joined_actor) = Application::new(
         ReportsSupervisionOutcome {
             commitment: ReportCommitment::Continue,
         }
@@ -525,6 +563,12 @@ fn supervision_report_from_a_continuing_action_cannot_override_later_shutdown() 
         lifecycle.termination().await
     })
     .expect("the continuing report is discarded before the later shutdown action");
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_completed_root(terminal);
@@ -532,9 +576,10 @@ fn supervision_report_from_a_continuing_action_cannot_override_later_shutdown() 
 
 #[test]
 fn run_delegates_shutdown_to_the_explicit_root_policy() {
-    let (finalization, terminal): (_, ApplicationTerminal<_>) = Application::new(
-        FinalizeOnShutdown::new(FinalizationProbe { observer: None }, record_finalization),
-    )
+    let (finalization, root_origin, joined_actor) = Application::new(FinalizeOnShutdown::new(
+        FinalizationProbe { observer: None },
+        record_finalization,
+    ))
     .run_with(|application| async move {
         let interface = application.interface(application.root().established_recipient());
         let lifecycle = application.lifecycle();
@@ -560,6 +605,12 @@ fn run_delegates_shutdown_to_the_explicit_root_policy() {
         finalization
     })
     .expect("the explicit finalization policy receives shutdown and terminates normally");
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_eq!(finalization, Some(FinalizationEvent::Finalized));
     assert_completed_root(terminal);
 }
@@ -569,36 +620,72 @@ fn activation_failure_does_not_invoke_the_boundary() {
     let calls = Arc::new(AtomicUsize::new(0));
     let observed = Arc::clone(&calls);
 
-    let result: Result<
-        (_, ApplicationTerminal<_>),
-        RunError<InitializationFailure, ApplicationTerminal<_>>,
-    > = Application::new(RejectsInitialization.stop_on_shutdown()).run_with(move |_| async move {
-        observed.fetch_add(1, Ordering::SeqCst);
-    });
+    let result =
+        Application::new(RejectsInitialization.stop_on_shutdown()).run_with(move |_| async move {
+            observed.fetch_add(1, Ordering::SeqCst);
+        });
 
-    assert!(matches!(
-        result,
-        Err(RunError::InitializationRejected(InitializationFailure(47)))
-    ));
+    let Err(RunError::Unpublished((origin, retirement))) = result else {
+        panic!("startup refusal returns the unpublished complete root retirement");
+    };
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let (origin, retirement) = into_root(terminal);
+    let ActorRetirement::InitializationRejected {
+        behavior,
+        error,
+        control,
+        user,
+        descendants,
+        child_failures: (),
+        capability_failures,
+        unread_owner_cancellation,
+    } = retirement
+    else {
+        panic!("the exact initialization refusal remains a distinct root outcome");
+    };
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    assert!(matches!(behavior.base(), RejectsInitialization));
+    assert_eq!(error, InitializationFailure(47));
+    assert_eq!(control.len(), 0);
+    assert_eq!(user.len(), 0);
+    assert_eq!(descendants.len(), 0);
+    assert_eq!(capability_failures.len(), 0);
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(calls.load(Ordering::SeqCst), 0);
+    drop((
+        behavior,
+        error,
+        control,
+        user,
+        descendants,
+        capability_failures,
+    ));
 }
 
 #[test]
 fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
-    let ((), terminal): (_, ApplicationTerminal<_>) =
-        Application::new(FailsAfterActivation.stop_on_shutdown())
-            .run_with(|application| async move {
-                application
-                    .root()
-                    .send_from(TEST_BOUNDARY, RootCommand::Stop)
-                    .await
-                    .expect("the live root admits the failing command");
-            })
-            .expect("failure after activation is an exact root terminal, not a launch error");
+    let ((), root_origin, joined_actor) = Application::new(FailsAfterActivation.stop_on_shutdown())
+        .run_with(|application| async move {
+            application
+                .root()
+                .send_from(TEST_BOUNDARY, RootCommand::Stop)
+                .await
+                .expect("the live root admits the failing command");
+        })
+        .expect("failure after activation is an exact root terminal, not a launch error");
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
     let (
         origin,
         ActorRetirement::BehaviorFailed {
+            child_failures: (),
+            capability_failures,
+            unread_owner_cancellation,
             behavior: _behavior,
             settlements,
             control,
@@ -610,6 +697,8 @@ fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     else {
         panic!("the root behavior failure must remain an exact typed terminal")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(settlements.len(), 0);
     assert_eq!(control.len(), 0);
@@ -619,26 +708,31 @@ fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
 
 #[test]
 fn application_delegates_to_the_explicit_single_space_app() {
-    let (ordinary, ordinary_terminal): (_, ApplicationTerminal<_>) =
-        Application::new(Root.stop_on_shutdown())
-            .run_with(|application| async move {
-                application
-                    .root()
-                    .send_from(TEST_BOUNDARY, RootCommand::Stop)
-                    .await
-                    .expect("the ordinary application admits its stop command");
-                let termination = application.lifecycle().termination().await;
-                assert_eq!(termination, Ok(Exit::Normal));
-                application
-                    .root()
-                    .send_from(TEST_BOUNDARY, RootCommand::Stop)
-                    .await
-                    .expect_err("the ordinary application rejects after termination")
-                    .into_message()
-            })
-            .expect("the ordinary application terminates normally");
+    let (ordinary, root_origin, joined_actor) = Application::new(Root.stop_on_shutdown())
+        .run_with(|application| async move {
+            application
+                .root()
+                .send_from(TEST_BOUNDARY, RootCommand::Stop)
+                .await
+                .expect("the ordinary application admits its stop command");
+            let termination = application.lifecycle().termination().await;
+            assert_eq!(termination, Ok(Exit::Normal));
+            application
+                .root()
+                .send_from(TEST_BOUNDARY, RootCommand::Stop)
+                .await
+                .expect_err("the ordinary application rejects after termination")
+                .into_message()
+        })
+        .expect("the ordinary application terminates normally");
+    let ordinary_terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
-    let (explicit, explicit_terminal): (_, ApplicationTerminal<_>) =
+    let (explicit, root_origin, joined_actor) =
         App::new(Root.stop_on_shutdown(), ActorSpace::new())
             .run_with(|application| async move {
                 application
@@ -656,6 +750,12 @@ fn application_delegates_to_the_explicit_single_space_app() {
                     .into_message()
             })
             .expect("the explicit application terminates normally");
+    let explicit_terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
 
     assert_eq!(ordinary, explicit);
     assert_completed_root(ordinary_terminal);

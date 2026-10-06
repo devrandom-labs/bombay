@@ -57,6 +57,9 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
     assert_eq!(calls.load(Ordering::SeqCst), 1);
     let (origin, retirement) = into_root(terminal);
     let ActorRetirement::Completed {
+        child_failures: (),
+        capability_failures,
+        unread_owner_cancellation,
         settlements,
         control,
         user,
@@ -67,6 +70,8 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
     else {
         panic!("the shutdown request must complete the published root")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(settlements.len(), 1);
     assert_eq!(control.len(), 0);
@@ -82,7 +87,7 @@ fn bind_failure_does_not_activate_or_build_the_router() {
     let calls = Arc::new(AtomicUsize::new(0));
     let observed = calls.clone();
 
-    let error: AxumRunError<RootTerminal<_>> = Application::new(Root.stop_on_shutdown())
+    let error: AxumRunError<RootTerminal<_>, _, _, _> = Application::new(Root.stop_on_shutdown())
         .run_axum(address, move |_| {
             observed.fetch_add(1, Ordering::SeqCst);
             Router::new()

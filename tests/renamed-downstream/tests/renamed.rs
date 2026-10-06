@@ -49,7 +49,7 @@ where
 enum NamedTerminal {
     Root {
         origin: RootOrigin<NamedActor<u8>>,
-        terminal: ActorRetirement<NamedActor<u8>, Self>,
+        terminal: ActorRetirement<NamedActor<u8>, Self, ()>,
     },
 }
 
@@ -59,7 +59,10 @@ mod tests {
     use actor_runtime::behavior::{User, delegate_transition, initialize};
 
     fn accepts_projection<
-        T: ProjectTerminal<RootOrigin<NamedActor<u8>>, ActorRetirement<NamedActor<u8>, NamedTerminal>>,
+        T: ProjectTerminal<
+                RootOrigin<NamedActor<u8>>,
+                ActorRetirement<NamedActor<u8>, NamedTerminal, ()>,
+            >,
     >() {
     }
 

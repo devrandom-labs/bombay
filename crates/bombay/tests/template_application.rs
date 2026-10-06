@@ -5,6 +5,7 @@ use behavior_actors::{
     Activate, Machine, Move, Stash, StashRoute, StopOnShutdown, TimerElapsed, TimerGeneration,
     TimerId,
 };
+use bombay::ProjectTerminal;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, ActiveTurn, Become, Behavior, BehaviorActed, BehaviorBase, Never, NoBirths, Protocol,
@@ -164,7 +165,7 @@ fn machine_transition(
 fn machine_template_runs_as_an_ordinary_application_root() {
     let root = Machine::<MailAddr, _, _, _, _>::new(0, MachinePhase::Closed, machine_transition);
 
-    let ((), terminal): (_, RootTerminal<_>) = Application::new(root.stop_on_shutdown())
+    let ((), root_origin, joined_actor) = Application::new(root.stop_on_shutdown())
         .run_with(|application| async move {
             application
                 .root()
@@ -183,6 +184,12 @@ fn machine_template_runs_as_an_ordinary_application_root() {
                 .expect("the machine accepts stop after draining");
         })
         .expect("the machine reaches its statically defined terminal transition");
+    let terminal: RootTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_completed(terminal);
 }
 

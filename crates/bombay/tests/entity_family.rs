@@ -49,6 +49,7 @@ impl LocalEntityRuntime<u64, u64> for RecordingRuntime {
     type ActivationError = Infallible;
     type Task = tokio::task::JoinHandle<()>;
     type TaskFailure = tokio::task::JoinError;
+    type RetirementFailure = Infallible;
 
     fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
         tokio::spawn(task)
@@ -97,8 +98,19 @@ impl LocalEntityRuntime<u64, u64> for RecordingRuntime {
         Ok(())
     }
 
-    async fn retire(&self, _: EntityId<u64>, _: ActivationId, _: Self::Lease, _: RetirementMode) {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Retirement recording must occur when the consuming trait-port future is polled."
+    )]
+    async fn retire(
+        &self,
+        _: &EntityId<u64>,
+        _: ActivationId,
+        _: Self::Lease,
+        _: RetirementMode,
+    ) -> Result<(), Self::RetirementFailure> {
         self.state.retirements.fetch_add(1, Ordering::Release);
+        Ok(())
     }
 }
 
@@ -113,10 +125,19 @@ async fn family_shutdown_closes_admission_drains_every_slot_and_joins_tasks() {
 
     let shutdown = entities.shutdown().await;
 
-    assert!(matches!(
-        shutdown,
-        EntityShutdown::Settled { represented: 2 }
-    ));
+    let EntityShutdown::Settled {
+        represented,
+        entities: mut returned_entities,
+    } = shutdown
+    else {
+        panic!("family must settle with original keys");
+    };
+    returned_entities.sort_by_key(|id| *id.get());
+    assert_eq!(represented, 2);
+    assert_eq!(
+        returned_entities,
+        vec![EntityId::new(41), EntityId::new(73)]
+    );
     assert_eq!(
         observations.trace(),
         RuntimeTrace {
@@ -141,7 +162,16 @@ async fn family_shutdown_has_one_result_owner() {
     let entities =
         EntityRuntime::new(DirectoryConfig::default(), RecordingRuntime::default()).unwrap();
     let first = entities.shutdown().await;
-    assert!(matches!(first, EntityShutdown::Settled { represented: 0 }));
+    let EntityShutdown::Settled {
+        represented,
+        entities: mut returned_entities,
+    } = first
+    else {
+        panic!("family must settle with original keys");
+    };
+    returned_entities.sort_by_key(|id| *id.get());
+    assert_eq!(represented, 0);
+    assert_eq!(returned_entities, vec![]);
 
     let repeated = tokio::spawn(async move { entities.shutdown().await }).await;
     let repeated = repeated.expect("a second caller receives a disposition");
@@ -197,7 +227,16 @@ async fn cancelled_shutdown_returns_task_custody_to_the_family() {
     release_activation.notify_one();
     admission.await.unwrap().unwrap();
     let retry = entities.shutdown().await;
-    assert!(matches!(retry, EntityShutdown::Settled { represented: 1 }));
+    let EntityShutdown::Settled {
+        represented,
+        entities: mut returned_entities,
+    } = retry
+    else {
+        panic!("family must settle with original keys");
+    };
+    returned_entities.sort_by_key(|id| *id.get());
+    assert_eq!(represented, 1);
+    assert_eq!(returned_entities, vec![EntityId::new(41)]);
     assert_eq!(
         observations.trace(),
         RuntimeTrace {
@@ -264,6 +303,7 @@ impl LocalEntityRuntime<u64, u64> for GatedRuntime {
     type ActivationError = Infallible;
     type Task = GatedTask;
     type TaskFailure = tokio::task::JoinError;
+    type RetirementFailure = Infallible;
 
     fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
         let scheduled = tokio::spawn(task);
@@ -334,7 +374,13 @@ impl LocalEntityRuntime<u64, u64> for GatedRuntime {
         Ok(())
     }
 
-    async fn retire(&self, _: EntityId<u64>, _: ActivationId, _: Self::Lease, _: RetirementMode) {
+    async fn retire(
+        &self,
+        _: &EntityId<u64>,
+        _: ActivationId,
+        _: Self::Lease,
+        _: RetirementMode,
+    ) -> Result<(), Self::RetirementFailure> {
         self.inner.state.retirements.fetch_add(1, Ordering::Release);
         match &self.retirement_disposition {
             RetirementDisposition::Complete => {}
@@ -344,6 +390,7 @@ impl LocalEntityRuntime<u64, u64> for GatedRuntime {
                 core::future::pending::<()>().await;
             }
         }
+        Ok(())
     }
 }
 
@@ -392,10 +439,16 @@ async fn shutdown_settles_an_installed_activation_before_draining_and_joining() 
     release_activation.notify_one();
     admission.await.unwrap().unwrap();
     let shutdown = shutdown.await.unwrap();
-    assert!(matches!(
-        shutdown,
-        EntityShutdown::Settled { represented: 1 }
-    ));
+    let EntityShutdown::Settled {
+        represented,
+        entities: mut returned_entities,
+    } = shutdown
+    else {
+        panic!("family must settle with original keys");
+    };
+    returned_entities.sort_by_key(|id| *id.get());
+    assert_eq!(represented, 1);
+    assert_eq!(returned_entities, vec![EntityId::new(41)]);
     assert_eq!(
         observations.trace(),
         RuntimeTrace {
@@ -464,10 +517,16 @@ async fn shutdown_claims_passivation_before_pending_delivery_settles() {
     release_delivery.notify_one();
     admission.await.unwrap().unwrap();
     let shutdown = shutdown.await.unwrap();
-    assert!(matches!(
-        shutdown,
-        EntityShutdown::Settled { represented: 1 }
-    ));
+    let EntityShutdown::Settled {
+        represented,
+        entities: mut returned_entities,
+    } = shutdown
+    else {
+        panic!("family must settle with original keys");
+    };
+    returned_entities.sort_by_key(|id| *id.get());
+    assert_eq!(represented, 1);
+    assert_eq!(returned_entities, vec![EntityId::new(41)]);
     assert_eq!(
         observations.trace(),
         RuntimeTrace {
@@ -502,14 +561,20 @@ async fn family_shutdown_preserves_retirement_task_failure() {
     let outcome = shutdown
         .await
         .expect("shutdown returns the owned task failure");
-    let EntityShutdown::TaskFailed {
+    let EntityShutdown::Unsettled {
         represented,
+        entities: returned_entities,
         mut failures,
     } = outcome
     else {
         panic!("retirement task panic must be returned");
     };
     assert_eq!(represented, 1);
+    assert_eq!(returned_entities.len(), 1);
+    let (id, disposition, receipts) = &returned_entities[0];
+    assert_eq!(id, &EntityId::new(41));
+    assert!(matches!(disposition, Err(Some(_))));
+    assert_eq!(receipts.len(), 0);
     assert_eq!(failures.len(), 1);
     let failure = failures.pop().expect("one failed retirement task");
     let panic = failure
@@ -553,14 +618,20 @@ async fn family_shutdown_preserves_cancelled_retirement_task() {
         .expect("the retirement task was scheduled");
     task.abort();
     let outcome = shutdown.await.expect("shutdown retains cancellation");
-    let EntityShutdown::TaskFailed {
+    let EntityShutdown::Unsettled {
         represented,
+        entities: returned_entities,
         mut failures,
     } = outcome
     else {
         panic!("canceled retirement task must be returned");
     };
     assert_eq!(represented, 1);
+    assert_eq!(returned_entities.len(), 1);
+    let (id, disposition, receipts) = &returned_entities[0];
+    assert_eq!(id, &EntityId::new(41));
+    assert!(matches!(disposition, Err(Some(_))));
+    assert_eq!(receipts.len(), 0);
     assert_eq!(failures.len(), 1);
     let failure = failures.pop().expect("one canceled retirement task");
     assert!(failure.is_cancelled());
@@ -599,10 +670,16 @@ async fn cancelled_join_preserves_the_original_family_drain_count() {
     assert!(cancellation.is_cancelled());
 
     let resumed = entities.shutdown().await;
-    assert!(matches!(
-        resumed,
-        EntityShutdown::Settled { represented: 1 }
-    ));
+    let EntityShutdown::Settled {
+        represented,
+        entities: mut returned_entities,
+    } = resumed
+    else {
+        panic!("family must settle with original keys");
+    };
+    returned_entities.sort_by_key(|id| *id.get());
+    assert_eq!(represented, 1);
+    assert_eq!(returned_entities, vec![EntityId::new(41)]);
     assert_eq!(
         observations.trace(),
         RuntimeTrace {
@@ -635,6 +712,7 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingRuntime {
     type ActivationError = Infallible;
     type Task = tokio::task::JoinHandle<()>;
     type TaskFailure = tokio::task::JoinError;
+    type RetirementFailure = Infallible;
 
     fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
         tokio::spawn(task)
@@ -684,7 +762,19 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingRuntime {
         Ok(())
     }
 
-    async fn retire(&self, _: EntityId<u64>, _: ActivationId, (): Self::Lease, _: RetirementMode) {}
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Retirement completion remains a cold trait-port future."
+    )]
+    async fn retire(
+        &self,
+        _: &EntityId<u64>,
+        _: ActivationId,
+        (): Self::Lease,
+        _: RetirementMode,
+    ) -> Result<(), Self::RetirementFailure> {
+        Ok(())
+    }
 }
 
 #[tokio::test]
@@ -695,13 +785,11 @@ async fn runtime_admission_returns_the_exact_move_only_command() {
         drops: Arc::clone(&drops),
     };
     let allocation = command.value.as_ptr();
+    let entity_id = EntityId::new(9);
     let entities = EntityRuntime::new(DirectoryConfig::default(), RejectingRuntime)
         .unwrap_or_else(|_| panic!("valid directory configuration must construct"));
 
-    let failure = entities
-        .admit((), EntityId::new(9), command)
-        .await
-        .unwrap_err();
+    let failure = entities.admit((), entity_id, command).await.unwrap_err();
     let AdmissionFailure::Refused { command, reason } = failure else {
         panic!("delivery must preserve the rejected command");
     };
@@ -713,8 +801,14 @@ async fn runtime_admission_returns_the_exact_move_only_command() {
     drop(command);
     assert_eq!(drops.load(Ordering::Relaxed), 1);
     let shutdown = entities.shutdown().await;
-    assert!(matches!(
-        shutdown,
-        EntityShutdown::Settled { represented: 1 }
-    ));
+    let EntityShutdown::Settled {
+        represented,
+        entities: mut returned_entities,
+    } = shutdown
+    else {
+        panic!("family must settle with original keys");
+    };
+    returned_entities.sort_by_key(|id| *id.get());
+    assert_eq!(represented, 1);
+    assert_eq!(returned_entities, vec![entity_id]);
 }

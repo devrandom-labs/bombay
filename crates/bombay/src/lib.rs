@@ -30,7 +30,8 @@ pub use application::Application;
 #[cfg(feature = "axum")]
 pub use application_runtime::AxumRunError;
 pub use application_runtime::{
-    App, ApplicationBehavior, ApplicationHandle, ApplicationLifecycle, RunError,
+    App, ApplicationBehavior, ApplicationDefinitionError, ApplicationHandle, ApplicationLifecycle,
+    ApplicationOutcome, ApplicationStagingError, RunError,
 };
 pub use bombay_engine::{Completion, SettlementFailure};
 pub use bombay_macros::{ActorSpaces, TerminalProjection, actor};
@@ -62,9 +63,9 @@ mod worker_preparation;
 pub(crate) use actor_execution::ActorExecution;
 pub(crate) use actor_outcome::ActorExecutionOutcome;
 pub use launch::ActorSpace;
-pub use local::{ActorRef, InstalledActor, SendError};
+pub use local::{ActorRef, InstalledActor, LocalActivationRejection, SendError};
 pub(crate) use retirement::Retirement;
-pub use terminal::{ActorRetirement, ChildOrigin, ProjectTerminal, RootOrigin};
+pub use terminal::{ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal, RootOrigin};
 pub use topology::Hosts;
 pub use worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
 
@@ -84,9 +85,9 @@ pub mod prelude {
     };
     pub use crate::{
         ActorInterface, ActorRef, ActorRetirement, Application, ApplicationBehavior,
-        ApplicationHandle, ApplicationLifecycle, ChildOrigin, Completion, ExternalActor,
-        ExternalActorError, ExternalTarget, MailAddr, RootOrigin, RunError, SettlementFailure,
-        TerminalProjection,
+        ApplicationHandle, ApplicationLifecycle, ApplicationStagingError, ChildFailure,
+        ChildOrigin, Completion, ExternalActor, ExternalActorError, ExternalTarget, MailAddr,
+        RootOrigin, RunError, SettlementFailure, TerminalProjection,
     };
     pub use behavior_actors::{
         Activate, Crash, Exit, Machine, MachineError, Move, ShutdownRejection, StopOnShutdown,

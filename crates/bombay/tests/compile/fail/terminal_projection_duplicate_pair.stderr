@@ -1,4 +1,4 @@
-error[E0119]: conflicting implementations of trait `ProjectTerminal<RootOrigin<StopOnShutdown<Root>>, ActorRetirement<StopOnShutdown<Root>, ApplicationTerminal>>` for type `ApplicationTerminal`
+error[E0119]: conflicting implementations of trait `ProjectTerminal<RootOrigin<StopOnShutdown<Root>>, ActorRetirement<StopOnShutdown<Root>, ApplicationTerminal, ()>>` for type `ApplicationTerminal`
   --> tests/compile/fail/terminal_projection_duplicate_pair.rs:10:10
    |
 10 | #[derive(TerminalProjection)]

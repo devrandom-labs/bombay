@@ -7,9 +7,11 @@ use behavior_actors::atomic::{
     OrderedRoles, PoolFailureReaction, PoolRecovery, SubmissionId, WorkerSubmission, fifo,
 };
 use behavior_actors::{Exit, StopOnShutdown};
+use bombay::ProjectTerminal;
 use bombay::behavior::{ChildHead, MessageProtocol, Never};
 use bombay::prelude::{
-    ActorRetirement, ChildOrigin, Completion, MailAddr, RootOrigin, TerminalProjection,
+    ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
+    TerminalProjection,
 };
 use bombay::{ActorSpace, ActorSpaces, App};
 use tokio::sync::oneshot;
@@ -76,12 +78,23 @@ struct PoolSpaces {
 enum PoolTerminal {
     Root {
         origin: RootOrigin<Pool>,
-        terminal: ActorRetirement<Pool, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the pool retirement retains exact worker origins and complete child failures"
+        )]
+        terminal: ActorRetirement<
+            Pool,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<Pool, ChildHead>, StopOnShutdown<SearchWorker>>>,
+                (),
+            ),
+        >,
     },
     #[structural_child]
     Worker {
         origin: ChildOrigin<Pool, ChildHead>,
-        terminal: ActorRetirement<StopOnShutdown<SearchWorker>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<SearchWorker>, Self, ()>,
     },
 }
 
@@ -128,7 +141,7 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
         workers: ActorSpace::new(),
         customers: ActorSpace::new(),
     };
-    let (termination, terminal): (_, PoolTerminal) = App::new(pool, spaces)
+    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
         .run_with(move |application| async move {
             tokio::time::timeout(Duration::from_secs(5), activation_received)
                 .await
@@ -186,6 +199,12 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
                 .expect("the pool terminates after shutdown")
         })
         .unwrap_or_else(|_| panic!("the pool runs its worker and shuts down"));
+    let terminal: PoolTerminal = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_orderly_pool_terminal(terminal);
 }
@@ -204,7 +223,7 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
         workers: ActorSpace::new(),
         customers: ActorSpace::new(),
     };
-    let (termination, terminal): (_, PoolTerminal) = App::new(pool, spaces)
+    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
         .run_with(move |application| async move {
             tokio::time::timeout(Duration::from_secs(5), activation_received)
                 .await
@@ -286,6 +305,12 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
                 .expect("the saturated pool drains its worker")
         })
         .unwrap_or_else(|_| panic!("the pool returns the full-backlog job and shuts down"));
+    let terminal: PoolTerminal = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_orderly_pool_terminal(terminal);
 }
@@ -296,6 +321,10 @@ fn assert_orderly_pool_terminal(terminal: PoolTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        child_failures: (child_failures, ()),
+
+        capability_failures,
+        unread_owner_cancellation,
         descendants,
         completion,
         ..
@@ -303,6 +332,9 @@ fn assert_orderly_pool_terminal(terminal: PoolTerminal) {
     else {
         panic!("the pool completes after its worker graph");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
+    assert!(child_failures.is_empty());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
     let PoolTerminal::Worker { origin, terminal } = descendants
@@ -314,6 +346,10 @@ fn assert_orderly_pool_terminal(terminal: PoolTerminal) {
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        child_failures: (),
+
+        capability_failures,
+        unread_owner_cancellation,
         completion,
         descendants,
         ..
@@ -321,6 +357,8 @@ fn assert_orderly_pool_terminal(terminal: PoolTerminal) {
     else {
         panic!("the pool shutdown completes the exact worker");
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert!(descendants.is_empty());
 }

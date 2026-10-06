@@ -1,11 +1,15 @@
+use std::panic::panic_any;
+use std::sync::Arc;
 use std::time::Duration;
 
+use bombay::ChildFailure;
+use bombay::ProjectTerminal;
 use bombay::behavior::{
-    ActiveTurn, Behavior, BehaviorBase, ChildCons, ChildCreationOutcome, ChildHead, ChildReport,
-    ClassifySettlement, CreateChild, CreationKind, CreationSequence, CreationSettlement, Creations,
-    EventIngress, InitializationTurn, InterpreterRequests, ItemSettlement, Never, NoChildren,
-    NoSends, ReportToParent, RetirementBirths, SettledItem, SettlementStatus, Step, Stopped, User,
-    UserEvent,
+    ActiveTurn, Behavior, BehaviorBase, ChildChoice, ChildCons, ChildCreationOutcome, ChildHead,
+    ChildReport, ChildTail, ClassifySettlement, CreateChild, CreationId, CreationKind,
+    CreationSequence, CreationSettlement, Creations, EventIngress, InitializationTurn,
+    InterpreterRequests, ItemSettlement, Never, NoChildren, NoSends, ReportToParent,
+    RetirementBirths, SettledItem, SettlementStatus, Step, Stopped, User, UserEvent,
 };
 use bombay::prelude::*;
 use bombay::{ActorSpace, App};
@@ -45,12 +49,23 @@ impl Root {
 enum ApplicationTerminal {
     Root {
         origin: RootOrigin<StopOnShutdown<Root>>,
-        terminal: ActorRetirement<StopOnShutdown<Root>, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the root retirement retains its exact typed child failures and complete terminal"
+        )]
+        terminal: ActorRetirement<
+            StopOnShutdown<Root>,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<Root, ChildHead>, StopOnShutdown<Worker>>>,
+                (),
+            ),
+        >,
     },
     #[declared_child(Root, RootChildrenWorker, StopOnShutdown<Worker>)]
     Worker {
         origin: ChildOrigin<Root, RootChildrenWorker>,
-        terminal: ActorRetirement<StopOnShutdown<Worker>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<Worker>, Self, ()>,
     },
 }
 
@@ -88,17 +103,41 @@ type DeclaredApplication = ApplicationBehavior<StopOnShutdown<ApplicationRoot>, 
 enum DeclaredApplicationTerminal {
     Root {
         origin: RootOrigin<StopOnShutdown<ApplicationRoot>>,
-        terminal: ActorRetirement<DeclaredApplication, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the declared root retirement retains both heterogeneous child failure products"
+        )]
+        terminal: ActorRetirement<
+            DeclaredApplication,
+            Self,
+            (
+                Vec<
+                    ChildFailure<
+                        ChildOrigin<StopOnShutdown<ApplicationRoot>, AuditWorker>,
+                        StopOnShutdown<Auditor>,
+                    >,
+                >,
+                (
+                    Vec<
+                        ChildFailure<
+                            ChildOrigin<StopOnShutdown<ApplicationRoot>, BackgroundWorker>,
+                            StopOnShutdown<Worker>,
+                        >,
+                    >,
+                    (),
+                ),
+            ),
+        >,
     },
     #[application_actor]
     BackgroundWorker {
         origin: ChildOrigin<StopOnShutdown<ApplicationRoot>, BackgroundWorker>,
-        terminal: ActorRetirement<StopOnShutdown<Worker>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<Worker>, Self, ()>,
     },
     #[application_actor]
     AuditWorker {
         origin: ChildOrigin<StopOnShutdown<ApplicationRoot>, AuditWorker>,
-        terminal: ActorRetirement<StopOnShutdown<Auditor>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<Auditor>, Self, ()>,
     },
 }
 
@@ -113,17 +152,42 @@ fn root_returns_only_after_owning_ordered_direct_child_terminals() {
         origin,
         terminal:
             ActorRetirement::Completed {
+                child_failures: (child_failures, ()),
+
+                capability_failures,
+                unread_owner_cancellation,
                 behavior: _,
                 settlements,
                 control,
                 user,
                 mut descendants,
                 completion,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+                additional_failures: retirement_additional_failures,
+                received_interpretation: retirement_received_interpretation,
+                received_source: retirement_received_source,
+                source_index: retirement_source_index,
+                acquired_ingress: retirement_acquired_ingress,
+                retirement_failures: retirement_native_failures,
+                terminal_report: retirement_terminal_report,
             },
     } = terminal
     else {
         panic!("the root must preserve its completed state and child custody")
     };
+    assert!(retirement_interpretation.is_none());
+    assert!(retirement_source.is_none());
+    assert!(retirement_additional_failures.is_empty());
+    assert!(retirement_received_interpretation.is_none());
+    assert!(retirement_received_source.is_none());
+    assert!(retirement_source_index.is_none());
+    assert!(retirement_acquired_ingress.is_none());
+    assert!(retirement_native_failures.is_empty());
+    assert!(retirement_terminal_report.is_none());
+    assert!(capability_failures.is_empty());
+    assert!(child_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(control.len(), 0);
     assert_eq!(user.len(), 0);
@@ -138,16 +202,40 @@ fn root_returns_only_after_owning_ordered_direct_child_terminals() {
             origin,
             terminal:
                 ActorRetirement::OwnerCancelled {
+                    child_failures: (),
+
+                    capability_failures,
+                    unread_owner_cancellation,
                     behavior: _,
                     settlements,
                     control,
                     user,
                     descendants,
+                    interpretation: retirement_interpretation,
+                    source: retirement_source,
+                    additional_failures: retirement_additional_failures,
+                    received_interpretation: retirement_received_interpretation,
+                    received_source: retirement_received_source,
+                    source_index: retirement_source_index,
+                    acquired_ingress: retirement_acquired_ingress,
+                    retirement_failures: retirement_native_failures,
+                    terminal_report: retirement_terminal_report,
                 },
         } = descendant
         else {
             panic!("parent retirement must preserve each exact child cancellation")
         };
+        assert!(retirement_interpretation.is_none());
+        assert!(retirement_source.is_none());
+        assert!(retirement_additional_failures.is_empty());
+        assert!(retirement_received_interpretation.is_none());
+        assert!(retirement_received_source.is_none());
+        assert!(retirement_source_index.is_none());
+        assert!(retirement_acquired_ingress.is_none());
+        assert!(retirement_native_failures.is_empty());
+        assert!(retirement_terminal_report.is_none());
+        assert_eq!(capability_failures.len(), 0);
+        assert!(unread_owner_cancellation.is_none());
         assert_eq!(control.len(), 0);
         assert_eq!(user.len(), 0);
         assert_eq!(settlements.len(), 0);
@@ -175,17 +263,43 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
         origin,
         terminal:
             ActorRetirement::Completed {
+                child_failures: (child_failures, (tail_child_failures, ())),
+
+                capability_failures,
+                unread_owner_cancellation,
                 behavior: _,
                 settlements,
                 control,
                 user,
                 descendants,
                 completion,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+                additional_failures: retirement_additional_failures,
+                received_interpretation: retirement_received_interpretation,
+                received_source: retirement_received_source,
+                source_index: retirement_source_index,
+                acquired_ingress: retirement_acquired_ingress,
+                retirement_failures: retirement_native_failures,
+                terminal_report: retirement_terminal_report,
             },
     } = terminal
     else {
         panic!("the application root must retain its declared child")
     };
+    assert!(retirement_interpretation.is_none());
+    assert!(retirement_source.is_none());
+    assert!(retirement_additional_failures.is_empty());
+    assert!(retirement_received_interpretation.is_none());
+    assert!(retirement_received_source.is_none());
+    assert!(retirement_source_index.is_none());
+    assert!(retirement_acquired_ingress.is_none());
+    assert!(retirement_native_failures.is_empty());
+    assert!(retirement_terminal_report.is_none());
+    assert!(capability_failures.is_empty());
+    assert!(child_failures.is_empty());
+    assert!(tail_child_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(control.len(), 0);
     assert_eq!(user.len(), 0);
@@ -201,13 +315,37 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
                 origin,
                 terminal:
                     ActorRetirement::OwnerCancelled {
+                        child_failures: (),
+
+                        capability_failures,
+                        unread_owner_cancellation,
                         behavior: _,
                         settlements,
                         control,
                         user,
                         descendants,
+                        interpretation: retirement_interpretation,
+                        source: retirement_source,
+                        additional_failures: retirement_additional_failures,
+                        received_interpretation: retirement_received_interpretation,
+                        received_source: retirement_received_source,
+                        source_index: retirement_source_index,
+                        acquired_ingress: retirement_acquired_ingress,
+                        retirement_failures: retirement_native_failures,
+                        terminal_report: retirement_terminal_report,
                     },
             } => {
+                assert!(retirement_interpretation.is_none());
+                assert!(retirement_source.is_none());
+                assert!(retirement_additional_failures.is_empty());
+                assert!(retirement_received_interpretation.is_none());
+                assert!(retirement_received_source.is_none());
+                assert!(retirement_source_index.is_none());
+                assert!(retirement_acquired_ingress.is_none());
+                assert!(retirement_native_failures.is_empty());
+                assert!(retirement_terminal_report.is_none());
+                assert_eq!(capability_failures.len(), 0);
+                assert!(unread_owner_cancellation.is_none());
                 assert_eq!(control.len(), 0);
                 assert_eq!(user.len(), 0);
                 assert_eq!(settlements.len(), 0);
@@ -219,13 +357,37 @@ fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
                 origin,
                 terminal:
                     ActorRetirement::OwnerCancelled {
+                        child_failures: (),
+
+                        capability_failures,
+                        unread_owner_cancellation,
                         behavior: _,
                         settlements,
                         control,
                         user,
                         descendants,
+                        interpretation: retirement_interpretation,
+                        source: retirement_source,
+                        additional_failures: retirement_additional_failures,
+                        received_interpretation: retirement_received_interpretation,
+                        received_source: retirement_received_source,
+                        source_index: retirement_source_index,
+                        acquired_ingress: retirement_acquired_ingress,
+                        retirement_failures: retirement_native_failures,
+                        terminal_report: retirement_terminal_report,
                     },
             } => {
+                assert!(retirement_interpretation.is_none());
+                assert!(retirement_source.is_none());
+                assert!(retirement_additional_failures.is_empty());
+                assert!(retirement_received_interpretation.is_none());
+                assert!(retirement_received_source.is_none());
+                assert!(retirement_source_index.is_none());
+                assert!(retirement_acquired_ingress.is_none());
+                assert!(retirement_native_failures.is_empty());
+                assert!(retirement_terminal_report.is_none());
+                assert_eq!(capability_failures.len(), 0);
+                assert!(unread_owner_cancellation.is_none());
                 assert_eq!(control.len(), 0);
                 assert_eq!(user.len(), 0);
                 assert_eq!(settlements.len(), 0);
@@ -356,23 +518,45 @@ impl BehaviorBase for NestedRoot {
 enum NestedTerminal {
     Root {
         origin: RootOrigin<StopOnShutdown<NestedRoot>>,
-        terminal: ActorRetirement<StopOnShutdown<NestedRoot>, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the nested root retains its exact child failure product"
+        )]
+        terminal: ActorRetirement<
+            StopOnShutdown<NestedRoot>,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<NestedRoot, ChildHead>, StopOnShutdown<NestedChild>>>,
+                (),
+            ),
+        >,
     },
     #[structural_child]
     Child {
         origin: ChildOrigin<NestedRoot, ChildHead>,
-        terminal: ActorRetirement<StopOnShutdown<NestedChild>, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the nested child retains its exact grandchild failure product"
+        )]
+        terminal: ActorRetirement<
+            StopOnShutdown<NestedChild>,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<NestedChild, ChildHead>, StopOnShutdown<Grandchild>>>,
+                (),
+            ),
+        >,
     },
     #[declared_child(NestedChild, NestedChildChildrenGrandchild, StopOnShutdown<Grandchild>)]
     Grandchild {
         origin: ChildOrigin<NestedChild, NestedChildChildrenGrandchild>,
-        terminal: ActorRetirement<StopOnShutdown<Grandchild>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<Grandchild>, Self, ()>,
     },
 }
 
 #[test]
 fn privately_bound_child_reports_its_nested_creation_before_parent_retirement() {
-    let (termination, terminal): (_, NestedTerminal) = App::new(
+    let (termination, root_origin, joined_actor) = App::new(
         NestedRoot { birth_report: None }.stop_on_shutdown(),
         ActorSpace::new(),
     )
@@ -389,6 +573,12 @@ fn privately_bound_child_reports_its_nested_creation_before_parent_retirement() 
         termination
     })
     .expect("the child report must stop the published root");
+    let terminal: NestedTerminal = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     let child_termination =
         termination.expect("the child report must complete before the watchdog");
     assert_eq!(child_termination, Ok(Exit::Normal));
@@ -396,22 +586,51 @@ fn privately_bound_child_reports_its_nested_creation_before_parent_retirement() 
     assert_nested_birth_retirement(terminal);
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "one complete recursive retirement oracle checks every owned lane and nested child outcome"
+)]
 fn assert_nested_birth_retirement(terminal: NestedTerminal) {
     let NestedTerminal::Root {
         origin,
         terminal:
             ActorRetirement::Completed {
+                child_failures: (child_failures, ()),
+
+                capability_failures,
+                unread_owner_cancellation,
                 behavior,
                 settlements,
                 control,
                 user,
                 descendants,
                 completion,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+                additional_failures: retirement_additional_failures,
+                received_interpretation: retirement_received_interpretation,
+                received_source: retirement_received_source,
+                source_index: retirement_source_index,
+                acquired_ingress: retirement_acquired_ingress,
+                retirement_failures: retirement_native_failures,
+                terminal_report: retirement_terminal_report,
             },
     } = terminal
     else {
         panic!("the root must retain its completed retirement")
     };
+    assert!(retirement_interpretation.is_none());
+    assert!(retirement_source.is_none());
+    assert!(retirement_additional_failures.is_empty());
+    assert!(retirement_received_interpretation.is_none());
+    assert!(retirement_received_source.is_none());
+    assert!(retirement_source_index.is_none());
+    assert!(retirement_acquired_ingress.is_none());
+    assert!(retirement_native_failures.is_empty());
+    assert!(retirement_terminal_report.is_none());
+    assert!(capability_failures.is_empty());
+    assert!(child_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let Some(report) = behavior.base().birth_report.as_ref() else {
         panic!("the child report must reach the root as a typed input")
@@ -432,17 +651,42 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
             origin,
             terminal:
                 ActorRetirement::OwnerCancelled {
+                    child_failures: (child_failures, ()),
+
+                    capability_failures,
+                    unread_owner_cancellation,
                     settlements,
                     control,
                     user,
                     descendants,
-                    ..
+                    behavior: _,
+                    interpretation: retirement_interpretation,
+                    source: retirement_source,
+                    additional_failures: retirement_additional_failures,
+                    received_interpretation: retirement_received_interpretation,
+                    received_source: retirement_received_source,
+                    source_index: retirement_source_index,
+                    acquired_ingress: retirement_acquired_ingress,
+                    retirement_failures: retirement_native_failures,
+                    terminal_report: retirement_terminal_report,
                 },
         },
     ] = descendants.as_slice()
     else {
         panic!("the root must retain its exact child retirement")
     };
+    assert!(retirement_interpretation.is_none());
+    assert!(retirement_source.is_none());
+    assert!(retirement_additional_failures.is_empty());
+    assert!(retirement_received_interpretation.is_none());
+    assert!(retirement_received_source.is_none());
+    assert!(retirement_source_index.is_none());
+    assert!(retirement_acquired_ingress.is_none());
+    assert!(retirement_native_failures.is_empty());
+    assert!(retirement_terminal_report.is_none());
+    assert!(capability_failures.is_empty());
+    assert!(child_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     let child_address = origin.address();
     assert_ne!(child_address, MailAddr::APPLICATION_ROOT);
     assert_eq!(settlements.len(), 1);
@@ -457,17 +701,41 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
             origin,
             terminal:
                 ActorRetirement::OwnerCancelled {
+                    child_failures: (),
+
+                    capability_failures,
+                    unread_owner_cancellation,
                     settlements,
                     control,
                     user,
                     descendants,
-                    ..
+                    behavior: _,
+                    interpretation: retirement_interpretation,
+                    source: retirement_source,
+                    additional_failures: retirement_additional_failures,
+                    received_interpretation: retirement_received_interpretation,
+                    received_source: retirement_received_source,
+                    source_index: retirement_source_index,
+                    acquired_ingress: retirement_acquired_ingress,
+                    retirement_failures: retirement_native_failures,
+                    terminal_report: retirement_terminal_report,
                 },
         },
     ] = descendants.as_slice()
     else {
         panic!("the child must retain its exact grandchild retirement")
     };
+    assert!(retirement_interpretation.is_none());
+    assert!(retirement_source.is_none());
+    assert!(retirement_additional_failures.is_empty());
+    assert!(retirement_received_interpretation.is_none());
+    assert!(retirement_received_source.is_none());
+    assert!(retirement_source_index.is_none());
+    assert!(retirement_acquired_ingress.is_none());
+    assert!(retirement_native_failures.is_empty());
+    assert!(retirement_terminal_report.is_none());
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_ne!(origin.address(), child_address);
     match settlements.as_slice() {
         [] => {}
@@ -486,102 +754,324 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
 
 struct PanickingChild {
     initialization_attempts: usize,
+    values: Option<Arc<Vec<u64>>>,
 }
 
 #[bombay::actor(message = Never)]
 impl PanickingChild {
     fn init(&mut self) -> BehaviorActed<Self> {
         self.initialization_attempts += 1;
-        panic!("child pure initialization panic")
+        let values = self
+            .values
+            .take()
+            .expect("the child owns its original semantic values");
+        panic_any(values)
     }
 }
 
-struct PanicParent;
+struct PanicParent {
+    child: CreationId,
+    survivor: CreationId,
+    values: Option<Arc<Vec<u64>>>,
+}
 
 #[bombay::actor(
     message = Never,
-    births = { child: StopOnShutdown<PanickingChild> },
+    births = {
+        child: StopOnShutdown<PanickingChild>,
+        survivor: StopOnShutdown<Worker>,
+    },
     creation_settlements = retain_for_retirement,
 )]
 impl PanicParent {
-    #[allow(
-        clippy::unused_self,
+    #[expect(
         clippy::unnecessary_wraps,
-        reason = "the generated foundational fold fixes the controlled-error boundary"
+        reason = "the generated Behavior contract requires the controlled Result even for this successful initializer"
     )]
     fn init(&mut self) -> BehaviorActed<Self> {
-        let mut creations = CreationSequence::new();
-        let id = creations.issue().expect("the child creation ID exists");
-        Ok(Actions::new(
-            NoSends,
-            Creations::one(CreateChild::birth(
-                id,
+        let values = self
+            .values
+            .take()
+            .expect("the parent transfers the original child values once");
+        let children = Creations::one(CreateChild::birth(
+            self.child,
+            ChildChoice::Tail(ChildChoice::Head(
                 PanickingChild {
                     initialization_attempts: 0,
+                    values: Some(values),
                 }
                 .stop_on_shutdown(),
             )),
-            Step::Stop(Stopped),
         ))
+        .and(CreateChild::birth(
+            self.survivor,
+            ChildChoice::Head(Worker.stop_on_shutdown()),
+        ));
+        Ok(Actions::new(NoSends, children, Step::Stop(Stopped)))
     }
+}
+
+#[derive(bombay::ActorSpaces)]
+struct PanicSpaces {
+    #[actor_space(PanicParent)]
+    parents: ActorSpace<PanicParent>,
+    #[actor_space(PanickingChild)]
+    children: ActorSpace<PanickingChild>,
+    #[actor_space(Worker)]
+    survivors: ActorSpace<Worker>,
 }
 
 #[derive(TerminalProjection)]
 enum PanicTerminal {
     Root {
         origin: RootOrigin<StopOnShutdown<PanicParent>>,
-        terminal: ActorRetirement<StopOnShutdown<PanicParent>, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the parent retains independent surviving-worker and panicking-child failure products"
+        )]
+        terminal: ActorRetirement<
+            StopOnShutdown<PanicParent>,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<PanicParent, ChildHead>, StopOnShutdown<Worker>>>,
+                (
+                    Vec<
+                        ChildFailure<
+                            ChildOrigin<PanicParent, ChildTail<ChildHead>>,
+                            StopOnShutdown<PanickingChild>,
+                        >,
+                    >,
+                    (),
+                ),
+            ),
+        >,
     },
     #[allow(
         dead_code,
-        reason = "the declared child role never commits after its pure fold panics"
+        reason = "the declared child never commits after its pure initialization panics"
     )]
     #[declared_child(PanicParent, PanicParentChildrenChild, StopOnShutdown<PanickingChild>)]
     Child {
         origin: ChildOrigin<PanicParent, PanicParentChildrenChild>,
-        terminal: ActorRetirement<StopOnShutdown<PanickingChild>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<PanickingChild>, Self, ()>,
+    },
+    #[declared_child(PanicParent, PanicParentChildrenSurvivor, StopOnShutdown<Worker>)]
+    Survivor {
+        origin: ChildOrigin<PanicParent, PanicParentChildrenSurvivor>,
+        terminal: ActorRetirement<StopOnShutdown<Worker>, Self, ()>,
     },
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one finite child-panic controller joins all owners before complete custody oracles"
+)]
 fn panicking_child_returns_exact_uncommitted_creation() {
-    let terminal: PanicTerminal = match Application::new(PanicParent.stop_on_shutdown()).run() {
+    let mut ids = CreationSequence::new();
+    let child_id = ids
+        .issue()
+        .expect("the child's original creation ID exists");
+    let survivor_id = ids
+        .issue()
+        .expect("the sibling's distinct original creation ID exists");
+    let values = Arc::new(vec![103, 107, 109]);
+    let original_values = Arc::downgrade(&values);
+    let original_arc_allocation = Arc::as_ptr(&values);
+    let original_vec_allocation = values.as_ptr();
+    let parents = ActorSpace::new();
+    let children = ActorSpace::new();
+    let survivors = ActorSpace::new();
+    let spaces = PanicSpaces {
+        parents: parents.clone(),
+        children: children.clone(),
+        survivors: survivors.clone(),
+    };
+    let parent = PanicParent {
+        child: child_id,
+        survivor: survivor_id,
+        values: Some(values),
+    };
+    let terminal: PanicTerminal = match App::new(parent.stop_on_shutdown(), spaces).run() {
         Err(RunError::Unpublished(terminal)) => terminal,
-        _ => panic!("the stopping parent must retain its unpublished terminal"),
+        _ => panic!("the stopping parent retains its complete unpublished retirement"),
     };
     let PanicTerminal::Root {
         origin,
         terminal:
             ActorRetirement::Completed {
+                behavior,
+                capability_failures,
+                unread_owner_cancellation,
                 settlements,
-                descendants,
+                control,
+                user,
+                mut descendants,
+                child_failures: (survivor_failures, (mut child_failures, ())),
                 completion,
-                ..
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+                additional_failures: retirement_additional_failures,
+                received_interpretation: retirement_received_interpretation,
+                received_source: retirement_received_source,
+                source_index: retirement_source_index,
+                acquired_ingress: retirement_acquired_ingress,
+                retirement_failures: retirement_native_failures,
+                terminal_report: retirement_terminal_report,
             },
-        ..
     } = terminal
     else {
-        panic!("the parent must complete after settling the rejected creation")
+        panic!("the parent completes after joining every surviving child");
     };
-    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    assert!(retirement_interpretation.is_none());
+    assert!(retirement_source.is_none());
+    assert!(retirement_additional_failures.is_empty());
+    assert!(retirement_received_interpretation.is_none());
+    assert!(retirement_received_source.is_none());
+    assert!(retirement_source_index.is_none());
+    assert!(retirement_acquired_ingress.is_none());
+    assert!(retirement_native_failures.is_empty());
+    assert!(retirement_terminal_report.is_none());
+    assert_eq!(behavior.base().child, child_id);
+    assert_eq!(behavior.base().survivor, survivor_id);
+    assert!(behavior.base().values.is_none());
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
+    assert_eq!(control.len(), 0);
+    assert_eq!(user.len(), 0);
     assert_eq!(completion, Completion::Stopped);
-    assert!(descendants.is_empty());
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    assert!(parents.resolve(&origin.address()).is_none());
+    assert!(survivor_failures.is_empty());
     let [settlement] = settlements.try_into().unwrap_or_else(|_| {
-        panic!("the parent must retain exactly one complete initialization settlement")
+        panic!("the parent retains one complete initialization settlement");
     });
+    assert_eq!(settlement.sends.owned, NoSends);
+    assert_eq!(settlement.sends.inner, NoSends);
+    assert_eq!(settlement.become_, Step::Stop(Stopped));
     let CreationSettlement::Settled(creations) = settlement.creations.into_settlement() else {
-        panic!("the parent must retain a routed child settlement")
+        panic!("the parent retains its original routed creation rows");
     };
-    let SettledItem::Attempted(ItemSettlement::Accepted(
+    let mut rows = creations.into_iter();
+    let native_row = rows
+        .next()
+        .expect("the native child owns the first original row");
+    let survivor_row = rows
+        .next()
+        .expect("the established sibling owns the second original row");
+    let remaining = rows.next();
+    assert!(remaining.is_none());
+    let SettledItem::Attempted(ItemSettlement::Accepted(ChildChoice::Tail(ChildChoice::Head(
         ChildCreationOutcome::InitializationPanicked { creation },
-    )) = creations
-        .into_one()
-        .unwrap_or_else(|_| panic!("one child creation must settle"))
+    )))) = native_row
     else {
-        panic!("the child panic must retain its exact routed creation")
+        panic!("the pure initialization panic returns its original surviving child");
     };
-    assert_eq!(creation.id().get(), 1);
+    assert_eq!(creation.id(), child_id);
     assert_eq!(creation.kind(), CreationKind::Birth);
-    let (_, child, _) = creation.into_parts().0.into_parts();
+    let (request, route) = creation.into_parts();
+    let (returned_id, child, returned_kind) = request.into_parts();
+    assert_eq!(returned_id, child_id);
+    assert_eq!(returned_kind, CreationKind::Birth);
     assert_eq!(child.base().initialization_attempts, 1);
+    assert!(child.base().values.is_none());
+    let SettledItem::Attempted(ItemSettlement::Accepted(ChildChoice::Head(
+        ChildCreationOutcome::Established(committed),
+    ))) = survivor_row
+    else {
+        panic!("the later sibling still commits and retains its original receipt");
+    };
+    let (returned_survivor_id, returned_survivor_kind, actor) = committed.into_parts();
+    assert_eq!(returned_survivor_id, survivor_id);
+    assert_eq!(returned_survivor_kind, CreationKind::Birth);
+    assert_eq!(descendants.len(), 1);
+    let survivor_terminal = descendants
+        .pop()
+        .expect("the sibling is joined exactly once");
+    let PanicTerminal::Survivor {
+        origin: survivor_origin,
+        terminal: survivor_retirement,
+    } = survivor_terminal
+    else {
+        panic!("the surviving terminal retains its declared sibling role");
+    };
+    // The selected public EstablishedActor deliberately keeps its installed
+    // endpoint opaque. Preserve that whole capability without inventing an
+    // address getter or inferring an incarnation generation from this address.
+    let survivor_recipient = actor.into_recipient();
+    assert!(survivors.resolve(&survivor_origin.address()).is_none());
+    let ActorRetirement::OwnerCancelled {
+        behavior: survivor,
+        settlements: survivor_settlements,
+        control: survivor_control,
+        user: survivor_user,
+        descendants: survivor_descendants,
+        child_failures: (),
+        capability_failures: survivor_capability_failures,
+        unread_owner_cancellation: survivor_unread_request,
+        interpretation: retirement_interpretation,
+        source: retirement_source,
+        additional_failures: retirement_additional_failures,
+        received_interpretation: retirement_received_interpretation,
+        received_source: retirement_received_source,
+        source_index: retirement_source_index,
+        acquired_ingress: retirement_acquired_ingress,
+        retirement_failures: retirement_native_failures,
+        terminal_report: retirement_terminal_report,
+    } = survivor_retirement
+    else {
+        panic!("the sibling preserves the actual acquired owner cancellation");
+    };
+    assert!(retirement_interpretation.is_none());
+    assert!(retirement_source.is_none());
+    assert!(retirement_additional_failures.is_empty());
+    assert!(retirement_received_interpretation.is_none());
+    assert!(retirement_received_source.is_none());
+    assert!(retirement_source_index.is_none());
+    assert!(retirement_acquired_ingress.is_none());
+    assert!(retirement_native_failures.is_empty());
+    assert!(retirement_terminal_report.is_none());
+    let _: &Worker = survivor.base();
+    assert_eq!(survivor_settlements.len(), 0);
+    assert_eq!(survivor_control.len(), 0);
+    assert_eq!(survivor_user.len(), 0);
+    assert!(survivor_descendants.is_empty());
+    assert!(survivor_capability_failures.is_empty());
+    assert!(survivor_unread_request.is_none());
+    assert_eq!(child_failures.len(), 1);
+    let failure = child_failures
+        .pop()
+        .expect("the native payload has one runtime owner");
+    let ChildFailure::InitializationPanicked {
+        id,
+        kind,
+        origin: child_origin,
+        payload,
+        additional_failures: initialization_additional_failures,
+        terminal_report: initialization_terminal_report,
+        retirement_failures: initialization_retirement_failures,
+    } = failure
+    else {
+        panic!("initialization provenance is distinct from actor and projector task failures");
+    };
+    assert!(initialization_additional_failures.is_empty());
+    assert!(initialization_terminal_report.is_none());
+    assert!(initialization_retirement_failures.is_empty());
+    assert_eq!(id, child_id);
+    assert_eq!(kind, CreationKind::Birth);
+    let child_origin: ChildOrigin<PanicParent, PanicParentChildrenChild> =
+        child_origin.into_declared_child();
+    assert_eq!(child_origin.nonce(), route);
+    assert!(children.resolve(&child_origin.address()).is_none());
+    assert_eq!(original_values.strong_count(), 1);
+    let retained_values = original_values
+        .upgrade()
+        .expect("the opaque runtime payload retains the original values");
+    assert_eq!(Arc::as_ptr(&retained_values), original_arc_allocation);
+    assert_eq!(retained_values.as_ptr(), original_vec_allocation);
+    assert_eq!(retained_values.as_slice(), [103, 107, 109]);
+    drop(retained_values);
+    drop(payload);
+    drop(survivor_recipient);
+    assert_eq!(original_values.strong_count(), 0);
 }

@@ -34,6 +34,7 @@ impl EntityDefinition for Accounts {
     type Hosts = MissingAccountSpace;
     type HydrationError = Never;
     type Terminal = Never;
+    type ChildFailures = ();
 
     async fn hydrate(
         &self,
@@ -46,19 +47,19 @@ impl EntityDefinition for Accounts {
         &self,
         _: EntityId<Self::Id>,
         _: ActivationId,
-        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
+        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal, Self::ChildFailures>,
     ) {
     }
 
     fn admission_refused(&self, _: EntityId<Self::Id>, _: AdmissionFailure<u64>) {}
 
-    fn forced_retirement(&self, _: EntityId<Self::Id>, _: ActivationId, _: DrainFailure) {}
+    fn forced_retirement(&self, _: &EntityId<Self::Id>, _: ActivationId, _: DrainFailure) {}
 
     fn retired(
         &self,
-        _: EntityId<Self::Id>,
+        _: &EntityId<Self::Id>,
         _: ActivationId,
-        _: ActorRetirement<Self::Behavior, Self::Terminal>,
+        _: Result<ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>, tokio::task::JoinError>,
     ) {
     }
 }

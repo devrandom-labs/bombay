@@ -1,39 +1,48 @@
 //! One concrete task-launch boundary for local actors.
 
 use core::fmt;
+use std::any::Any;
+use std::error::Error;
+use std::future::{Future, poll_fn};
+use std::ops::ControlFlow;
+use std::pin::Pin;
 use std::sync::Weak;
+use std::task::Poll;
 
 use crate::address::MailAddr;
+use crate::interpret::ActionSettlementOf;
 use crate::observation::TerminationObservations;
 use crate::observe;
-use crate::terminal::{ActorRetirement, ChildOrigin, LocalOutcome, ProjectTerminal};
+use crate::terminal::{ActorRetirement, LocalOutcome, ProjectTerminal, retirement_ingress};
 use crate::time::LocalTimers;
 use crate::{ActorExecutionOutcome, Retirement};
-use behavior::{
-    Behavior, BehaviorMessage, BehaviorSettlements, BirthMode, ClassifySettlement, Never, Protocol,
-    User,
-};
 #[cfg(test)]
 use behavior::{
-    Here, InterpretSends, Interpretation, NoBirths, SourceCustody, SourceSettlementCustody,
+    ActionSettlement, ActionSettlements, Actions, Creations, Here, InterpretSends, NoBirths,
+    SendSettlements, SourceProgress, SourceSettlementCustody,
+};
+use behavior::{
+    Behavior, BehaviorMessage, BehaviorSettlements, BirthMode, ClassifySettlement, Interpretation,
+    InterpretationProgress, Never, Protocol, SourceCustody, User,
 };
 use behavior_actors::ShutdownRequested;
 use bombay_address::{AddressSpace, ClaimError};
-use bombay_engine::ActionsOf;
 use bombay_engine::Driver;
+use bombay_engine::{ActionsOf, Completion, DriverError};
 use communication::Config;
 use tokio::sync::oneshot;
 use tokio::task::{JoinError, JoinHandle};
 
 #[cfg(test)]
-use crate::interpret::{ActionSettlementOf, InterpretedActionSettlement};
+use crate::interpret::InterpretedActionSettlement;
 
 use super::ActorExecution;
 #[cfg(test)]
 use super::local::CapabilityRetirement;
+use super::local::Termination;
 use super::local::{
     ActorRef, CommitActions, EntityIngress, IngressMode, LocalActivationRejection,
-    LocalEnvironment, LocalResidual, OwnerCancellation, StandardIngress,
+    LocalEnvironment, LocalResidual, LocalRetirementRequest, OwnerCancellation, StandardIngress,
 };
 use super::reports::LocalTerminalReports;
 use super::termination::TerminationPublication;
@@ -53,29 +62,70 @@ where
         control: Vec<B::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<B>>>,
         descendants: Descendants,
+        capability_failures: Vec<JoinError>,
+        additional_failures: Vec<DriverError<B::Error, LocalActivationRejection<MailAddr>>>,
+        terminal_report: Option<Result<(), Termination<MailAddr>>>,
+        retirement_failures: Vec<Box<dyn Any + Send>>,
+        received_interpretation: Option<Interpretation<B::Settlements>>,
+        received_source: Option<SourceCustody<B::Settlements>>,
+        source_index: Option<usize>,
+        acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
+        unread_owner_cancellation: Option<()>,
     },
     InitializationPanicked {
+        payload: Box<dyn Any + Send>,
         behavior: B,
         control: Vec<B::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<B>>>,
         descendants: Descendants,
+        capability_failures: Vec<JoinError>,
+        additional_failures: Vec<DriverError<B::Error, LocalActivationRejection<MailAddr>>>,
+        terminal_report: Option<Result<(), Termination<MailAddr>>>,
+        retirement_failures: Vec<Box<dyn Any + Send>>,
+        received_interpretation: Option<Interpretation<B::Settlements>>,
+        received_source: Option<SourceCustody<B::Settlements>>,
+        source_index: Option<usize>,
+        acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
+        unread_owner_cancellation: Option<()>,
     },
     HostRejected {
         behavior: B,
-        initialization: ActionsOf<B>,
+        initialization:
+            InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, B::Settlements>,
         error: ClaimError<MailAddr>,
         control: Vec<B::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<B>>>,
         descendants: Descendants,
+        capability_failures: Vec<JoinError>,
+        additional_failures: Vec<DriverError<B::Error, LocalActivationRejection<MailAddr>>>,
+        terminal_report: Option<Result<(), Termination<MailAddr>>>,
+        retirement_failures: Vec<Box<dyn Any + Send>>,
+        received_interpretation: Option<Interpretation<B::Settlements>>,
+        received_source: Option<SourceCustody<B::Settlements>>,
+        source_index: Option<usize>,
+        acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
+        unread_owner_cancellation: Option<()>,
     },
     BindingAbandoned {
         behavior: B,
-        initialization: ActionsOf<B>,
+        initialization:
+            InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, B::Settlements>,
         control: Vec<B::Event>,
         user: Vec<User<MailAddr, BehaviorMessage<B>>>,
         descendants: Descendants,
+        capability_failures: Vec<JoinError>,
+        additional_failures: Vec<DriverError<B::Error, LocalActivationRejection<MailAddr>>>,
+        terminal_report: Option<Result<(), Termination<MailAddr>>>,
+        retirement_failures: Vec<Box<dyn Any + Send>>,
+        received_interpretation: Option<Interpretation<B::Settlements>>,
+        received_source: Option<SourceCustody<B::Settlements>>,
+        source_index: Option<usize>,
+        acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
+        unread_owner_cancellation: Option<()>,
     },
     Unpublished(LocalOutcome<B, Descendants>),
+    /// The executor returned no local outcome; its original task failure survives.
+    ActorTaskFailed(JoinError),
     Panicked,
     Cancelled,
 }
@@ -92,6 +142,7 @@ where
             Self::HostRejected { .. } => "HostRejected",
             Self::BindingAbandoned { .. } => "BindingAbandoned",
             Self::Unpublished(_) => "Unpublished",
+            Self::ActorTaskFailed(_) => "ActorTaskFailed",
             Self::Panicked => "Panicked",
             Self::Cancelled => "Cancelled",
         })
@@ -120,15 +171,32 @@ where
                 formatter.write_str("the actor's private binding was abandoned")
             }
             Self::Unpublished(_) => formatter.write_str("the actor retired before publication"),
+            Self::ActorTaskFailed(_) => {
+                formatter.write_str("the actor task failed before publishing its live reference")
+            }
             Self::Panicked => formatter.write_str("actor initialization panicked"),
             Self::Cancelled => formatter.write_str("actor initialization was cancelled"),
         }
     }
 }
 
-impl<B, Descendants> std::error::Error for SpawnError<B, Descendants> where
-    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>>
+impl<B, Descendants> Error for SpawnError<B, Descendants>
+where
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>>,
 {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::ActorTaskFailed(error) => Some(error),
+            Self::AllocationRejected { .. }
+            | Self::InitializationRejected { .. }
+            | Self::InitializationPanicked { .. }
+            | Self::HostRejected { .. }
+            | Self::BindingAbandoned { .. }
+            | Self::Unpublished(_)
+            | Self::Panicked
+            | Self::Cancelled => None,
+        }
+    }
 }
 
 impl<B, Descendants> SpawnError<B, Descendants>
@@ -136,72 +204,185 @@ where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     fn from_local(outcome: LocalOutcome<B, Descendants>) -> Self {
+        let tasks = match &outcome {
+            ActorExecutionOutcome::BehaviorFailed {
+                residual:
+                    LocalResidual::Prepared {
+                        activation_tasks, ..
+                    },
+                ..
+            }
+            | ActorExecutionOutcome::InitializationPanicked {
+                residual:
+                    LocalResidual::Prepared {
+                        activation_tasks, ..
+                    },
+                ..
+            }
+            | ActorExecutionOutcome::ActivationFailed {
+                residual:
+                    LocalResidual::Uncommitted {
+                        activation_tasks, ..
+                    },
+                ..
+            } => Some(activation_tasks),
+            _ => None,
+        };
+        if tasks.is_some_and(|tasks| !tasks.is_empty()) {
+            return Self::Unpublished(outcome);
+        }
         match outcome {
             ActorExecutionOutcome::BehaviorFailed {
                 behavior,
                 residual:
                     LocalResidual::Prepared {
                         ingress,
+                        activation_tasks,
                         descendants,
-                        ..
+                        capability_failures,
+                        unread_owner_cancellation,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
                     },
+                additional_failures,
                 error,
-            } => Self::InitializationRejected {
-                behavior,
-                error,
-                control: ingress.control,
-                user: ingress.user,
-                descendants,
-            },
+            } => {
+                drop(activation_tasks);
+                Self::InitializationRejected {
+                    behavior,
+                    error,
+                    control: ingress.control,
+                    user: ingress.user,
+                    descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                }
+            }
             ActorExecutionOutcome::InitializationPanicked {
                 behavior,
                 residual:
                     LocalResidual::Prepared {
                         ingress,
+                        activation_tasks,
                         descendants,
-                        ..
+                        capability_failures,
+                        unread_owner_cancellation,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
                     },
-            } => Self::InitializationPanicked {
-                behavior,
-                control: ingress.control,
-                user: ingress.user,
-                descendants,
-            },
+                additional_failures,
+                payload,
+            } => {
+                drop(activation_tasks);
+                Self::InitializationPanicked {
+                    behavior,
+                    payload,
+                    control: ingress.control,
+                    user: ingress.user,
+                    descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                }
+            }
             ActorExecutionOutcome::ActivationFailed {
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
                         initialization,
                         ingress,
+                        activation_tasks,
                         descendants,
-                        ..
+                        capability_failures,
+                        unread_owner_cancellation,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
                     },
+                additional_failures,
                 error: LocalActivationRejection::Address(error),
-            } => Self::HostRejected {
-                behavior,
-                initialization,
-                error,
-                control: ingress.control,
-                user: ingress.user,
-                descendants,
-            },
+            } => {
+                drop(activation_tasks);
+                Self::HostRejected {
+                    behavior,
+                    initialization,
+                    error,
+                    control: ingress.control,
+                    user: ingress.user,
+                    descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                }
+            }
             ActorExecutionOutcome::ActivationFailed {
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
                         initialization,
                         ingress,
+                        activation_tasks,
                         descendants,
-                        ..
+                        capability_failures,
+                        unread_owner_cancellation,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
                     },
+                additional_failures,
                 error: LocalActivationRejection::BindingAbandoned,
-            } => Self::BindingAbandoned {
-                behavior,
-                initialization,
-                control: ingress.control,
-                user: ingress.user,
-                descendants,
-            },
+            } => {
+                drop(activation_tasks);
+                Self::BindingAbandoned {
+                    behavior,
+                    initialization,
+                    control: ingress.control,
+                    user: ingress.user,
+                    descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                }
+            }
             ActorExecutionOutcome::Panicked => Self::Panicked,
             ActorExecutionOutcome::Cancelled => Self::Cancelled,
             unpublished => Self::Unpublished(unpublished),
@@ -209,68 +390,147 @@ where
     }
 }
 
-impl<B, Root> SpawnError<B, Vec<Root>>
+impl<B, Root, ChildFailures> SpawnError<B, (Vec<Root>, ChildFailures)>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
-    pub(crate) fn into_retirement(self) -> ActorRetirement<B, Root> {
+    pub(crate) fn into_retirement(self) -> ActorRetirement<B, Root, ChildFailures> {
         match self {
             Self::AllocationRejected { behavior, reason } => {
                 ActorRetirement::AllocationRejected { behavior, reason }
             }
             Self::InitializationRejected {
-                behavior,
                 error,
+                behavior,
                 control,
                 user,
-                descendants,
+                descendants: (descendants, child_failures),
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
             } => ActorRetirement::InitializationRejected {
-                behavior,
                 error,
+                behavior,
                 control,
                 user,
                 descendants,
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress: retirement_ingress(acquired_ingress),
             },
             Self::InitializationPanicked {
+                payload,
                 behavior,
                 control,
                 user,
-                descendants,
+                descendants: (descendants, child_failures),
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
             } => ActorRetirement::InitializationPanicked {
+                payload,
                 behavior,
                 control,
                 user,
                 descendants,
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress: retirement_ingress(acquired_ingress),
             },
             Self::HostRejected {
-                behavior,
                 initialization,
                 error,
+                behavior,
                 control,
                 user,
-                descendants,
+                descendants: (descendants, child_failures),
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
             } => ActorRetirement::HostRejected {
-                behavior,
                 initialization,
                 error,
+                behavior,
                 control,
                 user,
                 descendants,
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress: retirement_ingress(acquired_ingress),
             },
             Self::BindingAbandoned {
-                behavior,
                 initialization,
+                behavior,
                 control,
                 user,
-                descendants,
+                descendants: (descendants, child_failures),
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
             } => ActorRetirement::BindingAbandoned {
-                behavior,
                 initialization,
+                behavior,
                 control,
                 user,
                 descendants,
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress: retirement_ingress(acquired_ingress),
             },
             Self::Unpublished(outcome) => ActorRetirement::from_local(outcome),
+            Self::ActorTaskFailed(error) => ActorRetirement::ActorTaskFailed(error),
             Self::Panicked => ActorRetirement::Panicked,
             Self::Cancelled => ActorRetirement::Cancelled,
         }
@@ -306,12 +566,12 @@ pub(crate) struct OwnedTask<B, Descendants>
 where
     B: BehaviorSettlements,
 {
-    task: JoinHandle<Result<LocalOutcome<B, Descendants>, JoinError>>,
+    task: JoinHandle<LocalOutcome<B, Descendants>>,
     cancellation: OwnerCancellationAuthority,
 }
 
 /// Requests actor cleanup if its startup or join waiter disappears.
-struct OwnerCancellationAuthority {
+pub(crate) struct OwnerCancellationAuthority {
     sender: Option<oneshot::Sender<OwnerCancellation>>,
 }
 
@@ -356,7 +616,7 @@ pub(crate) struct ProjectedTask<B, Root>
 where
     B: Behavior,
 {
-    task: tokio::task::JoinHandle<Root>,
+    task: JoinHandle<Result<Root, JoinError>>,
     cancellation: OwnerCancellationAuthority,
     behavior: core::marker::PhantomData<fn() -> B>,
 }
@@ -375,97 +635,98 @@ where
     B: BehaviorSettlements,
     B::Event: Send + 'static,
 {
-    pub(crate) async fn retire(self) -> LocalOutcome<B, Descendants> {
-        let Self { task, cancellation } = self;
-        owned_outcome(cancellation.retire(task).await)
+    /// Acquire this exact actor result in the caller's destination before
+    /// disposing the join operation. Empty or coexisting slots stay unchanged.
+    pub(crate) async fn receive_finish(
+        owned: &mut Option<Self>,
+        received: &mut Option<Result<LocalOutcome<B, Descendants>, JoinError>>,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        poll_fn(|context| {
+            let Some(owner) = owned.as_mut() else {
+                return Poll::Ready(());
+            };
+            match Pin::new(&mut owner.task).poll(context) {
+                Poll::Pending => Poll::Pending,
+                Poll::Ready(joined) => {
+                    *received = Some(joined);
+                    owner.cancellation.disarm();
+                    // All acquired output is already outside. The completed
+                    // Tokio handle and its unit cancellation authority own no
+                    // user result and invoke no application callback here.
+                    drop(owned.take());
+                    Poll::Ready(())
+                }
+            }
+        })
+        .await;
     }
 
-    pub(crate) async fn finish(self) -> LocalOutcome<B, Descendants> {
+    /// Request this exact actor's retirement and acquire its original result.
+    pub(crate) async fn receive_retirement(
+        owned: &mut Option<Self>,
+        received: &mut Option<Result<LocalOutcome<B, Descendants>, JoinError>>,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        if let Some(owner) = owned.as_mut() {
+            owner.cancellation.request();
+        }
+        Self::receive_finish(owned, received).await;
+    }
+
+    pub(crate) async fn retire(self) -> Result<LocalOutcome<B, Descendants>, JoinError> {
         let Self { task, cancellation } = self;
-        owned_outcome(cancellation.finish(task).await)
+        cancellation.retire(task).await
+    }
+
+    pub(crate) async fn finish(self) -> Result<LocalOutcome<B, Descendants>, JoinError> {
+        let Self { task, cancellation } = self;
+        cancellation.finish(task).await
     }
 }
 
-fn owned_outcome<B, Descendants>(
-    joined: Result<Result<LocalOutcome<B, Descendants>, JoinError>, JoinError>,
+async fn settle_local_outcome<B, Descendants>(
+    mut outcome: LocalOutcome<B, Descendants>,
 ) -> LocalOutcome<B, Descendants>
 where
     B: BehaviorSettlements,
     B::Event: Send + 'static,
 {
-    match joined {
-        Ok(Ok(outcome)) => outcome,
-        Ok(Err(error)) if error.is_panic() => std::panic::resume_unwind(error.into_panic()),
-        Ok(Err(error)) => panic!("activation task was cancelled unexpectedly: {error}"),
-        Err(error) if error.is_panic() => ActorExecutionOutcome::Panicked,
-        Err(_) => ActorExecutionOutcome::Cancelled,
+    let residual = match &mut outcome {
+        ActorExecutionOutcome::Completed { residual, .. }
+        | ActorExecutionOutcome::BehaviorFailed { residual, .. }
+        | ActorExecutionOutcome::InitializationPanicked { residual, .. }
+        | ActorExecutionOutcome::ActivationFailed { residual, .. }
+        | ActorExecutionOutcome::SettlementFailed { residual, .. }
+        | ActorExecutionOutcome::TransitionPanicked { residual, .. }
+        | ActorExecutionOutcome::HostExecutionPanicked { residual, .. }
+        | ActorExecutionOutcome::ActivationPanicked { residual, .. }
+        | ActorExecutionOutcome::RetirementPanicked { residual, .. }
+        | ActorExecutionOutcome::InterpreterContractFailed { residual, .. } => Some(residual),
+        ActorExecutionOutcome::Panicked | ActorExecutionOutcome::Cancelled => None,
+    };
+    if let Some(residual) = residual {
+        residual.receive_activation_tasks().await;
     }
-}
-
-async fn settle_local_outcome<B, Descendants>(
-    outcome: LocalOutcome<B, Descendants>,
-) -> Result<LocalOutcome<B, Descendants>, JoinError>
-where
-    B: BehaviorSettlements,
-    B::Event: Send + 'static,
-{
-    Ok(match outcome {
-        ActorExecutionOutcome::Completed {
-            behavior,
-            residual,
-            completion,
-        } => ActorExecutionOutcome::Completed {
-            behavior,
-            residual: residual.settle_activation_tasks().await?,
-            completion,
-        },
-        ActorExecutionOutcome::BehaviorFailed {
-            behavior,
-            residual,
-            error,
-        } => ActorExecutionOutcome::BehaviorFailed {
-            behavior,
-            residual: residual.settle_activation_tasks().await?,
-            error,
-        },
-        ActorExecutionOutcome::InitializationPanicked { behavior, residual } => {
-            ActorExecutionOutcome::InitializationPanicked {
-                behavior,
-                residual: residual.settle_activation_tasks().await?,
-            }
-        }
-        ActorExecutionOutcome::ActivationFailed {
-            behavior,
-            residual,
-            error,
-        } => ActorExecutionOutcome::ActivationFailed {
-            behavior,
-            residual: residual.settle_activation_tasks().await?,
-            error,
-        },
-        ActorExecutionOutcome::SettlementFailed {
-            behavior,
-            residual,
-            error,
-        } => ActorExecutionOutcome::SettlementFailed {
-            behavior,
-            residual: residual.settle_activation_tasks().await?,
-            error,
-        },
-        ActorExecutionOutcome::Panicked => ActorExecutionOutcome::Panicked,
-        ActorExecutionOutcome::Cancelled => ActorExecutionOutcome::Cancelled,
-    })
+    outcome
 }
 
 async fn startup_failure<B, Descendants>(
-    task: JoinHandle<Result<LocalOutcome<B, Descendants>, JoinError>>,
+    task: JoinHandle<LocalOutcome<B, Descendants>>,
     cancellation: OwnerCancellationAuthority,
 ) -> SpawnError<B, Descendants>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     B::Event: Send + 'static,
 {
-    SpawnError::from_local(owned_outcome(cancellation.finish(task).await))
+    match cancellation.finish(task).await {
+        Ok(outcome) => SpawnError::from_local(outcome),
+        Err(error) => SpawnError::ActorTaskFailed(error),
+    }
 }
 
 impl<B, Root> ProjectedTask<B, Root>
@@ -476,27 +737,29 @@ where
     <B::Birth as BirthMode>::Child: Send,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
-    crate::interpret::ActionSettlementOf<B>: Send + 'static,
+    B::InterpretationCustody: Send + 'static,
+    B::SourceCustody: Send + 'static,
+    ActionSettlementOf<B>: Send + 'static,
     Root: Send + 'static,
 {
-    pub(crate) fn project<Owner, Role>(
-        task: OwnedTask<B, Vec<Root>>,
-        origin: ChildOrigin<Owner, Role>,
+    pub(crate) fn project<Origin, ChildFailures>(
+        task: OwnedTask<B, (Vec<Root>, ChildFailures)>,
+        origin: Origin,
     ) -> Self
     where
-        Owner: 'static,
-        Role: 'static,
-        Root: ProjectTerminal<ChildOrigin<Owner, Role>, ActorRetirement<B, Root>>,
+        Origin: Send + 'static,
+        ChildFailures: Send + 'static,
+        Root: ProjectTerminal<Origin, ActorRetirement<B, Root, ChildFailures>>,
     {
         let OwnedTask {
             task: actor_task,
             cancellation,
         } = task;
         let task = tokio::spawn(async move {
-            Root::project(
-                origin,
-                ActorRetirement::from_local(owned_outcome(actor_task.await)),
-            )
+            match actor_task.await {
+                Ok(outcome) => Ok(Root::project(origin, ActorRetirement::from_local(outcome))),
+                Err(error) => Err(error),
+            }
         });
         Self {
             task,
@@ -510,29 +773,56 @@ impl<B, Root> ProjectedTask<B, Root>
 where
     B: Behavior,
 {
-    pub(crate) async fn retire(self) -> Root {
+    pub(crate) fn request_retirement(&mut self) {
+        self.cancellation.request();
+    }
+
+    /// Request the exact projected child's retirement and acquire the whole
+    /// actor/projection result before the borrowing join producer is disposed.
+    pub(crate) async fn receive_retirement(
+        owned: &mut Option<Self>,
+        received: &mut Option<Result<Result<Root, JoinError>, JoinError>>,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        if let Some(owner) = owned.as_mut() {
+            owner.cancellation.request();
+        }
+        poll_fn(|context| {
+            let Some(owner) = owned.as_mut() else {
+                return Poll::Ready(());
+            };
+            match Pin::new(&mut owner.task).poll(context) {
+                Poll::Pending => Poll::Pending,
+                Poll::Ready(joined) => {
+                    *received = Some(joined);
+                    owner.cancellation.disarm();
+                    drop(owned.take());
+                    Poll::Ready(())
+                }
+            }
+        })
+        .await;
+    }
+
+    pub(crate) async fn retire(self) -> Result<Result<Root, JoinError>, JoinError> {
         let Self {
             task,
             cancellation,
             behavior: _,
         } = self;
-        cancellation
-            .retire(task)
-            .await
-            .unwrap_or_else(|error| panic!("typed terminal projection task failed: {error}"))
+        cancellation.retire(task).await
     }
 
     #[cfg(test)]
-    pub(crate) async fn finish(self) -> Root {
+    pub(crate) async fn finish(self) -> Result<Result<Root, JoinError>, JoinError> {
         let Self {
             task,
             cancellation,
             behavior: _,
         } = self;
-        cancellation
-            .finish(task)
-            .await
-            .unwrap_or_else(|error| panic!("typed terminal projection task failed: {error}"))
+        cancellation.finish(task).await
     }
 }
 
@@ -540,6 +830,10 @@ where
 #[doc(hidden)]
 pub type ActorSpace<P> = AddressSpace<<P as Protocol>::Addr, ActorRef<P>>;
 
+#[expect(
+    clippy::result_large_err,
+    reason = "Return the complete original actor rejection by value without adding allocation."
+)]
 pub(crate) async fn spawn_owned_with<B, I>(
     addresses: ActorSpace<B::Protocol>,
     config: Config,
@@ -558,6 +852,8 @@ where
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
+    B::InterpretationCustody: Send + 'static,
+    B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
     crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
@@ -573,6 +869,10 @@ where
     .await
 }
 
+#[expect(
+    clippy::result_large_err,
+    reason = "Return the complete original actor rejection by value without adding allocation."
+)]
 pub(crate) async fn spawn_root_with<B, I>(
     addresses: ActorSpace<B::Protocol>,
     config: Config,
@@ -591,6 +891,8 @@ where
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
+    B::InterpretationCustody: Send + 'static,
+    B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
     crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
@@ -619,6 +921,10 @@ where
     })
 }
 
+#[expect(
+    clippy::result_large_err,
+    reason = "Return the complete original actor rejection by value without adding allocation."
+)]
 pub(crate) async fn spawn_owned_entity_with<B, I>(
     addresses: ActorSpace<B::Protocol>,
     config: Config,
@@ -637,6 +943,8 @@ where
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
+    B::InterpretationCustody: Send + 'static,
+    B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
     crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
@@ -652,6 +960,10 @@ where
     .await
 }
 
+#[expect(
+    clippy::result_large_err,
+    reason = "Return the complete original actor rejection by value without adding allocation."
+)]
 async fn spawn_owned_with_mode<B, I, M>(
     addresses: ActorSpace<B::Protocol>,
     config: Config,
@@ -671,6 +983,8 @@ where
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
+    B::InterpretationCustody: Send + 'static,
+    B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
     crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
@@ -698,6 +1012,10 @@ where
     })
 }
 
+#[expect(
+    clippy::result_large_err,
+    reason = "Return the complete original actor rejection by value without adding allocation."
+)]
 async fn spawn_local_with<B, I, M, P, Start, Control>(
     addresses: ActorSpace<B::Protocol>,
     config: Config,
@@ -725,12 +1043,74 @@ where
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
+    B::InterpretationCustody: Send + 'static,
+    B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
     crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
     Start: Send,
     Control: Send,
+{
+    let (cancellation, startup, control, task) = spawn_local_execution(
+        addresses,
+        config,
+        address,
+        behavior,
+        make_interpreter,
+        publish,
+    );
+
+    if let Ok(started) = startup.await {
+        Ok((started, control, OwnedTask { task, cancellation }))
+    } else {
+        Err(startup_failure(task, cancellation).await)
+    }
+}
+
+/// Transfer the original startup authority, receipt, control, and actor join before awaiting activation.
+#[expect(
+    clippy::type_complexity,
+    reason = "four independently owned actor startup values"
+)]
+pub(crate) fn spawn_local_execution<B, I, M, P, Start, Control>(
+    addresses: ActorSpace<B::Protocol>,
+    config: Config,
+    address: MailAddr,
+    behavior: B,
+    make_interpreter: impl FnOnce(
+        communication::ControlSender<B::Event>,
+        LocalTerminalReports,
+        LocalTimers<B::Event>,
+        TerminationObservations<MailAddr, B::Event>,
+    ) -> I,
+    publish: impl FnOnce(
+        LocalEnvironment<B, I, M>,
+    ) -> (
+        LocalEnvironment<B, I, M, P>,
+        oneshot::Receiver<Start>,
+        Control,
+    ),
+) -> (
+    OwnerCancellationAuthority,
+    oneshot::Receiver<Start>,
+    Control,
+    JoinHandle<LocalOutcome<B, I::Retired>>,
+)
+where
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    M: IngressMode<B, Retired = User<MailAddr, BehaviorMessage<B>>> + 'static,
+    P: FnOnce(ActorRef<B::Protocol>) + Send + 'static,
+    B::Event: Send + 'static,
+    BehaviorMessage<B>: Send + 'static,
+    B::Sends: Send + 'static,
+    B::Error: Send + 'static,
+    B::InterpretationCustody: Send + 'static,
+    B::SourceCustody: Send + 'static,
+    <B::Birth as BirthMode>::Child: Send + 'static,
+    I: CommitActions<B> + Send + 'static,
+    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
+    I::Retired: Send + 'static,
 {
     let (termination_publisher, termination) = observe::pair();
     let (report_sender, selected_report) = oneshot::channel();
@@ -761,12 +1141,7 @@ where
         let outcome = actor_execution.run().await;
         settle_local_outcome(outcome).await
     });
-
-    if let Ok(started) = startup.await {
-        Ok((started, control, OwnedTask { task, cancellation }))
-    } else {
-        Err(startup_failure(task, cancellation).await)
-    }
+    (cancellation, startup, control, task)
 }
 
 /// Launch one local actor in a focused lower-layer test.
@@ -774,6 +1149,10 @@ where
 /// `commit` receives each complete action value exactly once, including
 /// initialization.
 #[cfg(test)]
+#[expect(
+    clippy::result_large_err,
+    reason = "Return the complete original actor rejection by value without adding allocation."
+)]
 pub(crate) async fn launch_inert<B, F>(
     addresses: ActorSpace<B::Protocol>,
     config: Config,
@@ -782,14 +1161,26 @@ pub(crate) async fn launch_inert<B, F>(
     commit: F,
 ) -> Result<RootActor<B, ()>, SpawnError<B>>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never, Birth = NoBirths> + Send + 'static,
+    B: BehaviorSettlements<
+            Protocol: Protocol<Addr = MailAddr>,
+            Ph = Never,
+            Birth = NoBirths,
+            Settlements = InterpretedActionSettlement<B>,
+            InterpretationCustody = <ActionsOf<B> as ActionSettlements>::InterpretationCustody,
+            SourceCustody = <ActionsOf<B> as ActionSettlements>::SourceCustody,
+        > + Send
+        + 'static,
     B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
+    B::InterpretationCustody: Send + 'static,
+    B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     B::Sends: InterpretSends<InertCapabilities, B::Event, Here>,
-    ActionSettlementOf<B>: SourceSettlementCustody<InertCapabilities, B::Event> + Send,
+    <B::Sends as SendSettlements>::InterpretationCustody: Send,
+    ActionSettlementOf<B>:
+        SourceSettlementCustody<InertCapabilities, B::Event, Custody = B::SourceCustody> + Send,
     F: FnMut(&ActionsOf<B>) + Send + 'static,
 {
     spawn_root_with(addresses, config, address, behavior, move |_, _, _, _| {
@@ -800,6 +1191,10 @@ where
 
 /// Launch one Entity-capable actor in a focused lower-layer test.
 #[cfg(test)]
+#[expect(
+    clippy::result_large_err,
+    reason = "Return the complete original actor rejection by value without adding allocation."
+)]
 pub(crate) async fn launch_inert_entity<B, F>(
     addresses: ActorSpace<B::Protocol>,
     config: Config,
@@ -808,14 +1203,26 @@ pub(crate) async fn launch_inert_entity<B, F>(
     commit: F,
 ) -> Result<OwnedActor<B, ()>, SpawnError<B>>
 where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never, Birth = NoBirths> + Send + 'static,
+    B: BehaviorSettlements<
+            Protocol: Protocol<Addr = MailAddr>,
+            Ph = Never,
+            Birth = NoBirths,
+            Settlements = InterpretedActionSettlement<B>,
+            InterpretationCustody = <ActionsOf<B> as ActionSettlements>::InterpretationCustody,
+            SourceCustody = <ActionsOf<B> as ActionSettlements>::SourceCustody,
+        > + Send
+        + 'static,
     B::Event: behavior::InjectEvent<ShutdownRequested, behavior::Here> + Send + 'static,
     BehaviorMessage<B>: Send + 'static,
     B::Sends: Send + 'static,
     B::Error: Send + 'static,
+    B::InterpretationCustody: Send + 'static,
+    B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     B::Sends: InterpretSends<InertCapabilities, B::Event, Here>,
-    ActionSettlementOf<B>: SourceSettlementCustody<InertCapabilities, B::Event> + Send,
+    <B::Sends as SendSettlements>::InterpretationCustody: Send,
+    ActionSettlementOf<B>:
+        SourceSettlementCustody<InertCapabilities, B::Event, Custody = B::SourceCustody> + Send,
     F: FnMut(&ActionsOf<B>) + Send + 'static,
 {
     spawn_owned_entity_with(addresses, config, address, behavior, move |_, _, _, _| {
@@ -851,15 +1258,10 @@ where
 impl<B, Descendants>
     Retirement<
         B,
-        LocalResidual<
-            ActionsOf<B>,
-            crate::interpret::ActionSettlementOf<B>,
-            B::Event,
-            User<MailAddr, BehaviorMessage<B>>,
-            Descendants,
-        >,
+        LocalResidual<B, User<MailAddr, BehaviorMessage<B>>, Descendants>,
         B::Error,
         LocalActivationRejection<MailAddr>,
+        LocalRetirementRequest,
     > for LocalRetirement<B>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
@@ -869,9 +1271,21 @@ where
     fn retire(self, outcome: LocalOutcome<B, Descendants>) -> Self::Output {
         match &outcome {
             ActorExecutionOutcome::Completed {
-                residual: LocalResidual::OwnerCancelled { .. },
+                completion:
+                    Completion::RetirementRequested(LocalRetirementRequest::OwnerCancellation(
+                        OwnerCancellation,
+                    )),
                 ..
             } => self.termination.publish_owner_cancellation(),
+            ActorExecutionOutcome::Completed {
+                completion:
+                    Completion::RetirementRequested(LocalRetirementRequest::CapabilityFailed(_)),
+                ..
+            } => self.termination.publish_capability_failure(),
+            ActorExecutionOutcome::ActivationFailed {
+                error: LocalActivationRejection::HostCommitPanicked(_),
+                ..
+            } => self.termination.publish_host_panic(),
             _ => self.termination.publish(&outcome),
         }
         outcome
@@ -897,40 +1311,73 @@ where
             Protocol: Protocol<Addr = MailAddr>,
             Ph = Never,
             Birth = NoBirths,
-            Settlements = InterpretedActionSettlement<B>,
+            Settlements = ActionSettlement<Creations<Never>, <<B as Behavior>::Sends as SendSettlements>::Settlements, Never>,
+            InterpretationCustody = <Actions<MailAddr, Never, <B as Behavior>::Sends, NoBirths> as ActionSettlements>::InterpretationCustody,
+            SourceCustody = <Actions<MailAddr, Never, <B as Behavior>::Sends, NoBirths> as ActionSettlements>::SourceCustody,
         >,
     B::Sends: InterpretSends<InertCapabilities, B::Event, Here> + Send,
-    ActionSettlementOf<B>: SourceSettlementCustody<InertCapabilities, B::Event> + Send,
-    F: FnMut(&ActionsOf<B>) + Send,
+    <B::Sends as SendSettlements>::InterpretationCustody: Send,
+    ActionSettlement<Creations<Never>, <B::Sends as SendSettlements>::Settlements, Never>:
+        SourceSettlementCustody<InertCapabilities, B::Event, Custody = B::SourceCustody> + Send,
+    B::Event: Send,
+    F: FnMut(&Actions<MailAddr, Never, B::Sends, NoBirths>) + Send,
 {
     type Retired = ();
 
-    async fn commit(&mut self, actions: ActionsOf<B>) -> Interpretation<ActionSettlementOf<B>> {
-        (self.0)(&actions);
-        actions
-            .interpret::<_, B::Event, Here>(&mut InertCapabilities)
-            .await
+    async fn commit(
+        &mut self,
+        progress: &mut Option<
+            InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, ActionSettlementOf<B>>,
+        >,
+    ) {
+        if let Some(InterpretationProgress::Original(actions)) = progress.as_ref() {
+            (self.0)(actions);
+        }
+        ActionsOf::<B>::interpret::<_, B::Event, Here>(progress, &mut InertCapabilities).await;
     }
 
     async fn offer_next(
         &mut self,
-        settlement: ActionSettlementOf<B>,
-    ) -> SourceCustody<ActionSettlementOf<B>> {
-        settlement
-            .offer_next_to_source(&mut InertCapabilities)
-            .await
+        progress: &mut Option<SourceProgress<ActionSettlementOf<B>, B::SourceCustody>>,
+    ) {
+        <ActionSettlementOf<B> as SourceSettlementCustody<InertCapabilities, B::Event>>::prepare_source(progress);
+        if let Some(SourceProgress::Offering(custody)) = progress {
+            <ActionSettlementOf<B> as SourceSettlementCustody<InertCapabilities, B::Event>>::offer_next_to_source(custody, &mut InertCapabilities).await;
+        }
+        <ActionSettlementOf<B> as SourceSettlementCustody<InertCapabilities, B::Event>>::finish_source(progress);
     }
 
-    async fn next_local_event(&mut self) -> B::Event {
+    async fn next_local_event(&mut self) -> Result<B::Event, JoinError> {
         core::future::pending().await
     }
 
     #[expect(
         clippy::unused_async_trait_impl,
-        reason = "Defer trait-port work and owned inputs until the future is polled."
+        reason = "The trait future acquires the exact retirement output before disposing its original observer at poll time."
     )]
-    async fn retire(self) -> CapabilityRetirement<B::Event, Self::Retired> {
-        CapabilityRetirement::without_activations(())
+    async fn receive_retirement(
+        interpreter: &mut Option<Self>,
+        received: &mut Option<CapabilityRetirement<B::Event, ()>>,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        let Some(owner) = interpreter.take() else {
+            return;
+        };
+        *received = Some(CapabilityRetirement::without_activations(()));
+        drop(owner);
+    }
+
+    async fn retire(self) -> CapabilityRetirement<B::Event, ()> {
+        let mut interpreter = Some(self);
+        let mut received = None;
+        <Self as CommitActions<B>>::receive_retirement(&mut interpreter, &mut received).await;
+        assert!(
+            interpreter.is_none(),
+            "the original observer is disposed after its retirement output is acquired"
+        );
+        received.expect("the original complete retirement output remains owned")
     }
 }
 
@@ -941,60 +1388,99 @@ where
             Protocol: Protocol<Addr = MailAddr>,
             Ph = Never,
             Birth = NoBirths,
-            Settlements = InterpretedActionSettlement<B>,
+            Settlements = ActionSettlement<Creations<Never>, <<B as Behavior>::Sends as SendSettlements>::Settlements, Never>,
+            InterpretationCustody = <Actions<MailAddr, Never, <B as Behavior>::Sends, NoBirths> as ActionSettlements>::InterpretationCustody,
+            SourceCustody = <Actions<MailAddr, Never, <B as Behavior>::Sends, NoBirths> as ActionSettlements>::SourceCustody,
         >,
     B::Sends: InterpretSends<InertCapabilities, B::Event, Here> + Send,
-    ActionSettlementOf<B>: SourceSettlementCustody<InertCapabilities, B::Event> + Send,
-    F: FnMut(&ActionsOf<B>) + Send,
+    <B::Sends as SendSettlements>::InterpretationCustody: Send,
+    ActionSettlement<Creations<Never>, <B::Sends as SendSettlements>::Settlements, Never>:
+        SourceSettlementCustody<InertCapabilities, B::Event, Custody = B::SourceCustody> + Send,
+    B::Event: Send,
+    F: FnMut(&Actions<MailAddr, Never, B::Sends, NoBirths>) + Send,
     R: Send,
 {
     type Retired = R;
 
-    async fn commit(&mut self, actions: ActionsOf<B>) -> Interpretation<ActionSettlementOf<B>> {
-        (self.observe)(&actions);
-        actions
-            .interpret::<_, B::Event, Here>(&mut InertCapabilities)
-            .await
+    async fn commit(
+        &mut self,
+        progress: &mut Option<
+            InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, ActionSettlementOf<B>>,
+        >,
+    ) {
+        if let Some(InterpretationProgress::Original(actions)) = progress.as_ref() {
+            (self.observe)(actions);
+        }
+        ActionsOf::<B>::interpret::<_, B::Event, Here>(progress, &mut InertCapabilities).await;
     }
 
     async fn offer_next(
         &mut self,
-        settlement: ActionSettlementOf<B>,
-    ) -> SourceCustody<ActionSettlementOf<B>> {
-        settlement
-            .offer_next_to_source(&mut InertCapabilities)
-            .await
+        progress: &mut Option<SourceProgress<ActionSettlementOf<B>, B::SourceCustody>>,
+    ) {
+        <ActionSettlementOf<B> as SourceSettlementCustody<InertCapabilities, B::Event>>::prepare_source(progress);
+        if let Some(SourceProgress::Offering(custody)) = progress {
+            <ActionSettlementOf<B> as SourceSettlementCustody<InertCapabilities, B::Event>>::offer_next_to_source(custody, &mut InertCapabilities).await;
+        }
+        <ActionSettlementOf<B> as SourceSettlementCustody<InertCapabilities, B::Event>>::finish_source(progress);
     }
 
-    async fn next_local_event(&mut self) -> B::Event {
+    async fn next_local_event(&mut self) -> Result<B::Event, JoinError> {
         core::future::pending().await
     }
 
     #[expect(
         clippy::unused_async_trait_impl,
-        reason = "Defer trait-port work and owned inputs until the future is polled."
+        reason = "The trait future acquires the exact retirement output before disposing its original observer at poll time."
     )]
-    async fn retire(self) -> CapabilityRetirement<B::Event, Self::Retired> {
-        CapabilityRetirement::without_activations(self.retirement)
+    async fn receive_retirement(
+        interpreter: &mut Option<Self>,
+        received: &mut Option<CapabilityRetirement<B::Event, R>>,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        let Some(owner) = interpreter.take() else {
+            return;
+        };
+        *received = Some(CapabilityRetirement::without_activations(owner.retirement));
+        drop(owner.observe);
+    }
+
+    async fn retire(self) -> CapabilityRetirement<B::Event, R> {
+        let mut interpreter = Some(self);
+        let mut received = None;
+        <Self as CommitActions<B>>::receive_retirement(&mut interpreter, &mut received).await;
+        assert!(
+            interpreter.is_none(),
+            "the original observer is disposed after its retirement output is acquired"
+        );
+        received.expect("the original complete retirement output remains owned")
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::terminal::ChildOrigin;
+    use std::any::Any;
     use std::convert::Infallible;
+    use std::error::Error as StdError;
     use std::future::pending;
-    use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
+    use std::panic::resume_unwind;
+    use std::ptr;
+    use std::sync::Arc;
 
     use behavior::{
-        Actions, BehaviorActed, CreationSequence, EventLayer, InitializationTurn, MessageProtocol,
-        Never, NoBirths, NoSends, SettlementStatus, User,
+        ActionSettlement, Actions, BehaviorActed, CreationSequence, Creations, EventLayer,
+        InitializationTurn, MessageProtocol, Never, NoBirths, NoSends, SettlementStatus, User,
     };
     use behavior_actors::{Crash, ShutdownRequested};
     use bombay_engine::Completion;
-    use communication::Config;
+    use communication::{Config, Drained};
 
     use super::*;
     use crate::MailAddr;
+    use crate::local::ActivationTasks;
 
     struct RootProbe {
         terminal_marker: u8,
@@ -1007,7 +1493,7 @@ mod tests {
         #[application_actor]
         Probe {
             origin: ChildOrigin<RootProbe, ProbeChildRole>,
-            terminal: ActorRetirement<RootProbe, Self>,
+            terminal: ActorRetirement<RootProbe, Self, ()>,
         },
     }
 
@@ -1067,50 +1553,233 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn owned_outcome_classifies_task_panic_and_cancellation_separately() {
-        let panicking = tokio::spawn(async { panic!("the actor task panicked") });
-        let panic_error = panicking.await.expect_err("the task panic is retained");
-        let panicked = owned_outcome::<RootProbe, ()>(Err(panic_error));
-        assert!(matches!(panicked, ActorExecutionOutcome::Panicked));
-
-        let pending_task = tokio::spawn(async { pending::<()>().await });
-        pending_task.abort();
-        let cancellation = pending_task
-            .await
-            .expect_err("the task cancellation is retained");
-        let cancelled = owned_outcome::<RootProbe, ()>(Err(cancellation));
-        assert!(matches!(cancelled, ActorExecutionOutcome::Cancelled));
+    async fn startup_failure_retains_original_native_payload_lifetime() {
+        let payload = Box::new(Arc::new(vec![173_u64, 179, 181]));
+        let payload_identity: *const (dyn Any + Send) = payload.as_ref();
+        let retained = Arc::downgrade(payload.as_ref());
+        let (cancellation, request) = oneshot::channel();
+        let task: JoinHandle<LocalOutcome<RootProbe, ()>> = tokio::spawn(async move {
+            resume_unwind(payload);
+        });
+        let original_task = task.id();
+        println!(
+            "original native startup task: {original_task:?}, cause: {:p}",
+            payload_identity.cast::<()>(),
+        );
+        let failure = startup_failure(task, OwnerCancellationAuthority::new(cancellation)).await;
+        let cancellation_request = request.await;
+        assert!(cancellation_request.is_err());
+        assert_eq!(retained.strong_count(), 1);
+        assert!(StdError::source(&failure).is_some());
+        let SpawnError::ActorTaskFailed(task_failure) = failure else {
+            panic!("startup returns its original executor failure");
+        };
+        assert_eq!(task_failure.id(), original_task);
+        assert!(task_failure.is_panic());
+        let received = task_failure.into_panic();
+        let received_identity: *const (dyn Any + Send) = received.as_ref();
+        assert!(ptr::eq(
+            received_identity.cast::<()>(),
+            payload_identity.cast::<()>(),
+        ));
+        drop(received);
+        assert_eq!(retained.strong_count(), 0);
     }
 
-    struct ActivationPanicMarker;
+    #[tokio::test]
+    async fn startup_failure_retains_cancelled_task_failure_source() {
+        let (cancellation, request) = oneshot::channel();
+        let task = tokio::spawn(pending::<LocalOutcome<RootProbe, ()>>());
+        let original_task = task.id();
+        task.abort();
+        let failure = startup_failure(task, OwnerCancellationAuthority::new(cancellation)).await;
+        let cancellation_request = request.await;
+        println!("original cancelled startup task: {original_task:?}");
+        assert!(cancellation_request.is_err());
+        assert!(StdError::source(&failure).is_some());
+        let SpawnError::ActorTaskFailed(task_failure) = failure else {
+            panic!("startup returns its original cancelled executor failure");
+        };
+        assert_eq!(task_failure.id(), original_task);
+        assert!(task_failure.is_cancelled());
+    }
 
     #[tokio::test]
-    async fn owned_outcome_preserves_activation_panic_and_rejects_cancellation() {
-        let panicking = tokio::spawn(async { panic_any(ActivationPanicMarker) });
+    async fn owned_outcome_classifies_task_panic_and_cancellation_separately() {
+        let panicking: JoinHandle<LocalOutcome<RootProbe, ()>> =
+            tokio::spawn(async { panic!("the actor task panicked") });
+        let panic_task = panicking.id();
+        let (cancellation, _request) = oneshot::channel();
+        let failure =
+            startup_failure(panicking, OwnerCancellationAuthority::new(cancellation)).await;
+        let SpawnError::ActorTaskFailed(panic_error) = failure else {
+            panic!("the original panic remains an owned actor task failure");
+        };
+        assert_eq!(panic_error.id(), panic_task);
+        assert!(panic_error.is_panic());
+
+        let pending_task = tokio::spawn(pending::<LocalOutcome<RootProbe, ()>>());
+        let cancellation_task = pending_task.id();
+        pending_task.abort();
+        let (cancellation, _request) = oneshot::channel();
+        let failure =
+            startup_failure(pending_task, OwnerCancellationAuthority::new(cancellation)).await;
+        let SpawnError::ActorTaskFailed(cancelled) = failure else {
+            panic!("the original cancellation remains an owned actor task failure");
+        };
+        assert_eq!(cancelled.id(), cancellation_task);
+        assert!(cancelled.is_cancelled());
+    }
+
+    #[tokio::test]
+    async fn owned_outcome_preserves_activation_panic_and_cancellation() {
+        let panic_payload: Box<dyn Any + Send> = Box::new(vec![19_u64, 23]);
+        let panic_payload_identity: *const (dyn Any + Send) = panic_payload.as_ref();
+        let panicking = tokio::spawn(async move {
+            resume_unwind(panic_payload);
+        });
+        let panic_task_id = panicking.id();
+        let pending_task = tokio::spawn(async { pending::<()>().await });
+        let cancellation_task_id = pending_task.id();
+        assert_ne!(panic_task_id, cancellation_task_id);
         let panic_error = panicking
             .await
-            .expect_err("the activation panic is retained");
-        let Err(replayed) = catch_unwind(AssertUnwindSafe(|| {
-            owned_outcome::<RootProbe, ()>(Ok(Err(panic_error)))
-        })) else {
-            panic!("the exact activation panic must resume");
-        };
-        assert!(replayed.is::<ActivationPanicMarker>());
-
-        let pending_task = tokio::spawn(async { pending::<()>().await });
+            .expect_err("the original activation panic remains a native task failure");
         pending_task.abort();
         let cancellation = pending_task
             .await
-            .expect_err("the activation cancellation is retained");
-        let Err(rejected) = catch_unwind(AssertUnwindSafe(|| {
-            owned_outcome::<RootProbe, ()>(Ok(Err(cancellation)))
-        })) else {
-            panic!("unexpected activation cancellation must be rejected");
-        };
-        let description = rejected
-            .downcast_ref::<String>()
-            .expect("the cancellation diagnostic owns its text");
-        assert!(description.contains("activation task was cancelled unexpectedly"));
+            .expect_err("the original activation cancellation remains a native task failure");
+        assert!(panic_error.is_panic());
+        assert!(cancellation.is_cancelled());
+
+        for (failure, task_id) in [
+            (panic_error, panic_task_id),
+            (cancellation, cancellation_task_id),
+        ] {
+            let later_task = tokio::spawn(async { pending::<()>().await });
+            let later_task_id = later_task.id();
+            later_task.abort();
+            let later_failure = later_task
+                .await
+                .expect_err("a coexisting native failure remains independently owned");
+            let descendant_values = vec![31_u64, 37];
+            let descendant_allocation = descendant_values.as_ptr();
+            let outcome: LocalOutcome<RootProbe, Vec<u64>> = ActorExecutionOutcome::Completed {
+                behavior: RootProbe {
+                    terminal_marker: 41,
+                },
+                completion: Completion::RetirementRequested(
+                    LocalRetirementRequest::CapabilityFailed(failure),
+                ),
+                residual: LocalResidual::Retired {
+                    interpretation: None,
+                    source: None,
+                    settlements: vec![ActionSettlement {
+                        creations: Creations::empty(),
+                        sends: NoSends,
+                        become_: behavior::Step::Continue,
+                    }],
+                    received_interpretation: None,
+                    received_source: None,
+                    source_index: None,
+                    acquired_ingress: None,
+                    ingress: Drained {
+                        control: vec![EventLayer::Owned(ShutdownRequested)],
+                        user: Vec::new(),
+                    },
+                    activation_tasks: ActivationTasks::new(),
+                    descendants: descendant_values,
+                    capability_failures: vec![later_failure],
+                    terminal_report: Some(Err(Err(Crash::EnvironmentFailed))),
+                    retirement_failures: Vec::new(),
+                    unread_owner_cancellation: None,
+                },
+                additional_failures: vec![DriverError::Activation(
+                    LocalActivationRejection::BindingAbandoned,
+                )],
+            };
+            let producer = tokio::spawn(async move { outcome });
+            let (cancellation, _request) = oneshot::channel();
+            let failure =
+                startup_failure(producer, OwnerCancellationAuthority::new(cancellation)).await;
+            let SpawnError::Unpublished(returned) = failure else {
+                panic!("the complete original local outcome remains owned before publication");
+            };
+            let ActorExecutionOutcome::Completed {
+                behavior,
+                completion:
+                    Completion::RetirementRequested(LocalRetirementRequest::CapabilityFailed(failure)),
+                residual:
+                    LocalResidual::Retired {
+                        interpretation,
+                        source,
+                        settlements,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        ingress,
+                        activation_tasks,
+                        descendants,
+                        mut capability_failures,
+                        terminal_report,
+                        retirement_failures,
+                        unread_owner_cancellation,
+                    },
+                additional_failures,
+            } = returned
+            else {
+                drop(returned);
+                panic!(
+                    "activation failure cannot become ordinary completion or actor-task classification"
+                );
+            };
+            assert_eq!(behavior.terminal_marker, 41);
+            assert!(interpretation.is_none());
+            assert!(source.is_none());
+            let expected_settlements = vec![ActionSettlement {
+                creations: Creations::empty(),
+                sends: NoSends,
+                become_: behavior::Step::Continue,
+            }];
+            assert_eq!(settlements, expected_settlements);
+            assert!(received_interpretation.is_none());
+            assert!(received_source.is_none());
+            assert!(source_index.is_none());
+            assert!(acquired_ingress.is_none());
+            assert!(matches!(
+                ingress.control.as_slice(),
+                [EventLayer::Owned(ShutdownRequested)]
+            ));
+            assert!(ingress.user.is_empty());
+            assert!(activation_tasks.is_empty());
+            assert_eq!(descendants.as_slice(), [31, 37]);
+            assert_eq!(descendants.as_ptr(), descendant_allocation);
+            assert_eq!(terminal_report, Some(Err(Err(Crash::EnvironmentFailed))));
+            assert!(retirement_failures.is_empty());
+            assert!(unread_owner_cancellation.is_none());
+            assert!(matches!(
+                additional_failures.as_slice(),
+                [DriverError::Activation(
+                    LocalActivationRejection::BindingAbandoned
+                )]
+            ));
+            assert_eq!(capability_failures.len(), 1);
+            let later_failure = capability_failures
+                .pop()
+                .expect("the whole original later failure remains in its own lane");
+            assert_eq!(later_failure.id(), later_task_id);
+            assert!(later_failure.is_cancelled());
+            assert_eq!(failure.id(), task_id);
+            if task_id == panic_task_id {
+                assert!(failure.is_panic());
+                let payload = failure.into_panic();
+                let received_payload_identity: *const (dyn Any + Send) = payload.as_ref();
+                assert!(ptr::eq(received_payload_identity, panic_payload_identity));
+            } else {
+                assert!(failure.is_cancelled());
+            }
+        }
     }
 
     #[tokio::test]
@@ -1133,16 +1802,39 @@ mod tests {
             behavior,
             residual:
                 LocalResidual::Retired {
+                    interpretation,
+                    source,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    terminal_report,
+                    retirement_failures,
+
+                    capability_failures,
+                    unread_owner_cancellation,
                     settlements,
                     ingress,
                     activation_tasks,
                     descendants,
                 },
             completion,
+            additional_failures,
         } = outcome
         else {
             panic!("the root task lost its complete terminal outcome")
         };
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
+        assert!(additional_failures.is_empty());
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
 
         assert_eq!(behavior.terminal_marker, 19);
         let settlement_status = settlements.settlement_status();
@@ -1151,7 +1843,7 @@ mod tests {
         assert_eq!(ingress.user.len(), 0);
         assert!(activation_tasks.is_empty());
         assert_eq!(descendants, ());
-        assert_eq!(completion, Completion::Stopped);
+        assert!(matches!(completion, Completion::Stopped));
     }
 
     #[tokio::test]
@@ -1174,6 +1866,15 @@ mod tests {
         .await;
 
         let Err(SpawnError::HostRejected {
+            additional_failures,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            terminal_report,
+            retirement_failures,
+            capability_failures,
+            unread_owner_cancellation,
             behavior,
             initialization,
             error: ClaimError::AddressInUse(address),
@@ -1184,8 +1885,20 @@ mod tests {
         else {
             panic!("reservation refusal must preserve the exact uncommitted root")
         };
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
+        assert!(additional_failures.is_empty());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
         assert_eq!(address, MailAddr::APPLICATION_ROOT);
         assert_eq!(behavior.terminal_marker, 19);
+        let InterpretationProgress::Original(initialization) = initialization else {
+            panic!("uncommitted initialization must retain its exact original whole Actions");
+        };
         assert_eq!(initialization.sends, NoSends);
         assert!(initialization.creates.is_empty());
         assert!(matches!(initialization.become_, behavior::Step::Stop(_)));
@@ -1210,21 +1923,48 @@ mod tests {
 
         child.acknowledge_binding();
         assert!(child.binding.is_none());
-        let outcome = child.task.finish().await;
+        let outcome = child
+            .task
+            .finish()
+            .await
+            .expect("the child actor returns its exact outcome");
         let ActorExecutionOutcome::Completed {
             behavior,
             residual:
                 LocalResidual::Retired {
+                    interpretation,
+                    source,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    terminal_report,
+                    retirement_failures,
+
+                    capability_failures,
+                    unread_owner_cancellation,
                     settlements,
                     ingress,
                     activation_tasks,
                     descendants,
                 },
             completion,
+            additional_failures,
         } = outcome
         else {
             panic!("the child task lost its complete terminal outcome")
         };
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
+        assert!(additional_failures.is_empty());
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
 
         assert_eq!(behavior.terminal_marker, 19);
         let settlement_status = settlements.settlement_status();
@@ -1233,7 +1973,7 @@ mod tests {
         assert_eq!(ingress.user.len(), 0);
         assert!(activation_tasks.is_empty());
         assert_eq!(descendants, ());
-        assert_eq!(completion, Completion::Stopped);
+        assert!(matches!(completion, Completion::Stopped));
     }
 
     #[tokio::test]
@@ -1255,23 +1995,49 @@ mod tests {
             .take()
             .expect("private binding awaits its owner");
         drop(binding);
-        let outcome = child.task.finish().await;
+        let outcome = child
+            .task
+            .finish()
+            .await
+            .expect("the child actor returns its exact outcome");
         let ActorExecutionOutcome::ActivationFailed {
             behavior,
             residual:
                 LocalResidual::Uncommitted {
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    terminal_report,
+                    retirement_failures,
+
+                    capability_failures,
+                    unread_owner_cancellation,
                     initialization,
                     ingress,
                     activation_tasks,
                     descendants,
                 },
             error: LocalActivationRejection::BindingAbandoned,
+            additional_failures,
         } = outcome
         else {
             panic!("abandonment must return the exact uncommitted child and actions")
         };
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
+        assert!(additional_failures.is_empty());
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
 
         assert_eq!(behavior.terminal_marker, 19);
+        let InterpretationProgress::Original(initialization) = initialization else {
+            panic!("uncommitted initialization must retain its exact original whole Actions");
+        };
         assert_eq!(initialization.sends, NoSends);
         assert!(initialization.creates.is_empty());
         assert!(matches!(initialization.become_, behavior::Step::Stop(_)));
@@ -1306,7 +2072,7 @@ mod tests {
             RootProbe { terminal_marker: 0 },
             |_, _, _, _| ObserveActionsWithRetirement {
                 observe: ignore_root_actions,
-                retirement: vec![descendant],
+                retirement: (vec![descendant], ()),
             },
         )
         .await
@@ -1322,21 +2088,47 @@ mod tests {
 
         let terminal = ProjectedTask::project(child.task, child_origin)
             .finish()
-            .await;
+            .await
+            .expect("the projection task returns its exact result")
+            .expect("the child actor returns its exact outcome");
         let rejected = closed_parent_admission(terminal)
             .expect_err("closed parent admission returns the exact terminal value");
         let ProbeTerminal::Probe { origin, terminal } = rejected;
         let ActorRetirement::Completed {
+            interpretation,
+            source,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            terminal_report,
+            retirement_failures,
+            additional_failures,
+
+            capability_failures,
+            unread_owner_cancellation,
             behavior,
             settlements,
             control,
             user,
             descendants,
+            child_failures: (),
             completion,
         } = terminal
         else {
             panic!("the projected child must preserve its completed disposition")
         };
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
+        assert!(additional_failures.is_empty());
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
 
         assert_eq!(origin, child_origin);
         assert_eq!(behavior.terminal_marker, 19);
@@ -1356,7 +2148,597 @@ mod tests {
             panic!("the exact nested cancellation must remain classified")
         };
         assert_eq!(origin, descendant_origin);
-        assert_eq!(completion, Completion::Stopped);
+        assert!(matches!(completion, Completion::Stopped));
+    }
+}
+
+#[cfg(test)]
+mod ordinary_owner_retirement {
+    use super::{ActorSpace, ObserveInertActions};
+    use crate::MailAddr;
+    use crate::local::{
+        LocalEnvironment, LocalResidual, LocalRetirementRequest, OwnerCancellation, StandardIngress,
+    };
+    use crate::observe;
+    use behavior::{
+        Actions, ActiveTurn, Behavior, BehaviorActed, EventLayer, Here, InjectEvent,
+        MessageProtocol, Never, NoBirths, NoSends, User,
+    };
+    use behavior_actors::ShutdownRequested;
+    use bombay_engine::{ActionsOf, Completion, Driver};
+    use communication::Config;
+    use std::sync::Arc;
+    use tokio::sync::oneshot;
+
+    struct WaitingActor {
+        final_payload: Arc<Vec<u8>>,
+    }
+    impl Behavior for WaitingActor {
+        type Protocol = MessageProtocol<MailAddr, Never>;
+        type Event = EventLayer<ShutdownRequested, User<MailAddr, Never>>;
+        type Sends = NoSends;
+        type Ph = Never;
+        type Birth = NoBirths;
+        type Error = Never;
+        fn transition(&mut self, _: ActiveTurn, _: Self::Event) -> BehaviorActed<Self> {
+            Ok(Actions::cont())
+        }
+    }
+
+    #[tokio::test]
+    async fn ordinary_owner_retirement_is_distinct_from_live_source_exhaustion() {
+        let final_payload = Arc::new(vec![8, 13, 21]);
+        let allocation = final_payload.as_ptr();
+        let retained_payload = Arc::downgrade(&final_payload);
+        let (publisher, observation) = observe::pair();
+        let (request, cancellation) = oneshot::channel();
+        let environment = LocalEnvironment::<WaitingActor, _, StandardIngress>::prepare(
+            MailAddr(94),
+            ActorSpace::new(),
+            Config::new(2),
+            observation,
+            cancellation,
+            |_, _, _| ObserveInertActions(|_: &ActionsOf<WaitingActor>| {}),
+        );
+        let control = environment.control();
+        let shutdown = <EventLayer<ShutdownRequested, User<MailAddr, Never>> as InjectEvent<
+            ShutdownRequested,
+            Here,
+        >>::inject_at(ShutdownRequested);
+        let admission = control.send(shutdown);
+        assert!(
+            admission.is_ok(),
+            "a live exact control input precedes owner retirement"
+        );
+        let sent = request.send(OwnerCancellation);
+        assert!(sent.is_ok());
+        let retirement = Driver::new(WaitingActor { final_payload }, environment)
+            .run()
+            .await
+            .unwrap_or_else(|driver| {
+                drop(driver);
+                panic!("ordinary owner retirement must return its complete actual Driver result");
+            });
+        assert!(retirement.additional_failures.is_empty());
+        let LocalResidual::Retired {
+            interpretation,
+            source,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            terminal_report,
+            retirement_failures,
+
+            capability_failures,
+            unread_owner_cancellation,
+            settlements,
+            ingress,
+            activation_tasks,
+            descendants,
+        } = retirement.residual
+        else {
+            panic!("the actual local owner request remains an exact typed fact");
+        };
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
+        assert_eq!(settlements.len(), 0);
+        assert_eq!(
+            ingress.control.len(),
+            1,
+            "a live admitted control input proves retirement is not source exhaustion"
+        );
+        assert_eq!(ingress.user.len(), 0);
+        assert!(activation_tasks.is_empty());
+        assert_eq!(descendants, ());
+        assert_eq!(retirement.behavior.final_payload.as_slice(), [8, 13, 21]);
+        assert_eq!(retirement.behavior.final_payload.as_ptr(), allocation);
+        assert_eq!(retained_payload.strong_count(), 1);
+        let completion = retirement
+            .disposition
+            .expect("actual cancellation crosses the complete retirement barrier");
+        let Completion::RetirementRequested(LocalRetirementRequest::OwnerCancellation(
+            OwnerCancellation,
+        )) = completion
+        else {
+            panic!(
+                "the authoritative owner request cannot claim permanent live-event-source exhaustion"
+            );
+        };
+        eprintln!(
+            "ordinary owner request retains exact pendingcontrol/state and affine request in RetirementRequested"
+        );
+        drop((
+            retirement.behavior,
+            ingress,
+            activation_tasks,
+            settlements,
+            control,
+            publisher,
+        ));
+        assert_eq!(retained_payload.strong_count(), 0);
+    }
+}
+
+#[cfg(test)]
+mod transitive_source_cancellation {
+    use super::{ActorExecution, ActorExecutionOutcome, LocalRetirement, TerminationPublication};
+    use crate::MailAddr;
+    use crate::address::ApplicationAddresses;
+    use crate::application_runtime::{ApplicationCapabilities, ApplicationCapabilityInputs};
+    use crate::child_bindings::NoChildBindings;
+    use crate::interpret::{ActionInterpreter, ActionSettlementOf};
+    use crate::launch::ActorSpace;
+    use crate::local::{
+        CapabilityRetirement, CommitActions, LocalEnvironment, LocalResidual,
+        LocalRetirementRequest, OwnerCancellation, StandardIngress,
+    };
+    use crate::observe;
+    use crate::reports::LocalTerminalReports;
+    use crate::terminal::{ActorRetirement, LocalOutcome};
+    use behavior::{
+        ActionItemResult, Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorSettlements,
+        ClassifySettlement, EventIngress, Here, InitializationTurn, InjectEvent,
+        InterpretationProgress, ItemSettlement, MessageProtocol, Never, NoBirths, Own,
+        SourceActions, SourceCustody, SourceProgress, Step, User, UserEvent,
+    };
+    use behavior_actors::{
+        Crash, ScheduleAfter, ShutdownRequested, TimerElapsed, TimerGeneration, TimerId,
+    };
+    use bombay_engine::{ActionsOf, Completion, Driver};
+    use communication::Config;
+    use std::sync::Arc;
+    use std::time::{Duration, Instant};
+    use tokio::sync::oneshot;
+    use tokio::task::JoinError;
+
+    enum SourceCycleEvent {
+        Scheduling(ActionItemResult<ScheduleAfter>),
+        Elapsed(TimerElapsed),
+        Shutdown(ShutdownRequested),
+    }
+    impl UserEvent for SourceCycleEvent {
+        type Addr = MailAddr;
+        type Message = Never;
+        fn user(_: MailAddr, message: Never) -> Self {
+            match message {}
+        }
+        fn into_user(self) -> Result<User<MailAddr, Never>, Self> {
+            Err(self)
+        }
+    }
+    impl EventIngress<ScheduleAfter, ActionItemResult<ScheduleAfter>> for SourceCycleEvent {
+        fn ingress(report: ActionItemResult<ScheduleAfter>) -> Self {
+            Self::Scheduling(report)
+        }
+    }
+    impl InjectEvent<TimerElapsed, Here> for SourceCycleEvent {
+        fn inject_at(elapsed: TimerElapsed) -> Self {
+            Self::Elapsed(elapsed)
+        }
+    }
+    impl InjectEvent<ShutdownRequested, Here> for SourceCycleEvent {
+        fn inject_at(shutdown: ShutdownRequested) -> Self {
+            Self::Shutdown(shutdown)
+        }
+    }
+    struct SourceCycleActor {
+        scheduling_receipts: usize,
+    }
+    impl SourceCycleActor {
+        fn schedule_again() -> ActionsOf<Self> {
+            Actions::cont().with_send::<ScheduleAfter, Own>(ScheduleAfter::new(
+                TimerId(1),
+                TimerGeneration(1),
+                Duration::from_hours(1),
+            ))
+        }
+    }
+    impl Behavior for SourceCycleActor {
+        type Protocol = MessageProtocol<MailAddr, Never>;
+        type Event = SourceCycleEvent;
+        type Sends = SourceActions<ScheduleAfter>;
+        type Ph = Never;
+        type Birth = NoBirths;
+        type Error = Never;
+        fn init(&mut self, _: InitializationTurn) -> BehaviorActed<Self> {
+            Ok(
+                Self::schedule_again().with_send::<ScheduleAfter, Own>(ScheduleAfter::new(
+                    TimerId(2),
+                    TimerGeneration(1),
+                    Duration::from_hours(1),
+                )),
+            )
+        }
+        fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
+            match event {
+                SourceCycleEvent::Scheduling(report) => {
+                    match report {
+                        behavior::SettledItem::Attempted(ItemSettlement::Accepted(_)) => {
+                            self.scheduling_receipts += 1;
+                            Ok(Self::schedule_again())
+                        }
+                        behavior::SettledItem::Attempted(ItemSettlement::Rejected {
+                            item,
+                            reason: _,
+                        }) => {
+                            // This research actor deliberately retries the exact rejected schedule,
+                            // including after timer queue resource exhaustion.
+                            Ok(Actions::cont().with_send::<ScheduleAfter, Own>(item))
+                        }
+                        _ => Ok(Actions::stop()),
+                    }
+                }
+                SourceCycleEvent::Elapsed(TimerElapsed {
+                    id: _,
+                    generation: _,
+                })
+                | SourceCycleEvent::Shutdown(_) => Ok(Actions::stop()),
+            }
+        }
+    }
+    type SourceCycleInterpreter = ActionInterpreter<ApplicationCapabilities<SourceCycleActor, ()>>;
+    struct YieldingSourceInterpreter {
+        interpreter: Option<SourceCycleInterpreter>,
+        source_offers: usize,
+        entered: Option<oneshot::Sender<()>>,
+        release_first: Option<oneshot::Receiver<()>>,
+        progressed: Option<oneshot::Sender<()>>,
+        release_progress: Option<oneshot::Receiver<()>>,
+    }
+    impl CommitActions<SourceCycleActor> for YieldingSourceInterpreter {
+        type Retired = (Vec<Never>, ());
+        async fn commit(
+            &mut self,
+            progress: &mut Option<
+                InterpretationProgress<
+                    ActionsOf<SourceCycleActor>,
+                    <SourceCycleActor as BehaviorSettlements>::InterpretationCustody,
+                    ActionSettlementOf<SourceCycleActor>,
+                >,
+            >,
+        ) {
+            let interpreter = self
+                .interpreter
+                .as_mut()
+                .expect("the original source interpreter remains installed");
+            <SourceCycleInterpreter as CommitActions<SourceCycleActor>>::commit(
+                interpreter,
+                progress,
+            )
+            .await;
+        }
+        async fn offer_next(
+            &mut self,
+            progress: &mut Option<
+                SourceProgress<
+                    ActionSettlementOf<SourceCycleActor>,
+                    <SourceCycleActor as BehaviorSettlements>::SourceCustody,
+                >,
+            >,
+        ) {
+            let interpreter = self
+                .interpreter
+                .as_mut()
+                .expect("the original source interpreter remains installed");
+            <SourceCycleInterpreter as CommitActions<SourceCycleActor>>::offer_next(
+                interpreter,
+                progress,
+            )
+            .await;
+            if matches!(
+                progress,
+                Some(SourceProgress::Completed(SourceCustody::Admitted(_)))
+            ) {
+                self.source_offers += 1;
+                if self.source_offers == 1 {
+                    let sent = self
+                        .entered
+                        .take()
+                        .expect("the first offer has one observer")
+                        .send(());
+                    sent.expect("the first offer observer remains live");
+                    let released = self
+                        .release_first
+                        .take()
+                        .expect("the first offer has one release")
+                        .await;
+                    released.expect("owner cancellation precedes first source acquisition");
+                }
+                tokio::task::yield_now().await;
+                if self.source_offers == 16 {
+                    let sent = self
+                        .progressed
+                        .take()
+                        .expect("source progress has one observer")
+                        .send(());
+                    sent.expect("the continued source observer remains live");
+                    let released = self
+                        .release_progress
+                        .take()
+                        .expect("source progress has one release")
+                        .await;
+                    released.expect("the external shutdown releases the progress gate");
+                }
+            }
+        }
+        async fn next_local_event(&mut self) -> Result<SourceCycleEvent, JoinError> {
+            <SourceCycleInterpreter as CommitActions<SourceCycleActor>>::next_local_event(
+                self.interpreter
+                    .as_mut()
+                    .expect("the live source interpreter remains installed"),
+            )
+            .await
+        }
+        fn next_deadline(&mut self) -> Option<Instant> {
+            <SourceCycleInterpreter as CommitActions<SourceCycleActor>>::next_deadline(
+                self.interpreter
+                    .as_mut()
+                    .expect("the live source interpreter remains installed"),
+            )
+        }
+        fn pop_due(&mut self, now: Instant) -> Option<SourceCycleEvent> {
+            <SourceCycleInterpreter as CommitActions<SourceCycleActor>>::pop_due(
+                self.interpreter
+                    .as_mut()
+                    .expect("the live source interpreter remains installed"),
+                now,
+            )
+        }
+        async fn receive_retirement(
+            interpreter: &mut Option<Self>,
+            received: &mut Option<CapabilityRetirement<SourceCycleEvent, Self::Retired>>,
+        ) {
+            let Some(owner) = interpreter.as_mut() else {
+                return;
+            };
+            <SourceCycleInterpreter as CommitActions<SourceCycleActor>>::receive_retirement(
+                &mut owner.interpreter,
+                received,
+            )
+            .await;
+            if owner.interpreter.is_none() && received.is_some() {
+                drop(interpreter.take());
+            }
+        }
+        async fn retire(self) -> CapabilityRetirement<SourceCycleEvent, Self::Retired> {
+            let mut interpreter = Some(self);
+            let mut received = None;
+            Self::receive_retirement(&mut interpreter, &mut received).await;
+            assert!(
+                interpreter.is_none(),
+                "source retirement retains no incomplete lower interpreter"
+            );
+            received.expect("source retirement acquires the original complete typed outputs")
+        }
+    }
+
+    #[tokio::test]
+    async fn typed_source_owner_retirement_preserves_admitted_and_unoffered_receipts() {
+        let (publisher, termination) = observe::pair();
+        let terminal_observer = termination.clone();
+        let (report, selected_report) = oneshot::channel();
+        let (cancel, cancellation) = oneshot::channel();
+        let (entered, first_offer) = oneshot::channel();
+        let (release_first, first_release) = oneshot::channel();
+        let (progressed, continued_source) = oneshot::channel();
+        let (release_progress, progress_release) = oneshot::channel();
+        let addresses = ActorSpace::new();
+        let observer = addresses.clone();
+        let address = MailAddr(91);
+        let environment = LocalEnvironment::<
+            SourceCycleActor,
+            YieldingSourceInterpreter,
+            StandardIngress,
+        >::prepare(
+            address,
+            addresses,
+            Config::new(2),
+            termination,
+            cancellation,
+            move |control, timers, observations| {
+                let capabilities =
+                    ApplicationCapabilities::<SourceCycleActor, ()>::new_with_bindings(
+                        ApplicationCapabilityInputs {
+                            address,
+                            actor_spaces: Arc::new(()),
+                            allocations: ApplicationAddresses::new(),
+                            control,
+                            timers,
+                            observations,
+                            terminal_reports: LocalTerminalReports::new(report),
+                        },
+                        NoChildBindings::default(),
+                    );
+                YieldingSourceInterpreter {
+                    interpreter: Some(ActionInterpreter::new(capabilities)),
+                    source_offers: 0,
+                    entered: Some(entered),
+                    release_first: Some(first_release),
+                    progressed: Some(progressed),
+                    release_progress: Some(progress_release),
+                }
+            },
+        );
+        let control = environment.control();
+        let retirement = LocalRetirement::<SourceCycleActor>::new(TerminationPublication::new(
+            publisher,
+            selected_report,
+        ));
+        let task = tokio::spawn(
+            ActorExecution::new(
+                Driver::new(
+                    SourceCycleActor {
+                        scheduling_receipts: 0,
+                    },
+                    environment,
+                ),
+                retirement,
+            )
+            .run(),
+        );
+        first_offer
+            .await
+            .expect("actual timer receipt was admitted before cancellation");
+        let requested = cancel.send(OwnerCancellation);
+        assert!(
+            requested.is_ok(),
+            "the running local environment owns its cancellation receiver"
+        );
+        release_first
+            .send(())
+            .expect("the first source gate remains owned");
+        let mut task = task;
+        let retirement = tokio::select! {
+            biased;
+            retirement = &mut task => retirement.expect("typed owner retirement completes actual Driver cleanup"),
+            progressed = continued_source => {
+                progressed.expect("continued source progress is observational evidence of the original omitted retirement boundary");
+                release_progress.send(()).expect("the test releases the bounded observer before testing unbounded recurrence");
+                if let Ok(retirement) = tokio::time::timeout(Duration::from_millis(250), &mut task).await {
+                    retirement.expect("a later typed boundary still returns exact retirement")
+                } else {
+                    task.abort();
+                    let _aborted_test_execution = task.await;
+                    panic!("selected typed owner retirement cannot wait for the fair transitive source chain");
+                }
+            }
+        };
+        assert_eq!(
+            terminal_observer.await,
+            Err(Crash::Cancelled),
+            "actual LocalRetirement publishes cancellation from its exact owning request"
+        );
+        verify_source_retirement_custody(retirement, &observer, address);
+
+        drop(control);
+    }
+    fn verify_source_retirement_custody(
+        retirement: LocalOutcome<SourceCycleActor, (Vec<Never>, ())>,
+        observer: &ActorSpace<<SourceCycleActor as Behavior>::Protocol>,
+        address: MailAddr,
+    ) {
+        let ActorExecutionOutcome::Completed {
+            completion:
+                Completion::RetirementRequested(LocalRetirementRequest::OwnerCancellation(
+                    OwnerCancellation,
+                )),
+            residual: LocalResidual::Retired {
+                activation_tasks, ..
+            },
+            ..
+        } = &retirement
+        else {
+            panic!(
+                "the single affine request selects retirement while complete retired fields remain owned"
+            );
+        };
+        assert!(activation_tasks.is_empty());
+        let ActorRetirement::OwnerCancelled {
+            interpretation,
+            source,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            terminal_report,
+            retirement_failures,
+            additional_failures,
+
+            child_failures: (),
+            capability_failures,
+            unread_owner_cancellation,
+            behavior,
+            settlements,
+            control: admitted,
+            user,
+            descendants,
+        } = ActorRetirement::<SourceCycleActor, Never, ()>::from_local(retirement)
+        else {
+            panic!("the public exact projection preserves the same selected owner fact");
+        };
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
+        assert!(additional_failures.is_empty());
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
+        assert_eq!(
+            behavior.scheduling_receipts, 0,
+            "an admitted receipt remains exact custody when owner retirement wins before its fold"
+        );
+        assert_eq!(descendants.len(), 0);
+        assert_eq!(user.len(), 0);
+        assert_eq!(admitted.len(), 1);
+        let SourceCycleEvent::Scheduling(behavior::SettledItem::Attempted(
+            ItemSettlement::Accepted(receipt),
+        )) = admitted
+            .into_iter()
+            .next()
+            .expect("one admitted source receipt stays owned")
+        else {
+            panic!("the exact first accepted receipt remains admitted, not replayed or folded");
+        };
+        assert_eq!(receipt.id, TimerId(1));
+        assert_eq!(receipt.generation, TimerGeneration(1));
+        assert_eq!(settlements.len(), 1);
+        let settlement = settlements
+            .into_iter()
+            .next()
+            .expect("the exact initialization product remains owned");
+        let status = settlement.settlement_status();
+        assert_eq!(status, behavior::SettlementStatus::Accepted);
+        assert!(settlement.creations.is_empty());
+        assert!(matches!(settlement.become_, Step::Continue));
+        let mut unoffered = settlement.sends.into_inputs();
+        assert_eq!(unoffered.len(), 1);
+        let behavior::SettledItem::Attempted(ItemSettlement::Accepted(receipt)) = unoffered
+            .pop()
+            .expect("the untouched accepted suffix is owned")
+        else {
+            panic!(
+                "source retirement keeps the second exact accepted receipt without reinterpretation"
+            );
+        };
+        assert_eq!(receipt.id, TimerId(2));
+        assert_eq!(receipt.generation, TimerGeneration(1));
+        assert!(observer.resolve(&address).is_none());
+        eprintln!(
+            "RetirementRequested(OwnerCancellation)/Retired -> public OwnerCancelled; coarse Cancelled; state0; admitted accepted id1/gen1; unoffered accepted id2/gen1; one exact Accepted product; no publication/user/task/descendant"
+        );
     }
 }
 
@@ -1367,7 +2749,7 @@ mod independent_actor_execution {
     };
     use std::collections::HashMap;
     use std::convert::Infallible;
-    use std::future::pending;
+    use std::future::{Future, pending};
     use std::hint::black_box;
     use std::sync::{Arc, Mutex, mpsc};
     use std::thread::{self, ThreadId};
@@ -1375,11 +2757,12 @@ mod independent_actor_execution {
 
     use crate::actors::ActorExt;
     use behavior::{
-        ActionItem, Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, Here,
-        InitializationTurn, Inside, InterpretItem, Interpretation, InterpreterRequest,
-        InterpreterRequests, ItemSettlement, MessageProtocol, Never, NoBirthProtocols, NoBirths,
-        NoReturnToEmitter, NoSends, Own, SendEffects, SettledItem, SourceCustody,
-        SourceSettlementCustody, Step, User,
+        ActionItem, Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase,
+        BehaviorSettlements, Here, InitializationTurn, Inside, InterpretItem,
+        InterpretationProgress, InterpreterRequest, InterpreterRequests, ItemSettlement,
+        MessageProtocol, Never, NoBirthProtocols, NoBirths, NoReturnToEmitter, NoSends, Own,
+        SendEffects, SettledItem, SourceCustody, SourceProgress, SourceSettlementCustody, Step,
+        User, finish_item, prepare_item,
     };
     use behavior_actors::StopOnShutdown;
     use bombay_address::AddressSpace;
@@ -1388,7 +2771,7 @@ mod independent_actor_execution {
     use tokio::runtime::Builder;
     use tokio::sync::oneshot;
     use tokio::sync::{Barrier as WorkBarrier, Mutex as WorkMutex};
-    use tokio::task::Id;
+    use tokio::task::{Id, JoinError};
 
     use super::{LocalOutcome, spawn_root_with};
     use crate::interpret::ActionSettlementOf;
@@ -1427,6 +2810,33 @@ mod independent_actor_execution {
         type Accepted = ComputedWork;
         type Rejection = Never;
         type Prerequisite = Never;
+        type Custody = (Option<Self>, Option<Self::Reply>);
+        type Input<'a>
+            = &'a mut Option<Self>
+        where
+            Self: 'a;
+        type Reply = ItemSettlement<Self, ComputedWork, Never, Never>;
+        fn prepare_interpretation(
+            progress: &mut Option<InterpretationProgress<Self, Self::Custody, Self::Reply>>,
+        ) {
+            prepare_item::<Self>(progress);
+        }
+        fn interpretation_input<'a>(
+            custody: &'a mut Self::Custody,
+        ) -> Option<(Self::Input<'a>, &'a mut Option<Self::Reply>)>
+        where
+            Self: 'a,
+        {
+            match custody {
+                (input @ Some(_), received @ None) => Some((input, received)),
+                _ => None,
+            }
+        }
+        fn finish_interpretation(
+            progress: &mut Option<InterpretationProgress<Self, Self::Custody, Self::Reply>>,
+        ) {
+            finish_item::<Self>(progress);
+        }
 
         fn retain_accepted(work: ComputedWork) -> Option<ComputedWork> {
             Some(work)
@@ -1597,31 +3007,46 @@ mod independent_actor_execution {
     }
 
     impl InterpretItem<ComputeWork, WorkEvent, Inside<Here>> for WorkInterpreter {
-        async fn interpret_item(
-            &mut self,
-            work: ComputeWork,
-        ) -> ItemSettlement<ComputeWork, ComputedWork, Never, Never> {
-            let _exclusive_work = match &self.admission {
-                WorkAdmission::Independent => None,
-                WorkAdmission::Serialized(admission) => Some(admission.lock().await),
-            };
-            drop(self.observations.send(ExecutionObservation::WorkEntered {
-                owner: self.owner,
-                worker: thread::current().id(),
-                allocation: work.values.as_ptr() as usize,
-                length: work.values.len(),
-            }));
-            // The runtime owns this gate. No fold contains or calls it.
-            let _work_permission = self.work_permit.recv();
-            let sum = work.values.iter().sum();
-            drop(
-                self.observations
-                    .send(ExecutionObservation::WorkReturned(self.owner)),
-            );
-            ItemSettlement::Accepted(ComputedWork {
-                values: work.values,
-                sum,
-            })
+        fn interpret_item<'a>(
+            &'a mut self,
+            input: <ComputeWork as ActionItem>::Input<'a>,
+            received: &'a mut Option<<ComputeWork as ActionItem>::Reply>,
+        ) -> impl Future<Output = ()> + Send + 'a
+        where
+            ComputeWork: 'a,
+        {
+            async move {
+                if received.is_some() {
+                    return;
+                }
+                let Some(work) = input.as_ref() else {
+                    return;
+                };
+                let _exclusive_work = match &self.admission {
+                    WorkAdmission::Independent => None,
+                    WorkAdmission::Serialized(admission) => Some(admission.lock().await),
+                };
+                drop(self.observations.send(ExecutionObservation::WorkEntered {
+                    owner: self.owner,
+                    worker: thread::current().id(),
+                    allocation: work.values.as_ptr() as usize,
+                    length: work.values.len(),
+                }));
+                // The runtime owns this gate. No fold contains or calls it.
+                let _work_permission = self.work_permit.recv();
+                let sum = work.values.iter().sum();
+                drop(
+                    self.observations
+                        .send(ExecutionObservation::WorkReturned(self.owner)),
+                );
+                let Some(work) = input.take() else {
+                    return;
+                };
+                *received = Some(ItemSettlement::Accepted(ComputedWork {
+                    values: work.values,
+                    sum,
+                }));
+            }
         }
     }
 
@@ -1630,19 +3055,46 @@ mod independent_actor_execution {
 
         async fn commit(
             &mut self,
-            actions: ActionsOf<HostedComputingActor>,
-        ) -> Interpretation<ActionSettlementOf<HostedComputingActor>> {
-            actions.interpret::<_, WorkEvent, Here>(self).await
+            progress: &mut Option<
+                InterpretationProgress<
+                    ActionsOf<HostedComputingActor>,
+                    <HostedComputingActor as BehaviorSettlements>::InterpretationCustody,
+                    ActionSettlementOf<HostedComputingActor>,
+                >,
+            >,
+        ) {
+            ActionsOf::<HostedComputingActor>::interpret::<_, WorkEvent, Here>(progress, self)
+                .await;
         }
 
         async fn offer_next(
             &mut self,
-            settlement: ActionSettlementOf<HostedComputingActor>,
-        ) -> SourceCustody<ActionSettlementOf<HostedComputingActor>> {
-            let custody =
-                SourceSettlementCustody::<Self, WorkEvent>::offer_next_to_source(settlement, self)
-                    .await;
-            match &custody {
+            progress: &mut Option<
+                SourceProgress<
+                    ActionSettlementOf<HostedComputingActor>,
+                    <HostedComputingActor as BehaviorSettlements>::SourceCustody,
+                >,
+            >,
+        ) {
+            <ActionSettlementOf<HostedComputingActor> as SourceSettlementCustody<
+                Self,
+                WorkEvent,
+            >>::prepare_source(progress);
+            if let Some(SourceProgress::Offering(custody)) = progress.as_mut() {
+                <ActionSettlementOf<HostedComputingActor> as SourceSettlementCustody<
+                    Self,
+                    WorkEvent,
+                >>::offer_next_to_source(custody, self)
+                .await;
+            }
+            <ActionSettlementOf<HostedComputingActor> as SourceSettlementCustody<
+                Self,
+                WorkEvent,
+            >>::finish_source(progress);
+            let Some(SourceProgress::Completed(custody)) = progress.as_ref() else {
+                return;
+            };
+            match custody {
                 SourceCustody::Exhausted(settlement) | SourceCustody::Retained(settlement) => {
                     // All source lanes are checked before the next-port notice.
                     match &settlement.become_ {
@@ -1661,10 +3113,9 @@ mod independent_actor_execution {
                     panic!("computation has no emitter source input")
                 }
             }
-            custody
         }
 
-        async fn next_local_event(&mut self) -> WorkEvent {
+        async fn next_local_event(&mut self) -> Result<WorkEvent, JoinError> {
             if let Some(notice) = self.waiting_notice.take() {
                 drop(notice.send(ExecutionObservation::WaitingForCommand(self.owner)));
             }
@@ -1675,8 +3126,21 @@ mod independent_actor_execution {
             clippy::unused_async_trait_impl,
             reason = "Keep retirement on the polled runtime port."
         )]
+        async fn receive_retirement(
+            interpreter: &mut Option<Self>,
+            received: &mut Option<CapabilityRetirement<WorkEvent, ()>>,
+        ) {
+            if received.is_some() || interpreter.is_none() {
+                return;
+            }
+            *received = Some(CapabilityRetirement::without_activations(()));
+            drop(interpreter.take());
+        }
         async fn retire(self) -> CapabilityRetirement<WorkEvent, ()> {
-            CapabilityRetirement::without_activations(())
+            let mut interpreter = Some(self);
+            let mut received = None;
+            Self::receive_retirement(&mut interpreter, &mut received).await;
+            received.expect("actual complete work retirement remains")
         }
     }
 
@@ -1903,11 +3367,18 @@ mod independent_actor_execution {
         runtime
             .block_on(ash.actor.send_from(MailAddr(97), WorkCommand::Finish))
             .unwrap();
-        let oak_outcome = runtime.block_on(oak.task.finish());
-        let ash_outcome = runtime.block_on(ash.task.finish());
+        let oak_retirement = runtime.block_on(oak.task.finish());
+        let ash_retirement = runtime.block_on(ash.task.finish());
         drop(release);
         drop(runtime);
         observations.extend(observation_receiver.try_iter());
+        let (oak_outcome, ash_outcome) = match (oak_retirement, ash_retirement) {
+            (Ok(oak_outcome), Ok(ash_outcome)) => (oak_outcome, ash_outcome),
+            retirements => {
+                drop(retirements);
+                panic!("both independently joined actors must return their original outcomes");
+            }
+        };
         ActorPairExecution {
             observations,
             oak_task,
@@ -1930,17 +3401,39 @@ mod independent_actor_execution {
             behavior,
             residual:
                 LocalResidual::Retired {
+                    interpretation,
+                    source,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    terminal_report,
+                    retirement_failures,
                     settlements,
                     ingress,
                     activation_tasks,
                     descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
                 },
             completion,
+            additional_failures,
         } = outcome
         else {
             panic!("the actual actor did not complete its retirement")
         };
-        assert_eq!(completion, Completion::Stopped);
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
+        assert!(additional_failures.is_empty());
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
+        assert!(matches!(completion, Completion::Stopped));
         assert_eq!(behavior.base().initialization_count, 1);
         assert_eq!(behavior.base().commands, origins);
         assert!(ingress.control.is_empty());
@@ -2148,34 +3641,49 @@ mod independent_actor_execution {
     }
 
     impl InterpretItem<ComputeWork, WorkEvent, Inside<Here>> for MeasuredWork {
-        async fn interpret_item(
-            &mut self,
-            work: ComputeWork,
-        ) -> ItemSettlement<ComputeWork, ComputedWork, Never, Never> {
-            if let Some(start) = self.start.take() {
-                start.wait().await;
-            }
-            // An awaited gate may resume in another poll; snapshot only now.
-            let before = current_allocations();
-            match self.allocation {
-                WorkAllocation::Original => {}
-                WorkAllocation::Additional => {
-                    let original = Box::new(black_box(137_u64));
-                    black_box(&original);
-                    drop(original);
+        fn interpret_item<'a>(
+            &'a mut self,
+            input: <ComputeWork as ActionItem>::Input<'a>,
+            received: &'a mut Option<<ComputeWork as ActionItem>::Reply>,
+        ) -> impl Future<Output = ()> + Send + 'a
+        where
+            ComputeWork: 'a,
+        {
+            async move {
+                if received.is_some() {
+                    return;
                 }
+                let Some(work) = input.as_ref() else {
+                    return;
+                };
+                if let Some(start) = self.start.take() {
+                    start.wait().await;
+                }
+                // An awaited gate may resume in another poll; snapshot only now.
+                let before = current_allocations();
+                match self.allocation {
+                    WorkAllocation::Original => {}
+                    WorkAllocation::Additional => {
+                        let original = Box::new(black_box(137_u64));
+                        black_box(&original);
+                        drop(original);
+                    }
+                }
+                let sum = work.values.iter().sum();
+                for _ in 0..256 {
+                    let repeated: u64 = black_box(&work.values).iter().sum();
+                    black_box(repeated);
+                }
+                let after = current_allocations();
+                self.observations.push((before, after));
+                let Some(work) = input.take() else {
+                    return;
+                };
+                *received = Some(ItemSettlement::Accepted(ComputedWork {
+                    values: work.values,
+                    sum,
+                }));
             }
-            let sum = work.values.iter().sum();
-            for _ in 0..256 {
-                let repeated: u64 = black_box(&work.values).iter().sum();
-                black_box(repeated);
-            }
-            let after = current_allocations();
-            self.observations.push((before, after));
-            ItemSettlement::Accepted(ComputedWork {
-                values: work.values,
-                sum,
-            })
         }
     }
 
@@ -2183,34 +3691,77 @@ mod independent_actor_execution {
         type Retired = Vec<(usize, usize)>;
         async fn commit(
             &mut self,
-            actions: ActionsOf<HostedComputingActor>,
-        ) -> Interpretation<ActionSettlementOf<HostedComputingActor>> {
-            actions.interpret::<_, WorkEvent, Here>(self).await
+            progress: &mut Option<
+                InterpretationProgress<
+                    ActionsOf<HostedComputingActor>,
+                    <HostedComputingActor as BehaviorSettlements>::InterpretationCustody,
+                    ActionSettlementOf<HostedComputingActor>,
+                >,
+            >,
+        ) {
+            ActionsOf::<HostedComputingActor>::interpret::<_, WorkEvent, Here>(progress, self)
+                .await;
         }
         async fn offer_next(
             &mut self,
-            settlement: ActionSettlementOf<HostedComputingActor>,
-        ) -> SourceCustody<ActionSettlementOf<HostedComputingActor>> {
-            let custody =
-                SourceSettlementCustody::<Self, WorkEvent>::offer_next_to_source(settlement, self)
-                    .await;
+            progress: &mut Option<
+                SourceProgress<
+                    ActionSettlementOf<HostedComputingActor>,
+                    <HostedComputingActor as BehaviorSettlements>::SourceCustody,
+                >,
+            >,
+        ) {
+            <ActionSettlementOf<HostedComputingActor> as SourceSettlementCustody<
+                Self,
+                WorkEvent,
+            >>::prepare_source(progress);
+            if let Some(SourceProgress::Offering(custody)) = progress.as_mut() {
+                <ActionSettlementOf<HostedComputingActor> as SourceSettlementCustody<
+                    Self,
+                    WorkEvent,
+                >>::offer_next_to_source(custody, self)
+                .await;
+            }
+            <ActionSettlementOf<HostedComputingActor> as SourceSettlementCustody<
+                Self,
+                WorkEvent,
+            >>::finish_source(progress);
+            if !matches!(progress, Some(SourceProgress::Completed(_))) {
+                return;
+            }
             if self.observations.len() == self.expected
                 && let Some(completion) = self.completion.take()
             {
                 let delivered = completion.send(());
                 assert!(delivered.is_ok());
             }
-            custody
         }
-        async fn next_local_event(&mut self) -> WorkEvent {
+        async fn next_local_event(&mut self) -> Result<WorkEvent, JoinError> {
             pending().await
         }
         #[expect(
             clippy::unused_async_trait_impl,
             reason = "The owned work receipts retire through the runtime port."
         )]
+        async fn receive_retirement(
+            interpreter: &mut Option<Self>,
+            received: &mut Option<CapabilityRetirement<WorkEvent, Self::Retired>>,
+        ) {
+            if received.is_some() {
+                return;
+            }
+            let Some(original) = interpreter.take() else {
+                return;
+            };
+            *received = Some(CapabilityRetirement::without_activations(
+                original.observations,
+            ));
+        }
         async fn retire(self) -> CapabilityRetirement<WorkEvent, Self::Retired> {
-            CapabilityRetirement::without_activations(self.observations)
+            let mut interpreter = Some(self);
+            let mut received = None;
+            Self::receive_retirement(&mut interpreter, &mut received).await;
+            received.expect("actual complete measured work retirement remains")
         }
     }
 
@@ -2321,7 +3872,13 @@ mod independent_actor_execution {
                         .send_from(MailAddr(1033), WorkCommand::Finish)
                         .await;
                     assert!(sent.is_ok());
-                    outcomes.push(actor.task.finish().await);
+                    outcomes.push(
+                        actor
+                            .task
+                            .finish()
+                            .await
+                            .expect("the joined actor returns its exact outcome"),
+                    );
                 }
             });
         });
@@ -2333,17 +3890,39 @@ mod independent_actor_execution {
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        interpretation,
+                        source,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        terminal_report,
+                        retirement_failures,
                         settlements,
                         ingress,
                         activation_tasks,
                         descendants,
+                        capability_failures,
+                        unread_owner_cancellation,
                     },
                 completion,
+                additional_failures,
             } = outcome
             else {
                 panic!("whole measured actor retirement")
             };
-            assert_eq!(completion, Completion::Stopped);
+            assert!(interpretation.is_none());
+            assert!(source.is_none());
+            assert!(received_interpretation.is_none());
+            assert!(received_source.is_none());
+            assert!(source_index.is_none());
+            assert!(acquired_ingress.is_none());
+            assert!(terminal_report.is_none());
+            assert!(retirement_failures.is_empty());
+            assert!(additional_failures.is_empty());
+            assert!(capability_failures.is_empty());
+            assert!(unread_owner_cancellation.is_none());
+            assert!(matches!(completion, Completion::Stopped));
             assert_eq!(behavior.base().initialization_count, 1);
             assert_eq!(behavior.base().commands.len(), requests + 1);
             assert_eq!(

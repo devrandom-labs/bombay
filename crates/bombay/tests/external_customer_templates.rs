@@ -2,6 +2,7 @@ use behavior_actors::{
     Barrier, BarrierGeneration, BarrierMembership, BarrierMessage, BarrierReleased, Cache,
     CacheConfiguration, CacheMessage, CacheResult, Latch, LatchMessage, LatchReleased,
 };
+use bombay::ProjectTerminal;
 use bombay::behavior::MessageProtocol;
 use bombay::prelude::*;
 
@@ -16,7 +17,7 @@ fn cache_preserves_an_exact_external_customer() {
     let configuration = CacheConfiguration::new(2).expect("the cache capacity is positive");
     let cache = Cache::<MailAddr, u8, u16, EstablishedRecipient<CacheReplies>>::new(configuration);
 
-    let ((), terminal): (_, RootTerminal<_>) = Application::new(cache.stop_on_shutdown())
+    let ((), root_origin, joined_actor) = Application::new(cache.stop_on_shutdown())
         .run_with(|application| async move {
             let interface = application.interface(application.root().established_recipient());
             let lifecycle = application.lifecycle();
@@ -63,6 +64,12 @@ fn cache_preserves_an_exact_external_customer() {
             assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         })
         .expect("the exact-customer cache application terminates normally");
+    let terminal: RootTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_completed(terminal);
 }
 
@@ -74,7 +81,7 @@ fn barrier_releases_two_exact_external_participants() {
         BarrierMembership::new(vec![1, 2]).expect("the barrier membership is distinct");
     let barrier = Barrier::<MailAddr, u8, EstablishedRecipient<BarrierReplies>>::new(membership);
 
-    let ((), terminal): (_, RootTerminal<_>) = Application::new(barrier.stop_on_shutdown())
+    let ((), root_origin, joined_actor) = Application::new(barrier.stop_on_shutdown())
         .run_with(|application| async move {
             let interface = application.interface(application.root().established_recipient());
             let lifecycle = application.lifecycle();
@@ -128,6 +135,12 @@ fn barrier_releases_two_exact_external_participants() {
             assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         })
         .expect("the exact-customer barrier application terminates normally");
+    let terminal: RootTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_completed(terminal);
 }
 
@@ -135,7 +148,7 @@ type LatchReplies = MessageProtocol<MailAddr, LatchReleased>;
 
 #[test]
 fn latch_releases_exact_external_participants() {
-    let ((), terminal): (_, RootTerminal<_>) = Application::new(
+    let ((), root_origin, joined_actor) = Application::new(
         Latch::<MailAddr, EstablishedRecipient<LatchReplies>>::new(2).stop_on_shutdown(),
     )
     .run_with(|application| async move {
@@ -167,5 +180,11 @@ fn latch_releases_exact_external_participants() {
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
     })
     .expect("the exact-route latch application terminates normally");
+    let terminal: RootTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        joined_actor.unwrap_or_else(|failure| {
+            panic!("the actual application actor task failed: {failure}")
+        }),
+    );
     assert_completed(terminal);
 }

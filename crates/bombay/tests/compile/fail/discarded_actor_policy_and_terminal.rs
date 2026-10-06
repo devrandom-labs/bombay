@@ -23,7 +23,7 @@ impl Behavior for Root {
     }
 }
 
-fn discard_terminal(terminal: ActorRetirement<Root, ()>) {
+fn discard_terminal(terminal: ActorRetirement<Root, (), ()>) {
     terminal;
 }
 

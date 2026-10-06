@@ -5,6 +5,7 @@ mod processor;
 
 use core::time::Duration;
 
+use bombay::ProjectTerminal;
 use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
 use processor::{ProcessorMessage, ProcessorPhase, ProcessorState, transition};
@@ -23,7 +24,7 @@ where
 {
     Root {
         origin: RootOrigin<R>,
-        terminal: ActorRetirement<R, Self>,
+        terminal: ActorRetirement<R, Self, ()>,
     },
 }
 
@@ -43,7 +44,7 @@ fn run_receive_timeout() {
         })
         .stop_on_shutdown();
 
-    let ((), terminal) = Application::new(actor)
+    let ((), origin, retirement) = Application::new(actor)
         .run_with(|application| async move {
             let lifecycle = application.lifecycle();
             let interface = application.interface(application.root().established_recipient());
@@ -64,11 +65,15 @@ fn run_receive_timeout() {
             assert_eq!(termination, Ok(Exit::Normal));
         })
         .expect("the receive-timeout actor starts and retires");
+    let terminal = ApplicationTerminal::project(
+        origin,
+        retirement.expect("the actual actor returned its joined retirement"),
+    );
     assert_application_stopped(terminal);
 }
 
 fn run_shutdown() {
-    let ((), terminal) = Application::new(
+    let ((), origin, retirement) = Application::new(
         Machine::new(ProcessorState::new(), ProcessorPhase::Closed, transition).stop_on_shutdown(),
     )
     .run_with(|application| async move {
@@ -79,6 +84,10 @@ fn run_shutdown() {
         assert_eq!(termination, Ok(Exit::Normal));
     })
     .expect("the shutdown actor starts and retires");
+    let terminal = ApplicationTerminal::project(
+        origin,
+        retirement.expect("the actual actor returned its joined retirement"),
+    );
     assert_application_stopped(terminal);
 }
 
@@ -91,6 +100,9 @@ where
         origin,
         terminal:
             ActorRetirement::Completed {
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
                 behavior,
                 settlements,
                 control,
@@ -102,6 +114,8 @@ where
     else {
         panic!("the application must preserve the root's completed terminal state")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     drop(behavior);
     let settlement_status = settlements.settlement_status();

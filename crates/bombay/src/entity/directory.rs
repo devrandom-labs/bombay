@@ -1,5 +1,6 @@
 //! Concurrent storage for local entity lifecycle machines.
 
+use core::mem;
 #[cfg(bombay_entity_loom)]
 use loom::sync::atomic::{AtomicU64, Ordering};
 #[cfg(bombay_entity_loom)]
@@ -7,6 +8,7 @@ use loom::sync::{Arc, Mutex};
 use std::collections::{HashMap, VecDeque};
 use std::hash::{BuildHasher, Hash, RandomState};
 use std::num::{NonZeroU64, NonZeroUsize};
+use std::sync::PoisonError;
 #[cfg(not(bombay_entity_loom))]
 use std::sync::atomic::{AtomicU64, Ordering};
 #[cfg(not(bombay_entity_loom))]
@@ -14,7 +16,7 @@ use std::sync::{Arc, Mutex};
 
 use super::{
     ActivationId, DispatchId, DrainFailure, EntityId, EntitySlot, LifecyclePhase, Refusal,
-    RetirementMode, SlotEffect, SlotEffectBatch, SlotEvent, TransitionEvidence,
+    RetirementMode, SlotEffect, SlotEvent, TransitionEvidence,
 };
 
 /// Fixed sizing and admission limits for a local directory.
@@ -88,12 +90,12 @@ pub struct InstalledSlotDecision<I, C, E, L> {
     /// Phase installed by the decision.
     pub phase: LifecyclePhase,
     pub(crate) activation_id: Option<ActivationId>,
-    entity_id: EntityId<I>,
-    target: InstalledEffectSource<C, E, L>,
+    pub(super) entity_id: EntityId<I>,
+    pub(super) target: InstalledEffectSource<C, E, L>,
 }
 
 /// Where an installed decision's effects await interpretation.
-enum InstalledEffectSource<C, E, L> {
+pub(super) enum InstalledEffectSource<C, E, L> {
     /// A directory-mapped slot with queued effects.
     Mapped(Arc<Slot<C, E, L>>),
     /// Concrete ordered effects for an event addressed to an absent entry.
@@ -112,13 +114,13 @@ pub struct InstalledDispatch<I, C, E, L> {
     pub decision: InstalledSlotDecision<I, C, E, L>,
 }
 
-struct Slot<C, E, L> {
+pub(super) struct Slot<C, E, L> {
     execution: Mutex<SlotExecution<C, E, L>>,
 }
 
 struct SlotExecution<C, E, L> {
     state: SlotState<C, E, L>,
-    pending: VecDeque<SlotEffectBatch<C, E, L>>,
+    pending: VecDeque<SlotEffect<C, E, L>>,
     dispatch: SlotDispatchPhase,
 }
 
@@ -155,8 +157,11 @@ impl<C, E: Clone, L> Slot<C, E, L> {
     }
 
     fn submit(&self, event: SlotEvent<C, E, L>) -> InstalledSlotEvidence {
-        let mut execution = self.execution.lock().expect("entity slot lock poisoned");
-        let SlotState::Ready(state) = core::mem::replace(&mut execution.state, SlotState::Poisoned)
+        let mut execution = self
+            .execution
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let SlotState::Ready(state) = mem::replace(&mut execution.state, SlotState::Poisoned)
         else {
             panic!("entity slot transition poisoned");
         };
@@ -167,19 +172,24 @@ impl<C, E: Clone, L> Slot<C, E, L> {
             activation_id: decision.state.activation_id(),
         };
         execution.state = SlotState::Ready(decision.state);
-        execution.pending.push_back(decision.effects);
+        decision
+            .effects
+            .for_each(|effect| execution.pending.push_back(effect));
         installed
     }
 
     fn activation_id(&self) -> Option<ActivationId> {
-        let execution = self.execution.lock().expect("entity slot lock poisoned");
+        let execution = self
+            .execution
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
         match &execution.state {
             SlotState::Ready(state) => state.activation_id(),
             SlotState::Poisoned => panic!("entity slot transition poisoned"),
         }
     }
 
-    fn dispatch_pending(&self, interpret: &impl Fn(SlotEffectBatch<C, E, L>)) {
+    pub(super) fn dispatch_pending(&self, interpret: &impl Fn(SlotEffect<C, E, L>)) {
         let Some(mut dispatch) = SlotDispatch::acquire(&self.execution) else {
             return;
         };
@@ -189,9 +199,53 @@ impl<C, E: Clone, L> Slot<C, E, L> {
     }
 }
 
+impl<C, E: Clone, L> Slot<C, E, L> {
+    pub(super) fn submit_owned(&self, event: SlotEvent<C, E, L>) {
+        let _installed = self.submit(event);
+    }
+
+    pub(super) fn has_pending(&self) -> bool {
+        !self
+            .execution
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .pending
+            .is_empty()
+    }
+
+    pub(super) fn retirement_disposition(&self) -> Result<(), Option<ActivationId>> {
+        let execution = self
+            .execution
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        match &execution.state {
+            SlotState::Ready(EntitySlot::Inactive) => Ok(()),
+            SlotState::Ready(state) => Err(state.activation_id()),
+            SlotState::Poisoned => Err(None),
+        }
+    }
+
+    // Only the admission-closed, task-idle family owner calls this. The pure
+    // state owns every lease still available; unavailable values are not invented.
+    pub(super) fn close_family(&self) -> Option<(ActivationId, E, L, Result<(), DrainFailure>)> {
+        let mut execution = self
+            .execution
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let state = mem::replace(&mut execution.state, SlotState::Poisoned);
+        let SlotState::Ready(state) = state else {
+            return None;
+        };
+        let (state, effects, retirement) = state.close_family();
+        execution.state = SlotState::Ready(state);
+        effects.for_each(|effect| execution.pending.push_back(effect));
+        retirement
+    }
+}
+
 impl<'a, C, E, L> SlotDispatch<'a, C, E, L> {
     fn acquire(execution: &'a Mutex<SlotExecution<C, E, L>>) -> Option<Self> {
-        let mut slot = execution.lock().expect("entity slot lock poisoned");
+        let mut slot = execution.lock().unwrap_or_else(PoisonError::into_inner);
         match slot.dispatch {
             SlotDispatchPhase::Idle => {
                 slot.dispatch = SlotDispatchPhase::Dispatching;
@@ -203,9 +257,9 @@ impl<'a, C, E, L> SlotDispatch<'a, C, E, L> {
         }
     }
 
-    fn next(&mut self) -> Option<SlotEffectBatch<C, E, L>> {
+    fn next(&mut self) -> Option<SlotEffect<C, E, L>> {
         let execution = self.execution?;
-        let mut slot = execution.lock().expect("entity slot lock poisoned");
+        let mut slot = execution.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(effects) = slot.pending.pop_front() {
             Some(effects)
         } else {
@@ -221,7 +275,7 @@ impl<C, E, L> Drop for SlotDispatch<'_, C, E, L> {
         if let Some(execution) = self.execution {
             execution
                 .lock()
-                .expect("entity slot lock poisoned")
+                .unwrap_or_else(PoisonError::into_inner)
                 .dispatch = SlotDispatchPhase::Idle;
         }
     }
@@ -488,27 +542,41 @@ where
     /// activation and delivery tasks before calling this operation. Snapshot
     /// entries are addressed by their exact activation identity, so a stale
     /// decision cannot drain a replacement incarnation.
-    pub(crate) fn begin_family_drain(&self) -> Vec<InstalledSlotDecision<I, C, E, L>> {
-        let represented = self
-            .shards
+    #[expect(
+        clippy::type_complexity,
+        reason = "closed family drain returns every original key with its exact owned slot"
+    )]
+    pub(super) fn take_family(&self) -> Vec<(Arc<EntityId<I>>, Arc<Slot<C, E, L>>)> {
+        self.shards
             .iter()
             .flat_map(|shard| {
-                shard
-                    .lock()
-                    .expect("directory shard lock poisoned")
-                    .iter()
-                    .filter_map(|(entity_id, slot)| {
-                        slot.activation_id()
-                            .map(|activation_id| (entity_id.clone(), activation_id))
-                    })
+                let mut entries = shard.lock().unwrap_or_else(PoisonError::into_inner);
+                entries
+                    .drain()
+                    .map(|(id, slot)| (Arc::new(id), slot))
                     .collect::<Vec<_>>()
             })
-            .collect::<Vec<_>>();
-
-        represented
-            .into_iter()
-            .map(|(entity_id, activation_id)| self.begin_drain(&entity_id, activation_id))
             .collect()
+    }
+
+    #[expect(
+        clippy::type_complexity,
+        reason = "removal returns the original key and exact selected slot together"
+    )]
+    pub(super) fn take_slot(
+        &self,
+        selected: &Arc<Slot<C, E, L>>,
+    ) -> Option<(Arc<EntityId<I>>, Arc<Slot<C, E, L>>)> {
+        for shard in &self.shards {
+            let mut entries = shard.lock().unwrap_or_else(PoisonError::into_inner);
+            if let Some((id, slot)) = entries
+                .extract_if(|_, slot| Arc::ptr_eq(slot, selected))
+                .next()
+            {
+                return Some((Arc::new(id), slot));
+            }
+        }
+        None
     }
 
     pub(crate) fn current_activation(&self, entity_id: &EntityId<I>) -> Option<ActivationId> {
@@ -557,10 +625,8 @@ where
         } = decision;
         match target {
             InstalledEffectSource::Mapped(slot) => {
-                slot.dispatch_pending(&|effects| {
-                    effects.for_each(|effect| {
-                        self.apply_effect(&entity_id, Some(&slot), effect, runtime);
-                    });
+                slot.dispatch_pending(&|effect| {
+                    self.apply_effect(&entity_id, Some(&slot), effect, runtime);
                 });
             }
             InstalledEffectSource::Transient(effects) => {
