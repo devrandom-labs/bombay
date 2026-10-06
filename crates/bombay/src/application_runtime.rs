@@ -1013,6 +1013,7 @@ where
                 Output,
                 (RootOrigin<Root>, Result<ActorRetirement<Root, Terminal, ChildFailures>, JoinError>),
                 (Root, Work, Never),
+                (Root, Spaces),
             >>,
         ),
         (Self, Work, TryCurrentError),
@@ -1609,6 +1610,7 @@ where
                         Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
                     ),
                     (Root, Work, StagingFailure),
+                    (Actor, ActorSpace<Root::Protocol>),
                 >,
             >,
         ),
@@ -8944,18 +8946,33 @@ mod axum_retirement_custody {
 /// Caller-local work disposition alongside the actual unit application cleanup.
 ///
 /// Work values never move into the executor-owned cleanup task. `Unstarted`
-/// returns the original untouched application and callable. `NotInvoked` owns
-/// the original callable after startup began. `Interrupted` does not claim
+/// returns the original untouched application and callable. `Prepared` retains
+/// the actual actor and Spaces before handoff; `NotInvoked` retains the callable
+/// while setup or startup owns consumed inputs. `Interrupted` does not claim
 /// recovery of a callable or work future consumed by invocation.
 /// Cleanup first retains its publication receiving result, then its actual task
 /// join result; the joined actor outcome remains independently owned inside.
 #[must_use = "application inputs, output and joined actor outcome require explicit custody"]
-pub enum ApplicationOutcome<ApplicationInputs, Work, Output, Cleanup, StagingInputs = Never> {
+pub enum ApplicationOutcome<
+    ApplicationInputs,
+    Work,
+    Output,
+    Cleanup,
+    StagingInputs = Never,
+    PreparedInputs = Never,
+> {
     /// Staging stopped before actor startup; exact cold partial inputs and callable survive.
     StagingRejected { inputs: StagingInputs },
     Unstarted {
         application: ApplicationInputs,
         work: Work,
+    },
+    /// Prepared originals remain available before this owner transfers its actor.
+    /// The original native setup cause propagates to the unwinding caller.
+    Prepared {
+        inputs: PreparedInputs,
+        work: Work,
+        cleanup: Result<Result<Cleanup, JoinError>, RecvError>,
     },
     NotInvoked {
         work: Work,
@@ -8971,9 +8988,16 @@ pub enum ApplicationOutcome<ApplicationInputs, Work, Output, Cleanup, StagingInp
     },
 }
 
-enum ApplicationWorkCustody<ApplicationInputs, Work, Output, StagingInputs = Never> {
+enum ApplicationWorkCustody<
+    ApplicationInputs,
+    Work,
+    Output,
+    StagingInputs = Never,
+    PreparedInputs = Never,
+> {
     StagingRejected(StagingInputs),
     Unstarted(ApplicationInputs, Work),
+    Prepared(PreparedInputs, Work),
     NotInvoked(Work, Option<RecvError>),
     Completed(Output),
 }
@@ -8982,15 +9006,23 @@ enum ApplicationWorkCustody<ApplicationInputs, Work, Output, StagingInputs = Nev
     clippy::type_complexity,
     reason = "one affine publication pairs exact phase custody with its sole original sender"
 )]
-struct ApplicationWorkPublication<ApplicationInputs, Work, Output, StagingInputs = Never> {
+struct ApplicationWorkPublication<
+    ApplicationInputs,
+    Work,
+    Output,
+    StagingInputs = Never,
+    PreparedInputs = Never,
+> {
     publication: Option<(
-        ApplicationWorkCustody<ApplicationInputs, Work, Output, StagingInputs>,
-        oneshot::Sender<ApplicationWorkCustody<ApplicationInputs, Work, Output, StagingInputs>>,
+        ApplicationWorkCustody<ApplicationInputs, Work, Output, StagingInputs, PreparedInputs>,
+        oneshot::Sender<
+            ApplicationWorkCustody<ApplicationInputs, Work, Output, StagingInputs, PreparedInputs>,
+        >,
     )>,
 }
 
-impl<ApplicationInputs, Work, Output, StagingInputs> Drop
-    for ApplicationWorkPublication<ApplicationInputs, Work, Output, StagingInputs>
+impl<ApplicationInputs, Work, Output, StagingInputs, PreparedInputs> Drop
+    for ApplicationWorkPublication<ApplicationInputs, Work, Output, StagingInputs, PreparedInputs>
 {
     fn drop(&mut self) {
         if let Some((custody, publication)) = self.publication.take() {
@@ -9037,6 +9069,7 @@ fn execute_application_with<
                     Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
                 ),
                 (Owner, Work, StagingFailure),
+                (Actor, Spaces),
             >,
         >,
     ),
@@ -9087,7 +9120,15 @@ where
         else {
             unreachable!("execution owns the single original input publication");
         };
-        let (root, spaces) = match prepare(application) {
+        original_work.publication =
+            Some((ApplicationWorkCustody::NotInvoked(work, None), publication));
+        let prepared_inputs = prepare(application);
+        let Some((ApplicationWorkCustody::NotInvoked(work, None), publication)) =
+            original_work.publication.take()
+        else {
+            unreachable!("preparation owns the single uninvoked callable publication");
+        };
+        let (root, spaces) = match prepared_inputs {
             Ok(prepared) => prepared,
             Err((root, failure)) => {
                 original_work.publication = Some((
@@ -9098,20 +9139,35 @@ where
                 return;
             }
         };
-        original_work.publication =
-            Some((ApplicationWorkCustody::NotInvoked(work, None), publication));
-        let roots = <Spaces as Hosts<Actor::Protocol>>::space(&spaces).clone();
+        original_work.publication = Some((
+            ApplicationWorkCustody::Prepared((root, spaces), work),
+            publication,
+        ));
+        let Some((ApplicationWorkCustody::Prepared((_, spaces), _), _)) =
+            original_work.publication.as_ref()
+        else {
+            unreachable!("setup borrows the single prepared input publication");
+        };
+        let roots = <Spaces as Hosts<Actor::Protocol>>::space(spaces).clone();
         let bindings = ChildBindings::<Actor, Terminal, Origins>::default();
-        let actor_spaces = Arc::new(HostedActorSpaces(spaces));
         let allocations = ApplicationAddresses::new();
         let interface_allocations = allocations.clone();
         let (permission, permitted) = oneshot::channel();
         let (authority, startup, shutdown_control, actor_join) = {
             let entered_executor = executor.enter();
             let address = MailAddr::APPLICATION_ROOT;
+            let config = communication::Config::new(DEFAULT_USER_CAPACITY);
+            let Some((ApplicationWorkCustody::Prepared((root, spaces), work), publication)) =
+                original_work.publication.take()
+            else {
+                unreachable!("handoff consumes the single prepared input publication");
+            };
+            original_work.publication =
+                Some((ApplicationWorkCustody::NotInvoked(work, None), publication));
+            let actor_spaces = Arc::new(HostedActorSpaces(spaces));
             let started = spawn_local_execution::<Actor, _, StandardIngress, _, _, _>(
                 roots,
-                communication::Config::new(DEFAULT_USER_CAPACITY),
+                config,
                 address,
                 root,
                 move |control, terminal_reports, timers, observations| {
@@ -9215,6 +9271,13 @@ where
                     Err(error) => Err(error),
                 };
                 match custody {
+                    Ok(ApplicationWorkCustody::Prepared(inputs, work)) => {
+                        ApplicationOutcome::Prepared {
+                            inputs,
+                            work,
+                            cleanup,
+                        }
+                    }
                     Ok(ApplicationWorkCustody::NotInvoked(work, startup_error)) => {
                         ApplicationOutcome::NotInvoked {
                             work,

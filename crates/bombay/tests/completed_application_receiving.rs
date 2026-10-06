@@ -3564,12 +3564,14 @@ fn host_setup_unwind_keeps_uninvoked_work_until_receiver_discharge() {
         })
         .await;
         let work_after_receiving = original_work.strong_count();
+        let root_after_receiving = original_root.strong_count();
         let receiver_unwound = receiver_poll.is_err();
         // Dispose actual acquired values and both original futures before assertions.
         drop(receiver_poll);
         drop(receiver);
         drop(cause);
         let work_after_discharge = original_work.strong_count();
+        let root_after_discharge = original_root.strong_count();
         let cause_after_discharge = original_cause.strong_count();
         let host_reused = tokio::spawn(async { 367_u64 })
             .await
@@ -3584,6 +3586,9 @@ fn host_setup_unwind_keeps_uninvoked_work_until_receiver_discharge() {
         assert_eq!(work_after_setup, 1);
         assert_eq!(work_after_discharge, 0);
         assert_eq!(host_reused, 367);
+        assert_eq!(root_after_setup, 1);
+        assert_eq!(root_after_receiving, 1);
+        assert_eq!(root_after_discharge, 0);
         assert_eq!(
             work_after_receiving, 1,
             "the surviving result receiver must retain original uninvoked Work until explicit receiver/result discharge"
@@ -3643,14 +3648,17 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
             panic!("the supplied host accessor raises its original native cause");
         };
         let received_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
-        let ApplicationOutcome::NotInvoked {
+        let ApplicationOutcome::Prepared {
+            inputs: (prepared_root, prepared_spaces),
             work,
-            startup_error: None,
             cleanup,
         } = receiver.await
         else {
-            panic!("setup failure returns the original uninvoked callable");
+            panic!("setup failure returns the original prepared inputs and uninvoked callable");
         };
+        // This Work-only controller deliberately surrenders the acquired prepared inputs.
+        // The separate prepared-root witness checks their retained lifetime.
+        drop((prepared_root, prepared_spaces));
         let Err(publication_failure) = cleanup else {
             panic!("this exact pre-spawn cut returns the actual publication error");
         };
@@ -3703,6 +3711,141 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
         assert_eq!(cause_after_retry, 1);
         assert_eq!(work_after_discharge, 0);
         assert_eq!(retry_root_after_discharge, 0);
+        assert_eq!(cause_before_discharge, 1);
+        assert_eq!(cause_after_discharge, 0);
+    });
+    drop(runtime);
+}
+
+#[test]
+fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
+    let runtime = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the original live host builds");
+    let root = Arc::new(vec![31, 37]);
+    let original_root = Arc::downgrade(&root);
+    let original_root_allocation = Arc::as_ptr(&root);
+    let accounts = ActorSpace::new();
+    let original_scope = accounts.registration_scope_id();
+    let cause = Arc::new(vec![419, 421]);
+    let original_cause = Arc::downgrade(&cause);
+    let cause: Box<dyn Any + Send> = Box::new(cause);
+    let original_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+    let work = Rc::new(vec![431, 433]);
+    let original_work = Rc::downgrade(&work);
+    let borrowed = vec![439, 443];
+    let invocations = Rc::new(Cell::new(0_usize));
+    let work_invocations = Rc::clone(&invocations);
+    runtime.block_on(async {
+        let borrowed = borrowed.as_slice();
+        let application = App::new(
+            ReceivingAccount {
+                admission: AccountAdmission::Ready,
+                original: root,
+            }
+            .stop_on_shutdown(),
+            UnwindingAccountSpaces {
+                accounts,
+                hosting_failure: Mutex::new(Some(cause)),
+            },
+        );
+        let (execution, receiver) = application
+            .execute_with::<AccountConclusion, (), _, _, _>(move |application| {
+                work_invocations.set(work_invocations.get() + 1);
+                async move {
+                    let requested = application.lifecycle().request_shutdown();
+                    requested.expect("the retried original Work requests actual shutdown");
+                    (work, borrowed)
+                }
+            })
+            .unwrap_or_else(|_| panic!("the original host is entered"));
+        let mut execution = Box::pin(execution);
+        let execution_poll = poll_fn(|context| {
+            Poll::Ready(catch_unwind(AssertUnwindSafe(|| {
+                execution.as_mut().poll(context)
+            })))
+        })
+        .await;
+        drop(execution);
+        let Err(cause) = execution_poll else {
+            panic!("the supplied host accessor raises its original native cause");
+        };
+        let received_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+        let ApplicationOutcome::Prepared {
+            inputs: (prepared_root, prepared_spaces),
+            work,
+            cleanup,
+        } = receiver.await
+        else {
+            panic!("the receiver retains actual prepared inputs and original uninvoked Work");
+        };
+        let Err(publication_failure) = cleanup else {
+            panic!("the pre-handoff publication returns its actual receiving error");
+        };
+        let publication_failure: RecvError = publication_failure;
+        let prepared_admission = prepared_root.base().admission;
+        let prepared_values = prepared_root.base().original.as_slice().to_vec();
+        let prepared_allocation = Arc::as_ptr(&prepared_root.base().original);
+        let prepared_scope = prepared_spaces.accounts.registration_scope_id();
+        let failure_consumed = prepared_spaces
+            .hosting_failure
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_none();
+        let root_before_retry = original_root.strong_count();
+        let work_before_retry = original_work.strong_count();
+        let cause_before_retry = original_cause.strong_count();
+        let invocations_before_retry = invocations.get();
+        // Materialize a new App value from the same acquired actor and changed Spaces.
+        // This does not reconstruct an untouched declaration or consumed role.
+        let (execution, receiver) = App::new(prepared_root, prepared_spaces)
+            .execute_with::<AccountConclusion, (), _, _, _>(work)
+            .unwrap_or_else(|_| panic!("the same original host permits acquired-input retry"));
+        let ((), outcome) = tokio::join!(execution, receiver);
+        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+            panic!("the exact acquired actor and original Work complete on retry");
+        };
+        assert_completed_account(&cleanup);
+        let Ok(Ok((_, Ok(ActorRetirement::Completed { behavior, .. })))) = &cleanup else {
+            panic!("the full joined retry result retains the original actor");
+        };
+        let joined_allocation = Arc::as_ptr(&behavior.base().original);
+        let exact_work = original_work
+            .upgrade()
+            .is_some_and(|original| Rc::ptr_eq(&original, &output.0));
+        let exact_borrowed = ptr::eq(output.1, borrowed);
+        let work_values = output.0.as_slice().to_vec();
+        let borrowed_values = output.1.to_vec();
+        let invocations_after_retry = invocations.get();
+        let root_after_retry = original_root.strong_count();
+        let cause_after_retry = original_cause.strong_count();
+        drop((output, cleanup, publication_failure));
+        let root_after_discharge = original_root.strong_count();
+        let work_after_discharge = original_work.strong_count();
+        let cause_before_discharge = original_cause.strong_count();
+        drop(cause);
+        let cause_after_discharge = original_cause.strong_count();
+        assert_eq!(received_cause_object, original_cause_object);
+        assert_eq!(prepared_admission, AccountAdmission::Ready);
+        assert_eq!(prepared_values, vec![31, 37]);
+        assert_eq!(prepared_allocation, original_root_allocation);
+        assert_eq!(prepared_scope, original_scope);
+        assert!(failure_consumed);
+        assert_eq!(root_before_retry, 1);
+        assert_eq!(work_before_retry, 1);
+        assert_eq!(cause_before_retry, 1);
+        assert_eq!(invocations_before_retry, 0);
+        assert_eq!(joined_allocation, original_root_allocation);
+        assert!(exact_work);
+        assert!(exact_borrowed);
+        assert_eq!(work_values, vec![431, 433]);
+        assert_eq!(borrowed_values, vec![439, 443]);
+        assert_eq!(invocations_after_retry, 1);
+        assert_eq!(root_after_retry, 1);
+        assert_eq!(cause_after_retry, 1);
+        assert_eq!(root_after_discharge, 0);
+        assert_eq!(work_after_discharge, 0);
         assert_eq!(cause_before_discharge, 1);
         assert_eq!(cause_after_discharge, 0);
     });

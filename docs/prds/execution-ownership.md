@@ -9946,3 +9946,107 @@ net2738, public types0; its changes are records. A separate commit-bound
 recount covers final prose/backlog changes without overwriting these records.
 Entity review count erratum7c6f828b preserves94a and clarifies four passing
 model rows, each exit0; all explicit row/stream evidence stays unchanged.
+
+
+Formatted Prepared successor receipt `eb5ae807`, independently qualified
+`f1d8a700`, binds healthy App4ae2092a, fixture0ce6c446 and type-preserving
+original inverseb1bf7e6b. Only generic/product layouts add25 production
+lines; measured proposal+78/−15/net63 production, tests+146/−3/net143,
+zero new nominal types, one public variant and one actual-input parameter.
+All nine cfg fragments and native startup maps are conserved. Select the
+two-existing-file bounded trial under §52/§219, without final API acceptance.
+Current pre-edit checkpoint a20b87a0 remains118 tracked/zero untracked:
+production+8373/−2340/net6033, tests+23512/−2078/net21434,
+documentation+15640/−203/net15437, manifest/lock+51/−38/net13;
+five public nominals, zero removed. Stage40ab621238c9 records91 paths;
+canonical commit-bound e358814b records70 paths, production net133,
+tests net2738, zero new public types. Preserve these immutable snapshots.
+
+Root retains all already linked binaries and libraries while retiring only
+160 finished scratch objects,1,656,369,136 bytes, in receipt9d5ee0f7.
+No active compiler or cache user was observed. This makes room for the exact
+unchanged debug/release profiles; it does not alter Rust flags or verification.
+The collector performs ten frozen commands: whole30 no-run both, whole30
+positive both, selected original-borrow inverse both, restored whole30 both,
+and finally retained App2d/a819 whole29 both. Preserve every stream and347
+entry/exit maps; on any unexpected result restore the exact retained source.
+
+
+Conditional Entity correction is pushed as715a7b8e; canonical records are
+pushed asdc95462f. New exact-head checks Deny37432633432,
+Analyze37432633418 and aggregate CodeQL112168872508 pass. Nix check
+[37432633426](https://github.com/devrandom-labs/bombay/actions/runs/37432633426)
+fails after passing the earlier Entity pointer formation: counter example73
+has E0027 because its exhaustive Completed pattern omits nine current fields.
+The panic=unwind rejection printed earlier is an expected negative flake
+check which finishes successfully, not this build failure. Preserve full
+log SHA847d6ed1aac20a10dc6ed39d19c3b826340a2d00b038f01e296381a870e7e5a8; update the real result consumer without wildcard erasure.
+Counter source proposal, independent review and exact original/positive
+verification remain required. No workspace success or merge readiness.
+
+
+## 220. Repair the counter's complete joined-result consumer
+
+CI715a's actual E0027 and full log847d6ed1 identify one exhaustive example
+pattern missing nine existing authoritative fields. Select counter-only
+source59ad9a53, independently reviewed bfb0eb32: one already scoped example
+file, production+18/−0/net18, tests/public types0. Bind and observe each
+missing returned fact directly once. Preserve all original pure Counter tests,
+reply1, typed shutdown, original origin and complete prior result predicates.
+No wrapper, actor policy, runtime code, public bound or interface changes.
+
+Compare direct nine-field predicates with tuple grouping, wildcard ignoring
+and a summary wrapper. Direct predicates preserve diagnostic precision without
+another owner; wildcard/unchecked discharge fails complete-result evidence.
+These absent/empty expectations describe this concrete healthy Counter flow,
+not every Completed result. Counter has no terminal-report policy. Six other
+exhaustive stale patterns and seven wildcard example consumers need separate
+source-specific evidence; do not stamp root expectations onto child policies.
+
+Pinned external file-format20cef70c exits0; proposed2aa692fd and its sibling
+Counter source remain byte-exact. Root source review authenticates all proposal
+artifacts. Under §52/existing233-path scope, verify original E0027 both builds,
+corrected domain tests and actual counter execution both, repeat original
+static inverse both and corrected tests/execution both, then restore exact
+retained347-source map. Compilation cannot credit joined-consumer assertions;
+actual cargo run must execute them. Freeze all tracked sources/documents for
+these twelve commands. No claim of a new semantic production repair follows
+from this existing consumer correction; full current CI remains required.
+
+Pre-edit complete checkpoint e8e85c44 covers118 tracked/zero untracked:
+production+8373/−2340/net6033, tests+23512/−2078/net21434,
+documentation+15677/−203/net15474, manifest/lock+51/−38/net13;
+public nominals five/zero removed. Counter was already an affected path;
+this comparison adds no path or nominal type. Prepared actual be15409a has
+finished with exact retained-source restoration; its independent actual
+qualification is pending and no Prepared source is installed during this trial.
+
+
+§219 actual be15409a and nonauthor59c9803e qualify all ten commands,20
+complete streams and347-source maps: both compiler prerequisites0, four full30
+cohorts0, both original-borrow negatives reach3589 root0-versus1, and exact
+retained2d/a819 full29 restoration controls0. Original native Box/Work
+release and real host367 prerequisites precede the intended negative; later
+root-receiving/discharge assertions are unreachable and earn no negative credit.
+The new same-actor retry actually reaches its complete joined-result, original
+actor/Spaces/Work/borrow identities and final exact-release predicates. Eleven
+existing warnings remain; this is no strict/workspace/full-gate acceptance.
+
+Select only independently qualified4ae/0ce6 for conditional research backup
+under §196/§219, retaining all earlier original-proof snapshots. Reuse the
+existing affine publication, with production net63 and tests net143; no new
+nominal types. Prepared's public variant/actual-input parameter remain subject
+to final API/consumer/distillation review. No canonical production retention,
+69-source HOLD lifting or seven-gate acceptance is implied. Counter actual
+ba92860e is terminal with exact restoration and awaits independent qualification.
+
+
+Prepared post-install checkpoint bc1f6f9c covers118 tracked/zero untracked:
+production+8436/−2340/net6096, tests+23655/−2078/net21577,
+documentation+15733/−203/net15530, manifest/lock+51/−38/net13;
+five nominal types/zero removed, two existing public getters, one retirement
+variant, one application-outcome variant and one application-outcome generic.
+Stage40ab8323ab03 records production net5968/tests net18834. Canonical
+86dcbbea remains70 paths, production net133/tests net2738/public types0.
+Both whitespace checks and pinned whole workspace formatting pass after
+installation. Final commit-bound snapshots will be distinct records.
