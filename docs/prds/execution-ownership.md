@@ -10677,3 +10677,176 @@ zero untracked; production8602/−2342/net6260 (secondary6132), tests
 Canonical32d43a35 remains70/0, production133/tests2738/public0. This paragraph
 and the consistent backlog update require final recomputation before committing
 only the reviewed diagnostic and records. Unselected API prototypes stay restored.
+
+
+## 230. Collect current observation type denials with the exact owning lock
+
+Axum diagnostic correction3a25314 and canonical record99f4864 are pushed;
+required replacement CI remains prospective. STATIC72 successor a261d18a,
+collector95c541e8 and independent source reviewf6deb629 preserve all18 original
+source/manifest pairs and the failed720e/e137 attempt. Root authenticated all80
+artifacts and all808 owning bytes against selected git81 (preflight35376555).
+Each fresh fixture begins with exact65-package owning lockbe576e. No repository
+source, production/public type or fixture semantics change is selected.
+
+Run the prereviewed72 rows through pinned Bombay Nix:18 offline nonlocked full
+metadata formations,18 locked metadata validations and36 strict debug/optimized
+compiler checks. Exact20 owning package identities plus each original fixture
+are required; any package/source/checksum drift is NONPASS. Preserve the
+whole owning65 versus runtime179 graph distinction. Current runtime347 and
+owner808 memberships/bytes remain guarded before/after/finally, without source
+restoration or documentation edits while collection is live.
+
+Collector edge/feature checks establish declared requests and required feature
+inclusion, not exact least feature closure. Independent actual review must
+inspect complete resolved feature/edge closure, all stdout/stderr and complete
+primary/child/expansion diagnostics. Exact E-code/span alone is insufficient.
+Freeze every attempted row and formed lock even on setup/parser/normalizer
+failure; do not relax identity, feature or diagnostic expectations to obtain
+success. Original schema/seed/fixture laws remain unchanged. No model/fuzz,
+quality, full observation gate, canonical HOLD or delivery claim follows.
+
+
+## 231. Complete the caller migration before repeating ownership tests
+
+STATIC72 stopped after one successful offline metadata formation: the collector
+rejected a declared optional serde_core dependency before examining whether its
+resolve edge was enabled. Actual7c3bb292, complete exception and formed lock
+5d7647e1 are preserved; all347/808 source inputs are unchanged in finally.
+No compiler/static denial credit. Independent actual review and a narrow fresh
+collector correction remain required; do not loosen selected identity or feature
+closure requirements.
+
+Receiving successor11d3ab0c and wholly nonauthor source review5fe1de30 conserve
+all30 names and441 original assertions. Against retained0ce6 it is tests
++140/−46/net94; production/public types0. It migrates four async call sites
+without replacing native failures, original work, outputs or cleanup boundaries.
+Source eligibility only: first pinned rustfmt on external corrected App0ca and
+receivingbd31. Freeze hashes/format patches; then targeted JSON formation in
+both profiles and complete30 ownership tests in each, through pinned Nix.
+No partial a07 replay or previous borrowed-call success substitutes for these
+controllers. Complete streams/counts/warnings and all source/membership records
+are required. Finally restore exact App00d6/receiving0ce6 on every outcome.
+No source retention, final interface selection or EXEC gate self-approval.
+
+Formatter0da54bcf succeeds; corrected App0ca is unchanged and receivinge736
+contains only four formatting hunks. Nonauthor formatter review9ec9784f was
+received and fully read before the next trial. All1155 source inputs match
+before/finally. Root will run exactly the targeted checks and complete30 tests
+with no probe or additional repository path; final source restoration required.
+
+Receiving actual source formation passes both profiles, but debug test compilation
+stops with native LLVM “No space left on device” before any runtime test executes.
+All exact App00d6/receiving0ce6/1155 source inputs are restored. This is NONPASS,
+not a law failure. Preserve the three attempted rows, full streams and exception.
+After terminal compilation, retirementd782cb7f hashes95 exact generated scratch
+objects (2058593712 bytes) and preserves each six original binaries, all source
+and evidence. The failed receiving objects are not described as already linked.
+No broad cache cleanup or verification credit. Fresh two-row successor repeats
+only the previously unexecuted complete30 runtime debug/optimized commands with
+same0ca/e736, unchanged flags, exact30 names and finally original sources.
+The two successful earlier formation checks are not repeated or relabelled as
+a successful original four-command campaign; source epochs stay explicit.
+
+
+## 232. Collect observation type laws after the narrow metadata correction
+
+Receiving runtime successor7a4079a2 passes all30 original controllers in both
+profiles. Separate formationd7165079 passes both; its failed runtime compilation
+remains a native disk error, not a semantic result. Original App00d6/receiving0ce6
+and full1155 graphs are restored. Independent actual qualification is pending.
+
+Fresh STATIC72 receipt74cfd462, collector0b5e3f25 and nonauthor source review
+d11ae65a retain18 original source/manifest pairs, exact65 seeds,20 selected
+identities,72-command ordering, strict diagnostics and92 prior archive guards.
+Root fully read the collector and authenticated84 inputs, again comparing all808
+owner bytes with selected81 checkout before entry. Weak metadata exports retain
+conditional provenance and forwarded features; compile activation and exact
+least feature closure are not inferred. Run the existing72 rows through pinned
+Bombay Nix with source/prose writers idle. Preserve failures and finally invariant
+on every outcome. Independent full graph/streams/diagnostic review remains
+required; no source retention, final gate, HOLD, quality or delivery credit.
+Review5f8fb49e corrects original0ffb8067's later-live-epoch phrase without changing
+its archived STATIC graph/one-command qualification. Its later temporary source
+read cannot be attributed to the earlier completed STATIC collector.
+
+
+## 233. Repair the existing stash authoring fixture mismatch
+
+Replacement CI37457131501 at3a25314 passes the complete Axum3-test target, then
+fails template_authoring: the pass fixture and phased denial still supply an
+obsolete one-argument route; the owner requires both inner state and message.
+Full log is preserved. Existing pass and phase-denial sources receive that exact
+second input; expected E0271 retains the full real closed-phase rejection,
+without unrelated route-arity E0308. Proposed c41b9fdf touches exactly three
+existing fixture/diagnostic files: tests+5/−5/net0, production/public types0.
+This bounded expansion uses delegated §52 scope and remains within233 paths;
+no production changes are proposed. Independent source review, pinned external
+formatter and complete four-control original/corrected comparison both outer
+profiles precede retention. Trybuild uses dev compilation in both harness
+profiles, so do not claim optimized compilation of denials. Do not use overwrite
+or predict complete future diagnostics. Finally restore all original files;
+any unrelated failure remains NONPASS. Complete change measurement is required
+before selecting the independently qualified test-only correction.
+
+Source reviewf9497722 qualifies the bounded three-file proposal before execution.
+External formatter09bdea6a passes, changing only the pass fixture import wrapping
+(net−2 test lines); phase source and predicted diagnostic remain exact. Root
+reads all formatting/owner/source changes before the four-row trial. Combined
+formatted proposed delta is tests+6/−8/net−2, production/public0. Complete
+original/corrected full-target streams and1155 source restoration are required.
+
+
+Stash actualc6ac3b1c and wholly nonauthor actual/formatter reviewd7adcb63
+qualify the three existing paths. Original complete four-control target fails
+both outer profiles (two stale controls); corrected target passes all four
+controls and the one harness test each. Exact4b7f E0271 is present in both
+original actual streams and remains after correcting the unrelated route arity.
+Trybuild compiles denials in dev mode in both harness profiles. Eleven outer
+and three inner warnings remain; the pass fixture reprints those same three,
+without strict-warning credit. All1155 source/membership maps match finally.
+Retain only formatted aad38/3b118/4b7: tests+6/−8/net−2, production/public0.
+No execution API prototype is selected. Complete measurement precedes commit
+and push; required replacement CI and all final semantic gates remain open.
+
+
+## 234. Record bounded ownership and cancellation verification
+
+Receiving runtime7a4079a2 and independent nonauthor reviewd12313a5 qualify
+all30 original controllers in both builds, with exact original names/assertions,
+source restoration and native failures preserved. Formationd7165079 passes
+both; its separate disk-error runtime attempt remains NONPASS. Earlier paired
+APIa07 qualifies the two borrowed/non-Send caller tests per build only. These
+are disposable App0ca/receivinge736 trials, not retained API or family/HTTP
+acceptance. After all Rust collectors stopped, scratch retirement29c017c1
+removed16 exact already-linked receiving objects (1435323888 bytes), preserving
+the current executable and all sources/evidence. Of the six historical images
+at retirementd782's earlier cut, five still match; the receiving image has since
+been rebuilt. Do not assert six unchanged images across different epochs.
+
+STATIC72 actuald00cc717 and wholly nonauthor actual review6df3c702 qualify
+nine paired laws:18 positive checks and18 intended denials, half in each build,
+after18 exact-lock formations and18 locked metadata checks. All72 rows complete;
+no warnings, timeout or collector exception. Every selected package identity,
+all36 metadata objects, compiled package/feature sets and complete diagnostics
+were reviewed. Metadata has21 nodes/34 edges; compiled artifacts have18 positive
+package IDs/17 denial dependencies. The independently source-derived compiled
+closure has28 edges; those are not compiler-invocation edge logs. Conditional
+metadata exports do not prove optional compile activation. The20 diagnostics
+include two co-consequences of one missing inner event lane, and one private-field
+diagnostic names both correlation and recipient. Do not inflate those into
+additional laws. All18 original fixtures and1155 repository inputs are conserved;
+92 prior failed-attempt artifacts remain intact. Earlier setup failures stay
+unqualified. Model inversions, fuzz10000, strict workspace quality, full gates,
+canonical HOLD, minimization, extraction and reviewed delivery remain open.
+
+
+Precommit complete measurement8a294528/b4ef5e31 covers121/96 tracked paths,
+zero untracked. Research production+8602/−2342/net6260 (secondary6132),
+tests+24201/−2144/net22057 (secondary19314); public surface remains five
+conditional research types (three fresh/two promotions), with no new Stash type.
+Canonical adb7b6d3 remains70/0, production+167/−34/net133, tests+3295/−557/
+net2738, public0. Documentation/manifest totals and complete per-path hashes
+are preserved in the measured records. Recompute after this paragraph before
+committing the three narrow fixture changes and evidence; prototypes remain
+unselected and restored.

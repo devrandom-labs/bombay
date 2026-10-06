@@ -248,12 +248,12 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 ```text
 scope: conditional consolidated research; not distilled or accepted
 production: +8602 / -2342 / net 6260
-tests: +24195 / -2136 / net 22059
-documentation: +16448 / -203 / net 16245
+tests: +24201 / -2144 / net 22057
+documentation: +16650 / -203 / net 16447
 manifest/lock: +51 / -38 / net 13
 public API: +5 types (3 fresh / 2 promotions) / -0 types
 public getters: +2; public retirement variants: +1; application variants: +1; application generics: +1
-changed tracked paths: 118
+changed tracked paths: 121
 untracked paths: 0
 ```
 
@@ -1367,3 +1367,32 @@ Paired API comparison a07da704 is partial: corrected library checks and two
 borrowed callers pass both profiles, receiving target fails formation before
 any of30 controllers. Original source/receiving/probe absence restored; no
 API retention, full current trial or gate acceptance.
+
+
+### Current receiving, static cancellation and Stash evidence (EXEC §§231–234)
+
+Receiving30 runtime actual `7a4079a2de567418fb901f2addf475cbf3fee9fcd23cdea194c2c5298a644e0c`,
+nonauthor review `d12313a5103a8523950413559d591df42e29542f6365257a44d87879337ae7d4`:
+all30 original names pass both profiles, complete sources restored; corrected
+async API remains a disposable trial. Failed disk compilation and passed earlier
+formation are separate receipts, without full-campaign relabelling.
+
+STATIC72 actual `d00cc717fcad35ad168ed24bc895e744eebab8f7788c3d7601f39759a02e0eeb`
+at /tmp/bombay-observation-weak-resolution-successor-w_klq1lg/actual.json;
+independent review `6df3c702f185423fe73f259f8fddce014876d989e87f992ea99fceb841110144`
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-static72-actual-nonauthor-6692tl3h/review.json.
+All72 rows qualify the current nine paired static laws in debug/optimized builds.
+Exact graph/feature closure, complete diagnostics and144 streams reviewed;
+1155 source inputs conserved. Source-derived edges are not invocation logs.
+Earlier setup failures remain preserved; no model/fuzz/full-gate credit.
+
+Stash actual `c6ac3b1cdf0cae26c68df9bee05cb0bf1675d629c40cfc9314137ca8282b6c6e`
+at /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-stash-authoring-actual-root-euu5gk_4/actual.json;
+nonauthor review `d7adcb631d061bad9a8fc7e5fbdf7ed5a65de19254b257f4b50bb8a1331daf15`
+at /tmp/bombay-stash-authoring-actual-nonauthor-review-xzsypvk0/receipt.json.
+Original complete template_authoring target exits101 twice for the obsolete
+route signature; corrected complete four-control target exits0 twice. Exact
+closed-phase denial remains. Commands are pinned `nix develop` Cargo tests,
+`--offline --locked -p bombay-rs --test template_authoring [--release] -- --test-threads=1`.
+Trybuild inner compilation stays dev profile; retained three-file repair is
++6/−8/net−2 test lines, production/public0. Full CI remains required.
