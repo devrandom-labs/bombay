@@ -1,10 +1,11 @@
+use std::any::Any;
 use std::cell::Cell;
 use std::collections::VecDeque;
 use std::convert::Infallible;
 use std::future::{Future, pending};
-use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::panic::resume_unwind;
 use std::pin::Pin;
-use std::ptr::from_ref;
+use std::ptr::{self, from_ref};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Wake, Waker};
@@ -15,7 +16,11 @@ use behavior::{
     CreationKind, CreationSequence, Creations, InitializationTurn, MailAddr, MessageProtocol,
     Never, NoBirths, Step, Stopped, User, UserEvent,
 };
-use bombay_engine::{ActionsOf, Completion, Driver, DriverError, SettlementFailure};
+use core::fmt::Debug;
+
+use bombay_engine::{
+    ActionsOf, Completion, Driver, DriverError, DriverRetirement, SettlementFailure,
+};
 use tokio::runtime::Builder;
 use tokio::time::timeout;
 
@@ -39,6 +44,8 @@ enum ExecutionEvent {
     Next,
     DeliveredInput(u64),
     Retired,
+    EnvironmentReleased,
+    RetirementReceived,
 }
 
 #[derive(Default)]
@@ -137,7 +144,7 @@ impl TestActions<SettlementActor> for SettlementEnvironment {
         Ok(())
     }
 
-    async fn retire(self) {
+    async fn retire(&mut self) {
         self.execution_trace
             .lock()
             .unwrap()
@@ -164,8 +171,11 @@ fn execution(
 #[tokio::test]
 async fn universal_causal_transcript_has_no_prefetch_or_reentrancy() {
     let (driver, execution_trace) = execution([1, 2, 9, 100], None);
-    let retirement = driver.run().await;
-    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&retirement.disposition, &Ok(Completion::Stopped));
     assert_eq!(retirement.behavior.initialized, 1);
     assert_eq!(retirement.behavior.received_inputs, [1, 2, 9]);
     assert_eq!(
@@ -250,8 +260,11 @@ async fn initialization_has_exact_disposition_and_trace_across_terminal_boundari
         ),
     ] {
         let (driver, execution_trace) = execution(events, fail_on);
-        let retirement = driver.run().await;
-        assert_eq!(retirement.disposition, disposition);
+        let retirement = driver.run().await.unwrap_or_else(|driver| {
+            drop(driver);
+            panic!("the selected test host completes retirement")
+        });
+        assert_driver_disposition(&retirement.disposition, &disposition);
         assert_eq!(retirement.behavior.initialized, 1);
         assert_eq!(retirement.behavior.received_inputs, received_inputs);
         assert_eq!(retirement.residual, ());
@@ -321,7 +334,7 @@ impl TestActions<LedgerActor> for LedgerEnvironment {
         Ok(())
     }
 
-    async fn retire(self) {}
+    async fn retire(&mut self) {}
 }
 
 #[tokio::test]
@@ -341,8 +354,11 @@ async fn successor_state_and_complete_actions_come_from_the_same_decision() {
         },
     );
 
-    let retirement = driver.run().await;
-    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&retirement.disposition, &Ok(Completion::Stopped));
     assert_eq!(*committed.lock().unwrap(), [0, 2, 5, 5]);
     assert_eq!(retirement.behavior.value, 5);
     assert_eq!(retirement.behavior.initial_values.as_slice(), [0]);
@@ -385,7 +401,7 @@ impl TestActions<LedgerActor> for RejectedLedgerEnvironment {
         }
     }
 
-    async fn retire(self) {}
+    async fn retire(&mut self) {}
 }
 
 #[tokio::test]
@@ -404,10 +420,13 @@ async fn commitment_failure_does_not_roll_back_the_successful_fold() {
         },
     );
 
-    let retirement = driver.run().await;
-    assert_eq!(
-        retirement.disposition,
-        Err(DriverError::Settlement(SettlementFailure::Corrupt))
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(
+        &retirement.disposition,
+        &Err(DriverError::Settlement(SettlementFailure::Corrupt)),
     );
     assert_eq!(retirement.behavior.value, 3);
     assert_eq!(retirement.behavior.initial_values.as_slice(), [0]);
@@ -423,16 +442,23 @@ async fn commitment_failure_does_not_roll_back_the_successful_fold() {
 #[tokio::test]
 async fn unrelated_custom_behavior_shapes_use_the_same_driver_algorithm() {
     let (settlement_execution, _) = execution([9], None);
-    let settlement_retirement = settlement_execution.run().await;
-    assert_eq!(settlement_retirement.disposition, Ok(Completion::Stopped));
+    let settlement_retirement = settlement_execution.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&settlement_retirement.disposition, &Ok(Completion::Stopped));
 
     let move_retirement = direct(
         CellActor(Cell::new(0)),
         MoveInputEnvironment(Some(Box::new(42))),
     )
     .run()
-    .await;
-    assert_eq!(move_retirement.disposition, Ok(Completion::Stopped));
+    .await
+    .unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&move_retirement.disposition, &Ok(Completion::Stopped));
 
     let complete = Arc::new(Mutex::new(Vec::new()));
     let complete_retirement = direct(
@@ -444,8 +470,12 @@ async fn unrelated_custom_behavior_shapes_use_the_same_driver_algorithm() {
         CompleteEnvironment(complete),
     )
     .run()
-    .await;
-    assert_eq!(complete_retirement.disposition, Ok(Completion::Stopped));
+    .await
+    .unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&complete_retirement.disposition, &Ok(Completion::Stopped));
 }
 
 enum ClosedEvent {
@@ -521,7 +551,7 @@ impl TestActions<ClosedInputActor> for ClosedInputEnvironment {
         Ok(())
     }
 
-    async fn retire(self) {}
+    async fn retire(&mut self) {}
 }
 
 #[tokio::test]
@@ -538,16 +568,22 @@ async fn driver_accepts_only_the_final_closed_behavior_event_type() {
         },
     );
 
-    let retirement = driver.run().await;
-    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&retirement.disposition, &Ok(Completion::Stopped));
     assert_eq!(*committed.lock().unwrap(), [7, 8]);
 }
 
 #[tokio::test]
 async fn at_most_one_behavior_fold_is_active() {
     let (driver, execution_trace) = execution([1, 2, 9], None);
-    let retirement = driver.run().await;
-    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&retirement.disposition, &Ok(Completion::Stopped));
     assert_eq!(retirement.behavior.initialized, 1);
     assert_eq!(retirement.behavior.received_inputs, [1, 2, 9]);
     assert_eq!(
@@ -617,8 +653,11 @@ async fn local_commitment_advances_only_through_a_later_capability_event() {
         },
     );
 
-    let retirement = driver.run().await;
-    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&retirement.disposition, &Ok(Completion::Stopped));
     assert_eq!(*committed.lock().unwrap(), [7, 8]);
 }
 
@@ -646,47 +685,62 @@ impl TestActions<SettlementActor> for AlternateSettlementEnvironment {
         Ok(())
     }
 
-    async fn retire(self) {}
+    async fn retire(&mut self) {}
 }
 
 #[tokio::test]
 async fn one_behavior_is_substitutable_across_distinct_static_environments() {
     let (recording, _) = execution([9], None);
-    let recording_retirement = recording.run().await;
-    assert_eq!(recording_retirement.disposition, Ok(Completion::Stopped));
+    let recording_retirement = recording.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&recording_retirement.disposition, &Ok(Completion::Stopped));
 
     let alternate = direct(
         SettlementActor::default(),
         AlternateSettlementEnvironment(VecDeque::from([9])),
     );
-    let alternate_retirement = alternate.run().await;
-    assert_eq!(alternate_retirement.disposition, Ok(Completion::Stopped));
+    let alternate_retirement = alternate.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&alternate_retirement.disposition, &Ok(Completion::Stopped));
 }
 
 #[tokio::test]
 async fn exact_behavior_and_environment_errors_remain_distinct() {
     let (behavior_failure, _) = execution([7], None);
-    let behavior_retirement = behavior_failure.run().await;
-    assert_eq!(
-        behavior_retirement.disposition,
-        Err(DriverError::Behavior("controlled"))
+    let behavior_retirement = behavior_failure.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(
+        &behavior_retirement.disposition,
+        &Err(DriverError::Behavior("controlled")),
     );
 
     let (environment_failure, _) = execution([6], Some(61));
-    let environment_retirement = environment_failure.run().await;
-    assert_eq!(
-        environment_retirement.disposition,
-        Err(DriverError::Settlement(SettlementFailure::Corrupt))
+    let environment_retirement = environment_failure.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(
+        &environment_retirement.disposition,
+        &Err(DriverError::Settlement(SettlementFailure::Corrupt)),
     );
 }
 
 #[tokio::test]
 async fn controlled_failure_is_terminal_and_commits_no_nonexistent_actions() {
     let (driver, execution_trace) = execution([7, 8], None);
-    let retirement = driver.run().await;
-    assert_eq!(
-        retirement.disposition,
-        Err(DriverError::Behavior("controlled"))
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(
+        &retirement.disposition,
+        &Err(DriverError::Behavior("controlled")),
     );
     assert_eq!(retirement.behavior.initialized, 1);
     assert_eq!(retirement.behavior.received_inputs, [7]);
@@ -704,10 +758,13 @@ async fn controlled_failure_is_terminal_and_commits_no_nonexistent_actions() {
 #[tokio::test]
 async fn commit_failure_preserves_the_factual_committed_prefix() {
     let (driver, execution_trace) = execution([6, 10], Some(61));
-    let retirement = driver.run().await;
-    assert_eq!(
-        retirement.disposition,
-        Err(DriverError::Settlement(SettlementFailure::Corrupt))
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(
+        &retirement.disposition,
+        &Err(DriverError::Settlement(SettlementFailure::Corrupt)),
     );
     assert_eq!(retirement.behavior.initialized, 1);
     assert_eq!(retirement.behavior.received_inputs, [6]);
@@ -726,10 +783,13 @@ async fn commit_failure_preserves_the_factual_committed_prefix() {
 #[tokio::test]
 async fn initialization_commit_failure_is_exact_and_terminal() {
     let (driver, execution_trace) = execution([1], Some(0));
-    let retirement = driver.run().await;
-    assert_eq!(
-        retirement.disposition,
-        Err(DriverError::Settlement(SettlementFailure::Corrupt))
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(
+        &retirement.disposition,
+        &Err(DriverError::Settlement(SettlementFailure::Corrupt)),
     );
     assert_eq!(retirement.behavior.initialized, 1);
     assert_eq!(retirement.behavior.received_inputs, []);
@@ -745,8 +805,11 @@ async fn initialization_commit_failure_is_exact_and_terminal() {
 #[tokio::test]
 async fn source_closure_folds_no_synthetic_event_and_retires_once() {
     let (driver, execution_trace) = execution([], None);
-    let retirement = driver.run().await;
-    assert_eq!(retirement.disposition, Ok(Completion::Exhausted));
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&retirement.disposition, &Ok(Completion::Exhausted));
     assert_eq!(retirement.behavior.initialized, 1);
     assert_eq!(retirement.behavior.received_inputs, []);
     assert_eq!(
@@ -764,10 +827,16 @@ async fn completion_preserves_stop_and_input_exhaustion_as_success() {
     let (stopping, _) = execution([9], None);
     let (closing, _) = execution([], None);
 
-    let stopping_retirement = stopping.run().await;
-    assert_eq!(stopping_retirement.disposition, Ok(Completion::Stopped));
-    let closing_retirement = closing.run().await;
-    assert_eq!(closing_retirement.disposition, Ok(Completion::Exhausted));
+    let stopping_retirement = stopping.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&stopping_retirement.disposition, &Ok(Completion::Stopped));
+    let closing_retirement = closing.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&closing_retirement.disposition, &Ok(Completion::Exhausted));
 }
 
 struct RejectedInitialization;
@@ -812,7 +881,7 @@ impl TestActions<RejectedInitialization> for RejectedInitializationEnvironment {
     ) -> Result<(), Self::Error> {
         Ok(())
     }
-    async fn retire(self) {
+    async fn retire(&mut self) {
         self.0.fetch_add(1, Ordering::SeqCst);
     }
 }
@@ -825,13 +894,22 @@ async fn initialization_failure_returns_definition_and_retires_prepared_environm
         RejectedInitializationEnvironment(retirements.clone()),
     )
     .run()
-    .await;
-    assert_eq!(retirement.disposition, Err(DriverError::Behavior("init")));
+    .await
+    .unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&retirement.disposition, &Err(DriverError::Behavior("init")));
     assert_eq!(retirements.load(Ordering::SeqCst), 1);
 }
 
 struct PanickingInitialization {
     initialized: usize,
+    #[expect(
+        clippy::redundant_allocation,
+        reason = "Preserve native panic object identity separately from its shared payload lifetime."
+    )]
+    payload: Option<Box<Arc<Vec<u64>>>>,
 }
 
 impl Behavior for PanickingInitialization {
@@ -844,7 +922,11 @@ impl Behavior for PanickingInitialization {
 
     fn init(&mut self, _: InitializationTurn) -> BehaviorActed<Self> {
         self.initialized += 1;
-        panic!("pure initialization panic")
+        let payload = self
+            .payload
+            .take()
+            .expect("one original initialization payload");
+        resume_unwind(payload)
     }
 
     fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
@@ -852,7 +934,19 @@ impl Behavior for PanickingInitialization {
     }
 }
 
-struct InitializationPanicEnvironment(Arc<AtomicUsize>);
+struct InitializationPanicEnvironment {
+    retirements: Arc<AtomicUsize>,
+    execution_trace: ExecutionTrace,
+}
+
+impl Drop for InitializationPanicEnvironment {
+    fn drop(&mut self) {
+        self.execution_trace
+            .lock()
+            .unwrap()
+            .push(ExecutionEvent::EnvironmentReleased);
+    }
+}
 
 impl TestActions<PanickingInitialization> for InitializationPanicEnvironment {
     type Error = Infallible;
@@ -863,6 +957,10 @@ impl TestActions<PanickingInitialization> for InitializationPanicEnvironment {
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
     async fn next(&mut self) -> Option<<PanickingInitialization as Behavior>::Event> {
+        self.execution_trace
+            .lock()
+            .unwrap()
+            .push(ExecutionEvent::Next);
         None
     }
 
@@ -870,31 +968,100 @@ impl TestActions<PanickingInitialization> for InitializationPanicEnvironment {
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn apply(&mut self, _: ActionsOf<PanickingInitialization>) -> Result<(), Self::Error> {
+    async fn apply(
+        &mut self,
+        actions: ActionsOf<PanickingInitialization>,
+    ) -> Result<(), Self::Error> {
+        assert_eq!(actions.sends, Vec::<Never>::new());
+        assert_eq!(actions.creates, Creations::empty());
+        self.execution_trace
+            .lock()
+            .unwrap()
+            .push(ExecutionEvent::Commit(Vec::new(), actions.become_));
         Ok(())
     }
 
-    async fn retire(self) {
-        self.0.fetch_add(1, Ordering::SeqCst);
+    async fn retire(&mut self) {
+        self.retirements.fetch_add(1, Ordering::SeqCst);
+        self.execution_trace
+            .lock()
+            .unwrap()
+            .push(ExecutionEvent::Retired);
     }
 }
 
 #[tokio::test]
 async fn pure_initialization_panic_returns_surviving_behavior_and_retires_once() {
     let retirements = Arc::new(AtomicUsize::new(0));
+    let execution_trace = Arc::new(Mutex::new(Vec::new()));
+    let payload = Box::new(Arc::new(vec![103_u64, 107, 109]));
+    let payload_identity: *const (dyn Any + Send) = payload.as_ref();
+    let retained = Arc::downgrade(payload.as_ref());
+    let payload_allocation = Arc::as_ptr(payload.as_ref());
+    let values_allocation = payload.as_slice().as_ptr();
     let retirement = direct(
-        PanickingInitialization { initialized: 0 },
-        InitializationPanicEnvironment(retirements.clone()),
+        PanickingInitialization {
+            initialized: 0,
+            payload: Some(payload),
+        },
+        InitializationPanicEnvironment {
+            retirements: retirements.clone(),
+            execution_trace: execution_trace.clone(),
+        },
     )
     .run()
-    .await;
-
-    assert_eq!(retirement.behavior.initialized, 1);
-    assert_eq!(
-        retirement.disposition,
-        Err(DriverError::InitializationPanicked)
-    );
+    .await
+    .unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    execution_trace
+        .lock()
+        .unwrap()
+        .push(ExecutionEvent::RetirementReceived);
+    let DriverRetirement {
+        behavior:
+            PanickingInitialization {
+                initialized,
+                payload: None,
+            },
+        residual: (),
+        disposition: Err(DriverError::InitializationPanicked(cause)),
+        additional_failures,
+    } = retirement
+    else {
+        panic!("initialization panic returns the complete surviving Behavior and native cause");
+    };
+    assert_eq!(initialized, 1);
+    assert!(additional_failures.is_empty());
     assert_eq!(retirements.load(Ordering::SeqCst), 1);
+    println!(
+        "native fold cleanup: {:?}",
+        *execution_trace.lock().unwrap()
+    );
+    assert_eq!(
+        *execution_trace.lock().unwrap(),
+        [
+            ExecutionEvent::Retired,
+            ExecutionEvent::EnvironmentReleased,
+            ExecutionEvent::RetirementReceived,
+        ]
+    );
+    assert_eq!(retained.strong_count(), 1);
+    let original = retained
+        .upgrade()
+        .expect("the native retirement owns the original payload");
+    assert_eq!(Arc::as_ptr(&original), payload_allocation);
+    assert_eq!(original.as_ptr(), values_allocation);
+    assert_eq!(original.as_slice(), [103, 107, 109]);
+    drop(original);
+    let received_payload_identity: *const (dyn Any + Send) = cause.as_ref();
+    assert!(ptr::eq(
+        received_payload_identity.cast::<()>(),
+        payload_identity.cast::<()>(),
+    ));
+    drop(cause);
+    assert_eq!(retained.strong_count(), 0);
 }
 
 #[tokio::test]
@@ -905,10 +1072,14 @@ async fn every_ordinary_return_attempts_retirement_exactly_once() {
         RejectedInitializationEnvironment(init_retirements.clone()),
     )
     .run()
-    .await;
-    assert_eq!(
-        initialization.disposition,
-        Err(DriverError::Behavior("init"))
+    .await
+    .unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(
+        &initialization.disposition,
+        &Err(DriverError::Behavior("init")),
     );
     assert_eq!(init_retirements.load(Ordering::SeqCst), 1);
 
@@ -920,7 +1091,14 @@ async fn every_ordinary_return_attempts_retirement_exactly_once() {
         (Vec::new(), None),
     ] {
         let (driver, execution_trace) = execution(events, fail_on);
-        let _result = driver.run().await.disposition;
+        let _result = driver
+            .run()
+            .await
+            .unwrap_or_else(|driver| {
+                drop(driver);
+                panic!("the selected test host completes retirement")
+            })
+            .disposition;
         assert_eq!(
             execution_trace
                 .lock()
@@ -955,8 +1133,11 @@ async fn every_ordinary_terminal_edge_is_fused_against_later_work() {
         ),
     ] {
         let (driver, execution_trace) = execution(events, fail_on);
-        let retirement = driver.run().await;
-        assert_eq!(retirement.disposition, expected);
+        let retirement = driver.run().await.unwrap_or_else(|driver| {
+            drop(driver);
+            panic!("the selected test host completes retirement")
+        });
+        assert_driver_disposition(&retirement.disposition, &expected);
         let execution_trace = execution_trace.lock().unwrap();
         assert_eq!(execution_trace.last(), Some(&ExecutionEvent::Retired));
         assert_eq!(
@@ -1014,7 +1195,7 @@ impl TestActions<CellActor> for MoveInputEnvironment {
     async fn apply(&mut self, _actions: ActionsOf<CellActor>) -> Result<(), Self::Error> {
         Ok(())
     }
-    async fn retire(self) {}
+    async fn retire(&mut self) {}
 }
 
 #[tokio::test]
@@ -1023,8 +1204,11 @@ async fn driver_adds_no_sync_clone_or_static_payload_bound() {
         CellActor(Cell::new(0)),
         MoveInputEnvironment(Some(Box::new(42))),
     );
-    let retirement = driver.run().await;
-    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&retirement.disposition, &Ok(Completion::Stopped));
 }
 
 struct PendingEnvironment {
@@ -1052,7 +1236,7 @@ impl TestActions<SettlementActor> for PendingEnvironment {
     async fn apply(&mut self, _actions: ActionsOf<SettlementActor>) -> Result<(), Self::Error> {
         Ok(())
     }
-    async fn retire(self) {
+    async fn retire(&mut self) {
         *self.retired.lock().unwrap() = RetirementObservation::Attempted;
     }
 }
@@ -1113,7 +1297,7 @@ impl TestActions<SettlementActor> for PendingInputEnvironment {
         Ok(())
     }
 
-    async fn retire(self) {}
+    async fn retire(&mut self) {}
 }
 
 struct WakeCount(AtomicUsize);
@@ -1210,7 +1394,7 @@ impl TestActions<SettlementActor> for StallingEnvironment {
         Ok(())
     }
 
-    async fn retire(self) {
+    async fn retire(&mut self) {
         *self.retirement_started.lock().unwrap() = RetirementObservation::Attempted;
         if self.stall_at == StallAt::Retirement {
             pending::<()>().await;
@@ -1301,6 +1485,13 @@ enum PanicStage {
 
 struct PanickingActor {
     panic_stage: PanicStage,
+    initialized: usize,
+    received_inputs: Vec<u64>,
+    #[expect(
+        clippy::redundant_allocation,
+        reason = "Preserve native panic object identity separately from its shared payload lifetime."
+    )]
+    payload: Option<Box<Arc<Vec<u64>>>>,
 }
 
 impl Behavior for PanickingActor {
@@ -1312,24 +1503,38 @@ impl Behavior for PanickingActor {
     type Birth = NoBirths;
 
     fn init(&mut self, _: InitializationTurn) -> BehaviorActed<Self> {
+        self.initialized += 1;
         match &self.panic_stage {
-            PanicStage::Initialization => panic!("injected initialization panic"),
+            PanicStage::Initialization => {
+                let payload = self
+                    .payload
+                    .take()
+                    .expect("one original initialization cause");
+                resume_unwind(payload)
+            }
             PanicStage::Turn => Ok(Actions::cont()),
         }
     }
-    fn transition(&mut self, _: ActiveTurn, _: Self::Event) -> BehaviorActed<Self> {
-        panic!("injected fold panic")
+    fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
+        self.received_inputs.push(event.message);
+        let payload = self.payload.take().expect("one original event-fold cause");
+        resume_unwind(payload)
     }
 }
 
 struct PanicEnvironment {
     next: Arc<AtomicUsize>,
     dropped: Arc<Mutex<ExecutionCustody>>,
+    execution_trace: ExecutionTrace,
 }
 
 impl Drop for PanicEnvironment {
     fn drop(&mut self) {
         *self.dropped.lock().unwrap() = ExecutionCustody::Released;
+        self.execution_trace
+            .lock()
+            .unwrap()
+            .push(ExecutionEvent::EnvironmentReleased);
     }
 }
 
@@ -1343,49 +1548,174 @@ impl TestActions<PanickingActor> for PanicEnvironment {
     )]
     async fn next(&mut self) -> Option<<PanickingActor as Behavior>::Event> {
         self.next.fetch_add(1, Ordering::SeqCst);
+        self.execution_trace
+            .lock()
+            .unwrap()
+            .push(ExecutionEvent::Next);
+        self.execution_trace
+            .lock()
+            .unwrap()
+            .push(ExecutionEvent::DeliveredInput(1));
         Some(User::new(MailAddr(1), 1))
     }
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn apply(&mut self, _actions: ActionsOf<PanickingActor>) -> Result<(), Self::Error> {
+    async fn apply(&mut self, actions: ActionsOf<PanickingActor>) -> Result<(), Self::Error> {
+        assert_eq!(actions.sends, Vec::<Never>::new());
+        assert_eq!(actions.creates, Creations::empty());
+        self.execution_trace
+            .lock()
+            .unwrap()
+            .push(ExecutionEvent::Commit(Vec::new(), actions.become_));
         Ok(())
     }
-    async fn retire(self) {}
+    async fn retire(&mut self) {
+        self.execution_trace
+            .lock()
+            .unwrap()
+            .push(ExecutionEvent::Retired);
+    }
 }
 
-fn panic_case(panic_stage: PanicStage) -> (bool, usize, ExecutionCustody) {
+#[expect(
+    clippy::redundant_allocation,
+    reason = "Preserve native panic object identity separately from its shared payload lifetime."
+)]
+fn panic_case(
+    panic_stage: PanicStage,
+    payload: Box<Arc<Vec<u64>>>,
+    execution_trace: &ExecutionTrace,
+) -> (
+    DriverRetirement<PanickingActor, (), DriverError<Infallible, Infallible>>,
+    usize,
+    ExecutionCustody,
+) {
     let next = Arc::new(AtomicUsize::new(0));
     let dropped = Arc::new(Mutex::new(ExecutionCustody::Retained));
     let driver = direct(
-        PanickingActor { panic_stage },
+        PanickingActor {
+            panic_stage,
+            initialized: 0,
+            received_inputs: Vec::new(),
+            payload: Some(payload),
+        },
         PanicEnvironment {
             next: next.clone(),
             dropped: dropped.clone(),
+            execution_trace: execution_trace.clone(),
         },
     );
     let runtime = Builder::new_current_thread().build().unwrap();
-    let panic = catch_unwind(AssertUnwindSafe(|| runtime.block_on(driver.run())));
+    let retirement = runtime.block_on(driver.run()).unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    execution_trace
+        .lock()
+        .unwrap()
+        .push(ExecutionEvent::RetirementReceived);
     (
-        panic.is_err(),
+        retirement,
         next.load(Ordering::SeqCst),
         *dropped.lock().unwrap(),
     )
 }
 
 #[test]
-fn pure_initialization_panic_is_caught_and_turn_panic_consumes_execution() {
-    let initialization = panic_case(PanicStage::Initialization);
-    let turn = panic_case(PanicStage::Turn);
-    assert_eq!(initialization, (false, 0, ExecutionCustody::Released));
-    assert_eq!(turn, (true, 1, ExecutionCustody::Released));
+fn pure_initialization_panic_retires_before_acquiring_input() {
+    let execution_trace = Arc::new(Mutex::new(Vec::new()));
+    let payload = Box::new(Arc::new(vec![103_u64, 107, 109]));
+    let (retirement, next, custody) =
+        panic_case(PanicStage::Initialization, payload, &execution_trace);
+    let DriverRetirement {
+        behavior:
+            PanickingActor {
+                panic_stage: PanicStage::Initialization,
+                initialized,
+                received_inputs,
+                payload: None,
+            },
+        residual: (),
+        disposition: Err(DriverError::InitializationPanicked(_)),
+        additional_failures,
+    } = retirement
+    else {
+        panic!("initialization panic returns its surviving definition after retirement");
+    };
+    assert_eq!(initialized, 1);
+    assert_eq!(received_inputs, Vec::<u64>::new());
+    assert!(additional_failures.is_empty());
+    assert_eq!((next, custody), (0, ExecutionCustody::Released));
+    assert_eq!(
+        *execution_trace.lock().unwrap(),
+        [
+            ExecutionEvent::Retired,
+            ExecutionEvent::EnvironmentReleased,
+            ExecutionEvent::RetirementReceived,
+        ]
+    );
 }
 
 #[test]
-fn panic_consumes_the_only_execution_and_cannot_poll_again() {
-    let turn = panic_case(PanicStage::Turn);
-    assert_eq!(turn, (true, 1, ExecutionCustody::Released));
+fn pure_turn_panic_returns_native_cause_after_retirement() {
+    let execution_trace = Arc::new(Mutex::new(Vec::new()));
+    let payload = Box::new(Arc::new(vec![127_u64, 131, 137]));
+    let payload_identity: *const (dyn Any + Send) = payload.as_ref();
+    let retained = Arc::downgrade(payload.as_ref());
+    let payload_allocation = Arc::as_ptr(payload.as_ref());
+    let values_allocation = payload.as_slice().as_ptr();
+    let (retirement, next, custody) = panic_case(PanicStage::Turn, payload, &execution_trace);
+    let DriverRetirement {
+        behavior:
+            PanickingActor {
+                panic_stage: PanicStage::Turn,
+                initialized,
+                received_inputs,
+                payload: None,
+            },
+        residual: (),
+        disposition: Err(DriverError::TransitionPanicked(cause)),
+        additional_failures,
+    } = retirement
+    else {
+        panic!("turn panic returns its surviving actor and original cause after retirement");
+    };
+    assert_eq!(initialized, 1);
+    assert_eq!(received_inputs, [1]);
+    assert!(additional_failures.is_empty());
+    assert_eq!((next, custody), (1, ExecutionCustody::Released));
+    println!(
+        "native fold cleanup: {:?}",
+        *execution_trace.lock().unwrap()
+    );
+    assert_eq!(
+        *execution_trace.lock().unwrap(),
+        [
+            ExecutionEvent::Commit(Vec::new(), Step::Continue),
+            ExecutionEvent::Next,
+            ExecutionEvent::DeliveredInput(1),
+            ExecutionEvent::Retired,
+            ExecutionEvent::EnvironmentReleased,
+            ExecutionEvent::RetirementReceived,
+        ]
+    );
+    assert_eq!(retained.strong_count(), 1);
+    let original = retained
+        .upgrade()
+        .expect("the original event-fold payload survives");
+    assert_eq!(Arc::as_ptr(&original), payload_allocation);
+    assert_eq!(original.as_ptr(), values_allocation);
+    assert_eq!(original.as_slice(), [127, 131, 137]);
+    drop(original);
+    let received_payload_identity: *const (dyn Any + Send) = cause.as_ref();
+    assert!(ptr::eq(
+        received_payload_identity.cast::<()>(),
+        payload_identity.cast::<()>(),
+    ));
+    drop(cause);
+    assert_eq!(retained.strong_count(), 0);
 }
 
 struct SelfSendEnvironment {
@@ -1430,7 +1760,7 @@ impl TestActions<SelfSender> for SelfSendEnvironment {
         self.events.extend(sends);
         Ok(())
     }
-    async fn retire(self) {}
+    async fn retire(&mut self) {}
 }
 
 struct SelfSender {
@@ -1470,8 +1800,11 @@ async fn self_send_reenters_only_as_a_later_ordinary_event() {
             transcript: transcript.clone(),
         },
     );
-    let retirement = driver.run().await;
-    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&retirement.disposition, &Ok(Completion::Stopped));
     assert_eq!(retirement.behavior.received_inputs, [1, 2]);
     assert_eq!(
         *transcript.lock().unwrap(),
@@ -1569,7 +1902,7 @@ impl TestActions<CompleteActionActor> for CompleteEnvironment {
         Ok(())
     }
 
-    async fn retire(self) {
+    async fn retire(&mut self) {
         self.0.lock().unwrap().push(ExecutionEvent::Retired);
     }
 }
@@ -1594,8 +1927,12 @@ async fn complete_move_only_stop_actions_cross_once_before_completion() {
         CompleteEnvironment(observed.clone()),
     )
     .run()
-    .await;
-    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+    .await
+    .unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&retirement.disposition, &Ok(Completion::Stopped));
     assert!(retirement.behavior.sends.is_none());
     assert!(retirement.behavior.children.is_none());
     let [(birth_id, birth_kind), (replacement_id, replacement_kind)] =
@@ -1735,7 +2072,7 @@ impl TestActions<CreationScopeActor> for CreationScopeEnvironment {
         Ok(())
     }
 
-    async fn retire(self) {
+    async fn retire(&mut self) {
         self.execution_trace
             .lock()
             .unwrap()
@@ -1756,8 +2093,11 @@ async fn environment_preserves_creation_precedence_and_same_action_result_scope(
         },
     );
 
-    let retirement = driver.run().await;
-    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+    let retirement = driver.run().await.unwrap_or_else(|driver| {
+        drop(driver);
+        panic!("the selected test host completes retirement")
+    });
+    assert_driver_disposition(&retirement.disposition, &Ok(Completion::Stopped));
     assert_eq!(retirement.residual, ());
     let observed = execution_trace.lock().unwrap();
     let [
@@ -1779,3 +2119,32 @@ async fn environment_preserves_creation_precedence_and_same_action_result_scope(
 mod support;
 
 use support::{TestActions, direct};
+
+fn assert_driver_disposition<
+    Request: PartialEq + Debug,
+    BehaviorError: PartialEq + Debug,
+    ActivationError: PartialEq + Debug,
+>(
+    actual: &Result<Completion<Request>, DriverError<BehaviorError, ActivationError>>,
+    expected: &Result<Completion<Request>, DriverError<BehaviorError, ActivationError>>,
+) {
+    match (actual, expected) {
+        (Ok(actual), Ok(expected)) => assert_eq!(actual, expected),
+        (Err(DriverError::Behavior(actual)), Err(DriverError::Behavior(expected))) => {
+            assert_eq!(actual, expected);
+        }
+        (Err(DriverError::Activation(actual)), Err(DriverError::Activation(expected))) => {
+            assert_eq!(actual, expected);
+        }
+        (Err(DriverError::Settlement(actual)), Err(DriverError::Settlement(expected))) => {
+            assert_eq!(actual, expected);
+        }
+        (
+            Err(DriverError::InitializationPanicked(_)),
+            Err(DriverError::InitializationPanicked(_)),
+        ) => {}
+        (actual, expected) => panic!(
+            "unexpected disposition in this non-native-panic law: actual={actual:?}, expected={expected:?}"
+        ),
+    }
+}

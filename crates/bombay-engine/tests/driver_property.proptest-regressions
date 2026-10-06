@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 902aa62ae2fd326a5f1e1b10714ee8a6ff52a18e53bd99b21ddd5137c77141b7 # shrinks to script = Script { initialization: PlannedTurn { id: 0, decision: Continue, settlement: Accepted, source: Admit(PlannedTurn { id: 0, decision: Continue, settlement: Rejected, source: Exhaust, first: 0, second: 0, child: None }), first: 0, second: 0, child: None }, activation: Establish, ordinary: [] }

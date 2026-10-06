@@ -1,3 +1,4 @@
+use core::ops::ControlFlow;
 use std::collections::VecDeque;
 
 use behavior::{
@@ -5,19 +6,21 @@ use behavior::{
     Creations, EventLayer, Interpretation, MailAddr, Never, SendLayer, SettlementStatus,
     SourceCustody, Step, User,
 };
+use core::fmt::Debug;
+
 use bombay_engine::{
     ActionsOf, ActiveEnvironment, Completion, Driver, DriverError, Environment, SettlementFailure,
 };
 use proptest::prelude::*;
 
-#[derive(Clone, Debug)]
-enum FoldChoice {
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum ActorDecision {
     Continue,
     Stop,
     Fail,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 enum SourceChoice {
     Exhaust,
     Retain,
@@ -26,10 +29,10 @@ enum SourceChoice {
     Close,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct PlannedTurn {
     id: u8,
-    fold: FoldChoice,
+    decision: ActorDecision,
     settlement: SettlementStatus,
     source: SourceChoice,
     first: u8,
@@ -37,13 +40,13 @@ struct PlannedTurn {
     child: Option<u8>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 enum ActivationChoice {
     Establish,
     Fail,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Script {
     initialization: PlannedTurn,
     activation: ActivationChoice,
@@ -57,7 +60,7 @@ enum Ingress {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum Fact {
+enum ExecutionEvent {
     ActivationFailed,
     Created(u8),
     SentFirst(u8),
@@ -80,14 +83,14 @@ struct Directive {
 struct ScriptBehavior {
     initialization: PlannedTurn,
     creations: CreationSequence,
-    folded: Vec<Ingress>,
+    delivered_inputs: Vec<Ingress>,
 }
 
 impl ScriptBehavior {
     fn actions(&mut self, turn: PlannedTurn) -> BehaviorActed<Self> {
-        match turn.fold {
-            FoldChoice::Fail => Err("fold failed"),
-            FoldChoice::Continue | FoldChoice::Stop => {
+        match turn.decision {
+            ActorDecision::Fail => Err("decision failed"),
+            ActorDecision::Continue | ActorDecision::Stop => {
                 let creates = match turn.child {
                     Some(child) => {
                         let id = self.creations.issue().expect("bounded creation IDs exist");
@@ -95,10 +98,10 @@ impl ScriptBehavior {
                     }
                     None => Creations::empty(),
                 };
-                let step = match turn.fold {
-                    FoldChoice::Continue => Step::Continue,
-                    FoldChoice::Stop => Step::Stop(behavior::Stopped),
-                    FoldChoice::Fail => unreachable!("failure returned before actions"),
+                let step = match turn.decision {
+                    ActorDecision::Continue => Step::Continue,
+                    ActorDecision::Stop => Step::Stop(behavior::Stopped),
+                    ActorDecision::Fail => unreachable!("failure returned before actions"),
                 };
                 Ok(Actions::new(
                     SendLayer::new(
@@ -135,7 +138,7 @@ impl Behavior for ScriptBehavior {
             EventLayer::Owned(turn) => (Ingress::Source(turn.id), turn),
             EventLayer::Inner(event) => (Ingress::Ordinary(event.message.id), event.message),
         };
-        self.folded.push(ingress);
+        self.delivered_inputs.push(ingress);
         self.actions(turn)
     }
 }
@@ -144,7 +147,7 @@ struct ScriptEnvironment {
     activation: ActivationChoice,
     ordinary: VecDeque<PlannedTurn>,
     source: VecDeque<PlannedTurn>,
-    facts: Vec<Fact>,
+    execution_trace: Vec<ExecutionEvent>,
 }
 
 struct ScriptSettlement {
@@ -164,15 +167,16 @@ impl ScriptEnvironment {
         let Actions { sends, creates, .. } = actions;
         for creation in creates {
             let (_, child, _) = creation.into_parts();
-            self.facts.push(Fact::Created(child));
+            self.execution_trace.push(ExecutionEvent::Created(child));
         }
         let mut first = sends.owned.into_iter();
         let directive = first.next().expect("one first-lane directive");
         let extra = first.next();
         assert!(extra.is_none());
-        self.facts.push(Fact::SentFirst(directive.first));
-        self.facts
-            .extend(sends.inner.into_iter().map(Fact::SentSecond));
+        self.execution_trace
+            .push(ExecutionEvent::SentFirst(directive.first));
+        self.execution_trace
+            .extend(sends.inner.into_iter().map(ExecutionEvent::SentSecond));
         let status = directive.settlement;
         let settlement = ScriptSettlement {
             id: directive.id,
@@ -192,61 +196,102 @@ impl Environment<ScriptBehavior> for ScriptEnvironment {
     type Active = Self;
     type Settlement = ScriptSettlement;
     type Error = &'static str;
-    type Residual = Vec<Fact>;
+    type Residual = (Vec<ExecutionEvent>, Option<ActionsOf<ScriptBehavior>>);
+    type RetirementRequest = Never;
 
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
     async fn activate(
-        mut self,
-        actions: ActionsOf<ScriptBehavior>,
-    ) -> Result<(Self::Active, Interpretation<Self::Settlement>), (Self::Error, Self::Residual)>
-    {
-        match self.activation {
+        environment: &mut Option<Self>,
+        actions: &mut Option<ActionsOf<ScriptBehavior>>,
+        received: &mut Option<
+            Result<(Self::Active, Interpretation<Self::Settlement>), (Self::Error, Self::Residual)>,
+        >,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        let Some(original) = environment.as_mut() else {
+            return;
+        };
+        match original.activation {
             ActivationChoice::Establish => {
-                let settlement = self.commit(actions);
-                Ok((self, settlement))
+                let Some(actions) = actions.take() else {
+                    return;
+                };
+                let settlement = original.commit(actions);
+                let active = environment
+                    .take()
+                    .expect("the script environment remains available");
+                *received = Some(Ok((active, settlement)));
             }
             ActivationChoice::Fail => {
-                self.facts.push(Fact::ActivationFailed);
-                Err(("activation failed", self.facts))
+                original
+                    .execution_trace
+                    .push(ExecutionEvent::ActivationFailed);
+                let original = environment
+                    .take()
+                    .expect("the rejected script environment remains available");
+                *received = Some(Err((
+                    "activation failed",
+                    (original.execution_trace, actions.take()),
+                )));
             }
         }
     }
 
-    #[expect(
-        clippy::unused_async_trait_impl,
-        reason = "Defer trait-port work and owned inputs until the future is polled."
-    )]
-    async fn retire(mut self) -> Self::Residual {
-        self.facts.push(Fact::PreparedRetired);
-        self.facts
+    async fn retire(
+        environment: &mut Option<Self>,
+        actions: &mut Option<ActionsOf<ScriptBehavior>>,
+        received: &mut Option<Self::Residual>,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        let Some(original) = environment.as_mut() else {
+            return;
+        };
+        original
+            .execution_trace
+            .push(ExecutionEvent::PreparedRetired);
+        let original = environment
+            .take()
+            .expect("the prepared script environment remains available");
+        *received = Some((original.execution_trace, actions.take()));
     }
 }
 
 impl ActiveEnvironment<ScriptBehavior> for ScriptEnvironment {
     type Settlement = ScriptSettlement;
-    type Residual = Vec<Fact>;
+    type Residual = (Vec<ExecutionEvent>, Option<ActionsOf<ScriptBehavior>>);
+    type RetirementRequest = Never;
 
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn next(&mut self) -> Option<<ScriptBehavior as Behavior>::Event> {
-        self.facts.push(Fact::RequestedOrdinary);
-        self.ordinary
-            .pop_front()
-            .map(|turn| EventLayer::Inner(User::new(MailAddr(7), turn)))
+    async fn next(&mut self) -> ControlFlow<Never, Option<<ScriptBehavior as Behavior>::Event>> {
+        ControlFlow::Continue({
+            self.execution_trace.push(ExecutionEvent::RequestedOrdinary);
+            self.ordinary
+                .pop_front()
+                .map(|turn| EventLayer::Inner(User::new(MailAddr(7), turn)))
+        })
     }
 
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn next_source(&mut self) -> Option<<ScriptBehavior as Behavior>::Event> {
-        self.facts.push(Fact::RequestedSource);
-        self.source.pop_front().map(EventLayer::Owned)
+    async fn next_source(
+        &mut self,
+    ) -> ControlFlow<Never, Option<<ScriptBehavior as Behavior>::Event>> {
+        ControlFlow::Continue({
+            self.execution_trace.push(ExecutionEvent::RequestedSource);
+            self.source.pop_front().map(EventLayer::Owned)
+        })
     }
 
     #[expect(
@@ -255,21 +300,31 @@ impl ActiveEnvironment<ScriptBehavior> for ScriptEnvironment {
     )]
     async fn apply(
         &mut self,
-        actions: ActionsOf<ScriptBehavior>,
-    ) -> Interpretation<Self::Settlement> {
-        self.commit(actions)
+        actions: &mut Option<ActionsOf<ScriptBehavior>>,
+        received: &mut Option<Interpretation<Self::Settlement>>,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        if let Some(actions) = actions.take() {
+            *received = Some(self.commit(actions));
+        }
     }
 
-    #[expect(
-        clippy::unused_async_trait_impl,
-        reason = "Defer trait-port work and owned inputs until the future is polled."
-    )]
     async fn offer_next(
         &mut self,
-        mut settlement: Self::Settlement,
-    ) -> SourceCustody<Self::Settlement> {
-        self.facts.push(Fact::Offered(settlement.id));
-        match std::mem::replace(&mut settlement.source, SourceChoice::Exhaust) {
+        settlement: &mut Option<Self::Settlement>,
+        received: &mut Option<SourceCustody<Self::Settlement>>,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        let Some(mut settlement) = settlement.take() else {
+            return;
+        };
+        self.execution_trace
+            .push(ExecutionEvent::Offered(settlement.id));
+        let offered = match std::mem::replace(&mut settlement.source, SourceChoice::Exhaust) {
             SourceChoice::Exhaust => SourceCustody::Exhausted(settlement),
             SourceChoice::Retain => SourceCustody::Retained(settlement),
             SourceChoice::Admit(turn) => {
@@ -278,56 +333,138 @@ impl ActiveEnvironment<ScriptBehavior> for ScriptEnvironment {
             }
             SourceChoice::AdmitMissing => SourceCustody::Admitted(settlement),
             SourceChoice::Close => SourceCustody::Closed(settlement),
+        };
+        *received = Some(offered);
+    }
+
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
+        self.execution_trace.push(ExecutionEvent::Published);
+        ControlFlow::Continue(())
+    }
+
+    async fn retire(
+        environment: &mut Option<Self>,
+        actions: &mut Option<ActionsOf<ScriptBehavior>>,
+        interpretation: &mut Option<Interpretation<Self::Settlement>>,
+        source: &mut Option<SourceCustody<Self::Settlement>>,
+        source_index: &mut Option<usize>,
+        ingress: &mut Option<ControlFlow<Never, Option<<ScriptBehavior as Behavior>::Event>>>,
+        settlements: &mut Option<Vec<Self::Settlement>>,
+        received: &mut Option<Self::Residual>,
+    ) {
+        if received.is_some()
+            || interpretation.is_some()
+            || source.is_some()
+            || source_index.is_some()
+            || ingress.is_some()
+        {
+            return;
         }
-    }
-
-    fn publish(&mut self) {
-        self.facts.push(Fact::Published);
-    }
-
-    #[expect(
-        clippy::unused_async_trait_impl,
-        reason = "Defer trait-port work and owned inputs until the future is polled."
-    )]
-    async fn retire(mut self, settlements: Vec<Self::Settlement>) -> Self::Residual {
-        self.facts.push(Fact::Retired(
+        let Some(original) = environment.as_mut() else {
+            return;
+        };
+        let Some(settlements) = settlements.take() else {
+            return;
+        };
+        original.execution_trace.push(ExecutionEvent::Retired(
             settlements
                 .into_iter()
                 .map(|settlement| settlement.id)
                 .collect(),
         ));
-        self.facts
+        let original = environment
+            .take()
+            .expect("the retiring script environment remains available");
+        *received = Some((original.execution_trace, actions.take()));
     }
 }
 
 type Disposition = Result<Completion, DriverError<&'static str, &'static str>>;
 
-fn execute(script: Script) -> (Disposition, Vec<Ingress>, Vec<Fact>) {
+fn execute(script: Script) -> (Disposition, Vec<Ingress>, Vec<ExecutionEvent>) {
+    let expected_initialization = script.initialization.clone();
+    let expected_activation = script.activation.clone();
     let behavior = ScriptBehavior {
         initialization: script.initialization,
         creations: CreationSequence::new(),
-        folded: Vec::new(),
+        delivered_inputs: Vec::new(),
     };
     let environment = ScriptEnvironment {
         activation: script.activation,
         ordinary: script.ordinary.into(),
         source: VecDeque::new(),
-        facts: Vec::new(),
+        execution_trace: Vec::new(),
     };
     let runtime = tokio::runtime::Builder::new_current_thread()
         .build()
         .expect("local runtime builds");
-    let retirement = runtime.block_on(Driver::new(behavior, environment).run());
+    let retirement = runtime
+        .block_on(Driver::new(behavior, environment).run())
+        .unwrap_or_else(|driver| {
+            drop(driver);
+            panic!("the selected script host completes retirement")
+        });
+    let (trace, uncommitted) = retirement.residual;
+    match (
+        expected_activation,
+        &expected_initialization.decision,
+        uncommitted,
+    ) {
+        (ActivationChoice::Fail, ActorDecision::Continue | ActorDecision::Stop, Some(actions)) => {
+            let Actions {
+                sends,
+                creates,
+                become_,
+            } = actions;
+            let children = creates
+                .into_iter()
+                .map(|creation| {
+                    let (id, child, kind) = creation.into_parts();
+                    (id, kind, child)
+                })
+                .collect::<Vec<_>>();
+            let expected_children = expected_initialization
+                .child
+                .into_iter()
+                .collect::<Vec<_>>();
+            let actual_children = children
+                .iter()
+                .map(|(_, _, child)| *child)
+                .collect::<Vec<_>>();
+            assert_eq!(actual_children, expected_children);
+            assert!(
+                children
+                    .iter()
+                    .all(|(_, kind, _)| matches!(kind, behavior::CreationKind::Birth))
+            );
+            let [directive] = sends.owned.as_slice() else {
+                panic!("one original initialization directive")
+            };
+            assert_eq!(directive.id, expected_initialization.id);
+            assert_eq!(directive.settlement, expected_initialization.settlement);
+            assert_eq!(directive.source, expected_initialization.source);
+            assert_eq!(directive.first, expected_initialization.first);
+            assert_eq!(sends.inner, [expected_initialization.second]);
+            match expected_initialization.decision {
+                ActorDecision::Continue => assert!(matches!(become_, Step::Continue)),
+                ActorDecision::Stop => assert!(matches!(become_, Step::Stop(_))),
+                ActorDecision::Fail => unreachable!("a failed fold supplies no actions"),
+            }
+        }
+        (ActivationChoice::Establish, _, None)
+        | (ActivationChoice::Fail, ActorDecision::Fail, None) => {}
+        _ => panic!("only a rejected host activation retains the exact uncommitted initialization"),
+    }
     (
         retirement.disposition,
-        retirement.behavior.folded,
-        retirement.residual,
+        retirement.behavior.delivered_inputs,
+        trace,
     )
 }
 
 struct CausalModel {
-    facts: Vec<Fact>,
-    folded: Vec<Ingress>,
+    execution_trace: Vec<ExecutionEvent>,
+    delivered_inputs: Vec<Ingress>,
     pending: Vec<u8>,
 }
 
@@ -339,10 +476,12 @@ enum ModelEnd {
 impl CausalModel {
     fn commit(&mut self, turn: &PlannedTurn) {
         if let Some(child) = turn.child {
-            self.facts.push(Fact::Created(child));
+            self.execution_trace.push(ExecutionEvent::Created(child));
         }
-        self.facts.push(Fact::SentFirst(turn.first));
-        self.facts.push(Fact::SentSecond(turn.second));
+        self.execution_trace
+            .push(ExecutionEvent::SentFirst(turn.first));
+        self.execution_trace
+            .push(ExecutionEvent::SentSecond(turn.second));
         self.pending.insert(0, turn.id);
     }
 
@@ -356,7 +495,7 @@ impl CausalModel {
     }
 
     fn offer(&mut self, turn: &PlannedTurn) -> Result<(), ModelEnd> {
-        self.facts.push(Fact::Offered(turn.id));
+        self.execution_trace.push(ExecutionEvent::Offered(turn.id));
         match &turn.source {
             SourceChoice::Exhaust => self.discharge(turn.id),
             SourceChoice::Retain => {}
@@ -366,25 +505,25 @@ impl CausalModel {
                 )));
             }
             SourceChoice::AdmitMissing => {
-                self.facts.push(Fact::RequestedSource);
+                self.execution_trace.push(ExecutionEvent::RequestedSource);
                 return Err(ModelEnd::Failure(DriverError::Settlement(
                     SettlementFailure::SourceClosed,
                 )));
             }
             SourceChoice::Admit(source) => {
-                self.facts.push(Fact::RequestedSource);
-                self.fold(source, Ingress::Source(source.id))?;
-                self.facts.push(Fact::Offered(turn.id));
+                self.execution_trace.push(ExecutionEvent::RequestedSource);
+                self.decision(source, Ingress::Source(source.id))?;
+                self.execution_trace.push(ExecutionEvent::Offered(turn.id));
                 self.discharge(turn.id);
             }
         }
         Ok(())
     }
 
-    fn fold(&mut self, turn: &PlannedTurn, ingress: Ingress) -> Result<(), ModelEnd> {
-        self.folded.push(ingress);
-        if matches!(turn.fold, FoldChoice::Fail) {
-            return Err(ModelEnd::Failure(DriverError::Behavior("fold failed")));
+    fn decision(&mut self, turn: &PlannedTurn, ingress: Ingress) -> Result<(), ModelEnd> {
+        self.delivered_inputs.push(ingress);
+        if matches!(turn.decision, ActorDecision::Fail) {
+            return Err(ModelEnd::Failure(DriverError::Behavior("decision failed")));
         }
         self.commit(turn);
         if matches!(turn.settlement, SettlementStatus::Corrupt) {
@@ -392,73 +531,77 @@ impl CausalModel {
                 SettlementFailure::Corrupt,
             )));
         }
-        if matches!(turn.fold, FoldChoice::Stop) {
+        if matches!(turn.decision, ActorDecision::Stop) {
             return Err(ModelEnd::Stopped);
         }
         self.offer(turn)
     }
 }
 
-fn expected(script: &Script) -> (Disposition, Vec<Ingress>, Vec<Fact>) {
+fn expected(script: &Script) -> (Disposition, Vec<Ingress>, Vec<ExecutionEvent>) {
     let mut model = CausalModel {
-        facts: Vec::new(),
-        folded: Vec::new(),
+        execution_trace: Vec::new(),
+        delivered_inputs: Vec::new(),
         pending: Vec::new(),
     };
     let initial = &script.initialization;
-    let disposition = if matches!(initial.fold, FoldChoice::Fail) {
-        model.facts.push(Fact::PreparedRetired);
-        Err(DriverError::Behavior("fold failed"))
+    let disposition = if matches!(initial.decision, ActorDecision::Fail) {
+        model.execution_trace.push(ExecutionEvent::PreparedRetired);
+        Err(DriverError::Behavior("decision failed"))
     } else if matches!(script.activation, ActivationChoice::Fail) {
-        model.facts.push(Fact::ActivationFailed);
+        model.execution_trace.push(ExecutionEvent::ActivationFailed);
         Err(DriverError::Activation("activation failed"))
     } else {
         model.commit(initial);
-        let outcome = match (initial.settlement, &initial.fold) {
+        let outcome = match (initial.settlement, &initial.decision) {
             (SettlementStatus::Rejected, _) => Err(ModelEnd::Failure(DriverError::Settlement(
                 SettlementFailure::Rejected,
             ))),
             (SettlementStatus::Corrupt, _) => Err(ModelEnd::Failure(DriverError::Settlement(
                 SettlementFailure::Corrupt,
             ))),
-            (SettlementStatus::Accepted, FoldChoice::Stop) => Err(ModelEnd::Stopped),
-            (SettlementStatus::Accepted, FoldChoice::Continue) => {
+            (SettlementStatus::Accepted, ActorDecision::Stop) => Err(ModelEnd::Stopped),
+            (SettlementStatus::Accepted, ActorDecision::Continue) => {
                 if let Err(end) = model.offer(initial) {
                     Err(end)
                 } else {
-                    model.facts.push(Fact::Published);
+                    model.execution_trace.push(ExecutionEvent::Published);
                     let mut ordinary = script.ordinary.iter();
                     loop {
-                        model.facts.push(Fact::RequestedOrdinary);
+                        model
+                            .execution_trace
+                            .push(ExecutionEvent::RequestedOrdinary);
                         let Some(turn) = ordinary.next() else {
                             break Ok(Completion::Exhausted);
                         };
-                        match model.fold(turn, Ingress::Ordinary(turn.id)) {
+                        match model.decision(turn, Ingress::Ordinary(turn.id)) {
                             Ok(()) => {}
                             Err(end) => break Err(end),
                         }
                     }
                 }
             }
-            (SettlementStatus::Accepted, FoldChoice::Fail) => {
+            (SettlementStatus::Accepted, ActorDecision::Fail) => {
                 unreachable!("initial failure retired the prepared environment")
             }
         };
-        model.facts.push(Fact::Retired(model.pending.clone()));
+        model
+            .execution_trace
+            .push(ExecutionEvent::Retired(model.pending.clone()));
         match outcome {
             Ok(completion) => Ok(completion),
             Err(ModelEnd::Stopped) => Ok(Completion::Stopped),
             Err(ModelEnd::Failure(error)) => Err(error),
         }
     };
-    (disposition, model.folded, model.facts)
+    (disposition, model.delivered_inputs, model.execution_trace)
 }
 
-fn fold_strategy() -> impl Strategy<Value = FoldChoice> {
+fn actor_decision_strategy() -> impl Strategy<Value = ActorDecision> {
     prop_oneof![
-        Just(FoldChoice::Continue),
-        Just(FoldChoice::Stop),
-        Just(FoldChoice::Fail)
+        Just(ActorDecision::Continue),
+        Just(ActorDecision::Stop),
+        Just(ActorDecision::Fail)
     ]
 }
 
@@ -482,7 +625,7 @@ fn source_strategy() -> impl Strategy<Value = SourceChoice> {
 fn turn_strategy() -> BoxedStrategy<PlannedTurn> {
     let leaf = (
         any::<u8>(),
-        fold_strategy(),
+        actor_decision_strategy(),
         settlement_strategy(),
         source_strategy(),
         any::<u8>(),
@@ -490,9 +633,9 @@ fn turn_strategy() -> BoxedStrategy<PlannedTurn> {
         prop::option::of(any::<u8>()),
     )
         .prop_map(
-            |(id, fold, settlement, source, first, second, child)| PlannedTurn {
+            |(id, decision, settlement, source, first, second, child)| PlannedTurn {
                 id,
-                fold,
+                decision,
                 settlement,
                 source,
                 first,
@@ -503,24 +646,24 @@ fn turn_strategy() -> BoxedStrategy<PlannedTurn> {
     leaf.prop_recursive(2, 32, 4, |inner| {
         (
             any::<u8>(),
-            fold_strategy(),
+            actor_decision_strategy(),
             settlement_strategy(),
             inner.prop_map(|turn| SourceChoice::Admit(Box::new(turn))),
             any::<u8>(),
             any::<u16>(),
             prop::option::of(any::<u8>()),
         )
-            .prop_map(
-                |(id, fold, settlement, source, first, second, child)| PlannedTurn {
+            .prop_map(|(id, decision, settlement, source, first, second, child)| {
+                PlannedTurn {
                     id,
-                    fold,
+                    decision,
                     settlement,
                     source,
                     first,
                     second,
                     child,
-                },
-            )
+                }
+            })
     })
     .boxed()
 }
@@ -543,13 +686,13 @@ fn script_strategy() -> impl Strategy<Value = Script> {
 
 fn matrix_turn(
     id: u8,
-    fold: FoldChoice,
+    decision: ActorDecision,
     settlement: SettlementStatus,
     source: SourceChoice,
 ) -> PlannedTurn {
     PlannedTurn {
         id,
-        fold,
+        decision,
         settlement,
         source,
         first: id.wrapping_add(1),
@@ -560,7 +703,11 @@ fn matrix_turn(
 
 #[test]
 fn bounded_phase_matrix_covers_failure_source_and_terminal_edges() {
-    let folds = [FoldChoice::Continue, FoldChoice::Stop, FoldChoice::Fail];
+    let decisions = [
+        ActorDecision::Continue,
+        ActorDecision::Stop,
+        ActorDecision::Fail,
+    ];
     let statuses = [
         SettlementStatus::Accepted,
         SettlementStatus::Rejected,
@@ -573,32 +720,36 @@ fn bounded_phase_matrix_covers_failure_source_and_terminal_edges() {
         SourceChoice::Close,
         SourceChoice::Admit(Box::new(matrix_turn(
             3,
-            FoldChoice::Continue,
+            ActorDecision::Continue,
             SettlementStatus::Accepted,
             SourceChoice::Exhaust,
         ))),
     ];
-    for fold in &folds {
+    for decision in &decisions {
         for status in statuses {
             for source in &sources {
-                let initial = matrix_turn(1, fold.clone(), status, source.clone());
+                let initial = matrix_turn(1, decision.clone(), status, source.clone());
                 let script = Script {
                     initialization: initial,
                     activation: ActivationChoice::Establish,
                     ordinary: vec![matrix_turn(
                         2,
-                        FoldChoice::Continue,
+                        ActorDecision::Continue,
                         SettlementStatus::Accepted,
                         SourceChoice::Exhaust,
                     )],
                 };
-                assert_eq!(execute(script.clone()), expected(&script));
+                let (actual_disposition, actual_folded, actual_trace) = execute(script.clone());
+                let (expected_disposition, expected_folded, expected_trace) = expected(&script);
+                assert_driver_disposition(&actual_disposition, &expected_disposition);
+                assert_eq!(actual_folded, expected_folded);
+                assert_eq!(actual_trace, expected_trace);
 
-                let ordinary = matrix_turn(4, fold.clone(), status, source.clone());
+                let ordinary = matrix_turn(4, decision.clone(), status, source.clone());
                 let script = Script {
                     initialization: matrix_turn(
                         0,
-                        FoldChoice::Continue,
+                        ActorDecision::Continue,
                         SettlementStatus::Accepted,
                         SourceChoice::Exhaust,
                     ),
@@ -607,13 +758,17 @@ fn bounded_phase_matrix_covers_failure_source_and_terminal_edges() {
                         ordinary,
                         matrix_turn(
                             5,
-                            FoldChoice::Stop,
+                            ActorDecision::Stop,
                             SettlementStatus::Accepted,
                             SourceChoice::Exhaust,
                         ),
                     ],
                 };
-                assert_eq!(execute(script.clone()), expected(&script));
+                let (actual_disposition, actual_folded, actual_trace) = execute(script.clone());
+                let (expected_disposition, expected_folded, expected_trace) = expected(&script);
+                assert_driver_disposition(&actual_disposition, &expected_disposition);
+                assert_eq!(actual_folded, expected_folded);
+                assert_eq!(actual_trace, expected_trace);
             }
         }
     }
@@ -621,14 +776,18 @@ fn bounded_phase_matrix_covers_failure_source_and_terminal_edges() {
         let script = Script {
             initialization: matrix_turn(
                 0,
-                FoldChoice::Continue,
+                ActorDecision::Continue,
                 SettlementStatus::Accepted,
                 SourceChoice::Exhaust,
             ),
             activation,
             ordinary: Vec::new(),
         };
-        assert_eq!(execute(script.clone()), expected(&script));
+        let (actual_disposition, actual_folded, actual_trace) = execute(script.clone());
+        let (expected_disposition, expected_folded, expected_trace) = expected(&script);
+        assert_driver_disposition(&actual_disposition, &expected_disposition);
+        assert_eq!(actual_folded, expected_folded);
+        assert_eq!(actual_trace, expected_trace);
     }
 }
 
@@ -637,6 +796,119 @@ proptest! {
 
     #[test]
     fn typed_scripts_match_the_independent_causal_model(script in script_strategy()) {
-        prop_assert_eq!(execute(script.clone()), expected(&script));
+        let (actual_disposition, actual_folded, actual_trace) = execute(script.clone());
+                let (expected_disposition, expected_folded, expected_trace) = expected(&script);
+                assert_driver_disposition(&actual_disposition, &expected_disposition);
+                assert_eq!(actual_folded, expected_folded);
+                assert_eq!(actual_trace, expected_trace);
     }
+}
+
+fn assert_driver_disposition<Request: PartialEq + Debug>(
+    actual: &Result<Completion<Request>, DriverError<&'static str, &'static str>>,
+    expected: &Result<Completion<Request>, DriverError<&'static str, &'static str>>,
+) {
+    match (actual, expected) {
+        (Ok(actual), Ok(expected)) => assert_eq!(actual, expected),
+        (Err(DriverError::Behavior(actual)), Err(DriverError::Behavior(expected)))
+        | (Err(DriverError::Activation(actual)), Err(DriverError::Activation(expected))) => {
+            assert_eq!(actual, expected);
+        }
+        (Err(DriverError::Settlement(actual)), Err(DriverError::Settlement(expected))) => {
+            assert_eq!(actual, expected);
+        }
+        (
+            Err(DriverError::InitializationPanicked(_)),
+            Err(DriverError::InitializationPanicked(_)),
+        ) => {}
+        (actual, expected) => panic!(
+            "unexpected disposition in this non-native-panic law: actual={actual:?}, expected={expected:?}"
+        ),
+    }
+}
+
+#[test]
+fn rejected_source_continuation_during_initialization_settles_before_publication() {
+    let script = Script {
+        initialization: PlannedTurn {
+            id: 1,
+            decision: ActorDecision::Continue,
+            settlement: SettlementStatus::Accepted,
+            source: SourceChoice::Admit(Box::new(PlannedTurn {
+                id: 2,
+                decision: ActorDecision::Continue,
+                settlement: SettlementStatus::Rejected,
+                source: SourceChoice::Exhaust,
+                first: 22,
+                second: 222,
+                child: None,
+            })),
+            first: 11,
+            second: 111,
+            child: None,
+        },
+        activation: ActivationChoice::Establish,
+        ordinary: Vec::new(),
+    };
+    let (actual_disposition, actual_inputs, actual_trace) = execute(script);
+    assert_eq!(actual_inputs, [Ingress::Source(2)]);
+    assert_eq!(
+        actual_trace,
+        [
+            ExecutionEvent::SentFirst(11),
+            ExecutionEvent::SentSecond(111),
+            ExecutionEvent::Offered(1),
+            ExecutionEvent::RequestedSource,
+            ExecutionEvent::SentFirst(22),
+            ExecutionEvent::SentSecond(222),
+            ExecutionEvent::Offered(2),
+            ExecutionEvent::Offered(1),
+            ExecutionEvent::Published,
+            ExecutionEvent::RequestedOrdinary,
+            ExecutionEvent::Retired(Vec::new()),
+        ],
+        "source continuation disposition={actual_disposition:?}"
+    );
+    assert_driver_disposition(&actual_disposition, &Ok(Completion::Exhausted));
+}
+
+#[test]
+fn rejected_source_stop_during_initialization_preserves_stop_and_settlement_order() {
+    let script = Script {
+        initialization: PlannedTurn {
+            id: 1,
+            decision: ActorDecision::Continue,
+            settlement: SettlementStatus::Accepted,
+            source: SourceChoice::Admit(Box::new(PlannedTurn {
+                id: 2,
+                decision: ActorDecision::Stop,
+                settlement: SettlementStatus::Rejected,
+                source: SourceChoice::Exhaust,
+                first: 22,
+                second: 222,
+                child: None,
+            })),
+            first: 11,
+            second: 111,
+            child: None,
+        },
+        activation: ActivationChoice::Establish,
+        ordinary: Vec::new(),
+    };
+    let (actual_disposition, actual_inputs, actual_trace) = execute(script);
+    assert_eq!(actual_inputs, [Ingress::Source(2)]);
+    assert_eq!(
+        actual_trace,
+        [
+            ExecutionEvent::SentFirst(11),
+            ExecutionEvent::SentSecond(111),
+            ExecutionEvent::Offered(1),
+            ExecutionEvent::RequestedSource,
+            ExecutionEvent::SentFirst(22),
+            ExecutionEvent::SentSecond(222),
+            ExecutionEvent::Retired(vec![2, 1]),
+        ],
+        "source stop disposition={actual_disposition:?}"
+    );
+    assert_driver_disposition(&actual_disposition, &Ok(Completion::Stopped));
 }

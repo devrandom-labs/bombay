@@ -121,7 +121,7 @@ impl TestActions<StopOnOne> for ImmediateEnvironment {
         Ok(())
     }
 
-    async fn retire(self) {}
+    async fn retire(&mut self) {}
 }
 
 fn block_on<T>(future: impl Future<Output = T>) -> T {
@@ -151,7 +151,15 @@ fn one_complete_driver_execution_allocates_one_settlement_queue() {
             panic!("Driver measurement must retain its allocation count")
         }
     };
-    assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+    let retirement = match retirement {
+        Ok(retirement) => retirement,
+        Err(driver) => {
+            drop(driver);
+            panic!("the immediate allocation host completes original retirement");
+        }
+    };
+    assert!(retirement.additional_failures.is_empty());
+    assert!(matches!(retirement.disposition, Ok(Completion::Stopped)));
     assert_eq!(allocations, 1, "Driver allocated {allocations} times");
 }
 
@@ -227,7 +235,15 @@ fn allocations_on_another_thread_do_not_belong_to_driver_execution() {
         let global_allocations = ALLOCATIONS.load(Ordering::Relaxed) - before;
         phase.store(AllocationWork::Released as usize, Ordering::Release);
         worker.join().expect("other allocation owner completes");
-        assert_eq!(retirement.disposition, Ok(Completion::Stopped));
+        let retirement = match retirement {
+            Ok(retirement) => retirement,
+            Err(driver) => {
+                drop(driver);
+                panic!("the immediate allocation host completes original retirement");
+            }
+        };
+        assert!(retirement.additional_failures.is_empty());
+        assert!(matches!(retirement.disposition, Ok(Completion::Stopped)));
         assert_eq!(other_thread_allocations.load(Ordering::Acquire), 5);
         assert!(global_allocations >= 6);
         assert_eq!(allocations, 1, "Driver allocated {allocations} times");
