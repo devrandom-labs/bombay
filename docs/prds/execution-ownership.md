@@ -9064,3 +9064,137 @@ regression files are now tracked, so the current stage has90 tracked paths and
 zero untracked; the cumulative set has118 tracked paths and zero untracked.
 This changes tracking status, not source content or semantic acceptance.
 The remaining four evidence documents are committed separately after recount.
+
+
+## 203. Verify selected application host and original input custody
+
+Before changing the existing separate-result integration test, record two
+public paired-execution laws from XO16–18: constructing under actual host H
+keeps root, cleanup and child execution on H even when the caller polls on K;
+actual H destruction cannot fabricate a root residual, work output or successful
+join. Caller Work and explicit raw-root projection run on K. H-context presence
+is not a promise that H stays alive; retain the actual acquired failures only.
+
+Source packet `97fd2c8a` first repairs twelve stale exhaustive retirement patterns
+in the existing completed_application_receiving test. Preserve all23 existing
+controllers and assertions; bind all newly added typed custody lanes explicitly
+and assert their lawful empty values for these pure account scenarios. No
+blanket discarded fields, weaker outcomes or production correction from compiler
+formation errors. This separate prerequisite is+146 test lines.
+
+Its two further public witnesses use genuine H/K runtimes, original allocations,
+non-Send caller output, borrowed input, actual child terminal projection, native
+cleanup cancellation, uninvoked callable recovery and untouched cold-input retry.
+No effects occur inside Behavior methods. One private total terminal sum owns
+the exact root/child projection products; zero public types or runtime machinery.
+Witness delta+282/−1/net281; combined+428/−1/net427 test lines before formatting,
+production zero, one existing already approved path. Independent source review
+`c4325412` authenticates all25 artifacts, five complete patch/inverse pairs,
+current923e kernel, all23 old controllers and two new controllers. It supplies
+bounded source eligibility only, no design-gate acceptance.
+
+Run pinned formatting to stdout before guarded installation. Require compilation,
+healthy witnesses and the full existing integration cohort in debug/optimized
+builds. The original omitted-H scope inversion must fail the actual child H/K
+identity after real joins; the uninvoked-input discharge inversion must fail the
+exact NotInvoked frame after actual H destruction. Neither a compile error nor
+later unexecuted assertion earns kill credit. Record exact whole-source restoration
+and rerun healthy after each inverse. Root/cleanup H affinity is source-traced;
+only child projection observes H directly, while Work/root projection observe K.
+This remains a bounded witness, not universal host-shutdown liveness or the full
+standard-birth failure transport gate. All seven open gates and HOLD remain.
+
+
+The first pinned formatted successor is6abc5ec0: combined tests+732/−1/net731,
+production/public types zero. Complete compiler attempt exits101 before running
+any controller: new root-with-child stop custody is an existing
+RetirementCreationSettlement, not a plain vector. Preserve that formation veto;
+no host-law failure is inferred. Owning Behavior actions.rs39–76 and existing
+application11413 establish its consuming law: take the exact ActionSettlement,
+consume creations.into_settlement, match actual CreationSettlement::Settled,
+then inspect the entire empty creation/send/Stop product. Before installing,
+proposal bombay-selected-host-typed-creation-root-hjadx5ym adds the module-level
+owning imports and this exact consuming observation (+15/−5/net10 tests).
+No accessor, production machinery, new type or weaker law is proposed.
+
+
+The first executing combined cohort compiles and runs25 controllers:24 pass,
+including all23 original tests and actual selected-host destruction; the new
+H/K scene fails at3043, expected one stop row but received two retained rows.
+This is an incomplete proposed oracle, not evidence that runtime affinity failed.
+ApplicationBehavior init1442 appends the real declared child to the root's
+Continue actions; transition1467 appends an empty creation batch to Stop.
+Existing conservation witness11400 independently expects stop-front and original
+initialization. Before correcting the test, proposal
+bombay-selected-host-complete-creation-root-8lmqcli1 adds22 net test lines:
+consume both complete typed rows in order, inspect accepted ChildChoice::Head
+Established child with original Birth kind and correlate its issued creator-local
+ID to the independently acquired ChildOrigin nonce. Never predict that ID or
+use it as actor identity. Original root/child allocation identities, every
+remaining lane, actual joins and H/K affinity stay unchanged. No production or
+new type; rerun the complete25 cohort before any host-law inversion credit.
+
+
+Independent source review vetoes only the newly proposed creation-ID/origin-nonce
+equality before installation. These are distinct authoritative values:
+ApplicationCapabilities next_child_route starts at0, while owning Core
+CreationSequence issues nonzero IDs; establishment independently stores route
+in ChildOrigin and request ID in CommittedChild. Preserve that design falsifier
+instead of making either value agree. The host law needs no new correlation.
+The corrected bounded witness removes only that unsupported proposed assertion,
+keeps both complete creation/send/verdict rows, original accepted Established
+capability and Birth provenance, then explicitly discharges CommittedChild
+only after acquiring the independently typed child retirement. Original actual
+child address, role, allocation and H-affinity checks stay intact. No equality,
+new adapter or identity contract is invented from compiler/test output.
+
+
+Final formatted fixture `ff178cf0` retains all23 original controllers and adds
+exactly two public host/input laws. Its complete test-only delta against the
+committed3970 fixture is+769/−1/net768; production/public types zero. Healthy
+full integration runs pass25 tests in each debug and optimized build, and the
+full restored cohorts pass the same25 names in both builds, zero ignored or
+filtered. Eleven existing library warnings remain; no strict/all-target pass
+is inferred. Whole pinned formatting and diff whitespace checks pass.
+
+Actual packet `7fa4b69a` records six exact command rows and347-source maps.
+The omitted selected-host entry fails101 at the actual child H/K comparison
+in both builds, after real joins and both complete root action rows. Replacing
+original NotInvoked custody with Interrupted fails101 at that exact public
+frame in both builds after genuine H destruction. Later assertions unreached
+by either negative run earn no inversion credit. Each mutation changes only
+the application kernel; all three full restorations and final live347 map
+match the healthy source exactly. Independent nonauthor review `80e8601a`
+authenticates all six rows, four intended failures and100 positive outcomes
+across baseline/restored cohorts; this is25 distinct tests, not100 tests.
+No destroyed-root residual, root task identity or opaque panic identity is
+invented from cleanup cancellation. Kernel remains923e; tests supply no new
+production design and do not accept the seven open gates or lift HOLD.
+
+Before optimized verification, retire only32 authenticated finished debug
+code-generation object files from two already linked executables, releasing
+1,552,577,056 bytes. Receipt `0ee062cc` retains original hashes and sizes;
+all source, selected dependencies, libraries, binaries and evidence remain.
+This storage action supplies no semantic acceptance.
+
+
+## 204. Execute the ordinary async-running comparison before API selection
+
+Use independently reviewed two-method source candidate `a3e93811` against
+healthy923e. It replaces only App/Application run_with with async methods
+awaiting the existing execution/result pair, removing two runtime builders
+(production+89/−131/net−42, no new nominal type). This is an isolated temporary
+comparison, not public retention or full DG-API acceptance. Separate original
+compiler witnesses must distinguish Result-not-Future from the former Send
+restriction; one failure cannot stand in for the other. Actual public consumers
+must exercise both declarations, caller-owned host, original borrowed non-Send
+output and nested Result error with complete raw retirement observations.
+
+Before temporary source installation, preserve exact healthy source and current
+fixtureff178, all selected locks/pins and complete source inventory. Use one
+private temporary integration path, removed after the experiment, within the
+delegated233-path allowance. Restore healthy source in a finally boundary,
+record exact commands/results, and independently review intended failures and
+healthy controls. No migration or gate approval follows from compiler formation
+alone. Genuine no-work/AsyncFnOnce/Entity/HTTP and blocking-disposal comparisons
+remain separate; do not blindly combine incompatible outcome signatures.
