@@ -1597,6 +1597,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use core::task::{Context, Waker};
     use std::convert::Infallible;
     use std::future::pending;
     use std::mem::size_of;
@@ -1606,15 +1607,25 @@ mod tests {
     use std::time::Duration;
 
     use behavior::{
-        ActionItem, Actions, BehaviorActed, EventLayer, Here, InitializationTurn, InterpretItem,
-        InterpreterFault, InterpreterRequest, InterpreterRequests, ItemSettlement, MessageProtocol,
-        Never, NoBirthProtocols, NoBirths, NoReturnToEmitter, Own, SettledItem, SettlementStatus,
-        Step, User, finish_item, prepare_item,
+        ActionItem, ActionSettlement, Actions, ActiveTurn, BehaviorActed, EventIngress, EventLayer,
+        Here, InitializationTurn, InterpretItem, InterpreterFault, InterpreterRequest,
+        InterpreterRequests, ItemSettlement, MessageProtocol, Never, NoBirthProtocols, NoBirths,
+        NoReturnToEmitter, NoSends, Own, SettledItem, SettlementStatus, SourceAdmission, Step,
+        User, finish_item, prepare_item,
     };
-    use behavior_actors::{Crash, Exit, StopOnShutdown};
+    use behavior_actors::{
+        Crash, Exit, PeerStopped, ScheduleAt, StopOnShutdown, TimerElapsed, TimerGeneration,
+        TimerId,
+    };
     use communication::{Config, mailbox_channel};
 
-    use crate::observe::pair;
+    use crate::address::ApplicationAddresses;
+    use crate::application_runtime::{ApplicationCapabilities, ApplicationCapabilityInputs};
+    use crate::child_bindings::NoChildBindings;
+    use crate::interpret::ActionInterpreter;
+    use crate::launch::ActorSpace;
+    use crate::observe::{self, pair};
+    use crate::reports::LocalTerminalReports;
     use crate::{ActorExecutionOutcome, MailAddr};
     use bombay_engine::{Completion, Driver, DriverRetirement};
     use tokio::sync::oneshot::error::TryRecvError;
@@ -3252,6 +3263,293 @@ mod tests {
         assert_eq!(fence, Err(crate::entity::FenceFailure::Acknowledgement));
         let termination = actor.actor.termination().await;
         assert_eq!(termination, Err(Crash::Panicked));
+    }
+
+    struct ReadyActor;
+    struct ReadySource;
+
+    #[derive(Debug, PartialEq, Eq)]
+    enum ReadyEvent {
+        Mailbox(User<MailAddr, u64>),
+        SourceInput(u64),
+        Observation(PeerStopped<MailAddr>),
+        Timer(TimerElapsed),
+    }
+
+    impl UserEvent for ReadyEvent {
+        type Addr = MailAddr;
+        type Message = u64;
+        fn user(from: MailAddr, message: u64) -> Self {
+            Self::Mailbox(User::new(from, message))
+        }
+        fn into_user(self) -> Result<User<MailAddr, u64>, Self> {
+            match self {
+                Self::Mailbox(user) => Ok(user),
+                other => Err(other),
+            }
+        }
+    }
+    impl EventIngress<ReadySource, u64> for ReadyEvent {
+        fn ingress(input: u64) -> Self {
+            Self::SourceInput(input)
+        }
+    }
+    impl InjectEvent<PeerStopped<MailAddr>, Here> for ReadyEvent {
+        fn inject_at(stopped: PeerStopped<MailAddr>) -> Self {
+            Self::Observation(stopped)
+        }
+    }
+    impl InjectEvent<TimerElapsed, Here> for ReadyEvent {
+        fn inject_at(elapsed: TimerElapsed) -> Self {
+            Self::Timer(elapsed)
+        }
+    }
+    impl Behavior for ReadyActor {
+        type Protocol = MessageProtocol<MailAddr, u64>;
+        type Event = ReadyEvent;
+        type Sends = NoSends;
+        type Ph = Never;
+        type Birth = NoBirths;
+        type Error = Never;
+        fn transition(&mut self, _: ActiveTurn, _: ReadyEvent) -> BehaviorActed<Self> {
+            Ok(Actions::cont())
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn jointly_ready_source_mailbox_observation_and_timer_follow_native_acquisition_order() {
+        acquire_ready_campaign(Vec::new()).await;
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn continuously_ready_mailbox_postpones_observation_and_timer_until_mailbox_quiesces() {
+        acquire_ready_campaign(vec![13, 17, 19, 23, 29, 31, 37, 41]).await;
+    }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep simultaneous native readiness, replenishment, exact retirement, and full event trace in one controller."
+    )]
+    async fn acquire_ready_campaign(mailbox_inputs: Vec<u64>) {
+        let address = MailAddr(141);
+        let sender = MailAddr(143);
+        let peer = MailAddr(149);
+        let timer = TimerId(151);
+        let generation = TimerGeneration(3);
+        let (publication, termination) = observe::pair();
+        let (peer_publication, peer_termination) = observe::pair();
+        let (owner_request, owner_cancellation) = oneshot::channel();
+        let (terminal_sender, terminal_receiver) = oneshot::channel();
+        let deadline = Instant::now()
+            .checked_sub(Duration::from_secs(1))
+            .expect("the deterministic already-due deadline is representable");
+        peer_publication.complete(Ok(Exit::Normal));
+        let environment = LocalEnvironment::<
+            ReadyActor,
+            ActionInterpreter<ApplicationCapabilities<ReadyActor, ()>>,
+            StandardIngress,
+        >::prepare(
+            address,
+            ActorSpace::new(),
+            Config::new(2),
+            termination,
+            owner_cancellation,
+            move |control, mut timers, mut observations| {
+                observations.insert_peer::<Here>(peer, peer_termination);
+                timers
+                    .schedule_at::<Here>(ScheduleAt::new(timer, generation, deadline))
+                    .expect("the original finite timer is scheduled once");
+                let inputs = ApplicationCapabilityInputs::<ReadyActor, ()> {
+                    actor_spaces: Arc::new(()),
+                    allocations: ApplicationAddresses::new(),
+                    address,
+                    control,
+                    timers,
+                    observations,
+                    terminal_reports: LocalTerminalReports::new(terminal_sender),
+                };
+                let mut capabilities = ApplicationCapabilities::<ReadyActor, ()>::new_with_bindings(
+                    inputs,
+                    NoChildBindings::default(),
+                );
+                // Genuine source admission, before any Behavior fold, stores the
+                // exact SourceInput on this actor's existing control mailbox.
+                {
+                    let mut source_input = Some(47);
+                    let mut received_admission = None;
+                    let admitted = {
+                        let admission =
+                            SourceAdmission::<ReadyEvent, ReadySource, u64>::admit_source(
+                                &mut capabilities,
+                                &mut source_input,
+                                &mut received_admission,
+                            );
+                        let mut admission = pin!(admission);
+                        let mut context = Context::from_waker(Waker::noop());
+                        admission.as_mut().poll(&mut context)
+                    };
+                    assert_eq!(admitted, Poll::Ready(()));
+                    assert_eq!(source_input, None);
+                    assert_eq!(received_admission, Some(Ok(())));
+                }
+                ActionInterpreter::new(capabilities)
+            },
+        );
+        let endpoint = environment.endpoint.clone();
+        let queued = endpoint.send_from(sender, 11).await;
+        queued.expect("the original live endpoint accepts this exact mailbox input");
+        let mut prepared = Some(environment);
+        let mut initialization_actions = Some(Actions::cont());
+        let mut received_activation = None;
+        <_ as Environment<ReadyActor>>::activate(
+            &mut prepared,
+            &mut initialization_actions,
+            &mut received_activation,
+        )
+        .await;
+        let Some(Ok((mut active, interpretation))) = received_activation else {
+            panic!("the original native environment must install this closed actor");
+        };
+        assert!(prepared.is_none());
+        assert!(initialization_actions.is_none());
+        let Interpretation::Complete(initialization) = interpretation else {
+            panic!("the genuine empty initialization is complete");
+        };
+        let published = active.publish();
+        assert!(matches!(published, ControlFlow::Continue(())));
+        let mut acquired = Vec::new();
+        // The real source is control ingress: Communication prioritizes it over
+        // ordinary user ingress. It is not a fourth independent select branch.
+        for _ in 0..2 {
+            match active.next().await {
+                ControlFlow::Continue(Some(event)) => acquired.push(event),
+                ControlFlow::Continue(None) => {
+                    panic!("jointly ready native ingress must remain live")
+                }
+                ControlFlow::Break(request) => {
+                    drop(request);
+                    panic!("jointly ready native ingress must not request retirement");
+                }
+            }
+        }
+        for input in &mailbox_inputs {
+            let queued = endpoint.send_from(sender, *input).await;
+            queued.expect("the original live endpoint accepts this exact mailbox input");
+            match active.next().await {
+                ControlFlow::Continue(Some(event)) => acquired.push(event),
+                ControlFlow::Continue(None) => {
+                    panic!("replenished native mailbox must remain live")
+                }
+                ControlFlow::Break(request) => {
+                    drop(request);
+                    panic!("replenished native mailbox must not request retirement");
+                }
+            }
+        }
+        for _ in 0..2 {
+            match active.next().await {
+                ControlFlow::Continue(Some(event)) => acquired.push(event),
+                ControlFlow::Continue(None) => {
+                    panic!("original observation and due timer must remain available")
+                }
+                ControlFlow::Break(request) => {
+                    drop(request);
+                    panic!("ready observation and timer must not request retirement");
+                }
+            }
+        }
+        let mut retiring = Some(active);
+        let mut uncommitted_actions = None;
+        let mut received_interpretation = None;
+        let mut received_source = None;
+        let mut source_index = None;
+        let mut acquired_ingress = None;
+        let mut original_settlements = Some(vec![initialization]);
+        let mut received_retirement = None;
+        <_ as ActiveEnvironment<ReadyActor>>::retire(
+            &mut retiring,
+            &mut uncommitted_actions,
+            &mut received_interpretation,
+            &mut received_source,
+            &mut source_index,
+            &mut acquired_ingress,
+            &mut original_settlements,
+            &mut received_retirement,
+        )
+        .await;
+        let retired = received_retirement.expect(
+            "native retirement receives the original complete residual outside its producer",
+        );
+        let retired = retired.settle_activation_tasks().await;
+        assert!(retiring.is_none());
+        assert!(uncommitted_actions.is_none());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(original_settlements.is_none());
+        let LocalResidual::Retired {
+            interpretation,
+            source,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            terminal_report,
+            retirement_failures,
+            settlements,
+            ingress,
+            activation_tasks,
+            descendants,
+            capability_failures,
+            unread_owner_cancellation,
+        } = retired
+        else {
+            panic!("native acquisition comparison must return the actual joined retirement");
+        };
+        let (descendants, child_failures) = descendants;
+        drop((endpoint, owner_request, publication, terminal_receiver));
+        let mut expected = vec![
+            ReadyEvent::SourceInput(47),
+            ReadyEvent::Mailbox(User::new(sender, 11)),
+        ];
+        expected.extend(
+            mailbox_inputs
+                .into_iter()
+                .map(|input| ReadyEvent::Mailbox(User::new(sender, input))),
+        );
+        expected.push(ReadyEvent::Observation(PeerStopped::new(
+            peer,
+            Ok(Exit::Normal),
+        )));
+        expected.push(ReadyEvent::Timer(TimerElapsed::new(timer, generation)));
+        assert_eq!(acquired, expected);
+        let [initialization] = settlements.as_slice() else {
+            panic!("native retirement retains the single whole initialization settlement");
+        };
+        let ActionSettlement {
+            creations,
+            sends,
+            become_,
+        } = initialization;
+        assert!(creations.is_empty());
+        assert_eq!(*sends, NoSends);
+        assert!(matches!(become_, Step::Continue));
+        assert_eq!(ingress.control, []);
+        assert_eq!(ingress.user, []);
+        assert!(activation_tasks.is_empty());
+        assert_eq!(descendants.len(), 0);
+        assert_eq!(child_failures, ());
+        assert!(capability_failures.is_empty());
+        assert_eq!(unread_owner_cancellation, None);
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
     }
 }
 

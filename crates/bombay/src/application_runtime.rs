@@ -4769,6 +4769,8 @@ mod atomic_interpretation_contract {
         // the exact-member omission can fail any authoritative oracle.
         assert_eq!(returned.len(), 0);
         assert_eq!(failures.len(), 0);
+        assert!(retirement.terminal_report.is_none());
+        assert!(retirement.retirement_failures.is_empty());
         let (descendants, ()) = &retirement.descendants;
         assert_eq!(descendants.len(), 0);
         assert!(Arc::ptr_eq(&registered, original_relationship.identity()));
@@ -4908,6 +4910,8 @@ mod atomic_interpretation_contract {
         assert_eq!(failures.len(), 0);
         assert_eq!(late.len(), 0);
         assert_eq!(late_failures.len(), 0);
+        assert!(retirement.terminal_report.is_none());
+        assert!(retirement.retirement_failures.is_empty());
         let (descendants, ()) = &retirement.descendants;
         assert_eq!(descendants.len(), 0);
         assert_eq!(first_relationship.id(), ObservationId(51));
@@ -5045,6 +5049,8 @@ mod atomic_interpretation_contract {
         assert_eq!(outcome, Ok(behavior_actors::Exit::Normal));
         assert_eq!(returned.len(), 0);
         assert_eq!(failures.len(), 0);
+        assert!(retirement.terminal_report.is_none());
+        assert!(retirement.retirement_failures.is_empty());
         let (descendants, ()) = &retirement.descendants;
         assert_eq!(descendants.len(), 0);
         assert!(replay.is_pending());
@@ -5169,6 +5175,8 @@ mod atomic_interpretation_contract {
             let original_at = conversion_entered
                 .expect("actual completion timestamp acquired outside conversion");
             assert_eq!(failures.len(), 0);
+            assert!(retirement.terminal_report.is_none());
+            assert!(retirement.retirement_failures.is_empty());
             let (descendants, ()) = &retirement.descendants;
             assert_eq!(descendants.len(), 0);
             assert!(replay.is_pending());
@@ -5292,6 +5300,8 @@ mod atomic_interpretation_contract {
         assert_eq!(failures.len(), 0);
         assert_eq!(remaining.len(), 0);
         assert_eq!(retirement_failures.len(), 0);
+        assert!(retirement.terminal_report.is_none());
+        assert!(retirement.retirement_failures.is_empty());
         let (descendants, ()) = &retirement.descendants;
         assert_eq!(descendants.len(), 0);
         assert_eq!(returned.len(), 1);
@@ -5796,8 +5806,12 @@ mod atomic_interpretation_contract {
         assert_eq!(late_second.len(), 0);
         assert_eq!(late_first_failures.len(), 0);
         assert_eq!(late_second_failures.len(), 0);
+        assert!(first_retirement.terminal_report.is_none());
+        assert!(first_retirement.retirement_failures.is_empty());
         let (first_descendants, ()) = &first_retirement.descendants;
         assert_eq!(first_descendants.len(), 0);
+        assert!(second_retirement.terminal_report.is_none());
+        assert!(second_retirement.retirement_failures.is_empty());
         let (second_descendants, ()) = &second_retirement.descendants;
         assert_eq!(second_descendants.len(), 0);
         assert!(first_replay.is_pending());
@@ -6016,6 +6030,8 @@ mod atomic_interpretation_contract {
                 source_retirement.activation_tasks.settle().await;
             assert_eq!(returned_source.len(), 0);
             assert_eq!(source_failures.len(), 0);
+            assert!(source_retirement.terminal_report.is_none());
+            assert!(source_retirement.retirement_failures.is_empty());
             let (source_descendants, ()) = &source_retirement.descendants;
             assert_eq!(source_descendants.len(), 0);
             drop((owner, mailbox, receiver, report_received));
@@ -6333,6 +6349,8 @@ mod atomic_interpretation_contract {
                 source_retirement.activation_tasks.settle().await;
             assert_eq!(returned_source.len(), 0);
             assert_eq!(source_failures.len(), 0);
+            assert!(source_retirement.terminal_report.is_none());
+            assert!(source_retirement.retirement_failures.is_empty());
             let (source_descendants, ()) = &source_retirement.descendants;
             assert_eq!(source_descendants.len(), 0);
             drop((owner, mailbox, receiver, report_received));

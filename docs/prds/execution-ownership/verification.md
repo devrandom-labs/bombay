@@ -248,8 +248,8 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 ```text
 scope: conditional consolidated research; not distilled or accepted
 production: +8602 / -2342 / net 6260
-tests: +23871 / -2125 / net 21746
-documentation: +16205 / -203 / net 16002
+tests: +24191 / -2129 / net 22062
+documentation: +16319 / -203 / net 16116
 manifest/lock: +51 / -38 / net 13
 public API: +5 types (3 fresh / 2 promotions) / -0 types
 public getters: +2; public retirement variants: +1; application variants: +1; application generics: +1
@@ -1344,3 +1344,15 @@ formatter6254cb55 now have terminal actual69bdae11 and wholly nonauthor review
 intended inversion/denial reached. EXEC §225 records counts and limits.
 The two-path conditional test backup adds92 net test lines, no runtime code
 or public types; full replacement CI, gates and final delivery remain open.
+
+
+Combined current default library actuale2aa1e8c and independentda5f9854 qualify
+269 identical named tests/profile,538 passes, zero failed/ignored/filtered,
+all eight streams and preserved347/808 graphs. Six Rust warnings remain;
+current source is App00d6/Locald231/Actor0f4f/script8a39. No Axum/full-workspace,
+strict, current static/model-inversion/fuzz, seven gates or HOLD credit.
+STATIC72 actual720eb558 is setup NONPASS after its first successful lock command:
+six newer resolved packages violate exact owning-lock selection; no check ran.
+New required Nix37451839513 fails the stale Axum wrong-protocol snapshot, while
+Deny/CodeQL pass; the original typed E0631 is still present. EXEC §227 records
+precise source epochs, failure limits and proposed narrow continuations.

@@ -10457,3 +10457,105 @@ raw additions/deletions, while this stage's exact net increase remains92.
 Canonical measurement6e14d013 remains70/0, production167/−34/net133,
 tests3295/−557/net2738 and public0. Final checkpoint includes all tracked
 and untracked documentation bytes; this measurement is no acceptance claim.
+
+
+## 226. Retain bounded observation witnesses and verify the current composition
+
+Actor law repair3fd1490 and canonical evidence090c9f7 are pushed; prior complete
+checkpoint47ce/9e96 and canonical66fadf have independent final reviewe26f3d84
+(audit49fc36bc). Required replacement CI is prospective, not a passing claim.
+Select only the §224 reviewed tests under §196: App00d6 and Locald231 from
+pinned formatter81ef, actual158d and independent5b0d636d. Recheck original
+4ae/5a96 hashes and exact production conservation before writing either file.
+Two existing paths; tests+322/−6/net316, production/public0. Preserve every
+completed startup/native-failure controller, receiving30, Entity9a and
+ActorExecution0f4f. Reuse the existing Monitor, Driver, observation/mailbox/timer
+lanes and full retirement products. No production owner or interface changes.
+
+Measure the complete selected tree with App's eight cfg spans bound by11e84ffd,
+and all Local cfg boundaries shifted by the exact298-line insertion. Before
+additional Rust commands freeze all347 runtime/808 owning tracked inputs plus
+all untracked bytes/membership. Run the complete Bombay library in debug and
+optimized builds through pinned Nix; record every actual result, not only the
+selected cohorts. Source epochs of prior trials remain explicit. No current
+paired static, model-inversion, fuzz, full-gate or minimization credit follows
+from this test backup. CI evidence and final merge remain separate requirements.
+
+
+The first measurementd289/3b3 incorrectly omitted unchanged Local inline
+cfg132–142, misclassifying two cumulative lines as production. Preserve that
+invalid record; corrected intervals retain all six Local cfg regions, without
+changing source or weakening classification. The complete library collector
+also records pinned rustc/Cargo identity (four commands total), full stdout/
+stderr, exact test names/counts and all source membership/hash guards before
+and after each command. No owning source mutation or restoration is needed.
+Unexpected tests, timeout or compiler refusal remain explicit NONPASS.
+
+
+## 227. Verify observation permissions against the actual selected library
+
+The four-command combined-library triale2aa1e8c passes269 identical named tests
+in each profile (538 instances), zero failed/ignored/filtered. Actual Rust1.99
+b940/Cargo1.99 identities, all eight streams and unchanged347/808 source graphs
+are retained. Six Rust warnings remain. Source-plan review5db67edb qualifies
+only the finite trial; wholly nonauthor actual reviewda5f9854 qualifies these bounded results. This is
+default library coverage, without Axum/full-workspace/strict or gate credit.
+
+Prerecord the unchanged18 external observation fixtures4d388a1f: only two
+manifest paths per fixture changed to the actual selected81 Core/Actors owner.
+Source-plan nonauthor0f3cc51d and runner nonauthor11b911af qualify the finite
+72-command collection. Exact Root runnerf5198f73 uses18 offline lock formations,
+18 locked full-metadata checks and36 debug/optimized JSON compiler checks.
+Each positive precedes its paired denial, all compiler warning flags are
+explicit, and encoded overrides are removed. Require exact current library
+paths/versions and each dependency package/source/checksum from the owning lock.
+Unexpected offline resolution is NONPASS, never intended static-denial credit.
+
+Preserve complete streams, metadata, locks, primary diagnostics and all source
+membership/hash guards at every boundary. Positives need the correct library
+artifact and successful build completion; denials need exact E-code multisets
+and primary spans on their deliberate changed expressions. Complete semantic
+messages must receive independent review; code/span equality alone is insufficient.
+No repository source edit, public type or production/test delta is selected.
+Finally verify unchanged owner/source graphs, not a fabricated restoration.
+Current model inversions, instrumented fuzz, full quality/minimization and gate
+signatures remain separate. No original54 compiler result is relabelled current.
+
+
+Combined-library reviewerda5f9854 authenticates all eight streams, unchanged
+269-name inventories and archived source graphs. A later prerecord changes only
+this PRD's prose; no actual source epoch is relabelled. Final complete checkpoint
+must bind that prose before conditional backup. The six Rust warnings and all
+open default-versus-full-workspace distinctions remain explicit.
+
+STATIC72 stopped after one successful offline lock formation (actual720eb558),
+before metadata or any compiler check. Generated locke137d67e chose six packages
+absent from the exact owning lock: indexmap2.14.2, syn3.0.6, thiserror/impl2.0.21,
+toml_edit0.25.15+spec1.1.0 and unicode-ident1.0.26. Preserve the complete failed
+setup/source guards, raw streams and lock; it supplies no static-denial credit.
+Recommend fresh external fixtures seeded from the original owning lock, then
+metadata formation and locked metadata validation against the same strict
+package/source/checksum equation. Independent source-plan review and a fresh
+prerecord precede that successor; no dependency criterion is weakened.
+
+Required Nix run37451839513 on3fd fails on the old Axum diagnostic snapshot:
+unchanged wrong-protocol fixture still receives the same intended E0631 at30,
+but its bound note quotes a retired run_axum signature. Full original loge3a2f07e
+is archived. Deny/Analyze/aggregate CodeQL pass. The log only lists the separate
+actor-check derivation; its completion is unconfirmed, despite local script
+qualification. No passing replacement full CI is inferred.
+
+Before further Cargo work, preserve both terminal successful library binaries
+and retire only already-linked debug bombay-9d0d94b36a2ed876.*.rcgu.o scratch,
+with every hash/path/size and binary identity recorded as in §224. No runtime
+source, linked executable, library or broad cache deletion is selected.
+
+
+Final observation backup checkpointf5e034b3/9f68be98 covers118/92 tracked
+paths, no untracked files, production8602/−2342/net6260 (secondary6132),
+tests24191/−2129/net22062 (secondary19319), public surface unchanged.
+Documentation is16309/−203 before this final prose; manifest51/−38 remains
+net13. Canonicalac8a0802 remains70/0, production133/tests2738/public0.
+Terminal scratch receipt6a2f1f6a retires16 exact already-linked debug objects
+(634822192 bytes), preserving the successful binary. Recompute complete final
+prose before commit; actualda5f and classification5db67 remain bounded evidence.
