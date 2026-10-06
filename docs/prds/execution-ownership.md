@@ -10850,3 +10850,268 @@ net2738, public0. Documentation/manifest totals and complete per-path hashes
 are preserved in the measured records. Recompute after this paragraph before
 committing the three narrow fixture changes and evidence; prototypes remain
 unselected and restored.
+
+
+## 235. Verify existing observation failure detection without a new model
+
+Three-file Stash repair c82a41d is pushed; replacement CI37461219826 is running,
+not passed or merged. Canonical evidence7c0d9d5 is separately pushed. HTTP/Family
+source review9bb77a4c permits bounded HTTP prototype trials but vetoes the Family
+candidate: acquired root retirement and acquired family head stay inside producer
+futures across later fallible/pending work. This is a conditional source loss path,
+not an actual reproduced normal-poll tail panic. Caught Entity callbacks cannot
+serve as that proof. No family source is selected; genuine native cancellation
+and narrower ordinary-Rust custody comparisons remain required.
+
+Monitor16 collectorca629b89/author receipt307cef83 freezes the four original
+single omissions and independently reviewed plan62809c. Root fully read347
+collector lines, complete existing model, all four patches and16 unchanged argv;
+all19 packet inputs authenticate. Source review is pending and must precede entry.
+Then run exactly eight native negative controls and eight full healthy restores,
+half in each build, through pinned Bombay Nix using the selected65 owning lock.
+Expected first native oracles remain440/440/328/501; counts/phase orientation,
+complete shrink streams and original/generated seeds must be preserved. No
+new strategy, sample count, model, fixture law or alternate predicted oracle.
+Dynamically freeze347/808 complete source/membership maps, archive original bytes,
+restore only recognized owning mutant/seed appends, preserve any unexpected edit.
+No prose/source/cache writers while collection is live. Any setup/formation/parser
+failure remains NONPASS; only complete actual independent review can qualify
+bounded model evidence. No full gate, HOLD, minimization, retention or merge claim.
+
+
+Monitor source reviewd8000ebd is fully read and its bindings authenticated before
+entry. Root independently compares all808 current owning bytes with selected
+81ba2c0 checkout; memberships/HEAD match and no untracked owner files or ambient
+PROPTEST overrides exist. Preflight 75c2bbaa5f72c7e5f08755b943605f430dfbc93f5468dec6d5ed5be3aa9443a1 records the complete mapping.
+The single-writer16-command campaign may now enter with all other source/prose/
+cache writers idle. Predictions are not outcomes; exceptions/full native streams
+and finally conservation remain required for nonauthor actual qualification.
+
+
+## 236. Compare ordinary Rust caller forms and preserve the coverage failure
+
+Monitor16 actual3d63b4fb and wholly nonauthor review1559f523 qualify eight
+intended native failures/eight healthy restores over four original omissions,
+half in each build. All32 streams,16 original/generated seed pairs and67 graphs
+are authenticated; complete1155 inputs are restored. Each negative reaches its
+first oracle440/440/328/501, then shrinks to selected0/reports[]; downstream
+assertions are unexecuted there. Repeated shrink panics are not extra tests.
+Original seed91f remains unchanged. Proptest's SourceParallel warning falls
+back to adjacent persistence by selected source; replay is an inference, not
+an instrumented file-open receipt. Healthy case inventories are not claimed.
+This is bounded existing pure-fold model evidence, not full gate/HOLD acceptance.
+
+CI37461219826 on c82 passes the repaired fixtures and proceeds through workspace
+coverage tests, then rejects Driver734/818 below90% and ActorOutcome66/97 below90%.
+ActorExecution958/998 meets93%; Observe502/525 meets90%. The complete CI log is
+preserved. Later fuzz/Miri steps are skipped, not passed. Keep every floor intact;
+independently inspect actual missing laws before adding meaningful tests. No
+whole-CI or final acceptance claim follows from completed test targets.
+
+Caller successor ad99 and wholly nonauthor source reviewacbb preserve all29
+controllers/277 assertions and complete raw output/cleanup/error boundaries.
+They compare ordinary result annotations versus explicit method generic inputs;
+no wrapper/alias/production type is proposed. Historical no-work controller name
+needs final truthfulness reconciliation. Six run_with/eight projection static
+fixtures remain exact and require separate current diagnostics before acceptance.
+
+Filename formatter0c48 remains unexecuted/HOLD under dd2: four unbound sibling
+modules make recursive external file formatting unqualified. Fresh stdin
+collectora5d4/receiptfbec and narrow independent mechanism review449334fd are
+fully read and115 artifacts authenticate; consumer semantics remain separately
+reviewed by acbb, not their author. Run only nine raw stdin rustfmt commands
+inside one exact outer pinned Nix launch31be, using App0ca and both complete four
+consumer alternatives. Bind allthree canonical pin files and selected Nix-store
+formatter bytes; preserve every raw stdin/stdout/stderr and complete dynamic1155
+source/membership graphs. No banner extraction, sibling copying, skip-child flag
+or repository installation. All writers freeze while running. Formatted source
+qualification precedes the conditional16 compiler formations; no source/API
+retention or runtime forecast follows merely from formatting.
+
+
+## 237. Qualify two ordinary Rust caller forms before selecting either
+
+Nine stdin formatting observations complete: inner e2cb10d1/outer2784a91c
+record9exit0/empty inner stderr; App0ca remains byte-exact. Work743590aa
+independently qualifies formatted source products; Integration6f207d59
+qualifies actual formatter mechanism only, excluding authored caller semantics.
+All29 controllers/277 assertion tokens and27 compiler fixture/snapshot inputs
+remain intact. Formatted test delta against retained sources is annotation
++570/−199/net371 or method generics+492/−204/net288; production/public0
+for consumers. Neither alternative is selected from formatting alone.
+
+Original sixteen collector04f6/188 remains unexecuted/HOLD under f859: noisy
+stdout could be accepted and physical source metadata was not fully guarded.
+Fresh collector04900aa6/author15a7962f corrects those two mechanism gaps only.
+Root fully read the complete collector, all16 argv/source bindings and prefix
+derivation;126 artifacts/58 inputs authenticate, preserving52 prior inputs
+and exact planf67656f6. Independent mechanism review4602f8e1 qualifies Root-only
+collection, excluding its author's consumer semantics. Exact measured2890-byte
+Nix prefix350b22a2 and strict subsequent Cargo JSON are mandatory; noise, prefix
+drift, malformed JSON, timeout or unknown source metadata remains NONPASS.
+
+Run exactly two alternatives × four existing test targets × debug/optimized
+Cargo check, offline/locked/features axum/message-format=json, through canonical
+pinned Nix. Shared disposable App0ca plus four complete consumer files are
+installed only for each alternative; no new retained source, wrapper or public
+type. Freeze all writers, archive full347/808 byte/membership/kind/mode/device/
+inode maps, register atomic before/after states before each source replacement,
+restore only recognized states, and conserve all untouched identities and all
+original bytes/modes. Every raw diagnostic/warning/artifact and attempted row
+survives exception. Nonauthor actual review follows complete restoration; no
+runtime/static-denial/API retention, full gate, minimization or CI credit from
+formation alone. Current full task measurements remain §234 pending the next
+retention checkpoint; this prospective disposable comparison adds no retained
+production/test/API path.
+
+
+## 238. Add missing owning failure witnesses without lowering coverage floors
+
+Coverage proposal09b49280 and nonauthor39ccdd32/findingsd82e2491 preserve
+ActorOutcome's production prefix and every old test. Four projection tests
+check exact owned allocations, primary provenance and the complete ordered
+additional-failure lane. One genuine ClassifySettlement native panic checks
+original Complete interpretation custody, complete residual and absence of
+source/publication/ordinary requests. The new closed test retirement response
+receives Some original interpretation; all older guards still reject it.
+These boxes are owned/moved, not non-Clone types; pointer checks reject clones.
+Primary RetirementPanicked is supplied projection evidence, not an actual
+ordinary Driver primary. Four source inversions remain predictions. Two
+already-scoped paths: tests+283/−1/net282, production/public types0.
+
+Root fully read both complete patches/four unique inversions/review/26 exact
+native schedule rows;29 author artifacts and all reviewer bindings authenticate.
+Nonauthor plan2f5f4c37 permits exactly two pinned rustfmt commands on fresh
+external complete copies, with original bytes preserved. Both are self-contained;
+no sibling module copying, new collector framework or repository installation.
+Freeze source/prose/cache writers, preserve full1155 byte/membership/lstat maps
+and3canonical pins before/after, archive all native streams/statuses/format
+patches. Separately qualify formatted source before compiler/native trials.
+Keep full5/25 owning test cohorts, debug/optimized inversions and unchanged
+coverage requirements; numeric coverage gain is unknown.
+
+
+## 239. Record bounded formation and qualify owning failure witnesses
+
+Sixteen actual76f5ab2f/final3d931c9a and wholly nonauthor4cf1e2dc
+(receipt3f12840d) qualify two caller spellings across four targets/both builds.
+All16 exit0 with exact current metadata artifacts;3136 Cargo objects/all32
+streams/full1155 backups/41 graphs authenticate. There are208 warning emissions
+(13 unique), zero executed controllers/assertions and zero trybuild cases.
+Registry15 snapshots retain durable current states and successful endpoints,
+not every intermediate per-path transition: repeated labels overwrite older
+archive snapshots. Original bytes/modes/devices and untouched1150 identities
+are conserved; five collector-registered inode changes are explicit. Later
+§238 prose is a separate epoch. Choose the shorter explicit-method-generics
+spelling for the next ordinary-Rust runtime comparison, not API retention.
+
+Two owner-witness formatter commands actual98df8599/finalac8bf96b complete0
+without source edits. Nonauthor95e303c7/d96df0c6 qualifies complete formatted
+Outcome b18ce106 and Terminal965f6c59, all30 controller names/136 assertions
+and unchanged four unique inversions. Tests+433/−6/net427, production/public0.
+Canonical pin hashes are checked by Root, but no separately archived per-command
+pin metadata is claimed. Current numeric coverage remains unproved.
+
+Root fully reads bounded34 collectorbd20b2de/receipt54242643 and all34 exact
+argv;66 artifacts/48 inputs and independent mechanism38c0377f authenticate.
+Its fixture author excludes semantic self-approval; independent source39cc/95e
+remains separate. Run exactly four compiler no-run prerequisites before ten
+exact healthy selections, eight native inversions/eight healthy restores, then
+full5/25 owning cohorts in both builds. Exact expected first law sites are
+306/322/2234/2223; these are predictions. Preserve full native streams and
+actual artifact/package/profile/source identities. No warnings/coverage/full
+gate accepted by return code alone. Register each source operation in uniquely
+numbered durable history, restore healthy after EACH inversion and original
+three sources finally, preserve unrecognized byte/physical changes. Root
+freezes a fresh full1155 physical baseline AFTER prerecord/measurement, verifies
+all808 owning bytes against selected81 checkout, binds authorization to exact
+peer/prerecord/baseline hashes, and keeps every source/prose/cache writer idle.
+No production/public source is retained by this conditional test trial.
+
+## 240. Preserve acquired family results and select the actual Entity executor
+
+Family prototype692480dc and nonauthor45adaab1/7114643f isolate acquired
+root/head results outside the fallible cleanup producer. Original root transfer
+precedes family await; each complete head transfer precedes tail await. Actual
+unit cleanup JoinError and each original receiving error coexist with successful
+root/head receipts. There is no invented report or no-root inference. Unit-family
+methods add no channel/task/suspension; eleven normal/HTTP signatures and all
+nine complete cfg items stay exact. Two Family public signatures and existing
+Shutdowns association change materially. No new public type, kernel axis or
+framework. Serialized patch delta+134/−68/net66 (author's whole-file alignment
++130/−64/net66); tests0. This is source growth. Formatting/isolated formation
+are eligible; original317 failures, full typed witnesses/inversions, receiver
+surrender/independent observation, five current consumer calls and guidance
+migrations remain required before retention. Root authenticates all19 author
+and42 peer artifacts and reads both complete source patches.
+
+Independent host prerequisite df7374c0/519f05fd authenticates24 owning/Tokio
+inputs: Entity's ambient spawn selects callerK, while the constructor retainedH.
+Preparation is outside the entered-H startup guard; recapturing current there
+would still selectK. This is a source prediction, not an executed regression.
+Use a genuine public external admission polledK, retain complete root/family
+results, then compare actual hydration/retirement runtime IDs against constructorH.
+The old Pending-tail fixture deliberately entersH and proves cleanup only.
+Keep production blocked until the focused original law fails in both builds.
+The smallest owning correction threads capturedH through existing private install/
+factory into existing BombayEntityRuntime and uses that handle for spawn: three
+existing paths, no public type/second runtime/Behavior/Engine change. Exact
+patch/delta and ordinary ownership review precede edits; no broad refactor.
+
+
+Pre-trial complete measurement: research121 tracked/0 untracked against2fcc,
+production+8602/−2342/net6260, tests+24201/−2144/net22057; secondary40ab96/0,
+production+8528/−2396/net6132, tests+21155/−1841/net19314. Conditional public
+nominals remain+5 (three fresh/two promotions), no new stage type. Canonical
+70/0, production+167/−34/net133, tests+3295/−557/net2738, public0. All current
+source bytes remain c82/7c0d; only evidence prose/footer changed. Full per-path
+hashes, documentation/manifest deltas and untracked inventory are recomputed
+after this paragraph in the existing independently classified measurement
+records. Stage temporary tests are+433/−6/net427; no retained production delta.
+Existing233-path delegated research allowance governs; no line cap is inferred.
+
+
+## 241. Retain independently verified owning failure regressions
+
+The bounded34 actual31e26885/verificatione647c7ae and wholly nonauthor
+receipt ec3b354e/findings4df6d0b1 authenticate all68 streams, four formations,
+ten exact healthy selections, eight intended native101 inversions, eight
+healthy restorations, and complete5/25 owning cohorts in debug/optimized
+builds. All88 full1155 source/physical maps and65 unique registry records
+match; original sources are restored. The reviewer authored reused049 guard
+text and explicitly excludes mechanism self-approval; independent OBS38
+mechanism review and independent39cc/95e witness source reviews remain the
+separate prerequisites. Actual emitted executable paths are authenticated;
+executable bytes were not archived. Six existing Bombay warnings and one
+additional mutant-only warning remain; no strict-quality credit is claimed.
+
+Retain only the two already-scoped formatted test products b18ce106/965f6c59:
+tests+433/−6/net427, production/public types0. The complete ActorOutcome
+production prefix through line168 is byte-identical; TerminalCustody is an
+owning integration-test target. Four source inversions are controlled defect
+simulations, not historical baseline reproductions. Supplied RetirementPanicked
+is projection evidence only; the classification panic exercises the actual
+Driver receiving boundary and preserves its complete residual/ordered trace.
+Later assertions not reached by a negative run receive no negative credit.
+This is bounded regression retention, not acceptance of a design gate. Numeric
+coverage gain remains unknown until a fresh unchanged-floor report; full CI,
+Family/Entity/application implementation, extraction and minimization remain.
+
+The source-only Family612 schedule used an incorrect package selector; it
+was never executed and earns no formation/regression credit. Fresh plan-only
+successor0c330205/792dea1a changes exactly three selectors to bombay-rs and
+preserves the complete612 source27b79b35. Independent source/plan review
+precedes any formatting or trial. The corrected H/K284 witness14748273 removes
+an invalid assumption that normal completion has no unread cancellation;
+independent c8df60f8 permits bounded formatting/formation only. Original
+hydration-host failures in both profiles remain prerequisites to production.
+
+
+Complete retained checkpoint: research121 tracked/0 untracked against2fcc,
+production+8602/−2342/net6260, tests+24628/−2144/net22484; secondary40ab96/0,
+production+8528/−2396/net6132, tests+21582/−1841/net19741. Conditional public
+nominals remain+5 (three fresh/two promotions). Canonical70/0, production
++167/−34/net133, tests+3295/−557/net2738, public0. This stage changes only
+two existing test-bearing paths and evidence; total production is unchanged.
+Full per-path/documentation/manifest/untracked records are recomputed after
+this paragraph, with the exact reviewed169-to-EOF ActorOutcome test interval.

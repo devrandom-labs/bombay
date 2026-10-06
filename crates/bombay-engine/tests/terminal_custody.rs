@@ -81,6 +81,7 @@ struct Residual {
         reason = "Preserve the complete typed ingress and original retirement request in the observed residual."
     )]
     acquired_ingress: Option<ControlFlow<Box<[u64]>, Option<User<MailAddr, u64>>>>,
+    received_interpretation: Option<Interpretation<ActionSettlement>>,
     phase: ResidualPhase,
     committed: Vec<u64>,
     settlements: Vec<ActionSettlement>,
@@ -100,6 +101,10 @@ enum Publication {
 #[derive(Debug, PartialEq, Eq)]
 enum ActionSettlement {
     Applied(Vec<u64>),
+    Unclassified {
+        committed: Vec<u64>,
+        classification: Arc<NativeClassification>,
+    },
     AppliedWithDisposal {
         committed: Vec<u64>,
         payload: Option<Arc<NativeCause>>,
@@ -117,6 +122,20 @@ enum ActionSettlement {
 impl ClassifySettlement for ActionSettlement {
     fn settlement_status(&self) -> SettlementStatus {
         match self {
+            Self::Unclassified { classification, .. } => {
+                classification
+                    .observations
+                    .lock()
+                    .unwrap()
+                    .push(ClassificationObservation::ClassificationRequested);
+                let payload = classification
+                    .payload
+                    .lock()
+                    .unwrap()
+                    .take()
+                    .expect("classification owns one original native cause");
+                resume_unwind(payload);
+            }
             Self::Applied(_) | Self::AppliedWithDisposal { .. } => SettlementStatus::Accepted,
             Self::Rejected { .. } => SettlementStatus::Rejected,
             Self::Failed { .. } => SettlementStatus::Corrupt,
@@ -173,9 +192,35 @@ impl Drop for NativeDisposal {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum ClassificationObservation {
+    InterpretationPrepared { allocation: usize },
+    ClassificationRequested,
+    SourceOfferConstructed,
+    SourceIngressConstructed,
+    PublicationRequested,
+    OrdinaryRequested,
+    RetirementRequested,
+    RetirementReceived,
+}
+
+#[derive(Debug)]
+struct NativeClassification {
+    payload: Mutex<Option<Box<dyn Any + Send>>>,
+    observations: Arc<Mutex<Vec<ClassificationObservation>>>,
+}
+
+impl PartialEq for NativeClassification {
+    fn eq(&self, other: &Self) -> bool {
+        ptr::eq(self, other)
+    }
+}
+impl Eq for NativeClassification {}
+
 #[derive(Clone)]
 enum SettlementPlan {
     Accepted,
+    ClassificationPanicked(Arc<NativeClassification>),
     AcceptedWithDisposal(Arc<NativeCause>),
     HostPanicked,
     Rejected(&'static str),
@@ -184,6 +229,17 @@ enum SettlementPlan {
 
 fn settle_actions(committed: Vec<u64>, plan: SettlementPlan) -> Interpretation<ActionSettlement> {
     match plan {
+        SettlementPlan::ClassificationPanicked(classification) => {
+            classification.observations.lock().unwrap().push(
+                ClassificationObservation::InterpretationPrepared {
+                    allocation: committed.as_ptr() as usize,
+                },
+            );
+            Interpretation::Complete(ActionSettlement::Unclassified {
+                committed,
+                classification,
+            })
+        }
         SettlementPlan::Accepted => Interpretation::Complete(ActionSettlement::Applied(committed)),
         SettlementPlan::AcceptedWithDisposal(payload) => {
             Interpretation::Complete(ActionSettlement::AppliedWithDisposal {
@@ -205,6 +261,9 @@ fn settle_actions(committed: Vec<u64>, plan: SettlementPlan) -> Interpretation<A
 
 enum RetirementResponse {
     Complete,
+    ReceiveInterpretation {
+        observations: Arc<Mutex<Vec<ClassificationObservation>>>,
+    },
     IncompleteRetirement {
         original: Arc<Vec<u64>>,
         callbacks: Arc<Mutex<Vec<usize>>>,
@@ -298,6 +357,7 @@ impl Environment<CustodyBehavior> for PreparedEnvironment {
                 *received = Some(Err((
                     error,
                     Residual {
+                        received_interpretation: None,
                         acquired_ingress: None,
                         phase: ResidualPhase::Prepared,
                         committed: original.committed,
@@ -340,6 +400,7 @@ impl Environment<CustodyBehavior> for PreparedEnvironment {
         if let Some(owner) = environment.as_mut() {
             match &mut owner.retirement {
                 RetirementResponse::Complete => {}
+                RetirementResponse::ReceiveInterpretation { .. } => return,
                 RetirementResponse::IncompleteRetirement {
                     original,
                     callbacks,
@@ -381,6 +442,7 @@ impl Environment<CustodyBehavior> for PreparedEnvironment {
             return;
         };
         *received = Some(Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Prepared,
             committed: original.committed,
@@ -405,6 +467,12 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
     async fn next(
         &mut self,
     ) -> ControlFlow<Self::RetirementRequest, Option<<CustodyBehavior as Behavior>::Event>> {
+        if let RetirementResponse::ReceiveInterpretation { observations } = &self.retirement {
+            observations
+                .lock()
+                .unwrap()
+                .push(ClassificationObservation::OrdinaryRequested);
+        }
         ControlFlow::Continue(
             self.events
                 .pop_front()
@@ -417,6 +485,12 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
     ) -> impl Future<
         Output = ControlFlow<Self::RetirementRequest, Option<<CustodyBehavior as Behavior>::Event>>,
     > {
+        if let RetirementResponse::ReceiveInterpretation { observations } = &self.retirement {
+            observations
+                .lock()
+                .unwrap()
+                .push(ClassificationObservation::SourceIngressConstructed);
+        }
         let disposal = NativeDisposal {
             payload: self.source_none_disposal.take(),
         };
@@ -461,6 +535,12 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
         settlement: &mut Option<Self::Settlement>,
         received: &mut Option<SourceCustody<Self::Settlement>>,
     ) -> impl Future<Output = ()> {
+        if let RetirementResponse::ReceiveInterpretation { observations } = &self.retirement {
+            observations
+                .lock()
+                .unwrap()
+                .push(ClassificationObservation::SourceOfferConstructed);
+        }
         let disposal = NativeDisposal {
             payload: self.source_disposal.take(),
         };
@@ -513,6 +593,12 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
     }
 
     fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
+        if let RetirementResponse::ReceiveInterpretation { observations } = &self.retirement {
+            observations
+                .lock()
+                .unwrap()
+                .push(ClassificationObservation::PublicationRequested);
+        }
         if let Some(request) = self.publication_request.take() {
             return ControlFlow::Break(request);
         }
@@ -535,13 +621,14 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
         settlements: &mut Option<Vec<Self::Settlement>>,
         received: &mut Option<Self::Residual>,
     ) {
-        if received.is_some()
-            || actions.is_some()
-            || interpretation.is_some()
-            || source.is_some()
-            || source_index.is_some()
-        {
+        if received.is_some() || actions.is_some() || source.is_some() || source_index.is_some() {
             return;
+        }
+        if interpretation.is_some() {
+            match environment.as_ref().map(|owner| &owner.retirement) {
+                Some(RetirementResponse::ReceiveInterpretation { .. }) => {}
+                _ => return,
+            }
         }
         if environment.is_none() || settlements.is_none() {
             return;
@@ -549,6 +636,15 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
         if let Some(owner) = environment.as_mut() {
             match &mut owner.retirement {
                 RetirementResponse::Complete => {}
+                RetirementResponse::ReceiveInterpretation { observations } => {
+                    if interpretation.is_none() {
+                        return;
+                    }
+                    observations
+                        .lock()
+                        .unwrap()
+                        .push(ClassificationObservation::RetirementRequested);
+                }
                 RetirementResponse::IncompleteRetirement {
                     original,
                     callbacks,
@@ -589,10 +685,16 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
         let original = environment
             .take()
             .expect("original active environment is available");
+        let observations = match original.retirement {
+            RetirementResponse::ReceiveInterpretation { observations } => Some(observations),
+            _ => None,
+        };
+        let received_interpretation = interpretation.take();
         let settlements = settlements
             .take()
             .expect("original ordered settlement rows are available");
         *received = Some(Residual {
+            received_interpretation,
             acquired_ingress: ingress.take(),
             phase: ResidualPhase::Active,
             committed: original.committed,
@@ -602,6 +704,12 @@ impl ActiveEnvironment<CustodyBehavior> for ActiveCustodyEnvironment {
             retirements: 1,
             publication_request: original.publication_request,
         });
+        if let Some(observations) = observations {
+            observations
+                .lock()
+                .unwrap()
+                .push(ClassificationObservation::RetirementReceived);
+        }
     }
 }
 
@@ -681,6 +789,7 @@ async fn stop_returns_final_behavior_and_active_residual() {
             initialization_decision: InitializationDecision::Continue,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![5, 8, 8],
@@ -720,6 +829,7 @@ async fn exhaustion_returns_final_behavior_and_active_residual() {
             initialization_decision: InitializationDecision::Continue,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![2, 4],
@@ -759,6 +869,7 @@ async fn behavior_failure_returns_mutated_behavior_and_active_residual() {
             initialization_decision: InitializationDecision::Continue,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![6],
@@ -798,6 +909,7 @@ async fn initialization_failure_returns_mutated_behavior_and_prepared_residual()
             initialization_decision: InitializationDecision::Continue,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Prepared,
             committed: vec![],
@@ -837,6 +949,7 @@ async fn activation_failure_returns_behavior_and_prepared_residual() {
             initialization_decision: InitializationDecision::Continue,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Prepared,
             committed: vec![3],
@@ -876,6 +989,7 @@ async fn apply_failure_returns_mutated_behavior_and_active_residual() {
             initialization_decision: InitializationDecision::Continue,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![11, 15],
@@ -918,6 +1032,7 @@ async fn retained_source_settlement_reaches_retirement_without_reoffer() {
             initialization_decision: InitializationDecision::Continue,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![1],
@@ -957,6 +1072,7 @@ async fn retained_transitive_head_does_not_hide_an_older_source_residual() {
             initialization_decision: InitializationDecision::Continue,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![1, 3, 7],
@@ -996,6 +1112,7 @@ async fn stopping_turn_corruption_overrides_stop_and_preserves_settlement() {
             initialization_decision: InitializationDecision::Continue,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![1, 1],
@@ -1038,6 +1155,7 @@ async fn stopping_turn_rejection_preserves_stop_and_settlement() {
             initialization_decision: InitializationDecision::Continue,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![1, 1],
@@ -1080,6 +1198,7 @@ async fn stopping_initialization_rejection_overrides_stop_and_preserves_settleme
             initialization_decision: InitializationDecision::Stop,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![1],
@@ -1122,6 +1241,7 @@ async fn stopping_initialization_corruption_overrides_stop_and_preserves_settlem
             initialization_decision: InitializationDecision::Stop,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![1],
@@ -1184,6 +1304,7 @@ async fn publication_retirement_preserves_request_and_retained_initialization() 
     assert_eq!(
         residual,
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![5],
@@ -1240,6 +1361,7 @@ async fn activation_rejection_preserves_unacquired_publication_request() {
     assert!(additional_failures.is_empty());
     let Residual {
         acquired_ingress,
+        received_interpretation,
         phase,
         committed,
         settlements,
@@ -1248,6 +1370,7 @@ async fn activation_rejection_preserves_unacquired_publication_request() {
         retirements,
         publication_request,
     } = residual;
+    assert!(received_interpretation.is_none());
     assert!(acquired_ingress.is_none());
     let request = publication_request.expect("activation rejection retains unacquired input");
     assert_eq!(request.as_ptr(), original_request);
@@ -1256,6 +1379,7 @@ async fn activation_rejection_preserves_unacquired_publication_request() {
             behavior,
             residual: Residual {
                 acquired_ingress,
+                received_interpretation,
                 phase,
                 committed,
                 settlements,
@@ -1273,6 +1397,7 @@ async fn activation_rejection_preserves_unacquired_publication_request() {
             initialization_decision: InitializationDecision::Continue,
         },
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Prepared,
             committed: vec![5],
@@ -1342,6 +1467,7 @@ async fn retained_source_settlement_survives_active_host_panic() {
     assert_eq!(
         retirement.residual,
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![1, 8],
@@ -1420,6 +1546,7 @@ async fn activation_rejection_precedes_original_producer_disposal_panic() {
     assert_eq!(
         retirement.residual,
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Prepared,
             committed: vec![1],
@@ -1479,6 +1606,7 @@ async fn source_closure_precedes_original_producer_disposal_panic() {
     assert_eq!(
         retirement.residual,
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![1],
@@ -1538,6 +1666,7 @@ async fn source_ingress_closure_precedes_original_producer_disposal_panic() {
     assert_eq!(
         retirement.residual,
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![1],
@@ -1602,6 +1731,7 @@ async fn exhausted_source_preserves_producer_before_settlement_disposal_failure(
     assert_eq!(
         retirement.residual,
         Residual {
+            received_interpretation: None,
             acquired_ingress: None,
             phase: ResidualPhase::Active,
             committed: vec![1],
@@ -2044,4 +2174,125 @@ async fn incomplete_retirement_exposes_original_failure_without_replay() {
         assert_eq!(environment_after_discharge, 0);
         assert_eq!(native_after_discharge, 0);
     }
+}
+
+#[tokio::test]
+async fn classification_panic_preserves_original_interpretation_through_retirement() {
+    let observations = Arc::new(Mutex::new(Vec::new()));
+    let original_native: Box<[u64]> = vec![71, 73].into_boxed_slice();
+    let native_allocation = original_native.as_ptr();
+    let payload: Box<dyn Any + Send> = Box::new(original_native);
+    let native_carrier = ptr::from_ref(payload.as_ref()).cast::<()>();
+    let classification = Arc::new(NativeClassification {
+        payload: Mutex::new(Some(payload)),
+        observations: observations.clone(),
+    });
+    let received = Driver::new(
+        CustodyBehavior {
+            value: 0,
+            initialization_failure: None,
+            initialization_decision: InitializationDecision::Continue,
+        },
+        PreparedEnvironment {
+            retirement: RetirementResponse::ReceiveInterpretation {
+                observations: observations.clone(),
+            },
+            events: [7, 99].into(),
+            committed: Vec::new(),
+            activation_failure: None,
+            activation_disposal: None,
+            source_disposal: None,
+            source_none_disposal: None,
+            initialization_settlement: SettlementPlan::ClassificationPanicked(
+                classification.clone(),
+            ),
+            active_settlement: SettlementPlan::Accepted,
+            settlement_custody: SettlementCustody::Exhaust,
+            publication_request: None,
+        },
+    )
+    .run()
+    .await;
+    let Ok(DriverRetirement {
+        behavior,
+        residual,
+        disposition,
+        additional_failures,
+    }) = received
+    else {
+        panic!("active retirement must receive the complete original interpretation");
+    };
+    assert_eq!(
+        behavior,
+        CustodyBehavior {
+            value: 1,
+            initialization_failure: None,
+            initialization_decision: InitializationDecision::Continue
+        }
+    );
+    let Err(DriverError::HostExecutionPanicked(payload)) = disposition else {
+        panic!("settlement classification keeps its native host provenance");
+    };
+    let native = payload
+        .downcast_ref::<Box<[u64]>>()
+        .expect("the original classification native cause remains concrete");
+    assert_eq!(
+        (
+            ptr::from_ref(payload.as_ref()).cast::<()>(),
+            native.as_ptr(),
+            native.as_ref()
+        ),
+        (native_carrier, native_allocation, &[71, 73][..])
+    );
+    assert!(additional_failures.is_empty());
+    let Residual {
+        acquired_ingress: None,
+        received_interpretation,
+        phase: ResidualPhase::Active,
+        committed,
+        settlements,
+        remaining_events,
+        publication: Publication::Withheld,
+        retirements: 1,
+        publication_request: None,
+    } = residual
+    else {
+        panic!(
+            "the complete active residual owns the exact unclassified original without publication"
+        );
+    };
+    let retained_residual = (committed, settlements, remaining_events);
+    let expected_residual = (vec![1], vec![], vec![7, 99]);
+    assert_eq!(retained_residual, expected_residual);
+    let Some(Interpretation::Complete(ActionSettlement::Unclassified {
+        committed: original,
+        classification: received_classification,
+    })) = received_interpretation.as_ref()
+    else {
+        panic!("the unchanged original complete interpretation reaches its receiving residual");
+    };
+    let observed = observations.lock().unwrap();
+    let [
+        ClassificationObservation::InterpretationPrepared { allocation },
+        ClassificationObservation::ClassificationRequested,
+        ClassificationObservation::RetirementRequested,
+        ClassificationObservation::RetirementReceived,
+    ] = observed.as_slice()
+    else {
+        panic!(
+            "classification failure permits only the one receiving retirement, with no source or ordinary ingress"
+        );
+    };
+    assert_eq!(
+        (original.as_ptr() as usize, original.as_slice()),
+        (*allocation, &[1][..])
+    );
+    let same_classification = Arc::ptr_eq(&classification, received_classification);
+    assert!(same_classification);
+    let transferred_native = classification.payload.lock().unwrap().take();
+    assert!(transferred_native.is_none());
+    drop(observed);
+    drop(received_interpretation);
+    drop(payload);
+    drop(classification);
 }

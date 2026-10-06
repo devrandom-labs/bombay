@@ -248,8 +248,8 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 ```text
 scope: conditional consolidated research; not distilled or accepted
 production: +8602 / -2342 / net 6260
-tests: +24201 / -2144 / net 22057
-documentation: +16650 / -203 / net 16447
+tests: +24628 / -2144 / net 22484
+documentation: +16939 / -203 / net 16736
 manifest/lock: +51 / -38 / net 13
 public API: +5 types (3 fresh / 2 promotions) / -0 types
 public getters: +2; public retirement variants: +1; application variants: +1; application generics: +1
@@ -1396,3 +1396,27 @@ closed-phase denial remains. Commands are pinned `nix develop` Cargo tests,
 `--offline --locked -p bombay-rs --test template_authoring [--release] -- --test-threads=1`.
 Trybuild inner compilation stays dev profile; retained three-file repair is
 +6/−8/net−2 test lines, production/public0. Full CI remains required.
+
+
+EXEC §§235–240 record current Monitor16 intended negatives/healthy restores,
+nine external stdin formats and16 independently qualified caller formations.
+Caller formations execute no controllers/static fixtures and retain13 unique
+compiler warnings; full runtime/quality/gates remain open. CI37461219826 fails
+unchanged Driver/ActorOutcome coverage floors after repaired fixtures pass;
+fuzz/Miri are skipped. Owning five failure witnesses b18ce106/965f6c59 are now
+retained after the independently reviewed34 campaign below; numeric coverage
+gain remains unmeasured. Family692 source peer45ada permits
+bounded qualification only; actual acquired-prefix/receiver surrender and
+consumer migration remain required. Entity selected-H versus callerK spawning
+has a source-derived blocker df7374, not a reproduced regression or Behavior law.
+
+
+EXEC §241 records independently reviewed34 actual31e26885/e647c7ae and
+nonauthor ec3b354e/4df6d0b1: four no-run formations, ten exact healthy
+selections, eight intended native101 inversions, eight healthy restorations,
+and full5/25 owning cohorts in both profiles. All68 stream hashes,88 complete
+source/physical snapshots and65 unique registry histories authenticate; original
+1155 source bytes are restored. Retained b18ce106/965f6c59 adds427 net test
+lines, zero production/public types. Six existing warnings and one mutant-only
+warning persist. No executable checksum, strict quality or numeric coverage
+improvement is claimed. Fresh unchanged-floor CI and complete gates remain.
