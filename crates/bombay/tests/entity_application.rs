@@ -522,6 +522,15 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
         match profile_retirement {
             Ok(ActorRetirement::Completed {
                 behavior,
+                interpretation,
+                source,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
                 settlements,
                 control,
                 user,
@@ -531,6 +540,15 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
                 unread_owner_cancellation: None | Some(()),
                 completion,
             }) => {
+                assert!(interpretation.is_none());
+                assert!(source.is_none());
+                assert!(additional_failures.is_empty());
+                assert!(received_interpretation.is_none());
+                assert!(received_source.is_none());
+                assert!(source_index.is_none());
+                assert!(acquired_ingress.is_none());
+                assert!(retirement_failures.is_empty());
+                assert!(terminal_report.is_none());
                 assert_eq!(completion, Completion::Stopped);
                 assert_eq!(control.len(), 0);
                 (
@@ -544,6 +562,15 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
             }
             Ok(ActorRetirement::OwnerCancelled {
                 behavior,
+                interpretation,
+                source,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
                 settlements,
                 control,
                 user,
@@ -552,6 +579,15 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
                 capability_failures,
                 unread_owner_cancellation,
             }) => {
+                assert!(interpretation.is_none());
+                assert!(source.is_none());
+                assert!(additional_failures.is_empty());
+                assert!(received_interpretation.is_none());
+                assert!(received_source.is_none());
+                assert!(source_index.is_none());
+                assert!(acquired_ingress.is_none());
+                assert!(retirement_failures.is_empty());
+                assert!(terminal_report.is_none());
                 assert!(unread_owner_cancellation.is_none());
                 // StopOnShutdown owns a fieldless ShutdownRequested singleton.
                 assert!(matches!(control.as_slice(), [EventLayer::Owned(_)]));
@@ -682,7 +718,7 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
             FORCED_RETIREMENT,
         ]
     );
-    assert_completed(terminal);
+    assert_completed(terminal, None);
     Ok(())
 }
 

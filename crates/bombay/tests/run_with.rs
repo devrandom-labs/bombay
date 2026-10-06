@@ -367,7 +367,7 @@ fn live_boundary_receives_root_once_and_returns_its_exact_value() {
     );
 
     assert_eq!(rejected, RootCommand::Stop);
-    assert_completed_root(terminal);
+    assert_completed_root(terminal, None);
     assert_eq!(calls.load(Ordering::SeqCst), 1);
 }
 
@@ -391,7 +391,7 @@ fn boundary_owned_error_remains_an_unaggregated_output() {
     );
 
     assert_eq!(output, Err("boundary refused its own work"));
-    assert_completed_root(terminal);
+    assert_completed_root(terminal, None);
 }
 
 #[test]
@@ -401,7 +401,7 @@ fn run_is_the_unit_boundary_specialization() {
             Err(RunError::Unpublished(terminal)) => terminal,
             _ => panic!("the direct run must retain the unpublished terminal"),
         };
-    assert_completed_root(terminal);
+    assert_completed_root(terminal, None);
     let terminal: ApplicationTerminal<_> =
         match Application::new(StopsDuringInitialization.stop_on_shutdown())
             .run_with(|_| async { 41_u8 })
@@ -411,7 +411,7 @@ fn run_is_the_unit_boundary_specialization() {
             }
             _ => panic!("the generic boundary must withhold the unpublished root"),
         };
-    assert_completed_root(terminal);
+    assert_completed_root(terminal, None);
 }
 
 #[test]
@@ -455,7 +455,7 @@ fn application_handle_separates_shutdown_request_from_exact_termination() {
 
     assert_eq!(termination.0, Ok(Exit::Normal));
     assert_eq!(termination.1, Err(ShutdownRejection::AlreadyStopped));
-    assert_completed_root(terminal);
+    assert_completed_root(terminal, None);
 }
 
 #[test]
@@ -479,7 +479,7 @@ fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
     );
 
     assert_eq!(termination, Ok(Exit::LinkDied(MailAddr(19))));
-    assert_completed_root(terminal);
+    assert_completed_root(terminal, Some(()));
 }
 
 #[test]
@@ -505,7 +505,7 @@ fn continuing_report_cannot_select_the_later_stop_outcome() {
     );
 
     assert_eq!(termination, Ok(Exit::Normal));
-    assert_completed_root(terminal);
+    assert_completed_root(terminal, None);
 }
 
 #[test]
@@ -543,7 +543,7 @@ fn supervision_report_selects_the_typed_failure_publication_before_stop() {
             SupervisionFailureReason::RestartDenied(denial)
         ))
     );
-    assert_completed_root(terminal);
+    assert_completed_root(terminal, Some(()));
 }
 
 #[test]
@@ -571,7 +571,7 @@ fn supervision_report_from_a_continuing_action_cannot_override_later_shutdown() 
     );
 
     assert_eq!(termination, Ok(Exit::Normal));
-    assert_completed_root(terminal);
+    assert_completed_root(terminal, None);
 }
 
 #[test]
@@ -612,7 +612,7 @@ fn run_delegates_shutdown_to_the_explicit_root_policy() {
         }),
     );
     assert_eq!(finalization, Some(FinalizationEvent::Finalized));
-    assert_completed_root(terminal);
+    assert_completed_root(terminal, None);
 }
 
 #[test]
@@ -638,11 +638,25 @@ fn activation_failure_does_not_invoke_the_boundary() {
         descendants,
         child_failures: (),
         capability_failures,
+        additional_failures,
+        received_interpretation,
+        received_source,
+        source_index,
+        acquired_ingress,
+        retirement_failures,
+        terminal_report,
         unread_owner_cancellation,
     } = retirement
     else {
         panic!("the exact initialization refusal remains a distinct root outcome");
     };
+    assert!(additional_failures.is_empty());
+    assert!(received_interpretation.is_none());
+    assert!(received_source.is_none());
+    assert!(source_index.is_none());
+    assert!(acquired_ingress.is_none());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert!(matches!(behavior.base(), RejectsInitialization));
     assert_eq!(error, InitializationFailure(47));
@@ -685,6 +699,15 @@ fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
         ActorRetirement::BehaviorFailed {
             child_failures: (),
             capability_failures,
+            interpretation,
+            source,
+            additional_failures,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            retirement_failures,
+            terminal_report,
             unread_owner_cancellation,
             behavior: _behavior,
             settlements,
@@ -697,6 +720,15 @@ fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     else {
         panic!("the root behavior failure must remain an exact typed terminal")
     };
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    assert!(additional_failures.is_empty());
+    assert!(received_interpretation.is_none());
+    assert!(received_source.is_none());
+    assert!(source_index.is_none());
+    assert!(acquired_ingress.is_none());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
     assert!(capability_failures.is_empty());
     assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
@@ -758,8 +790,8 @@ fn application_delegates_to_the_explicit_single_space_app() {
     );
 
     assert_eq!(ordinary, explicit);
-    assert_completed_root(ordinary_terminal);
-    assert_completed_root(explicit_terminal);
+    assert_completed_root(ordinary_terminal, None);
+    assert_completed_root(explicit_terminal, None);
 }
 
 #[test]

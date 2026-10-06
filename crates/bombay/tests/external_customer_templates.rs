@@ -70,7 +70,7 @@ fn cache_preserves_an_exact_external_customer() {
             panic!("the actual application actor task failed: {failure}")
         }),
     );
-    assert_completed(terminal);
+    assert_completed(terminal, None);
 }
 
 type BarrierReplies = MessageProtocol<MailAddr, BarrierReleased>;
@@ -141,7 +141,7 @@ fn barrier_releases_two_exact_external_participants() {
             panic!("the actual application actor task failed: {failure}")
         }),
     );
-    assert_completed(terminal);
+    assert_completed(terminal, None);
 }
 
 type LatchReplies = MessageProtocol<MailAddr, LatchReleased>;
@@ -186,5 +186,5 @@ fn latch_releases_exact_external_participants() {
             panic!("the actual application actor task failed: {failure}")
         }),
     );
-    assert_completed(terminal);
+    assert_completed(terminal, None);
 }

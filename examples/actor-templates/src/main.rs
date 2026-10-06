@@ -109,11 +109,29 @@ where
                 user,
                 descendants,
                 completion,
+                interpretation,
+                source,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
             },
     } = terminal
     else {
         panic!("the application must preserve the root's completed terminal state")
     };
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    assert!(additional_failures.is_empty());
+    assert!(received_interpretation.is_none());
+    assert!(received_source.is_none());
+    assert!(source_index.is_none());
+    assert!(acquired_ingress.is_none());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
     assert!(capability_failures.is_empty());
     assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);

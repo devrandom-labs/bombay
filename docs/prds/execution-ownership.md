@@ -10103,3 +10103,179 @@ Counter post-copy56aa50d0 covers118 tracked/zero untracked: production
 surface unchanged from §219. Stage40ab2862190f has production net5986.
 Canonical ea9a6749 remains70 paths, production net133/tests net2738/types0.
 Final commit-bound recount changes only evidence prose; snapshots stay distinct.
+
+
+## 221. Collect current consumer formation errors together
+
+Counter correction is pushed asc45c285; canonical record2d44f02 is pushed.
+Commit-bound51b3ed08/58ce1dcc and canonical53fffeed preserve §220
+production/test/surface totals; only final evidence prose changes. Draft326
+stays unready with seven full gates/HOLD. Current code is App4ae, fixture0ce6,
+Entity9a and counter2aa; other example/test proposals are not installed.
+
+Perform one pinned cargo check --offline --locked --workspace --all-targets
+--keep-going with all347 source maps and complete stdout/stderr frozen. This
+read-only compiler inventory gathers actual remaining consumer denials without
+waiting for successive CI failures; it is not runtime, strict or gate acceptance.
+Existing counter/static negatives, Prepared/Engine/local-runtime regressions
+stay intact. Root retires only finished receiving scratch objects before this
+command while preserving its exact linked binary, libraries and source evidence.
+Any disk/timeout/tool interruption is NONPASS, not an actor law. Record every
+actual diagnostic and derive fixes from the owning returned values; compiler
+suggestions to ignore fields do not choose the consumer's semantic policy.
+
+
+## 222. Repair the source-verified current consumers together
+
+Compiler inventory74b9c0ee completed101 without timeout: all347 entry/exit
+source maps equal;15 distinct failing sites across seven existing files. Ten
+E0027 sites omit newly conserved result fields (Entity2, run_with2, four
+examples6); five E0308 sites use the old one-input Stash routing function.
+No runtime/strict/gate credit. Currentc45 Nix37438352516 fails; Deny37438352454,
+Analyze37438352526 and aggregate CodeQL112187438525 succeed.
+
+The independently source-reviewed first five-file comparison reuses the exact
+returned ActorRetirement products: four example mains +148/−2/net146
+production lines; Entity integration tests +36/−0/net36 test lines. No new
+public types, imports, wrappers, bounds, interpreter or policy. All five files
+already belong to the measured118-path research scope (233 authorized).
+Current51b3ed08 totals production+8454/−2340/net6114,
+tests+23655/−2078/net21577, zero untracked; five public nominals/zero removed,
+with previously recorded getters/variants/generic unchanged. Expected trial
+production net6260/tests net21613; complete post-trial measurement required.
+Canonical production remains net133/tests net2738/types0.
+
+Freeze pinned whole-file formatting outside the repository, then compare
+original and corrected target formation both profiles, run actual three finite
+example mains, real Axum HTTP test and Entity two-family test both profiles,
+repeat Entity with Axum enabled, and check whole formatting. Bound each own
+process group; disk, timeout, empty selection or unrelated failure is NONPASS.
+Finally restore every original file and prove all347 maps exact. Preserve the
+original eight-example-cut policy: each field observed once; no global empty
+Completed law. Entity unread cancellation and queued Shutdown race stays intact.
+Root source review is independent of Integration's proposal author; actual
+qualification needs a separate nonauthor review. Run_with/Stash and remaining
+wildcards require their own source-supported packets, not ignored fields.
+Seven full gates/HOLD and final extraction remain open.
+
+
+Integration independently authenticates74b9's original complete streams/maps
+as compiler-only evidence007d869c. Its additional source packeta01732ac
+repairs the two run_with controlled-error tests (+32 test lines) and the
+existing impossible Never Stash callback (+1/−1 test line). Root separately
+reviews full patches, actual selected Stash79/ActorExt21 signatures and both
+original test bodies. No production/public type additions. Include these two
+already-scoped paths in the same frozen trial: total seven existing files,
+production+148/−2/net146, tests+69/−1/net68; expected cumulative production
+net6260/tests net21645, zero public additions. Add both full corrected test
+targets debug/optimized; originals must still produce exact observed E0027
+and E0308 formation denials. Do not infer semantic inversion credit from them.
+
+
+The seven-file pinned formatter completes0, ae1fe18c: all proposed files
+remain byte-exact. Root independent source reviews dbcc2125 and9fa48ccb
+qualify the actual Prepared4ae/Entity9a/counter2aa epoch, without whole-gate
+approval. Freeze20 bounded commands: original release whole formation (the
+actual74b9 debug original already exists), corrected whole formation both,
+three complete integration targets both, Entity+Axum exact both, three real
+example mains both, actual Axum HTTP both and whole formatting. Preserve
+complete streams/maps and finally original source restoration. Only after a
+successful command terminates, Root may hash/preserve its linked executable
+and retire that exact crate's already-linked codegen scratch objects to keep
+the available2.4GB from preventing verification. No library, executable,
+source, Nix store or unrelated cache is removed; every retired path/hash/size
+is recorded. A failure, interruption or unrelated warning is never gate credit.
+
+
+First actual seven-consumer trial cbdf7c9d freezes four commands and restores
+all347 originals exactly: release original101 at the same15 compiler sites;
+corrected whole workspace formation0 both profiles; complete debug run_with
+13 passed/two failed. The two selected-report tests fail shared support78's
+unconditional terminal_report None assertion. Their actual typed reports are
+valid coexisting facts; do not change production to remove them. Source review
+of a minimal typed expected-report comparison is pending. Continue only the
+remaining independent already-prerecorded targets/examples in a distinct
+trial; preserve this failed packet and all warnings without passing credit.
+
+
+## 223. Compare exact final-report expectations in the existing test helper
+
+Independent remaining-consumer actual95f12926 completes15 commands0 and
+restores all347 originals: complete template and Entity targets both,
+Entity+Axum exact both, three real finite mains both, genuine Axum HTTP both
+and whole formatting. It omits the failed shared-report target, not its law.
+The count is15 (not a newly inferred17); original first trialcbdf remains
+failed and preserved. Root will obtain separate nonauthor actual review.
+
+Source proposal5487c8db reuses the existing complete root comparison with
+one explicit expected Option<()> argument. The two stopping report tests
+require successful Some(Ok(()));22 other callers require actual absence.
+The exact termination reason is already independently asserted, so the unit
+receipt does not duplicate it. Exhaustive matching rejects missing/unexpected
+reports and preserves any original refusal in the failure. No runtime change,
+new wrapper/type/bool or weakened residual predicate. Six existing test files
++36/−26/net10 raw; combined ten-file trial production+148/−2/net146,
+tests net78 before actual formatting. All ten already scoped;233 allowance
+and five public nominals unchanged. All347 maps and untracked inventory
+remain mandatory, not final gate acceptance.
+
+Root independently reviews full patches/inverses, all24 callers and actual
+LocalTerminalReports custody. Freeze pinned external formatting. Preserve
+the cbdf debug negative; repeat the original shared assertion in optimized
+build on the same seven corrected consumers. Then run every affected full
+test target both profiles, Entity+Axum exact both and whole formatting;
+finally restore all originals. No byte-format-only layout change alters
+policy, but actual hashes/deltas will be rebound. These tests remain distinct
+from full workspace/strict/coverage/decision-gate evidence.
+
+
+Pinned ten-file formatter5f5d62ca succeeds0. Only helper function/one panic
+arm layout changes; Root reads the complete formatted helper/diff and confirms
+all exhaustive cases/original predicates unchanged. Formatted test delta is
+recorded separately from raw expectations. The original debug13/2 failure is
+retained; fresh optimized original helper requires exactly the same two report
+oracle failures after compilation. The corrected actual trial covers all five
+helper-consuming complete test targets both profiles, Entity+Axum both,
+whole formation and formatting, with full-source final restoration.
+
+
+Independent actual review d1c01ad3 authenticates all80 linked evidence files
+(75d41338) and all35 command rows across74b9/cbdf/95f1/a7f9. Original
+nonforming consumers reproduce the same15 diagnostics in both profiles;
+corrected whole formation succeeds both. The old shared oracle fails exactly
+13-pass/two-fail at support78 in debug and optimized builds; the corrected five
+complete helper-consuming targets succeed both,60 successful test-function
+instances/29 distinct names, including repeated Entity under Axum. Remaining
+actual95f1 has20 instances/nine names plus six real finite mains. Successful
+trybuild rows retain their actual dev-profile compiler evidence. Existing11
+library/seven lib-test warnings remain; no strict, full-workspace runtime,
+current CI or decision-gate credit.
+
+Select the independently qualified ten-file conditional backup under §§52/196,
+inside the existing118 paths/233 allowance. Fresh pre-backup ac92b1e0 and
+1f2646e0 preserve all tracked/untracked bytes and previous production/test
+classification; production net6114/tests net21577, untracked0. Final formatted
+change is production+148/−2/net146, tests+104/−27/net77, public types0;
+expected cumulative production net6260/tests net21654. Rebind actual whole-file
+measurement after installation: topology's unchanged test suffix moves55 lines,
+not production; current Prepared4ae eight disjoint intervals and all four core
+source guards remain exact. Canonical source is untouched (net133/tests2738).
+This backup does not lift the69-source HOLD or accept any of seven open gates.
+
+Actual post-install whole-file measurement d87b60cc covers118 tracked paths,
+zero untracked: production+8602/−2342/net6260, tests+23758/−2104/net21654,
+documentation+15975/−203/net15772, manifests+51/−38/net13. Whole-file diff
+alignment overlaps one test addition/deletion compared with summed stage
+deltas; net77 is unchanged. Alternate40ab baseline a16cfed4 covers91 paths,
+production+8528/−2396/net6132, tests+20711/−1800/net18911. Both retain
+all exact guarded source hashes, topology's byte-identical shifted test suffix,
+Prepared's eight disjoint intervals and unchanged public surface. Later evidence
+prose/footer updates affect documentation totals only; final commit-bound
+measurement must cover those updates too.
+
+Nonauthor final measurement review91ad5b66 qualifies f5b469e2/dc4c10f2,
+formatter5f, actuald1c and canonicala61e7fba. It independently recounts every
+production row, exact shifted topology suffix and eight App intervals; older
+unavailable baseline documentation bytes retain Root's disclosed measurement.
+Select only the bounded reviewed consumer backup. Final evidence-prose changes
+are documentation-only and included in a fresh complete commit record.

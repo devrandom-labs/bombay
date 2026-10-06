@@ -80,7 +80,7 @@ fn one_shot_template_runs_as_an_ordinary_application_root() {
     let terminal: RootTerminal<_> = Application::new(root.stop_on_shutdown())
         .run()
         .expect("the timer fires and the template stops normally");
-    assert_completed(terminal);
+    assert_completed(terminal, None);
 }
 
 #[test]
@@ -95,7 +95,7 @@ fn receive_timeout_template_runs_as_an_ordinary_application_root() {
     let terminal: RootTerminal<_> = Application::new(root.stop_on_shutdown())
         .run()
         .expect("the idle timer fires and the template stops normally");
-    assert_completed(terminal);
+    assert_completed(terminal, None);
 }
 
 #[test]
@@ -110,7 +110,7 @@ fn periodic_template_runs_as_an_ordinary_application_root() {
     let terminal: RootTerminal<_> = Application::new(root.stop_on_shutdown())
         .run()
         .expect("the first periodic generation fires and the template stops normally");
-    assert_completed(terminal);
+    assert_completed(terminal, None);
 }
 
 #[test]
@@ -125,7 +125,7 @@ fn deadline_template_runs_as_an_ordinary_application_root() {
     let terminal: RootTerminal<_> = Application::new(root.stop_on_shutdown())
         .run()
         .expect("the absolute deadline fires and the template stops normally");
-    assert_completed(terminal);
+    assert_completed(terminal, None);
 }
 
 #[derive(Clone)]
@@ -190,14 +190,14 @@ fn machine_template_runs_as_an_ordinary_application_root() {
             panic!("the actual application actor task failed: {failure}")
         }),
     );
-    assert_completed(terminal);
+    assert_completed(terminal, None);
 }
 
 #[allow(
     clippy::trivially_copy_pass_by_ref,
     reason = "the owning Stash route contract borrows every message, including Never"
 )]
-const fn deliver_never(message: &Never) -> StashRoute {
+const fn deliver_never(_: &TimerRoot, message: &Never) -> StashRoute {
     match *message {}
 }
 
@@ -289,5 +289,5 @@ fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
     let terminal: RootTerminal<_> = Application::new(runtime)
         .run()
         .expect("the exact fluent wrapper stack runs as an ordinary application");
-    assert_completed(terminal);
+    assert_completed(terminal, None);
 }

@@ -37,7 +37,7 @@ where
     dead_code,
     reason = "integration tests compile their shared support independently"
 )]
-pub(crate) fn assert_completed<R>(terminal: RootTerminal<R>)
+pub(crate) fn assert_completed<R>(terminal: RootTerminal<R>, expected_terminal_report: Option<()>)
 where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
@@ -75,7 +75,16 @@ where
     assert!(retirement_source_index.is_none());
     assert!(retirement_acquired_ingress.is_none());
     assert!(retirement_native_failures.is_empty());
-    assert!(retirement_terminal_report.is_none());
+    match (retirement_terminal_report, expected_terminal_report) {
+        (None, None) | (Some(Ok(())), Some(())) => {}
+        (None, Some(())) => {
+            panic!("the selected terminal report must retain its acquired publication")
+        }
+        (Some(Ok(())), None) => panic!("this root must not select a terminal report"),
+        (Some(Err(termination)), None | Some(())) => {
+            panic!("the original terminal report publication was refused: {termination:?}");
+        }
+    }
     assert!(capability_failures.is_empty());
     assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);

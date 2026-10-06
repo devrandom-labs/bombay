@@ -178,7 +178,16 @@ where
                 user,
                 descendants,
                 completion,
-                ..
+                behavior,
+                interpretation,
+                source,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
             },
     } = terminal
     else {
@@ -186,9 +195,19 @@ where
     };
     assert_eq!(journal_failures.len(), 0);
     assert_eq!(indexer_failures.len(), 0);
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    assert!(additional_failures.is_empty());
+    assert!(received_interpretation.is_none());
+    assert!(received_source.is_none());
+    assert!(source_index.is_none());
+    assert!(acquired_ingress.is_none());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
     assert!(capability_failures.is_empty());
     assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    drop(behavior);
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
@@ -235,10 +254,28 @@ where
         user,
         descendants,
         completion,
+        interpretation,
+        source,
+        additional_failures,
+        received_interpretation,
+        received_source,
+        source_index,
+        acquired_ingress,
+        retirement_failures,
+        terminal_report,
     } = terminal
     else {
         panic!("the indexer must complete its explicit shutdown")
     };
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    assert!(additional_failures.is_empty());
+    assert!(received_interpretation.is_none());
+    assert!(received_source.is_none());
+    assert!(source_index.is_none());
+    assert!(acquired_ingress.is_none());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
     assert!(capability_failures.is_empty());
     assert!(unread_owner_cancellation.is_none());
     let settlement_status = settlements.settlement_status();
@@ -266,10 +303,28 @@ where
         user,
         descendants,
         completion,
+        interpretation,
+        source,
+        additional_failures,
+        received_interpretation,
+        received_source,
+        source_index,
+        acquired_ingress,
+        retirement_failures,
+        terminal_report,
     } = terminal
     else {
         panic!("the journal must complete its explicit shutdown")
     };
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    assert!(additional_failures.is_empty());
+    assert!(received_interpretation.is_none());
+    assert!(received_source.is_none());
+    assert!(source_index.is_none());
+    assert!(acquired_ingress.is_none());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
     assert!(capability_failures.is_empty());
     assert!(unread_owner_cancellation.is_none());
     let settlement_status = settlements.settlement_status();

@@ -120,7 +120,7 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
             panic!("the actual application actor task failed: {failure}")
         }),
     );
-    assert_completed(terminal);
+    assert_completed(terminal, None);
 }
 
 #[test]
@@ -178,7 +178,7 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
             panic!("the actual application actor task failed: {failure}")
         }),
     );
-    assert_completed(terminal);
+    assert_completed(terminal, None);
 }
 
 #[test]

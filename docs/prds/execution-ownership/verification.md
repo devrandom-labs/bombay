@@ -247,9 +247,9 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 
 ```text
 scope: conditional consolidated research; not distilled or accepted
-production: +8454 / -2340 / net 6114
-tests: +23655 / -2078 / net 21577
-documentation: +15797 / -203 / net 15594
+production: +8602 / -2342 / net 6260
+tests: +23758 / -2104 / net 21654
+documentation: +15993 / -203 / net 15790
 manifest/lock: +51 / -38 / net 13
 public API: +5 types (3 fresh / 2 promotions) / -0 types
 public getters: +2; public retirement variants: +1; application variants: +1; application generics: +1
@@ -1304,3 +1304,23 @@ Canonical early Linux CI passes on309f609: [run37301605698](https://github.com/d
 Actual child55 receipt `3dcb716a5c88b7639589618a954a2e5d022fc489951d9c736b714ab612f7e348`
 and nonauthor actual review `a1bd90d9283c1f9a5921df88a7559f7957499633c19eda3a5f7d6f9c3d59349c`
 retain51 qualified rows out of55 and all526 restored sources. Pinned debug/optimized normal and cfg compilation, six healthy tests/profile, seven precise runtime inversions/profile and every positive restore, plus full formatting pass. Both compiler-denial attempts are unqualified E0308; strict default/Axum each retain nine cfg diagnostics. Overall NONPASS remains. The fifteen-command test-only quality/static continuation is prospective; its results and full gates remain open. Unchanged semantic rows will be reused once.
+
+
+### Current complete consumer comparisons (EXEC §§221–223)
+
+The current Prepared4ae/receiving30/Entity9a/counter2aa graph is held in all35
+rows. Actual74b9c0ee (original15 formation denials), cbdf7c9d (four rows,
+corrected formation both then genuine report-oracle runtime failure),95f12926
+(all15 remaining rows successful) and a7f9b8b0 (original optimized report
+failure plus14 corrected successes) retain347-file entry/exit/final-restoration
+maps and complete streams. Independent nonauthor actual review d1c01ad3 and
+its80-file authentication75d41338 qualify bounded consumer backup only.
+
+The complete five final test suites pass both profiles:29 distinct test names,
+60 successful instances including repeated Entity Axum; old report oracle
+fails13-pass/two-fail both. Three finite actual mains pass both, real HTTP test
+passes both. The shared helper explicitly expects two selected successful
+reports and22 actual absences, retaining original typed refusal. Four example
+mains+148/−2/net146 production, six existing test/support files+104/−27/net77,
+public0. Whole formatter and all-target formation pass at the recorded graph;
+existing warnings/full workspace runtime/strict CI and seven gates remain open.
