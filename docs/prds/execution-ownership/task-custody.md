@@ -15,6 +15,31 @@ runtime regressions have now run for dropped root activation and dropped
 normal-finish waiters; the other drop edges and ordinary-Rust candidate
 comparison have not.
 
+## Current indexed-source evidence
+
+EXEC §190 records a verified Engine correction in the research graph using
+unreleased owning revision `6f7e966`; canonical selection remains 0.21.2.
+When a borrowed receive is dropped, the Driver must resume its existing
+indexed source before acquiring later work. If it already holds the source
+receipt, it consumes that fact without constructing another producer. This
+uses existing source custody and phase ownership; no new public type or owner.
+
+Original/fixed comparisons and the separate guard inversion pass independent
+review (`c5dde9bb`, `795fc4b8`, `540e9bad`). The complete custody and ordered
+trace witnesses run in both profiles. Negative evidence covers the reached
+fresh-loan cases only; positive evidence covers all four receipt variants.
+The exact healthy graph is restored after inversion. Full DG-TASK acceptance,
+advanced-host failure recovery and canonical-controller preservation remain
+open; this bounded evidence does not authorize production retention.
+
+EXEC §191 also selects the independently recommended native-panic law
+amendment (`165e4bca`) for verification: preserve the original cause and
+surviving owners through retirement instead of the canonical post-init unwind
+and drop. This changes that policy explicitly. A complete retirement reply and
+an incomplete retained Driver are distinct; dropping a borrowing waiter does
+not establish joined cleanup. Current cause identity, temporal cleanup and
+publication proofs remain required before normative migration or retention.
+
 ## Selected contract and scope
 
 At this snapshot `Cargo.lock` selects Behavior and Behavior Actors 0.17.0,

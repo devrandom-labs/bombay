@@ -8380,3 +8380,687 @@ failures; archive the mutation, restore the full healthy1,153-source graph
 and rerun both private laws in both profiles. Independent actual review
 remains required; first receipt failure cannot prove later receipt negatives.
 Run only after the sole native retry writer terminates.
+
+Exact Axum debug retry `4c8afeef` passes; nonauthor actual review `a7a31886`
+authenticates the emitted test executable and complete unchanged source graph.
+All four library compiler configurations now pass on the same source. Eleven
+warnings remain; runtime, strict checks and full design gates remain separate.
+
+Actual guard collector `378df708` passes both compiler prerequisites. Both
+profiles fail precisely at the unchanged full-trace oracle `driver.rs:1308:9`:
+an acquired Exhausted receipt wrongly triggers an extra offer construction,
+poll and disposal when the guard is removed. The complete actual vectors
+retain all other ordered events. It then restores the exact healthy1,153-source
+graph; both private laws pass in each profile. First Exhausted failure stops
+the later variants, so no negative credit for those follows. Root reads both
+complete failure transcripts. Independent actual review `540e9bad` qualifies
+this precise guard inversion and complete graph restoration; broader gates
+remain open. Supporting task-custody evidence links this bounded law once.
+
+## 191. Combined controller and Engine verification
+
+Select source proposal `d68ec658`: exact current native graph plus the verified
+Engine repairs, maintenance and six targeted controller hunks. Seventeen paths
+(sixteen existing plus the already budgeted saved seed): production+78/−59/net19;
+tests+1,826/−231/net1,595; public types and manifests zero. This includes two
+private Driver repairs (net14), Rustdoc and a separator; it adds no runtime
+wrapper or owner. Existing §52 delegation and231-path allowance govern this
+comparison. Canonical production stays untouched; source-copy HOLD remains.
+
+Preserve current cfg retirement and admission corrections. Four stale test
+import warnings use the separate reviewed five-line substitution `ef4b09d6`
+with Root peer `edaf4547`; actual formatter reflow is measured. Full-source and
+harness review precede execution. Test original controller counterparts
+explicitly, retaining the absolute allocation law. Panic transport is an
+expressly proposed amended policy, not an unchanged-law rename; D-RETIRE-1
+and its normative migration require independent acceptance before retention.
+The nine controller dispositions and every full design gate remain open.
+
+Full-source peer `a1b35912` authenticates the complete3,132-line composition
+and all42 artifacts, preserving the current native retirement correction and
+all dependency bytes. Authored slices use their separate nonauthor reviews.
+Select first-stage collector `f2c8dae7`, pre-manifest `592c3039`: Root reads the
+whole208-line harness and plan. Six independent compilers run on the same
+raw graph after16 formatter observations; changed formatter output is archived
+without installation or semantic approval. No runtime test runs in this stage.
+
+Actual collector `192869a7` preserves all1,153 source inputs. Both Engine
+compilers pass. All four Bombay compilers fail with the same two E0308 errors
+in the new Launch fixture: it supplies an actor failure where the existing
+terminal-report field requires the delivery result containing that termination.
+Root reads all four complete diagnostics and verifies `Termination` in Local
+and the actual `report.send(outcome)` contract in Reports. Correct the two test
+values to preserve both refusal and original failure; no runtime type or law
+change follows from this compiler error. Rename the misleading cancellation
+test explicitly and preserve its other complete custody oracles. Three actual
+formatter differences affect cfg-test text only; thirteen outputs are exact.
+No runtime test or combined-controller acceptance follows from this stage.
+
+Independent decision recommendation `165e4bca` selects an explicit prospective
+D-RETIRE-1 amendment under §52: preserve original native panic causes and
+surviving outside owners through the applicable retirement. This changes the
+canonical post-initialization unwind/drop policy. Migrate the complete law and
+its stale explanatory text together after the required current-graph proofs;
+do not treat a renamed test or historical pass as unchanged-law acceptance.
+Complete versus incomplete retirement and borrowing versus consuming future
+cancellation remain distinct. The nine controllers, native cleanup/publication
+proofs and full design gates remain open; no additional API is selected.
+
+Before the next compiler retry, Root frees1,140,410,144bytes from32 regenerable
+intermediate objects of the two finished native test builds, with no Rust
+writer active. Record `cf5dd6a3` retains their exact paths, sizes and hashes;
+all binaries, libraries, source and evidence remain.
+
+Select corrected source `ae6276c5`: three existing paths, tests+24/−22/net2,
+production/public types zero; all1,150 other inputs and complete non-test
+text remain exact. The two Launch values now express refused report carrying
+its original failed termination. Test selector
+`owned_outcome_preserves_activation_panic_and_cancellation` explicitly replaces
+the historical misleading name. Independent fixture review `b6c5af33` approves
+this bounded correction only. Preserve actual-review `291d99ee` and its prose
+erratum `bdd583e1`: the report type is not RootProbe's Behavior error type.
+
+Select collector `cd04489d`, pre-manifest `ad0fff3a`: three formatter observations,
+four independent Bombay compilers, then all32 exact mapped controller rows
+if those compiler prerequisites pass. Root reads the entire243-line harness
+and all exact invocations; a failed law does not suppress independent rows.
+Use one stable disposable workspace, preserving immutable before/after graph
+and raw log archives. The absolute one-allocation oracle remains unchanged.
+This schedule supplies no broad-cohort, inversion, strict or full-gate credit.
+Nonauthor collector/source reconciliation `889a6d66` reads all243 lines and
+all39 exact invocations, authenticating the full graph. Authored fixture
+semantics are excluded from self-approval and retain their separate peers.
+
+## 192. Owning activation test cohort
+
+Select the test-only proposal `688aeb99` and Root nonauthor peer `1d69fc01`:
+remove the intentionally failing duplicate and its sole-use original-order
+producer from the normal owning integration target. All56 other tests and
+the two passing complete-custody bodies remain exact. The removed negative
+equals the retained regression after only two name substitutions. Keep its
+original source in Git6f and the existing historical failure record; reproduce
+the defect by reordering two lines in the retained producer, without weakening
+an assertion, ignoring a test or accepting an arbitrary panic as evidence.
+
+The existing `crates/actors/tests/proxy_command_recovery.rs` path deletes111
+test lines; production/public types zero. Add only the owning reproduction
+record `docs/research-probes/activation-retention.md` and its bounded mutation
+`docs/research-probes/activation-retention.patch`. Under §52, select this
+concrete two-path expansion,231 → 233. Focused healthy, intended-failure and
+whole-source-restored comparisons in both profiles precede retention. This
+is an outside-fold admission comparison; actual runtime task laws and the
+full owning release checks still require their own evidence.
+
+The first harness packet remains vetoed because it bound a mutable measurement
+file. Correct only that binding to Root's immutable checkpoint; successor
+`af95b710` retains the whole verifier, source graph and command plan. Independent
+binding review `7b642b32` resolves that narrow veto using the existing mechanism
+review. Root authenticates all820 artifacts and14 external bindings, reads the
+whole verifier and plan, and selects frozen §192 before invoking pinned Nix.
+Actual collector `c4f417d9` passes all16 commands. Both profiles reach the exact
+restored-defect oracle at `proxy_command_recovery.rs:2962`: zero retained
+requests where one is required, after disposal of the original panic cause and
+producer. Both healthy controls pass before and after exact806-source restoration.
+Independent actual review remains required; no full owning release is claimed.
+
+Independent actual review `9de7c338` qualifies this bounded isolation and both
+restorations. It authenticates all16 rows and exact806-source archives. The
+later negative request/content assertions do not execute after the row-count
+failure; healthy controls establish those separately. Next run the complete
+56-test `proxy_command_recovery` target in debug and optimized modes on the
+same restored graph, without filters or ignores. This remains test-only work
+within §192; complete owning release and Bombay design gates stay separate.
+
+Complete affected-target receipt `57897d1b` passes all56 tests in each profile,
+without ignored or filtered tests. Independent review `0d403226` qualifies that
+narrow result and the six-line current-evidence documentation successor.
+Its source-history limit remains explicit: whole806 after parity and the
+sole-writer/no-edit declaration inherit the restored focused epoch; this small
+continuation has no separate per-command source inventories. Select the reviewed
+owning test and two reproduction documents for a focused research commit:
+three paths, production zero, tests−111, documentation+58, public types zero.
+Focused owning commit `81ba2c0d1a8c6fc3d6235349980bf2657463041d` is pushed to
+`research/exec-receiving-custody`. It changes only that test and its two records;
+owning production and canonical dependency selection remain unchanged. This
+research backup does not claim release or merge to main.
+
+## 193. Driver operation allocation comparison
+
+Actual controller collector `2758653f` passes three exact formatter checks,
+all four compilers and28 of32 focused runtime rows. In each default/Axum
+debug/optimized run, the unchanged absolute allocation assertion at
+`actor_execution.rs:772` fails with actual4 versus required1. Complete
+outcome comparison and direct-Driver allocation equality precede that failure.
+The later diagnostic print does not execute. Root reads all four complete
+failure transcripts; preserve their genuine failure and the unchanged limit.
+Independent actual review `f00a4789` authenticates all39 commands, their complete
+source epochs and32 runtime outcomes. It qualifies28 positive rows and four
+intended absolute-allocation failures, without closing the controller or
+source-copy gates. Direct Driver also allocated four times: this follows from
+the preceding equality assertion, not from the unexecuted diagnostic print.
+
+Before editing, compare ordinary stack pinning in the existing Driver operation
+receiver. Expected one existing `crates/bombay-engine/src/driver.rs` path,
+about12 net production lines before formatting; tests/public types zero.
+Reuse its constructor catch, exact outside reply slot, ordered native failures
+and concrete future. An anonymous async scope keeps producer disposal inside
+an outer poll catch; its inner catch stores the original reply or poll failure
+first. Remove the per-operation heap pin without a new wrapper, owner, trait,
+bound, field, dependency, unsafe operation or public API. This is a proposed
+allocation fix, not a claim of source-line reduction or proven attribution.
+
+Require independent source review, unchanged absolute and differential
+allocation checks in all four configurations, genuine reply-before-disposal
+and poll/disposal failure ordering, existing cancellation/reentry custody
+regressions, focused debug/optimized cohorts and intended inversions. A normal
+completion catch alone cannot prove cancellation or every native fault cut.
+Keep the original graph and complete589-line private fixture exact for the
+comparison. §52's233-path allowance covers this existing path; production
+retention and all full gates remain open.
+
+Raw proposal `96b2694c` measures production+29/−16/net13 in that one existing
+path; all589 private fixture lines remain exact. Pinned whole-file formatter
+observation `b4293ac9` changes only closure layout and measures the proposed
+formatted source at+31/−16/net15. Preserve the entire shell/formatter output;
+the unique pathname header separates the actual source from the shell banner.
+No formatter output is silently installed. Independent source review and the
+compiler, custody and allocation comparisons precede retention.
+
+Before those compilers, Root recovers1,141,375,376bytes from32 regenerable
+intermediate objects of the two completed controller debug binaries. Record
+`7e84f5e8` binds their exact paths, sizes and hashes and authenticates the
+preserved executables against the completed compiler logs. No Rust writer is
+active; source, libraries, binaries and all evidence archives remain intact.
+
+Independent source review `9e89f557` finds no veto for the formatted ordinary
+Rust comparison; actual compiler and runtime proof remain separate. Complete
+patch counting gives+31/−16/net15; the independent cfg-aware matcher gives
++30/−15/net15. Both classify tests/public types as zero. Preserve the methods
+explicitly instead of mixing their addition/deletion totals.
+
+Select26-command pre-manifest `50806903` with bounded nonauthor collector
+review `a5bd5aba`, inheriting the previously independent full-mechanism review.
+Root reads the complete delta and all26 invocations and authenticates nine
+artifacts and16 immutable references before pinned execution. The unchanged
+allocation test captures output so its existing diagnostic print cannot break
+the selected-name check; its assertions and measured interval remain exact.
+Two Engine compiler prerequisites precede the four allocation configurations,
+the29/23/4 cohorts and both private laws in both profiles, and strict Engine
+library checking. Restore the original complete boxed Driver and require the
+four exact4-versus1 failures, then restore every proposed source byte and require
+all four allocation positives. No full gate or source-copy approval follows
+from scheduling these comparisons.
+
+The locally pinned version compiles in both Engine profiles. Its first three
+allocation configurations still fail at the unchanged772:9 oracle, now2 versus1;
+preserve these genuine partial results and await the complete collector.
+Before another production proposal, compare the existing ordered VecDeque's
+standard owning conversion to Vec, followed by the same settlement mapping,
+against draining into a newly allocated Vec. Expected one existing Driver
+path, about one net production line including a module-scope `mem` import;
+tests/public types zero. Reuse the same queue, settlement variants, retirement
+input and ordered conversion; no new owner, field, wrapper or trait. Verify the
+selected standard-library conversion and relevant tests, original value/order
+custody, debug/optimized cancellation and fault cohorts, unchanged allocation
+law in all four configurations and the intended restored-defect inversion.
+Do not infer allocation reuse from the spelling or weaken the one-allocation
+limit. This proposal remains blocked on source comparison and peer review.
+
+Complete actual collector `b617466c` archives18 executed commands: all four
+allocation cases fail2 versus1; the29/23/4 cohorts and both private laws pass
+in both profiles, totaling116 selected test passes. Whole Driver formatting,
+both Engine compilers and debug Engine library strict checks pass. Independent
+actual review `b275e9e6` authenticates those exact results and the unchanged
+proposed1,153-source graph. The eight scheduled inversion/restoration commands
+did not execute because the allocation criterion failed. No inverse or complete
+26-command acceptance is claimed.
+
+Selected Rust1.99 source study `332af576` binds the installed Rustdoc source to
+compiler commit `b940084d7eb6a299eb4bfeb8e34901bc051e7ac4`. The standard
+VecDeque-to-Vec conversion transfers the same ordered buffer; the later owning
+map may reuse it only when its layout permits, and can shrink or allocate.
+Do not promise generic zero-allocation conversion. Exact standard-library unit
+test modules were unavailable; their execution is not credited. The shipped
+source and examples support this bounded ordinary-Rust comparison, while the
+existing Bombay custody tests and unchanged memory limit must verify its actual
+use. Root proposal `0c9aeb45` changes only the module import and two expression
+lines: production+3/−2/net1, tests/public types zero, all589 fixture lines exact.
+Independent source review and actual formatter/compiler feedback precede use.
+
+Root next frees1,232,317,608bytes from32 regenerable intermediate objects of
+the completed debug binaries, with no Rust writer active. Record `b546036c`
+preserves exact object paths, sizes and hashes and the current binary identities.
+Source, libraries, binaries and evidence archives remain.
+
+The one-line owning-buffer proposal has source review `6994194f`; its mechanical
+26-command successor `16a0d5b6` has independent review `33a74fa4`. Root
+reads the entire bounded collector delta and all26 unchanged invocations,
+authenticates nine artifacts and13 immutable prerequisites, then authorizes
+execution with `41cf913f`. The original drain inversion must fail2 versus1,
+not the historical boxed-operation4 versus1. The absolute1 limit, exact test,
+measurement interval, complete589-line custody fixture and all1,153 neighbors
+remain unchanged. Initial debug results pass; the complete comparison and
+independent actual review are still pending.
+
+Complete actual `c3199c01` executes all26 commands: all four healthy allocation
+configurations satisfy the original absolute1 limit, all116 custody/cohort tests
+pass, and all four restored-defect configurations fail exactly2 versus1 at
+772:9. Complete1,153-source restoration precedes the four passing restored
+allocation controls. No source neighbor, fixture, generator or saved seed changes.
+Root reads the four complete negative outputs and final outcomes; independent
+actual review `7cd561c2` authenticates all26 rows,52 raw streams and52 source
+maps, the four complete source archives, exact restoration and these bounded
+results. Full gates and source consolidation remain separate. Before native verification, record
+`7a3de046` retires1,256,911,096bytes of32 finished debug intermediate objects;
+there is no active Rust writer, and source/evidence/libraries/binaries remain.
+
+## 194. Native panic identity witnesses
+
+Select the existing test-only source proposal `2371b16f` with nonauthor source
+review `46354328`: strengthen three existing `driver_law.rs` tests; retain all29
+names and all26 other bodies. Expected one existing test path, tests+173/−29/net144,
+production/public types zero. Reuse the concrete panic fixtures, original Box,
+Arc/Vec allocations, original behavior and actual Environment retirement trace.
+The fold mutates only owned state and resumes native unwinding; trace publication
+belongs to the Environment. Compare original native object addresses separately
+from payload lifetime and assert complete recorded retirement order.
+
+Formatter-first packet `7948c371` preserves the original witness source and fixes
+only inverse-patch header labels in its supporting artifacts. Select the compiled
+locally pinned Driver `b681e7a0` and exact actual `b617466c` graph for this
+independent law. Its allocation criterion remains unmet. First archive actual
+whole-file formatter stdout and review every difference. Only then may the
+32-command comparison run: healthy compiler/cohort controls, four separate
+one-site init/turn discharge/rebox mutations in both profiles, exact original
+failure sites, complete graph restorations and restored controls. No other
+failure earns inversion credit. This proves only native identity/lifetime and
+Engine retirement order; child joining, global completion publication and full
+gates need their own evidence. Source/harness review and immutable Root selection
+precede execution; §52's233-path allowance covers the existing test path.
+
+
+Native formatter-only execution `6accedae` returns complete stdout `8de14ebd`
+from raw witness `394bc08f`, with one successful pinned formatter command and
+exact1,153-source parity. Root reads every layout-only difference; no formatter
+output is silently installed. The original verification collector had a genuine
+archival-before-restoration defect: an archive error could skip restoring the
+intentionally mutated Driver. Preserve that veto. Mechanical successor
+`85c94ec3` protects mutation application and bookkeeping, attempts restoration
+and complete source verification even when archival fails, and preserves both
+errors when restoration itself fails. Root reads its complete+44/−17 delta
+and exact extracted Python fault proof; nonauthor review `df908e99` independently
+reproduces all11 isolated cases. This verifies only collector error handling,
+not Rust ownership. Actual formatted witness review and a fresh Root selection
+still precede the32 native comparisons; full gates remain open.
+
+Actual native32 `5488cee3` executes all32 scheduled commands. The four full29-test controls,
+eight exact native identity/lifetime inversions and eight restored controls pass
+their respective criteria, but both strict checks report eight test diagnostics.
+The whole comparison remains NONPASS. Before correcting that one existing test
+path, remove its unused panic import, compare complete empty lanes, borrow the
+existing trace in its synchronous fixture, and justify only the three native
+Box/shared-payload allocation sites with narrow fulfilled lint expectations.
+Expected about16 net test lines; production/public types zero. Original object,
+Arc/Vec addresses, Weak lifetime, full cleanup traces and all29 names remain.
+Independent source-conservation review plus pinned full29/strict/format checks
+in both profiles must qualify the maintenance; no full native32 PASS is inferred
+from earlier runtime-only positives. §52's233-path allowance is unchanged.
+
+Root maintenance proposal `eab9e2b3` measures tests+19/−7/net12, production/public
+zero. It preserves all29 names and the native identity/lifetime and complete
+cleanup oracles. Source-conservation review and the focused quality continuation
+remain pending; preserve `5488cee3` as overall NONPASS rather than relabeling it.
+
+Focused quality continuation `91813dde`, independently qualified by `60069e16`,
+passes pinned whole formatting, both full29-test cohorts and both targeted strict
+checks on exact test source `960466bf`. Preserve native32 `5488cee3` as NONPASS;
+these58 later positive outcomes qualify only the repaired test-quality epoch.
+
+
+## 195. Borrowing failures from an incomplete advanced Driver
+
+The advanced Environment boundary can fail before returning retirement custody.
+The current Driver correctly returns its original owner, but external callers
+cannot inspect its private primary disposition or additional failures. This is
+an advanced observability gap; no failing standard Local path is claimed.
+Comparison `3936c125` proposes two shared-borrow inherent getters on the existing
+Driver, preserving its exact `Option<Result<Completion, DriverError>>` and
+ordered failure slice without moving, cloning, retrying or discharging them.
+Expected two existing paths: `crates/bombay-engine/src/driver.rs` and
+`crates/bombay-engine/tests/terminal_custody.rs`; production+14/−0/net14,
+tests+144/−5/net139, no new public types and two public methods. Reuse the
+existing Driver, retirement response, prepared/active fixtures and original
+opaque Rust panic payload under the approved narrow exception. Add no owner,
+wrapper, protocol or default cleanup policy. The complete589-line private
+fixture and23 existing terminal test bodies remain exact.
+
+Before implementation, require independent source review and actual external
+compiler denials for private-field/destructuring access and the absent getters.
+Then compare the proposed getters with the same caller and prove the original
+native cause, coexisting primary, no repeated retirement callback and explicit
+final-owner discharge in debug and optimized tests. Check immutable borrowing
+and native-cause move denials. Each getter's information-erasing inversion must
+fail its intended oracle, followed by exact restoration. Pinned formatting and
+strict checks remain required. The existing233-path allowance covers both
+paths; full DG-TASK/API acceptance and source-copy HOLD remain separate.
+
+Original external callers now fail for the exact gap: two private-field E0616
+diagnostics, private destructuring E0451, and two absent-getter E0599 diagnostics.
+Their isolated complete1,153-source graph is restored before the proposal.
+Independent review `76d5def6` requires two thin-object pointer comparisons;
+Root applies only those corrections and reviews all formatter differences.
+The resulting test delta is+160/−5/net155; both24-test cohorts pass. Debug
+strict checking rejects only the getter's complete existing disposition type.
+Before a quality-only edit, allow four annotation lines on that getter with
+the same narrowly fulfilled type-complexity expectation as its owning field:
+production net18 total, no new alias, wrapper, field, bound, path or type.
+Preserve the nonpass and run strict checking again; getter inversions and
+borrowing denials still precede public-interface retention.
+
+The getter expectation is fulfilled. Both-profile strict checks next reject
+only the113-line end-to-end test. Before changing it, retain one explained
+four-line test-function expectation rather than add a fixture wrapper or split
+the original owner's lifetime across helpers. Production remains net18;
+tests become net159, with no operation or oracle change. Preserve both nonpasses
+and recheck formatting/strict quality before the original-fact inversions.
+
+Direct continuation `68e5de88`, independently qualified by `47efee9b`,
+completes the external caller, E0594/E0507 borrow/move denials, both getter-only
+erasures in both builds, exact1,153-source restorations,48 final positive
+passes, both targeted strict checks and whole formatting. Primary erasure
+fails at1980:17; cause-lane erasure at1991:13. Both negatives stop in Prepared,
+so Active and later identity/re-receive/discharge receive positive credit only.
+Final Driver `036ddd35` and test `cbc532e5` are eligible for guarded conditional
+research copy; production+18/−0/net18, tests+164/−5/net159, two public methods,
+zero new nominal types. Full portable composition and decision gates remain
+required; source-copy HOLD is not lifted.
+
+## 196. Consolidate the current code in one portable research branch
+
+Select the80-path proposal `2d518345`, independently inspected by `533b8d2c`,
+as a conditional code backup rather than canonical retention. Use isolated base
+`40ab2a6adf2022a0fc06d131c21db9f37c0711bc`: all80 canonical guards match,
+and this preserves completed canonical fixes and PRD history. Preserve the
+current working tree; carry its four documentation edits separately with exact
+hash guards. Reuse the existing Driver, Environment, local actor composition,
+application, Entity and typed interpreters. Add no competing implementation.
+
+Root measurement `21304757` covers78 non-generated paths against that base:
+production+8180/−2420/net5760; tests+18888/−1615/net17273;
+documentation+125/−126/net−1; manifests+12/−3/net9. The two generated lock
+deltas remain unknown until actual resolution. Public surface is three fresh
+nominal types, two existing-name promotions and no nominal deletion; Engine
+also changes public signatures despite adding no nominal type. This is code
+growth, not a reduction or proof of minimality. It remains inside the delegated
+233-path research allowance; retain the full measurement and per-path selection.
+Advanced failure getters are excluded pending their own original/fixed proof.
+
+Override only the explicitly reviewed Driver-law status/ownership correction
+`94cfa2c6` (`3a7a4ae9` review), and substitute the stronger native fixture
+`960466bf` with its separate source review `32dab1fd` and direct pinned quality
+continuation `91813dde`. Do not attribute either substitution to the older c319
+archive. The law is an unaccepted research amendment, with explicit native
+unwind/cancellation limits; it does not claim equivalence to canonical policy.
+Regenerate root and excluded fuzz locks through pinned Nix with all three
+owning patches at Git `81ba2c0d1a8c6fc3d6235349980bf2657463041d`.
+Verify actual source, instructions, graph and unrelated resolver changes;
+preserve all three Nix pins and Timer revision. Freeze and measure the resulting
+whole graph before testing or pushing focused code commits. The69-path HOLD,
+catalogue anchors/current mutation consumers, full native cleanup/publication,
+all seven open gates, minimization and final review/CI merge remain required.
+
+Actual portable resolution selects Core/Actors0.22.0 and Macros0.13.1 at81ba,
+with179 root packages and31 excluded-fuzz packages. Every unrelated package
+entry remains identical to40ab. The fuzz Actors patch is explicitly unused,
+not an invented dependency. Root reads the actual selected complete AGENTS
+and compares all806 earlier owner paths: only the isolated owning test and
+README differ, plus two added research records; production and contracts match.
+The frozen portable graph `6a995cf7` contains347 runtime and808 owning files.
+Complete cumulative measurement `be6784a0` covers110 tracked and two untracked
+paths: production+8257/−2364/net5893; tests+21932/−1921/net20011;
+documentation+14441/−192/net14249; manifests+52/−38/net14.
+This conditional branch remains unminimized and unaccepted.
+
+## 197. Repair existing Engine verification consumers
+
+Before applying `5ceaedf4`, Root reads its complete four-path source delta,
+script restoration, source bindings and the catalogue's explicit partial
+coverage. Independent nonauthor Root review finds no new semantic mechanism:
+correct the actual direct-fold literal, enumerate only the five existing Rust
+panic causes and three private custody signatures, rebind seven one-site
+inversions and the real law-row deletion, and replace nine absent inline-test
+anchors with existing tests at81ba. Preserve all eight laws, names, denials,
+killers, models, generators and the existing regression seed. Do not credit a
+reference as complete semantic proof or a failed literal as a killed defect.
+
+Expected four existing paths: `crates/bombay-engine/tests/law_manifest.rs`,
+`crates/bombay-engine/tests/driver-law-evidence.sh`,
+`docs/driver-law-manifest.json`, and `docs/driver-template-manifest.json`.
+Production/public types zero; tests+46/−31/net15; catalogues+10/−10/net0.
+The233-path allowance already contains all four. The original portable surface
+regression actually fails at law_manifest733:5, zero versus one direct folds;
+this is an obsolete verification consumer, not a newly proved runtime defect.
+Repeat optimized, review pinned formatter output, then apply exact guards and
+run the complete manifest and existing eight-law evidence script. Both-profile
+law inversions, restoration, strict checks and remaining semantic gates still
+apply; this repair does not approve native publication or the source-copy HOLD.
+
+The optimized original surface check fails at the same733:5 oracle. Pinned
+formatter output changes only one assertion layout (+5 net test lines); Root
+reviews that complete delta before application. Formatted surface source
+`e0e089e4` raises this test-only stage to+52/−32/net20; production/public
+surface remains zero. The exact four old-source guards match the portable
+branch before any write.
+
+The complete manifest next reports8 passes and one genuine audit failure:
+it scans the owning cfg(test) source-loan fixture for its necessary trace.
+Before correcting that same existing test path, restrict this production
+control-surface audit to the exact required `source_offer_custody` module
+boundary. Independent source review confirms the sole boundary, observation-
+free production prefix and unchanged complete589-line test suffix. Preserve
+all six forbidden authority strings and reject an absent boundary; no runtime
+source changes. Expected four net test lines, subject to pinned formatting.
+Prove a real production observation-control insertion fails in both builds,
+then restore before crediting the repaired consumer.
+
+## 198. Preserve genuine task failure before startup publication
+
+The current private `owned_outcome` maps an actual Tokio JoinError to a bare
+Panicked/Cancelled guard fact, losing the owned task error. Before production
+repair, use the two original-compatible witnesses `d669c54e` and nonauthor
+review `246041a5` on the portable graph: an original native Box panic and a real
+aborted task feed `startup_failure`. Weak lifetime and Error::source absence
+are initial falsifiers, not claims to returned Box identity or matching task ID.
+Expected one existing Launch test module, +38 test lines; production/public
+types zero. Format and run both in debug and optimized builds before fixing.
+
+Proposed repair `6fa711c0` reuses existing RunError::ActorTaskFailed and retains
+the actual JoinError in existing SpawnError/ActorRetirement variants. Expected
+three existing paths: Launch, Application runtime and Terminal; production
++34/−18/net16, tests+44/−12/net32 beyond the38-line original witness; no new
+nominal types, public methods, task owner, bound or erased protocol. Bare
+guard-only facts remain distinct. Require independent source review, exact
+returned ID/kind/thin native Box identity and final discharge, complete Root/
+Entity consumers, original/fixed/inversion evidence and strict checks before
+retention. The standard-birth missing-child fallback is independently
+unverified: do not fabricate state, mislabel rejection, claim it migrated, or
+silently exclude it from EXEC. The existing233-path allowance covers this
+bounded repair; full acceptance remains blocked on its actual evidence.
+
+All four original startup runs now fail at their intended oracles: native
+Weak0 versus1 at1561:9, and absent cancellation error source at1577:9,
+in debug and optimized builds. Later typed identity oracles are not credited
+on those negatives. Nonauthor transport review `72570c56` permits only the
+bounded Root/Entity repair; the standard-birth host-lifetime cut stays open.
+The raw patch is+79/−31/net48, not the packet category sum+78/−30;
+separate production/test comparisons retain net16 production and net32 tests.
+Pinned formatting only sorts imports, wraps one test call and corrects one
+match-arm indentation: production stays net16, tests become net33 beyond
+the38-line original witness. Exact formatted Launch `2c6aa32c`, Application
+`923e2fe5`, and Terminal `51e55fce` replace the guarded three before sources;
+no publication-witness overlay or hidden additional change is included.
+
+## 199. Restore the omitted owning retirement signature
+
+The first fresh portable Bombay test compilation rejects four-argument
+Retirement against its already selected five-argument ActorExecution and
+LocalRetirement consumers. No startup witness executes on this compiler veto.
+The80-path source selection omitted the existing `crates/bombay/src/retirement.rs`,
+already named in the approved change record. Before copying it, retain exact
+c319 source `3097a595`: pass the existing Request (default Never) through the
+existing Retirement and ActorExecutionOutcome/FnOnce equation. Expected
+production+7/−5/net2, tests/public nominal types zero, no new mechanism or
+owner; one additional copied existing path, inside the233-path allowance.
+Independent nonauthor source review and fresh whole-graph compilation precede
+qualification; do not disguise this source-selection defect as an actor-law
+failure or inherit a whole-workspace pass from c319.
+
+The repaired production-boundary audit now passes all nine manifest tests in
+both builds. Actual real mutating observation-control insertion `ad65b4af`
+fails the named production assertion at875:5 in both builds; exact347-source
+restoration precedes both complete nine-test passes. The existing eight-law
+script exits0 and runs sixteen positive/boundary controls. Independent actual
+qualification grants seven isolated intended kills; its D-PORT transcript also
+contains unrelated stale compiler snapshots, so that row receives no kill credit.
+Preserve this evidence defect and rerun the port check against the now-passing
+five-case compiler baseline. Optimized inversions and full gates remain separate.
+
+Startup transport now compiles the complete Bombay library test binary and
+passes all eleven `launch::tests::` tests in each build. This is22 positive
+outcomes, not a claim to all seventeen Launch-module tests or whole Bombay.
+Retirement omission review `0b83b68a` qualifies the exact existing3097 signature;
+no new actor contract was invented to satisfy the compiler. Full Root/Entity,
+standard-birth host boundary, Axum and strict verification remain required.
+
+## 200. Correct the complete research change classification
+
+Earlier portable records used a first-inline-test-module suffix classifier.
+That incorrectly called the later unconditional application result/kernel tests,
+and incorrectly called some earlier guarded Launch/Local/Interpreter items
+production. Preserve those immutable historical measurements with this explicit
+correction. Independent source-bound interval review `18dcc2ed` identifies every
+mixed Rust interval against40ab,2fcc and the actual current source, including
+the resumed297-line application production block and its following test module.
+Use one whole-file SequenceMatcher with autojunk disabled; classify removed
+and added lines against their respective exact source intervals. Out-of-span
+blank separators count conservatively as production, symmetrically. Whole test,
+benchmark, fuzz targets and test scripts remain tests; documentation and locks
+remain separate. Guard every source hash before reusing an interval.
+
+Corrected complete current-source code delta against the cumulative2fcc baseline:
+production+8363/−2340/net6023; tests+22173/−2003/net20170. Against stage40ab:
+production+8289/−2394/net5895; tests+19126/−1699/net17427. These are measured
+code growth, not distillation. The cumulative set has111 changed tracked paths
+and two untracked paths; the current stage has83 tracked and two untracked.
+Public surface remains three fresh nominal types and two existing-name promotions,
+no nominal deletion; the advanced getters add two methods, and startup custody
+adds one public variant to existing ActorRetirement. No new path/type allowance
+is inferred. The233-path research allowance and §52 delegated recommendations
+apply; all seven open gates, the69-source retention HOLD and final minimization
+still apply. Synchronize the four pending canonical evidence documents into this
+conditional branch with exact guards, then measure documentation/locks as well
+before focused research code commits and remote backup. This backup is not
+feature completion, accepted canonical code, a reviewed PR or main delivery.
+
+## 201. Close current Engine verification consumers
+
+Fresh complete Engine test execution preserves a real NONPASS: its four
+expected-error snapshots are stale, and the lifecycle-control fixture omits
+current Driver formation bounds. These are test-consumer defects; do not credit
+an unrelated type-formation error as a prohibited-control denial. Before
+updating diagnostics, repair only the two existing phase/control fixtures:
+use valid Behavior/Environment bounds, preserve all nine absent controls,
+and test the current associated activation operation on the wrong owning
+phase. The missing-Environment and non-Behavior inputs remain unchanged.
+Capture every actual compiler diagnostic in all four existing .stderr files;
+review exact intended denials before replacement. No production/public type
+change or acceptance criterion reduction. Six existing test paths, already
+within the delegated233-path allowance; all five compile cases must rerun.
+
+Complete strict Engine checking separately rejects needless explicit lifetimes
+in the private source-offer fixture and the155-line ownership witness.
+Before changing that existing Driver test suffix, proposal
+`bombay-portable-engine-source-quality-root` elides only the three independent
+input lifetimes, retaining the same borrowed SourceOffer fields/body, and adds
+one narrowly fulfilled too-many-lines expectation to the existing end-to-end
+witness. Tests+8/−4/net4; no production, public interface, operation or oracle
+change. Remove one excess EOF blank from the existing fuzz manifest
+(manifest0/−1/net−1). Require independent source-conservation review, exact
+original/fixed custody tests, strict both profiles and formatting before
+qualification. Preserve the complete original strict/compiler nonpasses;
+these maintenance edits add no semantic mechanism and lift no full gate.
+
+Fresh combined default library verification now passes266 tests in debug and
+266 in optimized mode through the pinned1.99 shell, with the same seven known
+warnings. Independent exact-name qualification `b10984b9` counts thirteen
+Launch selectors: eleven startup/owned-task cases plus ordinary and transitive
+source retirement. The four concurrency/serialization/allocation measurements
+require `tokio_unstable` and are absent from these default runs; their earlier
+isolated evidence stays separate. This corrects the interim all-seventeen
+forecast rather than inventing fresh default coverage. Startup original/fixed
+actual review `b4e4c1c9` qualifies
+its earlier four intended failures and22 focused positives separately. It
+supplies no public Root/Entity/HTTP failure or full-gate certification. Full
+Engine verification remains NONPASS on four stale compile diagnostics and the
+two identified test-code lint issues; keep those outcomes with this backup.
+
+Reviewed test-quality25635 and the two source-fixture04750 proposals are now
+installed with original byte guards. Pinned whole formatting passes; all-target
+Engine strict checks pass in both builds. The four complete actual compiler
+outputs replace only their four original snapshots. Fresh full Engine debug
+and optimized runs each pass74 Rust tests, including the compile harness and
+doctest; all five individual compile cases pass without overwrite in each run.
+These supersede the current consumer/lint blockers while preserving their
+historical NONPASS records. Independent actual qualification and optimized
+law inversions remain required; no full design gate or retention HOLD is lifted.
+
+
+## 202. Back up the consolidated implementation with bounded verification
+
+Before focused code commits, the complete current research stage against40ab
+has88 changed tracked paths and two untracked paths; cumulative2fcc has116
+tracked plus those two untracked paths,118 total. Source-bound classification:
+production+8363/−2340/net6023; tests+22366/−2077/net20289;
+manifest/lock+51/−38/net13. Stage production+8289/−2394/net5895 and
+ tests+19319/−1773/net17546. Documentation is remeasured after this record.
+Public nominal surface stays three fresh types and two existing-name promotions,
+zero removed, plus two advanced getters and one existing-enum retirement variant.
+These are research growth measurements, not minimization. All paths fit the
+already delegated233-path research allowance; no fresh permission is inferred.
+
+Retain a focused Engine causal-custody commit with its selected owning patches,
+locked graphs, law consumers, regressions and independent verification, then a
+Bombay incarnation/application/Entity commit with affected callers and examples.
+Keep the four PRD/backlog evidence documents in a separate commit. Push the
+combined branch as an explicit conditional research backup. It neither lifts
+69-source retention HOLD nor accepts any of the seven open design gates.
+The final application API, genuine no-work comparison, public host witnesses,
+remaining ownership evidence, module extraction, minimization, full repository
+checks, reviewed PR and main delivery remain required. The existing separate
+result-receiver integration consumer has twelve stale exhaustive patterns still
+pending its already drafted test-only repair; library passes do not imply that
+integration target passes.
+
+Independent actual review `b10984b9` qualifies default Bombay266 and Engine74
+named results in EACH debug/optimized profile, the five Engine compile cases,
+Engine strict both profiles, and the genuine production-observation inversion
+with exact347-source restoration. It preserves the original diagnostic/lint
+NONPASS and excludes the contaminated old D-PORT kill. Fresh isolated D-PORT
+script exits0: two named controls pass; only the phase fixture mismatches when
+the mutant removes the real Prepared.next denial, while both wrong-active-phase
+denials and the other four compiler cases remain. The mutant harness fails101
+for that intended isolated denial. Independent actual review `030288cf`
+qualifies this fresh isolated kill against both healthy five-case baselines.
+The old contaminated row remains excluded; eight distinct debug inversions now
+have intended observations across the stated epochs, not a freshly rerun full
+eight-law suite. Optimized eight-law inversion execution remains separate.
+
+
+Remote code backup is now real: Engine commit
+`c7897b6` and Bombay commit `74ab7bea59b4555eaed2d9eaaf743d9b17af63d0`
+are pushed to [research/exec-consolidated](https://github.com/devrandom-labs/bombay/tree/research/exec-consolidated).
+The Engine commit contains28 paths; the Bombay commit58. Both original untracked
+regression files are now tracked, so the current stage has90 tracked paths and
+zero untracked; the cumulative set has118 tracked paths and zero untracked.
+This changes tracking status, not source content or semantic acceptance.
+The remaining four evidence documents are committed separately after recount.

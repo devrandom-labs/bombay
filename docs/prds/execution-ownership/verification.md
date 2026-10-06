@@ -246,12 +246,14 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 <!-- exec-research-counts -->
 
 ```text
-production: +167 / -34 / net 133
-tests: +3295 / -557 / net 2738
-documentation: +13931 / -97 / net 13834
-manifest/lock: +38 / -33 / net 5
-public API: +0 types / -0 types
-changed tracked paths: 70
+scope: conditional consolidated research; not distilled or accepted
+production: +8363 / -2340 / net 6023
+tests: +22366 / -2077 / net 20289
+documentation: +14746 / -202 / net 14544
+manifest/lock: +51 / -38 / net 13
+public API: +5 types (3 fresh / 2 promotions) / -0 types
+public getters: +2; public retirement variants: +1
+changed tracked paths: 118
 untracked paths: 0
 ```
 
