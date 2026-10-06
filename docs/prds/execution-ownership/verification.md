@@ -247,9 +247,9 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 
 ```text
 scope: conditional consolidated research; not distilled or accepted
-production: +8436 / -2340 / net 6096
+production: +8454 / -2340 / net 6114
 tests: +23655 / -2078 / net 21577
-documentation: +15744 / -203 / net 15541
+documentation: +15797 / -203 / net 15594
 manifest/lock: +51 / -38 / net 13
 public API: +5 types (3 fresh / 2 promotions) / -0 types
 public getters: +2; public retirement variants: +1; application variants: +1; application generics: +1

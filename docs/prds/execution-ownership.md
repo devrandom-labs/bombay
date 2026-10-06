@@ -10050,3 +10050,56 @@ Stage40ab8323ab03 records production net5968/tests net18834. Canonical
 86dcbbea remains70 paths, production net133/tests net2738/public types0.
 Both whitespace checks and pinned whole workspace formatting pass after
 installation. Final commit-bound snapshots will be distinct records.
+
+
+Prepared conditional backup11155b15 is pushed to draft326; canonical
+record6b9903b is pushed. Commit-bound full records c35cf6d4/9fa9803a
+and canonical aef683de preserve §219 totals, with only evidence prose changing.
+Current source is now4ae/0ce6/Entity9a; exact-head CI37436867542,
+37436867512 and37436867575 is running, with no passing result inferred.
+
+Before retaining counter2aa, rebind its comparison to that actual Prepared
+source epoch: repeat original exhaustive E0027 both, corrected two domain
+tests and actual joined-consumer execution both, plus whole formatting.
+Seven frozen commands,14 complete streams and347-source maps; finally restore
+the exact current baseline. This new-graph trial is justified by the intervening
+Prepared edit, rather than silently inheriting ba92860e's older App2d graph.
+Only Counter's one already-scoped source file changes; nominal surface remains
+five/zero removed and its additional production delta remains18. Preserve
+all previous original/inverse/positive evidence and avoid another whole rebuild
+of unchanged startup regressions. Current complete c35cf6d4 production net6096,
+tests net21577; the proposed consumer expansion adds no path or public type.
+
+
+Counter original12 actual ba92860e and independent41c74fa9 preserve
+oldApp2d original/inverse E0027 both, four two-test domain passes and four
+real executions. Fresh Prepared-epoch d4a2a598, independently9a093480,
+adds both current E0027 prerequisites, two corrected two-test rows, both
+actual executions and whole formatting0, with exact347-source final restoration.
+No runtime law credit is given to static denials; no fresh inverse/replay is
+invented. All nine new predicates execute after the joined actor result,
+not merely its earlier coarse termination. All eleven warnings remain.
+
+Select unchanged2aa for guarded conditional research backup under §196/§220.
+Current pre-copy6b04ca04 records118 tracked/zero untracked: production
++8436/−2340/net6096, tests+23655/−2078/net21577, documentation
++15763/−203/net15560, manifest/lock+51/−38/net13; nominal types five/zero
+removed. The one-file +18 production correction adds no path/type or runtime
+policy. Recount complete tracked/untracked delta; other consumer proposals
+stay external pending their own source/actual review.
+
+Exact11155 remote reread confirms Deny37436867575, Analyze37436867512 and
+aggregate CodeQL112182685458 succeed. Nix37436867542 now fails ownership
+coverage on two exhaustive Entity integration-test patterns at523/545, each
+missing the same nine current result fields; this is newly observed formation
+evidence, not a passing/failed runtime law. Full CI log SHAd240b4eb4cd74df5766a52b80a65d76a1f319fd6e10a39941e86afb787458d7c is
+preserved. Correct those consumers without wildcard erasure or discarding
+coexisting cancellation/queue facts. No green full CI or merge readiness.
+
+
+Counter post-copy56aa50d0 covers118 tracked/zero untracked: production
++8454/−2340/net6114, tests+23655/−2078/net21577, documentation
++15789/−203/net15586, manifest/lock+51/−38/net13; nominal and other public
+surface unchanged from §219. Stage40ab2862190f has production net5986.
+Canonical ea9a6749 remains70 paths, production net133/tests net2738/types0.
+Final commit-bound recount changes only evidence prose; snapshots stay distinct.
