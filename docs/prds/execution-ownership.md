@@ -10559,3 +10559,121 @@ net13. Canonicalac8a0802 remains70/0, production133/tests2738/public0.
 Terminal scratch receipt6a2f1f6a retires16 exact already-linked debug objects
 (634822192 bytes), preserving the successful binary. Recompute complete final
 prose before commit; actualda5f and classification5db67 remain bounded evidence.
+
+
+## 228. Correct the current Axum protocol diagnostic without changing its law
+
+Observation witness commit69c6973 and canonical evidence7833c1b are pushed.
+Final complete checkpointsb8a31c0c/dd15435d retain118/92 tracked paths, zero
+untracked, production6260/6132 and tests22062/19319; canonical0d363b58
+remains70/0, production133/tests2738/public0. No gate or main merge follows.
+
+Required CI37451839513 preserves the intended E0631 against unchanged wrong-
+protocol fixture90c6c3f3. Only its saved method-bound note is stale. Independent
+source reviewfc847600 authenticates complete CI expected/actual diagnostics,
+old9973bd39 and proposed6820be9d. One already-scoped diagnostic path; tests
++4/−7/net−3, production/public types0. The root/router protocol distinction,
+fixture, compiler and dependency selection remain unchanged.
+
+Before selecting the snapshot, run the original named compile-check test in
+debug and optimized builds through pinned Nix, requiring an actual named
+failure caused by this complete E0631 snapshot mismatch. Then temporarily
+install exactly reviewed6820 and run the whole three-case Axum target in both
+profiles: valid live-root router, bind refusal before activation, and unchanged
+wrong-protocol denial. Preserve every full stream, actual count and tracked/
+untracked source membership/hash before/after each command. Restore the exact
+original snapshot in finally; no TRYBUILD overwrite or compiler-error filtering.
+Independent actual review is required before retaining the diagnostic change.
+This is no HTTP ownership, strict-quality, full CI or final gate acceptance.
+
+The first collector reached two expected original failures and a genuine
+three-test corrected debug pass, then its count guard mistakenly included the
+trybuild fixture-success line from stderr as a fourth harness test. Finally
+restored9973 exactly. Preserve this noncomplete attempt; parse harness names
+from stdout, keep both full streams, and repeat the four-command collection.
+This changes evidence parsing only; no fixture or acceptance criterion changes.
+
+
+## 229. Compare the current paired execution API without losing completed fixes
+
+Source-only localized packet718defb8 applies API52b then supplied-workf439
+to the actual App00d6, not an older whole-file replacement. All cfg bodies,
+18 observation assertions and three native startup-failure maps remain exact.
+Existing private execution/publication/cleanup owners are reused; no new nominal
+type, field, variant, wrapper, trait or service. Complete proposed production
++446/−263/net183; this is added capability, not a code-reduction claim. Genuine
+absent work uses Option<Never>; supplied original work and output use Some.
+Both run_with methods await the same paired execution kernel, permitting
+borrowed/non-Send caller work without silently constructing another runtime.
+Entity-family and HTTP preparation remain separate required implementation.
+
+First format external copies only through pinned Nix: the current composed
+App, exact receiving30 envelope migration, borrowed-public-work fixture, three
+ordinary no-work call alternatives and two inhabited-work/output denials.
+Authenticate raw/formatted bytes, complete source graphs, all formatter output
+and exact deltas. Independent composition/formatter review precedes any
+disposable source trial; no production retention or gate approval follows.
+The old four-target no-work alternatives260b assumed synchronous run_with;
+reconcile their supplied-work consumers with this exact composition before
+claiming a current whole-target result. No helper or specialization is inferred
+from a compiler complaint. Finally conserve all repository and owning bytes.
+
+Source author subsequently found an inherited generic-arity defect in declared
+execute:14 supplied arguments for the existing13-axis private kernel, including
+an extra Prepared tuple that is already fixed in its result. This does not
+change the intended model. Before correcting it, temporarily compile exact
+formatted481de in debug and optimized library checks through pinned Nix, retaining
+complete JSON diagnostics and source guards. Finally restore App00d6 exactly.
+Freeze a separate one-tuple-removal successor; compiler output may verify this
+source error but cannot invent a new ownership axis or architecture.
+
+Actual original-arityb1b04ba8 confirms one E0107 at1845 in each profile,
+14 supplied versus13 private generic arguments. App00d6 and all347/808 source
+inputs finally restored. Exact formatted-parent correctionc47448ea removes
+only the extra tuple, yielding0ca3499d; no body/bound/ownership change.
+
+Next finite comparison temporarily uses0ca plus formatted receiving31ba and
+unchanged borrowed-public fixture6adf in the previously used disposable
+exec_async_contract_probe test path (must be absent initially). First compile
+the two real caller tests against original App00d6 in both profiles, retaining
+every actual await/non-Send refusal. Then check corrected library formation
+and run the two caller tests and all30 original receiving controllers in both
+profiles. Preserve full JSON/errors/streams/counts; no positive execution after
+formation failure. Finally restore App00d6/receiving0ce6 and remove only the
+byte-guarded disposable probe. This reuses the unchanged original work/root/
+cleanup owners and adds no retained test path or public type. Actual complete
+result/static inference, absent-call alternatives and family/HTTP laws remain
+independently required; no source retention or gate claim follows.
+
+The seven-row paired trial stops on receiving-target compilation. Corrected
+library checks pass both profiles; the two borrowed/non-Send caller tests pass
+in each (four execution instances). Original callers fail with four intended
+E0277 refusals per profile, plus two downstream E0599 cascades without separate
+credit. Receiving debug fails before executing any of its30 controllers: old
+synchronous run_with consumers were not migrated by the envelope-only patch.
+Release receiving remains unexecuted. Finally restores exact App00d6, receiving
+0ce6 and probe absence. All source maps/streams are preserved; no full-trial or
+retention credit. Reconcile complete consumers before repeating that target.
+
+Ordering deviation: this disposable comparison began before the pending
+formatted-source review returned, contrary to the prior narrative checkpoint.
+Record that deviation; do not describe later review as pretrial authorization.
+No production is retained or gate self-approved. The reviewer may still veto
+any proposed source or result. Source-only prototype reviewcd975 precedes it;
+formatter and one-line correction remain separate prospective qualifications.
+
+Actual6ac3ae5a and wholly nonauthor reviewd07f175a qualify exact Axum
+snapshot6820 for the current API epoch. Original named mismatch fails once
+in each outer profile; corrected full3-test target passes each. Trybuild still
+compiles its denial in dev mode under both harness profiles: no optimized
+denial compilation claim. Eleven outer-library and three inner-library warning
+emissions remain. Select only the one reviewed diagnostic file (+4/−7 tests,
+production/public0); all prototype API/receiving source trials stay restored.
+Complete current measurement precedes focused commit/push and replacement CI.
+
+Precommit complete checkpointed3e8c4c/524dfc0e covers118/93 tracked paths,
+zero untracked; production8602/−2342/net6260 (secondary6132), tests
+24195/−2136/net22059 (secondary19316), current public surface unchanged.
+Canonical32d43a35 remains70/0, production133/tests2738/public0. This paragraph
+and the consistent backlog update require final recomputation before committing
+only the reviewed diagnostic and records. Unselected API prototypes stay restored.

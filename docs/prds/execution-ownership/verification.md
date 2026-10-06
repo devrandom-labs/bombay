@@ -248,8 +248,8 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 ```text
 scope: conditional consolidated research; not distilled or accepted
 production: +8602 / -2342 / net 6260
-tests: +24191 / -2129 / net 22062
-documentation: +16319 / -203 / net 16116
+tests: +24195 / -2136 / net 22059
+documentation: +16448 / -203 / net 16245
 manifest/lock: +51 / -38 / net 13
 public API: +5 types (3 fresh / 2 promotions) / -0 types
 public getters: +2; public retirement variants: +1; application variants: +1; application generics: +1
@@ -1356,3 +1356,14 @@ six newer resolved packages violate exact owning-lock selection; no check ran.
 New required Nix37451839513 fails the stale Axum wrong-protocol snapshot, while
 Deny/CodeQL pass; the original typed E0631 is still present. EXEC §227 records
 precise source epochs, failure limits and proposed narrow continuations.
+
+
+Axum diagnostic current trial: actual6ac3ae5a, nonauthor d07f175a. Old9973
+causes the intended single E0631 mismatch in both outer profiles; exact6820
+passes the full three-case target each. Inner trybuild remains dev compilation.
+Source graphs1155 finally conserved; warnings11 outer/3 inner remain. Retained
+change is one existing diagnostic only, tests+4/−7, production/public0.
+Paired API comparison a07da704 is partial: corrected library checks and two
+borrowed callers pass both profiles, receiving target fails formation before
+any of30 controllers. Original source/receiving/probe absence restored; no
+API retention, full current trial or gate acceptance.
