@@ -38,29 +38,28 @@ Line, file, type, allocation, and task counts are diagnostics and review limits.
 They cannot justify combining distinct responsibilities or keeping a wrapper
 with no independent purpose.
 
-## Remaining blockers — current integration plan
+## Remaining blockers — current closure table
 
-`research/exec-consolidated` is the only integration branch, delivered through
-[PR #326](https://github.com/devrandom-labs/bombay/pull/326). This table is the
-current work list. Earlier checkpoint lists are dated evidence, not additional
-work. Reuse valid results for unchanged laws and source; rerun affected tests
-when their inputs change. Stop optional research. Required PRD comparisons,
-independent decisions and verification still apply.
+One integration branch: `research/exec-consolidated`, [PR #326](https://github.com/devrandom-labs/bombay/pull/326).
+This is the only current closure list. Earlier lists are dated evidence.
+Reuse results for unchanged code/contracts; rerun affected checks after a relevant
+change or failure, and retain all required final integrated verification.
+Stop optional research. Existing work and completed runtime fixes stay preserved.
 
-| Blocker | Test for acceptance |
-| --- | --- |
-| Entity cleanup result preservation | Real executor destruction and native task panic preserve already acquired root/head results and distinct remaining join failures; dropping the last result receiver releases each value once. Original defect fails; correction and publication-order inversions pass in debug and release. Migrate the affected family consumers. |
-| Final application execution API | One caller-owned async execution path and one owned-runtime construction location; explicit current-thread/multithread choice; exact unstarted inputs, callback output, root/child/family results and failures. Required caller, startup/drop, join, static-denial and consumer tests pass; independent DG-API/TASK/PROJECTION decisions accept exact signatures and ownership. |
-| HTTP and bounded external work | HTTP binds before activation, builds its router once, delegates to common execution and preserves serving error plus root outcome. Bounded work rejects with exact input and distinguishes abandoned waiting from running work. Required EV-22/24 regressions and affected examples pass both profiles; DG-WORK accepted. |
-| Selected upstream receiving contract | Reviewed owning Behavior change, passing owner checks, published release, then exact Cargo selection/source verification and affected Bombay tests. No unreleased patch is treated as delivered. |
-| Remaining design decisions and dispositions | Independent reviewers accept all seven open DG records and all nine controller dispositions using valid existing evidence plus the missing tests above. Resolve each actual failing law; no self-approval or weaker acceptance criterion. |
-| Required module extraction and minimization | Approved symbol-to-owner map; one implementation per responsibility; mechanical extraction preserves differential traces, curated exports, macros and consumers. DG-MODULES/WRAPPERS accepted; final abstraction/disposition and complete change records prove the retained composition minimal. |
-| Required verification and CI | Repair the ActorOutcome coverage failure without lowering floors or hiding production lines. All §10.1 pinned-Nix commands, focused regressions, required static/model/fuzz/Miri and benchmark gates pass on the integrated source. Preserve earlier failures and valid proof limits. |
-| Final review and main delivery | Required independent final reviews approve the complete patch; required GitHub checks pass; PR merges into main. Record PR, CI and merge commit in this PRD/backlog, then mark the goal complete. |
-
-The private Entity runtime-choice correction is implemented and independently
-verified (§250). It is no longer a remaining implementation blocker. Completed
-local-runtime fixes and their regressions remain preservation obligations.
+| Requirement / gate | Exact blocker | Valid evidence available | Next action and pass condition |
+| --- | --- | --- | --- |
+| XO-10/11/44, EV-05/07/08: Entity cleanup | A completed root/head can be lost when remaining family cleanup is interrupted. | Runtime selection fixed in056ac7e; both-profile original/fixed native proof. Reviewed ac319 root/head publication correction and complete typed witnesses are prepared. | Run original loss witness, then corrected three controls and root/head publication inversions in both profiles; preserve exact reports/native cause/remaining receive error and once-only release. Migrate affected family consumers. |
+| DG-API; XO-01–12/43–45; EV-01–05 | Final async/owned signatures and complete root/family outcome are not accepted/integrated. | Ordinary-Rust comparisons; receiving30, prepared-input, owned-mode, borrowed-work and caller formations at recorded source epochs. | Select the evidenced spelling with independent review; integrate one execution path/one runtime constructor and migrate callers. Run tests affected by signature/family changes; preserve callback output and unstarted inputs. |
+| DG-TASK; XO-13–22; EV-06–12 | Full live hierarchy custody at every await/drop is not yet accepted. | Engine74, native failure34, receiving30 and existing startup/cancellation/custody tests; approved typed failure and receiver-surrender policies. | Fill only missing live parent/child/capability cleanup witnesses; prove no abandoned owner, exact failure/result custody and joined ordered descendants in both profiles; record reviewed ownership table. |
+| DG-PROJECTION; XO-23; EV-10/12/30 | Eager child cleanup, actual projection panic and task-count disposition need final integrated proof. | Existing projection/custody regressions and constructed conversion comparisons; native failure34. | Exercise real child completion while parent continues and real projection failure; preserve origin/results, compare required progress and measure retained task/allocation counts. Accept exact representation independently. |
+| DG-OBSERVATION; XO-31–36/40; EV-16–21/23 | Final integrated observation/fairness/timer acceptance and current instrumented fuzz remain. | Qualified runtime28, STATIC72, Monitor16; selected Observe/Timer contracts and deterministic race/order inversions. | Reuse unchanged laws; run required current10k instrumented fuzz, affected integrated checks and strict lint. Sign one relationship owner/commit-point/fairness decision; preserve exact rejected notifications. |
+| DG-WORK; XO-41/42; EV-24 | Direct semaphore/FIFO probes do not yet prove the real typed interpreter’s bounded-work law. | Prepared WORK12 source and existing port/rejection/native work comparisons. | Add the smallest real-port saturation/rejected-input/completion/shutdown witness; prove abandoned waiting does not stop running work. Original/inversion and healthy tests pass both profiles; independently accept concrete limit. |
+| XO-37–39; EV-22: HTTP | HTTP integration still needs the final common execution path and complete serving/root result. | Reviewed HTTP source/bind-custody and real HTTP consumer results at recorded epochs. | Integrate/migrate; bind failure activates nothing, router runs once, root stop closes server, serving failure returns its error plus joined root result. Run affected Axum tests both profiles. |
+| Nine preservation dispositions | Successor transport/panic policy must be explicitly accepted; these are not nine missing implementations. | Allocation1, Driver execution, start/cancel, raw-unwind and typed Engine/Local/Launch successor evidence. | Independent review signs exact old-to-new mappings and the retirement/panic amendment, reusing qualified traces and denials. |
+| DG-WRAPPERS | Individual retained/deleted/reshaped abstractions lack final disposition. | Existing section7 comparisons, direct-owner probes and current consumers. | Finish each five-answer disposition; remove only proven redundant machinery, preserve differential laws and get independent acceptance. |
+| DG-MODULES; EV-27–29 | Approved extraction map and required application/local file separation remain. | Current symbol/import/export inventories and consumer/macro/renamed-crate evidence. | Freeze owner/visibility map, perform mechanical extraction, update affected exports/docs/consumers and prove before/after traces and compile denials. No duplicate implementation. |
+| Selected upstream contract | Integration still selects unreleased Behavior receiving81ba2c0. | Exact selected source/tests/instructions verified; receiving/static/native campaigns qualified. | Deliver reviewed owning PR with passing CI, publish release, select exact published contract and rerun affected integration checks. Finish other rows while this proceeds. |
+| Final verification, minimization, review and delivery | Latest completed CI fails ActorOutcome177/212 at unchanged90% floor; full final gates/reviews/merge absent. | All valid source-bound results above; private test move preserves production/test bodies and floors; DG-SHUTDOWN and EV-25 already accepted. | Run required §10.1 commands, model/fuzz/Miri, actual unchanged-floor coverage and benchmark on integrated source; complete delta/minimization and independent final reviews. Merge PR only after required green checks; record CI/merge and then complete goal. |
 
 ## 1. Authority and how to execute this document
 
@@ -11441,3 +11440,30 @@ tests+24683/−2144/net22539. Stage public types0; complete conditional nominal
 surface remains3 fresh/2 promotions. The eight proof commands and independent
 review are recorded in the verification record; no duplicate rerun is needed
 for these exact bytes. This closes only runtime selection, not full EXEC.
+
+### ActorOutcome test-module move — pre-edit record
+
+The current CI floor includes the expanded inline test fixture. Move only the
+four unchanged projection tests and their fixture into the private
+`actor_outcome/failure_projection.rs` module. Existing production lines1–168
+and the settlement test stay byte-exact. Two source paths (one new private
+test file); production+0/−0/net0, tests+182/−176/net6, public types0.
+This remains inside the authorized233-path research allowance.
+Independent source review1ca63d7f and reuse reviewc477068a permit reuse of the
+qualified34-campaign laws/inversions because all bodies, production and
+contracts are unchanged. Run full formatting and all five Outcome tests in
+both profiles for the changed module paths; required unchanged-floor CI must
+measure actual parent and child coverage. No forecast or gate waiver.
+
+Actual module-path verification at
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-outcome-test-module-retention-hw905mxs/checks.json`
+passes full pinned formatting and the exact five Outcome cases in debug and
+release (five passed,269 filtered per profile). Complete sources remain
+unchanged during all three commands; six existing compiler warnings persist.
+The check commands are `nix develop /Users/joel/Code/devrandom/bombay -c cargo
+fmt --all -- --check` and `cargo test --offline --locked -p bombay-rs --lib
+[--release] actor_outcome:: -- --test-threads=1` in that same pinned shell.
+Reuse prior34 law/inversion results for these unchanged production/test bodies;
+only the module paths changed. Source review/reuse is independent; numeric
+coverage remains pending in the unchanged CI gate. New test path has no script
+consumer needing migration; historical old selectors remain dated evidence.
