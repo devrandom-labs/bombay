@@ -193,6 +193,10 @@ impl EntityCapacity {
 }
 
 /// Exact phase and fact that prevented native activation.
+#[expect(
+    clippy::large_enum_variant,
+    reason = "launch refusal retains the original unboxed actor retirement; adding a Box would add an allocation and disposal owner to the actual failure"
+)]
 pub enum EntityActivationError<Hydration, B, Terminal, ChildFailures>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,

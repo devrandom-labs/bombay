@@ -407,7 +407,7 @@ pub(crate) mod tests {
             }
             match (&self.interpretation, actions.as_ref()) {
                 (None, Some(_)) => {
-                    self.interpretation = actions.take().map(InterpretationProgress::Original)
+                    self.interpretation = actions.take().map(InterpretationProgress::Original);
                 }
                 (Some(_), None) => {}
                 (Some(_), Some(_)) | (None, None) => return,
@@ -419,7 +419,7 @@ pub(crate) mod tests {
             .await;
             match self.interpretation.take() {
                 Some(InterpretationProgress::Completed(interpretation)) => {
-                    *received = Some(interpretation)
+                    *received = Some(interpretation);
                 }
                 retained => self.interpretation = retained,
             }
@@ -545,10 +545,6 @@ pub(crate) mod tests {
             }
         }
 
-        #[expect(
-            clippy::unused_async_trait_impl,
-            reason = "Prepared retirement owns input discharge on poll."
-        )]
         async fn retire(
             environment: &mut Option<Self>,
             actions: &mut Option<ActionsOf<ProbeBehavior>>,

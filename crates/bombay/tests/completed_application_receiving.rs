@@ -2,11 +2,11 @@ use core::future::{Future, poll_fn};
 use core::mem;
 use core::num::NonZeroUsize;
 use core::pin::{Pin, pin};
-use core::ptr;
 use core::task::{Context, Poll};
 use std::any::Any;
 use std::cell::Cell;
 use std::panic::{AssertUnwindSafe, catch_unwind, panic_any, resume_unwind};
+use std::ptr;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, PoisonError, Weak};
 
@@ -442,6 +442,10 @@ enum DeclaredAccountConclusion {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "observe complete original root and declared unstarted child custody, full rejection lanes and final disposal in one controller"
+)]
 fn declared_application_refusal_retains_unstarted_original_child() {
     let original_root = Arc::new(vec![31, 37]);
     let root_retained = Arc::downgrade(&original_root);
@@ -1046,6 +1050,10 @@ fn missing_executor_returns_original_application_and_callable() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "observe full startup refusal, original callable/native receiving error and real retry with complete joined root custody"
+)]
 fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
     let runtime = Builder::new_current_thread()
         .enable_all()
@@ -2845,6 +2853,10 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
 enum HostAccountConclusion {
     Root {
         origin: RootOrigin<StopOnShutdown<ReceivingAccount>>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "retain the exact composed root, declared child origin and full typed child failure product without a forwarding alias"
+        )]
         terminal: ActorRetirement<
             ApplicationBehavior<
                 StopOnShutdown<ReceivingAccount>,
@@ -2937,6 +2949,10 @@ impl
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep the two real hosts, joined root and child, all typed settlement lanes and original value disposal in one outside-fold affinity controller"
+)]
 fn selected_actor_host_survives_distinct_caller_polling_host() {
     let actor_host = Builder::new_multi_thread()
         .worker_threads(1)
@@ -3089,8 +3105,8 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
             assert_eq!(sends.owned, NoSends);
             assert_eq!(sends.inner, NoSends);
             assert!(matches!(become_, Step::Continue));
-            assert!(control.is_empty());
-            assert!(user.is_empty());
+            assert_eq!(control, []);
+            assert_eq!(user, []);
             assert!(child_failures.is_empty());
             assert!(capability_failures.is_empty());
             assert!(additional_failures.is_empty());
@@ -3148,9 +3164,9 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
                 ),
                 (None, None, None, None, None, None)
             ));
-            assert!(settlements.is_empty());
-            assert!(control.is_empty());
-            assert!(user.is_empty());
+            assert_eq!(settlements, []);
+            assert_eq!(control, []);
+            assert_eq!(user, []);
             assert!(descendants.is_empty());
             assert!(capability_failures.is_empty());
             assert!(additional_failures.is_empty());
@@ -3195,6 +3211,10 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep selected-host destruction, original uninvoked callable and exact task failure/control custody together before final discharge"
+)]
 fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
     let selected_host = Builder::new_current_thread()
         .enable_all()
@@ -3432,7 +3452,7 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
     let original_allocation = Arc::downgrade(&panic_allocation);
     // This opaque carrier belongs solely to the native Rust unwind boundary.
     let payload: Box<dyn Any + Send> = Box::new(panic_allocation);
-    let original_panic = payload.as_ref() as *const (dyn Any + Send) as *const ();
+    let original_panic = ptr::from_ref(payload.as_ref()).cast::<()>();
     let (execution, result) = {
         let entered = runtime.enter();
         let pair = paired_account(root)
@@ -3452,7 +3472,7 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
     let Err(payload) = execution_fault else {
         panic!("the invoked unfinished work panics natively");
     };
-    let received_panic = payload.as_ref() as *const (dyn Any + Send) as *const ();
+    let received_panic = ptr::from_ref(payload.as_ref()).cast::<()>();
     let same_panic = original_panic == received_panic;
     let work_released_before_join = original_work.strong_count();
     let outcome = runtime.block_on(result);
@@ -3513,7 +3533,7 @@ fn host_setup_unwind_keeps_uninvoked_work_until_receiver_discharge() {
     let cause = Arc::new(vec![347, 349]);
     let original_cause = Arc::downgrade(&cause);
     let cause: Box<dyn Any + Send> = Box::new(cause);
-    let original_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+    let original_cause_object = ptr::from_ref(&*cause).cast::<()>();
     let work = Rc::new(vec![353, 359]);
     let original_work = Rc::downgrade(&work);
     let invocations = Rc::new(Cell::new(0_usize));
@@ -3551,7 +3571,7 @@ fn host_setup_unwind_keeps_uninvoked_work_until_receiver_discharge() {
         let Err(cause) = execution_poll else {
             panic!("the actual supplied host accessor must raise its original native cause");
         };
-        let received_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+        let received_cause_object = ptr::from_ref(&*cause).cast::<()>();
         let work_after_setup = original_work.strong_count();
         let root_after_setup = original_root.strong_count();
         let cause_after_setup = original_cause.strong_count();
@@ -3597,6 +3617,10 @@ fn host_setup_unwind_keeps_uninvoked_work_until_receiver_discharge() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep native host-setup cause identity, original uninvoked callable and real retry/disposal observations in one controller"
+)]
 fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
     let runtime = Builder::new_current_thread()
         .enable_all()
@@ -3607,7 +3631,7 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
     let cause = Arc::new(vec![401, 409]);
     let original_cause = Arc::downgrade(&cause);
     let cause: Box<dyn Any + Send> = Box::new(cause);
-    let original_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+    let original_cause_object = ptr::from_ref(&*cause).cast::<()>();
     let work = Rc::new(vec![373, 379]);
     let original_work = Rc::downgrade(&work);
     let borrowed = vec![389, 397];
@@ -3647,7 +3671,7 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
         let Err(cause) = execution_poll else {
             panic!("the supplied host accessor raises its original native cause");
         };
-        let received_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+        let received_cause_object = ptr::from_ref(&*cause).cast::<()>();
         let ApplicationOutcome::Prepared {
             inputs: (prepared_root, prepared_spaces),
             work,
@@ -3718,6 +3742,10 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep original prepared actor/spaces, native cause and uninvoked callable custody through the real same-input retry and final discharge"
+)]
 fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
     let runtime = Builder::new_current_thread()
         .enable_all()
@@ -3731,7 +3759,7 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
     let cause = Arc::new(vec![419, 421]);
     let original_cause = Arc::downgrade(&cause);
     let cause: Box<dyn Any + Send> = Box::new(cause);
-    let original_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+    let original_cause_object = ptr::from_ref(&*cause).cast::<()>();
     let work = Rc::new(vec![431, 433]);
     let original_work = Rc::downgrade(&work);
     let borrowed = vec![439, 443];
@@ -3771,7 +3799,7 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
         let Err(cause) = execution_poll else {
             panic!("the supplied host accessor raises its original native cause");
         };
-        let received_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+        let received_cause_object = ptr::from_ref(&*cause).cast::<()>();
         let ApplicationOutcome::Prepared {
             inputs: (prepared_root, prepared_spaces),
             work,

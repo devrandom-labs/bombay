@@ -51,7 +51,7 @@ impl LocalTerminalReports {
         }
         let outcome = match mem::replace(&mut self.selection, TerminationSelection::new()) {
             TerminationSelection::Selected(outcome) => outcome,
-            unselected => {
+            unselected @ TerminationSelection::Unselected => {
                 self.selection = unselected;
                 drop(self.report.take());
                 return;
@@ -71,11 +71,6 @@ impl LocalTerminalReports {
     /// An acquired refusal remains in the outside publication result.
     pub(crate) fn retirement_complete(&self) -> bool {
         self.report.is_none() && !matches!(self.selection, TerminationSelection::Selected(_))
-    }
-
-    pub(crate) fn retire(mut self) {
-        let mut publication = None;
-        self.receive_retirement(&mut publication);
     }
 }
 

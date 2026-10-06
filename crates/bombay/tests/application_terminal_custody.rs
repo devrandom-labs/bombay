@@ -248,6 +248,10 @@ fn root_returns_only_after_owning_ordered_direct_child_terminals() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep full heterogeneous declared-role retirements and all original typed custody lanes in one test"
+)]
 fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
     let terminal: DeclaredApplicationTerminal =
         match Application::new(ApplicationRoot.stop_on_shutdown())
@@ -515,6 +519,10 @@ impl BehaviorBase for NestedRoot {
 }
 
 #[derive(TerminalProjection)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "retain complete original role retirements without adding a heap owner or changing terminal custody"
+)]
 enum NestedTerminal {
     Root {
         origin: RootOrigin<StopOnShutdown<NestedRoot>>,

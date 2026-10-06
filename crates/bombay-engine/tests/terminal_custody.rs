@@ -2177,6 +2177,10 @@ async fn incomplete_retirement_exposes_original_failure_without_replay() {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep the complete outside-fold controller, joined disposal and whole typed original-value oracles together; shortening it would split the single custody law or weaken observations"
+)]
 async fn classification_panic_preserves_original_interpretation_through_retirement() {
     let observations = Arc::new(Mutex::new(Vec::new()));
     let original_native: Box<[u64]> = vec![71, 73].into_boxed_slice();

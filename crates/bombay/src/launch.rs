@@ -203,6 +203,10 @@ impl<B, Descendants> SpawnError<B, Descendants>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one exhaustive owning phase/failure conversion preserves every original typed field; forwarding functions or aliases would only relocate the same conservation obligation"
+    )]
     fn from_local(outcome: LocalOutcome<B, Descendants>) -> Self {
         let tasks = match &outcome {
             ActorExecutionOutcome::BehaviorFailed {
@@ -394,6 +398,10 @@ impl<B, Root, ChildFailures> SpawnError<B, (Vec<Root>, ChildFailures)>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one exhaustive owning phase/failure conversion preserves every original typed field; forwarding functions or aliases would only relocate the same conservation obligation"
+    )]
     pub(crate) fn into_retirement(self) -> ActorRetirement<B, Root, ChildFailures> {
         match self {
             Self::AllocationRejected { behavior, reason } => {
@@ -594,11 +602,6 @@ impl OwnerCancellationAuthority {
         drop(self.sender.take());
     }
 
-    async fn retire<T>(mut self, task: JoinHandle<T>) -> Result<T, JoinError> {
-        self.request();
-        task.await
-    }
-
     async fn finish<T>(mut self, task: JoinHandle<T>) -> Result<T, JoinError> {
         let joined = task.await;
         self.disarm();
@@ -645,14 +648,14 @@ where
             return;
         }
         poll_fn(|context| {
-            let Some(owner) = owned.as_mut() else {
+            let Some(actor_task) = owned.as_mut() else {
                 return Poll::Ready(());
             };
-            match Pin::new(&mut owner.task).poll(context) {
+            match Pin::new(&mut actor_task.task).poll(context) {
                 Poll::Pending => Poll::Pending,
                 Poll::Ready(joined) => {
                     *received = Some(joined);
-                    owner.cancellation.disarm();
+                    actor_task.cancellation.disarm();
                     // All acquired output is already outside. The completed
                     // Tokio handle and its unit cancellation authority own no
                     // user result and invoke no application callback here.
@@ -672,20 +675,24 @@ where
         if received.is_some() {
             return;
         }
-        if let Some(owner) = owned.as_mut() {
-            owner.cancellation.request();
+        if let Some(actor_task) = owned.as_mut() {
+            actor_task.cancellation.request();
         }
         Self::receive_finish(owned, received).await;
     }
 
     pub(crate) async fn retire(self) -> Result<LocalOutcome<B, Descendants>, JoinError> {
-        let Self { task, cancellation } = self;
-        cancellation.retire(task).await
+        let mut owned = Some(self);
+        let mut received = None;
+        Self::receive_retirement(&mut owned, &mut received).await;
+        received.expect("the original actor retirement result was acquired")
     }
 
     pub(crate) async fn finish(self) -> Result<LocalOutcome<B, Descendants>, JoinError> {
-        let Self { task, cancellation } = self;
-        cancellation.finish(task).await
+        let mut owned = Some(self);
+        let mut received = None;
+        Self::receive_finish(&mut owned, &mut received).await;
+        received.expect("the original actor finish result was acquired")
     }
 }
 
@@ -786,33 +793,24 @@ where
         if received.is_some() {
             return;
         }
-        if let Some(owner) = owned.as_mut() {
-            owner.cancellation.request();
+        if let Some(projection_task) = owned.as_mut() {
+            projection_task.cancellation.request();
         }
         poll_fn(|context| {
-            let Some(owner) = owned.as_mut() else {
+            let Some(projection_task) = owned.as_mut() else {
                 return Poll::Ready(());
             };
-            match Pin::new(&mut owner.task).poll(context) {
+            match Pin::new(&mut projection_task.task).poll(context) {
                 Poll::Pending => Poll::Pending,
                 Poll::Ready(joined) => {
                     *received = Some(joined);
-                    owner.cancellation.disarm();
+                    projection_task.cancellation.disarm();
                     drop(owned.take());
                     Poll::Ready(())
                 }
             }
         })
         .await;
-    }
-
-    pub(crate) async fn retire(self) -> Result<Result<Root, JoinError>, JoinError> {
-        let Self {
-            task,
-            cancellation,
-            behavior: _,
-        } = self;
-        cancellation.retire(task).await
     }
 
     #[cfg(test)]
@@ -1351,10 +1349,6 @@ where
         core::future::pending().await
     }
 
-    #[expect(
-        clippy::unused_async_trait_impl,
-        reason = "The trait future acquires the exact retirement output before disposing its original observer at poll time."
-    )]
     async fn receive_retirement(
         interpreter: &mut Option<Self>,
         received: &mut Option<CapabilityRetirement<B::Event, ()>>,
@@ -1369,16 +1363,6 @@ where
         drop(owner);
     }
 
-    async fn retire(self) -> CapabilityRetirement<B::Event, ()> {
-        let mut interpreter = Some(self);
-        let mut received = None;
-        <Self as CommitActions<B>>::receive_retirement(&mut interpreter, &mut received).await;
-        assert!(
-            interpreter.is_none(),
-            "the original observer is disposed after its retirement output is acquired"
-        );
-        received.expect("the original complete retirement output remains owned")
-    }
 }
 
 #[cfg(test)]
@@ -1429,10 +1413,6 @@ where
         core::future::pending().await
     }
 
-    #[expect(
-        clippy::unused_async_trait_impl,
-        reason = "The trait future acquires the exact retirement output before disposing its original observer at poll time."
-    )]
     async fn receive_retirement(
         interpreter: &mut Option<Self>,
         received: &mut Option<CapabilityRetirement<B::Event, R>>,
@@ -1447,16 +1427,6 @@ where
         drop(owner.observe);
     }
 
-    async fn retire(self) -> CapabilityRetirement<B::Event, R> {
-        let mut interpreter = Some(self);
-        let mut received = None;
-        <Self as CommitActions<B>>::receive_retirement(&mut interpreter, &mut received).await;
-        assert!(
-            interpreter.is_none(),
-            "the original observer is disposed after its retirement output is acquired"
-        );
-        received.expect("the original complete retirement output remains owned")
-    }
 }
 
 #[cfg(test)]
@@ -1632,6 +1602,10 @@ mod tests {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep the complete outside-fold controller, joined disposal and whole typed original-value oracles together; shortening it would split the single custody law or weaken observations"
+    )]
     async fn owned_outcome_preserves_activation_panic_and_cancellation() {
         let panic_payload: Box<dyn Any + Send> = Box::new(vec![19_u64, 23]);
         let panic_payload_identity: *const (dyn Any + Send) = panic_payload.as_ref();
@@ -1751,7 +1725,7 @@ mod tests {
                 ingress.control.as_slice(),
                 [EventLayer::Owned(ShutdownRequested)]
             ));
-            assert!(ingress.user.is_empty());
+            assert_eq!(ingress.user, []);
             assert!(activation_tasks.is_empty());
             assert_eq!(descendants.as_slice(), [31, 37]);
             assert_eq!(descendants.as_ptr(), descendant_allocation);
@@ -2529,16 +2503,6 @@ mod transitive_source_cancellation {
                 drop(interpreter.take());
             }
         }
-        async fn retire(self) -> CapabilityRetirement<SourceCycleEvent, Self::Retired> {
-            let mut interpreter = Some(self);
-            let mut received = None;
-            Self::receive_retirement(&mut interpreter, &mut received).await;
-            assert!(
-                interpreter.is_none(),
-                "source retirement retains no incomplete lower interpreter"
-            );
-            received.expect("source retirement acquires the original complete typed outputs")
-        }
     }
 
     #[tokio::test]
@@ -3135,12 +3099,6 @@ mod independent_actor_execution {
             }
             *received = Some(CapabilityRetirement::without_activations(()));
             drop(interpreter.take());
-        }
-        async fn retire(self) -> CapabilityRetirement<WorkEvent, ()> {
-            let mut interpreter = Some(self);
-            let mut received = None;
-            Self::receive_retirement(&mut interpreter, &mut received).await;
-            received.expect("actual complete work retirement remains")
         }
     }
 
@@ -3756,12 +3714,6 @@ mod independent_actor_execution {
             *received = Some(CapabilityRetirement::without_activations(
                 original.observations,
             ));
-        }
-        async fn retire(self) -> CapabilityRetirement<WorkEvent, Self::Retired> {
-            let mut interpreter = Some(self);
-            let mut received = None;
-            Self::receive_retirement(&mut interpreter, &mut received).await;
-            received.expect("actual complete measured work retirement remains")
         }
     }
 

@@ -163,6 +163,10 @@ struct SupervisorSpaces {
 }
 
 #[derive(TerminalProjection)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "retain complete original role retirements without adding a heap owner or changing terminal custody"
+)]
 enum SupervisorTerminal {
     Root {
         origin: RootOrigin<RootSupervisor>,

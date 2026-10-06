@@ -47,6 +47,7 @@ pub(crate) trait RetireCapabilities {
         Self::Event: Send,
         Self::Descendants: Send;
 
+    #[cfg(test)]
     fn retire(
         self,
     ) -> impl core::future::Future<Output = CapabilityRetirement<Self::Event, Self::Descendants>> + Send;
@@ -182,13 +183,6 @@ where
             drop(interpreter.take());
         }
     }
-
-    async fn retire(self) -> CapabilityRetirement<B::Event, Self::Retired> {
-        self.capabilities
-            .expect("consuming interpreter retains its original capabilities")
-            .retire()
-            .await
-    }
 }
 
 #[cfg(test)]
@@ -290,15 +284,6 @@ where
         if owner.capabilities.is_none() && received.is_some() {
             drop(interpreter.take());
         }
-    }
-
-    async fn retire(
-        self,
-    ) -> CapabilityRetirement<B::Event, (Inner::Descendants, (Activation, Preparation))> {
-        self.capabilities
-            .expect("consuming interpreter retains its original capabilities")
-            .retire()
-            .await
     }
 }
 

@@ -286,8 +286,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -308,8 +312,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -336,8 +344,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -358,8 +370,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -389,8 +405,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -426,8 +446,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -452,8 +476,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -482,8 +510,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -513,8 +545,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -552,8 +588,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -582,8 +622,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -614,8 +658,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -635,8 +683,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -657,8 +709,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -683,8 +739,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -710,8 +770,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -740,8 +804,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -771,8 +839,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -802,8 +874,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -823,8 +899,12 @@ where
         source_index: Option<usize>,
         /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
         /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability JoinError. This report
+        /// Break(Err(error)) owns the original capability `JoinError`. This report
         /// grants no cancellation sender authority.
+        #[expect(
+            clippy::type_complexity,
+            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+        )]
         acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
@@ -857,6 +937,10 @@ impl<BehaviorState, Root, ChildFailures> ActorRetirement<BehaviorState, Root, Ch
 where
     BehaviorState: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = behavior::Never>,
 {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one closed Completion conversion retains every original typed field and invariant; another forwarding function would only relocate the same conservation law"
+    )]
     fn from_completed(outcome: LocalOutcome<BehaviorState, (Vec<Root>, ChildFailures)>) -> Self {
         let ActorExecutionOutcome::Completed {
             behavior,
@@ -890,70 +974,34 @@ where
             activation_tasks.is_empty(),
             "terminal projection follows every original capability task join"
         );
-        match completion {
-            Completion::Stopped => Self::Completed {
-                behavior,
-                interpretation,
-                source,
-                settlements,
-                control: ingress.control,
-                user: ingress.user,
-                descendants,
-                child_failures,
-                capability_failures,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress: retirement_ingress(acquired_ingress),
-                unread_owner_cancellation,
-                completion: Completion::Stopped,
-            },
-            Completion::Exhausted => Self::Completed {
-                behavior,
-                interpretation,
-                source,
-                settlements,
-                control: ingress.control,
-                user: ingress.user,
-                descendants,
-                child_failures,
-                capability_failures,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress: retirement_ingress(acquired_ingress),
-                unread_owner_cancellation,
-                completion: Completion::Exhausted,
-            },
+        let completion = match completion {
+            Completion::Stopped => Completion::Stopped,
+            Completion::Exhausted => Completion::Exhausted,
             Completion::RetirementRequested(LocalRetirementRequest::OwnerCancellation(
                 OwnerCancellation,
-            )) => Self::OwnerCancelled {
-                behavior,
-                interpretation,
-                source,
-                settlements,
-                control: ingress.control,
-                user: ingress.user,
-                descendants,
-                child_failures,
-                capability_failures,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress: retirement_ingress(acquired_ingress),
-                unread_owner_cancellation,
-            },
+            )) => {
+                return Self::OwnerCancelled {
+                    behavior,
+                    interpretation,
+                    source,
+                    settlements,
+                    control: ingress.control,
+                    user: ingress.user,
+                    descendants,
+                    child_failures,
+                    capability_failures,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress: retirement_ingress(acquired_ingress),
+                    unread_owner_cancellation,
+                };
+            }
             Completion::RetirementRequested(LocalRetirementRequest::CapabilityFailed(error)) => {
-                Self::CapabilityFailed {
+                return Self::CapabilityFailed {
                     behavior,
                     interpretation,
                     source,
@@ -972,12 +1020,36 @@ where
                     acquired_ingress: retirement_ingress(acquired_ingress),
                     unread_owner_cancellation,
                     error,
-                }
+                };
             }
+        };
+        Self::Completed {
+            behavior,
+            interpretation,
+            source,
+            settlements,
+            control: ingress.control,
+            user: ingress.user,
+            descendants,
+            child_failures,
+            capability_failures,
+            additional_failures,
+            terminal_report,
+            retirement_failures,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress: retirement_ingress(acquired_ingress),
+            unread_owner_cancellation,
+            completion,
         }
     }
     /// Project each actual received residual phase without discarding current
     /// progress, a refused report or coexisting execution/retirement failures.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one exhaustive owning phase/failure conversion preserves every original typed field; forwarding functions or aliases would only relocate the same conservation obligation"
+    )]
     pub(crate) fn from_local(
         outcome: LocalOutcome<BehaviorState, (Vec<Root>, ChildFailures)>,
     ) -> Self {
@@ -1224,31 +1296,8 @@ where
                     },
                 additional_failures,
                 payload,
-            } => {
-                assert!(
-                    activation_tasks.is_empty(),
-                    "terminal projection follows every original capability task join"
-                );
-                Self::HostCommitPanicked {
-                    behavior,
-                    initialization: None,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
-                    payload,
-                }
             }
-            ActorExecutionOutcome::ActivationFailed {
+            | ActorExecutionOutcome::ActivationFailed {
                 behavior,
                 residual:
                     LocalResidual::Prepared {
@@ -1309,31 +1358,8 @@ where
                     },
                 additional_failures,
                 payload,
-            } => {
-                assert!(
-                    activation_tasks.is_empty(),
-                    "terminal projection follows every original capability task join"
-                );
-                Self::HostCommitPanicked {
-                    behavior,
-                    initialization: Some(initialization),
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
-                    payload,
-                }
             }
-            ActorExecutionOutcome::ActivationFailed {
+            | ActorExecutionOutcome::ActivationFailed {
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {

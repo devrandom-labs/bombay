@@ -8,10 +8,11 @@ use core::future::{Future, pending, poll_fn};
 use core::hash::Hash;
 use core::marker::PhantomData;
 use core::ops::ControlFlow;
-use core::pin::{Pin, pin};
+use core::pin::Pin;
+#[cfg(test)]
+use core::pin::pin;
 use core::task::Poll;
 use std::any::Any;
-use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::{Arc, Mutex, PoisonError, Weak};
 use std::time::Instant;
 
@@ -93,6 +94,7 @@ impl<E> ActivationTasks<E> {
         }
     }
 
+    #[cfg(test)]
     pub(crate) async fn settle(mut self) -> (Vec<E>, Vec<JoinError>)
     where
         E: 'static,
@@ -179,10 +181,6 @@ pub(crate) trait CommitActions<B: BehaviorSettlements<Ph = Never>> {
         Self: Sized + Send,
         B::Event: Send,
         Self::Retired: Send;
-
-    fn retire(self) -> impl Future<Output = CapabilityRetirement<B::Event, Self::Retired>> + Send
-    where
-        Self: Sized + Send;
 }
 
 /// Shared access to one affine Communication admission owner.
@@ -767,6 +765,7 @@ where
             .await;
     }
 
+    #[cfg(test)]
     pub(crate) async fn settle_activation_tasks(mut self) -> Self {
         self.receive_activation_tasks().await;
         self
@@ -997,10 +996,10 @@ where
         match self.admission.close() {
             AdmissionClosure::Closed | AdmissionClosure::AlreadyClosed => {}
         }
-        if self.retired_ingress.is_none() {
-            if let Some(consumer) = self.consumer.take() {
-                self.retired_ingress = Some(collect_retired_ingress::<B, M>(consumer));
-            }
+        if self.retired_ingress.is_none()
+            && let Some(consumer) = self.consumer.take()
+        {
+            self.retired_ingress = Some(collect_retired_ingress::<B, M>(consumer));
         }
         I::receive_retirement(&mut self.interpreter, &mut self.retirement).await;
         if self.interpreter.is_some() {
@@ -1088,6 +1087,10 @@ where
     type Error = LocalActivationRejection<BehaviorAddr<B>>;
     type Residual = LocalResidual<B, M::Retired, I::Retired>;
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one affine activation preserves original address rejection, private acknowledgement, pending input and received result at every owning cut"
+    )]
     async fn activate(
         environment: &mut Option<Self>,
         actions: &mut Option<ActionsOf<B>>,
@@ -1115,7 +1118,7 @@ where
             match owner.addresses.try_reserve(owner.address) {
                 Ok(reservation) => owner.reservation = Some(reservation),
                 Err(error) => {
-                    owner.activation_rejection = Some(LocalActivationRejection::Address(error))
+                    owner.activation_rejection = Some(LocalActivationRejection::Address(error));
                 }
             }
         }
@@ -1136,11 +1139,11 @@ where
             }
             if owner.activation_rejection.is_none() && owner.acknowledgement.is_some() {
                 poll_fn(|context| {
-                    let receiver = owner
+                    let acknowledgement = owner
                         .acknowledgement
                         .as_mut()
                         .expect("the same private ACK remains borrowed");
-                    match Pin::new(receiver).poll(context) {
+                    match Pin::new(acknowledgement).poll(context) {
                         Poll::Pending => Poll::Pending,
                         Poll::Ready(acknowledged) => {
                             owner.acknowledged = Some(acknowledged);
@@ -1424,7 +1427,7 @@ where
         interpreter.commit(&mut self.interpretation).await;
         match self.interpretation.take() {
             Some(InterpretationProgress::Completed(interpretation)) => {
-                *received = Some(interpretation)
+                *received = Some(interpretation);
             }
             interpretation => self.interpretation = interpretation,
         }
@@ -1848,6 +1851,10 @@ mod tests {
     impl InterpretItem<InitializationRequest, ActivationEvent, Here>
         for GatedInitializationInterpreter
     {
+        #[expect(
+            clippy::manual_async_fn,
+            reason = "retain the original receiving-loan opaque future and exact capture contract without introducing new route or phase lifetime bounds"
+        )]
         fn interpret_item<'a>(
             &'a mut self,
             input: &'a mut Option<InitializationRequest>,
@@ -1934,16 +1941,12 @@ mod tests {
                 Some(SourceProgress::Original(settlement)) => {
                     *source = Some(SourceProgress::Completed(SourceCustody::Exhausted(
                         settlement,
-                    )))
+                    )));
                 }
                 retained => *source = retained,
             }
         }
 
-        #[expect(
-            clippy::unused_async_trait_impl,
-            reason = "Defer trait-port work and owned inputs until the future is polled."
-        )]
         async fn receive_retirement(
             interpreter: &mut Option<Self>,
             received: &mut Option<CapabilityRetirement<ActivationEvent, Self::Retired>>,
@@ -1983,13 +1986,6 @@ mod tests {
                 retirement_failures: Vec::new(),
             });
             drop(interpreter.take());
-        }
-
-        async fn retire(self) -> CapabilityRetirement<ActivationEvent, Self::Retired> {
-            let mut interpreter = Some(self);
-            let mut received = None;
-            Self::receive_retirement(&mut interpreter, &mut received).await;
-            received.expect("the concrete initialization interpreter completes retirement")
         }
     }
 
@@ -2310,6 +2306,10 @@ mod tests {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep the complete outside-fold controller, joined disposal and whole typed original-value oracles together; shortening it would split the single custody law or weaken observations"
+    )]
     async fn ready_owner_request_prevents_actual_address_publication() {
         let address = MailAddr(43);
         let addresses = AddressSpace::new();
@@ -2422,6 +2422,10 @@ mod tests {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep the complete outside-fold controller, joined disposal and whole typed original-value oracles together; shortening it would split the single custody law or weaken observations"
+    )]
     async fn disarmed_owner_sender_still_allows_actual_publication() {
         let address = MailAddr(43);
         let addresses = AddressSpace::new();
@@ -2538,6 +2542,10 @@ mod tests {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep the complete outside-fold controller, joined disposal and whole typed original-value oracles together; shortening it would split the single custody law or weaken observations"
+    )]
     async fn request_after_actual_publication_remains_admissible() {
         let address = MailAddr(43);
         let addresses = AddressSpace::new();
@@ -2662,6 +2670,10 @@ mod tests {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep the complete outside-fold controller, joined disposal and whole typed original-value oracles together; shortening it would split the single custody law or weaken observations"
+    )]
     async fn owner_request_during_publication_remains_available_to_local_environment() {
         let address = MailAddr(43);
         let addresses = AddressSpace::new();
@@ -3657,10 +3669,6 @@ mod source_acquisition_custody {
         async fn next_local_event(&mut self) -> Result<ActorInput, JoinError> {
             self.activation_tasks.next_event().await
         }
-        #[expect(
-            clippy::unused_async_trait_impl,
-            reason = "Defer trait-port work and owned inputs until the future is polled."
-        )]
         async fn receive_retirement(
             interpreter: &mut Option<Self>,
             received: &mut Option<CapabilityRetirement<ActorInput, Self::Retired>>,
@@ -3681,12 +3689,6 @@ mod source_acquisition_custody {
                 retirement_failures: Vec::new(),
             });
         }
-        async fn retire(self) -> CapabilityRetirement<ActorInput, Self::Retired> {
-            let mut interpreter = Some(self);
-            let mut received = None;
-            Self::receive_retirement(&mut interpreter, &mut received).await;
-            received.expect("the actual source interpreter completes retirement")
-        }
     }
 
     enum CancellationTiming {
@@ -3702,6 +3704,10 @@ mod source_acquisition_custody {
     async fn owner_cancels_pending_source_acquisition_retaining_joint_ready_move_only_inputs() {
         preserve_source_cancellation(CancellationTiming::SourcePending).await;
     }
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep the complete outside-fold controller, joined disposal and whole typed original-value oracles together; shortening it would split the single custody law or weaken observations"
+    )]
     async fn preserve_source_cancellation(timing: CancellationTiming) {
         let mailbox = Arc::new(vec![11, 111]);
         let capability = Arc::new(vec![22, 122]);
@@ -3903,6 +3909,10 @@ mod source_acquisition_custody {
     }
 
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep the complete outside-fold controller, joined disposal and whole typed original-value oracles together; shortening it would split the single custody law or weaken observations"
+    )]
     async fn owner_first_acquisition_retains_joint_ready_capability_failure_on_both_ports() {
         for port in [AcquisitionPort::Ordinary, AcquisitionPort::Source] {
             let original = Box::new(vec![44_u64, 144]);
@@ -4032,6 +4042,10 @@ mod source_acquisition_custody {
         }
     }
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep the complete outside-fold controller, joined disposal and whole typed original-value oracles together; shortening it would split the single custody law or weaken observations"
+    )]
     async fn primary_capability_failure_returns_original_error_once_on_both_local_ports() {
         for port in [AcquisitionPort::Ordinary, AcquisitionPort::Source] {
             let original = Box::new(vec![55_u64, 155]);

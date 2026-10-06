@@ -108,6 +108,10 @@ struct SupervisorSpaces {
     capability: ActorSpace<Capability>,
 }
 
+#[expect(
+    clippy::large_enum_variant,
+    reason = "retain original unboxed root, proxy and worker retirements without an extra allocation or disposal owner"
+)]
 #[derive(TerminalProjection)]
 enum SupervisorTerminal {
     Root {

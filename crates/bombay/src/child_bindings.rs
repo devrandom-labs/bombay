@@ -276,6 +276,7 @@ pub(crate) trait RetireChildTasks {
     where
         Self: Sized;
 
+    #[cfg(test)]
     fn retire_child_tasks(
         self,
     ) -> impl core::future::Future<Output = (Vec<Self::Root>, Self::Failures)> + Send;
@@ -289,13 +290,17 @@ impl<Root> RetireChildTasks for NoChildBindings<Root> {
 
     fn retirement_failures() {}
 
+    #[expect(
+        clippy::manual_async_fn,
+        reason = "this empty binding future captures only bindings; an async function would capture unused root destinations and require Root: Send"
+    )]
     fn receive_retirement(
         bindings: &mut Option<Self>,
         _retired: &mut Vec<Self::Root>,
         _failures: &mut Self::Failures,
     ) -> impl core::future::Future<Output = ()> + Send {
         async move {
-            drop(bindings.take());
+            *bindings = None;
         }
     }
 
@@ -303,6 +308,7 @@ impl<Root> RetireChildTasks for NoChildBindings<Root> {
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
+    #[cfg(test)]
     async fn retire_child_tasks(self) -> (Vec<Self::Root>, ()) {
         (Vec::new(), ())
     }
@@ -347,6 +353,10 @@ where
         (Vec::new(), Tail::retirement_failures())
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one ordered concrete child retirement traversal conserves original child state, projection failures, native causes and tail custody across every await"
+    )]
     async fn receive_retirement(
         bindings: &mut Option<Self>,
         retired: &mut Vec<Self::Root>,
@@ -451,7 +461,7 @@ where
                             additional_failures,
                             terminal_report,
                             retirement_failures,
-                        })
+                        });
                     }
                     primary_failure => failures.0.push(ChildFailure::StartupRetirementFailed {
                         id,
@@ -475,6 +485,7 @@ where
         }
     }
 
+    #[cfg(test)]
     async fn retire_child_tasks(self) -> (Vec<Self::Root>, Self::Failures) {
         // Historical consuming adapter only. New affine callers keep these
         // original inputs and destinations outside their operation future.
