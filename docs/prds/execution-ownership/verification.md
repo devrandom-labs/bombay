@@ -247,9 +247,9 @@ Current bounded evidence (EXEC §§146–159): observation A actuala70/independe
 
 ```text
 scope: conditional consolidated research; not distilled or accepted
-production: +8602 / -2342 / net 6260
-tests: +24628 / -2144 / net 22484
-documentation: +16939 / -203 / net 16736
+production: +8640 / -2361 / net 6279
+tests: +24683 / -2144 / net 22539
+documentation: +17309 / -203 / net 17106
 manifest/lock: +51 / -38 / net 13
 public API: +5 types (3 fresh / 2 promotions) / -0 types
 public getters: +2; public retirement variants: +1; application variants: +1; application generics: +1
@@ -1420,3 +1420,47 @@ source/physical snapshots and65 unique registry histories authenticate; original
 lines, zero production/public types. Six existing warnings and one mutant-only
 warning persist. No executable checksum, strict quality or numeric coverage
 improvement is claimed. Fresh unchanged-floor CI and complete gates remain.
+
+
+### Retained private Entity runtime selection (EXEC §250)
+
+The native Entity port now stores the runtime Handle supplied during family
+installation and spawns through that Handle. The existing synchronous runner
+passes the Handle from its one owned runtime. The new native regression uses
+two real runtimes and joins/disposes the selected host before asserting its
+observed identity. Both earlier native panic/cleanup regressions remain.
+
+Stage: three existing code files; production+42/−23/net19,
+tests+55/−0/net55; new public types0. Exact retained Appc286d6df,
+Family80b5ce6e and native-port2735ed34 have independent source/actual review.
+The complete current measured counts are in the research-count block above.
+
+Actual evidence is
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-retained-port-eight-trailer-successor-6_eavmqe/retained-port-eight-actual-root-20261006T163622-3868`:
+actual SHA b3740cd380e5a221fad42ee65a8869af86d65085add546ce6cbff2d249ffd5af;
+verification SHA2b47b9d722b5a6a1842d4ccb9731e82e15f71ab6e86762afd6c718d458988c1f.
+Independent review is
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-retained-port-eight-independent-actual-proposal-review-vlo3d4wk/review.json`,
+SHA0b1eadd098ec6a047c2b1e2bf87ff5a5cbdee967460a00e2b6d46c1571c4187c.
+It recommends these exact private bytes for conditional research retention.
+
+All commands use the canonical pinned shell, with unset Rust flags,
+CARGO_INCREMENTAL=0, CARGO_BUILD_JOBS=1 and the recorded shared target directory:
+
+```sh
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --offline --locked -p bombay-rs --lib --no-run --message-format=json
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --offline --locked -p bombay-rs --lib --release --no-run --message-format=json
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --offline --locked -p bombay-rs --lib entity::bombay::tests::native_entity_port_spawns_on_its_selected_host_from_distinct_caller -- --exact --test-threads=1
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --offline --locked -p bombay-rs --lib --release entity::bombay::tests::native_entity_port_spawns_on_its_selected_host_from_distinct_caller -- --exact --test-threads=1
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --offline --locked -p bombay-rs --lib entity::bombay::tests:: -- --test-threads=1
+nix develop /Users/joel/Code/devrandom/bombay -c cargo test --offline --locked -p bombay-rs --lib --release entity::bombay::tests:: -- --test-threads=1
+```
+
+Both formations pass. Running the exact new test against restored ambient
+`tokio::spawn` fails at the intended runtime-identity assertion in both profiles
+(exit101, one failed,273 filtered); corrected bytes pass (one passed,273 filtered).
+Both complete native cohorts pass (three passed,271 filtered). Six existing
+compiler warnings remain; these results give no strict-Clippy/full-CI credit.
+The separate fourteen-command public-host experiment qualifies application
+Handle transport and both ambient-spawn/wrong-Handle inversions (§249); its
+public API remains unretained. No full gate, minimality or main merge is claimed.

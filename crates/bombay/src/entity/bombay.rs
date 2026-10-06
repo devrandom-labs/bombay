@@ -10,6 +10,7 @@ use behavior::{
 };
 use behavior_actors::ShutdownRequested;
 use communication::Config;
+use tokio::runtime::Handle;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
 use crate::ActorRetirement;
@@ -156,6 +157,7 @@ where
     hydrations: Arc<Semaphore>,
     residents: Arc<Semaphore>,
     metrics: Arc<EntityMetricState>,
+    executor: Handle,
 }
 
 impl<D> Clone for BombayEntityRuntime<D>
@@ -170,6 +172,7 @@ where
             hydrations: Arc::clone(&self.hydrations),
             residents: Arc::clone(&self.residents),
             metrics: Arc::clone(&self.metrics),
+            executor: self.executor.clone(),
         }
     }
 }
@@ -180,6 +183,7 @@ pub(crate) fn bombay_entity_runtime<D>(
     allocations: ApplicationAddresses,
     capacity: EntityCapacity,
     metrics: Arc<EntityMetricState>,
+    executor: Handle,
 ) -> BombayEntityRuntime<D>
 where
     D: EntityDefinition,
@@ -191,6 +195,7 @@ where
         hydrations: Arc::new(Semaphore::new(capacity.concurrent_hydrations().get())),
         residents: Arc::new(Semaphore::new(capacity.residents().get())),
         metrics,
+        executor,
     }
 }
 
@@ -209,7 +214,7 @@ where
     type RetirementFailure = EntityRetirementFailure;
 
     fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
-        tokio::spawn(task)
+        self.executor.spawn(task)
     }
 
     async fn join(task: &mut Self::Task) -> Result<(), Self::TaskFailure> {
@@ -381,6 +386,9 @@ mod tests {
     use core::pin::pin;
     use core::task::{Context, Poll, Waker};
     use std::sync::Mutex;
+    use tokio::runtime::Builder;
+    use tokio::sync::oneshot;
+    use tokio::task::spawn_blocking;
 
     use crate::actors::ActorExt;
     use crate::entity::{AdmissionFailure, DrainFailure, DrainStage};
@@ -530,6 +538,7 @@ mod tests {
         reason = "The complete original and native conversion traces join their actor owners before the custody oracles."
     )]
     async fn shutdown_conversion_fault_keeps_the_same_actor_owner_until_join() {
+        let executor = Handle::current();
         let inputs = Arc::new(vec![17_u64, 43]);
         let allocation = inputs.as_ptr();
         let addresses = ApplicationAddresses::new();
@@ -614,6 +623,7 @@ mod tests {
             addresses,
             capacity,
             Arc::new(EntityMetricState::default()),
+            executor,
         );
         let id = EntityId::new(59);
         let activation = ActivationId::new(NonZeroU64::MIN);
@@ -798,5 +808,55 @@ mod tests {
             panic!("the native join must preserve the failed task")
         };
         assert!(failure.is_panic());
+    }
+
+    #[tokio::test]
+    async fn native_entity_port_spawns_on_its_selected_host_from_distinct_caller() {
+        let caller = Handle::current().id();
+        let selected_runtime = Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build()
+            .expect("real independent selected Entity host");
+        let executor = selected_runtime.handle().clone();
+        let selected = executor.id();
+        let native_runtime = bombay_entity_runtime(
+            Arc::new(JoinDefinition),
+            Arc::new(ActorSpace::<JoinedActor>::new()),
+            ApplicationAddresses::new(),
+            EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN),
+            Arc::new(EntityMetricState::default()),
+            executor,
+        );
+        let (task_host, received_host) = oneshot::channel();
+        let mut task = native_runtime.spawn(async move {
+            let actual_host = Handle::current().id();
+            task_host
+                .send(actual_host)
+                .expect("actual task observation receiver remains owned");
+        });
+        let actual_host = received_host.await;
+        let joined = <BombayEntityRuntime<JoinDefinition> as LocalEntityRuntime<u64, Never>>::join(
+            &mut task,
+        )
+        .await;
+        drop(task);
+        drop(native_runtime);
+        let released_host = spawn_blocking(move || drop(selected_runtime)).await;
+
+        let Ok(()) = released_host else {
+            panic!("the selected host is disposed after its native task joins")
+        };
+        let Ok(()) = joined else {
+            panic!("the actual owning native Entity port joins its task")
+        };
+        let Ok(actual_host) = actual_host else {
+            panic!("the actual task returns its observed runtime identity")
+        };
+        assert_ne!(selected, caller);
+        assert_eq!(
+            actual_host, selected,
+            "native Entity lifecycle task must use its selected host"
+        );
     }
 }

@@ -16,6 +16,7 @@ use behavior::{
     finish_item, prepare_item,
 };
 use behavior_actors::ShutdownRequested;
+use tokio::runtime::Handle;
 
 use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
@@ -618,7 +619,12 @@ pub(crate) trait InstallEntityFamilies<Hosts>: EntityApplicationFamilies<Hosts> 
     type Installed: InstalledEntityFamilies<Receptionists = Self::Receptionists, Shutdowns = Self::Shutdowns>
         + Send;
 
-    fn install(self, hosts: Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed;
+    fn install(
+        self,
+        hosts: Arc<Hosts>,
+        allocations: ApplicationAddresses,
+        executor: Handle,
+    ) -> Self::Installed;
 }
 
 impl<Hosts> InstallEntityFamilies<Hosts> for ()
@@ -627,7 +633,7 @@ where
 {
     type Installed = ();
 
-    fn install(self, _: Arc<Hosts>, _: ApplicationAddresses) -> Self::Installed {}
+    fn install(self, _: Arc<Hosts>, _: ApplicationAddresses, _: Handle) -> Self::Installed {}
 }
 
 impl<Hosts, Role, D, Tail> InstallEntityFamilies<Hosts>
@@ -641,7 +647,12 @@ where
 {
     type Installed = (Role, InstalledEntityFamily<D>, Tail::Installed);
 
-    fn install(self, hosts: Arc<Hosts>, allocations: ApplicationAddresses) -> Self::Installed {
+    fn install(
+        self,
+        hosts: Arc<Hosts>,
+        allocations: ApplicationAddresses,
+        executor: Handle,
+    ) -> Self::Installed {
         let (role, definition, directory, capacity, tail) = self;
         let definition = Arc::new(definition);
         let metrics = Arc::new(EntityMetricState::default());
@@ -651,6 +662,7 @@ where
             allocations.clone(),
             capacity,
             Arc::clone(&metrics),
+            executor.clone(),
         );
         let Ok(runtime) = EntityRuntime::new(directory, runtime) else {
             unreachable!("EntityCapacity retains a validated directory configuration")
@@ -661,7 +673,7 @@ where
             entities,
             metrics,
         };
-        let tail = tail.install(hosts, allocations);
+        let tail = tail.install(hosts, allocations, executor);
         (role, family, tail)
     }
 }

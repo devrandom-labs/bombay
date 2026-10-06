@@ -38,6 +38,30 @@ Line, file, type, allocation, and task counts are diagnostics and review limits.
 They cannot justify combining distinct responsibilities or keeping a wrapper
 with no independent purpose.
 
+## Remaining blockers — current integration plan
+
+`research/exec-consolidated` is the only integration branch, delivered through
+[PR #326](https://github.com/devrandom-labs/bombay/pull/326). This table is the
+current work list. Earlier checkpoint lists are dated evidence, not additional
+work. Reuse valid results for unchanged laws and source; rerun affected tests
+when their inputs change. Stop optional research. Required PRD comparisons,
+independent decisions and verification still apply.
+
+| Blocker | Test for acceptance |
+| --- | --- |
+| Entity cleanup result preservation | Real executor destruction and native task panic preserve already acquired root/head results and distinct remaining join failures; dropping the last result receiver releases each value once. Original defect fails; correction and publication-order inversions pass in debug and release. Migrate the affected family consumers. |
+| Final application execution API | One caller-owned async execution path and one owned-runtime construction location; explicit current-thread/multithread choice; exact unstarted inputs, callback output, root/child/family results and failures. Required caller, startup/drop, join, static-denial and consumer tests pass; independent DG-API/TASK/PROJECTION decisions accept exact signatures and ownership. |
+| HTTP and bounded external work | HTTP binds before activation, builds its router once, delegates to common execution and preserves serving error plus root outcome. Bounded work rejects with exact input and distinguishes abandoned waiting from running work. Required EV-22/24 regressions and affected examples pass both profiles; DG-WORK accepted. |
+| Selected upstream receiving contract | Reviewed owning Behavior change, passing owner checks, published release, then exact Cargo selection/source verification and affected Bombay tests. No unreleased patch is treated as delivered. |
+| Remaining design decisions and dispositions | Independent reviewers accept all seven open DG records and all nine controller dispositions using valid existing evidence plus the missing tests above. Resolve each actual failing law; no self-approval or weaker acceptance criterion. |
+| Required module extraction and minimization | Approved symbol-to-owner map; one implementation per responsibility; mechanical extraction preserves differential traces, curated exports, macros and consumers. DG-MODULES/WRAPPERS accepted; final abstraction/disposition and complete change records prove the retained composition minimal. |
+| Required verification and CI | Repair the ActorOutcome coverage failure without lowering floors or hiding production lines. All §10.1 pinned-Nix commands, focused regressions, required static/model/fuzz/Miri and benchmark gates pass on the integrated source. Preserve earlier failures and valid proof limits. |
+| Final review and main delivery | Required independent final reviews approve the complete patch; required GitHub checks pass; PR merges into main. Record PR, CI and merge commit in this PRD/backlog, then mark the goal complete. |
+
+The private Entity runtime-choice correction is implemented and independently
+verified (§250). It is no longer a remaining implementation blocker. Completed
+local-runtime fixes and their regressions remain preservation obligations.
+
 ## 1. Authority and how to execute this document
 
 Read Bombay's [AGENTS.md](../../AGENTS.md), resolve the current lock and patches,
@@ -11115,3 +11139,305 @@ nominals remain+5 (three fresh/two promotions). Canonical70/0, production
 two existing test-bearing paths and evidence; total production is unchanged.
 Full per-path/documentation/manifest/untracked records are recomputed after
 this paragraph, with the exact reviewed169-to-EOF ActorOutcome test interval.
+
+
+## 242. Qualify the original public Entity executor witness
+
+Source14748273 receives independent c8df60f8 and1ea50076 reviews. Root
+reads the complete284-line witness, both bounded findings and source bindings.
+All original H joins, complete root/Entity reports, accepted command allocation,
+whole settlement/control lanes and seven family metrics precede the predicted
+hydration-host oracle. H and callerK remain simultaneously alive for opaque ID
+equality; K is not claimed shut down. Completed preserves actual unread None
+or Some(()); OwnerCancelled proves consumed one-shot None separately. The
+original false-None witness stays vetoed/unexecuted. This is not affine692
+conservation or multicore-overlap evidence.
+
+Original executable plan had nineteen nonexistent copied-input paths. The
+plan-only8169 correction and independent eaa4e536 authenticate real inputs;
+four original C5a argv and source1474 stay exact. Formatter plan-onlyf00c7fed/
+9e4e175c additionally captures the selected rustfmt executable using a shell
+builtin before the sole rustfmt invocation. Root authenticates all42 bindings;
+execute only after the independent exact-use review. One self-contained source
+is passed through stdin inside pinned Nix; complete source output is redirected
+separately from complete outer Nix streams. No banner parsing or recursive
+module formatting. Root launcher9132c768 freezes all1155 source/membership/
+physical metadata and three canonical pins before/after; one900-second process
+-group deadline preserves terminal streams and rejects timeout/unknown changes.
+External formatted source/executable bytes are hashed and patches archived;
+separate formatted-source peer precedes any temporary installation or formation.
+
+Temporary original trials use the exact unselected constructor C5a38 and a
+single explicitly registered test target. Two actual exact JSON no-run profiles
+precede two native originals. No production correction before both genuine
+hydration-host failures receive independent review. Compiler/setup/timeout or
+earlier custody failures earn no intended-law credit. Original retained source
+must be restored conditionally; unexpected byte/physical changes preserved.
+Stage production/public types0, temporary fixture284 raw test lines; no source
+retention or full gate acceptance is granted by this prerecord. Existing
+233-path delegated research allowance applies; complete checkpoint remains
+research121/0, production+8602/−2342/net6260, tests+24628/−2144/net22484;
+canonical70/0, production+167/−34/net133, tests+3295/−557/net2738. Complete
+hash-bound documentation/manifest deltas are recomputed after this record.
+
+
+Formatter prerecord clarification: the unexecuted9132 draft is preserved and
+superseded by exact launcher829dc975 after independent review identified
+terminal-record-before-guard and process-group deadline gaps. The successor
+persists terminal streams before either post-guard, records both guard failures
+independently, checks process-group absence after bounded TERM/KILL even when
+the leader exited, and archives complete nonsymlink pin metadata from one
+lstat. Planned outer stream paths remain exact; no source/banner parsing.
+This is tooling qualification only. Final source-use peer precedes execution.
+
+
+## 243. Bind the formatted host witness and temporary original source growth
+
+Sole pinned formatter actual265e8cbc and independent856f3260/3140552b
+qualify complete522-line ab85b7ce. All38 assertions, one controller, six
+fixture types and original complete results are conserved; changes are24
+trailing commas and one divergent closure block. Complete outer2890/2199
+streams, empty inner stderr, captured selected rustfmt executable20020779,
+all1155 original source/physical maps and three pins authenticate unchanged.
+The first intended hydration assertion is496; it remains unexecuted. Later
+host inequalities/invocation assertions receive no negative execution credit.
+Hydration not using measured constructorH is the direct intended negative law;
+identifying callerK is explicitly an inference from the authenticated two-live
+runtime/ambient-spawn source. A healthy correction must reach the later checks.
+Bind this limit into the runnable plan before any compiler/native command.
+
+The temporary C5a38 constructor overlay against retained00d6234d measures
+production+844/−365/net479, tests0: unchanged complete cfg test bodies only
+shift. Source cfg-conservation234633bb and current independently classified
+intervals bind this count. The new temporary self-contained target adds522
+test lines. These are temporary source-growth diagnostics, not retained
+production or accepted API changes. No new nominal type; the existing public
+signature comparison remains required. One tracked overlay/one registered
+untracked target must be restored/removed only at known bytes and physical
+states; preserve unexpected changes. The bounded four commands remain blocked
+on the separate orchestration peer and fresh full baseline after measurement.
+
+Family612 source27b79b35 receives nonauthor3d42959b; all232 combined source/
+package-plan bindings authenticate and complete typed/native/surrender laws
+are reviewed for formatting eligibility only. Warning-scope successor75563bd1/
+c23e9951 and independent0489f139 preserve every source/argv and26 rows:
+compiler errors refuse formation, all warnings are preserved/classified,
+warning-bearing formation earns zero strict-quality credit. The final PRD
+zero-warning gate remains unchanged/open. Original317 failures and subsequent
+whole typed positives/inversions remain unexecuted; no Family retention.
+
+
+## 244. Execute only the independently qualified original host trial
+
+Bounded4 original13ea/7f40 remained unexecuted: independent5826c9d2 vetoed
+leader-only cleanup and ignored filtered counts. Narrow successord61d2b13/
+6c4fef70 and nonauthor722c2232 qualify exactly the same four argv and C5a/
+ab85 sources. Root reads original full collector and complete successor patch;
+all71 author/75 peer artifacts authenticate. Exact049 guard definitions retain
+independent OBS38/9a82 approval, separate from their author Work's orchestration
+review. Exact829 process-group definitions run even after leader exit; group
+absence is required before ANY source restoration/removal. Unproved absence
+preserves registered sources and partial streams as NONPASS recovery custody.
+Terminal facts precede post-source guards; native counts require one failure,
+zero filtered tests and the unchanged496 law. There is no production host fix.
+
+Freeze fresh full1155 baseline after this prerecord and complete measurement.
+Bind exact author receipt, peer722, formatted-source peer856 and prerecord
+hash into immutable Root authorization before installing tracked C5a and the
+sole registered temporary target. Archive original1155 bytes; per-command
+1156 inventories/SHA/kind/mode/device/inode guards and actual selected sources
+must match. These guard fields do NOT include timestamps. Remove the fixture
+and restore App only at known states after verified process-group absence.
+Temporary production+844/−365/net479 and tests+522/−0/net522 are explicit;
+retained production/public types0 after restoration. Existing233-path delegated
+allowance covers this bounded probe; do not retain an API or approve a gate.
+
+Separately, a399 CI37478033422 is terminal failure. Full workspace coverage
+tests pass; Driver737/818 now passes90%, ActorExecution958/998 passes93% and
+Observe502/525 passes90%. ActorOutcome177/212 still fails90%; later fuzz/Miri
+are skipped. No coverageJSON artifact exists in this run. Root receipt49c175d4
+archives the complete log. Independent0ef62a3e identifies the unchanged verifier
+as a per-file summary floor that includes inline test code. A private test-only
+layout comparison may move the same four whole laws to their owning child
+module, keeping all production bytes, the floor and verifier unchanged. Its
+numeric effect and cold production lines remain unknown until fresh reports;
+no padding, API widening or production-line coverage claim is authorized.
+
+
+## 245. Preserve failed formation and repair only documented actor syntax
+
+Original host trial actualc6bc041f/verification5b466aaf is NONPASS, independently
+authenticated0e0748c3/d85e5157. Both no-run commands exit101: each192 Cargo
+objects,22 errors (one facade refusal,16 E0277,5 E0599),19 warning groups,
+no target artifact and failed build-finished. Native rows3/4 never run. Complete
+four streams/44 rendered errors/38 warnings remain archived. Both process
+groups end; thirteen registry events/eight maps restore all1155 original bytes
+and declared metadata, except registered App inode; temporary fixture absent.
+Root outer exit1 is reported separately, not independently archived here.
+No original host defect or correction credit is claimed.
+
+The primary refusal is the existing facade law: a typed receive already supplies
+message, so a redundant actor message argument is invalid. Root rechecks exact
+macro165–217 and existing actor_message_is_inferred source/stderr. Previous
+source eligibility conserved this invalid spelling and should have caught it;
+old reviews/failed run remain preserved. No architecture is derived from the
+cascading trait errors. Declaration-only154e2cff/c7428a2e changes ONLY that
+attribute in host ab85→4f90, original Family7c63→ef2a and complete Family27b→
+bb48. All other bytes and38/14/59 assertions remain exact; each tests+1/−1/net0,
+production/public0. Underlying612 still requires its independent OBS review,
+separate from its author's nonauthored declaration-delta review.
+
+The fresh same95-line host formatter becf46f2 differs829 only in expectedinput
+hash4f90. Initial plan abe1 is preserved unexecuted under independentd31e9284
+HOLD: two stale descriptive paths. Plan-only7e223808 corrects only captured
+executable path and diff-source metadata. Final exact-use peer precedes sole
+pinned formatting; no source installation/Cargo belongs to that stage. Fresh
+four-command source-binding successor must bind the actual corrected product,
+keep all original failing evidence and repeat formation before native rows.
+All broader runtime/public source remains unretained and semantic gates open.
+
+
+## 246. Corrected host witness: repeat original debug and optimized failure
+
+Formatter actual661a03f7 and independent product peer e10c3f0e conserve the
+complete corrected4f90 witness byte for byte: 522 lines, 38 assertions, empty
+formatter stderr, and unchanged owner/pin maps. This is formatting evidence
+only. Frozen binding-only successor8abf44c6 reuses collector6c4f and command
+plan a259 unchanged; inherited mechanism peer722c and a fresh narrow binding
+review are required. Preserve original formation NONPASS c6bc as historical.
+
+Repeat exactly the four commands specified in §244: debug/release no-run first,
+then the single original selected-host regression in each profile. Native rows
+must fail at line496 with the intended hydration-host message and exact census;
+any compiler failure or different oracle receives no defect credit. Root takes
+a fresh 1155-source baseline after this record and the measured-change footer.
+Only the registered C5a App and temporary test are installed; all source/pin
+writes remain frozen until process-group absence and conditional restoration.
+Temporary/retained deltas and metadata limits remain exactly §244; no new
+production correction, public contract, scope expansion or gate approval yet.
+
+
+## 247. Selected Entity executor: smallest owning correction
+
+Original four-row actual50f35334/verification2c99d397 has two successful no-run
+formations and two native101 failures at the intended hydration496 oracle.
+All four process groups ended and original source custody was restored; fresh
+independent actual review remains required before correction credit. Eighteen
+existing library warning groups are preserved, not strict-quality credit.
+
+Source proposal80ba5545 follows independent ownership planf196: capture the
+constructor-selected Tokio Handle before handing it to the kernel; move that
+same Handle through the existing sealed family product; store and clone it in
+the existing native Entity port; use its spawn method. No new runtime, wrapper,
+public type, generic axis, Behavior/Actors contract or Engine policy. Raw delta
+relative to frozen C5a: production+15/−7/net8, tests+2/−0/net2, three existing
+paths (application_runtime.rs, entity/family.rs, entity/bombay.rs). The only
+existing private factory test receives its real test-host Handle explicitly.
+Retained synchronous App00d6 has a separate same-runtime Handle alternative;
+it is mutually exclusive with C5a, not a second execution implementation.
+
+Next, after independent source eligibility, format the three complete proposed
+sources outside the repository using pinned rustfmt and preserve every raw
+stream and exact formatted delta. Then install only known bytes for bounded
+original/fixed debug/release comparisons. Required inversions restore ambient
+spawn and deliberately substitute caller-runtime provenance, each followed by
+a healthy restore. Preserve Work on caller K and Entity hydration/launch on H,
+all exact retirement values and existing conversion regression. Fresh source
+maps and process-group guards precede every temporary edit/conditional restore.
+No C5a public API retention or full gate approval follows from this local fix.
+
+
+## 248. Verify selected-host correction without retaining blocked public API
+
+Independent original actual cdf5e660 authenticates all four commands and the
+same genuine native failure in both profiles (§246). Source peerb6c83e25 and
+formatted-product peerbdd1eb2b qualify exact proposed App67e4/Family80b5/native
+port9769. All three external formatter commands exit0 with empty inner stderr,
+full source/pin physical maps unchanged and only formatting differences. Raw
+semantic net8 is separate from complete formatted production+172/−60/net112
+relative to C5a; tests+2. Relative to the actual retained tree, temporary C5a
+composition is production+955/−364/net591 and tests+524 (522 fixture+2 migration).
+No raw-eight-line or zero-growth description applies to that temporary product.
+
+Prerecord fourteen finite commands: both target no-run formations; both whole
+healthy host witnesses; both existing private factory regressions; original
+ambient-spawn inversion in each profile with immediate healthy restore; wrong
+caller-Handle transport inversion in each profile with immediate healthy restore.
+Every warning, actual native census, first oracle and source/pin/process-group
+fact remains evidence. Any unqualified healthy/compiler/factory row stops the
+campaign with NONPASS; no required row may be skipped and credited. Exact frozen
+runner/mutant bindings and independent mechanism review precede Root execution.
+
+For a separately retainable owning correction, independenta1e5848a qualifies
+synchronous App4e680 (same one owned runtime) and native witness8130 (+54 test
+lines) without the blocked C5a public API. Format exactly those two external
+complete copies with the same reviewed95 mechanism; preserve both originals,
+streams, diffs and full source/pin maps. Raw combined retained proposal across
+three existing owners is production+17/−9/net8, tests+56, public types0; final
+formatted delta remains to be measured. Its actual private-port source must
+fail under original ambient spawn and pass corrected in debug and release;
+existing native conversion regressions remain required. No source retention,
+HOLD lift, full design gate or final minimization follows from formatting alone.
+
+
+Frozen fourteen-row authorc12c1182 supersedes21927683 only by correcting its
+copied four-row docstring; executable body, all fourteen argv and both complete
+mutant sources remain exact. Collectorb50f19c9/plan264c283e bind
+App wrong-caller transportc1cfb3a9 and port ambient-spawnd230dd07. Old author
+packet remains historical. Fresh nonauthor mechanism/mutant review and Root
+full1155 epoch are required before this exact finite execution.
+
+Separately, two formatter actuals88aa68b7/8c882865 and independent85de0c8c
+qualify retained Appc286d6df/native2735ed34; Family80b5 remains unchanged from
+the three-source formatting. Final retained proposal is production+42/−23/net19,
+tests+55/−0/net55, public types0 across the same three paths. It contains the
+same existing runtime selection, native spawn and original/focused regressions;
+no C5a or affine receiving API. Every actual source install remains conditional
+on the required bounded proof and independent review; semantic gates stay open.
+
+
+## 249. Selected-host proof and retained owning regression
+
+Fourteen actual7b4f07e6/verificationb0a6a2ea, independently qualified36e0609d,
+passes both formations, six whole public host witnesses and both existing
+conversion regressions; both restored faults fail at496 in each profile.
+Complete28 streams and full original source restoration are retained. Existing
+warnings remain (18 ordinary,11 lib-test,19 under caller-Handle mutant); no
+strict quality, public C5a retention or full gate credit.
+
+Execute exact retained eight plan47239f72/collector95d3fc30,
+authorf6ae4f75 and independent13c37ec1: two lib no-run formations, original
+ambient-spawn fault new-test debug/release, fixed new-test debug/release,
+complete old2+new1 native cohort debug/release. Only Appc286/Family80b5/port2735;
+public fixture absent. Production+42/−23/net19, tests+55, public types0, three
+existing paths. Current complete measured tree is121 tracked/0untracked,
+production+8602/−2342/net6260 and tests+24628/−2144/net22484. Freeze fresh1155
+maps after this record; retain every diagnostic, first857 native fault and full
+census. Restore known original bytes only after verified group absence. This
+proposes a conditional research backup; main delivery/full EXEC remains open.
+
+
+## 250. Back up the verified private Entity runtime-choice correction
+
+Retained eight actualb3740cd3/verification2b47b9d7 and independenta009c314
+qualify both155-object formations, both native857 original-fault failures,
+both healthy new cases and both complete three-test cohorts. Actual selected
+counts1/273filtered and3/271filtered; six existing warnings remain. Original
+1155 bytes/memberships/modes/pins restored; only three registered inodes change.
+Independent recommendation permits the exact conditional research proposal
+Appc286/Family80b5/port2735: production+42/−23/net19, tests+55, public types0,
+three existing paths. No C5a/affine API or main/gate acceptance is retained.
+Root preserves the restored originals and installs only those tested bytes,
+then measures the complete tracked/untracked delta and commits/pushes focused
+code and evidence. Preserve both original cleanup regressions. Full EXEC,
+strict checks, coverage, final reviews, extraction, minimization and merge remain.
+
+The exact three tested sources are now installed on the integration branch.
+Original bytes and physical metadata are preserved in
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-private-entity-runtime-choice-retention-1xh9xf9h`;
+all other source bytes, membership and pins are unchanged. Full measurement
+against `2fccedf6` is121 tracked/0untracked: production+8640/−2361/net6279,
+tests+24683/−2144/net22539. Stage public types0; complete conditional nominal
+surface remains3 fresh/2 promotions. The eight proof commands and independent
+review are recorded in the verification record; no duplicate rerun is needed
+for these exact bytes. This closes only runtime selection, not full EXEC.

@@ -1222,25 +1222,27 @@ where
         BoundaryFuture: Future<Output = Output> + Send,
         Output: Send,
     {
-        Ok(tokio::runtime::Builder::new_current_thread()
+        let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
-            .build()?
-            .block_on(async move {
-                let Self {
-                    root,
-                    spaces,
-                    families,
-                } = self;
-                let spaces = Arc::new(spaces);
-                let allocations = ApplicationAddresses::new();
-                let installed = families.install(Arc::clone(&spaces), allocations.clone());
-                let receptionists = installed.receptionists();
-                let outcome = spaces
-                    .launch_with(root, allocations, receptionists, boundary)
-                    .await;
-                let shutdowns = installed.shutdown().await;
-                (outcome, shutdowns)
-            }))
+            .build()?;
+        let entity_executor = runtime.handle().clone();
+        Ok(runtime.block_on(async move {
+            let Self {
+                root,
+                spaces,
+                families,
+            } = self;
+            let spaces = Arc::new(spaces);
+            let allocations = ApplicationAddresses::new();
+            let installed =
+                families.install(Arc::clone(&spaces), allocations.clone(), entity_executor);
+            let receptionists = installed.receptionists();
+            let outcome = spaces
+                .launch_with(root, allocations, receptionists, boundary)
+                .await;
+            let shutdowns = installed.shutdown().await;
+            (outcome, shutdowns)
+        }))
     }
 }
 
