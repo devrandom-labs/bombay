@@ -3,18 +3,20 @@ use core::mem;
 use core::num::NonZeroUsize;
 use core::pin::{Pin, pin};
 use core::task::{Context, Poll};
+use std::cell::Cell;
 use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, PoisonError, Weak};
 
 use behavior_actors::{Exit, StopOnShutdown};
 use bombay::behavior::{
-    Actions, BehaviorActed, BehaviorBase, ChildChoice, ChildCons, CreationKind,
-    EstablishedDelivery, EstablishedRecipient, EventLayer, Never, NoChildren, NoSends, Protocol,
-    Step, User,
+    ActionSettlement, Actions, BehaviorActed, BehaviorBase, ChildChoice, ChildCons,
+    ChildCreationOutcome, CreationKind, CreationSettlement, EstablishedDelivery,
+    EstablishedRecipient, EventLayer, ItemSettlement, Never, NoChildren, NoSends, Protocol,
+    SettledItem, Step, User,
 };
 use bombay_engine::Completion;
-use tokio::runtime::Builder;
+use tokio::runtime::{Builder, Handle, Id};
 use tokio::sync::oneshot;
 use tokio::task::JoinError;
 
@@ -163,10 +165,29 @@ fn assert_rejected_root(
         child_failures: (),
         capability_failures,
         unread_owner_cancellation,
+        additional_failures,
+        received_interpretation,
+        received_source,
+        source_index,
+        acquired_ingress,
+        retirement_failures,
+        terminal_report,
     } = terminal
     else {
         panic!("the complete actual initialization refusal remains owned");
     };
+    assert!(matches!(
+        (
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress
+        ),
+        (None, None, None, None)
+    ));
+    assert!(additional_failures.is_empty());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(behavior.base().admission, AccountAdmission::Reject);
     assert_eq!(behavior.base().original.as_slice(), &[31, 37]);
@@ -212,10 +233,33 @@ fn completed_output_survives_actual_root_terminal_conversion_failure() {
         capability_failures,
         unread_owner_cancellation,
         completion,
+        interpretation,
+        source,
+        additional_failures,
+        received_interpretation,
+        received_source,
+        source_index,
+        acquired_ingress,
+        retirement_failures,
+        terminal_report,
     } = &retirement
     else {
         panic!("same standard root completed normally");
     };
+    assert!(matches!(
+        (
+            interpretation,
+            source,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress
+        ),
+        (None, None, None, None, None, None)
+    ));
+    assert!(additional_failures.is_empty());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
     assert_eq!(behavior.base().admission, AccountAdmission::Ready);
     assert_eq!(behavior.base().original.as_slice(), &[31, 37]);
     assert_eq!(settlements.len(), 1);
@@ -445,11 +489,30 @@ fn declared_application_refusal_retains_unstarted_original_child() {
             child_failures: (child_failures, ()),
             capability_failures,
             unread_owner_cancellation,
+            additional_failures,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            retirement_failures,
+            terminal_report,
         },
     ) = &returned
     else {
         panic!("the actual composed actor retains complete initialization rejection");
     };
+    assert!(matches!(
+        (
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress
+        ),
+        (None, None, None, None)
+    ));
+    assert!(additional_failures.is_empty());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(behavior.base().admission, AccountAdmission::Reject);
     assert_eq!(behavior.base().original.as_slice(), &[31, 37]);
@@ -527,11 +590,34 @@ fn assert_completed_account(
             capability_failures,
             unread_owner_cancellation,
             completion,
+            interpretation,
+            source,
+            additional_failures,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            retirement_failures,
+            terminal_report,
         }),
     )) = cleanup
     else {
         panic!("the standard account and cleanup join normally");
     };
+    assert!(matches!(
+        (
+            interpretation,
+            source,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress
+        ),
+        (None, None, None, None, None, None)
+    ));
+    assert!(additional_failures.is_empty());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(behavior.base().admission, AccountAdmission::Ready);
     assert_eq!(behavior.base().original.as_slice(), &[31, 37]);
@@ -575,11 +661,34 @@ fn assert_cancelled_account(
             child_failures: (),
             capability_failures,
             unread_owner_cancellation,
+            interpretation,
+            source,
+            additional_failures,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            retirement_failures,
+            terminal_report,
         }),
     )) = cleanup
     else {
         panic!("the original authority cancels the still-live account");
     };
+    assert!(matches!(
+        (
+            interpretation,
+            source,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress
+        ),
+        (None, None, None, None, None, None)
+    ));
+    assert!(additional_failures.is_empty());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(behavior.base().admission, AccountAdmission::Ready);
     assert_eq!(behavior.base().original.as_slice(), &[31, 37]);
@@ -976,11 +1085,30 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                 child_failures: (),
                 capability_failures,
                 unread_owner_cancellation,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
             }),
         )) = &cleanup
         else {
             panic!("the complete original initialization refusal remains available");
         };
+        assert!(matches!(
+            (
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress
+            ),
+            (None, None, None, None)
+        ));
+        assert!(additional_failures.is_empty());
+        assert!(retirement_failures.is_empty());
+        assert!(terminal_report.is_none());
         let exact_root = root_retained
             .upgrade()
             .is_some_and(|original| Arc::ptr_eq(&original, &behavior.base().original));
@@ -1300,6 +1428,15 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
                     capability_failures,
                     unread_owner_cancellation,
                     completion,
+                    interpretation,
+                    source,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
                 }),
             )),
             (
@@ -1337,6 +1474,20 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
                 ),
             ),
         )) => {
+            assert!(matches!(
+                (
+                    interpretation,
+                    source,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress
+                ),
+                (None, None, None, None, None, None)
+            ));
+            assert!(additional_failures.is_empty());
+            assert!(retirement_failures.is_empty());
+            assert!(terminal_report.is_none());
             let output_exact = original_output
                 .upgrade()
                 .is_some_and(|original| Arc::ptr_eq(&original, output));
@@ -1664,8 +1815,27 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
                 child_failures: (current_failures, (earlier_failures, ())),
                 capability_failures,
                 unread_owner_cancellation,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
             },
         )))) => {
+            assert!(matches!(
+                (
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress
+                ),
+                (None, None, None, None)
+            ));
+            assert!(additional_failures.is_empty());
+            assert!(retirement_failures.is_empty());
+            assert!(terminal_report.is_none());
             let refusal = match error {
                 ApplicationDefinitionError::Root(AccountRefusal::Initialization) => {
                     AccountRefusal::Initialization
@@ -1895,11 +2065,30 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
                 child_failures: (child_failures, ()),
                 capability_failures,
                 unread_owner_cancellation,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
             }),
         )) = &cleanup
         else {
             panic!("both real joins return the complete declared initialization refusal");
         };
+        assert!(matches!(
+            (
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress
+            ),
+            (None, None, None, None)
+        ));
+        assert!(additional_failures.is_empty());
+        assert!(retirement_failures.is_empty());
+        assert!(terminal_report.is_none());
         let refused = match error {
             ApplicationDefinitionError::Root(reason) => *reason,
             ApplicationDefinitionError::InitializedTwice => {
@@ -2389,7 +2578,30 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             capability_failures,
             unread_owner_cancellation: None | Some(()),
             completion,
+            interpretation,
+            source,
+            additional_failures,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            retirement_failures,
+            terminal_report,
         } => {
+            assert!(matches!(
+                (
+                    interpretation,
+                    source,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress
+                ),
+                (None, None, None, None, None, None)
+            ));
+            assert!(additional_failures.is_empty());
+            assert!(retirement_failures.is_empty());
+            assert!(terminal_report.is_none());
             assert_eq!(behavior.base().accepted, vec![283]);
             assert_eq!(behavior.base().original.as_slice(), &[241, 251]);
             assert_eq!(settlements.len(), 1);
@@ -2412,7 +2624,30 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             child_failures: (),
             capability_failures,
             unread_owner_cancellation,
+            interpretation,
+            source,
+            additional_failures,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            retirement_failures,
+            terminal_report,
         } => {
+            assert!(matches!(
+                (
+                    interpretation,
+                    source,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress
+                ),
+                (None, None, None, None, None, None)
+            ));
+            assert!(additional_failures.is_empty());
+            assert!(retirement_failures.is_empty());
+            assert!(terminal_report.is_none());
             assert_eq!(behavior.base().accepted, vec![283]);
             assert_eq!(behavior.base().original.as_slice(), &[241, 251]);
             assert_eq!(settlements.len(), 0);
@@ -2458,6 +2693,15 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                     capability_failures,
                     unread_owner_cancellation,
                     completion,
+                    interpretation,
+                    source,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
                 }),
             )),
             (
@@ -2473,6 +2717,20 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                 (),
             ),
         )) => {
+            assert!(matches!(
+                (
+                    interpretation,
+                    source,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress
+                ),
+                (None, None, None, None, None, None)
+            ));
+            assert!(additional_failures.is_empty());
+            assert!(retirement_failures.is_empty());
+            assert!(terminal_report.is_none());
             let Ok(()) = admitted else {
                 panic!("the actual EntityAdmission accepted the original command");
             };
@@ -2573,4 +2831,514 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
     assert_eq!(released, (0, 0, 0));
     assert_eq!(cause_retained, original_cause.as_ref().map(|_| 1));
     assert_eq!(cause_released, original_cause.as_ref().map(|_| 0));
+}
+
+// Host observations belong to terminal projection and caller work, never a Behavior fold.
+enum HostAccountConclusion {
+    Root {
+        origin: RootOrigin<StopOnShutdown<ReceivingAccount>>,
+        terminal: ActorRetirement<
+            ApplicationBehavior<
+                StopOnShutdown<ReceivingAccount>,
+                ChildCons<MailAddr, ReceivingAccount, NoChildren>,
+            >,
+            Self,
+            (
+                Vec<
+                    ChildFailure<
+                        ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
+                        ReceivingAccount,
+                    >,
+                >,
+                (),
+            ),
+        >,
+        executor: Id,
+    },
+    Account {
+        origin: ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
+        terminal: ActorRetirement<ReceivingAccount, Self, ()>,
+        executor: Id,
+    },
+}
+
+impl
+    ProjectTerminal<
+        RootOrigin<StopOnShutdown<ReceivingAccount>>,
+        ActorRetirement<
+            ApplicationBehavior<
+                StopOnShutdown<ReceivingAccount>,
+                ChildCons<MailAddr, ReceivingAccount, NoChildren>,
+            >,
+            Self,
+            (
+                Vec<
+                    ChildFailure<
+                        ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
+                        ReceivingAccount,
+                    >,
+                >,
+                (),
+            ),
+        >,
+    > for HostAccountConclusion
+{
+    fn project(
+        origin: RootOrigin<StopOnShutdown<ReceivingAccount>>,
+        terminal: ActorRetirement<
+            ApplicationBehavior<
+                StopOnShutdown<ReceivingAccount>,
+                ChildCons<MailAddr, ReceivingAccount, NoChildren>,
+            >,
+            Self,
+            (
+                Vec<
+                    ChildFailure<
+                        ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
+                        ReceivingAccount,
+                    >,
+                >,
+                (),
+            ),
+        >,
+    ) -> Self {
+        Self::Root {
+            origin,
+            terminal,
+            executor: Handle::current().id(),
+        }
+    }
+}
+
+impl
+    ProjectTerminal<
+        ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
+        ActorRetirement<ReceivingAccount, Self, ()>,
+    > for HostAccountConclusion
+{
+    fn project(
+        origin: ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
+        terminal: ActorRetirement<ReceivingAccount, Self, ()>,
+    ) -> Self {
+        Self::Account {
+            origin,
+            terminal,
+            executor: Handle::current().id(),
+        }
+    }
+}
+
+#[test]
+fn selected_actor_host_survives_distinct_caller_polling_host() {
+    let actor_host = Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .expect("the selected actor host builds");
+    let caller_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the distinct caller host builds");
+    let selected_id = actor_host.handle().id();
+    let caller_id = caller_host.handle().id();
+    let root = Arc::new(vec![31, 37]);
+    let original_root = Arc::downgrade(&root);
+    let child = Arc::new(vec![53, 59]);
+    let original_child = Arc::downgrade(&child);
+    let role = Arc::new(vec![61, 67]);
+    let original_role = Arc::downgrade(&role);
+    let output = Rc::new(vec![277, 281]);
+    let original_output = Rc::downgrade(&output);
+    let borrowed = vec![283, 293];
+    let borrowed_input = &borrowed;
+    let entered = actor_host.enter();
+    let constructed_id = Handle::current().id();
+    let pair = Application::new(
+        ReceivingAccount {
+            admission: AccountAdmission::Ready,
+            original: root,
+        }
+        .stop_on_shutdown(),
+    )
+    .child(
+        AccountsRole(role),
+        ReceivingAccount {
+            admission: AccountAdmission::Ready,
+            original: child,
+        },
+    )
+    .execute_with::<_, _, HostAccountConclusion, _, _, _, _>(move |application| {
+        let work_id = Handle::current().id();
+        async move {
+            let requested = application.lifecycle().request_shutdown();
+            requested.expect("the genuine live root receives its explicit shutdown request");
+            (output, borrowed_input, work_id)
+        }
+    });
+    drop(entered);
+    let (execution, result) =
+        pair.unwrap_or_else(|_| panic!("construction selects the entered actor host"));
+    let (work_id, projected_id, child_id, root_address, child_address) =
+        caller_host.block_on(async {
+            let ((), outcome) = tokio::join!(execution, result);
+            let ApplicationOutcome::Completed {
+                output: (output, borrowed, work_id),
+                cleanup,
+            } = outcome
+            else {
+                panic!("the distinct caller receives its original complete work output");
+            };
+            let Ok((origin, Ok(retirement))) = cleanup else {
+                panic!("both actual actor and cleanup joins complete");
+            };
+            // The pair never projects root retirement; this is explicit caller policy on K.
+            let projected = HostAccountConclusion::project(origin, retirement);
+            let HostAccountConclusion::Root {
+                origin,
+                terminal,
+                executor: projected_id,
+            } = projected
+            else {
+                panic!("the raw root is projected as the original root");
+            };
+            let ActorRetirement::Completed {
+                behavior,
+                interpretation,
+                source,
+                settlements,
+                control,
+                user,
+                mut descendants,
+                child_failures: (child_failures, ()),
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+                completion,
+            } = terminal
+            else {
+                panic!("the explicit root shutdown retains its complete ordinary retirement");
+            };
+            assert_eq!(
+                Arc::as_ptr(&behavior.base().original),
+                original_root.as_ptr()
+            );
+            assert_eq!(behavior.base().original.as_slice(), [31, 37]);
+            assert_eq!(behavior.base().admission, AccountAdmission::Ready);
+            assert!(matches!(
+                (
+                    &interpretation,
+                    &source,
+                    &received_interpretation,
+                    &received_source,
+                    &source_index,
+                    &acquired_ingress
+                ),
+                (None, None, None, None, None, None)
+            ));
+            assert_eq!(settlements.len(), 2);
+            let mut rows = settlements.into_iter();
+            let ActionSettlement {
+                creations,
+                sends,
+                become_,
+            } = rows.next().expect("one complete stop settlement");
+            let CreationSettlement::Settled(creations) = creations.into_settlement() else {
+                panic!("the exact empty stop creation batch is settled");
+            };
+            assert_eq!(creations.len(), 0);
+            assert_eq!(sends.owned, NoSends);
+            assert_eq!(sends.inner, NoSends);
+            assert!(matches!(become_, Step::Stop(_)));
+            drop(creations);
+            let ActionSettlement {
+                creations,
+                sends,
+                become_,
+            } = rows.next().expect("the original initialization settlement");
+            let extra = rows.next();
+            assert!(extra.is_none());
+            let CreationSettlement::Settled(creations) = creations.into_settlement() else {
+                panic!("the original declared creation is settled");
+            };
+            assert_eq!(creations.len(), 1);
+            let creation = creations
+                .into_iter()
+                .next()
+                .expect("one declared child settlement");
+            let SettledItem::Attempted(ItemSettlement::Accepted(ChildChoice::Head(
+                ChildCreationOutcome::Established(committed),
+            ))) = creation
+            else {
+                panic!("the original declared child was actually established");
+            };
+            assert_eq!(committed.kind(), CreationKind::Birth);
+            assert_eq!(sends.owned, NoSends);
+            assert_eq!(sends.inner, NoSends);
+            assert!(matches!(become_, Step::Continue));
+            assert!(control.is_empty());
+            assert!(user.is_empty());
+            assert!(child_failures.is_empty());
+            assert!(capability_failures.is_empty());
+            assert!(additional_failures.is_empty());
+            assert!(retirement_failures.is_empty());
+            assert!(terminal_report.is_none());
+            assert!(unread_owner_cancellation.is_none());
+            assert_eq!(completion, Completion::Stopped);
+            assert_eq!(descendants.len(), 1);
+            let descendant = descendants.pop().expect("one actual declared child joined");
+            let HostAccountConclusion::Account {
+                origin: child_origin,
+                terminal: child_terminal,
+                executor: child_id,
+            } = descendant
+            else {
+                panic!("the original declared child uses its total child projection");
+            };
+            drop(committed);
+            let ActorRetirement::OwnerCancelled {
+                behavior: child_behavior,
+                interpretation,
+                source,
+                settlements,
+                control,
+                user,
+                descendants,
+                child_failures: (),
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            } = child_terminal
+            else {
+                panic!("root retirement joins its actually cancelled declared child");
+            };
+            assert_eq!(
+                Arc::as_ptr(&child_behavior.base().original),
+                original_child.as_ptr()
+            );
+            assert_eq!(child_behavior.base().original.as_slice(), [53, 59]);
+            assert_eq!(child_behavior.base().admission, AccountAdmission::Ready);
+            assert!(matches!(
+                (
+                    &interpretation,
+                    &source,
+                    &received_interpretation,
+                    &received_source,
+                    &source_index,
+                    &acquired_ingress
+                ),
+                (None, None, None, None, None, None)
+            ));
+            assert!(settlements.is_empty());
+            assert!(control.is_empty());
+            assert!(user.is_empty());
+            assert!(descendants.is_empty());
+            assert!(capability_failures.is_empty());
+            assert!(additional_failures.is_empty());
+            assert!(retirement_failures.is_empty());
+            assert!(terminal_report.is_none());
+            assert!(unread_owner_cancellation.is_none());
+            assert_eq!(Rc::as_ptr(&output), original_output.as_ptr());
+            assert_eq!(output.as_slice(), [277, 281]);
+            assert_eq!(borrowed.as_slice(), [283, 293]);
+            let root_address = origin.address();
+            let child_address = child_origin.address();
+            drop((
+                behavior,
+                child_behavior,
+                settlements,
+                control,
+                user,
+                descendants,
+                capability_failures,
+                additional_failures,
+                retirement_failures,
+                terminal_report,
+                output,
+            ));
+            (work_id, projected_id, child_id, root_address, child_address)
+        });
+    drop((actor_host, caller_host));
+    assert_ne!(selected_id, caller_id);
+    assert_eq!(constructed_id, selected_id);
+    assert_eq!(
+        child_id, selected_id,
+        "standard child projection remains on the constructor-selected actor host"
+    );
+    assert_eq!(work_id, caller_id);
+    assert_eq!(projected_id, caller_id);
+    assert_eq!(root_address, MailAddr::APPLICATION_ROOT);
+    assert_ne!(root_address, child_address);
+    assert_eq!(original_root.strong_count(), 0);
+    assert_eq!(original_child.strong_count(), 0);
+    assert_eq!(original_role.strong_count(), 0);
+    assert_eq!(original_output.strong_count(), 0);
+}
+
+#[test]
+fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
+    let selected_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the actual selected host builds");
+    let caller_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the surviving caller host builds");
+    let selected_id = selected_host.handle().id();
+    let caller_id = caller_host.handle().id();
+    let entered = selected_host.enter();
+    let constructed_id = Handle::current().id();
+    let root = Arc::new(vec![31, 37]);
+    let original_root = Arc::downgrade(&root);
+    let work = Rc::new(vec![307, 311]);
+    let original_work = Rc::downgrade(&work);
+    let invocations = Rc::new(Cell::new(0_usize));
+    let observed_invocations = Rc::clone(&invocations);
+    let borrowed = vec![313, 317];
+    let borrowed_input = &borrowed;
+    let pair = Application::new(
+        ReceivingAccount {
+            admission: AccountAdmission::Ready,
+            original: root,
+        }
+        .stop_on_shutdown(),
+    )
+    .execute_with::<_, _, AccountConclusion, (), _, _, _>(move |application| {
+        observed_invocations.set(observed_invocations.get() + 1);
+        let work_id = Handle::current().id();
+        async move {
+            let requested = application.lifecycle().request_shutdown();
+            requested.expect("the retried original callable requests actual new-root shutdown");
+            (work, borrowed_input, work_id)
+        }
+    });
+    let control_root = Arc::new(vec![31, 37]);
+    let original_control_root = Arc::downgrade(&control_root);
+    let control_work = Rc::new(vec![331, 337]);
+    let original_control_work = Rc::downgrade(&control_work);
+    let control_invocations = Rc::new(Cell::new(0_usize));
+    let observed_control_invocations = Rc::clone(&control_invocations);
+    let control = Application::new(
+        ReceivingAccount {
+            admission: AccountAdmission::Ready,
+            original: control_root,
+        }
+        .stop_on_shutdown(),
+    )
+    .execute_with::<_, _, AccountConclusion, (), _, _, _>(move |application| {
+        observed_control_invocations.set(observed_control_invocations.get() + 1);
+        let work_id = Handle::current().id();
+        async move {
+            let requested = application.lifecycle().request_shutdown();
+            requested.expect("the untouched original application receives its actual shutdown");
+            (control_work, borrowed_input, work_id)
+        }
+    });
+    drop(entered);
+    let (execution, result) =
+        pair.unwrap_or_else(|_| panic!("a real entered host constructed the cold pair"));
+    let (control_execution, control_result) =
+        control.unwrap_or_else(|_| panic!("the same live host constructed the untouched control"));
+    // Actual Runtime destruction, outside an async context; a retained Handle is not a live Runtime.
+    drop(selected_host);
+    let before_poll = (
+        original_root.strong_count(),
+        original_work.strong_count(),
+        original_control_root.strong_count(),
+        original_control_work.strong_count(),
+    );
+    let (work_id, control_work_id) = caller_host.block_on(async {
+        let ((), outcome) = tokio::join!(execution, result);
+        let ApplicationOutcome::NotInvoked {
+            work,
+            startup_error,
+            cleanup: Err(cleanup_failure),
+        } = outcome
+        else {
+            panic!(
+                "destroyed selected host returns the uninvoked callable and actual cleanup failure"
+            );
+        };
+        assert!(cleanup_failure.is_cancelled());
+        assert!(!cleanup_failure.is_panic());
+        assert!(startup_error.is_some());
+        assert_eq!(invocations.get(), 0);
+        assert_eq!(original_work.strong_count(), 1);
+        assert_eq!(original_root.strong_count(), 0);
+        drop((cleanup_failure, startup_error));
+        // Explicit caller retry uses a genuine new application; the destroyed actor has no fabricated residual.
+        let (execution, result) = paired_account(Arc::new(vec![31, 37]))
+            .execute_with::<AccountConclusion, (), _, _, _>(work)
+            .unwrap_or_else(|_| panic!("the surviving caller host receives original work"));
+        let ((), outcome) = tokio::join!(execution, result);
+        let ApplicationOutcome::Completed {
+            output: (output, borrowed, work_id),
+            cleanup,
+        } = outcome
+        else {
+            panic!("the original callable completes on the explicit new application");
+        };
+        assert_completed_account(&cleanup);
+        assert_eq!(Rc::as_ptr(&output), original_work.as_ptr());
+        assert_eq!(output.as_slice(), [307, 311]);
+        assert_eq!(borrowed.as_slice(), [313, 317]);
+        assert_eq!(invocations.get(), 1);
+        drop((output, cleanup));
+        // The second execution has never been polled or staged, even though its selected host is gone.
+        drop(control_execution);
+        let ApplicationOutcome::Unstarted { application, work } = control_result.await else {
+            panic!("destroyed host cannot turn untouched input into a begun application");
+        };
+        assert_eq!(control_invocations.get(), 0);
+        assert_eq!(
+            Arc::as_ptr(&application.root().base().original),
+            original_control_root.as_ptr()
+        );
+        assert_eq!(application.root().base().original.as_slice(), [31, 37]);
+        assert_eq!(application.root().base().admission, AccountAdmission::Ready);
+        assert_eq!(original_control_work.strong_count(), 1);
+        let (execution, result) = application
+            .execute_with::<_, _, AccountConclusion, (), _, _, _>(work)
+            .unwrap_or_else(|_| {
+                panic!("the exact original application and work select the actual surviving host")
+            });
+        let ((), outcome) = tokio::join!(execution, result);
+        let ApplicationOutcome::Completed {
+            output: (output, borrowed, control_work_id),
+            cleanup,
+        } = outcome
+        else {
+            panic!("the original untouched control runs after explicit retry");
+        };
+        assert_completed_account(&cleanup);
+        assert_eq!(Rc::as_ptr(&output), original_control_work.as_ptr());
+        assert_eq!(output.as_slice(), [331, 337]);
+        assert_eq!(borrowed.as_slice(), [313, 317]);
+        assert_eq!(control_invocations.get(), 1);
+        drop((output, cleanup));
+        (work_id, control_work_id)
+    });
+    drop(caller_host);
+    assert_ne!(selected_id, caller_id);
+    assert_eq!(constructed_id, selected_id);
+    assert_eq!(before_poll, (1, 1, 1, 1));
+    assert_eq!(work_id, caller_id);
+    assert_eq!(control_work_id, caller_id);
+    // No root-task identity, root residual or native cause was acquired or reconstructed.
+    assert_eq!(original_root.strong_count(), 0);
+    assert_eq!(original_work.strong_count(), 0);
+    assert_eq!(original_control_root.strong_count(), 0);
+    assert_eq!(original_control_work.strong_count(), 0);
 }
