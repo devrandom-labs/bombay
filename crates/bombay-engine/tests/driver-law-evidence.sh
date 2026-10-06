@@ -10,12 +10,17 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "$script_dir/../../.." && pwd)"
 selected_law=""
 output_dir=""
+profile_arguments=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --law)
       selected_law="${2:?--law requires a canonical law id}"
       shift 2
+      ;;
+    --release)
+      profile_arguments=(--release)
+      shift
       ;;
     --output)
       output_dir="${2:?--output requires a directory}"
@@ -90,7 +95,7 @@ run_reference() {
   local suite="${reference%%::*}"
   local test_name="${reference#*::}"
   printf 'PASS  %s\n' "$reference"
-  cargo test --locked -p bombay-engine --test "$suite" "$test_name" -- --exact
+  cargo test "${profile_arguments[@]}" --locked -p bombay-engine --test "$suite" "$test_name" -- --exact
 }
 
 apply_mutation() {
@@ -174,7 +179,7 @@ kill_mutation() {
   apply_mutation "$law" "$inversion"
   printf 'KILL  %s with %s\n' "$inversion" "$killer"
   set +e
-  output="$(cargo test --locked -p bombay-engine --test "$suite" "$test_name" -- --exact 2>&1)"
+  output="$(cargo test "${profile_arguments[@]}" --locked -p bombay-engine --test "$suite" "$test_name" -- --exact 2>&1)"
   status=$?
   set -e
   restore_sources
@@ -216,6 +221,12 @@ while IFS= read -r row; do
   positive_command="$(jq -r '.positive.command' <<< "$row")"
   boundary_command="$(jq -r '.boundary.command' <<< "$row")"
   inversion_command="$(jq -r '.inversion.command' <<< "$row")"
+
+  if [[ ${#profile_arguments[@]} -ne 0 ]]; then
+    positive_command="${positive_command/cargo test --locked/cargo test --release --locked}"
+    boundary_command="${boundary_command/cargo test --locked/cargo test --release --locked}"
+    inversion_command="$inversion_command --release"
+  fi
 
   run_reference "$positive"
   run_reference "$boundary"

@@ -9198,3 +9198,144 @@ record exact commands/results, and independently review intended failures and
 healthy controls. No migration or gate approval follows from compiler formation
 alone. Genuine no-work/AsyncFnOnce/Entity/HTTP and blocking-disposal comparisons
 remain separate; do not blindly combine incompatible outcome signatures.
+
+
+Actual async-running comparison `54a64413` records six commands: separate
+original Result-not-Future and original output-Send denials; two public
+caller-runtime/borrowed non-Send tests pass in both builds on formatted
+candidate08a89504; finally-restored healthy923e/ff178 passes all25 original
+controllers in each build. Candidate syntax removes30 net production lines
+across the two methods, adds no type, and leaves the kernel unchanged. The25
+controllers ran on restored baseline, not the candidate. All347 original
+sources are restored and the temporary test target removed. Independent
+review8749b413 qualifies those exact limits. Current-thread/no-child positive
+evidence does not prove native panic, Entity/HTTP or no-work semantics;
+no final API retention or full decision-gate acceptance follows.
+
+
+## 205. Verify native owned-host disposal before selecting a blocking runner
+
+The proposed plain blocking return has a concrete conservation falsifier:
+a genuine current-thread Tokio Builder retains a configured callback whose
+whole captured existing role panics during disposal, after Runtime::block_on
+has acquired output. Use immutable program `0b608a0c`, actual pinned Tokio1.53.1
+and an independently owned borrowed/non-Send output. Original versus successor
+changes only three disposal lines, zero repository production/public types.
+The original must fail output retention after actual completion and native
+cause observations; healthy configuration must pass. The successor catches
+Runtime and Builder disposal separately, keeping output outside both catches
+and returning both original panic Results in an ordinary standard product.
+Do not fabricate a runtime failure or claim unavailable double-cause coverage.
+Preserve native abort/double-panic limitations. Execute exact programs in a
+private disposable workspace in both builds, capture actual subset lock/source
+and full streams, restore/rerun controls, then require nonauthor qualification.
+This decides no public blocking carrier or actor semantics by itself.
+
+
+Actual native-disposal packet `f1fe8c87` records the pinned Tokio1.53.1
+subset and all commands. Original healthy disposal passes both builds; the
+original native Builder-capture disposal loses the already acquired output
+and fails its lifetime oracle in both builds. With separate Runtime/Builder
+catches, both two-test cohorts and their replays pass. The callback body
+never runs; the configured captured role causes the real disposal unwind.
+Independent reviewecd64e1a authenticates original output/borrow/cause custody
+and complete streams. This is a standalone output-retention law, not a
+Runtime-panic, application Work-panic or final blocking-carrier proof.
+
+
+## 206. Check stable affine async-callable syntax without another abstraction
+
+Before considering AsyncFnOnce for public Work, use pinned1.99 language fixture
+`69d19215`: four finite tests compare a regular concrete future-returning closure,
+a borrowed non-Send async closure, abstract FnOnce-to-Future forwarding, and
+original Ready-output custody across genuine future-destructor unwind. Unit
+call arguments prove Rust language behavior only, never actor execution. The
+one-site added async-await dispatcher must fail the unchanged outside-output
+oracle in both builds; never introduce that dispatcher as a compiler workaround.
+Capture separate wrong-protocol compiler denial, actual commands and complete
+streams. No unstable associated-future projection, new trait/wrapper or production
+installation; current and proposed runtime source remain unchanged. Passing
+this finite comparison alone cannot select the final API or close any gate.
+
+
+AsyncFnOnce fixture formation is NONPASS in both debug and optimized builds:
+actual5b75e9a8 and independent reviewaf38ee8a record the same three E0277
+diagnostics at the unchanged abstract FnOnce-to-Future forwarding seam.
+No runtime controller formed or ran. Keep ordinary FnOnce/WorkFuture rather
+than adding another bound or an await wrapper to satisfy the compiler. The
+comparison against all four unchanged controllers remains separately scoped
+below; no claim about unexecuted concrete closures follows from this veto.
+
+
+## 207. Run every Driver inversion in optimized mode
+
+Before editing the existing test script, proposal ad008523 adds an explicit
+--release option and passes it to the same positive, boundary and one-site
+mutation commands. The recorded reproduction commands receive the same flag;
+default execution and canonical manifest stay unchanged. Tests+13/−2/net11,
+production/public types zero, one existing script and its existing test-strategy
+document within delegated scope. No replacement collector, new law or weaker
+kill criterion. All Rust runs remain inside the pinned shell; inner trybuild
+compiler cases retain their own dev profile even when the outer harness is
+optimized. Require independent source review, syntax check, exact eight-law
+optimized positives/kills, source conservation and restored full Engine cohort.
+The earlier eight debug witnesses retain their original epochs and limits.
+
+After the AsyncFnOnce whole-fixture formation veto, keep all four original
+test bodies and abstract forwarding unchanged and compare the existing
+FnOnce/WorkFuture seam (`0c62ec8a`, independent source review `930b6c45`).
+Only the callable bounds/import differ; no failed controller is deleted.
+Execute four healthy tests, the isolated original Ready-output inverse and
+separate concrete wrong-protocol denial in both builds, then replay healthy
+controls. These language-only tests add no production or public surface.
+
+
+Independent source reviewbc13a701 and pinned syntax check qualify script
+ad008523. Actual optimized receipt3e449b51 and nonauthor reviewbeae1163
+qualify all16 named controls and eight viable intended kills. Every outer
+command uses --release; inner trybuild remains dev. The reviewed script
+deletes its copied source workspace on exit, so no347-source copied archive
+is claimed or reconstructed. The full-root follow-up debug passes74 tests;
+its initial release follow-up fails9 manifest tests because the cached
+executable embeds the now-deleted copy's CARGO_MANIFEST_DIR. Preserve that
+101 NONPASS and its full streams; it is not a new semantic inversion.
+
+Cache receipt1ab2eff2 moves only six finished release manifest executable,
+dep-info and fingerprint files into retained quarantine (1,245,492 bytes),
+without changing any source or other target. Valid-epoch actuale3d5144d and
+nonauthor review2fff137c then qualify identical74-test debug/release cohorts,
+all five inner compiler cases and eight conserved owner hashes. Fresh
+manifest executable/dep-info point at the live worktree. Original failure
+evidence and optimized eight-law receipt remain unchanged. This is a scoped
+Engine pass; the seven open gates and source-retention HOLD remain open.
+
+
+
+The unchanged four-test ordinary FnOnce/WorkFuture baseline now forms and
+passes in both builds; each healthy replay also passes. Actual0f78cbc8 and
+independent execution qualification65a62102 authenticate13 commands and
+16 positive outcomes over four distinct tests. The one-site extra-await
+wrapper forms, then loses original Ready output at153:26 in both builds
+after native Box identity passes. Later negative lifetime/trace assertions
+earn no credit. Both independent wrong-protocol denials produce three E0631
+diagnostics and no runtime execution. Retain the ordinary callable seam:
+these captures and abstract forwarding need no AsyncFnOnce wrapper or trait.
+This is Rust language evidence, not actor, native-task or full API acceptance.
+
+
+## 208. Reconcile the research Driver guide with its actual selected owner
+
+The consolidated guide still names published Core/Actors0.21.2 and the older
+macro revision, while its current Cargo.lock and both manifest contracts name
+Core/Actors0.22.0 and Macros0.13.1 at81ba2c0. Update only those three existing
+guide paragraphs to the exact locked receiving revision and explicitly call
+it research, not a released/merged owner. Documentation only, no new path,
+production, public type, law or verification criterion. The canonical build's
+0.21.2 contract is separate and its guide must not be overwritten. The45/19
+inventories retain their already verified actual manifest sets.
+
+Independent reviewcb968a84 qualifies the three-paragraph research-guide
+correction against actual root patches/lock and both unchanged manifests.
+The45-template/19-request inventories and all verification criteria remain
+unchanged; canonical guide bytes still select the actual0.21.2 contract.
+Pinned whole-workspace formatting and diff whitespace checks pass.
