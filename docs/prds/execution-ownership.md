@@ -9450,3 +9450,302 @@ its changes in this checkpoint are records only. Pinned workspace formatting
 and both whitespace checks pass. Finished-object receipt `4e3e96d1` retires
 only sixteen linked scratch objects (927,725,544 bytes), retaining the linked
 binary, libraries, source and every original stream.
+
+
+## 211. Prove acquired work loss at the public host setup boundary
+
+Source-only packet `4d2ff124` and independent review `fd4d2de2` identify a
+reachable public App/Hosts accessor unwind after original Work enters
+NotInvoked custody and before spawn/cleanup publication. The result receiver
+subsequently acquires that Work, then its cleanup-publication expect can
+unwind and destroy the acquired fact. This is a Bombay concrete ownership
+boundary, not a Behavior fold. Current execute_with panic documentation permits
+panic propagation; EXEC's stronger acquired-fact law requires preservation.
+No absent actor is inferred from arbitrary channel closure, no original root
+residual or JoinError is invented, and no typed correction is selected yet.
+
+Before original-defect execution, use independently reviewed test-only source
+459a82ea on exact production923e. One existing integration file, tests
++112/−2/net110, one private supplied host fixture, zero production/public
+types, within delegated scope. The temporary26-case fixture preserves all
+original25; retained27-case7fbe is restored in finally, including both new
+native-blocking controllers. Format the external exact fixture through Nix,
+inspect changes, then run formation prerequisites and the exact new selector
+in both profiles. Accept only the intended final original Work lifetime
+mismatch after native identity, uninvoked counter, deliberate releases and
+same-host reuse have passed. Preserve all actual streams/source epochs and
+rerun retained27 both profiles. Mere receiver panic is not a regression kill.
+A source-only ordinary-Rust cleanup-result comparison remains separate;
+implementation is blocked until original failure and independent selection.
+
+
+§211 actual receipt `b9a5358f` and independent review `f67d55f1`
+authenticate six commands, twelve full streams, every347-path entry/exit map
+and exact finally restoration. Both no-run prerequisites pass. Original
+production923e then fails the unchanged custody oracle3449:9 in each build,
+Work0 versus1, after native Box identity, uninvoked counter, cause lifetime,
+deliberate release and genuine same-host reuse pass. Observed Work trace is
+1→0→0; the secondary cleanup expect9217 panic is caught and does not itself
+qualify the regression. Printed root0 is no retained-root or global no-actor
+proof. Finally-restored retained27/7fbe pass both builds, fifty-four positive
+outcomes; the failing new witness is excluded from those positive controls.
+No production correction, strict-lint, public policy or full gate acceptance
+follows. Actual error/site mapping corrects the prior source-only line forecast;
+all original records remain preserved.
+
+Ordinary-Rust comparison `35f539d0` enumerates existing nested publication/join
+Results, a new flat named error, optional discharge, phase variants, a broader
+cleanup type parameter and an outer result. Actual acquired RecvError and native
+JoinError must remain distinct. The direct existing-field Result trial adds no
+nominal type, owner, state, allocation or bounds; successful consumer patterns
+gain one publication Ok. A named error may improve readability but needs actual
+interface/comparison evidence before adding public surface. Option would discard
+an acquired error without an accepted policy; channel closure cannot fabricate
+noActor or an untouched application. Its original live-fixture impact hash
+was captured during temporary26 execution; a separate corrected retained27
+impact record is required before composing that trial. This is source-only
+comparison, not final API selection.
+
+
+## 212. Trial exact cleanup publication failure without another owner
+
+After original failure `b9a5358f` and nonauthor qualification `f67d55f1`,
+source-only trial `ca5bb06b` uses the existing cleanup field as successive
+publication Result and native join Result. Production923e→40cca195 changes
+only three cleanup field equations, exhaustive receiving and honest rustdoc:
++11/−11/net0 production, zero nominal types, fields, bounds or task owners.
+Transport27/7fbe→db940d06 changes only eighteen matching/type envelope lines;
+full28/295a6d18 adds the unchanged original Hosts witness, tests
++128/−19/net109 and one private host fixture. Both existing paths stay within
+delegated233 scope. Corrected impact56b674f4 binds immutable27 rather than
+live temporary26. All eight private cfg test modules, the ninth cfg test hook and three
+native startup maps remain exact. No noActor, success, fabricated JoinError or lost RecvError.
+
+Obtain nonauthor source eligibility before installation; format exact external
+sources through pinned Nix and inspect measured successor. Bind all347 sources,
+pins and original27/923e. Temporarily form/run full28 both profiles, then restore
+only the original receiver expect as a viable inverse while retaining the new
+outer type, requiring the unchanged host lifetime law to fail. Whole-proposal
+restoration must pass again; finally restore27/923e and rerun controls.
+Keep every acquired Work/Output fact and native task result separately visible.
+The original host witness alone does not assert its full typed publication
+failure result; a separately reviewed complete result controller is still
+required. This is a bounded semantic comparison, not public runner retention,
+final named-error/API selection or full gate acceptance.
+
+
+## 213. Restore current observation acquisition verification
+
+Independent readiness audit `1888b4af` identifies two missing EV21 controllers
+and five changed bodies among seven earlier observation controls; historical
+passes cannot be relabelled as current923/81 acceptance. Source-only restoration
+`cd4d56a2` adds the original two finite acquisition campaigns inside the existing
+Local test module on5a96. Proposed tests +296/−4/net292, three private test
+nominals, production/public types zero, one existing path within delegated233.
+All existing test bodies and non-test source before/after the module remain
+exact. Three borrowed admission/activation/retirement calls are updated to the
+actual owning ports, with every new residual fact explicitly checked.
+
+Before temporary installation, require nonauthor eligibility, pinned external
+formatting and inspected successor. Run both ready-acquisition controls in
+debug/optimized and the two reviewed one-site observation/timer priority
+inversions, requiring complete trace failure after actual retirement and joins.
+Replay whole healthy controls after each inverse and restore original5a96 in
+finally. Fresh current seven observation custody controls and their two precise
+omissions remain required. No production scheduling change, new fairness bound,
+relationship framework, complete OBS gate signature or global HOLD release
+follows from this test-only stage.
+
+
+Pinned external formatting produces trial App `2d0ae3f9` and tests `40675d52`.
+Only a variant layout and two helper type-signature layouts change; all owned
+values and oracles remain identical. Measured trial production+12/−14/net−2,
+tests+146/−31/net115, no new public nominal. The original-expect inverse keeps
+the new type by wrapping its real join Result in publication Ok; it restores
+only the losing receiver acquisition and does not change any controller.
+Source eligibility and runtime results remain pending. Finished-object receipt
+`7fdea85e` retires sixteen linked scratch objects (981,472,512 bytes), retaining
+all binaries, libraries, sources and original failure/control evidence.
+
+
+Nonauthor source review `cfbfb200` qualifies the exact formatted trial and
+original-expect inverse `685825f2` for bounded execution. It confirms a public
+field-type/failure-behavior change, despite zero new nominal types; no claim of
+unchanged public API follows. The ordinary original host oracle may also pass
+with pending retained Work, so complete typed NotInvoked/publication-error
+verification remains separately required. Bookkeeping is corrected to eight
+cfg test modules plus one cfg test hook (nine sites), all preserved exactly.
+
+
+Execution-plan variance: nonauthor reviewer accepts coupled compiler formation
+and one exact intended runtime test in each Cargo invocation as sufficient
+viability evidence for this bounded inverse. Separate inverse --no-run rows
+would repeat that proof and are not claimed. Actual compilation, exact name,
+source epoch and intended lifetime site must be unambiguous; compiler/setup/
+zero-test failures still earn no kill credit. This explicitly replaces the
+source review's suggested separate prerequisite ordering, while §212's
+form/run sequence and original separately recorded formation controls remain.
+No full gate criterion or custody oracle changes.
+
+
+## 214. Repeat the frozen cleanup comparison with exact typed retry
+
+The first §212 trial is a partial source-freeze NONPASS (`c04d806d`;
+stop record `00583820`). Both full28 commands pass and both original-expect
+commands reach the intended runtime failure, but Root appended the execution-
+plan variance to this PRD during the fourth command. Only this documentation
+path differs; the source-equality guard rejects the run. Its finally block
+restores exact production923e/fixture7fbe, but the documentation difference
+also prevents its final controls. Preserve all four rows and full streams;
+claim no complete eight-row or finally-control receipt. Do not relabel this
+operational mistake as a semantic defect or fabricate a restoration record.
+
+For the fresh trial, use test proposal `ae4bc6da` plus nonauthor review
+`b42f93b2`: append one complete receiving/retry controller to all original28.
+It requires Ready NotInvoked with original Work, no fabricated startup error,
+and the actual outer publication RecvError, then retries that exact callable
+on a genuine new App in the same living host. Observe native Box allocation,
+original Rc, borrowed slice, complete joined root facts, single invocation and
+ordered release. Root adds three observational test lines for exact borrowed
+slice pointer identity, avoiding a contents-only claim. Formatter output is
+byte-identical `a8199687`; exact placement eligibility follows separately.
+Total temporary test delta versus retained7fbe is+265/−31/net234; production
+remains the independently reviewed2d0ae3f9 (+12/−14/net−2), no new nominal.
+Two existing paths within delegated233. This preserves the original lifetime
+witness for negative attribution; the typed retry test does not substitute for
+its intended final custody oracle.
+
+Freeze repository files for all eight new commands: full29 debug/release;
+one-site original-expect/lifetime selector both profiles; restored full29
+both profiles; finally exact923e/7fbe/full27 both profiles. Record exact source
+entry/exit maps and complete streams, require independent execution review.
+No source/document edits during the run. Other research continues from immutable
+text packets. Complete prepared-root preservation, Entity/HTTP ownership and
+full design gates remain independent obligations; this trial fixes only the
+acquired Work/publication result boundary.
+
+
+Exact placement erratum `a41e6167` independently qualifies formatted test
+`a8199687` for the same bounded trial, preserving the original b42 review and
+its differently placed observational projection. All values, operations,
+releases and complete oracles remain exact. No public API or full gate
+acceptance follows. Finished-object receipt `ceee9777` removes only sixteen
+authenticated linked scratch objects (1,037,691,872 bytes), preserving source,
+libraries, binaries and all partial-run evidence.
+
+
+§214 fresh actual receipt `258fee09` completes all eight frozen commands and
+sixteen full streams. Full29/2d/a819 pass in both builds, original-expect
+inverse685 fails the unchanged Work lifetime3587 in both, and restored29
+then finally original923/7fbe/full27 pass both. Every347-path entry/exit map
+is equal within its command; the final full map exactly matches entry baseline.
+The typed controller receives actual NotInvoked/raw publication RecvError and
+retries the original callable, Rc and borrowed slice once. Independent actual
+qualification remains pending; no full gate or canonical retention follows.
+Finished-object record `fd3f5d4d` removes sixteen authenticated linked debug
+scratch objects (981,472,512 bytes), retaining sources, libraries, binaries
+and every original stream.
+
+## 215. Prove the separate prepared actor loss before selecting a repair
+
+Integration source witness/comparison `0cc6b208`/`3da333e5`, nonauthor law
+review `904716a1`, and exact current29 composition review `7c59202d` isolate
+the still-original Actor lost during a borrowed public Hosts accessor. The
+accessor receives Spaces by reference; it never consumes Actor. EXEC §8.2
+requires custody of prepared inputs before spawn. The surrounding Bombay
+frame loses Actor although it can preserve it. Spaces may already be mutated,
+and declared Actor may be ApplicationBehavior containing staged children:
+neither untouched original Self nor equivalence of Actor and Owner is valid.
+This is separate from values destroyed inside a consuming user operation.
+
+Original root law remains on App2d, whose Work-only repair changes no setup
+transfer. Compose only five observational test lines onto exact29/a819,
+producing ae417902: two root count observations and three assertions, all29
+names and other source exact. One existing test file; additional tests+5/−0,
+production/public/private types zero. Total temporary test comparison versus
+retained7fbe is+270/−31/net239. The temporary App2d production comparison
+remains+12/−14/net−2, zero nominal, within delegated233 existing paths.
+Before installation format external source through pinned Nix and inspect
+its successor. Preserve native cause identity, no Work invocation, deliberate
+Work/cause release and same-host reuse before the first root lifetime oracle.
+Only actual root0-versus1 at that first assertion qualifies original failure;
+later assertions earn no negative credit. Closed cleanup publication cannot
+prove global actor absence.
+
+Freeze all repository files and source maps for eight commands: no-run
+formation both profiles; exact root-loss selector both; restored a819/full29
+both on2d; finally exact923/7fbe/full27 both. Record every complete stream
+and347-path entry/exit map; require independent actual review. Production
+repair remains unselected until original failure and complete ordinary-Rust
+comparison. The existing affine publication's truthful Prepared phase is a
+comparison, adding an actual-input generic and public variant despite zero
+new nominal; its full typed positive, native cause disposition, real handoff,
+consumer impact and other prepare/setup cuts require separate review. No
+new owner/framework, cold-input reconstruction, full design gate acceptance
+or canonical HOLD release is inferred.
+
+
+§215 pinned external formatter exits0 with byte-identical ae417902 and a
+zero-byte format patch. Source eligibility7c59202d applies to that exact
+successor. No new source or policy is inferred from formatting.
+
+
+## 216. Back up the verified work-receiving repair separately
+
+Nonauthor actual review `65e60201` qualifies complete §214 receipt258fee09:
+all29 named tests and replay both profiles, two intended lifetime3587 kills
+following native/counter/discharge/host checks, and exact original27 restoration
+both. No source-freeze failure remains in that fresh run. Preserve the earlier
+partial NONPASS and its full evidence. Full startup/API gates remain open.
+
+Before conditional research backup, fresh complete checkpoint `7c78c4c9`
+against2fcc covers118 tracked paths, zero untracked: production+8363/−2340/
+net6023; tests+23278/−2078/net21200; documentation+15382/−203/net15179;
+manifest/lock+51/−38/net13. Public nominal surface stays five (three fresh,
+two promotions), zero removed, two getters and one existing retirement variant.
+Stage40ab record `d168e980` covers91 tracked paths, zero untracked; production
+net5895 and tests net18457. These totals include all current documentation,
+not just Rust or a previous committed snapshot.
+
+Select only independently reviewed Work-only App2d and fixture29/a819 for
+conditional research backup under §196/§52, not canonical retention. Two
+existing code paths: production+12/−14/net−2; tests+265/−31/net234; zero
+new nominal types. Three cleanup field equations now preserve actual
+publication failure separately from task join. This changes public failure
+behavior despite zero new types. Independent classification `2d775647` binds
+all cfg bodies byte-for-byte; each disjoint test span shifts−2, rather than
+only the final span. The fresh source-bound cumulative delta and verification
+footer must be measured after installation, with original snapshots preserved.
+Pin, dependency, Driver and unrelated production bytes remain exact.
+
+Keep prepared-root failure/test5 and unselected Prepared production comparison
+outside this backup; it does not solve that separate law. The seven full open
+gates,69-source HOLD, all remaining public/Entity/HTTP/native runtime evidence,
+module extraction, distillation, whole checks, reviewed PR/CI/main delivery
+remain required. Native setup cause still reaches its original caller; no
+actor absence or success is fabricated. Finish pinned formatting, whitespace
+checks and focused commit/push after complete measurement.
+
+
+§215 actual `f4492c01` and nonauthor review `25d7db6e` qualify eight
+commands, sixteen streams and every347-path entry/exit map with exact final
+baseline. Both formation prerequisites pass; both exact runtime negatives
+reach first root3589 with0 where1 required, after native identity, invocation0,
+Work/cause custody and deliberate release, plus genuine same-host reuse. Later
+root-receiving/discharge and final Work assertions are unreachable and earn
+no negative credit. Restored a819/2d/full29 and final923/7fbe/full27 each
+pass both builds. The repaired Work trace1→1→0 does not excuse lost Actor.
+A complete typed Prepared positive and its ordinary owner comparison remain
+unselected. Finished-object receipt `7096785b` removes sixteen linked scratch
+objects (981,472,512 bytes), preserving source/libraries/binaries/evidence.
+
+§216 source-bound checkpoint `c04f12f3` now covers118 tracked paths, zero
+untracked: production+8361/−2340/net6021; tests+23512/−2078/net21434;
+documentation+15419/−203/net15216; manifest/lock+51/−38/net13. Nominal
+surface remains five (three fresh/two promotions), zero removed. Stage40ab
+record `05588d23` covers91 paths with production net5893 and tests net18691.
+Canonical record `1de38878` stays70 tracked, zero untracked, production
+net133, tests net2738, zero new public types; this checkpoint changes its
+records only. Pinned workspace cargo fmt --all -- --check and both whitespace
+checks exit0. Final commit-bound recount adds only these evidence lines; all
+original checkpoint snapshots are preserved under distinct filenames.

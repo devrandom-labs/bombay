@@ -997,8 +997,6 @@ where
     /// # Panics
     ///
     /// The execution future propagates panics from application setup and work.
-    /// The result future panics if a begun execution violates its cleanup
-    /// publication invariant.
     #[expect(
         clippy::type_complexity,
         reason = "the independent execution and result preserve exact input, output and two join boundaries"
@@ -8949,12 +8947,12 @@ mod axum_retirement_custody {
 /// returns the original untouched application and callable. `NotInvoked` owns
 /// the original callable after startup began. `Interrupted` does not claim
 /// recovery of a callable or work future consumed by invocation.
+/// Cleanup first retains its publication receiving result, then its actual task
+/// join result; the joined actor outcome remains independently owned inside.
 #[must_use = "application inputs, output and joined actor outcome require explicit custody"]
 pub enum ApplicationOutcome<ApplicationInputs, Work, Output, Cleanup, StagingInputs = Never> {
     /// Staging stopped before actor startup; exact cold partial inputs and callable survive.
-    StagingRejected {
-        inputs: StagingInputs,
-    },
+    StagingRejected { inputs: StagingInputs },
     Unstarted {
         application: ApplicationInputs,
         work: Work,
@@ -8962,14 +8960,14 @@ pub enum ApplicationOutcome<ApplicationInputs, Work, Output, Cleanup, StagingInp
     NotInvoked {
         work: Work,
         startup_error: Option<RecvError>,
-        cleanup: Result<Cleanup, JoinError>,
+        cleanup: Result<Result<Cleanup, JoinError>, RecvError>,
     },
     Completed {
         output: Output,
-        cleanup: Result<Cleanup, JoinError>,
+        cleanup: Result<Result<Cleanup, JoinError>, RecvError>,
     },
     Interrupted {
-        cleanup: Result<Cleanup, JoinError>,
+        cleanup: Result<Result<Cleanup, JoinError>, RecvError>,
     },
 }
 
@@ -9210,12 +9208,12 @@ where
                 ApplicationOutcome::StagingRejected { inputs }
             }
             custody => {
-                // All standard begun branches synchronously publish this
-                // handle before their first await or work invocation.
-                let cleanup = cleanup_result
-                    .await
-                    .expect("begun standard application publishes its one cleanup owner");
-                let cleanup = cleanup.await;
+                // Publication failure does not classify actor or task existence.
+                // Retain its actual error alongside the acquired work custody.
+                let cleanup = match cleanup_result.await {
+                    Ok(cleanup) => Ok(cleanup.await),
+                    Err(error) => Err(error),
+                };
                 match custody {
                     Ok(ApplicationWorkCustody::NotInvoked(work, startup_error)) => {
                         ApplicationOutcome::NotInvoked {

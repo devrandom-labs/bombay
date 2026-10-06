@@ -2,6 +2,7 @@ use core::future::{Future, poll_fn};
 use core::mem;
 use core::num::NonZeroUsize;
 use core::pin::{Pin, pin};
+use core::ptr;
 use core::task::{Context, Poll};
 use std::any::Any;
 use std::cell::Cell;
@@ -18,7 +19,7 @@ use bombay::behavior::{
 };
 use bombay_engine::Completion;
 use tokio::runtime::{Builder, Handle, Id};
-use tokio::sync::oneshot;
+use tokio::sync::oneshot::{self, error::RecvError};
 use tokio::task::JoinError;
 
 use bombay::actors::ActorExt;
@@ -31,7 +32,7 @@ use bombay::{
     ApplicationStagingError, ChildFailure, ChildOrigin, ProjectTerminal, RootOrigin,
     TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App, Application, MailAddr, RunError, actor};
+use bombay::{ActorSpace, ActorSpaces, App, Application, Hosts, MailAddr, RunError, actor};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum AccountAdmission {
@@ -569,17 +570,20 @@ fn paired_account(original: Arc<Vec<u8>>) -> App<StopOnShutdown<ReceivingAccount
 )]
 fn assert_completed_account(
     cleanup: &Result<
-        (
-            RootOrigin<StopOnShutdown<ReceivingAccount>>,
-            Result<
-                ActorRetirement<StopOnShutdown<ReceivingAccount>, AccountConclusion, ()>,
-                JoinError,
-            >,
-        ),
-        JoinError,
+        Result<
+            (
+                RootOrigin<StopOnShutdown<ReceivingAccount>>,
+                Result<
+                    ActorRetirement<StopOnShutdown<ReceivingAccount>, AccountConclusion, ()>,
+                    JoinError,
+                >,
+            ),
+            JoinError,
+        >,
+        RecvError,
     >,
 ) {
-    let Ok((
+    let Ok(Ok((
         origin,
         Ok(ActorRetirement::Completed {
             behavior,
@@ -601,7 +605,7 @@ fn assert_completed_account(
             retirement_failures,
             terminal_report,
         }),
-    )) = cleanup
+    ))) = cleanup
     else {
         panic!("the standard account and cleanup join normally");
     };
@@ -641,17 +645,20 @@ fn assert_completed_account(
 )]
 fn assert_cancelled_account(
     cleanup: &Result<
-        (
-            RootOrigin<StopOnShutdown<ReceivingAccount>>,
-            Result<
-                ActorRetirement<StopOnShutdown<ReceivingAccount>, AccountConclusion, ()>,
-                JoinError,
-            >,
-        ),
-        JoinError,
+        Result<
+            (
+                RootOrigin<StopOnShutdown<ReceivingAccount>>,
+                Result<
+                    ActorRetirement<StopOnShutdown<ReceivingAccount>, AccountConclusion, ()>,
+                    JoinError,
+                >,
+            ),
+            JoinError,
+        >,
+        RecvError,
     >,
 ) {
-    let Ok((
+    let Ok(Ok((
         origin,
         Ok(ActorRetirement::OwnerCancelled {
             behavior,
@@ -672,7 +679,7 @@ fn assert_cancelled_account(
             retirement_failures,
             terminal_report,
         }),
-    )) = cleanup
+    ))) = cleanup
     else {
         panic!("the original authority cancels the still-live account");
     };
@@ -775,7 +782,7 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
             panic!("the recovered original callable runs on the recovered original application");
         };
         assert_completed_account(&cleanup);
-        let Ok((_, Ok(ActorRetirement::Completed { behavior, .. }))) = &cleanup else {
+        let Ok(Ok((_, Ok(ActorRetirement::Completed { behavior, .. })))) = &cleanup else {
             panic!("the recovered application owns its original root");
         };
         let exact_root = state_retained
@@ -1075,7 +1082,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
         else {
             panic!("actual initialization refusal preserves the uninvoked callable");
         };
-        let Ok((
+        let Ok(Ok((
             origin,
             Ok(ActorRetirement::InitializationRejected {
                 behavior,
@@ -1094,7 +1101,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                 retirement_failures,
                 terminal_report,
             }),
-        )) = &cleanup
+        ))) = &cleanup
         else {
             panic!("the complete original initialization refusal remains available");
         };
@@ -2055,7 +2062,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
         else {
             panic!("the actual refused root never invokes the original callable");
         };
-        let Ok((
+        let Ok(Ok((
             origin,
             Ok(ActorRetirement::InitializationRejected {
                 behavior,
@@ -2074,7 +2081,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
                 retirement_failures,
                 terminal_report,
             }),
-        )) = &cleanup
+        ))) = &cleanup
         else {
             panic!("both real joins return the complete declared initialization refusal");
         };
@@ -2989,7 +2996,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
             else {
                 panic!("the distinct caller receives its original complete work output");
             };
-            let Ok((origin, Ok(retirement))) = cleanup else {
+            let Ok(Ok((origin, Ok(retirement)))) = cleanup else {
                 panic!("both actual actor and cleanup joins complete");
             };
             // The pair never projects root retirement; this is explicit caller policy on K.
@@ -3265,7 +3272,7 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         let ApplicationOutcome::NotInvoked {
             work,
             startup_error,
-            cleanup: Err(cleanup_failure),
+            cleanup: Ok(Err(cleanup_failure)),
         } = outcome
         else {
             panic!(
@@ -3380,7 +3387,7 @@ fn owned_blocking_retains_ready_output_native_fault_and_joined_root() {
         panic!("Ready was acquired before disposal of the work future");
     };
     assert_cancelled_account(&cleanup);
-    let Ok((_, Ok(ActorRetirement::OwnerCancelled { behavior, .. }))) = &cleanup else {
+    let Ok(Ok((_, Ok(ActorRetirement::OwnerCancelled { behavior, .. })))) = &cleanup else {
         panic!("the complete retirement oracle already established owner cancellation");
     };
     let exact_root = original_root
@@ -3453,7 +3460,7 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
         panic!("no output or recoverable uninvoked callable was acquired");
     };
     assert_cancelled_account(&cleanup);
-    let Ok((_, Ok(ActorRetirement::OwnerCancelled { behavior, .. }))) = &cleanup else {
+    let Ok(Ok((_, Ok(ActorRetirement::OwnerCancelled { behavior, .. })))) = &cleanup else {
         panic!("the complete retirement oracle already established owner cancellation");
     };
     let exact_root = original_root
@@ -3472,5 +3479,232 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
     assert_eq!(root_released, 0);
     assert_eq!(cause_still_owned, 1);
     assert_eq!(cause_released, 0);
+    drop(runtime);
+}
+
+// The advanced host accessor runs during setup, outside every Behavior fold.
+struct UnwindingAccountSpaces {
+    accounts: ActorSpace<ReceivingAccount>,
+    hosting_failure: Mutex<Option<Box<dyn Any + Send>>>,
+}
+
+impl Hosts<ReceivingAccount> for UnwindingAccountSpaces {
+    fn space(&self) -> &ActorSpace<ReceivingAccount> {
+        let failure = self
+            .hosting_failure
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .take();
+        match failure {
+            Some(failure) => resume_unwind(failure),
+            None => &self.accounts,
+        }
+    }
+}
+
+#[test]
+fn host_setup_unwind_keeps_uninvoked_work_until_receiver_discharge() {
+    let runtime = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the real live host builds");
+    let root = Arc::new(vec![31, 37]);
+    let original_root = Arc::downgrade(&root);
+    let cause = Arc::new(vec![347, 349]);
+    let original_cause = Arc::downgrade(&cause);
+    let cause: Box<dyn Any + Send> = Box::new(cause);
+    let original_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+    let work = Rc::new(vec![353, 359]);
+    let original_work = Rc::downgrade(&work);
+    let invocations = Rc::new(Cell::new(0_usize));
+    let work_invocations = Rc::clone(&invocations);
+    runtime.block_on(async {
+        let application = App::new(
+            ReceivingAccount {
+                admission: AccountAdmission::Ready,
+                original: root,
+            }
+            .stop_on_shutdown(),
+            UnwindingAccountSpaces {
+                accounts: ActorSpace::new(),
+                hosting_failure: Mutex::new(Some(cause)),
+            },
+        );
+        let (execution, receiver) = application
+            .execute_with::<AccountConclusion, (), _, _, _>(move |application| {
+                work_invocations.set(work_invocations.get() + 1);
+                async move {
+                    let requested = application.lifecycle().request_shutdown();
+                    requested.expect("only an actually invoked Work requests shutdown");
+                    work
+                }
+            })
+            .unwrap_or_else(|_| panic!("the real host is entered"));
+        let mut execution = Box::pin(execution);
+        let execution_poll = poll_fn(|context| {
+            Poll::Ready(catch_unwind(AssertUnwindSafe(|| {
+                execution.as_mut().poll(context)
+            })))
+        })
+        .await;
+        drop(execution);
+        let Err(cause) = execution_poll else {
+            panic!("the actual supplied host accessor must raise its original native cause");
+        };
+        let received_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+        let work_after_setup = original_work.strong_count();
+        let root_after_setup = original_root.strong_count();
+        let cause_after_setup = original_cause.strong_count();
+        let invocations_after_setup = invocations.get();
+        let mut receiver = Box::pin(receiver);
+        let receiver_poll = poll_fn(|context| {
+            Poll::Ready(catch_unwind(AssertUnwindSafe(|| {
+                receiver.as_mut().poll(context)
+            })))
+        })
+        .await;
+        let work_after_receiving = original_work.strong_count();
+        let receiver_unwound = receiver_poll.is_err();
+        // Dispose actual acquired values and both original futures before assertions.
+        drop(receiver_poll);
+        drop(receiver);
+        drop(cause);
+        let work_after_discharge = original_work.strong_count();
+        let cause_after_discharge = original_cause.strong_count();
+        let host_reused = tokio::spawn(async { 367_u64 })
+            .await
+            .unwrap_or_else(|_| panic!("the same actual host remains live after the setup fault"));
+        println!(
+            "setup-native/receiver-unwound={receiver_unwound}/root={root_after_setup}/work={work_after_setup}->{work_after_receiving}->{work_after_discharge}"
+        );
+        assert_eq!(received_cause_object, original_cause_object);
+        assert_eq!(invocations_after_setup, 0);
+        assert_eq!(cause_after_setup, 1);
+        assert_eq!(cause_after_discharge, 0);
+        assert_eq!(work_after_setup, 1);
+        assert_eq!(work_after_discharge, 0);
+        assert_eq!(host_reused, 367);
+        assert_eq!(
+            work_after_receiving, 1,
+            "the surviving result receiver must retain original uninvoked Work until explicit receiver/result discharge"
+        );
+    });
+}
+
+#[test]
+fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
+    let runtime = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the original live host builds");
+    let root = Arc::new(vec![31, 37]);
+    let original_root = Arc::downgrade(&root);
+    let cause = Arc::new(vec![401, 409]);
+    let original_cause = Arc::downgrade(&cause);
+    let cause: Box<dyn Any + Send> = Box::new(cause);
+    let original_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+    let work = Rc::new(vec![373, 379]);
+    let original_work = Rc::downgrade(&work);
+    let borrowed = vec![389, 397];
+    let invocations = Rc::new(Cell::new(0_usize));
+    let work_invocations = Rc::clone(&invocations);
+    runtime.block_on(async {
+        let borrowed = borrowed.as_slice();
+        let application = App::new(
+            ReceivingAccount {
+                admission: AccountAdmission::Ready,
+                original: root,
+            }
+            .stop_on_shutdown(),
+            UnwindingAccountSpaces {
+                accounts: ActorSpace::new(),
+                hosting_failure: Mutex::new(Some(cause)),
+            },
+        );
+        let (execution, receiver) = application
+            .execute_with::<AccountConclusion, (), _, _, _>(move |application| {
+                work_invocations.set(work_invocations.get() + 1);
+                async move {
+                    let requested = application.lifecycle().request_shutdown();
+                    requested.expect("the retried original Work requests actual shutdown");
+                    (work, borrowed)
+                }
+            })
+            .unwrap_or_else(|_| panic!("the original host is entered"));
+        let mut execution = Box::pin(execution);
+        let execution_poll = poll_fn(|context| {
+            Poll::Ready(catch_unwind(AssertUnwindSafe(|| {
+                execution.as_mut().poll(context)
+            })))
+        })
+        .await;
+        drop(execution);
+        let Err(cause) = execution_poll else {
+            panic!("the supplied host accessor raises its original native cause");
+        };
+        let received_cause_object = (&*cause as *const (dyn Any + Send)).cast::<()>();
+        let ApplicationOutcome::NotInvoked {
+            work,
+            startup_error: None,
+            cleanup,
+        } = receiver.await
+        else {
+            panic!("setup failure returns the original uninvoked callable");
+        };
+        let Err(publication_failure) = cleanup else {
+            panic!("this exact pre-spawn cut returns the actual publication error");
+        };
+        let publication_failure: RecvError = publication_failure;
+        let work_before_retry = original_work.strong_count();
+        let cause_before_retry = original_cause.strong_count();
+        let invocations_before_retry = invocations.get();
+        let root_after_setup = original_root.strong_count();
+        let retry_root = Arc::new(vec![31, 37]);
+        let original_retry_root = Arc::downgrade(&retry_root);
+        let (execution, receiver) = paired_account(retry_root)
+            .execute_with::<AccountConclusion, (), _, _, _>(work)
+            .unwrap_or_else(|_| panic!("the same original host permits a genuine new App"));
+        let ((), outcome) = tokio::join!(execution, receiver);
+        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+            panic!("the exact recovered callable completes once on the new App");
+        };
+        assert_completed_account(&cleanup);
+        let Ok(Ok((_, Ok(ActorRetirement::Completed { behavior, .. })))) = &cleanup else {
+            panic!("the complete retry retirement retains its original root");
+        };
+        let exact_work = original_work
+            .upgrade()
+            .is_some_and(|original| Rc::ptr_eq(&original, &output.0));
+        let exact_retry_root = original_retry_root
+            .upgrade()
+            .is_some_and(|original| Arc::ptr_eq(&original, &behavior.base().original));
+        let exact_borrowed = ptr::eq(output.1, borrowed);
+        let work_contents = output.0.as_slice().to_vec();
+        let borrowed_contents = output.1.to_vec();
+        let invocations_after_retry = invocations.get();
+        let cause_after_retry = original_cause.strong_count();
+        drop((output, cleanup, publication_failure));
+        let work_after_discharge = original_work.strong_count();
+        let retry_root_after_discharge = original_retry_root.strong_count();
+        let cause_before_discharge = original_cause.strong_count();
+        drop(cause);
+        let cause_after_discharge = original_cause.strong_count();
+        println!("setup-root-disposal={root_after_setup}");
+        assert_eq!(received_cause_object, original_cause_object);
+        assert_eq!(invocations_before_retry, 0);
+        assert_eq!(work_before_retry, 1);
+        assert_eq!(cause_before_retry, 1);
+        assert!(exact_work);
+        assert!(exact_retry_root);
+        assert!(exact_borrowed);
+        assert_eq!(work_contents, vec![373, 379]);
+        assert_eq!(borrowed_contents, vec![389, 397]);
+        assert_eq!(invocations_after_retry, 1);
+        assert_eq!(cause_after_retry, 1);
+        assert_eq!(work_after_discharge, 0);
+        assert_eq!(retry_root_after_discharge, 0);
+        assert_eq!(cause_before_discharge, 1);
+        assert_eq!(cause_after_discharge, 0);
+    });
     drop(runtime);
 }
