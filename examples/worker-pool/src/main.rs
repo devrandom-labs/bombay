@@ -1,6 +1,8 @@
 //! Run one bounded FIFO pool through Bombay's concrete local application.
 //! The pool owns admission, assignment, completion, and orderly worker drain.
 
+use bombay::ApplicationOutcome;
+use tokio::runtime::Builder;
 mod worker;
 
 use core::convert::Infallible;
@@ -98,54 +100,74 @@ fn run_search_pool() {
         workers: ActorSpace::new(),
         customers: ActorSpace::new(),
     };
-    let (termination, root_origin, joined_actor) = App::new(search_pool(), spaces)
-        .run_with(|application| async move {
-            let interface = application.interface(application.root().established_recipient());
-            let mut customer = interface
-                .external::<CustomerProtocol>()
-                .expect("the search customer is established");
-            let reply = customer.recipient();
-            customer
-                .send(
-                    interface.api(),
-                    FifoCommand::submit(
-                        SubmissionId::new(7),
-                        SearchJob {
-                            document: String::from("bombay behavior"),
-                            needle: 'b',
-                        },
-                        reply,
-                    ),
-                )
-                .await
-                .expect("the pool accepts the search submission");
-            let accepted = customer
-                .receive()
-                .await
-                .expect("the pool reports accepted admission")
-                .message;
-            let (submission, job) = accepted
-                .into_accepted()
-                .unwrap_or_else(|_| panic!("the first customer outcome accepts the job"));
-            assert_eq!(submission, SubmissionId::new(7));
-            let completed = customer
-                .receive()
-                .await
-                .expect("the worker returns its search result")
-                .message;
-            assert_eq!(completed.role(), Some(&WorkerRole::Primary));
-            let (completed_job, result) = completed
-                .into_completed()
-                .unwrap_or_else(|_| panic!("the second customer outcome completes the job"));
-            assert_eq!(completed_job, job);
-            assert_eq!(result.matches, 3);
-            customer
-                .send(interface.api(), FifoCommand::shutdown())
-                .await
-                .expect("the pool accepts orderly shutdown");
-            application.lifecycle().termination().await
-        })
-        .unwrap_or_else(|_| panic!("the pool runs its worker and shuts down"));
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            App::new(search_pool(), spaces).run_with::<SearchTerminal, _, _, _, _>(
+                |application| async move {
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let mut customer = interface
+                        .external::<CustomerProtocol>()
+                        .expect("the search customer is established");
+                    let reply = customer.recipient();
+                    customer
+                        .send(
+                            interface.api(),
+                            FifoCommand::submit(
+                                SubmissionId::new(7),
+                                SearchJob {
+                                    document: String::from("bombay behavior"),
+                                    needle: 'b',
+                                },
+                                reply,
+                            ),
+                        )
+                        .await
+                        .expect("the pool accepts the search submission");
+                    let accepted = customer
+                        .receive()
+                        .await
+                        .expect("the pool reports accepted admission")
+                        .message;
+                    let (submission, job) = accepted
+                        .into_accepted()
+                        .unwrap_or_else(|_| panic!("the first customer outcome accepts the job"));
+                    assert_eq!(submission, SubmissionId::new(7));
+                    let completed = customer
+                        .receive()
+                        .await
+                        .expect("the worker returns its search result")
+                        .message;
+                    assert_eq!(completed.role(), Some(&WorkerRole::Primary));
+                    let (completed_job, result) = completed.into_completed().unwrap_or_else(|_| {
+                        panic!("the second customer outcome completes the job")
+                    });
+                    assert_eq!(completed_job, job);
+                    assert_eq!(result.matches, 3);
+                    customer
+                        .send(interface.api(), FifoCommand::shutdown())
+                        .await
+                        .expect("the pool accepts orderly shutdown");
+                    application.lifecycle().termination().await
+                },
+            ),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the pool runs its worker and shuts down");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((root_origin, joined_actor))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let terminal: SearchTerminal = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {

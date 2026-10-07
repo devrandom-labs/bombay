@@ -99,8 +99,10 @@ capability types, all with typed Bombay interpretation after ARC-010. This
 inventory count does not prove every template policy end to end; structural
 Behavior lanes and other runtime capabilities are outside that denominator.
 
-The ordinary runners currently use a current-thread Tokio runtime. There is no
-standard integrated Zenoh, verified remote identity, distributed placement or
+The EXEC source selects caller-host async execution and configured Builder-only
+owned blocking over one paired execution/result owner. Its independent gates,
+verification and delivery remain in the EXEC PRD. There is no standard
+integrated Zenoh, verified remote identity, distributed placement or
 Mnesis-backed actor execution path in this checkout. Neighboring repositories
 contain useful code; they are not interchangeable with a working integration.
 

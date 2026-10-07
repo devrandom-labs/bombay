@@ -1,8 +1,10 @@
 //! Run one fixed supervisor through worker failure, replacement, and shutdown.
 //! The supervisor owns recovery policy; Bombay interprets its typed actions.
 
+use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
+use tokio::runtime::Builder;
 
 use bombay::ProjectTerminal;
 use bombay::actors::ActorExt as _;
@@ -204,53 +206,73 @@ fn run_supervision() {
         status: ActorSpace::new(),
         capability: ActorSpace::new(),
     };
-    let (termination, root_origin, joined_actor) = App::new(supervisor.stop_on_shutdown(), spaces)
-        .run_with(move |application| async move {
-            let first = tokio::time::timeout(Duration::from_secs(5), activations.recv())
-                .await
-                .expect("the first worker activates")
-                .expect("the first activation has a role");
-            assert_eq!(first, WorkerRole::Primary);
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            App::new(supervisor.stop_on_shutdown(), spaces)
+                .run_with::<SupervisorTerminal, _, _, _, _>(move |application| async move {
+                    let first = tokio::time::timeout(Duration::from_secs(5), activations.recv())
+                        .await
+                        .expect("the first worker activates")
+                        .expect("the first activation has a role");
+                    assert_eq!(first, WorkerRole::Primary);
 
-            let interface = application.interface(application.root().established_recipient());
-            let mut caller = interface
-                .external::<Capability>()
-                .expect("the capability caller is established");
-            caller
-                .send(
-                    interface.api(),
-                    FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
-                )
-                .await
-                .expect("the supervisor accepts the capability query");
-            let reply = caller
-                .receive()
-                .await
-                .expect("the primary capability is returned");
-            let CapabilityResult::Ready { role, proxy } = reply.message else {
-                panic!("the primary proxy is ready")
-            };
-            assert_eq!(role, WorkerRole::Primary);
-            caller
-                .send(&proxy, WorkerCommand::Stop)
-                .await
-                .expect("the first worker accepts its stop command");
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let mut caller = interface
+                        .external::<Capability>()
+                        .expect("the capability caller is established");
+                    caller
+                        .send(
+                            interface.api(),
+                            FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
+                        )
+                        .await
+                        .expect("the supervisor accepts the capability query");
+                    let reply = caller
+                        .receive()
+                        .await
+                        .expect("the primary capability is returned");
+                    let CapabilityResult::Ready { role, proxy } = reply.message else {
+                        panic!("the primary proxy is ready")
+                    };
+                    assert_eq!(role, WorkerRole::Primary);
+                    caller
+                        .send(&proxy, WorkerCommand::Stop)
+                        .await
+                        .expect("the first worker accepts its stop command");
 
-            let replacement = tokio::time::timeout(Duration::from_secs(5), activations.recv())
-                .await
-                .expect("the replacement activates")
-                .expect("the replacement activation has a role");
-            assert_eq!(replacement, WorkerRole::Primary);
-            caller
-                .send(interface.api(), FixedCommand::shutdown())
-                .await
-                .expect("the supervisor accepts shutdown");
-            let lifecycle = application.lifecycle();
-            tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
-                .await
-                .expect("the supervisor retires after replacement and shutdown")
-        })
-        .unwrap_or_else(|_| panic!("the supervisor runs its recovery policy"));
+                    let replacement =
+                        tokio::time::timeout(Duration::from_secs(5), activations.recv())
+                            .await
+                            .expect("the replacement activates")
+                            .expect("the replacement activation has a role");
+                    assert_eq!(replacement, WorkerRole::Primary);
+                    caller
+                        .send(interface.api(), FixedCommand::shutdown())
+                        .await
+                        .expect("the supervisor accepts shutdown");
+                    let lifecycle = application.lifecycle();
+                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                        .await
+                        .expect("the supervisor retires after replacement and shutdown")
+                }),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the supervisor runs its recovery policy");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((root_origin, joined_actor))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let terminal: SupervisorTerminal = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {

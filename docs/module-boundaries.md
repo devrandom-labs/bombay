@@ -61,8 +61,9 @@ Bombay owns:
 - static interpretation of named creation, delivery, observation, timer,
   report, and shutdown effect lanes;
 - recursive child-task retirement;
-- the ordinary `Application::new(root).run()` single-root boundary and the
-  deliberate advanced `App::new(root, actors).run()` boundary;
+- inherent async `Application::run` and advanced `App::run`, supplied Work,
+  and paired execution/result receiving over one common execution owner;
+- configured `Application::run_blocking`, which drives that same pair;
 - the opt-in Axum boundary that gives a router the typed application handle
   and coordinates HTTP/root termination.
 
@@ -88,12 +89,12 @@ tree:
 |---|---|---|
 | `lib.rs` | minimal façade and semantic-level re-exports | curated application prelude, template-family modules, `Application`, `App`, `RunError`, typed boundaries, transitional hosting evidence, and deliberate `behavior` power surface |
 | `application.rs` | pure ownership of one root and its semantic-role child declarations before execution | `Application` and its root-first `child` method are public; it owns values and roles, never runtime capabilities, addresses, or a second birth algebra |
-| `application_runtime.rs` | actor-system runner and concrete runtime capability product | `ApplicationHandle`, `ApplicationLifecycle`, `App`, and `RunError`; opt-in `AxumRunError` and Axum execution |
+| `application_runtime.rs` | one paired application execution/result owner and concrete runtime capability product | `ApplicationHandle`, `ApplicationLifecycle`, `App`, `ApplicationOutcome`, and `RunError`; inherent async calls, configured owned blocking, and same-path HTTP/Entity composition |
 | `child_bindings.rs` | one closed occurrence product for exact child creation status, endpoint/control, address space, ordered task ownership, and descendant retirement | crate-private; application interpretation consumes its typed creation state |
 | `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |
-| `topology.rs` | transitional static `Hosts<P>` runtime selection | public until `Application` materialization internalizes the closed actor-space product |
+| `topology.rs` | static `Hosts<P>` runtime selection | public for deliberate advanced `App` composition; ordinary `Application` privately materializes its closed actor-space product |
 | `local.rs` | prepared/live Environment and concrete delivery/installed-actor capabilities | root-curated `ActorRef`, `InstalledActor`, and exact-payload `SendError`; `InstalledActor` has no public constructor or shutdown method |
-| `launch.rs` | share the concrete root/owned spawn transaction, request owner cancellation on abandoned waits, and settle actor-owned activation tasks inside the spawned incarnation task | only the `ActorSpace<P>` alias is public |
+| `launch.rs` | spawn concrete owned incarnation tasks, request owner cancellation on abandoned waits, and settle actor-owned activation tasks inside the spawned incarnation task | only the `ActorSpace<P>` alias is public; lower-layer RootActor/spawn_root_with/OwnedTask.finish remain cfg(test) native owners, not a second production runner |
 | `observe/` | actor-independent exact publication and shared/affine waiting | private to Bombay; its ordinary tests run in Bombay, while the isolated test package compiles the same source for Loom and for fuzz/performance dependencies |
 | `interpret.rs` | statically dispatch complete named action lanes through Behavior's owning interpretation and settlement types | traversal and interpreters remain crate-private; root `Completion` and `SettlementFailure` exports belong to Engine |
 | `observation.rs` | own the actor's pending peer and child termination facts in registration order and inject their typed Behavior events | private; the application capability product owns its single queue |

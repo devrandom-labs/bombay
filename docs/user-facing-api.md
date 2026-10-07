@@ -6,8 +6,9 @@ by Behavior Actors.
 
 Implementation status is separate from this target contract. Local application,
 external interface, timer, Entity, supervisor, and worker-pool paths have
-executable coverage. Ordinary runners use a current-thread Tokio runtime;
-durability and networking remain planned.
+executable coverage. Async methods use a caller-owned Tokio host. The explicitly
+owned `run_blocking` entry takes a configured Tokio Builder for current-thread
+or multithread execution. Durability and networking remain planned.
 See the [source-backed inventory](prd-backlog/evidence.md). The short code
 fragments below are schematic, omit surrounding definitions, and are not
 compilation evidence. The executable, compiler-checked spellings are:
@@ -25,73 +26,111 @@ compilation evidence. The executable, compiler-checked spellings are:
 
 ## Entry boundary
 
-A complete single-protocol application supplies one ordinary root value:
+`Application` owns a pure root and its declarations. `run`, `run_with`, and
+feature-gated `run_axum` are inherent async methods. They acquire the currently
+entered Tokio host when polled, and return original inputs with `TryCurrentError`
+when no host is entered. Constructing their futures does not stage or start an
+actor. Actors execute on that selected host; supplied Work executes where its
+execution future is polled. Work and its output may borrow caller values and
+need not be `Send`. Actor tasks keep their actual `Send + 'static` requirements.
+
+For a root with an empty descendant projection destination:
 
 ```text
-let terminal: ApplicationTerminal<_> = Application::new(root()).run()?;
-inspect_terminal(terminal);
+let outcome = Application::new(service.stop_on_shutdown())
+    .run::<_, _, Never, _>()
+    .await;
 ```
 
-`run` owns asynchronous execution. Users do not write an auxiliary `async fn`,
-construct a Tokio runtime, or construct a lifecycle wrapper. The ordinary
-function is the execution path. `ApplicationTerminal` is the application's
-`#[derive(TerminalProjection)]` sum: `run` does not erase the final root,
-descendant custody, or the exact fact that selected retirement.
+`Never` selects the empty descendant destination. The actual Actor, staging
+failure, and child failures remain inferred. A declared child topology selects
+its actual closed descendant projection instead. Bare inference is preferred
+where its constraints determine that destination; an explicit meaningful
+selection is allowed. No default, dummy value, or wrapper supplies missing
+information.
 
-For a framework-neutral external boundary, `run_with` supplies the live
-application's concrete typed handle and keeps the future and output generic:
+The successful outer result owns `ApplicationOutcome`. It does not imply a
+completed actor or erase an initialization refusal. Its closed alternatives
+retain the actual phase and values:
+
+- `StagingRejected` returns the actual cold partial product.
+- `Unstarted` returns the untouched application and original optional Work.
+- `Prepared` returns the actual prepared Actor/Spaces product, optional Work,
+  and the actual cleanup result, before actor ownership transfer.
+- `NotInvoked` returns original optional Work, the startup receiving error when
+  present, and the independent cleanup result.
+- `Completed` returns the original optional output and independent cleanup.
+- `Interrupted` retains cleanup when the Work publication does not provide an
+  owned result; it does not infer whether an actor existed from channel closure.
+
+No supplied Work uses `Option<Never>` with `None` for both Work and output.
+`Completed { output: None }` records an acquired startup grant without supplied
+Work. For supplied Work, `Some(output)` preserves the original output, including
+`Some(Err(error))` or `Some(None)` when those are its actual return values.
+
+For non-family constructors, cleanup is
+`Result<Result<(RootOrigin<Owner>, Result<ActorRetirement<Actor, Terminal,
+ChildFailures>, JoinError>), JoinError>, RecvError>`.
+The outer receiving error, cleanup task error, and actual root task result are
+three distinct facts. Preserve each field; do not infer absent actors or make
+up a JoinError from a closed channel. `Terminal` is the descendant destination.
+The root stays raw. A caller may use the existing `ProjectTerminal::project`
+outside the runtime to apply its own root projection policy, using the original
+origin and retirement without changing the actual Owner/Actor distinction.
+`ApplicationOutcome` is an explicit `bombay` root import, not a prelude export.
+
+Supplied Work receives the activated application's concrete handle:
 
 ```text
-let (boundary_result, terminal): (_, ApplicationTerminal<_>) =
-    Application::new(root()).run_with(|application| async move {
-    boundary(application.root()).await?;
-    let lifecycle = application.lifecycle();
-    lifecycle
-        .request_shutdown()
-        .expect("the live root accepts its first shutdown request");
-    })?;
-inspect_terminal(terminal);
+let outcome = Application::new(service.stop_on_shutdown())
+    .run_with::<Never, _, _, _, _, _, _>(|application| async move {
+        let lifecycle = application.lifecycle();
+        let reply = boundary(application.root()).await;
+        let shutdown = lifecycle.request_shutdown();
+        (reply, shutdown)
+    })
+    .await;
 ```
 
-Boundary completion is not a shutdown request. `ApplicationHandle` projects
-root delivery through `root()` and lifecycle authority through `lifecycle()`;
-it does not duplicate either capability's operations. `run_with` returns
-`Result<(Output, Terminal), RunError<_>>`; if `Output` is `Result<T, E>`, that
-value remains nested so boundary and runtime failures are not aggregated.
+Returning from Work does not request shutdown. The root's concrete Behavior
+must accept or transform `ShutdownRequested`; topology does not select policy.
+`ApplicationHandle::root()` projects delivery, and `lifecycle()` projects
+shutdown/termination authority. Observation is not the complete joined result.
 
-Shutdown policy is part of the root value, not a second execution mode:
+For cancellation or unwind recovery, use `execute` or `execute_with` to obtain
+separate execution and receiving futures. The paired constructor captures its
+entered host immediately and stays cold until execution is polled. Keep and
+poll receiving after dropping execution. A one-future `run` or `run_with` owns
+both futures; dropping it also surrenders the receiver. Original native setup
+or Work panic payloads unwind to the caller. A Ready output is published before
+Work-future disposal, so retained receiving can still acquire it if disposal
+panics. A recovered Prepared product is actual prepared input, not a fabricated
+cold application.
 
-```text
-let ((), terminal): (_, ApplicationTerminal<_>) =
-    Application::new(service.stop_on_shutdown()).run_with(|application| async move {
-    let lifecycle = application.lifecycle();
-    let shutdown = lifecycle.request_shutdown();
-    assert_eq!(shutdown, Ok(()));
-    let termination = lifecycle.termination().await;
-    inspect_termination(termination);
-    })?;
-inspect_terminal(terminal);
-```
+The selected host must remain live and polling through the required joins.
+Holding a Handle or observing termination does not guarantee host liveness.
+Runtime destruction can cancel remaining tasks; neither entry promises recovery
+of values that user code already consumed or destroyed inside a failing call.
+Explicitly surrendering the final receiver discharges its original returned
+values once. It does not authorize accidental loss in reusable code.
 
-This is the same execution spelling for every root. The concrete root must
-explicitly accept or transform `ShutdownRequested`; Bombay does not infer a
-shutdown policy from topology and does not secretly insert a root wrapper.
+The sole owned synchronous convenience is `Application::run_blocking(builder)`.
+Supply an ordinary configured `tokio::runtime::Builder`. An entered-runtime
+refusal occurs before construction or actor effects. Refusal returns
+`(application, builder, RunError::BlockingInEnteredRuntime)`; a real build error
+returns `(application, builder, RunError::Runtime(original_io_error))`. A
+successful build drives the same async pair and preserves its full result.
+There is no automatic current-thread default, scheduler enum, or blocking
+supplied-Work/HTTP twin. A synchronous supplied-Work caller may explicitly own
+its Tokio host and call `block_on` on the same async method.
 
-With the opt-in `axum` feature, the same boundary can host an HTTP adapter:
-
-```text
-Application::new(root()).run_axum(
-    "127.0.0.1:3000".parse()?,
-    order_http::router,
-)?;
-```
-
-The router factory receives `ApplicationHandle<Root::Protocol, Root::Event>`
-for a direct root, or the composed actor's event sum for a templated root. Axum owns
-extraction and HTTP responses; `application.root()` is the delivery-only
-reference and `application.lifecycle()` is the lifecycle authority.
-Bombay owns the shared executor, graceful server stop, exact root termination
-classification, and the distinction between HTTP and root failures.
+With `axum`, `execute_axum` and async `run_axum` use that same ownership path.
+Bind occurs before staging and returns the actual cold application, original
+router, address, and native bind error on failure. The router is invoked once
+only after activation. Work output is the exact optional `Result<(), io::Error>`
+from serving; raw root and cleanup facts coexist with it. Graceful serving
+completion is not proof that the root result is successful. Axum owns HTTP
+extraction/responses; Bombay adds no projected aggregate AxumRunError.
 
 ## Application composition
 
@@ -171,7 +210,14 @@ A single-protocol root does not declare that product. Bombay supplies its one
 concrete protocol space directly:
 
 ```text
-Application::new(OrderBook::default()).run_axum(address, order_http::router)?;
+let outcome = Application::new(OrderBook::default().stop_on_shutdown())
+    .run_axum::<Never, _, _, _, _>(address, |application| {
+        let interface = application.interface(order_http::OrderApi {
+            orders: application.root().established_recipient(),
+        });
+        order_http::router(interface, application.lifecycle())
+    })
+    .await;
 ```
 
 This is the ordinary Axum example boundary. Advanced compositions whose
@@ -191,7 +237,7 @@ let root = Machine::new(state, phase, transition)
     .with_one_shot(TimerId(1), Duration::from_secs(1), stop)
     .stop_on_shutdown();
 
-Application::new(root).run()
+Application::new(root).run::<_, _, Never, _>().await
 ```
 
 `bombay::actors::ActorExt` is imported by the ordinary prelude, so reusable
@@ -376,8 +422,9 @@ customer seams should instantiate templates with
 
 The intended ordinary public surface is:
 
-- `Application::new(root).child(role, actor).run()`, `run_with`, feature-gated
-  `run_axum`, exact terminal projections, and typed runtime errors;
+- inherent async `Application::run`, `run_with`, feature-gated `run_axum`,
+  paired `execute`/`execute_with`/`execute_axum`, raw actual root results,
+  application-selected descendant projections, and configured `run_blocking`;
 - a focused prelude for Level-1/2 Bombay actor vocabulary;
 - pure logical `Recipient<P>` and exact `EstablishedRecipient<P>` values in
   actor messages;
@@ -401,7 +448,8 @@ ordinary prelude and is not the target application API.
 
 Users never manually construct or implement:
 
-- a runtime, System, Guardian, Driver, Environment, or actor execution object;
+- a Bombay System, Guardian, Driver, Environment, or actor execution object;
+  selecting a caller Tokio host or configuring its ordinary Builder is explicit;
 - mailboxes, channels, capacities, address spaces, claims, or leases;
 - observation publishers, timer queues, executor tasks, or child-task owners;
 - creation, delivery, observation, timer, report, or shutdown interpreters;
@@ -444,7 +492,7 @@ let application = App::new(root, spaces).entity_family(
     EntityCapacity::new(concurrent_hydrations, residents),
 )?;
 
-let (output, root_terminal, shutdowns) = application.run_with_entities(
+let application_receiving = application.run_with_entities(
     |application| async move {
         let accounts = application.entities(AccountsRole);
         let account = accounts.entity(account_id);
@@ -452,8 +500,12 @@ let (output, root_terminal, shutdowns) = application.run_with_entities(
         let caller = interface.external::<Replies>()?;
         caller.send(interface.api(), AccountCommand::Deposit(amount)).await
     },
-)?;
+).await;
 ```
+
+`application_receiving` is a `Result`: success retains
+`(work_outcome, root_receiving, family_receiving)`; host-entry rejection returns
+the original application, Work callable, and actual entered-host error.
 
 `EntityRef<Accounts>` retains the logical account ID, not an actor address or
 incarnation. The same value therefore survives passivation and replacement.
@@ -492,8 +544,17 @@ Entity.
 
 Native lowering hydrates before address allocation, uses the application allocator, preserves
 forced-retirement provenance and descendant terminals, and launches the exact
-authored lifecycle stack. `run_with_entities` settles the root first, then
-closes, drains, and joins every declared family and returns its bounded metrics.
+authored lifecycle stack. `run_with_entities` awaits the same paired owner as
+`execute_with_entities`. The result keeps Work outcome, root receiving, and the
+recursive family receiving product separate. Work cleanup has a unit normal
+result and retains its own cleanup receiving/task failures. The independent
+root receipt owns its exact origin plus actor result; each family receipt owns
+its original role, complete shutdown, metrics, and native disposal cause.
+Root is published before family shutdown; each completed family head is
+published before awaiting its tail. A cancelled or panicking later producer
+cannot authorize loss of an already acquired root/head report. A receiving
+error for an unfinished row is not a fabricated family report. This order is
+runtime custody, not a new Behavior shutdown policy.
 
 ## Local actor spaces
 
@@ -543,12 +604,15 @@ application must prove all of these while retaining the tiny `main`:
 - exact-incarnation observation and cleanup;
 - orderly recursive shutdown;
 - exact terminal failure reporting;
-- no runtime plumbing in application code.
+- no internal Bombay task, mailbox, or lifecycle plumbing in application code;
+  the caller supplies its Tokio host or configured Builder.
 
 Graceful shutdown order is Behavior policy expressed by templates such as
 `ShutdownCoordinator` and `HeterogeneousShutdownCoordinator`. Independently of that policy,
-Bombay cancels and joins any child still live when its owner terminates, so an
-incomplete graceful protocol cannot leak a subtree or deadlock retirement.
+Bombay retains cancellation and join ownership for any child still live when
+its owner terminates. Completion requires a live polling host and cooperative
+operations; noncooperative work can delay retirement indefinitely. An incomplete
+graceful protocol does not authorize surrendering that retained ownership.
 
 Current implementation eligibility and upstream blockers are recorded in
 [`prd-backlog/status.md`](prd-backlog/status.md).

@@ -15,10 +15,10 @@ Selo builds on Bombay, Mnesis and `mnesis-bombay`; Bombay does not depend on
 Selo or Mnesis. The new document's proposed distributed contracts are not
 implemented capabilities or additions to the current Engine port.
 
-The selected dependency graph uses the immutable Behavior Core and Actors
-0.21.2 registry releases from
-`edc2d466a50df7cd396f891e3da31fc9e3747bbd` and Behavior Macros 0.13.1
-from `5ca96444f0a66e9a013b6989e3e53d345cbabf65`. Behavior owns the direct
+The selected dependency graph uses Behavior Core/Actors 0.22.0 and
+Behavior Macros 0.13.1 from locked Git revision
+`81ba2c0d1a8c6fc3d6235349980bf2657463041d`.
+Behavior owns the direct
 `Behavior -> Actions` fold, closed typed action products, total interpretation,
 source-settlement custody, explicit generated creation-settlement disposition,
 and static birth installation and dispatch. Bombay's current contract is
@@ -66,13 +66,14 @@ and order activation and retirement across the primitive capabilities.
 
 ## Exact audited dependency set
 
-The selected artifacts were refreshed on 2026-10-03 against this workspace's
-lockfile, not against adapters or remembered APIs.
+The source graph is selected by this workspace's current lockfile and patches.
+The EXEC API documentation is reconciled on 2026-10-06; prior verification
+snapshots retain their own exact revisions and do not prove new signatures.
 
 | Capability | Exact source used by Bombay | Current owner |
 |---|---|---|
-| Behavior | crates.io `bombay-behavior 0.21.2`, checksum `67210103f2be49efc2ecbcf42f478f2beac07da5e4e722e4a74bc58b533c16f8`, plus `bombay-behavior-macros 0.13.1`, checksum `fdbea4c696f3bed02965835fd253087d696a25bf206e229e174bd2882fc2638c` | pure `Behavior -> Actions` algebra, named interpreter requests, total typed settlement products, exact source custody, explicit generated creation-settlement policy, static `DispatchBirth`/`InstallBirth`, and stable protocol/birth/event composition |
-| Behavior Actors | crates.io `bombay-behavior-actors 0.21.2`, checksum `2c7d8a69c8d713ae7b35887a5fcddc868a3ef948e4947ee9049cc58f057fc2fb` | reusable actor templates and their topology, supervision, shutdown, timing, terminal-disposition, routing, discovery, persistence, workflow, and operations policies over the same foundational algebra |
+| Behavior | Git `bombay-behavior 0.22.0` and `bombay-behavior-macros 0.13.1`, revision `81ba2c0d1a8c6fc3d6235349980bf2657463041d` | pure `Behavior -> Actions` algebra, named interpreter requests, total typed settlement products, exact source custody, explicit generated creation-settlement policy, static `DispatchBirth`/`InstallBirth`, and stable protocol/birth/event composition |
+| Behavior Actors | Git `bombay-behavior-actors 0.22.0`, same locked revision `81ba2c0d1a8c6fc3d6235349980bf2657463041d` | reusable actor templates and their topology, supervision, shutdown, timing, terminal-disposition, routing, discovery, persistence, workflow, and operations policies over the same foundational algebra |
 | Address | crates.io `bombay-address 0.3.0`, checksum `8dfc2197b4156cc87c4021a2fa0e8767a5efb009c98d4238c4147714840fc1dc` | exclusive non-resolvable reservation, exact publication lease and retirement, opaque resolution |
 | Communication | crates.io checksum `eb0dc8a057efce6e387c9bc24955ffb020b2c138c5ce6b10c1f6c211d32ad268`, package `bombay-communication 0.1.3` | two-lane mailbox, delivery, backpressure, affine user-admission retirement |
 | Observe | Bombay-private import of semantic commit `b3b5f36a3b514713012086dfc72f5327d15fe2b2` plus exact Loom-bound fix `ef2ea13e65889aa3bf713822041e032020e98d73` from `feat/affine-observation` | keyed exact-generation facts plus shared and affine unkeyed publication pairs; no separately published actor API |
@@ -502,65 +503,38 @@ already exists in `bombay-engine`: the affine `Environment<B>` /
 `ActiveEnvironment<B>` typestate pair. It should remain the only actor-loop
 port.
 
-```text
-pub trait Environment<B: Behavior<Ph = Never>> {
-    type Active: ActiveEnvironment<B, Residual = Self::Residual, Settlement = Self::Settlement>;
-    type Settlement: ClassifySettlement;
-    type Error;
-    type Residual;
-
-    fn activate(
-        self,
-        initialization: ActionsOf<B>,
-    ) -> impl Future<Output = Result<
-        (Self::Active, Interpretation<Self::Settlement>),
-        (Self::Error, Self::Residual),
-    >>;
-
-    fn retire(self) -> impl Future<Output = Self::Residual>;
-}
-
-pub trait ActiveEnvironment<B: Behavior<Ph = Never>> {
-    type Settlement: ClassifySettlement;
-    type Residual;
-
-    fn next(&mut self) -> impl Future<Output = Option<B::Event>>;
-    fn next_source(&mut self) -> impl Future<Output = Option<B::Event>>;
-
-    fn apply(
-        &mut self,
-        actions: ActionsOf<B>,
-    ) -> impl Future<Output = Interpretation<Self::Settlement>>;
-
-    fn offer_next(
-        &mut self,
-        settlement: Self::Settlement,
-    ) -> impl Future<Output = SourceCustody<Self::Settlement>>;
-
-    fn publish(&mut self);
-
-    fn retire(self, settlements: Vec<Self::Settlement>) -> impl Future<Output = Self::Residual>;
-}
-```
+The exact signatures belong to Engine's
+[`Environment` and `ActiveEnvironment`](../crates/bombay-engine/src/environment.rs),
+not a second trait schema in this guide. Their current interface is audited in
+[public API ownership](public-api-audit.md#engine).
 
 Its laws are:
 
-1. `Environment` is prepared but cannot yield ingress.
-2. `activate(self, initialization)` consumes the prepared value, reserves its
-   address invisibly, commits complete initialization actions, and returns the
-   exact settlement with an unpublished active environment. Reservation or
-   private binding rejection returns untouched initialization custody.
+1. `Environment` is prepared and cannot yield ordinary ingress.
+2. Activation borrows the original prepared environment, initialization actions
+   and outside reply slots. A successful transfer acquires the exact settlement
+   with an unpublished active environment before producer disposal. Rejection
+   and incomplete progress retain their actual original inputs and replies.
 3. The Driver settles initialization and admitted source effects before
-   calling `publish`. Only then does Address produce a resolvable lease.
-4. `next` acquires ordinary input; `next_source` acquires an admitted control
-   result before later ordinary input. Communication, Timers, and typed facts
-   remain distinct owned sources.
-5. `apply` interprets one complete decision through named effect lanes and
-   returns its exact settlement. `offer_next` offers one ordered source result.
-6. `retire(self, settlements)` is the affine completion barrier and preserves
-   every retained settlement and owned descendant.
-7. The Driver owns the causal sequence `initialize -> activate -> settle ->
-   publish -> (next -> transition -> apply -> settle)* -> retire`.
+   publication. `publish` either commits visibility or transfers the exact
+   retirement request without publication.
+4. `next` acquires ordinary input; `next_source` acquires admitted control results.
+   Their `ControlFlow<RetirementRequest, Option<Event>>` distinguishes exact
+   retirement authority from source exhaustion. Neither request claims completed
+   cleanup or another Behavior fold.
+5. `apply` and `offer_next` borrow original actions/settlement and outside reply
+   slots. Acquired interpretation and source custody survive their producer;
+   source progression preserves its original ordered position.
+6. Retirement borrows the original environment, pending actions, acquired
+   interpretation/source/ingress, ordered settlement remainder and outside
+   residual slot. Only an acquired complete residual with exhausted inputs
+   completes retirement. `Driver::receive_run` returns the surviving Driver
+   otherwise; receiving again never repeats attempted work. Dropping a borrowing
+   future preserves outside custody, while dropping the whole owner is a
+   separate discharge.
+7. The Driver owns one causal sequence: initialize, activate, settle, publish,
+   then repeated next/transition/apply/settle, followed by retirement. A selected
+   retirement request prevents another fold or source offer.
 
 This trait is generic infrastructure and should stay hidden from ordinary
 application users. It is public only at the framework-extension boundary if a
@@ -572,27 +546,10 @@ The spine itself must not grow one method per runtime feature. Effects are
 open-ended and typed. Each capability plugs into the action interpreter at the
 smallest semantic lane it owns:
 
-```text
-pub trait InterpretSends<A: Address, Sends> {
-    type Error;
-
-    fn interpret_sends(
-        &mut self,
-        from: A,
-        sends: Sends,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send;
-}
-
-pub trait SpawnChild<A: Address, C: Behavior<Protocol: Protocol<Addr = A>>> {
-    type Error;
-
-    fn spawn_child(
-        &mut self,
-        address: A,
-        creation: Create<A, C>,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send;
-}
-```
+Behavior owns `InterpretSends` and its borrowed request/reply custody;
+Bombay supplies concrete typed lane interpreters. Creation uses the same
+selected owning `InstallBirth` / `DispatchBirth` contract. This guide defines
+neither another send trait nor a `SpawnChild` port.
 
 The exact creation dispatch remains Behavior's existing `InstallBirth` /
 `DispatchBirth` contract. Observation, timer, report, shutdown, persistence,
@@ -711,27 +668,44 @@ the published subtree outcome is truthful.
 
 ## Public API consequence
 
-The functional entry remains intentionally small and value-oriented:
+The functional entry remains value-oriented and async-first:
 
 ```text
-let terminal: ApplicationTerminal<_> = Application::new(root()).run()?;
-inspect_terminal(terminal);
+let outcome = Application::new(service.stop_on_shutdown())
+    .run::<_, _, Never, _>()
+    .await;
 ```
 
-`Application::new(root).child(Role, actor)` is the ordinary root-first
-declaration and execution value. The application-owned terminal projection
-retains every root and child outcome. Advanced multi-protocol applications may
-temporarily use `App::new()` with a typed local actor-space product where
-intentional logical deliveries require additional canonical hosts.
-Users configure supervision, routing, worker capacity, restart policy, and
-shutdown policy on those template values, where the policy belongs. They never
-construct a runtime, guardian, mailbox, observation space, timer queue, Driver,
-or interpreter. Bombay re-exports Behavior's one owning macro at the root; it
-does not add another actor trait, parser, expansion, or effect language.
-`ActorExt` layers and owning template constructors produce ordinary concrete
-Behavior values. Every construction terminates at this same boundary and
-creates no second runtime, effect algebra, policy owner, or dynamic capability
-mechanism.
+`Application::new(root).child(Role, actor)` owns a root-first declaration.
+`run`, `run_with`, and `run_axum` consume it through one paired execution/result
+owner on the entered caller host. `execute`/`execute_with`/`execute_axum` expose
+those two futures separately when receiving must survive dropped execution.
+Calling `run` without Work retains genuine absence; Ready supplied output is
+owned before producer disposal. The actual raw root stays beside cleanup receiving and
+native task failures. `Terminal` is a descendant projection destination, not
+an implicit root conversion. `ProjectTerminal` is an explicit application
+policy over original typed origin and retirement.
+
+`Application::run_blocking` takes the caller's configured Tokio Builder and
+drives that same pair. Nested blocking rejects before effects; build failure
+returns exact Application, Builder and native io::Error. Current-thread and
+multithread are Builder choices. There is no second public runner framework.
+Advanced `App` supplies intentional logical hosts and native Entity families.
+Each acquired root/family head is published before a later cleanup await;
+unfinished receiving errors remain distinct from acquired reports.
+
+Keep the selected host live and polling until required joins finish. A captured
+Handle is context authority, not a liveness guarantee. Observe termination
+facts do not substitute for complete root/child/family custody. Native user
+unwind causes remain caller-owned; retained receiving preserves already acquired
+facts. Runtime destruction limits liveness and does not justify fabricating
+absent actors or successful cleanup.
+
+Users configure supervision, routing, capacity, restart and shutdown policy on
+the owning templates. They do not construct a Bombay guardian, mailbox,
+observation space, timer queue, Driver, or interpreter. `ActorExt` and owning
+constructors produce the same concrete Behavior composition. No second effect
+algebra, policy owner, or dynamic capability mechanism is introduced.
 
 ## Acceptance gate
 

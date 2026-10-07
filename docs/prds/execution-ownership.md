@@ -23,13 +23,12 @@ ARC-020 later renamed the private actor execution and outcome symbols; the
 snapshot names below remain historical, and `docs/module-boundaries.md` records
 the current source paths.
 
-**Status: active.** Selected contracts are verified; DG-SHUTDOWN and DG-TASK are accepted.
-The task decision covers the inspected final kernel; its public API remains
-unretained pending DG-API. Other decision gates remain open. Current work proves
-cancellation and exact result ownership through isolated, independently reviewed
-experiments. Their passing checks do not imply acceptance of the full public API
-or cancellation contract. Semantic blockers precede the required module
-extraction, final minimization, reviewed PR and passing-CI merge.
+**Status: active.** Selected contracts are verified. DG-SHUTDOWN, DG-TASK and
+DG-API are independently accepted. The reviewed API, common task execution and
+Entity custody corrections are integrated on the consolidated branch, with
+current affected verification passing. Five decision gates, required extraction,
+final minimization, upstream release, full integrated checks and reviewed
+passing-CI merge remain. Semantic blockers precede module extraction.
 
 This PRD replaces the earlier conversational criterion that EXEC must produce
 a net reduction in production lines. Model quality is the acceptance criterion:
@@ -46,21 +45,21 @@ This is the only current closure list. Earlier lists are dated evidence.
 Reuse results for unchanged code/contracts; rerun affected checks after a relevant
 change or failure, and retain all required final integrated verification.
 Stop optional research. Existing work and completed runtime fixes stay preserved.
+The nine preservation mappings are independently accepted; their single current
+record is [verification](execution-ownership/verification.md#accepted-nine-preservation-dispositions-2026-10-06).
+API, common execution, Entity root/head custody and HTTP integration are closed
+with [accepted source-bound verification](execution-ownership/verification.md#accepted-api-verification-2026-10-07);
+required whole-integration verification remains in the final row below.
 
 | Requirement / gate | Exact blocker | Valid evidence available | Next action and pass condition |
 | --- | --- | --- | --- |
-| XO-10/11/44, EV-05/07/08: Entity cleanup | A completed root/head can be lost when remaining family cleanup is interrupted. | Runtime selection fixed in056ac7e; both-profile original/fixed native proof. Reviewed ac319 root/head publication correction and complete typed witnesses are prepared. | Original/fixed controls and root/head inversions pass their intended laws in both profiles and qualify independently (§251). Integrate the reviewed correction, migrate affected family consumers, and verify those consumers; reuse the unchanged native proof. |
-| DG-API; XO-01–12/43–45; EV-01–05 | Final async/owned signatures and complete root/family outcome are not accepted/integrated. | Ordinary-Rust comparisons; receiving30, prepared-input, owned-mode, borrowed-work and caller formations at recorded source epochs. | Select the evidenced spelling with independent review; integrate one execution path/one runtime constructor and migrate callers. Run tests affected by signature/family changes; preserve callback output and unstarted inputs. |
-| XO-13–22; EV-06–12: integrate accepted task custody | DG-TASK is accepted; the inspected final application kernel is not yet integrated. | [Signed12-row ownership decision](execution-ownership/task-custody.md#accepted-task-custody-2026-10-06); current receiving30/Family3 pass both profiles; unchanged native/source/child proofs qualify. | Integrate through DG-API, preserve the accepted owner/transfer table and rerun only affected checks. No additional owning experiment is required for this selected model. |
 | DG-PROJECTION; XO-23; EV-10/12/30 | Actual projector panic and eager-progress laws now have qualified native evidence; final task/allocation/throughput measurement and representation disposition remain. | Existing projection/custody regressions and constructed conversion comparisons; native failure34. | Reuse qualified native failure and eager-progress results (terminal-projection record). Rerun the changed fixture, measure the required whole declared-parent/child composition, and independently accept its retained representation. |
 | DG-OBSERVATION; XO-31–36/40; EV-16–21/23 | Final integrated observation/fairness/timer acceptance and current instrumented fuzz remain. | Qualified runtime28, STATIC72, Monitor16; selected Observe/Timer contracts and deterministic race/order inversions. | Reuse unchanged laws; run required current10k instrumented fuzz, affected integrated checks and strict lint. Sign one relationship owner/commit-point/fairness decision; preserve exact rejected notifications. |
 | DG-WORK; XO-41/42; EV-24 | Direct semaphore/FIFO probes do not yet prove the real typed interpreter’s bounded-work law. | Prepared WORK12 source and existing port/rejection/native work comparisons. | Add the smallest real-port saturation/rejected-input/completion/shutdown witness; prove abandoned waiting does not stop running work. Original/inversion and healthy tests pass both profiles; independently accept concrete limit. |
-| XO-37–39; EV-22: HTTP | HTTP integration still needs the final common execution path and complete serving/root result. | Reviewed HTTP source/bind-custody and real HTTP consumer results at recorded epochs. | Integrate/migrate; bind failure activates nothing, router runs once, root stop closes server, serving failure returns its error plus joined root result. Run affected Axum tests both profiles. |
-| Nine preservation dispositions | Successor transport/panic policy must be explicitly accepted; these are not nine missing implementations. | Allocation1, Driver execution, start/cancel, raw-unwind and typed Engine/Local/Launch successor evidence. | Independent review signs exact old-to-new mappings and the retirement/panic amendment, reusing qualified traces and denials. |
 | DG-WRAPPERS | Individual retained/deleted/reshaped abstractions lack final disposition. | Existing section7 comparisons, direct-owner probes and current consumers. | Finish each five-answer disposition; remove only proven redundant machinery, preserve differential laws and get independent acceptance. |
 | DG-MODULES; EV-27–29 | Approved extraction map and required application/local file separation remain. | Current symbol/import/export inventories and consumer/macro/renamed-crate evidence. | Freeze owner/visibility map, perform mechanical extraction, update affected exports/docs/consumers and prove before/after traces and compile denials. No duplicate implementation. |
 | Selected upstream contract | Integration still selects unreleased Behavior receiving81ba2c0. | Exact selected source/tests/instructions verified; receiving/static/native campaigns qualified. | Deliver reviewed owning PR with passing CI, publish release, select exact published contract and rerun affected integration checks. Finish other rows while this proceeds. |
-| Final verification, minimization, review and delivery | Local full flake now passes all21 required native-platform checks after the test-only coverage/lint correction and disk-capacity retry. Final API/upstream/extraction integration, final gates/reviews/CI/merge remain. | All valid source-bound results above; private test move preserves production/test bodies and floors; DG-SHUTDOWN and EV-25 already accepted. | Run required §10.1 commands, model/fuzz/Miri, actual unchanged-floor coverage and benchmark on integrated source; complete delta/minimization and independent final reviews. Merge PR only after required green checks; record CI/merge and then complete goal. |
+| Final verification, minimization, review and delivery | The accepted API is now integrated; its full local flake run must precede push. Upstream release, remaining gates/extraction/minimization and final checks/review/CI/merge remain. | All valid source-bound results above; private test move preserves production/test bodies and floors; DG-SHUTDOWN and EV-25 already accepted. | Run required §10.1 commands, model/fuzz/Miri, actual unchanged-floor coverage and benchmark on integrated source; complete delta/minimization and independent final reviews. Merge PR only after required green checks; record CI/merge and then complete goal. |
 
 ## 1. Authority and how to execute this document
 
@@ -11613,3 +11612,155 @@ Independent reference review qualifies deletion0b40 of13 wholly unused test-only
 Current guarded strict/default and Axum checks pass after deletion/formatting. Optimized owners pass280 library,30 application receiving,4 terminal-custody and3 supervisor tests, matching debug controls; no Rust warnings remain. Exact commands, streams and348-path source/result map are `/tmp/bombay-strict-final-source-results.json`; debug epoch and three historical unused-method warnings are retained separately. Reuse qualified inversions whose classifiers/controller oracles remain unchanged; full final integrated verification is still required. The next full local flake runs with `--max-jobs 1 --cores 2` to avoid the observed parallel-build disk exhaustion, without changing checks/floors.
 
 Current complete change record (cumulative2fcc baseline;122 tracked paths,0 untracked): production+8770/−2370/net6400; tests+25669/−2150/net23519. This bounded stage adds no public type; cumulative audit retains five added nominal names (three new, two promotions). All existing paths remain inside the authorized233-path conditional research allowance; the line cap is waived. Exact per-path/code/document/manifest counts and SHA bindings: `/tmp/bombay-outcome-joint-pattern-complete-base2fcc-measurement.json`; the independently reviewed whole-cfg-child successor is `/tmp/bombay-outcome-joint-pattern-cfg-bindings/record.json`. These are research-retention counts, not minimization or full-gate acceptance.
+
+## 253. Four required example dependency files: proposed scope checkpoint
+
+The final async API makes each caller own its Tokio executor. Four existing
+example manifests do not expose the executor used by their migrated main:
+`examples/counter/Cargo.toml`, `examples/worker-pool/Cargo.toml`,
+`examples/application-topology/Cargo.toml`, and `examples/axum/Cargo.toml`.
+The first three add exactly `tokio.workspace = true`; Axum moves its unchanged
+Tokio dependency from development-only to normal dependencies. The selected
+Tokio version and workspace features do not change. No Bombay wrapper or
+re-export is added.
+
+Complete current code checkpoint: 122 tracked changed paths, zero untracked;
+production +8770/−2370/net6400; tests +25669/−2150/net23519;
+cumulative nominal surface +5 (three new, two promotions). This proposed stage
+changes manifests +4/−1/net3, production/tests/public types +0/−0/net0.
+All four named files are absent from the frozen229-path list and its four later
+additions. Concrete proposed allowance: 233 → 237 named paths; line cap remains
+waived and this stage adds no public nominal type.
+
+Exact before/proposed/forward/inverse files and measurement are in
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-required-four-manifest-source-n46hwmas/receipt.json`,
+SHA256 `6a17ef2523cd38d04f538adcc51376bf0b76ac17a1b9c7f1c72e596a72cb32ab`.
+The user explicitly approved these four files on2026-10-06, selecting the
+recommended233→237 named expansion. This closes the scope prerequisite, without
+approving DG-API or semantic retention. Verify exact before/proposed bytes,
+locked dependency resolution, affected examples and required final integrated
+checks before retention.
+
+## 254. Final API deletion and required caller comparison
+
+Bounded private comparison, with no main API retention: remove the obsolete
+LaunchSystem/projection/HTTP cluster and AxumRunError exports; keep the single
+accepted custody kernel and all private native regressions. RunError owns only
+entered-runtime refusal and runtime construction failure. Actor/startup/work/
+family outcomes remain exact in their existing affine result products.
+
+Exact deletion proposal16466539 at
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-final-obsolete-runner-source-j8l58t_3/receipt.json`
+changes App production +10/−616/net−606 and library exports −4;65 unchanged native
+owner lines become test-only, with three cfg attributes measured separately.
+The accepted kernel and complete App test bodies remain exact. Required
+receiving/run_with adaptation changes tests +9/−17/net−8, explicitly replacing
+obsolete synthetic coarse error transport; no new public nominal type or bound.
+
+Required18 existing Rust callers proposal93670f43 preserves733 original
+assertion bodies and25 Work arguments; production +154/−37/net117,
+tests +518/−139/net379, public types +0/−0. Independent source reviewc66b4c34
+permitted13 paths before the §253 approval; all18 are now authorized after the
+explicit four-manifest approval. The HTTP import spelling successor
+`bombay-consumer-http-builder-successor-jwt7y_o9/receipt.json` (d5e294b0)
+uses the already imported Builder and adds no semantics. All originals and
+reversible patches are preserved. Pinned formatting, affected both-profile
+runtime/consumer checks,27 compiler artifacts and final signatures remain
+required; formation is not semantic or full-gate acceptance.
+
+Separate inherited fixture finding: fixed_supervisor_recovery's two and
+fifo_pool_recovery's five controllers store runtime resources in their concrete
+recovery Source, retained by the selected Behavior Actors state. Preparation
+callbacks run outside the fold, but the stored resources violate the pure
+Behavior-state boundary. Their unchanged migration bodies receive only
+formation/caller-compatibility credit, never EXEC pure-fold semantic credit.
+No required EXEC law relies solely on these seven tests: qualified native34,
+receiving30, Family3 and ordinary native controls carry those laws. Record this
+as separate recovery-fixture repair work; do not expand EXEC or fabricate a
+new factory contract to repair it here. The public supervision example has the
+same inherited `Workshop` Source resource fault: its finite execution proves
+caller compatibility only. The two `fifo_pool_runtime` cases use temporary
+recovery and outside-fold typed requests, so that exclusion does not apply to
+them. These inherited Source consumers are separate work, not EXEC acceptance
+or merge blockers; every required EXEC law has independent valid evidence.
+
+## 255. Two omitted existing paths: concrete scope checkpoint
+
+Proposed named allowance: **237 → 239**, held until explicit authorization.
+The complete current Bombay change is122 tracked paths/zero untracked:
+production +8770/−2370/net6400; tests +25669/−2150/net23519;
+public names +5/−0 (three new names, two existing-name promotions).
+No production source changed during this checkpoint. The complete SHA-bound
+measurement is `/tmp/bombay-exec-current-scope-checkpoint-base2fcc-measurement.json`.
+
+| Additional existing path | Exact change | Reason |
+| --- | --- | --- |
+| `bombay/docs/prd-backlog/README.md` | Documentation +4/−2/net2 | Remove the stale synchronous/current-thread runner claim when the reviewed final API is retained. |
+| `behavior/crates/actors/tests/proxy_command_recovery.rs` | Tests +217/−4/net213 | Deliver the already selected and independently qualified upstream receiving regression with its owning contract. |
+
+Both proposed changes add zero production lines and zero public types. Exact
+before/proposed source, patches and source hashes are frozen in
+`/tmp/bombay-exec-two-path-scope-proposal/record.json`. The upstream patch is
+the selected81ba2 test on verified main1fc8, not a new implementation.
+The existing line-cap waiver remains; no module-path expansion or other omitted
+file is included. Independent review, acceptance and delivery gates still apply.
+
+**Authorization (2026-10-06):** The user explicitly approved both §255 files.
+The named allowance is now239; runtime/public-type limits and all gates remain.
+This authorizes retention only after the respective source/review requirements.
+
+## 256. Final API verification correction — bounded pre-edit record
+
+Exact composed debug/optimized runtime checks pass358 tests each; HTTP passes
+five each. Workspace all-target formation passes, including seven example
+packages and benchmarks. These results are independently qualified and reused.
+The current static campaign executes33 selected fixtures (7 pass/26 denial),
+not the preserved34 variants; its existing feature-unified child alternate
+still requires execution. Two intended E0631 root-protocol denials differ only
+in saved diagnostic text; the separately reviewed actual-output successor
+updates two existing authorized stderr paths, without changing fixture source.
+
+The strict run fails18 existing-source checks: documentation backticks, five
+unfulfilled complexity expectations, two complex existing result signatures,
+and two one-pattern matches. The bounded proposal touches only existing
+`application_runtime.rs`: +44/−62/net−18 raw source lines; no new type, trait,
+alias, bound, wrapper, method or policy. It removes unnecessary annotations,
+justifies the two direct concrete result compositions, and uses equivalent
+`if let` patterns. Both original work branches preserve complete statement
+bodies, acquired output publication and disposal order.
+
+Exact pre-edit/proposed source and provenance are frozen in
+`/tmp/bombay-final-api-narrow-strict-source-proposal/receipt.json`. Independent
+source-equivalence review must precede installation; reuse the archived accepted
+kernel proof through its explicit epoch bridge, rerun affected receiving33,
+run16 and HTTP5 in both profiles, and complete strict checks. No new semantic
+experiment or public-surface expansion follows from compiler output.
+
+The successor strict check is library-clean but identifies33 test lint findings
+and three occurrences of one missing owning import, over eight already
+approved test paths. The external bounded correction preserves every test
+name and oracle; it restores `ShutdownRequested` at module scope, uses exact
+empty-lane comparisons and standard pointer/permit methods, and justifies
+complete trace length and explicit input discharge locally. Production +0/−0;
+tests +98/−27/net71; public types +0/−0. Exact proposed sources and before
+hashes: `/tmp/bombay-final-api-eight-test-strict-proposal-qualified/receipt.json`.
+Independent source review, pinned formatting, strict success and affected
+both-profile runtime checks remain required. The original default runtime
+row contains15 passing `run_with` runtime tests plus one filtered static
+controller; it must not be reported as16 runtime passes. The alternate
+feature-unified child diagnostic also needs its actual reviewed-output rerun.
+
+## 257. Accepted API integration checkpoint (2026-10-07)
+
+[DG-API's two signatures](execution-ownership/application-api.md#accepted-api-2026-10-07)
+accept the exact Appaf400/kernel378/Family784c candidate. Root integrated41
+already-authorized paths byte-exact, preserving the four current PRD/backlog
+records, all completed local-runtime fixes, and the selected179 dependency facts.
+No new public type is added; obsolete `AxumRunError` is removed. Shared typed
+execution/receiving and existing Tokio Builder replace the legacy runners; no
+second runtime, actor contract, trait, wrapper or scheduler policy is introduced.
+
+The full tracked/untracked change measurement and independent cfg classification
+are required at this checkpoint, followed by full local Nix before push. Valid
+unchanged original/inversion/native proofs retain their own epochs; the final
+integrated verification remains required after all remaining work.

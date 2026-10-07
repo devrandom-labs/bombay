@@ -1,7 +1,9 @@
+use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use tokio::runtime::Builder;
 
 use behavior_actors::atomic::{
     ActivationPolicy, ActorDrainPolicy, AdmissionRejection, AssignedReturnReason, Assignment,
@@ -194,6 +196,10 @@ fn recovery_pool(
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep the complete ordered ownership trace in one observable regression; test length does not justify a new abstraction"
+)]
 fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
     let preparations = Arc::new(AtomicUsize::new(0));
     let prepared = Arc::new(Notify::new());
@@ -211,82 +217,106 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
     };
     let observed_preparations = Arc::clone(&preparations);
 
-    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
-        .run_with(move |application| async move {
-            let interface = application.interface(application.root().established_recipient());
-            let mut caller = interface
-                .external::<CustomerProtocol>()
-                .expect("the pool caller is established");
-            let customer = caller.recipient();
-            caller
-                .send(
-                    interface.api(),
-                    FifoCommand::submit(SubmissionId::new(7), 3, customer.clone()),
-                )
-                .await
-                .expect("the first job reaches the pool");
-            let first_accepted = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the pool admits the first job")
-                .expect("the pool reports first admission")
-                .message;
-            let (first_id, first_job) = first_accepted
-                .into_accepted()
-                .unwrap_or_else(|_| panic!("the first outcome accepts the first job"));
-            assert_eq!(first_id, SubmissionId::new(7));
-            let first_completed = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the retiring worker completes the first job")
-                .expect("the worker reports first completion")
-                .message;
-            assert_eq!(first_completed.role(), Some(&WorkerRole::Primary));
-            let (completed_job, first_result) = first_completed
-                .into_completed()
-                .unwrap_or_else(|_| panic!("the second outcome completes the first job"));
-            assert_eq!(completed_job, first_job);
-            assert_eq!(first_result, 3);
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _>(
+                move |application| async move {
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let mut caller = interface
+                        .external::<CustomerProtocol>()
+                        .expect("the pool caller is established");
+                    let customer = caller.recipient();
+                    caller
+                        .send(
+                            interface.api(),
+                            FifoCommand::submit(SubmissionId::new(7), 3, customer.clone()),
+                        )
+                        .await
+                        .expect("the first job reaches the pool");
+                    let first_accepted =
+                        tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                            .await
+                            .expect("the pool admits the first job")
+                            .expect("the pool reports first admission")
+                            .message;
+                    let (first_id, first_job) = first_accepted
+                        .into_accepted()
+                        .unwrap_or_else(|_| panic!("the first outcome accepts the first job"));
+                    assert_eq!(first_id, SubmissionId::new(7));
+                    let first_completed =
+                        tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                            .await
+                            .expect("the retiring worker completes the first job")
+                            .expect("the worker reports first completion")
+                            .message;
+                    assert_eq!(first_completed.role(), Some(&WorkerRole::Primary));
+                    let (completed_job, first_result) = first_completed
+                        .into_completed()
+                        .unwrap_or_else(|_| panic!("the second outcome completes the first job"));
+                    assert_eq!(completed_job, first_job);
+                    assert_eq!(first_result, 3);
 
-            tokio::time::timeout(Duration::from_secs(5), prepared.notified())
-                .await
-                .expect("the pool requests its replacement source");
-            assert_eq!(observed_preparations.load(Ordering::SeqCst), 1);
-            caller
-                .send(
-                    interface.api(),
-                    FifoCommand::submit(SubmissionId::new(8), 4, customer),
-                )
-                .await
-                .expect("the second job reaches the pool");
-            let second_accepted = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the pool admits the second job")
-                .expect("the pool reports second admission")
-                .message;
-            let (second_id, second_job) = second_accepted
-                .into_accepted()
-                .unwrap_or_else(|_| panic!("the third outcome accepts the second job"));
-            assert_eq!(second_id, SubmissionId::new(8));
-            let second_completed = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the replacement completes the second job")
-                .expect("the worker reports second completion")
-                .message;
-            assert_eq!(second_completed.role(), Some(&WorkerRole::Primary));
-            let (completed_job, second_result) = second_completed
-                .into_completed()
-                .unwrap_or_else(|_| panic!("the fourth outcome completes the second job"));
-            assert_eq!(completed_job, second_job);
-            assert_eq!(second_result, 4);
-            caller
-                .send(interface.api(), FifoCommand::shutdown())
-                .await
-                .expect("the pool receives orderly shutdown");
-            let lifecycle = application.lifecycle();
-            tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
-                .await
-                .expect("the pool drains after replacement")
-        })
-        .unwrap_or_else(|_| panic!("the pool runs both workers and shuts down"));
+                    tokio::time::timeout(Duration::from_secs(5), prepared.notified())
+                        .await
+                        .expect("the pool requests its replacement source");
+                    assert_eq!(observed_preparations.load(Ordering::SeqCst), 1);
+                    caller
+                        .send(
+                            interface.api(),
+                            FifoCommand::submit(SubmissionId::new(8), 4, customer),
+                        )
+                        .await
+                        .expect("the second job reaches the pool");
+                    let second_accepted =
+                        tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                            .await
+                            .expect("the pool admits the second job")
+                            .expect("the pool reports second admission")
+                            .message;
+                    let (second_id, second_job) = second_accepted
+                        .into_accepted()
+                        .unwrap_or_else(|_| panic!("the third outcome accepts the second job"));
+                    assert_eq!(second_id, SubmissionId::new(8));
+                    let second_completed =
+                        tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                            .await
+                            .expect("the replacement completes the second job")
+                            .expect("the worker reports second completion")
+                            .message;
+                    assert_eq!(second_completed.role(), Some(&WorkerRole::Primary));
+                    let (completed_job, second_result) = second_completed
+                        .into_completed()
+                        .unwrap_or_else(|_| panic!("the fourth outcome completes the second job"));
+                    assert_eq!(completed_job, second_job);
+                    assert_eq!(second_result, 4);
+                    caller
+                        .send(interface.api(), FifoCommand::shutdown())
+                        .await
+                        .expect("the pool receives orderly shutdown");
+                    let lifecycle = application.lifecycle();
+                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                        .await
+                        .expect("the pool drains after replacement")
+                },
+            ),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the pool runs both workers and shuts down");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((root_origin, joined_actor))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let terminal: RecoveryTerminal = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {
@@ -315,55 +345,75 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
         customers: ActorSpace::new(),
     };
     let observed_preparations = Arc::clone(&preparations);
-    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
-        .run_with(move |application| async move {
-            let interface = application.interface(application.root().established_recipient());
-            let mut caller = interface
-                .external::<CustomerProtocol>()
-                .expect("the retry customer is established");
-            let customer = caller.recipient();
-            caller
-                .send(
-                    interface.api(),
-                    FifoCommand::submit(SubmissionId::new(9), 5, customer),
-                )
-                .await
-                .expect("the interrupted job reaches the pool");
-            let accepted = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the interrupted job is admitted")
-                .expect("the pool reports admission")
-                .message;
-            let (submission, job) = accepted
-                .into_accepted()
-                .unwrap_or_else(|_| panic!("the first customer outcome admits the job"));
-            assert_eq!(submission, SubmissionId::new(9));
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _>(
+                move |application| async move {
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let mut caller = interface
+                        .external::<CustomerProtocol>()
+                        .expect("the retry customer is established");
+                    let customer = caller.recipient();
+                    caller
+                        .send(
+                            interface.api(),
+                            FifoCommand::submit(SubmissionId::new(9), 5, customer),
+                        )
+                        .await
+                        .expect("the interrupted job reaches the pool");
+                    let accepted = tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                        .await
+                        .expect("the interrupted job is admitted")
+                        .expect("the pool reports admission")
+                        .message;
+                    let (submission, job) = accepted
+                        .into_accepted()
+                        .unwrap_or_else(|_| panic!("the first customer outcome admits the job"));
+                    assert_eq!(submission, SubmissionId::new(9));
 
-            tokio::time::timeout(Duration::from_secs(5), prepared.notified())
-                .await
-                .expect("the stopped worker triggers one preparation");
-            assert_eq!(observed_preparations.load(Ordering::SeqCst), 1);
-            let completed = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the replacement completes the interrupted job")
-                .expect("the customer receives the retried result")
-                .message;
-            assert_eq!(completed.role(), Some(&WorkerRole::Primary));
-            let (completed_job, result) = completed
-                .into_completed()
-                .unwrap_or_else(|_| panic!("the retry completes without returning the job"));
-            assert_eq!(completed_job, job);
-            assert_eq!(result, 5);
-            caller
-                .send(interface.api(), FifoCommand::shutdown())
-                .await
-                .expect("the pool receives orderly shutdown after retry");
-            let lifecycle = application.lifecycle();
-            tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
-                .await
-                .expect("the pool drains both workers after retry")
-        })
-        .unwrap_or_else(|_| panic!("the interrupted job completes after replacement"));
+                    tokio::time::timeout(Duration::from_secs(5), prepared.notified())
+                        .await
+                        .expect("the stopped worker triggers one preparation");
+                    assert_eq!(observed_preparations.load(Ordering::SeqCst), 1);
+                    let completed = tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                        .await
+                        .expect("the replacement completes the interrupted job")
+                        .expect("the customer receives the retried result")
+                        .message;
+                    assert_eq!(completed.role(), Some(&WorkerRole::Primary));
+                    let (completed_job, result) = completed.into_completed().unwrap_or_else(|_| {
+                        panic!("the retry completes without returning the job")
+                    });
+                    assert_eq!(completed_job, job);
+                    assert_eq!(result, 5);
+                    caller
+                        .send(interface.api(), FifoCommand::shutdown())
+                        .await
+                        .expect("the pool receives orderly shutdown after retry");
+                    let lifecycle = application.lifecycle();
+                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                        .await
+                        .expect("the pool drains both workers after retry")
+                },
+            ),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the interrupted job completes after replacement");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((root_origin, joined_actor))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let terminal: RecoveryTerminal = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {
@@ -376,6 +426,10 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep the complete ordered ownership trace in one observable regression; test length does not justify a new abstraction"
+)]
 fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
     let preparations = Arc::new(AtomicUsize::new(0));
     let prepared = Arc::new(Notify::new());
@@ -392,83 +446,103 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
         customers: ActorSpace::new(),
     };
     let observed_preparations = Arc::clone(&preparations);
-    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
-        .run_with(move |application| async move {
-            let interface = application.interface(application.root().established_recipient());
-            let mut caller = interface
-                .external::<CustomerProtocol>()
-                .expect("the interrupted customer is established");
-            let customer = caller.recipient();
-            caller
-                .send(
-                    interface.api(),
-                    FifoCommand::submit(SubmissionId::new(10), 6, customer.clone()),
-                )
-                .await
-                .expect("the first job reaches the pool");
-            let accepted = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the interrupted job is admitted")
-                .expect("the pool reports admission")
-                .message;
-            let (submission, job) = accepted
-                .into_accepted()
-                .unwrap_or_else(|_| panic!("the first outcome admits the interrupted job"));
-            assert_eq!(submission, SubmissionId::new(10));
-            let returned = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the stopped worker returns its assigned job")
-                .expect("the pool reports the interrupted assignment")
-                .message;
-            assert_eq!(returned.role(), Some(&WorkerRole::Primary));
-            let (returned_job, payload, reason) = returned
-                .into_returned_assigned()
-                .unwrap_or_else(|_| panic!("the pool returns the exact assigned job"));
-            assert_eq!(returned_job, job);
-            assert_eq!(payload, 6);
-            assert_eq!(reason, AssignedReturnReason::WorkerStopped);
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _>(
+                move |application| async move {
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let mut caller = interface
+                        .external::<CustomerProtocol>()
+                        .expect("the interrupted customer is established");
+                    let customer = caller.recipient();
+                    caller
+                        .send(
+                            interface.api(),
+                            FifoCommand::submit(SubmissionId::new(10), 6, customer.clone()),
+                        )
+                        .await
+                        .expect("the first job reaches the pool");
+                    let accepted = tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                        .await
+                        .expect("the interrupted job is admitted")
+                        .expect("the pool reports admission")
+                        .message;
+                    let (submission, job) = accepted
+                        .into_accepted()
+                        .unwrap_or_else(|_| panic!("the first outcome admits the interrupted job"));
+                    assert_eq!(submission, SubmissionId::new(10));
+                    let returned = tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                        .await
+                        .expect("the stopped worker returns its assigned job")
+                        .expect("the pool reports the interrupted assignment")
+                        .message;
+                    assert_eq!(returned.role(), Some(&WorkerRole::Primary));
+                    let (returned_job, payload, reason) = returned
+                        .into_returned_assigned()
+                        .unwrap_or_else(|_| panic!("the pool returns the exact assigned job"));
+                    assert_eq!(returned_job, job);
+                    assert_eq!(payload, 6);
+                    assert_eq!(reason, AssignedReturnReason::WorkerStopped);
 
-            tokio::time::timeout(Duration::from_secs(5), prepared.notified())
-                .await
-                .expect("the source prepares a replacement after interruption");
-            assert_eq!(observed_preparations.load(Ordering::SeqCst), 1);
-            caller
-                .send(
-                    interface.api(),
-                    FifoCommand::submit(SubmissionId::new(11), 7, customer),
-                )
-                .await
-                .expect("the replacement receives another job");
-            let accepted = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the second job is admitted")
-                .expect("the pool reports second admission")
-                .message;
-            let (submission, job) = accepted
-                .into_accepted()
-                .unwrap_or_else(|_| panic!("the third outcome admits the second job"));
-            assert_eq!(submission, SubmissionId::new(11));
-            let completed = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the replacement completes its job")
-                .expect("the customer receives a completed result")
-                .message;
-            assert_eq!(completed.role(), Some(&WorkerRole::Primary));
-            let (completed_job, result) = completed
-                .into_completed()
-                .unwrap_or_else(|_| panic!("the fourth outcome completes the second job"));
-            assert_eq!(completed_job, job);
-            assert_eq!(result, 7);
-            caller
-                .send(interface.api(), FifoCommand::shutdown())
-                .await
-                .expect("the pool receives orderly shutdown");
-            let lifecycle = application.lifecycle();
-            tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
-                .await
-                .expect("the pool drains after the failed assignment")
-        })
-        .unwrap_or_else(|_| panic!("the pool returns the failed job and drains"));
+                    tokio::time::timeout(Duration::from_secs(5), prepared.notified())
+                        .await
+                        .expect("the source prepares a replacement after interruption");
+                    assert_eq!(observed_preparations.load(Ordering::SeqCst), 1);
+                    caller
+                        .send(
+                            interface.api(),
+                            FifoCommand::submit(SubmissionId::new(11), 7, customer),
+                        )
+                        .await
+                        .expect("the replacement receives another job");
+                    let accepted = tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                        .await
+                        .expect("the second job is admitted")
+                        .expect("the pool reports second admission")
+                        .message;
+                    let (submission, job) = accepted
+                        .into_accepted()
+                        .unwrap_or_else(|_| panic!("the third outcome admits the second job"));
+                    assert_eq!(submission, SubmissionId::new(11));
+                    let completed = tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                        .await
+                        .expect("the replacement completes its job")
+                        .expect("the customer receives a completed result")
+                        .message;
+                    assert_eq!(completed.role(), Some(&WorkerRole::Primary));
+                    let (completed_job, result) = completed
+                        .into_completed()
+                        .unwrap_or_else(|_| panic!("the fourth outcome completes the second job"));
+                    assert_eq!(completed_job, job);
+                    assert_eq!(result, 7);
+                    caller
+                        .send(interface.api(), FifoCommand::shutdown())
+                        .await
+                        .expect("the pool receives orderly shutdown");
+                    let lifecycle = application.lifecycle();
+                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                        .await
+                        .expect("the pool drains after the failed assignment")
+                },
+            ),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the pool returns the failed job and drains");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((root_origin, joined_actor))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let terminal: RecoveryTerminal = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {
@@ -501,74 +575,94 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
         workers: ActorSpace::new(),
         customers: ActorSpace::new(),
     };
-    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
-        .run_with(move |application| async move {
-            let interface = application.interface(application.root().established_recipient());
-            let mut caller = interface
-                .external::<CustomerProtocol>()
-                .expect("the customer is established");
-            let customer = caller.recipient();
-            caller
-                .send(
-                    interface.api(),
-                    FifoCommand::submit(SubmissionId::new(12), 8, customer.clone()),
-                )
-                .await
-                .expect("the first job reaches the pool");
-            let accepted = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the job is admitted")
-                .expect("the pool reports admission")
-                .message;
-            let (submission, job) = accepted
-                .into_accepted()
-                .unwrap_or_else(|_| panic!("the first outcome admits the job"));
-            assert_eq!(submission, SubmissionId::new(12));
-            let completed = tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                .await
-                .expect("the first worker completes its job")
-                .expect("the customer receives completion")
-                .message;
-            let (completed_job, result) = completed
-                .into_completed()
-                .unwrap_or_else(|_| panic!("the completed outcome retains the job"));
-            assert_eq!(completed_job, job);
-            assert_eq!(result, 8);
-            tokio::time::timeout(Duration::from_secs(5), prepared.notified())
-                .await
-                .expect("the source begins replacement preparation");
-            caller
-                .send(interface.api(), FifoCommand::shutdown())
-                .await
-                .expect("shutdown is admitted while preparation is held");
-            caller
-                .send(
-                    interface.api(),
-                    FifoCommand::submit(SubmissionId::new(13), 9, customer),
-                )
-                .await
-                .expect("the later job is admitted while preparation is held");
-            let shutdown_response =
-                tokio::time::timeout(Duration::from_secs(1), caller.receive()).await;
-            release_preparation
-                .send(())
-                .unwrap_or_else(|()| panic!("the source still awaits release"));
-            let rejected = shutdown_response
-                .expect("shutdown must fold while preparation is held")
-                .expect("the pool returns the later job")
-                .message;
-            let (submission, payload, reason) = rejected
-                .into_rejected()
-                .unwrap_or_else(|_| panic!("the later job is rejected after shutdown"));
-            assert_eq!(submission, SubmissionId::new(13));
-            assert_eq!(payload, 9);
-            assert_eq!(reason, AdmissionRejection::ShuttingDown);
-            let lifecycle = application.lifecycle();
-            tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
-                .await
-                .expect("the pool finishes shutdown after the source returns")
-        })
-        .unwrap_or_else(|_| panic!("the pool drains after held preparation"));
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _>(
+                move |application| async move {
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let mut caller = interface
+                        .external::<CustomerProtocol>()
+                        .expect("the customer is established");
+                    let customer = caller.recipient();
+                    caller
+                        .send(
+                            interface.api(),
+                            FifoCommand::submit(SubmissionId::new(12), 8, customer.clone()),
+                        )
+                        .await
+                        .expect("the first job reaches the pool");
+                    let accepted = tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                        .await
+                        .expect("the job is admitted")
+                        .expect("the pool reports admission")
+                        .message;
+                    let (submission, job) = accepted
+                        .into_accepted()
+                        .unwrap_or_else(|_| panic!("the first outcome admits the job"));
+                    assert_eq!(submission, SubmissionId::new(12));
+                    let completed = tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                        .await
+                        .expect("the first worker completes its job")
+                        .expect("the customer receives completion")
+                        .message;
+                    let (completed_job, result) = completed
+                        .into_completed()
+                        .unwrap_or_else(|_| panic!("the completed outcome retains the job"));
+                    assert_eq!(completed_job, job);
+                    assert_eq!(result, 8);
+                    tokio::time::timeout(Duration::from_secs(5), prepared.notified())
+                        .await
+                        .expect("the source begins replacement preparation");
+                    caller
+                        .send(interface.api(), FifoCommand::shutdown())
+                        .await
+                        .expect("shutdown is admitted while preparation is held");
+                    caller
+                        .send(
+                            interface.api(),
+                            FifoCommand::submit(SubmissionId::new(13), 9, customer),
+                        )
+                        .await
+                        .expect("the later job is admitted while preparation is held");
+                    let shutdown_response =
+                        tokio::time::timeout(Duration::from_secs(1), caller.receive()).await;
+                    release_preparation
+                        .send(())
+                        .unwrap_or_else(|()| panic!("the source still awaits release"));
+                    let rejected = shutdown_response
+                        .expect("shutdown must fold while preparation is held")
+                        .expect("the pool returns the later job")
+                        .message;
+                    let (submission, payload, reason) = rejected
+                        .into_rejected()
+                        .unwrap_or_else(|_| panic!("the later job is rejected after shutdown"));
+                    assert_eq!(submission, SubmissionId::new(13));
+                    assert_eq!(payload, 9);
+                    assert_eq!(reason, AdmissionRejection::ShuttingDown);
+                    let lifecycle = application.lifecycle();
+                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                        .await
+                        .expect("the pool finishes shutdown after the source returns")
+                },
+            ),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the pool drains after held preparation");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((root_origin, joined_actor))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let terminal: RecoveryTerminal = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {
@@ -620,6 +714,10 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep the complete ordered ownership trace in one observable regression; test length does not justify a new abstraction"
+)]
 fn source_task_failure_terminates_the_active_pool() {
     let preparations = Arc::new(AtomicUsize::new(0));
     let prepared = Arc::new(Notify::new());
@@ -635,35 +733,55 @@ fn source_task_failure_terminates_the_active_pool() {
         workers: ActorSpace::new(),
         customers: ActorSpace::new(),
     };
-    let (termination, root_origin, joined_actor) = App::new(pool, spaces)
-        .run_with(move |application| async move {
-            let interface = application.interface(application.root().established_recipient());
-            let mut caller = interface
-                .external::<CustomerProtocol>()
-                .expect("the customer is established");
-            let customer = caller.recipient();
-            caller
-                .send(
-                    interface.api(),
-                    FifoCommand::submit(SubmissionId::new(41), 8, customer),
-                )
-                .await
-                .expect("the first job reaches the pool");
-            for _ in 0..2 {
-                tokio::time::timeout(Duration::from_secs(5), caller.receive())
-                    .await
-                    .expect("the first worker reports its job")
-                    .expect("the customer receives one outcome");
-            }
-            tokio::time::timeout(Duration::from_secs(5), prepared.notified())
-                .await
-                .expect("the source begins preparation before failing");
-            let lifecycle = application.lifecycle();
-            tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
-                .await
-                .expect("a failed source task terminates the active pool")
-        })
-        .unwrap_or_else(|_| panic!("the pool reports source task failure"));
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _>(
+                move |application| async move {
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let mut caller = interface
+                        .external::<CustomerProtocol>()
+                        .expect("the customer is established");
+                    let customer = caller.recipient();
+                    caller
+                        .send(
+                            interface.api(),
+                            FifoCommand::submit(SubmissionId::new(41), 8, customer),
+                        )
+                        .await
+                        .expect("the first job reaches the pool");
+                    for _ in 0..2 {
+                        tokio::time::timeout(Duration::from_secs(5), caller.receive())
+                            .await
+                            .expect("the first worker reports its job")
+                            .expect("the customer receives one outcome");
+                    }
+                    tokio::time::timeout(Duration::from_secs(5), prepared.notified())
+                        .await
+                        .expect("the source begins preparation before failing");
+                    let lifecycle = application.lifecycle();
+                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                        .await
+                        .expect("a failed source task terminates the active pool")
+                },
+            ),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the pool reports source task failure");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((root_origin, joined_actor))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let terminal: RecoveryTerminal = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {

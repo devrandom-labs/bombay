@@ -216,6 +216,7 @@ name = "bombay-example-application-topology"
 version = "0.1.0"
 dependencies = [
  "bombay-rs",
+ "tokio",
 ]
 
 [[package]]
@@ -236,6 +237,7 @@ name = "bombay-example-counter"
 version = "0.1.0"
 dependencies = [
  "bombay-rs",
+ "tokio",
 ]
 
 [[package]]
@@ -259,6 +261,7 @@ name = "bombay-example-worker-pool"
 version = "0.1.0"
 dependencies = [
  "bombay-rs",
+ "tokio",
 ]
 
 [[package]]

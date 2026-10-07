@@ -20,26 +20,45 @@ deterministic Behaviors and the reusable templates owned by Behavior Actors.
 Applications describe actors, topology, routing, supervision, timers, and
 shutdown through Bombay. The foundational Behavior API remains available for
 power users; Behavior Actors owns reusable policy and Bombay supplies local
-execution. Full catalogue policy verification, multicore public runners,
-durable execution and distributed hosting are not complete in this checkout.
+execution. Full catalogue policy verification, durable execution and
+distributed hosting remain separate requirements. EXEC acceptance and delivery
+status are recorded in the selected PRD; source formation alone is not acceptance.
 
 The [application topology example](examples/application-topology/src/main.rs)
-executes the ordinary root boundary and inspects its typed terminal.
+executes the ordinary async root boundary and inspects its complete raw root
+retirement through an application-owned terminal projection.
 
 `ApplicationTerminal` is an application-owned `#[derive(TerminalProjection)]`
 sum. It retains the exact final state, runtime origin, descendant terminals,
 and completion or failure for every declared actor.
 
-Framework-neutral boundaries receive the activated application handle without
-constructing a runtime or boxing a future. The [run_with tests](crates/bombay/tests/run_with.rs)
-compile and execute this boundary with exact output, shutdown, and terminal
-custody.
+`run`, `run_with`, and feature-gated `run_axum` are inherent async methods.
+They use an entered, caller-owned Tokio host. `Application::run_blocking`
+accepts the caller's configured Tokio `Builder`, constructs an owned host,
+and drives the same paired execution and receiving path. It rejects an entered
+runtime before effects and returns the original application, Builder, and
+`RunError` on that refusal or a native build failure. The Builder selects
+current-thread or multithread execution; Bombay adds no scheduler enum.
+
+`execute` and `execute_with` return separate execution and result futures.
+Keep the result future when execution may be dropped or may unwind. The
+[run_with tests](crates/bombay/tests/run_with.rs) exercise supplied Work, exact
+output, shutdown, and raw root custody. Work futures and outputs may borrow
+caller values and need not be `Send`; independently spawned actor tasks retain
+their actual `Send + 'static` requirements.
 
 Returning from the boundary does not stop the actor. The handle names shutdown
 authority separately from root delivery: `application.lifecycle()` is the one
 ordinary root-lifecycle spelling, and its `termination()` retains the exact
-incarnation fact. A boundary-owned `Result<T, E>` is returned unchanged rather
-than folded into `RunError`.
+incarnation fact. A boundary-owned `Result<T, E>` remains the exact supplied Work output,
+inside `Some`. It coexists with the independent cleanup receiving and task-join
+results. When no Work is supplied, both callable and output are `None` in
+`Option<Never>`; no unit callable is fabricated. The raw root result retains `RootOrigin<Owner>` and the actual
+`ActorRetirement<Actor, Terminal, ChildFailures>` or native `JoinError`.
+`Terminal` selects descendant projection, not automatic root projection.
+For an empty descendant destination, `.run::<_, _, Never, _>().await` makes
+that choice explicit while the other axes remain inferred. Project the root
+outside the runtime only when the application selects that policy.
 
 An interface establishes a real typed external actor rather than inventing a
 raw sender address. The [external actor tests](crates/bombay/tests/actor_interface.rs)
@@ -115,7 +134,11 @@ Behavior-originated admission preserve truthful caller provenance and exact
 rejected commands without claiming processing or durable commit. Native
 activation hydrates before routability, shares the application address source,
 preserves exact failure and descendant-terminal facts, and returns bounded
-family metrics after root-first shutdown. The generic directory/runtime
+family metrics after root-first shutdown. `run_with_entities` returns Work
+outcome, a separate root receipt, and the recursive family receipts together.
+Each acquired root or family report leaves the cleanup producer before it
+awaits the next owner. Native cleanup failure and receiving errors remain
+separate from those acquired reports. The generic directory/runtime
 equation remains an explicit advanced `bombay::entity` integration surface.
 
 ## Architecture
@@ -132,9 +155,13 @@ Behavior + bombay-engine::Driver
 ```
 
 Behavior decides; runtime capabilities perform; capability results return as
-later typed events. Users do not construct a runtime, guardian, Driver,
-mailbox, address space, timer queue, observation subject, incarnation, task,
-or interpreter.
+later typed events. Ordinary applications select a live Tokio host or supply
+a Builder to `run_blocking`; they do not construct a Bombay guardian, Driver,
+mailbox, timer queue, observation subject, incarnation, or interpreter.
+Dropping a runtime limits task liveness. An entered or captured Handle is not
+a liveness guarantee: keep the selected host alive and polling through all
+required actor, cleanup, and family joins. Completion observation alone does
+not replace those owned results.
 
 The standard local runtime uses Address, Communication, Observe, and Timers
 directly. Bombay does not wrap them in a second registry, namespace, mailbox,
@@ -159,10 +186,11 @@ channel are gone.
 
 The exact selected contracts and any live blockers are recorded in
 [`docs/prd-backlog/status.md`](docs/prd-backlog/status.md). The local
-explicit application path is executable. Named topology declaration and the
-opt-in Axum boundary are feature-complete; automatic topology-owned actor-space
-materialization remains blocked on the owning contracts identified by the
-backlog and selected PRD.
+explicit application path has executable source and controls. Named topology
+and same-path HTTP use private closed actor-space composition. Advanced App
+still supplies canonical hosts for deliberate logical-delivery protocols.
+Feature acceptance, distillation and merge state remain in the selected PRD
+and backlog; source formation does not establish those states.
 
 The product exposes Behavior's generated user-message form and statically
 typed application composition. Every level is static: generated code reduces to ordinary concrete

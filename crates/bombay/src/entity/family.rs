@@ -1,13 +1,15 @@
 //! Nominal native Entity definitions, stable references, and family products.
 
 use core::fmt;
-use core::future::Future;
+use core::future::{Future, ready};
 use core::hash::Hash;
 use core::num::NonZeroUsize;
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use tokio::sync::oneshot::{self, error::RecvError};
+use tokio::task::JoinError;
 
 use behavior::{
     ActionItem, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -111,7 +113,7 @@ pub trait EntityDefinition: Send + Sync + 'static {
         activation: ActivationId,
         retirement: Result<
             ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>,
-            tokio::task::JoinError,
+            JoinError,
         >,
     );
 }
@@ -294,7 +296,7 @@ type ReceptionistFor<D> = EntityReceptionist<
     ActorRef<<<D as EntityDefinition>::Behavior as Behavior>::Protocol>,
     NativeEntityLease<D>,
     tokio::task::JoinHandle<()>,
-    tokio::task::JoinError,
+    JoinError,
     EntityRetirementFailure,
 >;
 
@@ -502,7 +504,8 @@ mod application_families_sealed {
 /// Static application family product and its live/shutdown projections.
 pub trait EntityApplicationFamilies<Hosts>: application_families_sealed::Sealed {
     type Receptionists: Clone + Send + 'static;
-    /// Original role-indexed shutdown facts, metrics and native installed-family disposal failure.
+    /// Original role-indexed shutdown receiving results, including exact receiving failures.
+    /// An unfinished tail is a receiving failure, never a fabricated completed report.
     type Shutdowns: Send + 'static;
 }
 
@@ -534,12 +537,17 @@ where
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
     type Shutdowns = (
-        Role,
-        (
-            EntityShutdown<tokio::task::JoinError, EntityRetirementFailure, D::Id>,
-            EntityMetrics,
-            Option<Box<dyn Any + Send>>,
-        ),
+        Result<
+            (
+                Role,
+                (
+                    EntityShutdown<JoinError, EntityRetirementFailure, D::Id>,
+                    EntityMetrics,
+                    Option<Box<dyn Any + Send>>,
+                ),
+            ),
+            RecvError,
+        >,
         Tail::Shutdowns,
     );
 }
@@ -611,7 +619,7 @@ where
     async fn shutdown(
         &self,
     ) -> (
-        EntityShutdown<tokio::task::JoinError, EntityRetirementFailure, D::Id>,
+        EntityShutdown<JoinError, EntityRetirementFailure, D::Id>,
         EntityMetrics,
     ) {
         let directory = self.runtime.shutdown().await;
@@ -685,19 +693,33 @@ where
 pub(crate) trait InstalledEntityFamilies {
     type Receptionists: Clone + Send + 'static;
     type Shutdowns: Send + 'static;
+    type ShutdownPublications: Send + 'static;
 
     fn receptionists(&self) -> Self::Receptionists;
 
-    fn shutdown(self) -> impl Future<Output = Self::Shutdowns> + Send;
+    fn shutdown_receiving() -> (
+        Self::ShutdownPublications,
+        impl Future<Output = Self::Shutdowns> + Send,
+    );
+
+    fn shutdown(self, publications: Self::ShutdownPublications) -> impl Future<Output = ()> + Send;
 }
 
 impl InstalledEntityFamilies for () {
     type Receptionists = ();
     type Shutdowns = ();
+    type ShutdownPublications = ();
 
     fn receptionists(&self) -> Self::Receptionists {}
 
-    async fn shutdown(self) -> Self::Shutdowns {}
+    fn shutdown_receiving() -> (
+        Self::ShutdownPublications,
+        impl Future<Output = Self::Shutdowns> + Send,
+    ) {
+        ((), ready(()))
+    }
+
+    async fn shutdown(self, (): Self::ShutdownPublications) {}
 }
 
 impl<Role, D, Tail> InstalledEntityFamilies for (Role, InstalledEntityFamily<D>, Tail)
@@ -709,13 +731,30 @@ where
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
     type Shutdowns = (
-        Role,
-        (
-            EntityShutdown<tokio::task::JoinError, EntityRetirementFailure, D::Id>,
-            EntityMetrics,
-            Option<Box<dyn Any + Send>>,
-        ),
+        Result<
+            (
+                Role,
+                (
+                    EntityShutdown<JoinError, EntityRetirementFailure, D::Id>,
+                    EntityMetrics,
+                    Option<Box<dyn Any + Send>>,
+                ),
+            ),
+            RecvError,
+        >,
         Tail::Shutdowns,
+    );
+
+    type ShutdownPublications = (
+        oneshot::Sender<(
+            Role,
+            (
+                EntityShutdown<JoinError, EntityRetirementFailure, D::Id>,
+                EntityMetrics,
+                Option<Box<dyn Any + Send>>,
+            ),
+        )>,
+        Tail::ShutdownPublications,
     );
 
     fn receptionists(&self) -> Self::Receptionists {
@@ -726,11 +765,30 @@ where
         )
     }
 
-    async fn shutdown(self) -> Self::Shutdowns {
+    fn shutdown_receiving() -> (
+        Self::ShutdownPublications,
+        impl Future<Output = Self::Shutdowns> + Send,
+    ) {
+        let (head_publication, received_head) = oneshot::channel();
+        let (tail_publications, received_tail) = Tail::shutdown_receiving();
+        let receiving = async move {
+            let head = received_head.await;
+            let tail = received_tail.await;
+            (head, tail)
+        };
+        ((head_publication, tail_publications), receiving)
+    }
+
+    async fn shutdown(self, publications: Self::ShutdownPublications) {
         let (role, family, tail) = self;
+        let (head_publication, tail_publications) = publications;
         let (shutdown, metrics) = family.shutdown().await;
         let family_disposal_failure = catch_unwind(AssertUnwindSafe(|| drop(family))).err();
-        let tail = tail.shutdown().await;
-        (role, (shutdown, metrics, family_disposal_failure), tail)
+        match head_publication.send((role, (shutdown, metrics, family_disposal_failure))) {
+            Ok(()) => {}
+            // Only the final receiver's surrender permits this exact one-time discharge.
+            Err(head) => drop(head),
+        }
+        tail.shutdown(tail_publications).await;
     }
 }

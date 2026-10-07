@@ -3,6 +3,7 @@
 //! shutdown. Behavior owns the closed roles and routes, Behavior Actors owns
 //! the shutdown plan, and Bombay only interprets and retains the result.
 
+use bombay::ApplicationOutcome;
 use bombay::behavior::{
     BehaviorBase, BehaviorSettlements, ChildHead, ChildTail, Children, ClassifySettlement,
     CreationSequence, Never, SettlementStatus,
@@ -10,6 +11,7 @@ use bombay::behavior::{
 use bombay::lifecycle::shutdown_after_children;
 use bombay::prelude::*;
 use bombay::{ChildFailure, ProjectTerminal};
+use tokio::runtime::Builder;
 
 const INDEXER_NONCE: u64 = 0;
 const JOURNAL_NONCE: u64 = 1;
@@ -144,14 +146,33 @@ fn main() {
         .shutdown_phase(DocumentSystemChild::Indexer)
         .shutdown_phase(DocumentSystemChild::Journal)
         .finish();
-    let (termination, origin, retirement) = Application::new(application)
-        .run_with(|application| async move {
-            let lifecycle = application.lifecycle();
-            let shutdown = lifecycle.request_shutdown();
-            assert_eq!(shutdown, Ok(()));
-            lifecycle.termination().await
-        })
-        .expect("the named child topology activates and shuts down in declared phase order");
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            Application::new(application).run_with::<ApplicationTerminal<_>, _, _, _, _, _, _>(
+                |application| async move {
+                    let lifecycle = application.lifecycle();
+                    let shutdown = lifecycle.request_shutdown();
+                    assert_eq!(shutdown, Ok(()));
+                    lifecycle.termination().await
+                },
+            ),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the named child topology activates and shuts down in declared phase order");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((origin, retirement))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
 
     assert_eq!(termination, Ok(Exit::Normal));
     let terminal = ApplicationTerminal::project(

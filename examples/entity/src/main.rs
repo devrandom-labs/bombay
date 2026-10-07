@@ -22,7 +22,8 @@ use bombay::entity::{
 use bombay::prelude::{
     ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown, TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App};
+use bombay::{ActorSpace, ActorSpaces, App, ApplicationOutcome};
+use tokio::runtime::Builder;
 use tokio::sync::Semaphore;
 
 const ACCOUNT_ID: u64 = 7;
@@ -168,45 +169,62 @@ fn main() {
         )
         .expect("the default directory configuration is valid");
 
-    let (outcome, shutdowns) = application
-        .run_with_entities(move |application| async move {
-            let accounts = application.entities(AccountsRole);
-            let account = accounts.entity(ACCOUNT_ID);
-            let interface = application.interface(account.clone());
-            let caller = interface
-                .external::<Replies>()
-                .expect("the external caller is established");
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous example owns one enabled application host");
+    let (outcome, root_receiving, shutdowns) = application_host
+        .block_on(
+            application.run_with_entities(move |application| async move {
+                let accounts = application.entities(AccountsRole);
+                let account = accounts.entity(ACCOUNT_ID);
+                let interface = application.interface(account.clone());
+                let caller = interface
+                    .external::<Replies>()
+                    .expect("the external caller is established");
 
-            caller
-                .send(interface.api(), AccountCommand::Deposit(40))
-                .await
-                .expect("the first incarnation accepts its command");
-            let passivation = application.passivate_entity(AccountsRole, &ACCOUNT_ID);
-            assert_eq!(passivation, Passivation::Begun);
-            Arc::clone(&retired)
-                .acquire_owned()
-                .await
-                .expect("the first incarnation retires")
-                .forget();
-            caller
-                .send(&account, AccountCommand::Deposit(2))
-                .await
-                .expect("the same stable reference activates a replacement");
-            let shutdown = application.lifecycle().request_shutdown();
-            assert_eq!(shutdown, Ok(()));
-        })
-        .expect("the root and Entity family settle");
-    let ((), root_origin, joined_actor) = outcome.unwrap_or_else(|failure| {
-        drop(failure);
-        panic!("the actual root starts before application work completes");
-    });
+                caller
+                    .send(interface.api(), AccountCommand::Deposit(40))
+                    .await
+                    .expect("the first incarnation accepts its command");
+                let passivation = application.passivate_entity(AccountsRole, &ACCOUNT_ID);
+                assert_eq!(passivation, Passivation::Begun);
+                Arc::clone(&retired)
+                    .acquire_owned()
+                    .await
+                    .expect("the first incarnation retires")
+                    .forget();
+                caller
+                    .send(&account, AccountCommand::Deposit(2))
+                    .await
+                    .expect("the same stable reference activates a replacement");
+                let shutdown = application.lifecycle().request_shutdown();
+                assert_eq!(shutdown, Ok(()));
+            }),
+        )
+        .unwrap_or_else(|(application, work, error)| {
+            drop((application, work));
+            panic!("the explicit application host must be entered: {error}");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(()),
+        cleanup: Ok(Ok(())),
+    } = outcome
+    else {
+        panic!("the original application work completes beside its joined cleanup");
+    };
+    let (root_origin, joined_actor) =
+        root_receiving.expect("the independent original root retirement is acquired");
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {
             panic!("the actual application actor task failed: {failure}")
         }),
     );
-    let (AccountsRole, (shutdown, metrics, family_disposal_failure), ()) = shutdowns;
+    let (head_receiving, ()) = shutdowns;
+    let (AccountsRole, (shutdown, metrics, family_disposal_failure)) =
+        head_receiving.expect("the complete original account family retirement is acquired");
 
     assert!(family_disposal_failure.is_none());
     let EntityShutdown::Settled {

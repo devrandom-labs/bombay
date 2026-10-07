@@ -1,4 +1,6 @@
+use bombay::ApplicationOutcome;
 use core::any::type_name;
+use tokio::runtime::Builder;
 
 use bombay::ProjectTerminal;
 use bombay::behavior::EstablishedDelivery;
@@ -77,43 +79,63 @@ impl WaitsForShutdown {
 
 #[test]
 fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
-    let ((), root_origin, joined_actor) = Application::new(Service.stop_on_shutdown())
-        .run_with(|application| async move {
-            let interface = application.interface(Api {
-                service: application.root().established_recipient(),
-            });
-            let interface_description = format!("{interface:?}");
-            assert!(interface_description.contains("ActorInterface"));
-            assert!(interface_description.contains("api_type"));
-            assert!(interface_description.contains(type_name::<Api>()));
-            assert!(!interface_description.contains("EstablishedRecipient"));
-            let lifecycle = application.lifecycle();
-            let mut caller = interface
-                .external::<Replies>()
-                .expect("the external actor is established");
-            let caller_address = caller.address();
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            Application::new(Service.stop_on_shutdown())
+                .run_with::<RootTerminal<StopOnShutdown<Service>>, _, _, _, _, _, _>(
+                    |application| async move {
+                        let interface = application.interface(Api {
+                            service: application.root().established_recipient(),
+                        });
+                        let interface_description = format!("{interface:?}");
+                        assert!(interface_description.contains("ActorInterface"));
+                        assert!(interface_description.contains("api_type"));
+                        assert!(interface_description.contains(type_name::<Api>()));
+                        assert!(!interface_description.contains("EstablishedRecipient"));
+                        let lifecycle = application.lifecycle();
+                        let mut caller = interface
+                            .external::<Replies>()
+                            .expect("the external actor is established");
+                        let caller_address = caller.address();
 
-            caller
-                .send(
-                    &interface.api().service,
-                    Command::Get {
-                        value: 41,
-                        reply_to: caller.recipient(),
+                        caller
+                            .send(
+                                &interface.api().service,
+                                Command::Get {
+                                    value: 41,
+                                    reply_to: caller.recipient(),
+                                },
+                            )
+                            .await
+                            .expect("the exact receptionist admits the command");
+
+                        let reply = caller
+                            .receive()
+                            .await
+                            .expect("the external actor receives the exact reply");
+                        assert_eq!(reply.from, MailAddr(0));
+                        assert_eq!(reply.message, (caller_address, 42));
+                        let termination = lifecycle.termination().await;
+                        assert_eq!(termination, Ok(Exit::Normal));
                     },
-                )
-                .await
-                .expect("the exact receptionist admits the command");
-
-            let reply = caller
-                .receive()
-                .await
-                .expect("the external actor receives the exact reply");
-            assert_eq!(reply.from, MailAddr(0));
-            assert_eq!(reply.message, (caller_address, 42));
-            let termination = lifecycle.termination().await;
-            assert_eq!(termination, Ok(Exit::Normal));
-        })
-        .expect("the application terminates normally");
+                ),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the application terminates normally");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(()),
+        cleanup: Ok(Ok((root_origin, joined_actor))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let terminal: RootTerminal<_> = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {
@@ -125,53 +147,74 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
 
 #[test]
 fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retargets() {
-    let ((), root_origin, joined_actor) = Application::new(WaitsForShutdown.stop_on_shutdown())
-        .run_with(|application| async move {
-            let interface = application.interface(());
-            let lifecycle = application.lifecycle();
-            let sender = interface
-                .external::<ScalarReplies>()
-                .expect("the sender is established");
-            let mut receiver = interface
-                .external::<ScalarReplies>()
-                .expect("the receiver is established");
-            assert_ne!(sender.address(), receiver.address());
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            Application::new(WaitsForShutdown.stop_on_shutdown()).run_with::<RootTerminal<
+                StopOnShutdown<WaitsForShutdown>,
+            >, _, _, _, _, _, _>(
+                |application| async move {
+                    let interface = application.interface(());
+                    let lifecycle = application.lifecycle();
+                    let sender = interface
+                        .external::<ScalarReplies>()
+                        .expect("the sender is established");
+                    let mut receiver = interface
+                        .external::<ScalarReplies>()
+                        .expect("the receiver is established");
+                    assert_ne!(sender.address(), receiver.address());
 
-            let recipient = receiver.recipient();
-            sender
-                .send(&recipient, 10)
-                .await
-                .expect("the first reply is accepted");
-            sender
-                .send(&recipient, 20)
-                .await
-                .expect("the second reply is accepted");
-            close_reply_admission(&receiver);
-            let rejected_after_close = sender
-                .send(&recipient, 30)
-                .await
-                .expect_err("closed admission rejects the exact recipient immediately");
-            assert_eq!(rejected_after_close.into_message(), 30);
-            let first_reply = receiver.receive().await.map(|user| user.message);
-            assert_eq!(first_reply, Some(10));
-            let second_reply = receiver.receive().await.map(|user| user.message);
-            assert_eq!(second_reply, Some(20));
-            let exhausted = receiver.receive().await;
-            assert_eq!(exhausted, None);
-            drop(receiver);
+                    let recipient = receiver.recipient();
+                    sender
+                        .send(&recipient, 10)
+                        .await
+                        .expect("the first reply is accepted");
+                    sender
+                        .send(&recipient, 20)
+                        .await
+                        .expect("the second reply is accepted");
+                    close_reply_admission(&receiver);
+                    let rejected_after_close = sender
+                        .send(&recipient, 30)
+                        .await
+                        .expect_err("closed admission rejects the exact recipient immediately");
+                    assert_eq!(rejected_after_close.into_message(), 30);
+                    let first_reply = receiver.receive().await.map(|user| user.message);
+                    assert_eq!(first_reply, Some(10));
+                    let second_reply = receiver.receive().await.map(|user| user.message);
+                    assert_eq!(second_reply, Some(20));
+                    let exhausted = receiver.receive().await;
+                    assert_eq!(exhausted, None);
+                    drop(receiver);
 
-            let rejected = sender
-                .send(&recipient, 31)
-                .await
-                .expect_err("the stale exact endpoint is closed");
-            let rejected_message = rejected.into_message();
-            assert_eq!(rejected_message, 31);
-            let shutdown = lifecycle.request_shutdown();
-            assert_eq!(shutdown, Ok(()));
-            let repeated = lifecycle.request_shutdown();
-            assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
-        })
-        .expect("the application terminates normally");
+                    let rejected = sender
+                        .send(&recipient, 31)
+                        .await
+                        .expect_err("the stale exact endpoint is closed");
+                    let rejected_message = rejected.into_message();
+                    assert_eq!(rejected_message, 31);
+                    let shutdown = lifecycle.request_shutdown();
+                    assert_eq!(shutdown, Ok(()));
+                    let repeated = lifecycle.request_shutdown();
+                    assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+                },
+            ),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the application terminates normally");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(()),
+        cleanup: Ok(Ok((root_origin, joined_actor))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let terminal: RootTerminal<_> = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {

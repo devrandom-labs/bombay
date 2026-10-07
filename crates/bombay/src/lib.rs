@@ -6,9 +6,10 @@
 //!
 //! # Panic strategy
 //!
-//! Driver panics are normalized internally, and terminal retirement completes
-//! during unwinding. The runtime therefore requires `panic = "unwind"`;
-//! abort-mode programs cannot preserve these lifecycle guarantees.
+//! Caught Behavior fold panics preserve their original cause and surviving state
+//! for asynchronous retirement. Drop does not join; cleanup needs a live,
+//! cooperative host. Other unwinding cannot promise completed cleanup.
+//! The runtime requires `panic = "unwind"`; abort destroys recoverable custody.
 
 extern crate self as bombay;
 
@@ -27,8 +28,6 @@ mod actor_interface;
 pub use actor_interface::{ActorInterface, ExternalActor, ExternalActorError, ExternalTarget};
 pub mod actors;
 pub use application::Application;
-#[cfg(feature = "axum")]
-pub use application_runtime::AxumRunError;
 pub use application_runtime::{
     App, ApplicationBehavior, ApplicationDefinitionError, ApplicationHandle, ApplicationLifecycle,
     ApplicationOutcome, ApplicationStagingError, RunError,
@@ -71,8 +70,6 @@ pub use worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
 
 /// Conventional imports for Bombay applications.
 pub mod prelude {
-    #[cfg(feature = "axum")]
-    pub use crate::AxumRunError;
     pub use crate::actors::ActorExt;
     pub use crate::behavior::{
         Actions, BehaviorActed, ChildDelivery, ChildRole, Children, CreationRejection, Delivery,

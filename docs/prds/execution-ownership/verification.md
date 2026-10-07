@@ -1,10 +1,52 @@
 # EXEC verification evidence
 
-Status: staged EXEC evidence. DG-SHUTDOWN is independently accepted; the
-remaining decision gates are open. [PR326](https://github.com/devrandom-labs/bombay/pull/326) is the consolidated open integration PR; full EXEC acceptance, passing delivery CI and merge are not claimed. The historical baseline is
+Status: staged EXEC evidence. DG-SHUTDOWN, DG-TASK and DG-API are independently
+accepted; five decision gates remain open. [PR326](https://github.com/devrandom-labs/bombay/pull/326) is the consolidated open integration PR; full EXEC acceptance, passing delivery CI and merge are not claimed. The historical baseline is
 `2fccedf6eb636ac22143e7e01de7e784f96e2b4e`, with its original lock and manifest
 hashes in PRD section 16. Later selected contracts and retained evidence are
 recorded below and in the PRD.
+
+## Accepted API verification (2026-10-07)
+
+The [two-signature API decision](application-api.md#accepted-api-2026-10-07)
+selects the current integrated source. Exact private348-source guards, full
+argv/environment, complete stdout/stderr and source hashes are preserved in
+the `/tmp/bombay-final-api-quality-successor-*` actual ledgers and their signed
+peer records. Integration copies41 authorized paths byte-exact, preserves the
+four current PRD/backlog records and all completed local-runtime fixes:
+`/tmp/bombay-final-api-main-integration.json`. No selected contract changed.
+
+Every Cargo command below runs through
+`nix develop /Users/joel/Code/devrandom/bombay -c`, with offline/locked Cargo,
+one build job and a private target directory; no host Rust command is used.
+
+| Actual check | Result / precise scope |
+| --- | --- |
+| `cargo clippy --workspace --all-targets --keep-going -- -D warnings` |0; workspace-unified graph, zero Rust diagnostics. Ledger strictbb5bc45f, peer78891714. |
+| `cargo test -p bombay-rs --features axum` for eight affected targets, debug and release |74 actual passes each: custody4, HTTP5, receiving33, FIFO recovery5, FIFO runtime2, run16, templates7, projection2. Three named static controllers separately executed; the ignored descriptor-limited child is actually invoked by its passing parent, not an extra harness pass. Ledger affected2c27e99e; corrected peer086051bd. |
+| Existing feature-unified application-child compile controller |0; pass fixture and intended NotBehavior E0277 denial. Ledger feature-childa9804663, peerc110dda9. Cumulative unchanged/reviewed static evidence covers34 distinct fixtures:7 pass/27 denials, not34 in this one command. |
+| `cargo check --workspace --all-targets --message-format=json` |0;75 project artifacts, all seven public examples, renamed consumer and three benches, no compiler messages. Formation only. Ledger formationbd715d06, peer8bca71ec. |
+| Six `cargo run --release -p bombay-example-*` finite programs; existing exact HTTP flow test in release |All0; HTTP1 actual pass. Full14 streams and same348-source guards. Ledger examplesb7ada129, peer17a02e70. Supervision is caller compatibility only under the inherited Source finding. |
+
+The unchanged kernel/model proofs remain at their original epochs. In
+particular, Family originalf619f5cd fails the intended law in both profiles;
+fixedcc37dd28 passes; root/head publication inversionsc1f1ff32 fail their
+intended laws and exact healthy restores pass. These are bound by the accepted
+DG-TASK63219517 and final API9359f9a9 decisions; no unchanged inversion is
+repeated. Earlier358 default runtime passes and HTTP5 passes per profile are
+preserved, with15 actual default run tests plus one filtered static controller.
+
+Original strict18/11/33 findings, three missing-import errors, wrong-protocol
+snapshot failures and the failed static collector remain preserved. Their
+reviewed successors do not convert those failure rows into passes. The
+inherited seven Recovery Source controllers and public supervision Source
+receive compatibility credit only; FIFO runtime's two cases are not excluded.
+Their repair is separate existing Source-consumer work, not an EXEC blocker.
+No required EXEC law depends solely on these excluded consumers.
+
+Full local Nix verification of this integration must pass before pushing.
+Other gates, final minimization, required final integrated checks, reviewed
+current-head CI and merge remain open.
 
 ## Fresh preservation commands (2026-10-02)
 
@@ -1473,3 +1515,39 @@ Current full-check result: `nix flake check -L --keep-going --max-jobs 1 --cores
 
 
 Full local checkpoint is green: `nix flake check -L --keep-going --max-jobs 1 --cores 2` exits0 with all21 explicit required aarch64-darwin check successes on the frozen348-source map. `/tmp/bombay-exec-local-flake-disk-retry-result.json` binds exact sources, argv, checks and stdout/stderr. The preceding attempt failed only the panic-unwind compiler’s disk output; its log/result remain separate. Clearing idle task-generated compiler caches left23GiB before retry; no source, contract, check or coverage floor changed. Current branch code is eligible for push; this is not final integrated API/release/extraction verification or main merge. Subsequent edits here/task record/backlog are documentation only; reuse these code/contract checks under the explicit unchanged-code rule and let required CI check the pushed commit.
+
+
+## Accepted nine preservation dispositions (2026-10-06)
+
+Both independent reviewers accept these exact mappings and the explicit
+D-RETIRE-1 panic-transport amendment, with no law veto or new witness required.
+Coordinating signature: `/root/task_gate_coordinator`,
+`/tmp/bombay-nine-preservation-coordinating-disposition.md`,
+SHA256 `4c54304d6891472fdc15227b5bd5e84605f4a8ef260761160d1aba1b98329d97`.
+Separate peer signature: `/root/current_verification_independent_review`,
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-outcome-coverage-summary-cause-review-hbes69rl/nine-preservation-peer-signature.json`,
+SHA256 `653f9b419853382a567e4ebe248fd534b57fcad0570c1873daa4ce1bb906a39a`.
+The complete signed records bind original/current bodies and all16 evidence
+receipts. The table below is the single current repository disposition.
+
+| Original controller | Current successor | Disposition and retained law | Qualified evidence |
+| --- | --- | --- | --- |
+| `panic_consumes_the_only_execution_and_cannot_poll_again` | `pure_turn_panic_returns_native_cause_after_retirement` | Amend panic transport; preserve one consumed execution, one input and no later work. Original task unwind becomes TransitionPanicked with original cause, surviving Behavior and genuine active retirement. Returned Behavior is terminal custody. | Native32/quality29; current Driver terminal/native34 and DG-TASK. |
+| `pure_initialization_panic_is_caught_and_turn_panic_consumes_execution` | `pure_initialization_panic_retires_before_acquiring_input`<br>`pure_turn_panic_returns_native_cause_after_retirement` | Split the combined law; amend only post-init transport and strengthen native cause custody. Init retains zero input and prepared cleanup; turn retains one input and active cleanup. Both exact original causes survive. Both current tests are needed for this original. | Native32 discharge/rebox inversions, complete traces and quality29; the separately executed `pure_initialization_panic_returns_surviving_behavior_and_retires_once` companion supplies initialization cause identity. |
+| `core_surface_has_one_driver_run_and_no_split_lifecycle` | `core_surface_has_one_driver_receipt_and_no_split_lifecycle` | Preserve the single execution law through the existing affine receive seam. One Driver::receive_run invokes one drive loop. No second actor loop, split lifecycle, spawn or abort authority enters ActorExecution. | Current source census, duplicate-driver/retirement E0382 denials, raw-law scripts. |
+| `one_complete_actor_execution_allocates_only_its_exact_settlement_custody` | `actor_execution_adds_no_allocation_to_the_same_driver_receiving_work` | Preserve absolute allocation1; add differential attribution. The exact stopped fixture still requires execution_allocations==1, complete outcome equality and direct==execution allocations. Equality alone is insufficient. No generic whole-hierarchy allocation claim. | Allocation26 c319/7cd: four current/default/Axum/profile positives and four original-drain2-versus1 inversions/restorations; current owner cohorts. |
+| `panic_drops_driver_before_exactly_one_terminal_classification` | `panic_drops_driver_before_exactly_one_terminal_classification`<br>`pure_transition_panic_retires_surviving_behavior_once` | Preserve raw unwind guard and explicitly split caught pure-fold panic. An outside-fold unwind after Pending still drops Driver before exactly one Panicked classification with no false async retirement. A caught pure turn instead returns surviving typed state through one genuine active retirement. | Raw-unwind69b/8f89 complete scripts in both profiles; typed current owner cohorts and Native32. |
+| `exact_observation_start_and_cancel_publish_distinct_control_events` | `exact_observation_start_and_cancel_publish_distinct_control_events` | Preserve distinct synchronous control events with selected exact relationship authority. Started transfers the actual registered authority. Cancel consumes that authority; Cancelled preserves the same relationship. Bare ID cancellation is superseded by the authorized relationship policy, not erased. Joined observation work remains independent. | Current complete owner cohorts; OBS28 priority/event inversions and existing selected-library relationship/static evidence, bounded to this row. |
+| `owned_outcome_preserves_activation_panic_and_rejects_cancellation` | `owned_outcome_preserves_activation_panic_and_cancellation` | Amend unwind/rejection to exact typed task failure custody. Startup conversion retains the original panic or cancellation JoinError, actual task ID, original panic object, whole actor outcome, descendants, report refusal and later failure lane. Real native cancellation never becomes a string panic. | Current complete owner cohorts, exact opaque-cause fixture and DG-TASK/native34 source-bound transport; synthetic conversion is not independently a live-join proof. |
+| `activation_task_event_preserves_task_panic_and_rejects_cancellation` | `activation_task_event_returns_exact_panic_and_cancellation` | Amend panic replay/cancellation rejection to original native failure return. ActivationTasks::next_event returns Result<E,JoinError>; panic retains original opaque object and cancellation stays is_cancelled. The owning actor selects typed capability retirement; no downcast or default success. | Current complete owner cohorts, current primary capability failure both-local-port control and DG-TASK/native task custody. |
+| `activation_task_panic_still_unwinds_the_joining_owner` | `owner_retirement_preserves_later_activation_task_panic` | Amend joining-owner unwind; preserve the earlier primary owner request and later exact failure. OwnerCancellation stays primary. The original late activation panic remains in capability_failures with its task ID; all complete residual lanes return after actor-owned activation settlement. No parent-wide failure policy is imposed. | Current complete owner cohorts, live parent/capability/child controls and independently signed DG-TASK owner table. |
+
+D-RETIRE-1 deliberately changes post-initialization panic transport. It does not claim equivalence to the old task-unwind policy. Caught pure init/turn panic ends folding, keeps the original opaque cause and surviving concrete Behavior, then attempts prepared/active retirement respectively. Only an acquired complete residual with exhausted owners establishes cleanup. An incomplete original Driver retains available facts without replay. Native task panic/cancellation stays exact typed custody. Earlier primary cause and ordered later failures coexist.
+
+Raw pending unwind remains separate and covered. Dropping a borrowed producer retains its outside owner; dropping the complete consuming owner is a separate discharge. Synchronous Drop does not join. Host destruction, non-yielding Behavior, permanently pending uncancellable work, abort/double panic, and values destroyed inside consuming user code or their destructors remain explicit limits. The narrow Any exception owns only original Rust-native panic objects outside actor state/protocols; payload inspection is prohibited.
+
+Evidence limits: Native32 remains historically NONPASS because of test lint failures; its eight intended cause-discharge/rebox failures and exact restorations are reused only through the source-conserving quality29 continuation. Raw-unwind scripts prove their named kills/affine denials; selective arbitrary field erasure is not inferred. Allocation1 covers the exact measured fixture and interval. Current debug/release owner streams each contain all eight named Bombay successor/raw controls once; Engine pure init/turn controls use the exact current `960466bf...` fixture and qualified native evidence. No optional new probe or repeated valid proof is requested.
+
+The final isolated App baseline remains `ca706421...`; the accepted custody/publication/execution kernel is `6f93199e136f32706fd18c1425e2e77ee6a23910a65c75e516750aa59317b2f8`. Temporary controlled HTTP rows are outside this disposition and receive no preservation credit.
+
+Separate gates remain: DG-API, complete DG-OBSERVATION and DG-PROJECTION, minimization/distillation, integrated warning/coverage/Nix/CI/delivery, source retention and whole-PRD states.

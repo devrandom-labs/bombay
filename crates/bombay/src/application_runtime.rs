@@ -2,8 +2,9 @@
 
 use core::convert::Infallible;
 use core::fmt;
-use core::future::{Future, poll_fn};
+use core::future::{Future, Ready, poll_fn};
 use core::marker::PhantomData;
+use core::ops::AsyncFnOnce;
 use core::pin::pin;
 use core::task::Poll;
 use std::any::Any;
@@ -12,12 +13,14 @@ use std::error::Error;
 use std::io;
 #[cfg(feature = "axum")]
 use std::net::SocketAddr;
-use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use std::sync::{Arc, Mutex, PoisonError, Weak};
 use std::time::Instant;
-use tokio::runtime::{Handle, TryCurrentError};
+#[cfg(feature = "axum")]
+use tokio::net::TcpListener;
+use tokio::runtime::{Builder, Handle, TryCurrentError};
 use tokio::sync::oneshot::error::RecvError;
-use tokio::task::JoinError;
+use tokio::task::{JoinError, JoinHandle};
 
 use behavior::{
     ActionItem, Actions, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -62,13 +65,12 @@ use crate::child_bindings::{
     NoChildBindings, RetireChildTasks, RuntimeChildBindings,
 };
 use crate::entity::{
-    EntityAdmission, EntityApplicationFamilies, EntityDefinition, EntityFamilyAt,
-    InstallEntityFamilies, InstalledEntityFamilies, NativeEntityHost, Passivation,
+    EntityAdmission, EntityDefinition, EntityFamilyAt, InstallEntityFamilies,
+    InstalledEntityFamilies, NativeEntityHost, Passivation,
 };
 use crate::interpret::{ActionInterpreter, RetireCapabilities};
 use crate::launch::{
-    ActorSpace, ProjectedTask, RootActor, SpawnError, spawn_local_execution, spawn_owned_with,
-    spawn_root_with,
+    ActorSpace, ProjectedTask, SpawnError, spawn_local_execution, spawn_owned_with,
 };
 use crate::local::{
     ActivationTasks, ActorRef, CapabilityRetirement, CommitActions, InstalledActor,
@@ -78,8 +80,6 @@ use crate::observation::{TerminationObservations, observe_peer};
 use crate::reports::{
     LocalParentReports, LocalTerminalReports, ParentReporting, TerminalReportTransaction,
 };
-#[cfg(feature = "axum")]
-use crate::terminal::LocalOutcome;
 use crate::terminal::{ActorRetirement, ChildOrigin, ProjectTerminal, RootOrigin};
 use crate::termination::TerminalReportDisposition;
 use crate::time::LocalTimers;
@@ -163,93 +163,23 @@ where
     pub(crate) terminal_reports: LocalTerminalReports,
 }
 
-/// Failure at the complete local application boundary.
-pub enum RunError<
-    RootError = Never,
-    RootTerminal = Never,
-    StagingInputs = Never,
-    PreparedInputs = Never,
-> {
-    /// Cold staging stopped; every still-available root, declaration and callable is retained.
-    StagingRejected { inputs: StagingInputs },
-    /// Executor construction failed after staging; the complete prepared actor and callable survive.
-    ExecutorRejected {
-        error: io::Error,
-        inputs: PreparedInputs,
-    },
+/// Failure while constructing or entering the owned blocking executor.
+#[derive(thiserror::Error)]
+pub enum RunError {
+    /// Blocking execution was requested while a Tokio runtime was entered.
+    #[error("blocking application execution is forbidden inside an entered Tokio runtime")]
+    BlockingInEnteredRuntime,
     /// Tokio could not construct the application executor.
-    Runtime(io::Error),
-    /// The root address source rejected allocation.
-    AllocationRejected(behavior::AllocationRejection),
-    /// The root's controlled initialization fold failed.
-    InitializationRejected(RootError),
-    /// The runtime could not commit the root's address claim.
-    HostRejected(ClaimError<MailAddr>),
-    /// The root task panicked before activation.
-    Panicked,
-    /// The executor cancelled the root task before activation.
-    Cancelled,
-    /// The root never published; its exact rejected or retired terminal is retained.
-    Unpublished(RootTerminal),
-    /// The private running application was initialized more than once.
-    InitializedTwice,
-    /// The actor task failed before it returned an owned local outcome.
-    ActorTaskFailed(JoinError),
+    #[error("Bombay could not construct its Tokio runtime")]
+    Runtime(#[source] io::Error),
 }
 
-impl<RootError, RootTerminal, StagingInputs, PreparedInputs> fmt::Debug
-    for RunError<RootError, RootTerminal, StagingInputs, PreparedInputs>
-{
+impl fmt::Debug for RunError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
-            Self::StagingRejected { .. } => "StagingRejected",
-            Self::ExecutorRejected { .. } => "ExecutorRejected",
+            Self::BlockingInEnteredRuntime => "BlockingInEnteredRuntime",
             Self::Runtime(_) => "Runtime",
-            Self::AllocationRejected(_) => "AllocationRejected",
-            Self::InitializationRejected(_) => "InitializationRejected",
-            Self::HostRejected(_) => "HostRejected",
-            Self::Panicked => "Panicked",
-            Self::Cancelled => "Cancelled",
-            Self::Unpublished(_) => "Unpublished",
-            Self::InitializedTwice => "InitializedTwice",
-            Self::ActorTaskFailed(_) => "ActorTaskFailed",
         })
-    }
-}
-
-impl<RootError, RootTerminal, StagingInputs, PreparedInputs> fmt::Display
-    for RunError<RootError, RootTerminal, StagingInputs, PreparedInputs>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(match self {
-            Self::StagingRejected { .. } => {
-                "the declared application did not complete cold staging"
-            }
-            Self::ExecutorRejected { .. } => {
-                "the prepared application retains its inputs after executor construction failed"
-            }
-            Self::Runtime(_) => "Bombay could not construct its Tokio runtime",
-            Self::AllocationRejected(_) => "the root address source rejected allocation",
-            Self::InitializationRejected(_) => "the root rejected initialization",
-            Self::HostRejected(_) => "the actor host rejected root initialization",
-            Self::Panicked => "root initialization panicked",
-            Self::Cancelled => "root initialization was cancelled",
-            Self::Unpublished(_) => "the root never published its live reference",
-            Self::InitializedTwice => "the running application was initialized more than once",
-            Self::ActorTaskFailed(_) => "the actor task did not return an owned retirement",
-        })
-    }
-}
-
-impl<RootError, RootTerminal, StagingInputs, PreparedInputs> Error
-    for RunError<RootError, RootTerminal, StagingInputs, PreparedInputs>
-{
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::Runtime(error) | Self::ExecutorRejected { error, .. } => Some(error),
-            Self::ActorTaskFailed(error) => Some(error),
-            _ => None,
-        }
     }
 }
 
@@ -411,102 +341,6 @@ impl<P: Protocol, Event> ApplicationLifecycle<P, Event> {
     }
 }
 
-/// Failure at the opt-in Axum HTTP boundary.
-#[cfg(feature = "axum")]
-pub enum AxumRunError<
-    RootTerminal,
-    RootError = Never,
-    StagingInputs = Never,
-    PreparedInputs = Never,
-> {
-    Application(RunError<RootError, RootTerminal, StagingInputs, PreparedInputs>),
-    Bind {
-        address: SocketAddr,
-        source: io::Error,
-    },
-    Serve {
-        source: io::Error,
-        terminal: RootTerminal,
-    },
-    ActorTaskFailed {
-        source: JoinError,
-        serve: Result<(), io::Error>,
-    },
-}
-
-#[cfg(feature = "axum")]
-impl<RootTerminal, RootError, StagingInputs, PreparedInputs> fmt::Debug
-    for AxumRunError<RootTerminal, RootError, StagingInputs, PreparedInputs>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Application(error) => formatter.debug_tuple("Application").field(error).finish(),
-            Self::Bind { address, source } => formatter
-                .debug_struct("Bind")
-                .field("address", address)
-                .field("source", source)
-                .finish(),
-            Self::Serve { source, .. } => formatter
-                .debug_struct("Serve")
-                .field("source", source)
-                .finish_non_exhaustive(),
-            Self::ActorTaskFailed { source, serve } => formatter
-                .debug_struct("ActorTaskFailed")
-                .field("source", source)
-                .field("serve", serve)
-                .finish(),
-        }
-    }
-}
-
-#[cfg(feature = "axum")]
-impl<RootTerminal, RootError, StagingInputs, PreparedInputs> fmt::Display
-    for AxumRunError<RootTerminal, RootError, StagingInputs, PreparedInputs>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Application(error) => fmt::Display::fmt(error, formatter),
-            Self::Bind { address, .. } => write!(formatter, "Bombay could not bind the Axum listener at {address}"),
-            Self::Serve { .. } => formatter.write_str("the Axum server failed before the application root retired"),
-            Self::ActorTaskFailed { .. } => formatter.write_str("the application actor task returned no owned retirement after Axum serving completed"),
-        }
-    }
-}
-
-#[cfg(feature = "axum")]
-impl<RootTerminal, RootError, StagingInputs, PreparedInputs> Error
-    for AxumRunError<RootTerminal, RootError, StagingInputs, PreparedInputs>
-{
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::Application(error) => Error::source(error),
-            Self::Bind { source, .. } | Self::Serve { source, .. } => Some(source),
-            Self::ActorTaskFailed { source, .. } => Some(source),
-        }
-    }
-}
-
-#[cfg(feature = "axum")]
-impl<RootTerminal, RootError, StagingInputs, PreparedInputs>
-    From<RunError<RootError, RootTerminal, StagingInputs, PreparedInputs>>
-    for AxumRunError<RootTerminal, RootError, StagingInputs, PreparedInputs>
-{
-    fn from(error: RunError<RootError, RootTerminal, StagingInputs, PreparedInputs>) -> Self {
-        Self::Application(error)
-    }
-}
-
-#[cfg(feature = "axum")]
-fn acquire_axum_retirement<Outcome, RootTerminal, RootError>(
-    serve: Result<(), io::Error>,
-    retirement: Result<Outcome, JoinError>,
-) -> Result<(Result<(), io::Error>, Outcome), AxumRunError<RootTerminal, RootError>> {
-    match retirement {
-        Ok(retirement) => Ok((serve, retirement)),
-        Err(source) => Err(AxumRunError::ActorTaskFailed { source, serve }),
-    }
-}
-
 /// Explicit advanced composition of one root and its logical protocol spaces.
 #[derive(Debug)]
 pub struct App<Root, Spaces, Families = ()> {
@@ -571,384 +405,8 @@ impl<Root, Spaces, Families> App<Root, Spaces, Families> {
     }
 }
 
-struct DirectRoot;
-struct DeclaredRoot;
 pub(crate) struct StructuralOrigins<Owner>(PhantomData<fn() -> Owner>);
 struct ApplicationOrigins<Root, Members>(PhantomData<fn() -> (Root, Members)>);
-
-trait RootProjection<Actor, Terminal, ChildFailures>
-where
-    Actor: behavior::BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-{
-    type Error;
-    type Owner;
-
-    fn project_retirement(
-        address: MailAddr,
-        retirement: ActorRetirement<Actor, Terminal, ChildFailures>,
-    ) -> Terminal;
-
-    #[cfg(feature = "axum")]
-    fn project(
-        address: MailAddr,
-        outcome: LocalOutcome<Actor, (Vec<Terminal>, ChildFailures)>,
-    ) -> Terminal {
-        Self::project_retirement(address, ActorRetirement::from_local(outcome))
-    }
-
-    #[cfg(feature = "axum")]
-    fn startup_error(
-        address: MailAddr,
-        error: SpawnError<Actor, (Vec<Terminal>, ChildFailures)>,
-    ) -> RunError<Self::Error, Terminal>;
-}
-
-impl<Actor, Terminal, ChildFailures> RootProjection<Actor, Terminal, ChildFailures> for DirectRoot
-where
-    Actor: behavior::BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    Terminal: ProjectTerminal<RootOrigin<Actor>, ActorRetirement<Actor, Terminal, ChildFailures>>,
-{
-    type Error = Actor::Error;
-    type Owner = Actor;
-
-    fn project_retirement(
-        address: MailAddr,
-        retirement: ActorRetirement<Actor, Terminal, ChildFailures>,
-    ) -> Terminal {
-        Terminal::project(RootOrigin::<Actor>::new(address), retirement)
-    }
-
-    #[cfg(feature = "axum")]
-    fn startup_error(
-        address: MailAddr,
-        error: SpawnError<Actor, (Vec<Terminal>, ChildFailures)>,
-    ) -> RunError<Self::Error, Terminal> {
-        match error {
-            SpawnError::ActorTaskFailed(error) => RunError::ActorTaskFailed(error),
-            SpawnError::Panicked => RunError::Panicked,
-            SpawnError::Cancelled => RunError::Cancelled,
-            rejected => RunError::Unpublished(Self::project_retirement(
-                address,
-                rejected.into_retirement(),
-            )),
-        }
-    }
-}
-
-#[expect(
-    clippy::result_large_err,
-    reason = "Return exact rejected actor inputs and retirement values without an extra allocation."
-)]
-async fn launch_application_root<Actor, Spaces, Terminal, Origins>(
-    spaces: Spaces,
-    root: Actor,
-    allocations: ApplicationAddresses,
-) -> Result<
-    RootActor<
-        Actor,
-        (
-            Vec<Terminal>,
-            <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures,
-        ),
-    >,
-    SpawnError<
-        Actor,
-        (
-            Vec<Terminal>,
-            <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures,
-        ),
-    >,
->
-where
-    Actor: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
-    BehaviorMessage<Actor>: Send + 'static,
-    Actor::Sends: Send + 'static,
-    Actor::Error: Send + 'static,
-    Actor::InterpretationCustody: Send + 'static,
-    Actor::SourceCustody: Send + 'static,
-    <Actor::Birth as BirthMode>::Child:
-        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Origins>> + Send + 'static,
-    Spaces: Hosts<Actor::Protocol> + Send + Sync + 'static,
-    ChildBindings<Actor, Terminal, Origins>:
-        Default + RetireChildTasks<Root = Terminal> + Send + 'static,
-    RootInterpreter<Actor, Spaces, Terminal, Origins>: CommitActions<
-            Actor,
-            Retired = (
-                Vec<Terminal>,
-                <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures,
-            ),
-        > + Send
-        + 'static,
-    <Actor as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
-    Terminal: Send + 'static,
-    <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures: Send + 'static,
-{
-    let roots = <Spaces as Hosts<Actor::Protocol>>::space(&spaces).clone();
-    let actor_spaces = Arc::new(HostedActorSpaces(spaces));
-    let address = MailAddr::APPLICATION_ROOT;
-    spawn_root_with(
-        roots,
-        communication::Config::new(DEFAULT_USER_CAPACITY),
-        address,
-        root,
-        move |control, terminal_reports, timers, observations| {
-            ActionInterpreter::new(ApplicationCapabilities::<
-                Actor,
-                HostedActorSpaces<Spaces>,
-                NoParent,
-                ChildBindings<Actor, Terminal, Origins>,
-                Origins,
-            >::new_with_bindings(
-                ApplicationCapabilityInputs {
-                    address,
-                    actor_spaces,
-                    allocations,
-                    control,
-                    timers,
-                    observations,
-                    terminal_reports,
-                },
-                ChildBindings::<Actor, Terminal, Origins>::default(),
-            ))
-        },
-    )
-    .await
-}
-
-trait LaunchSystem<Actor, Terminal, Origins, Projection>
-where
-    Actor: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-{
-    type RootError;
-    type ChildFailures;
-    type RootOwner;
-
-    fn launch(
-        self,
-        root: Actor,
-    ) -> impl Future<Output = Result<Terminal, RunError<Self::RootError, Terminal>>> + Send;
-
-    #[expect(
-        clippy::type_complexity,
-        reason = "completed work and exact joined retirement remain independent owned values"
-    )]
-    fn launch_with<Families, Boundary, BoundaryFuture, Output>(
-        self,
-        root: Actor,
-        allocations: ApplicationAddresses,
-        families: Families,
-        boundary: Boundary,
-    ) -> impl Future<
-        Output = Result<
-            (
-                Output,
-                RootOrigin<Self::RootOwner>,
-                Result<ActorRetirement<Actor, Terminal, Self::ChildFailures>, JoinError>,
-            ),
-            RunError<
-                Self::RootError,
-                (
-                    RootOrigin<Self::RootOwner>,
-                    ActorRetirement<Actor, Terminal, Self::ChildFailures>,
-                ),
-            >,
-        >,
-    > + Send
-    where
-        Actor: BehaviorSettlements,
-        Families: Clone + Send + 'static,
-        Boundary: FnOnce(ApplicationHandle<Actor::Protocol, Actor::Event, Families>) -> BoundaryFuture
-            + Send,
-        BoundaryFuture: Future<Output = Output> + Send,
-        Output: Send;
-
-    #[cfg(feature = "axum")]
-    fn launch_axum<Router>(
-        self,
-        root: Actor,
-        address: SocketAddr,
-        router: Router,
-    ) -> impl Future<Output = Result<Terminal, AxumRunError<Terminal, Self::RootError>>> + Send
-    where
-        Router: FnOnce(ApplicationHandle<Actor::Protocol, Actor::Event>) -> axum::Router + Send;
-}
-
-impl<Actor, Spaces, Terminal, Origins, Projection>
-    LaunchSystem<Actor, Terminal, Origins, Projection> for Spaces
-where
-    Actor: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
-    BehaviorMessage<Actor>: Send + 'static,
-    Actor::Sends: Send + 'static,
-    Actor::Error: Send + 'static,
-    Actor::InterpretationCustody: Send + 'static,
-    Actor::SourceCustody: Send + 'static,
-    <Actor::Birth as BirthMode>::Child:
-        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Origins>> + Send + 'static,
-    Spaces: Hosts<Actor::Protocol> + Send + Sync + 'static,
-    ChildBindings<Actor, Terminal, Origins>:
-        Default + RetireChildTasks<Root = Terminal> + Send + 'static,
-    RootInterpreter<Actor, Spaces, Terminal, Origins>: CommitActions<
-            Actor,
-            Retired = (
-                Vec<Terminal>,
-                <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures,
-            ),
-        > + Send
-        + 'static,
-    <Actor as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
-    Terminal: Send + 'static,
-    <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures: Send + 'static,
-    Projection: RootProjection<
-            Actor,
-            Terminal,
-            <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures,
-        >,
-{
-    type RootOwner = <Projection as RootProjection<
-        Actor,
-        Terminal,
-        <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures,
-    >>::Owner;
-
-    type ChildFailures = <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures;
-
-    type RootError = <Projection as RootProjection<
-        Actor,
-        Terminal,
-        <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures,
-    >>::Error;
-
-    async fn launch(self, root: Actor) -> Result<Terminal, RunError<Self::RootError, Terminal>> {
-        let retirement =
-            <Spaces as LaunchSystem<Actor, Terminal, Origins, Projection>>::launch_with(
-                self,
-                root,
-                ApplicationAddresses::new(),
-                (),
-                |_: ApplicationHandle<Actor::Protocol, Actor::Event>| async {},
-            )
-            .await;
-        match retirement {
-            Ok(((), origin, Ok(retirement))) => {
-                Ok(Projection::project_retirement(origin.address(), retirement))
-            }
-            Ok(((), _, Err(error))) => Err(RunError::ActorTaskFailed(error)),
-            Err(error) => Err(match error {
-                RunError::StagingRejected { inputs }
-                | RunError::ExecutorRejected { inputs, .. } => match inputs {},
-                RunError::Runtime(error) => RunError::Runtime(error),
-                RunError::AllocationRejected(reason) => RunError::AllocationRejected(reason),
-                RunError::InitializationRejected(error) => RunError::InitializationRejected(error),
-                RunError::HostRejected(error) => RunError::HostRejected(error),
-                RunError::Panicked => RunError::Panicked,
-                RunError::Cancelled => RunError::Cancelled,
-                RunError::Unpublished((origin, retirement)) => RunError::Unpublished(
-                    Projection::project_retirement(origin.address(), retirement),
-                ),
-                RunError::InitializedTwice => RunError::InitializedTwice,
-                RunError::ActorTaskFailed(error) => RunError::ActorTaskFailed(error),
-            }),
-        }
-    }
-
-    async fn launch_with<Families, Boundary, BoundaryFuture, Output>(
-        self,
-        root: Actor,
-        allocations: ApplicationAddresses,
-        families: Families,
-        boundary: Boundary,
-    ) -> Result<
-        (
-            Output,
-            RootOrigin<Self::RootOwner>,
-            Result<ActorRetirement<Actor, Terminal, Self::ChildFailures>, JoinError>,
-        ),
-        RunError<
-            Self::RootError,
-            (
-                RootOrigin<Self::RootOwner>,
-                ActorRetirement<Actor, Terminal, Self::ChildFailures>,
-            ),
-        >,
-    >
-    where
-        Families: Clone + Send + 'static,
-        Boundary: FnOnce(ApplicationHandle<Actor::Protocol, Actor::Event, Families>) -> BoundaryFuture
-            + Send,
-        BoundaryFuture: Future<Output = Output> + Send,
-        Output: Send,
-    {
-        let interface_allocations = allocations.clone();
-        let origin = RootOrigin::<Self::RootOwner>::new(MailAddr::APPLICATION_ROOT);
-        let root =
-            launch_application_root::<Actor, Spaces, Terminal, Origins>(self, root, allocations)
-                .await
-                .map_err(|error| match error {
-                    SpawnError::ActorTaskFailed(error) => RunError::ActorTaskFailed(error),
-                    SpawnError::Panicked => RunError::Panicked,
-                    SpawnError::Cancelled => RunError::Cancelled,
-                    rejected => RunError::Unpublished((origin, rejected.into_retirement())),
-                })?;
-
-        let application = ApplicationHandle::new(
-            root.actor,
-            root.shutdown_control,
-            interface_allocations,
-            families,
-        );
-        let output = boundary(application).await;
-        let retirement = root.task.finish().await.map(ActorRetirement::from_local);
-        Ok((output, origin, retirement))
-    }
-
-    #[cfg(feature = "axum")]
-    async fn launch_axum<Router>(
-        self,
-        root: Actor,
-        address: SocketAddr,
-        router: Router,
-    ) -> Result<Terminal, AxumRunError<Terminal, Self::RootError>>
-    where
-        Router: FnOnce(ApplicationHandle<Actor::Protocol, Actor::Event>) -> axum::Router + Send,
-    {
-        let listener = tokio::net::TcpListener::bind(address)
-            .await
-            .map_err(|source| AxumRunError::Bind { address, source })?;
-        let allocations = ApplicationAddresses::new();
-        let interface_allocations = allocations.clone();
-        let root_address = MailAddr::APPLICATION_ROOT;
-        let root =
-            launch_application_root::<Actor, Spaces, Terminal, Origins>(self, root, allocations)
-                .await
-                .map_err(|error| Projection::startup_error(root_address, error))?;
-
-        let application =
-            ApplicationHandle::new(root.actor, root.shutdown_control, interface_allocations, ());
-        let lifecycle = application.lifecycle();
-        let server_shutdown = lifecycle.termination();
-        let serve = axum::serve(listener, router(application.clone()))
-            .with_graceful_shutdown(async move {
-                match server_shutdown.await {
-                    Ok(_) | Err(_) => {}
-                }
-            })
-            .await;
-        if serve.is_err() {
-            match lifecycle.request_shutdown() {
-                Ok(())
-                | Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped) => {}
-            }
-        }
-        let (serve, retirement) = acquire_axum_retirement(serve, root.task.finish().await)?;
-        let terminal = Projection::project(root_address, retirement);
-        match serve {
-            Ok(()) => Ok(terminal),
-            Err(source) => Err(AxumRunError::Serve { source, terminal }),
-        }
-    }
-}
 
 #[allow(
     private_bounds,
@@ -958,26 +416,127 @@ impl<Root, Spaces> App<Root, Spaces>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
 {
-    /// Run the application to exact root termination.
+    /// Construct genuine absent work with original inputs and joined raw root facts.
+    /// `Completed { output: None }` means an actual startup grant was acquired without supplied work.
+    /// This comparison selects no terminal projection and constructs no callable value.
+    /// The execution remains cold; only polling stages or starts the actor.
     ///
     /// # Errors
+    /// Returns the untouched application and actual entered-host error.
     ///
-    /// Returns the exact runtime-construction or root-startup failure.
-    pub fn run<Terminal>(self) -> Result<Terminal, RunError<Root::Error, Terminal>>
-    where
-        Spaces: LaunchSystem<
-                Root,
-                Terminal,
-                StructuralOrigins<Root::Base>,
-                DirectRoot,
-                RootError = Root::Error,
-            >,
-    {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .map_err(RunError::Runtime)?
-            .block_on(self.spaces.launch(self.root))
+    /// # Panics
+    /// Execution propagates staging panics; receiving preserves the actual cleanup publication result.
+    #[expect(
+        clippy::type_complexity,
+        reason = "the existing concrete pair preserves original inputs and independent exact root custody without a new wrapper"
+    )]
+    pub fn execute<Terminal, ChildFailures>(self) -> Result<(impl Future<Output = ()>, impl Future<Output = ApplicationOutcome<Self, Option<Never>, Option<Never>, (RootOrigin<Root>, Result<ActorRetirement<Root, Terminal, ChildFailures>, JoinError>), Never, (Root, Spaces)>>), (Self, TryCurrentError)>
+where
+    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+    BehaviorMessage<Root>: Send + 'static,
+    Root::Sends: Send + 'static,
+    Root::Error: Send + 'static,
+    Root::InterpretationCustody: Send + 'static,
+    Root::SourceCustody: Send + 'static,
+    <Root::Birth as BirthMode>::Child:
+        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
+    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
+    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
+        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+    RootInterpreter<Root, Spaces, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
+            Root,
+            Retired = (
+                Vec<Terminal>,
+                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
+            ),
+        > + Send
+        + 'static,
+    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
+    Terminal: Send + 'static,
+    ChildFailures: Send + 'static,
+{
+        let executor = match Handle::try_current() {
+            Ok(executor) => executor,
+            Err(error) => return Err((self, error)),
+        };
+        Ok(execute_application_with::<
+            Self,
+            Root,
+            Root,
+            Spaces,
+            StructuralOrigins<Root::Base>,
+            Terminal,
+            ChildFailures,
+            (),
+            Never,
+            _,
+            _,
+            _,
+            Never,
+            fn(Never, ApplicationHandle<Root::Protocol, Root::Event>) -> Ready<Never>,
+            Ready<Never>,
+            Never,
+            _,
+            _,
+            _,
+        >(
+            executor,
+            self,
+            None,
+            async |_| {},
+            |App {
+                 root,
+                 spaces,
+                 families: (),
+             },
+             _work,
+             (),
+             _allocations| Ok((root, spaces, ())),
+            ((), |_executor, (), ()| None),
+            |root| root,
+        ))
+    }
+
+    /// Await genuine absent work with original inputs and joined raw root facts.
+    /// `Completed { output: None }` means an actual startup grant was acquired without supplied work.
+    /// This comparison selects no terminal projection and constructs no callable value.
+    /// The execution remains cold; only polling stages or starts the actor.
+    ///
+    /// # Errors
+    /// Returns the untouched application and actual entered-host error.
+    ///
+    /// # Panics
+    /// Execution propagates staging panics; receiving preserves the actual cleanup publication result.
+    pub async fn run<Terminal, ChildFailures>(self) -> Result<ApplicationOutcome<Self, Option<Never>, Option<Never>, (RootOrigin<Root>, Result<ActorRetirement<Root, Terminal, ChildFailures>, JoinError>), Never, (Root, Spaces)>, (Self, TryCurrentError)>
+where
+    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+    BehaviorMessage<Root>: Send + 'static,
+    Root::Sends: Send + 'static,
+    Root::Error: Send + 'static,
+    Root::InterpretationCustody: Send + 'static,
+    Root::SourceCustody: Send + 'static,
+    <Root::Birth as BirthMode>::Child:
+        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
+    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
+    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
+        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+    RootInterpreter<Root, Spaces, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
+            Root,
+            Retired = (
+                Vec<Terminal>,
+                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
+            ),
+        > + Send
+        + 'static,
+    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
+    Terminal: Send + 'static,
+    ChildFailures: Send + 'static,
+{
+        let (execution, result) = self.execute::<Terminal, ChildFailures>()?;
+        execution.await;
+        Ok(result.await)
     }
 
     /// Construct caller-local execution and its independently owned result receiver.
@@ -1009,8 +568,8 @@ where
             impl Future<Output = ()>,
             impl Future<Output = ApplicationOutcome<
                 Self,
-                Work,
-                Output,
+                Option<Work>,
+                Option<Output>,
                 (RootOrigin<Root>, Result<ActorRetirement<Root, Terminal, ChildFailures>, JoinError>),
                 (Root, Work, Never),
                 (Root, Spaces),
@@ -1045,7 +604,11 @@ where
     Work: FnOnce(ApplicationHandle<Root::Protocol, Root::Event>) -> WorkFuture,
         WorkFuture: Future<Output = Output>,
 {
-        execute_application_with::<
+        let executor = match Handle::try_current() {
+            Ok(executor) => executor,
+            Err(error) => return Err((self, work, error)),
+        };
+        Ok(execute_application_with::<
             Self,
             Root,
             Root,
@@ -1053,104 +616,275 @@ where
             StructuralOrigins<Root::Base>,
             Terminal,
             ChildFailures,
-            Never,
+            (),
+            (Root, Work, Never),
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
             _,
             _,
             _,
             _,
         >(
+            executor,
             self,
-            work,
+            Some((work, |work: Work, application| work(application))),
+            async |_| {},
             |App {
                  root,
                  spaces,
                  families: (),
-             }| Ok((root, spaces)),
-        )
+             },
+             _work,
+             (),
+             _allocations| Ok((root, spaces, ())),
+            ((), |_executor, (), ()| None),
+            |root| root,
+        ))
     }
 
-    /// Acquire completed application work and the raw joined root retirement.
+    /// Await caller-local work and the exact application result on the entered host.
     ///
-    /// Primary terminal projection is caller-owned after acquisition. A raw actor
-    /// join failure coexists with completed work and does not manufacture retirement.
+    /// This future is cold until polled. Work and its output may borrow or be non-Send.
+    /// Use `execute_with` when the result receiver must remain independently owned
+    /// after dropping execution; dropping this convenience also drops that receiver.
     ///
     /// # Errors
+    /// Returns the original application and work with the actual entered-host error.
     ///
-    /// Returns the exact available unpublished root retirement without projecting it.
-    #[expect(
-        clippy::type_complexity,
-        clippy::result_large_err,
-        reason = "return complete original actor custody without a new wrapper or allocation"
-    )]
-    pub fn run_with<Terminal, ChildFailures, Boundary, BoundaryFuture, Output>(
+    /// # Panics
+    /// Setup and work may unwind; original native causes remain with the caller.
+    pub async fn run_with<Terminal, ChildFailures, Work, WorkFuture, Output>(
         self,
-        boundary: Boundary,
+        work: Work,
     ) -> Result<
-        (
-            Output,
-            RootOrigin<Root>,
-            Result<ActorRetirement<Root, Terminal, ChildFailures>, JoinError>,
-        ),
-        RunError<
-            Root::Error,
+        ApplicationOutcome<
+            Self,
+            Option<Work>,
+            Option<Output>,
             (
                 RootOrigin<Root>,
-                ActorRetirement<Root, Terminal, ChildFailures>,
+                Result<ActorRetirement<Root, Terminal, ChildFailures>, JoinError>,
             ),
+            (Root, Work, Never),
+            (Root, Spaces),
         >,
+        (Self, Work, TryCurrentError),
     >
-    where
-        Root: BehaviorSettlements,
-        Spaces: LaunchSystem<
-                Root,
-                Terminal,
-                StructuralOrigins<Root::Base>,
-                DirectRoot,
-                RootError = Root::Error,
-                ChildFailures = ChildFailures,
-                RootOwner = Root,
-            >,
-        Boundary: FnOnce(ApplicationHandle<Root::Protocol, Root::Event>) -> BoundaryFuture + Send,
-        BoundaryFuture: Future<Output = Output> + Send,
-        Output: Send,
-    {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .map_err(RunError::Runtime)?
-            .block_on(
-                self.spaces
-                    .launch_with(self.root, ApplicationAddresses::new(), (), boundary),
-            )
+where
+    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+    BehaviorMessage<Root>: Send + 'static,
+    Root::Sends: Send + 'static,
+    Root::Error: Send + 'static,
+    Root::InterpretationCustody: Send + 'static,
+    Root::SourceCustody: Send + 'static,
+    <Root::Birth as BirthMode>::Child:
+        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
+    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
+    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
+        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+    RootInterpreter<Root, Spaces, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
+            Root,
+            Retired = (
+                Vec<Terminal>,
+                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
+            ),
+        > + Send
+        + 'static,
+    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
+    Terminal: Send + 'static,
+    ChildFailures: Send + 'static,
+    Work: FnOnce(ApplicationHandle<Root::Protocol, Root::Event>) -> WorkFuture,
+        WorkFuture: Future<Output = Output>,
+{
+        let (execution, result) =
+            self.execute_with::<Terminal, ChildFailures, Work, WorkFuture, Output>(work)?;
+        execution.await;
+        Ok(result.await)
     }
 
     #[cfg(feature = "axum")]
-    /// Run the application behind an Axum HTTP boundary.
+    /// Pair asynchronous prebind and serving with the original application result receiver.
+    /// Cold inputs remain published during bind; invocation owns the bare router and listener.
+    /// Primary root projection is caller-owned after acquiring the raw joined outcome.
     ///
     /// # Errors
+    /// Returns the untouched application, router and address with the actual entered-host error.
+    /// Bind refusal is an exact `StagingRejected` product before actor handoff.
     ///
-    /// Returns the exact application startup, listener bind, or server error.
-    /// An actor task failure retains its original join error and the completed server result.
-    /// That failure does not establish descendant cleanup or manufacture a root terminal.
-    pub fn run_axum<Terminal>(
+    /// # Panics
+    /// Setup or router invocation can unwind; the original cause remains with the caller.
+    #[expect(
+        clippy::type_complexity,
+        reason = "retain original router/listener and all raw root result boundaries"
+    )]
+    pub fn execute_axum<Terminal, ChildFailures, Router>(
         self,
         address: SocketAddr,
-        router: impl FnOnce(ApplicationHandle<Root::Protocol, Root::Event>) -> axum::Router + Send,
-    ) -> Result<Terminal, AxumRunError<Terminal, Root::Error>>
-    where
-        Spaces: LaunchSystem<
-                Root,
-                Terminal,
-                StructuralOrigins<Root::Base>,
-                DirectRoot,
-                RootError = Root::Error,
-            >,
-    {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .map_err(RunError::Runtime)?
-            .block_on(self.spaces.launch_axum(self.root, address, router))
+        router: Router,
+    ) -> Result<
+        (
+            impl Future<Output = ()>,
+            impl Future<Output = ApplicationOutcome<
+                (Self, Router, SocketAddr),
+                Option<(Router, TcpListener)>,
+                Option<Result<(), io::Error>>,
+                (RootOrigin<Root>, Result<ActorRetirement<Root, Terminal, ChildFailures>, JoinError>),
+                (Self, Router, SocketAddr, io::Error),
+                (Root, Spaces),
+            >>,
+        ),
+        ((Self, Router, SocketAddr), TryCurrentError),
+    >
+where
+    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+    BehaviorMessage<Root>: Send + 'static,
+    Root::Sends: Send + 'static,
+    Root::Error: Send + 'static,
+    Root::InterpretationCustody: Send + 'static,
+    Root::SourceCustody: Send + 'static,
+    <Root::Birth as BirthMode>::Child:
+        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
+    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
+    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
+        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+    RootInterpreter<Root, Spaces, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
+            Root,
+            Retired = (
+                Vec<Terminal>,
+                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
+            ),
+        > + Send
+        + 'static,
+    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
+    Terminal: Send + 'static,
+    ChildFailures: Send + 'static,
+    Router: FnOnce(ApplicationHandle<Root::Protocol, Root::Event>) -> axum::Router,
+{
+        let executor = match Handle::try_current() {
+            Ok(executor) => executor,
+            Err(error) => return Err(((self, router, address), error)),
+        };
+        Ok(execute_application_with::<
+            _,
+            Root,
+            Root,
+            Spaces,
+            StructuralOrigins<Root::Base>,
+            Terminal,
+            ChildFailures,
+            (),
+            (Self, Router, SocketAddr, io::Error),
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        >(
+            executor,
+            (self, router, address),
+            None,
+            async |(_, _, address): &(Self, Router, SocketAddr)| TcpListener::bind(*address).await,
+            |(application, router, address), work, listener, _allocations| {
+                let listener = match listener {
+                    Ok(listener) => listener,
+                    Err(error) => return Err((application, router, address, error)),
+                };
+                *work = Some(((router, listener), async |(router, listener): (Router, TcpListener), application: ApplicationHandle<Root::Protocol, Root::Event>| {
+                    let lifecycle = application.lifecycle();
+                    let server_shutdown = lifecycle.termination();
+                    let serve = axum::serve(listener, router(application.clone()))
+                        .with_graceful_shutdown(async move {
+                            match server_shutdown.await {
+                                Ok(_) | Err(_) => {}
+                            }
+                        })
+                        .await;
+                    if serve.is_err() {
+                        match lifecycle.request_shutdown() {
+                            Ok(())
+                            | Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped) => {}
+                        }
+                    }
+                    serve
+                }));
+                let App {
+                    root,
+                    spaces,
+                    families: (),
+                } = application;
+                Ok((root, spaces, ()))
+            },
+            ((), |_executor, (), ()| None),
+            |root| root,
+        ))
+    }
+
+    #[cfg(feature = "axum")]
+    /// Await asynchronous prebind, caller-local serving and the complete raw root result.
+    /// Use `execute_axum` when a separately retained result receiver is required.
+    ///
+    /// # Errors
+    /// Returns original cold inputs and the native entered-host error.
+    /// Actual bind refusal remains an explicit `StagingRejected` product.
+    ///
+    /// # Panics
+    /// Setup or serving can unwind; the original native cause remains with the caller.
+    pub async fn run_axum<Terminal, ChildFailures, Router>(
+        self,
+        address: SocketAddr,
+        router: Router,
+    ) -> Result<
+        ApplicationOutcome<
+            (Self, Router, SocketAddr),
+            Option<(Router, TcpListener)>,
+            Option<Result<(), io::Error>>,
+            (RootOrigin<Root>, Result<ActorRetirement<Root, Terminal, ChildFailures>, JoinError>),
+            (Self, Router, SocketAddr, io::Error),
+            (Root, Spaces),
+        >,
+        ((Self, Router, SocketAddr), TryCurrentError),
+    >
+where
+    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+    BehaviorMessage<Root>: Send + 'static,
+    Root::Sends: Send + 'static,
+    Root::Error: Send + 'static,
+    Root::InterpretationCustody: Send + 'static,
+    Root::SourceCustody: Send + 'static,
+    <Root::Birth as BirthMode>::Child:
+        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
+    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
+    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
+        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+    RootInterpreter<Root, Spaces, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
+            Root,
+            Retired = (
+                Vec<Terminal>,
+                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
+            ),
+        > + Send
+        + 'static,
+    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
+    Terminal: Send + 'static,
+    ChildFailures: Send + 'static,
+    Router: FnOnce(ApplicationHandle<Root::Protocol, Root::Event>) -> axum::Router,
+{
+        let (execution, result) =
+            self.execute_axum::<Terminal, ChildFailures, Router>(address, router)?;
+        execution.await;
+        Ok(result.await)
     }
 }
 
@@ -1163,86 +897,194 @@ where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     Families: InstallEntityFamilies<Spaces> + Send,
 {
-    /// Acquire completed application work and the raw joined root retirement.
-    ///
-    /// Primary terminal projection is caller-owned after acquisition. A raw actor
-    /// join failure coexists with completed work and does not manufacture retirement.
+    /// Pair caller-local Entity work with original root and family retirement receiving.
+    /// The receiving product keeps work/startup phase, root receiving and each family receiving result.
+    /// Its cleanup join remains the actual unit producer outcome beside independently acquired facts.
+    /// A receiving error never infers root absence or completed family shutdown.
+    /// Definitions install before receptionists; the original borrowed setup cause stays native.
     ///
     /// # Errors
+    /// Returns untouched application and bare Work with actual missing-host error.
     ///
-    /// Returns the exact available unpublished root retirement without projecting it.
-    /// Installed family shutdown results coexist with that startup result. This
-    /// product does not invent family results if the consuming shutdown future panics.
-    #[allow(
+    /// # Panics
+    /// Original borrowed setup or Work causes unwind in the caller; retained receiving remains independent.
+    #[expect(
         clippy::type_complexity,
-        reason = "the exact root and role-indexed shutdown products remain caller visible"
+        reason = "retain independent work phase, original root reply and role-indexed shutdown receiving results"
     )]
-    pub fn run_with_entities<Terminal, ChildFailures, Boundary, BoundaryFuture, Output>(
+    pub fn execute_with_entities<Terminal, ChildFailures, Work, WorkFuture, Output>(
         self,
-        boundary: Boundary,
+        work: Work,
     ) -> Result<
         (
-            Result<
-                (
-                    Output,
-                    RootOrigin<Root>,
-                    Result<ActorRetirement<Root, Terminal, ChildFailures>, JoinError>,
-                ),
-                RunError<
-                    Root::Error,
-                    (
-                        RootOrigin<Root>,
-                        ActorRetirement<Root, Terminal, ChildFailures>,
-                    ),
-                >,
+            impl Future<Output = ()>,
+            impl Future<Output = (ApplicationOutcome<
+                Self,
+                Option<Work>,
+                Option<Output>,
+                (),
+                (Root, Work, Never),
+                (Root, Arc<Spaces>),
             >,
-            <Families as EntityApplicationFamilies<Spaces>>::Shutdowns,
+                Result<(RootOrigin<Root>, Result<ActorRetirement<Root, Terminal, ChildFailures>, JoinError>), RecvError>,
+                Families::Shutdowns,
+            )>,
         ),
-        io::Error,
+        (Self, Work, TryCurrentError),
     >
-    where
-        Root: BehaviorSettlements,
-        Arc<Spaces>: LaunchSystem<
-                Root,
-                Terminal,
-                StructuralOrigins<Root::Base>,
-                DirectRoot,
-                RootError = Root::Error,
-                ChildFailures = ChildFailures,
-                RootOwner = Root,
-            >,
-        Boundary: FnOnce(
-                ApplicationHandle<
-                    Root::Protocol,
-                    Root::Event,
-                    <Families as EntityApplicationFamilies<Spaces>>::Receptionists,
-                >,
-            ) -> BoundaryFuture
-            + Send,
-        BoundaryFuture: Future<Output = Output> + Send,
-        Output: Send,
-    {
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        let entity_executor = runtime.handle().clone();
-        Ok(runtime.block_on(async move {
-            let Self {
-                root,
-                spaces,
-                families,
-            } = self;
-            let spaces = Arc::new(spaces);
-            let allocations = ApplicationAddresses::new();
-            let installed =
-                families.install(Arc::clone(&spaces), allocations.clone(), entity_executor);
-            let receptionists = installed.receptionists();
-            let outcome = spaces
-                .launch_with(root, allocations, receptionists, boundary)
-                .await;
-            let shutdowns = installed.shutdown().await;
-            (outcome, shutdowns)
-        }))
+where
+    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+    BehaviorMessage<Root>: Send + 'static,
+    Root::Sends: Send + 'static,
+    Root::Error: Send + 'static,
+    Root::InterpretationCustody: Send + 'static,
+    Root::SourceCustody: Send + 'static,
+    <Root::Birth as BirthMode>::Child:
+        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
+    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
+    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
+        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+    RootInterpreter<Root, Arc<Spaces>, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
+            Root,
+            Retired = (
+                Vec<Terminal>,
+                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
+            ),
+        > + Send
+        + 'static,
+    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
+    Terminal: Send + 'static,
+    ChildFailures: Send + 'static,
+    Families::Installed: 'static,
+    Work: FnOnce(ApplicationHandle<Root::Protocol, Root::Event, Families::Receptionists>) -> WorkFuture,
+    WorkFuture: Future<Output = Output>,
+{
+        let executor = match Handle::try_current() {
+            Ok(executor) => executor,
+            Err(error) => return Err((self, work, error)),
+        };
+        let entity_executor = executor.clone();
+        let (root_publication, received_root) = oneshot::channel();
+        let (family_publications, received_families) =
+            <Families::Installed as InstalledEntityFamilies>::shutdown_receiving();
+        let (execution, receiving) = execute_application_with::<
+            Self,
+            Root,
+            Root,
+            Arc<Spaces>,
+            StructuralOrigins<Root::Base>,
+            Terminal,
+            ChildFailures,
+            Families::Installed,
+            (Root, Work, Never),
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        >(
+            executor,
+            self,
+            Some((work, |work: Work, application| work(application))),
+            async |_| {},
+            move |App {
+                      root,
+                      spaces,
+                      families,
+                  },
+                  _work,
+                  (),
+                  allocations| {
+                let spaces = Arc::new(spaces);
+                let installed_families =
+                    families.install(Arc::clone(&spaces), allocations, entity_executor);
+                Ok((root, spaces, installed_families))
+            },
+            (
+                family_publications,
+                |executor: Handle, installed_families: Families::Installed, publications| {
+                    Some(executor.spawn(installed_families.shutdown(publications)))
+                },
+            ),
+            move |root| match root_publication.send(root) {
+                Ok(()) => {}
+                // The final receiving owner explicitly surrendered its receipt.
+                // Rejected send returns the exact original fact for one discharge.
+                Err(root) => drop(root),
+            },
+        );
+        let receiving = async move {
+            let work_outcome = receiving.await;
+            let root_retirement = received_root.await;
+            let family_retirements = received_families.await;
+            (work_outcome, root_retirement, family_retirements)
+        };
+        Ok((execution, receiving))
+    }
+
+    /// Await caller-local Entity work and the exact independent root/family receiving product.
+    /// Use `execute_with_entities` to retain receiving independently after execution is dropped.
+    ///
+    /// # Errors
+    /// Returns original application and Work with the actual entered-host error.
+    ///
+    /// # Panics
+    /// Setup and Work can unwind; original native causes remain caller-owned.
+    pub async fn run_with_entities<Terminal, ChildFailures, Work, WorkFuture, Output>(
+        self,
+        work: Work,
+    ) -> Result<
+        (ApplicationOutcome<
+            Self,
+            Option<Work>,
+            Option<Output>,
+            (),
+            (Root, Work, Never),
+            (Root, Arc<Spaces>),
+        >,
+            Result<(RootOrigin<Root>, Result<ActorRetirement<Root, Terminal, ChildFailures>, JoinError>), RecvError>,
+            Families::Shutdowns,
+        ),
+        (Self, Work, TryCurrentError),
+    >
+where
+    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+    BehaviorMessage<Root>: Send + 'static,
+    Root::Sends: Send + 'static,
+    Root::Error: Send + 'static,
+    Root::InterpretationCustody: Send + 'static,
+    Root::SourceCustody: Send + 'static,
+    <Root::Birth as BirthMode>::Child:
+        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
+    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
+    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
+        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+    RootInterpreter<Root, Arc<Spaces>, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
+            Root,
+            Retired = (
+                Vec<Terminal>,
+                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
+            ),
+        > + Send
+        + 'static,
+    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
+    Terminal: Send + 'static,
+    ChildFailures: Send + 'static,
+    Families::Installed: 'static,
+    Work: FnOnce(ApplicationHandle<Root::Protocol, Root::Event, Families::Receptionists>) -> WorkFuture,
+    WorkFuture: Future<Output = Output>,
+{
+        let (execution, result) =
+            self.execute_with_entities::<Terminal, ChildFailures, Work, WorkFuture, Output>(work)?;
+        execution.await;
+        Ok(result.await)
     }
 }
 
@@ -1482,61 +1324,12 @@ where
     }
 }
 
-impl<Root, Product, Terminal, ChildFailures>
-    RootProjection<ApplicationBehavior<Root, Product>, Terminal, ChildFailures> for DeclaredRoot
-where
-    Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    Product: ChildProduct<MailAddr>,
-    RootBirthNode<Root>: BirthNodeAppend<Product::Choice>,
-    Root::Birth: AppendApplicationBirths<Product::Choice>,
-    ApplicationBehavior<Root, Product>: BehaviorSettlements<
-            Protocol = Root::Protocol,
-            Event = Root::Event,
-            Sends = Root::Sends,
-            Ph = Never,
-            Error = ApplicationDefinitionError<Root::Error>,
-            Birth = <Root::Birth as AppendApplicationBirths<Product::Choice>>::Output,
-            Settlements: ClassifySettlement + Send + 'static,
-        >,
-    Terminal: ProjectTerminal<
-            RootOrigin<Root>,
-            ActorRetirement<ApplicationBehavior<Root, Product>, Terminal, ChildFailures>,
-        >,
-{
-    type Error = Root::Error;
-    type Owner = Root;
-
-    fn project_retirement(
-        address: MailAddr,
-        retirement: ActorRetirement<ApplicationBehavior<Root, Product>, Terminal, ChildFailures>,
-    ) -> Terminal {
-        Terminal::project(RootOrigin::<Root>::new(address), retirement)
-    }
-
-    #[cfg(feature = "axum")]
-    fn startup_error(
-        address: MailAddr,
-        error: SpawnError<ApplicationBehavior<Root, Product>, (Vec<Terminal>, ChildFailures)>,
-    ) -> RunError<Self::Error, Terminal> {
-        match error {
-            SpawnError::ActorTaskFailed(error) => RunError::ActorTaskFailed(error),
-            SpawnError::Panicked => RunError::Panicked,
-            SpawnError::Cancelled => RunError::Cancelled,
-            rejected => RunError::Unpublished(Self::project_retirement(
-                address,
-                rejected.into_retirement(),
-            )),
-        }
-    }
-}
-
 trait ComposeApplication<Root>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
 {
     type Actor: Behavior<Protocol = Root::Protocol, Ph = Never>;
     type Origins;
-    type Projection;
     type StagingFailure;
 
     fn compose(self, root: Root) -> Result<Self::Actor, (Root, Self::StagingFailure)>;
@@ -1548,7 +1341,6 @@ where
 {
     type Actor = Root;
     type Origins = StructuralOrigins<Root::Base>;
-    type Projection = DirectRoot;
     type StagingFailure = Never;
 
     fn compose(self, root: Root) -> Result<Self::Actor, (Root, Self::StagingFailure)> {
@@ -1565,7 +1357,6 @@ where
 {
     type Actor = ApplicationBehavior<Root, ApplicationProduct<(Role, Actor, Tail)>>;
     type Origins = ApplicationOrigins<Root, (Role, Actor, Tail)>;
-    type Projection = DeclaredRoot;
     type StagingFailure = <Self as StageApplicationChildren>::Failure;
 
     fn compose(self, root: Root) -> Result<Self::Actor, (Root, Self::StagingFailure)> {
@@ -1605,8 +1396,8 @@ where
             impl Future<
                 Output = ApplicationOutcome<
                     Self,
-                    Work,
-                    Output,
+                    Option<Work>,
+                    Option<Output>,
                     (
                         RootOrigin<Root>,
                         Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
@@ -1644,7 +1435,11 @@ where
         Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
         WorkFuture: Future<Output = Output>,
     {
-        execute_application_with::<
+        let executor = match Handle::try_current() {
+            Ok(executor) => executor,
+            Err(error) => return Err((self, work, error)),
+        };
+        Ok(execute_application_with::<
             Self,
             Root,
             Actor,
@@ -1652,274 +1447,558 @@ where
             Members::Origins,
             Terminal,
             ChildFailures,
-            StagingFailure,
+            (),
+            (Root, Work, StagingFailure),
             _,
             _,
             _,
             _,
-        >(self, work, |application| {
-            let (root, members) = application.into_parts();
-            match members.compose(root) {
-                Ok(actor) => Ok((actor, ActorSpace::new())),
-                Err(original) => Err(original),
-            }
-        })
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        >(
+            executor,
+            self,
+            Some((work, |work: Work, application| work(application))),
+            async |_| {},
+            |application, work, (), _allocations| {
+                let (root, members) = application.into_parts();
+                match members.compose(root) {
+                    Ok(actor) => Ok((actor, ActorSpace::new(), ())),
+                    Err((root, failure)) => {
+                        let Some((work, _invoke)) = work.take() else {
+                            unreachable!("this constructor supplies actual work");
+                        };
+                        Err((root, work, failure))
+                    }
+                }
+            },
+            ((), |_executor, (), ()| None),
+            |root| root,
+        ))
     }
 
-    /// Run the application to exact root termination.
+    /// Construct genuine absent work with original inputs and joined raw root facts.
+    /// `Completed { output: None }` means an actual startup grant was acquired without supplied work.
+    /// This comparison selects no terminal projection and constructs no callable value.
+    /// The execution remains cold; only polling stages or starts the actor.
     ///
     /// # Errors
+    /// Returns the untouched application and actual entered-host error.
     ///
-    /// Returns the exact root initialization or local runtime failure that
-    /// prevented the application from reaching its retirement boundary.
+    /// # Panics
+    /// Execution propagates staging panics; receiving preserves the actual cleanup publication result.
     #[expect(
         clippy::type_complexity,
-        reason = "retain distinct original cold root/staging failure and prepared actor inputs in the concrete running error"
+        reason = "the existing concrete pair preserves original inputs and independent exact root custody without a new wrapper"
     )]
-    pub fn run<Terminal, Actor, StagingFailure>(
+    pub fn execute<Actor, StagingFailure, Terminal, ChildFailures>(
         self,
-    ) -> Result<Terminal, RunError<Root::Error, Terminal, (Root, StagingFailure), Actor>>
+    ) -> Result<
+        (
+            impl Future<Output = ()>,
+            impl Future<
+                Output = ApplicationOutcome<
+                    Self,
+                    Option<Never>,
+                    Option<Never>,
+                    (
+                        RootOrigin<Root>,
+                        Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
+                    ),
+                    (Root, StagingFailure),
+                    (Actor, ActorSpace<Root::Protocol>),
+                >,
+            >,
+        ),
+        (Self, TryCurrentError),
+    >
     where
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
-        Actor: Behavior<Protocol = Root::Protocol, Ph = Never>,
-        ActorSpace<Root::Protocol>: LaunchSystem<
-                Actor,
-                Terminal,
-                Members::Origins,
-                Members::Projection,
-                RootError = Root::Error,
-            >,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
+            + Send
+            + 'static,
+        ChildBindings<Actor, Terminal, Members::Origins>:
+            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+        RootInterpreter<Actor, ActorSpace<Root::Protocol>, Terminal, Members::Origins>:
+            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        Terminal: Send + 'static,
+        ChildFailures: Send + 'static,
     {
-        let (root, members) = self.into_parts();
-        let actor = match members.compose(root) {
-            Ok(actor) => actor,
-            Err(inputs) => return Err(RunError::StagingRejected { inputs }),
-        };
-        let executor = match tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-        {
+        let executor = match Handle::try_current() {
             Ok(executor) => executor,
-            Err(error) => {
-                return Err(RunError::ExecutorRejected {
-                    error,
-                    inputs: actor,
-                });
-            }
+            Err(error) => return Err((self, error)),
         };
-        executor
-            .block_on(<ActorSpace<Root::Protocol> as LaunchSystem<
-                Actor,
-                Terminal,
-                Members::Origins,
-                Members::Projection,
-            >>::launch(ActorSpace::new(), actor))
-            .map_err(|error| match error {
-                RunError::StagingRejected { inputs }
-                | RunError::ExecutorRejected { inputs, .. } => match inputs {},
-                RunError::Runtime(error) => RunError::Runtime(error),
-                RunError::AllocationRejected(reason) => RunError::AllocationRejected(reason),
-                RunError::InitializationRejected(error) => RunError::InitializationRejected(error),
-                RunError::HostRejected(error) => RunError::HostRejected(error),
-                RunError::Panicked => RunError::Panicked,
-                RunError::Cancelled => RunError::Cancelled,
-                RunError::Unpublished(terminal) => RunError::Unpublished(terminal),
-                RunError::InitializedTwice => RunError::InitializedTwice,
-                RunError::ActorTaskFailed(error) => RunError::ActorTaskFailed(error),
-            })
+        Ok(execute_application_with::<
+            Self,
+            Root,
+            Actor,
+            ActorSpace<Root::Protocol>,
+            Members::Origins,
+            Terminal,
+            ChildFailures,
+            (),
+            (Root, StagingFailure),
+            _,
+            _,
+            _,
+            Never,
+            fn(Never, ApplicationHandle<Root::Protocol, Actor::Event>) -> Ready<Never>,
+            Ready<Never>,
+            Never,
+            _,
+            _,
+            _,
+        >(
+            executor,
+            self,
+            None,
+            async |_| {},
+            |application, _work, (), _allocations| {
+                let (root, members) = application.into_parts();
+                members
+                    .compose(root)
+                    .map(|actor| (actor, ActorSpace::new(), ()))
+            },
+            ((), |_executor, (), ()| None),
+            |root| root,
+        ))
     }
 
-    /// Acquire completed application work and the raw joined root retirement.
-    ///
-    /// Primary terminal projection is caller-owned after acquisition. A raw actor
-    /// join failure coexists with completed work and does not manufacture retirement.
+    /// Await genuine absent work with original inputs and joined raw root facts.
+    /// `Completed { output: None }` means an actual startup grant was acquired without supplied work.
+    /// This comparison selects no terminal projection and constructs no callable value.
+    /// The execution remains cold; only polling stages or starts the actor.
     ///
     /// # Errors
+    /// Returns the untouched application and actual entered-host error.
     ///
-    /// Returns the exact available unpublished root retirement without projecting it.
+    /// # Panics
+    /// Execution propagates staging panics; receiving preserves the actual cleanup publication result.
+    pub async fn run<Actor, StagingFailure, Terminal, ChildFailures>(
+        self,
+    ) -> Result<
+        ApplicationOutcome<
+            Self,
+            Option<Never>,
+            Option<Never>,
+            (
+                RootOrigin<Root>,
+                Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
+            ),
+            (Root, StagingFailure),
+            (Actor, ActorSpace<Root::Protocol>),
+        >,
+        (Self, TryCurrentError),
+    >
+    where
+        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
+            + Send
+            + 'static,
+        ChildBindings<Actor, Terminal, Members::Origins>:
+            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+        RootInterpreter<Actor, ActorSpace<Root::Protocol>, Terminal, Members::Origins>:
+            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        Terminal: Send + 'static,
+        ChildFailures: Send + 'static,
+    {
+        let (execution, result) =
+            self.execute::<Actor, StagingFailure, Terminal, ChildFailures>()?;
+        execution.await;
+        Ok(result.await)
+    }
+
+    /// Drive this same cold application future on one configured owned Tokio host.
+    /// Configure and enable the required drivers on the supplied Builder first.
+    /// Neither scheduler nor worker count is substituted or defaulted here.
+    ///
+    /// The outer error returns the untouched declaration and the same Builder.
+    /// `RunError::BlockingInEnteredRuntime` rejects an entered Tokio runtime;
+    /// `RunError::Runtime` retains the actual construction error. Neither starts an actor.
+    /// The outer success retains the existing checked async result unchanged.
+    ///
+    /// # Errors
+    /// Returns original inputs before construction when called inside Tokio;
+    /// construction failure preserves the actual error and retryable inputs.
+    /// Async execution retains its complete original result and entered-host error.
+    ///
+    /// # Panics
+    /// Invalid Builder configuration may have panicked before this call. Native
+    /// declaration/setup panics propagate as for run; receiver surrender and host
+    /// destruction are not a promise that async cleanup completed.
     #[expect(
         clippy::type_complexity,
-        clippy::result_large_err,
-        reason = "return complete original actor custody without a new wrapper or allocation"
+        reason = "the existing async result and exact cold Builder/input refusal remain independent"
     )]
-    pub fn run_with<
+    #[expect(
+        clippy::result_large_err,
+        reason = "return the actual configured Builder and declaration without boxing originals"
+    )]
+    pub fn run_blocking<Actor, StagingFailure, Terminal, ChildFailures>(
+        self,
+        mut builder: Builder,
+    ) -> Result<
+        Result<
+            ApplicationOutcome<
+                Self,
+                Option<Never>,
+                Option<Never>,
+                (
+                    RootOrigin<Root>,
+                    Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
+                ),
+                (Root, StagingFailure),
+                (Actor, ActorSpace<Root::Protocol>),
+            >,
+            (Self, TryCurrentError),
+        >,
+        (Self, Builder, RunError),
+    >
+    where
+        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
+            + Send
+            + 'static,
+        ChildBindings<Actor, Terminal, Members::Origins>:
+            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+        RootInterpreter<Actor, ActorSpace<Root::Protocol>, Terminal, Members::Origins>:
+            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        Terminal: Send + 'static,
+        ChildFailures: Send + 'static,
+    {
+        if let Ok(entered_executor) = Handle::try_current() {
+            drop(entered_executor);
+            return Err((self, builder, RunError::BlockingInEnteredRuntime));
+        }
+        let application_host = match builder.build() {
+            Ok(application_host) => application_host,
+            Err(source) => return Err((self, builder, RunError::Runtime(source))),
+        };
+        Ok(application_host.block_on(self.run::<Actor, StagingFailure, Terminal, ChildFailures>()))
+    }
+
+    /// Await declared composition, caller-local work and the exact joined result.
+    ///
+    /// This future is cold until polled. Bare original work survives actual staging
+    /// refusal; supplied work and completed output occupy their actual Some axes.
+    /// Use `execute_with` to retain the result receiver independently of execution.
+    ///
+    /// # Errors
+    /// Returns the untouched declaration and work with the actual entered-host error.
+    ///
+    /// # Panics
+    /// Setup and work may unwind; the actual cause remains with the caller.
+    pub async fn run_with<
         Terminal,
         Actor,
         ChildFailures,
         StagingFailure,
-        Boundary,
-        BoundaryFuture,
+        Work,
+        WorkFuture,
         Output,
     >(
         self,
-        boundary: Boundary,
+        work: Work,
     ) -> Result<
-        (
-            Output,
-            RootOrigin<Root>,
-            Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
-        ),
-        RunError<
-            Root::Error,
+        ApplicationOutcome<
+            Self,
+            Option<Work>,
+            Option<Output>,
             (
                 RootOrigin<Root>,
-                ActorRetirement<Actor, Terminal, ChildFailures>,
+                Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
             ),
-            (Root, Boundary, StagingFailure),
-            (Actor, Boundary),
+            (Root, Work, StagingFailure),
+            (Actor, ActorSpace<Root::Protocol>),
         >,
+        (Self, Work, TryCurrentError),
     >
     where
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
-        Actor: BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>,
-        ActorSpace<Root::Protocol>: LaunchSystem<
-                Actor,
-                Terminal,
-                Members::Origins,
-                Members::Projection,
-                RootError = Root::Error,
-                ChildFailures = ChildFailures,
-                RootOwner = Root,
-            >,
-        Boundary: FnOnce(ApplicationHandle<Root::Protocol, <Actor as Behavior>::Event>) -> BoundaryFuture
-            + Send,
-        BoundaryFuture: Future<Output = Output> + Send,
-        Output: Send,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
+            + Send
+            + 'static,
+        ChildBindings<Actor, Terminal, Members::Origins>:
+            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+        RootInterpreter<Actor, ActorSpace<Root::Protocol>, Terminal, Members::Origins>:
+            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        Terminal: Send + 'static,
+        ChildFailures: Send + 'static,
+        Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
+        WorkFuture: Future<Output = Output>,
     {
-        let (root, members) = self.into_parts();
-        let actor = match members.compose(root) {
-            Ok(actor) => actor,
-            Err((root, failure)) => {
-                return Err(RunError::StagingRejected {
-                    inputs: (root, boundary, failure),
-                });
-            }
-        };
-        let executor = match tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-        {
-            Ok(executor) => executor,
-            Err(error) => {
-                return Err(RunError::ExecutorRejected {
-                    error,
-                    inputs: (actor, boundary),
-                });
-            }
-        };
-        executor
-            .block_on(<ActorSpace<Root::Protocol> as LaunchSystem<
-                Actor,
-                Terminal,
-                Members::Origins,
-                Members::Projection,
-            >>::launch_with(
-                ActorSpace::new(),
-                actor,
-                ApplicationAddresses::new(),
-                (),
-                boundary,
-            ))
-            .map_err(|error| match error {
-                RunError::StagingRejected { inputs }
-                | RunError::ExecutorRejected { inputs, .. } => match inputs {},
-                RunError::Runtime(error) => RunError::Runtime(error),
-                RunError::AllocationRejected(reason) => RunError::AllocationRejected(reason),
-                RunError::InitializationRejected(error) => RunError::InitializationRejected(error),
-                RunError::HostRejected(error) => RunError::HostRejected(error),
-                RunError::Panicked => RunError::Panicked,
-                RunError::Cancelled => RunError::Cancelled,
-                RunError::Unpublished(terminal) => RunError::Unpublished(terminal),
-                RunError::InitializedTwice => RunError::InitializedTwice,
-                RunError::ActorTaskFailed(error) => RunError::ActorTaskFailed(error),
-            })
+        let (execution, result) = self.execute_with::<
+            Actor,
+            StagingFailure,
+            Terminal,
+            ChildFailures,
+            Work,
+            WorkFuture,
+            Output,
+        >(work)?;
+        execution.await;
+        Ok(result.await)
     }
 
     #[cfg(feature = "axum")]
-    /// Run the application behind an Axum HTTP boundary.
+    /// Pair prebinding and caller-local HTTP serving with the same application owner.
+    /// Bind refusal retains the untouched declaration/router/address/error before
+    /// composition. Staging refusal retains actual remaining root/declarations,
+    /// router and acquired listener. Each phase is explicit in the existing result.
+    /// No root terminal conversion runs inside serving or the execution kernel.
     ///
     /// # Errors
+    /// Missing host returns untouched cold inputs. `StagingRejected` inputs contain
+    /// Ok(original bind-refusal inputs) or Err(actual partial composition inputs).
+    /// Serving returns its exact `io::Error` beside the independently joined root.
     ///
-    /// Returns the exact application construction, runtime, server, or terminal
-    /// failure while preserving terminal custody when it is available.
+    /// # Panics
+    /// Native consuming composition or router causes remain caller-owned. The
+    /// separately retained result receiver preserves every still-owned fact.
     #[expect(
         clippy::type_complexity,
-        reason = "preserve the exact terminal and distinct original root/router/staging failure or prepared actor/router recovery products"
+        reason = "retain original prebind and partial composition inputs beside exact HTTP/root results"
     )]
-    pub fn run_axum<Terminal, Actor, StagingFailure, Router>(
+    pub fn execute_axum<Terminal, Actor, StagingFailure, ChildFailures, Router>(
         self,
         address: SocketAddr,
         router: Router,
     ) -> Result<
-        Terminal,
-        AxumRunError<Terminal, Root::Error, (Root, Router, StagingFailure), (Actor, Router)>,
+        (
+            impl Future<Output = ()>,
+            impl Future<
+                Output = ApplicationOutcome<
+                    (Self, Router, SocketAddr),
+                    Option<(Router, TcpListener)>,
+                    Option<Result<(), io::Error>>,
+                    (
+                        RootOrigin<Root>,
+                        Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
+                    ),
+                    Result<
+                        (Self, Router, SocketAddr, io::Error),
+                        (Root, Router, StagingFailure, TcpListener),
+                    >,
+                    (Actor, ActorSpace<Root::Protocol>),
+                >,
+            >,
+        ),
+        ((Self, Router, SocketAddr), TryCurrentError),
     >
     where
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
-        Actor: Behavior<Protocol = Root::Protocol, Ph = Never>,
-        Router: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> axum::Router + Send,
-        ActorSpace<Root::Protocol>: LaunchSystem<
-                Actor,
-                Terminal,
-                Members::Origins,
-                Members::Projection,
-                RootError = Root::Error,
-            >,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
+            + Send
+            + 'static,
+        ChildBindings<Actor, Terminal, Members::Origins>:
+            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+        RootInterpreter<Actor, ActorSpace<Root::Protocol>, Terminal, Members::Origins>:
+            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        Terminal: Send + 'static,
+        ChildFailures: Send + 'static,
+        Router: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> axum::Router,
     {
-        let (root, members) = self.into_parts();
-        let actor = match members.compose(root) {
-            Ok(actor) => actor,
-            Err((root, failure)) => {
-                return Err(AxumRunError::Application(RunError::StagingRejected {
-                    inputs: (root, router, failure),
-                }));
-            }
-        };
-        let executor = match tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-        {
+        let executor = match Handle::try_current() {
             Ok(executor) => executor,
-            Err(error) => {
-                return Err(AxumRunError::Application(RunError::ExecutorRejected {
-                    error,
-                    inputs: (actor, router),
-                }));
-            }
+            Err(error) => return Err(((self, router, address), error)),
         };
-        executor
-            .block_on(<ActorSpace<Root::Protocol> as LaunchSystem<
-                Actor,
-                Terminal,
-                Members::Origins,
-                Members::Projection,
-            >>::launch_axum(
-                ActorSpace::new(), actor, address, router
-            ))
-            .map_err(|error| match error {
-                AxumRunError::Application(error) => AxumRunError::Application(match error {
-                    RunError::StagingRejected { inputs }
-                    | RunError::ExecutorRejected { inputs, .. } => match inputs {},
-                    RunError::Runtime(error) => RunError::Runtime(error),
-                    RunError::AllocationRejected(reason) => RunError::AllocationRejected(reason),
-                    RunError::InitializationRejected(error) => {
-                        RunError::InitializationRejected(error)
+        Ok(execute_application_with::<
+            _,
+            Root,
+            Actor,
+            ActorSpace<Root::Protocol>,
+            Members::Origins,
+            Terminal,
+            ChildFailures,
+            (),
+            Result<
+                (Self, Router, SocketAddr, io::Error),
+                (Root, Router, StagingFailure, TcpListener),
+            >,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        >(
+            executor,
+            (self, router, address),
+            None,
+            async |(_, _, address): &(Self, Router, SocketAddr)| TcpListener::bind(*address).await,
+            |(application, router, address), work, listener, _allocations| {
+                let listener = match listener {
+                    Ok(listener) => listener,
+                    Err(error) => return Err(Ok((application, router, address, error))),
+                };
+                // Guard already-acquired HTTP inputs before the consuming user composition cut.
+                *work = Some(((router, listener), async |(router, listener): (Router, TcpListener), application: ApplicationHandle<Root::Protocol, Actor::Event>| {
+                    let lifecycle = application.lifecycle();
+                    let server_shutdown = lifecycle.termination();
+                    let serve = axum::serve(listener, router(application.clone()))
+                        .with_graceful_shutdown(async move {
+                            match server_shutdown.await {
+                                Ok(_) | Err(_) => {}
+                            }
+                        })
+                        .await;
+                    if serve.is_err() {
+                        match lifecycle.request_shutdown() {
+                            Ok(())
+                            | Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped) => {}
+                        }
                     }
-                    RunError::HostRejected(error) => RunError::HostRejected(error),
-                    RunError::Panicked => RunError::Panicked,
-                    RunError::Cancelled => RunError::Cancelled,
-                    RunError::Unpublished(terminal) => RunError::Unpublished(terminal),
-                    RunError::InitializedTwice => RunError::InitializedTwice,
-                    RunError::ActorTaskFailed(error) => RunError::ActorTaskFailed(error),
-                }),
-                AxumRunError::Bind { address, source } => AxumRunError::Bind { address, source },
-                AxumRunError::Serve { source, terminal } => {
-                    AxumRunError::Serve { source, terminal }
-                }
-                AxumRunError::ActorTaskFailed { source, serve } => {
-                    AxumRunError::ActorTaskFailed { source, serve }
-                }
-            })
+                    serve
+                }));
+                let (root, members) = application.into_parts();
+                let actor = match members.compose(root) {
+                    Ok(actor) => actor,
+                    Err((root, failure)) => {
+                        let Some(((router, listener), _invoke)) = work.take() else {
+                            unreachable!(
+                                "the single preparation owner retains its acquired HTTP work before composition"
+                            );
+                        };
+                        return Err(Err((root, router, failure, listener)));
+                    }
+                };
+                Ok((actor, ActorSpace::new(), ()))
+            },
+            ((), |_executor, (), ()| None),
+            |root| root,
+        ))
+    }
+
+    #[cfg(feature = "axum")]
+    /// Await the same prebind/serving/root pair. Use `execute_axum` to retain receiving separately.
+    ///
+    /// # Errors
+    /// Missing host returns cold originals; all actual bind/staging/serving/root
+    /// outcomes remain in their explicit independent result fields.
+    ///
+    /// # Panics
+    /// Native composition/serving causes propagate; dropping this combined future
+    /// surrenders both owning execution and receiving, unlike a separately retained pair.
+    pub async fn run_axum<Terminal, Actor, StagingFailure, ChildFailures, Router>(
+        self,
+        address: SocketAddr,
+        router: Router,
+    ) -> Result<
+        ApplicationOutcome<
+            (Self, Router, SocketAddr),
+            Option<(Router, TcpListener)>,
+            Option<Result<(), io::Error>>,
+            (
+                RootOrigin<Root>,
+                Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
+            ),
+            Result<
+                (Self, Router, SocketAddr, io::Error),
+                (Root, Router, StagingFailure, TcpListener),
+            >,
+            (Actor, ActorSpace<Root::Protocol>),
+        >,
+        ((Self, Router, SocketAddr), TryCurrentError),
+    >
+    where
+        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
+            + Send
+            + 'static,
+        ChildBindings<Actor, Terminal, Members::Origins>:
+            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+        RootInterpreter<Actor, ActorSpace<Root::Protocol>, Terminal, Members::Origins>:
+            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        Terminal: Send + 'static,
+        ChildFailures: Send + 'static,
+        Router: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> axum::Router,
+    {
+        let (execution, receiving) = self
+            .execute_axum::<Terminal, Actor, StagingFailure, ChildFailures, Router>(
+                address, router,
+            )?;
+        execution.await;
+        Ok(receiving.await)
     }
 }
 
@@ -8972,103 +9051,6 @@ mod parent_conversion_custody {
     }
 }
 
-#[cfg(all(test, feature = "axum"))]
-mod axum_retirement_custody {
-    use std::panic::panic_any;
-    use std::sync::Arc;
-
-    use behavior::Never;
-    use tokio::net::TcpListener;
-
-    use super::{AxumRunError, RunError, acquire_axum_retirement};
-
-    #[tokio::test]
-    async fn failed_axum_actor_retirement_preserves_completed_serving_result() {
-        let listener = TcpListener::bind("127.0.0.1:0")
-            .await
-            .expect("the test owns one genuine occupied listener");
-        let address = listener
-            .local_addr()
-            .expect("the listener has its actual address");
-        let rejected = TcpListener::bind(address).await;
-        let Err(source) = rejected else {
-            panic!("the second actual bind is rejected while the first listener lives");
-        };
-        drop(listener);
-        // The IO error is genuine, but these are supplied completed serve results:
-        // this does not claim the selected Axum server itself returned an error.
-        for serve in [Ok(()), Err(source)] {
-            let original_serve = serve
-                .as_ref()
-                .err()
-                .map(|error| (error.kind(), error.raw_os_error()));
-            let payload = Arc::new(vec![103_u64, 107]);
-            let original_payload = Arc::downgrade(&payload);
-            let original_allocation = Arc::as_ptr(&payload);
-            let task = tokio::spawn(async move { panic_any(payload) });
-            let original_task_id = task.id();
-            let retirement = task.await;
-            let returned = acquire_axum_retirement::<(), Never, Never>(serve, retirement);
-            let (retained_serve, source) = match returned {
-                Err(AxumRunError::ActorTaskFailed { source, serve }) => (Some(serve), source),
-                Err(AxumRunError::Application(RunError::ActorTaskFailed(source))) => (None, source),
-                _ => panic!("the failed task cannot invent a projected terminal"),
-            };
-            let task_id = source.id();
-            let task_panicked = source.is_panic();
-            let payload_count = original_payload.strong_count();
-            let retained_payload = original_payload
-                .upgrade()
-                .expect("the original opaque task failure retains its payload");
-            let retained_allocation = Arc::as_ptr(&retained_payload);
-            let retained_values = retained_payload.as_slice().to_vec();
-            drop(retained_payload);
-            drop(source);
-            let discharged_payload = original_payload.strong_count();
-            let Some(retained_serve) = retained_serve else {
-                panic!("the coexisting completed serving result must not be discarded");
-            };
-            let retained_serve = match retained_serve {
-                Ok(()) => None,
-                Err(source) => {
-                    let facts = (source.kind(), source.raw_os_error());
-                    drop(source);
-                    Some(facts)
-                }
-            };
-            assert_eq!(task_id, original_task_id);
-            assert!(task_panicked);
-            assert_eq!(payload_count, 1);
-            assert_eq!(retained_allocation, original_allocation);
-            assert_eq!(retained_values, [103, 107]);
-            assert_eq!(discharged_payload, 0);
-            assert_eq!(retained_serve, original_serve);
-        }
-    }
-
-    #[tokio::test]
-    async fn joined_axum_actor_retirement_preserves_original_outcome() {
-        let values = Arc::new(vec![17_u64, 43]);
-        let allocation = Arc::as_ptr(&values);
-        let original = Arc::downgrade(&values);
-        let task = tokio::spawn(async move { values });
-        let retirement = task.await;
-        let returned = acquire_axum_retirement::<_, Never, Never>(Ok(()), retirement);
-        let Ok((serve, values)) = returned else {
-            panic!("the joined task returns its whole original outcome");
-        };
-        let retained_allocation = Arc::as_ptr(&values);
-        let retained_values = values.as_slice().to_vec();
-        let count = original.strong_count();
-        drop(values);
-        assert!(serve.is_ok());
-        assert_eq!(retained_allocation, allocation);
-        assert_eq!(retained_values, [17, 43]);
-        assert_eq!(count, 1);
-        assert_eq!(original.strong_count(), 0);
-    }
-}
-
 /// Caller-local work disposition alongside the actual unit application cleanup.
 ///
 /// Work values never move into the executor-owned cleanup task. `Unstarted`
@@ -9077,7 +9059,12 @@ mod axum_retirement_custody {
 /// while setup or startup owns consumed inputs. `Interrupted` does not claim
 /// recovery of a callable or work future consumed by invocation.
 /// Cleanup first retains its publication receiving result, then its actual task
-/// join result; the joined actor outcome remains independently owned inside.
+/// join result; each constructor retains its exact joined-root product.
+/// Entity receiving additionally returns independently held original root and family receipts.
+/// Those actual receiving errors never substitute a no-root or completed-family classification.
+/// For genuine absent work, `execute` and async `run` retain `Option<Never>`:
+/// `None` is no supplied callable/output, and Completed means actual startup grant.
+/// Supplied `execute_with` retains original Work and Ready Output inside `Some`.
 #[must_use = "application inputs, output and joined actor outcome require explicit custody"]
 pub enum ApplicationOutcome<
     ApplicationInputs,
@@ -9173,34 +9160,42 @@ fn execute_application_with<
     Origins,
     Terminal,
     ChildFailures,
-    StagingFailure,
+    InstalledFamilies,
+    StagingInputs,
+    AcquireStartupInputs,
+    StartupInputs,
     Prepare,
     Work,
+    Invoke,
     WorkFuture,
     Output,
+    Cleanup,
+    RetireUnstartedFamilies,
+    RetainRootRetirement,
 >(
+    executor: Handle,
     application: Inputs,
-    work: Work,
+    work: Option<(Work, Invoke)>,
+    acquire_startup_inputs: AcquireStartupInputs,
     prepare: Prepare,
-) -> Result<
-    (
-        impl Future<Output = ()>,
-        impl Future<
-            Output = ApplicationOutcome<
-                Inputs,
-                Work,
-                Output,
-                (
-                    RootOrigin<Owner>,
-                    Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
-                ),
-                (Owner, Work, StagingFailure),
-                (Actor, Spaces),
-            >,
-        >,
+    (family_publications, retire_unstarted_families): (
+        InstalledFamilies::ShutdownPublications,
+        RetireUnstartedFamilies,
     ),
-    (Inputs, Work, TryCurrentError),
->
+    retain_root_retirement: RetainRootRetirement,
+) -> (
+    impl Future<Output = ()>,
+    impl Future<
+        Output = ApplicationOutcome<
+            Inputs,
+            Option<Work>,
+            Option<Output>,
+            Cleanup,
+            StagingInputs,
+            (Actor, Spaces),
+        >,
+    >,
+)
 where
     Actor: BehaviorBase
         + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>
@@ -9223,14 +9218,34 @@ where
     RootOrigin<Owner>: Send + 'static,
     Terminal: Send + 'static,
     ChildFailures: Send + 'static,
-    Prepare: FnOnce(Inputs) -> Result<(Actor, Spaces), (Owner, StagingFailure)>,
-    Work: FnOnce(ApplicationHandle<Actor::Protocol, Actor::Event>) -> WorkFuture,
+    AcquireStartupInputs: AsyncFnOnce(&Inputs) -> StartupInputs,
+    InstalledFamilies: InstalledEntityFamilies + Send + 'static,
+    Prepare: FnOnce(
+        Inputs,
+        &mut Option<(Work, Invoke)>,
+        StartupInputs,
+        ApplicationAddresses,
+    ) -> Result<(Actor, Spaces, InstalledFamilies), StagingInputs>,
+    Invoke: FnOnce(
+        Work,
+        ApplicationHandle<Actor::Protocol, Actor::Event, InstalledFamilies::Receptionists>,
+    ) -> WorkFuture,
     WorkFuture: Future<Output = Output>,
+    Cleanup: Send + 'static,
+    RetireUnstartedFamilies: FnOnce(
+        Handle,
+        InstalledFamilies,
+        InstalledFamilies::ShutdownPublications,
+    ) -> Option<JoinHandle<Cleanup>>,
+    RetainRootRetirement: FnOnce(
+            (
+                RootOrigin<Owner>,
+                Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>,
+            ),
+        ) -> Cleanup
+        + Send
+        + 'static,
 {
-    let executor = match Handle::try_current() {
-        Ok(executor) => executor,
-        Err(error) => return Err((application, work, error)),
-    };
     let (publication, work_result) = oneshot::channel();
     let original_work = ApplicationWorkPublication {
         publication: Some((
@@ -9241,6 +9256,21 @@ where
     let (cleanup_publication, cleanup_result) = oneshot::channel();
     let execution = async move {
         let mut original_work = original_work;
+        let startup_inputs = {
+            let Some((ApplicationWorkCustody::Unstarted(application, _), _)) =
+                original_work.publication.as_ref()
+            else {
+                unreachable!("startup acquisition borrows the original cold inputs");
+            };
+            let mut startup_acquisition = pin!(acquire_startup_inputs(application));
+            poll_fn(|context| {
+                let entered_executor = executor.enter();
+                let acquired = startup_acquisition.as_mut().poll(context);
+                drop(entered_executor);
+                acquired
+            })
+            .await
+        };
         let Some((ApplicationWorkCustody::Unstarted(application, work), publication)) =
             original_work.publication.take()
         else {
@@ -9248,19 +9278,25 @@ where
         };
         original_work.publication =
             Some((ApplicationWorkCustody::NotInvoked(work, None), publication));
-        let prepared_inputs = prepare(application);
+        let allocations = ApplicationAddresses::new();
+        let prepared_inputs = {
+            let Some((ApplicationWorkCustody::NotInvoked(work, None), _)) =
+                original_work.publication.as_mut()
+            else {
+                unreachable!("preparation borrows the original uninvoked work publication");
+            };
+            prepare(application, work, startup_inputs, allocations.clone())
+        };
         let Some((ApplicationWorkCustody::NotInvoked(work, None), publication)) =
             original_work.publication.take()
         else {
             unreachable!("preparation owns the single uninvoked callable publication");
         };
-        let (root, spaces) = match prepared_inputs {
+        let (root, spaces, installed_families) = match prepared_inputs {
             Ok(prepared) => prepared,
-            Err((root, failure)) => {
-                original_work.publication = Some((
-                    ApplicationWorkCustody::StagingRejected((root, work, failure)),
-                    publication,
-                ));
+            Err(inputs) => {
+                original_work.publication =
+                    Some((ApplicationWorkCustody::StagingRejected(inputs), publication));
                 drop(original_work);
                 return;
             }
@@ -9269,14 +9305,34 @@ where
             ApplicationWorkCustody::Prepared((root, spaces), work),
             publication,
         ));
-        let Some((ApplicationWorkCustody::Prepared((_, spaces), _), _)) =
-            original_work.publication.as_ref()
-        else {
-            unreachable!("setup borrows the single prepared input publication");
+        let setup = catch_unwind(AssertUnwindSafe(|| {
+            let Some((ApplicationWorkCustody::Prepared((_, spaces), _), _)) =
+                original_work.publication.as_ref()
+            else {
+                unreachable!("setup borrows the single prepared input publication");
+            };
+            let roots = <Spaces as Hosts<Actor::Protocol>>::space(spaces).clone();
+            let bindings = ChildBindings::<Actor, Terminal, Origins>::default();
+            let receptionists = installed_families.receptionists();
+            (roots, bindings, receptionists)
+        }));
+        let (roots, bindings, receptionists) = match setup {
+            Ok(setup) => setup,
+            Err(cause) => {
+                // The actor is still inside Prepared; no task was handed off at this cut.
+                if let Some(cleanup) = retire_unstarted_families(
+                    executor.clone(),
+                    installed_families,
+                    family_publications,
+                ) {
+                    match cleanup_publication.send(cleanup) {
+                        Ok(()) => {}
+                        Err(cleanup) => drop(cleanup),
+                    }
+                }
+                resume_unwind(cause);
+            }
         };
-        let roots = <Spaces as Hosts<Actor::Protocol>>::space(spaces).clone();
-        let bindings = ChildBindings::<Actor, Terminal, Origins>::default();
-        let allocations = ApplicationAddresses::new();
         let interface_allocations = allocations.clone();
         let (permission, permitted) = oneshot::channel();
         let (authority, startup, shutdown_control, actor_join) = {
@@ -9337,10 +9393,12 @@ where
                 Ok(()) | Err(_) => {}
             }
             let retirement = actor_join.await.map(ActorRetirement::from_local);
+            let cleanup = retain_root_retirement((origin, retirement));
+            installed_families.shutdown(family_publications).await;
             match joined_publication.send(()) {
                 Ok(()) | Err(()) => {}
             }
-            (origin, retirement)
+            cleanup
         });
         match cleanup_publication.send(cleanup) {
             Ok(()) => {}
@@ -9354,14 +9412,30 @@ where
         };
         match started {
             Ok(actor) => {
-                let application =
-                    ApplicationHandle::new(actor, shutdown_control, interface_allocations, ());
-                {
-                    let mut application_work = pin!(work(application));
-                    let output = poll_fn(|context| application_work.as_mut().poll(context)).await;
-                    // The outside owner obtains Ready output before W is disposed.
+                if let Some((work, invoke)) = work {
+                    let application = ApplicationHandle::new(
+                        actor,
+                        shutdown_control,
+                        interface_allocations,
+                        receptionists,
+                    );
+                    {
+                        let mut application_work = pin!(invoke(work, application));
+                        let output =
+                            poll_fn(|context| application_work.as_mut().poll(context)).await;
+                        original_work.publication =
+                            Some((ApplicationWorkCustody::Completed(Some(output)), publication));
+                    }
+                } else {
+                    // Discharge the genuine unused startup projections in their existing field order.
                     original_work.publication =
-                        Some((ApplicationWorkCustody::Completed(output), publication));
+                        Some((ApplicationWorkCustody::Completed(None), publication));
+                    drop((
+                        actor,
+                        shutdown_control,
+                        interface_allocations,
+                        receptionists,
+                    ));
                 }
                 drop(original_work);
             }
@@ -9384,6 +9458,13 @@ where
         let custody = work_result.await;
         match custody {
             Ok(ApplicationWorkCustody::Unstarted(application, work)) => {
+                let work = match work {
+                    Some((work, invoke)) => {
+                        drop(invoke);
+                        Some(work)
+                    }
+                    None => None,
+                };
                 ApplicationOutcome::Unstarted { application, work }
             }
             Ok(ApplicationWorkCustody::StagingRejected(inputs)) => {
@@ -9398,6 +9479,13 @@ where
                 };
                 match custody {
                     Ok(ApplicationWorkCustody::Prepared(inputs, work)) => {
+                        let work = match work {
+                            Some((work, invoke)) => {
+                                drop(invoke);
+                                Some(work)
+                            }
+                            None => None,
+                        };
                         ApplicationOutcome::Prepared {
                             inputs,
                             work,
@@ -9405,6 +9493,13 @@ where
                         }
                     }
                     Ok(ApplicationWorkCustody::NotInvoked(work, startup_error)) => {
+                        let work = match work {
+                            Some((work, invoke)) => {
+                                drop(invoke);
+                                Some(work)
+                            }
+                            None => None,
+                        };
                         ApplicationOutcome::NotInvoked {
                             work,
                             startup_error,
@@ -9425,7 +9520,7 @@ where
             }
         }
     };
-    Ok((execution, result))
+    (execution, result)
 }
 
 #[cfg(test)]

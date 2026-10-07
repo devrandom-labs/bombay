@@ -1,5 +1,7 @@
+use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
+use tokio::runtime::Builder;
 
 use behavior_actors::atomic::{
     ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
@@ -194,25 +196,44 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
         status: ActorSpace::new(),
         capability: ActorSpace::new(),
     };
-    let (termination, root_origin, joined_actor) = App::new(supervisor.stop_on_shutdown(), spaces)
-        .run_with(move |application| async move {
-            activation_received
-                .await
-                .expect("the proxy activates its exact worker");
-            let interface = application.interface(application.root().established_recipient());
-            let caller = interface
-                .external::<Status>()
-                .expect("the supervisor caller is established");
-            caller
-                .send(interface.api(), FixedCommand::shutdown())
-                .await
-                .expect("the supervisor accepts shutdown");
-            let lifecycle = application.lifecycle();
-            tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
-                .await
-                .expect("the supervisor terminates after shutdown")
-        })
-        .unwrap_or_else(|_| panic!("the supervisor runs its worker and shuts down"));
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            App::new(supervisor.stop_on_shutdown(), spaces)
+                .run_with::<SupervisorTerminal, _, _, _, _>(move |application| async move {
+                    activation_received
+                        .await
+                        .expect("the proxy activates its exact worker");
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let caller = interface
+                        .external::<Status>()
+                        .expect("the supervisor caller is established");
+                    caller
+                        .send(interface.api(), FixedCommand::shutdown())
+                        .await
+                        .expect("the supervisor accepts shutdown");
+                    let lifecycle = application.lifecycle();
+                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                        .await
+                        .expect("the supervisor terminates after shutdown")
+                }),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the supervisor runs its worker and shuts down");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((root_origin, joined_actor))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let terminal: SupervisorTerminal = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {

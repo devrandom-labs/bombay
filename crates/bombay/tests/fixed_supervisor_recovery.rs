@@ -1,6 +1,8 @@
+use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
 use std::sync::{Arc, Mutex, PoisonError};
+use tokio::runtime::Builder;
 
 use behavior_actors::atomic::{
     ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticAccepted,
@@ -259,61 +261,80 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
         status: ActorSpace::new(),
         capability: ActorSpace::new(),
     };
-    let (termination, origin, joined) = App::new(supervisor.stop_on_shutdown(), spaces)
-        .run_with(move |application| async move {
-            let first = activations
-                .recv()
-                .await
-                .expect("the first worker activates");
-            let second = activations
-                .recv()
-                .await
-                .expect("the second worker activates");
-            assert_ne!(first, second);
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            App::new(supervisor.stop_on_shutdown(), spaces)
+                .run_with::<SupervisorTerminal, _, _, _, _>(move |application| async move {
+                    let first = activations
+                        .recv()
+                        .await
+                        .expect("the first worker activates");
+                    let second = activations
+                        .recv()
+                        .await
+                        .expect("the second worker activates");
+                    assert_ne!(first, second);
 
-            let interface = application.interface(application.root().established_recipient());
-            let mut caller = interface
-                .external::<Capability>()
-                .expect("the capability caller is established");
-            caller
-                .send(
-                    interface.api(),
-                    FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
-                )
-                .await
-                .expect("the supervisor accepts the capability query");
-            let reply = caller
-                .receive()
-                .await
-                .expect("the primary capability is returned");
-            let CapabilityResult::Ready { role, proxy } = reply.message else {
-                panic!("the primary proxy is ready")
-            };
-            assert_eq!(role, WorkerRole::Primary);
-            caller
-                .send(&proxy, WorkerCommand::Stop)
-                .await
-                .expect("the primary worker accepts its stop command");
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let mut caller = interface
+                        .external::<Capability>()
+                        .expect("the capability caller is established");
+                    caller
+                        .send(
+                            interface.api(),
+                            FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
+                        )
+                        .await
+                        .expect("the supervisor accepts the capability query");
+                    let reply = caller
+                        .receive()
+                        .await
+                        .expect("the primary capability is returned");
+                    let CapabilityResult::Ready { role, proxy } = reply.message else {
+                        panic!("the primary proxy is ready")
+                    };
+                    assert_eq!(role, WorkerRole::Primary);
+                    caller
+                        .send(&proxy, WorkerCommand::Stop)
+                        .await
+                        .expect("the primary worker accepts its stop command");
 
-            let first = activations
-                .recv()
-                .await
-                .expect("the first replacement activates");
-            let second = activations
-                .recv()
-                .await
-                .expect("the second replacement activates");
-            assert_ne!(first, second);
-            caller
-                .send(interface.api(), FixedCommand::shutdown())
-                .await
-                .expect("the supervisor accepts shutdown");
-            let lifecycle = application.lifecycle();
-            tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
-                .await
-                .expect("the supervisor terminates after recovery and shutdown")
-        })
-        .unwrap_or_else(|_| panic!("the two-role supervisor runs its policy"));
+                    let first = activations
+                        .recv()
+                        .await
+                        .expect("the first replacement activates");
+                    let second = activations
+                        .recv()
+                        .await
+                        .expect("the second replacement activates");
+                    assert_ne!(first, second);
+                    caller
+                        .send(interface.api(), FixedCommand::shutdown())
+                        .await
+                        .expect("the supervisor accepts shutdown");
+                    let lifecycle = application.lifecycle();
+                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                        .await
+                        .expect("the supervisor terminates after recovery and shutdown")
+                }),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the two-role supervisor runs its policy");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((origin, joined))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let retirement = joined
         .unwrap_or_else(|failure| panic!("the actual supervisor actor task failed: {failure}"));
     let terminal = SupervisorTerminal::project(origin, retirement);
@@ -410,11 +431,15 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
         status: ActorSpace::new(),
         capability: ActorSpace::new(),
     };
-    let (termination, origin, joined) = App::new(
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host.block_on(App::new(
         supervisor.stop_on_shutdown(),
         spaces,
     )
-    .run_with(move |application| async move {
+    .run_with::<SupervisorTerminal, _, _, _, _>(move |application| async move {
         let first = activations
             .recv()
             .await
@@ -461,8 +486,19 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
         tokio::time::timeout(Duration::from_secs(5), rejection_retirement)
             .await
             .expect("the supervisor retires after the second role rejects")
-    })
-    .unwrap_or_else(|_| panic!("the second-role rejection is interpreted"));
+    }))
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the second-role rejection is interpreted");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((origin, joined))),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
     let retirement = joined
         .unwrap_or_else(|failure| panic!("the actual supervisor actor task failed: {failure}"));
     let terminal = SupervisorTerminal::project(origin, retirement);

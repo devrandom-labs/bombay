@@ -1,5 +1,127 @@
 # Application execution API decision record
 
+## Accepted API (2026-10-07)
+
+DG-API is accepted and its exact candidate is integrated on
+`research/exec-consolidated`. Coordinating reviewer `/root/task_gate_coordinator`
+signed `/tmp/bombay-final-api-independent-coordinating-decision-scoped-final.json`
+(SHA9359f9a9be1b65618a6d573e7080df072c32197cad9cba589eb5caf3eb5ca184).
+Independent nonauthor `/root/current_verification_independent_review` signed
+`final-dg-api-independent-peer-signature.json`
+(SHA862b8b7eecad445ef62a4282fe3c02beb284e76fc0486461f0bdaf9f218e2695).
+Neither reviewer authored the selected model, source, migrations or witnesses.
+
+The accepted App source is SHAaf400af8838b22065c204f3a920c7f1c421f5374e37e6fac04808d2bac8158ed;
+its execution kernel is SHA378a6711dd4740cf6e36903f7df9b42a4b407dcff300b4749cf427077f4d806b.
+The earlier DG-TASK kernel6f93199e differs only by reviewed equivalent
+`if let` spelling and formatting; complete bodies, operation/publication/drop
+order remain unchanged. Family784c retains its original/fixed and publication
+inversion proofs. The three new lock edges select existing Tokio for examples;
+all179 selected package/version/source/checksum facts remain unchanged.
+
+[Current verification](verification.md#accepted-api-verification-2026-10-07)
+records the actual checks and precise proof exclusions. Remaining EXEC gates,
+integrated full verification, minimization, upstream publication, CI and merge
+remain required; this gate is not full PRD completion.
+
+## Final source contract and migration
+
+This current contract supersedes the historical runner descriptions below.
+It is source-bound to the accepted, integrated EXEC candidate. Publication,
+final integrated verification and delivery remain separate PRD states.
+
+The selected surface is one inherent async `run`, `run_with`, and feature-gated
+`run_axum` on the actual Application/App owners. Paired `execute`, `execute_with`
+and `execute_axum` return execution and receiving independently. The advanced
+Entity seam has `execute_with_entities` and async `run_with_entities`, using the
+same common owner. There are no async compatibility twins or retained
+LaunchSystem/projected HTTP production runners.
+
+The two application signatures that expose the selected raw-result boundary
+are, schematically (all original method bounds remain in source):
+
+```text
+Application::run<Actor, StagingFailure, Terminal, ChildFailures>(self)
+    -> async Result<ApplicationOutcome<
+        Self, Option<Never>, Option<Never>,
+        (RootOrigin<Root>, Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>),
+        (Root, StagingFailure),
+        (Actor, ActorSpace<Root::Protocol>)
+    >, (Self, TryCurrentError)>
+
+Application::run_with<Terminal, Actor, ChildFailures, StagingFailure,
+                      Work, WorkFuture, Output>(self, work)
+    -> async Result<ApplicationOutcome<
+        Self, Option<Work>, Option<Output>,
+        (RootOrigin<Root>, Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>),
+        (Root, Work, StagingFailure),
+        (Actor, ActorSpace<Root::Protocol>)
+    >, (Self, Work, TryCurrentError)>
+```
+
+`Actor` is the actual composed public Behavior, distinct from its original
+root Owner when declarations exist. Private composition proof traits remain
+private. `Terminal` chooses descendant projection. The root is never implicitly
+projected, and application-owned projection consumes original origin and
+retirement outside the runtime. For an empty descendant destination,
+`.run::<_, _, Never, _>().await` selects meaningful absence while Actor,
+staging failure and child failures remain inferred. The actual bare E0283 and
+positive explicit-Never formation remain source-bound evidence;
+both independent reviewers accepted that evidenced spelling.
+
+No-work is `Option<Never>`/None in all startup phases, not fabricated unit Work.
+Supplied Work retains the original FnOnce and original Ready output inside
+Some; output may itself be Result or Option. Work/future/output may borrow and
+need not be Send/static. Spawned Actor/event/effect/custody values retain their
+actual owning Send/static requirements. Ready output leaves producer custody
+before Work-future disposal.
+
+Paired construction captures an entered host synchronously; execution remains
+cold and can be polled on a different caller host. The selected host owns actor,
+Entity and cleanup tasks; caller Work stays where execution is polled. Async
+one-future calls capture their host on polling. Missing context returns original
+inputs and TryCurrentError. Unstarted inputs, actual cold partials, Prepared
+Actor/Spaces, original NotInvoked Work/startup error, completed output and cleanup
+receiving/join failures are separate closed alternatives. NoActor is not
+inferred from channel closure. Native user unwind payloads stay with the caller;
+dropping one-future run also surrenders receiving. The live-host limitation in
+XO-18 and observation/completion distinction in XO-17 remain mandatory.
+
+`Application::run_blocking(builder)` is the sole owned convenience. It accepts
+the ordinary configured Tokio Builder and drives the same pair. Entered-runtime
+refusal returns original Application/Builder with BlockingInEnteredRuntime
+before effects. Native build failure returns those originals with
+Runtime(original_io_error). Existing RunError has only those two flat semantic
+variants; its obsolete generic staging/activation/projection cases and
+AxumRunError/re-exports are removed. No scheduler enum or defaults are introduced.
+
+HTTP binds before staging and returns exact original application/router/address
+and native bind error on refusal. Native serve output remains beside independent
+raw root/cleanup facts. Entity receiving returns Work outcome, an independent
+root receipt, and recursive family receipts. Each acquired root/head report
+leaves producer custody before any later await; unfinished tail receiving errors
+and original cleanup JoinError remain distinct. There is no aggregate failure
+or root loss caused by awaiting a later family.
+
+Migration replaces synchronous calls with existing-host async calls or an
+explicit caller Tokio Builder/block_on. It observes Some output, both cleanup
+boundaries, raw root and family receiving products, then applies existing
+application projection. An owned-execution law uses run_blocking, not an
+unexplained caller-host substitution. All old meaningful controllers, complete
+oracles, pure folds, native causes and static denials remain required. Exact
+current source signatures, both-profile runtime controls, final trybuild
+snapshots, docs/consumer conservation and independent gate acceptance must all
+refer to the same final source graph. Historical passing probes cannot accept
+changed signatures or a different owner epoch.
+
+## Historical comparisons and verification snapshots
+
+Everything below retains its original time-specific source and outcomes.
+Phrases such as "current runners" describe that recorded epoch, not the final
+source contract above. Failed proposals and earlier projected return shapes
+remain evidence history; they do not provide another current API.
+
+
 **Frozen research snapshot:** ARC-011 on 2026-10-01 retained the distinct
 `Application` and advanced `App` construction policies and factored their
 root launch into one private transaction. The duplicated-root descriptions

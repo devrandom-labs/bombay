@@ -3,8 +3,9 @@
 ## Accepted task custody (2026-10-06)
 
 DG-TASK is **accepted** for the selected standard runtime and the inspected final
-execution kernel. This accepts the ownership law; the isolated public API still
-requires DG-API acceptance and integration. Current selection is Core/Actors
+execution kernel. The public API is now independently accepted and integrated;
+[its current source bridge](application-api.md#accepted-api-2026-10-07) preserves
+this ownership law. Current selection is Core/Actors
 0.22.0 and Macros0.13.1 at81ba2c0d1a8c6fc3d6235349980bf2657463041d.
 The earlier release/source descriptions below are historical evidence.
 

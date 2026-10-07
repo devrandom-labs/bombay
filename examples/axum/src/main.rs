@@ -2,6 +2,8 @@
 //! outside the Level-1 Behavior. Axum owns extraction and responses; Bombay
 //! owns local activation, delivery, exact rejection recovery, and termination.
 
+use bombay::{ApplicationOutcome, ProjectTerminal};
+use tokio::runtime::Builder;
 mod domain;
 mod http;
 mod order_book;
@@ -30,14 +32,33 @@ impl fmt::Debug for OrderBookTerminal {
 
 fn main() {
     let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 3000);
-    let terminal = Application::new(order_book::OrderBook::default().stop_on_shutdown())
-        .run_axum(address, |application| {
-            let interface = application.interface(http::OrderApi {
-                orders: application.root().established_recipient(),
-            });
-            http::router(interface, application.lifecycle())
-        })
-        .expect("the HTTP application retains exact cold or serving failure custody");
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous HTTP caller owns its enabled current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            Application::new(order_book::OrderBook::default().stop_on_shutdown())
+                .run_axum::<OrderBookTerminal, _, _, _, _>(address, |application| {
+                    let interface = application.interface(http::OrderApi {
+                        orders: application.root().established_recipient(),
+                    });
+                    http::router(interface, application.lifecycle())
+                }),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the explicit HTTP host is entered");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: Some(Ok(())),
+        cleanup: Ok(Ok((origin, Ok(retirement)))),
+    } = application_outcome
+    else {
+        panic!("the exact serving result and independently joined root remain complete");
+    };
+    let terminal = OrderBookTerminal::project(origin, retirement);
     assert_application_stopped(terminal);
 }
 

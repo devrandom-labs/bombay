@@ -6,6 +6,7 @@ use std::error::Error;
 use std::future::{Future, poll_fn};
 use std::ops::ControlFlow;
 use std::pin::Pin;
+#[cfg(test)]
 use std::sync::Weak;
 use std::task::Poll;
 
@@ -25,6 +26,7 @@ use behavior::{
     Behavior, BehaviorMessage, BehaviorSettlements, BirthMode, ClassifySettlement, Interpretation,
     InterpretationProgress, Never, Protocol, SourceCustody, User,
 };
+#[cfg(test)]
 use behavior_actors::ShutdownRequested;
 use bombay_address::{AddressSpace, ClaimError};
 use bombay_engine::Driver;
@@ -624,6 +626,7 @@ where
     behavior: core::marker::PhantomData<fn() -> B>,
 }
 
+#[cfg(test)]
 pub(crate) struct RootActor<B, Descendants>
 where
     B: BehaviorSettlements,
@@ -688,6 +691,7 @@ where
         received.expect("the original actor retirement result was acquired")
     }
 
+    #[cfg(test)]
     pub(crate) async fn finish(self) -> Result<LocalOutcome<B, Descendants>, JoinError> {
         let mut owned = Some(self);
         let mut received = None;
@@ -867,6 +871,7 @@ where
     .await
 }
 
+#[cfg(test)]
 #[expect(
     clippy::result_large_err,
     reason = "Return the complete original actor rejection by value without adding allocation."

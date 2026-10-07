@@ -12,7 +12,7 @@ use bombay::behavior::{
     RetirementBirths, SettledItem, SettlementStatus, Step, Stopped, User, UserEvent,
 };
 use bombay::prelude::*;
-use bombay::{ActorSpace, App};
+use bombay::{ActorSpace, App, ApplicationOutcome};
 
 struct Worker;
 
@@ -141,12 +141,30 @@ enum DeclaredApplicationTerminal {
     },
 }
 
-#[test]
-fn root_returns_only_after_owning_ordered_direct_child_terminals() {
-    let terminal: ApplicationTerminal = match Application::new(Root.stop_on_shutdown()).run() {
-        Err(RunError::Unpublished(terminal)) => terminal,
-        _ => panic!("an initialization stop must return the unpublished root terminal"),
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::drop_non_drop,
+    reason = "keep the full ordered direct-child custody trace and explicit recovered-input discharge before failure"
+)]
+async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
+    let application_outcome = Application::new(Root.stop_on_shutdown())
+        .run::<_, _, ApplicationTerminal, _>()
+        .await
+        .unwrap_or_else(|(application, error)| {
+            drop(application);
+            panic!("the caller owns the application's live entered host: {error}");
+        });
+    let ApplicationOutcome::NotInvoked {
+        work: None,
+        startup_error: Some(_startup_error),
+        cleanup: Ok(Ok((origin, Ok(retirement)))),
+    } = application_outcome
+    else {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
     };
+    let terminal: ApplicationTerminal = ProjectTerminal::project(origin, retirement);
 
     let ApplicationTerminal::Root {
         origin,
@@ -247,21 +265,35 @@ fn root_returns_only_after_owning_ordered_direct_child_terminals() {
     assert_ne!(nonces[0], nonces[1]);
 }
 
-#[test]
+#[tokio::test(flavor = "current_thread")]
 #[expect(
     clippy::too_many_lines,
     reason = "keep full heterogeneous declared-role retirements and all original typed custody lanes in one test"
 )]
-fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
-    let terminal: DeclaredApplicationTerminal =
-        match Application::new(ApplicationRoot.stop_on_shutdown())
-            .child(BackgroundWorker, Worker.stop_on_shutdown())
-            .child(AuditWorker, Auditor.stop_on_shutdown())
-            .run()
-        {
-            Err(RunError::Unpublished(terminal)) => terminal,
-            _ => panic!("an initialization stop must return the unpublished application terminal"),
-        };
+#[expect(
+    clippy::drop_non_drop,
+    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
+)]
+async fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
+    let application_outcome = Application::new(ApplicationRoot.stop_on_shutdown())
+        .child(BackgroundWorker, Worker.stop_on_shutdown())
+        .child(AuditWorker, Auditor.stop_on_shutdown())
+        .run::<_, _, DeclaredApplicationTerminal, _>()
+        .await
+        .unwrap_or_else(|(application, error)| {
+            drop(application);
+            panic!("the caller owns the application's live entered host: {error}");
+        });
+    let ApplicationOutcome::NotInvoked {
+        work: None,
+        startup_error: Some(_startup_error),
+        cleanup: Ok(Ok((origin, Ok(retirement)))),
+    } = application_outcome
+    else {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    };
+    let terminal: DeclaredApplicationTerminal = ProjectTerminal::project(origin, retirement);
 
     let DeclaredApplicationTerminal::Root {
         origin,
@@ -562,9 +594,12 @@ enum NestedTerminal {
     },
 }
 
-#[test]
-fn privately_bound_child_reports_its_nested_creation_before_parent_retirement() {
-    let (termination, root_origin, joined_actor) = App::new(
+#[tokio::test(flavor = "current_thread")]
+async fn privately_bound_child_reports_its_nested_creation_before_parent_retirement() {
+    let ApplicationOutcome::Completed {
+        output: Some(termination),
+        cleanup: Ok(Ok((root_origin, joined_actor))),
+    } = App::new(
         NestedRoot { birth_report: None }.stop_on_shutdown(),
         ActorSpace::new(),
     )
@@ -580,7 +615,14 @@ fn privately_bound_child_reports_its_nested_creation_before_parent_retirement() 
         }
         termination
     })
-    .expect("the child report must stop the published root");
+    .await
+    .unwrap_or_else(|failed| {
+        drop(failed);
+        panic!("the child report must stop the published root");
+    })
+    else {
+        panic!("the original completed output and both cleanup join boundaries remain exact");
+    };
     let terminal: NestedTerminal = ProjectTerminal::project(
         root_origin,
         joined_actor.unwrap_or_else(|failure| {
@@ -870,12 +912,12 @@ enum PanicTerminal {
     },
 }
 
-#[test]
+#[tokio::test(flavor = "current_thread")]
 #[expect(
     clippy::too_many_lines,
     reason = "one finite child-panic controller joins all owners before complete custody oracles"
 )]
-fn panicking_child_returns_exact_uncommitted_creation() {
+async fn panicking_child_returns_exact_uncommitted_creation() {
     let mut ids = CreationSequence::new();
     let child_id = ids
         .issue()
@@ -900,10 +942,23 @@ fn panicking_child_returns_exact_uncommitted_creation() {
         survivor: survivor_id,
         values: Some(values),
     };
-    let terminal: PanicTerminal = match App::new(parent.stop_on_shutdown(), spaces).run() {
-        Err(RunError::Unpublished(terminal)) => terminal,
-        _ => panic!("the stopping parent retains its complete unpublished retirement"),
+    let application_outcome = App::new(parent.stop_on_shutdown(), spaces)
+        .run::<PanicTerminal, _>()
+        .await
+        .unwrap_or_else(|(application, error)| {
+            drop(application);
+            panic!("the caller owns the application's live entered host: {error}");
+        });
+    let ApplicationOutcome::NotInvoked {
+        work: None,
+        startup_error: Some(_startup_error),
+        cleanup: Ok(Ok((origin, Ok(retirement)))),
+    } = application_outcome
+    else {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
     };
+    let terminal: PanicTerminal = ProjectTerminal::project(origin, retirement);
     let PanicTerminal::Root {
         origin,
         terminal:

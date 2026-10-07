@@ -32,7 +32,7 @@ use bombay::{
     ApplicationStagingError, ChildFailure, ChildOrigin, ProjectTerminal, RootOrigin,
     TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App, Application, Hosts, MailAddr, RunError, actor};
+use bombay::{ActorSpace, ActorSpaces, App, Application, Hosts, MailAddr, actor};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum AccountAdmission {
@@ -152,12 +152,8 @@ impl EntityDefinition for Accounts {
     }
 }
 
-fn assert_rejected_root(
-    outcome: &Result<((), AccountConclusion), RunError<AccountRefusal, AccountConclusion>>,
-) {
-    let Err(RunError::Unpublished(AccountConclusion::Root { origin, terminal })) = outcome else {
-        panic!("the actual pure initialization refusal remains unpublished");
-    };
+fn assert_rejected_root(outcome: &AccountConclusion) {
+    let AccountConclusion::Root { origin, terminal } = outcome;
     let ActorRetirement::InitializationRejected {
         behavior,
         error,
@@ -201,8 +197,8 @@ fn assert_rejected_root(
     assert!(unread_owner_cancellation.is_none());
 }
 
-#[test]
-fn completed_output_survives_actual_root_terminal_conversion_failure() {
+#[tokio::test(flavor = "current_thread")]
+async fn completed_output_survives_actual_root_terminal_conversion_failure() {
     let output = Arc::new(vec![11, 19]);
     let original_output = Arc::downgrade(&output);
     let state = Arc::new(vec![31, 37]);
@@ -217,13 +213,21 @@ fn completed_output_survives_actual_root_terminal_conversion_failure() {
             accounts: ActorSpace::new(),
         },
     );
-    let (output, origin, joined) = application
+    let outcome = application
         .run_with::<AccountConclusion, _, _, _, _>(move |application| async move {
             let requested = application.lifecycle().request_shutdown();
             requested.expect("the actual live root accepts shutdown");
             output
         })
-        .expect("the actual runtime and root startup succeed");
+        .await
+        .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"));
+    let ApplicationOutcome::Completed {
+        output: Some(output),
+        cleanup: Ok(Ok((origin, joined))),
+    } = outcome
+    else {
+        panic!("completed original output and both actual cleanup boundaries are acquired");
+    };
     let retirement = joined.unwrap_or_else(|_| panic!("the actual root joined normally"));
     let ActorRetirement::Completed {
         behavior,
@@ -322,22 +326,37 @@ fn actual_family_shutdown_survives_pure_root_startup_refusal() {
         capacity,
     )
     .unwrap_or_else(|_| panic!("the real directory configuration is valid"));
-    let (outcome, shutdowns) = application
-        .run_with_entities::<AccountConclusion, _, _, _, ()>(|_| async {
-            panic!("startup refusal leaves original work uninvoked");
-        })
-        .expect("the actual configured runtime builds");
-    let outcome = match outcome {
-        Err(RunError::Unpublished((origin, retirement))) => Err(RunError::Unpublished(
-            AccountConclusion::project(origin, retirement),
-        )),
-        outcome => {
-            drop(outcome);
-            panic!("actual root startup refuses before publication");
-        }
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous refusal controller owns one enabled application host");
+    let (outcome, root_receiving, shutdowns) = application_host
+        .block_on(
+            application.run_with_entities::<AccountConclusion, _, _, _, ()>(|_| async {
+                panic!("startup refusal leaves original work uninvoked");
+            }),
+        )
+        .unwrap_or_else(|(application, work, error)| {
+            drop((application, work));
+            panic!("the explicit application host must be entered: {error}");
+        });
+    drop(application_host);
+    let ApplicationOutcome::NotInvoked {
+        work: Some(work),
+        startup_error: Some(startup_error),
+        cleanup: Ok(Ok(())),
+    } = outcome
+    else {
+        panic!("actual root startup refuses with its original uninvoked work and joined cleanup");
     };
+    let (origin, retirement) =
+        root_receiving.expect("the actual rejected root retirement is independently acquired");
+    let retirement = retirement.expect("ordinary initialization refusal retains its actor");
+    let outcome = AccountConclusion::project(origin, retirement);
     assert_rejected_root(&outcome);
-    let (returned_role, (shutdown, metrics, family_disposal_failure), ()) = shutdowns;
+    let (head_receiving, ()) = shutdowns;
+    let (returned_role, (shutdown, metrics, family_disposal_failure)) =
+        head_receiving.expect("the original zero-incarnation family retirement is acquired");
     assert!(family_disposal_failure.is_none());
     let EntityShutdown::Settled {
         represented,
@@ -353,7 +372,7 @@ fn actual_family_shutdown_survives_pure_root_startup_refusal() {
     let role_retained = original_role.strong_count();
     let state_retained = original_state.strong_count();
     let entities_len = entities.len();
-    drop((outcome, returned_role, entities));
+    drop((work, startup_error, outcome, returned_role, entities));
     let role_released = original_role.strong_count();
     let state_released = original_state.strong_count();
     assert_eq!(represented, 0);
@@ -378,8 +397,8 @@ fn actual_family_shutdown_survives_pure_root_startup_refusal() {
     assert_eq!(state_released, 0);
 }
 
-#[test]
-fn application_startup_refusal_returns_whole_unprojected_root() {
+#[tokio::test(flavor = "current_thread")]
+async fn application_startup_refusal_returns_whole_unprojected_root() {
     let original = Arc::new(vec![31, 37]);
     let retained = Arc::downgrade(&original);
     let outcome = Application::new(
@@ -391,11 +410,18 @@ fn application_startup_refusal_returns_whole_unprojected_root() {
     )
     .run_with::<AccountConclusion, _, _, _, _, _, ()>(|_| async {
         panic!("actual initialization refusal leaves this work uninvoked");
-    });
+    })
+    .await
+    .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"));
     let outcome = match outcome {
-        Err(RunError::Unpublished((origin, retirement))) => Err(RunError::Unpublished(
-            AccountConclusion::project(origin, retirement),
-        )),
+        ApplicationOutcome::NotInvoked {
+            work: Some(work),
+            startup_error: Some(startup_error),
+            cleanup: Ok(Ok((origin, Ok(retirement)))),
+        } => {
+            drop((work, startup_error));
+            AccountConclusion::project(origin, retirement)
+        }
         outcome => {
             drop(outcome);
             panic!("the actual Application root refused initialization");
@@ -441,12 +467,12 @@ enum DeclaredAccountConclusion {
     },
 }
 
-#[test]
+#[tokio::test(flavor = "current_thread")]
 #[expect(
     clippy::too_many_lines,
     reason = "observe complete original root and declared unstarted child custody, full rejection lanes and final disposal in one controller"
 )]
-fn declared_application_refusal_retains_unstarted_original_child() {
+async fn declared_application_refusal_retains_unstarted_original_child() {
     let original_root = Arc::new(vec![31, 37]);
     let root_retained = Arc::downgrade(&original_root);
     let original_child = Arc::new(vec![53, 59]);
@@ -466,11 +492,21 @@ fn declared_application_refusal_retains_unstarted_original_child() {
         }
         .stop_on_shutdown(),
     );
-    let outcome = application.run_with::<DeclaredAccountConclusion, _, _, _, _, _, ()>(|_| async {
-        panic!("the refused root never invokes application work");
-    });
+    let outcome = application
+        .run_with::<DeclaredAccountConclusion, _, _, _, _, _, ()>(|_| async {
+            panic!("the refused root never invokes application work");
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"));
     let (origin, retirement) = match outcome {
-        Err(RunError::Unpublished(original)) => original,
+        ApplicationOutcome::NotInvoked {
+            work: Some(work),
+            startup_error: Some(startup_error),
+            cleanup: Ok(Ok((origin, Ok(retirement)))),
+        } => {
+            drop((work, startup_error));
+            (origin, retirement)
+        }
         other => {
             drop(other);
             panic!("declared application initialization refuses before publication");
@@ -734,7 +770,11 @@ fn borrowed_local_work_returns_non_send_output_after_root_join() {
         let (execution, result) =
             pair.unwrap_or_else(|_| panic!("the original entered executor is available"));
         let ((), result) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = result else {
+        let ApplicationOutcome::Completed {
+            output: Some(output),
+            cleanup,
+        } = result
+        else {
             panic!("the original caller-local work completes");
         };
         assert_completed_account(&cleanup);
@@ -774,7 +814,11 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
             })
             .unwrap_or_else(|_| panic!("the original entered executor is available"));
         drop(execution);
-        let ApplicationOutcome::Unstarted { application, work } = result.await else {
+        let ApplicationOutcome::Unstarted {
+            application,
+            work: Some(work),
+        } = result.await
+        else {
             panic!("before-first-poll drop returns the whole original inputs");
         };
         let owned_before_retry = retained.strong_count();
@@ -782,7 +826,11 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
             .execute_with::<AccountConclusion, (), _, _, _>(work)
             .unwrap_or_else(|_| panic!("the exact original inputs retry in the live executor"));
         let ((), result) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = result else {
+        let ApplicationOutcome::Completed {
+            output: Some(output),
+            cleanup,
+        } = result
+        else {
             panic!("the recovered original callable runs on the recovered original application");
         };
         assert_completed_account(&cleanup);
@@ -829,7 +877,7 @@ fn startup_pending_drop_preserves_uninvoked_callable_and_exact_old_root() {
         let first_poll = poll_fn(|context| Poll::Ready(execution.as_mut().poll(context))).await;
         drop(execution);
         let ApplicationOutcome::NotInvoked {
-            work,
+            work: Some(work),
             startup_error,
             cleanup,
         } = result.await
@@ -843,7 +891,11 @@ fn startup_pending_drop_preserves_uninvoked_callable_and_exact_old_root() {
             .execute_with::<AccountConclusion, (), _, _, _>(work)
             .unwrap_or_else(|_| panic!("the original callable runs against a genuine new handle"));
         let ((), result) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = result else {
+        let ApplicationOutcome::Completed {
+            output: Some(output),
+            cleanup,
+        } = result
+        else {
             panic!("the recovered original callable completes on the new actor");
         };
         assert_completed_account(&cleanup);
@@ -975,7 +1027,11 @@ fn completed_root_does_not_surrender_pending_application_work() {
         let held_after_root_stop = retained.strong_count();
         let released = continuation.send(());
         let ((), outcome) = tokio::join!(&mut execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let ApplicationOutcome::Completed {
+            output: Some(output),
+            cleanup,
+        } = outcome
+        else {
             panic!("the original work survives root completion and then completes");
         };
         assert_completed_account(&cleanup);
@@ -1028,7 +1084,11 @@ fn missing_executor_returns_original_application_and_callable() {
                 panic!("the exact original input product retries in the entered executor")
             });
         let ((), outcome) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let ApplicationOutcome::Completed {
+            output: Some(output),
+            cleanup,
+        } = outcome
+        else {
             panic!("the recovered original callable completes");
         };
         assert_completed_account(&cleanup);
@@ -1083,7 +1143,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
             .unwrap_or_else(|_| panic!("the entered executor is available"));
         let ((), outcome) = tokio::join!(execution, result);
         let ApplicationOutcome::NotInvoked {
-            work,
+            work: Some(work),
             startup_error,
             cleanup,
         } = outcome
@@ -1146,7 +1206,11 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                 panic!("the exact recovered callable retries on an actual new root")
             });
         let ((), outcome) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let ApplicationOutcome::Completed {
+            output: Some(output),
+            cleanup,
+        } = outcome
+        else {
             panic!("the original callable completes on its real retry");
         };
         assert_completed_account(&cleanup);
@@ -1197,7 +1261,11 @@ fn cancelled_borrowed_result_wait_preserves_same_receiver_and_completed_output()
         let output_owned = retained.strong_count();
         let requested = lifecycle.request_shutdown();
         let ((), outcome) = tokio::join!(&mut execution, result.as_mut());
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let ApplicationOutcome::Completed {
+            output: Some(output),
+            cleanup,
+        } = outcome
+        else {
             panic!("the same original receiver retains completed caller-local output");
         };
         assert_completed_account(&cleanup);
@@ -1270,7 +1338,11 @@ fn ready_output_survives_work_destructor_panic_and_actual_root_join() {
         .await;
         drop(execution);
         let result = result.await;
-        let ApplicationOutcome::Completed { output, cleanup } = result else {
+        let ApplicationOutcome::Completed {
+            output: Some(output),
+            cleanup,
+        } = result
+        else {
             panic!("the already acquired Ready output survives W disposal and real actor cleanup");
         };
         assert_cancelled_account(&cleanup);
@@ -1411,16 +1483,28 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
     .unwrap_or_else(|_| panic!("the original head directory is valid"));
     let mut returned = None;
     let caught = catch_unwind(AssertUnwindSafe(|| {
-        let products = application
-            .run_with_entities::<AccountConclusion, _, _, _, _>(move |application| async move {
-                let requested = application.lifecycle().request_shutdown();
-                requested.expect("the actual live root accepts shutdown");
-                output
-            })
-            .expect("the actual configured runtime builds");
+        let application_host = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("the synchronous disposal controller owns one enabled application host");
+        let products = application_host
+            .block_on(
+                application.run_with_entities::<AccountConclusion, _, _, _, _>(
+                    move |application| async move {
+                        let requested = application.lifecycle().request_shutdown();
+                        requested.expect("the actual live root accepts shutdown");
+                        output
+                    },
+                ),
+            )
+            .unwrap_or_else(|(application, work, error)| {
+                drop((application, work));
+                panic!("the explicit application host must be entered: {error}");
+            });
+        drop(application_host);
         returned = Some(products);
     }));
-    // The blocking public call has joined its runtime before every oracle.
+    // The explicit owned host has joined and been disposed before every oracle.
     // Its returned products still own any caught installed-family disposal payload.
     let retained = (
         original_output.strong_count(),
@@ -1431,8 +1515,11 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
     );
     let acquired_products = match returned.as_ref() {
         Some((
+            ApplicationOutcome::Completed {
+                output: Some(output),
+                cleanup: Ok(Ok(())),
+            },
             Ok((
-                output,
                 origin,
                 Ok(ActorRetirement::Completed {
                     behavior,
@@ -1456,35 +1543,41 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
                 }),
             )),
             (
-                head,
-                (
-                    EntityShutdown::Settled {
-                        represented: head_represented,
-                        entities: head_entities,
-                    },
-                    head_metrics,
-                    head_family_disposal_failure,
-                ),
-                (
-                    middle,
+                Ok((
+                    head,
                     (
                         EntityShutdown::Settled {
-                            represented: middle_represented,
-                            entities: middle_entities,
+                            represented: head_represented,
+                            entities: head_entities,
                         },
-                        middle_metrics,
-                        middle_family_disposal_failure,
+                        head_metrics,
+                        head_family_disposal_failure,
                     ),
-                    (
-                        tail,
+                )),
+                (
+                    Ok((
+                        middle,
                         (
                             EntityShutdown::Settled {
-                                represented: tail_represented,
-                                entities: tail_entities,
+                                represented: middle_represented,
+                                entities: middle_entities,
                             },
-                            tail_metrics,
-                            tail_family_disposal_failure,
+                            middle_metrics,
+                            middle_family_disposal_failure,
                         ),
+                    )),
+                    (
+                        Ok((
+                            tail,
+                            (
+                                EntityShutdown::Settled {
+                                    represented: tail_represented,
+                                    entities: tail_entities,
+                                },
+                                tail_metrics,
+                                tail_family_disposal_failure,
+                            ),
+                        )),
                         (),
                     ),
                 ),
@@ -1745,23 +1838,29 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
         }
         .stop_on_shutdown(),
     );
+    let caller = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the actual caller runtime builds");
     let mut returned = None;
     let caught = catch_unwind(AssertUnwindSafe(|| {
-        returned = Some(
+        returned = Some(caller.block_on(
             application.run_with::<StagedAccountConclusion, _, _, _, _, _, ()>(
                 move |_| async move {
                     drop(work);
                     panic!("the original refused root must leave work uninvoked");
                 },
             ),
-        );
+        ));
     }));
-    // A faulting role is disposed before Runtime/ActorSpace construction. In
-    // the control, the real root refusal has joined before the public return.
+    // A faulting role returns actual cold partial inputs before actor handoff.
+    // The control joins the refused root before the public result is acquired.
     let mut cold_inputs = None;
     let mut cold_metadata = None;
+    let mut joined_refusal = None;
+    let mut uninvoked_work_retained = None;
     match returned.take() {
-        Some(Err(RunError::StagingRejected {
+        Some(Ok(ApplicationOutcome::StagingRejected {
             inputs:
                 (
                     root,
@@ -1800,6 +1899,16 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
             // remain concrete owners outside the disposed user Role.
             cold_inputs = Some((root, work, actor, earlier, cause));
         }
+        Some(Ok(ApplicationOutcome::NotInvoked {
+            work: Some(work),
+            startup_error: Some(startup_error),
+            cleanup: Ok(Ok((origin, Ok(retirement)))),
+        })) => {
+            uninvoked_work_retained = Some(original_work.strong_count());
+            // This concrete consumer intentionally releases its returned uninvoked work.
+            drop((work, startup_error));
+            joined_refusal = Some((origin, retirement));
+        }
         other => returned = other,
     }
     let actors_retained = (
@@ -1819,8 +1928,8 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
             .map(|original| original.as_slice().to_vec()),
     );
     let work_released = original_work.strong_count();
-    let complete_refusal = match returned.as_ref() {
-        Some(Err(RunError::Unpublished((
+    let complete_refusal = match joined_refusal.as_ref() {
+        Some((
             origin,
             ActorRetirement::InitializationRejected {
                 behavior,
@@ -1839,7 +1948,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
                 retirement_failures,
                 terminal_report,
             },
-        )))) => {
+        )) => {
             assert!(matches!(
                 (
                     received_interpretation,
@@ -1883,6 +1992,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
         .as_ref()
         .and_then(|fault| fault.upgrade().map(|original| original.as_slice().to_vec()));
     drop(cold_inputs);
+    drop(joined_refusal);
     drop(returned);
     drop(caught);
     let actors_released = (
@@ -1893,12 +2003,13 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
     let fault_released = fault.as_ref().map(Weak::strong_count);
     let work_disposed = original_work.strong_count();
     // Full error/result cleanup and original native payload discharge precede
-    // every omission oracle. The normal synchronous refusal still consumes F;
-    // cold staging returns the original F and only explicit discharge releases it.
+    // every omission oracle. Startup refusal now returns the original Work;
+    // this consumer explicitly discharges it before the existing release oracle.
     assert_eq!(fault_owned, fault.as_ref().map(|_| 1));
     assert_eq!(fault_contents, fault.as_ref().map(|_| vec![229, 233]));
     assert_eq!(fault_released, fault.as_ref().map(|_| 0));
     if fault.is_none() {
+        assert_eq!(uninvoked_work_retained, Some(1));
         assert_eq!(work_released, 0);
         assert!(cold_metadata.is_none());
         assert_eq!(
@@ -1912,6 +2023,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
             ))
         );
     } else {
+        assert_eq!(uninvoked_work_retained, None);
         assert_eq!(work_released, 1);
         assert!(complete_refusal.is_none());
         let Some((
@@ -2063,7 +2175,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
             .unwrap_or_else(|_| panic!("the original executor is entered"));
         let ((), outcome) = tokio::join!(execution, result);
         let ApplicationOutcome::NotInvoked {
-            work,
+            work: Some(work),
             startup_error,
             cleanup,
         } = outcome
@@ -2516,46 +2628,58 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
     .unwrap_or_else(|_| panic!("the actual one-family directory is valid"));
     let mut returned = None;
     let caught = catch_unwind(AssertUnwindSafe(|| {
-        let products = application
-            .run_with_entities::<AccountConclusion, _, _, _, _>(move |application| async move {
-                let accounts = application.entities(AccountsRole(selection));
-                let account = accounts.entity(73);
-                let interface = application.interface(account);
-                let mut observer = interface
-                    .external::<LiveAccountNotice>()
-                    .expect("the actual external recipient is established");
-                let admitted = observer
-                    .send(
-                        interface.api(),
-                        LiveAccountCommand {
-                            observer: observer.recipient(),
-                            value: 283,
-                        },
-                    )
-                    .await;
-                let ready = match &admitted {
-                    Ok(()) => observer.receive().await,
-                    Err(_) => None,
-                };
-                let shutdown = application.lifecycle().request_shutdown();
-                let termination = application.lifecycle().termination().await;
-                let retirements_before_work_completion = work_retirements
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .len();
-                (
-                    output,
-                    admitted,
-                    ready,
-                    shutdown,
-                    termination,
-                    retirements_before_work_completion,
-                )
-            })
-            .expect("the actual configured host runtime builds");
+        let application_host = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("the synchronous disposal controller owns one enabled application host");
+        let products = application_host
+            .block_on(
+                application.run_with_entities::<AccountConclusion, _, _, _, _>(
+                    move |application| async move {
+                        let accounts = application.entities(AccountsRole(selection));
+                        let account = accounts.entity(73);
+                        let interface = application.interface(account);
+                        let mut observer = interface
+                            .external::<LiveAccountNotice>()
+                            .expect("the actual external recipient is established");
+                        let admitted = observer
+                            .send(
+                                interface.api(),
+                                LiveAccountCommand {
+                                    observer: observer.recipient(),
+                                    value: 283,
+                                },
+                            )
+                            .await;
+                        let ready = match &admitted {
+                            Ok(()) => observer.receive().await,
+                            Err(_) => None,
+                        };
+                        let shutdown = application.lifecycle().request_shutdown();
+                        let termination = application.lifecycle().termination().await;
+                        let retirements_before_work_completion = work_retirements
+                            .lock()
+                            .unwrap_or_else(PoisonError::into_inner)
+                            .len();
+                        (
+                            output,
+                            admitted,
+                            ready,
+                            shutdown,
+                            termination,
+                            retirements_before_work_completion,
+                        )
+                    },
+                ),
+            )
+            .unwrap_or_else(|(application, work, error)| {
+                drop((application, work));
+                panic!("the explicit application host must be entered: {error}");
+            });
+        drop(application_host);
         returned = Some(products);
     }));
-    // The blocking host has completed its actual root and family joins before these observations.
+    // The explicit owned host completed its actual root/family joins and disposal before these observations.
     let hydrated = hydrated.lock().unwrap_or_else(PoisonError::into_inner);
     assert_eq!(hydrated.as_slice(), &[EntityId::new(73)]);
     drop(hydrated);
@@ -2689,15 +2813,19 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
     let discharged_account = original_account.strong_count();
     let acquired = match returned.as_ref() {
         Some((
+            ApplicationOutcome::Completed {
+                output:
+                    Some((
+                        output,
+                        admitted,
+                        ready,
+                        shutdown,
+                        termination,
+                        retirements_before_work_completion,
+                    )),
+                cleanup: Ok(Ok(())),
+            },
             Ok((
-                (
-                    output,
-                    admitted,
-                    ready,
-                    shutdown,
-                    termination,
-                    retirements_before_work_completion,
-                ),
                 origin,
                 Ok(ActorRetirement::Completed {
                     behavior,
@@ -2721,15 +2849,17 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                 }),
             )),
             (
-                role,
-                (
-                    EntityShutdown::Settled {
-                        represented,
-                        entities,
-                    },
-                    metrics,
-                    disposal_failure,
-                ),
+                Ok((
+                    role,
+                    (
+                        EntityShutdown::Settled {
+                            represented,
+                            entities,
+                        },
+                        metrics,
+                        disposal_failure,
+                    ),
+                )),
                 (),
             ),
         )) => {
@@ -3006,7 +3136,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
         caller_host.block_on(async {
             let ((), outcome) = tokio::join!(execution, result);
             let ApplicationOutcome::Completed {
-                output: (output, borrowed, work_id),
+                output: Some((output, borrowed, work_id)),
                 cleanup,
             } = outcome
             else {
@@ -3290,7 +3420,7 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
     let (work_id, control_work_id) = caller_host.block_on(async {
         let ((), outcome) = tokio::join!(execution, result);
         let ApplicationOutcome::NotInvoked {
-            work,
+            work: Some(work),
             startup_error,
             cleanup: Ok(Err(cleanup_failure)),
         } = outcome
@@ -3312,7 +3442,7 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
             .unwrap_or_else(|_| panic!("the surviving caller host receives original work"));
         let ((), outcome) = tokio::join!(execution, result);
         let ApplicationOutcome::Completed {
-            output: (output, borrowed, work_id),
+            output: Some((output, borrowed, work_id)),
             cleanup,
         } = outcome
         else {
@@ -3326,7 +3456,11 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         drop((output, cleanup));
         // The second execution has never been polled or staged, even though its selected host is gone.
         drop(control_execution);
-        let ApplicationOutcome::Unstarted { application, work } = control_result.await else {
+        let ApplicationOutcome::Unstarted {
+            application,
+            work: Some(work),
+        } = control_result.await
+        else {
             panic!("destroyed host cannot turn untouched input into a begun application");
         };
         assert_eq!(control_invocations.get(), 0);
@@ -3344,7 +3478,7 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
             });
         let ((), outcome) = tokio::join!(execution, result);
         let ApplicationOutcome::Completed {
-            output: (output, borrowed, control_work_id),
+            output: Some((output, borrowed, control_work_id)),
             cleanup,
         } = outcome
         else {
@@ -3403,7 +3537,11 @@ fn owned_blocking_retains_ready_output_native_fault_and_joined_root() {
     let output_owned_before_join = original_output.strong_count();
     assert_eq!(output_owned_before_join, 1);
     let outcome = runtime.block_on(result.take().expect("the original receiver is retained"));
-    let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+    let ApplicationOutcome::Completed {
+        output: Some(output),
+        cleanup,
+    } = outcome
+    else {
         panic!("Ready was acquired before disposal of the work future");
     };
     assert_cancelled_account(&cleanup);
@@ -3674,7 +3812,7 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
         let received_cause_object = ptr::from_ref(&*cause).cast::<()>();
         let ApplicationOutcome::Prepared {
             inputs: (prepared_root, prepared_spaces),
-            work,
+            work: Some(work),
             cleanup,
         } = receiver.await
         else {
@@ -3697,7 +3835,11 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
             .execute_with::<AccountConclusion, (), _, _, _>(work)
             .unwrap_or_else(|_| panic!("the same original host permits a genuine new App"));
         let ((), outcome) = tokio::join!(execution, receiver);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let ApplicationOutcome::Completed {
+            output: Some(output),
+            cleanup,
+        } = outcome
+        else {
             panic!("the exact recovered callable completes once on the new App");
         };
         assert_completed_account(&cleanup);
@@ -3802,7 +3944,7 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
         let received_cause_object = ptr::from_ref(&*cause).cast::<()>();
         let ApplicationOutcome::Prepared {
             inputs: (prepared_root, prepared_spaces),
-            work,
+            work: Some(work),
             cleanup,
         } = receiver.await
         else {
@@ -3831,7 +3973,11 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
             .execute_with::<AccountConclusion, (), _, _, _>(work)
             .unwrap_or_else(|_| panic!("the same original host permits acquired-input retry"));
         let ((), outcome) = tokio::join!(execution, receiver);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let ApplicationOutcome::Completed {
+            output: Some(output),
+            cleanup,
+        } = outcome
+        else {
             panic!("the exact acquired actor and original Work complete on retry");
         };
         assert_completed_account(&cleanup);
@@ -3878,4 +4024,821 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
         assert_eq!(cause_after_discharge, 0);
     });
     drop(runtime);
+}
+
+mod family_cleanup {
+    use core::future::{Future, poll_fn};
+    use core::num::NonZeroUsize;
+    use core::pin::pin;
+    use core::task::Poll;
+    use std::any::Any;
+    use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+    use std::ptr::from_ref;
+    use std::sync::{Arc, Mutex, PoisonError, Weak};
+    use std::thread;
+
+    use behavior_actors::{Crash, Exit, ShutdownRequested, StopOnShutdown};
+    use bombay::actors::ActorExt;
+    use bombay::behavior::{
+        ActionSettlement, Actions, BehaviorActed, BehaviorBase, Creations, EventLayer, Never,
+        NoSends, Protocol, SendLayer, Step, Stopped,
+    };
+    use bombay::entity::{
+        ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
+        EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityShutdown,
+    };
+    use bombay::{
+        ActorRetirement, ActorSpace, ActorSpaces, App, ApplicationOutcome, Completion, MailAddr,
+    };
+    use tokio::runtime::{Builder, Handle};
+    use tokio::sync::{OwnedSemaphorePermit, Semaphore, oneshot};
+    use tokio::task::JoinError;
+
+    struct ReceivingAccount {
+        original: Arc<Vec<u8>>,
+    }
+
+    #[bombay::actor]
+    #[allow(
+        clippy::unnecessary_wraps,
+        reason = "the fold computes only its typed Actions"
+    )]
+    impl ReceivingAccount {
+        fn receive(&mut self, _: u64) -> BehaviorActed<Self> {
+            Ok(Actions::cont())
+        }
+    }
+
+    #[derive(ActorSpaces)]
+    struct AccountSpaces {
+        #[actor_space(ReceivingAccount)]
+        accounts: ActorSpace<ReceivingAccount>,
+    }
+
+    struct AccountReplies;
+
+    impl Protocol for AccountReplies {
+        type Addr = MailAddr;
+        type Msg = Never;
+    }
+
+    #[derive(Clone)]
+    struct HeadAccounts(Arc<Vec<u8>>);
+
+    #[expect(
+        clippy::type_complexity,
+        reason = "retain the native panic payload with its shared acquisition slot outside actor state and protocol routing"
+    )]
+    struct TailAccounts {
+        original: Arc<Vec<u8>>,
+        disposal_cause: Option<Arc<Mutex<Option<Box<dyn Any + Send>>>>>,
+    }
+
+    impl Clone for TailAccounts {
+        fn clone(&self) -> Self {
+            Self {
+                original: Arc::clone(&self.original),
+                // The installed original owns disposal; receptionist copies never gain it.
+                disposal_cause: None,
+            }
+        }
+    }
+
+    impl Drop for TailAccounts {
+        fn drop(&mut self) {
+            if let Some(cause) = self.disposal_cause.take() {
+                let original = cause.lock().unwrap_or_else(PoisonError::into_inner).take();
+                if let Some(original) = original {
+                    resume_unwind(original);
+                }
+            }
+        }
+    }
+
+    struct PendingAccounts {
+        hydration_started: Arc<Semaphore>,
+        hydration_release: Arc<Semaphore>,
+        completed_head: Option<oneshot::Sender<()>>,
+    }
+
+    impl Drop for PendingAccounts {
+        fn drop(&mut self) {
+            if let Some(completed_head) = self.completed_head.take() {
+                let _publication = completed_head.send(());
+            }
+        }
+    }
+
+    impl EntityDefinition for PendingAccounts {
+        type Id = u64;
+        type Behavior = StopOnShutdown<ReceivingAccount>;
+        type Hosts = AccountSpaces;
+        type HydrationError = ();
+        type Terminal = Never;
+        type ChildFailures = ();
+
+        async fn hydrate(&self, _: EntityId<u64>) -> Result<Self::Behavior, ()> {
+            self.hydration_started.add_permits(1);
+            let released = Arc::clone(&self.hydration_release).acquire_owned().await;
+            match released {
+                Ok(released) => released.forget(),
+                Err(_) => return Err(()),
+            }
+            Ok(ReceivingAccount {
+                original: Arc::new(vec![173]),
+            }
+            .stop_on_shutdown())
+        }
+
+        fn activation_failed(
+            &self,
+            _: EntityId<u64>,
+            _: ActivationId,
+            failure: EntityActivationError<(), Self::Behavior, Never, ()>,
+        ) {
+            // This concrete definition explicitly consumes its callback result.
+            // The witness claims no callback completeness or incarnation retirement.
+            drop(failure);
+        }
+
+        #[expect(
+            clippy::drop_non_drop,
+            reason = "the concrete Entity definition explicitly consumes this callback result; the witness claims no callback completeness"
+        )]
+        fn admission_refused(&self, _: EntityId<u64>, failure: AdmissionFailure<u64>) {
+            drop(failure);
+        }
+
+        fn forced_retirement(&self, _: &EntityId<u64>, _: ActivationId, _: DrainFailure) {}
+
+        fn retired(
+            &self,
+            _: &EntityId<u64>,
+            _: ActivationId,
+            retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+        ) {
+            drop(retirement);
+        }
+    }
+
+    #[expect(
+        clippy::too_many_lines,
+        clippy::manual_let_else,
+        reason = "qualify the original retirement variant first, then inspect every shared typed field without splitting or weakening the complete root oracle"
+    )]
+    fn observe_original_root_retirement(
+        retirement: &ActorRetirement<StopOnShutdown<ReceivingAccount>, Never, ()>,
+        original_root: &Weak<Vec<u8>>,
+    ) {
+        // These are the selected owner equations for the actual pure root. An
+        // accepted shutdown either folds to Stop, or remains the sole control input
+        // when the distinct owner-cancellation source was acquired first.
+        match retirement {
+            ActorRetirement::Completed {
+                completion,
+                settlements,
+                control,
+                unread_owner_cancellation,
+                ..
+            } => {
+                let expected_settlements = vec![ActionSettlement {
+                    creations: Creations::empty(),
+                    sends: SendLayer::new(NoSends, NoSends),
+                    become_: Step::Stop(Stopped),
+                }];
+                assert_eq!(*completion, Completion::Stopped);
+                assert_eq!(settlements, &expected_settlements);
+                assert_eq!(control.as_slice(), []);
+                // A shutdown win may leave a queued owner request unread. Keep
+                // the actual closed fact in the whole report until final discharge.
+                match unread_owner_cancellation {
+                    None | Some(()) => {}
+                }
+            }
+            ActorRetirement::OwnerCancelled {
+                settlements,
+                control,
+                unread_owner_cancellation,
+                ..
+            } => {
+                assert_eq!(settlements.as_slice(), []);
+                assert_eq!(*unread_owner_cancellation, None);
+                let [EventLayer::Owned(ShutdownRequested)] = control.as_slice() else {
+                    panic!("owner cancellation retains the original unconsumed shutdown input");
+                };
+            }
+            _ => panic!(
+                "the pure original root must expose its whole stopped or owner-cancelled retirement"
+            ),
+        }
+        let (
+            behavior,
+            interpretation,
+            source,
+            user,
+            descendants,
+            child_failures,
+            capability_failures,
+            additional_failures,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            retirement_failures,
+            terminal_report,
+            unread_owner_cancellation,
+        ) = match retirement {
+            ActorRetirement::Completed {
+                behavior,
+                interpretation,
+                source,
+                settlements: _,
+                control: _,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+                completion: _,
+            }
+            | ActorRetirement::OwnerCancelled {
+                behavior,
+                interpretation,
+                source,
+                settlements: _,
+                control: _,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            } => (
+                behavior,
+                interpretation,
+                source,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            ),
+            _ => unreachable!("the original typed retirement variant was already qualified"),
+        };
+        let root_identity = original_root
+            .upgrade()
+            .expect("the actual returned root remains alive");
+        assert!(Arc::ptr_eq(&root_identity, &behavior.base().original));
+        assert_eq!(behavior.base().original.as_slice(), &[31, 37]);
+        drop(root_identity);
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert_eq!(user.as_slice(), []);
+        assert_eq!(descendants.as_slice(), []);
+        assert_eq!(*child_failures, ());
+        assert!(capability_failures.is_empty());
+        assert!(additional_failures.is_empty());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(retirement_failures.is_empty());
+        assert!(terminal_report.is_none());
+        // Both actual closed cases are preserved in the original typed report;
+        // the OwnerCancelled branch above proves its consumed one-shot separately.
+        match unread_owner_cancellation {
+            None | Some(()) => {}
+        }
+    }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep the complete ordered ownership trace in one observable regression; test length does not justify a new abstraction"
+    )]
+    async fn acquired_family_prefix_survives_host_cancellation(
+        original_cause: Option<Box<dyn Any + Send>>,
+    ) {
+        let cause_pointer = original_cause
+            .as_ref()
+            .map(|cause| from_ref::<dyn Any>(&**cause).cast::<()>());
+        let native_original = original_cause
+            .as_ref()
+            .and_then(|cause| cause.downcast_ref::<Arc<Vec<u8>>>().map(Arc::downgrade));
+        let disposal_cause = Arc::new(Mutex::new(None));
+        let root = Arc::new(vec![31, 37]);
+        let original_root = Arc::downgrade(&root);
+        let head = Arc::new(vec![41, 43]);
+        let original_head = Arc::downgrade(&head);
+        let tail = Arc::new(vec![59, 61]);
+        let original_tail = Arc::downgrade(&tail);
+        let output = Arc::new(vec![11, 19]);
+        let original_output = Arc::downgrade(&output);
+        let hydration_started = Arc::new(Semaphore::new(0));
+        let hydration_release = Arc::new(Semaphore::new(0));
+        let (head_publication, acquired_head) = oneshot::channel();
+        let capacity = EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN);
+        let application = App::new(
+            ReceivingAccount { original: root }.stop_on_shutdown(),
+            AccountSpaces {
+                accounts: ActorSpace::new(),
+            },
+        )
+        .entity_family(
+            TailAccounts {
+                original: tail,
+                disposal_cause: Some(Arc::clone(&disposal_cause)),
+            },
+            PendingAccounts {
+                hydration_started: Arc::clone(&hydration_started),
+                hydration_release: Arc::clone(&hydration_release),
+                completed_head: None,
+            },
+            DirectoryConfig::default(),
+            capacity,
+        )
+        .unwrap_or_else(|_| panic!("the concrete tail directory forms before host creation"))
+        .entity_family(
+            HeadAccounts(head),
+            PendingAccounts {
+                hydration_started: Arc::new(Semaphore::new(0)),
+                hydration_release: Arc::new(Semaphore::new(1)),
+                completed_head: Some(head_publication),
+            },
+            DirectoryConfig::default(),
+            capacity,
+        )
+        .unwrap_or_else(|_| panic!("the concrete head directory forms before host creation"));
+        let (host_publication, selected_host) = oneshot::channel();
+        let (host_shutdown, shutdown_requested) = oneshot::channel();
+        let host_thread = thread::spawn(move || {
+            let runtime = Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("the selected live host builds");
+            runtime.block_on(async move {
+                let published = host_publication.send(Handle::current());
+                if published.is_ok() {
+                    let shutdown = shutdown_requested.await;
+                    drop(shutdown);
+                }
+            });
+            // The real host destructor cancels its actual retained tasks.
+            drop(runtime);
+        });
+        let selected_host = match selected_host.await {
+            Ok(host) => host,
+            Err(failure) => {
+                let requested = host_shutdown.send(());
+                let joined = tokio::task::spawn_blocking(move || host_thread.join()).await;
+                drop((requested, joined));
+                panic!("the selected host did not publish its handle: {failure}");
+            }
+        };
+        let hydration_host = selected_host.clone();
+        let selection_identity = original_tail
+            .upgrade()
+            .expect("the actual family owns its original role");
+        let paired = {
+            let entered = selected_host.enter();
+            let paired = application.execute_with_entities::<Never, (), _, _, _>(
+                move |application| async move {
+                    let entities = application.entities(TailAccounts {
+                        original: selection_identity,
+                        disposal_cause: None,
+                    });
+                    let interface = application.interface(entities.entity(71));
+                    let caller = interface.external::<AccountReplies>();
+                    let admission = match caller {
+                        Ok(caller) => {
+                            // A Pending command is explicitly cancelled while the genuine
+                            // shared hydration stays directory-owned. No command was accepted.
+                            let admission = {
+                                let mut admission = pin!(caller.send(interface.api(), 73));
+                                poll_fn(|context| {
+                                    let entered = hydration_host.enter();
+                                    let progress = admission.as_mut().poll(context);
+                                    drop(entered);
+                                    Poll::Ready(progress)
+                                })
+                                .await
+                            };
+                            Ok(admission)
+                        }
+                        Err(failure) => Err(failure),
+                    };
+                    let hydrated = match &admission {
+                        Ok(Poll::Pending) => Some(
+                            Arc::clone(&hydration_started)
+                                .acquire_owned()
+                                .await
+                                .map(OwnedSemaphorePermit::forget),
+                        ),
+                        Ok(Poll::Ready(_)) | Err(_) => None,
+                    };
+                    let stopped = application.lifecycle().request_shutdown();
+                    (output, admission, hydrated, stopped)
+                },
+            );
+            drop(entered);
+            paired
+        };
+        let (execution, receiving) = match paired {
+            Ok(paired) => paired,
+            Err((application, work, failure)) => {
+                let requested = host_shutdown.send(());
+                let joined = tokio::task::spawn_blocking(move || host_thread.join()).await;
+                drop((application, work, requested, joined));
+                panic!("the live entered host rejected construction: {failure}");
+            }
+        };
+        let close_host = async move {
+            let acquired = acquired_head.await;
+            // Head Definition Drop occurs only after its real shutdown+metrics;
+            // this task cannot poll host stop until the cleanup poll yields at tail.
+            if acquired.is_ok() {
+                *disposal_cause
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner) = original_cause;
+            } else {
+                drop(original_cause);
+            }
+            let requested = host_shutdown.send(());
+            let joined = tokio::task::spawn_blocking(move || host_thread.join()).await;
+            (acquired, requested, joined)
+        };
+        let execute = async move {
+            let mut execution = pin!(execution);
+            poll_fn(|context| {
+                match catch_unwind(AssertUnwindSafe(|| execution.as_mut().poll(context))) {
+                    Ok(Poll::Pending) => Poll::Pending,
+                    Ok(Poll::Ready(())) => Poll::Ready(Ok(())),
+                    Err(cause) => Poll::Ready(Err(cause)),
+                }
+            })
+            .await
+        };
+        let (executed, (acquired, requested, joined)) = tokio::join!(execute, close_host);
+        // Host and cleanup cancellation finish before any oracle can unwind.
+        let (returned, root_receiving, family_receiving) = receiving.await;
+        assert!(executed.is_ok());
+        assert!(acquired.is_ok());
+        assert!(requested.is_ok());
+        assert!(matches!(joined, Ok(Ok(()))));
+        let ApplicationOutcome::Completed {
+            output: Some((output, admission, hydrated, stopped)),
+            cleanup,
+        } = returned
+        else {
+            panic!("actual supplied work must publish before selected-host cancellation");
+        };
+        assert_eq!(output.as_slice(), &[11, 19]);
+        assert!(matches!(admission, Ok(Poll::Pending)));
+        assert!(matches!(hydrated, Some(Ok(()))));
+        assert!(stopped.is_ok());
+        let failure = match cleanup {
+            Ok(Err(failure)) => failure,
+            other => {
+                drop(other);
+                panic!(
+                    "the real pending cleanup task must retain its cancellation/disposal result"
+                );
+            }
+        };
+        let original_disposal_cause = if let Some(pointer) = cause_pointer {
+            assert!(failure.is_panic());
+            let cause = failure.into_panic();
+            assert_eq!(from_ref::<dyn Any>(&*cause).cast::<()>(), pointer);
+            Some(cause)
+        } else {
+            assert!(failure.is_cancelled());
+            drop(failure);
+            None
+        };
+        assert_eq!(
+            (original_root.strong_count(), original_head.strong_count()),
+            (1, 1),
+            "already acquired original root and complete head shutdown custody must survive unfinished tail cancellation",
+        );
+        let (root_origin, root_report) = root_receiving.unwrap_or_else(|failure| {
+            panic!("the original acquired root reply must survive: {failure}")
+        });
+        let root_report = root_report.unwrap_or_else(|failure| {
+            panic!("the real pure root task must have joined: {failure}")
+        });
+        assert_eq!(root_origin.address(), MailAddr::APPLICATION_ROOT);
+        observe_original_root_retirement(&root_report, &original_root);
+        let (head_receiving, (tail_receiving, ())) = family_receiving;
+        let (HeadAccounts(head), (head_shutdown, head_metrics, head_disposal_failure)) =
+            head_receiving.unwrap_or_else(|failure| {
+                panic!("the original complete head report must survive: {failure}")
+            });
+        let head_identity = original_head
+            .upgrade()
+            .expect("the acquired original head role is alive");
+        assert!(Arc::ptr_eq(&head_identity, &head));
+        assert_eq!(head.as_slice(), &[41, 43]);
+        drop(head_identity);
+        let EntityShutdown::Settled {
+            represented,
+            entities,
+        } = head_shutdown
+        else {
+            panic!("the actual zero-incarnation head owns its whole settled report");
+        };
+        assert_eq!(represented, 0);
+        assert_eq!(entities, Vec::new());
+        assert_eq!(
+            head_metrics,
+            EntityMetrics {
+                activations: 0,
+                hydration_failures: 0,
+                launch_failures: 0,
+                capacity_refusals: 0,
+                forced_retirements: 0,
+                peak_hydrations: 0,
+                residents: 0,
+            }
+        );
+        assert!(head_disposal_failure.is_none());
+        let tail_failure = match tail_receiving {
+            Err(failure) => failure,
+            Ok(report) => {
+                drop(report);
+                panic!("the genuinely unfinished tail has no completed receiving report");
+            }
+        };
+        match (original_disposal_cause.as_ref(), native_original.as_ref()) {
+            (Some(cause), Some(original)) => {
+                let native = cause
+                    .downcast_ref::<Arc<Vec<u8>>>()
+                    .expect("the original native producer cause retains its concrete allocation");
+                let native_identity = original
+                    .upgrade()
+                    .expect("the caller owns its acquired original cause");
+                assert!(Arc::ptr_eq(&native_identity, native));
+                assert_eq!(native.as_slice(), &[67, 71]);
+                drop(native_identity);
+                assert_eq!(original.strong_count(), 1);
+            }
+            (None, None) => {}
+            _ => panic!(
+                "native cancellation cannot fabricate or erase its original cause allocation"
+            ),
+        }
+        assert_eq!(original_output.strong_count(), 1);
+        assert_eq!(original_tail.strong_count(), 0);
+        // Concrete final receiving policy discharges every whole acquired owner,
+        // each genuine receiving error and the original native cause once.
+        drop((
+            output,
+            root_origin,
+            root_report,
+            head,
+            entities,
+            head_metrics,
+            head_disposal_failure,
+            tail_failure,
+            original_disposal_cause,
+            admission,
+            hydrated,
+            stopped,
+            hydration_release,
+        ));
+        assert_eq!(original_root.strong_count(), 0);
+        assert_eq!(original_head.strong_count(), 0);
+        assert_eq!(original_output.strong_count(), 0);
+        assert_eq!(original_tail.strong_count(), 0);
+        if let Some(original) = native_original {
+            assert_eq!(original.strong_count(), 0);
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn acquired_root_and_head_survive_pending_family_host_cancellation() {
+        acquired_family_prefix_survives_host_cancellation(None).await;
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn acquired_root_and_head_survive_native_pending_family_disposal() {
+        let original: Box<dyn Any + Send> = Box::new(Arc::new(vec![67_u8, 71]));
+        acquired_family_prefix_survives_host_cancellation(Some(original)).await;
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep the complete ordered ownership trace in one observable regression; test length does not justify a new abstraction"
+    )]
+    async fn surrendering_family_receiving_preserves_independent_root_observers() {
+        let native = Arc::new(vec![67_u8, 71]);
+        let original_native = Arc::downgrade(&native);
+        let original_cause: Option<Box<dyn Any + Send>> = Some(Box::new(native));
+        let disposal_cause = Arc::new(Mutex::new(None));
+        let root = Arc::new(vec![31, 37]);
+        let original_root = Arc::downgrade(&root);
+        let head = Arc::new(vec![41, 43]);
+        let original_head = Arc::downgrade(&head);
+        let tail = Arc::new(vec![59, 61]);
+        let original_tail = Arc::downgrade(&tail);
+        let output = Arc::new(vec![11, 19]);
+        let original_output = Arc::downgrade(&output);
+        let hydration_started = Arc::new(Semaphore::new(0));
+        let hydration_release = Arc::new(Semaphore::new(0));
+        let (head_publication, acquired_head) = oneshot::channel();
+        let (observation_publication, received_observations) = oneshot::channel();
+        let capacity = EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN);
+        let application = App::new(
+            ReceivingAccount { original: root }.stop_on_shutdown(),
+            AccountSpaces {
+                accounts: ActorSpace::new(),
+            },
+        )
+        .entity_family(
+            TailAccounts {
+                original: tail,
+                disposal_cause: Some(Arc::clone(&disposal_cause)),
+            },
+            PendingAccounts {
+                hydration_started: Arc::clone(&hydration_started),
+                hydration_release: Arc::clone(&hydration_release),
+                completed_head: None,
+            },
+            DirectoryConfig::default(),
+            capacity,
+        )
+        .unwrap_or_else(|_| panic!("the concrete tail directory forms before host creation"))
+        .entity_family(
+            HeadAccounts(head),
+            PendingAccounts {
+                hydration_started: Arc::new(Semaphore::new(0)),
+                hydration_release: Arc::new(Semaphore::new(1)),
+                completed_head: Some(head_publication),
+            },
+            DirectoryConfig::default(),
+            capacity,
+        )
+        .unwrap_or_else(|_| panic!("the concrete head directory forms before host creation"));
+        let (host_publication, selected_host) = oneshot::channel();
+        let (host_shutdown, shutdown_requested) = oneshot::channel();
+        let host_thread = thread::spawn(move || {
+            let runtime = Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("the selected live host builds");
+            runtime.block_on(async move {
+                let published = host_publication.send(Handle::current());
+                if published.is_ok() {
+                    let shutdown = shutdown_requested.await;
+                    drop(shutdown);
+                }
+            });
+            // The real host destructor cancels its actual retained tasks.
+            drop(runtime);
+        });
+        let selected_host = match selected_host.await {
+            Ok(host) => host,
+            Err(failure) => {
+                let requested = host_shutdown.send(());
+                let joined = tokio::task::spawn_blocking(move || host_thread.join()).await;
+                drop((requested, joined));
+                panic!("the selected host did not publish its handle: {failure}");
+            }
+        };
+        let hydration_host = selected_host.clone();
+        let selection_identity = original_tail
+            .upgrade()
+            .expect("the actual family owns its original role");
+        let paired = {
+            let entered = selected_host.enter();
+            let paired = application.execute_with_entities::<Never, (), _, _, _>(
+                move |application| async move {
+                    let entities = application.entities(TailAccounts {
+                        original: selection_identity,
+                        disposal_cause: None,
+                    });
+                    let interface = application.interface(entities.entity(71));
+                    let caller = interface.external::<AccountReplies>();
+                    let admission = match caller {
+                        Ok(caller) => {
+                            // A Pending command is explicitly cancelled while the genuine
+                            // shared hydration stays directory-owned. No command was accepted.
+                            let admission = {
+                                let mut admission = pin!(caller.send(interface.api(), 73));
+                                poll_fn(|context| {
+                                    let entered = hydration_host.enter();
+                                    let progress = admission.as_mut().poll(context);
+                                    drop(entered);
+                                    Poll::Ready(progress)
+                                })
+                                .await
+                            };
+                            Ok(admission)
+                        }
+                        Err(failure) => Err(failure),
+                    };
+                    let hydrated = match &admission {
+                        Ok(Poll::Pending) => Some(
+                            Arc::clone(&hydration_started)
+                                .acquire_owned()
+                                .await
+                                .map(OwnedSemaphorePermit::forget),
+                        ),
+                        Ok(Poll::Ready(_)) | Err(_) => None,
+                    };
+                    let lifecycle = application.lifecycle();
+                    let published = observation_publication
+                        .send((lifecycle.termination(), lifecycle.termination()));
+                    drop(published);
+                    let stopped = lifecycle.request_shutdown();
+                    (output, admission, hydrated, stopped)
+                },
+            );
+            drop(entered);
+            paired
+        };
+        let (execution, receiving) = match paired {
+            Ok(paired) => paired,
+            Err((application, work, failure)) => {
+                let requested = host_shutdown.send(());
+                let joined = tokio::task::spawn_blocking(move || host_thread.join()).await;
+                drop((application, work, requested, joined));
+                panic!("the live entered host rejected construction: {failure}");
+            }
+        };
+        let close_host = async move {
+            let acquired = acquired_head.await;
+            // This surrenders ONLY the final result future; the independent
+            // observation futures remain separately owned outside the producer.
+            drop(receiving);
+            if acquired.is_ok() {
+                *disposal_cause
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner) = original_cause;
+            } else {
+                drop(original_cause);
+            }
+            let requested = host_shutdown.send(());
+            let joined = tokio::task::spawn_blocking(move || host_thread.join()).await;
+            let observations = received_observations.await;
+            (acquired, requested, joined, observations)
+        };
+        let execute = async move {
+            let mut execution = pin!(execution);
+            poll_fn(|context| {
+                match catch_unwind(AssertUnwindSafe(|| execution.as_mut().poll(context))) {
+                    Ok(Poll::Pending) => Poll::Pending,
+                    Ok(Poll::Ready(())) => Poll::Ready(Ok(())),
+                    Err(cause) => Poll::Ready(Err(cause)),
+                }
+            })
+            .await
+        };
+        let (executed, (acquired, requested, joined, observations)) =
+            tokio::join!(execute, close_host);
+        // Real H tasks/thread have finished before any observational assertion.
+        let (first_observation, second_observation) = observations.unwrap_or_else(|failure| {
+            panic!("the original independent observers were not published: {failure}")
+        });
+        let (first_observation, second_observation) =
+            tokio::join!(first_observation, second_observation);
+        assert!(executed.is_ok());
+        assert!(acquired.is_ok());
+        assert!(requested.is_ok());
+        assert!(matches!(joined, Ok(Ok(()))));
+        assert_eq!(first_observation, second_observation);
+        match &first_observation {
+            Ok(Exit::Normal) | Err(Crash::Cancelled) => {}
+            _ => panic!(
+                "surrendering a result receiver cannot replace the original stopped/cancelled root observation"
+            ),
+        }
+        assert_eq!(original_root.strong_count(), 0);
+        assert_eq!(original_head.strong_count(), 0);
+        assert_eq!(original_tail.strong_count(), 0);
+        assert_eq!(original_output.strong_count(), 0);
+        assert_eq!(original_native.strong_count(), 0);
+        // No cleanup JoinError is claimed after deliberately surrendering its
+        // actual result owner. The two retained controls above inspect that fact.
+        drop((first_observation, second_observation, hydration_release));
+    }
 }

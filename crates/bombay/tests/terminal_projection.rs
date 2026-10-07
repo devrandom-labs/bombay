@@ -1,10 +1,10 @@
-use bombay::ProjectTerminal;
 use bombay::actors::ActorExt;
 use bombay::behavior::{Actions, BehaviorActed, ChildRole, Never};
 use bombay::prelude::{
-    ActorRetirement, Application, ChildOrigin, Completion, MailAddr, RootOrigin, RunError,
-    StopOnShutdown, TerminalProjection,
+    ActorRetirement, Application, ChildOrigin, Completion, MailAddr, RootOrigin, StopOnShutdown,
+    TerminalProjection,
 };
+use bombay::{ApplicationOutcome, ProjectTerminal};
 
 struct Root;
 
@@ -89,12 +89,29 @@ fn equal_child_types_project_from_their_distinct_generated_role_positions() {
     >();
 }
 
-#[test]
-fn derive_preserves_the_exact_runtime_origin_and_retirement() {
-    let terminal: ApplicationTerminal = match Application::new(Root.stop_on_shutdown()).run() {
-        Err(RunError::Unpublished(terminal)) => terminal,
-        _ => panic!("the initialization stop must retain an unpublished terminal"),
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::drop_non_drop,
+    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
+)]
+async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
+    let application_outcome = Application::new(Root.stop_on_shutdown())
+        .run::<_, _, ApplicationTerminal, _>()
+        .await
+        .unwrap_or_else(|(application, error)| {
+            drop(application);
+            panic!("the caller owns the application's live entered host: {error}");
+        });
+    let ApplicationOutcome::NotInvoked {
+        work: None,
+        startup_error: Some(_startup_error),
+        cleanup: Ok(Ok((origin, Ok(retirement)))),
+    } = application_outcome
+    else {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
     };
+    let terminal: ApplicationTerminal = ProjectTerminal::project(origin, retirement);
     let ApplicationTerminal::Root {
         origin,
         terminal:
