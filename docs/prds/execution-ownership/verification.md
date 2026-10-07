@@ -1891,7 +1891,7 @@ source equivalence, final integrated verification, final byte ledgers and delive
 remain required. The WORK current-status paragraph now reflects already
 accepted strict checks; its historical evidence is unchanged.
 
-The current complete Main flake88e5548 passes18/21 on356 Main/808 owning
+The superseded complete Main flake88e5548 passes18/21 on356 Main/808 owning
 unchanged source guards. Independent341eaa54 authenticates every stream and
 classifies all three failures: panic-unwind and owner-coverage fail solely during
 compilation at NoSpaceLeft; doc fails on the moved Application link. Coverage
@@ -1915,3 +1915,55 @@ free space rises to17GiB. This is capacity recovery, not an additional test pass
 or a replacement for the required failed checks. The16 completed unfiltered
 controller binaries were separately measured; their17MiB objects were not
 retired because they would not address this capacity blocker.
+
+
+### Current full local integration and API-parser regression (2026-10-07)
+
+Actual6d8b6cc5 (`/tmp/bombay-exec-main-repaired-full-flake-actual/actual.json`)
+repeats the strict documentation build and complete `nix flake check -L
+--keep-going --max-jobs 1 --cores 2` after the observed three failures. Both
+commands exit0, all21 checks pass, all356 Main inputs are unchanged, and both
+process groups are absent. Actual coverage: Driver737/818, ActorExecution961/1001,
+ActorOutcome95/97 and Observe502/525; all existing floors pass. Main1b1a949 is
+pushed to PR326 after this local full check. Independentcb1f115e accepts all
+streams, four coverage floors and the exact1b1a949 source/tree54f2f46d.
+Three omitted local platforms, existing unused-patch notices and cache-reuse
+limits remain explicit. Final published-selection verification remains required.
+
+The unchanged owning PR86 passes Nix, all eight mutation shards and their
+authoritative aggregate, CodeQL and dependency checks at11b9a1e. Its remaining
+API-audit failure is reproduced using official cargo-semver-checks0.51.0:
+private/hidden Actors JSONv57 has depth154 and21297 items; the exact schema
+parser reports recursion-limit exceeded at line1,column349710. Plain public
+JSON depth42 parses and does not reproduce the checker configuration.
+
+Focused successor actualb0716de2 (`/tmp/bombay-owning-stack-safe-parser-regression-actual/actual.json`)
+uses stack-safe deserialization on the original481f501b JSON. It parses exactly
+21297 items, while appended junk and truncated copies fail101 with original
+trailing-character/EOF errors. The original default-parser/checker failures
+remain preserved. This is a tooling regression, not an actor-contract change;
+full corrected checker execution, independent review and scope approval remain
+required before installing the proposed tooling files.
+
+
+Full corrected checker actual8376194e (`/tmp/bombay-owning-stack-safe-api-tool-build-and-check-actual/actual.json`)
+builds official0.51.0 with the independently reviewed loader and frozen lock in
+optimized mode through pinned Nix, then runs exactly both owning packages with
+the existing major-release policy. Both commands exit0, both process groups are
+absent and all808 owning source files are unchanged. Current and baseline Core
+and Actors documentation parse; original0.51/default-parser failures remain.
+The existing major policy executes0 checks/skips260 per package, as before.
+No audit policy or semantic acceptance is weakened or inferred from that count.
+
+Tool output conservation037e22bf preserves final baseline JSON separately and
+restores the earlier original current JSON path byte-exactly from the already
+hashed malformed-control copy, removing only its explicit appended junk. The
+checker writes current then baseline to the same target filename. Stable copies
+retain v57 current21297 items/481f501b and baseline21050 items/69121e94.
+No JSON item filtering or semantic reconstruction occurs. Source/lock review
+c6731176 and CI packaging reviewe734ee5c are independent; final actual review,
+independent full-tool actual acceptancea9b6b4ca also authenticates every stream,
+source guard and process completion. It qualifies the actual current/baseline
+parsing and completed audit, without inventing an unrecorded intermediate
+regenerated-current JSON hash or item-set comparison. Explicit scope authorization
+and exact-head Linux CI remain required.

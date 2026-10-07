@@ -73,8 +73,8 @@ both profiles; [current evidence](execution-ownership/verification.md#module-acc
 
 | Requirement / gate | Exact blocker | Valid evidence available | Next action and pass condition |
 | --- | --- | --- | --- |
-| Selected upstream contract | Reviewed owning PR86 is open at11b9a1e; its API audit cannot parse Actors rustdocJSONv57. Publication remains. | Independent source/modela56c8ccb, head bindingfa736b44 and transfer278486b4 authenticate all808 sources and five signed commits. Full owning local Nix31b083dd and complete external debug/release pass. | Expose the exact checker parse cause and repair that blocker without weakening audit or changing accepted semantics; pass exact-head CI, reviewed owning merge/release, then select and verify published contract. |
-| Final verification, minimization, review and delivery | Current full local Nix passes18/21: rustdoc has one moved Application link; panic-unwind and coverage compilation exhaust disk. Published selection, final full checks and reviewed merge remain. | All eight gates and conditional source minimization5d8881b0/b42b2175 are accepted. Current standard campaigns694acdb7 and execution measurements qualify. Full Nix preserves all sources; its18 successes are retained, with no coverage-floor verdict. | Correct the one reviewed documentation link, retire only verified completed build intermediates, and rerun failed checks/full Nix. Finish §10.1 on published selection, final delta/minimization and independent final review; push only after local full Nix passes, then green CI/reviewed merge. |
+| Selected upstream contract | The reviewed three-file CI repair awaits §265 scope approval; owning merge/publication remain. | Independently accepted full checker8376194e/a9b6b4ca and malformed-input controls pass; independent loader/lockc6731176 and CI-setupe734ee5c reviews accept the source. Other current owning CI and local Nix31b083dd pass. | Install the authorized repair, run local Nix before push, require exact-head CI/review, merge/release and verify the published contract. |
+| Final verification, minimization, review and delivery | Published selection, required final integration and reviewed merge remain. | All eight gates and conditional source minimization are accepted. Successor full local Nix6d8b6cc5 passes all21 checks, including all four coverage floors; Main1b1a949 is pushed. Unchanged campaigns694acdb7 and execution measurements qualify. Independentcb1f115e accepts the successor actual and exact1b1a949 source tree. | Select the published contract; finish §10.1 and final source equivalence, byte delta/minimization and independent review; require exact-head green CI before merge. |
 
 ## 1. Authority and how to execute this document
 
@@ -12476,3 +12476,57 @@ The panic-unwind and coverage checks failed during compilation with NoSpaceLeft;
 no coverage percentage or full-flake success is claimed. The required owning
 API checker cause remains a separate named delivery blocker, not permission to
 change the accepted model or omit its audit.
+
+
+## 265. Required API-checker repair: concrete three-file scope checkpoint
+
+Proposed; not installed or authorized. Current allowance271 named paths and13
+public nominal additions remains. The reviewed owning PR86 cannot pass its
+Published API Change Audit because official cargo-semver-checks0.51.0's loader
+exceeds its default JSON recursion limit on valid private/hidden Actors JSONv57.
+Same-file original failure and successor controls are in the verification record.
+No actor contract change or weakened audit is proposed.
+
+Exact proposed additional names (all absent from the approved271 union):
+
+- behavior/.github/workflows/checks.yml
+- behavior/.github/semver-checks-stack-safe-json.patch
+- behavior/.github/semver-checks-stack-safe-json.Cargo.lock
+
+Proposed allowance274 names;13 public types unchanged, no line cap. Exact
+external products515af692 are independently source-reviewed by e734ee5c.
+The workflow adds40 lines to install the locked corrected checker through
+pinned Nix before the existing official action. That action, both package names,
+release policy, Rust1.95.0 documentation toolchain and all other jobs remain
+unchanged. Exact patch28 lines and dependency lock4337 lines give:
+
+```text
+actor production: +0 / -0 / net 0
+tests:            +0 / -0 / net 0
+CI configuration: +4405 / -0 / net 4405
+public API:       +0 types / -0 types
+```
+
+The third-party loader patch itself adds5/removes1 Rust lines and adds4
+normalized manifest lines; its canonical upstream source delta is net5 lines.
+It retains every schema and item, the original error mapping and trailing-input
+rejection. Frozen real tool lock761245ae retains all416 original package versions
+and adds only five stack-support dependencies. Their actual source/archive audit
+0a5f8974 records selected-platform support, MSRV and licenses; no actor/runtime
+dependency is added. Loader/lock reviewc6731176 accepts the source and malformed
+input regressions. Full locked optimized tool build and unchanged both-package
+checker exit0 in actual8376194e, with all808 owning sources unchanged. Existing
+major-release audit semantics (0 checks,260 skipped per package) remain explicit;
+this is parsing/tool verification, not260 newly verified semantic laws.
+
+Complete current Bombay endpoint checkpoint7f913bd4, before this prose record:
+150 tracked paths, no untracked files; production+13869/−6382/net7487;
+tests+34256/−4694/net29562; documentation+19629/−433/net19196;
+configuration+58/−39/net19. It reuses142 unchanged qualified pairs against
+original2fcc; it does not reset the cumulative historical/owning scope. The
+unchanged owning89-path source record remains in the verification record.
+
+Explicit user authorization is required before installing these three products.
+Then run the owning local Nix gate before push and require the exact-head Linux
+API audit and other required CI/reviews before merge. Publication, Bombay's
+published-contract selection and required final integration remain mandatory.
