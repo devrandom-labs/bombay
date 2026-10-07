@@ -83,7 +83,7 @@ use crate::reports::{
 use crate::terminal::{ActorRetirement, ChildOrigin, ProjectTerminal, RootOrigin};
 use crate::termination::TerminalReportDisposition;
 use crate::time::LocalTimers;
-use crate::topology::{HostedActorSpaces, Hosts, ResolveLogical};
+use crate::topology::Hosts;
 use crate::worker_preparation::{WorkerPreparationSource, settle_worker_preparation};
 
 const DEFAULT_USER_CAPACITY: usize = 1_024;
@@ -142,7 +142,7 @@ where
 
 type RootCapabilities<Actor, Spaces, Terminal, Origins> = ApplicationCapabilities<
     Actor,
-    HostedActorSpaces<Spaces>,
+    Spaces,
     NoParent,
     ChildBindings<Actor, Terminal, Origins>,
     Origins,
@@ -2998,7 +2998,7 @@ where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Target: Protocol<Addr = MailAddr>,
     Target::Msg: Send,
-    N: ResolveLogical<Target> + Send + Sync,
+    N: Hosts<Target> + Send + Sync,
     Self: Send,
 {
     #[expect(
@@ -3022,7 +3022,12 @@ where
             };
             let settlement = 'settlement: {
                 let address = delivery.to.address();
-                let Some(actor) = self.actor_spaces.resolve_logical(address) else {
+                let Some(actor) = self
+                    .actor_spaces
+                    .space()
+                    .resolve(&address)
+                    .map(|actor| actor.as_ref().clone())
+                else {
                     break 'settlement ItemSettlement::Rejected {
                         item: delivery,
                         reason: LogicalDeliveryReason::UnknownAddress,
@@ -4837,10 +4842,10 @@ mod atomic_interpretation_contract {
     use std::time::{Duration, Instant};
 
     use behavior::{
-        Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, Creations, EstablishedDelivery,
-        EstablishedRecipient, EventIngress, EventLayer, Here, InjectEvent, Inside, InterpretItem,
-        MessageProtocol, Never, NoBirths, NoSends, Recipient, SendLayer, SourceAdmission, Step,
-        User, UserEvent,
+        Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, Creations, Delivery,
+        EstablishedDelivery, EstablishedRecipient, EventIngress, EventLayer, Here, InjectEvent,
+        Inside, InterpretItem, ItemSettlement, LogicalDeliveryReason, MessageProtocol, Never,
+        NoBirths, NoSends, Recipient, SendLayer, SourceAdmission, Step, User, UserEvent,
     };
     use behavior_actors::atomic::{
         AssignWorker, Assignment, BeginActivation, CustomerDelivery, DiagnosticAction,
@@ -4866,14 +4871,15 @@ mod atomic_interpretation_contract {
     use crate::child_bindings::ChildBindings;
     use crate::interpret::{ActionInterpreter, RetireCapabilities};
     use crate::local::{
-        ActivationTasks, CommitActions, LocalEnvironment, LocalResidual, StandardIngress,
+        ActivationTasks, ActorRef, Admission, AdmissionClosure, CommitActions, LocalEnvironment,
+        LocalResidual, StandardIngress,
     };
     use crate::observation::TerminationObservations;
-    use crate::observe;
+    use crate::observe::{self, pair};
     use crate::reports::LocalTerminalReports;
     use crate::terminal::{ActorRetirement, LocalOutcome};
     use crate::time::LocalTimers;
-    use crate::topology::HostedActorSpaces;
+    use crate::topology::Hosts;
     use crate::{ActorExecutionOutcome, ActorSpace};
 
     struct Worker;
@@ -4891,6 +4897,208 @@ mod atomic_interpretation_contract {
         creation_settlements = retain_for_retirement,
     )]
     impl ProxyParent {}
+
+    type LedgerProtocol = MessageProtocol<MailAddr, Vec<u64>>;
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep the complete two-generation delivery and retirement trace together."
+    )]
+    async fn application_delivery_and_direct_hosts_preserve_exact_claim_generations() {
+        let address = MailAddr(701);
+        let origin = MailAddr(709);
+        let hosts = ActorSpace::<LedgerProtocol>::new();
+        let application_hosts = Arc::new(hosts.clone());
+        let (control, source_owner, source_mailbox, source_receiver) =
+            mailbox_channel::<SourceControlEvent, User<MailAddr, Never>>(Config::new(1));
+        let (terminal_sender, terminal_receiver) = oneshot::channel();
+        let mut capabilities = ApplicationCapabilities::<SourceActor, _>::new_with_bindings(
+            ApplicationCapabilityInputs {
+                address: origin,
+                actor_spaces: Arc::clone(&application_hosts),
+                allocations: ApplicationAddresses::new(),
+                control,
+                timers: LocalTimers::new(),
+                observations: TerminationObservations::new(),
+                terminal_reports: LocalTerminalReports::new(terminal_sender),
+            },
+            NoChildBindings::default(),
+        );
+        let absent = vec![11, 13];
+        let absent_allocation = absent.as_ptr();
+        let mut delivery = Some(Delivery::new(Recipient::global(address), absent));
+        let mut rejected = None;
+        <_ as InterpretItem<Delivery<LedgerProtocol>, SourceControlEvent, Here>>::interpret_item(
+            &mut capabilities,
+            &mut delivery,
+            &mut rejected,
+        )
+        .await;
+        let rejected = rejected.expect("original logical delivery receiving result");
+        let ItemSettlement::Rejected { item, reason } = rejected else {
+            panic!("an unclaimed logical address must return its whole delivery")
+        };
+        assert_eq!(reason, LogicalDeliveryReason::UnknownAddress);
+        assert_eq!(item.to.address(), address);
+        assert_eq!(item.message, [11, 13]);
+        assert_eq!(item.message.as_ptr(), absent_allocation);
+        let direct_absent = hosts.space().resolve(&address);
+        assert!(direct_absent.is_none());
+
+        let (old_control, old_owner, old_mailbox, mut old_receiver) =
+            mailbox_channel::<Never, User<MailAddr, Vec<u64>>>(Config::new(1));
+        let old_admission = Arc::new(Admission::new(old_owner));
+        let (old_publisher, old_observation) = pair();
+        let old_actor = ActorRef::<LedgerProtocol>::external(
+            address,
+            old_mailbox,
+            Arc::downgrade(&old_admission),
+            old_observation,
+        );
+        let old_claim = hosts.try_claim(address, old_actor).expect("old claim");
+        let old_generation = old_claim.registration_id();
+        let captured_application = application_hosts
+            .space()
+            .resolve(&address)
+            .map(|actor| actor.as_ref().clone())
+            .expect("application old endpoint");
+        let captured_direct = hosts
+            .space()
+            .resolve(&address)
+            .expect("direct old endpoint")
+            .as_ref()
+            .clone();
+        let filled = captured_direct.send_from(origin, vec![17]).await;
+        assert!(filled.is_ok());
+        let second_fill = captured_direct.send_from(origin, vec![18]).await;
+        assert!(second_fill.is_ok());
+        let pending_values = vec![19, 23];
+        let pending_allocation = pending_values.as_ptr();
+        let (new_control, new_owner, new_mailbox, mut new_receiver) =
+            mailbox_channel::<Never, User<MailAddr, Vec<u64>>>(Config::new(1));
+        let new_admission = Arc::new(Admission::new(new_owner));
+        let (new_publisher, new_observation) = pair();
+        let new_actor = ActorRef::<LedgerProtocol>::external(
+            address,
+            new_mailbox,
+            Arc::downgrade(&new_admission),
+            new_observation,
+        );
+        let new_claim;
+        {
+            let mut delivery = Some(Delivery::new(Recipient::global(address), pending_values));
+            let mut received_delivery = None;
+            {
+                let mut pending_delivery = pin!(<_ as InterpretItem<
+                    Delivery<LedgerProtocol>,
+                    SourceControlEvent,
+                    Here,
+                >>::interpret_item(
+                    &mut capabilities,
+                    &mut delivery,
+                    &mut received_delivery
+                ));
+                let mut context = Context::from_waker(Waker::noop());
+                let pending = pending_delivery.as_mut().poll(&mut context);
+                assert!(matches!(pending, Poll::Pending));
+                old_claim.release();
+                let closed = old_admission.close();
+                assert!(matches!(closed, AdmissionClosure::Closed));
+                new_claim = hosts
+                    .try_claim(address, new_actor)
+                    .expect("fresh same-address claim");
+                assert_ne!(old_generation, new_claim.registration_id());
+                let first = old_receiver.recv().await;
+                let Some(Received::User(first)) = first else {
+                    panic!("old first delivery")
+                };
+                assert_eq!(first, User::new(origin, vec![17]));
+                let second = old_receiver.recv().await;
+                let Some(Received::User(second)) = second else {
+                    panic!("old second delivery")
+                };
+                assert_eq!(second, User::new(origin, vec![18]));
+                pending_delivery.await;
+            }
+            let settled = received_delivery.expect("the original admitted delivery receipt");
+            assert!(matches!(settled, ItemSettlement::Accepted(())));
+            let admitted = old_receiver.recv().await;
+            let Some(Received::User(admitted)) = admitted else {
+                panic!("preclose admitted delivery")
+            };
+            assert_eq!(admitted.from, origin);
+            assert_eq!(admitted.message, [19, 23]);
+            assert_eq!(admitted.message.as_ptr(), pending_allocation);
+        }
+        for captured in [captured_application, captured_direct] {
+            let values = vec![29, 31];
+            let allocation = values.as_ptr();
+            let failed = captured.send_from(origin, values).await;
+            let returned = failed
+                .expect_err("captured old endpoint stays closed")
+                .into_message();
+            assert_eq!(returned, [29, 31]);
+            assert_eq!(returned.as_ptr(), allocation);
+        }
+        let fresh_direct = hosts
+            .space()
+            .resolve(&address)
+            .expect("fresh endpoint")
+            .as_ref()
+            .clone();
+        let values = vec![37, 41];
+        let allocation = values.as_ptr();
+        let delivered = fresh_direct.send_from(origin, values).await;
+        assert!(delivered.is_ok());
+        let fresh = new_receiver.recv().await;
+        let Some(Received::User(fresh)) = fresh else {
+            panic!("fresh direct delivery")
+        };
+        assert_eq!(fresh.from, origin);
+        assert_eq!(fresh.message, [37, 41]);
+        assert_eq!(fresh.message.as_ptr(), allocation);
+        let new_closed = new_admission.close();
+        assert!(matches!(new_closed, AdmissionClosure::Closed));
+        let values = vec![43, 47];
+        let allocation = values.as_ptr();
+        let mut delivery = Some(Delivery::new(Recipient::global(address), values));
+        let mut rejected = None;
+        <_ as InterpretItem<Delivery<LedgerProtocol>, SourceControlEvent, Here>>::interpret_item(
+            &mut capabilities,
+            &mut delivery,
+            &mut rejected,
+        )
+        .await;
+        let rejected = rejected.expect("original closed delivery receiving result");
+        let ItemSettlement::Rejected { item, reason } = rejected else {
+            panic!("a claimed closed endpoint must return its whole delivery")
+        };
+        assert_eq!(reason, LogicalDeliveryReason::ClosedRecipient);
+        assert_eq!(item.to.address(), address);
+        assert_eq!(item.message, [43, 47]);
+        assert_eq!(item.message.as_ptr(), allocation);
+        let new_terminal = new_receiver.recv().await;
+        assert!(matches!(new_terminal, Some(Received::UserLaneClosed)));
+        drop(new_control);
+        let new_exhausted = new_receiver.recv().await;
+        assert!(new_exhausted.is_none());
+        let terminal = old_receiver.recv().await;
+        assert!(matches!(terminal, Some(Received::UserLaneClosed)));
+        drop(old_control);
+        let exhausted = old_receiver.recv().await;
+        assert!(exhausted.is_none());
+        new_claim.release();
+        drop((
+            old_publisher,
+            new_publisher,
+            new_admission,
+            source_owner,
+            source_mailbox,
+            source_receiver,
+            terminal_receiver,
+        ));
+    }
 
     struct SourceActor;
 
@@ -6013,7 +6221,7 @@ mod atomic_interpretation_contract {
     #[test]
     fn local_application_interprets_complete_customer_delivery() {
         type CustomerProtocol = MessageProtocol<crate::MailAddr, u64>;
-        type Spaces = HostedActorSpaces<ActorSpace<CustomerProtocol>>;
+        type Spaces = ActorSpace<CustomerProtocol>;
 
         fn require<Capabilities>()
         where
@@ -6027,7 +6235,7 @@ mod atomic_interpretation_contract {
     #[test]
     fn local_application_interprets_routed_and_terminal_diagnostics() {
         type DiagnosticProtocol = MessageProtocol<crate::MailAddr, u64>;
-        type Spaces = HostedActorSpaces<ActorSpace<DiagnosticProtocol>>;
+        type Spaces = ActorSpace<DiagnosticProtocol>;
 
         fn require<Capabilities>()
         where
@@ -8320,7 +8528,6 @@ mod parent_conversion_custody {
     use crate::local::{ActorRef, Admission, LocalResidual, StandardIngress};
     use crate::observe;
     use crate::terminal::{ActorRetirement, ChildOrigin, ProjectTerminal};
-    use crate::topology::HostedActorSpaces;
     use crate::{ActorExecutionOutcome, ActorSpace};
 
     static CONVERSION_SERIAL: Mutex<()> = Mutex::new(());
@@ -8651,7 +8858,7 @@ mod parent_conversion_custody {
                 .await;
             let (capability_ready, capability_started) = oneshot::channel();
             let (release_capability, capability_permission) = oneshot::channel();
-            let actor_spaces = Arc::new(HostedActorSpaces(roots.clone()));
+            let actor_spaces = Arc::new(roots.clone());
             let parent = Parent {
                 entries: original_parent,
                 child: Some(Child {
@@ -8672,7 +8879,7 @@ mod parent_conversion_custody {
                     move |control, terminal_reports, timers, observations| {
                         let mut capabilities = ApplicationCapabilities::<
                         Parent,
-                        HostedActorSpaces<ActorSpace<ParentProtocol>>,
+                        ActorSpace<ParentProtocol>,
                         NoParent,
                         ChildBindings<Parent, ChildTerminal, StructuralOrigins<Parent>>,
                         StructuralOrigins<Parent>,
@@ -9878,7 +10085,7 @@ where
             };
             original_work.publication =
                 Some((ApplicationWorkCustody::NotInvoked(work, None), publication));
-            let actor_spaces = Arc::new(HostedActorSpaces(spaces));
+            let actor_spaces = Arc::new(spaces);
             let started = spawn_local_execution::<Actor, _, StandardIngress, _, _, _>(
                 roots,
                 config,
@@ -9887,7 +10094,7 @@ where
                 move |control, terminal_reports, timers, observations| {
                     ActionInterpreter::new(ApplicationCapabilities::<
                         Actor,
-                        HostedActorSpaces<Spaces>,
+                        Spaces,
                         NoParent,
                         ChildBindings<Actor, Terminal, Origins>,
                         Origins,
@@ -10064,7 +10271,6 @@ mod capability_task_retirement {
     use crate::reports::TerminalReportTransaction;
     use crate::terminal::{ActorRetirement, ChildOrigin, ProjectTerminal};
     use crate::termination::TerminalReportDisposition;
-    use crate::topology::HostedActorSpaces;
     use crate::worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
     use behavior::{
         ActionItem, ActionItemResult, Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorAddr,
@@ -11888,7 +12094,7 @@ mod capability_task_retirement {
         let mut creations = CreationSequence::new();
         let creation = creations.issue().expect("actual parent namespace");
         let roots = ActorSpace::<MessageProtocol<MailAddr, Never>>::new();
-        let actor_spaces = Arc::new(HostedActorSpaces(roots.clone()));
+        let actor_spaces = Arc::new(roots.clone());
         let allocations = ApplicationAddresses::new();
         let activation_lane = Arc::new(Mutex::new(Vec::new()));
         let preparation_lane = Arc::new(Mutex::new(Vec::new()));
@@ -11913,7 +12119,7 @@ mod capability_task_retirement {
                 move |control, terminal_reports, timers, observations| {
                     let capabilities = ApplicationCapabilities::<
                         CapabilityParent,
-                        HostedActorSpaces<ActorSpace<MessageProtocol<MailAddr, Never>>>,
+                        ActorSpace<MessageProtocol<MailAddr, Never>>,
                         NoParent,
                         ChildBindings<
                             CapabilityParent,
@@ -12421,7 +12627,6 @@ mod child_projection_panic {
     use crate::interpret::ActionInterpreter;
     use crate::launch::{OwnedTask, spawn_root_with};
     use crate::terminal::{ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal};
-    use crate::topology::HostedActorSpaces;
     use crate::{ActorSpace, ActorSpaces};
 
     type ProjectionCustody = (oneshot::Sender<(Id, ChildTerminal)>, Box<dyn Any + Send>);
@@ -12587,7 +12792,7 @@ mod child_projection_panic {
         .stop_on_shutdown();
         let (reported, parent_poll, shutdown, received, remaining_owner) =
             runtime.block_on(async move {
-                let actor_spaces = Arc::new(HostedActorSpaces(spaces));
+                let actor_spaces = Arc::new(spaces);
                 let root = spawn_root_with(
                     roots.clone(),
                     Config::new(2),
@@ -12596,7 +12801,7 @@ mod child_projection_panic {
                     move |control, terminal_reports, timers, observations| {
                         ActionInterpreter::new(ApplicationCapabilities::<
                             StopOnShutdown<ProjectionParent>,
-                            HostedActorSpaces<ProjectionSpaces>,
+                            ProjectionSpaces,
                             NoParent,
                             ChildBindings<
                                 StopOnShutdown<ProjectionParent>,

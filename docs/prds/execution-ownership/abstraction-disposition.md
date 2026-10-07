@@ -1,5 +1,33 @@
 # Existing abstraction disposition evidence
 
+## Current wrapper decision
+
+DG-WRAPPERS is independently accepted by coordinating eabfa531 and nonauthor
+9487ad69, with corrected exact-count co-sign881c3033. The20 individual five-answer
+dispositions remain in the signed source-bound decision,
+/tmp/bombay-dg-wrappers-final-current-coordinating-decision-corrected.json.
+The historical tables below retain their original contract epochs.
+
+HostedActorSpaces and ResolveLogical are deleted in current source. The actual
+application and native Entity consumers preserve the same73 assertions and
+complete outcomes before and after deletion: all four passes per side qualify
+in debug/optimized profiles; both AFTER strict workspace profiles pass. Actuals
+94d9b88f/6c355406 preserve all36 streams, current348-source guards and restorations.
+Four original retarget/payload/static law cuts retain their original execution
+epochs only through precise current-source bridge49a35352; no new wrapper bug
+or fresh inversion execution is claimed. Initial missing-Exit formation2c86bbb2
+remains failed, with no runtime credit. The import correction changes no law.
+
+The installed formatted three-path stage is production+14/−45/net−31;
+tests+452/−25/net427; public types+0/−0. Exact cfg-item classification includes
+the late production kernel edits. Installationfa7dd9d3 preserves every other
+source and the accepted result model/eager projection. The raw source−32 count
+is a different pre-format epoch; the complete EXEC production delta remains
+positive. Final modules/integrated checks/published owner/reviewed merge remain.
+
+## Historical source audits and comparisons
+
+
 **Frozen research snapshot:** ARC-011 on 2026-10-01 retained
 `ProjectedTask` as the concrete typed origin boundary, moved activation-task
 settlement into the spawned actor task, and shared root/owned setup. Its

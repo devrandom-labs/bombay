@@ -20,7 +20,7 @@ use crate::child_bindings::{ChildBindings, RetireChildTasks, RuntimeChildBinding
 use crate::interpret::{ActionInterpreter, ActionSettlementOf};
 use crate::launch::{OwnedActor, SpawnError, spawn_owned_entity_with};
 use crate::local::{ActorRef, CommitActions, request_actor_shutdown};
-use crate::topology::{HostedActorSpaces, Hosts};
+use crate::topology::Hosts;
 
 use super::family::{EntityCapacity, EntityDefinition, EntityMetricState, EntityRetirementFailure};
 use super::{
@@ -32,7 +32,7 @@ const USER_CAPACITY: usize = 1_024;
 
 type NativeEntityCapabilities<B, N, Terminal> = ApplicationCapabilities<
     B,
-    HostedActorSpaces<Arc<N>>,
+    Arc<N>,
     NoParent,
     ChildBindings<B, Terminal, StructuralOrigins<<B as BehaviorBase>::Base>>,
     StructuralOrigins<<B as BehaviorBase>::Base>,
@@ -106,7 +106,7 @@ where
                 ActionInterpreter::new(ApplicationCapabilities::new_with_bindings(
                     crate::application_runtime::ApplicationCapabilityInputs {
                         address,
-                        actor_spaces: Arc::new(HostedActorSpaces(self)),
+                        actor_spaces: Arc::new(self),
                         allocations,
                         control,
                         timers,
@@ -380,19 +380,243 @@ where
 mod tests {
     use super::*;
     use crate::local::Termination;
-    use behavior::{ActiveTurn, BehaviorActed, NoBirths, NoSends, User, UserEvent};
-    use behavior_actors::StopOnShutdown;
+    use behavior::{Actions, ActiveTurn, BehaviorActed, NoBirths, NoSends, Step, User, UserEvent};
+    use behavior_actors::{Exit, StopOnShutdown};
+    use bombay_engine::Completion;
     use core::num::{NonZeroU64, NonZeroUsize};
     use core::pin::pin;
     use core::task::{Context, Poll, Waker};
     use std::sync::Mutex;
     use tokio::runtime::Builder;
     use tokio::sync::oneshot;
+    use tokio::task::JoinError;
     use tokio::task::spawn_blocking;
 
     use crate::actors::ActorExt;
     use crate::entity::{AdmissionFailure, DrainFailure, DrainStage};
     use crate::launch::ActorSpace;
+
+    #[derive(Default)]
+    struct DeliveryLedger {
+        received: Vec<User<MailAddr, Vec<u64>>>,
+    }
+
+    #[crate::actor]
+    impl DeliveryLedger {
+        fn receive(&mut self, from: MailAddr, values: Vec<u64>) -> BehaviorActed<Self> {
+            self.received.push(User::new(from, values));
+            Ok(Actions::cont())
+        }
+    }
+
+    struct LedgerDefinition {
+        #[expect(
+            clippy::type_complexity,
+            reason = "The runtime owner retains one whole native actor retirement without an extra wrapper."
+        )]
+        retired: Mutex<
+            Option<
+                oneshot::Sender<
+                    Result<ActorRetirement<StopOnShutdown<DeliveryLedger>, Never, ()>, JoinError>,
+                >,
+            >,
+        >,
+    }
+
+    impl EntityDefinition for LedgerDefinition {
+        type Id = u64;
+        type Behavior = StopOnShutdown<DeliveryLedger>;
+        type Hosts = ActorSpace<DeliveryLedger>;
+        type HydrationError = Never;
+        type Terminal = Never;
+        type ChildFailures = ();
+
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Hydration retains its cold future boundary."
+        )]
+        async fn hydrate(&self, id: EntityId<u64>) -> Result<Self::Behavior, Never> {
+            assert_eq!(id.into_inner(), 73);
+            Ok(DeliveryLedger::default().stop_on_shutdown())
+        }
+
+        fn activation_failed(
+            &self,
+            _: EntityId<u64>,
+            _: ActivationId,
+            _: EntityActivationError<Never, Self::Behavior, Never, ()>,
+        ) {
+            panic!("the native ledger activation must succeed")
+        }
+
+        fn admission_refused(&self, _: EntityId<u64>, _: AdmissionFailure<Vec<u64>>) {
+            panic!("the native ledger commands must be admitted")
+        }
+
+        fn forced_retirement(&self, _: &EntityId<u64>, _: ActivationId, _: DrainFailure) {
+            panic!("the native ledger must drain gracefully")
+        }
+
+        fn retired(
+            &self,
+            id: &EntityId<u64>,
+            activation: ActivationId,
+            retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+        ) {
+            assert_eq!((*id).into_inner(), 73);
+            assert_eq!(activation.get().get(), 83);
+            let sender = self
+                .retired
+                .lock()
+                .expect("retirement custody")
+                .take()
+                .expect("one native retirement");
+            let published = sender.send(retirement);
+            assert!(published.is_ok());
+        }
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep both original delivery allocations, actual stop, and complete native joined retirement in one trace."
+    )]
+    async fn native_entity_wrapper_and_direct_hosts_retain_exact_actor_retirement() {
+        let hosts = Arc::new(ActorSpace::<DeliveryLedger>::new());
+        let native_hosts = Arc::clone(&hosts);
+        let (retired_sender, retired_receiver) = oneshot::channel();
+        let definition = Arc::new(LedgerDefinition {
+            retired: Mutex::new(Some(retired_sender)),
+        });
+        let metrics = Arc::new(EntityMetricState::default());
+        let runtime = bombay_entity_runtime(
+            Arc::clone(&definition),
+            Arc::clone(&hosts),
+            ApplicationAddresses::new(),
+            EntityCapacity::new(
+                NonZeroUsize::new(1).expect("hydration capacity"),
+                NonZeroUsize::new(1).expect("resident capacity"),
+            ),
+            Arc::clone(&metrics),
+            Handle::current(),
+        );
+        let activation = ActivationId::new(NonZeroU64::new(83).expect("activation"));
+        let activated = runtime.activate(EntityId::new(73), activation).await;
+        let Ok(Activated { endpoint, lease }) = activated else {
+            panic!("real native activation must establish an actor")
+        };
+        let committed = runtime.fence(endpoint.clone()).await;
+        assert!(committed.is_ok());
+        let address = endpoint.address();
+        let native_endpoint = native_hosts
+            .space()
+            .resolve(&address)
+            .map(|actor| actor.as_ref().clone())
+            .expect("native endpoint");
+        let direct_endpoint = hosts
+            .space()
+            .resolve(&address)
+            .expect("direct native endpoint")
+            .as_ref()
+            .clone();
+        let from = MailAddr(97);
+        let native_values = vec![101, 103];
+        let native_allocation = native_values.as_ptr();
+        let native_delivery = runtime
+            .deliver(native_endpoint.clone(), from, native_values)
+            .await;
+        assert!(native_delivery.is_ok());
+        let direct_values = vec![107, 109];
+        let direct_allocation = direct_values.as_ptr();
+        let direct_delivery = direct_endpoint.send_from(from, direct_values).await;
+        assert!(direct_delivery.is_ok());
+        let fenced = runtime.fence(endpoint.clone()).await;
+        assert!(fenced.is_ok());
+        // The current native port owns cancellation as well as shutdown. Keep
+        // the original Completed oracle by observing real stop before retiring its lease.
+        let requested = request_actor_shutdown(&endpoint, &lease.actor.control, Ingress::new());
+        assert_eq!(requested, Ok(()));
+        let actual_stopped = endpoint.termination().await;
+        assert_eq!(actual_stopped, Ok(Exit::Normal));
+        let retired = runtime
+            .retire(
+                &EntityId::new(73),
+                activation,
+                lease,
+                RetirementMode::Graceful,
+            )
+            .await;
+        assert!(retired.is_ok());
+        let retirement = retired_receiver.await.expect("whole native retirement");
+        let Ok(ActorRetirement::Completed {
+            behavior,
+            settlements,
+            control,
+            user,
+            descendants,
+            completion,
+            interpretation,
+            source,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            terminal_report,
+            retirement_failures,
+            additional_failures,
+            child_failures,
+            capability_failures,
+            unread_owner_cancellation,
+        }) = retirement
+        else {
+            panic!("native shutdown must preserve completed state")
+        };
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
+        assert!(additional_failures.is_empty());
+        assert_eq!(child_failures, ());
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
+        assert_eq!(completion, Completion::Stopped);
+        assert_eq!(control.len(), 0);
+        assert_eq!(user, []);
+        assert_eq!(descendants, []);
+        assert_eq!(settlements.len(), 1);
+        for settlement in settlements {
+            assert!(settlement.creations.is_empty());
+            assert!(matches!(settlement.sends.owned, NoSends));
+            assert!(matches!(settlement.sends.inner, NoSends));
+            assert!(matches!(settlement.become_, Step::Stop(_)));
+        }
+        let stopped = endpoint.termination().await;
+        assert_eq!(stopped, Ok(Exit::Normal));
+        let ledger = behavior.base();
+        assert_eq!(ledger.received.len(), 2);
+        assert_eq!(ledger.received[0], User::new(from, vec![101, 103]));
+        assert_eq!(ledger.received[0].message.as_ptr(), native_allocation);
+        assert_eq!(ledger.received[1], User::new(from, vec![107, 109]));
+        assert_eq!(ledger.received[1].message.as_ptr(), direct_allocation);
+        let absent_native = native_hosts.space().resolve(&address);
+        let absent_direct = hosts.space().resolve(&address);
+        assert!(absent_native.is_none());
+        assert!(absent_direct.is_none());
+        for captured in [native_endpoint, direct_endpoint, endpoint] {
+            let values = vec![113, 127];
+            let allocation = values.as_ptr();
+            let rejected = captured.send_from(from, values).await;
+            let original = rejected
+                .expect_err("retired native endpoint stays closed")
+                .into_message();
+            assert_eq!(original, [113, 127]);
+            assert_eq!(original.as_ptr(), allocation);
+        }
+    }
 
     struct ShutdownConversionActor {
         entries: Arc<Vec<u64>>,
