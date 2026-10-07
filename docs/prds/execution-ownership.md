@@ -73,8 +73,8 @@ both profiles; [current evidence](execution-ownership/verification.md#module-acc
 
 | Requirement / gate | Exact blocker | Valid evidence available | Next action and pass condition |
 | --- | --- | --- | --- |
-| Selected upstream contract | Integration selects unreleased receiving81ba2c0. Reviewed owning delivery and publication remain. | Approved section264 corrections are installed. Main static controller and complete owning external suites pass unfiltered in debug/release (d6a36dde); independently accepted9609392f/a448332c with co-sign4b93ef88. Owning full local Nix31b083dd passes, with independent review in progress. | Deliver reviewed owning PR with passing CI, publish release, select the exact published contract and run affected final integration. |
-| Final verification, minimization, review and delivery | Final published selection, unfiltered integrated checks, whole-tree minimization/delta and reviewed merge remain. | All21 local Nix/four remote checks pass at cffeb49c. Current mandatory standard campaigns694acdb7 pass under independent61ba4d4d/49bc944b; current EV-30 is accepted. Preserve all source-bound native inversions and unchanged floors. | Run remaining required §10.1 final integrated/model/coverage gates on the published selection, reusing valid unchanged evidence and repeating only affected checks. Complete final delta/minimization and independent final review. Run local full flake before push; merge only after green required CI/reviews and record delivery. |
+| Selected upstream contract | Reviewed owning PR86 is open at11b9a1e; its API audit cannot parse Actors rustdocJSONv57. Publication remains. | Independent source/modela56c8ccb, head bindingfa736b44 and transfer278486b4 authenticate all808 sources and five signed commits. Full owning local Nix31b083dd and complete external debug/release pass. | Expose the exact checker parse cause and repair that blocker without weakening audit or changing accepted semantics; pass exact-head CI, reviewed owning merge/release, then select and verify published contract. |
+| Final verification, minimization, review and delivery | Current full local Nix passes18/21: rustdoc has one moved Application link; panic-unwind and coverage compilation exhaust disk. Published selection, final full checks and reviewed merge remain. | All eight gates and conditional source minimization5d8881b0/b42b2175 are accepted. Current standard campaigns694acdb7 and execution measurements qualify. Full Nix preserves all sources; its18 successes are retained, with no coverage-floor verdict. | Correct the one reviewed documentation link, retire only verified completed build intermediates, and rerun failed checks/full Nix. Finish §10.1 on published selection, final delta/minimization and independent final review; push only after local full Nix passes, then green CI/reviewed merge. |
 
 ## 1. Authority and how to execute this document
 
@@ -12460,3 +12460,19 @@ physical preimages remain exact before installation; no source body, Rust
 contract, public type or test assertion changes. The approved271-name
 allowance applies cumulatively across all stages. Repeat only the blocked
 complete controllers/external tests, then required final release/integration.
+
+
+Current full-local-check repair record (2026-10-07): the first complete current
+Nix run passes18/21. The doc check fails at application/composition.rs438
+because its preserved Application link was moved out of scope. Exact external
+product /tmp/bombay-exec-composition-doc-link-source/receipt.json qualifies only
+the existing public-root link: production+1/−1/net0, tests0, public types0.
+Expected edited source is the already approved application/composition.rs;
+existing PRD/verification/backlog and external-work status records will be kept
+current. No executable code, owner, import, bound or interface changes. Original
+full-flake diagnostic supplies the failing regression; strict rustdoc after the
+link correction must pass, then full local Nix remains mandatory before push.
+The panic-unwind and coverage checks failed during compilation with NoSpaceLeft;
+no coverage percentage or full-flake success is claimed. The required owning
+API checker cause remains a separate named delivery blocker, not permission to
+change the accepted model or omit its audit.

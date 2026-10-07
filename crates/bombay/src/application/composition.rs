@@ -435,7 +435,7 @@ where
 ///
 /// This type is public because terminal custody retains the final concrete
 /// behavior and its complete action settlements. Applications normally create
-/// it through [`Application`] and only name it in terminal projections.
+/// it through [`Application`](crate::Application) and only name it in terminal projections.
 pub struct ApplicationBehavior<Root, Product>
 where
     Product: ChildProduct<MailAddr>,

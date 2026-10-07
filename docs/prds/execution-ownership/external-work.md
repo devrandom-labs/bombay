@@ -12,8 +12,9 @@ operation; executor destruction remains a separate outcome. No global work
 service, preemption or bounded liveness guarantee is added.
 
 Both profiles pass all twelve existing owners and exact original/fault/restored
-real-actor laws. Test-only strict formatting/quality corrections and final
-integrated checks remain pending; they do not reopen the accepted bounded law.
+real-actor laws. Test-only strict formatting/quality corrections are verified.
+Final integrated verification remains required; it does not reopen the accepted
+bounded law.
 No other semaphore/FIFO-only experiment substitutes for this native witness.
 
 ## Historical research and prerequisites

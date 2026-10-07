@@ -1868,3 +1868,50 @@ Owning full local flake31b083dd exits0 after the approved fixtures and seven
 import-only corrections. Its full logs/source guards are preserved at
 /tmp/bombay-exec-receiving-final-approved-flake-actual/actual.json; independent
 review is pending. This is local verification, not remote CI or publication.
+
+
+### Owning delivery and current full-check failures (2026-10-07)
+
+Owning PR86 targets main at11b9a1e/tree66e36675. The five focused commits
+preserve the reviewed808 source files and all89 endpoints. Complete measurement
+4a2d0b10: production+3908/−786/net3122, tests+8998/−1455/net7543, docs
++79/−1/net78; five owning public exposures retain the complete13-addition,
+one-removal whole-task census. Independent605b3b13 accepts the full local
+Nix31b083dd (ten checks,901 tests,107 doctests); a56c8ccb/fa736b44 accept
+source/model and exact final head. Signed transferb91ce054 conserves every
+commit SHA through the GitData API after Git receive failed; independent
+278486b4/aaf68f12 authenticates the transfer and PR. Original failed transports
+and interrupted API attempts are preserved; mismatched objects never advanced
+the branch. Review is recorded on PR86; exact-head CI and publication remain.
+
+Conditional source minimization5d8881b0 with independent co-signb42b2175
+finds no remaining representation/semantic test gap. Original complete census
+and public paths are authenticated; no new trait/alias name is added. Published
+source equivalence, final integrated verification, final byte ledgers and delivery
+remain required. The WORK current-status paragraph now reflects already
+accepted strict checks; its historical evidence is unchanged.
+
+The current complete Main flake88e5548 passes18/21 on356 Main/808 owning
+unchanged source guards. Independent341eaa54 authenticates every stream and
+classifies all three failures: panic-unwind and owner-coverage fail solely during
+compilation at NoSpaceLeft; doc fails on the moved Application link. Coverage
+never reaches its final verifier, so no floor verdict is claimed. Exact source
+4400142c and independent341eaa54 correct only the existing public-root doc
+link in application/composition.rs438 (+1/−1/net0 production-comment line;
+no executable token, bound, import, interface or public-type change). All
+required failing checks and the full local flake must genuinely pass before push.
+Current PR86 API audit separately fails while parsing Actors JSONv57; primary
+sourceca57154d shows supported format and a hidden underlying deserialize error.
+The exact parse cause must be observed before retaining any tool repair; no
+audit, semantic contract or acceptance criterion is waived.
+
+
+Resource recoverya5e873b5 retires34817 disposable rcgu.o intermediates
+(16461657752 apparent bytes) from four finished isolated experiment targets.
+All1773 source/receipt/log/patch files and276 linked executables retain their
+exact hashes. Other target artifacts, Git/worktrees and canonical changes are
+preserved; no global cache collection or user-source deletion occurs. Filesystem
+free space rises to17GiB. This is capacity recovery, not an additional test pass
+or a replacement for the required failed checks. The16 completed unfiltered
+controller binaries were separately measured; their17MiB objects were not
+retired because they would not address this capacity blocker.
