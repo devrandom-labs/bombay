@@ -1,11 +1,33 @@
 # External work decision record
 
+Status: **DG-WORK accepted for the bounded real-port laws** (2026-10-07).
+Selected Behavior Core/Actors0.22.0 and Macros0.13.1 at81ba2c0; selected
+Tokio1.53.1. The exact current source/actual/independent decision is recorded
+once in EXEC §259, decision SHAda5766b6, actual ledger SHAe07b75c4.
+The concrete host limit is2; its configured blocking executor runs one and
+queues one. Third-source rejection retains the original allocation and typed
+reason; a completed operation reopens admission. Retirement preserves and
+joins admitted work. Native abort cannot stop an already running blocking
+operation; executor destruction remains a separate outcome. No global work
+service, preemption or bounded liveness guarantee is added.
+
+Both profiles pass all twelve existing owners and exact original/fault/restored
+real-actor laws. Test-only strict formatting/quality corrections and final
+integrated checks remain pending; they do not reopen the accepted bounded law.
+No other semaphore/FIFO-only experiment substitutes for this native witness.
+
+## Historical research and prerequisites
+
+The material below is dated research, including then-open states and earlier
+versions. It is not the current selected contract or acceptance status.
+
+
 Status: **open**. Owner: WP-API-DESIGN. Requirements: XO-17, XO-18,
 XO-41–42, EV-24 and DG-WORK. This record identifies an existing typed port and
 the ownership question that must be solved before it can count as the bounded
 external-work witness. It does not select a new general work service.
 The source hashes and 0.17.0 contract below are the 2026-09-29 research
-snapshot. The current lock selects Behavior Core/Actors 0.21.2 and Macros
+snapshot. At that earlier reconciliation the lock selected Behavior Core/Actors 0.21.2 and Macros
 0.13.1; revalidate this open decision against those sources before using its
 candidate. All 19 inventoried actor-owned requests now have typed Bombay
 interpretation, so missing atomic interpreters are no longer its blocker.
