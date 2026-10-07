@@ -133,12 +133,11 @@ mod tests {
     use tokio::sync::{Mutex as AsyncMutex, OwnedSemaphorePermit, Semaphore, TryAcquireError};
     use tokio::task::{AbortHandle, JoinError, JoinHandle, spawn_blocking};
 
-    use crate::interpret::{ActionSettlementOf, RetireCapabilities};
     use crate::launch::{OwnedTask, spawn_owned_with};
-    use crate::local::{
-        ActivationTasks, CapabilityRetirement, CommitActions, LocalResidual,
-        LocalRetirementRequest, OwnerCancellation,
-    };
+    use crate::local::effects::{ActionSettlementOf, RetireCapabilities};
+    use crate::local::effects::{CapabilityRetirement, CommitActions};
+    use crate::local::environment::LocalResidual;
+    use crate::local::execution::{ActivationTasks, LocalRetirementRequest, OwnerCancellation};
     use crate::{ActorExecutionOutcome, ActorSpace, MailAddr};
     use behavior::{
         ActionItemResult, BehaviorSettlements, EventIngress, InitializationTurn, MessageProtocol,
@@ -168,7 +167,9 @@ mod tests {
     use behavior_actors::{Activate as _, Active, ChildStopped, Exit, StopOnShutdown};
     use tokio::sync::oneshot;
 
-    use super::{WorkerPreparationSource, WorkerPreparationStart, settle_worker_preparation};
+    use crate::worker_preparation::{
+        WorkerPreparationSource, WorkerPreparationStart, settle_worker_preparation,
+    };
 
     macro_rules! start_preparation {
         ($pool:expr, $request:expr) => {{

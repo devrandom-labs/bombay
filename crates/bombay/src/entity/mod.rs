@@ -74,7 +74,7 @@ impl<T: fmt::Display> fmt::Display for EntityId<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::EntityId;
+    use crate::entity::EntityId;
 
     #[test]
     fn entity_id_preserves_domain_identity() {

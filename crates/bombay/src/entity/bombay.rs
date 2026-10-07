@@ -15,11 +15,13 @@ use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
 use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
-use crate::application_runtime::{ApplicationCapabilities, NoParent, StructuralOrigins};
-use crate::child_bindings::{ChildBindings, RetireChildTasks, RuntimeChildBindings};
-use crate::interpret::{ActionInterpreter, ActionSettlementOf};
 use crate::launch::{OwnedActor, SpawnError, spawn_owned_entity_with};
-use crate::local::{ActorRef, CommitActions, request_actor_shutdown};
+use crate::local::children::StructuralOrigins;
+use crate::local::children::{ChildBindings, RetireChildTasks, RuntimeChildBindings};
+use crate::local::effects::CommitActions;
+use crate::local::effects::{ActionInterpreter, ActionSettlementOf};
+use crate::local::effects::{ApplicationCapabilities, NoParent};
+use crate::local::endpoint::{ActorRef, request_actor_shutdown};
 use crate::topology::Hosts;
 
 use super::family::{EntityCapacity, EntityDefinition, EntityMetricState, EntityRetirementFailure};
@@ -104,7 +106,7 @@ where
             behavior,
             move |control, terminal_reports, timers, observations| {
                 ActionInterpreter::new(ApplicationCapabilities::new_with_bindings(
-                    crate::application_runtime::ApplicationCapabilityInputs {
+                    crate::local::effects::ApplicationCapabilityInputs {
                         address,
                         actor_spaces: Arc::new(self),
                         allocations,
@@ -379,7 +381,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::local::Termination;
+    use crate::termination::Termination;
     use behavior::{Actions, ActiveTurn, BehaviorActed, NoBirths, NoSends, Step, User, UserEvent};
     use behavior_actors::{Exit, StopOnShutdown};
     use bombay_engine::Completion;

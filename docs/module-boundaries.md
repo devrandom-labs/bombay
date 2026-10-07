@@ -88,19 +88,28 @@ tree:
 | Module | Current responsibility | Public disposition |
 |---|---|---|
 | `lib.rs` | minimal façade and semantic-level re-exports | curated application prelude, template-family modules, `Application`, `App`, `RunError`, typed boundaries, transitional hosting evidence, and deliberate `behavior` power surface |
-| `application.rs` | pure ownership of one root and its semantic-role child declarations before execution | `Application` and its root-first `child` method are public; it owns values and roles, never runtime capabilities, addresses, or a second birth algebra |
-| `application_runtime.rs` | one paired application execution/result owner and concrete runtime capability product | `ApplicationHandle`, `ApplicationLifecycle`, `App`, `ApplicationOutcome`, `ApplicationCleanupError`, and `RunError`; inherent async calls, bare supplied results, configured owned blocking, and same-path HTTP/Entity composition |
-| `child_bindings.rs` | one closed occurrence product for exact child creation status, endpoint/control, address space, ordered task ownership, and descendant retirement | crate-private; application interpretation consumes its typed creation state |
+| `application/mod.rs` | root, role-indexed child and Entity-family declarations; curate the application surface | `Application` owns pure declarations; advanced `App` also owns its supplied spaces. Construction starts no task and adds no birth algebra. |
+| `application/composition.rs` | static declaration-to-Behavior composition and exact origin selection | canonical `ApplicationBehavior`, `ApplicationDefinitionError` and `ApplicationStagingError`; implementation traits remain private |
+| `application/execution.rs` | one paired execution/result owner, supplied Work, cleanup custody and configured blocking entry | `ApplicationOutcome`, `ApplicationCleanupError` and `RunError`; async, owned blocking and Entity execution share this owner |
+| `application/interface.rs` | application handle/lifecycle projection and affine external actor interfaces | `ApplicationHandle`, `ApplicationLifecycle`, `ActorInterface`, `ExternalTarget`, `ExternalActor` and `ExternalActorError`; messaging alone grants no shutdown authority |
+| `application/http.rs` | opt-in HTTP preparation, binding and serving over the common execution owner | existing application methods; retains bind, serving and actor failures. The feature-gated outcome mapper remains in `application/execution.rs`. |
+| `local/children.rs` | closed occurrence product, exact creation status, endpoint/control and descendant task retirement | crate-private; creation-order custody stays with the local actor |
 | `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |
-| `topology.rs` | static `Hosts<P>` runtime selection | public for deliberate advanced `App` composition; ordinary `Application` privately materializes its closed actor-space product |
-| `local.rs` | prepared/live Environment and concrete delivery/installed-actor capabilities | root-curated `ActorRef`, `InstalledActor`, and exact-payload `SendError`; `InstalledActor` has no public constructor or shutdown method |
+| `topology.rs` | static `Hosts<P>` actor-space selection | public for deliberate advanced `App` composition; ordinary `Application` privately materializes its closed actor-space product |
+| `local/mod.rs` | curate the concrete local composition and its child modules | private module; canonical public capabilities are re-exported at crate root |
+| `local/endpoint.rs` | exact messaging endpoint, installed-actor proof and shutdown authority | root-curated `ActorRef`, `InstalledActor` and exact-payload `SendError`; `InstalledActor` has no public constructor or shutdown method |
+| `local/ingress.rs` | mailbox admission, standard/Entity ingress and exact retirement drain | private; reuses Communication's mailbox |
+| `local/environment.rs` | prepared/live Engine port and exact residual custody | private; one standard local Environment for roots, children and Entity actors |
+| `local/execution.rs` | actor-owned activation tasks, exact task failures and owner cancellation | private; task settlement remains with the actor owner |
 | `launch.rs` | spawn concrete owned incarnation tasks, request owner cancellation on abandoned waits, and settle actor-owned activation tasks inside the spawned incarnation task | only the `ActorSpace<P>` alias is public; lower-layer RootActor/spawn_root_with/OwnedTask.finish remain cfg(test) native owners, not a second production runner |
 | `observe/` | actor-independent exact publication and shared/affine waiting | private to Bombay; its ordinary tests run in Bombay, while the isolated test package compiles the same source for Loom and for fuzz/performance dependencies |
-| `interpret.rs` | statically dispatch complete named action lanes through Behavior's owning interpretation and settlement types | traversal and interpreters remain crate-private; root `Completion` and `SettlementFailure` exports belong to Engine |
-| `observation.rs` | own the actor's pending peer and child termination facts in registration order and inject their typed Behavior events | private; the application capability product owns its single queue |
-| `time.rs` | own the actor's `TimerQueue` and adapt due entries into typed events | private; the application capability product owns its single queue |
+| `local/effects/mod.rs` | concrete actor capability product and ordered complete action settlement | private; uses Behavior's owning interpretation and settlement types, never a second effect algebra |
+| `local/effects/creation.rs` | install fresh child requests and retain exact rejected creation inputs | private; child creation precedes dependent sends |
+| `local/effects/delivery.rs` | interpret named logical, established and child sends | private; exact endpoint selection and rejected payload recovery |
+| `local/effects/observation.rs` | own the actor's pending peer and child termination facts in registration order and inject their typed Behavior events | private; the application capability product owns its single queue |
+| `local/effects/timers.rs` | own the actor's `TimerQueue` and adapt due entries into typed events | private; the application capability product owns its single queue |
 | `terminal.rs` | preserve exact root and child origin provenance and typed actor retirement | public `RootOrigin<Owner>`, `ChildOrigin<Owner, Role>`, `ActorRetirement`, and `ProjectTerminal`; root origins have no nonce and child origins require one |
-| `reports.rs` | preserve exact typed parent reports | private |
+| `local/effects/reports.rs` | action-scoped terminal-report custody and exact typed parent reports | private; one curated crate-private `LocalTerminalReports` crossing, not an exposed reports module |
 | `termination.rs` | publish the coarse external termination observation | private |
 | `actor_execution.rs` | one Driver execution plus terminal classification | private `ActorExecution` owning the Driver and retirement authority |
 | `actor_outcome.rs` | exact terminal vocabulary | private `ActorExecutionOutcome` preserving every disposition |

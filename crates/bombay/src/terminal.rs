@@ -17,10 +17,10 @@ use tokio::task::JoinError;
 
 use crate::ActorExecutionOutcome;
 use crate::address::MailAddr;
-use crate::interpret::ActionSettlementOf;
-use crate::local::{
-    LocalActivationRejection, LocalResidual, LocalRetirementRequest, OwnerCancellation, Termination,
-};
+use crate::local::effects::ActionSettlementOf;
+use crate::local::environment::{LocalActivationRejection, LocalResidual};
+use crate::local::execution::{LocalRetirementRequest, OwnerCancellation};
+use crate::termination::Termination;
 
 pub(crate) type LocalOutcome<B, Descendants> = ActorExecutionOutcome<
     B,
@@ -2007,13 +2007,11 @@ mod capability_retirement_projection {
     use communication::Drained;
     use tokio::{sync::oneshot, task};
 
-    use super::{ActorRetirement, LocalOutcome};
     use crate::ActorExecutionOutcome;
     use crate::MailAddr;
-    use crate::local::{
-        ActivationTasks, LocalActivationRejection, LocalResidual, LocalRetirementRequest,
-        OwnerCancellation,
-    };
+    use crate::local::environment::{LocalActivationRejection, LocalResidual};
+    use crate::local::execution::{ActivationTasks, LocalRetirementRequest, OwnerCancellation};
+    use crate::terminal::{ActorRetirement, LocalOutcome};
     use bombay_engine::Completion;
 
     struct RetiringActor {

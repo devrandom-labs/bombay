@@ -256,7 +256,9 @@ async wait API merely to compensate for missing Observe composition.
 
 The short code fragments in this document are schematic descriptions of
 capability ownership, not compilation evidence. Current callable spellings
-are exercised by the [local runtime tests](../crates/bombay/src/local.rs),
+are exercised by the [local Environment tests](../crates/bombay/src/local/environment.rs),
+[activation-task custody tests](../crates/bombay/src/local/execution.rs),
+and [native launch tests](../crates/bombay/src/launch.rs),
 the [Observe compile boundary](../crates/observe-tests/tests/observe_contract.rs),
 the [Engine contract tests](../crates/bombay-engine/tests/driver_law.rs), and
 the [application examples](../examples/application-topology/src/main.rs).

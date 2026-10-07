@@ -170,7 +170,7 @@ impl<B, R, BehaviorError, ActivationError, Request>
 mod tests {
     use bombay_engine::{DriverError, DriverRetirement, SettlementFailure};
 
-    use super::ActorExecutionOutcome;
+    use crate::actor_outcome::ActorExecutionOutcome;
 
     #[test]
     fn settlement_retirement_preserves_each_exact_failure_and_owned_payload() {

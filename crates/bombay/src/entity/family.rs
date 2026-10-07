@@ -22,7 +22,7 @@ use tokio::runtime::Handle;
 
 use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
-use crate::local::ActorRef;
+use crate::local::endpoint::ActorRef;
 use crate::topology::Hosts as LocalHosts;
 
 use super::bombay::{

@@ -1,30 +1,36 @@
-//! Exact creator-local bindings derived from one behavior's closed births.
-
-use core::marker::PhantomData;
-use std::any::Any;
-use std::collections::HashMap;
-use std::collections::hash_map::Entry;
-
+use crate::address::MailAddr;
+use crate::launch::{ActorSpace, ProjectedTask};
+use crate::local::endpoint::{ActorRef, InstalledActor};
+use crate::local::environment::LocalActivationRejection;
+use crate::terminal::{ChildFailure, ChildOrigin};
+use crate::termination::Termination;
 use behavior::{
     Behavior, BirthMode, ChildHead, ChildOccurrenceProduct, ChildOccurrenceShape, ChildOccurrences,
     ChildTail, CreationId, CreationKind, EstablishedActor,
 };
 use bombay_engine::DriverError;
 use communication::ControlSender;
+use core::marker::PhantomData;
+use std::any::Any;
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use tokio::task::JoinError;
 
-use crate::address::MailAddr;
-use crate::application_runtime::{ChildOriginAt, StructuralOrigins};
+pub(crate) trait ChildOriginAt<Position, Child: Behavior> {
+    type Origin: Send + 'static;
 
-use crate::ActorSpace;
-use crate::launch::ProjectedTask;
-use crate::local::{ActorRef, InstalledActor, LocalActivationRejection, Termination};
-use crate::terminal::ChildFailure;
+    fn origin(address: MailAddr, nonce: u64) -> Self::Origin;
+}
 
-type ChildNode<Owner> = <<Owner as Behavior>::Birth as BirthMode>::Child;
+impl<Owner: 'static, Position: 'static, Child: Behavior> ChildOriginAt<Position, Child>
+    for StructuralOrigins<Owner>
+{
+    type Origin = ChildOrigin<Owner, Position>;
 
-/// Bombay's runtime binding representation for one direct-child birth node.
-pub(crate) struct RuntimeChildBindings<Root, Origins>(PhantomData<fn() -> (Root, Origins)>);
+    fn origin(address: MailAddr, nonce: u64) -> Self::Origin {
+        ChildOrigin::new(address, nonce)
+    }
+}
 
 impl<Root, Origins> ChildOccurrenceShape for RuntimeChildBindings<Root, Origins> {
     type Empty = NoChildBindings<Root>;
@@ -32,29 +38,10 @@ impl<Root, Origins> ChildOccurrenceShape for RuntimeChildBindings<Root, Origins>
         ChildBinding<Position, Child, Root, Origins, Tail>;
 }
 
-/// Exact binding product for the direct children of `Owner`.
-pub(crate) type ChildBindings<Owner, Root, Origins> =
-    ChildOccurrences<ChildNode<Owner>, RuntimeChildBindings<Root, Origins>>;
-
-/// End of one creator's direct-child binding product.
-pub(crate) struct NoChildBindings<Root = behavior::Never>(PhantomData<fn() -> Root>);
-
 impl<Root> Default for NoChildBindings<Root> {
     fn default() -> Self {
         Self(PhantomData)
     }
-}
-
-/// Creation outcomes, hosting, and ordered task custody for one occurrence.
-pub(crate) struct ChildBinding<Position, Child, Root, Origins, Tail>
-where
-    Child: Behavior,
-{
-    creations: HashMap<CreationId, CreationBinding<Child, Root>>,
-    creation_order: Vec<CreationId>,
-    actors: ActorSpace<Child::Protocol>,
-    tail: Option<Tail>,
-    position: PhantomData<fn() -> (Position, Origins)>,
 }
 
 impl<Position, Child, Root, Origins, Tail> Default
@@ -72,27 +59,6 @@ where
             position: PhantomData,
         }
     }
-}
-
-pub(crate) enum CreationBinding<Child: Behavior, Root> {
-    Established {
-        kind: CreationKind,
-        route: u64,
-        endpoint: ActorRef<Child::Protocol>,
-        control: ControlSender<Child::Event>,
-        task: Option<ProjectedTask<Child, Root>>,
-        joined: Option<Result<Result<Root, JoinError>, JoinError>>,
-    },
-    Rejected,
-    StartupRejected {
-        kind: CreationKind,
-        address: MailAddr,
-        route: u64,
-        primary_failure: Option<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
-        additional_failures: Vec<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-    },
 }
 
 /// Static selection and custody of one structural child occurrence.
@@ -252,9 +218,6 @@ where
 {
     type Bindings = ChildBindings<Child, Bindings::Root, StructuralOrigins<Child::Base>>;
 }
-
-pub(crate) type NestedBindings<Bindings, Child> =
-    <Bindings as NestedChildBindings<Child>>::Bindings;
 
 pub(crate) trait RetireChildTasks {
     type Root;
@@ -501,15 +464,65 @@ where
     }
 }
 
+pub(crate) struct StructuralOrigins<Owner>(PhantomData<fn() -> Owner>);
+
+type ChildNode<Owner> = <<Owner as Behavior>::Birth as BirthMode>::Child;
+
+/// Bombay's runtime binding representation for one direct-child birth node.
+pub(crate) struct RuntimeChildBindings<Root, Origins>(PhantomData<fn() -> (Root, Origins)>);
+
+/// Exact binding product for the direct children of `Owner`.
+pub(crate) type ChildBindings<Owner, Root, Origins> =
+    ChildOccurrences<ChildNode<Owner>, RuntimeChildBindings<Root, Origins>>;
+
+/// End of one creator's direct-child binding product.
+pub(crate) struct NoChildBindings<Root = behavior::Never>(PhantomData<fn() -> Root>);
+
+/// Creation outcomes, hosting, and ordered task custody for one occurrence.
+pub(crate) struct ChildBinding<Position, Child, Root, Origins, Tail>
+where
+    Child: Behavior,
+{
+    creations: HashMap<CreationId, CreationBinding<Child, Root>>,
+    creation_order: Vec<CreationId>,
+    actors: ActorSpace<Child::Protocol>,
+    tail: Option<Tail>,
+    position: PhantomData<fn() -> (Position, Origins)>,
+}
+
+pub(crate) enum CreationBinding<Child: Behavior, Root> {
+    Established {
+        kind: CreationKind,
+        route: u64,
+        endpoint: ActorRef<Child::Protocol>,
+        control: ControlSender<Child::Event>,
+        task: Option<ProjectedTask<Child, Root>>,
+        joined: Option<Result<Result<Root, JoinError>, JoinError>>,
+    },
+    Rejected,
+    StartupRejected {
+        kind: CreationKind,
+        address: MailAddr,
+        route: u64,
+        primary_failure: Option<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
+        additional_failures: Vec<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
+        terminal_report: Option<Result<(), Termination<MailAddr>>>,
+        retirement_failures: Vec<Box<dyn Any + Send>>,
+    },
+}
+
+pub(crate) type NestedBindings<Bindings, Child> =
+    <Bindings as NestedChildBindings<Child>>::Bindings;
+
 #[cfg(test)]
 mod tests {
     use std::panic::{AssertUnwindSafe, catch_unwind};
 
     use behavior::{ChildHead, ChildTail, CreationSequence, Never};
 
-    use super::{ChildBinding, ChildBindingAt, CreationBinding, NoChildBindings};
     use crate::actor;
-    use crate::application_runtime::StructuralOrigins;
+    use crate::local::children::StructuralOrigins;
+    use crate::local::children::{ChildBinding, ChildBindingAt, CreationBinding, NoChildBindings};
 
     struct Worker;
 

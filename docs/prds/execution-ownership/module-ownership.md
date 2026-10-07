@@ -1,6 +1,35 @@
-# Module ownership research
+# Module ownership
 
-Current source-only reconciliation is recorded below; the preceding version-bound snapshot remains historical and is not relabeled. No production move or DG-MODULES acceptance is selected.
+The accepted pre-extraction map53edb384 binds22 original owners and713
+production declaration/method entries, with238 true impl/trait items and55
+signature-bound opaque `impl Future` fragments. The one common execution
+kernel retains19 generic axes and7 value parameters. The approved scope
+permits17 new module files and removal of nine former owners, with no new
+semantic interface or type.
+
+The extraction is installed. Independent source and count reviews accept its
+conservation bridge cfb2027f and complete cfg supplement ca894640. The cfg
+mapping has20 destination entries for19 distinct original source ranges:
+`installed_shutdown_contract` is partitioned between its two actual private
+owners. Three later intact regressions are placed with their private mechanisms
+in `local/execution.rs` and `local/endpoint.rs`; no field or method is exposed
+for their access.
+
+Locator erratum16fcece1 places the whole feature-gated
+`ApplicationOutcome::into_http` impl in `application/execution.rs` (current
+guard1162/method1174; original application_runtime.rs9622–9679). HTTP entry
+methods are separately owned by `application/http.rs`.
+
+Actual module verification and EV-27–29 acceptance remain pending. Source
+conservation does not close DG-MODULES. The sole current closure list is in
+the [EXEC PRD](../execution-ownership.md#remaining-blockers--current-closure-table).
+The inventories and stop conditions below are historical source epochs. Their
+versions, names, hashes and earlier eligibility states are preserved as evidence
+and do not describe the current selected contract or accepted map.
+
+---
+
+# Historical source inventories
 
 **Revision note (2026-10-01):** ARC-001 removed `ShutdownControl`,
 `TypedShutdownControl`, `ShutdownSignalRejection`, and `ActorRef.shutdown`.

@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use behavior::{Address, AllocationRejection, Behavior, EndpointAddress, Protocol};
 
-use crate::local::{ActorRef, InstalledActor};
+use crate::local::endpoint::{ActorRef, InstalledActor};
 
 /// One logical address in Bombay's standard local runtime.
 ///

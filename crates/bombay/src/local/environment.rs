@@ -1,737 +1,40 @@
-//! One local typed mailbox behind the existing Engine environment port.
-//!
-//! This is deliberately crate-private. It proves the mailbox/address layer
-//! without prescribing construction, task, handle, or System APIs.
-
-use core::fmt;
-use core::future::{Future, pending, poll_fn};
-use core::hash::Hash;
-use core::marker::PhantomData;
-use core::ops::ControlFlow;
-use core::pin::Pin;
-#[cfg(test)]
-use core::pin::pin;
-use core::task::Poll;
-use std::any::Any;
-use std::sync::{Arc, Mutex, PoisonError, Weak};
-use std::time::Instant;
-
 use crate::address::MailAddr;
-use crate::interpret::ActionSettlementOf;
-use crate::observation::TerminationObservations;
-use crate::observe::{Observation, Publisher, affine_pair};
-use crate::time::LocalTimers;
+use crate::local::effects::observation::TerminationObservations;
+use crate::local::effects::timers::LocalTimers;
+use crate::local::effects::{ActionSettlementOf, CapabilityRetirement, CommitActions};
+use crate::local::endpoint::ActorRef;
+#[cfg(test)]
+use crate::local::endpoint::request_actor_shutdown;
+use crate::local::execution::{
+    ActivationTasks, LocalRetirementRequest, OwnerCancellation, close_owner_cancellation,
+};
+use crate::local::ingress::{
+    Admission, AdmissionClosure, IngressMode, LocalInbox, StandardIngress, collect_retired_ingress,
+};
+#[cfg(test)]
+use crate::local::ingress::{EndpointMailbox, EntityIngress, LocalIngress};
+use crate::observe::Observation;
+use crate::termination::Termination;
+#[cfg(test)]
+use behavior::InjectEvent;
 use behavior::{
     Behavior, BehaviorAddr, BehaviorMessage, BehaviorSettlements, ClassifySettlement,
-    EstablishedRecipient, Ingress, InjectEvent, Interpretation, InterpretationProgress, Never,
-    Protocol, SourceCustody, SourceProgress, User, UserEvent,
+    Interpretation, InterpretationProgress, Never, SourceCustody, SourceProgress,
 };
-use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested};
 use bombay_address::{AddressSpace, ClaimError, Lease, Reservation};
 use bombay_engine::{ActionsOf, ActiveEnvironment, Environment};
-use communication::{
-    Config, Consumer, ControlSender, Drained, MailboxOwner, MailboxRef, Received, UserClosed,
-    mailbox_channel,
-};
-use tokio::sync::oneshot::{self, error::TryRecvError};
-use tokio::task::{JoinError, JoinSet};
-
-pub(crate) type Termination<A> = Result<Exit<A>, behavior_actors::Crash>;
-
-/// Actor-owned external activation work with exact closed-lane recovery.
-pub(crate) struct ActivationTasks<E> {
-    tasks: JoinSet<Result<(), E>>,
-}
-
-impl<E> ActivationTasks<E> {
-    pub(crate) fn new() -> Self {
-        Self {
-            tasks: JoinSet::new(),
-        }
-    }
-
-    pub(crate) fn spawn(&mut self, task: impl Future<Output = Result<(), E>> + Send + 'static)
-    where
-        E: Send + 'static,
-    {
-        self.tasks.spawn(task);
-    }
-
-    pub(crate) fn is_empty(&self) -> bool {
-        self.tasks.is_empty()
-    }
-
-    pub(crate) async fn next_event(&mut self) -> Result<E, JoinError>
-    where
-        E: 'static,
-    {
-        loop {
-            match self.tasks.join_next().await {
-                Some(Ok(Ok(()))) => {}
-                Some(Ok(Err(event))) => return Ok(event),
-                Some(Err(failure)) => return Err(failure),
-                None => pending().await,
-            }
-        }
-    }
-
-    /// Receive every original joined capability result into its surviving local lanes.
-    ///
-    /// The original task set and both receiving lanes remain outside this future.
-    pub(crate) async fn receive_settlement(
-        &mut self,
-        control: &mut Vec<E>,
-        failures: &mut Vec<JoinError>,
-    ) where
-        E: 'static,
-    {
-        while let Some(completed) = self.tasks.join_next().await {
-            match completed {
-                Ok(Ok(())) => {}
-                Ok(Err(event)) => control.push(event),
-                Err(failure) => failures.push(failure),
-            }
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) async fn settle(mut self) -> (Vec<E>, Vec<JoinError>)
-    where
-        E: 'static,
-    {
-        let mut control = Vec::new();
-        let mut failures = Vec::new();
-        self.receive_settlement(&mut control, &mut failures).await;
-        (control, failures)
-    }
-}
-
-/// Exact actor-local capability output transferred into environment retirement.
-pub(crate) struct CapabilityRetirement<E, Descendants> {
-    pub(crate) activation_tasks: ActivationTasks<E>,
-    pub(crate) descendants: Descendants,
-    pub(crate) terminal_report: Option<Result<(), Termination<MailAddr>>>,
-    pub(crate) retirement_failures: Vec<Box<dyn Any + Send>>,
-}
-
-/// Affine fact that the actor's task owner requested forced retirement.
-pub(crate) struct OwnerCancellation;
-
-/// One acquired primary retirement cause, owned exactly once by Driver completion.
-pub(crate) enum LocalRetirementRequest {
-    OwnerCancellation(OwnerCancellation),
-    CapabilityFailed(JoinError),
-}
-
-fn close_owner_cancellation(mut receiver: oneshot::Receiver<OwnerCancellation>) -> Option<()> {
-    receiver.close();
-    match receiver.try_recv() {
-        Ok(OwnerCancellation) => Some(()),
-        Err(oneshot::error::TryRecvError::Empty | oneshot::error::TryRecvError::Closed) => None,
-    }
-}
-
-#[cfg(test)]
-impl<E, Descendants> CapabilityRetirement<E, Descendants> {
-    pub(crate) fn without_activations(descendants: Descendants) -> Self {
-        Self {
-            activation_tasks: ActivationTasks::new(),
-            descendants,
-            terminal_report: None,
-            retirement_failures: Vec::new(),
-        }
-    }
-}
-
-/// Commits one complete action value for the concrete local actor.
-///
-/// Product traversal and concrete runtime services remain behind this private
-/// seam. It is not an application extension API.
-pub(crate) trait CommitActions<B: BehaviorSettlements<Ph = Never>> {
-    type Retired;
-
-    fn commit(
-        &mut self,
-        interpretation: &mut Option<
-            InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, ActionSettlementOf<B>>,
-        >,
-    ) -> impl Future<Output = ()> + Send;
-
-    fn offer_next(
-        &mut self,
-        source: &mut Option<SourceProgress<ActionSettlementOf<B>, B::SourceCustody>>,
-    ) -> impl Future<Output = ()> + Send;
-
-    fn next_local_event(&mut self) -> impl Future<Output = Result<B::Event, JoinError>> + Send;
-
-    fn next_deadline(&mut self) -> Option<Instant> {
-        None
-    }
-
-    fn pop_due(&mut self, _now: Instant) -> Option<B::Event> {
-        None
-    }
-
-    /// Receive actual capability/task/child custody outside the disposable retirement work.
-    fn receive_retirement(
-        interpreter: &mut Option<Self>,
-        received: &mut Option<CapabilityRetirement<B::Event, Self::Retired>>,
-    ) -> impl Future<Output = ()> + Send
-    where
-        Self: Sized + Send,
-        B::Event: Send,
-        Self::Retired: Send;
-}
-
-/// Shared access to one affine Communication admission owner.
-///
-/// The active environment holds the only strong reference. Actor references
-/// hold a weak reference so they cannot keep admission open. Closing takes the
-/// owner exactly once; dropping the final strong reference closes it through
-/// Communication's `MailboxOwner` drop law.
-pub(crate) struct Admission<U> {
-    owner: Mutex<Option<MailboxOwner<U>>>,
-}
-
-#[must_use = "admission closure reports whether this call won the transition"]
-pub(crate) enum AdmissionClosure {
-    Closed,
-    AlreadyClosed,
-}
-pub(crate) enum LocalIngress<A, M> {
-    Message(User<A, M>),
-    Fence(Publisher<Result<(), crate::entity::FenceFailure>>),
-}
-
-pub(crate) struct StandardIngress;
-
-pub(crate) struct EntityIngress;
-
-pub(crate) enum EndpointMailbox<A, M> {
-    Standard {
-        mailbox: MailboxRef<User<A, M>>,
-        admission: Weak<Admission<User<A, M>>>,
-    },
-    Entity {
-        mailbox: MailboxRef<LocalIngress<A, M>>,
-        admission: Weak<Admission<LocalIngress<A, M>>>,
-    },
-}
-
-impl<A, M> Clone for EndpointMailbox<A, M> {
-    fn clone(&self) -> Self {
-        match self {
-            Self::Standard { mailbox, admission } => Self::Standard {
-                mailbox: mailbox.clone(),
-                admission: admission.clone(),
-            },
-            Self::Entity { mailbox, admission } => Self::Entity {
-                mailbox: mailbox.clone(),
-                admission: admission.clone(),
-            },
-        }
-    }
-}
-
-impl<A, M> EndpointMailbox<A, M> {
-    fn close_admission(&self) -> AdmissionClosure {
-        match self {
-            Self::Standard { admission, .. } => Admission::close_from_endpoint(admission),
-            Self::Entity { admission, .. } => Admission::close_from_endpoint(admission),
-        }
-    }
-}
-
-pub(crate) trait IngressMode<B: Behavior> {
-    type Item: Send;
-    type Retired;
-
-    fn endpoint(
-        mailbox: MailboxRef<Self::Item>,
-        admission: Weak<Admission<Self::Item>>,
-    ) -> EndpointMailbox<BehaviorAddr<B>, BehaviorMessage<B>>;
-
-    fn into_event(item: Self::Item) -> Option<B::Event>;
-
-    fn retain_at_retirement(item: Self::Item) -> Option<Self::Retired>;
-}
-
-impl<B> IngressMode<B> for StandardIngress
-where
-    B: Behavior,
-    B::Event: UserEvent<Addr = BehaviorAddr<B>, Message = BehaviorMessage<B>>,
-    User<BehaviorAddr<B>, BehaviorMessage<B>>: Send,
-{
-    type Item = User<BehaviorAddr<B>, BehaviorMessage<B>>;
-    type Retired = Self::Item;
-
-    fn endpoint(
-        mailbox: MailboxRef<Self::Item>,
-        admission: Weak<Admission<Self::Item>>,
-    ) -> EndpointMailbox<BehaviorAddr<B>, BehaviorMessage<B>> {
-        EndpointMailbox::Standard { mailbox, admission }
-    }
-
-    fn into_event(user: Self::Item) -> Option<B::Event> {
-        Some(B::Event::user(user.from, user.message))
-    }
-
-    fn retain_at_retirement(item: Self::Item) -> Option<Self::Retired> {
-        Some(item)
-    }
-}
-
-impl<B> IngressMode<B> for EntityIngress
-where
-    B: Behavior,
-    B::Event: UserEvent<Addr = BehaviorAddr<B>, Message = BehaviorMessage<B>>,
-    LocalIngress<BehaviorAddr<B>, BehaviorMessage<B>>: Send,
-{
-    type Item = LocalIngress<BehaviorAddr<B>, BehaviorMessage<B>>;
-    type Retired = User<BehaviorAddr<B>, BehaviorMessage<B>>;
-
-    fn endpoint(
-        mailbox: MailboxRef<Self::Item>,
-        admission: Weak<Admission<Self::Item>>,
-    ) -> EndpointMailbox<BehaviorAddr<B>, BehaviorMessage<B>> {
-        EndpointMailbox::Entity { mailbox, admission }
-    }
-
-    fn into_event(item: Self::Item) -> Option<B::Event> {
-        match item {
-            LocalIngress::Message(user) => Some(B::Event::user(user.from, user.message)),
-            LocalIngress::Fence(publisher) => {
-                publisher.complete(Ok(()));
-                None
-            }
-        }
-    }
-
-    fn retain_at_retirement(item: Self::Item) -> Option<Self::Retired> {
-        match item {
-            LocalIngress::Message(user) => Some(user),
-            LocalIngress::Fence(publisher) => {
-                publisher.complete(Err(crate::entity::FenceFailure::Acknowledgement));
-                None
-            }
-        }
-    }
-}
-
-fn collect_retired_ingress<B, M>(
-    consumer: Consumer<B::Event, M::Item>,
-) -> Drained<B::Event, M::Retired>
-where
-    B: Behavior,
-    M: IngressMode<B>,
-{
-    let Drained { control, user } = consumer.drain();
-    let user = user
-        .into_iter()
-        .filter_map(M::retain_at_retirement)
-        .collect();
-    Drained { control, user }
-}
-
-struct LocalInbox<B, M>
-where
-    B: Behavior,
-    M: IngressMode<B>,
-{
-    consumer: Option<Consumer<B::Event, M::Item>>,
-    mode: PhantomData<fn() -> M>,
-}
-
-impl<B, M> LocalInbox<B, M>
-where
-    B: Behavior,
-    M: IngressMode<B>,
-{
-    fn new(consumer: Consumer<B::Event, M::Item>) -> Self {
-        Self {
-            consumer: Some(consumer),
-            mode: PhantomData,
-        }
-    }
-
-    async fn recv(&mut self) -> Option<Received<B::Event, M::Item>> {
-        self.consumer
-            .as_mut()
-            .expect("active local inbox retains its consumer")
-            .recv()
-            .await
-    }
-
-    async fn recv_source(&mut self) -> Option<B::Event> {
-        self.consumer
-            .as_mut()
-            .expect("active local inbox retains its consumer")
-            .recv_control()
-            .await
-    }
-
-    fn drain(&mut self) -> Option<Drained<B::Event, M::Retired>> {
-        self.consumer.take().map(collect_retired_ingress::<B, M>)
-    }
-}
-
-impl<B, M> Drop for LocalInbox<B, M>
-where
-    B: Behavior,
-    M: IngressMode<B>,
-{
-    fn drop(&mut self) {
-        drop(self.drain());
-    }
-}
-
-impl<U> Admission<U> {
-    pub(crate) fn new(owner: MailboxOwner<U>) -> Self {
-        Self {
-            owner: Mutex::new(Some(owner)),
-        }
-    }
-
-    fn close_from_endpoint(admission: &Weak<Self>) -> AdmissionClosure {
-        match admission.upgrade() {
-            Some(admission) => admission.close(),
-            None => AdmissionClosure::AlreadyClosed,
-        }
-    }
-
-    pub(crate) fn close(&self) -> AdmissionClosure {
-        self.owner
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .take()
-            .map_or(AdmissionClosure::AlreadyClosed, |owner| {
-                owner.close_admission();
-                AdmissionClosure::Closed
-            })
-    }
-}
-
-/// A non-owning, protocol-indexed user-lane capability.
-///
-/// The Communication anchor cannot keep or resurrect an actor. Indexing by
-/// `P` preserves destination protocol identity independently of the concrete
-/// behavior or transparent wrappers currently implementing it.
-pub struct ActorRef<P: Protocol> {
-    address: P::Addr,
-    endpoint: EndpointMailbox<P::Addr, P::Msg>,
-    termination: Observation<Termination<P::Addr>>,
-    protocol: PhantomData<fn() -> P>,
-}
-
-impl<P> fmt::Debug for ActorRef<P>
-where
-    P: Protocol,
-    P::Addr: fmt::Debug,
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter
-            .debug_struct("ActorRef")
-            .field("address", &self.address)
-            .finish_non_exhaustive()
-    }
-}
-
-/// One installed incarnation's message endpoint and exact behavior control.
-///
-/// The runtime issues this value only after committing the child's binding.
-pub struct InstalledActor<B>
-where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-{
-    recipient: ActorRef<B::Protocol>,
-    control: ControlSender<B::Event>,
-    behavior: PhantomData<fn() -> B>,
-}
-
-impl<B> fmt::Debug for InstalledActor<B>
-where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter
-            .debug_struct("InstalledActor")
-            .field("recipient", &self.recipient)
-            .finish_non_exhaustive()
-    }
-}
-
-impl<B> Clone for InstalledActor<B>
-where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-{
-    fn clone(&self) -> Self {
-        Self {
-            recipient: self.recipient.clone(),
-            control: self.control.clone(),
-            behavior: PhantomData,
-        }
-    }
-}
-
-impl<B> InstalledActor<B>
-where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-{
-    pub(crate) fn new(recipient: ActorRef<B::Protocol>, control: ControlSender<B::Event>) -> Self {
-        Self {
-            recipient,
-            control,
-            behavior: PhantomData,
-        }
-    }
-
-    pub(crate) fn recipient(&self) -> ActorRef<B::Protocol> {
-        self.recipient.clone()
-    }
-
-    pub(crate) fn request_shutdown<TargetPath>(
-        &self,
-        ingress: Ingress<ShutdownRequested, TargetPath>,
-    ) -> Result<(), ShutdownRejection>
-    where
-        B::Event: InjectEvent<ShutdownRequested, TargetPath>,
-    {
-        request_actor_shutdown(&self.recipient, &self.control, ingress)
-    }
-}
-
-pub(crate) fn request_actor_shutdown<P: Protocol, E, TargetPath>(
-    recipient: &ActorRef<P>,
-    control: &ControlSender<E>,
-    ingress: Ingress<ShutdownRequested, TargetPath>,
-) -> Result<(), ShutdownRejection>
-where
-    E: InjectEvent<ShutdownRequested, TargetPath>,
-{
-    if recipient.termination.try_get().is_some() {
-        return Err(ShutdownRejection::AlreadyStopped);
-    }
-    match recipient.endpoint.close_admission() {
-        AdmissionClosure::Closed => {}
-        AdmissionClosure::AlreadyClosed => return Err(recipient.shutdown_rejection()),
-    }
-    control
-        .send(ingress.event(ShutdownRequested))
-        .map_err(|_| recipient.shutdown_rejection())
-}
-
-impl<P: Protocol> Clone for ActorRef<P> {
-    fn clone(&self) -> Self {
-        Self {
-            address: self.address,
-            endpoint: self.endpoint.clone(),
-            termination: self.termination.clone(),
-            protocol: PhantomData,
-        }
-    }
-}
-
-impl<P: Protocol> ActorRef<P> {
-    fn new(
-        address: P::Addr,
-        endpoint: EndpointMailbox<P::Addr, P::Msg>,
-        termination: Observation<Termination<P::Addr>>,
-    ) -> Self {
-        Self {
-            address,
-            endpoint,
-            termination,
-            protocol: PhantomData,
-        }
-    }
-
-    pub(crate) fn external(
-        address: P::Addr,
-        mailbox: MailboxRef<User<P::Addr, P::Msg>>,
-        admission: Weak<Admission<User<P::Addr, P::Msg>>>,
-        termination: Observation<Termination<P::Addr>>,
-    ) -> Self {
-        Self {
-            address,
-            endpoint: EndpointMailbox::Standard { mailbox, admission },
-            termination,
-            protocol: PhantomData,
-        }
-    }
-
-    /// Observe the retained terminal result of this exact incarnation.
-    ///
-    /// Every clone refers to the same one-publication fact. Resolving a later
-    /// actor at the same address produces a different observation.
-    ///
-    /// # Errors
-    ///
-    /// Resolves to the exact crash when this incarnation terminates
-    /// abnormally; normal exits retain their typed exit reason.
-    pub fn termination(&self) -> impl Future<Output = Termination<P::Addr>> + use<P> {
-        let observation = self.termination.clone();
-        async move { observation.await }
-    }
-
-    pub(crate) fn termination_observation(&self) -> Observation<Termination<P::Addr>> {
-        self.termination.clone()
-    }
-
-    pub(crate) fn shutdown_rejection(&self) -> ShutdownRejection {
-        if self.termination.try_get().is_some() {
-            ShutdownRejection::AlreadyStopped
-        } else {
-            ShutdownRejection::AlreadyStopping
-        }
-    }
-
-    /// The typed address of this exact actor reference.
-    #[must_use]
-    pub const fn address(&self) -> P::Addr {
-        self.address
-    }
-
-    /// Admit one user message from an explicitly supplied typed origin through
-    /// the behavior's complete event sum.
-    ///
-    /// This reference resolves only the target. It does not claim, host, or
-    /// validate `from`; the external boundary that owns that identity must
-    /// supply it truthfully.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SendError`] with the original message when this incarnation's
-    /// user lane is no longer live.
-    pub async fn send_from(&self, from: P::Addr, message: P::Msg) -> Result<(), SendError<P::Msg>> {
-        match &self.endpoint {
-            EndpointMailbox::Standard { mailbox, .. } => mailbox
-                .send(User::new(from, message))
-                .await
-                .map_err(SendError::from_standard_rejection),
-            EndpointMailbox::Entity { mailbox, .. } => mailbox
-                .send(LocalIngress::Message(User::new(from, message)))
-                .await
-                .map_err(SendError::from_entity_rejection),
-        }
-    }
-
-    pub(crate) async fn fence(&self) -> Result<(), crate::entity::FenceFailure> {
-        let (publisher, observation) = affine_pair();
-        let EndpointMailbox::Entity { mailbox, .. } = &self.endpoint else {
-            return Err(crate::entity::FenceFailure::Enqueue);
-        };
-        if mailbox.send(LocalIngress::Fence(publisher)).await.is_err() {
-            return Err(crate::entity::FenceFailure::Enqueue);
-        }
-        observation.await
-    }
-}
-
-impl<P> ActorRef<P>
-where
-    P: Protocol<Addr = MailAddr>,
-{
-    /// Issue the exact recipient for this installed incarnation.
-    ///
-    /// The capability retains this endpoint directly. It performs no address
-    /// lookup and never retargets to a replacement at the same logical
-    /// address.
-    #[must_use]
-    pub fn established_recipient(&self) -> EstablishedRecipient<P> {
-        EstablishedRecipient::issued(self.clone())
-    }
-}
-
-/// Exact user payload rejected because the incarnation is no longer live.
-#[derive(thiserror::Error)]
-#[error("actor reference is closed")]
-pub struct SendError<M>(M);
-
-impl<M> fmt::Debug for SendError<M> {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.debug_struct("SendError").finish_non_exhaustive()
-    }
-}
-
-impl<M> SendError<M> {
-    /// Recover the exact message rejected by the closed actor reference.
-    #[must_use]
-    pub fn into_message(self) -> M {
-        self.0
-    }
-
-    fn from_standard_rejection<A>(rejected: UserClosed<User<A, M>>) -> Self {
-        let UserClosed(user) = rejected;
-        Self(user.message)
-    }
-
-    fn from_entity_rejection<A>(rejected: UserClosed<LocalIngress<A, M>>) -> Self {
-        let UserClosed(LocalIngress::Message(user)) = rejected else {
-            unreachable!("ordinary ActorRef delivery creates only message ingress");
-        };
-        Self(user.message)
-    }
-}
-
-pub(crate) enum LocalResidual<B: BehaviorSettlements, U, Descendants = ()> {
-    Prepared {
-        received_interpretation: Option<Interpretation<B::Settlements>>,
-        received_source: Option<SourceCustody<B::Settlements>>,
-        source_index: Option<usize>,
-        acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
-        ingress: Drained<B::Event, U>,
-        activation_tasks: ActivationTasks<B::Event>,
-        descendants: Descendants,
-        capability_failures: Vec<JoinError>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        unread_owner_cancellation: Option<()>,
-    },
-    Uncommitted {
-        initialization:
-            InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, B::Settlements>,
-        received_interpretation: Option<Interpretation<B::Settlements>>,
-        received_source: Option<SourceCustody<B::Settlements>>,
-        source_index: Option<usize>,
-        acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
-        ingress: Drained<B::Event, U>,
-        activation_tasks: ActivationTasks<B::Event>,
-        descendants: Descendants,
-        capability_failures: Vec<JoinError>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        unread_owner_cancellation: Option<()>,
-    },
-    Retired {
-        interpretation:
-            Option<InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, B::Settlements>>,
-        source: Option<SourceProgress<B::Settlements, B::SourceCustody>>,
-        settlements: Vec<B::Settlements>,
-        received_interpretation: Option<Interpretation<B::Settlements>>,
-        received_source: Option<SourceCustody<B::Settlements>>,
-        source_index: Option<usize>,
-        acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
-        ingress: Drained<B::Event, U>,
-        activation_tasks: ActivationTasks<B::Event>,
-        descendants: Descendants,
-        capability_failures: Vec<JoinError>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        unread_owner_cancellation: Option<()>,
-    },
-}
-
-/// Exact failure selected by the concrete local activation owner.
-///
-/// The address rejection, abandoned private binding, and original native
-/// commitment panic remain distinct, including in ordered later Driver failures.
-#[derive(Debug)]
-pub enum LocalActivationRejection<A> {
-    Address(ClaimError<A>),
-    BindingAbandoned,
-    /// Commitment unwound; the actual original partial initialization remains in the residual.
-    HostCommitPanicked(Box<dyn Any + Send>),
-}
+use communication::{Config, Consumer, ControlSender, Drained, Received, mailbox_channel};
+use core::future::{pending, poll_fn};
+use core::hash::Hash;
+use core::ops::ControlFlow;
+use core::pin::Pin;
+use core::task::Poll;
+use std::any::Any;
+use std::sync::{Arc, Weak};
+use std::time::Instant;
+use tokio::sync::oneshot;
+use tokio::sync::oneshot::error::TryRecvError;
+use tokio::task::JoinError;
 
 impl<B, U, Descendants> LocalResidual<B, U, Descendants>
 where
@@ -770,48 +73,6 @@ where
         self.receive_activation_tasks().await;
         self
     }
-}
-
-/// The prepared local half of one mailbox-backed behavior generation.
-pub(crate) struct LocalEnvironment<
-    B: BehaviorSettlements<Ph = Never>,
-    I,
-    M = StandardIngress,
-    P = fn(ActorRef<<B as Behavior>::Protocol>),
-> where
-    M: IngressMode<B>,
-    I: CommitActions<B>,
-    BehaviorAddr<B>: Hash,
-{
-    address: BehaviorAddr<B>,
-    addresses: AddressSpace<BehaviorAddr<B>, ActorRef<B::Protocol>>,
-    endpoint: ActorRef<B::Protocol>,
-    consumer: Option<Consumer<B::Event, M::Item>>,
-    admission: Arc<Admission<M::Item>>,
-    control_liveness: Option<Arc<ControlSender<B::Event>>>,
-    interpreter: Option<I>,
-    owner_cancellation: Option<oneshot::Receiver<OwnerCancellation>>,
-    #[allow(
-        clippy::type_complexity,
-        reason = "the private binding transports one exact actor reference and its affine acknowledgement"
-    )]
-    commitment: Option<oneshot::Sender<(ActorRef<B::Protocol>, oneshot::Sender<()>)>>,
-    publication_notice: PublicationNotice<P>,
-    reservation: Option<Reservation<BehaviorAddr<B>, ActorRef<B::Protocol>>>,
-    acknowledgement: Option<oneshot::Receiver<()>>,
-    acknowledged: Option<Result<(), oneshot::error::RecvError>>,
-    initialization:
-        Option<InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, B::Settlements>>,
-    activation_rejection: Option<LocalActivationRejection<BehaviorAddr<B>>>,
-    retirement: Option<CapabilityRetirement<B::Event, I::Retired>>,
-    retired_ingress: Option<Drained<B::Event, M::Retired>>,
-    unread_owner_cancellation: Option<()>,
-    residual: Option<LocalResidual<B, M::Retired, I::Retired>>,
-}
-
-enum PublicationNotice<P> {
-    Unobserved,
-    Notify(P),
 }
 
 impl<B, I, M> LocalEnvironment<B, I, M, fn(ActorRef<B::Protocol>)>
@@ -927,47 +188,6 @@ where
             residual: self.residual,
         }
     }
-}
-
-enum Publication<P, A: Eq + Hash, Endpoint> {
-    Pending {
-        reservation: Reservation<A, Endpoint>,
-        publication_notice: PublicationNotice<P>,
-        endpoint: Endpoint,
-    },
-    Published,
-}
-
-/// The only local value with mailbox ingress and address ownership.
-pub(crate) struct ActiveLocalEnvironment<
-    B: BehaviorSettlements<Ph = Never>,
-    I,
-    M = StandardIngress,
-    P = fn(ActorRef<<B as Behavior>::Protocol>),
-> where
-    BehaviorAddr<B>: Hash,
-    BehaviorMessage<B>: Send,
-    M: IngressMode<B>,
-    I: CommitActions<B>,
-    BehaviorAddr<B>: Hash,
-{
-    inbox: LocalInbox<B, M>,
-    admission: Arc<Admission<M::Item>>,
-    control_liveness: Option<Arc<ControlSender<B::Event>>>,
-    interpreter: Option<I>,
-    owner_cancellation: Option<oneshot::Receiver<OwnerCancellation>>,
-    publication: Option<Publication<P, BehaviorAddr<B>, ActorRef<B::Protocol>>>,
-    lease: Option<Lease<BehaviorAddr<B>, ActorRef<B::Protocol>>>,
-    interpretation:
-        Option<InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, B::Settlements>>,
-    source: Option<SourceProgress<B::Settlements, B::SourceCustody>>,
-    received_interpretation: Option<Interpretation<B::Settlements>>,
-    received_source: Option<SourceCustody<B::Settlements>>,
-    source_index: Option<usize>,
-    acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
-    retirement: Option<CapabilityRetirement<B::Event, I::Retired>>,
-    retired_ingress: Option<Drained<B::Event, M::Retired>>,
-    unread_owner_cancellation: Option<()>,
 }
 
 impl<B, I, M, P> LocalEnvironment<B, I, M, P>
@@ -1598,93 +818,187 @@ where
     }
 }
 
+pub(crate) enum LocalResidual<B: BehaviorSettlements, U, Descendants = ()> {
+    Prepared {
+        received_interpretation: Option<Interpretation<B::Settlements>>,
+        received_source: Option<SourceCustody<B::Settlements>>,
+        source_index: Option<usize>,
+        acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
+        ingress: Drained<B::Event, U>,
+        activation_tasks: ActivationTasks<B::Event>,
+        descendants: Descendants,
+        capability_failures: Vec<JoinError>,
+        terminal_report: Option<Result<(), Termination<MailAddr>>>,
+        retirement_failures: Vec<Box<dyn Any + Send>>,
+        unread_owner_cancellation: Option<()>,
+    },
+    Uncommitted {
+        initialization:
+            InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, B::Settlements>,
+        received_interpretation: Option<Interpretation<B::Settlements>>,
+        received_source: Option<SourceCustody<B::Settlements>>,
+        source_index: Option<usize>,
+        acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
+        ingress: Drained<B::Event, U>,
+        activation_tasks: ActivationTasks<B::Event>,
+        descendants: Descendants,
+        capability_failures: Vec<JoinError>,
+        terminal_report: Option<Result<(), Termination<MailAddr>>>,
+        retirement_failures: Vec<Box<dyn Any + Send>>,
+        unread_owner_cancellation: Option<()>,
+    },
+    Retired {
+        interpretation:
+            Option<InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, B::Settlements>>,
+        source: Option<SourceProgress<B::Settlements, B::SourceCustody>>,
+        settlements: Vec<B::Settlements>,
+        received_interpretation: Option<Interpretation<B::Settlements>>,
+        received_source: Option<SourceCustody<B::Settlements>>,
+        source_index: Option<usize>,
+        acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
+        ingress: Drained<B::Event, U>,
+        activation_tasks: ActivationTasks<B::Event>,
+        descendants: Descendants,
+        capability_failures: Vec<JoinError>,
+        terminal_report: Option<Result<(), Termination<MailAddr>>>,
+        retirement_failures: Vec<Box<dyn Any + Send>>,
+        unread_owner_cancellation: Option<()>,
+    },
+}
+
+/// Exact failure selected by the concrete local activation owner.
+///
+/// The address rejection, abandoned private binding, and original native
+/// commitment panic remain distinct, including in ordered later Driver failures.
+#[derive(Debug)]
+pub enum LocalActivationRejection<A> {
+    Address(ClaimError<A>),
+    BindingAbandoned,
+    /// Commitment unwound; the actual original partial initialization remains in the residual.
+    HostCommitPanicked(Box<dyn Any + Send>),
+}
+
+/// The prepared local half of one mailbox-backed behavior generation.
+pub(crate) struct LocalEnvironment<
+    B: BehaviorSettlements<Ph = Never>,
+    I,
+    M = StandardIngress,
+    P = fn(ActorRef<<B as Behavior>::Protocol>),
+> where
+    M: IngressMode<B>,
+    I: CommitActions<B>,
+    BehaviorAddr<B>: Hash,
+{
+    address: BehaviorAddr<B>,
+    addresses: AddressSpace<BehaviorAddr<B>, ActorRef<B::Protocol>>,
+    endpoint: ActorRef<B::Protocol>,
+    consumer: Option<Consumer<B::Event, M::Item>>,
+    admission: Arc<Admission<M::Item>>,
+    control_liveness: Option<Arc<ControlSender<B::Event>>>,
+    interpreter: Option<I>,
+    owner_cancellation: Option<oneshot::Receiver<OwnerCancellation>>,
+    #[allow(
+        clippy::type_complexity,
+        reason = "the private binding transports one exact actor reference and its affine acknowledgement"
+    )]
+    commitment: Option<oneshot::Sender<(ActorRef<B::Protocol>, oneshot::Sender<()>)>>,
+    publication_notice: PublicationNotice<P>,
+    reservation: Option<Reservation<BehaviorAddr<B>, ActorRef<B::Protocol>>>,
+    acknowledgement: Option<oneshot::Receiver<()>>,
+    acknowledged: Option<Result<(), oneshot::error::RecvError>>,
+    initialization:
+        Option<InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, B::Settlements>>,
+    activation_rejection: Option<LocalActivationRejection<BehaviorAddr<B>>>,
+    retirement: Option<CapabilityRetirement<B::Event, I::Retired>>,
+    retired_ingress: Option<Drained<B::Event, M::Retired>>,
+    unread_owner_cancellation: Option<()>,
+    residual: Option<LocalResidual<B, M::Retired, I::Retired>>,
+}
+
+enum PublicationNotice<P> {
+    Unobserved,
+    Notify(P),
+}
+
+enum Publication<P, A: Eq + Hash, Endpoint> {
+    Pending {
+        reservation: Reservation<A, Endpoint>,
+        publication_notice: PublicationNotice<P>,
+        endpoint: Endpoint,
+    },
+    Published,
+}
+
+/// The only local value with mailbox ingress and address ownership.
+pub(crate) struct ActiveLocalEnvironment<
+    B: BehaviorSettlements<Ph = Never>,
+    I,
+    M = StandardIngress,
+    P = fn(ActorRef<<B as Behavior>::Protocol>),
+> where
+    BehaviorAddr<B>: Hash,
+    BehaviorMessage<B>: Send,
+    M: IngressMode<B>,
+    I: CommitActions<B>,
+    BehaviorAddr<B>: Hash,
+{
+    inbox: LocalInbox<B, M>,
+    admission: Arc<Admission<M::Item>>,
+    control_liveness: Option<Arc<ControlSender<B::Event>>>,
+    interpreter: Option<I>,
+    owner_cancellation: Option<oneshot::Receiver<OwnerCancellation>>,
+    publication: Option<Publication<P, BehaviorAddr<B>, ActorRef<B::Protocol>>>,
+    lease: Option<Lease<BehaviorAddr<B>, ActorRef<B::Protocol>>>,
+    interpretation:
+        Option<InterpretationProgress<ActionsOf<B>, B::InterpretationCustody, B::Settlements>>,
+    source: Option<SourceProgress<B::Settlements, B::SourceCustody>>,
+    received_interpretation: Option<Interpretation<B::Settlements>>,
+    received_source: Option<SourceCustody<B::Settlements>>,
+    source_index: Option<usize>,
+    acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
+    retirement: Option<CapabilityRetirement<B::Event, I::Retired>>,
+    retired_ingress: Option<Drained<B::Event, M::Retired>>,
+    unread_owner_cancellation: Option<()>,
+}
+
+#[cfg(test)]
+use core::pin::pin;
+
 #[cfg(test)]
 mod tests {
     use core::task::{Context, Waker};
     use std::convert::Infallible;
-    use std::future::pending;
     use std::mem::size_of;
-    use std::panic::resume_unwind;
-    use std::ptr;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
 
     use behavior::{
         ActionItem, ActionSettlement, Actions, ActiveTurn, BehaviorActed, EventIngress, EventLayer,
-        Here, InitializationTurn, InterpretItem, InterpreterFault, InterpreterRequest,
+        Here, Ingress, InitializationTurn, InterpretItem, InterpreterFault, InterpreterRequest,
         InterpreterRequests, ItemSettlement, MessageProtocol, Never, NoBirthProtocols, NoBirths,
         NoReturnToEmitter, NoSends, Own, SettledItem, SettlementStatus, SourceAdmission, Step,
-        User, finish_item, prepare_item,
+        User, UserEvent, finish_item, prepare_item,
     };
     use behavior_actors::{
-        Crash, Exit, PeerStopped, ScheduleAt, StopOnShutdown, TimerElapsed, TimerGeneration,
-        TimerId,
+        Crash, Exit, PeerStopped, ScheduleAt, ShutdownRejection, ShutdownRequested, StopOnShutdown,
+        TimerElapsed, TimerGeneration, TimerId,
     };
     use communication::{Config, mailbox_channel};
 
     use crate::address::ApplicationAddresses;
-    use crate::application_runtime::{ApplicationCapabilities, ApplicationCapabilityInputs};
-    use crate::child_bindings::NoChildBindings;
-    use crate::interpret::ActionInterpreter;
     use crate::launch::ActorSpace;
+    use crate::local::children::NoChildBindings;
+    use crate::local::effects::ActionInterpreter;
+    use crate::local::effects::LocalTerminalReports;
+    use crate::local::effects::{ApplicationCapabilities, ApplicationCapabilityInputs};
+    use crate::local::endpoint::InstalledActor;
     use crate::observe::{self, pair};
-    use crate::reports::LocalTerminalReports;
     use crate::{ActorExecutionOutcome, MailAddr};
     use bombay_engine::{Completion, Driver, DriverRetirement};
     use tokio::sync::oneshot::error::TryRecvError;
     use tokio::task;
 
     use super::*;
-
-    #[tokio::test]
-    async fn activation_task_custody_reports_pending_work_until_it_settles() {
-        let mut tasks = ActivationTasks::<u64>::new();
-        assert!(tasks.is_empty());
-        tasks.spawn(async { Ok(()) });
-        assert!(!tasks.is_empty());
-        let (completed, failures) = tasks.settle().await;
-        assert_eq!(failures.len(), 0);
-        assert_eq!(completed.len(), 0);
-    }
-
-    #[tokio::test]
-    async fn activation_task_event_returns_exact_panic_and_cancellation() {
-        let panic_payload: Box<dyn Any + Send> = Box::new(vec![19_u64, 23]);
-        let panic_payload_identity: *const (dyn Any + Send) = panic_payload.as_ref();
-        let mut panicking = ActivationTasks::<u64>::new();
-        panicking.spawn(async move { resume_unwind(panic_payload) });
-        let failure = panicking
-            .next_event()
-            .await
-            .expect_err("the exact task failure is returned");
-        assert!(failure.is_panic());
-        let payload = failure.into_panic();
-        let received_payload_identity: *const (dyn Any + Send) = payload.as_ref();
-        assert!(ptr::eq(received_payload_identity, panic_payload_identity));
-        assert!(panicking.is_empty());
-
-        let mut cancelled = ActivationTasks::<u64>::new();
-        cancelled.spawn(async { pending::<Result<(), u64>>().await });
-        cancelled.tasks.abort_all();
-        let failure = cancelled
-            .next_event()
-            .await
-            .expect_err("cancelled activation work is retained");
-        assert!(failure.is_cancelled());
-        assert!(cancelled.is_empty());
-    }
-
-    #[test]
-    fn rejected_user_delivery_recovers_the_exact_owned_payload() {
-        let payload = String::from("application-owned-payload");
-        let rejected = UserClosed(LocalIngress::Message(User::new(MailAddr(7), payload)));
-
-        let error = SendError::from_entity_rejection(rejected);
-        assert_eq!(format!("{error:?}"), "SendError { .. }");
-
-        let rejected_message = error.into_message();
-        assert_eq!(rejected_message, "application-owned-payload");
-    }
 
     struct FenceProbe;
 
@@ -3567,13 +2881,13 @@ mod tests {
 
 #[cfg(test)]
 mod source_acquisition_custody {
-    use super::{
-        ActivationTasks, CapabilityRetirement, CommitActions, LocalEnvironment, LocalResidual,
-        LocalRetirementRequest, OwnerCancellation, StandardIngress,
-    };
     use crate::MailAddr;
-    use crate::interpret::ActionSettlementOf;
     use crate::launch::{ActorSpace, InertCapabilities};
+    use crate::local::effects::ActionSettlementOf;
+    use crate::local::effects::{CapabilityRetirement, CommitActions};
+    use crate::local::environment::{LocalEnvironment, LocalResidual};
+    use crate::local::execution::{ActivationTasks, LocalRetirementRequest, OwnerCancellation};
+    use crate::local::ingress::StandardIngress;
     use crate::observe;
     use behavior::{
         Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorSettlements, ClassifySettlement,
@@ -4192,101 +3506,15 @@ mod source_acquisition_custody {
 }
 
 #[cfg(test)]
-mod capability_failure_custody {
-    use std::future::Future;
-    use std::panic::panic_any;
-    use std::task::{Context, Poll, Waker};
-
-    use tokio::sync::oneshot;
-    use tokio::task;
-
-    use super::{ActivationTasks, OwnerCancellation, close_owner_cancellation};
-
-    #[tokio::test]
-    async fn settlement_joins_every_task_after_failure_and_retains_events_and_errors() {
-        let first_payload = Box::new(vec![11_u64, 111]);
-        let later_payload = Box::new(vec![22_u64, 122]);
-        let event = vec![33_u64, 133];
-        let event_allocation = event.as_ptr() as usize;
-        let (ready, reached) = oneshot::channel();
-        let (later_ready, later_reached) = oneshot::channel();
-        let (release, released) = oneshot::channel();
-        let mut tasks = ActivationTasks::<Vec<u64>>::new();
-        tasks.spawn(async move {
-            ready
-                .send(task::id())
-                .expect("the caller observes the first task starting");
-            panic_any(first_payload);
-        });
-        tasks.spawn(async move {
-            later_ready
-                .send(task::id())
-                .expect("the caller observes the later task starting");
-            panic_any(later_payload);
-        });
-        tasks.spawn(async move {
-            released
-                .await
-                .expect("the owner explicitly releases the final task");
-            Err(event)
-        });
-        let first_task_id = reached.await.expect("the first actual task started");
-        let later_task_id = later_reached.await.expect("the later actual task started");
-        let mut settlement = Box::pin(tasks.settle());
-        let mut context = Context::from_waker(Waker::noop());
-        let waiting = settlement.as_mut().poll(&mut context);
-        assert!(matches!(waiting, Poll::Pending));
-        release
-            .send(())
-            .expect("the blocked actual task receives its release");
-        let (events, failures) = settlement.await;
-        assert_eq!(events, [vec![33, 133]]);
-        assert_eq!(events[0].as_ptr() as usize, event_allocation);
-        assert_eq!(failures.len(), 2);
-        let mut failed_task_ids = failures
-            .iter()
-            .map(|failure| {
-                assert!(failure.is_panic());
-                failure.id()
-            })
-            .collect::<Vec<_>>();
-        failed_task_ids.sort();
-        let mut original_task_ids = [first_task_id, later_task_id];
-        original_task_ids.sort();
-        assert_eq!(failed_task_ids, original_task_ids);
-    }
-
-    #[test]
-    fn owner_receiver_close_retains_only_the_accepted_unread_occurrence() {
-        let (sender, receiver) = oneshot::channel();
-        let admitted = sender.send(OwnerCancellation);
-        assert!(admitted.is_ok());
-        let unread = close_owner_cancellation(receiver);
-        assert_eq!(unread, Some(()));
-
-        let (sender, receiver) = oneshot::channel();
-        let unread = close_owner_cancellation(receiver);
-        assert_eq!(unread, None);
-        let refused = sender.send(OwnerCancellation);
-        assert!(matches!(refused, Err(OwnerCancellation)));
-
-        let (sender, mut receiver) = oneshot::channel();
-        let admitted = sender.send(OwnerCancellation);
-        assert!(admitted.is_ok());
-        let acquired = receiver.try_recv();
-        assert!(matches!(acquired, Ok(OwnerCancellation)));
-        let unread = close_owner_cancellation(receiver);
-        assert_eq!(unread, None);
-    }
-}
-#[cfg(test)]
 mod shutdown_admission_contract {
-    use super::{ActorRef, Admission, InstalledActor, LocalResidual};
     use crate::ActorExecutionOutcome;
     use crate::ActorSpace;
     use crate::actor;
     use crate::address::MailAddr;
     use crate::launch::launch_inert_entity;
+    use crate::local::endpoint::{ActorRef, InstalledActor};
+    use crate::local::environment::LocalResidual;
+    use crate::local::ingress::Admission;
     use crate::observe;
     use behavior::{
         Actions, Become, Behavior, BehaviorActed, BehaviorBase, EventLayer, Here, Ingress, Inside,

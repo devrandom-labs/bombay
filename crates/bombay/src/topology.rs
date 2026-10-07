@@ -49,7 +49,8 @@ mod tests {
     use communication::{Config, mailbox_channel};
 
     use crate::address::MailAddr;
-    use crate::local::{ActorRef, Admission};
+    use crate::local::endpoint::ActorRef;
+    use crate::local::ingress::Admission;
     use crate::observe;
 
     struct RootProtocol;

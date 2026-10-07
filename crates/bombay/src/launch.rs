@@ -11,11 +11,11 @@ use std::sync::Weak;
 use std::task::Poll;
 
 use crate::address::MailAddr;
-use crate::interpret::ActionSettlementOf;
-use crate::observation::TerminationObservations;
+use crate::local::effects::ActionSettlementOf;
+use crate::local::effects::observation::TerminationObservations;
+use crate::local::effects::timers::LocalTimers;
 use crate::observe;
 use crate::terminal::{ActorRetirement, LocalOutcome, ProjectTerminal, retirement_ingress};
-use crate::time::LocalTimers;
 use crate::{ActorExecutionOutcome, Retirement};
 #[cfg(test)]
 use behavior::{
@@ -36,18 +36,18 @@ use tokio::sync::oneshot;
 use tokio::task::{JoinError, JoinHandle};
 
 #[cfg(test)]
-use crate::interpret::InterpretedActionSettlement;
+use crate::local::effects::InterpretedActionSettlement;
 
 use super::ActorExecution;
-#[cfg(test)]
-use super::local::CapabilityRetirement;
-use super::local::Termination;
-use super::local::{
-    ActorRef, CommitActions, EntityIngress, IngressMode, LocalActivationRejection,
-    LocalEnvironment, LocalResidual, LocalRetirementRequest, OwnerCancellation, StandardIngress,
-};
-use super::reports::LocalTerminalReports;
 use super::termination::TerminationPublication;
+#[cfg(test)]
+use crate::local::effects::CapabilityRetirement;
+use crate::local::effects::{CommitActions, LocalTerminalReports};
+use crate::local::environment::{LocalEnvironment, LocalResidual};
+use crate::local::execution::{LocalRetirementRequest, OwnerCancellation};
+use crate::local::ingress::{EntityIngress, IngressMode, StandardIngress};
+use crate::local::{ActorRef, LocalActivationRejection};
+use crate::termination::Termination;
 
 /// Failure before a launched actor publishes its live reference.
 pub(crate) enum SpawnError<B, Descendants = ()>
@@ -858,7 +858,7 @@ where
     B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
-    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
+    crate::local::effects::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
     spawn_owned_with_mode::<B, I, StandardIngress>(
@@ -898,7 +898,7 @@ where
     B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
-    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
+    crate::local::effects::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
     let (actor, shutdown_control, task) = spawn_local_with::<B, I, StandardIngress, _, _, _>(
@@ -950,7 +950,7 @@ where
     B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
-    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
+    crate::local::effects::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
     spawn_owned_with_mode::<B, I, EntityIngress>(
@@ -990,7 +990,7 @@ where
     B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
-    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
+    crate::local::effects::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
     let ((actor, binding), control, task) = spawn_local_with::<B, I, M, _, _, _>(
@@ -1050,7 +1050,7 @@ where
     B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
-    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
+    crate::local::effects::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
     Start: Send,
     Control: Send,
@@ -1112,7 +1112,7 @@ where
     B::SourceCustody: Send + 'static,
     <B::Birth as BirthMode>::Child: Send + 'static,
     I: CommitActions<B> + Send + 'static,
-    crate::interpret::ActionSettlementOf<B>: ClassifySettlement + Send,
+    crate::local::effects::ActionSettlementOf<B>: ClassifySettlement + Send,
     I::Retired: Send + 'static,
 {
     let (termination_publisher, termination) = observe::pair();
@@ -1455,7 +1455,7 @@ mod tests {
 
     use super::*;
     use crate::MailAddr;
-    use crate::local::ActivationTasks;
+    use crate::local::execution::ActivationTasks;
 
     struct RootProbe {
         terminal_marker: u8,
@@ -2133,11 +2133,12 @@ mod tests {
 
 #[cfg(test)]
 mod ordinary_owner_retirement {
-    use super::{ActorSpace, ObserveInertActions};
+    use super::ObserveInertActions;
     use crate::MailAddr;
-    use crate::local::{
-        LocalEnvironment, LocalResidual, LocalRetirementRequest, OwnerCancellation, StandardIngress,
-    };
+    use crate::launch::ActorSpace;
+    use crate::local::environment::{LocalEnvironment, LocalResidual};
+    use crate::local::execution::{LocalRetirementRequest, OwnerCancellation};
+    use crate::local::ingress::StandardIngress;
     use crate::observe;
     use behavior::{
         Actions, ActiveTurn, Behavior, BehaviorActed, EventLayer, Here, InjectEvent,
@@ -2269,20 +2270,23 @@ mod ordinary_owner_retirement {
 
 #[cfg(test)]
 mod transitive_source_cancellation {
-    use super::{ActorExecution, ActorExecutionOutcome, LocalRetirement, TerminationPublication};
+    use super::ActorExecution;
+    use crate::ActorExecutionOutcome;
     use crate::MailAddr;
     use crate::address::ApplicationAddresses;
-    use crate::application_runtime::{ApplicationCapabilities, ApplicationCapabilityInputs};
-    use crate::child_bindings::NoChildBindings;
-    use crate::interpret::{ActionInterpreter, ActionSettlementOf};
     use crate::launch::ActorSpace;
-    use crate::local::{
-        CapabilityRetirement, CommitActions, LocalEnvironment, LocalResidual,
-        LocalRetirementRequest, OwnerCancellation, StandardIngress,
-    };
+    use crate::launch::LocalRetirement;
+    use crate::local::children::NoChildBindings;
+    use crate::local::effects::LocalTerminalReports;
+    use crate::local::effects::{ActionInterpreter, ActionSettlementOf};
+    use crate::local::effects::{ApplicationCapabilities, ApplicationCapabilityInputs};
+    use crate::local::effects::{CapabilityRetirement, CommitActions};
+    use crate::local::environment::{LocalEnvironment, LocalResidual};
+    use crate::local::execution::{LocalRetirementRequest, OwnerCancellation};
+    use crate::local::ingress::StandardIngress;
     use crate::observe;
-    use crate::reports::LocalTerminalReports;
     use crate::terminal::{ActorRetirement, LocalOutcome};
+    use crate::termination::TerminationPublication;
     use behavior::{
         ActionItemResult, Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorSettlements,
         ClassifySettlement, EventIngress, Here, InitializationTurn, InjectEvent,
@@ -2743,9 +2747,11 @@ mod independent_actor_execution {
     use tokio::sync::{Barrier as WorkBarrier, Mutex as WorkMutex};
     use tokio::task::{Id, JoinError, id, try_id};
 
-    use super::{LocalOutcome, spawn_root_with};
-    use crate::interpret::ActionSettlementOf;
-    use crate::local::{CapabilityRetirement, CommitActions, LocalResidual};
+    use super::spawn_root_with;
+    use crate::local::effects::ActionSettlementOf;
+    use crate::local::effects::{CapabilityRetirement, CommitActions};
+    use crate::local::environment::LocalResidual;
+    use crate::terminal::LocalOutcome;
     use crate::{
         ActorExecutionOutcome, ActorRetirement, Application, ApplicationOutcome, ChildOrigin,
         MailAddr, ProjectTerminal, actor,
@@ -4429,5 +4435,362 @@ mod independent_actor_execution {
         assert_eq!(observed.len(), 1);
         assert_eq!(observed[0].0, id);
         assert!(observed[0].1.is_ok());
+    }
+}
+
+#[cfg(test)]
+mod root_join_custody {
+    use crate::address::MailAddr;
+    use crate::launch::{InertCapabilities, spawn_local_execution};
+    use crate::local::effects::ActionSettlementOf;
+    use crate::local::effects::{CapabilityRetirement, CommitActions};
+    use crate::local::environment::LocalResidual;
+    use crate::local::execution::{LocalRetirementRequest, OwnerCancellation};
+    use crate::local::ingress::StandardIngress;
+    use crate::terminal::LocalOutcome;
+    use crate::{ActorExecutionOutcome, ActorSpace};
+    use behavior::{
+        Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorSettlements, EventLayer, Here,
+        InitializationTurn, InterpretationProgress, MessageProtocol, Never, NoBirths, NoSends,
+        SourceProgress, SourceSettlementCustody, Step, Stopped, User,
+    };
+    use behavior_actors::ShutdownRequested;
+    use bombay_engine::{ActionsOf, Completion};
+    use communication::Config;
+    use core::future::{Future, pending};
+    use core::task::{Context, Poll, Waker};
+    use std::sync::{Arc, Mutex, Weak};
+    use tokio::sync::oneshot;
+    use tokio::task::JoinHandle;
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum RootFinish {
+        Stop,
+        Cancel,
+        Unpublished,
+    }
+    #[derive(Clone, Copy, Debug)]
+    enum ResultCustody {
+        Retain,
+        Surrender,
+    }
+    impl ResultCustody {
+        async fn finish_root_cleanup<T>(
+            self,
+            receipt: JoinHandle<T>,
+            release: oneshot::Sender<()>,
+            released: &Weak<Vec<u8>>,
+            verification: oneshot::Receiver<()>,
+        ) {
+            match self {
+                ResultCustody::Retain => {
+                    let sent = release.send(());
+                    sent.expect("root cleanup remains owned");
+                    let result = receipt
+                        .await
+                        .expect("exact root receipt remains after wait drop");
+                    assert_eq!(released.strong_count(), 1);
+                    drop(result);
+                }
+                ResultCustody::Surrender => {
+                    drop(receipt);
+                    assert_eq!(released.strong_count(), 1);
+                    let sent = release.send(());
+                    sent.expect("receiverless cleanup remains owned");
+                    while released.strong_count() != 0 {
+                        tokio::task::yield_now().await;
+                    }
+                }
+            }
+            verification.await.expect("root oracles verified");
+        }
+    }
+
+    struct RootState {
+        values: Arc<Vec<u8>>,
+        finish: RootFinish,
+    }
+    impl Behavior for RootState {
+        type Protocol = MessageProtocol<MailAddr, Never>;
+        type Event = EventLayer<ShutdownRequested, User<MailAddr, Never>>;
+        type Sends = NoSends;
+        type Ph = Never;
+        type Error = Never;
+        type Birth = NoBirths;
+        fn init(&mut self, _: InitializationTurn) -> BehaviorActed<Self> {
+            Ok(match self.finish {
+                RootFinish::Unpublished => Actions::stop(),
+                _ => Actions::cont(),
+            })
+        }
+        fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
+            match event {
+                EventLayer::Owned(_) => Ok(Actions::stop()),
+                EventLayer::Inner(user) => match user.message {},
+            }
+        }
+    }
+    struct RootCleanup {
+        decisions: Arc<Mutex<Vec<Step<Never, Stopped>>>>,
+        initializing: Option<(Option<oneshot::Sender<()>>, oneshot::Receiver<()>)>,
+        retiring: Option<oneshot::Sender<()>>,
+        release: oneshot::Receiver<()>,
+    }
+    impl CommitActions<RootState> for RootCleanup {
+        type Retired = ();
+        async fn commit(
+            &mut self,
+            progress: &mut Option<
+                InterpretationProgress<
+                    ActionsOf<RootState>,
+                    <RootState as BehaviorSettlements>::InterpretationCustody,
+                    ActionSettlementOf<RootState>,
+                >,
+            >,
+        ) {
+            if let Some((initializing, admitted)) = self.initializing.as_mut() {
+                if let Some(initializing) = initializing.take() {
+                    let sent = initializing.send(());
+                    sent.expect("startup observer remains");
+                }
+                admitted
+                    .await
+                    .expect("initial action interpretation is explicitly admitted");
+                drop(self.initializing.take());
+            }
+            if let Some(InterpretationProgress::Original(actions)) = progress.as_ref() {
+                assert_eq!(actions.sends, NoSends);
+                assert!(actions.creates.is_empty());
+                self.decisions.lock().unwrap().push(actions.become_);
+            }
+            ActionsOf::<RootState>::interpret::<_, <RootState as Behavior>::Event, Here>(
+                progress,
+                &mut InertCapabilities,
+            )
+            .await;
+        }
+        async fn offer_next(
+            &mut self,
+            progress: &mut Option<
+                SourceProgress<
+                    ActionSettlementOf<RootState>,
+                    <RootState as BehaviorSettlements>::SourceCustody,
+                >,
+            >,
+        ) {
+            <ActionSettlementOf<RootState> as SourceSettlementCustody<
+                InertCapabilities,
+                <RootState as Behavior>::Event,
+            >>::prepare_source(progress);
+            if let Some(SourceProgress::Offering(custody)) = progress {
+                <ActionSettlementOf<RootState> as SourceSettlementCustody<
+                    InertCapabilities,
+                    <RootState as Behavior>::Event,
+                >>::offer_next_to_source(custody, &mut InertCapabilities)
+                .await;
+            }
+            <ActionSettlementOf<RootState> as SourceSettlementCustody<
+                InertCapabilities,
+                <RootState as Behavior>::Event,
+            >>::finish_source(progress);
+        }
+        async fn next_local_event(
+            &mut self,
+        ) -> Result<<RootState as Behavior>::Event, tokio::task::JoinError> {
+            pending().await
+        }
+        async fn receive_retirement(
+            interpreter: &mut Option<Self>,
+            received: &mut Option<CapabilityRetirement<<RootState as Behavior>::Event, ()>>,
+        ) {
+            if received.is_some() {
+                return;
+            }
+            let Some(original) = interpreter.as_mut() else {
+                return;
+            };
+            if let Some(retiring) = original.retiring.take() {
+                let sent = retiring.send(());
+                sent.expect("cleanup observer remains");
+            }
+            (&mut original.release)
+                .await
+                .expect("cleanup must explicitly finish");
+            *received = Some(CapabilityRetirement::without_activations(()));
+            drop(interpreter.take());
+        }
+    }
+    fn assert_root_retirement(
+        outcome: &LocalOutcome<RootState, ()>,
+        finish: RootFinish,
+        allocation: usize,
+    ) {
+        let ActorExecutionOutcome::Completed {
+            behavior,
+            residual,
+            additional_failures,
+            completion,
+        } = outcome
+        else {
+            panic!("complete actor state must survive")
+        };
+        assert!(additional_failures.is_empty());
+        assert_eq!(behavior.values.as_slice(), [31, 37]);
+        assert_eq!(behavior.finish, finish);
+        assert_eq!(behavior.values.as_ptr() as usize, allocation);
+        match (finish, completion) {
+            (RootFinish::Stop | RootFinish::Unpublished, Completion::Stopped)
+            | (
+                RootFinish::Cancel,
+                Completion::RetirementRequested(LocalRetirementRequest::OwnerCancellation(
+                    OwnerCancellation,
+                )),
+            ) => {}
+            _ => panic!("the exact root retirement cause must survive"),
+        }
+        let LocalResidual::Retired {
+            interpretation,
+            source,
+            settlements,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            terminal_report,
+            retirement_failures,
+            ingress,
+            activation_tasks,
+            descendants,
+            capability_failures,
+            unread_owner_cancellation,
+        } = residual
+        else {
+            panic!("retirement keeps all ambient fields")
+        };
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
+        let expected = match finish {
+            RootFinish::Cancel => 0,
+            _ => 1,
+        };
+        assert_eq!(settlements.len(), expected);
+        for (index, settlement) in settlements.iter().enumerate() {
+            assert_eq!(settlement.sends, NoSends);
+            assert!(settlement.creations.is_empty());
+            match (finish, index, &settlement.become_) {
+                (RootFinish::Unpublished | RootFinish::Stop, 0, Step::Stop(_)) => {}
+                _ => panic!("exact fold sequence survives"),
+            }
+        }
+        assert_eq!(ingress.control.len(), 0);
+        assert_eq!(ingress.user.len(), 0);
+        assert!(activation_tasks.is_empty());
+        assert_eq!(*descendants, ());
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn root_join_receipt_preserves_exact_outcome_through_cleanup() {
+        for finish in [
+            RootFinish::Stop,
+            RootFinish::Cancel,
+            RootFinish::Unpublished,
+        ] {
+            for custody in [ResultCustody::Retain, ResultCustody::Surrender] {
+                let addresses = ActorSpace::new();
+                let bytes = vec![31, 37];
+                let allocation = bytes.as_ptr() as usize;
+                let values = Arc::new(bytes);
+                let released_root = Arc::downgrade(&values);
+                let decisions = Arc::new(Mutex::new(Vec::new()));
+                let interpreted = decisions.clone();
+                let (initializing, initialization) = oneshot::channel();
+                let (admit, admitted) = oneshot::channel();
+                let (retiring, retirement) = oneshot::channel();
+                let (release, released) = oneshot::channel();
+                let (authority, startup, control, task) =
+                    spawn_local_execution::<RootState, _, StandardIngress, _, _, _>(
+                        addresses.clone(),
+                        Config::new(2),
+                        MailAddr::APPLICATION_ROOT,
+                        RootState { values, finish },
+                        |_, _, _, _| RootCleanup {
+                            decisions: interpreted,
+                            initializing: Some((Some(initializing), admitted)),
+                            retiring: Some(retiring),
+                            release: released,
+                        },
+                        |environment| {
+                            let (publication, startup) = oneshot::channel();
+                            let control = environment.shutdown_control();
+                            let environment = environment.publish_with(move |actor| {
+                                drop(publication.send(actor));
+                            });
+                            (environment, startup, control)
+                        },
+                    );
+                let authority = match finish {
+                    RootFinish::Cancel => {
+                        drop(authority);
+                        None
+                    }
+                    _ => Some(authority),
+                };
+                initialization.await.expect("initial actions admitted");
+                assert!(addresses.resolve(&MailAddr::APPLICATION_ROOT).is_none());
+                let sent = admit.send(());
+                sent.expect("the original actor remains owned");
+                let startup = match finish {
+                    RootFinish::Cancel | RootFinish::Unpublished => Some(startup),
+                    RootFinish::Stop => {
+                        let actor = startup.await.expect("continuing root is published");
+                        let control = control.upgrade().expect("the actor owns control");
+                        let sent = control.send(EventLayer::Owned(ShutdownRequested));
+                        sent.expect("the root accepts shutdown");
+                        drop(actor);
+                        None
+                    }
+                };
+                retirement.await.expect("actual root cleanup begins");
+                let expected_decisions = match finish {
+                    RootFinish::Stop => vec![Step::Continue, Step::Stop(Stopped)],
+                    RootFinish::Cancel => vec![Step::Continue],
+                    RootFinish::Unpublished => vec![Step::Stop(Stopped)],
+                };
+                assert_eq!(*decisions.lock().unwrap(), expected_decisions);
+                let (verified, verification) = oneshot::channel();
+                let mut receipt = tokio::spawn(async move {
+                    let outcome = task.await.expect("actor joined");
+                    let startup_rejection = match startup {
+                        Some(startup) => Some(startup.await.expect_err("root unpublished")),
+                        None => None,
+                    };
+                    assert_root_retirement(&outcome, finish, allocation);
+                    let notified = verified.send(());
+                    notified.expect("the root oracle receiver remains");
+                    (outcome, startup_rejection)
+                });
+                let mut waiting = Box::pin(&mut receipt);
+                let polled = waiting
+                    .as_mut()
+                    .poll(&mut Context::from_waker(Waker::noop()));
+                assert!(matches!(polled, Poll::Pending));
+                drop(waiting);
+                assert_eq!(released_root.strong_count(), 1);
+                custody
+                    .finish_root_cleanup(receipt, release, &released_root, verification)
+                    .await;
+                assert_eq!(released_root.strong_count(), 0);
+                assert!(addresses.resolve(&MailAddr::APPLICATION_ROOT).is_none());
+                drop(authority);
+            }
+        }
     }
 }

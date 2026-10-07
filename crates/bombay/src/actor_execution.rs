@@ -148,7 +148,7 @@ pub(crate) mod tests {
 
     use super::*;
     use crate::MailAddr;
-    use crate::interpret::ActionSettlementOf;
+    use crate::local::effects::ActionSettlementOf;
 
     struct CountingAllocator;
 

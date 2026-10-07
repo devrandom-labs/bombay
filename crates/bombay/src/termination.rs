@@ -6,7 +6,7 @@ use tokio::sync::oneshot;
 use tokio::sync::oneshot::error::TryRecvError;
 
 use crate::ActorExecutionOutcome;
-use crate::local::Termination;
+
 use crate::observe::Publisher;
 
 #[derive(Clone, Copy)]
@@ -133,6 +133,8 @@ impl<A: behavior::Address> TerminationPublication<A> {
         self.publisher.complete(Err(Crash::Cancelled));
     }
 }
+
+pub(crate) type Termination<A> = Result<Exit<A>, behavior_actors::Crash>;
 
 #[cfg(test)]
 mod tests {

@@ -18,17 +18,16 @@ compile_error!(
     "bombay requires panic=unwind to classify actor panics and complete terminal retirement"
 );
 
+pub use crate::address::MailAddr;
+pub use crate::application::{ActorInterface, ExternalActor, ExternalActorError, ExternalTarget};
 pub use ::behavior;
 pub use ::behavior_actors::{
     atomic, composition, discovery, lifecycle, operations, persistence, routing, time as timing,
     workflow,
 };
-pub use address::MailAddr;
-mod actor_interface;
-pub use actor_interface::{ActorInterface, ExternalActor, ExternalActorError, ExternalTarget};
 pub mod actors;
-pub use application::Application;
-pub use application_runtime::{
+pub use crate::application::Application;
+pub use crate::application::{
     App, ApplicationBehavior, ApplicationCleanupError, ApplicationDefinitionError,
     ApplicationHandle, ApplicationLifecycle, ApplicationOutcome, ApplicationStagingError, RunError,
 };
@@ -38,35 +37,32 @@ mod actor_execution;
 mod actor_outcome;
 mod address;
 mod application;
-mod application_runtime;
-mod child_bindings;
 pub mod entity;
-mod interpret;
 mod launch;
 mod local;
-mod observation;
 #[allow(
     dead_code,
     reason = "Bombay uses pair publication while this same private source retains the separately verified keyed Observe API"
 )]
 mod observe;
-mod reports;
 mod retirement;
 mod terminal;
 mod termination;
 pub mod testing;
-mod time;
 mod topology;
 mod worker_preparation;
 
-pub(crate) use actor_execution::ActorExecution;
-pub(crate) use actor_outcome::ActorExecutionOutcome;
-pub use launch::ActorSpace;
-pub use local::{ActorRef, InstalledActor, LocalActivationRejection, SendError};
-pub(crate) use retirement::Retirement;
-pub use terminal::{ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal, RootOrigin};
-pub use topology::Hosts;
-pub use worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
+pub(crate) use crate::actor_execution::ActorExecution;
+pub(crate) use crate::actor_outcome::ActorExecutionOutcome;
+pub use crate::launch::ActorSpace;
+pub use crate::local::endpoint::{ActorRef, InstalledActor, SendError};
+pub use crate::local::environment::LocalActivationRejection;
+pub(crate) use crate::retirement::Retirement;
+pub use crate::terminal::{
+    ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal, RootOrigin,
+};
+pub use crate::topology::Hosts;
+pub use crate::worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
 
 /// Conventional imports for Bombay applications.
 pub mod prelude {
@@ -91,3 +87,22 @@ pub mod prelude {
         TimerId,
     };
 }
+
+#[cfg(test)]
+use behavior::{Actions, BehaviorActed, User};
+
+#[cfg(test)]
+struct ShutdownLedger {
+    entries: Vec<u64>,
+    received: Vec<User<MailAddr, Vec<u64>>>,
+}
+#[cfg(test)]
+#[actor]
+impl ShutdownLedger {
+    fn receive(&mut self, from: MailAddr, entries: Vec<u64>) -> BehaviorActed<Self> {
+        self.received.push(User::new(from, entries));
+        Ok(Actions::cont())
+    }
+}
+#[cfg(test)]
+type LedgerProtocol = ShutdownLedger;
