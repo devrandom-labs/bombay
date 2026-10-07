@@ -11,8 +11,15 @@ Independent nonauthor `/root/current_verification_independent_review` signed
 (SHA862b8b7eecad445ef62a4282fe3c02beb284e76fc0486461f0bdaf9f218e2695).
 Neither reviewer authored the selected model, source, migrations or witnesses.
 
-The accepted App source is SHAaf400af8838b22065c204f3a920c7f1c421f5374e37e6fac04808d2bac8158ed;
+The accepted pre-minimization App source is SHAaf400af8838b22065c204f3a920c7f1c421f5374e37e6fac04808d2bac8158ed;
 its execution kernel is SHA378a6711dd4740cf6e36903f7df9b42a4b407dcff300b4749cf427077f4d806b.
+The required minimization successor is App387b9f57cd2b0b791444513456f542725a3c7ab507ac7eddcbd5827b771cb909,
+lib2acbba6a0740bcc6e6f9243cb2f1c13a6badc5f05fbbc32b25835b79656d46d2,
+and corrected HTTP control8f028fe4477e9d14c320292e865372f04e1d4fa738305689b8568e6b2ecb10fe.
+Its semantic controls and exact three inversions are independently qualified.
+The mechanically migrated consumers/current guidance below remain subject to
+complete formation, strict checks, and nonauthor final model/gate acceptance;
+this successor record does not inherit the old signature's acceptance.
 The earlier DG-TASK kernel6f93199e differs only by reviewed equivalent
 `if let` spelling and formatting; complete bodies, operation/publication/drop
 order remain unchanged. Family784c retains its original/fixed and publication
@@ -27,7 +34,8 @@ remain required; this gate is not full PRD completion.
 ## Final source contract and migration
 
 This current contract supersedes the historical runner descriptions below.
-It is source-bound to the accepted, integrated EXEC candidate. Publication,
+It describes the exact minimization successor above; integration and final
+independent signature acceptance remain separate. Publication,
 final integrated verification and delivery remain separate PRD states.
 
 The selected surface is one inherent async `run`, `run_with`, and feature-gated
@@ -44,16 +52,16 @@ are, schematically (all original method bounds remain in source):
 Application::run<Actor, StagingFailure, Terminal, ChildFailures>(self)
     -> async Result<ApplicationOutcome<
         Self, Option<Never>, Option<Never>,
-        (RootOrigin<Root>, Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>),
+        (RootOrigin<Root>, ActorRetirement<Actor, Terminal, ChildFailures>),
         (Root, StagingFailure),
         (Actor, ActorSpace<Root::Protocol>)
     >, (Self, TryCurrentError)>
 
 Application::run_with<Terminal, Actor, ChildFailures, StagingFailure,
-                      Work, WorkFuture, Output>(self, work)
+                      Work, WorkFuture>(self, work)
     -> async Result<ApplicationOutcome<
-        Self, Option<Work>, Option<Output>,
-        (RootOrigin<Root>, Result<ActorRetirement<Actor, Terminal, ChildFailures>, JoinError>),
+        Self, Work, WorkFuture::Output,
+        (RootOrigin<Root>, ActorRetirement<Actor, Terminal, ChildFailures>),
         (Root, Work, StagingFailure),
         (Actor, ActorSpace<Root::Protocol>)
     >, (Self, Work, TryCurrentError)>
@@ -70,8 +78,11 @@ positive explicit-Never formation remain source-bound evidence;
 both independent reviewers accepted that evidenced spelling.
 
 No-work is `Option<Never>`/None in all startup phases, not fabricated unit Work.
-Supplied Work retains the original FnOnce and original Ready output inside
-Some; output may itself be Result or Option. Work/future/output may borrow and
+Supplied Work retains the bare original FnOnce and bare `WorkFuture::Output`.
+A user Result or Option stays opaque, including Err or None. The HTTP cold
+product owns original Application/Router/address plus unit ColdWork; after bind,
+Ready Work owns the actual Router/Listener/Invoke before consuming composition.
+No impossible runtime fallback supplies a missing supplied Work or output. Work/future/output may borrow and
 need not be Send/static. Spawned Actor/event/effect/custody values retain their
 actual owning Send/static requirements. Ready output leaves producer custody
 before Work-future disposal.
@@ -82,8 +93,10 @@ Entity and cleanup tasks; caller Work stays where execution is polled. Async
 one-future calls capture their host on polling. Missing context returns original
 inputs and TryCurrentError. Unstarted inputs, actual cold partials, Prepared
 Actor/Spaces, original NotInvoked Work/startup error, completed output and cleanup
-receiving/join failures are separate closed alternatives. NoActor is not
-inferred from channel closure. Native user unwind payloads stay with the caller;
+receiving/join failures are separate closed alternatives. `ApplicationCleanupError`
+retains `PublicationClosed(RecvError)` versus `TaskFailed(JoinError)`. An actor
+join error is `ActorRetirement::ActorTaskFailed`, with its original task ID/cause.
+NoActor is not inferred from channel closure. Native user unwind payloads stay with the caller;
 dropping one-future run also surrenders receiving. The live-host limitation in
 XO-18 and observation/completion distinction in XO-17 remain mandatory.
 
@@ -103,10 +116,14 @@ leaves producer custody before any later await; unfinished tail receiving errors
 and original cleanup JoinError remain distinct. There is no aggregate failure
 or root loss caused by awaiting a later family.
 
-Migration replaces synchronous calls with existing-host async calls or an
-explicit caller Tokio Builder/block_on. It observes Some output, both cleanup
-boundaries, raw root and family receiving products, then applies existing
-application projection. An owned-execution law uses run_blocking, not an
+Migration retains existing-host async calls or explicit caller Tokio Builder/block_on.
+It observes bare supplied output, the flat complete cleanup result, raw root and
+independent family receiving products, then applies existing application
+projection. Actor, staging and child-failure requirements stay unchanged;
+WorkFuture::Output replaces the redundant Output axis. The private interpreter
+retirement axis is derived from its actual associated owner. The common spine
+has nineteen generic axes and seven values; this is not a net source reduction.
+ An owned-execution law uses run_blocking, not an
 unexplained caller-host substitution. All old meaningful controllers, complete
 oracles, pure folds, native causes and static denials remain required. Exact
 current source signatures, both-profile runtime controls, final trybuild

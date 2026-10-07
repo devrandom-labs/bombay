@@ -297,9 +297,16 @@ mod tests {
             drop(failed);
             panic!("the live caller host is entered");
         });
+        if let ApplicationOutcome::Completed {
+            output: _,
+            cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        } = &outcome
+        {
+            panic!("the original serving result and joined root must both remain acquired");
+        }
         let ApplicationOutcome::Completed {
-            output: Some(Ok(())),
-            cleanup: Ok(Ok((origin, Ok(retirement)))),
+            output: Ok(()),
+            cleanup: Ok((origin, retirement)),
         } = outcome
         else {
             panic!("the original serving result and joined root must both remain acquired");

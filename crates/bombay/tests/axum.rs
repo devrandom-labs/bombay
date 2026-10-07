@@ -7,6 +7,7 @@ use bombay::behavior::{
     CreationKind, CreationSettlement, Creations, EventLayer, ItemSettlement, NoChildren, NoSends,
     SendLayer, SettledItem, Step, Stopped, User,
 };
+use core::pin::pin;
 use std::io::{self, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::panic::panic_any;
@@ -77,8 +78,8 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
             panic!("the actual caller HTTP host is entered");
         });
     let ApplicationOutcome::Completed {
-        output: Some(serving),
-        cleanup: Ok(Ok((origin, Ok(retirement)))),
+        output: serving,
+        cleanup: Ok((origin, retirement)),
     } = returned
     else {
         panic!("HTTP serving and the complete joined root must both return");
@@ -256,7 +257,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
             drop(execution);
             let ApplicationOutcome::Unstarted {
                 application: (application, router, returned_address),
-                work: None,
+                work: (),
             } = receiving.await
             else {
                 panic!("unpolled HTTP execution must return all untouched cold inputs");
@@ -277,44 +278,77 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
             };
             let bind_calls = calls.load(Ordering::SeqCst);
             assert_eq!(returned_address, address);
-            drop(occupied);
-            let (execution, receiving) = application
-                .execute_axum::<HttpTerminal, _, _, _, _>(returned_address, router)
-                .unwrap_or_else(|_| panic!("the exact originals retry on the entered caller host"));
-            let client = async move {
-                let (router_entries, lifecycle) = router_output
-                    .await
-                    .expect("the actual router publishes its original non-Clone callback output");
-                let response = tokio::task::spawn_blocking(move || -> io::Result<Vec<u8>> {
-                    let mut connection =
-                        TcpStream::connect_timeout(&address, Duration::from_secs(5))?;
-                    connection.set_read_timeout(Some(Duration::from_secs(5)))?;
-                    connection.set_write_timeout(Some(Duration::from_secs(5)))?;
-                    connection.write_all(
-                        b"GET /shutdown HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
-                    )?;
-                    let mut response = Vec::new();
-                    connection.read_to_end(&mut response)?;
-                    Ok(response)
-                })
-                .await;
-                match &response {
-                    Ok(Ok(_)) => {}
-                    Ok(Err(_)) | Err(_) => {
-                        // A real client failure must still release the running root and server.
-                        match lifecycle.request_shutdown() {
-                            Ok(())
-                            | Err(
-                                ShutdownRejection::AlreadyStopping
-                                | ShutdownRejection::AlreadyStopped,
-                            ) => {}
-                        }
+            let mut occupied = Some(occupied);
+            let mut application = application;
+            let mut router = router;
+            let mut router_output = router_output;
+            let (outcome, router_entries, response) = loop {
+                let (execution, receiving) = application
+                    .execute_axum::<HttpTerminal, _, _, _, _>(returned_address, router)
+                    .unwrap_or_else(|_| panic!("the exact originals retry on the entered caller host"));
+                let mut completion = pin!(async move {
+                    execution.await;
+                    receiving.await
+                });
+                tokio::select! {
+                    returned = &mut completion => {
+                        let ApplicationOutcome::StagingRejected {
+                            inputs: Ok((returned_application, returned_router, retry_address, error)),
+                        } = returned else {
+                            panic!("an early HTTP result must retain the actual bind refusal and original inputs");
+                        };
+                        assert_eq!(error.kind(), io::ErrorKind::AddrInUse);
+                        assert_eq!(retry_address, address);
+                        assert_eq!(calls.load(Ordering::SeqCst), 0);
+                        application = returned_application;
+                        router = returned_router;
+                        drop(error);
+                        let released_listener = occupied.take();
+                        drop(released_listener);
+                        tokio::task::yield_now().await;
+                    }
+                    started = &mut router_output => {
+                        let (router_entries, lifecycle) = started.expect(
+                            "the actual router publishes its original non-Clone callback output",
+                        );
+                        let client = async move {
+                            let response = tokio::task::spawn_blocking(move || -> io::Result<Vec<u8>> {
+                                let mut connection =
+                                    TcpStream::connect_timeout(&address, Duration::from_secs(5))?;
+                                connection.set_read_timeout(Some(Duration::from_secs(5)))?;
+                                connection.set_write_timeout(Some(Duration::from_secs(5)))?;
+                                connection.write_all(
+                                    b"GET /shutdown HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+                                )?;
+                                let mut response = Vec::new();
+                                connection.read_to_end(&mut response)?;
+                                Ok(response)
+                            })
+                            .await;
+                            match &response {
+                                Ok(Ok(_)) => {}
+                                Ok(Err(_)) | Err(_) => {
+                                    // A real client failure must still release the running root and server.
+                                    match lifecycle.request_shutdown() {
+                                        Ok(())
+                                        | Err(
+                                            ShutdownRejection::AlreadyStopping
+                                            | ShutdownRejection::AlreadyStopped,
+                                        ) => {}
+                                    }
+                                }
+                            }
+                            response
+                        };
+                        let (outcome, response) = tokio::join!(completion, client);
+                        break (outcome, router_entries, response);
                     }
                 }
-                (router_entries, response)
             };
-            let ((), (router_entries, response)) = tokio::join!(execution, client);
-            let outcome = receiving.await;
+            assert!(
+                occupied.is_none(),
+                "the actual retry refusal was acquired before releasing the original listener",
+            );
             (
                 cold_calls,
                 bind_calls,
@@ -350,8 +384,8 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
     assert!(headers.starts_with(b"HTTP/1.1 200 OK\r\n"));
     assert_eq!(body, b"stopped");
     let ApplicationOutcome::Completed {
-        output: Some(Ok(())),
-        cleanup: Ok(Ok((origin, Ok(retirement)))),
+        output: Ok(()),
+        cleanup: Ok((origin, retirement)),
     } = outcome
     else {
         panic!("actual graceful serving and all native cleanup facts must coexist");
@@ -539,7 +573,7 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
             let task: JoinHandle<()> = spawn(async move { panic_any(payload) });
             let original_task_id = task.id();
             let (execution, receiving) = Application::new(Root.stop_on_shutdown())
-                .execute_with::<_, _, Never, (), _, _, _>(move |application| async move {
+                .execute_with::<_, _, Never, (), _, _>(move |application| async move {
                     let supplied_retirement = task.await;
                     let requested = application.lifecycle().request_shutdown();
                     match requested {
@@ -572,8 +606,8 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
         returned
     {
         let ApplicationOutcome::Completed {
-            output: Some((retained_serve, supplied_retirement)),
-            cleanup: Ok(Ok((origin, Ok(root_retirement)))),
+            output: (retained_serve, supplied_retirement),
+            cleanup: Ok((origin, root_retirement)),
         } = outcome
         else {
             panic!("completed Work input and the separately joined root must both survive");
@@ -623,7 +657,7 @@ fn joined_work_owned_retirement_preserves_original_outcome() {
     let outcome = caller.block_on(async {
         let task = spawn(async move { values });
         let (execution, receiving) = Application::new(Root.stop_on_shutdown())
-            .execute_with::<_, _, Never, (), _, _, _>(move |application| async move {
+            .execute_with::<_, _, Never, (), _, _>(move |application| async move {
                 let supplied_retirement = task.await;
                 let requested = application.lifecycle().request_shutdown();
                 match requested {
@@ -642,8 +676,8 @@ fn joined_work_owned_retirement_preserves_original_outcome() {
     });
     drop(caller);
     let ApplicationOutcome::Completed {
-        output: Some((serve, Ok(values))),
-        cleanup: Ok(Ok((origin, Ok(root_retirement)))),
+        output: (serve, Ok(values)),
+        cleanup: Ok((origin, root_retirement)),
     } = outcome
     else {
         panic!("the joined task returns its whole original outcome beside the real root");

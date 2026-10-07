@@ -50,11 +50,13 @@ their actual `Send + 'static` requirements.
 Returning from the boundary does not stop the actor. The handle names shutdown
 authority separately from root delivery: `application.lifecycle()` is the one
 ordinary root-lifecycle spelling, and its `termination()` retains the exact
-incarnation fact. A boundary-owned `Result<T, E>` remains the exact supplied Work output,
-inside `Some`. It coexists with the independent cleanup receiving and task-join
-results. When no Work is supplied, both callable and output are `None` in
+incarnation fact. A boundary-owned `Result<T, E>` remains the exact bare supplied Work output.
+A user-returned `Option<T>` also remains unchanged, including `None`. The output
+coexists with the independent complete cleanup result. When no Work is supplied, both callable and output are `None` in
 `Option<Never>`; no unit callable is fabricated. The raw root result retains `RootOrigin<Owner>` and the actual
-`ActorRetirement<Actor, Terminal, ChildFailures>` or native `JoinError`.
+`ActorRetirement<Actor, Terminal, ChildFailures>`. Its `ActorTaskFailed` variant
+owns the original actor `JoinError`. `ApplicationCleanupError::PublicationClosed`
+and `TaskFailed` separately retain cleanup receiving and cleanup-task errors.
 `Terminal` selects descendant projection, not automatic root projection.
 For an empty descendant destination, `.run::<_, _, Never, _>().await` makes
 that choice explicit while the other axes remain inferred. Project the root

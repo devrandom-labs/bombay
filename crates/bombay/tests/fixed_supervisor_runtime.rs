@@ -203,7 +203,7 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
     let application_outcome = application_host
         .block_on(
             App::new(supervisor.stop_on_shutdown(), spaces)
-                .run_with::<SupervisorTerminal, _, _, _, _>(move |application| async move {
+                .run_with::<SupervisorTerminal, _, _, _>(move |application| async move {
                     activation_received
                         .await
                         .expect("the proxy activates its exact worker");
@@ -228,17 +228,20 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: SupervisorTerminal = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     assert_eq!(termination, Ok(Exit::Normal));

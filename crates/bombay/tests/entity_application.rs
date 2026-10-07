@@ -481,8 +481,8 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(()),
-        cleanup: Ok(Ok(())),
+        output: (),
+        cleanup: Ok(()),
     } = outcome
     else {
         panic!("the original application work completes beside its joined cleanup");
@@ -491,9 +491,12 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
         root_receiving.expect("the independent original root retirement is acquired");
     let terminal: RootTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     let (profile_receiving, tail) = shutdowns;

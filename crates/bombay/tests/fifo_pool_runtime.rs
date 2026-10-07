@@ -148,7 +148,7 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
-        .block_on(App::new(pool, spaces).run_with::<PoolTerminal, _, _, _, _>(
+        .block_on(App::new(pool, spaces).run_with::<PoolTerminal, _, _, _>(
             move |application| async move {
                 tokio::time::timeout(Duration::from_secs(5), activation_received)
                     .await
@@ -212,17 +212,20 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: PoolTerminal = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_orderly_pool_terminal(terminal);
@@ -251,7 +254,7 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
-        .block_on(App::new(pool, spaces).run_with::<PoolTerminal, _, _, _, _>(
+        .block_on(App::new(pool, spaces).run_with::<PoolTerminal, _, _, _>(
             move |application| async move {
                 tokio::time::timeout(Duration::from_secs(5), activation_received)
                     .await
@@ -339,17 +342,20 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: PoolTerminal = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_orderly_pool_terminal(terminal);

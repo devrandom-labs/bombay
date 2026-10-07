@@ -195,7 +195,7 @@ only and leaves DG-MODULES open for independent review.
 
 ---
 
-# Current module ownership reconciliation
+# Historical module ownership reconciliation (source 931)
 
 This is an unaccepted source-only DG-MODULES proposal against actual931, not a production move or final gate signature. Semantic verification precedes layout as explicitly selected in EXEC's user-selected implementation order (lines933–940), superseding the earlier layout-first work-package sequence.
 

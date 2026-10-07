@@ -223,7 +223,7 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _>(
+            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _>(
                 move |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
@@ -311,17 +311,20 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: RecoveryTerminal = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
@@ -351,7 +354,7 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _>(
+            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _>(
                 move |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
@@ -408,17 +411,20 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: RecoveryTerminal = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
@@ -452,7 +458,7 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _>(
+            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _>(
                 move |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
@@ -537,17 +543,20 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: RecoveryTerminal = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
@@ -581,7 +590,7 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _>(
+            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _>(
                 move |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
@@ -657,17 +666,20 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: RecoveryTerminal = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
@@ -739,7 +751,7 @@ fn source_task_failure_terminates_the_active_pool() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _>(
+            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _>(
                 move |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
@@ -776,17 +788,20 @@ fn source_task_failure_terminates_the_active_pool() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: RecoveryTerminal = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_eq!(termination, Err(Crash::CapabilityFailed));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);

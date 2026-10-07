@@ -268,7 +268,7 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
     let application_outcome = application_host
         .block_on(
             App::new(supervisor.stop_on_shutdown(), spaces)
-                .run_with::<SupervisorTerminal, _, _, _, _>(move |application| async move {
+                .run_with::<SupervisorTerminal, _, _, _>(move |application| async move {
                     let first = activations
                         .recv()
                         .await
@@ -329,14 +329,18 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((origin, joined))),
+        output: termination,
+        cleanup: Ok((origin, joined)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let retirement = joined
-        .unwrap_or_else(|failure| panic!("the actual supervisor actor task failed: {failure}"));
+    let retirement = match joined {
+        ActorRetirement::ActorTaskFailed(failure) => {
+            panic!("the actual supervisor actor task failed: {failure}")
+        }
+        retirement => retirement,
+    };
     let terminal = SupervisorTerminal::project(origin, retirement);
 
     assert_eq!(termination, Ok(Exit::Normal));
@@ -439,7 +443,7 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
         supervisor.stop_on_shutdown(),
         spaces,
     )
-    .run_with::<SupervisorTerminal, _, _, _, _>(move |application| async move {
+    .run_with::<SupervisorTerminal, _, _, _>(move |application| async move {
         let first = activations
             .recv()
             .await
@@ -493,14 +497,18 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((origin, joined))),
+        output: termination,
+        cleanup: Ok((origin, joined)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let retirement = joined
-        .unwrap_or_else(|failure| panic!("the actual supervisor actor task failed: {failure}"));
+    let retirement = match joined {
+        ActorRetirement::ActorTaskFailed(failure) => {
+            panic!("the actual supervisor actor task failed: {failure}")
+        }
+        retirement => retirement,
+    };
     let terminal = SupervisorTerminal::project(origin, retirement);
 
     assert_eq!(termination, Ok(Exit::Normal));

@@ -52,7 +52,7 @@ fn run_receive_timeout() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::new(actor).run_with::<ApplicationTerminal<_>, _, _, _, _, _, _>(
+            Application::new(actor).run_with::<ApplicationTerminal<_>, _, _, _, _, _>(
                 |application| async move {
                     let lifecycle = application.lifecycle();
                     let interface =
@@ -84,15 +84,20 @@ fn run_receive_timeout() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(()),
-        cleanup: Ok(Ok((origin, retirement))),
+        output: (),
+        cleanup: Ok((origin, retirement)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal = ApplicationTerminal::project(
         origin,
-        retirement.expect("the actual actor returned its joined retirement"),
+        match retirement {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual actor returned its joined retirement: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_application_stopped(terminal);
 }
@@ -108,7 +113,7 @@ fn run_shutdown() {
                 Machine::new(ProcessorState::new(), ProcessorPhase::Closed, transition)
                     .stop_on_shutdown(),
             )
-            .run_with::<ApplicationTerminal<_>, _, _, _, _, _, _>(
+            .run_with::<ApplicationTerminal<_>, _, _, _, _, _>(
                 |application| async move {
                     let lifecycle = application.lifecycle();
                     let shutdown = lifecycle.request_shutdown();
@@ -124,15 +129,20 @@ fn run_shutdown() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(()),
-        cleanup: Ok(Ok((origin, retirement))),
+        output: (),
+        cleanup: Ok((origin, retirement)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal = ApplicationTerminal::project(
         origin,
-        retirement.expect("the actual actor returned its joined retirement"),
+        match retirement {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual actor returned its joined retirement: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_application_stopped(terminal);
 }

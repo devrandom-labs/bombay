@@ -152,7 +152,7 @@ fn main() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::new(application).run_with::<ApplicationTerminal<_>, _, _, _, _, _, _>(
+            Application::new(application).run_with::<ApplicationTerminal<_>, _, _, _, _, _>(
                 |application| async move {
                     let lifecycle = application.lifecycle();
                     let shutdown = lifecycle.request_shutdown();
@@ -167,8 +167,8 @@ fn main() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((origin, retirement))),
+        output: termination,
+        cleanup: Ok((origin, retirement)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -177,7 +177,12 @@ fn main() {
     assert_eq!(termination, Ok(Exit::Normal));
     let terminal = ApplicationTerminal::project(
         origin,
-        retirement.expect("the original named child topology joined"),
+        match retirement {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the original named child topology joined: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_terminal_tree(terminal);
 }

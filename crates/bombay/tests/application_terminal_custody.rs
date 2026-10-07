@@ -155,10 +155,19 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
+    if let ApplicationOutcome::NotInvoked {
+        work: _,
+        startup_error: _,
+        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+    } = &application_outcome
+    {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    }
     let ApplicationOutcome::NotInvoked {
         work: None,
         startup_error: Some(_startup_error),
-        cleanup: Ok(Ok((origin, Ok(retirement)))),
+        cleanup: Ok((origin, retirement)),
     } = application_outcome
     else {
         drop(application_outcome);
@@ -284,10 +293,19 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
+    if let ApplicationOutcome::NotInvoked {
+        work: _,
+        startup_error: _,
+        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+    } = &application_outcome
+    {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    }
     let ApplicationOutcome::NotInvoked {
         work: None,
         startup_error: Some(_startup_error),
-        cleanup: Ok(Ok((origin, Ok(retirement)))),
+        cleanup: Ok((origin, retirement)),
     } = application_outcome
     else {
         drop(application_outcome);
@@ -597,8 +615,8 @@ enum NestedTerminal {
 #[tokio::test(flavor = "current_thread")]
 async fn privately_bound_child_reports_its_nested_creation_before_parent_retirement() {
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = App::new(
         NestedRoot { birth_report: None }.stop_on_shutdown(),
         ActorSpace::new(),
@@ -625,9 +643,12 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
     };
     let terminal: NestedTerminal = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     let child_termination =
         termination.expect("the child report must complete before the watchdog");
@@ -949,10 +970,19 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
+    if let ApplicationOutcome::NotInvoked {
+        work: _,
+        startup_error: _,
+        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+    } = &application_outcome
+    {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    }
     let ApplicationOutcome::NotInvoked {
         work: None,
         startup_error: Some(_startup_error),
-        cleanup: Ok(Ok((origin, Ok(retirement)))),
+        cleanup: Ok((origin, retirement)),
     } = application_outcome
     else {
         drop(application_outcome);

@@ -102,10 +102,19 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
+    if let ApplicationOutcome::NotInvoked {
+        work: _,
+        startup_error: _,
+        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+    } = &application_outcome
+    {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    }
     let ApplicationOutcome::NotInvoked {
         work: None,
         startup_error: Some(_startup_error),
-        cleanup: Ok(Ok((origin, Ok(retirement)))),
+        cleanup: Ok((origin, retirement)),
     } = application_outcome
     else {
         drop(application_outcome);

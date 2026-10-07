@@ -51,9 +51,16 @@ fn main() {
             panic!("the explicit HTTP host is entered");
         });
     drop(application_host);
+    if let ApplicationOutcome::Completed {
+        output: _,
+        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+    } = &application_outcome
+    {
+        panic!("the exact serving result and independently joined root remain complete");
+    }
     let ApplicationOutcome::Completed {
-        output: Some(Ok(())),
-        cleanup: Ok(Ok((origin, Ok(retirement)))),
+        output: Ok(()),
+        cleanup: Ok((origin, retirement)),
     } = application_outcome
     else {
         panic!("the exact serving result and independently joined root remain complete");

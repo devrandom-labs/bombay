@@ -4142,7 +4142,7 @@ mod independent_actor_execution {
             let entered = runtime.enter();
             formed = Some(
                 application
-                    .execute_with::<_, _, CompletedExecutionChild, _, _, _, _>(
+                    .execute_with::<_, _, CompletedExecutionChild, _, _, _>(
                         move |application| async move {
                             for command in submissions {
                                 let sent =
@@ -4185,10 +4185,18 @@ mod independent_actor_execution {
         drop(runtime);
         let stale = CHILD_EXECUTION_COMPLETION.lock().unwrap().take();
         assert!(stale.is_none());
+        let application_outcome = joined.expect("whole original application result remains");
+        if let ApplicationOutcome::Completed {
+            output: _,
+            cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        } = &application_outcome
+        {
+            panic!("the measured application owns completed work and both native joins");
+        }
         let ApplicationOutcome::Completed {
-            output: Some((projector, projected_origin, termination)),
-            cleanup: Ok(Ok((origin, Ok(retirement)))),
-        } = joined.expect("whole original application result remains")
+            output: (projector, projected_origin, termination),
+            cleanup: Ok((origin, retirement)),
+        } = application_outcome
         else {
             panic!("the measured application owns completed work and both native joins");
         };

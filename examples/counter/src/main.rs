@@ -36,7 +36,7 @@ fn main() {
         .block_on(
             Application::new(Counter::new().stop_on_shutdown()).run_with::<ApplicationTerminal<
                 StopOnShutdown<Counter>,
-            >, _, _, _, _, _, _>(
+            >, _, _, _, _, _>(
                 |application| async move {
                     let lifecycle = application.lifecycle();
                     let interface = application.interface(Api {
@@ -74,13 +74,18 @@ fn main() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(()),
-        cleanup: Ok(Ok((origin, retirement))),
+        output: (),
+        cleanup: Ok((origin, retirement)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let retirement = retirement.expect("the counter root returns its actual retirement");
+    let retirement = match retirement {
+        ActorRetirement::ActorTaskFailed(failure) => {
+            panic!("the counter root returns its actual retirement: {failure}")
+        }
+        retirement => retirement,
+    };
     let terminal = <ApplicationTerminal<_> as ProjectTerminal<_, _>>::project(origin, retirement);
     assert_application_stopped(terminal);
 }

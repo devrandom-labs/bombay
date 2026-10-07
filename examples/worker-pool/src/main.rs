@@ -106,7 +106,7 @@ fn run_search_pool() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(search_pool(), spaces).run_with::<SearchTerminal, _, _, _, _>(
+            App::new(search_pool(), spaces).run_with::<SearchTerminal, _, _, _>(
                 |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
@@ -162,17 +162,20 @@ fn run_search_pool() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: SearchTerminal = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_eq!(termination, Ok(Exit::Normal));
     assert_search_terminal(terminal);

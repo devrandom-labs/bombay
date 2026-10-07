@@ -14,7 +14,7 @@ error[E0631]: type mismatch in function arguments
 note: required by a bound in `bombay::application_runtime::<impl bombay::Application<Root, Members>>::run_with`
   --> src/application_runtime.rs
    |
-   |     pub async fn run_with<
+   |     pub async fn run_with<Terminal, Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
    |                  -------- required by a bound in this associated function
 ...
    |         Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,

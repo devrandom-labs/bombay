@@ -349,8 +349,8 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
     let observed = Arc::clone(&calls);
 
     let ApplicationOutcome::Completed {
-        output: Some(rejected),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: rejected,
+        cleanup: Ok((root_origin, joined_actor)),
     } = Application::new(Root.stop_on_shutdown())
         .run_with(move |application| async move {
             observed.fetch_add(1, Ordering::SeqCst);
@@ -379,9 +379,12 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
     };
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     assert_eq!(rejected, RootCommand::Stop);
@@ -392,8 +395,8 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
 #[tokio::test(flavor = "current_thread")]
 async fn boundary_owned_error_remains_an_unaggregated_output() {
     let ApplicationOutcome::Completed {
-        output: Some(output),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output,
+        cleanup: Ok((root_origin, joined_actor)),
     } = Application::new(Root.stop_on_shutdown())
         .run_with(|application| async move {
             application
@@ -413,9 +416,12 @@ async fn boundary_owned_error_remains_an_unaggregated_output() {
     };
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     assert_eq!(output, Err("boundary refused its own work"));
@@ -445,7 +451,7 @@ fn run_is_the_unit_boundary_specialization() {
         let ApplicationOutcome::NotInvoked {
             work: None,
             startup_error: Some(_startup_error),
-            cleanup: Ok(Ok((origin, Ok(retirement)))),
+            cleanup: Ok((origin, retirement)),
         } = application_outcome
         else {
             drop(application_outcome);
@@ -470,9 +476,9 @@ fn run_is_the_unit_boundary_specialization() {
                 panic!("the actual supplied-work caller host is entered");
             });
         let ApplicationOutcome::NotInvoked {
-            work: Some(work),
+            work,
             startup_error: Some(startup_error),
-            cleanup: Ok(Ok((origin, Ok(retirement)))),
+            cleanup: Ok((origin, retirement)),
         } = returned
         else {
             panic!("the generic boundary must withhold the unpublished root");
@@ -486,8 +492,8 @@ fn run_is_the_unit_boundary_specialization() {
 #[tokio::test(flavor = "current_thread")]
 async fn application_handle_separates_shutdown_request_from_exact_termination() {
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = Application::new(WaitsForApplicationShutdown.stop_on_shutdown())
         .run_with(|application| async move {
             assert_eq!(application.root().address(), MailAddr(0));
@@ -526,9 +532,12 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
     };
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     assert_eq!(termination.0, Ok(Exit::Normal));
@@ -539,8 +548,8 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
 #[tokio::test(flavor = "current_thread")]
 async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = Application::new(ReportsTerminalOutcome.stop_on_shutdown())
         .run_with(|application| async move {
             application
@@ -560,9 +569,12 @@ async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
     };
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     assert_eq!(termination, Ok(Exit::LinkDied(MailAddr(19))));
@@ -572,8 +584,8 @@ async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
 #[tokio::test(flavor = "current_thread")]
 async fn continuing_report_cannot_select_the_later_stop_outcome() {
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = Application::new(ContinuingTerminalReport.stop_on_shutdown())
         .run_with(|application| async move {
             let root = application.root();
@@ -595,9 +607,12 @@ async fn continuing_report_cannot_select_the_later_stop_outcome() {
     };
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     assert_eq!(termination, Ok(Exit::Normal));
@@ -612,8 +627,8 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
         maximum_restarts: 2,
     };
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = Application::new(
         ReportsSupervisionOutcome {
             commitment: ReportCommitment::Stop,
@@ -638,9 +653,12 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
     };
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     assert_eq!(
@@ -655,8 +673,8 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
 #[tokio::test(flavor = "current_thread")]
 async fn supervision_report_from_a_continuing_action_cannot_override_later_shutdown() {
     let ApplicationOutcome::Completed {
-        output: Some(termination),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
     } = Application::new(
         ReportsSupervisionOutcome {
             commitment: ReportCommitment::Continue,
@@ -681,9 +699,12 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
     };
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     assert_eq!(termination, Ok(Exit::Normal));
@@ -693,8 +714,8 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
 #[tokio::test(flavor = "current_thread")]
 async fn run_delegates_shutdown_to_the_explicit_root_policy() {
     let ApplicationOutcome::Completed {
-        output: Some(finalization),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: finalization,
+        cleanup: Ok((root_origin, joined_actor)),
     } = Application::new(FinalizeOnShutdown::new(
         FinalizationProbe { observer: None },
         record_finalization,
@@ -733,9 +754,12 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
     };
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_eq!(finalization, Some(FinalizationEvent::Finalized));
     assert_completed_root(terminal, None);
@@ -757,9 +781,9 @@ async fn activation_failure_does_not_invoke_the_boundary() {
         });
 
     let ApplicationOutcome::NotInvoked {
-        work: Some(work),
+        work,
         startup_error: Some(startup_error),
-        cleanup: Ok(Ok((origin, Ok(retirement)))),
+        cleanup: Ok((origin, retirement)),
     } = result
     else {
         panic!("startup refusal returns the unpublished complete root retirement");
@@ -816,8 +840,8 @@ async fn activation_failure_does_not_invoke_the_boundary() {
 #[tokio::test(flavor = "current_thread")]
 async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     let ApplicationOutcome::Completed {
-        output: Some(()),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: (),
+        cleanup: Ok((root_origin, joined_actor)),
     } = Application::new(FailsAfterActivation.stop_on_shutdown())
         .run_with(|application| async move {
             application
@@ -836,9 +860,12 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     };
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     let (
@@ -888,8 +915,8 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
 #[tokio::test(flavor = "current_thread")]
 async fn application_delegates_to_the_explicit_single_space_app() {
     let ApplicationOutcome::Completed {
-        output: Some(ordinary),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: ordinary,
+        cleanup: Ok((root_origin, joined_actor)),
     } = Application::new(Root.stop_on_shutdown())
         .run_with(|application| async move {
             application
@@ -916,14 +943,17 @@ async fn application_delegates_to_the_explicit_single_space_app() {
     };
     let ordinary_terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     let ApplicationOutcome::Completed {
-        output: Some(explicit),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: explicit,
+        cleanup: Ok((root_origin, joined_actor)),
     } = App::new(Root.stop_on_shutdown(), ActorSpace::new())
         .run_with(|application| async move {
             application
@@ -950,9 +980,12 @@ async fn application_delegates_to_the_explicit_single_space_app() {
     };
     let explicit_terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
 
     assert_eq!(ordinary, explicit);
@@ -1105,7 +1138,7 @@ fn public_run_blocking_returns_entered_host_inputs_and_retries_both_configuratio
         let ApplicationOutcome::NotInvoked {
             work: None,
             startup_error: Some(startup_error),
-            cleanup: Ok(Ok((origin, Ok(retirement)))),
+            cleanup: Ok((origin, retirement)),
         } = retried
         else {
             panic!(
@@ -1179,7 +1212,7 @@ fn public_run_blocking_recovers_real_build_error_in_limited_child() {
         let ApplicationOutcome::NotInvoked {
             work: None,
             startup_error: Some(startup_error),
-            cleanup: Ok(Ok((origin, Ok(retirement)))),
+            cleanup: Ok((origin, retirement)),
         } = retried
         else {
             panic!("the finite original root retains its whole native cleanup after retry");

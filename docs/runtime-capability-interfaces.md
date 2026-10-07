@@ -680,9 +680,12 @@ let outcome = Application::new(service.stop_on_shutdown())
 `run`, `run_with`, and `run_axum` consume it through one paired execution/result
 owner on the entered caller host. `execute`/`execute_with`/`execute_axum` expose
 those two futures separately when receiving must survive dropped execution.
-Calling `run` without Work retains genuine absence; Ready supplied output is
-owned before producer disposal. The actual raw root stays beside cleanup receiving and
-native task failures. `Terminal` is a descendant projection destination, not
+Calling `run` without Work retains genuine absence. Supplied Work and
+`WorkFuture::Output` remain bare original values; a user Option or Result is
+unchanged. Ready output is owned before producer disposal. The actual raw root
+retains native actor failure in `ActorRetirement::ActorTaskFailed`.
+`ApplicationCleanupError` separately retains cleanup-publication receiving and
+cleanup-task failures. `Terminal` is a descendant projection destination, not
 an implicit root conversion. `ProjectTerminal` is an explicit application
 policy over original typed origin and retirement.
 

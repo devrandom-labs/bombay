@@ -27,53 +27,52 @@ fn cache_preserves_an_exact_external_customer() {
         .block_on(
             Application::new(cache.stop_on_shutdown()).run_with::<RootTerminal<
                 StopOnShutdown<Cache<MailAddr, u8, u16, EstablishedRecipient<CacheReplies>>>,
-            >, _, _, _, _, _, _>(
+            >, _, _, _, _, _>(
                 |application| async move {
-                    let interface =
-                        application.interface(application.root().established_recipient());
-                    let lifecycle = application.lifecycle();
-                    let mut caller = interface
-                        .external::<CacheReplies>()
-                        .expect("the cache customer is established");
+                let interface = application.interface(application.root().established_recipient());
+                let lifecycle = application.lifecycle();
+                let mut caller = interface
+                    .external::<CacheReplies>()
+                    .expect("the cache customer is established");
 
-                    caller
-                        .send(
-                            interface.api(),
-                            CacheMessage::Put {
-                                key: 7,
-                                value: 42,
-                                reply_to: caller.recipient(),
-                            },
-                        )
-                        .await
-                        .expect("the exact cache admits the put");
-                    let stored = caller.receive().await.map(|reply| reply.message);
-                    assert!(matches!(
-                        stored,
-                        Some(CacheResult::Stored {
+                caller
+                    .send(
+                        interface.api(),
+                        CacheMessage::Put {
                             key: 7,
-                            replaced: None,
-                            evicted: None,
-                        })
-                    ));
+                            value: 42,
+                            reply_to: caller.recipient(),
+                        },
+                    )
+                    .await
+                    .expect("the exact cache admits the put");
+                let stored = caller.receive().await.map(|reply| reply.message);
+                assert!(matches!(
+                    stored,
+                    Some(CacheResult::Stored {
+                        key: 7,
+                        replaced: None,
+                        evicted: None,
+                    })
+                ));
 
-                    caller
-                        .send(
-                            interface.api(),
-                            CacheMessage::Get {
-                                key: 7,
-                                reply_to: caller.recipient(),
-                            },
-                        )
-                        .await
-                        .expect("the exact cache admits the get");
-                    let hit = caller.receive().await.map(|reply| reply.message);
-                    assert_eq!(hit, Some(CacheResult::Hit { key: 7, value: 42 }));
-                    let shutdown = lifecycle.request_shutdown();
-                    assert_eq!(shutdown, Ok(()));
-                    let repeated = lifecycle.request_shutdown();
-                    assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
-                },
+                caller
+                    .send(
+                        interface.api(),
+                        CacheMessage::Get {
+                            key: 7,
+                            reply_to: caller.recipient(),
+                        },
+                    )
+                    .await
+                    .expect("the exact cache admits the get");
+                let hit = caller.receive().await.map(|reply| reply.message);
+                assert_eq!(hit, Some(CacheResult::Hit { key: 7, value: 42 }));
+                let shutdown = lifecycle.request_shutdown();
+                assert_eq!(shutdown, Ok(()));
+                let repeated = lifecycle.request_shutdown();
+                assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+            }
             ),
         )
         .unwrap_or_else(|failed| {
@@ -82,17 +81,20 @@ fn cache_preserves_an_exact_external_customer() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(()),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: (),
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: RootTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_completed(terminal, None);
 }
@@ -113,7 +115,7 @@ fn barrier_releases_two_exact_external_participants() {
         .block_on(
             Application::new(barrier.stop_on_shutdown()).run_with::<RootTerminal<
                 StopOnShutdown<Barrier<MailAddr, u8, EstablishedRecipient<BarrierReplies>>>,
-            >, _, _, _, _, _, _>(
+            >, _, _, _, _, _>(
                 |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
@@ -175,17 +177,20 @@ fn barrier_releases_two_exact_external_participants() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(()),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: (),
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: RootTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_completed(terminal, None);
 }
@@ -205,7 +210,7 @@ fn latch_releases_exact_external_participants() {
             )
             .run_with::<RootTerminal<
                 StopOnShutdown<Latch<MailAddr, EstablishedRecipient<LatchReplies>>>,
-            >, _, _, _, _, _, _>(|application| async move {
+            >, _, _, _, _, _>(|application| async move {
                 let interface = application.interface(application.root().established_recipient());
                 let lifecycle = application.lifecycle();
                 let mut first = interface
@@ -240,17 +245,20 @@ fn latch_releases_exact_external_participants() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(()),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: (),
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: RootTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_completed(terminal, None);
 }

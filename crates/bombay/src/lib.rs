@@ -29,8 +29,8 @@ pub use actor_interface::{ActorInterface, ExternalActor, ExternalActorError, Ext
 pub mod actors;
 pub use application::Application;
 pub use application_runtime::{
-    App, ApplicationBehavior, ApplicationDefinitionError, ApplicationHandle, ApplicationLifecycle,
-    ApplicationOutcome, ApplicationStagingError, RunError,
+    App, ApplicationBehavior, ApplicationCleanupError, ApplicationDefinitionError,
+    ApplicationHandle, ApplicationLifecycle, ApplicationOutcome, ApplicationStagingError, RunError,
 };
 pub use bombay_engine::{Completion, SettlementFailure};
 pub use bombay_macros::{ActorSpaces, TerminalProjection, actor};

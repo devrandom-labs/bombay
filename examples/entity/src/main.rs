@@ -208,8 +208,8 @@ fn main() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(()),
-        cleanup: Ok(Ok(())),
+        output: (),
+        cleanup: Ok(()),
     } = outcome
     else {
         panic!("the original application work completes beside its joined cleanup");
@@ -218,9 +218,12 @@ fn main() {
         root_receiving.expect("the independent original root retirement is acquired");
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     let (head_receiving, ()) = shutdowns;
     let (AccountsRole, (shutdown, metrics, family_disposal_failure)) =

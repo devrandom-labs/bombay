@@ -54,26 +54,31 @@ completed actor or erase an initialization refusal. Its closed alternatives
 retain the actual phase and values:
 
 - `StagingRejected` returns the actual cold partial product.
-- `Unstarted` returns the untouched application and original optional Work.
-- `Prepared` returns the actual prepared Actor/Spaces product, optional Work,
+- `Unstarted` returns the untouched application and its actual cold Work. Supplied
+  Work is bare; no-work remains `None`; cold HTTP uses unit while its original
+  application, Router and address remain in the application-input product.
+- `Prepared` returns the actual prepared Actor/Spaces product, original Work,
   and the actual cleanup result, before actor ownership transfer.
-- `NotInvoked` returns original optional Work, the startup receiving error when
+- `NotInvoked` returns original Work, the startup receiving error when
   present, and the independent cleanup result.
-- `Completed` returns the original optional output and independent cleanup.
+- `Completed` returns the original supplied output and independent cleanup.
+  No-work completion returns `None` without a fabricated callable.
 - `Interrupted` retains cleanup when the Work publication does not provide an
   owned result; it does not infer whether an actor existed from channel closure.
 
 No supplied Work uses `Option<Never>` with `None` for both Work and output.
 `Completed { output: None }` records an acquired startup grant without supplied
-Work. For supplied Work, `Some(output)` preserves the original output, including
-`Some(Err(error))` or `Some(None)` when those are its actual return values.
+Work. For supplied Work, `output` is the original bare `WorkFuture::Output`. A user
+`Err(error)` or `None` remains that exact output. The framework adds no `Some`
+layer and cannot fabricate absence when the supplied output type is unit.
 
 For non-family constructors, cleanup is
-`Result<Result<(RootOrigin<Owner>, Result<ActorRetirement<Actor, Terminal,
-ChildFailures>, JoinError>), JoinError>, RecvError>`.
-The outer receiving error, cleanup task error, and actual root task result are
-three distinct facts. Preserve each field; do not infer absent actors or make
-up a JoinError from a closed channel. `Terminal` is the descendant destination.
+`Result<(RootOrigin<Owner>, ActorRetirement<Actor, Terminal, ChildFailures>),
+ApplicationCleanupError>`. `PublicationClosed(RecvError)` retains the original
+cleanup-publication receiving error. `TaskFailed(JoinError)` retains the actual
+cleanup task error. The root's `ActorTaskFailed(JoinError)` variant separately
+owns the native actor failure. Preserve these distinct owners; do not infer
+absent actors or manufacture a JoinError from a closed channel. `Terminal` is the descendant destination.
 The root stays raw. A caller may use the existing `ProjectTerminal::project`
 outside the runtime to apply its own root projection policy, using the original
 origin and retirement without changing the actual Owner/Actor distinction.
@@ -83,7 +88,7 @@ Supplied Work receives the activated application's concrete handle:
 
 ```text
 let outcome = Application::new(service.stop_on_shutdown())
-    .run_with::<Never, _, _, _, _, _, _>(|application| async move {
+    .run_with::<Never, _, _, _, _, _>(|application| async move {
         let lifecycle = application.lifecycle();
         let reply = boundary(application.root()).await;
         let shutdown = lifecycle.request_shutdown();
@@ -127,8 +132,8 @@ its Tokio host and call `block_on` on the same async method.
 With `axum`, `execute_axum` and async `run_axum` use that same ownership path.
 Bind occurs before staging and returns the actual cold application, original
 router, address, and native bind error on failure. The router is invoked once
-only after activation. Work output is the exact optional `Result<(), io::Error>`
-from serving; raw root and cleanup facts coexist with it. Graceful serving
+only after activation. Acquired HTTP Work owns the original Router/Listener pair. Work output is the
+exact bare `Result<(), io::Error>` from serving; raw root and cleanup facts coexist with it. Graceful serving
 completion is not proof that the root result is successful. Axum owns HTTP
 extraction/responses; Bombay adds no projected aggregate AxumRunError.
 
@@ -547,8 +552,9 @@ forced-retirement provenance and descendant terminals, and launches the exact
 authored lifecycle stack. `run_with_entities` awaits the same paired owner as
 `execute_with_entities`. The result keeps Work outcome, root receiving, and the
 recursive family receiving product separate. Work cleanup has a unit normal
-result and retains its own cleanup receiving/task failures. The independent
-root receipt owns its exact origin plus actor result; each family receipt owns
+result or a distinct `ApplicationCleanupError` for its receiving/task failure. The independent
+root receipt owns its exact origin plus `ActorRetirement`, including an original
+native actor failure in `ActorTaskFailed`; each family receipt owns
 its original role, complete shutdown, metrics, and native disposal cause.
 Root is published before family shutdown; each completed family head is
 published before awaiting its tail. A cancelled or panicking later producer

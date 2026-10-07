@@ -86,7 +86,7 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
     let application_outcome = application_host
         .block_on(
             Application::new(Service.stop_on_shutdown())
-                .run_with::<RootTerminal<StopOnShutdown<Service>>, _, _, _, _, _, _>(
+                .run_with::<RootTerminal<StopOnShutdown<Service>>, _, _, _, _, _>(
                     |application| async move {
                         let interface = application.interface(Api {
                             service: application.root().established_recipient(),
@@ -130,17 +130,20 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(()),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: (),
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: RootTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_completed(terminal, None);
 }
@@ -155,7 +158,7 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
         .block_on(
             Application::new(WaitsForShutdown.stop_on_shutdown()).run_with::<RootTerminal<
                 StopOnShutdown<WaitsForShutdown>,
-            >, _, _, _, _, _, _>(
+            >, _, _, _, _, _>(
                 |application| async move {
                     let interface = application.interface(());
                     let lifecycle = application.lifecycle();
@@ -209,17 +212,20 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
         });
     drop(application_host);
     let ApplicationOutcome::Completed {
-        output: Some(()),
-        cleanup: Ok(Ok((root_origin, joined_actor))),
+        output: (),
+        cleanup: Ok((root_origin, joined_actor)),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
     let terminal: RootTerminal<_> = ProjectTerminal::project(
         root_origin,
-        joined_actor.unwrap_or_else(|failure| {
-            panic!("the actual application actor task failed: {failure}")
-        }),
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
     );
     assert_completed(terminal, None);
 }
