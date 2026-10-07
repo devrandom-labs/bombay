@@ -1807,3 +1807,34 @@ three standard campaign results are reusable for unchanged primitive sources
 and contracts. Published dependency selection must preserve that exact bridge
 or repeat affected checks; final integrated Nix/model/coverage/CI and final
 minimization/review remain required.
+
+
+### Focused local commits (2026-10-07)
+
+Eight local commits on research/exec-consolidated retain separate review
+surfaces: ccfc92c (task-cost controls), ef9b95d (direct work/cleanup results),
+8672507 (worker preparation custody),4d36ee6 (forwarding deletion),
+63d5eac (HTTP-only attribute),d6148e3 (module extraction/current guides),
+76c5b92 (four approved diagnostic contexts),bacdebe (current records).
+The resulting checkout is clean, with17 new modules tracked. No source
+byte changed while committing; nine already deleted owners remain absent.
+
+Actual index-only receipt588e958c is independently accepted by1fc65718.
+All eight complete parent-plus-stage trees, exact source products/modes,
+patches and365 physical before/after guards are conserved. Five initial
+commits and a five-row partial module index survived the missing --add
+option; the corrected continuation stages the remaining entries without
+reset, source copying or duplicated commits. An initial resume assumption
+failed before mutation. All raw attempts remain preserved.
+
+The raw initial_partial_index field aliases the subsequently mutated final
+index. Metadata-only qualificationce6c6ca7 and independent5504caf2 bind
+the reconstructed346-entry initial map separately from the final356-entry
+map; raw588e958c is not rewritten. This is an evidence-field correction,
+not a changed source, test or Git result.
+
+No intermediate tree execution, new-head Nix/CI, publication or merge is
+claimed. Source-bound existing proofs retain their stated epochs; final
+integrated checks remain mandatory. Remote PR326 still has cffeb49c;
+local commits remain unpushed until required unfiltered local Nix passes.
+The four section264 source preimages remain untouched pending approval.
