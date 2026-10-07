@@ -1838,3 +1838,33 @@ claimed. Source-bound existing proofs retain their stated epochs; final
 integrated checks remain mandatory. Remote PR326 still has cffeb49c;
 local commits remain unpushed until required unfiltered local Nix passes.
 The four section264 source preimages remain untouched pending approval.
+
+
+### Module acceptance and approved unfiltered tests (2026-10-07)
+
+The user explicitly approved section264's combined four-file scope, superseding
+the two-file proposal. Guarded installation2f2ed162 changes only the three exact
+observed diagnostic products and three documentation links: tests+16/−26/net−10,
+docs+3/−3/net0, production/public types0. The allowance is271 paths/13 public
+nominals; no further scope question remains.
+
+Actuald6a36dde runs the complete Main run_with controller and complete owning
+interpreter-contract workspace unfiltered in debug and release, all four exits0.
+Main has16 outer tests and six UI cases per profile; owning has19 outer tests
+across seven targets and seven UI cases per profile. All eight streams (23648
+bytes), per-row/final356 Main and808 owning source maps, and absent process
+groups are conserved. Nine retired source names remain absent. Old scoped
+results retain their exclusions; these new runs close those exact gaps.
+
+Coordinator9609392f and independent actual/model decisiona448332c accept
+DG-MODULES/EV-27–29; separate exact co-sign4b93ef88 authenticates the
+coordinator packet. The assignment diagnostic author does not approve their own
+source gate: independentd647 source acceptance and the peer's complete observed
+E0382 comparison are explicit. No module-specific witness remains. Published
+selection, final integrated Nix/model/coverage, final whole-tree minimization,
+CI/review and merge remain required.
+
+Owning full local flake31b083dd exits0 after the approved fixtures and seven
+import-only corrections. Its full logs/source guards are preserved at
+/tmp/bombay-exec-receiving-final-approved-flake-actual/actual.json; independent
+review is pending. This is local verification, not remote CI or publication.

@@ -42,7 +42,7 @@ the full ownership-preserving implementation.
 | KeyedPool | Key binding, assignment, correlation and recovery | The FIFO atomic capabilities plus CustomerDelivery with retained rejected-customer routes. |
 
 Sources: [selected template/capability manifest](../driver-template-manifest.json),
-[Bombay interpretations](../../crates/bombay/src/application_runtime.rs).
+[Bombay interpretations](../../crates/bombay/src/local/effects/mod.rs).
 The manifest now records all 19 actor-owned capability types as implemented;
 this excludes ordinary structural lanes and is not a completion score. The
 earlier Behavior Actors 0.19.0 fixed-supervisor diagnostic parent-ingress
@@ -316,9 +316,9 @@ Driver discard and pool continuation paths were traced directly in source.
 
 Primary source locations:
 
-- [Bombay runtime](../../crates/bombay/src/application_runtime.rs),
+- [Bombay runtime](../../crates/bombay/src/local/effects/mod.rs),
   [preparation](../../crates/bombay/src/worker_preparation.rs),
-  [local activation/task custody](../../crates/bombay/src/local.rs),
+  [local activation/task custody](../../crates/bombay/src/local/environment.rs),
   [launch](../../crates/bombay/src/launch.rs),
   [Driver](../../crates/bombay-engine/src/driver.rs).
 - [Selected assignment API](https://github.com/devrandom-labs/bombay-behavior/blob/435560ce7bea8ad3330ee2d42e5034f837a80602/crates/actors/src/atomic/pool/assignment.rs),

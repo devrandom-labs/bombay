@@ -23,9 +23,9 @@ ARC-020 later renamed the private actor execution and outcome symbols; the
 snapshot names below remain historical, and `docs/module-boundaries.md` records
 the current source paths.
 
-**Status: active.** Selected contracts are verified. DG-SHUTDOWN, DG-TASK, DG-API, DG-WORK, DG-OBSERVATION, DG-PROJECTION and DG-WRAPPERS are independently accepted. The reviewed API, common task execution and
+**Status: active.** Selected contracts are verified. DG-SHUTDOWN, DG-TASK, DG-API, DG-WORK, DG-OBSERVATION, DG-PROJECTION, DG-WRAPPERS and DG-MODULES are independently accepted. The reviewed API, common task execution and
 Entity custody corrections are integrated on the consolidated branch, with
-current affected verification passing. Required extraction, final minimization,
+current affected verification passing. Module extraction and its unfiltered acceptance tests are complete. Final minimization,
 upstream release, full integrated checks and reviewed
 passing-CI merge remain. Semantic blockers precede module extraction.
 
@@ -67,11 +67,13 @@ The final execution measurements are independently accepted (5f511da8/05b5826b).
 Their single current [cost report](execution-ownership/verification.md#final-execution-measurements-2026-10-07)
 records actual concurrency, tasks, allocations, throughput and baseline limits.
 No EV-30 experiment remains.
+DG-MODULES and EV-27–29 are independently accepted (9609392f/a448332c,
+co-sign4b93ef88). The complete unfiltered static and external tests pass in
+both profiles; [current evidence](execution-ownership/verification.md#module-acceptance-and-approved-unfiltered-tests-2026-10-07) records the source bridge.
 
 | Requirement / gate | Exact blocker | Valid evidence available | Next action and pass condition |
 | --- | --- | --- | --- |
-| DG-MODULES; EV-27–29 | Extraction and current guidance are installed. Debug/release strict checks, runtime tests and six runnable examples pass; one compiler-message snapshot remains held by section264. Independent final actual review remains. | Exact whole-source conservation cfb2027f/ca894640 and locator correction16fcece1 have independent GO27a650c3/14b09888. Three moved fixtures execute once in each profile. Current scoped actualb7957db3 passes15 rows; prior five successful rows3941f73c are reused. Only the named blocked static controller was excluded, so this is not full acceptance. | Install the exact held E0599 message after scope approval, run the complete unfiltered static controller, obtain independent actual/gate review and retain required final integrated verification. No getter, new bound or duplicate implementation. |
-| Selected upstream contract | Integration selects unreleased receiving81ba2c0. Two external compile-denial snapshots need the exact held corrections; full external tests and publication remain. | Selected source/contracts and native/static campaigns qualify. Owning local Nix/strict and warning-clean21-target fuzz formation pass with recorded epoch limits; [delivery evidence](execution-ownership/verification.md#current-standard-campaigns-and-owning-fuzz-quality-2026-10-07). | Obtain the pending section264 four-file approval, install both exact observed fixtures and finish external debug/release. Deliver reviewed owning PR with passing CI, publish release, select the exact published contract and run affected final integration. |
+| Selected upstream contract | Integration selects unreleased receiving81ba2c0. Reviewed owning delivery and publication remain. | Approved section264 corrections are installed. Main static controller and complete owning external suites pass unfiltered in debug/release (d6a36dde); independently accepted9609392f/a448332c with co-sign4b93ef88. Owning full local Nix31b083dd passes, with independent review in progress. | Deliver reviewed owning PR with passing CI, publish release, select the exact published contract and run affected final integration. |
 | Final verification, minimization, review and delivery | Final published selection, unfiltered integrated checks, whole-tree minimization/delta and reviewed merge remain. | All21 local Nix/four remote checks pass at cffeb49c. Current mandatory standard campaigns694acdb7 pass under independent61ba4d4d/49bc944b; current EV-30 is accepted. Preserve all source-bound native inversions and unchanged floors. | Run remaining required §10.1 final integrated/model/coverage gates on the published selection, reusing valid unchanged evidence and repeating only affected checks. Complete final delta/minimization and independent final review. Run local full flake before push; merge only after green required CI/reviews and record delivery. |
 
 ## 1. Authority and how to execute this document
@@ -12339,7 +12341,9 @@ No overwrite mode, weakened denial or filtered full-gate claim is permitted.
 
 ## 264. Combined remaining compiler-message and documentation scope checkpoint
 
-Proposal only; this replaces the pending two-file section263 request.
+Approved by the user on2026-10-07; the four-file approval replaces the
+also-approved two-file section263 proposal. Current allowance271 names,
+still13 public types and no line cap. All required acceptance gates remain.
 Independent scope08315a8f confirms the named267 allowance omits these four
 existing paths, giving a proposed271-name union, still13 public types:
 
@@ -12357,9 +12361,10 @@ current interpretation pointers go to local/effects/mod.rs and local
 activation/custody goes to local/environment.rs. Historical commands and
 evidence remain unchanged. No runtime contract is altered.
 
-Concrete four-file expansion: production+0/−0/net0; tests+16/−26/net−10;
-documentation+3/−3/net0; new public types0. Installation stays blocked until
-explicit authorization; all independent checks continue.
+Concrete approved four-file expansion: production+0/−0/net0; tests+16/−26/
+net−10; documentation+3/−3/net0; new public types0. Install only the exact
+independently reviewed products; run the full previously blocked static
+controller and external suites in both profiles. No denial is weakened.
 
 Current complete Bombay endpoint measurement against original2fcc:
 131 tracked changed files plus17 untracked module files,148 total;
@@ -12444,3 +12449,14 @@ All26 pre-extraction old-owner products match byte-exactly. Final metadata
 hashes are refreshed after terminal records; pending271-name products are
 excluded. This does not claim each intermediate tree was executed, final
 Nix passed, remote delivery or acceptance of the held static controller.
+
+
+Four-path approval — pre-edit record: the user approved both263 and its
+combined replacement264. Exact assignmenta4239bf0/proxy5bb3bfa1 diagnostics
+retain E0382; app_localb75ca4c7 retains E0599; core links07c8d0e9 retain
+historical commands. Independent source reviews d64718d5/04000ced/7c715ecf/
+5edd0de4/d6fcc149/a83a3c73 and scope08315a8f bind these products. Four
+physical preimages remain exact before installation; no source body, Rust
+contract, public type or test assertion changes. The approved271-name
+allowance applies cumulatively across all stages. Repeat only the blocked
+complete controllers/external tests, then required final release/integration.

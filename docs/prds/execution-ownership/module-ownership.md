@@ -20,8 +20,12 @@ Locator erratum16fcece1 places the whole feature-gated
 guard1162/method1174; original application_runtime.rs9622–9679). HTTP entry
 methods are separately owned by `application/http.rs`.
 
-Actual module verification and EV-27–29 acceptance remain pending. Source
-conservation does not close DG-MODULES. The sole current closure list is in
+DG-MODULES and EV-27–29 are independently accepted: coordinator9609392f,
+independent actual decisiona448332c and exact co-sign4b93ef88. The approved
+diagnostic corrections are installed; complete unfiltered Main static and owning
+external tests pass in debug and release (d6a36dde). Whole-source conservation,
+cfg boundaries, narrow visibility and unchanged public ownership are verified.
+Final integrated verification, published selection and delivery remain required. The sole current closure list is in
 the [EXEC PRD](../execution-ownership.md#remaining-blockers--current-closure-table).
 The inventories and stop conditions below are historical source epochs. Their
 versions, names, hashes and earlier eligibility states are preserved as evidence
