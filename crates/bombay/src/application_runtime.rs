@@ -9619,6 +9619,7 @@ impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
     }
 }
 
+#[cfg(feature = "axum")]
 impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
     ApplicationOutcome<
         Inputs,
