@@ -2727,25 +2727,29 @@ mod independent_actor_execution {
     use crate::actors::ActorExt;
     use behavior::{
         ActionItem, Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase,
-        BehaviorSettlements, Here, InitializationTurn, Inside, InterpretItem,
-        InterpretationProgress, InterpreterRequest, InterpreterRequests, ItemSettlement,
-        MessageProtocol, Never, NoBirthProtocols, NoBirths, NoReturnToEmitter, NoSends, Own,
-        SendEffects, SettledItem, SourceCustody, SourceProgress, SourceSettlementCustody, Step,
-        User, finish_item, prepare_item,
+        BehaviorSettlements, ChildCreationOutcome, ChildDelivery, ChildHead, CreateChild,
+        CreationId, CreationKind, CreationSequence, CreationSettlement, Creations, Here,
+        InitializationTurn, Inside, InterpretItem, InterpretationProgress, InterpreterRequest,
+        InterpreterRequests, ItemSettlement, MessageProtocol, Never, NoBirthProtocols, NoBirths,
+        NoReturnToEmitter, NoSends, Own, RetirementBirths, SendEffects, SettledItem, SourceCustody,
+        SourceProgress, SourceSettlementCustody, Step, User, finish_item, prepare_item,
     };
-    use behavior_actors::StopOnShutdown;
+    use behavior_actors::{Exit, StopOnShutdown};
     use bombay_address::AddressSpace;
     use bombay_engine::{ActionsOf, Completion};
     use communication::Config;
     use tokio::runtime::Builder;
     use tokio::sync::oneshot;
     use tokio::sync::{Barrier as WorkBarrier, Mutex as WorkMutex};
-    use tokio::task::{Id, JoinError};
+    use tokio::task::{Id, JoinError, id, try_id};
 
     use super::{LocalOutcome, spawn_root_with};
     use crate::interpret::ActionSettlementOf;
     use crate::local::{CapabilityRetirement, CommitActions, LocalResidual};
-    use crate::{ActorExecutionOutcome, MailAddr};
+    use crate::{
+        ActorExecutionOutcome, ActorRetirement, Application, ApplicationOutcome, ChildOrigin,
+        MailAddr, ProjectTerminal, actor,
+    };
 
     #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     enum WorkOwner {
@@ -2976,6 +2980,10 @@ mod independent_actor_execution {
     }
 
     impl InterpretItem<ComputeWork, WorkEvent, Inside<Here>> for WorkInterpreter {
+        #[expect(
+            clippy::manual_async_fn,
+            reason = "preserve the original receiving-loan future and its qualified native poll attribution"
+        )]
         fn interpret_item<'a>(
             &'a mut self,
             input: <ComputeWork as ActionItem>::Input<'a>,
@@ -3091,10 +3099,6 @@ mod independent_actor_execution {
             pending().await
         }
 
-        #[expect(
-            clippy::unused_async_trait_impl,
-            reason = "Keep retirement on the polled runtime port."
-        )]
         async fn receive_retirement(
             interpreter: &mut Option<Self>,
             received: &mut Option<CapabilityRetirement<WorkEvent, ()>>,
@@ -3604,6 +3608,10 @@ mod independent_actor_execution {
     }
 
     impl InterpretItem<ComputeWork, WorkEvent, Inside<Here>> for MeasuredWork {
+        #[expect(
+            clippy::manual_async_fn,
+            reason = "preserve the original receiving-loan future and its qualified native poll attribution"
+        )]
         fn interpret_item<'a>(
             &'a mut self,
             input: <ComputeWork as ActionItem>::Input<'a>,
@@ -3702,10 +3710,6 @@ mod independent_actor_execution {
         async fn next_local_event(&mut self) -> Result<WorkEvent, JoinError> {
             pending().await
         }
-        #[expect(
-            clippy::unused_async_trait_impl,
-            reason = "The owned work receipts retire through the runtime port."
-        )]
         async fn receive_retirement(
             interpreter: &mut Option<Self>,
             received: &mut Option<CapabilityRetirement<WorkEvent, Self::Retired>>,
@@ -3951,6 +3955,432 @@ mod independent_actor_execution {
                 / elapsed.as_secs_f64()
         );
         (work_allocations, actor_allocations)
+    }
+
+    #[derive(Debug)]
+    enum ParentWorkCommand {
+        Compute { parent: Vec<u64>, child: Vec<u64> },
+        FinishChild,
+        Finish,
+    }
+
+    struct ExecutionChild {
+        computed: Vec<(Vec<u64>, u64)>,
+    }
+
+    #[actor]
+    impl ExecutionChild {
+        fn receive(&mut self, command: WorkCommand) -> BehaviorActed<Self> {
+            match command {
+                WorkCommand::Compute(values) => {
+                    self.computed.push(compute_execution_batch(values));
+                    Ok(Actions::cont())
+                }
+                WorkCommand::Finish => Ok(Actions::stop()),
+            }
+        }
+    }
+
+    fn compute_execution_batch(values: Vec<u64>) -> (Vec<u64>, u64) {
+        let sum = values.iter().sum();
+        for _ in 0..256 {
+            let repeated: u64 = black_box(&values).iter().sum();
+            black_box(repeated);
+        }
+        (values, sum)
+    }
+
+    struct ExecutionParent {
+        child: Option<ExecutionChild>,
+        creation: Option<CreationId>,
+        computed: Vec<(Vec<u64>, u64)>,
+    }
+
+    #[actor(
+        sends = {
+            computations: Vec<ChildDelivery<ExecutionChild, ChildHead>>,
+        },
+        births = RetirementBirths<StopOnShutdown<ExecutionChild>>,
+        creation_settlements = retain_for_retirement,
+    )]
+    impl ExecutionParent {
+        #[expect(
+            clippy::unnecessary_wraps,
+            reason = "the owning actor expansion requires the exact fallible BehaviorActed fold signature"
+        )]
+        fn init(&mut self) -> BehaviorActed<Self> {
+            let mut creations = CreationSequence::new();
+            let creation = creations.issue().expect("one actual worker birth");
+            self.creation = Some(creation);
+            let child = self.child.take().expect("one original worker definition");
+            Ok(Actions::create(Creations::one(CreateChild::birth(
+                creation,
+                child.stop_on_shutdown(),
+            ))))
+        }
+
+        fn receive(&mut self, command: ParentWorkCommand) -> BehaviorActed<Self> {
+            let creation = self
+                .creation
+                .expect("the issued worker birth remains owned");
+            match command {
+                ParentWorkCommand::Compute { parent, child } => {
+                    self.computed.push(compute_execution_batch(parent));
+                    Ok(Actions::cont().send_computations(ChildDelivery::after(
+                        creation,
+                        WorkCommand::Compute(child),
+                    )))
+                }
+                ParentWorkCommand::FinishChild => Ok(Actions::cont()
+                    .send_computations(ChildDelivery::after(creation, WorkCommand::Finish))),
+                ParentWorkCommand::Finish => Ok(Actions::stop()),
+            }
+        }
+    }
+
+    struct CompletedExecutionChild {
+        origin: ChildOrigin<ExecutionParent, ChildHead>,
+        terminal: ActorRetirement<StopOnShutdown<ExecutionChild>, Self, ()>,
+    }
+
+    #[expect(
+        clippy::type_complexity,
+        reason = "one existing sender retains coexisting actual projector ID and original typed origin; an alias would add no owner"
+    )]
+    static CHILD_EXECUTION_COMPLETION: Mutex<
+        Option<oneshot::Sender<(Id, ChildOrigin<ExecutionParent, ChildHead>)>>,
+    > = Mutex::new(None);
+
+    impl
+        ProjectTerminal<
+            ChildOrigin<ExecutionParent, ChildHead>,
+            ActorRetirement<StopOnShutdown<ExecutionChild>, Self, ()>,
+        > for CompletedExecutionChild
+    {
+        fn project(
+            origin: ChildOrigin<ExecutionParent, ChildHead>,
+            terminal: ActorRetirement<StopOnShutdown<ExecutionChild>, Self, ()>,
+        ) -> Self {
+            let publication = CHILD_EXECUTION_COMPLETION
+                .lock()
+                .unwrap()
+                .take()
+                .expect("the runtime projector owns one original completion publication");
+            let sent = publication.send((id(), origin));
+            sent.expect("the caller retains its actual child completion receiver");
+            Self { origin, terminal }
+        }
+    }
+
+    #[test]
+    #[ignore = "Explicit whole parent/child workload timing and scoped allocation measurement."]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep exact measured regions, native task provenance and complete joined parent/child custody visible together"
+    )]
+    fn measure_declared_parent_child_throughput_and_scoped_allocations() {
+        let requests = 128;
+        let measurements = Arc::new(Mutex::new(TaskMeasurements {
+            spawned: Vec::with_capacity(8),
+            polls: HashMap::with_capacity(8),
+        }));
+        let spawning_contexts = Arc::new(Mutex::new(Vec::with_capacity(8)));
+        let spawned = Arc::clone(&measurements);
+        let spawning = Arc::clone(&spawning_contexts);
+        let returned = Arc::clone(&measurements);
+        let runtime = Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .on_task_spawn(move |task| {
+                spawned.lock().unwrap().spawned.push(task.id());
+                spawning.lock().unwrap().push((task.id(), try_id()));
+            })
+            .on_before_task_poll(|_| begin_allocations())
+            .on_after_task_poll(move |task| {
+                let count = finish_allocations().expect("finite task-poll allocation count");
+                let mut measurements = returned.lock().unwrap();
+                let totals = measurements.polls.entry(task.id()).or_default();
+                totals.0 = totals
+                    .0
+                    .checked_add(count)
+                    .expect("finite task allocation total");
+                totals.1 = totals.1.checked_add(1).expect("finite task poll total");
+            })
+            .build()
+            .unwrap();
+        let mut originals = Vec::with_capacity(requests);
+        let mut submissions = Vec::with_capacity(requests);
+        for ordinal in 0..requests {
+            let parent: Vec<_> = (0..1024).map(|value| value + ordinal as u64).collect();
+            let child: Vec<_> = (0..1024).map(|value| value + ordinal as u64 + 17).collect();
+            originals.push((
+                parent.as_ptr() as usize,
+                child.as_ptr() as usize,
+                parent.iter().sum::<u64>(),
+                child.iter().sum::<u64>(),
+            ));
+            submissions.push(ParentWorkCommand::Compute { parent, child });
+        }
+        let (publication, completed_child) = oneshot::channel();
+        let prior = CHILD_EXECUTION_COMPLETION
+            .lock()
+            .unwrap()
+            .replace(publication);
+        drop(prior);
+        let application = Application::new(
+            ExecutionParent {
+                child: Some(ExecutionChild {
+                    computed: Vec::with_capacity(requests),
+                }),
+                creation: None,
+                computed: Vec::with_capacity(requests),
+            }
+            .stop_on_shutdown(),
+        );
+        let mut formed = None;
+        let formation = allocations_during(|| {
+            let entered = runtime.enter();
+            formed = Some(
+                application
+                    .execute_with::<_, _, CompletedExecutionChild, _, _, _, _>(
+                        move |application| async move {
+                            for command in submissions {
+                                let sent =
+                                    application.root().send_from(MailAddr(1031), command).await;
+                                sent.expect("each original parent computation is admitted");
+                            }
+                            let sent = application
+                                .root()
+                                .send_from(MailAddr(1031), ParentWorkCommand::FinishChild)
+                                .await;
+                            sent.expect("the child finish follows all original computations");
+                            let (projector, projected_origin) = completed_child
+                                .await
+                                .expect("actual eager child projection");
+                            let sent = application
+                                .root()
+                                .send_from(MailAddr(1031), ParentWorkCommand::Finish)
+                                .await;
+                            sent.expect(
+                                "parent finish is explicit after original child completion",
+                            );
+                            (
+                                projector,
+                                projected_origin,
+                                application.lifecycle().termination().await,
+                            )
+                        },
+                    )
+                    .unwrap_or_else(|_| panic!("the explicit measured host is entered")),
+            );
+            drop(entered);
+        });
+        let (execution, result) = formed.expect("one original cold paired execution");
+        let mut joined = None;
+        let started = Instant::now();
+        let controller = allocations_during(|| {
+            joined = Some(runtime.block_on(async { tokio::join!(execution, result).1 }));
+        });
+        let elapsed = started.elapsed();
+        drop(runtime);
+        let stale = CHILD_EXECUTION_COMPLETION.lock().unwrap().take();
+        assert!(stale.is_none());
+        let ApplicationOutcome::Completed {
+            output: Some((projector, projected_origin, termination)),
+            cleanup: Ok(Ok((origin, Ok(retirement)))),
+        } = joined.expect("whole original application result remains")
+        else {
+            panic!("the measured application owns completed work and both native joins");
+        };
+        assert_eq!(termination, Ok(Exit::Normal));
+        assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+        let ActorRetirement::Completed {
+            behavior,
+            interpretation,
+            source,
+            settlements,
+            control,
+            user,
+            descendants,
+            child_failures: (child_failures, ()),
+            capability_failures,
+            additional_failures,
+            terminal_report,
+            retirement_failures,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            unread_owner_cancellation,
+            completion,
+        } = retirement
+        else {
+            panic!("the parent stopped after its complete workload");
+        };
+        assert!(interpretation.is_none() && source.is_none());
+        assert!(received_interpretation.is_none() && received_source.is_none());
+        assert!(source_index.is_none() && acquired_ingress.is_none());
+        assert!(unread_owner_cancellation.is_none() && terminal_report.is_none());
+        assert!(control.is_empty() && user.is_empty());
+        assert!(additional_failures.is_empty() && capability_failures.is_empty());
+        assert!(retirement_failures.is_empty() && child_failures.is_empty());
+        assert!(matches!(completion, Completion::Stopped));
+        let parent = behavior.base();
+        assert!(parent.child.is_none());
+        let creation = parent
+            .creation
+            .expect("the original issued worker creation survives");
+        assert_eq!(parent.computed.len(), requests);
+        for (ordinal, (values, sum)) in parent.computed.iter().enumerate() {
+            assert_eq!(values.as_ptr() as usize, originals[ordinal].0);
+            assert_eq!(*sum, originals[ordinal].2);
+            assert_eq!(
+                values,
+                &(0..1024).map(|v| v + ordinal as u64).collect::<Vec<_>>()
+            );
+        }
+        // ChildDelivery owns unit acceptance; selected ActionItem::retain_accepted
+        // discharges it. Actual child vectors/sums below prove the full delivery trace.
+        assert_eq!(settlements.len(), 2);
+        for (turn, settlement) in settlements.into_iter().enumerate() {
+            assert_eq!(settlement.sends.owned, NoSends);
+            assert!(settlement.sends.inner.computations.is_empty());
+            let CreationSettlement::Settled(creations) = settlement.creations.into_settlement()
+            else {
+                panic!("every parent creation lane retains its complete settlement");
+            };
+            let creations: Vec<_> = creations.into_iter().collect();
+            if turn == 0 {
+                assert!(matches!(settlement.become_, Step::Stop(_)));
+                assert!(creations.is_empty());
+            } else {
+                assert_eq!(settlement.become_, Step::Continue);
+                let [created] = creations
+                    .try_into()
+                    .unwrap_or_else(|_| panic!("one whole birth"));
+                let SettledItem::Attempted(ItemSettlement::Accepted(
+                    ChildCreationOutcome::Established(committed),
+                )) = created
+                else {
+                    panic!("the original child actually committed");
+                };
+                assert_eq!(committed.id(), creation);
+                assert_eq!(committed.kind(), CreationKind::Birth);
+                drop(committed);
+            }
+        }
+        drop(behavior);
+        let [
+            CompletedExecutionChild {
+                origin: child_origin,
+                terminal,
+            },
+        ] = descendants
+            .try_into()
+            .unwrap_or_else(|_| panic!("one whole projected child remains"));
+        assert_eq!(child_origin, projected_origin);
+        assert_ne!(child_origin.address(), origin.address());
+        let ActorRetirement::Completed {
+            behavior,
+            interpretation,
+            source,
+            settlements,
+            control,
+            user,
+            descendants,
+            child_failures: (),
+            capability_failures,
+            additional_failures,
+            terminal_report,
+            retirement_failures,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            unread_owner_cancellation,
+            completion,
+        } = terminal
+        else {
+            panic!("the actual child completed its original computation batch");
+        };
+        assert!(interpretation.is_none() && source.is_none());
+        assert!(received_interpretation.is_none() && received_source.is_none());
+        assert!(source_index.is_none() && acquired_ingress.is_none());
+        assert!(unread_owner_cancellation.is_none() && terminal_report.is_none());
+        assert!(control.is_empty() && user.is_empty() && descendants.is_empty());
+        assert!(additional_failures.is_empty() && capability_failures.is_empty());
+        assert!(retirement_failures.is_empty());
+        assert!(matches!(completion, Completion::Stopped));
+        assert_eq!(behavior.base().computed.len(), requests);
+        for (ordinal, (values, sum)) in behavior.base().computed.iter().enumerate() {
+            assert_eq!(values.as_ptr() as usize, originals[ordinal].1);
+            assert_eq!(*sum, originals[ordinal].3);
+            assert_eq!(
+                values,
+                &(0..1024)
+                    .map(|v| v + ordinal as u64 + 17)
+                    .collect::<Vec<_>>()
+            );
+        }
+        let [stopped] = settlements
+            .try_into()
+            .unwrap_or_else(|_| panic!("one full child Stop row"));
+        assert_eq!(stopped.sends.owned, NoSends);
+        assert_eq!(stopped.sends.inner, NoSends);
+        assert!(stopped.creations.is_empty());
+        assert!(matches!(stopped.become_, Step::Stop(_)));
+        let measurements = measurements.lock().unwrap();
+        let contexts = spawning_contexts.lock().unwrap();
+        assert_eq!(measurements.spawned.len(), 4);
+        assert_eq!(contexts.len(), 4);
+        let child_spawns: Vec<_> = contexts
+            .iter()
+            .filter_map(|(id, parent)| parent.map(|p| (*id, p)))
+            .collect();
+        assert_eq!(child_spawns.len(), 2);
+        let root = child_spawns[0].1;
+        assert_eq!(child_spawns[1].1, root);
+        assert!(child_spawns.iter().any(|(id, _)| *id == projector));
+        let child = child_spawns
+            .iter()
+            .find_map(|(id, _)| (*id != projector).then_some(*id))
+            .expect("the original child actor is distinct from its projector");
+        let root_join = contexts
+            .iter()
+            .find_map(|(id, parent)| (parent.is_none() && *id != root).then_some(*id))
+            .expect("actual root join task");
+        let roles = [
+            ("parent", root),
+            ("child", child),
+            ("projection", projector),
+            ("root_join", root_join),
+        ];
+        for (position, (_, id)) in roles.iter().enumerate() {
+            assert_eq!(
+                measurements
+                    .spawned
+                    .iter()
+                    .filter(|native| *native == id)
+                    .count(),
+                1
+            );
+            assert!(roles[..position].iter().all(|(_, prior)| prior != id));
+            assert!(measurements.polls.contains_key(id));
+        }
+        assert!(
+            contexts
+                .iter()
+                .any(|(id, parent)| *id == root && parent.is_none())
+        );
+        let task_allocations: usize = roles.iter().map(|(_, id)| measurements.polls[id].0).sum();
+        println!(
+            "parent_child requests={} elapsed={elapsed:?} computations_per_second={} native_roles={roles:?} spawning_contexts={contexts:?} cold_pair_formation_allocations={formation} controller_execution_and_join_allocations={controller} all_four_task_poll_allocations={task_allocations} task_poll_totals={:?}; payload setup/runtime construction/off-poll worker allocations/host reporting excluded; no whole-runtime heap total; eager_child_tasks=2, deferred_one_task_equation_is_unexecuted",
+            requests * 2,
+            f64::from(u32::try_from(requests * 2).expect("finite measured workload"))
+                / elapsed.as_secs_f64(),
+            measurements.polls
+        );
+        drop((measurements, contexts, behavior, child_origin));
     }
 
     #[test]
