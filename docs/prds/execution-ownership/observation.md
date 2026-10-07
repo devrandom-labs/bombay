@@ -1,19 +1,87 @@
 # Exact observation relationship design evidence
 
-**Historical baseline:** The 0.17.0 selection, names and copied-algorithm replay
-below describe the 2026-09-29 research snapshot. Current EXEC selects Core/Actors
-0.21.2 and Macros 0.13.1; PRD section 46 and `verification.md` record
-the reviewed dependency selection and fresh verification. Current polling uses `TerminationObservations` and ordered vector
-removal. The separate established-observation map/task still exists. Its races
-need witnesses against the actual compiled interpreter, not the old replay.
-No gate is accepted by this reconciliation.
+## Current source-bound disposition (2026-10-07)
+
+Semantic and retained-representation minimization are accepted by two
+independent nonauthor signatures: coordinator5bddcbde and peer cb497a32.
+Delivery and final whole-integration verification are separate requirements.
+The integration selects Core/Actors0.22.0 and Macros0.13.1 at research revision
+81ba2c0d. That receiving contract is compiled and verified but its owning
+reviewed release still must be delivered. The earlier registry0.21.2 selection
+and ID-only candidates below are historical, not current guidance.
+
+Behavior Actors owns the typed request, exact relationship authority and
+settlement algebra. Observe owns the captured incarnation's completion fact;
+Communication owns admission and returns the original rejected event.
+Bombay's actor-owned exact_observations membership map is the sole owner of
+whether an established relationship is live. An ID selects the entry; original
+Arc authority identity authorizes it. A reused ID or foreign authority cannot
+cancel or complete another relationship. Typed requests retain their protocol;
+there is no erased message routing or global cancellation policy.
+
+Registration commits membership before Started and before spawning its waiter.
+Cancellation and completion remove the exact member under the same guard, so
+only one wins. Removal commits the decision to admit the completed fact; it
+does not prove notification delivery. Conversion runs outside the decision
+guard. Notification admission reacquires the same membership-owner guard,
+checks retirement and holds it during control.send, so retirement cannot race
+between that check and admission. A retired owner or closed lane returns the
+whole original notification, which existing joined capability custody retains. A conversion panic retains
+available native failure information, but cannot recreate values destroyed
+inside the conversion. Independent observations of one incarnation coexist.
+The notification timestamp is acquisition time, not target publication time.
+
+Retain the existing exact-relationship capability task: it owns the captured
+future, typed conversion and revocation receiver, with independent progress
+and panic custody. The ordered peer/child termination queue owns a different
+acquisition responsibility. Neither is a second membership authority. The
+ordinary fixed-protocol storage comparison proves a smaller bounded case;
+it does not enumerate arbitrary Target/Path for this generic interpreter.
+No new queue, scheduler trait, dynamic capability map or runtime policy is added.
+
+Retain the one existing actor-owned TimerQueue. Its generation, sequence,
+stale-entry pruning and equal-deadline ordering remain verified. Normal next
+checks cancellation first, then prefers mailbox over local events and deadlines.
+A source shares the control FIFO; next_source checks cancellation first then
+selects source/local input without a separate timer branch. The finite eight
+replenishments test proves delay until mailbox quiescence. A continuously ready
+mailbox can delay observations/timers indefinitely; no bounded fairness or timer
+lateness promise is made. This is the existing XO-36 contract, not a new policy.
+
+Reuse runtime28 (review5b0d), STATIC72 (6df3) and Monitor16 (1559), including
+their original-defect, sole-inversion and restoration evidence. The exact
+membership span6717bytes/a5a0a4be and Local next/next_source span5145bytes/
+51cc5b52 are unchanged. Coordinator source bridge069d binds those epochs to
+current source and qualifies the five owning guidance-only changes.
+
+The required current stress check now passes: six commands, twelve complete
+streams, actual standalone33-package graph, selected current owning source,
+nightly instrumentation, strict target Clippy and target formatting. Original
+308seeds/6036bytes are preserved;10000 total executions include initialization.
+Actual3910counters and3910PCs, seed4227931305, terminal coverage713/features1989;
+no crashes, sanitizer reports or assertions. Final disk364files is distinct from
+active274files; all three artifact destinations are empty. This is sampled
+safety evidence, not exhaustive coverage or a fairness/liveness proof.
+
+Actual receipt18ddd2cf:
+`/tmp/bombay-exec-observation-current-fuzz-actual/actual.json`.
+Independent actual reviews43420435 and b897660b authenticate the complete
+commands, streams, source guards, locked graph, actual wrapper/compiler/binary,
+corpus and artifacts. Earlier359-file and0.21.2 runs receive no current credit.
+No additional observation campaign or alternative is required.
+
+## Historical design and verification snapshots
+
+All remaining dated sections describe their own source epochs. Their uses of
+“current” refer to those dates. The0.17.0 copied-algorithm replay, ID-only
+cancellation and one-queue proposal are superseded by the disposition above.
 
 Date: 2026-09-29. Work package: `WP-OBSERVATION-DESIGN`. Decision gate:
 `DG-OBSERVATION`. Status: **research complete; gate not accepted**. This note
 contains a bounded design candidate and its falsifiers. It does not authorize
 production edits or assert that Bombay integration tests have passed.
 
-## Selected contract and current owner
+## Selected contract and owner (2026-09-29)
 
 At the dated historical snapshot, `Cargo.lock` selected registry
 `bombay-behavior 0.17.0` and
@@ -1059,7 +1127,7 @@ nominal types; this replaces the unformatted size forecast for measurement.
 This accepts bounded evidence. Runtime integration, real wrapper recovery,
 EV20, model/fuzz, minimization and the complete independent gate remain open.
 
-## Current synchronous receiver-lifetime decision
+## Synchronous receiver-lifetime decision (2026-10-04)
 
 The failed-Started rollback and extra returned-event storage proposals above
 were source hypotheses. They are not the selected standard-runtime repair.
@@ -1123,11 +1191,11 @@ approval5405175477 and all14 latest checks passed. [EXEC section63](../execution
 owns the source, review, CI, rule and merge receipts. Earlier backup statements
 above describe their historical checkpoints. At that checkpoint, publication and selected-source verification were pending.
 Section67 records subsequently published and authenticated0.22.0 sources.
-Canonical dependencies remain0.21.2/EDC; integrated ownership and the complete
-runtime gate remain open.
+At that historical checkpoint canonical dependencies remained0.21.2/EDC;
+integrated ownership and the complete runtime gate remained open.
 
 
-## Current scheduling selection for integration
+## Scheduling selection for integration (2026-10-04)
 
 The compile-only comparison in EXEC section66 proves ordinary fixed-protocol
 storage is possible. Choose the tested existing capability task for integration,
@@ -1155,7 +1223,7 @@ and throughput savings are not inferred from source-level task counts. Fresh
 compiled registry integration, canonical selection and full gate signatures remain.
 
 
-### Current selected81 prepared-input observation evidence
+### Selected81 prepared-input observation evidence (historical checkpoint)
 
 EXEC §224 actual158d2500 and wholly nonauthor review5b0d636d supersede any
 assumption that older successful runs alone prove the selected81 graph.
@@ -1163,7 +1231,8 @@ Seven exact native observation controllers and both finite event-order traces
 pass both profiles; four isolated custody/priority defects fail as intended
 in both and whole cohorts pass after restoration. Selected owning Monitor,
 established-capability suite, doctests and independent model pass at the same
-verified808-input epoch. Full paired static diagnostics, four model omissions
-and their restorations, current instrumented10k corpus run, quality/minimization
-and both decision-gate signatures remain open. No universal Completed-empty
+verified808-input epoch. At that checkpoint full paired static diagnostics, four model omissions
+and their restorations, the current instrumented10k corpus run, quality/minimization
+and both decision-gate signatures remained open. See the current disposition
+above for the subsequently qualified evidence. No universal Completed-empty
 policy, fairness guarantee or arbitrary destructor recovery is inferred.

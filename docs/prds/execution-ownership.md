@@ -23,11 +23,10 @@ ARC-020 later renamed the private actor execution and outcome symbols; the
 snapshot names below remain historical, and `docs/module-boundaries.md` records
 the current source paths.
 
-**Status: active.** Selected contracts are verified. DG-SHUTDOWN, DG-TASK and
-DG-API are independently accepted. The reviewed API, common task execution and
+**Status: active.** Selected contracts are verified. DG-SHUTDOWN, DG-TASK, DG-API, DG-WORK, DG-OBSERVATION, DG-PROJECTION and DG-WRAPPERS are independently accepted. The reviewed API, common task execution and
 Entity custody corrections are integrated on the consolidated branch, with
-current affected verification passing. Five decision gates, required extraction,
-final minimization, upstream release, full integrated checks and reviewed
+current affected verification passing. Required extraction, final minimization,
+upstream release, full integrated checks and reviewed
 passing-CI merge remain. Semantic blockers precede module extraction.
 
 This PRD replaces the earlier conversational criterion that EXEC must produce
@@ -50,16 +49,30 @@ record is [verification](execution-ownership/verification.md#accepted-nine-prese
 API, common execution, Entity root/head custody and HTTP integration are closed
 with [accepted source-bound verification](execution-ownership/verification.md#accepted-api-verification-2026-10-07);
 required whole-integration verification remains in the final row below.
+[Observation](execution-ownership/observation.md#current-source-bound-disposition-2026-10-07)
+is independently accepted (5bddcbde/cb497a32): current10k fuzz,28/72/16 laws,
+one authority owner, guarded notification admission and explicit fairness limits.
+No observation-specific test remains; final integrated checks remain required.
+[Projection](execution-ownership/terminal-projection.md#current-representation-decision)
+is independently accepted (53d440a4/3cb96357). The ordinary one-task candidate
+passes its native and cost/order laws but is not retained; separate native
+actor/projector failure ownership remains the simpler composition. No additional
+representation experiment remains.
+Result/parameter minimization is independently accepted (ed2b07e0/105459bb)
+and its exact32 source products are installed; [current evidence](execution-ownership/verification.md#current-result-and-parameter-trial)
+records the checks and reuse limits. The twenty wrapper dispositions are independently accepted (eabfa531/9487ad69),
+and the three-path forwarding deletion is installed; [current wrapper evidence](execution-ownership/abstraction-disposition.md#current-wrapper-decision)
+records its distinct net reduction and source-bound comparison.
+The final execution measurements are independently accepted (5f511da8/05b5826b).
+Their single current [cost report](execution-ownership/verification.md#final-execution-measurements-2026-10-07)
+records actual concurrency, tasks, allocations, throughput and baseline limits.
+No EV-30 experiment remains.
 
 | Requirement / gate | Exact blocker | Valid evidence available | Next action and pass condition |
 | --- | --- | --- | --- |
-| DG-PROJECTION; XO-23; EV-10/12/30 | Actual projector panic and eager-progress laws now have qualified native evidence; final task/allocation/throughput measurement and representation disposition remain. | Existing projection/custody regressions and constructed conversion comparisons; native failure34. | Reuse qualified native failure and eager-progress results (terminal-projection record). Rerun the changed fixture, measure the required whole declared-parent/child composition, and independently accept its retained representation. |
-| DG-OBSERVATION; XO-31–36/40; EV-16–21/23 | Final integrated observation/fairness/timer acceptance and current instrumented fuzz remain. | Qualified runtime28, STATIC72, Monitor16; selected Observe/Timer contracts and deterministic race/order inversions. | Reuse unchanged laws; run required current10k instrumented fuzz, affected integrated checks and strict lint. Sign one relationship owner/commit-point/fairness decision; preserve exact rejected notifications. |
-| DG-WORK; XO-41/42; EV-24 | Direct semaphore/FIFO probes do not yet prove the real typed interpreter’s bounded-work law. | Prepared WORK12 source and existing port/rejection/native work comparisons. | Add the smallest real-port saturation/rejected-input/completion/shutdown witness; prove abandoned waiting does not stop running work. Original/inversion and healthy tests pass both profiles; independently accept concrete limit. |
-| DG-WRAPPERS | Individual retained/deleted/reshaped abstractions lack final disposition. | Existing section7 comparisons, direct-owner probes and current consumers. | Finish each five-answer disposition; remove only proven redundant machinery, preserve differential laws and get independent acceptance. |
-| DG-MODULES; EV-27–29 | Approved extraction map and required application/local file separation remain. | Current symbol/import/export inventories and consumer/macro/renamed-crate evidence. | Freeze owner/visibility map, perform mechanical extraction, update affected exports/docs/consumers and prove before/after traces and compile denials. No duplicate implementation. |
-| Selected upstream contract | Integration still selects unreleased Behavior receiving81ba2c0. | Exact selected source/tests/instructions verified; receiving/static/native campaigns qualified. | Deliver reviewed owning PR with passing CI, publish release, select exact published contract and rerun affected integration checks. Finish other rows while this proceeds. |
-| Final verification, minimization, review and delivery | The accepted API is now integrated; its full local flake run must precede push. Upstream release, remaining gates/extraction/minimization and final checks/review/CI/merge remain. | All valid source-bound results above; private test move preserves production/test bodies and floors; DG-SHUTDOWN and EV-25 already accepted. | Run required §10.1 commands, model/fuzz/Miri, actual unchanged-floor coverage and benchmark on integrated source; complete delta/minimization and independent final reviews. Merge PR only after required green checks; record CI/merge and then complete goal. |
+| DG-MODULES; EV-27–29 | Extraction and current guidance are installed. Debug/release strict checks, runtime tests and six runnable examples pass; one compiler-message snapshot remains held by section264. Independent final actual review remains. | Exact whole-source conservation cfb2027f/ca894640 and locator correction16fcece1 have independent GO27a650c3/14b09888. Three moved fixtures execute once in each profile. Current scoped actualb7957db3 passes15 rows; prior five successful rows3941f73c are reused. Only the named blocked static controller was excluded, so this is not full acceptance. | Install the exact held E0599 message after scope approval, run the complete unfiltered static controller, obtain independent actual/gate review and retain required final integrated verification. No getter, new bound or duplicate implementation. |
+| Selected upstream contract | Integration selects unreleased receiving81ba2c0. Two external compile-denial snapshots need the exact held corrections; full external tests and publication remain. | Selected source/contracts and native/static campaigns qualify. Owning local Nix/strict and warning-clean21-target fuzz formation pass with recorded epoch limits; [delivery evidence](execution-ownership/verification.md#current-standard-campaigns-and-owning-fuzz-quality-2026-10-07). | Obtain the pending section264 four-file approval, install both exact observed fixtures and finish external debug/release. Deliver reviewed owning PR with passing CI, publish release, select the exact published contract and run affected final integration. |
+| Final verification, minimization, review and delivery | Final published selection, unfiltered integrated checks, whole-tree minimization/delta and reviewed merge remain. | All21 local Nix/four remote checks pass at cffeb49c. Current mandatory standard campaigns694acdb7 pass under independent61ba4d4d/49bc944b; current EV-30 is accepted. Preserve all source-bound native inversions and unchanged floors. | Run remaining required §10.1 final integrated/model/coverage gates on the published selection, reusing valid unchanged evidence and repeating only affected checks. Complete final delta/minimization and independent final review. Run local full flake before push; merge only after green required CI/reviews and record delivery. |
 
 ## 1. Authority and how to execute this document
 
@@ -463,9 +476,10 @@ entry alone is not proof of a delivered notification.
 
 ## 9. Decision gates: exact experiments and stop conditions
 
-DG-SHUTDOWN is **accepted** for the exact source and signatures in section 35;
-all other gates below remain **open**. The coordinator must record evidence
-before changing a gate to accepted. A gate is not accepted because a worker
+DG-SHUTDOWN, DG-TASK, DG-API, DG-WORK, DG-OBSERVATION, DG-PROJECTION
+and DG-WRAPPERS are **accepted** at the source epochs linked in the current
+closure table and supporting decision records. DG-MODULES remains open. The
+coordinator must record evidence before changing a gate to accepted. A gate is not accepted because a worker
 produced a compiling patch or because another agent assumed its answer.
 
 Every decision record must contain: the law and requirement IDs; competing
@@ -816,11 +830,11 @@ use `done`. This PRD and passing focused tests do not establish distillation.
 
 - [Completion inventory](../prd-backlog/README.md) and
   [local execution requirements](../prd-backlog/local-runtime.md#exec--parallel-execution-and-embedding).
-- [Current application execution](../../crates/bombay/src/application_runtime.rs),
-  [local Environment](../../crates/bombay/src/local.rs),
+- [Current application execution](../../crates/bombay/src/application/execution.rs),
+  [local Environment](../../crates/bombay/src/local/environment.rs),
   [actor launch/task ownership](../../crates/bombay/src/launch.rs),
-  [observation queue](../../crates/bombay/src/observation.rs),
-  [child custody](../../crates/bombay/src/child_bindings.rs), and
+  [observation queue](../../crates/bombay/src/local/effects/observation.rs),
+  [child custody](../../crates/bombay/src/local/children.rs), and
   [Entity host](../../crates/bombay/src/entity/bombay.rs).
 - [Rust API naming](https://rust-lang.github.io/api-guidelines/naming.html) and
   [future-proofing](https://rust-lang.github.io/api-guidelines/future-proofing.html)
@@ -11760,7 +11774,673 @@ No new public type is added; obsolete `AxumRunError` is removed. Shared typed
 execution/receiving and existing Tokio Builder replace the legacy runners; no
 second runtime, actor contract, trait, wrapper or scheduler policy is introduced.
 
-The full tracked/untracked change measurement and independent cfg classification
-are required at this checkpoint, followed by full local Nix before push. Valid
-unchanged original/inversion/native proofs retain their own epochs; the final
-integrated verification remains required after all remaining work.
+Complete checkpoint against2fcc:127 tracked changed paths, zero untracked;
+production+9728/−2918/net6810; tests+28966/−3012/net25954.
+The independently classified complete source record is
+`/tmp/bombay-exec-accepted-api-main-complete-count-coordinating-review.json`,
+SHA256 `1b649481211247ae9ae4ee7c099a43b0d2444959bae66516a3aeb74de0409c4d`.
+This stage adds no public type and removes `AxumRunError`; original whole-task
+public additions and historical paths remain subject to the cumulative budget,
+without a release or research-stage reset.
+
+`nix flake check -L --keep-going --max-jobs 1 --cores 2` passed all21
+`aarch64-darwin` checks on the348-path source snapshot, with zero source drift.
+Exact commands, source hashes and complete streams:
+`/tmp/bombay-exec-accepted-api-full-local-flake/actual.json`,
+SHA256 `17a3318d131a12841d89579a6eb1831cd5896334465414a6477096c0c408922b`.
+Root committed the exact tested tree as
+`cffeb49cfe0d104b8b5018c4e8511ee55dc08f5d` and pushed it to
+[PR326](https://github.com/devrandom-labs/bombay/pull/326). Its remote CI is
+pending; no merge or full EXEC acceptance is claimed. Valid unchanged
+original/inversion/native proofs retain their own epochs. Final integrated
+verification remains required after the remaining gates and extraction.
+
+## 258. Owning settlement documentation regression: pre-edit record
+
+Independent full owning-source review found one stale public compile-fail
+example in `behavior/crates/behavior/src/effects/sending.rs`: its old by-value
+call and returned Interpretation can fail before isolating the fixed settlement
+law. Correct only that existing snippet to the actual borrowed progress and unit
+future. The sole wrong axis remains the runtime-selected settlement type.
+The healthy companion substitutes only the owning settlement projection.
+
+Executable production/public declarations, signatures, bounds and types change0;
+documentation+9/−6/net3, one already-authorized existing path.
+Exact source07bd0b47→326b7ebd, complete proposal/old/healthy/negative sources:
+`bombay-owning-static-settlement-rustdoc-source-final-j743f5c7/receipt.json`
+SHA256 `1c9cf07a0b20777bff95a1a41b4d0733a85438ea8bebe9d5323f448ecc20b7ff`.
+Independent nonauthor source review2683e123 permits this exact correction.
+Preserve the old mixed diagnostic; require actual healthy formation, intended
+E0308-only settlement rejection and owning rustdoc verification through pinned
+Nix. No owning runtime contract changes or new semantic experiment follows.
+
+## 259. Real bounded-work port: test-only pre-edit record
+
+DG-WORK remains open: the old direct semaphore/FIFO probes do not prove the
+real typed actor port. Reuse the existing source-reviewed twelve-controller
+proposal and fourteen-command acceptance plan. `IndexDepot` emits typed actions;
+only its concrete runtime capabilities own threads, admission and joins.
+Pure workshop selection remains in Behavior state.
+
+One already-authorized existing path:
+`bombay/crates/bombay/src/worker_preparation.rs`,4b0e7deb→24ede983.
+Formatted tests+2472/−84/net2388; production+0/−0/net0, public types+0/−0,
+new files0. The entire production prefix is byte-exact. Complete measurement:
+`/tmp/bombay-exec-work-formatted-pre-edit-delta.json`.
+Independent source/format reviews qualify the exact24ede/ac31/ea08 sources.
+Root's existing-plan runner has independent source review93f2166a and binds
+plan2d913, exact controller identities, input guards and complete streams.
+
+Run formation first; then healthy, capacity and original-input identity
+inversions with healthy restoration in both profiles, and all twelve owners.
+Unexpected compiler, timeout, setup or wrong-oracle failure stops the campaign
+without credit. Preserve original4b0 in the immutable source packet. During the
+campaign and on its exit, restore the reviewed healthy24ede candidate; retain
+it only as a test draft until actual results receive independent acceptance.
+This is not restoration of4b0 and not DG-WORK acceptance before execution.
+
+The first actual WORK formation stopped with four test-code errors (E0407,
+E0308 and two E0282); no runtime row was executed or credited.
+`/tmp/bombay-exec-work-real-port-actual/actual.json` preserves the complete
+failure and unchanged-input guards. Independent review301ffa5c accepts the
+same four corrections on healthy and both mutant sources: delete the unused
+obsolete consuming test member; wrap one accepted preparation receipt in the
+existing SettledItem; construct the declared ActionsOf<Self> at two sites.
+No oracle, controller, join/drop order, production byte, new bound or type changes.
+Pinned formatter0 changes whitespace only. Current healthyadb1989d replaces
+24ede; capacity06f1ab25 and input-identity92a64023 preserve their exact single
+faults. Original draft/source/formation failure remain immutable. The fresh
+fourteen-row campaign owns separate streams and restores healthyadb1989d;
+independent actual acceptance is still required.
+
+DG-WORK is independently **accepted** for the exact bounded real-port laws:
+`dg-work-real-port-current-contract-independent-decision.json`, SHA256
+`da5766b69f549520ed55454bd4d0db3c557135408fb94b398b706e50ea74f1cf`.
+Actual fourteen-step ledger `e07b75c4` authenticates347 other inputs (348 total),
+all28 streams, formations and whole twelve-controller cohorts in both profiles.
+Both designated faults fail their exact native oracles after cleanup; healthy
+restorations pass. Limit2 admits one running and one queued operation in the
+configured host; exact excess-input custody and later admission are proven.
+Started blocking work survives abort of its waiter; runtime destruction has
+separate typed cancellation results, not a preemption guarantee.
+
+Required strict quality then found22 test-only lint findings, preserved in
+`/tmp/bombay-exec-work-strict-actual/actual.json`. Independent source review8992
+permits the exact bounded correction in
+`/tmp/bombay-exec-work-strict-correction-proposal/receipt.json`:
+tests+36/−25/net11; production/public types/new files0. All394 assertions and
+all twelve controller identities remain. Eight empty lanes use complete typed
+comparisons; three pointers use standard from_ref; one optional-operation branch
+has equivalent control flow. Scope-local naming and narrowly justified trace,
+explicit loan and zero-resource discharge expectations add no machinery.
+Two inert drops of borrowed Pin references are removed: the actual coroutines
+already drop at the same lexical block exit, which the comment now states.
+Pinned formatting0 preserves exact source bytes. Reuse the unchanged fourteen
+inversion laws only through this explicit source/earliest-oracle bridge; run
+strict workspace/all-targets and the twelve-controller cohort in both profiles
+on the correction. Quality and final integrated verification remain required.
+
+The post-style strict run leaves only one let-and-return diagnostic in the same
+borrowing retirement block. Return its identical await expression directly;
+the complete poll body, result value and hidden coroutine's lexical drop point
+remain unchanged. This changes tests+2/−3/net−1 per candidate and adds no
+production, type, bound or helper. Preserve both failed strict epochs; qualify
+the same full cohort/strict checks on the exact expression successor.
+
+Final WORK quality on fbf66ea0 passes strict workspace/all-target checks and all
+twelve controllers in debug and optimized builds. Actual f5c17851 and independent
+coordinating acceptance7bfdc067 close this gate. Earlier intended faults retain
+the explicit source-preservation bridges; they need no unchanged rerun.
+
+## 260. Declared parent/child measurement: test-only pre-edit record
+
+EV30 still needs the actual retained composition measurement and its omission
+inversion. Install only the reviewed current-API fixture in existing launch.rs.
+Production/public types/new paths0; tests+425/−8/net417.
+Current241e971b→healthyad1e1e19; the entire production prefix is byte-exact.
+The single mutant a59b6a92 drops the child computation values. Source review
+7f34d208 qualifies formatting, bodies, exact custody and original oracles.
+Complete source/change record: /tmp/bombay-exec-parent-child-formatted-pre-edit-delta.json.
+
+Execute the existing eight rows: formation, healthy workload, intended child
+omission, and healthy restoration, each in debug and optimized builds. Preserve
+complete streams and unchanged inputs; stop at any unexpected result. Timing
+includes native joins; counts are scoped to formation, controller polling and
+task polls, not the whole heap. The deferred representation is unexecuted and
+receives no performance credit. Independent actual acceptance remains required.
+
+The first EV30 formation stops101 with sixteen diagnostics from two test
+contract mismatches; no runtime row is credited. Complete original source and
+streams remain in /tmp/bombay-exec-parent-child-current-actual/actual.json.
+Independent selected-source reviewd7edfcfe permits the exact correction: one
+bare generated child uses existing Creations::one(CreateChild::birth); its
+actual root-owned origin is structural ChildHead. The generated named role
+still selects the same send target; no named-origin fact had been acquired.
+Production/types/paths0; tests+12/−13/net-1. Pinned formatting0 only
+orders/wraps the same import set. Healthy4591d112 and sole omission2e0cf67d
+keep every native join, effect lane, workload, payload and original oracle.
+Run the unchanged eight-row plan in a fresh ledger; retain healthy on exit.
+
+## 261. Duplicate execution type parameters: isolated comparison
+
+The larger supplied-presence candidate936ff is vetoed by independent source
+review7c208: an invalid associated binding and a larger real parameter set. It
+was neither installed nor compiled. HTTP/supplied-output presence remains open.
+
+The narrower source ad302 removes only two private kernel parameters already
+determined by Future::Output and RetireChildTasks::Failures. Production+20/−22/
+net−2; tests/public/private types/new paths0. All seven values, public signatures,
+constructor code, acquired HTTP guards and kernel executable body stay exact.
+Independent source reviewc3ba1cca permits isolated all-feature library formation
+in both profiles through pinned Nix, with full source guards and original private
+source restoration. No changed bound, policy, wrapper or fallback is authorized.
+Compiler diagnostics may veto this comparison; they cannot invent architecture.
+Main production retention and full minimization acceptance remain blocked.
+
+The corrected EV30 fixture next stops formation101 solely at four E0446
+privacy diagnostics; no runtime evidence follows. Preserve that epoch in
+/tmp/bombay-exec-parent-child-owning-contract-actual/actual.json. The private-interface
+formation failure is preserved without credit; its cause is not established
+by that diagnostic alone. No upstream macro change is added to EXEC. Independent review60b688fb accepts
+the existing nominal RetirementBirths spelling and actual ChildHead delivery
+occurrence: exactly the same lowered birth, target and origin, with the unused
+generated public role declarations removed. No child visibility is widened.
+Production/public surface/new paths0; tests+4/−4/net0.
+Healthy2c536f3b and sole computation-omission52d4faff preserve every controller,
+join, payload, oracle and measurement scope; a fresh unchanged eight-row run
+owns actual evidence, without credit from either failed formation.
+
+The isolated private associated-axis comparison forms successfully in both
+profiles with all features. Complete source guards/streams/original restoration:
+/tmp/bombay-exec-kernel-associated-axes-actual/actual.json. This is library
+formation only, with no runtime, retention or full result-minimization credit.
+
+Nominal-birth formation still fails at the same four E0446 diagnostics. This
+withdraws the earlier generated-role-only attribution and any claim of a proven
+upstream macro fault. Exact selected send generation propagates the requested
+crate visibility beyond the private child audience. All consumers are inside
+the private owning test module. Independent reviewcb1f711e permits narrowing
+that one send-product visibility to its actual owner: tests+1/−1/net0,
+production/public API/new paths0; bodies and oracles byte-exact. Healthy57334fc2
+and sole omission6c8f7238 own a fresh eight-row ledger with unchanged tests and
+strict stop/restoration rules. Preserve all three failed formation snapshots.
+
+Both EV30 formations now pass, but the first healthy runtime fails after
+joined custody at the invalid assertion route-nonce==creation-request-ID
+(actual0 versus1). Preserve that nonpass and all streams in
+/tmp/bombay-exec-parent-child-private-send-actual/actual.json; no measurement
+or omission inversion credit is obtained. These are independent facts in the
+selected RoutedCreation/EstablishChild/CommittedChild contracts. Review5e6192eb
+accepts the exact correction: the same outside-fold projector oneshot publishes
+its actual task ID and original typed ChildOrigin; work retains those facts,
+and the returned child origin is compared with that original after joins.
+Committed request ID/kind, complete effects/workload/pointers/sums/native census
+and sole computation-omission fault stay unchanged. Production/types/paths0;
+tests+12/−6/net6. The receipt is larger; its actual cost remains
+inside the existing scoped measurement, with no zero-cost claim. Healthy6c3d2327
+and omission56a1efd6 run the same eight-row plan in a fresh ledger.
+
+## 262. Remaining scope checkpoint and native-result minimization proposal
+
+User explicitly authorized the recorded267-path/13-public-type proposal.
+Independent gate acceptance remains pending; approval permits only this named
+scope and does not waive correctness, minimization, verification or review.
+The current239-file list omitted eight already changed paths. Independently
+authenticated inspected history records245 actual paths across Bombay, Behavior
+and Communication, including the temporary later-deleted Family test target.
+The union of239 names and those omissions is247. The required module map adds
+20 names (17 new private module files and three existing owners), giving267.
+No extraction or production minimization is installed by this record.
+Unrecorded transient edits cannot be reconstructed from Git; no claim of their
+universal absence is made. Scope review: d42f7cfe,
+`/tmp/bombay-exec-cumulative-all-recorded-stages-scope-coordinating-review.json`.
+
+Eight inventory corrections, namespaced by repository:
+
+- `bombay/crates/bombay-engine/tests/compile/fail/missing_environment.stderr`
+- `bombay/crates/bombay-engine/tests/compile/fail/no_lifecycle_controls.rs`
+- `bombay/crates/bombay-engine/tests/compile/fail/no_lifecycle_controls.stderr`
+- `bombay/crates/bombay-engine/tests/compile/fail/not_a_behavior.stderr`
+- `bombay/crates/bombay/src/actor_outcome/failure_projection.rs`
+- `bombay/crates/bombay/tests/compile/fail/stash_requires_closed_phase.stderr`
+- `bombay/crates/bombay/tests/family_cleanup_acquisition.rs`
+- `bombay/docs/prds/execution-ownership/module-ownership.md`
+
+Required module-map additions:
+
+- `bombay/crates/bombay/src/application/mod.rs`
+- `bombay/crates/bombay/src/application/composition.rs`
+- `bombay/crates/bombay/src/application/execution.rs`
+- `bombay/crates/bombay/src/application/interface.rs`
+- `bombay/crates/bombay/src/application/http.rs`
+- `bombay/crates/bombay/src/local/mod.rs`
+- `bombay/crates/bombay/src/local/endpoint.rs`
+- `bombay/crates/bombay/src/local/ingress.rs`
+- `bombay/crates/bombay/src/local/environment.rs`
+- `bombay/crates/bombay/src/local/execution.rs`
+- `bombay/crates/bombay/src/local/children.rs`
+- `bombay/crates/bombay/src/local/effects/mod.rs`
+- `bombay/crates/bombay/src/local/effects/creation.rs`
+- `bombay/crates/bombay/src/local/effects/delivery.rs`
+- `bombay/crates/bombay/src/local/effects/observation.rs`
+- `bombay/crates/bombay/src/local/effects/timers.rs`
+- `bombay/crates/bombay/src/local/effects/reports.rs`
+- `bombay/crates/bombay/src/application.rs`
+- `bombay/crates/bombay/src/time.rs`
+- `bombay/crates/bombay/src/topology.rs`
+
+Current complete Bombay working-tree measurement against original2fcc:127
+tracked changed paths, zero untracked; production+9728/−2918/net6810;
+tests+31865/−3096/net28769; documentation+18465/−409/net18056;
+configuration+58/−39/net19. Source pairs, unchanged classified intervals and
+exact extended cfg-test tails are recorded in
+`/tmp/bombay-exec-current-closure-complete-delta.json` (227e63e0).
+That is an endpoint measurement, not a claim that previously delivered owning
+library edits disappear from cumulative scope. The owning receiving-stage
+classified baseline and earlier delivered stages remain in scope reviewd42f.
+No line cap is reintroduced. Final integrated measurement remains required.
+
+Whole-task public census from the original selected contract is12 nominal
+additions (including two already delivered observation-authority types), with
+AxumRunError removal counted separately. The concrete proposal below adds one
+public error enum, raising the proposed allowance to13. It does not reset the
+census at the latest release or count only fresh spellings.
+
+Native cleanup proposaldfda012c, outside repository source until authorized:
+`/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-native-flat-cleanup-source-hl4xecb2/receipt.json`.
+Two existing source files: application_runtime.rs and lib.rs;
+production+45/−26/net19; tests0; public types+1/−0.
+ApplicationCleanupError distinguishes original cleanup publication RecvError
+from the original cleanup-task JoinError. A root actor JoinError moves unchanged
+into existing ActorRetirement::ActorTaskFailed, removing its extra Result layer.
+Successful cleanup becomes `Ok((origin, retirement))`, removing two nested
+Result layers. Work/Output presence is a separate open requirement; no claim of
+removing its Options is made.
+
+The new error owns the actual failure of obtaining the cleanup owner's result;
+it transforms two native failure locations into distinct exhaustive variants.
+Existing ActorRetirement covers actor failure but cannot truthfully classify
+cleanup-task failure or a closed publication. It deletes the nested cleanup
+product and its second success wrapper across all application constructors.
+The real Application/Entity consumers demonstrate this belongs to Bombay's
+execution boundary, while RunError retains its separate executor role.
+
+Independent review must precede installation. Required controls retain actual
+native task ID, panic payload identity and precise failure owner; successful
+root/Entity cleanup and all independently held family receipts remain intact.
+Existing unaffected native witnesses stay at their qualified epochs. Migrate
+all affected current consumers/docs, run focused debug/release laws and their
+meaningful inversions, then required integrated checks. Approving this scope
+does not approve that model, its gate, module extraction or final delivery.
+
+The changed tokio_unstable benchmark module has six actual strict-lint findings
+(record /tmp/bombay-exec-parent-child-current-strict-actual/actual.json,101).
+Review95439 permits only lint attributes: tests+16/−8/net8, production/types/
+paths0; all executable bodies, futures, oracles and measurement regions exact.
+Keep native8 at its original6c3 epoch through this qualified source bridge.
+Run pinned formatting and the same cfg-aware strict check; do not claim pass
+from default Clippy, which did not compile this module.
+
+## 263. External compiler-fixture scope checkpoint
+
+Proposal only; installation awaits explicit authorization. The approved267
+names omit two existing owning compiler-error fixtures:
+
+- `behavior/tests/interpreter-contract/tests/ui/assignment_double_settlement.stderr`
+- `behavior/tests/interpreter-contract/tests/ui/proxy_double_settlement.stderr`
+
+Both current tests still produce the required E0382 denial of transferring one
+original request into two owners. Expected text describes the old consuming
+settlement API; actual current denial occurs at the second original-value
+transfer into `InterpretationProgress`. Complete observed diagnostics are
+frozen in assignmenta4239bf0 (independentd64718d5) and proxy5bb3bfa1. Actual
+fa8ce6fc and66778f79 preserve the failing tests and unchanged808-source graphs.
+Other five privacy expectations pass unchanged; no runtime law is weakened.
+
+Concrete expansion:267→269 named paths, still13 public types and no line cap.
+Proposed two-file delta: production+0/−0/net0; tests+15/−25/net−10; public
+API+0/−0. Existing receiving working-tree scope is87 paths (85 tracked, two
+untracked); the approved classified recordf2a87a41 measures production
++3898/−779/net3119 and tests+8986/−1430/net7556 before the separately reviewed
+zero-net warning correction. Neither this fixture repair nor that correction
+adds production capability or public types. Complete final source-bound
+classification remains required before delivery.
+
+Install only the exact observed expected-output corrections after independent
+source review and authorization; rerun complete external tests in both
+profiles, then the required remaining owner checks. Keep the existing passing
+checks scoped to unchanged code. Final local Nix verification is required
+before the owning push.
+
+
+### Current result/parameter retention — pre-edit record (2026-10-07)
+
+The supplied-work result previously allowed a completed application without its
+output and wrapped the complete cleanup in two success carriers. The current
+Cold/Ready comparison returns the bare supplied work/output, preserves real
+no-work absence and opaque user Option/Result, and derives two redundant
+parameter axes from their existing owners. It keeps original root/family and
+native failure custody; all twelve native-failure consumer cuts retain their
+original rejection/discharge before projection. No parameter-forwarding DTO,
+runtime, policy or second execution path is added.
+
+Exact32 proposed source:9c2dea21; complete caller verification:e891ead8, all28
+commands pass. Strict checks and nine affected runtime groups plus three
+static groups pass in debug and optimized builds. Four unchanged runtime groups
+(62 tests per profile), debug60-target formation and24 focused inversion/restore
+rows are reused only under their signed source bridges. The final integrated
+verification and actual executable-example runs remain required.
+
+The32 existing named paths and exact preimages/proposals are frozen in
+/tmp/bombay-exec-required-min-consumer-unit-successor-source/complete-source-manifest.json.
+The stage measures production+891/−327/net564, tests+810/−515/net295,
+documentation+69/−40/net29; configuration0. Public API+1 type/−0:
+ApplicationCleanupError, already within the approved267-path/13-type allowance.
+This is result/parameter minimization with positive code growth, not a net code
+reduction. Separate forwarding-wrapper deletion and module extraction follow.
+
+Independent final retention signatures ed2b07e0 and105459bb accept this exact
+candidate. Installation record be0066c3,
+/tmp/bombay-exec-required-min-retention-installed/actual.json, authenticates the
+exact32 products and preserves every other source. The later prose-only cleanup
+wrapper-count erratum changes no source, law, measured delta or test credit.
+
+
+### Accepted forwarding-wrapper deletion — pre-edit record (2026-10-07)
+
+HostedActorSpaces and ResolveLogical only forward the existing Hosts and
+AddressSpace law. Two current consumers compare exact delivery/claim generations
+and native Entity retirement before and after their deletion, with identical73
+assertions and the same selected compiler/contracts/features. All eight exact
+consumer passes and both AFTER strict profiles qualify (before94d9b88f,
+after6c355406); original law cuts retain only their precisely bridged epochs.
+
+Three already approved source paths: application_runtime.rs, entity/bombay.rs
+and topology.rs. Exact formatted products95b527c1/b4521b29/3b2ba4a7; production
++14/−45/net−31; tests+452/−25/net427; public types+0/−0. Two forwarding production
+constructs are deleted; the original cfg-test fixtures remain. Complete lexical
+cfg-item classification ca0a91dc includes the late production kernel edits;
+the earlier first-cfg count47640051 remains a preserved corrected record. This
+stage reduces31 production lines; the complete EXEC production delta is still
+positive. No new semantic owner, policy, trait, registry, task or public type.
+
+Independent decisions eabfa531/9487ad69 accept current DG-WRAPPERS dispositions
+and exact same-consumer comparison. Installation records the complete preserved
+source graph in /tmp/bombay-exec-forwarding-wrappers-retention-installed/actual.json.
+Required mechanical modules, final integrated verification and reviewed delivery
+remain. This stage stays within the approved267 paths/13 public types.
+
+
+### HTTP-only result refinement — pre-edit record (2026-10-07)
+
+The current package-isolated default build fails strict Clippy in both profiles
+for one unused private HTTP refinement (original30b80b07, exit101). Workspace
+feature unification had hidden this fault. Both actual consumers already require
+the Axum feature. Add only that same feature attribute to the complete existing
+impl: source5b8152c3, independentd2424258/1f6b1ab4. Every body, signature, bound,
+phase and owned value stays exact; no suppression or new interface is added.
+
+One approved existing path, application_runtime.rs; production+1/−0/net1,
+tests+0/−0/net0, public API+0/−0. This stays within267 paths/13 types. Verify
+package-isolated default all-target strict debug/release, all-feature checks and
+pinned formatting before broader module extraction. Rebind the module source
+map to the sole added attribute and shifted lines. The earlier example baseline
+7441d0f2 passes and retains its original source epoch and warning qualification.
+
+Closed: fixeda488ed9c passes all five commands. Independent actual decisions
+0e677bbb/8198b463 authenticate both original failures, complete fixed streams
+and unchanged source guards. Example baseline7441d0f2 is reusable only through
+the exact unchanged-body/feature bridge; no semantic mutant or warning-free
+original baseline is claimed. New application source is de6f9eaa.
+
+
+### Guarded module extraction — pre-edit record (2026-10-07)
+
+All selected semantic repairs and the separate default-feature fault have
+passed their required source-bound comparisons. The current map53edb384 and
+before-example baseline7441d0f2 authorize only an unchanged-code extraction.
+Corrected source685190cf repairs the held eddff source proposal's import merge,
+receiver visibility, lost original impl attributes and duplicated sealed trait.
+Independent source reviews47f8fa1b/cf53f341 accept guarded installation and
+compilation, not final DG-MODULES retention. All2377 assertion expressions and
+258 within-unit orders remain conserved; no new test or model is invented.
+
+Exact39 operations:17 approved new private module files, nine former owner
+files removed after their complete move, and13 existing import/owner files.
+The complete path/preimage/product record is the corrected source-manifest.json
+in /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/bombay-seventeen-module-corrected-source-hhgof7j7.
+No current documentation is overwritten. Existing concrete Behavior, Driver,
+mailbox, Address, Observe, Timers, task and child owners are reused unchanged.
+No wrapper, trait, alias, bound, semantic type, kernel or runtime is added.
+
+Independently reproduced unformatted delta: production+8610/−8563/net47;
+tests+11292/−11219/net73; public API+0/−0; configuration/documentation0.
+This stage grows code and stays within the approved267 paths/13 public types
+and existing no-line-cap allowance. Actual formatting and complete cumulative
+tracked/untracked measurement remain required. Run pinned default and Axum
+formation, strict checks, complete existing unit/integration/doc/static cohorts
+and affected examples in both profiles; preserve original-defect evidence only
+under exact source conservation. Reopen the owning gate if the move requires
+any new semantic interface. Final module review, EV-30 and full delivery remain.
+
+
+Module formation correction: original c9129663 preserves pinned formatting0
+and first default library check101. Three old-owner import groups caused direct
+errors; the pattern/associated-type diagnostics are consistent fallout, not
+a demonstrated semantic defect. No later planned check executed. Independent
+actual3b8c848e/419720e5 preserve that fault and complete source guards.
+
+Before retry, exact9152eb99 corrects six already approved files: launch.rs,
+local/effects/mod.rs, local/mod.rs, local/children.rs, application/interface.rs
+and local/environment.rs. All bodies/signatures/fields/captures/assertions stay
+unchanged. Existing LocalTerminalReports crosses its private leaf through one
+crate-visible effects reexport for actual consumers; no wrapper, alias, getter,
+bound or new semantic interface. Canonical public exports remain unchanged.
+Production+12/−11/net1; tests+4/−4/net0; public API+0/−0, within267/13.
+Independent sourceeb0d9e05/bfb3da81 accept only installation and actual recheck.
+Formatting and the failed formation must pass before later checks gain credit.
+
+
+Application audience correction — pre-edit record: actual24c795f6 retains
+formatting0 then default library formation101. Original import errors are gone;
+five E0446 diagnostics expose a mismatch between ComposeApplication and its
+existing private associated-output owners. Independent failure reviews
+bbc3cd59/73fe1bb4 preserve the exact fault; no runtime test ran.
+
+Complete source2fe27d54 traces the original shared private namespace and the
+full associated-output equation, rather than guessing from compiler suggestions.
+Eight existing declaration owners receive only application-ancestor visibility;
+fields, aliases, selection, bounds, bodies and canonical public exports stay
+unchanged. Four verified unused imports are removed. Four approved files:
+application/composition.rs, application/execution.rs, application/mod.rs and
+local/effects/timers.rs. Production+10/−11/net−1; tests/public API+0/−0.
+No new interface/type/getter/kernel, within267 paths/13 types. Independent
+138ed29f/a1e816c3 accept only installation and required formation. Earlier b5eb
+is held history and was never installed. Actual checks and final DG-MODULES
+review still determine retention.
+
+
+Test-scope import correction — pre-edit record: actuald011867b qualifies
+pinned formatting and default/Axum library formation, all0. The first all-target
+strict check fails44 cfg/test import diagnostics; no runtime test executed.
+Independent actualc04ed924/9ad61c28 preserve that exact epoch and source guards.
+
+Complete5dc3886e restores the original five Environment imports, corrects the
+nested termination path, and removes only duplicate/unused fixture imports.
+Five approved files: launch.rs, local/environment.rs, local/effects/mod.rs,
+application/interface.rs and local/effects/observation.rs. All1437 affected
+assertions and the full unstable benchmark remain exact. No body, attribute,
+label, bound, type, visibility, fixture or canonical export changes. Production
++0/−1/net−1 (blank); tests+30/−50/net−20; public API+0/−0, within267/13.
+Independent25951281/99d84b4a accept installation and actual recheck only.
+Repeat formatting and the failed strict check, then the required remaining
+formation/runtime/static/example checks. Source eligibility is not test credit.
+
+
+Private mechanism test relocation — pre-edit record: actual8312c252 retains
+pinned formatting0 and default all-target strict101. The former44 import
+diagnostics are gone; only E0616/E0624 remain where relocated Environment
+fixtures access private task storage and endpoint rejection conversion.
+Independent actual5f0e81df/8d17e52d preserve four complete streams,365 source
+guards and absent process groups; no runtime test ran.
+
+Source9936ad4f moves both complete activation-task tests into the existing
+local/execution.rs test owner and exact rejected-payload recovery into a
+cfg(test) child of local/endpoint.rs. The third approved file is
+local/environment.rs. All427 assertion expressions and all three complete
+attributes/signatures/bodies remain exact; test names/counts do not change.
+The existing private field/method stay private. Raw production+1/−0/net1
+(blank), tests+64/−54/net10, public API+0/−0, within267 paths/13 types.
+Independent bde0b8c2/9c2c6323 permit installation and verification only.
+
+Repeat pinned formatting and failed strict formation, prove all three new
+selectors execute one test in both profiles, then required full verification.
+Existing default/HTTP library formationd011867b remains source-bound evidence
+through the test-only corrections; no runtime credit is inferred. Run the
+existing protocol-denial tests early because three expected diagnostic
+contexts still name the former application module. Preserve complete actual
+messages and the same invalid-program denial; do not invent expected output.
+
+
+Warning-only test layout correction — pre-edit record: actual247be552
+retains formatting0 then default all-target strict101. Both private-access
+faults are gone; only an unused test pending import and the existing
+Termination alias placed after tests remain. Independent actuale895bb7a/
+eb087efd preserve the complete failure and365 source guards; no runtime
+tests ran.
+
+Sourceb5e75fce removes that one unused import and places the unchanged
+crate-only alias before the unchanged tests. Two approved files:
+local/environment.rs and termination.rs. RHS, visibility, body, attributes
+and all410 assertion expressions stay exact. Raw production+2/−2/net0;
+tests+0/−1/net−1; public API+0/−0, within267 paths/13 types. Independent
+f3546903/a39af917 permit installation and actual verification. No warning
+suppression, accessor, type, bound or semantic choice is added. Repeat the
+failed strict check, exact owning selectors and remaining integrated checks.
+
+
+Observed compiler-context correction — pre-edit record: e307a8cc passes
+pinned formatting, default/all-feature strict checks and the three exact
+debug private-owner selectors (one each). Its application static controller
+fails only old owner contexts; four other fixtures pass. Remaining static
+packet1671add0 passes the interface controller and records the same source
+context mismatch in HTTP and both child feature formations. No invalid
+program became valid.
+
+Root-authored sourceb75ca4c7 extracts five complete ACTUAL OUTPUT fences.
+All E0631/E0599/E0277 errors, caller sites, bounds and suggestions stay exact;
+only existing owning paths change. Independent7c715ecf/5edd0de4 approve four
+already named paths: run_with_wrong_root_protocol.stderr,
+axum_wrong_root_protocol.stderr, application_child_must_be_behavior.stderr,
+and application_child_must_be_behavior_feature_unified.stderr. Tests+8/−8/
+net0; production/public API+0/−0. Install only these four within267/13.
+The fifth app_local expectation remains untouched pending section264.
+No overwrite mode, weakened denial or filtered full-gate claim is permitted.
+
+## 264. Combined remaining compiler-message and documentation scope checkpoint
+
+Proposal only; this replaces the pending two-file section263 request.
+Independent scope08315a8f confirms the named267 allowance omits these four
+existing paths, giving a proposed271-name union, still13 public types:
+
+- behavior/tests/interpreter-contract/tests/ui/assignment_double_settlement.stderr
+- behavior/tests/interpreter-contract/tests/ui/proxy_double_settlement.stderr
+- bombay/crates/bombay/tests/compile/fail/app_local_is_not_an_ordinary_path.stderr
+- bombay/docs/prd-backlog/core-integration.md
+
+The first two exact observed products and their reviews are in section263.
+The third is b75ca4c7's independently reviewed whole E0599 diagnostic: only
+src/application_runtime.rs becomes src/application/mod.rs. The fourth is
+the concrete three-link repair in
+/tmp/bombay-exec-current-module-guidance-proposal/proposed/docs/prd-backlog/core-integration.md:
+current interpretation pointers go to local/effects/mod.rs and local
+activation/custody goes to local/environment.rs. Historical commands and
+evidence remain unchanged. No runtime contract is altered.
+
+Concrete four-file expansion: production+0/−0/net0; tests+16/−26/net−10;
+documentation+3/−3/net0; new public types0. Installation stays blocked until
+explicit authorization; all independent checks continue.
+
+Current complete Bombay endpoint measurement against original2fcc:
+131 tracked changed files plus17 untracked module files,148 total;
+production+13869/−6382/net7487; tests+34249/−4687/net29562;
+documentation+19166/−412/net18754; configuration+58/−39/net19.
+Full source pairs/cfg regions and75 reused unchanged qualified pairs:
+/tmp/bombay-exec-module-current-complete-delta.json (242d0cd3). This snapshot
+precedes the four already authorized context updates and this prose record;
+it is not the required final delivery measurement or a reset of cumulative
+owning-library/historical scope. Current unchanged owning scope remains87
+files and its qualified classified recordf2a87a41 in section263.
+The full module-only stage is production+8723/−8567/net156 and tests+11270/
+−11220/net50, public types0 (sourcecfb2027f/whole-cfgca894640); independent
+final source/count review and actual runtime/static acceptance remain pending.
+
+
+Current module guidance — pre-edit record: install only the five already
+approved documentation products07c8d0e9. Independent d6fcc149/a83a3c73
+verify exact source links, complete historical preservation and no premature
+gate closure. Documentation+53/−29/net24; production/tests/public types0.
+The separate three-link core-integration product remains held under264.
+No Rust body, inline executable example, contract or verification command
+changes; valid formed-source results remain reusable. Final documentation
+and full integrated checks still apply.
+
+
+Current PRD reference repair: finite current-guidance checkliste84d3c0b
+finds four section13 links to deleted owners. They now point to the exact
+application execution, local Environment, observation interpretation and
+child-custody modules already accepted by the source map. Documentation
++4/−4/net0; production/tests/types0; already approved PRD path. Historical
+inventories and commands remain unchanged. The separate core links remain
+held under264. The checklist retains all fifteen exact section10.1 commands
+and required final model/coverage/law, two fuzz and Observe Miri checks;
+accepted unchanged relational fuzz and native inversions are reused only
+under their recorded source/contract bridges.
+
+
+Owning fuzz consumer quality — pre-edit record: actual90738e78 runs the
+required existing fuzz build successfully, but seven migrated consumers keep
+an unused SendSettlements import. Owner AGENTS requires warning-clean
+workspaces. Sourcec716cf5b removes only those seven import leaves; independent
+8b2b320a/896072ec verify all bodies/assertions byte-exact. Bounded pinned
+stdin formatteradb25166 changes only three use-list wraps; independent
+01b836d7 verifies every other byte unchanged and all seven actual formatter
+commands0, without repository mutation.
+
+Seven already approved behavior/crates/behavior-testkit/fuzz/fuzz_targets
+paths: fixed_supervisor.rs, fixed_supervisor/roster.rs,
+fixed_supervisor_delayed_sequences.rs, fixed_supervisor_recovery.rs,
+fixed_supervisor_recovery_sequences.rs,
+fixed_supervisor_role_correlation_sequences.rs and
+fixed_supervisor_shutdown_sequences.rs. Formatted tests+8/−11/net−3;
+production/public types0; no new files, bounds, policy or runtime code.
+Scope remains267 names/13 types. Install only exact seven products, retain
+original warning streams, then rerun the same required fuzz build and prove
+no remaining Rust warnings. No optional new campaign or semantic regression
+is added for removal of unused imports. The two held external expected-error
+files remain unchanged under264.
+
+
+Current closure checkpoint: independently accepted5c4637f6 binds complete
+endpoint measurements9290569d (Bombay) and837c8985 (owning receiving):
+Bombay148 paths=131 tracked+17 untracked, production+13869/−6382/net7487,
+tests+34255/−4693/net29562, docs+19427/−430/net18997, configuration
++58/−39/net19. Owner87 paths=85 tracked+2 untracked, production
++3908/−786/net3122 (three additional Rustdoc lines included), tests
++8983/−1430/net7553, docs+79/−1/net78. This stage adds no public types;
+the separately reviewed cumulative13-type allowance remains. Measurements
+precede this prose and are checkpoint evidence, not the final delivery delta.
+235 current endpoint paths do not reset the cumulative267-name scope or
+historical Communication/release surface. All four section264 preimages
+remain unchanged. Canonical working-tree edits and other worktrees remain
+preserved.
+
+Focused local commit plan da857b44 reconstructs eight exact index stages
+from cffeb49c without copying older sources over the current checkout.
+Measurement controls,32-file accepted minimization, WORK, forwarding
+deletion, the HTTP attribute,39-operation module extraction/current guides,
+four already approved diagnostic products and final records remain separate.
+All26 pre-extraction old-owner products match byte-exactly. Final metadata
+hashes are refreshed after terminal records; pending271-name products are
+excluded. This does not claim each intermediate tree was executed, final
+Nix passed, remote delivery or acceptance of the held static controller.

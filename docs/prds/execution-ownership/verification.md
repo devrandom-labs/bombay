@@ -1,10 +1,104 @@
 # EXEC verification evidence
 
-Status: staged EXEC evidence. DG-SHUTDOWN, DG-TASK and DG-API are independently
-accepted; five decision gates remain open. [PR326](https://github.com/devrandom-labs/bombay/pull/326) is the consolidated open integration PR; full EXEC acceptance, passing delivery CI and merge are not claimed. The historical baseline is
+Status: staged EXEC evidence. DG-SHUTDOWN, DG-TASK, DG-API, DG-WORK and
+DG-OBSERVATION, DG-PROJECTION and DG-WRAPPERS are independently accepted. The PRD current closure table names
+remaining representation, extraction, minimization and delivery requirements. [PR326](https://github.com/devrandom-labs/bombay/pull/326) is the consolidated open integration PR; full EXEC acceptance, passing delivery CI and merge are not claimed. The historical baseline is
 `2fccedf6eb636ac22143e7e01de7e784f96e2b4e`, with its original lock and manifest
 hashes in PRD section 16. Later selected contracts and retained evidence are
 recorded below and in the PRD.
+
+## Current result and parameter trial
+
+The exact32 successor9c2dea21 is independently accepted and installed.
+Coordinating decision ed2b07e0 and independent nonauthor105459bb bind App33cf4d1e,
+lib2acbba6a and receivingf0a3ca18; installationbe0066c3 copies those products
+without changing the selected179-package graph or other source. The original
+pre-minimization API acceptance below retains its own epoch.
+
+Actuale891ead8, /tmp/bombay-exec-required-min-consumer-unit-current-actual/actual.json,
+qualifies all28 commands and56 complete streams. Pinned Nix workspace/all-target/
+all-feature strict checks pass in debug and optimized profiles. Nine affected
+runtime groups pass30 controllers per profile; three static groups pass9 outer
+controllers and22 nested fixtures (5 pass/17 intended denials), counted separately.
+Optimized whole-workspace formation produces60 distinct executable targets with
+no compiler messages. All348 source guards/restores and process-group fences pass.
+Independent actual reviewd562231a authenticates the complete record.
+
+Reuse is explicit: four unchanged whole groups pass62 tests per profile, prior
+debug60-target formation remains valid, and24 focused original-fault/inversion/
+restore rows remain qualified through source bridges443fe201/772105f0/0a9f4ff8.
+Failed formatter, missing-import and strict-lint attempts remain preserved in
+their original records; only their corrected successors pass. No empty test
+selection or example formation counts as runtime evidence.
+
+The32-path stage is production+891/−327/net564; tests+810/−515/net295; docs+69/−40/
+net29; configuration0; public types+1/−0. Exact measurement0b155339 is independently
+reconstructed by bfb230e6. Supplied work/output are bare, genuine no-work absence
+and user Option/Result remain intact, and cleanup distinguishes its original
+publication/task failure. Two redundant parameter axes are derived from their
+owners; nineteen true axes and seven values remain. No forwarding DTO, new
+policy or duplicate execution path is retained. This is model minimization
+with code growth. The separately [accepted wrapper deletion](abstraction-disposition.md#current-wrapper-decision)
+is installed. Modules, actual example execution, published owner selection and
+final integrated verification/delivery remain required.
+
+### Historical isolated trial evidence
+
+The unretained seven-source proposal is frozen in
+`/tmp/bombay-exec-joint-minimization-native-protocol-snapshot-source/receipt.json`
+(SHA04abf9a2); App387b9f57, lib2acbba6a. It derives two redundant generic
+parameters, distinguishes cold from ready callable custody, gives supplied work
+its bare original output and names the two real cleanup failures. The private
+kernel still has nineteen genuine generic axes. This proposal is net-positive
+production code; it is not a code-reduction claim or a retained API decision.
+
+Formatted debug/release formation and receiving38 debug pass under actual44330;
+actual5ca086 continuation qualifies receiving38 release (including all five bare
+output controls), run17 plus one ignored child per profile, Entity1 per profile,
+and HTTP6 release. Independent review71e66ccb corrects only the outer test census;
+the raw record's collector vetoes remain preserved. Reuse those unchanged bodies.
+
+HTTP debug is a real nonpass: full-six candidate contexts actual5ca086 and
+0c8f3329 reach the unchanged fifteen-second watchdog. Original full-six API
+actualcaa4ae41 passes, and isolated original/candidate controllers both pass;
+those different contexts do not prove or discharge the fault. The bounded
+original-schedule diagnostic actual4bd6f12f runs two full suites: first passes,
+second fails after retry construction **before router invocation**. Its eleven
+outside-fold messages preserve all original assertions, values and deadlines.
+The execution-first diagnostic actual81fc1505 then observes the complete
+`StagingRejected` result with `AddrInUse`. Independent review8e0c4212 confirms
+Bombay returned the real bind error and original inputs; the test incorrectly
+waits for the callback retained inside that uninvoked router. No production
+deadlock or explanation of the OS port occupant is established. The repair
+belongs to this owning test, with every original custody/serving oracle retained.
+
+Concurrent receiver diagnostic actual33a4f9f9 passes all six and records serving
+Ok, exact receiving and completed cleanup. It changes receiver polling, so it
+cannot discharge the original failed schedule. All actuals retain complete
+stdout/stderr, pinned Nix argv, process-group fences and full348-source restoration
+plus integration-tree guards. Tests never extend the watchdog to claim success.
+
+The test-only deterministic repair046efe acquires actual bind refusals before
+waiting for router startup and retains the same listener until the first retry
+refusal. FullHTTP6 passes both profiles; restoring the original wait ordering
+fails the unchanged watchdog in both, and exact restores pass. Acceptancea9bd
+binds initial actualc7fd and continuation179e, preserving the raw collector
+veto caused only by Cargo’s expected “test failed” summary. Runtime unchanged.
+
+Final candidatea798 contains that repair and six unchanged proposal products.
+Three finite inversionsd5d54 execute as actual8e3a3d47: twelve intended negatives
+and twelve exact positive restores across both profiles. Review0a9f4ff8
+authenticates all48 complete streams and source348/main guards. The unit binding
+has primary E0308 at4800 and one dependent E0308 at4802, one static law. The
+other ten negatives reach the original output/input oracles after cleanup,
+while preserving genuine native causes. Final trial source peerb8af binds the
+three ownership answers and nineteen real kernel axes; its then-pending caller/
+strict and retention decisions are closed only by the current successor above. The raw actual’s copied
+“No negative/static/mutation proof” limit is superseded only by this precise
+row qualification, not by rewriting its evidence. Independent bridge2ad3cd30 qualifies the unchanged Family tail and root/head
+publication order for reuse of the existing original/fixed/root/head inversions.
+No fresh root/head fault is needed. Original accepted API and runtime evidence
+keeps its own epoch; final integrated verification is required.
 
 ## Accepted API verification (2026-10-07)
 
@@ -1551,3 +1645,165 @@ Evidence limits: Native32 remains historically NONPASS because of test lint fail
 The final isolated App baseline remains `ca706421...`; the accepted custody/publication/execution kernel is `6f93199e136f32706fd18c1425e2e77ee6a23910a65c75e516750aa59317b2f8`. Temporary controlled HTTP rows are outside this disposition and receive no preservation credit.
 
 Separate gates remain: DG-API, complete DG-OBSERVATION and DG-PROJECTION, minimization/distillation, integrated warning/coverage/Nix/CI/delivery, source retention and whole-PRD states.
+
+## Current owning delivery
+
+The receiving owner remains uncommitted and unpublished. Readiness source
+reviews5077126b/d719324c bind its exact87-path scope and custody contract.
+The reviewed warning-only three-path correction12fa519f changes no statement,
+ownership, public type or production line count; source reviewb8a8ec4a and
+actual qualityd2ae99ff/independent008e7059 qualify strict workspace Clippy,
+formatting and all16 affected tests in each profile.
+
+Current actualfa8ce6fc passes the full owning local Nix check and separate
+interpreter dependency-graph check. External debug execution stops at the
+existing double-assignment compiler fixture; a separate proxy privacy run66778f79
+finds the second stale fixture. Both still reject request reuse with E0382, but
+the snapshots expect predecessor method signatures and lines. Exact observed
+corrections a4239bf0/5bb3bfa1 are independently reviewed d64718d5/04000ced and
+await the combined explicit four-file scope approval recorded in section264. This is an expected-output fault, not a weakened affine law. The
+actual mismatch and all original streams remain preserved; release-profile
+external tests and fuzz build have not executed in this batch. Initial
+preflight5a99a392 and Nix0c0b3ad6/independent8eac9e48 remain scoped to their
+unchanged contracts. They do not prove new-version publication.
+
+DG-PROJECTION is closed by the single current
+[representation decision](terminal-projection.md#current-representation-decision).
+Its two independent signatures select existing eager execution; the ordinary
+completion prototype and all its raw failed collector metadata remain evidence,
+not retained code or a clean-quality claim.
+
+
+### Before-module examples and HTTP feature closure (2026-10-07)
+
+Current example baseline7441d0f2 runs all seven example packages in both
+profiles (nine tests each; the two zero-test targets are formation only), then
+six finite optimized mains. All eight commands pass. The Supervision example
+retains its recorded compatibility-only exception; it supplies no stronger
+source-law evidence. This is the before-extraction EV-27/28 baseline.
+
+Package-isolated default strict checks exposed one private HTTP-only method
+compiled without its consumers. Original30b80b07 preserves the intended
+into_http dead-code failure in both profiles. Exact one-attribute source5b8152c3
+gates the whole existing impl with its existing Axum consumers; every body and
+bound stays exact. Fixeda488ed9c passes pinned formatting and package-isolated
+default all-target strict plus workspace all-feature strict in both profiles.
+Independent0e677bbb/8198b463 authenticate all thirty complete streams and348
+source guards. The example baseline remains reusable under that exact feature/
+body bridge; this is a lint fault closure, not a semantic inversion. Original
+warnings and source epochs remain preserved. Module extraction and final
+integrated verification remain required.
+
+
+### Current module checks (2026-10-07)
+
+Whole-source conservation cfb2027f/ca894640, corrected mapper locator16fcece1
+and independent27a650c3/14b09888 preserve the exact public contract, complete
+folds and all2377 assertion expressions. The17-file module stage is
+production+8723/−8567/net156; tests+11270/−11220/net50; public types0.
+Five current guidance products07c8d0e9 are installed under independent
+d6fcc149/a83a3c73 (installation receipt in
+/tmp/bombay-current-module-five-guidance-installed/actual.json).
+
+Actuale307a8cc qualifies formatting, both debug strict formations and three
+exact moved tests. Exact observed messagesb75ca4c7 correct four approved
+compiler contexts; the fifth remains held under264. Partial actual3941f73c
+passes the HTTP and both child static controllers,60 linked all-target
+executables and scoped debug workspace tests; its no-default row failed
+before runtime because LLVM ran out of disk. That failure remains preserved.
+
+Successorb7957db3 retries that failed row and completes15 checks, all0:
+no-default debug tests, both optimized strict formations, the three exact
+optimized moved tests (one each), all-target optimized formation, workspace
+and no-default optimized tests, and six finite example mains. Runtime rows
+explicitly exclude only run_with_protocol_is_compile_checked, whose held
+E0599 expectation names the deleted owner. They are scoped successful
+verification, not unfiltered whole-gate acceptance. Independent b78a207b/14c5f9a6 authenticate the complete scoped actual
+and preserve the original disk failure. The held unfiltered controller
+and final integrated verification remain pending.
+
+Disk receiptsff3274f4 and960216dd preserve all source and linked executables
+at their respective terminal epochs; only root-generated auxiliary rcgu
+objects are retired. Later authorized trybuild rebuilds are a separate
+epoch, not an assertion that shared fixture binaries never change. No
+compiler flag, contract, acceptance criterion or global cache was changed.
+
+
+### Final execution measurements (2026-10-07)
+
+EV-30 is independently accepted by5f511da8/05b5826b. Actual packet
+/tmp/bombay-exec-final-ev30-actual/actual.json (c4dddb5a) contains the five
+exact existing commands from finite plan7dfe220e, all0, ten complete streams
+and365 unchanged source guards with terminal process groups. No new model,
+threshold, fixture or alternative experiment was added. Commands use the
+pinned Rust1.99 shell, tokio_unstable, two build jobs and an isolated target.
+
+Both ordinary debug/release cohorts run four tests with two explicitly
+ignored measurements: independent actors overlap on distinct workers
+(maximum2), the deliberately serialized control stays1, selected interpreted
+allocations change0→8 and corresponding poll allocations64→72, and the
+native panic test resets its allocation scope. Expected panic output is
+preserved; no broader recovery claim is inferred.
+
+| Existing measurement | Debug | Release | Scope |
+| --- | --- | --- | --- |
+| Parent/child,256 computations |242.0555ms;1057.6087/s|4.078792ms;62763.6810/s|Two-worker host; actual parent, child, projection and root-join tasks; two eager child tasks.|
+| Cold pair allocations |2|2|Formation only.|
+| Controller execution/join allocations |35|34|Measured controller scope.|
+| All four task poll allocations |561|559|Actual instrumented polls, excluding off-poll worker/runtime/report allocations.|
+| Independent roots,256 requests |Not selected|3.559416ms;71921.9108/s|Two actual actor IDs;7 selected polls,1314 poll allocations; controller43,joined cleanup0.|
+
+The timing run is separate from the overlap witness; it does not claim its
+own overlap measurement. These are observed runs, without statistical or
+simultaneous-CPU-instruction claims or a whole-runtime heap total.
+
+Preserved original6d84/current226f whole-epoch reports use the same workload,
+but Rust1.96/earlier dependencies versus Rust1.99/current selected81.
+Original3 task roles,cold0,optimized controller27,poll302–305 become final
+4,cold2,controller34,poll559. This is allocation/task growth, not reduction;
+it supplies no same-compiler causal speed claim. The qualified same1.99
+eager/completion representation comparison53d440a4/3cb96357 remains separate
+evidence for the accepted ownership choice, without retaining the rejected
+candidate. Prior source-bound omission/restoration evidence is reused under
+its recorded body bridge. No EV-30 fact or experiment remains open.
+Final published dependency selection and whole integrated acceptance remain
+required; relevant contract/source changes require an affected recheck.
+
+
+### Current standard campaigns and owning fuzz quality (2026-10-07)
+
+The three existing mandatory campaigns pass on the formed min/WG/module
+source at the selected81 epoch. Actual694acdb7 contains all six streams,
+365 source guards and terminal process groups. Independent61ba4d4d/49bc944b
+authenticate Driver2048 ASan units (seed20260928), four Observe targets1024
+each (seed20261001), and all12 named affine Miri tests under seeds0–3.
+Pinned campaign Rust1.98-nightly2026-06-14 is distinct from ordinary Rust1.99
+and the owning fuzz toolchain. Exact scripts and full logs remain preserved.
+Generated manifestfa1cb6ae binds517 retained files,123420bytes, all five
+actual target binaries and original16 seed files. Retained corpus counts
+are120 and100/79/95/109, separate from active libFuzzer corpus reports.
+No crash/timeout/oom/leak artifact was generated. The prior Miri archive
+manifests zero old files; no existing evidence was overwritten.
+
+Current owning fuzz build90738e78 forms the21 declared targets, but reports
+seven stale imports in migrated consumers. Exact import removalc716cf5b
+and pinned formatadb25166 preserve every byte outside the existing use
+lists. Independent8b2b320a/896072ec/e139ff5e/01b836d7 approve only this
+source correction. Guarded installation6d458866 changes exactly seven
+approved files; formatted tests+8/−11/net−3, production/public types0.
+
+The same required build5aa503e2 exits0 and has no Rust warnings or errors.
+Its collector mistakenly classifies the sole Nix Git-dirty notice as a Rust
+warning, so raw qualifiedfalse and top-level Python exit1 remain preserved.
+Metadata-only namespace qualification10c175b2 binds the same successful
+execution; independent10530a2a/772f0859 accept its bounded build quality.
+No build is repeated or raw failure overwritten. All808 owning source guards
+and absent process group are authenticated; remaining801 inputs are exact.
+This closes the consumer warning fault, not fuzz runtime/fullCI/publication.
+
+Two exact external expected-error products still await section264 approval;
+full external debug/release and owning delivery remain blocked there. The
+three standard campaign results are reusable for unchanged primitive sources
+and contracts. Published dependency selection must preserve that exact bridge
+or repeat affected checks; final integrated Nix/model/coverage/CI and final
+minimization/review remain required.

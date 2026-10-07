@@ -1,5 +1,74 @@
 # Terminal projection decision evidence
 
+**Current closure:** DG-PROJECTION, XO-23 and EV-10/12/30 representation
+comparison are independently accepted. The existing eager actor-plus-projector
+composition is retained. Final integrated checks remain; historical sections
+below do not reopen the accepted decision.
+
+## Current representation decision
+
+Independent decisions53d440a4 and3cb96357 select the existing composition. The
+actor already owns capability settlement; the separate projector owns the
+exact native failure cause and task identity of terminal conversion. This is
+not retained as a second actor cleanup owner or as a performance promise.
+
+The actual ordinary-Rust completion candidate passes all20 native control,
+classification-fault and restoration rows in both profiles. Its eight required
+cost/order rows also pass: the whole child-custody target covers failed startup,
+ordered/heterogeneous/nested children and cancellation; both computation
+omissions fail at the original complete post-join 0-versus-128 oracle and both
+restorations pass. Actual receipts0d9ce136/2dba6c21,66d6e5a0/b3d9ff6b/39267209
+preserve every stream, source graph and restoration. Collector-only false
+flags remain intact and are independently qualified; no valid row was repeated.
+
+| Selected81ba2c0 / Rust1.99 optimized observations | Retained eager | Unretained completion |
+| --- | --- | --- |
+| Actual native roles | Parent, child, projector, root join | Parent, combined child/projection, root join |
+| Cold formation allocations | 2 | 2 |
+| Controller execution/join allocations | 34 | 34 |
+| Observed task-poll allocations | 559 | 560–561 |
+| Elapsed healthy/restored | 5.059–5.435 ms | 10.519–12.609 ms |
+
+The same workload, regions and exclusions apply as the matching comparison
+below. Runs occur at different times; these observations establish neither
+causal speed nor a whole-runtime allocation total. The alternative removes
+one native task but adds three channels, two private state sums and192 net
+production lines to reconstruct the existing native-source and startup-custody
+distinctions. It is rejected on total ownership/model simplicity, not because
+one-task Rust is impossible or because counts alone outweigh correctness.
+Neither its source nor its candidate-only quality warnings are retained.
+
+No additional representation law or experiment remains unresolved. The
+join-time static carrier probe remains unexecuted evidence only; it receives
+no fabricated runtime-counterexample credit.
+
+## Current matching-workload comparison
+
+Both versions execute the same 128 parent and 128 child computations on two
+Tokio workers, return the original vectors and sums, and join the exact typed
+retirements. Healthy, omitted-child-computation and restored controls ran in
+debug and optimized builds. Both omissions fail at the intended 0-versus-128
+oracle after joining. The original source and all unchanged inputs are restored.
+
+| Optimized observations | Original 2fccedf6 | Current integration |
+| --- | --- | --- |
+| Elapsed, healthy and restored | 9.068–10.736 ms | 5.059–5.435 ms |
+| Actual task roles | Parent, child, projector | Parent, child, projector, root join |
+| Cold formation allocations | 0 | 2 |
+| Controller execution/join allocations | 27 | 34 |
+| Observed task-poll allocations | 302–305 | 559 |
+
+These are separate measured regions, not a whole-runtime heap total. Payload
+setup, runtime construction, off-poll worker allocations and reporting are
+excluded. Compiler and owning-library revisions also differ (Rust 1.96/Behavior
+Actors 0.20 versus Rust 1.99/0.22); the timing difference cannot be attributed
+to one task or promised as a general speedup. Allocation growth is explicit.
+The authoritative actual receipts are original 6d84a8f0 and current 226f083f;
+the unchanged-body style bridge is 632559bb. Independent review 32b27a08 binds
+the complete streams, source graphs, original selected dependency graph and
+restorations. This closes the before/after measurement requirement, not the
+representation gate or final integrated benchmark.
+
 **Frozen research snapshot:** ARC-011 on 2026-10-01 retained the one child
 projection task after comparing typed origin propagation with erased
 projection dispatch. The spawned actor task now settles its own activation
@@ -7,11 +76,11 @@ tasks, and abandoned join waiters request owner cancellation. Descriptions
 below of `finish_owned_task` and bare sender-drop behavior apply only to the
 earlier 0.17.0 snapshot; current evidence is in the ARC-011 retained evidence in the backlog status index.
 
-Status: **open research; the projection task is retained until its independent
-timing and panic laws are proved.** This record addresses DG-PROJECTION,
+Historical status: **open research; the projection task was retained pending
+its independent timing and panic laws.** This record addresses DG-PROJECTION,
 XO-20–23 and EV-10–12, and depends on [task custody](task-custody.md). No
-production or test source was edited for this record. The required controlled
-capability-completion and projection-panic witnesses have not run.
+production or test source was edited for that initial record. Its controlled
+capability-completion and projection-panic witnesses had not yet run.
 
 ## Exact source and ownership
 

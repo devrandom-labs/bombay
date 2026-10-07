@@ -13,13 +13,16 @@ Neither reviewer authored the selected model, source, migrations or witnesses.
 
 The accepted pre-minimization App source is SHAaf400af8838b22065c204f3a920c7f1c421f5374e37e6fac04808d2bac8158ed;
 its execution kernel is SHA378a6711dd4740cf6e36903f7df9b42a4b407dcff300b4749cf427077f4d806b.
-The required minimization successor is App387b9f57cd2b0b791444513456f542725a3c7ab507ac7eddcbd5827b771cb909,
+The accepted minimization successor is App33cf4d1e04c4471c625c8c7561c17d59720b074ef279e016f23dbf6afd58d57e,
 lib2acbba6a0740bcc6e6f9243cb2f1c13a6badc5f05fbbc32b25835b79656d46d2,
 and corrected HTTP control8f028fe4477e9d14c320292e865372f04e1d4fa738305689b8568e6b2ecb10fe.
 Its semantic controls and exact three inversions are independently qualified.
-The mechanically migrated consumers/current guidance below remain subject to
-complete formation, strict checks, and nonauthor final model/gate acceptance;
-this successor record does not inherit the old signature's acceptance.
+The complete32 source products have independent retention signatures
+ed2b07e0/105459bb and current28-command verificatione891ead8.
+[Current result evidence](verification.md#current-result-and-parameter-trial)
+records the source-bound checks and reuse; acceptance does not inherit the old
+signature. The prose-only cleanup count erratum removes two of three wrappers;
+user Work Result remains independently opaque.
 The earlier DG-TASK kernel6f93199e differs only by reviewed equivalent
 `if let` spelling and formatting; complete bodies, operation/publication/drop
 order remain unchanged. Family784c retains its original/fixed and publication
@@ -34,8 +37,8 @@ remain required; this gate is not full PRD completion.
 ## Final source contract and migration
 
 This current contract supersedes the historical runner descriptions below.
-It describes the exact minimization successor above; integration and final
-independent signature acceptance remain separate. Publication,
+It describes the independently accepted and integrated minimization successor
+above; final whole-PRD acceptance remains separate. Publication,
 final integrated verification and delivery remain separate PRD states.
 
 The selected surface is one inherent async `run`, `run_with`, and feature-gated
@@ -123,7 +126,7 @@ projection. Actor, staging and child-failure requirements stay unchanged;
 WorkFuture::Output replaces the redundant Output axis. The private interpreter
 retirement axis is derived from its actual associated owner. The common spine
 has nineteen generic axes and seven values; this is not a net source reduction.
- An owned-execution law uses run_blocking, not an
+An owned-execution law uses run_blocking, not an
 unexplained caller-host substitution. All old meaningful controllers, complete
 oracles, pure folds, native causes and static denials remain required. Exact
 current source signatures, both-profile runtime controls, final trybuild
