@@ -23,11 +23,13 @@ ARC-020 later renamed the private actor execution and outcome symbols; the
 snapshot names below remain historical, and `docs/module-boundaries.md` records
 the current source paths.
 
-**Status: active.** Selected contracts are verified. DG-SHUTDOWN, DG-TASK, DG-API, DG-WORK, DG-OBSERVATION, DG-PROJECTION, DG-WRAPPERS and DG-MODULES are independently accepted. The reviewed API, common task execution and
-Entity custody corrections are integrated on the consolidated branch, with
-current affected verification passing. Module extraction and its unfiltered acceptance tests are complete. Final minimization,
-upstream release, full integrated checks and reviewed
-passing-CI merge remain. Semantic blockers precede module extraction.
+**Status: distilled.** All eight design gates, the scoped implementation-to-PRD
+and retained-model audit, and final required verification are accepted.
+Published Core/Actors0.23.0 and Macros0.14.0 are selected. All15 required commands
+return0 and all21 Darwin Nix checks report success; the three separate Nix
+post-fixup classifier crashes remain an explicit packaging-audit limitation.
+Exact-head Linux CI, final reviewed PR326 merge and actual merged records remain.
+Section276 records current acceptance; earlier checkpoints retain their dates.
 
 This PRD replaces the earlier conversational criterion that EXEC must produce
 a net reduction in production lines. Model quality is the acceptance criterion:
@@ -73,8 +75,8 @@ both profiles; [current evidence](execution-ownership/verification.md#module-acc
 
 | Requirement / gate | Exact blocker | Valid evidence available | Next action and pass condition |
 | --- | --- | --- | --- |
-| Selected upstream contract | The reviewed three-file CI repair awaits §265 scope approval; owning merge/publication remain. | Independently accepted full checker8376194e/a9b6b4ca and malformed-input controls pass; independent loader/lockc6731176 and CI-setupe734ee5c reviews accept the source. Other current owning CI and local Nix31b083dd pass. | Install the authorized repair, run local Nix before push, require exact-head CI/review, merge/release and verify the published contract. |
-| Final verification, minimization, review and delivery | Published selection, required final integration and reviewed merge remain. | All eight gates and conditional source minimization are accepted. Successor full local Nix6d8b6cc5 passes all21 checks, including all four coverage floors; Main1b1a949 is pushed. Unchanged campaigns694acdb7 and execution measurements qualify. Independentcb1f115e accepts the successor actual and exact1b1a949 source tree. | Select the published contract; finish §10.1 and final source equivalence, byte delta/minimization and independent review; require exact-head green CI before merge. |
+| Selected upstream contract | Closed: authenticated published receiving contract selected. | PR86/87/88 and automatic Release37714832852 pass. Independentefc6b91a accepts three archives/tags/consumer;3b4fd158 accepts unchanged runtime bridge. Exact selection09a6ab8f uses registry Core/Actors0.23.0 and Macros0.14.0 in root and Engine fuzz; unrelated dependencies and Timers remain exact. | Carry the source-bound evidence into final Main verification; no upstream release blocker remains. |
+| Final verification, minimization, review and delivery | Local acceptance and scoped minimization are closed. Exact-head Linux CI and reviewed PR326 delivery remain. | All15 §10.1 commands return0; independent95d4c0f6 accepts all21 Darwin check results, genuine unchanged coverage and bounded negative-law evidence. Three Nix post-fixup classifier crashes are separately attributed; no clean packaging-audit claim. Independent109aa01b accepts actual code/PRD correspondence, all20 abstraction dispositions,13 public additions and all17 agent groups. | Final docs-only/full150-path ledger review, exact-head clean Linux CI, reviewed PR326 merge and actual merged records. |
 
 ## 1. Authority and how to execute this document
 
@@ -478,10 +480,10 @@ entry alone is not proof of a delivered notification.
 
 ## 9. Decision gates: exact experiments and stop conditions
 
-DG-SHUTDOWN, DG-TASK, DG-API, DG-WORK, DG-OBSERVATION, DG-PROJECTION
-and DG-WRAPPERS are **accepted** at the source epochs linked in the current
-closure table and supporting decision records. DG-MODULES remains open. The
-coordinator must record evidence before changing a gate to accepted. A gate is not accepted because a worker
+DG-SHUTDOWN, DG-TASK, DG-API, DG-WORK, DG-OBSERVATION, DG-PROJECTION,
+DG-WRAPPERS and DG-MODULES are **accepted** at the source epochs linked in the
+current closure table and supporting decision records. The coordinator must
+record evidence before changing a gate to accepted. A gate is not accepted because a worker
 produced a compiling patch or because another agent assumed its answer.
 
 Every decision record must contain: the law and requirement IDs; competing
@@ -3768,8 +3770,10 @@ cannot supply compile-time source-byte inference. The corrected proposal
 retains each native payload opaquely. Only its original externally retained
 Weak observes sole ownership, allocation/content through a temporary upgrade,
 and final release after that temporary owner and opaque failure are dropped.
-The source literals explicitly select u8. No payload inspection, additional
-catch or exception to the owning rule is selected by this correction.
+The source literals explicitly select u8. The historical claim of no payload
+inspection is superseded by section273: a native allocation/content read through
+Weak violates section41 even when the received carrier remains opaque. The
+original runs retain their source epoch and do not accept the current repair.
 
 Independent eligibility review27f3fae0a4deb27ca2e6c2bedd28534323795c2ba35f64b1de593dd7b3537740
 accepts only corrected1686 bounded execution. Rejection review
@@ -12480,20 +12484,26 @@ change the accepted model or omit its audit.
 
 ## 265. Required API-checker repair: concrete three-file scope checkpoint
 
-Proposed; not installed or authorized. Current allowance271 named paths and13
-public nominal additions remains. The reviewed owning PR86 cannot pass its
-Published API Change Audit because official cargo-semver-checks0.51.0's loader
+Approved by the user on 2026-10-07 after session recovery. The user explicitly
+selected "Approve these three CI files" for the exact proposal below. The
+cumulative allowance is now274 named paths;13 public nominal additions remain.
+The three reviewed products are installed byte-exactly under receipt
+06c9006c (`/tmp/bombay-exec-resumed-approved-ci-install.json`). The full
+owning local Nix gate4fe8f4f1 passes all ten Darwin checks after installation;
+independent completed-run reviewda5f629f accepts the exact source. Commit
+f6e30cc is pushed to PR86; exact-head Linux CI run37664241403 is running.
+The owning PR86 previously failed its Published API Change Audit because official cargo-semver-checks0.51.0's loader
 exceeds its default JSON recursion limit on valid private/hidden Actors JSONv57.
 Same-file original failure and successor controls are in the verification record.
 No actor contract change or weakened audit is proposed.
 
-Exact proposed additional names (all absent from the approved271 union):
+Exact approved additional names (all absent from the prior271 union):
 
 - behavior/.github/workflows/checks.yml
 - behavior/.github/semver-checks-stack-safe-json.patch
 - behavior/.github/semver-checks-stack-safe-json.Cargo.lock
 
-Proposed allowance274 names;13 public types unchanged, no line cap. Exact
+Approved allowance274 names;13 public types unchanged, no line cap. Exact
 external products515af692 are independently source-reviewed by e734ee5c.
 The workflow adds40 lines to install the locked corrected checker through
 pinned Nix before the existing official action. That action, both package names,
@@ -12526,7 +12536,709 @@ configuration+58/−39/net19. It reuses142 unchanged qualified pairs against
 original2fcc; it does not reset the cumulative historical/owning scope. The
 unchanged owning89-path source record remains in the verification record.
 
-Explicit user authorization is required before installing these three products.
-Then run the owning local Nix gate before push and require the exact-head Linux
+The user authorization above permits installing these exact three products.
+Run the owning local Nix gate before push and require the exact-head Linux
 API audit and other required CI/reviews before merge. Publication, Bombay's
 published-contract selection and required final integration remain mandatory.
+
+
+## 266. Mutation CI failure reporting and artifact custody
+
+The completed Linux run37664241403 onf6e30cc is not merge evidence despite
+its green GitHub summary. Actual aggregate job112942665199 emits the strict
+verifier failure "exactly one successful unmutated baseline is required".
+The default Bash command uses `-e` without `pipefail`; `tee` masks the failed
+verifier. Independent review15689d5d rejects merge eligibility.
+
+The downloaded eight original shard artifacts preserve416 mutants:159 caught,
+210 unviable and47 missed, plus eight successful shard baselines. Their JSON
+contains exact caught-log paths, but the workflow uploads only JSON. The owning
+strict verifier requires the original caught logs; aggregation also wrongly
+concatenates eight baselines into its single-campaign input.
+
+Pre-edit stage: only the already approved
+`behavior/.github/workflows/checks.yml` may change. Expected CI delta is about
+40 lines; actor production/tests/public types0. The cumulative274-name/13-type
+allowance stays fixed; there is no new path or production model. Preserve the
+reviewed API-checker installation, strict owning verifier, all original mutant
+rows, exact log payloads, source identities, existing floors and exclusions.
+Validate each shard baseline before explicit campaign-baseline normalization;
+retain the original shard reports and logs, namespace their merged paths and
+propagate every actual gate failure. Source-only proposal and meaningful
+original/inverted/restored pipeline regressions precede installation.
+
+This stage repairs reporting and artifact custody only. The47 surviving
+mutations remain a separate real verification blocker; no original campaign
+health or merge is claimed. Do not change actor production for a broader audit
+while this blocker remains. Existing owning tests and external interpreter
+contracts must first be traced against each surviving mutation. A test gap or
+proven equivalent mutation requires explicit law/evidence; no weaker floor,
+blanket exclusion, synthesized log, or green metadata substitutes for acceptance.
+
+
+Source-identity check after the user's structure warning: the current candidate
+inventory has258 file/function keys, against181 baseline keys. All55 positive
+floors still match and meet their existing counts; there is no floor collapse.
+Fourteen obsolete keys were all known-zero entries;91 current keys are not yet
+accounted for. Five EstablishedCreation methods differ only by the type-parameter
+name; other removed/replaced methods require their actual contract disposition.
+No missing current mutant source path was found. This is a metadata-reconciliation
+requirement, not proof that every surviving mutation is equivalent.
+
+Original/strict pipeline replay96eb3a21 executes the unchanged real verifier in debug and optimized
+builds. In both builds the original eight-baseline report fails, the original
+`tee` pipeline incorrectly returns0, and the strict pipeline returns1. A
+single-baseline diagnostic preserves every actual mutant and reveals the
+stale/unaccounted keys and47 survivors. The existing12 verifier tests pass
+in both builds. No original artifact, floor, exclusion, actor source or test
+was changed. A passing diagnostic is not claimed.
+
+
+## 267. Mutation invariant witnesses (test-only preparation)
+
+The §266 reporting blocker stays separate. Test-only preparation may proceed
+against the unchanged owning f6e30cc source, original416 candidates and original
+47 missed outcomes. Source-only proposals live outside both worktrees until
+independent review and required actual regressions qualify their installation.
+
+The smallest missing witnesses include two ordinary deliveries completed in
+order; empty send/creation lanes completed without host calls; real built-in
+child/request lifecycle loans denied for empty or already-replied custody;
+and complete creation batches preserved across pending, corrupt and replayed
+progress. These are owning API laws and deliberate interpreter policies, not
+new actor-model laws. Use existing typed progress, settlements and host ports.
+Do not add production wrappers, host policies or public types.
+
+Expected paths are existing approved Behavior cfg modules addressing.rs,
+actor/creation.rs and effects/sending.rs, plus existing creation.rs and
+generated_creation_custody.rs integration tests. Expected retained production
++0/−0/net0; public types +0/−0. Test delta is measured after the source proposal;
+no line limit applies to the already approved274 paths/13 public types.
+Prove each claimed killer by restoring the original exact mutation and obtaining
+the intended observable-law failure in debug and optimized builds, then restore
+and pass. Compiler rejection is unviable evidence, not a semantic kill.
+
+Keep all55 positive floors unchanged. A source identity correction requires
+exact VCS/contract succession. A mutation proved observationally equivalent
+requires a specific redundant-validation proof and independent review; its
+existing known-zero/exclusion policy cannot be silently broadened. No current
+missed outcome may be converted, dropped or explained away by file movement.
+
+
+§266 installed reporting repair: source packet e13ee460, author actual04edf44b,
+Root independent reviewc2e4a0bd and exact installationd377d46f. One already
+approved checks.yml changes CI+37/−2/net35; actor production/tests/public0.
+All809 other owning inputs remain exact. Collection retains original JSON,
+original log/ and diff/ directories; assembly validates all eight successful
+matching baselines, retains each raw shard, namespaces only artifact paths
+and keeps every candidate/outcome without deduplication. Explicit Bash enables
+pipefail for the strict verifier. The approved API-checker block is byte-exact.
+
+All35 bounded collection/assembly/verdict controls qualify. A separately
+predeclared native16-mutant control runs eight real baselines and existing
+equality laws, preserving all24 native logs and16 native diffs. Applicable
+existing5/5/3/3 floors are copied unchanged to that external control only.
+Debug/optimized strict control exits0; failed/missing/duplicate/mismatched
+baselines, invalid artifact paths, missing original payloads, missing candidates
+and declared survivor inversions fail. Original416 rows remain159 caught,
+210 unviable,47 missed; the actual full campaign still fails in both profiles.
+Its424 log refs and416 diff refs remain unavailable and are never fabricated.
+Local full Nix is running before any push. CI transport acceptance gives no
+full-campaign, actor-law, merge or publication credit.
+
+Complete Bombay pre-installation endpoint22b8525a covers150 tracked changed
+paths and no untracked files against original2fcc: production+13869/−6382/net7487;
+tests+34256/−4694/net29562; documentation+19849/−433/net19416;
+configuration+58/−39/net19. It reuses147 byte-exact qualified source pairs and
+recounts only three edited existing Markdown paths. Historical/owning cumulative
+scope remains274 named paths/13 public nominal additions.
+
+
+§267 selected test-only products: Root proposal594c6e0d, actual original-defect
+replay (complete54-row receipt hash is frozen in the proposal), independent
+reviewe7a205a3 and strict-Clippy actual1ca02bd0 qualify exactly three existing
+paths: actor/creation.rs cfg tests, integration creation.rs and
+generated_creation_custody.rs. Tests+616/−3/net613; production/public0.
+In both debug and optimized profiles23 of25 exact original creation/action
+mutations produce named observational assertion failures; healthy/restored
+runs each pass55 tests. No compiler rejection counts as a semantic killer.
+
+Delivery source packet (final actual2e0da613, patchbcd84d4b), Root independent
+review12dc370b qualifies one existing total_interpretation.rs path: tests+827/−0.
+Nine real built-in delivery/parent/source laws catch all22 assigned exact
+original mutations in each profile; all44 inversions fail their intended
+assertions. Healthy/restored laws and the full13-test existing target pass in
+both profiles. Strict test Clippy, formatting and assertion-effect checks pass.
+All ownership extractions precede assertions; stage completion is observed
+before replay can repair a defect. Complete typed payloads and an independent
+ordered host trace supply the oracles.
+
+Combined accepted stage: four existing approved test/cfg paths;
+production+0/−0/net0; tests+1443/−3/net1440; public types+0/−0.
+The274 named-path/13 nominal allowance remains unchanged. Exact guarded
+installation and combined local Nix precede push. Original full416 campaign
+receipts remain immutable;45 genuine killers are bounded evidence, not a
+new passing full native campaign.
+
+Two original finish_creations &&→|| mutations still survive. Independent
+source proof4825764b binds the exact owning actions.rs bytes and both native
+mutant spans. Each broadened preliminary guard admits only a both-present or
+both-absent row. Downstream exhaustive extraction rejects that row and
+reconstructs the unchanged owned prefix, current row and suffix; the complete
+typed custody and classification stay equal. This is a specific semantic
+equivalence proof, not an assertion failure or broad exclusion permission.
+Committed mutation policies remain frozen pending a concrete separately
+approved metadata/exclusion scope and qualified native campaign.
+
+The installed §266 workflow-only full local check actuala97c232a exits0,
+all10 Darwin checks pass,901 nextest and107 doctests pass; all809 other
+source inputs remain exact. This check precedes the new test installation
+and does not qualify their combined full source.
+
+
+Exact guarded test installationa5303bbe changes only those four selected
+paths; all806 other owning inputs, including the installed reviewed workflow,
+remain byte-exact. Combined full local Nix actual18bd25c5 at
+`/tmp/bombay-exec-invariant-combined-local-gate/actual.json` exits0: all10
+Darwin checks pass,920 nextest tests pass,107 doctests pass and all810 before/after
+source hashes match. Both-profile original-defect receipts remain independently
+qualified; this full local gate does not claim the complete native mutation
+verdict. The strict verifier, committed baseline and exclusions remain unchanged.
+
+## 268. Mutation policy/index preparation and approved delivery
+
+The read-only source/scope packet32502a10 reconstructs the274-name approval
+and proves Behavior's `.cargo/mutants.toml` and `mutants-baseline.json` are
+not named. An eventual exact reviewed two-file product requires explicit
+274→276 approval;13 public nominal additions stay fixed. Production/tests/public
+delta for those metadata files is0. Do not install either file before approval.
+
+All 55 positive floor key/value lines remain byte-equal. Source-succession
+review `598c3445` accepts seven real deletions, five same-operation authority
+correspondences and two explicit semantic successors. These changes follow
+the protocol-to-concrete-Behavior contract; they are not mere spelling changes.
+The 84 new keys and seven formerly-known-zero viable functions remained
+unseeded until the complete fresh campaign qualified. No failed original
+report seeds a new floor.
+
+A separate external complete campaign declares the accepted tests and exact
+two-guard equivalence proof before mutation outcomes. Only its external config
+contains two source-span-specific patterns; committed policy is frozen.
+Discoveryab2e9453 proves414 exact candidate objects equal the original416
+minus precisely those two independently reviewed equivalents. No other
+candidate, path, function, replacement or test selection changes. Root's
+predeclaratione4fa2040 and durable native runner retain source guards, original
+JSON, native phases, logs and diffs. The unmutated baseline passes; the full
+campaign must retain all native reports before it supplies healthy or new-floor
+credit. Its exact argv preserves the Core+Testkit selection and mutant profile.
+A completed genuine healthy campaign, unchanged strict gate, full candidate
+conservation, every caught native failure log, unchanged55 floors and
+independent final policy/actual review precede a concrete approval request.
+
+
+Fresh Linux CI37673801657 on34fcae5 completes with a correctly failed aggregate
+mutation verdict. Actual log02ea4e64 records14 stale known-zero keys,91
+unaccounted keys and exactly the two reviewed finish_creations survivors.
+Bash uses explicit pipefail and returns1. Linux Nix/API, CodeQL, dependency
+checks and eight report-producing shards pass. Independent checkpointa0dc83d8
+and Linux addendum9e25ecbd reject merge while accepting exact source/local
+evidence. Thus all45 proper law witnesses also kill their original defects in
+the fresh native Linux campaign. The original unfiltered416 report stays failed;
+no status or candidate is removed to claim health.
+
+Owner-contract succession review598c3445 accepts five same-operation authority
+correspondences,seven true source deletions and the two explicit semantic
+successors for metadata preparation. It supplies no viable counts, floor or
+exclusion approval. The separate414 prepared-policy campaign now uses the
+exact owning Nix shard derivations (two concurrent builds,two cores each).
+The development-shell unsharded run was explicitly interrupted after preserving
+its incomplete native reports and stream; it yields no full health/new-floor
+credit. The Nix campaign retains the same predeclared414 candidates and source
+bytes. Only its external config carries two reviewed equivalent patterns.
+
+
+Current owning endpoint receipt73b97235/measurement4b2c87a7 covers the complete
+clean34fcae5 tree against original1fc8:92 tracked changed paths,no untracked;
+production+3908/−786/net3122; tests+10439/−1456/net8983;
+documentation+79/−1/net78; CI/tooling+4442/−2/net4440.
+It reuses83 byte-qualified pairs and recounts nine changed pairs, including
+the exact cfg span in creation.rs and complete UI diagnostic fixtures.
+Independent wholefile/classified totals agree; all810 current source hashes
+remain exact. The current §266–267 stage adds no actor production or public
+type; the full historical owning production delta is retained rather than reset.
+The approved cumulative13 nominal additions remain a separate semantic ledger.
+
+Current Bombay endpoint61db9594 covers150 tracked changed paths,no untracked
+against original2fcc:production+13869/−6382/net7487;
+tests+34256/−4694/net29562; documentation+20024/−433/net19591;
+configuration+58/−39/net19. It reuses147 unchanged qualified source pairs and
+recounts only the three current records. This checkpoint precedes this prose.
+Cumulative historical/neighbor approval remains274 named paths/13 nominal
+additions; the proposed two policy paths remain external and unapproved.
+
+The eight-shard Nix build actual58b7ac8b completed at20:02:49UTC with exit0
+and all810 declared source inputs unchanged. Its no-link outputs were not
+durably rooted; shard0 and shard3 reports became unavailable before final
+qualification. No counts, native logs or full-health credit are inferred from
+that successful build. The six available outputs are now explicitly rooted
+and copied unchanged: preservation2d81d99b authenticates all674 native files.
+Fresh source-guarded recovery5de68516 completes exactly shard0 and shard3
+at20:13:40UTC with exit0,810 unchanged inputs and persistent output links.
+Root verifies the full union equals all414 discovery candidate objects:
+204 CaughtMutant,210 Unviable,no survivor/timeout/failure,eight Success baselines.
+Final floor/log/gate qualification must bind these fresh actual reports and all
+six preserved reports, not substitute prior counts.
+
+Native headers distinguish actual test scopes. All414 mutant Build phases and
+204 caught-mutant Test phases explicitly select Core and Testkit. The eight
+unmutated baselines select only Core, as cargo-mutants27.1.0's owning
+run_baseline derives packages from mutated sources. Full owning local Nix
+separately runs the complete workspace. No Testkit baseline execution is claimed.
+Recovery stderr preserves a shard0 audit-tmpdir.sh background-classifier shell
+segmentation fault during post-test fixup. Final Nix exit0 does not prove that
+hook completed. This event grants no mutation kill or packaging-hook acceptance;
+independent native phase/status/log qualification remains required.
+
+Root status-conservation receipt `56138019` binds 16 original/current native
+outcome hashes and complete canonical mutant identities. Exactly 159 previously
+caught mutants remain caught; 45 original survivors become caught; the identical
+210 unviable mutants remain unviable; only the two proved equivalents leave the prepared
+candidate universe. No previously viable or surviving mutation becomes a
+compilation failure. This source-bound comparison rules out file-structure
+fallout as the reason for the improved invariant verdicts.
+
+The frozen two-file proposal is packet `f6c6c2f4` at
+`/tmp/bombay-exec-final-native-mutation-qualification/packet.json`.
+Actual `ae24f672` conserves all native artifacts and passes the unchanged
+strict owner gate in debug and optimized builds. The proposed baseline has
+133 positive floors and 125 known-zero functions, with all 258 current keys
+accounted. It preserves the complete 55-line old floor block and adds 78
+positive floors: 71 new functions and seven historical-zero promotions.
+Thirteen other new functions have verified zero viable mutations.
+The config preserves four existing patterns and adds only the two exact
+source-span patterns justified by proof `4825764b`.
+
+Exact proposed surface: two existing owning policy files; CI/tooling
++105/−22/net83; actor production +0/−0/net0; tests +0/−0/net0;
+public types +0/−0. Root source/native-verdict review `4e80e47c` accepts this
+external product. It grants no retention, expanded-scope or merge approval.
+Full external owning Nix actual `f5a320f0` and Root review `960f1252`
+authenticate all 810 inputs before/after, all ten Darwin check labels,
+920 passing tests with zero skips and 107 doctests. The retained owning tree
+is still clean at `34fcae5`. This run also records the same background
+audit-tmpdir classifier crash in crane-utils post-test fixup; it supplies no
+clean-hook acceptance. Native crate laws and mutation verdicts are separately
+authenticated. Final independent review `741d02f1` accepts the exact source,
+all 900 raw native files and 836 referenced payloads, both strict verdicts,
+all floor dispositions and the complete local check. It preserves both hook
+limitations and grants no scope, retention or merge approval. Explicit
+The user explicitly approved274→276 for exactly these two files. Installation3169ed47 preserves all808 other inputs; local retained-source check passes all ten cached Darwin derivations and matches the independently verified920-test/107-doctest source. Commit4163e11 contains only the approved two-file policy repair. Linux CI37683309826 passes all14 checks; the strict aggregate reports204 viable/414 total with explicit pipefail. Independent290a0c15 authenticates exact candidate/status conservation and merge eligibility. PR86 merged through the reviewed PR at65ed3a59bb43a227051cbd0af19cefd764672050 on2026-10-07T20:54:12Z. Merge receipt7590e0f9 binds the actual delivery. No publication follows from that merge alone.
+
+
+## 269. Release workflow repair and contribution reconciliation
+
+The merged owner source65ed3a5 passes main CI37685528934. Automatic Release37686837018 fails at release-plz version planning: stock cargo-semver-checks0.51.0 cannot parse current Actors JSONv57. Conserved failureaa9a36e9 and independent03ae5d2a record the actual failure. No version PR or publication exists at this checkpoint. The same known loader failure is the source-based diagnosis; full corrected Linux release execution must confirm it.
+
+Concrete repair packet9f44b211 at `/tmp/bombay-exec-release-checker-proposal/packet.json` changes only Behavior `.github/workflows/release-plz.yml`. Patch762b8535 adds41 CI lines and reuses the already approved stack-safe loader patch and lock. It preserves release-plz/action inputs, release policy and publication order. Official installer and PATH behavior are independently checked; no unsupported preinstalled-checker option is invented. Native actualb4e31b15 runs through the exact owning pinned Nix shell: stock parsing fails101, while the patched minor-version audit parses and reports real breaking API findings with100. Syntax and tool-path selection pass. This grants no local version-planner, Linux-composite or publication credit.
+
+Independent8e1ce26c accepts the exact proposal and bounded native proof. The user explicitly approves276→277 named paths for this one CI file;13 public nominal additions remain unchanged. Scope ledger `/tmp/bombay-exec-approved277-named-scope.json` records the union. Installation8990faf1 preserves all809 other tracked owner inputs byte-for-byte. Stage measurement: production+0/−0/net0; tests+0/−0/net0; CI+41/−0/net41; public API+0/−0. Full retained-source local actual8bfaab7e exits0: all ten Darwin checks,920 nextest tests and107 doctests pass; all810 inputs remain exact. The failed offline/evaluation attempts remain conserved8997d6ea/d3d946d8 with no green credit. Commit11607e902484128f64e1ffb754085d430e5f53fc installs only the approved workflow and is pushed to focused [Behavior PR87](https://github.com/devrandom-labs/bombay-behavior/pull/87). Exact-head Linux CI37708726176, independent merge review and actual release remain required.
+
+The user requests reconciliation of all accepted agent code. A fresh independent read-only audit must compare accepted contribution/disposition records with the consolidated branch and owning merged source, including committed, uncommitted and untracked products. Rejected and superseded probes are not accepted deliverables. Record any missing accepted product and its disposition before final integration acceptance.
+
+Later Main documentation-head actual50778beb fails with LLVM output-stream disk exhaustion during coverage; all356 inputs remain exact. It does not supersede earlier passing21-check actualb32d2289 with green credit. Task-generated build caches are retired only with source/evidence preservation receipts3433b068 andd9acb95f; no user source is deleted and no coverage floor changes. Final published-source §10.1 verification remains required.
+
+
+Current complete retained Main endpoint (base2fccedf6, HEADb6e353ea plus the three authorized dirty Markdown records) changes150 tracked paths and has0 untracked paths. Production:+13869/−6382/net7487; tests:+34256/−4694/net29562; configuration:+58/−39/net19. Documentation:+20234/−433/net19801. Measurement `/tmp/bombay-exec-current-records-complete-delta.json` reuses147 byte-exact qualified source pairs and recounts only those three Markdown paths; all current endpoint hashes are checked twice. Owning PR86's complete endpoint recordd6269e1a changes94 tracked paths/0 untracked: production+3908/−786/net3122; tests+10439/−1456/net8983; documentation+79/−1/net78; CI+4547/−24/net4523. The separately approved release repair adds only41 CI lines. These measurements do not reset the cumulative277-name/13-public-type scope.
+
+
+Capacity recovery15fae652 removes exactly12 inactive experiment `target/debug/incremental` directories (12,020,592KiB). Immediate process/open-file and file-identity guards pass. All21,145 object files are classified as native objects, with compiler metadata and empty locks only; no linked executable, source, receipt, log, diff or mutation report is removed. Filesystem free space rises to34GiB. This grants no verification pass and changes no retained production/test/public surface.
+
+
+Independent contribution reconciliation30a8389e/79e9a52c finds no missing accepted implementation in17 enumerated groups. [The complete source/disposition table](execution-ownership/verification.md#independent-accepted-contribution-reconciliation-2026-10-08) records transferred successors, retired probes and each dirty/untracked state. All17 modules are tracked and all42 signed conservation artifacts authenticate. Historical prunable dirty states remain unverified; no missing current accepted source is inferred from that limitation. The two live agent tasks have no separate unintegrated production branch: the release author supplied external proposals, while the reviewer supplies read-only acceptance.
+
+
+Independent retained-release reviewdf4e6301 authenticates installation8990faf1, full local actual8bfaab7e, coherent277-name ledger4c88e93d and exact committed/pushed11607e9. All810 source hashes match;809 parent inputs remain unchanged and the sole retained diff is41/0 CI lines. All ten Darwin labels,920 passing tests/zero skips and107 doctests are authenticated. No classifier crash appears in this new stream; earlier recorded hook limitations remain. The complete owning endpoint is95 tracked paths/0 untracked, with CI/config+4588/−24/net4564; other owning production/test/documentation counts remain the94-path record above. Pending Linux CI and actual release receive no credit from this local review.
+
+
+Latest exact11607e9 CI37708726176 completes successfully: all11 CI jobs pass, including Nix, the API audit, all eight mutation shards and the strict aggregate. Separate dependency37708725320 and CodeQL37708725346 workflows pass. Earlier same-head37708725387 is cancelled when applying the existing breaking-contract label starts the replacement run; its failed/cancelled aggregate is not the latest verdict. Independent final native-report/merge eligibility remains required.
+
+
+Independent PR87 merge review7ed6b029 accepts exact11607e9/treee79e9061 and all14 current checks. Native qualificationc4b57363 preserves852 files/836 referenced payloads, all414 candidate identities and statuses,204 real native test failures and210 genuine compiler denials. All55 original floors remain unchanged. Shards0–6 execute fresh; shard7 reuses qualified native evidence under identical source and receives no fresh-execution credit. Actual strict aggregate113091298033 uses explicit pipefail and reports204 viable/414 total; full log77c9a46b is conserved. PR87 merges through authorized squash at9a8c774dc13486c56863e5c8b3974c4e1845bc94 on2026-10-08T00:53:01Z, receipt2feac321. The merged isolated source is clean and all810 inputs match reviewed116. Main CI37710066575 and subsequent automatic Release remain pending; no version or publication is claimed.
+
+
+External final15-command proposal7187288e is preparation only; no verification command executes it. Independent static review95f05733 rejects its original runner for three source-custody gaps: resume omits before/failed-after artifacts, final completion lacks renewed external-input checks and durable completion before guard exceptions, and nested fuzz build targets are incorrectly included as source. Exact15 commands, package/feature/default gates,21 labels and resource limits are otherwise authenticated. Preserve the rejected script/packet and correct only those orchestration gaps before renewed independent review and any published-source execution. This adds no retained production, tests, public types or scope.
+
+
+Merged-main CI37710066575 completes successfully at9a8c774 with all11 CI jobs. Automatic Release37710949383 starts on that exact head. The checked-out source and selected tool, actual generated candidate versions, package assembly/publication and tags remain to be authenticated; no successful version plan or publication is inferred from workflow start.
+
+
+Corrected external final15 runner V3 proposal9c41beae/script9a921a78 receives independent static acceptance89576ff3. It conserves rejected V1/V2, durably records native exit/streams before fallible guards, authenticates every before/after/failed source artifact and both streams on resume, rechecks all frozen external inputs after each command and at final completion, and excludes only declared build targets. All15 current §10.1 argv and21 check labels remain exact; only declared resource settings are added. No native verification command executes at this preparation checkpoint. Actual three matching publications, registry selection and a reviewed complete final356-input source declaration remain prerequisites.
+
+
+Bounded source relationship packet8fba4424 checks the actual published Core0.22.0/Macros0.13.1 archives against official registry checksums and exported source/manifests/VCS bytes. The accepted current generator44947164/tree94788232 emits borrowed progress and settlement APIs absent from published Core0.22.0. Its release must be outside old Core's allowed Macro range>=0.13.1,<0.14.0, and new Core must select that actual new generator. Official release-plz0.3.170 skips proc-macro API checking; conventional breaking metadata is present in feature commit65. No generated candidate exists at this checkpoint, so no version is predicted or overridden and no fabricated mixed-version consumer runs. Independent source review and actual candidate inspection remain required before publication.
+
+
+## 270. Actual generated version PR and release preflight repair
+
+Automatic Release37710949383 completes successfully on verified merged9a8c774 and creates [Behavior PR88](https://github.com/devrandom-labs/bombay-behavior/pull/88), exact generated head808aa41bfb31bc960a77b2e45a4ed486b9ffae9f. Actual tool decisions are Core/Actors0.23.0 and Macros0.14.0, including real Core/Actors breaking API diagnostics. Root dependencies select Macro0.14.0; old Core's Macro range excludes it. No manual version override occurs. Full workflow log `/tmp/bombay-exec-owner9a8-release-planner-success.log` preserves original source selection, checker build, official installers, planning and old-tag no-publication verdicts. Independentba3a9e36 accepts the Macro/Core source relationship.
+
+First bundled preflight on exact clean808aa through the byte-qualified owning pinned Nix shell exits1. Three independent lockfiles retain0.22 Core/Actors and the root README retains its two0.22 dependency versions. No packaged-consumer success is credited from this failing run. The generated root lock and three package version decisions are correct.
+
+Smallest repair: `README.md`, `crates/behavior-macros/tests/fixtures/Cargo.lock`, `crates/behavior-testkit/fuzz/Cargo.lock`, and `tests/interpreter-contract/Cargo.lock`. All four paths already belong to the approved277-name scope. Expected production/test/public delta0; no new type, interpreter, product, owner or composition. Use Cargo's workspace lock update through pinned Nix and change only the two installation versions; preserve unrelated registry selections. Rerun complete preflight, explicit Macro/four-lock/package archive checks, full local Nix and independent exact-head/CI review before version PR merge. No registry publication or Bombay dependency selection is claimed.
+
+
+The generated-head failure42e6517b preserves all810 exact808aa inputs and complete streams. Cargo `update --offline --workspace` through owning pinned Nix updates only three owning package versions in each independent lock; unrelated registry selections remain unchanged. Installation6ffd50ae changes exactly the four approved paths and preserves806 other inputs. Stage: production+0/−0/net0; tests+0/−0/net0; configuration+9/−9/net0; README+5/−7/net−2; public types+0/−0. The README header now states the Core/Actors0.23–Macros0.14 relationship, with no premature publication claim. Complete final preflight on these bytes exits0 across all four workspaces and compiles the actual three packaged archives' consumer; four pre-existing unused-code warnings remain. Full local owning Nix is running before commit/push; independent source/preflight, exact versioned-head qualification and CI remain required.
+
+
+Full corrected version-source local Nix actualaa2833e0 exits0: all ten Darwin check labels,920 passing tests/zero skips and107 doctests, all810 source hashes unchanged. Commit6ade7cc7e80c496b04b4a963733cd3762cfa5b7d retains exactly the four approved metadata/document repairs. Exact clean committed-head preflight556d7da8 passes all four workspaces and the actual packaged Core/Actors/Macros consumer, with four existing warnings preserved. That head is pushed to PR88 only after the full local gate; latest Linux CI37712762681 is running. Older generated808aa CI37711800218 fails with the stale separate workspace locks and remains recorded. The complete version PR has ten named paths: configuration+18/−18/net0, documentation+23/−7/net16; actor production/tests/public types+0/−0. Scope277/13 remains unchanged; exact-head independent review, CI, merge and actual registry publication remain.
+
+
+Complete original-base1fc8→version-head6ade endpoint measurement63fc790d authenticates101 tracked changed paths,0 untracked/dirty, all810 source/index/head/tree inputs twice, and membership of every endpoint in the approved277-name ledger. It reuses90 exact qualified pairs and recounts11 actually changed metadata/document pairs, preserving mixed Rust/test classifications. Production:+3908/−786/net3122; tests:+10439/−1456/net8983; documentation:+97/−3/net94; CI/config:+4606/−42/net4564. Every current Rust file equals accepted416, including the Macro generator44947164. The global13-public-nominal allowance remains unchanged. Source-equivalence input28ee526f binds actual candidate versions and source only; it grants no registry archive, selected graph or final Main acceptance before publication.
+
+
+Exact corrected-head Linux CI37712762681 completes successfully on6ade7cc; separate CodeQL37712762494 and dependency37712762502 workflows also pass. PR88 is clean/mergeable with the exact expected head. Independent final native report/package/merge eligibility remains required; registry publication and Bombay selected-source gates are not yet complete.
+
+
+Actual PR88 receipt2f0f5054 records merge d69f992b371c12ab34e73b18e45b8112c90a1508 at2026-10-08T01:38:43Z by GitHub accountjoeldsouzax. This root session did not issue that merge. Exact6ade CI was already green; the actual merged isolated source is clean and all810 inputs equal the locally verified candidate. Final independent version-source/report verification remains to be completed; do not claim it preceded this externally observed merge. New merged-main CI37713956806 is running before automatic publication. No registry publication or Bombay final selection is inferred from the merge.
+
+
+Merged-main CI37713956806 passes all11 jobs. Automatic [Release37714832852](https://github.com/devrandom-labs/bombay-behavior/actions/runs/37714832852) succeeds on exact d69f992 at2026-10-08T01:56:52Z. Official registry observation51665a0a confirms published Core0.23.0, Actors0.23.0 and Macros0.14.0. The log records all three actual publications and tags. This is publication evidence, not archive/source-equivalence or Bombay delivery acceptance. Independent archive/checksum/VCS/tag/consumer qualification is in progress before registry selection.
+
+
+## 271. Published contract selection and final integration
+
+The exact blocker is final portable registry selection after actual publication.
+Plan5432ab58 prepares15 existing approved paths: root and Engine fuzz manifests
+and locks; two Driver manifests and their existing version assertions; current
+Driver law/test strategy, capability/API/evidence guidance; and the three EXEC
+progress records. No new path, runtime owner, interpreter, product or public type
+is required. Expected production+0/−0/net0; tests change only five existing
+version/revision literals; manifest removals delete the three temporary Behavior
+Git overrides. Timers retains13e884d. Observe fuzz has no Behavior dependency and
+requires no selection edit. Cargo must select only actual Core/Actors0.23.0 and
+Macros0.14.0 registry entries and checksums without unrelated dependency updates.
+
+The externally prepared ten-file proposalbbcc578a is not installed. Independent
+actual archive/checksum/VCS/tag/consumer verification, the narrow old81→published
+d69 source bridge, and fresh selected dependency verification remain installation
+prerequisites. The existing Driver manifest index, causal trace assertions,
+inversion definitions, template catalogue and all mutation floors remain exact.
+The accepted runner9a921a78 will execute all15 section10.1 commands against a
+reviewed complete source declaration after selection. Every old gate retains
+its original source epoch; no historical log is relabeled as a fresh execution.
+
+
+Fresh selected-owner verification is complete before installation. Published
+Core/Actors0.23.0 and Macros0.14.0 identify d69; independentefc6b91a accepts their
+archives, tags and exact-archive consumer. The full d69 AGENTS bytes equal the
+previously read81 contract2b7a9195. Public algebra, owning tests and adapter
+documentation are inspected at this authenticated source. Behavior owns typed
+Actions and borrowed request/reply custody; Actors owns template policy; Macros
+owns syntax only. Neighbor receipt1f5f159c authenticates every Address0.3.0 and
+Communication0.1.3 archive/cache byte, all tracked Timers13e884d bytes and the
+current private Observe source. Their APIs, lifecycle/generation tests and
+current ownership guidance are inspected. No dependency ownership or consumer
+blocker remains for registry selection. The source bridge3b4fd158 preserves
+accepted runtime laws; final native Main gates remain separate. Main's normal
+pinned Nix confirms Cargo1.99.0; owning Cargo1.95 is not its verification host.
+[Publication evidence](execution-ownership/verification.md#published-receiving-contract-2026-10-08)
+contains the authoritative versions/checksums and review limits.
+
+
+Prepared selectiona8ecf4e6 and exact ten-file installation14c9e5a2 are independently
+accepted. Actual09a6ab8f completes both named-package Cargo updates through Main
+pinned Nix with exit0. Root selects the three authenticated registry packages;
+Engine fuzz selects Core/Macros and deletes only its obsolete unused Actors
+patch record. All unrelated package rows and designated dependencies remain
+exact. Timers stays13e884d. Twelve source inputs change and344 other tracked
+inputs remain byte-equal, with0 untracked. Both Driver JSON manifests and the
+whole law test reverse-substitute exactly to their prior source: only selected
+version/revision literals change. Mutation policy and baseline bytes remain
+exact. This closes portable dependency selection, not final native verification.
+Production+0/−0/net0; public types+0/−0. The final source declaration and all15
+commands remain subject to independent review before execution.
+
+
+Complete published-selection checkpoint (base2fccedf6, working HEADb6e353ea):
+150 tracked changed paths;0 untracked. Production:+13869/−6382/net7487;
+tests:+34256/−4694/net29562; public API remains within13 approved nominal
+additions, with0 added/removed in this selection. Configuration:+45/−34/net11.
+Documentation:+20349/−436/net19913. Measurement reuses135 exact
+qualified endpoint pairs and recounts only15 approved paths with their existing
+unmixed classifications; all150 endpoint hashes are checked twice. Native
+acceptance remains pending; source growth is recorded without a reduction claim.
+
+
+The user's step-audit requirement is explicit. An audit before command1 finds
+and corrects the final closure row's stale instruction to select a contract
+that is already installed. Current source/dependency facts and pending native
+gates are reconciled. The external checkpoint runnerda2eb560 preserves all15
+commands,21 labels and frozen-input/native-failure guards. Commands1–14 return
+after one qualified result; the coordinator audits the PRD read-only, saves an
+external receipt and resumes only after that audit. Command15 receives the
+same audit before final delivery. Native execution has not started. Earlier
+full-run and checkpoint declarations remain preserved as unexecuted candidates.
+
+
+## 272. Fresh code-to-PRD audit: opaque native panic custody
+
+The user requires actual code-to-PRD audit after every completed step, before
+continuing. Fresh Engine/runtime body inspection and independent Task/API/HTTP
+and Observation/Projection/Entity inspection find a concrete test-source
+violation: nine native-payload inspections in five files. Section41 permits
+passive original native panic custody; the accepted preservation record
+explicitly prohibits payload inspection, including tests. Earlier acceptance
+does not waive this rule. The law remains original opaque cause preservation,
+complete typed lanes, native provenance and honest final discharge.
+
+Affected approved files: `crates/bombay/src/actor_outcome/failure_projection.rs`
+(four calls), `crates/bombay/src/local/effects/creation.rs` (one),
+`crates/bombay-engine/tests/terminal_custody.rs` (one),
+`crates/bombay/tests/completed_application_receiving.rs` (two), and
+`crates/bombay/tests/entity_family.rs` (one). The smallest repair replaces
+inspection-based assertions with identities captured from the original owner
+before erasure, opaque carrier identity, native task identity and independent
+lifetime/discharge observations. Preserve every typed residual, origin, ordered
+failure lane and original-defect oracle. Do not relax the exception or delete
+conservation checks. Expected production/public delta0; expected test-only delta
+within these five existing277-approved paths, measured before installation. No
+new wrapper/service/public type or owning abstraction is required.
+
+Main15 has not executed. Hold it until the exact bounded test repair receives
+independent review, focused debug/optimized regressions and source/static checks,
+with native preservation inversions as required. Then reconcile the current PRD
+closure/status and freeze the actual repaired source. The stale section9
+DG-MODULES sentence is also corrected to its accepted disposition, without
+changing any law. Prior frozen declarations and qualified proof epochs remain
+preserved; they grant no repaired-source or fresh execution credit.
+
+
+The same fresh code audit identifies two false ownership statements in existing
+rustdoc: `App::entity_family` consumes its inputs on invalid directory rejection,
+and ordinary Driver completion transfers surviving values into retirement. The
+source conserves the promised runtime facts; these two comments are corrected
+in `crates/bombay/src/application/mod.rs` and `crates/bombay/src/retirement.rs`
+without changing an API or production body. Both are already approved paths.
+The complete bounded repair therefore has five test files and two rustdoc files,
+with production/public delta0 and no new path/type/abstraction. All prior test
+openings remain recorded until the reviewed repair is actually installed and
+qualified. The user requires code-to-PRD inspection, not document-only audit.
+
+
+Exact seven-file source proposals receive independent bounded acceptance:
+Projection/Engine92562801, creation/Entity76446431, passive Application1466042c,
+and rustdoc444f611d. Actual Git stage measurement: production+0/−0/net0;
+tests+93/−96/net−3; rustdoc+5/−5/net0; public types+0/−0; new paths0. The
+source proposal's difflib alignment counts95/98 have the same net−3; the
+initial mismatched count guard stops before any source edit. Its failure
+receipt and unmodified-source format result remain preserved with no repair
+acceptance credit. Exact opaque object identity and independent before-erasure
+lifetime tokens replace all nine openings while complete typed lanes remain.
+Source-only acceptance grants no native/regression or final Main pass.
+
+
+## 273. Complete native-cause test audit: indirect contents opening
+
+The code-to-PRD audit extends beyond direct downcasts. Complete census47ad35d0
+and independent Root reviewc08aa716 inspect all62 Weak upgrades in13 tracked
+Rust files. Eight upgrades open native panic contents or their inner allocation
+after erasure. The other54 calls inspect ordinary typed owners or shutdown
+authority. Those facts remain typed and their existing assertions stay valid.
+No runtime-body defect is found. The nine direct downcasts fixed in section272
+remain absent; that count did not prove complete native-cause opacity.
+
+The eight violations occur in five already277-approved paths:
+`crates/bombay-engine/tests/driver_law.rs` (two),
+`crates/bombay/tests/completed_application_receiving.rs` (three),
+`crates/bombay/tests/application_terminal_custody.rs` (one),
+`crates/bombay/tests/axum.rs` (one), and
+`crates/bombay/src/local/effects/reports.rs` (one). Their actual producers
+unwind with the cause, and their consumers receive only the opaque native
+carrier. A Weak token captured before erasure can observe ownership and final
+release. It does not authorize reading the native object's contents afterward.
+Section41 and the rejected ApplicationV1 remain the authority. The contrary
+historical section78 claim is superseded without relabeling its original runs.
+
+The smallest repair uses the existing exact Box identity where it is already
+captured. Otherwise, use a concrete typed Box in the existing private fixture,
+capture its identity before native transport, and pass that original through
+resume_unwind. Retain every ordinary typed Work, root, child, family, serving,
+error, task-identity and ordered residual assertion. Keep the original native
+lifetime checks and explicit final discharge. Add no Any to Behavior state or
+protocols, wrapper, service, new test, or public type. Expected production
+body:+0/−0/net0; public types:+0/−0. The exact test delta must be measured from
+independently reviewed proposals before installation. All five paths are in
+the existing named scope; no new path or cumulative allowance is selected.
+
+The selected graph remains registry Core/Actors0.23.0 and Macros0.14.0 from
+actual upstream revisiond69f992b, with unchanged Address, Communication,
+Observe and Timers ownership. Selection09a6ab8f, neighbor verification1f5f159c
+and complete owning-source/archive reviews remain exact. This test repair
+adds no dependency edge or runtime interpretation policy. Pinned Main Nix1.99
+is mandatory for every Rust command.
+
+The separate family_cleanup qualification completes all12 native rows in
+both profiles: two formations, six whole three-controller healthy/restored
+runs, and four intended cause-loss/rebox failures at the original pointer
+oracle. Actual3d004fd5 and final Root code audit911a40b2 preserve all356 source
+bytes, locks, native exits, process completion and streams. They qualify that
+unchanged controller group only. Independent actual review0102c47e accepts that bounded qualification.
+These records do not accept the eight other openings or grant a full Main pass.
+
+Hold the prepared44-row cause-custody epoch and final15-command/21-check plan
+until this bounded repair has independent review, focused debug/optimized
+controls and intended original-cause inversions with exact restorations.
+Audit the actual code, reached evidence and PRD after each native step.
+Refreeze the resulting source and full original-base change record afterward.
+Do not weaken mutation, coverage, test-selection or publication gates. Keep
+EXEC active until final verification, minimization, exact-head CI, review and
+actual PR326 delivery satisfy their existing requirements.
+
+Exact five-file proposals767a3817/583c1966 receive independent source acceptance
+5ff1a921/d53cf3cf. Actual Git proposal stage: tests+88/−91/net−3;
+production body+0/−0/net0; public types+0/−0; new paths0. Reports retains its
+complete242-line production prefix. Typed Box primitives in existing private
+fixtures own original carrier identity without Any state/protocols or a new
+wrapper. The complete family_cleanup suffix26a30e3d remains byte-exact;
+5ff1a921 accepts reuse of0102c47e only for that unchanged three-controller
+group. All new source formation, focused controls/inversions and final Main
+verification remain unproved until their actual commands qualify.
+
+Actual strict affected Clippy exits101 on an unfulfilled redundant_allocation
+expectation on the cfg-only reports static slot. Preserve its streams and
+source guard. Remove only that unused expectation entry, retaining the existing
+type_complexity expectation, reason, all assertions and strict warnings.
+Expected test source+0/−1/net−1; production/public/newpaths0. This is a
+compiler-friction correction, not native invariant or kill evidence. The
+unexecuted94-row source declaration must be refrozen after qualification.
+
+
+## 274. Accepted opaque-cause repairs and final integrated checkpoint
+
+The complete bounded source repair in sections272–273 is independently accepted
+and actually qualified. [Current verification](execution-ownership/verification.md#accepted-passive-native-cause-qualification-2026-10-08) records exact native
+results, code-to-PRD audits, original-defect inversions and source-restoration
+limits. Historical unexecuted44/pre-lint94 declarations remain superseded;
+Native32's historical NONPASS remains unchanged. No earlier failed run becomes
+green. Strict affected Clippy and formatting pass on the repaired source.
+
+The retained repair changes eleven already-approved source paths. Git stage:
+production rustdoc+5/−5/net0; tests+181/−186/net−5; executable production
+body+0/−0/net0; public types+0/−0; new paths0. Creation659 and Reports242
+production prefixes remain exact. No owner, interpretation policy, dependency
+edge, mutation floor, coverage floor or selected test inventory changes.
+
+Current source review preserves the accepted scoped minimization:327 of356
+inputs are exact;29 differences are the approved registry selection, rustdoc,
+test/law bindings and guidance. The original13 public nominal additions stay
+within the277 named-path allowance. Complete original-base production/test
+growth remains recorded; this test repair grants no total reduction claim.
+
+Complete original-base source checkpoint: production+13872/−6385/net7487;
+tests+34257/−4700/net29557. Current repair public API:+0 types/−0 types;
+the original13 approved additions remain conserved. The complete ledger is
+`/tmp/bombay-exec-final-pre-main-complete-delta.json`; documentation and
+configuration counts use the same original150 endpoint pairs.
+
+Refresh the complete150-path original-base ledger and freeze the repaired
+source for the reviewed c90e84c0 runner. Execute all15 required commands and
+all21 Nix check labels, with actual code-to-PRD audit after each command. Keep
+EXEC active until final evidence/minimization, exact-head CI, independent review
+and actual PR326 merge satisfy the existing delivery requirements.
+
+
+## 275. Actor-interface observational assertion repair
+
+Fresh command4 code audit889a54f2 finds one required ownership transfer inside
+`actor_interface.rs:187`: recovered rejected payload30 is consumed by
+`into_message()` inside `assert_eq!`. Full Main4–6 scan2c9ebef4 reads all96
+assertion bodies and finds no other required-move violation in those files.
+Native Main commands1–4 pass on declaration1787817d; command4 has a separate
+source-policy NONPASSb04b53c2. Ordinary assertions execute in optimized builds,
+so no native custody defect or failing native inversion is claimed.
+
+Smallest repair: bind the exact recovered message before the assertion, as the
+adjacent stale-recipient case already does. Expected changed source path:
+`crates/bombay/tests/actor_interface.rs`; tests+2/−1/net1; production+0/−0;
+public types+0/−0. The file is already in the277 named scope. Reuse the owning
+Communication rejection and existing runtime/interface/controller; add no new
+state, type, service, error, test or policy. Original production bodies and all
+complete rejection/drain/exhaustion/shutdown assertions remain unchanged.
+
+Independently review the exact one-file source diff before installation. Run
+the existing affected controller in both profiles. Then reconcile current
+source/ledger and refreeze a new c90 declaration for all15/21 checks. Preserve
+old Main1–4 facts with their original source epoch; do not resume declaration178
+after this edit or relabel its source-policy failure as success.
+
+
+Exact one-file proposal190fa020 receives independent source acceptance20e95d1f;
+installation8e39bbe3 changes only the reviewed test source to d39b3d50.
+The existing full affected controller passes debug835ff6e0 and optimized
+52f3f8bb:one pass/zero failures per profile, real native exit0 and complete
+source/stream guards. Independent actual/code reviewdf4b36ab accepts both,
+without a native-defect or inversion claim. The required recovery now precedes
+the observational assertion; no required operation depends on assertion use.
+
+Complete original-base checkpoint remains150 paths:production+13872/−6385/
+net7487; tests+34261/−4703/net29558. Full current repair stage across twelve
+existing source paths:tests+183/−187/net−4; rustdoc+5/−5/net0; executable
+production+0/−0/net0; public types+0/−0; new paths0. The cumulative277/13
+allowance and original endpoint remain intact. The successor ledger is
+`/tmp/bombay-exec-actor-interface-final-pre-main-complete-delta-qualified.json`.
+
+Source minimization now has326 exact inputs and30 approved differences from
+the accepted unfiltered epoch. The sole additional difference is this
+test-only recovery binding; retained runtime models and all13 nominal additions
+remain exact. Native94's selected controllers, mutation variants and compiled
+owning sources are unchanged; this separate integration-test target grants no
+new Native94 claim. Preserve the old Main1–4 source-policy-NONPASS epoch and
+execute a fresh complete15/21 plan under a newly reviewed c90 declaration.
+
+## 276. Final scoped code acceptance and delivery checkpoint
+
+Actual Main38e57139 completes the exact reviewed c90/e02 plan:15 required
+commands return0, all21 aarch64-darwin Nix check labels succeed, and all356
+tracked/871 non-build inputs, streams and process-group guards remain exact.
+Root92697a9d and independent95d4c0f6 accept those actual facts. All16 attempts
+remain: command10's original disk-exhaustion exit101 has zero test credit;
+its unchanged-input retry passes. Old source-policy and native failures retain
+their original nonpass records. No test selector, mutation floor, coverage floor,
+static denial, runtime body or dependency contract is changed for acceptance.
+
+Coverage is actual737/818 Driver,961/1001 ActorExecution,95/97 ActorOutcome
+and502/525 Observe, against unchanged90/93/90/90 percent floors. Supplement
+a6196da2 binds the raw report and exact compiled evidence:16 Driver positive/
+boundary controls and8 intended Driver negatives;5 Actor controls,8 killed
+inversions and2 affine compiler denials. Proof categories and first-reached
+negative oracles remain distinct. Native94's38 intended failures and exact
+restores across both profiles remain qualified by77cbaa77/805725ff.
+
+Three real Darwin Nix background classifier crashes occur after passing checks
+on outputs containing only target.tar.zst. Rootf6b1138e and independenta6196da2
+attribute them to audit-tmpdir.sh's unawaited classifier. Native0/all21 does not
+prove a clean classifier or complete packaging audit. No crash cause is claimed.
+Clean exact-head Linux CI remains mandatory before merge.
+
+Independent109aa01b closes current scoped implementation/PRD correspondence and
+the20 individual retained-abstraction dispositions. All17 accepted contribution
+groups are integrated; no accepted agent implementation is missing. The original
+source bridge has326 exact inputs and30 approved successors. Only delivery
+documentation changes after Main; every executable, test, manifest, lock,
+checker and selected owning source remains byte-exact. The global public API
+is+13 types/−1 type (AxumRunError); Main+6/−1 and upstream+7/−0.
+The cumulative277 named-path allowance remains unchanged.
+
+The audit retains explicit limits: cooperative cleanup while the host lives;
+no reconstruction of consumed user values; exact native panic custody outside
+Behavior state/protocols; inherited impure compatibility fixtures and Observe
+assertion-style debt are excluded as sole EXEC proof. This is scoped feature
+acceptance, not whole-repository style certification or future-work completion.
+
+Complete original-base checkpoint remains150 endpoint paths and no untracked
+source. Production+13872/−6385/net7487; tests+34261/−4703/net29558;
+documentation+20702/−436/net20266; configuration+45/−34/net11.
+The final source-bound ledger is /tmp/bombay-exec-final-delivery-complete-delta.json.
+This is capability growth, with separately proved forwarding deletions; it is
+not a total code-reduction claim. Exact-head CI/reviewed merge and actual merged
+PRD/backlog records remain required before delivery.

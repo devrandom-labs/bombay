@@ -1,4 +1,4 @@
-//! Terminal handoff after one Driver execution has been destroyed.
+//! Terminal handoff after one Driver execution finishes or drops.
 
 use super::ActorExecutionOutcome;
 use behavior::Never;
@@ -6,8 +6,8 @@ use behavior::Never;
 /// Consumes the terminal capability for one incarnation exactly once.
 ///
 /// Implementations may release an identity lease and publish the supplied
-/// outcome. They cannot affect Driver execution because invocation occurs only
-/// after the Driver future and all values it owns have been dropped.
+/// outcome. Invocation follows completion or disposal of the Driver future.
+/// Ordinary completion transfers its surviving values into the outcome.
 pub trait Retirement<B, R, BehaviorError, ActivationError, Request = Never> {
     type Output;
 

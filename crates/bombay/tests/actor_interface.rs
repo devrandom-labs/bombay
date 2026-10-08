@@ -184,7 +184,8 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
                         .send(&recipient, 30)
                         .await
                         .expect_err("closed admission rejects the exact recipient immediately");
-                    assert_eq!(rejected_after_close.into_message(), 30);
+                    let rejected_message = rejected_after_close.into_message();
+                    assert_eq!(rejected_message, 30);
                     let first_reply = receiver.receive().await.map(|user| user.message);
                     assert_eq!(first_reply, Some(10));
                     let second_reply = receiver.receive().await.map(|user| user.message);

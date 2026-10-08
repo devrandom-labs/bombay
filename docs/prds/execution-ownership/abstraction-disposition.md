@@ -23,7 +23,8 @@ tests+452/−25/net427; public types+0/−0. Exact cfg-item classification inclu
 the late production kernel edits. Installationfa7dd9d3 preserves every other
 source and the accepted result model/eager projection. The raw source−32 count
 is a different pre-format epoch; the complete EXEC production delta remains
-positive. Final modules/integrated checks/published owner/reviewed merge remain.
+positive. Current scoped acceptance and remaining delivery gates are recorded
+in [PRD section276](../execution-ownership.md#276-final-scoped-code-acceptance-and-delivery-checkpoint).
 
 ## Historical source audits and comparisons
 

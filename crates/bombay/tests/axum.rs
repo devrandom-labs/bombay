@@ -10,7 +10,8 @@ use bombay::behavior::{
 use core::pin::pin;
 use std::io::{self, Read, Write};
 use std::net::{TcpListener, TcpStream};
-use std::panic::panic_any;
+use std::panic::resume_unwind;
+use std::ptr;
 use std::time::Duration;
 use tokio::net::TcpListener as TokioTcpListener;
 use tokio::runtime::Builder as TokioBuilder;
@@ -567,10 +568,10 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
                 .as_ref()
                 .err()
                 .map(|error| (error.kind(), error.raw_os_error()));
-            let payload = Arc::new(vec![103_u64, 107]);
-            let original_payload = Arc::downgrade(&payload);
-            let original_allocation = Arc::as_ptr(&payload);
-            let task: JoinHandle<()> = spawn(async move { panic_any(payload) });
+            let payload = Box::new(Arc::new(vec![103_u64, 107]));
+            let original_payload = Arc::downgrade(payload.as_ref());
+            let original_carrier = ptr::from_ref(payload.as_ref()).cast::<()>();
+            let task: JoinHandle<()> = spawn(async move { resume_unwind(payload) });
             let original_task_id = task.id();
             let (execution, receiving) = Application::new(Root.stop_on_shutdown())
                 .execute_with::<_, _, Never, (), _, _>(move |application| async move {
@@ -593,7 +594,7 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
             returned.push((
                 original_serve,
                 original_payload,
-                original_allocation,
+                original_carrier,
                 original_task_id,
                 outcome,
             ));
@@ -602,8 +603,7 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
     });
     drop(caller);
     // Every supplied task and every actual root/cleanup is joined before oracles.
-    for (original_serve, original_payload, original_allocation, original_task_id, outcome) in
-        returned
+    for (original_serve, original_payload, original_carrier, original_task_id, outcome) in returned
     {
         let ApplicationOutcome::Completed {
             output: (retained_serve, supplied_retirement),
@@ -617,14 +617,11 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
         };
         let task_id = retirement_failure.id();
         let task_panicked = retirement_failure.is_panic();
+        assert!(task_panicked);
         let payload_count = original_payload.strong_count();
-        let retained_payload = original_payload
-            .upgrade()
-            .expect("the original opaque task failure retains its payload");
-        let retained_allocation = Arc::as_ptr(&retained_payload);
-        let retained_values = retained_payload.as_slice().to_vec();
-        drop(retained_payload);
-        drop(retirement_failure);
+        let payload = retirement_failure.into_panic();
+        let received_carrier = ptr::from_ref(payload.as_ref()).cast::<()>();
+        drop(payload);
         let discharged_payload = original_payload.strong_count();
         let retained_serve = match retained_serve {
             Ok(()) => None,
@@ -635,10 +632,8 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
             }
         };
         assert_eq!(task_id, original_task_id);
-        assert!(task_panicked);
         assert_eq!(payload_count, 1);
-        assert_eq!(retained_allocation, original_allocation);
-        assert_eq!(retained_values, [103, 107]);
+        assert_eq!(received_carrier, original_carrier);
         assert_eq!(discharged_payload, 0);
         assert_eq!(retained_serve, original_serve);
         assert_joined_http_root(origin, root_retirement);

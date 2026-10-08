@@ -1,8 +1,8 @@
 # Retained public API audit
 
 This retains ARC-020's owner inventory and reconciles the EXEC application
-surface against Behavior Core/Actors 0.22.0 and Macros 0.13.1 at locked Git
-revision `81ba2c0d1a8c6fc3d6235349980bf2657463041d`, Address 0.3.0,
+surface against published Behavior Core/Actors 0.23.0 and Macros 0.14.0 at
+archive revision `d69f992b371c12ab34e73b18e45b8112c90a1508`, Address 0.3.0,
 Communication 0.1.3, private Observe, and patched Timers in `Cargo.lock`. It covers Bombay-owned
 items reachable from the `bombay`, `bombay::entity`, `bombay::actors`, and
 `bombay_engine` roots. Re-exported Behavior and Behavior Actors families retain

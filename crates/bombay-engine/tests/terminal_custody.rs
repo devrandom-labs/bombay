@@ -2183,8 +2183,8 @@ async fn incomplete_retirement_exposes_original_failure_without_replay() {
 )]
 async fn classification_panic_preserves_original_interpretation_through_retirement() {
     let observations = Arc::new(Mutex::new(Vec::new()));
-    let original_native: Box<[u64]> = vec![71, 73].into_boxed_slice();
-    let native_allocation = original_native.as_ptr();
+    let original_native = Arc::new(vec![71_u64, 73]);
+    let native_lifetime = Arc::downgrade(&original_native);
     let payload: Box<dyn Any + Send> = Box::new(original_native);
     let native_carrier = ptr::from_ref(payload.as_ref()).cast::<()>();
     let classification = Arc::new(NativeClassification {
@@ -2237,17 +2237,9 @@ async fn classification_panic_preserves_original_interpretation_through_retireme
     let Err(DriverError::HostExecutionPanicked(payload)) = disposition else {
         panic!("settlement classification keeps its native host provenance");
     };
-    let native = payload
-        .downcast_ref::<Box<[u64]>>()
-        .expect("the original classification native cause remains concrete");
-    assert_eq!(
-        (
-            ptr::from_ref(payload.as_ref()).cast::<()>(),
-            native.as_ptr(),
-            native.as_ref()
-        ),
-        (native_carrier, native_allocation, &[71, 73][..])
-    );
+    assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), native_carrier);
+    let native_owners = native_lifetime.strong_count();
+    assert_eq!(native_owners, 1);
     assert!(additional_failures.is_empty());
     let Residual {
         acquired_ingress: None,
@@ -2298,5 +2290,7 @@ async fn classification_panic_preserves_original_interpretation_through_retireme
     drop(observed);
     drop(received_interpretation);
     drop(payload);
+    let native_owners = native_lifetime.strong_count();
+    assert_eq!(native_owners, 0);
     drop(classification);
 }

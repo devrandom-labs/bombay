@@ -242,7 +242,8 @@ pub(crate) struct LocalParentReports<Event, Child, Position> {
 
 #[cfg(test)]
 mod parent_conversion_custody {
-    use std::panic::panic_any;
+    use core::ptr;
+    use std::panic::resume_unwind;
     use std::sync::{Arc, Mutex, PoisonError};
 
     use behavior::{
@@ -277,12 +278,12 @@ mod parent_conversion_custody {
     static CONVERSION_SERIAL: Mutex<()> = Mutex::new(());
     #[expect(
         clippy::type_complexity,
-        reason = "original report and panic payload have one affine custody"
+        reason = "original report and separately allocated native panic carrier have one affine custody"
     )]
     static CONVERSION_CUSTODY: Mutex<
         Option<(
             oneshot::Sender<EstablishedCreation<Child, ChildHead>>,
-            Arc<Vec<u8>>,
+            Box<Arc<Vec<u8>>>,
         )>,
     > = Mutex::new(None);
     #[expect(
@@ -359,7 +360,7 @@ mod parent_conversion_custody {
             }
             // This application conversion is outside every Behavior fold.
             // No inspection of the resulting native payload is performed.
-            panic_any(payload);
+            resume_unwind(payload);
         }
     }
 
@@ -548,15 +549,15 @@ mod parent_conversion_custody {
         let original_parent = Arc::new(vec![43, 47, 53]);
         let original_child = Arc::new(vec![31, 37, 41]);
         let original_capability = Arc::new(vec![59, 61, 67]);
-        let original_payload = Arc::new(vec![71, 73, 79]);
+        let original_payload = Box::new(Arc::new(vec![71_u8, 73, 79]));
         let parent_allocation = original_parent.as_ptr() as usize;
         let child_allocation = original_child.as_ptr() as usize;
         let capability_allocation = original_capability.as_ptr() as usize;
-        let payload_allocation = original_payload.as_ptr() as usize;
+        let payload_carrier = ptr::from_ref(original_payload.as_ref()).cast::<()>();
         let parent_owner = Arc::downgrade(&original_parent);
         let child_owner = Arc::downgrade(&original_child);
         let capability_owner = Arc::downgrade(&original_capability);
-        let payload_owner = Arc::downgrade(&original_payload);
+        let payload_owner = Arc::downgrade(original_payload.as_ref());
         let payload_before_cleanup = payload_owner.clone();
         let (report_publication, report_receiver) = oneshot::channel();
         let (child_publication, child_receiver) = oneshot::channel();
@@ -790,11 +791,11 @@ mod parent_conversion_custody {
         let parent_retained = parent_owner.upgrade();
         let child_retained = child_owner.upgrade();
         let capability_retained = capability_owner.upgrade();
-        let payload_retained = payload_owner.upgrade();
+        let payload_retained = payload_owner.strong_count();
         // The original raw JoinError already preserves its native payload. It
         // does not preserve the outside Parent, child result or capability value.
         assert_eq!(payload_count_before_cleanup, 1);
-        assert!(payload_retained.is_some());
+        assert_eq!(payload_retained, 1);
         assert!(
             joined.is_ok(),
             "conversion must retire the outside parent ownership before returning"
@@ -1006,10 +1007,6 @@ mod parent_conversion_custody {
         assert_eq!(child_retained.as_ptr() as usize, child_allocation);
         assert_eq!(capability_retained.as_slice(), [59, 61, 67]);
         assert_eq!(capability_retained.as_ptr() as usize, capability_allocation);
-        let payload_retained =
-            payload_retained.expect("the exact native payload remains with the returned outcome");
-        assert_eq!(payload_retained.as_slice(), [71, 73, 79]);
-        assert_eq!(payload_retained.as_ptr() as usize, payload_allocation);
         // Current original progress was observed above independently of the
         // complete prior row. Explicit final discharge retains the original
         // opaque cause and every recovered row until all actual joins finish.
@@ -1114,6 +1111,11 @@ mod parent_conversion_custody {
                 );
             }
         };
+        assert_eq!(
+            ptr::from_ref(payload.as_ref()).cast::<()>(),
+            payload_carrier
+        );
+        assert_eq!(payload_owner.strong_count(), 1);
         assert!(additional_failures.is_empty());
         assert!(received_interpretation.is_none());
         assert!(received_source.is_none());
@@ -1220,7 +1222,7 @@ mod parent_conversion_custody {
         drop(parent_retained);
         drop(child_retained);
         drop(capability_retained);
-        drop(payload_retained);
+
         // Explicit final result discharge only AFTER raw actor and its known
         // children/capability tasks have completed their normal retirement.
         assert_eq!(parent_owner.strong_count(), 0);

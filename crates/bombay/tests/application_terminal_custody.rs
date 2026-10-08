@@ -1,4 +1,5 @@
-use std::panic::panic_any;
+use core::ptr;
+use std::panic::resume_unwind;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -825,7 +826,11 @@ fn assert_nested_birth_retirement(terminal: NestedTerminal) {
 
 struct PanickingChild {
     initialization_attempts: usize,
-    values: Option<Arc<Vec<u64>>>,
+    #[expect(
+        clippy::redundant_allocation,
+        reason = "Preserve native panic carrier identity separately from shared payload lifetime."
+    )]
+    values: Option<Box<Arc<Vec<u64>>>>,
 }
 
 #[bombay::actor(message = Never)]
@@ -836,14 +841,18 @@ impl PanickingChild {
             .values
             .take()
             .expect("the child owns its original semantic values");
-        panic_any(values)
+        resume_unwind(values)
     }
 }
 
 struct PanicParent {
     child: CreationId,
     survivor: CreationId,
-    values: Option<Arc<Vec<u64>>>,
+    #[expect(
+        clippy::redundant_allocation,
+        reason = "Preserve native panic carrier identity separately from shared payload lifetime."
+    )]
+    values: Option<Box<Arc<Vec<u64>>>>,
 }
 
 #[bombay::actor(
@@ -946,10 +955,9 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
     let survivor_id = ids
         .issue()
         .expect("the sibling's distinct original creation ID exists");
-    let values = Arc::new(vec![103, 107, 109]);
-    let original_values = Arc::downgrade(&values);
-    let original_arc_allocation = Arc::as_ptr(&values);
-    let original_vec_allocation = values.as_ptr();
+    let values = Box::new(Arc::new(vec![103_u64, 107, 109]));
+    let original_values = Arc::downgrade(values.as_ref());
+    let original_carrier = ptr::from_ref(values.as_ref()).cast::<()>();
     let parents = ActorSpace::new();
     let children = ActorSpace::new();
     let survivors = ActorSpace::new();
@@ -1157,13 +1165,10 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
     assert_eq!(child_origin.nonce(), route);
     assert!(children.resolve(&child_origin.address()).is_none());
     assert_eq!(original_values.strong_count(), 1);
-    let retained_values = original_values
-        .upgrade()
-        .expect("the opaque runtime payload retains the original values");
-    assert_eq!(Arc::as_ptr(&retained_values), original_arc_allocation);
-    assert_eq!(retained_values.as_ptr(), original_vec_allocation);
-    assert_eq!(retained_values.as_slice(), [103, 107, 109]);
-    drop(retained_values);
+    assert_eq!(
+        ptr::from_ref(payload.as_ref()).cast::<()>(),
+        original_carrier
+    );
     drop(payload);
     drop(survivor_recipient);
     assert_eq!(original_values.strong_count(), 0);

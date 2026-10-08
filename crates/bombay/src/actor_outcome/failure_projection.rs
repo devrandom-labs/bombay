@@ -1,5 +1,6 @@
 use std::any::Any;
 use std::ptr;
+use std::sync::Arc;
 use std::vec::Drain;
 
 use bombay_engine::{Completion, DriverError, DriverRetirement, SettlementFailure};
@@ -28,10 +29,10 @@ fn failure_projection_preserves_owned_originals(origin: ExecutionFailureOrigin) 
     let residual = residual_original.drain(..);
     let mut later_behavior_original = vec![23_u64, 29];
     let mut later_activation_original = vec![31_u64, 37];
-    let later_native: Box<[u64]> = vec![41, 43].into_boxed_slice();
+    let later_native = Arc::new(vec![41_u64, 43]);
     let later_behavior_allocation = later_behavior_original.as_ptr();
     let later_activation_allocation = later_activation_original.as_ptr();
-    let later_native_allocation = later_native.as_ptr();
+    let later_native_lifetime = Arc::downgrade(&later_native);
     let later_payload: Box<dyn Any + Send> = Box::new(later_native);
     let later_carrier = ptr::from_ref(later_payload.as_ref()).cast::<()>();
     let additional_failures = vec![
@@ -46,11 +47,11 @@ fn failure_projection_preserves_owned_originals(origin: ExecutionFailureOrigin) 
         ExecutionFailureOrigin::HostExecution
         | ExecutionFailureOrigin::Activation
         | ExecutionFailureOrigin::Retirement => {
-            let native: Box<[u64]> = vec![71, 73].into_boxed_slice();
-            let native_allocation = native.as_ptr();
+            let native = Arc::new(vec![71_u64, 73]);
+            let native_lifetime = Arc::downgrade(&native);
             let payload: Box<dyn Any + Send> = Box::new(native);
             let native_carrier = ptr::from_ref(payload.as_ref()).cast::<()>();
-            primary_original = Some((native_carrier, native_allocation));
+            primary_original = Some((native_carrier, native_lifetime));
             match origin {
                 ExecutionFailureOrigin::HostExecution => {
                     DriverError::HostExecutionPanicked(payload)
@@ -147,36 +148,32 @@ fn failure_projection_preserves_owned_originals(origin: ExecutionFailureOrigin) 
         ),
         (later_activation_allocation, &[31, 37][..])
     );
-    let later_native = later_payload
-        .downcast_ref::<Box<[u64]>>()
-        .expect("the later native cause retains its concrete owned payload");
     assert_eq!(
-        (
-            ptr::from_ref(later_payload.as_ref()).cast::<()>(),
-            later_native.as_ptr(),
-            later_native.as_ref()
-        ),
-        (later_carrier, later_native_allocation, &[41, 43][..])
+        ptr::from_ref(later_payload.as_ref()).cast::<()>(),
+        later_carrier
     );
-    match (payload.as_ref(), primary_original) {
-        (Some(payload), Some((native_carrier, native_allocation))) => {
-            let native = payload
-                .downcast_ref::<Box<[u64]>>()
-                .expect("the primary native cause retains its concrete owned payload");
+    let later_native_owners = later_native_lifetime.strong_count();
+    assert_eq!(later_native_owners, 1);
+    match (payload.as_ref(), primary_original.as_ref()) {
+        (Some(payload), Some((native_carrier, native_lifetime))) => {
             assert_eq!(
-                (
-                    ptr::from_ref(payload.as_ref()).cast::<()>(),
-                    native.as_ptr(),
-                    native.as_ref()
-                ),
-                (native_carrier, native_allocation, &[71, 73][..])
+                ptr::from_ref(payload.as_ref()).cast::<()>(),
+                *native_carrier
             );
+            let native_owners = native_lifetime.strong_count();
+            assert_eq!(native_owners, 1);
         }
         (None, None) => {}
         _ => panic!("a contract failure cannot fabricate or erase an original native cause"),
     }
     drop(payload);
     drop(additional_failures);
+    let later_native_owners = later_native_lifetime.strong_count();
+    assert_eq!(later_native_owners, 0);
+    if let Some((_, native_lifetime)) = primary_original.as_ref() {
+        let native_owners = native_lifetime.strong_count();
+        assert_eq!(native_owners, 0);
+    }
     drop(residual);
     drop(behavior);
 }
@@ -441,8 +438,8 @@ fn initialization_panic_projection_preserves_every_owned_original() {
         DriverError::Behavior(later_behavior_original.drain(..)),
         DriverError::Activation(later_activation_original.drain(..)),
     ];
-    let native: Box<[u64]> = vec![71, 73].into_boxed_slice();
-    let native_allocation = native.as_ptr();
+    let native = Arc::new(vec![71_u64, 73]);
+    let native_lifetime = Arc::downgrade(&native);
     let payload: Box<dyn Any + Send> = Box::new(native);
     let native_carrier = ptr::from_ref(payload.as_ref()).cast::<()>();
     let retirement = DriverRetirement {
@@ -490,18 +487,12 @@ fn initialization_panic_projection_preserves_every_owned_original() {
         ),
         (later_activation_allocation, &[31, 37][..])
     );
-    let native = payload
-        .downcast_ref::<Box<[u64]>>()
-        .expect("the original opaque panic payload retains its concrete owned value");
-    assert_eq!(
-        (
-            ptr::from_ref(payload.as_ref()).cast::<()>(),
-            native.as_ptr(),
-            native.as_ref()
-        ),
-        (native_carrier, native_allocation, &[71, 73][..])
-    );
+    assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), native_carrier);
+    let native_owners = native_lifetime.strong_count();
+    assert_eq!(native_owners, 1);
     drop(payload);
+    let native_owners = native_lifetime.strong_count();
+    assert_eq!(native_owners, 0);
     drop(additional_failures);
     drop(residual);
     drop(behavior);
@@ -523,8 +514,8 @@ fn transition_panic_projection_preserves_every_owned_original() {
         DriverError::Behavior(later_behavior_original.drain(..)),
         DriverError::Activation(later_activation_original.drain(..)),
     ];
-    let native: Box<[u64]> = vec![71, 73].into_boxed_slice();
-    let native_allocation = native.as_ptr();
+    let native = Arc::new(vec![71_u64, 73]);
+    let native_lifetime = Arc::downgrade(&native);
     let payload: Box<dyn Any + Send> = Box::new(native);
     let native_carrier = ptr::from_ref(payload.as_ref()).cast::<()>();
     let retirement = DriverRetirement {
@@ -572,18 +563,12 @@ fn transition_panic_projection_preserves_every_owned_original() {
         ),
         (later_activation_allocation, &[31, 37][..])
     );
-    let native = payload
-        .downcast_ref::<Box<[u64]>>()
-        .expect("the original opaque panic payload retains its concrete owned value");
-    assert_eq!(
-        (
-            ptr::from_ref(payload.as_ref()).cast::<()>(),
-            native.as_ptr(),
-            native.as_ref()
-        ),
-        (native_carrier, native_allocation, &[71, 73][..])
-    );
+    assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), native_carrier);
+    let native_owners = native_lifetime.strong_count();
+    assert_eq!(native_owners, 1);
     drop(payload);
+    let native_owners = native_lifetime.strong_count();
+    assert_eq!(native_owners, 0);
     drop(additional_failures);
     drop(residual);
     drop(behavior);

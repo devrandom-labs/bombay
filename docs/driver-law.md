@@ -1,14 +1,12 @@
 # Bombay Driver law
 
-This is an **unaccepted EXEC research candidate** for `bombay-engine` and its
-Bombay runtime integration. Its amended laws are prospective verification
-targets, not canonical retention or full-gate acceptance. The unchanged
-canonical Driver law remains authoritative until explicit independent acceptance.
+This is the independently accepted EXEC Driver contract for `bombay-engine`
+and its Bombay runtime integration. Final integrated verification and reviewed
+PR delivery remain separate acceptance gates in the EXEC PRD.
 
-The selected research contract is Behavior Core and Actors 0.22.0 and
-Macros 0.13.1 from the same Git revision
-`81ba2c0d1a8c6fc3d6235349980bf2657463041d`. These are the selected research sources,
-not a claim that this revision is a published crate release.
+The selected contract is published Behavior Core and Actors 0.23.0 and
+Macros 0.14.0. All three registry archives identify owning revision
+`d69f992b371c12ab34e73b18e45b8112c90a1508`. Their archive and source verification is recorded in the EXEC PRD.
 The owner supplies one direct `Behavior -> Actions` fold, ordered creations,
 named send interpretation, total action settlements, and typed source custody.
 A complete Driver terminal reply transfers all still-owned settlements through

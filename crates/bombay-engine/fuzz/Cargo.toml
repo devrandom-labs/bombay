@@ -9,7 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-behavior = { package = "bombay-behavior", version = "0.22.0" }
+behavior = { package = "bombay-behavior", version = "0.23.0" }
 bombay-engine = { path = ".." }
 
 [[bin]]
@@ -18,10 +18,5 @@ path = "fuzz_targets/causal_turns.rs"
 test = false
 doc = false
 bench = false
-
-[patch.crates-io]
-bombay-behavior = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "81ba2c0d1a8c6fc3d6235349980bf2657463041d" }
-bombay-behavior-actors = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "81ba2c0d1a8c6fc3d6235349980bf2657463041d" }
-bombay-behavior-macros = { git = "https://github.com/devrandom-labs/bombay-behavior.git", rev = "81ba2c0d1a8c6fc3d6235349980bf2657463041d" }
 
 [workspace]

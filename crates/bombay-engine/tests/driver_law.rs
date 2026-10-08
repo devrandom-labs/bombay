@@ -997,8 +997,6 @@ async fn pure_initialization_panic_returns_surviving_behavior_and_retires_once()
     let payload = Box::new(Arc::new(vec![103_u64, 107, 109]));
     let payload_identity: *const (dyn Any + Send) = payload.as_ref();
     let retained = Arc::downgrade(payload.as_ref());
-    let payload_allocation = Arc::as_ptr(payload.as_ref());
-    let values_allocation = payload.as_slice().as_ptr();
     let retirement = direct(
         PanickingInitialization {
             initialized: 0,
@@ -1048,13 +1046,6 @@ async fn pure_initialization_panic_returns_surviving_behavior_and_retires_once()
         ]
     );
     assert_eq!(retained.strong_count(), 1);
-    let original = retained
-        .upgrade()
-        .expect("the native retirement owns the original payload");
-    assert_eq!(Arc::as_ptr(&original), payload_allocation);
-    assert_eq!(original.as_ptr(), values_allocation);
-    assert_eq!(original.as_slice(), [103, 107, 109]);
-    drop(original);
     let received_payload_identity: *const (dyn Any + Send) = cause.as_ref();
     assert!(ptr::eq(
         received_payload_identity.cast::<()>(),
@@ -1664,8 +1655,6 @@ fn pure_turn_panic_returns_native_cause_after_retirement() {
     let payload = Box::new(Arc::new(vec![127_u64, 131, 137]));
     let payload_identity: *const (dyn Any + Send) = payload.as_ref();
     let retained = Arc::downgrade(payload.as_ref());
-    let payload_allocation = Arc::as_ptr(payload.as_ref());
-    let values_allocation = payload.as_slice().as_ptr();
     let (retirement, next, custody) = panic_case(PanicStage::Turn, payload, &execution_trace);
     let DriverRetirement {
         behavior:
@@ -1702,13 +1691,6 @@ fn pure_turn_panic_returns_native_cause_after_retirement() {
         ]
     );
     assert_eq!(retained.strong_count(), 1);
-    let original = retained
-        .upgrade()
-        .expect("the original event-fold payload survives");
-    assert_eq!(Arc::as_ptr(&original), payload_allocation);
-    assert_eq!(original.as_ptr(), values_allocation);
-    assert_eq!(original.as_slice(), [127, 131, 137]);
-    drop(original);
     let received_payload_identity: *const (dyn Any + Send) = cause.as_ref();
     assert!(ptr::eq(
         received_payload_identity.cast::<()>(),

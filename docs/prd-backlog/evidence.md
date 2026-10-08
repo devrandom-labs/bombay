@@ -30,16 +30,16 @@ is held, without starting a replacement, and preserves exact source custody.
 
 | Owner | Selected contract inspected | Consequence |
 | --- | --- | --- |
-| Behavior | bombay-behavior 0.22.0, locked Git revision `81ba2c0d1a8c6fc3d6235349980bf2657463041d` | Owns Actions and the typed capability algebra. Exact revision's AGENTS.md applies. |
-| Behavior Actors | bombay-behavior-actors 0.22.0, same locked Git revision | Owns existing supervision, pools and template policies. |
-| Behavior macros | bombay-behavior-macros 0.13.1, same locked Git revision | Owns syntax generation; Bombay must not replace its semantics. |
+| Behavior | bombay-behavior 0.23.0, registry archive revision `d69f992b371c12ab34e73b18e45b8112c90a1508` | Owns Actions and the typed capability algebra. Exact revision's AGENTS.md applies. |
+| Behavior Actors | bombay-behavior-actors 0.23.0, same registry archive revision | Owns existing supervision, pools and template policies. |
+| Behavior macros | bombay-behavior-macros 0.14.0, same registry archive revision | Owns syntax generation; Bombay must not replace its semantics. |
 | Address | bombay-address 0.3.0 | Owns local claims/leases and opaque resolution; its process-local representation is not a wire address. |
 | Communication | bombay-communication 0.1.3 | Owns bounded user delivery, separate control delivery, closure and payload recovery. |
 | Observe | Private Bombay implementation | Owns completion publication and waiting; is not a missing external dependency. |
 | Timers | 0.1.0 patched to `13e884da7ab41781f52337b0038060e375b00ee0` | Owns volatile actor scheduling/generations, not persistent reminders. |
 | Tokio | 1.53.1 in this lockfile | Caller-host async execution and configured Builder-only owned current-thread/multithread execution share one paired owner; final acceptance remains separate. |
 
-Selected-contract table reconciled on 2026-10-06 for the final EXEC source. The earlier dated
+Selected-contract table reconciled on 2026-10-08 for the final EXEC source. The earlier dated
 0.20.0 execution observations below remain historical evidence. Behavior
 Actors 0.21.2 publication retains its historical distinct live capability-failure
 cause evidence. The final selected source and full acceptance remain in EXEC. See the
@@ -48,10 +48,9 @@ for publication, source and verification evidence.
 
 Sources: [Cargo.lock](../../Cargo.lock), [workspace manifest](../../Cargo.toml),
 [Bombay manifest](../../crates/bombay/Cargo.toml). Behavior source was read from
-the exact locked Git revision and prior registry snapshots at their recorded
-epochs, not inferred from a sibling branch. The root patches select Behavior
-and Timers; a nearby
-checkout at another revision is not the build contract.
+the authenticated registry archives and prior selected snapshots at their
+recorded epochs. The root patch selects only Timers; a nearby checkout at
+another revision is not the build contract.
 
 Current architectural references remain
 [capability ownership](../runtime-capability-interfaces.md),

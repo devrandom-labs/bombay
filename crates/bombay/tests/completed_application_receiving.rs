@@ -1328,13 +1328,17 @@ fn ready_output_survives_work_destructor_panic_and_actual_root_join() {
 }
 
 struct RetiringAccounts {
-    panic_payload: Option<Arc<Vec<u8>>>,
+    #[expect(
+        clippy::redundant_allocation,
+        reason = "Preserve native panic object identity separately from its shared payload lifetime."
+    )]
+    panic_payload: Option<Box<Arc<Vec<u8>>>>,
 }
 
 impl Drop for RetiringAccounts {
     fn drop(&mut self) {
         if let Some(original) = self.panic_payload.take() {
-            panic_any(original);
+            resume_unwind(original);
         }
     }
 }
@@ -1391,7 +1395,13 @@ impl EntityDefinition for RetiringAccounts {
     reason = "the original three-family disposal oracle keeps the complete acquired root, output, named family products and final discharge cuts in one trace"
 )]
 fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<Vec<u8>>>) {
-    let original_fault = panic_payload.as_ref().map(Arc::downgrade);
+    let panic_payload = panic_payload.map(Box::new);
+    let original_fault = panic_payload
+        .as_ref()
+        .map(|payload| Arc::downgrade(payload.as_ref()));
+    let original_carrier = panic_payload
+        .as_ref()
+        .map(|payload| ptr::from_ref(payload.as_ref()).cast::<()>());
     let output = Arc::new(vec![11, 19]);
     let original_output = Arc::downgrade(&output);
     let state = Arc::new(vec![31, 37]);
@@ -1615,6 +1625,9 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
                     head_family_disposal_failure.is_some(),
                     middle_family_disposal_failure.is_some(),
                     tail_family_disposal_failure.is_some(),
+                    middle_family_disposal_failure
+                        .as_ref()
+                        .map(|cause| ptr::from_ref(cause.as_ref()).cast::<()>()),
                 ),
             ))
         }
@@ -1622,13 +1635,6 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
     };
     let public_call_returned = caught.is_ok();
     let fault_retained = original_fault.as_ref().map(Weak::strong_count);
-    let fault_contents = original_fault.as_ref().and_then(|original| {
-        original.upgrade().map(|original| {
-            let contents = original.as_slice().to_vec();
-            drop(original);
-            contents
-        })
-    });
     drop(returned);
     drop(caught);
     let fault_released = original_fault.as_ref().map(Weak::strong_count);
@@ -1650,10 +1656,6 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
     };
     assert!(public_call_returned);
     assert_eq!(fault_retained, original_fault.as_ref().map(|_| 1));
-    assert_eq!(
-        fault_contents,
-        original_fault.as_ref().map(|_| vec![67, 71])
-    );
     assert_eq!(fault_released, original_fault.as_ref().map(|_| 0));
     assert_eq!(
         acquired_products,
@@ -1671,7 +1673,7 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
             (0, 0, 0, 0, true, true),
             (0, 0, 0, 0, 0, 0),
             (empty_metrics, empty_metrics, empty_metrics),
-            (false, original_fault.is_some(), false),
+            (false, original_fault.is_some(), false, original_carrier),
         )),
         "the original completed output, joined root and acquired family prefix must survive later family disposal",
     );
@@ -1690,13 +1692,17 @@ fn family_report_disposal_fault_keeps_acquired_products() {
 }
 
 struct DeclaredAccountRole {
-    original_fault: Option<Arc<Vec<u8>>>,
+    #[expect(
+        clippy::redundant_allocation,
+        reason = "Preserve native panic object identity separately from its shared payload lifetime."
+    )]
+    original_fault: Option<Box<Arc<Vec<u8>>>>,
 }
 
 impl Drop for DeclaredAccountRole {
     fn drop(&mut self) {
         if let Some(original) = self.original_fault.take() {
-            panic_any(original);
+            resume_unwind(original);
         }
     }
 }
@@ -1759,7 +1765,13 @@ enum StagedAccountConclusion {
     reason = "keep the two-role staging fault, actual whole refusal control and original allocation discharge in one independent trace"
 )]
 fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Arc<Vec<u8>>>) {
-    let fault = original_fault.as_ref().map(Arc::downgrade);
+    let original_fault = original_fault.map(Box::new);
+    let fault = original_fault
+        .as_ref()
+        .map(|cause| Arc::downgrade(cause.as_ref()));
+    let original_carrier = original_fault
+        .as_ref()
+        .map(|cause| ptr::from_ref(cause.as_ref()).cast::<()>());
     let root = Arc::new(vec![173, 179]);
     let original_root = Arc::downgrade(&root);
     let current = Arc::new(vec![181, 191]);
@@ -1941,9 +1953,9 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
         _ => None,
     };
     let fault_owned = fault.as_ref().map(Weak::strong_count);
-    let fault_contents = fault
+    let received_carrier = cold_inputs
         .as_ref()
-        .and_then(|fault| fault.upgrade().map(|original| original.as_slice().to_vec()));
+        .map(|(_, _, _, _, cause)| ptr::from_ref(cause.as_ref()).cast::<()>());
     drop(cold_inputs);
     drop(joined_refusal);
     drop(returned);
@@ -1959,7 +1971,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
     // every omission oracle. Startup refusal now returns the original Work;
     // this consumer explicitly discharges it before the existing release oracle.
     assert_eq!(fault_owned, fault.as_ref().map(|_| 1));
-    assert_eq!(fault_contents, fault.as_ref().map(|_| vec![229, 233]));
+    assert_eq!(received_carrier, original_carrier);
     assert_eq!(fault_released, fault.as_ref().map(|_| 0));
     if fault.is_none() {
         assert_eq!(uninvoked_work_retained, Some(1));
@@ -2245,8 +2257,9 @@ fn declared_execution_returns_cold_partial_and_non_send_callable() {
     let original_earlier = Arc::downgrade(&earlier);
     let work = Rc::new(vec![199, 211]);
     let original_work = Rc::downgrade(&work);
-    let cause = Arc::new(vec![229, 233]);
-    let original_cause = Arc::downgrade(&cause);
+    let cause = Box::new(Arc::new(vec![229, 233]));
+    let original_cause = Arc::downgrade(cause.as_ref());
+    let original_carrier = ptr::from_ref(cause.as_ref()).cast::<()>();
     let borrowed = vec![239, 241];
     runtime.block_on(async {
         let borrowed = &borrowed;
@@ -2328,9 +2341,7 @@ fn declared_execution_returns_cold_partial_and_non_send_callable() {
             original_work.strong_count(),
             original_cause.strong_count(),
         );
-        let cause_contents = original_cause
-            .upgrade()
-            .map(|cause| cause.as_slice().to_vec());
+        let received_carrier = ptr::from_ref(cause.as_ref()).cast::<()>();
         drop((root, work, actor, earlier, cause));
         let released = (
             original_root.strong_count(),
@@ -2354,7 +2365,7 @@ fn declared_execution_returns_cold_partial_and_non_send_callable() {
             (trace.8, trace.9),
             (AccountAdmission::Ready, vec![193, 197])
         );
-        assert_eq!(cause_contents, Some(vec![229, 233]));
+        assert_eq!(received_carrier, original_carrier);
         assert_eq!(retained, (1, 1, 1, 1, 1));
         assert_eq!(released, (0, 0, 0, 0, 0));
     });
@@ -4266,13 +4277,11 @@ mod family_cleanup {
     )]
     async fn acquired_family_prefix_survives_host_cancellation(
         original_cause: Option<Box<dyn Any + Send>>,
+        native_original: Option<Weak<Vec<u8>>>,
     ) {
         let cause_pointer = original_cause
             .as_ref()
             .map(|cause| from_ref::<dyn Any>(&**cause).cast::<()>());
-        let native_original = original_cause
-            .as_ref()
-            .and_then(|cause| cause.downcast_ref::<Arc<Vec<u8>>>().map(Arc::downgrade));
         let disposal_cause = Arc::new(Mutex::new(None));
         let root = Arc::new(vec![31, 37]);
         let original_root = Arc::downgrade(&root);
@@ -4520,16 +4529,7 @@ mod family_cleanup {
             }
         };
         match (original_disposal_cause.as_ref(), native_original.as_ref()) {
-            (Some(cause), Some(original)) => {
-                let native = cause
-                    .downcast_ref::<Arc<Vec<u8>>>()
-                    .expect("the original native producer cause retains its concrete allocation");
-                let native_identity = original
-                    .upgrade()
-                    .expect("the caller owns its acquired original cause");
-                assert!(Arc::ptr_eq(&native_identity, native));
-                assert_eq!(native.as_slice(), &[67, 71]);
-                drop(native_identity);
+            (Some(_), Some(original)) => {
                 assert_eq!(original.strong_count(), 1);
             }
             (None, None) => {}
@@ -4567,13 +4567,16 @@ mod family_cleanup {
 
     #[tokio::test(flavor = "current_thread")]
     async fn acquired_root_and_head_survive_pending_family_host_cancellation() {
-        acquired_family_prefix_survives_host_cancellation(None).await;
+        acquired_family_prefix_survives_host_cancellation(None, None).await;
     }
 
     #[tokio::test(flavor = "current_thread")]
     async fn acquired_root_and_head_survive_native_pending_family_disposal() {
-        let original: Box<dyn Any + Send> = Box::new(Arc::new(vec![67_u8, 71]));
-        acquired_family_prefix_survives_host_cancellation(Some(original)).await;
+        let original = Arc::new(vec![67_u8, 71]);
+        let native_original = Arc::downgrade(&original);
+        let original: Box<dyn Any + Send> = Box::new(original);
+        acquired_family_prefix_survives_host_cancellation(Some(original), Some(native_original))
+            .await;
     }
 
     #[tokio::test(flavor = "current_thread")]

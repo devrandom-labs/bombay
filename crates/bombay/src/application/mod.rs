@@ -71,8 +71,8 @@ impl<Root, Spaces, Families> App<Root, Spaces, Families> {
     ///
     /// # Errors
     ///
-    /// Returns the existing directory configuration error without starting the
-    /// application or consuming the definition.
+    /// Returns the existing directory configuration error before application
+    /// startup. This consuming call drops its inputs on rejection.
     #[allow(
         clippy::type_complexity,
         reason = "the inferred role-indexed family product is the public static composition"

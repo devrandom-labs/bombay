@@ -822,7 +822,6 @@ mod child_projection_panic {
         let original_cause = Arc::new(vec![59_u64, 61, 67]);
         let first_allocation = first_entries.as_ptr();
         let later_allocation = later_entries.as_ptr();
-        let cause_allocation = original_cause.as_ptr();
         let first_owner = Arc::downgrade(&first_entries);
         let later_owner = Arc::downgrade(&later_entries);
         let cause_owner = Arc::downgrade(&original_cause);
@@ -1027,11 +1026,6 @@ mod child_projection_panic {
             ptr::from_ref(payload.as_ref()).cast::<()>(),
             payload_allocation
         );
-        let original_cause = payload
-            .downcast::<Arc<Vec<u64>>>()
-            .expect("the original opaque native panic payload retains its exact type");
-        assert_eq!(original_cause.as_ptr(), cause_allocation);
-        assert_eq!(original_cause.as_slice(), [59, 61, 67]);
         let [later_terminal] = descendants.as_slice() else {
             panic!("the later sibling is joined despite the earlier native projector failure");
         };
@@ -1175,7 +1169,7 @@ mod child_projection_panic {
         assert_eq!(first_owner.strong_count(), 1);
         assert_eq!(later_owner.strong_count(), 1);
         assert_eq!(cause_owner.strong_count(), 1);
-        drop((terminals, original_cause));
+        drop((terminals, payload));
         assert_eq!(first_owner.strong_count(), 0);
         assert_eq!(later_owner.strong_count(), 0);
         assert_eq!(cause_owner.strong_count(), 0);

@@ -7,10 +7,9 @@ primitive concurrency semantics.
 
 ## Selected contract and ownership
 
-The research workspace selects Behavior Core and Actors 0.22.0 and Behavior
-Macros 0.13.1 from receiving revision
-`81ba2c0d1a8c6fc3d6235349980bf2657463041d`, as recorded in `Cargo.lock`.
-This selection does not claim publication or an owning-library main merge.
+The workspace selects published Behavior Core and Actors 0.23.0 and Behavior
+Macros 0.14.0, as recorded in `Cargo.lock`. All three registry archives identify
+owning revision `d69f992b371c12ab34e73b18e45b8112c90a1508`.
 Evidence must name the revision of each owner it exercises.
 
 Behavior owns initialization, synchronous folds, complete `Actions`, ordered
@@ -33,7 +32,7 @@ it cannot be used to pass or block an Engine law.
 ## Actor-template boundary inventory
 
 `driver-template-manifest.json` schema 3 is the revision-bound ownership
-boundary for the selected Behavior Actors 0.22.0 package. It records the exact
+boundary for the selected Behavior Actors 0.23.0 package. It records the exact
 45 public Behavior compositions by family, public spelling, event boundary,
 ordered effect lanes, composition edge, owning source, and upstream evidence.
 It separately records all 19 actor-owned interpreter-request/source-action
@@ -57,7 +56,7 @@ atomic surface: `BeginActivation`, `CustomerDelivery`, `DiagnosticAction`,
 typed Bombay interpreter and a compile-contract witness under ARC-010; the
 manifest records all 19 actor-owned request types as implemented. The
 `PrepareWorkers` source action also has a direct typed interpreter. Selected
-Actors 0.22.0 supplies typed `ProxyDiagnostic` ingress and split worker
+Actors 0.23.0 supplies typed `ProxyDiagnostic` ingress and split worker
 preparation; Bombay's live fixed-supervisor and held-source FIFO regressions
 exercise those contracts. This manifest alone is not end-to-end template
 proof. `ObserveEstablishedCreation` and `CancelObservation` are

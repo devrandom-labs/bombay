@@ -1,6 +1,9 @@
 use core::convert::Infallible;
 use core::future::{Future, poll_fn};
 use core::pin::pin;
+use core::ptr;
+use std::any::Any;
+use std::panic::resume_unwind;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::Notify;
@@ -289,7 +292,10 @@ enum DeliveryGate {
 #[derive(Clone)]
 enum RetirementDisposition {
     Complete,
-    Panic,
+    Panic {
+        cause: Arc<Mutex<Option<Box<dyn Any + Send>>>>,
+        task: Arc<Mutex<Option<tokio::task::Id>>>,
+    },
     Cancel {
         started: Arc<Notify>,
         task: Arc<Mutex<Option<tokio::task::AbortHandle>>>,
@@ -384,7 +390,16 @@ impl LocalEntityRuntime<u64, u64> for GatedRuntime {
         self.inner.state.retirements.fetch_add(1, Ordering::Release);
         match &self.retirement_disposition {
             RetirementDisposition::Complete => {}
-            RetirementDisposition::Panic => panic!("retirement task failed"),
+            RetirementDisposition::Panic { cause, task } => {
+                let payload = cause
+                    .lock()
+                    .unwrap()
+                    .take()
+                    .expect("one original opaque retirement cause");
+                let original_task = tokio::task::id();
+                *task.lock().unwrap() = Some(original_task);
+                resume_unwind(payload)
+            }
             RetirementDisposition::Cancel { started, .. } => {
                 started.notify_one();
                 core::future::pending::<()>().await;
@@ -540,6 +555,12 @@ async fn shutdown_claims_passivation_before_pending_delivery_settles() {
 
 #[tokio::test]
 async fn family_shutdown_preserves_retirement_task_failure() {
+    let original_cause = Arc::new(vec![59_u64, 61, 67]);
+    let cause_owner = Arc::downgrade(&original_cause);
+    let original_payload: Box<dyn Any + Send> = Box::new(original_cause);
+    let payload_allocation = ptr::from_ref(original_payload.as_ref()).cast::<()>();
+    let cause = Arc::new(Mutex::new(Some(original_payload)));
+    let task = Arc::new(Mutex::new(None));
     let observations = RecordingRuntime::default();
     let release_activation = Arc::new(Notify::new());
     let entities = EntityRuntime::new(
@@ -549,7 +570,10 @@ async fn family_shutdown_preserves_retirement_task_failure() {
             activation_started: Arc::new(Notify::new()),
             release_activation: Arc::clone(&release_activation),
             delivery_gate: DeliveryGate::Immediate,
-            retirement_disposition: RetirementDisposition::Panic,
+            retirement_disposition: RetirementDisposition::Panic {
+                cause: Arc::clone(&cause),
+                task: Arc::clone(&task),
+            },
             join_gate: JoinGate::Immediate,
         },
     )
@@ -577,13 +601,24 @@ async fn family_shutdown_preserves_retirement_task_failure() {
     assert_eq!(receipts.len(), 0);
     assert_eq!(failures.len(), 1);
     let failure = failures.pop().expect("one failed retirement task");
+    let original_task = task
+        .lock()
+        .unwrap()
+        .take()
+        .expect("the actual retirement task recorded its native identity");
+    assert_eq!(failure.id(), original_task);
+    assert!(failure.is_panic());
+    assert!(!failure.is_cancelled());
     let panic = failure
         .try_into_panic()
         .expect("the retirement task panicked");
-    let message = panic
-        .downcast::<&'static str>()
-        .expect("the original panic message is retained");
-    assert_eq!(*message, "retirement task failed");
+    assert_eq!(
+        ptr::from_ref(panic.as_ref()).cast::<()>(),
+        payload_allocation
+    );
+    assert_eq!(cause_owner.strong_count(), 1);
+    drop(panic);
+    assert_eq!(cause_owner.strong_count(), 0);
 }
 
 #[tokio::test]
