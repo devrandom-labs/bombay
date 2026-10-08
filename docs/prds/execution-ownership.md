@@ -23,13 +23,12 @@ ARC-020 later renamed the private actor execution and outcome symbols; the
 snapshot names below remain historical, and `docs/module-boundaries.md` records
 the current source paths.
 
-**Status: distilled.** All eight design gates, the scoped implementation-to-PRD
-and retained-model audit, and final required verification are accepted.
-Published Core/Actors0.23.0 and Macros0.14.0 are selected. All15 required commands
-return0 and all21 Darwin Nix checks report success; the three separate Nix
-post-fixup classifier crashes remain an explicit packaging-audit limitation.
-Exact-head Linux CI, final reviewed PR326 merge and actual merged records remain.
-Section276 records current acceptance; earlier checkpoints retain their dates.
+**Status: merged.** [PR326](https://github.com/devrandom-labs/bombay/pull/326) merged to main at 2026-10-08T10:13:33Z.
+The actual merge commit is `81256c8e00b580f37f4a1036ac28ec53b1ea948b`; reviewed head `6cf7736d6fdbec8cdb764af1664220b0c87d3b07`
+passed all four required CI checks. All eight design gates, scoped code/PRD
+and minimization acceptance, and required local verification are retained.
+Section277 records actual delivery. Earlier checkpoints retain their source
+and diagnostic limits; the three Darwin Nix classifier crashes remain recorded.
 
 This PRD replaces the earlier conversational criterion that EXEC must produce
 a net reduction in production lines. Model quality is the acceptance criterion:
@@ -41,7 +40,7 @@ with no independent purpose.
 
 ## Remaining blockers — current closure table
 
-One integration branch: `research/exec-consolidated`, [PR #326](https://github.com/devrandom-labs/bombay/pull/326).
+Delivered from `research/exec-consolidated` through [PR #326](https://github.com/devrandom-labs/bombay/pull/326).
 This is the only current closure list. Earlier lists are dated evidence.
 Reuse results for unchanged code/contracts; rerun affected checks after a relevant
 change or failure, and retain all required final integrated verification.
@@ -50,11 +49,11 @@ The nine preservation mappings are independently accepted; their single current
 record is [verification](execution-ownership/verification.md#accepted-nine-preservation-dispositions-2026-10-06).
 API, common execution, Entity root/head custody and HTTP integration are closed
 with [accepted source-bound verification](execution-ownership/verification.md#accepted-api-verification-2026-10-07);
-required whole-integration verification remains in the final row below.
+completed whole-integration verification and delivery are in the final row below.
 [Observation](execution-ownership/observation.md#current-source-bound-disposition-2026-10-07)
 is independently accepted (5bddcbde/cb497a32): current10k fuzz,28/72/16 laws,
 one authority owner, guarded notification admission and explicit fairness limits.
-No observation-specific test remains; final integrated checks remain required.
+No observation-specific test remains; final integration and delivery are recorded below.
 [Projection](execution-ownership/terminal-projection.md#current-representation-decision)
 is independently accepted (53d440a4/3cb96357). The ordinary one-task candidate
 passes its native and cost/order laws but is not retained; separate native
@@ -75,8 +74,8 @@ both profiles; [current evidence](execution-ownership/verification.md#module-acc
 
 | Requirement / gate | Exact blocker | Valid evidence available | Next action and pass condition |
 | --- | --- | --- | --- |
-| Selected upstream contract | Closed: authenticated published receiving contract selected. | PR86/87/88 and automatic Release37714832852 pass. Independentefc6b91a accepts three archives/tags/consumer;3b4fd158 accepts unchanged runtime bridge. Exact selection09a6ab8f uses registry Core/Actors0.23.0 and Macros0.14.0 in root and Engine fuzz; unrelated dependencies and Timers remain exact. | Carry the source-bound evidence into final Main verification; no upstream release blocker remains. |
-| Final verification, minimization, review and delivery | Local acceptance and scoped minimization are closed. Exact-head Linux CI and reviewed PR326 delivery remain. | All15 §10.1 commands return0; independent95d4c0f6 accepts all21 Darwin check results, genuine unchanged coverage and bounded negative-law evidence. Three Nix post-fixup classifier crashes are separately attributed; no clean packaging-audit claim. Independent109aa01b accepts actual code/PRD correspondence, all20 abstraction dispositions,13 public additions and all17 agent groups. | Final docs-only/full150-path ledger review, exact-head clean Linux CI, reviewed PR326 merge and actual merged records. |
+| Selected upstream contract | Closed: authenticated published receiving contract selected. | PR86/87/88 and automatic Release37714832852 pass. Independentefc6b91a accepts three archives/tags/consumer;3b4fd158 accepts unchanged runtime bridge. Exact selection09a6ab8f uses registry Core/Actors0.23.0 and Macros0.14.0 in root and Engine fuzz; unrelated dependencies and Timers remain exact. | The matching published contract is verified and delivered; no upstream blocker remains. |
+| Final verification, minimization, review and delivery | Closed by reviewed PR326 merge to main. | Local15/21 acceptance, scoped minimization and final150-path ledger remain accepted. All four required checks pass on6cf7736; actual merge `81256c8e00b580f37f4a1036ac28ec53b1ea948b` is source-equivalent. | Delivered; retain section277 CI/merge facts and the explicit inherited/style/host and Darwin packaging-audit limits. |
 
 ## 1. Authority and how to execute this document
 
@@ -13242,3 +13241,40 @@ The final source-bound ledger is /tmp/bombay-exec-final-delivery-complete-delta.
 This is capability growth, with separately proved forwarding deletions; it is
 not a total code-reduction claim. Exact-head CI/reviewed merge and actual merged
 PRD/backlog records remain required before delivery.
+
+## 277. Actual reviewed delivery
+
+[PR326](https://github.com/devrandom-labs/bombay/pull/326) merged to main at 2026-10-08T10:13:33Z.
+Reviewed head: `6cf7736d6fdbec8cdb764af1664220b0c87d3b07`.
+Actual merge commit: `81256c8e00b580f37f4a1036ac28ec53b1ea948b`.
+The actual merged tree is byte-identical to the reviewed and CI-tested tree.
+All accepted code from the17 contribution groups is included. This delivery
+has no new production/test/public type or dependency-contract change.
+
+All four required checks passed before merge on that exact reviewed head:
+
+- [Linux Nix Flake Check](https://github.com/devrandom-labs/bombay/actions/runs/37756875261/job/113243485737).
+- [Analyze Rust](https://github.com/devrandom-labs/bombay/actions/runs/37756875048/job/113243484315).
+- [CodeQL](https://github.com/devrandom-labs/bombay/runs/113245567605).
+- [Dependency denial check](https://github.com/devrandom-labs/bombay/actions/runs/37756875141/job/113243485067).
+
+The Linux Nix job passes all21 checks, the bounded Driver/Observe fuzz campaigns,
+and artifact retention. Its complete native log has no post-fixup classifier
+crash. PR-event Miri steps are intentionally skipped by the unchanged workflow;
+no fresh Miri execution is claimed. Independent exact-head delivery review and
+Root merge/tree/source receipts retain the actual logs, results and source.
+The earlier three Darwin classifier failures and disk-exhaustion attempt remain
+separate nonpass facts, without packaging or test-kill credit.
+
+The published owner remains Core/Actors0.23.0 and Macros0.14.0. Local all15/21,
+Native94, model/public-surface minimization and original-base source counts are
+retained from section276. The current documentation-only source/count successor
+is recorded in /tmp/bombay-exec-merged-record-final-complete-delta.json; the original
+150 endpoint/277 named scope and global public API+13/−1 remain unchanged.
+EXEC1 is delivered. DIST1 still requires NET1, AUTH1, PLACE1 and MNE1; this merge
+does not complete those requirements or publish a new Bombay crate version.
+
+Final complete original-base checkpoint: production+13872/−6385/net7487;
+tests+34261/−4703/net29558; documentation+20741/−438/net20303;
+configuration+45/−34/net11; public API+13 types/−1 type. All150 endpoint paths
+are accounted for, with no untracked source and no cumulative scope reset.

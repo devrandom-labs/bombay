@@ -1,15 +1,15 @@
 # EXEC verification evidence
 
-Status: distilled EXEC acceptance. All eight design gates, the scoped current
-implementation/PRD and retained-model audit, and final required verification
-are accepted. [Current acceptance](../execution-ownership.md#276-final-scoped-code-acceptance-and-delivery-checkpoint)
-binds Main38e57139, Root92697a9d, independent95d4c0f6 and scoped model109aa01b.
-All15 required commands return0 and all21 Darwin Nix checks report success;
-three separately attributed post-fixup classifier crashes grant no clean hook
-or complete packaging-audit credit. Exact-head clean Linux CI, reviewed
-[PR326](https://github.com/devrandom-labs/bombay/pull/326) merge and actual merged
-records remain. Earlier entries retain their original source epochs and
-checkpoint pending conditions; the PRD closure table is authoritative.
+Status: merged EXEC delivery. [PR326](https://github.com/devrandom-labs/bombay/pull/326) merged to main at
+2026-10-08T10:13:33Z, commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. The reviewed head
+`6cf7736d6fdbec8cdb764af1664220b0c87d3b07` passed all four required CI checks before merge.
+[Current delivery](../execution-ownership.md#277-actual-reviewed-delivery)
+records CI, source equivalence and retained acceptance. All eight design gates,
+scoped model minimization, all15 required local commands and all21 Darwin
+check results remain accepted. Exact-head Linux checks/fuzz and delivery review
+also pass. Three earlier Darwin classifier crashes retain their packaging-audit
+limit; failed resource/source-policy attempts remain failed. Earlier entries
+retain their dated epochs; the PRD closure table is authoritative.
 The historical original baseline remains2fccedf6eb636ac22143e7e01de7e784f96e2b4e.
 
 ## Current result and parameter trial
