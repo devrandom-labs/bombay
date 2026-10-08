@@ -2,16 +2,22 @@
 
 use core::future::Future;
 use core::hash::Hash;
+use core::mem;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+#[cfg(bombay_entity_loom)]
+use loom::sync::Arc as DirectoryArc;
+#[cfg(not(bombay_entity_loom))]
+use std::sync::Arc as DirectoryArc;
 use std::sync::{Arc, Mutex, PoisonError, Weak};
 
 use crate::observe::{AffineObservation, Observation, Publisher, affine_pair, pair};
 
+use super::directory::{InstalledEffectSource, InstalledSlotDecision, Slot};
 use super::{
-    ActivationId, DirectoryConfig, DirectoryError, DispatchId, DrainFailure, DrainStage,
-    EffectInterpreter, EntityId, LifecycleEdge, LifecyclePhase, LocalDirectory, Refusal,
-    RetirementMode, TransitionEvidence,
+    ActivationId, DirectoryConfig, DirectoryError, DispatchId, DrainFailure, DrainStage, EntityId,
+    LifecycleEdge, LifecyclePhase, LocalDirectory, Refusal, RetirementMode, SlotEffect, SlotEvent,
+    TransitionEvidence,
 };
 
 /// Exact-incarnation capabilities returned by transactional activation.
@@ -65,6 +71,9 @@ pub trait LocalEntityRuntime<I, C>: Send + Sync + 'static {
     type Task: Send + 'static;
     /// Exact failure returned when the owned task is joined.
     type TaskFailure: Send + 'static;
+    /// Available failures after the exact actor task has been joined, including
+    /// unavailable actor retirement or independently panicking application consumers.
+    type RetirementFailure: Send + 'static;
 
     /// Schedule work owned by the entity directory and return its join handle.
     ///
@@ -113,13 +122,17 @@ pub trait LocalEntityRuntime<I, C>: Send + Sync + 'static {
     ) -> impl Future<Output = Result<(), FenceFailure>> + Send;
 
     /// Retire and await exact termination of one incarnation.
+    /// Resolving this future proves the exact incarnation task has ended and its
+    /// lease is no longer actionable. An error may still report unavailable full
+    /// actor retirement or application conversion/notification failures. Neither
+    /// result alone asserts that otherwise unavailable descendants were joined.
     fn retire(
         &self,
-        entity_id: EntityId<I>,
+        entity_id: &EntityId<I>,
         activation_id: ActivationId,
         lease: Self::Lease,
         retirement: RetirementMode,
-    ) -> impl Future<Output = ()> + Send;
+    ) -> impl Future<Output = Result<(), Self::RetirementFailure>> + Send;
 }
 
 /// Failure from [`EntityRuntime::admit`] with command ownership preserved.
@@ -155,11 +168,31 @@ where
     inner: Arc<RuntimeState<I, C, R>>,
 }
 
-struct Runtime<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure> {
+struct Runtime<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure, RetirementFailure> {
     directory: LocalDirectory<I, PendingCommand<Origin, C>, Endpoint, Lease>,
     port: R,
     admission: Mutex<EntityAdmission>,
-    tasks: Arc<EntityTaskGroup<Task, TaskFailure>>,
+    #[expect(
+        clippy::type_complexity,
+        reason = "the task owner retains original family keys, slots and independent retirement failures"
+    )]
+    tasks: Arc<
+        EntityTaskGroup<
+            Task,
+            TaskFailure,
+            (
+                DirectoryArc<EntityId<I>>,
+                DirectoryArc<Slot<PendingCommand<Origin, C>, Endpoint, Lease>>,
+            ),
+            (
+                DirectoryArc<EntityId<I>>,
+                Option<DirectoryArc<Slot<PendingCommand<Origin, C>, Endpoint, Lease>>>,
+                ActivationId,
+                RetirementMode,
+                RetirementFailure,
+            ),
+        >,
+    >,
 }
 
 type RuntimeState<I, C, R> = Runtime<
@@ -171,6 +204,7 @@ type RuntimeState<I, C, R> = Runtime<
     <R as LocalEntityRuntime<I, C>>::Lease,
     <R as LocalEntityRuntime<I, C>>::Task,
     <R as LocalEntityRuntime<I, C>>::TaskFailure,
+    <R as LocalEntityRuntime<I, C>>::RetirementFailure,
 >;
 type RuntimeReceptionist<I, C, R> = EntityReceptionist<
     I,
@@ -181,14 +215,25 @@ type RuntimeReceptionist<I, C, R> = EntityReceptionist<
     <R as LocalEntityRuntime<I, C>>::Lease,
     <R as LocalEntityRuntime<I, C>>::Task,
     <R as LocalEntityRuntime<I, C>>::TaskFailure,
+    <R as LocalEntityRuntime<I, C>>::RetirementFailure,
 >;
 
-pub(crate) struct EntityReceptionist<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure> {
+pub(crate) struct EntityReceptionist<
+    I,
+    C,
+    R,
+    Origin,
+    Endpoint,
+    Lease,
+    Task,
+    TaskFailure,
+    RetirementFailure,
+> {
     #[expect(
         clippy::type_complexity,
         reason = "the private receptionist retains exact runtime task and join-failure types"
     )]
-    inner: Arc<Runtime<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure>>,
+    inner: Arc<Runtime<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure, RetirementFailure>>,
 }
 
 enum EntityAdmission {
@@ -196,17 +241,19 @@ enum EntityAdmission {
     Closed,
 }
 
-struct EntityTaskGroup<Task, TaskFailure> {
-    state: Mutex<EntityTaskState<Task, TaskFailure>>,
+struct EntityTaskGroup<Task, TaskFailure, Family, Retirement> {
+    state: Mutex<EntityTaskState<Task, TaskFailure, Family, Retirement>>,
 }
 
-enum EntityTaskState<Task, TaskFailure> {
+enum EntityTaskState<Task, TaskFailure, Family, Retirement> {
     Open {
         active: usize,
         idle_epoch: Option<(Publisher<()>, Observation<()>)>,
         tasks: Vec<EntityTaskRecord<Task, TaskFailure>>,
         shutdown: ShutdownClaimPhase,
-        drain: FamilyDrainPhase,
+        drain: FamilyDrainPhase<Family>,
+        retired: Vec<Family>,
+        retirements: Vec<Retirement>,
     },
     Closed,
 }
@@ -216,10 +263,12 @@ enum ShutdownClaimPhase {
     Claimed,
 }
 
-#[derive(Clone, Copy)]
-enum FamilyDrainPhase {
+enum FamilyDrainPhase<Family> {
     NotStarted,
-    Started { represented: usize },
+    Started {
+        represented: usize,
+        rows: Vec<Family>,
+    },
 }
 
 enum EntityTaskRecord<Task, TaskFailure> {
@@ -228,30 +277,42 @@ enum EntityTaskRecord<Task, TaskFailure> {
     Failed(TaskFailure),
 }
 
-struct EntityShutdownClaim<Task, TaskFailure> {
-    group: Arc<EntityTaskGroup<Task, TaskFailure>>,
+struct EntityShutdownClaim<Task, TaskFailure, Family, Retirement> {
+    group: Arc<EntityTaskGroup<Task, TaskFailure, Family, Retirement>>,
     tasks: Vec<EntityTaskRecord<Task, TaskFailure>>,
 }
 
-struct EntityTaskGuard<Task, TaskFailure> {
-    group: Arc<EntityTaskGroup<Task, TaskFailure>>,
+struct EntityTaskGuard<Task, TaskFailure, Family, Retirement> {
+    group: Arc<EntityTaskGroup<Task, TaskFailure, Family, Retirement>>,
 }
 
 /// Exact result of one family shutdown request.
 #[derive(Debug)]
-pub enum EntityShutdown<TaskFailure> {
-    /// Every represented incarnation retired and every lifecycle task joined.
-    Settled { represented: usize },
-    /// Another caller owns or already received the affine shutdown result.
-    AlreadyClaimed,
-    /// A lifecycle task failed; exact failures remain owned by the caller.
-    TaskFailed {
+pub enum EntityShutdown<TaskFailure, RetirementFailure, I> {
+    /// All owned task joins completed; every original represented slot is inactive.
+    Settled {
         represented: usize,
+        entities: Vec<EntityId<I>>,
+    },
+    /// Another caller owns or already received this affine shutdown result.
+    AlreadyClaimed,
+    /// Available rows and actual failures; no destroyed state is reconstructed.
+    Unsettled {
+        represented: usize,
+        #[expect(
+            clippy::type_complexity,
+            reason = "unsettled family rows retain original keys, activation disposition and retirement failures"
+        )]
+        entities: Vec<(
+            EntityId<I>,
+            Result<(), Option<ActivationId>>,
+            Vec<(ActivationId, RetirementMode, RetirementFailure)>,
+        )>,
         failures: Vec<TaskFailure>,
     },
 }
 
-impl<Task, TaskFailure> EntityTaskGroup<Task, TaskFailure> {
+impl<Task, TaskFailure, Family, Retirement> EntityTaskGroup<Task, TaskFailure, Family, Retirement> {
     fn new() -> Self {
         Self {
             state: Mutex::new(EntityTaskState::Open {
@@ -260,11 +321,13 @@ impl<Task, TaskFailure> EntityTaskGroup<Task, TaskFailure> {
                 tasks: Vec::new(),
                 shutdown: ShutdownClaimPhase::Available,
                 drain: FamilyDrainPhase::NotStarted,
+                retired: Vec::new(),
+                retirements: Vec::new(),
             }),
         }
     }
 
-    fn begin(self: &Arc<Self>) -> EntityTaskGuard<Task, TaskFailure> {
+    fn begin(self: &Arc<Self>) -> EntityTaskGuard<Task, TaskFailure, Family, Retirement> {
         let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
         let EntityTaskState::Open {
             active, idle_epoch, ..
@@ -283,7 +346,9 @@ impl<Task, TaskFailure> EntityTaskGroup<Task, TaskFailure> {
         }
     }
 
-    fn claim(self: &Arc<Self>) -> Option<EntityShutdownClaim<Task, TaskFailure>> {
+    fn claim(
+        self: &Arc<Self>,
+    ) -> Option<EntityShutdownClaim<Task, TaskFailure, Family, Retirement>> {
         let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
         match &mut *state {
             EntityTaskState::Open { shutdown, .. } => match shutdown {
@@ -347,6 +412,31 @@ impl<Task, TaskFailure> EntityTaskGroup<Task, TaskFailure> {
         }
     }
 
+    fn retirement_failed(&self, retirement: Retirement) {
+        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        let EntityTaskState::Open { retirements, .. } = &mut *state else {
+            panic!("retirement failure returned after task owner closed");
+        };
+        retirements.push(retirement);
+    }
+
+    fn retain_retired(&self, row: Family, matches: impl Fn(&Retirement) -> bool) {
+        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        let EntityTaskState::Open {
+            retired,
+            retirements,
+            ..
+        } = &mut *state
+        else {
+            panic!("original family row removed after task owner closed");
+        };
+        // A successful live notification explicitly discharged its original key.
+        // Only still-owned failure custody keeps a removed live row here.
+        if retirements.iter().any(matches) {
+            retired.push(row);
+        }
+    }
+
     fn close(&self) {
         let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
         let EntityTaskState::Open {
@@ -370,33 +460,41 @@ impl<Task, TaskFailure> EntityTaskGroup<Task, TaskFailure> {
     }
 }
 
-impl<Task, TaskFailure> EntityShutdownClaim<Task, TaskFailure> {
-    fn drain_phase(&self) -> FamilyDrainPhase {
-        let state = self
-            .group
-            .state
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
-        let EntityTaskState::Open { drain, .. } = &*state else {
-            panic!("family drain phase requested after shutdown");
-        };
-        *drain
-    }
-
-    fn record_drain(&self, represented: usize) {
+impl<Task, TaskFailure, Family, Retirement>
+    EntityShutdownClaim<Task, TaskFailure, Family, Retirement>
+{
+    fn record_drain(&self, take: impl FnOnce() -> Vec<Family>) {
         let mut state = self
             .group
             .state
             .lock()
             .unwrap_or_else(PoisonError::into_inner);
-        let EntityTaskState::Open {
-            drain: phase @ FamilyDrainPhase::NotStarted,
-            ..
-        } = &mut *state
-        else {
-            panic!("family drain was already recorded");
+        let EntityTaskState::Open { drain, .. } = &mut *state else {
+            panic!("family drain requested after shutdown");
         };
-        *phase = FamilyDrainPhase::Started { represented };
+        if matches!(drain, FamilyDrainPhase::NotStarted) {
+            let rows = take();
+            *drain = FamilyDrainPhase::Started {
+                represented: rows.len(),
+                rows,
+            };
+        }
+    }
+
+    fn rows(&self, copy: impl Fn(&Family) -> Family) -> Vec<Family> {
+        let state = self
+            .group
+            .state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let EntityTaskState::Open {
+            drain: FamilyDrainPhase::Started { rows, .. },
+            ..
+        } = &*state
+        else {
+            panic!("family rows requested before drain");
+        };
+        rows.iter().map(copy).collect()
     }
 
     fn take_tasks(&mut self) {
@@ -416,19 +514,48 @@ impl<Task, TaskFailure> EntityShutdownClaim<Task, TaskFailure> {
         self.tasks.append(tasks);
     }
 
-    fn complete(mut self) -> Vec<TaskFailure> {
+    fn complete(mut self) -> (usize, Vec<Family>, Vec<Retirement>, Vec<TaskFailure>) {
         let mut failures = Vec::new();
         for task in self.tasks.drain(..) {
-            if let EntityTaskRecord::Failed(failure) = task {
-                failures.push(failure);
+            match task {
+                EntityTaskRecord::Failed(failure) => failures.push(failure),
+                EntityTaskRecord::Joined => {}
+                EntityTaskRecord::Running(_) => panic!("unjoined lifecycle task at shutdown"),
             }
         }
+        let (represented, rows, retirements) = {
+            let mut state = self
+                .group
+                .state
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            let EntityTaskState::Open {
+                drain,
+                retired,
+                retirements,
+                ..
+            } = &mut *state
+            else {
+                panic!("family shutdown completed twice");
+            };
+            let FamilyDrainPhase::Started {
+                represented,
+                mut rows,
+            } = mem::replace(drain, FamilyDrainPhase::NotStarted)
+            else {
+                panic!("family shutdown without owned rows");
+            };
+            rows.append(retired);
+            (represented, rows, mem::take(retirements))
+        };
         self.group.close();
-        failures
+        (represented, rows, retirements, failures)
     }
 }
 
-impl<Task, TaskFailure> Drop for EntityShutdownClaim<Task, TaskFailure> {
+impl<Task, TaskFailure, Family, Retirement> Drop
+    for EntityShutdownClaim<Task, TaskFailure, Family, Retirement>
+{
     fn drop(&mut self) {
         let mut state = self
             .group
@@ -445,7 +572,9 @@ impl<Task, TaskFailure> Drop for EntityShutdownClaim<Task, TaskFailure> {
     }
 }
 
-impl<Task, TaskFailure> Drop for EntityTaskGuard<Task, TaskFailure> {
+impl<Task, TaskFailure, Family, Retirement> Drop
+    for EntityTaskGuard<Task, TaskFailure, Family, Retirement>
+{
     fn drop(&mut self) {
         self.group.finish();
     }
@@ -462,8 +591,8 @@ where
     }
 }
 
-impl<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure> Clone
-    for EntityReceptionist<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure>
+impl<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure, RetirementFailure> Clone
+    for EntityReceptionist<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure, RetirementFailure>
 {
     fn clone(&self) -> Self {
         Self {
@@ -571,9 +700,7 @@ where
                 })?;
             let dispatch_id = dispatched.dispatch_id;
             let activation_id = dispatched.decision.activation_id;
-            self.inner
-                .directory
-                .interpret(dispatched.decision, &self.inner);
+            self.inner.interpret(dispatched.decision);
             (observation, activation_id, dispatch_id)
         };
         DispatchWait {
@@ -594,36 +721,139 @@ where
     /// Panics after synchronization poison or if an internal lifecycle law is
     /// violated by late task scheduling, an unmatched task completion, or a
     /// represented slot that survives the drain without a task failure.
-    pub async fn shutdown(&self) -> EntityShutdown<R::TaskFailure> {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one affine shutdown claim joins all owned tasks before consuming original family rows"
+    )]
+    pub async fn shutdown(&self) -> EntityShutdown<R::TaskFailure, R::RetirementFailure, I> {
         {
             let mut admission = self
                 .inner
                 .admission
                 .lock()
                 .unwrap_or_else(PoisonError::into_inner);
-            match *admission {
-                EntityAdmission::Open => *admission = EntityAdmission::Closed,
-                EntityAdmission::Closed => {}
-            }
+            *admission = EntityAdmission::Closed;
         }
         let Some(mut claim) = self.inner.tasks.claim() else {
             return EntityShutdown::AlreadyClaimed;
         };
+        self.inner.tasks.wait_idle().await;
+        self.join_owned(&mut claim).await;
+        claim.record_drain(|| self.inner.directory.take_family());
 
-        self.inner.tasks.wait_idle().await;
-        let represented = match claim.drain_phase() {
-            FamilyDrainPhase::NotStarted => {
-                let drains = self.inner.directory.begin_family_drain();
-                let represented = drains.len();
-                for decision in drains {
-                    self.inner.directory.interpret(decision, &self.inner);
-                }
-                claim.record_drain(represented);
-                represented
+        let rows = claim.rows(|(id, slot)| (DirectoryArc::clone(id), DirectoryArc::clone(slot)));
+        // Closed-family transitions consume available leases without user clones.
+        // Retained original effect leaves remain in each slot until interpreted.
+        for (id, slot) in &rows {
+            let retirement = slot.close_family();
+            self.inner
+                .interpret_closed_slot(DirectoryArc::clone(id), DirectoryArc::clone(slot));
+            if let Some((activation, endpoint, lease, fence)) = retirement {
+                let runtime = Arc::clone(&self.inner);
+                let id = DirectoryArc::clone(id);
+                let slot = DirectoryArc::clone(slot);
+                self.inner.spawn_owned(async move {
+                    let mode = match fence {
+                        Ok(()) => match runtime.port.fence(endpoint).await {
+                            Ok(()) => RetirementMode::Graceful,
+                            Err(failure) => RetirementMode::Forced(DrainFailure {
+                                stage: match failure {
+                                    FenceFailure::Enqueue => DrainStage::FenceEnqueue,
+                                    FenceFailure::Acknowledgement => {
+                                        DrainStage::FenceAcknowledgement
+                                    }
+                                },
+                                outstanding_reservations: 0,
+                            }),
+                        },
+                        Err(failure) => RetirementMode::Forced(failure),
+                    };
+                    runtime
+                        .retire_owned(id, slot, activation, lease, mode)
+                        .await;
+                });
             }
-            FamilyDrainPhase::Started { represented } => represented,
-        };
-        self.inner.tasks.wait_idle().await;
+        }
+        loop {
+            self.inner.tasks.wait_idle().await;
+            self.join_owned(&mut claim).await;
+            if !rows.iter().any(|(_, slot)| slot.has_pending()) {
+                break;
+            }
+            for (id, slot) in &rows {
+                self.inner
+                    .interpret_closed_slot(DirectoryArc::clone(id), DirectoryArc::clone(slot));
+            }
+        }
+        drop(rows);
+        let (represented, rows, mut retirements, failures) = claim.complete();
+        let mut entities = Vec::new();
+        for (id, slot) in rows {
+            let disposition = slot.retirement_disposition();
+            let receipts = retirements
+                .extract_if(.., |(_, original, _, _, _)| {
+                    original
+                        .as_ref()
+                        .is_some_and(|original| DirectoryArc::ptr_eq(original, &slot))
+                })
+                .map(|(_, _, activation, mode, failure)| (activation, mode, failure))
+                .collect();
+            // No reference to a key escapes a completed lifecycle task or callback.
+            let Ok(id) = DirectoryArc::try_unwrap(id) else {
+                panic!("original family key still owned after all task joins");
+            };
+            entities.push((id, disposition, receipts));
+        }
+        for (id, slot, activation, mode, failure) in retirements {
+            assert!(
+                slot.is_none(),
+                "mapped retirement failure lost its original family row"
+            );
+            let Ok(id) = DirectoryArc::try_unwrap(id) else {
+                panic!("transient retirement key still owned after task joins");
+            };
+            entities.push((id, Ok(()), vec![(activation, mode, failure)]));
+        }
+        if failures.is_empty()
+            && entities
+                .iter()
+                .all(|(_, disposition, receipts)| disposition.is_ok() && receipts.is_empty())
+        {
+            EntityShutdown::Settled {
+                represented,
+                entities: entities.into_iter().map(|(id, _, _)| id).collect(),
+            }
+        } else {
+            EntityShutdown::Unsettled {
+                represented,
+                entities,
+                failures,
+            }
+        }
+    }
+
+    #[expect(
+        clippy::type_complexity,
+        reason = "the shutdown claim owns original task failures, family rows and retirement failures"
+    )]
+    async fn join_owned(
+        &self,
+        claim: &mut EntityShutdownClaim<
+            R::Task,
+            R::TaskFailure,
+            (
+                DirectoryArc<EntityId<I>>,
+                DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
+            ),
+            (
+                DirectoryArc<EntityId<I>>,
+                Option<DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>>,
+                ActivationId,
+                RetirementMode,
+                R::RetirementFailure,
+            ),
+        >,
+    ) {
         claim.take_tasks();
         for task in &mut claim.tasks {
             if let EntityTaskRecord::Running(handle) = task {
@@ -631,17 +861,6 @@ where
                     Ok(()) => EntityTaskRecord::Joined,
                     Err(failure) => EntityTaskRecord::Failed(failure),
                 };
-            }
-        }
-        let settled = self.inner.directory.is_empty();
-        let failures = claim.complete();
-        if failures.is_empty() {
-            assert!(settled, "settled entity family retained a lifecycle slot");
-            EntityShutdown::Settled { represented }
-        } else {
-            EntityShutdown::TaskFailed {
-                represented,
-                failures,
             }
         }
     }
@@ -679,13 +898,13 @@ where
                 LifecyclePhase::Inactive | LifecyclePhase::Activating => Passivation::NotActive,
             },
         };
-        self.inner.directory.interpret(decision, &self.inner);
+        self.inner.interpret(decision);
         passivation
     }
 }
 
-impl<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure>
-    EntityReceptionist<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure>
+impl<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure, RetirementFailure>
+    EntityReceptionist<I, C, R, Origin, Endpoint, Lease, Task, TaskFailure, RetirementFailure>
 where
     I: Clone + Eq + Hash + Send + Sync + 'static,
     C: Send + 'static,
@@ -697,6 +916,7 @@ where
             Lease = Lease,
             Task = Task,
             TaskFailure = TaskFailure,
+            RetirementFailure = RetirementFailure,
         >,
 {
     pub(crate) async fn admit(
@@ -774,140 +994,19 @@ where
         if let Some(runtime) = self.runtime.upgrade()
             && let Some(activation_id) = self.activation_id.take()
         {
+            let admission = runtime
+                .admission
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            if matches!(*admission, EntityAdmission::Closed) {
+                return;
+            }
             let decision =
                 runtime
                     .directory
                     .cancel_waiter(&self.entity_id, activation_id, self.dispatch_id);
-            runtime.directory.interpret(decision, &runtime);
+            runtime.interpret(decision);
         }
-    }
-}
-
-impl<I, C, R> EffectInterpreter<I, PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>
-    for Arc<RuntimeState<I, C, R>>
-where
-    I: Clone + Eq + Hash + Send + Sync + 'static,
-    C: Send + 'static,
-    R: LocalEntityRuntime<I, C>,
-{
-    fn start_activation(&self, entity_id: EntityId<I>, activation_id: ActivationId) {
-        let runtime = Arc::clone(self);
-        self.spawn_owned(async move {
-            let result = runtime
-                .port
-                .activate(entity_id.clone(), activation_id)
-                .await;
-            let decision = match result {
-                Ok(activated) => runtime.directory.activation_succeeded(
-                    &entity_id,
-                    activation_id,
-                    activated.endpoint,
-                    activated.lease,
-                ),
-                Err(error) => {
-                    runtime
-                        .port
-                        .activation_failed(entity_id.clone(), activation_id, error);
-                    runtime
-                        .directory
-                        .activation_failed(&entity_id, activation_id)
-                }
-            };
-            runtime.directory.interpret(decision, &runtime);
-        });
-    }
-
-    fn deliver(
-        &self,
-        entity_id: EntityId<I>,
-        activation_id: ActivationId,
-        dispatch_id: DispatchId,
-        endpoint: R::Endpoint,
-        pending: PendingCommand<R::Origin, C>,
-    ) {
-        let runtime = Arc::clone(self);
-        self.spawn_owned(async move {
-            let PendingCommand {
-                origin,
-                command,
-                publisher,
-            } = pending;
-            let failure = match runtime
-                .port
-                .deliver(endpoint, origin.clone(), command)
-                .await
-            {
-                Ok(()) => {
-                    publisher.complete(Ok(()));
-                    None
-                }
-                Err(command) => Some((
-                    dispatch_id,
-                    PendingCommand {
-                        origin,
-                        command,
-                        publisher,
-                    },
-                )),
-            };
-            let decision = runtime
-                .directory
-                .delivery_resolved(&entity_id, activation_id, failure);
-            runtime.directory.interpret(decision, &runtime);
-        });
-    }
-
-    fn reject(&self, _: DispatchId, pending: PendingCommand<R::Origin, C>, reason: Refusal) {
-        pending.publisher.complete(Err(AdmissionFailure::Refused {
-            command: pending.command,
-            reason,
-        }));
-    }
-
-    fn enqueue_fence(
-        &self,
-        entity_id: EntityId<I>,
-        activation_id: ActivationId,
-        endpoint: R::Endpoint,
-    ) {
-        let runtime = Arc::clone(self);
-        self.spawn_owned(async move {
-            let decision = match runtime.port.fence(endpoint).await {
-                Ok(()) => runtime
-                    .directory
-                    .fence_acknowledged(&entity_id, activation_id),
-                Err(failure) => runtime.directory.force_drain(
-                    &entity_id,
-                    activation_id,
-                    DrainFailure {
-                        stage: match failure {
-                            FenceFailure::Enqueue => DrainStage::FenceEnqueue,
-                            FenceFailure::Acknowledgement => DrainStage::FenceAcknowledgement,
-                        },
-                        outstanding_reservations: 0,
-                    },
-                ),
-            };
-            runtime.directory.interpret(decision, &runtime);
-        });
-    }
-
-    fn retire(
-        &self,
-        entity_id: EntityId<I>,
-        activation_id: ActivationId,
-        lease: R::Lease,
-        retirement: RetirementMode,
-    ) {
-        let runtime = Arc::clone(self);
-        self.spawn_owned(async move {
-            runtime
-                .port
-                .retire(entity_id.clone(), activation_id, lease, retirement)
-                .await;
-            let decision = runtime.directory.terminated(&entity_id, activation_id);
-            runtime.directory.interpret(decision, &runtime);
-        });
     }
 }
 
@@ -917,6 +1016,260 @@ where
     C: Send + 'static,
     R: LocalEntityRuntime<I, C>,
 {
+    fn interpret(
+        self: &Arc<Self>,
+        decision: InstalledSlotDecision<I, PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>,
+    ) {
+        let InstalledSlotDecision {
+            entity_id, target, ..
+        } = decision;
+        let id = DirectoryArc::new(entity_id);
+        match target {
+            InstalledEffectSource::Mapped(slot) => self.interpret_slot(id, slot),
+            InstalledEffectSource::Transient(effects) => {
+                for effect in effects {
+                    self.interpret_effect(DirectoryArc::clone(&id), None, effect);
+                }
+            }
+        }
+    }
+
+    #[expect(
+        clippy::type_complexity,
+        reason = "slot dispatch retains the exact command origin, endpoint and lease types"
+    )]
+    fn interpret_slot(
+        self: &Arc<Self>,
+        id: DirectoryArc<EntityId<I>>,
+        slot: DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
+    ) {
+        slot.dispatch_pending(&|effect| {
+            self.interpret_effect(
+                DirectoryArc::clone(&id),
+                Some(DirectoryArc::clone(&slot)),
+                effect,
+            );
+        });
+        drop(slot);
+        drop(id);
+    }
+
+    #[expect(
+        clippy::type_complexity,
+        reason = "closed slot dispatch retains the exact command origin, endpoint and lease types"
+    )]
+    fn interpret_closed_slot(
+        self: &Arc<Self>,
+        id: DirectoryArc<EntityId<I>>,
+        slot: DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
+    ) {
+        slot.dispatch_pending(&|effect| {
+            match effect {
+                SlotEffect::StartActivation { .. } => {
+                    // close_family explicitly returned all original unstarted waiters.
+                }
+                effect => self.interpret_effect(
+                    DirectoryArc::clone(&id),
+                    Some(DirectoryArc::clone(&slot)),
+                    effect,
+                ),
+            }
+        });
+        drop(slot);
+        drop(id);
+    }
+
+    #[expect(
+        clippy::type_complexity,
+        clippy::too_many_lines,
+        reason = "one exhaustive slot effect interpretation preserves each original command, lease and task owner"
+    )]
+    fn interpret_effect(
+        self: &Arc<Self>,
+        id: DirectoryArc<EntityId<I>>,
+        slot: Option<DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>>,
+        effect: SlotEffect<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>,
+    ) {
+        match effect {
+            SlotEffect::StartActivation { activation_id } => {
+                let runtime = Arc::clone(self);
+                self.spawn_owned(async move {
+                    let result = runtime.port.activate((*id).clone(), activation_id).await;
+                    let Some(slot) = slot else {
+                        panic!("activation without installed slot")
+                    };
+                    match result {
+                        Ok(activated) => {
+                            slot.submit_owned(SlotEvent::ActivationSucceeded {
+                                activation_id,
+                                endpoint: activated.endpoint,
+                                lease: activated.lease,
+                            });
+                            runtime.interpret_slot(id, slot);
+                        }
+                        Err(error) => {
+                            // Install all original command returns before a consuming
+                            // user diagnostic callback can fail.
+                            slot.submit_owned(SlotEvent::ActivationFailed { activation_id });
+                            runtime.interpret_slot(DirectoryArc::clone(&id), slot);
+                            runtime
+                                .port
+                                .activation_failed((*id).clone(), activation_id, error);
+                        }
+                    }
+                });
+            }
+            SlotEffect::Deliver {
+                activation_id,
+                dispatch_id,
+                endpoint,
+                command: pending,
+            } => {
+                let runtime = Arc::clone(self);
+                self.spawn_owned(async move {
+                    let PendingCommand {
+                        origin,
+                        command,
+                        publisher,
+                    } = pending;
+                    let failure = match runtime
+                        .port
+                        .deliver(endpoint, origin.clone(), command)
+                        .await
+                    {
+                        Ok(()) => {
+                            publisher.complete(Ok(()));
+                            None
+                        }
+                        Err(command) => Some((
+                            dispatch_id,
+                            PendingCommand {
+                                origin,
+                                command,
+                                publisher,
+                            },
+                        )),
+                    };
+                    if let Some(slot) = slot {
+                        slot.submit_owned(SlotEvent::DeliveryResolved {
+                            activation_id,
+                            failure,
+                        });
+                        runtime.interpret_slot(id, slot);
+                    } else if let Some((dispatch_id, pending)) = failure {
+                        Self::reject(dispatch_id, pending, Refusal::Unavailable);
+                    }
+                });
+            }
+            SlotEffect::Reject {
+                dispatch_id,
+                command,
+                reason,
+            } => Self::reject(dispatch_id, command, reason),
+            SlotEffect::EnqueueFence {
+                activation_id,
+                endpoint,
+            } => {
+                let runtime = Arc::clone(self);
+                self.spawn_owned(async move {
+                    let event = match runtime.port.fence(endpoint).await {
+                        Ok(()) => SlotEvent::FenceAcknowledged { activation_id },
+                        Err(failure) => SlotEvent::ForceDrain {
+                            activation_id,
+                            failure: DrainFailure {
+                                stage: match failure {
+                                    FenceFailure::Enqueue => DrainStage::FenceEnqueue,
+                                    FenceFailure::Acknowledgement => {
+                                        DrainStage::FenceAcknowledgement
+                                    }
+                                },
+                                outstanding_reservations: 0,
+                            },
+                        },
+                    };
+                    if let Some(slot) = slot {
+                        slot.submit_owned(event);
+                        runtime.interpret_slot(id, slot);
+                    }
+                });
+            }
+            SlotEffect::Retire {
+                activation_id,
+                lease,
+                retirement,
+            } => {
+                let runtime = Arc::clone(self);
+                self.spawn_owned(async move {
+                    if let Some(slot) = slot {
+                        runtime
+                            .retire_owned(id, slot, activation_id, lease, retirement)
+                            .await;
+                    } else {
+                        let result = runtime
+                            .port
+                            .retire(&id, activation_id, lease, retirement)
+                            .await;
+                        if let Err(failure) = result {
+                            runtime.tasks.retirement_failed((
+                                id,
+                                None,
+                                activation_id,
+                                retirement,
+                                failure,
+                            ));
+                        }
+                    }
+                });
+            }
+            SlotEffect::Remove { .. } => {
+                if let Some(slot) = slot
+                    && let Some(row) = self.directory.take_slot(&slot)
+                {
+                    self.tasks.retain_retired(row, |(_, original, _, _, _)| {
+                        original
+                            .as_ref()
+                            .is_some_and(|original| DirectoryArc::ptr_eq(original, &slot))
+                    });
+                }
+            }
+        }
+    }
+
+    fn reject(_: DispatchId, pending: PendingCommand<R::Origin, C>, reason: Refusal) {
+        pending.publisher.complete(Err(AdmissionFailure::Refused {
+            command: pending.command,
+            reason,
+        }));
+    }
+
+    #[expect(
+        clippy::type_complexity,
+        reason = "retirement retains the original key and exact slot through the joined actor result"
+    )]
+    async fn retire_owned(
+        self: &Arc<Self>,
+        id: DirectoryArc<EntityId<I>>,
+        slot: DirectoryArc<Slot<PendingCommand<R::Origin, C>, R::Endpoint, R::Lease>>,
+        activation: ActivationId,
+        lease: R::Lease,
+        mode: RetirementMode,
+    ) {
+        let result = self.port.retire(&id, activation, lease, mode).await;
+        if let Err(failure) = result {
+            self.tasks.retirement_failed((
+                DirectoryArc::clone(&id),
+                Some(DirectoryArc::clone(&slot)),
+                activation,
+                mode,
+                failure,
+            ));
+        }
+        slot.submit_owned(SlotEvent::Terminated {
+            activation_id: activation,
+        });
+        self.interpret_slot(id, slot);
+    }
+
     fn spawn_owned(self: &Arc<Self>, task: impl Future<Output = ()> + Send + 'static) {
         let guard = self.tasks.begin();
         let scheduled = self.port.spawn(async move {

@@ -453,6 +453,80 @@ impl<C, E, L> SlotDecision<C, E, L> {
     }
 }
 
+impl<C, E, L> EntitySlot<C, E, L> {
+    #[expect(
+        clippy::type_complexity,
+        reason = "closing a slot returns its successor, original pending effects and exact available lease"
+    )]
+    pub(super) fn close_family(
+        self,
+    ) -> (
+        Self,
+        SlotEffectBatch<C, E, L>,
+        Option<(ActivationId, E, L, Result<(), DrainFailure>)>,
+    ) {
+        match self {
+            Self::Inactive => (Self::Inactive, SlotEffectBatch::default(), None),
+            Self::Activating(state) => {
+                let mut effects: SlotEffectBatch<_, _, _> = state
+                    .waiters
+                    .into_iter()
+                    .map(|waiter| SlotEffect::Reject {
+                        dispatch_id: waiter.dispatch_id,
+                        command: waiter.command,
+                        reason: Refusal::Shutdown,
+                    })
+                    .collect();
+                effects.push(SlotEffect::Remove {
+                    activation_id: state.activation_id,
+                });
+                (Self::Inactive, effects, None)
+            }
+            Self::Active(state) => {
+                let admission = match state.reservations {
+                    ReservationCount::Drained => Ok(()),
+                    ReservationCount::Pending(count) => Err(DrainFailure {
+                        stage: DrainStage::Reservations,
+                        outstanding_reservations: count.get(),
+                    }),
+                };
+                (
+                    Self::Retiring {
+                        activation_id: state.activation_id,
+                    },
+                    SlotEffectBatch::default(),
+                    Some((state.activation_id, state.endpoint, state.lease, admission)),
+                )
+            }
+            Self::Draining(state) => {
+                let failure = match state.progress {
+                    DrainProgress::Reservations(count) => DrainFailure {
+                        stage: DrainStage::Reservations,
+                        outstanding_reservations: count.get(),
+                    },
+                    DrainProgress::FenceAcknowledgement => DrainFailure {
+                        stage: DrainStage::FenceAcknowledgement,
+                        outstanding_reservations: 0,
+                    },
+                };
+                (
+                    Self::Retiring {
+                        activation_id: state.activation_id,
+                    },
+                    SlotEffectBatch::default(),
+                    Some((
+                        state.activation_id,
+                        state.endpoint,
+                        state.lease,
+                        Err(failure),
+                    )),
+                )
+            }
+            state @ Self::Retiring { .. } => (state, SlotEffectBatch::default(), None),
+        }
+    }
+}
+
 impl<C, E: Clone, L> EntitySlot<C, E, L> {
     /// Return the compact lifecycle phase represented by this state.
     #[must_use]
@@ -1382,5 +1456,140 @@ mod tests {
                 SlotEffect::Remove { activation_id: second }
             ] if *first == activation(1) && *second == activation(2)
         ));
+    }
+}
+
+#[cfg(test)]
+mod family_closure_tests {
+    use super::{
+        ActivatingSlot, ActivationId, ActivationWaiter, ActiveSlot, DispatchId, DrainFailure,
+        DrainProgress, DrainStage, DrainingSlot, EntitySlot, Refusal, ReservationCount, SlotEffect,
+    };
+    use core::num::{NonZeroU64, NonZeroUsize};
+
+    #[test]
+    fn closed_active_slot_moves_exact_fence_inputs_without_clone() {
+        let activation = ActivationId::new(NonZeroU64::MIN);
+        let mut endpoint_values = vec![17_u8, 43];
+        let endpoint_allocation = endpoint_values.as_ptr();
+        let endpoint = endpoint_values.as_mut_slice();
+        let lease = vec![31_u8, 61];
+        let lease_allocation = lease.as_ptr();
+        let state = EntitySlot::<Vec<u8>, _, _>::Active(ActiveSlot {
+            activation_id: activation,
+            endpoint,
+            lease,
+            reservations: ReservationCount::Drained,
+        });
+        let (state, effects, retirement) = state.close_family();
+        let EntitySlot::Retiring { activation_id } = state else {
+            panic!("retirement owns lease")
+        };
+        let Some((observed, endpoint, lease, fence)) = retirement else {
+            panic!("original fence inputs")
+        };
+        assert_eq!(activation_id, activation);
+        assert_eq!(observed, activation);
+        assert_eq!(&*endpoint, &[17, 43]);
+        assert_eq!(endpoint.as_ptr(), endpoint_allocation);
+        assert_eq!(lease, [31, 61]);
+        assert_eq!(lease.as_ptr(), lease_allocation);
+        assert_eq!(fence, Ok(()));
+        assert!(effects.as_slice().is_empty());
+    }
+
+    #[test]
+    fn closed_unstarted_activation_returns_every_original_waiter() {
+        let activation = ActivationId::new(NonZeroU64::MIN);
+        let first = vec![17_u8, 43];
+        let allocation = first.as_ptr();
+        let first_dispatch = DispatchId::new(NonZeroU64::MIN);
+        let second_dispatch = DispatchId::new(NonZeroU64::new(2).unwrap());
+        let state = EntitySlot::<_, Vec<u8>, Vec<u8>>::Activating(ActivatingSlot {
+            activation_id: activation,
+            waiters: vec![
+                ActivationWaiter {
+                    dispatch_id: first_dispatch,
+                    command: first,
+                },
+                ActivationWaiter {
+                    dispatch_id: second_dispatch,
+                    command: vec![31, 61],
+                },
+            ],
+            waiter_limit: NonZeroUsize::new(2).unwrap(),
+        });
+        let (state, effects, retirement) = state.close_family();
+        let [
+            SlotEffect::Reject {
+                dispatch_id: first,
+                command: first_command,
+                reason: first_reason,
+            },
+            SlotEffect::Reject {
+                dispatch_id: second,
+                command: second_command,
+                reason: second_reason,
+            },
+            SlotEffect::Remove { activation_id },
+        ] = effects.as_slice()
+        else {
+            panic!("whole ordered return")
+        };
+        assert!(matches!(state, EntitySlot::Inactive));
+        assert!(retirement.is_none());
+        assert_eq!(*first, first_dispatch);
+        assert_eq!(*second, second_dispatch);
+        assert_eq!(first_command, &[17, 43]);
+        assert_eq!(first_command.as_ptr(), allocation);
+        assert_eq!(second_command, &[31, 61]);
+        assert_eq!(*first_reason, Refusal::Shutdown);
+        assert_eq!(*second_reason, Refusal::Shutdown);
+        assert_eq!(*activation_id, activation);
+    }
+
+    #[test]
+    fn closed_incomplete_drain_retains_actual_stage_and_affine_lease() {
+        let activation = ActivationId::new(NonZeroU64::MIN);
+        for (progress, expected) in [
+            (
+                DrainProgress::Reservations(NonZeroUsize::new(2).unwrap()),
+                DrainFailure {
+                    stage: DrainStage::Reservations,
+                    outstanding_reservations: 2,
+                },
+            ),
+            (
+                DrainProgress::FenceAcknowledgement,
+                DrainFailure {
+                    stage: DrainStage::FenceAcknowledgement,
+                    outstanding_reservations: 0,
+                },
+            ),
+        ] {
+            let lease = vec![31_u8, 61];
+            let allocation = lease.as_ptr();
+            let mut endpoint_values = [17_u8, 43];
+            let state = EntitySlot::<Vec<u8>, _, _>::Draining(DrainingSlot {
+                activation_id: activation,
+                endpoint: &mut endpoint_values[..],
+                lease,
+                progress,
+            });
+            let (state, effects, retirement) = state.close_family();
+            let EntitySlot::Retiring { activation_id } = state else {
+                panic!("exact retiring slot")
+            };
+            let Some((observed, endpoint, lease, fence)) = retirement else {
+                panic!("available authority")
+            };
+            assert_eq!(activation_id, activation);
+            assert_eq!(observed, activation);
+            assert_eq!(&*endpoint, &[17, 43]);
+            assert_eq!(lease, [31, 61]);
+            assert_eq!(lease.as_ptr(), allocation);
+            assert_eq!(fence, Err(expected));
+            assert!(effects.as_slice().is_empty());
+        }
     }
 }

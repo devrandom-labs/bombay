@@ -1,10 +1,10 @@
-use bombay::ProjectTerminal;
 use bombay::actors::ActorExt;
 use bombay::behavior::{Actions, BehaviorActed, ChildRole, Never};
 use bombay::prelude::{
-    ActorRetirement, Application, ChildOrigin, Completion, MailAddr, RootOrigin, RunError,
-    StopOnShutdown, TerminalProjection,
+    ActorRetirement, Application, ChildOrigin, Completion, MailAddr, RootOrigin, StopOnShutdown,
+    TerminalProjection,
 };
+use bombay::{ApplicationOutcome, ProjectTerminal};
 
 struct Root;
 
@@ -21,7 +21,7 @@ impl Root {
 }
 
 type RootLocation = RootOrigin<StopOnShutdown<Root>>;
-type RootDeparture = ActorRetirement<StopOnShutdown<Root>, ApplicationTerminal>;
+type RootDeparture = ActorRetirement<StopOnShutdown<Root>, ApplicationTerminal, ()>;
 
 #[derive(TerminalProjection)]
 enum ApplicationTerminal {
@@ -49,7 +49,7 @@ struct Parent;
 impl Parent {}
 
 type PrimaryOrigin = ChildOrigin<Parent, ParentChildrenPrimary>;
-type WorkerRetirement = ActorRetirement<Worker, RoleTerminal>;
+type WorkerRetirement = ActorRetirement<Worker, RoleTerminal, ()>;
 
 #[allow(dead_code)]
 #[derive(TerminalProjection)]
@@ -62,7 +62,7 @@ enum RoleTerminal {
     #[declared_child(Parent, ParentChildrenReplica, Worker)]
     Replica {
         origin: ChildOrigin<Parent, ParentChildrenReplica>,
-        terminal: ActorRetirement<Worker, Self>,
+        terminal: ActorRetirement<Worker, Self, ()>,
     },
 }
 
@@ -79,29 +79,58 @@ fn equal_child_types_project_from_their_distinct_generated_role_positions() {
 
     accepts_projection::<
         ChildOrigin<Parent, PrimaryPosition>,
-        ActorRetirement<Worker, RoleTerminal>,
+        ActorRetirement<Worker, RoleTerminal, ()>,
         RoleTerminal,
     >();
     accepts_projection::<
         ChildOrigin<Parent, ReplicaPosition>,
-        ActorRetirement<Worker, RoleTerminal>,
+        ActorRetirement<Worker, RoleTerminal, ()>,
         RoleTerminal,
     >();
 }
 
-#[test]
-fn derive_preserves_the_exact_runtime_origin_and_retirement() {
-    let terminal: ApplicationTerminal = match Application::new(Root.stop_on_shutdown()).run() {
-        Err(RunError::Unpublished(terminal)) => terminal,
-        _ => panic!("the initialization stop must retain an unpublished terminal"),
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::drop_non_drop,
+    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
+)]
+async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
+    let application_outcome = Application::new(Root.stop_on_shutdown())
+        .run::<_, _, ApplicationTerminal, _>()
+        .await
+        .unwrap_or_else(|(application, error)| {
+            drop(application);
+            panic!("the caller owns the application's live entered host: {error}");
+        });
+    if let ApplicationOutcome::NotInvoked {
+        work: _,
+        startup_error: _,
+        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+    } = &application_outcome
+    {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    }
+    let ApplicationOutcome::NotInvoked {
+        work: None,
+        startup_error: Some(_startup_error),
+        cleanup: Ok((origin, retirement)),
+    } = application_outcome
+    else {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
     };
+    let terminal: ApplicationTerminal = ProjectTerminal::project(origin, retirement);
     let ApplicationTerminal::Root {
         origin,
         terminal:
             ActorRetirement::Completed {
+                capability_failures,
+                unread_owner_cancellation,
                 control,
                 user,
                 descendants,
+                child_failures: (),
                 completion,
                 ..
             },
@@ -109,10 +138,12 @@ fn derive_preserves_the_exact_runtime_origin_and_retirement() {
     else {
         panic!("the derive must preserve the exact root terminal")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
 
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
+    assert_eq!(control.len(), 0);
+    assert_eq!(user.len(), 0);
     assert!(descendants.is_empty());
     assert_eq!(completion, Completion::Stopped);
 }

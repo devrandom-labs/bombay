@@ -1,26 +1,49 @@
 error[E0599]: no method named `next` found for struct `Prepared` in the current scope
-  --> tests/compile/fail/environment_phase_authority.rs:87:22
-   |
-29 | struct Prepared;
-   | --------------- method `next` not found for this struct
+   --> tests/compile/fail/environment_phase_authority.rs:150:22
+    |
+ 30 | struct Prepared;
+    | --------------- method `next` not found for this struct
 ...
-87 |     let _ = prepared.next();
-   |                      ^^^^ method not found in `Prepared`
-   |
-   = help: items from traits can only be used if the trait is implemented and in scope
-   = note: the following traits define an item `next`, perhaps you need to implement one of them:
-           candidate #1: `ActiveEnvironment`
-           candidate #2: `Iterator`
+150 |     let _ = prepared.next();
+    |                      ^^^^ method not found in `Prepared`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following traits define an item `next`, perhaps you need to implement one of them:
+            candidate #1: `ActiveEnvironment`
+            candidate #2: `Iterator`
 
-error[E0599]: no method named `activate` found for struct `Active` in the current scope
-  --> tests/compile/fail/environment_phase_authority.rs:90:20
-   |
-28 | struct Active;
-   | ------------- method `activate` not found for this struct
-...
-90 |     let _ = active.activate(Actions::stop());
-   |                    ^^^^^^^^ method not found in `Active`
-   |
-   = help: items from traits can only be used if the trait is implemented and in scope
-   = note: the following trait defines an item `activate`, perhaps you need to implement it:
-           candidate #1: `Environment`
+error[E0277]: the trait bound `Active: Environment<Definition>` is not satisfied
+   --> tests/compile/fail/environment_phase_authority.rs:155:49
+    |
+155 |     let _ = Environment::<Definition>::activate(&mut active, &mut actions, &mut received);
+    |             ----------------------------------- ^^^^^^^^^^^ unsatisfied trait bound
+    |             |
+    |             required by a bound introduced by this call
+    |
+help: the trait `Environment<Definition>` is not implemented for `Active`
+   --> tests/compile/fail/environment_phase_authority.rs:29:1
+    |
+ 29 | struct Active;
+    | ^^^^^^^^^^^^^
+help: the trait `Environment<Definition>` is implemented for `Prepared`
+   --> tests/compile/fail/environment_phase_authority.rs:39:1
+    |
+ 39 | impl Environment<Definition> for Prepared {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0277]: the trait bound `Active: Environment<Definition>` is not satisfied
+   --> tests/compile/fail/environment_phase_authority.rs:155:76
+    |
+155 |     let _ = Environment::<Definition>::activate(&mut active, &mut actions, &mut received);
+    |                                                                            ^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+help: the trait `Environment<Definition>` is not implemented for `Active`
+   --> tests/compile/fail/environment_phase_authority.rs:29:1
+    |
+ 29 | struct Active;
+    | ^^^^^^^^^^^^^
+help: the trait `Environment<Definition>` is implemented for `Prepared`
+   --> tests/compile/fail/environment_phase_authority.rs:39:1
+    |
+ 39 | impl Environment<Definition> for Prepared {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

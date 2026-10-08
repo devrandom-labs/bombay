@@ -12,9 +12,9 @@ workspace = true
 axum.workspace = true
 bombay-rs = { path = "../../crates/bombay", features = ["axum"] }
 serde.workspace = true
+tokio = { workspace = true, features = ["rt"] }
 
 [dev-dependencies]
 http-body-util = "0.1.5"
 serde_json.workspace = true
 tower = { version = "0.5.3", features = ["util"] }
-tokio = { workspace = true, features = ["rt"] }

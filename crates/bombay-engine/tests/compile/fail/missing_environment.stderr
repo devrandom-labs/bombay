@@ -1,3 +1,20 @@
+error[E0277]: the trait bound `(): Environment<Example>` is not satisfied
+  --> tests/compile/fail/missing_environment.rs:26:34
+   |
+26 |     let _ = Driver::new(Example, ()).run();
+   |             -----------          ^^ the trait `Environment<Example>` is not implemented for `()`
+   |             |
+   |             required by a bound introduced by this call
+   |
+note: required by a bound in `Driver::<B, E>::new`
+  --> src/driver.rs
+   |
+   |     E: Environment<B>,
+   |        ^^^^^^^^^^^^^^ required by this bound in `Driver::<B, E>::new`
+...
+   |     pub fn new(behavior: B, environment: E) -> Self {
+   |            --- required by a bound in this associated function
+
 error[E0599]: the method `run` exists for struct `Driver<Example, ()>`, but its trait bounds were not satisfied
   --> tests/compile/fail/missing_environment.rs:26:38
    |
@@ -6,3 +23,18 @@ error[E0599]: the method `run` exists for struct `Driver<Example, ()>`, but its 
    |
    = note: the following trait bounds were not satisfied:
            `(): Environment<Example>`
+
+error[E0277]: the trait bound `(): Environment<Example>` is not satisfied
+  --> tests/compile/fail/missing_environment.rs:26:13
+   |
+26 |     let _ = Driver::new(Example, ()).run();
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Environment<Example>` is not implemented for `()`
+   |
+note: required by a bound in `Driver`
+  --> src/driver.rs
+   |
+   | pub struct Driver<B, E>
+   |            ------ required by a bound in this struct
+...
+   |     E: Environment<B>,
+   |        ^^^^^^^^^^^^^^ required by this bound in `Driver`

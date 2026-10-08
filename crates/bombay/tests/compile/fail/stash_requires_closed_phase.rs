@@ -23,7 +23,7 @@ impl Behavior for Phased {
     }
 }
 
-const fn deliver(_: &()) -> StashRoute {
+const fn deliver(_: &Phased, _: &()) -> StashRoute {
     StashRoute::Deliver
 }
 

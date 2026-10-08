@@ -26,10 +26,17 @@
         pkgs = nixpkgs.legacyPackages.${system};
 
         # Nix and rustup resolve the same pinned toolchain declaration.
-        toolchain = fenix.packages.${system}.fromToolchainFile {
-          file = ./rust-toolchain.toml;
-          sha256 = "sha256-mvUGEOHYJpn3ikC5hckneuGixaC+yGrkMM/liDIDgoU=";
-        };
+        toolchain =
+          (fenix.packages.${system}.fromToolchainFile {
+            file = ./rust-toolchain.toml;
+            sha256 = "sha256-zm3dyIY2T414ZRR3EhLOvptzG6gta4WZUcawzMUWtqI=";
+          }).overrideAttrs
+            (previous: {
+              # Fenix patches compiler-library paths with this tool on macOS.
+              nativeBuildInputs =
+                (previous.nativeBuildInputs or [ ])
+                ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.darwin.cctools ];
+            });
         craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
         src =
           let

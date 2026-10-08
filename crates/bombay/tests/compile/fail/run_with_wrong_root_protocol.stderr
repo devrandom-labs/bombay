@@ -9,19 +9,16 @@ error[E0631]: type mismatch in function arguments
    |                                                       |
    |                                                       required by a bound introduced by this call
    |
-   = note: expected function signature `fn(bombay::ApplicationHandle<Root, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>>) -> _`
-              found function signature `fn(bombay::ApplicationHandle<Other, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>>) -> _`
-note: required by a bound in `bombay::application_runtime::<impl bombay::Application<Root, Members>>::run_with`
-  --> src/application_runtime.rs
+   = note: expected function signature `fn(ApplicationHandle<Root, EventLayer<ShutdownRequested, User<MailAddr, Never>>>) -> _`
+              found function signature `fn(ApplicationHandle<Other, EventLayer<ShutdownRequested, User<MailAddr, Never>>>) -> _`
+note: required by a bound in `bombay::application::execution::<impl bombay::Application<Root, Members>>::run_with`
+  --> src/application/execution.rs
    |
-   |       pub fn run_with<Terminal, Boundary, BoundaryFuture, Output>(
-   |              -------- required by a bound in this associated function
+   |     pub async fn run_with<Terminal, Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                  -------- required by a bound in this associated function
 ...
-   |           Boundary: FnOnce(
-   |  ___________________^
-   | |                 ApplicationHandle<Root::Protocol, <Members::Actor as Behavior>::Event>,
-   | |             ) -> BoundaryFuture
-   | |_______________________________^ required by this bound in `bombay::application_runtime::<impl Application<Root, Members>>::run_with`
+   |         Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Members>>::run_with`
 help: consider wrapping the function in a closure
    |
 29 |     let _ = Application::new(Root.stop_on_shutdown()).run_with(|arg0: bombay::ApplicationHandle<Root, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>>| wrong_boundary(/* bombay::ApplicationHandle<Other, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>> */));

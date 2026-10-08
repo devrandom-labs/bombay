@@ -1,9 +1,12 @@
 //! Run one fixed supervisor through worker failure, replacement, and shutdown.
 //! The supervisor owns recovery policy; Bombay interprets its typed actions.
 
+use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
+use tokio::runtime::Builder;
 
+use bombay::ProjectTerminal;
 use bombay::actors::ActorExt as _;
 use bombay::atomic::{
     ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
@@ -12,8 +15,8 @@ use bombay::atomic::{
 };
 use bombay::behavior::{Actions, BehaviorActed, ChildHead, MessageProtocol, Never};
 use bombay::prelude::{
-    ActorRetirement, ChildOrigin, Completion, Exit, MailAddr, RootOrigin, StopOnShutdown,
-    TerminalProjection,
+    ActorRetirement, ChildFailure, ChildOrigin, Completion, Exit, MailAddr, RootOrigin,
+    StopOnShutdown, TerminalProjection,
 };
 use bombay::{ActorSpace, ActorSpaces, App, WorkerPreparationSource, WorkerPreparationStart};
 use tokio::sync::mpsc;
@@ -49,6 +52,10 @@ impl ActivationPlan for ActivationNotice {
     type Ready = ();
     type Rejection = Never;
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn activate(self) -> Result<Self::Ready, Self::Rejection> {
         self.activated
             .send(self.role)
@@ -67,6 +74,10 @@ impl WorkerSource<WorkerRole, ManagedWorker, ActivationNotice> for Workshop {
 }
 
 impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Workshop {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn prepare_first(
         &mut self,
         role: &WorkerRole,
@@ -74,6 +85,10 @@ impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Wo
         WorkerPreparationStart::Submitted(worker_submission(*role, &self.activated))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn prepare_next(
         &mut self,
         role: &WorkerRole,
@@ -117,20 +132,46 @@ struct SupervisorSpaces {
 }
 
 #[derive(TerminalProjection)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "retain complete original role retirements without adding a heap owner or changing terminal custody"
+)]
 enum SupervisorTerminal {
     Root {
         origin: RootOrigin<RootSupervisor>,
-        terminal: ActorRetirement<RootSupervisor, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the supervisor retirement retains its exact proxy-role child failures and complete terminal"
+        )]
+        terminal: ActorRetirement<
+            RootSupervisor,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<Supervisor, ChildHead>, WorkerProxy>>,
+                (),
+            ),
+        >,
     },
     #[structural_child]
     Proxy {
         origin: ChildOrigin<Supervisor, ChildHead>,
-        terminal: ActorRetirement<WorkerProxy, Self>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the proxy retirement retains its exact worker-role child failures and complete terminal"
+        )]
+        terminal: ActorRetirement<
+            WorkerProxy,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<WorkerProxy, ChildHead>, ProxyWorker>>,
+                (),
+            ),
+        >,
     },
     #[structural_child]
     Worker {
         origin: ChildOrigin<WorkerProxy, ChildHead>,
-        terminal: ActorRetirement<ProxyWorker, Self>,
+        terminal: ActorRetirement<ProxyWorker, Self, ()>,
     },
 }
 
@@ -165,54 +206,82 @@ fn run_supervision() {
         status: ActorSpace::new(),
         capability: ActorSpace::new(),
     };
-    let (termination, terminal): (_, SupervisorTerminal) =
-        App::new(supervisor.stop_on_shutdown(), spaces)
-            .run_with(move |application| async move {
-                let first = tokio::time::timeout(Duration::from_secs(5), activations.recv())
-                    .await
-                    .expect("the first worker activates")
-                    .expect("the first activation has a role");
-                assert_eq!(first, WorkerRole::Primary);
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            App::new(supervisor.stop_on_shutdown(), spaces)
+                .run_with::<SupervisorTerminal, _, _, _>(move |application| async move {
+                    let first = tokio::time::timeout(Duration::from_secs(5), activations.recv())
+                        .await
+                        .expect("the first worker activates")
+                        .expect("the first activation has a role");
+                    assert_eq!(first, WorkerRole::Primary);
 
-                let interface = application.interface(application.root().established_recipient());
-                let mut caller = interface
-                    .external::<Capability>()
-                    .expect("the capability caller is established");
-                caller
-                    .send(
-                        interface.api(),
-                        FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
-                    )
-                    .await
-                    .expect("the supervisor accepts the capability query");
-                let reply = caller
-                    .receive()
-                    .await
-                    .expect("the primary capability is returned");
-                let CapabilityResult::Ready { role, proxy } = reply.message else {
-                    panic!("the primary proxy is ready")
-                };
-                assert_eq!(role, WorkerRole::Primary);
-                caller
-                    .send(&proxy, WorkerCommand::Stop)
-                    .await
-                    .expect("the first worker accepts its stop command");
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let mut caller = interface
+                        .external::<Capability>()
+                        .expect("the capability caller is established");
+                    caller
+                        .send(
+                            interface.api(),
+                            FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
+                        )
+                        .await
+                        .expect("the supervisor accepts the capability query");
+                    let reply = caller
+                        .receive()
+                        .await
+                        .expect("the primary capability is returned");
+                    let CapabilityResult::Ready { role, proxy } = reply.message else {
+                        panic!("the primary proxy is ready")
+                    };
+                    assert_eq!(role, WorkerRole::Primary);
+                    caller
+                        .send(&proxy, WorkerCommand::Stop)
+                        .await
+                        .expect("the first worker accepts its stop command");
 
-                let replacement = tokio::time::timeout(Duration::from_secs(5), activations.recv())
-                    .await
-                    .expect("the replacement activates")
-                    .expect("the replacement activation has a role");
-                assert_eq!(replacement, WorkerRole::Primary);
-                caller
-                    .send(interface.api(), FixedCommand::shutdown())
-                    .await
-                    .expect("the supervisor accepts shutdown");
-                let lifecycle = application.lifecycle();
-                tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
-                    .await
-                    .expect("the supervisor retires after replacement and shutdown")
-            })
-            .unwrap_or_else(|_| panic!("the supervisor runs its recovery policy"));
+                    let replacement =
+                        tokio::time::timeout(Duration::from_secs(5), activations.recv())
+                            .await
+                            .expect("the replacement activates")
+                            .expect("the replacement activation has a role");
+                    assert_eq!(replacement, WorkerRole::Primary);
+                    caller
+                        .send(interface.api(), FixedCommand::shutdown())
+                        .await
+                        .expect("the supervisor accepts shutdown");
+                    let lifecycle = application.lifecycle();
+                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                        .await
+                        .expect("the supervisor retires after replacement and shutdown")
+                }),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the supervisor runs its recovery policy");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: termination,
+        cleanup: Ok((root_origin, joined_actor)),
+    } = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
+    let terminal: SupervisorTerminal = ProjectTerminal::project(
+        root_origin,
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
+    );
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_restarted_worker_retirement(terminal);
@@ -224,6 +293,8 @@ fn assert_restarted_worker_retirement(terminal: SupervisorTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         completion,
         descendants,
         ..
@@ -231,6 +302,8 @@ fn assert_restarted_worker_retirement(terminal: SupervisorTerminal) {
     else {
         panic!("the supervisor returns completed terminal custody")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
     let SupervisorTerminal::Proxy { origin, terminal } = descendants
@@ -242,6 +315,8 @@ fn assert_restarted_worker_retirement(terminal: SupervisorTerminal) {
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
+        capability_failures,
+        unread_owner_cancellation,
         completion,
         descendants,
         ..
@@ -249,6 +324,8 @@ fn assert_restarted_worker_retirement(terminal: SupervisorTerminal) {
     else {
         panic!("the proxy returns both worker incarnations")
     };
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 2);
     for descendant in descendants {
@@ -257,6 +334,8 @@ fn assert_restarted_worker_retirement(terminal: SupervisorTerminal) {
         };
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let ActorRetirement::Completed {
+            capability_failures,
+            unread_owner_cancellation,
             completion,
             descendants,
             ..
@@ -264,6 +343,8 @@ fn assert_restarted_worker_retirement(terminal: SupervisorTerminal) {
         else {
             panic!("the worker returns completed terminal custody")
         };
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
         assert_eq!(completion, Completion::Stopped);
         assert!(descendants.is_empty());
     }

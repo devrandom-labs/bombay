@@ -5,13 +5,14 @@ use behavior_actors::{
     Activate, Machine, Move, Stash, StashRoute, StopOnShutdown, TimerElapsed, TimerGeneration,
     TimerId,
 };
+use bombay::ProjectTerminal;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, ActiveTurn, Become, Behavior, BehaviorActed, BehaviorBase, Never, NoBirths, Protocol,
     Step, Stopped, User,
 };
 use bombay::timing::{Deadline, OneShot, Periodic, ReceiveTimeout};
-use bombay::{Application, MailAddr};
+use bombay::{ActorRetirement, Application, ApplicationOutcome, MailAddr};
 
 mod application_support;
 
@@ -67,8 +68,12 @@ fn stop_at_deadline(_: &mut TimerRoot) -> Become {
     Step::Stop(Stopped)
 }
 
-#[test]
-fn one_shot_template_runs_as_an_ordinary_application_root() {
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::drop_non_drop,
+    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
+)]
+async fn one_shot_template_runs_as_an_ordinary_application_root() {
     let root = OneShot::new(
         TimerRoot,
         TimerId(1),
@@ -76,14 +81,39 @@ fn one_shot_template_runs_as_an_ordinary_application_root() {
         stop_after_timer,
     );
 
-    let terminal: RootTerminal<_> = Application::new(root.stop_on_shutdown())
-        .run()
-        .expect("the timer fires and the template stops normally");
-    assert_completed(terminal);
+    let application_outcome = Application::new(root.stop_on_shutdown())
+        .run::<_, _, RootTerminal<_>, _>()
+        .await
+        .unwrap_or_else(|(application, error)| {
+            drop(application);
+            panic!("the caller owns the application's live entered host: {error}");
+        });
+    if let ApplicationOutcome::Completed {
+        output: _,
+        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+    } = &application_outcome
+    {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    }
+    let ApplicationOutcome::Completed {
+        output: None,
+        cleanup: Ok((origin, retirement)),
+    } = application_outcome
+    else {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    };
+    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    assert_completed(terminal, None);
 }
 
-#[test]
-fn receive_timeout_template_runs_as_an_ordinary_application_root() {
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::drop_non_drop,
+    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
+)]
+async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
     let root = ReceiveTimeout::new(
         TimerRoot,
         TimerId(2),
@@ -91,14 +121,39 @@ fn receive_timeout_template_runs_as_an_ordinary_application_root() {
         stop_after_timer,
     );
 
-    let terminal: RootTerminal<_> = Application::new(root.stop_on_shutdown())
-        .run()
-        .expect("the idle timer fires and the template stops normally");
-    assert_completed(terminal);
+    let application_outcome = Application::new(root.stop_on_shutdown())
+        .run::<_, _, RootTerminal<_>, _>()
+        .await
+        .unwrap_or_else(|(application, error)| {
+            drop(application);
+            panic!("the caller owns the application's live entered host: {error}");
+        });
+    if let ApplicationOutcome::Completed {
+        output: _,
+        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+    } = &application_outcome
+    {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    }
+    let ApplicationOutcome::Completed {
+        output: None,
+        cleanup: Ok((origin, retirement)),
+    } = application_outcome
+    else {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    };
+    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    assert_completed(terminal, None);
 }
 
-#[test]
-fn periodic_template_runs_as_an_ordinary_application_root() {
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::drop_non_drop,
+    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
+)]
+async fn periodic_template_runs_as_an_ordinary_application_root() {
     let root = Periodic::new(
         TimerRoot,
         TimerId(3),
@@ -106,14 +161,39 @@ fn periodic_template_runs_as_an_ordinary_application_root() {
         stop_after_timer,
     );
 
-    let terminal: RootTerminal<_> = Application::new(root.stop_on_shutdown())
-        .run()
-        .expect("the first periodic generation fires and the template stops normally");
-    assert_completed(terminal);
+    let application_outcome = Application::new(root.stop_on_shutdown())
+        .run::<_, _, RootTerminal<_>, _>()
+        .await
+        .unwrap_or_else(|(application, error)| {
+            drop(application);
+            panic!("the caller owns the application's live entered host: {error}");
+        });
+    if let ApplicationOutcome::Completed {
+        output: _,
+        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+    } = &application_outcome
+    {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    }
+    let ApplicationOutcome::Completed {
+        output: None,
+        cleanup: Ok((origin, retirement)),
+    } = application_outcome
+    else {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    };
+    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    assert_completed(terminal, None);
 }
 
-#[test]
-fn deadline_template_runs_as_an_ordinary_application_root() {
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::drop_non_drop,
+    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
+)]
+async fn deadline_template_runs_as_an_ordinary_application_root() {
     let root = Deadline::new(
         TimerRoot,
         TimerId(4),
@@ -121,10 +201,31 @@ fn deadline_template_runs_as_an_ordinary_application_root() {
         stop_at_deadline,
     );
 
-    let terminal: RootTerminal<_> = Application::new(root.stop_on_shutdown())
-        .run()
-        .expect("the absolute deadline fires and the template stops normally");
-    assert_completed(terminal);
+    let application_outcome = Application::new(root.stop_on_shutdown())
+        .run::<_, _, RootTerminal<_>, _>()
+        .await
+        .unwrap_or_else(|(application, error)| {
+            drop(application);
+            panic!("the caller owns the application's live entered host: {error}");
+        });
+    if let ApplicationOutcome::Completed {
+        output: _,
+        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+    } = &application_outcome
+    {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    }
+    let ApplicationOutcome::Completed {
+        output: None,
+        cleanup: Ok((origin, retirement)),
+    } = application_outcome
+    else {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    };
+    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    assert_completed(terminal, None);
 }
 
 #[derive(Clone)]
@@ -160,11 +261,14 @@ fn machine_transition(
     }
 }
 
-#[test]
-fn machine_template_runs_as_an_ordinary_application_root() {
+#[tokio::test(flavor = "current_thread")]
+async fn machine_template_runs_as_an_ordinary_application_root() {
     let root = Machine::<MailAddr, _, _, _, _>::new(0, MachinePhase::Closed, machine_transition);
 
-    let ((), terminal): (_, RootTerminal<_>) = Application::new(root.stop_on_shutdown())
+    let ApplicationOutcome::Completed {
+        output: (),
+        cleanup: Ok((root_origin, joined_actor)),
+    } = Application::new(root.stop_on_shutdown())
         .run_with(|application| async move {
             application
                 .root()
@@ -182,15 +286,31 @@ fn machine_template_runs_as_an_ordinary_application_root() {
                 .await
                 .expect("the machine accepts stop after draining");
         })
-        .expect("the machine reaches its statically defined terminal transition");
-    assert_completed(terminal);
+        .await
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the machine reaches its statically defined terminal transition");
+        })
+    else {
+        panic!("the original completed output and both cleanup join boundaries remain exact");
+    };
+    let terminal: RootTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
+    );
+    assert_completed(terminal, None);
 }
 
 #[allow(
     clippy::trivially_copy_pass_by_ref,
     reason = "the owning Stash route contract borrows every message, including Never"
 )]
-const fn deliver_never(message: &Never) -> StashRoute {
+const fn deliver_never(_: &TimerRoot, message: &Never) -> StashRoute {
     match *message {}
 }
 
@@ -236,8 +356,12 @@ fn every_fluent_method_returns_its_existing_owner_type() {
     );
 }
 
-#[test]
-fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::manual_assert_eq,
+    reason = "Compare complete typed transitions without adding Debug requirements to their owning types."
+)]
+async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
     let delay = Duration::from_millis(1);
     let fluent = TimerRoot
         .with_stash(deliver_never)
@@ -275,8 +399,29 @@ fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
         .with_stash(deliver_never)
         .with_receive_timeout(TimerId(5), delay, stop_wrapped::<Stash<TimerRoot>>)
         .stop_on_shutdown();
-    let terminal: RootTerminal<_> = Application::new(runtime)
-        .run()
-        .expect("the exact fluent wrapper stack runs as an ordinary application");
-    assert_completed(terminal);
+    let application_outcome = Application::new(runtime)
+        .run::<_, _, RootTerminal<_>, _>()
+        .await
+        .unwrap_or_else(|(application, error)| {
+            drop(application);
+            panic!("the caller owns the application's live entered host: {error}");
+        });
+    if let ApplicationOutcome::Completed {
+        output: _,
+        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+    } = &application_outcome
+    {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    }
+    let ApplicationOutcome::Completed {
+        output: None,
+        cleanup: Ok((origin, retirement)),
+    } = application_outcome
+    else {
+        drop(application_outcome);
+        panic!("the original startup phase and complete joined root remain exact");
+    };
+    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    assert_completed(terminal, None);
 }

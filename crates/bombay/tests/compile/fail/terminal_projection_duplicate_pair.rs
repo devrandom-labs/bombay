@@ -11,11 +11,11 @@ impl Root {}
 enum ApplicationTerminal {
     Primary {
         origin: RootOrigin<StopOnShutdown<Root>>,
-        terminal: ActorRetirement<StopOnShutdown<Root>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<Root>, Self, ()>,
     },
     Replica {
         origin: RootOrigin<StopOnShutdown<Root>>,
-        terminal: ActorRetirement<StopOnShutdown<Root>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<Root>, Self, ()>,
     },
 }
 

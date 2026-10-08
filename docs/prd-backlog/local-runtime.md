@@ -14,7 +14,7 @@ the next job's exact payload on a capacity-one `BacklogFull` rejection.
 ARC-006 has also made the activation visibility regressions executable: the
 address remains invisible through initialization commitment and a failed
 commit never publishes it. The ACT rows below retain the original snapshot's
-requirements and marks; use the live ledger for current verification.
+requirements and marks; use [the status index](status.md) for current verification.
 Broader capacity accounting and keyed-pool proofs remain open. A second runtime
 regression now observes one permanent replacement after a worker stops,
 followed by another completed job and two-worker terminal custody; broader
@@ -23,8 +23,7 @@ Independent runtime traces also prove both FIFO interruption dispositions:
 `Retry` completes the interrupted job on a replacement, and `Fail` returns
 the assigned payload and worker-stop reason before that replacement serves
 another job.
-The marks below are the earlier requirements inventory; use the live ledger
-and `docs/todo.md` queue for current verification state.
+The marks below are the earlier requirements inventory; use [the status index](status.md) for current verification state.
 
 See [classification marks](README.md#reading-the-inventory) and
 [evidence](evidence.md). The standard local composition remains Behavior plus

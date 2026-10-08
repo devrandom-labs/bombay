@@ -10,13 +10,15 @@
 //!   exact [`Completion`] or [`DriverError`] disposition
 //!
 //! The Engine accepts the complete closed Behavior phase expected by the
-//! owning templates. An open-phase Behavior cannot be wrapped in `Stash`:
+//! Engine phase contract. An open-phase Behavior cannot form an Engine Driver:
 //!
 //! ```compile_fail
 //! use behavior::{
 //!     Actions, Behavior, BehaviorActed, InitializationTurn, MailAddr, Never,
-//!     NoBirths, Stash, User,
+//!     NoBirths, User,
 //! };
+//!
+//! use bombay_engine::{Driver, Environment};
 //!
 //! struct OpenPhase;
 //!
@@ -41,7 +43,9 @@
 //!     }
 //! }
 //!
-//! let _ = Stash::new(OpenPhase, |_| behavior::StashRoute::Deliver);
+//! fn open_phase_driver<E: Environment<OpenPhase>>(environment: E) {
+//!     let _ = Driver::new(OpenPhase, environment);
+//! }
 //! ```
 
 mod driver;

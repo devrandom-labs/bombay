@@ -9,7 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-behavior = { package = "bombay-behavior", version = "0.20.0" }
+behavior = { package = "bombay-behavior", version = "0.23.0" }
 bombay-engine = { path = ".." }
 
 [[bin]]

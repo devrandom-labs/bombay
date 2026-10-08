@@ -1,3 +1,4 @@
+use core::ops::ControlFlow;
 use std::convert::Infallible;
 use std::future::Future;
 use std::hint::black_box;
@@ -8,9 +9,7 @@ use behavior::{
     Actions, Behavior, BehaviorActed, Interpretation, MailAddr, Never, NoBirths, SourceCustody,
     User,
 };
-use bombay_engine::{
-    ActionsOf, ActiveEnvironment, Completion, Driver, DriverRetirement, Environment,
-};
+use bombay_engine::{ActionsOf, ActiveEnvironment, Completion, Driver, Environment};
 use criterion::{Criterion, criterion_group, criterion_main};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -43,33 +42,100 @@ struct Immediate(Ingress);
 impl ActiveEnvironment<OneTurn> for Immediate {
     type Settlement = Vec<Never>;
     type Residual = Vec<Self::Settlement>;
+    type RetirementRequest = Never;
 
-    async fn next(&mut self) -> Option<<OneTurn as Behavior>::Event> {
-        match std::mem::replace(&mut self.0, Ingress::Exhausted) {
-            Ingress::Pending => Some(User::new(MailAddr(1), 1)),
-            Ingress::Exhausted => None,
-        }
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
+    async fn next(&mut self) -> ControlFlow<Never, Option<<OneTurn as Behavior>::Event>> {
+        ControlFlow::Continue({
+            match std::mem::replace(&mut self.0, Ingress::Exhausted) {
+                Ingress::Pending => Some(User::new(MailAddr(1), 1)),
+                Ingress::Exhausted => None,
+            }
+        })
     }
 
-    async fn next_source(&mut self) -> Option<<OneTurn as Behavior>::Event> {
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
+    async fn next_source(&mut self) -> ControlFlow<Never, Option<<OneTurn as Behavior>::Event>> {
         unreachable!("the benchmark has no source-returning actions")
     }
 
-    async fn apply(&mut self, _: ActionsOf<OneTurn>) -> Interpretation<Self::Settlement> {
-        Interpretation::Complete(Vec::new())
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
+    async fn apply(
+        &mut self,
+        actions: &mut Option<ActionsOf<OneTurn>>,
+        received: &mut Option<Interpretation<Self::Settlement>>,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        if let Some(actions) = actions.take() {
+            assert_eq!(actions.sends, [] as [Never; 0]);
+            assert!(actions.creates.is_empty());
+            drop(actions);
+            *received = Some(Interpretation::Complete(Vec::new()));
+        }
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn offer_next(
         &mut self,
-        settlement: Self::Settlement,
-    ) -> SourceCustody<Self::Settlement> {
-        SourceCustody::Exhausted(settlement)
+        settlement: &mut Option<Self::Settlement>,
+        received: &mut Option<SourceCustody<Self::Settlement>>,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        if let Some(settlement) = settlement.take() {
+            *received = Some(SourceCustody::Exhausted(settlement));
+        }
     }
 
-    fn publish(&mut self) {}
+    fn publish(&mut self) -> ControlFlow<Self::RetirementRequest, ()> {
+        ControlFlow::Continue(())
+    }
 
-    async fn retire(self, settlements: Vec<Self::Settlement>) -> Self::Residual {
-        settlements
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
+    async fn retire(
+        environment: &mut Option<Self>,
+        actions: &mut Option<ActionsOf<OneTurn>>,
+        interpretation: &mut Option<Interpretation<Self::Settlement>>,
+        source: &mut Option<SourceCustody<Self::Settlement>>,
+        source_index: &mut Option<usize>,
+        ingress: &mut Option<ControlFlow<Never, Option<<OneTurn as Behavior>::Event>>>,
+        settlements: &mut Option<Vec<Self::Settlement>>,
+        received: &mut Option<Self::Residual>,
+    ) {
+        if received.is_some()
+            || actions.is_some()
+            || interpretation.is_some()
+            || source.is_some()
+            || source_index.is_some()
+            || ingress.is_some()
+        {
+            return;
+        }
+        if environment.is_none() {
+            return;
+        }
+        if let Some(settlements) = settlements.take() {
+            *received = Some(settlements);
+            *environment = None;
+        }
     }
 }
 
@@ -78,17 +144,41 @@ impl Environment<OneTurn> for Immediate {
     type Settlement = Vec<Never>;
     type Error = Infallible;
     type Residual = Vec<Self::Settlement>;
+    type RetirementRequest = Never;
 
     async fn activate(
-        mut self,
-        actions: ActionsOf<OneTurn>,
-    ) -> Result<(Self, Interpretation<Self::Settlement>), (Self::Error, Self::Residual)> {
-        let interpretation = self.apply(actions).await;
-        Ok((self, interpretation))
+        environment: &mut Option<Self>,
+        actions: &mut Option<ActionsOf<OneTurn>>,
+        received: &mut Option<
+            Result<(Self::Active, Interpretation<Self::Settlement>), (Self::Error, Self::Residual)>,
+        >,
+    ) {
+        if received.is_some() {
+            return;
+        }
+        let Some(original) = environment.as_mut() else {
+            return;
+        };
+        let mut interpretation = None;
+        ActiveEnvironment::apply(original, actions, &mut interpretation).await;
+        if let Some(interpretation) = interpretation {
+            let active = environment
+                .take()
+                .expect("the benchmark environment remains available");
+            *received = Some(Ok((active, interpretation)));
+        }
     }
 
-    async fn retire(self) -> Self::Residual {
-        Vec::new()
+    async fn retire(
+        environment: &mut Option<Self>,
+        actions: &mut Option<ActionsOf<OneTurn>>,
+        received: &mut Option<Self::Residual>,
+    ) {
+        if received.is_some() || actions.is_some() || environment.is_none() {
+            return;
+        }
+        *received = Some(Vec::new());
+        *environment = None;
     }
 }
 
@@ -102,16 +192,19 @@ fn block_on<T>(future: impl Future<Output = T>) -> T {
     }
 }
 
+#[expect(
+    clippy::result_large_err,
+    reason = "the measured result preserves the original affine Driver without another allocation"
+)]
 fn driver_benchmark(criterion: &mut Criterion) {
-    let retirement = block_on(Driver::new(OneTurn, Immediate(Ingress::Pending)).run());
-    assert_eq!(
-        retirement,
-        DriverRetirement {
-            behavior: OneTurn,
-            residual: vec![Vec::new()],
-            disposition: Ok(Completion::Stopped),
-        }
-    );
+    let retirement = block_on(Driver::new(OneTurn, Immediate(Ingress::Pending)).run())
+        .unwrap_or_else(|driver| {
+            drop(driver);
+            panic!("the immediate benchmark host completes retirement")
+        });
+    assert_eq!(retirement.behavior, OneTurn);
+    assert_eq!(retirement.residual, vec![Vec::new()]);
+    assert!(matches!(retirement.disposition, Ok(Completion::Stopped)));
 
     criterion.bench_function("driver/init_commit_turn_commit_stop_retire", |bencher| {
         bencher.iter(|| {

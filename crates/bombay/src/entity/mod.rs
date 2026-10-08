@@ -22,14 +22,14 @@ pub use directory::{
 };
 pub use family::{
     Entities, EntityActivationError, EntityAdmission, EntityApplicationFamilies, EntityCapacity,
-    EntityDefinition, EntityFamilyAt, EntityMetrics, EntityRef,
+    EntityDefinition, EntityFamilyAt, EntityMetrics, EntityRef, EntityRetirementFailure,
 };
 pub(crate) use family::{InstallEntityFamilies, InstalledEntityFamilies};
+pub(crate) use lifecycle::SlotEffect;
 pub use lifecycle::{
     ActivationId, DispatchId, DrainFailure, DrainStage, EntitySlot, LifecycleEdge, LifecyclePhase,
     Refusal, RetirementMode, SlotEvent, TransitionEvidence,
 };
-pub(crate) use lifecycle::{SlotEffect, SlotEffectBatch};
 pub use runtime::{
     Activated, AdmissionFailure, EntityRuntime, EntityShutdown, FenceFailure, LocalEntityRuntime,
     Passivation,
@@ -74,7 +74,7 @@ impl<T: fmt::Display> fmt::Display for EntityId<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::EntityId;
+    use crate::entity::EntityId;
 
     #[test]
     fn entity_id_preserves_domain_identity() {

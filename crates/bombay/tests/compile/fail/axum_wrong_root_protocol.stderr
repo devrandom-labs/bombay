@@ -10,19 +10,16 @@ error[E0631]: type mismatch in function arguments
 30 |         wrong_router,
    |         ^^^^^^^^^^^^ expected due to this
    |
-   = note: expected function signature `fn(bombay::ApplicationHandle<Root, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>>) -> _`
-              found function signature `fn(bombay::ApplicationHandle<Other, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>>) -> _`
-note: required by a bound in `bombay::application_runtime::<impl bombay::Application<Root, Members>>::run_axum`
-  --> src/application_runtime.rs
+   = note: expected function signature `fn(ApplicationHandle<Root, EventLayer<ShutdownRequested, User<MailAddr, Never>>>) -> _`
+              found function signature `fn(ApplicationHandle<Other, EventLayer<ShutdownRequested, User<MailAddr, Never>>>) -> _`
+note: required by a bound in `bombay::application::http::<impl bombay::Application<Root, Members>>::run_axum`
+  --> src/application/http.rs
    |
-   |       pub fn run_axum<Terminal>(
-   |              -------- required by a bound in this associated function
+   |     pub async fn run_axum<Terminal, Actor, StagingFailure, ChildFailures, Router>(
+   |                  -------- required by a bound in this associated function
 ...
-   |           router: impl FnOnce(
-   |  ______________________^
-   | |             ApplicationHandle<Root::Protocol, <Members::Actor as Behavior>::Event>,
-   | |         ) -> axum::Router
-   | |_________________________^ required by this bound in `bombay::application_runtime::<impl Application<Root, Members>>::run_axum`
+   |         Router: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> axum::Router,
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::http::<impl Application<Root, Members>>::run_axum`
 help: consider wrapping the function in a closure
    |
 30 |         |arg0: bombay::ApplicationHandle<Root, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>>| wrong_router(/* bombay::ApplicationHandle<Other, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>> */),

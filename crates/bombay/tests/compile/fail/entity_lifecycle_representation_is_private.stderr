@@ -1,12 +1,19 @@
-error[E0432]: unresolved imports `bombay::entity::ActivatingSlot`, `bombay::entity::ActiveSlot`, `bombay::entity::DrainingSlot`, `bombay::entity::SlotDecision`
+error[E0432]: unresolved imports `bombay::entity::ActivatingSlot`, `bombay::entity::ActiveSlot`, `bombay::entity::DrainingSlot`, `bombay::entity::SlotDecision`, `bombay::entity::SlotEffectBatch`
  --> tests/compile/fail/entity_lifecycle_representation_is_private.rs:2:5
   |
 2 |     ActivatingSlot, ActiveSlot, DrainingSlot, SlotDecision, SlotEffect, SlotEffectBatch,
-  |     ^^^^^^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^  ^^^^^^^^^^^^ no `SlotDecision` in `entity`
-  |     |               |           |
+  |     ^^^^^^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^  ^^^^^^^^^^^^              ^^^^^^^^^^^^^^^ no `SlotEffectBatch` in `entity`
+  |     |               |           |             |
+  |     |               |           |             no `SlotDecision` in `entity`
   |     |               |           no `DrainingSlot` in `entity`
   |     |               no `ActiveSlot` in `entity`
   |     no `ActivatingSlot` in `entity`
+  |
+help: a similar name exists in the module
+  |
+2 -     ActivatingSlot, ActiveSlot, DrainingSlot, SlotDecision, SlotEffect, SlotEffectBatch,
+2 +     ActivatingSlot, ActiveSlot, DrainingSlot, SlotDecision, SlotEffect, SlotEffect,
+  |
 
 error[E0603]: enum `SlotEffect` is private
  --> tests/compile/fail/entity_lifecycle_representation_is_private.rs:2:61
@@ -17,25 +24,5 @@ error[E0603]: enum `SlotEffect` is private
 note: the enum `SlotEffect` is defined here
  --> src/entity/mod.rs
   |
-  | pub(crate) use lifecycle::{SlotEffect, SlotEffectBatch};
-  |                            ^^^^^^^^^^
-help: import `SlotEffect` directly
-  |
-2 |     ActivatingSlot, ActiveSlot, DrainingSlot, SlotDecision, bombay::entity::lifecycle::SlotEffect, SlotEffectBatch,
-  |                                                             +++++++++++++++++++++++++++
-
-error[E0603]: struct `SlotEffectBatch` is private
- --> tests/compile/fail/entity_lifecycle_representation_is_private.rs:2:73
-  |
-2 |     ActivatingSlot, ActiveSlot, DrainingSlot, SlotDecision, SlotEffect, SlotEffectBatch,
-  |                                                                         ^^^^^^^^^^^^^^^ private struct
-  |
-note: the struct `SlotEffectBatch` is defined here
- --> src/entity/mod.rs
-  |
-  | pub(crate) use lifecycle::{SlotEffect, SlotEffectBatch};
-  |                                        ^^^^^^^^^^^^^^^
-help: import `SlotEffectBatch` directly
-  |
-2 |     ActivatingSlot, ActiveSlot, DrainingSlot, SlotDecision, SlotEffect, bombay::entity::lifecycle::SlotEffectBatch,
-  |                                                                         +++++++++++++++++++++++++++
+  | pub(crate) use lifecycle::SlotEffect;
+  |                ^^^^^^^^^^^^^^^^^^^^^

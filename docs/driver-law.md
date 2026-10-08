@@ -1,16 +1,18 @@
 # Bombay Driver law
 
-This is the accepted normative contract for `bombay-engine` and its Bombay
-runtime integration. Every `D-*` identifier is mandatory.
+This is the independently accepted EXEC Driver contract for `bombay-engine`
+and its Bombay runtime integration. Final integrated verification and reviewed
+PR delivery remain separate acceptance gates in the EXEC PRD.
 
-The selected contract is Behavior Core and Actors 0.20.0 at
-`804b2bf25325a523884ec49d8a4ae6d2d2b6e9da` and Macros 0.13.0 at
-`3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8`.
+The selected contract is published Behavior Core and Actors 0.23.0 and
+Macros 0.14.0. All three registry archives identify owning revision
+`d69f992b371c12ab34e73b18e45b8112c90a1508`. Their archive and source verification is recorded in the EXEC PRD.
 The owner supplies one direct `Behavior -> Actions` fold, ordered creations,
 named send interpretation, total action settlements, and typed source custody.
-Every ordinary Driver terminal path transfers all still-owned settlements
-through the one retirement barrier and returns the final concrete Behavior
-together with the prepared or active environment residual.
+A complete Driver terminal reply transfers all still-owned settlements through
+the one retirement barrier and returns the final concrete Behavior together
+with the prepared or active environment residual. An incomplete reply retains
+the exact surviving Driver and makes no cleanup or completion claim.
 
 The corresponding verification design is
 [`driver-test-strategy.md`](driver-test-strategy.md).
@@ -65,13 +67,24 @@ text can refine them but cannot create another mandatory law implicitly.
   synthetic turn. Behavior, activation, and settlement failures remain
   disjoint. Once a terminal edge is selected, no later event, fold, apply, or
   source offer begins.
-- **D-RETIRE-1 — Honest affine retirement.** Every ordinary return crosses the
-  applicable prepared or active retirement barrier exactly once and returns
-  the final concrete Behavior, exact residual, complete settlement custody,
-  and factual disposition together. A pure initialization panic is caught
-  before commitment and returns through prepared retirement. Panic after that
-  boundary or cancellation drops the currently owned execution and never
-  falsely claims that asynchronous retirement or completion occurred.
+- **D-RETIRE-1 — Honest affine retirement.** Every complete terminal reply
+  crosses the applicable prepared or active retirement barrier exactly once
+  and returns the final concrete Behavior, exact residual, complete settlement
+  custody, factual disposition, and coexisting original failures together.
+  A pure initialization panic returns its surviving Behavior through prepared
+  retirement. A pure event-fold panic returns its partially mutated Behavior
+  through active retirement. Native Environment construction, poll, and producer
+  disposal failures retain their original payloads and operation provenance;
+  an acquired reply remains an independent fact when producer disposal fails.
+  Prepared and active retirement borrow the actual surviving inputs and receive
+  the original residual outside the disposable operation. A complete residual
+  with exhausted input establishes cleanup; absence or simultaneous input and
+  reply does not. An incomplete reply returns the original Driver with every
+  surviving input, acquired reply, queue position, and failure. Receiving that
+  owner again never repeats attempted retirement, activation, or a fold.
+  Cancelling borrowed work retains the outside Driver and reply; dropping their
+  complete owner separately discharges custody without claiming joined cleanup.
+  Values destroyed inside consuming user work cannot be reconstructed.
 - **D-PORT-1 — One typed phased Environment port.** `Environment<B>` alone owns
   preparation and activation; `ActiveEnvironment<B>` alone owns ingress,
   action application, source settlement, publication, and active retirement.
@@ -79,11 +92,14 @@ text can refine them but cannot create another mandatory law implicitly.
   residuals without type erasure or cross-incarnation mixing. The Driver adds
   no `Clone`, `Sync`, `'static`, runtime, or capability-specific bound that this
   protocol does not require.
-- **D-SURFACE-1 — One opaque production path.** `Driver::run` is the sole
-  direct-Behavior execution path. Engine contains no template, application,
-  mailbox, address, timer, observation, identity, scheduler, dynamic registry,
-  recovery, restart, or reusable lifecycle authority. Cross-crate technical
-  visibility does not make Driver an application-facing lifecycle API.
+- **D-SURFACE-1 — One opaque production path.** `Driver::receive_run` runs
+  the one direct-Behavior causal algorithm while borrowing its outside owner
+  and reply. `Driver::run` delegates to that same operation as a consuming
+  convenience and returns the exact Driver if retirement is incomplete. Engine
+  contains no template, application, mailbox, address, timer, observation,
+  identity, scheduler, dynamic registry, recovery, restart, or reusable lifecycle
+  authority. Cross-crate technical visibility does not make Driver an
+  application-facing lifecycle API.
 - **D-EVIDENCE-1 — Executed revision-bound falsification.** Every retained law
   has one exact positive witness, one applicable boundary witness, and one
   unique mutation of its real owning source, all bound to the selected Behavior
@@ -252,13 +268,16 @@ cancellation by itself.
 ## Environment boundary
 
 The Driver depends on two affine environment phases. `Environment<B>` is
-prepared: it can consume itself and the complete initialization actions to
-produce `ActiveEnvironment<B>`, or consume itself into its typed residual when
-Behavior initialization fails. Activation rejection returns the error and
-prepared residual together. Only the active phase can obtain the next
-`B::Event`, commit later actions, or consume itself into the same residual
-type. A prepared environment cannot expose ingress, and an active environment
-cannot activate again.
+prepared: activation borrows the outside original environment/action slots and
+receives the exact active environment and interpretation into an outside reply
+slot. Rejection receives the error and prepared residual together. Prepared
+retirement likewise borrows the original slots and receives an actual residual.
+Only the active phase obtains `B::Event` or a distinct retirement request and
+commits later actions. Active retirement borrows the environment, all remaining
+inputs and acquired replies until a complete residual is received. A missing
+reply retains incomplete custody; it does not fabricate cleanup. A prepared
+environment cannot expose ingress, and an active environment cannot activate
+again.
 
 This is a Driver-facing internal port, not an application capability API.
 Bombay may compose it internally from independently tested event-source,
@@ -334,50 +353,17 @@ ActionsOf<B>   complete output algebra derived from B's associated types
 ```
 
 The runtime constructs one concrete environment specialized for that exact
-Behavior. The following port sketch is schematic; the compiled contract lives
-in [Engine](../crates/bombay-engine/src/driver.rs) and its
-[law tests](../crates/bombay-engine/tests/driver_law.rs):
-
-```text
-trait Environment<B: Behavior<Ph = Never>> {
-    type Active: ActiveEnvironment<
-        B,
-        Residual = Self::Residual,
-        Settlement = Self::Settlement,
-    >;
-    type Settlement: ClassifySettlement;
-    type Error;
-    type Residual;
-
-    async fn activate(self, actions: ActionsOf<B>)
-        -> Result<
-            (Self::Active, Interpretation<Self::Settlement>),
-            (Self::Error, Self::Residual),
-        >;
-    async fn retire(self) -> Self::Residual;
-}
-
-trait ActiveEnvironment<B: Behavior<Ph = Never>> {
-    type Settlement: ClassifySettlement;
-    type Residual;
-
-    async fn next(&mut self) -> Option<B::Event>;
-    async fn next_source(&mut self) -> Option<B::Event>;
-    async fn apply(
-        &mut self,
-        actions: ActionsOf<B>,
-    ) -> Interpretation<Self::Settlement>;
-    async fn offer_next(
-        &mut self,
-        settlement: Self::Settlement,
-    ) -> SourceCustody<Self::Settlement>;
-    fn publish(&mut self);
-    async fn retire(
-        self,
-        settlements: Vec<Self::Settlement>,
-    ) -> Self::Residual;
-}
-```
+Behavior. The complete owning signatures live in
+[`Environment` and `ActiveEnvironment`](../crates/bombay-engine/src/environment.rs),
+with the one causal execution in [Driver](../crates/bombay-engine/src/driver.rs)
+and observable witnesses in the [law tests](../crates/bombay-engine/tests/driver_law.rs).
+Activation, application, source offer, and retirement borrow actual outside
+input slots and receive exact replies outside the disposable operation.
+Ingress and publication transfer an exact `RetirementRequest` through
+`ControlFlow`, distinct from source exhaustion. Active retirement independently
+retains uncommitted Actions, interpretation, source reply and original position,
+acquired ingress, ordered settlements, and the received residual. No shorthand
+consuming-port sketch defines an alternative contract.
 
 The environment is a static composition of capability-specific interpreters:
 
@@ -419,7 +405,7 @@ The Driver performs this sequence and no other:
 
 ```text
 initialize the owned Behavior exactly once
-    -> consume Environment::activate with the complete initialization actions
+    -> loan original Environment and complete initialization action slots to activate
     -> receive the only ActiveEnvironment and exact initialization settlement
     -> resolve live-return custody or retain the product for retirement
     -> publish the installed environment
@@ -458,23 +444,18 @@ stop because successful initialization was never established.
 ## Transactional initialization boundary
 
 Bombay root activation and child birth must commit initialization before
-publishing a new address generation. The prepared environment owns this
-transaction, and successful publication is required before it returns the
-active environment. The Driver still exposes only one consuming operation:
+publishing a new address generation. Prepared activation receives the exact
+active Environment and interpretation outside its producer. The Driver resolves
+initialization settlement custody before calling `ActiveEnvironment::publish`;
+publication may instead transfer the exact retirement request without admitting
+ordinary ingress.
 
-```text
-consume Driver::run
-    -> initialize exactly once
-    -> Environment::activate(initialization actions)
-    -> terminal completion, or request the first event
-```
-
-The concrete environment may acknowledge its first successful local commitment
-to a transaction owner without giving that owner access to Behavior state or a
-Driver continuation. Publication may occur only after that acknowledgement.
-Ordinary users and integration code receive no `prepare`, `run_init`,
-`run_loop`, or `retire` phase controls. The consuming Driver future cannot be
-cloned, restarted, initialized again, or used after completion.
+`Driver::receive_run` initializes once, applies that complete initialization,
+resolves its custody, and then either retires or requests the next event.
+`Driver::run` delegates to the same path. Neither entry point exposes separate
+prepare, initialization, event-loop, or retirement phase controls. A surviving
+incomplete Driver retains original custody; it cannot replay an attempted
+retirement or begin a second incarnation.
 
 ## Ownership boundaries
 
@@ -511,15 +492,29 @@ external capabilities. This law does not prescribe a `System` object.
 
 ## Panic and cancellation
 
-A panic during a Behavior fold terminates the incarnation. No subsequent event
-may be obtained and no successor Behavior may be reused. The incarnation's
-drop-owned terminal guard classifies the panic and preserves resource-drop,
-address-release, and publication ordering.
+A panic during a Behavior fold terminates its incarnation. No subsequent event
+is acquired and no successor Behavior is reused. Caught initialization and
+transition panics preserve the original native cause and surviving concrete
+Behavior before prepared or active retirement. Caught Environment construction,
+poll, and disposal faults preserve distinct owning provenance and coexist with
+already acquired typed replies and earlier failures. Their presence does not
+prove the retirement barrier completed.
 
-Cancellation drops the Driver future and its owned Behavior/environment. The
-Driver must not claim that asynchronous retirement completed after its future
-was cancelled. The incarnation guard classifies cancellation only after
-Driver-owned resources have been dropped.
+Catching covers unwind panics at the explicitly protected construction, polling
+and completed-operation disposal sites. Process abort and double panic cannot
+return a preserved cause. Cancelling a pending producer drops that producer
+outside the completed-operation catch; cancellation-time disposal may itself
+unwind and is not universally caught. Values already destroyed inside consuming
+user work cannot be recovered. Surviving outside slots remain owned without
+proving cleanup or successful publication.
+
+Cancelling `Driver::receive_run` drops only its borrowing producer; the outside
+Driver and acquired reply remain owned. Cancelling the consuming `Driver::run`
+or dropping the whole outside owner separately discharges those resources.
+Neither operation claims asynchronous retirement completed. Bombay's incarnation
+terminal guard classifies a whole-execution cancellation after Driver-owned
+resources are dropped; it does not turn incomplete surviving custody into a
+fabricated residual or replay arbitrary retirement work.
 
 The final black-box interface must not expose poison recovery or Driver reuse.
 Poison is an internal consequence of a reusable executor seat; it is not an
@@ -570,7 +565,9 @@ After this law is accepted and the Behavior dependency version is aligned:
 2. remove Transition and Machine Executor from `bombay-engine` dependencies;
 3. replace `BehaviorMachine`/`ExclusiveExecutor` with one private direct
    Behavior turn seat;
-4. make consuming `run` the only Driver lifecycle operation;
+4. implement one receiving `receive_run` algorithm, with consuming `run` as its
+   convenience; keep complete retirement distinct from the surviving incomplete
+   Driver;
 5. let incarnation and transactional activation coordinate publication around
    the concrete environment's first local commitment;
 6. delete obsolete adapter, topology, executor-compatibility, poison-reentry,

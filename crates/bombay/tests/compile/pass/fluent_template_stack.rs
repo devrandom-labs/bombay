@@ -1,6 +1,4 @@
-use bombay::behavior::{
-    ActiveTurn, Behavior, BehaviorActed, Never, NoBirths, Protocol, User,
-};
+use bombay::behavior::{ActiveTurn, Behavior, BehaviorActed, Never, NoBirths, Protocol, User};
 use bombay::{composition::StashRoute, prelude::*};
 
 struct Root;
@@ -23,7 +21,7 @@ impl Behavior for Root {
     }
 }
 
-const fn route(message: &Never) -> StashRoute {
+const fn route(_: &Root, message: &Never) -> StashRoute {
     match *message {}
 }
 

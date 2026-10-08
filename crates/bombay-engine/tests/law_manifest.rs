@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use serde::Deserialize;
 use serde_json::Value;
 
-const BEHAVIOR_REVISION: &str = "804b2bf25325a523884ec49d8a4ae6d2d2b6e9da";
+const BEHAVIOR_REVISION: &str = "d69f992b371c12ab34e73b18e45b8112c90a1508";
 
 #[derive(Deserialize)]
 struct Manifest {
@@ -170,9 +170,7 @@ fn repository_artifacts_are_closed(files: &[(String, String)]) -> bool {
         "name = \"bombay-framework\"",
     ];
     files.iter().all(|(path, source)| {
-        if path == "docs/open-design-ledger.md"
-            || path == "docs/historical-design-decisions.md"
-            || path == "docs/driver-law.md"
+        if path == "docs/driver-law.md"
             || path == "crates/bombay-engine/tests/law_manifest.rs"
             || path.starts_with("crates/bombay-engine/tests/compile/")
             || path == "crates/bombay/src/actor_execution.rs"
@@ -356,9 +354,9 @@ fn manifest_exactly_matches_canonical_law_index() {
     let manifest = manifest();
     assert_eq!(manifest.schema, 2);
     assert_eq!(manifest.law_source, "docs/driver-law.md");
-    assert_eq!(manifest.behavior.core, "0.20.0");
-    assert_eq!(manifest.behavior.actors, "0.20.0");
-    assert_eq!(manifest.behavior.macros, "0.13.0");
+    assert_eq!(manifest.behavior.core, "0.23.0");
+    assert_eq!(manifest.behavior.actors, "0.23.0");
+    assert_eq!(manifest.behavior.macros, "0.14.0");
     assert_eq!(manifest.behavior.revision, BEHAVIOR_REVISION);
     assert_eq!(
         manifest.gate.command,
@@ -600,7 +598,7 @@ fn engine_does_not_mirror_actor_template_laws() {
     }
     for (field, expected) in [
         ("package", "bombay-behavior-actors"),
-        ("version", "0.20.0"),
+        ("version", "0.23.0"),
         ("revision", BEHAVIOR_REVISION),
     ] {
         if manifest["owner"][field] != expected {
@@ -715,6 +713,10 @@ fn engine_does_not_mirror_actor_template_laws() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "The complete Driver surface audit keeps the exact intrinsic panic declarations and private transport signatures beside every forbidden erased authority and obsolete path."
+)]
 fn repository_has_one_direct_driver_path_and_no_obsolete_product_api() {
     let root = root();
     let engine_manifest =
@@ -730,10 +732,48 @@ fn repository_has_one_direct_driver_path_and_no_obsolete_product_api() {
     let driver = std::fs::read_to_string(root.join("crates/bombay-engine/src/driver.rs")).unwrap();
     assert_eq!(
         driver
-            .matches("behavior::delegate_transition(behavior, event)")
+            .matches("behavior::delegate_transition(&mut self.behavior, event)")
             .count(),
         1,
         "the production Driver must contain exactly one direct fold site"
+    );
+    // The EXEC native-panic exception permits only these intrinsic causes outside
+    // Behavior state, protocols, routing, and interpreter remainder products.
+    let (before_errors, errors) = driver
+        .split_once("pub enum DriverError<B, A> {")
+        .expect("the owning Driver error enum remains present");
+    let (errors, after_errors) = errors
+        .split_once("\n}")
+        .expect("the owning Driver error enum remains closed");
+    let mut errors = errors.to_owned();
+    for declaration in [
+        "    InitializationPanicked(Box<dyn Any + Send>),",
+        "    TransitionPanicked(Box<dyn Any + Send>),",
+        "    HostExecutionPanicked(Box<dyn Any + Send>),",
+        "    ActivationPanicked(Box<dyn Any + Send>),",
+        "    RetirementPanicked(Box<dyn Any + Send>),",
+    ] {
+        assert_eq!(errors.matches(declaration).count(), 1);
+        errors = errors.replacen(declaration, "", 1);
+    }
+    let mut driver_source_without_native_causes = format!("{before_errors}{errors}{after_errors}");
+    for signature in [
+        "async fn receive_operation<F, Operation>(\n    operation: Operation,\n    received: &mut Option<F::Output>,\n) -> Vec<Box<dyn Any + Send>>",
+        "    fn receive_activation_failures(&mut self, failures: Vec<Box<dyn Any + Send>>) {",
+        "    fn receive_execution_failures(&mut self, failures: Vec<Box<dyn Any + Send>>) {",
+    ] {
+        assert_eq!(
+            driver_source_without_native_causes
+                .matches(signature)
+                .count(),
+            1
+        );
+        driver_source_without_native_causes =
+            driver_source_without_native_causes.replacen(signature, "", 1);
+    }
+    assert!(
+        !driver_source_without_native_causes.contains("dyn Any"),
+        "Driver erasure outside its exact intrinsic native panic custody"
     );
     for obsolete in [
         "ExclusiveExecutor",
@@ -751,10 +791,10 @@ fn repository_has_one_direct_driver_path_and_no_obsolete_product_api() {
         "DriverError::Poisoned",
         "behavior::Task",
         "behavior::Supervisor",
-        "dyn Any",
         "downcast",
         "type_id",
         "behavior::delegate_transition(behavior, event).await",
+        "behavior::delegate_transition(&mut self.behavior, event).await",
         "spawn(",
         "yield_now",
         "    registry:",
@@ -829,5 +869,8 @@ fn observation_is_nonsemantic(source: &str) -> bool {
 fn driver_has_no_observation_control_surface() {
     let source =
         std::fs::read_to_string(root().join("crates/bombay-engine/src/driver.rs")).unwrap();
-    assert!(observation_is_nonsemantic(&source));
+    let (production, _) = source
+        .split_once("\n#[cfg(test)]\nmod source_offer_custody {")
+        .expect("the exact owning Driver test boundary is present");
+    assert!(observation_is_nonsemantic(production));
 }

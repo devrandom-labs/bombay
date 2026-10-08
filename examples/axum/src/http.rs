@@ -53,6 +53,10 @@ impl OrderCommands for LiveOrderCommands {
             })
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn shutdown(&self) -> Result<(), ()> {
         self.lifecycle.request_shutdown().map_err(|_| ())
     }
@@ -110,11 +114,14 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::OrderBookTerminal;
+    use bombay::{ApplicationOutcome, ProjectTerminal};
     use std::io::{Read, Write};
     use std::net::{SocketAddr, TcpListener, TcpStream};
     use std::sync::{Arc, Mutex, mpsc};
     use std::thread;
     use std::time::Duration;
+    use tokio::runtime::Builder;
 
     use axum::{
         body::Body,
@@ -133,6 +140,10 @@ mod tests {
     }
 
     impl OrderCommands for RecordingCommands {
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn place(&self, order: PlaceOrder) -> Result<(), PlaceOrder> {
             self.orders
                 .lock()
@@ -141,6 +152,10 @@ mod tests {
             Ok(())
         }
 
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn shutdown(&self) -> Result<(), ()> {
             Ok(())
         }
@@ -183,10 +198,18 @@ mod tests {
     struct RejectingCommands;
 
     impl OrderCommands for RejectingCommands {
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn place(&self, order: PlaceOrder) -> Result<(), PlaceOrder> {
             Err(order)
         }
 
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "Defer trait-port work and owned inputs until the future is polled."
+        )]
         async fn shutdown(&self) -> Result<(), ()> {
             Err(())
         }
@@ -232,18 +255,24 @@ mod tests {
             .expect("the test port has an address");
         let (ready, started) = mpsc::channel();
         let server = thread::spawn(move || {
-            Application::new(OrderBook::default().stop_on_shutdown()).run_axum(
-                address,
-                move |application| {
-                    ready
-                        .send(())
-                        .expect("the test server receiver remains live");
-                    let interface = application.interface(OrderApi {
-                        orders: application.root().established_recipient(),
-                    });
-                    router(interface, application.lifecycle())
-                },
-            )
+            let application_host = Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("the server thread owns its enabled caller host");
+            let result = application_host.block_on(
+                Application::new(OrderBook::default().stop_on_shutdown())
+                    .run_axum::<OrderBookTerminal, _, _, _, _>(address, move |application| {
+                        ready
+                            .send(())
+                            .expect("the test server receiver remains live");
+                        let interface = application.interface(OrderApi {
+                            orders: application.root().established_recipient(),
+                        });
+                        router(interface, application.lifecycle())
+                    }),
+            );
+            drop(application_host);
+            result
         });
 
         started
@@ -264,7 +293,25 @@ mod tests {
         assert!(stopped.starts_with("HTTP/1.1 202 Accepted"));
 
         let result = server.join().expect("the server thread joins");
-        let terminal = result.expect("the live application must exit normally");
+        let outcome = result.unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the live caller host is entered");
+        });
+        if let ApplicationOutcome::Completed {
+            output: _,
+            cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        } = &outcome
+        {
+            panic!("the original serving result and joined root must both remain acquired");
+        }
+        let ApplicationOutcome::Completed {
+            output: Ok(()),
+            cleanup: Ok((origin, retirement)),
+        } = outcome
+        else {
+            panic!("the original serving result and joined root must both remain acquired");
+        };
+        let terminal = OrderBookTerminal::project(origin, retirement);
         assert_application_stopped(terminal);
     }
 

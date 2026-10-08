@@ -1,16 +1,45 @@
 # Existing abstraction disposition evidence
 
+## Current wrapper decision
+
+DG-WRAPPERS is independently accepted by coordinating eabfa531 and nonauthor
+9487ad69, with corrected exact-count co-sign881c3033. The20 individual five-answer
+dispositions remain in the signed source-bound decision,
+/tmp/bombay-dg-wrappers-final-current-coordinating-decision-corrected.json.
+The historical tables below retain their original contract epochs.
+
+HostedActorSpaces and ResolveLogical are deleted in current source. The actual
+application and native Entity consumers preserve the same73 assertions and
+complete outcomes before and after deletion: all four passes per side qualify
+in debug/optimized profiles; both AFTER strict workspace profiles pass. Actuals
+94d9b88f/6c355406 preserve all36 streams, current348-source guards and restorations.
+Four original retarget/payload/static law cuts retain their original execution
+epochs only through precise current-source bridge49a35352; no new wrapper bug
+or fresh inversion execution is claimed. Initial missing-Exit formation2c86bbb2
+remains failed, with no runtime credit. The import correction changes no law.
+
+The installed formatted three-path stage is production+14/−45/net−31;
+tests+452/−25/net427; public types+0/−0. Exact cfg-item classification includes
+the late production kernel edits. Installationfa7dd9d3 preserves every other
+source and the accepted result model/eager projection. The raw source−32 count
+is a different pre-format epoch; the complete EXEC production delta remains
+positive. Current scoped acceptance and remaining delivery gates are recorded
+in [PRD section276](../execution-ownership.md#276-final-scoped-code-acceptance-and-delivery-checkpoint).
+
+## Historical source audits and comparisons
+
+
 **Frozen research snapshot:** ARC-011 on 2026-10-01 retained
 `ProjectedTask` as the concrete typed origin boundary, moved activation-task
 settlement into the spawned actor task, and shared root/owned setup. Its
-current disposition and tests are recorded in the live ledger; the table
+current disposition and tests are recorded in the backlog status index; the table
 below describes the prior 0.17.0 representation.
 
 **Revision note (2026-10-01):** ARC-001 retained the public lifecycle
 projection as `ApplicationLifecycle<P, E>` and removed the erased shutdown
 path from `ActorRef<P>`. The table below records the earlier 0.17.0 source
 audit; the current selected contract and verification are in
-`../../open-design-ledger.md`. ARC-002 removed the unobservable Address lease
+`../../prd-backlog/status.md`. ARC-002 removed the unobservable Address lease
 from `ExternalActor<P>`; its allocated origin, exact recipient, affine receive,
 and admission owner remain.
 
@@ -19,7 +48,7 @@ mutable `Unselected | Selected` transaction state and the sole sender of the
 selected terminal report. `TerminationPublication` owns its receiver. The
 dated candidate below to delete this wrapper by sharing an
 `Arc<TerminationSelection<_>>` is superseded; the owning transaction now has
-an affine handoff. See the ARC-012 proof in the live ledger.
+an affine handoff. See the ARC-012 proof in the backlog status index.
 
 Date: 2026-09-29. Work package: `WP-CONTRACT` input for `DG-WRAPPERS` in the
 [execution PRD](../execution-ownership.md). Status: **source audit complete;
@@ -134,3 +163,120 @@ tree contains unrelated concurrent changes, so the coordinator must measure
 the complete tree and the task-local delta at the next checkpoint. The gate
 is open until these witnesses are recorded and the frozen symbol/file map in
 DG-MODULES selects exact destinations.
+
+## Current-source reconciliation (2026-10-02)
+
+The tables above are historical hypotheses, not instructions to recreate
+removed code. Fresh inspection at canonical Bombay 4e009b9 selects Core/Actors
+0.20.0 and Communication 0.1.3. `OccurrenceBindings` and `LocalAddresses` are
+already absent. `TerminationObservations` directly owns its pending Vec; the
+old FactState/FactQueue and shared observation mutex are absent. `LocalTimers`
+directly owns one TimerQueue, with no Arc or mutex. Their old deletion/borrowing
+experiments therefore have no current subject. Preserve these completed fixes
+and their regressions rather than claiming new EXEC reduction.
+
+Current `LocalTerminalReports` owns the selected report transaction and its
+affine sender; its old forwarding-only removal proposal is superseded.
+`HostedActorSpaces` and `ResolveLogical` still exist and need the prescribed
+direct-Hosts comparison for application and native Entity consumers.
+ActivationTasks has three production spawn sites: worker activation, worker
+preparation and established observation. Moving observations alone would not
+remove its remaining producers. Current task/failure laws must cover all three.
+No wrapper gate is accepted
+from this source reconciliation.
+
+Current source SHA-256 values: topology.rs
+`7e5d9181a53d34995e5cfbc9b44e0562bd154afe0812a23589d898199db90ead`;
+time.rs `62251d2c58943d353ca02d075af0d593783226ada219bc734c23a6e3661c72b0`;
+reports.rs `9cd827bcb64bfa2ab217ef4da7d4158447b8b752086e8ff3fc1ce1aca44c55bf`.
+Other current source anchors are in verification.md. This is read-only evidence;
+production, tests and public types remain unchanged.
+
+## Direct Hosts comparison on the selected release (2026-10-03)
+
+`bombay-direct-hosts-0_rmhopj`, based on canonical 1feefcf, selects published
+Core/Actors 0.21.1 and Macros 0.13.1 under pinned Rust 1.99. Ordinary
+`hosts.space().resolve(&address)` compiles in actual application and native
+Entity consumers without another wrapper or support type. Existing wrapper
+delivery is compared with that direct expression.
+
+Application delivery captures the exact endpoint before awaiting capacity.
+An admitted send stays on its old generation after lease release and a fresh
+claim at the same address. Unknown and closed destinations return the whole
+original delivery and Vec allocation. Native Entity hydration, activation,
+binding acknowledgment, fencing, delivery and graceful retirement return the
+complete pure actor ledger, original allocations and terminal residual lanes.
+Both resolution routes disappear after retirement; captured endpoints reject
+the exact payloads. Native address reuse is not covered by the Entity fixture.
+
+Receipt `dd63bde0c90e0dc8c78913f40e20d3e572b1b41b05bcf5914209010321fae97f`;
+patch `fa131bbcb789bd14d055bceab1afe7ba91ee90ce3545708626710402411e4187`.
+Two approved test modules: +373 / -6 / net 367; production/public types zero.
+Independent nonauthor review
+`302f67838c581fdd6c351090d2ac2d7672f87c6f41ef0d4cd7efaa7ba95eac4a`
+authenticates all 345 sources and 74 artifacts, reads complete fixtures and
+selected Address/Communication contracts, and accepts bounded research only.
+Coordinator separately authenticated those sources and artifacts, read the
+complete final patch and reran both positives in a fresh isolated target under
+pinned Nix: two tests pass in each profile. Receipt
+`414badbf688b8079dd79970df82da3b0f9c3c99e0bc0a516e2fc6ca8eba23afd`
+binds those commands/logs. No coordinator mutation rerun or reviewer Rust
+execution is claimed.
+
+Author positives and restorations pass two tests in each pinned-Nix profile;
+formatting and strict package all-target Clippy pass. Re-resolving an admitted
+send or copying its payload fails the intended runtime assertions in both
+profiles. Missing Hosts produces E0277; wrong protocol/payload produces E0308.
+These are counterfactual inversions and static denials, not original defects.
+Production bound migration, wrapper deletion, full application/birth consumers,
+noncooperative Entity retirement, forced family cleanup and metrics remain
+open. topology.rs is unchanged and outside the approved edit scope.
+DG-WRAPPERS is not accepted by this bounded comparison.
+
+## Direct timer comparison on the selected release (2026-10-03)
+
+Section 38's ordinary-Rust comparison uses the actual selected TimerQueue and
+existing LocalTimers, with typed request functions in the approved
+application_runtime.rs test module. time.rs remains unchanged. The comparison
+preserves absolute ordering, replacement, Behavior generation, event injection
+paths, relative deadlines and complete overflow rejection. Relative comparison
+recovers the wrapper's actual clock sample; separately sampled clocks are not
+assumed equal. Constructed exhaustion errors prove rejection algebra only.
+The selected owner's actual generation/sequence exhaustion and failed
+replacement tests pass in both pinned-Nix profiles without forging private state.
+
+Predecessor receipt
+092dc9e21201562c52ad642829b8c2bf57f83286a584acfc4ec482b89f08f1bb
+and independent review
+90a87f6be88461557188ca8c8ea04c3f83f84bd2aa992366ec33086d1a4cf39c
+accept bounded evidence. That predecessor acquires a nonempty timer only through
+RetireCapabilities; its CommitActions check observes an empty queue. It therefore
+does not prove both nonempty acquisition ports.
+
+Successor receipt
+178744fbb8c4c25ed76c55ed07c33142d3f623ca956db5c391d2285372b34bb9
+closes that limitation with two distinct original requests in the same queue.
+RetireCapabilities and CommitActions each acquire a real due event, preserving
+complete receipts, deadlines, event lanes and the direct queue's key/at/value.
+Both are followed by replay checks. Incremental patch
+e5b232a9e85e7ee7fb362578df2de2864c3f8676cf766d836fe45d1688bcf89e
+adds +50/-2/net48 test lines; the complete comparison is +435/-5/net430 tests
+in one existing file, with zero production lines, public types or new unsafe.
+Tests are exempt from production condensation.
+
+Six author positives and restorations pass in each pinned-Nix profile. Omitting
+the second acquired fact after actual queue removal fails the intended assertion
+in both profiles. This is a counterfactual inversion, not an original defect.
+Strict workspace all-target Clippy and formatting pass. Predecessor static
+wrong-path/non-Clone denials and three semantic inversions remain inherited
+evidence, not successor reruns. Excluded preliminary insertion and length-lint
+failures remain in the immutable artifacts.
+
+Independent nonauthor review
+c81d4f766641ad72714b55e2000405a048dcf60a1e65a4af5c988ca2402b0068
+accepts the bounded successor. It authenticates 38 artifacts and both 345-file
+inventories, with 344 files unchanged. The coordinator separately authenticates
+those artifacts, inventories and signed review, and reads both complete patches.
+Neither reviewer nor coordinator claims a fresh Rust rerun. No source is retained
+in the canonical tree. Actual Driver retirement, complete source arbitration,
+production migration and full DG-WRAPPERS acceptance remain open.

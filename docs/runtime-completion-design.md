@@ -25,11 +25,12 @@ ordinary-Rust experiments and executable evidence.
 
 Behavior Actors owns the existing supervisor/pool policies; Bombay now
 interprets all 19 inventoried actor-owned requests, while broader policy
-verification remains in the live ledger. Mnesis owns persistence,
+verification is recorded in [the backlog status index](prd-backlog/status.md)
+and each selected feature PRD. Mnesis owns persistence,
 mnesis-bombay owns its execution
 integration, and Selo will supply KERI identity downstream using that stack.
 Node identity, actor identity and hosting authority remain distinct.
 
 This short page preserves existing links without maintaining a competing
-completion specification. The open design ledger remains the implementation
-eligibility record; the separate PRD inventory is the product requirements list.
+completion specification. The PRD backlog and its status index select work;
+each feature PRD records implementation eligibility and acceptance evidence.

@@ -9,10 +9,11 @@ use core::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
+use bombay::ProjectTerminal;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
-    Actions, BehaviorActed, BehaviorBase, BehaviorSettlements, ClassifySettlement, Never, Protocol,
-    SettlementStatus,
+    Actions, BehaviorActed, BehaviorBase, BehaviorSettlements, ClassifySettlement, EventLayer,
+    Never, Protocol, SettlementStatus,
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
@@ -21,7 +22,8 @@ use bombay::entity::{
 use bombay::prelude::{
     ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown, TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App};
+use bombay::{ActorSpace, ActorSpaces, App, ApplicationOutcome};
+use tokio::runtime::Builder;
 use tokio::sync::Semaphore;
 
 const ACCOUNT_ID: u64 = 7;
@@ -56,7 +58,8 @@ impl Account {
     }
 }
 
-type AccountRetirement = ActorRetirement<StopOnShutdown<Account>, Never>;
+type AccountRetirement =
+    Result<ActorRetirement<StopOnShutdown<Account>, Never, ()>, tokio::task::JoinError>;
 
 struct Accounts {
     retired: Arc<Semaphore>,
@@ -70,7 +73,12 @@ impl EntityDefinition for Accounts {
     type Hosts = Spaces;
     type HydrationError = Never;
     type Terminal = Never;
+    type ChildFailures = ();
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn hydrate(&self, _: EntityId<Self::Id>) -> Result<Self::Behavior, Self::HydrationError> {
         Ok(Account { balance: 0 }.stop_on_shutdown())
     }
@@ -79,7 +87,12 @@ impl EntityDefinition for Accounts {
         &self,
         _: EntityId<Self::Id>,
         _: ActivationId,
-        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
+        _: EntityActivationError<
+            Self::HydrationError,
+            Self::Behavior,
+            Self::Terminal,
+            Self::ChildFailures,
+        >,
     ) {
         self.unexpected_facts.fetch_add(1, Ordering::Relaxed);
     }
@@ -88,11 +101,11 @@ impl EntityDefinition for Accounts {
         self.unexpected_facts.fetch_add(1, Ordering::Relaxed);
     }
 
-    fn forced_retirement(&self, _: EntityId<Self::Id>, _: ActivationId, _: DrainFailure) {
+    fn forced_retirement(&self, _: &EntityId<Self::Id>, _: ActivationId, _: DrainFailure) {
         self.unexpected_facts.fetch_add(1, Ordering::Relaxed);
     }
 
-    fn retired(&self, _: EntityId<Self::Id>, _: ActivationId, retirement: AccountRetirement) {
+    fn retired(&self, _: &EntityId<Self::Id>, _: ActivationId, retirement: AccountRetirement) {
         self.retirements
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
@@ -126,7 +139,7 @@ where
 {
     Root {
         origin: RootOrigin<R>,
-        terminal: ActorRetirement<R, Self>,
+        terminal: ActorRetirement<R, Self, ()>,
     },
 }
 
@@ -156,9 +169,13 @@ fn main() {
         )
         .expect("the default directory configuration is valid");
 
-    let ((), terminal, (AccountsRole, (shutdown, metrics), ())): (_, ApplicationTerminal<_>, _) =
-        application
-            .run_with_entities(move |application| async move {
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous example owns one enabled application host");
+    let (outcome, root_receiving, shutdowns) = application_host
+        .block_on(
+            application.run_with_entities(move |application| async move {
                 let accounts = application.entities(AccountsRole);
                 let account = accounts.entity(ACCOUNT_ID);
                 let interface = application.interface(account.clone());
@@ -183,13 +200,45 @@ fn main() {
                     .expect("the same stable reference activates a replacement");
                 let shutdown = application.lifecycle().request_shutdown();
                 assert_eq!(shutdown, Ok(()));
-            })
-            .expect("the root and Entity family settle");
+            }),
+        )
+        .unwrap_or_else(|(application, work, error)| {
+            drop((application, work));
+            panic!("the explicit application host must be entered: {error}");
+        });
+    drop(application_host);
+    let ApplicationOutcome::Completed {
+        output: (),
+        cleanup: Ok(()),
+    } = outcome
+    else {
+        panic!("the original application work completes beside its joined cleanup");
+    };
+    let (root_origin, joined_actor) =
+        root_receiving.expect("the independent original root retirement is acquired");
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+        root_origin,
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
+    );
+    let (head_receiving, ()) = shutdowns;
+    let (AccountsRole, (shutdown, metrics, family_disposal_failure)) =
+        head_receiving.expect("the complete original account family retirement is acquired");
 
-    assert!(matches!(
-        shutdown,
-        EntityShutdown::Settled { represented: 1 }
-    ));
+    assert!(family_disposal_failure.is_none());
+    let EntityShutdown::Settled {
+        represented,
+        entities: returned_entities,
+    } = shutdown
+    else {
+        panic!("application family must settle");
+    };
+    assert_eq!(represented, 1);
+    assert_eq!(returned_entities, vec![EntityId::new(ACCOUNT_ID)]);
     assert_eq!(metrics.activations, 2);
     assert_eq!(metrics.residents, 0);
     assert_eq!(unexpected_facts.load(Ordering::Relaxed), 0);
@@ -206,18 +255,42 @@ where
         origin,
         terminal:
             ActorRetirement::Completed {
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
                 settlements,
                 control,
                 user,
                 descendants,
                 completion,
-                ..
+                behavior,
+                interpretation,
+                source,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
             },
     } = terminal
     else {
         panic!("the application root must stop normally")
     };
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    assert!(additional_failures.is_empty());
+    assert!(received_interpretation.is_none());
+    assert!(received_source.is_none());
+    assert!(source_index.is_none());
+    assert!(acquired_ingress.is_none());
+    assert!(retirement_failures.is_empty());
+    assert!(terminal_report.is_none());
+    assert!(capability_failures.is_empty());
+    assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    drop(behavior);
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
@@ -232,14 +305,91 @@ fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
     let balances = retirements
         .iter()
         .map(|retirement| {
-            let ActorRetirement::Completed {
-                behavior,
-                settlements,
-                ..
-            } = retirement
-            else {
-                panic!("each account incarnation must retire normally")
+            let (behavior, settlements, user, descendants, capability_failures) = match retirement {
+                Ok(ActorRetirement::Completed {
+                    child_failures: (),
+                    capability_failures,
+                    unread_owner_cancellation: None | Some(()),
+                    behavior,
+                    settlements,
+                    control,
+                    user,
+                    descendants,
+                    completion,
+                    interpretation,
+                    source,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                }) => {
+                    assert!(interpretation.is_none());
+                    assert!(source.is_none());
+                    assert!(additional_failures.is_empty());
+                    assert!(received_interpretation.is_none());
+                    assert!(received_source.is_none());
+                    assert!(source_index.is_none());
+                    assert!(acquired_ingress.is_none());
+                    assert!(retirement_failures.is_empty());
+                    assert!(terminal_report.is_none());
+                    assert_eq!(*completion, Completion::Stopped);
+                    assert!(control.is_empty());
+                    // Natural stopping may precede acquisition of the owner request;
+                    // either original unit presence remains in the retained result.
+                    (
+                        behavior,
+                        settlements,
+                        user,
+                        descendants,
+                        capability_failures,
+                    )
+                }
+                Ok(ActorRetirement::OwnerCancelled {
+                    child_failures: (),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    behavior,
+                    settlements,
+                    control,
+                    user,
+                    descendants,
+                    interpretation,
+                    source,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                }) => {
+                    assert!(interpretation.is_none());
+                    assert!(source.is_none());
+                    assert!(additional_failures.is_empty());
+                    assert!(received_interpretation.is_none());
+                    assert!(received_source.is_none());
+                    assert!(source_index.is_none());
+                    assert!(acquired_ingress.is_none());
+                    assert!(retirement_failures.is_empty());
+                    assert!(terminal_report.is_none());
+                    assert!(unread_owner_cancellation.is_none());
+                    assert!(matches!(control.as_slice(), [EventLayer::Owned(_)]));
+                    (
+                        behavior,
+                        settlements,
+                        user,
+                        descendants,
+                        capability_failures,
+                    )
+                }
+                _ => panic!("each fenced account incarnation must return its joined state"),
             };
+            assert!(capability_failures.is_empty());
+            assert!(user.is_empty());
+            assert_eq!(descendants.len(), 0);
             let settlement_status = settlements.settlement_status();
             assert_eq!(settlement_status, SettlementStatus::Accepted);
             behavior.base().balance

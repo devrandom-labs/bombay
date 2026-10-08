@@ -10,12 +10,17 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "$script_dir/../../.." && pwd)"
 selected_law=""
 output_dir=""
+profile_arguments=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --law)
       selected_law="${2:?--law requires a canonical law id}"
       shift 2
+      ;;
+    --release)
+      profile_arguments=(--release)
+      shift
       ;;
     --output)
       output_dir="${2:?--output requires a directory}"
@@ -90,7 +95,7 @@ run_reference() {
   local suite="${reference%%::*}"
   local test_name="${reference#*::}"
   printf 'PASS  %s\n' "$reference"
-  cargo test --locked -p bombay-engine --test "$suite" "$test_name" -- --exact
+  cargo test "${profile_arguments[@]}" --locked -p bombay-engine --test "$suite" "$test_name" -- --exact
 }
 
 apply_mutation() {
@@ -99,36 +104,41 @@ apply_mutation() {
   case "$law:$inversion" in
     D-INIT-1:duplicate-initialization)
       replace_exact "$driver" \
-        '            match catch_unwind(AssertUnwindSafe(|| behavior::initialize(&mut behavior))) {' \
-        '            match catch_unwind(AssertUnwindSafe(|| {
-                drop(behavior::initialize(&mut behavior));
-                behavior::initialize(&mut behavior)
-            })) {'
+        '                        behavior::initialize(&mut self.behavior)' \
+        '                        drop(behavior::initialize(&mut self.behavior));
+                        behavior::initialize(&mut self.behavior)'
       ;;
     D-TURN-1:prefetch-before-apply)
       replace_exact "$driver" \
-        '        let interpretation = environment.apply(actions).await;' \
-        '        let _ = environment.next().await;
-        let interpretation = environment.apply(actions).await;'
+        '                    let failures = receive_operation(
+                        || active.apply(&mut self.actions, &mut self.interpretation),' \
+        '                    drop(active.next().await);
+                    let failures = receive_operation(
+                        || active.apply(&mut self.actions, &mut self.interpretation),'
       ;;
     D-SETTLE-1:progress-retained-settlement)
       replace_exact "$driver" \
-        '        .position(|turn| !matches!(turn, SettlementTurn::Retained(_)))?;' \
-        '        .position(|_| true)?;'
+        '                            SourceCustody::Retained(settlement) => {
+                                self.settlements
+                                    .insert(index, SettlementTurn::Retained(settlement));' \
+        '                            SourceCustody::Retained(settlement) => {
+                                self.settlements
+                                    .insert(index, SettlementTurn::Offer(settlement));'
       ;;
     D-TERM-1:corruption-as-stop)
       replace_exact "$driver" \
-        '            (SettlementStatus::Corrupt, _) => {
-                return Err(DriverError::Settlement(SettlementFailure::Corrupt));
-            }' \
-        '            (SettlementStatus::Corrupt, _) => {
-                return Ok(Completion::Stopped);
-            }'
+        '                            (SettlementStatus::Corrupt, _) => {
+                                self.reject(DriverError::Settlement(SettlementFailure::Corrupt));' \
+        '                            (SettlementStatus::Corrupt, _) => {
+                                self.complete(Completion::Stopped);'
       ;;
     D-RETIRE-1:erase-retirement-settlements)
       replace_exact "$driver" \
-        '        let residual = environment.retire(settlements).await;' \
-        '        let residual = environment.retire(Vec::new()).await;'
+        '                                .map(SettlementTurn::into_settlement)
+                                .collect(),' \
+        '                                .map(SettlementTurn::into_settlement)
+                                .take(0)
+                                .collect(),'
       ;;
     D-PORT-1:prepared-environment-next)
       replace_exact "$environment" \
@@ -139,13 +149,11 @@ apply_mutation() {
       ;;
     D-SURFACE-1:driver-reset-control)
       replace_exact "$driver" \
-        'impl<B: Behavior, E> Driver<B, E> {
-    #[must_use]' \
-        'impl<B: Behavior, E> Driver<B, E> {
-    /// Invalid mutation: a consumed Driver cannot be reset.
+        '    fn reject(&mut self, error: DriverError<B::Error, E::Error>) {' \
+        '    /// Invalid mutation: the Driver must not expose a reset control.
     pub fn reset(&mut self) {}
 
-    #[must_use]'
+    fn reject(&mut self, error: DriverError<B::Error, E::Error>) {'
       ;;
     D-EVIDENCE-1:remove-first-law-row)
       jq '.laws = .laws[1:]' "$manifest" > "$work_dir/mutated-manifest.json"
@@ -171,10 +179,11 @@ kill_mutation() {
   apply_mutation "$law" "$inversion"
   printf 'KILL  %s with %s\n' "$inversion" "$killer"
   set +e
-  output="$(cargo test --locked -p bombay-engine --test "$suite" "$test_name" -- --exact --nocapture 2>&1)"
+  output="$(cargo test "${profile_arguments[@]}" --locked -p bombay-engine --test "$suite" "$test_name" -- --exact 2>&1)"
   status=$?
   set -e
   restore_sources
+  printf '%s\n' "$output"
 
   if [[ $status -eq 0 ]]; then
     printf '%s\n' "$output" >&2
@@ -186,7 +195,9 @@ kill_mutation() {
     printf 'mutation was unviable instead of killed: %s\n' "$inversion" >&2
     exit 1
   fi
-  if ! grep -Fq "test $test_name ... FAILED" <<< "$output"; then
+  if ! NAMED_KILLER="$test_name" perl -0ne '
+    exit(/(?:\A|\n)failures:\n    \Q$ENV{NAMED_KILLER}\E\n\ntest result: FAILED\. 0 passed; 1 failed; 0 ignored; 0 measured; [0-9]+ filtered out; finished in [^\n]*\n(?:(?!^test result:).)*\z/ms ? 0 : 1);
+  ' <<< "$output"; then
     printf '%s\n' "$output" >&2
     printf 'mutation failed outside its named killer: %s\n' "$inversion" >&2
     exit 1
@@ -210,6 +221,12 @@ while IFS= read -r row; do
   positive_command="$(jq -r '.positive.command' <<< "$row")"
   boundary_command="$(jq -r '.boundary.command' <<< "$row")"
   inversion_command="$(jq -r '.inversion.command' <<< "$row")"
+
+  if [[ ${#profile_arguments[@]} -ne 0 ]]; then
+    positive_command="${positive_command/cargo test --locked/cargo test --release --locked}"
+    boundary_command="${boundary_command/cargo test --locked/cargo test --release --locked}"
+    inversion_command="$inversion_command --release"
+  fi
 
   run_reference "$positive"
   run_reference "$boundary"

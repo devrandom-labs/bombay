@@ -5,7 +5,7 @@ error[E0599]: no associated function or constant named `local` found for struct 
    |                  ^^^^^ associated function or constant not found in `App<_, _, _>`
    |
 note: if you're trying to build a new `App<_, _, _>`, consider using `App::<Root, Spaces>::new` which returns `App<_, _>`
-  --> src/application_runtime.rs
+  --> src/application/mod.rs
    |
    |     pub const fn new(root: Root, spaces: Spaces) -> Self {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -5,9 +5,9 @@ use bombay_engine::Completion;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::error::TryRecvError;
 
-use crate::local::Termination;
+use crate::ActorExecutionOutcome;
+
 use crate::observe::Publisher;
-use crate::{ActorExecutionOutcome, Retirement};
 
 #[derive(Clone, Copy)]
 pub(crate) enum TerminalReportDisposition {
@@ -60,9 +60,9 @@ impl<A: behavior::Address> TerminationPublication<A> {
         }
     }
 
-    pub(crate) fn publish<B, Residual, BehaviorError, Activation>(
+    pub(crate) fn publish<B, Residual, BehaviorError, Activation, Request>(
         mut self,
-        outcome: &ActorExecutionOutcome<B, Residual, BehaviorError, Activation>,
+        outcome: &ActorExecutionOutcome<B, Residual, BehaviorError, Activation, Request>,
     ) {
         let termination = match outcome {
             ActorExecutionOutcome::Completed {
@@ -73,10 +73,21 @@ impl<A: behavior::Address> TerminationPublication<A> {
                 completion: Completion::Exhausted,
                 ..
             } => Ok(Exit::Collected),
+            ActorExecutionOutcome::Completed {
+                completion: Completion::RetirementRequested(_),
+                ..
+            } => {
+                unreachable!("the local receiver publishes its exact retirement request separately")
+            }
             ActorExecutionOutcome::BehaviorFailed { .. } => Err(Crash::Failed),
             ActorExecutionOutcome::InitializationPanicked { .. }
+            | ActorExecutionOutcome::TransitionPanicked { .. }
+            | ActorExecutionOutcome::HostExecutionPanicked { .. }
+            | ActorExecutionOutcome::ActivationPanicked { .. }
+            | ActorExecutionOutcome::RetirementPanicked { .. }
             | ActorExecutionOutcome::Panicked => Err(Crash::Panicked),
             ActorExecutionOutcome::ActivationFailed { .. }
+            | ActorExecutionOutcome::InterpreterContractFailed { .. }
             | ActorExecutionOutcome::SettlementFailed { .. } => Err(Crash::EnvironmentFailed),
             ActorExecutionOutcome::Cancelled => Err(Crash::Cancelled),
         };
@@ -92,12 +103,17 @@ impl<A: behavior::Address> TerminationPublication<A> {
                 }
             },
             ActorExecutionOutcome::Completed {
-                completion: Completion::Exhausted,
+                completion: Completion::Exhausted | Completion::RetirementRequested(_),
                 ..
             }
             | ActorExecutionOutcome::BehaviorFailed { .. }
             | ActorExecutionOutcome::InitializationPanicked { .. }
+            | ActorExecutionOutcome::TransitionPanicked { .. }
+            | ActorExecutionOutcome::HostExecutionPanicked { .. }
+            | ActorExecutionOutcome::ActivationPanicked { .. }
+            | ActorExecutionOutcome::RetirementPanicked { .. }
             | ActorExecutionOutcome::ActivationFailed { .. }
+            | ActorExecutionOutcome::InterpreterContractFailed { .. }
             | ActorExecutionOutcome::SettlementFailed { .. }
             | ActorExecutionOutcome::Panicked
             | ActorExecutionOutcome::Cancelled => termination,
@@ -105,22 +121,20 @@ impl<A: behavior::Address> TerminationPublication<A> {
         self.publisher.complete(termination);
     }
 
+    pub(crate) fn publish_host_panic(self) {
+        self.publisher.complete(Err(Crash::Panicked));
+    }
+
+    pub(crate) fn publish_capability_failure(self) {
+        self.publisher.complete(Err(Crash::CapabilityFailed));
+    }
+
     pub(crate) fn publish_owner_cancellation(self) {
         self.publisher.complete(Err(Crash::Cancelled));
     }
 }
 
-impl<A, B, Residual, BehaviorError, Activation> Retirement<B, Residual, BehaviorError, Activation>
-    for TerminationPublication<A>
-where
-    A: behavior::Address,
-{
-    type Output = ();
-
-    fn retire(self, outcome: ActorExecutionOutcome<B, Residual, BehaviorError, Activation>) {
-        self.publish(&outcome);
-    }
-}
+pub(crate) type Termination<A> = Result<Exit<A>, behavior_actors::Crash>;
 
 #[cfg(test)]
 mod tests {
@@ -143,38 +157,31 @@ mod tests {
 
     #[test]
     fn selected_report_applies_only_to_stopped_completion() {
-        assert_eq!(
-            published_termination(&ActorExecutionOutcome::Completed {
-                behavior: (),
-                residual: (),
-                completion: Completion::Stopped,
-            }),
-            Ok(Exit::LinkDied(MailAddr(19)))
-        );
-        assert_eq!(
-            published_termination(&ActorExecutionOutcome::Completed {
-                behavior: (),
-                residual: (),
-                completion: Completion::Exhausted,
-            }),
-            Ok(Exit::Collected)
-        );
-        assert_eq!(
-            published_termination(&ActorExecutionOutcome::ActivationFailed {
-                behavior: (),
-                residual: (),
-                error: (),
-            }),
-            Err(Crash::EnvironmentFailed)
-        );
-        assert_eq!(
-            published_termination(&ActorExecutionOutcome::Panicked),
-            Err(Crash::Panicked)
-        );
-        assert_eq!(
-            published_termination(&ActorExecutionOutcome::Cancelled),
-            Err(Crash::Cancelled)
-        );
+        let termination = published_termination(&ActorExecutionOutcome::Completed {
+            behavior: (),
+            residual: (),
+            additional_failures: Vec::new(),
+            completion: Completion::Stopped,
+        });
+        assert_eq!(termination, Ok(Exit::LinkDied(MailAddr(19))));
+        let termination = published_termination(&ActorExecutionOutcome::Completed {
+            behavior: (),
+            residual: (),
+            additional_failures: Vec::new(),
+            completion: Completion::Exhausted,
+        });
+        assert_eq!(termination, Ok(Exit::Collected));
+        let termination = published_termination(&ActorExecutionOutcome::ActivationFailed {
+            behavior: (),
+            residual: (),
+            additional_failures: Vec::new(),
+            error: (),
+        });
+        assert_eq!(termination, Err(Crash::EnvironmentFailed));
+        let termination = published_termination(&ActorExecutionOutcome::Panicked);
+        assert_eq!(termination, Err(Crash::Panicked));
+        let termination = published_termination(&ActorExecutionOutcome::Cancelled);
+        assert_eq!(termination, Err(Crash::Cancelled));
     }
 
     #[test]
@@ -186,7 +193,8 @@ mod tests {
             Err(outcome) => panic!("retirement must own the report receiver: {outcome:?}"),
         }
         TerminationPublication::new(publisher, selected).publish_owner_cancellation();
-        assert_eq!(observed.wait(), Err(Crash::Cancelled));
+        let termination = observed.wait();
+        assert_eq!(termination, Err(Crash::Cancelled));
     }
 
     #[test]
@@ -199,15 +207,19 @@ mod tests {
             Err(termination) => panic!("retirement must own the report receiver: {termination:?}"),
         }
 
-        Retirement::retire(
-            TerminationPublication::new(publisher, selected),
-            ActorExecutionOutcome::<(), (), (), ()>::Completed {
-                behavior: (),
-                residual: (),
-                completion: Completion::Stopped,
-            },
-        );
+        TerminationPublication::new(publisher, selected).publish(&ActorExecutionOutcome::<
+            (),
+            (),
+            (),
+            (),
+        >::Completed {
+            behavior: (),
+            residual: (),
+            additional_failures: Vec::new(),
+            completion: Completion::Stopped,
+        });
 
-        assert_eq!(observed.wait(), selected_termination);
+        let termination = observed.wait();
+        assert_eq!(termination, selected_termination);
     }
 }

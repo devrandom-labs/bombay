@@ -1,13 +1,30 @@
 # Bombay completion requirements
 
-Planning snapshot: 2026-09-29. This is a separate requirements inventory for
-writing PRDs. It does not replace the open design ledger, authorize production
-implementation, or mark any ledger item complete. Existing code, including
-uncommitted work, was inspected; this is not an assessment of the last release.
-The selected 0.20.0 contract now has typed Bombay interpretation for all 19
-inventoried actor-owned capabilities; the six missing-interpreter marks below
-record the earlier snapshot. Use the [current template manifest](../driver-template-manifest.json)
-and [live ledger](../open-design-ledger.md) for implementation status.
+The requirement inventory began as a planning snapshot on 2026-09-29.
+[Current status and dependencies](status.md) records remaining product work and
+retained evidence from the completed local audit. Historical marks below do
+not establish implementation eligibility. The selected template manifest has
+typed Bombay interpretation for all 19 inventoried actor-owned capabilities;
+the six missing-interpreter marks describe the earlier snapshot.
+
+## Execution workflow
+
+1. Select requirements from this backlog and verify their prerequisites in
+   [the status index](status.md).
+2. Create or reconcile a focused PRD in `docs/prds/` using the authoring
+   requirements below. Record exact selected dependencies, ownership, accepted
+   decisions, acceptance witnesses and the change budget in that PRD.
+3. Implement the complete accepted scope on a feature branch. Keep the PRD's
+   verification and change record current, including remaining blockers.
+4. Finish acceptance tests, required pinned-Nix checks and minimization; open
+   a focused PR targeting `main` with concrete behavior and verification evidence.
+5. Resolve review and CI failures, then merge through the PR once required CI
+   and review gates pass. Record the PR, passing CI and merge commit in the PRD;
+   update the status index and retain any deferred requirements in the backlog.
+
+The repository instructions define the feature states. Local verification
+alone does not establish merged delivery. Git preserves the retired audit
+chronology; active verification and decisions belong beside the feature PRD.
 
 The inventory contains 260 individually identified requirements, including
 verification obligations and optional decisions. The failure contract adds 22
@@ -51,7 +68,7 @@ result, usually including an adverse case.
 | X | Work belongs in, or requires coordination with, a dependency/downstream repository. Existing implementation there must be reused. |
 | O | Optional expansion; decide explicitly whether it belongs in the release. |
 
-These marks are not the ledger's implementation states. None of the counts in
+These marks are not the status index's implementation states. None of the counts in
 this inventory is a completion percentage. A small missing capability can block
 many already implemented templates; a large optional feature may not block the
 first release at all.
@@ -82,8 +99,10 @@ capability types, all with typed Bombay interpretation after ARC-010. This
 inventory count does not prove every template policy end to end; structural
 Behavior lanes and other runtime capabilities are outside that denominator.
 
-The ordinary runners currently use a current-thread Tokio runtime. There is no
-standard integrated Zenoh, verified remote identity, distributed placement or
+The EXEC source selects caller-host async execution and configured Builder-only
+owned blocking over one paired execution/result owner. Its independent gates,
+verification and delivery remain in the EXEC PRD. There is no standard
+integrated Zenoh, verified remote identity, distributed placement or
 Mnesis-backed actor execution path in this checkout. Neighboring repositories
 contain useful code; they are not interchangeable with a working integration.
 
@@ -137,16 +156,12 @@ For each selected group, record:
 8. Resource bounds, pressure policy, security assumptions and deployment limits.
 9. Dependency edges, migration impact, compatibility and version skew policy.
 10. Smallest implementation slice, expected files/line delta/public types and
-    required gates. Record the implementation ledger only when selecting work
-    for implementation under repository rules.
+    required gates. Record the feature change budget and verification in the PRD before
+    implementation under repository rules.
 
-## Validation and change boundary
+## Evidence boundary
 
-This task changes documentation only. No production code, tests, public Rust
-types, dependency selection or open-ledger task entries are changed by this task.
-Existing documentation was also reconciled at the user's subsequent request;
-the evidence report records the corrections, including the ledger's obsolete
-transport-direction prose without changing its task states. The unrelated dirty working tree
-is retained. Evidence inspection is not a fresh
-workspace test run, and this inventory does not certify all existing tests or
-all distributed properties.
+The dated inventory and research reports identify observed gaps, proposals and
+historical findings. They do not certify the current workspace or authorize a
+production interface. Repeat feature-local verification when selecting a PRD;
+use current source, owner contracts and executable witnesses for completion.

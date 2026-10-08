@@ -19,7 +19,7 @@ struct Lifecycle;
 enum ApplicationTerminal {
     Lifecycle {
         origin: ChildOrigin<StopOnShutdown<Root>, Lifecycle>,
-        terminal: ActorRetirement<StopOnShutdown<LifecycleActor>, Self>,
+        terminal: ActorRetirement<StopOnShutdown<LifecycleActor>, Self, ()>,
     },
 }
 

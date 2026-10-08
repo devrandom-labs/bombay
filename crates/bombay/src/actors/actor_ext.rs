@@ -14,9 +14,11 @@ use behavior_actors::{
 /// type and remains semantically significant. No policy is selected unless it
 /// is supplied explicitly by the application.
 pub trait ActorExt: Behavior + Sized {
-    /// Stash selected messages and replay them according to `route`.
+    /// Stash selected messages using a pure decision over the inner behavior and message.
+    ///
+    /// Replay observes the inner state returned by each preceding transition.
     #[must_use]
-    fn with_stash(self, route: fn(&BehaviorMessage<Self>) -> StashRoute) -> Stash<Self>
+    fn with_stash(self, route: fn(&Self, &BehaviorMessage<Self>) -> StashRoute) -> Stash<Self>
     where
         Self: Behavior<Ph = Never>,
     {

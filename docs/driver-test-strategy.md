@@ -7,10 +7,10 @@ primitive concurrency semantics.
 
 ## Selected contract and ownership
 
-The workspace selects Behavior Core and Actors 0.20.0 from release revision
-`804b2bf25325a523884ec49d8a4ae6d2d2b6e9da` and Behavior Macros 0.13.0
-from `3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8`. Evidence must name the
-revision of each owner it exercises.
+The workspace selects published Behavior Core and Actors 0.23.0 and Behavior
+Macros 0.14.0, as recorded in `Cargo.lock`. All three registry archives identify
+owning revision `d69f992b371c12ab34e73b18e45b8112c90a1508`.
+Evidence must name the revision of each owner it exercises.
 
 Behavior owns initialization, synchronous folds, complete `Actions`, ordered
 interpretation, total settlements, source custody, and child products. Behavior
@@ -24,14 +24,15 @@ The previous strategy required a 68-row cross-product and template campaign
 inside the Driver manifest. That representation was ownership-stale: it turned
 upstream and downstream obligations into unexecutable Engine status strings.
 The template inventory is now recorded in `driver-template-manifest.json`;
-`docs/todo.md` retains the historical TEST-008 evidence. Catalogue support is
+[The backlog status index](prd-backlog/status.md) retains the TEST-008 evidence
+location; the retired audit chronology remains in Git history. Catalogue support is
 tracked separately in [the completion inventory](prd-backlog/evidence.md);
 it cannot be used to pass or block an Engine law.
 
 ## Actor-template boundary inventory
 
 `driver-template-manifest.json` schema 3 is the revision-bound ownership
-boundary for the selected Behavior Actors 0.20.0 package. It records the exact
+boundary for the selected Behavior Actors 0.23.0 package. It records the exact
 45 public Behavior compositions by family, public spelling, event boundary,
 ordered effect lanes, composition edge, owning source, and upstream evidence.
 It separately records all 19 actor-owned interpreter-request/source-action
@@ -55,7 +56,7 @@ atomic surface: `BeginActivation`, `CustomerDelivery`, `DiagnosticAction`,
 typed Bombay interpreter and a compile-contract witness under ARC-010; the
 manifest records all 19 actor-owned request types as implemented. The
 `PrepareWorkers` source action also has a direct typed interpreter. Selected
-Actors 0.20.0 supplies typed `ProxyDiagnostic` ingress and split worker
+Actors 0.23.0 supplies typed `ProxyDiagnostic` ingress and split worker
 preparation; Bombay's live fixed-supervisor and held-source FIFO regressions
 exercise those contracts. This manifest alone is not end-to-end template
 proof. `ObserveEstablishedCreation` and `CancelObservation` are
@@ -131,6 +132,16 @@ nix develop -c bash crates/bombay-engine/tests/driver-law-evidence.sh --law D-TU
 The script's inner Cargo invocations are valid only because the script itself
 runs inside the pinned Nix shell or check derivation.
 
+The same controls and mutations can run in optimized mode:
+
+```console
+nix develop -c bash crates/bombay-engine/tests/driver-law-evidence.sh --release
+```
+
+The receipt records optimized reproduction commands. The outer Cargo tests use
+release mode; trybuild still compiles its individual diagnostic fixtures in its
+own development profile.
+
 ## Oracle responsibilities
 
 Deterministic Driver tests assert complete transcripts: initialization,
@@ -168,10 +179,11 @@ artifacts. Driver panic and cancellation-stage tests remain separate focused
 ownership witnesses.
 
 Redundant Driver-test cleanup, Miri, Loom, coverage, sanitizer, allocation,
-and performance findings retain their historical references in `docs/todo.md`.
+and performance findings retain their historical audit records in Git.
 Their absence cannot be hidden in this manifest, and their eventual results
 cannot silently broaden the eight Engine laws. TEST-008's
-separate actor-template inventory is now executable, but its missing
-interpreter rows remain ARC-010 work. Concrete Bombay adapter tests continue to
+separate actor-template inventory is executable, and ARC-010 now supplies all
+19 inventoried actor-owned capability interpretations. Broader policy proofs
+remain explicit backlog requirements. Concrete Bombay adapter tests continue to
 prove capability ordering and lifecycle integration without copying those laws
 into Engine.

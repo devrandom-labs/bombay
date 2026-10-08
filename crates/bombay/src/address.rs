@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use behavior::{Address, AllocationRejection, Behavior, EndpointAddress, Protocol};
 
-use crate::local::{ActorRef, InstalledActor};
+use crate::local::endpoint::{ActorRef, InstalledActor};
 
 /// One logical address in Bombay's standard local runtime.
 ///
@@ -79,7 +79,7 @@ impl ApplicationAddresses {
 
     pub(crate) fn allocate(&self) -> Result<MailAddr, AllocationRejection> {
         self.next
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |address| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |address| {
                 address.checked_add(1)
             })
             .map(MailAddr)

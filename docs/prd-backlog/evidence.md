@@ -5,7 +5,8 @@ planning, not a fresh certification of the workspace. Existing uncommitted
 changes are included in the observed baseline. Before implementation, repeat
 feature-local verification against the selected lockfile and patches.
 The documentation-reconciliation table below records that snapshot's edits;
-`docs/todo.md` has since been reactivated as the canonical audit queue.
+The local audit is now closed; [current status](status.md) retains its relevant
+evidence and the remaining product dependencies.
 
 Follow-up: [core integration research](core-integration.md) adds focused
 execution evidence for supervisor/pool prerequisites. Worker preparation tests
@@ -29,20 +30,27 @@ is held, without starting a replacement, and preserves exact source custody.
 
 | Owner | Selected contract inspected | Consequence |
 | --- | --- | --- |
-| Behavior | bombay-behavior 0.20.0, registry VCS revision `804b2bf25325a523884ec49d8a4ae6d2d2b6e9da` | Owns Actions and the typed capability algebra. Exact revision's AGENTS.md applies. |
-| Behavior Actors | bombay-behavior-actors 0.20.0, same revision | Owns existing supervision, pools and template policies. |
-| Behavior macros | bombay-behavior-macros 0.13.0, registry VCS revision `3f08364ef3c6d84bb4c27d3d7c0dea9721a628b8` | Owns syntax generation; Bombay must not replace its semantics. |
+| Behavior | bombay-behavior 0.23.0, registry archive revision `d69f992b371c12ab34e73b18e45b8112c90a1508` | Owns Actions and the typed capability algebra. Exact revision's AGENTS.md applies. |
+| Behavior Actors | bombay-behavior-actors 0.23.0, same registry archive revision | Owns existing supervision, pools and template policies. |
+| Behavior macros | bombay-behavior-macros 0.14.0, same registry archive revision | Owns syntax generation; Bombay must not replace its semantics. |
 | Address | bombay-address 0.3.0 | Owns local claims/leases and opaque resolution; its process-local representation is not a wire address. |
-| Communication | bombay-communication 0.1.2 | Owns bounded user delivery, separate control delivery, closure and payload recovery. |
+| Communication | bombay-communication 0.1.3 | Owns bounded user delivery, separate control delivery, closure and payload recovery. |
 | Observe | Private Bombay implementation | Owns completion publication and waiting; is not a missing external dependency. |
 | Timers | 0.1.0 patched to `13e884da7ab41781f52337b0038060e375b00ee0` | Owns volatile actor scheduling/generations, not persistent reminders. |
-| Tokio | 1.53.1 in this lockfile | Ordinary runners select current-thread execution; multithread execution needs deliberate integration. |
+| Tokio | 1.53.1 in this lockfile | Caller-host async execution and configured Builder-only owned current-thread/multithread execution share one paired owner; final acceptance remains separate. |
+
+Selected-contract table reconciled on 2026-10-08 for the final EXEC source. The earlier dated
+0.20.0 execution observations below remain historical evidence. Behavior
+Actors 0.21.2 publication retains its historical distinct live capability-failure
+cause evidence. The final selected source and full acceptance remain in EXEC. See the
+[EXEC release record](../prds/execution-ownership.md#21-live-capability-failure-cause-checkpoint-2026-10-02)
+for publication, source and verification evidence.
 
 Sources: [Cargo.lock](../../Cargo.lock), [workspace manifest](../../Cargo.toml),
 [Bombay manifest](../../crates/bombay/Cargo.toml). Behavior source was read from
-the exact registry packages and the matching VCS revision, not inferred from
-the sibling checkout's current branch. The root patch selects Timers; a nearby
-checkout at another revision is not the build contract.
+the authenticated registry archives and prior selected snapshots at their
+recorded epochs. The root patch selects only Timers; a nearby checkout at
+another revision is not the build contract.
 
 Current architectural references remain
 [capability ownership](../runtime-capability-interfaces.md),
@@ -55,18 +63,18 @@ This inventory does not replace those normative contracts.
 
 | Finding | Source | What may truthfully be concluded |
 | --- | --- | --- |
-| All inventoried atomic interpreter requests and `PrepareWorkers` have typed Bombay interpretation | [Application runtime](../../crates/bombay/src/application_runtime.rs), [capability manifest](../driver-template-manifest.json) | Selected 0.20.0 adds typed proxy diagnostic ingress and separates accepted source start from its late result; live policy evidence remains necessary. |
-| Queued pool shutdown folds while `PrepareWorkers` holds an affine source | [prior failure](../research-probes/fifo-preparation-shutdown-gap.md), [selected runtime regression](../../crates/bombay/tests/fifo_pool_recovery.rs) | The 0.19.0 trace failed; the selected runtime rejects a later job as `ShuttingDown` before source release and does not start a replacement. |
+| All inventoried atomic interpreter requests and `PrepareWorkers` have typed Bombay interpretation | [Local action settlement](../../crates/bombay/src/local/effects/mod.rs), [creation and worker preparation](../../crates/bombay/src/local/effects/creation.rs), [capability manifest](../driver-template-manifest.json) | Selected 0.20.0 adds typed proxy diagnostic ingress and separates accepted source start from its late result; live policy evidence remains necessary. |
+| Queued pool shutdown folds while `PrepareWorkers` holds an affine source | the prior 0.19.0 failure recorded in Git history, [selected runtime regression](../../crates/bombay/tests/fifo_pool_recovery.rs) | The 0.19.0 trace failed; the selected runtime rejects a later job as `ShuttingDown` before source release and does not start a replacement. |
 | Assignment/proxy exact returned-request reconstruction remains selected in Actors 0.20.0 | Behavior Actors `src/atomic/pool/assignment.rs`, `src/atomic/stable_proxy/operation.rs` | Bombay's rejected delivery interpreters can return the original typed request; the earlier 0.17.0 owner gap is resolved. |
-| Activation publication regressions | [local activation](../../crates/bombay/src/local.rs), [ARC-006](../open-design-ledger.md) | The selected invisible-reservation order passes ordinary gated visibility regressions; the original claim-before-commit order failed them. |
-| Ordinary public runners construct current-thread Tokio runtimes | [Application runtime](../../crates/bombay/src/application_runtime.rs) | Ordinary multicore actor execution and caller-owned async embedding are not supplied by merely having Tokio as a dependency. |
-| User mailbox capacity is fixed at DEFAULT_USER_CAPACITY in ordinary construction | Same runtime | Application-facing capacity configuration remains a specific gap. |
+| Activation publication regressions | [local activation](../../crates/bombay/src/local/environment.rs), [ARC-006 retained evidence](status.md#retained-local-evidence) | The selected invisible-reservation order passes ordinary gated visibility regressions; the original claim-before-commit order failed them. |
+| Ordinary public execution uses one async paired owner | [Application runtime](../../crates/bombay/src/application/execution.rs), [EXEC API decision](../prds/execution-ownership/application-api.md) | Caller-host async entry and configured Builder-only run_blocking retain raw root plus independent Work/cleanup/family facts. Source formation is separate from final DG-API acceptance and delivery. |
+| User mailbox capacity is fixed at DEFAULT_USER_CAPACITY in ordinary construction | [Local ingress](../../crates/bombay/src/local/ingress.rs) | Application-facing capacity configuration remains a specific gap. |
 | The public supervision example executes worker replacement and retirement; the FIFO example executes a job and orderly drain | [supervision](../../examples/supervision/src/main.rs), [worker pool](../../examples/worker-pool/src/main.rs), [supervisor recovery](../../crates/bombay/tests/fixed_supervisor_recovery.rs), [pool recovery](../../crates/bombay/tests/fifo_pool_recovery.rs) | Selected 0.20.0 tests prove coordinated replacement, later-role rejection, exact terminal diagnostic custody, child retirement, both pool interruption choices, and shutdown during held preparation. |
 | Timed/Machine public application witnesses exist | [template application tests](../../crates/bombay/tests/template_application.rs) | These are existing integration evidence, not missing template implementations. |
 | Cache, Barrier and Latch customer witnesses exist | [external customer tests](../../crates/bombay/tests/external_customer_templates.rs) | Do not infer absent delivery support from lack of a separate adapter per template. |
 | Public lifecycle/terminal policy tests exist | [run_with tests](../../crates/bombay/tests/run_with.rs) | A supervision-report test is not, by itself, a live supervisor restart test. |
 | Entity hydration, admission, capacity, passivation and metrics exist | [entity family](../../crates/bombay/src/entity/family.rs) | Local virtual-entity mechanisms should be reused; they do not by themselves prove storage recovery or cluster placement. |
-| Typed local external interfaces exist | [actor interface](../../crates/bombay/src/actor_interface.rs) | Remote protocol export should integrate with established boundaries, not invent a second ordinary actor contract. |
+| Typed local external interfaces exist | [actor interface](../../crates/bombay/src/application/interface.rs) | Remote protocol export should integrate with established boundaries, not invent a second ordinary actor contract. |
 | No integrated Zenoh or Mnesis dependency in the standard runtime | [manifest](../../crates/bombay/Cargo.toml), [exports](../../crates/bombay/src/lib.rs) | Network/durable paths are new integration work; re-exported persistence templates are not evidence of durable execution. |
 | Existing CI and Driver failure campaigns exist | [checks workflow](../../.github/workflows/checks.yml) | Extend existing gates for distribution; do not claim the repository lacks verification infrastructure. |
 
@@ -169,11 +177,8 @@ This task corrected current-facing claims while retaining historical evidence:
 | module-boundaries.md | Corrected obsolete supervisor/pool names and replaced alternate-production-transport scope with the Zenoh-only direction. |
 | runtime-capability-interfaces.md | Updated planned networking scope and explicitly marked activation order as an unresolved target law, not completed behavior. |
 | runtime-completion-design.md | Pruned the duplicate long-form proposal into navigation; removed competing proposed fluent APIs and obsolete transport interchangeability requirement. |
-| todo.md | Marked the old audit and its persistent-goal instructions historical; retained the underlying findings rather than silently deleting unresolved evidence. |
-| open-design-ledger.md | Corrected only obsolete programme transport scope and linked the separate inventory; existing implementation IDs, eligibility states and dependency edges retained. No new completion task list inserted. |
 | driver-law.md | Retained normative semantics; a required law is not proof of current implementation. ACT documents the known activation gap. |
 | driver-test-strategy.md | Retained verification requirements and clarified historical audit references; the existing executable template inventory is not described as still awaiting inventory. |
-| historical-design-decisions.md | Retained as explicitly historical context, not current API authority. |
 
 This is a source-backed correction of identified contradictions, not a claim
 that every legacy audit checkbox or ignored documentation snippet has been

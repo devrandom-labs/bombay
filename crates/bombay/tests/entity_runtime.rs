@@ -104,11 +104,16 @@ impl<I: Send + 'static> LocalEntityRuntime<I, u64> for TestRuntime {
     type ActivationError = ();
     type Task = Option<thread::JoinHandle<()>>;
     type TaskFailure = Box<dyn Any + Send>;
+    type RetirementFailure = Infallible;
 
     fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
         Some(thread::spawn(move || block_on(task)))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn join(task: &mut Self::Task) -> Result<(), Self::TaskFailure> {
         task.take()
             .expect("the exact lifecycle task is joined once")
@@ -176,17 +181,24 @@ impl<I: Send + 'static> LocalEntityRuntime<I, u64> for TestRuntime {
         }
     }
 
-    async fn retire(
+    #[expect(
+        clippy::manual_async_fn,
+        reason = "The cold retirement future captures only self and retirement, not the ignored non-Sync identity."
+    )]
+    fn retire(
         &self,
-        _: EntityId<I>,
+        _: &EntityId<I>,
         _: ActivationId,
         _: Self::Lease,
         retirement: RetirementMode,
-    ) {
-        let _event_gate = self.state.event_gate.lock().unwrap();
-        self.state.retirement_modes.lock().unwrap().push(retirement);
-        self.state.retirements.fetch_add(1, Ordering::Release);
-        self.state.event_changed.notify_all();
+    ) -> impl Future<Output = Result<(), Self::RetirementFailure>> + Send {
+        async move {
+            let _event_gate = self.state.event_gate.lock().unwrap();
+            self.state.retirement_modes.lock().unwrap().push(retirement);
+            self.state.retirements.fetch_add(1, Ordering::Release);
+            self.state.event_changed.notify_all();
+            Ok(())
+        }
     }
 }
 
@@ -210,17 +222,26 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingMoveOnlyRuntime {
     type ActivationError = Infallible;
     type Task = Option<thread::JoinHandle<()>>;
     type TaskFailure = Box<dyn Any + Send>;
+    type RetirementFailure = Infallible;
 
     fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
         Some(thread::spawn(move || block_on(task)))
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn join(task: &mut Self::Task) -> Result<(), Self::TaskFailure> {
         task.take()
             .expect("the exact lifecycle task is joined once")
             .join()
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn activate(
         &self,
         _: EntityId<u64>,
@@ -236,6 +257,10 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingMoveOnlyRuntime {
         match error {}
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn deliver(
         &self,
         (): Self::Endpoint,
@@ -245,11 +270,27 @@ impl LocalEntityRuntime<u64, MoveOnlyCommand> for RejectingMoveOnlyRuntime {
         Err(command)
     }
 
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Defer trait-port work and owned inputs until the future is polled."
+    )]
     async fn fence(&self, (): Self::Endpoint) -> Result<(), FenceFailure> {
         Ok(())
     }
 
-    async fn retire(&self, _: EntityId<u64>, _: ActivationId, (): Self::Lease, _: RetirementMode) {}
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Retirement completion remains a cold trait-port future."
+    )]
+    async fn retire(
+        &self,
+        _: &EntityId<u64>,
+        _: ActivationId,
+        (): Self::Lease,
+        _: RetirementMode,
+    ) -> Result<(), Self::RetirementFailure> {
+        Ok(())
+    }
 }
 
 struct HashGate {
