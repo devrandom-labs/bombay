@@ -1,6 +1,6 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-06. This is the implementation index for the
+Updated: 2026-10-08. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
@@ -15,16 +15,17 @@ record remains in Git history. Do not restart that audit as a feature backlog.
 `candidate` means available for PRD preparation and fresh verification, not
 permission to implement an unverified interface. `blocked` names unresolved
 prerequisites. A feature becomes `active` only when its PRD records the required
-verification and accepted decisions. No product row below claims completion.
+verification and accepted decisions. `merged` records actual reviewed delivery;
+other product rows remain incomplete.
 
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
-| EXEC1 | distilled | Exact-head clean Linux CI and reviewed PR326 delivery | DIST1 | [EXEC’s closure table](../prds/execution-ownership.md#remaining-blockers--current-closure-table) is authoritative. All eight gates and current scoped code/PRD/minimization are accepted. Published Core/Actors0.23.0 and Macros0.14.0 are selected. Independent95d4c0f6 accepts all15 native commands/all21 Darwin checks and unchanged coverage; three Nix classifier crashes retain an explicit packaging-audit limitation. Original mutation floors/denials remain; Native94 and both-profile actor-interface controls are qualified. All17 accepted agent groups are integrated. Scope remains277 named paths; global public API+13/−1. Final complete150-path ledger, exact-head clean Linux CI, reviewed [PR326](https://github.com/devrandom-labs/bombay/pull/326) merge and actual merged records remain. |
+| EXEC1 | merged | — | — | [PR326](https://github.com/devrandom-labs/bombay/pull/326) merged at 2026-10-08T10:13:33Z, commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`, after all four required checks passed on6cf7736. [Current delivery](../prds/execution-ownership.md#277-actual-reviewed-delivery) retains all eight gates, scoped code/PRD/minimization, all15 local commands/21 Darwin checks, clean Linux checks/fuzz, unchanged coverage/mutation floors and all17 accepted agent contributions. Scope277/global public API+13/−1 remain. Earlier Darwin classifier/resource failures and inherited proof/style limits remain explicit. |
 | NET1 | blocked | External: immutable Zenoh/codec selection and verified typed extension contract | PLACE1, DIST1, SELO1 | [Networking](networking.md): two-process request/reply, exact versus ambiguous delivery, bounded queues and static routing; exercise the same law with Zenoh and a deterministic faulting test host. |
 | AUTH1 | candidate | — | PLACE1, DIST1, SELO1 | [Identity](identity-and-placement.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. |
 | PLACE1 | blocked | NET1, AUTH1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. |
 | MNE1 | blocked | External: Mnesis-Bombay release and dependency-graph alignment | DIST1, SELO1 | [Durability](durability-and-operations.md): select current Bombay and compatible Behavior; hydrate before routability and retain exact admission, decision, conflict, uncertain commit and durable completion outcomes. |
-| DIST1 | blocked | EXEC1, NET1, AUTH1, PLACE1, MNE1 | OPS1 | [Distributed composition](durability-and-operations.md): supervised, durable, authenticated actors recover across host failure. |
+| DIST1 | blocked | NET1, AUTH1, PLACE1, MNE1 | OPS1 | [Distributed composition](durability-and-operations.md): supervised, durable, authenticated actors recover across host failure. |
 | OPS1 | blocked | DIST1 | — | [Operations](durability-and-operations.md): equivalent semantics on self-hosted and Kubernetes deployments, bounded telemetry, drain and compatible upgrades. |
 | SELO1 | blocked | AUTH1, NET1, MNE1; external: Selo KERI runtime | — | [Downstream identity](identity-and-placement.md): run the admission contract suite against Selo, then prove rotation, delegation, revocation and deployment scenarios. |
 
