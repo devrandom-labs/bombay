@@ -194,7 +194,7 @@ dependencies = [
 
 [[package]]
 name = "bombay-engine"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bombay-behavior",
  "criterion",
@@ -269,7 +269,7 @@ dependencies = [
 
 [[package]]
 name = "bombay-macros"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
