@@ -2308,6 +2308,54 @@ rewrite the actor report or drop original native custody. Exact storage,
 error/API representation and production budget remain unselected. The user
 question is pending; no mechanism is adopted.
 
+Fresh notification-custody source review (2026-10-09 UTC), no edits or probes:
+the existing root `ApplicationOutcome` stores cleanup as
+`Result<Cleanup, ApplicationCleanupError>`; the error owns only actual cleanup
+publication/task errors, not a caught notification payload alongside native
+success. Four ordinary-root retention callbacks return the native result;
+the Entity path instead already transfers native root/family results to
+independent receivers. Reusing that receiving pattern is a candidate, with
+an additional coexisting contained-cause component, but changes public
+receiving/cleanup shape and is not a catch-only patch. Delayed rethrow alone
+cannot preserve an earlier cause if later retention/family cleanup fails.
+
+The child's existing nested actor/projector join result also has no independent
+notification-cause slot. A candidate affine transfer to its existing owning
+binding before consuming `Root::project` could preserve both the acquired
+notification cause and a later genuine projector `JoinError`. Existing Tokio
+oneshot is a finite crate-owned transfer candidate; no channel/slot choice is
+adopted. Catching application projection into a result product is another
+candidate, but changes its current native task-error contract. Do not fabricate
+`JoinError`, clone an arbitrary origin to create duplicate failure rows, lose
+normal descendant results when a reporting fault coexists, or silently insert
+an application-reporting fault into the actor's own retirement failure lane.
+Storage, receiving abandonment and public fields/variants need review first.
+
+Observe tries every notification and resumes the **first** waiter panic; that
+is the available propagated cause, not custody of every waiter payload. Keep
+the owning primitive's policy. Bombay already requires unwinding panics in
+`src/lib.rs` and has pinned-Nix unwind/abort-denial checks in `flake.nix`.
+The matching Rust 1.99.0 standard-library
+[catch_unwind documentation](https://doc.rust-lang.org/std/panic/fn.catch_unwind.html)
+confirms original-payload capture and warns that dropping a payload can panic.
+No new panic strategy or dependency is selected. The official Rust API
+[type-safety](https://rust-lang.github.io/api-guidelines/type-safety.html) and
+[naming](https://rust-lang.github.io/api-guidelines/naming.html) guidance were
+checked for upcoming representation comparison; no new public API is retained.
+
+The root review identifies eleven public execute/run entry points in
+`application/execution.rs`; receiving changes require auditing those signatures,
+HTTP integration and concrete callers. Root containment/receiving preparation
+is estimated at net +70–150 production lines before public migrations; child
+fault custody at +50–100 beyond report attachment/aggregation. These are
+conditional estimates, not disjoint additions, a measured patch or an approved
+stage budget. Reuse the exact locked Tokio 1.53.1 source. Its oneshot send stores
+the original and commits completion before waking the receiver, and returns
+the exact value on closure refusal. A registered receiver's waker may still
+panic: any proposed cause-transfer boundary must account for that fault and
+actual receiving order, not assume sending cannot unwind. No channel is
+selected merely from this source review.
+
 Prepared independent two-assessment oracles, all **unexecuted**:
 
 | Actual owning evidence | Required observation / intended falsifier |
@@ -2387,7 +2435,7 @@ This is a planned oracle, not a current passing test or a selected public API.
 Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
 tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
 tests: +0 / -0 / net 0; public API: +0 types / -0 types.
-Documentation: +289 / -29 / net +260.
+Documentation: +337 / -29 / net +308.
 Pinned-Nix law-manifest tests pass all nine in debug and optimized builds;
 all 48 relative file links resolve and whitespace checks pass. These checks
 verify the decision records, not any new retirement or networking implementation.
