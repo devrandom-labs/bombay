@@ -936,6 +936,17 @@ The [audit checkpoint](execution-ownership/post-delivery-audit.md#verification-a
 owns its complete tracked/untracked counts. Isolated research remains separately
 measured and must be included in the cumulative checkpoint before retention.
 
+Documentation delivery: [draft PR #329](https://github.com/devrandom-labs/bombay/pull/329)
+was opened from `0de741ca7b23227ad554337e82241b27178ba432` against refreshed main.
+Its scope is this specification and post-delivery audit, not AUTH1/NET1 feature
+delivery. Required remote CI remains pending; independent document review
+accepted the corrected specification within its evidence limits. No merge or
+feature acceptance is recorded. Review of the initial frozen head independently
+confirmed all 93 inventory IDs, 25 witnesses and 12 reciprocal edges across
+eight acyclic programme rows. It found the unmarked historical first-correction
+proposal below; that wording is corrected without reopening any approved choice.
+Required checks must pass on the final document head before preparation delivery.
+
 Pre-production cumulative scope checkpoint (2026-10-08), authorized by the user:
 the root and three isolated research trees contain 97 distinct non-snapshot
 paths: documents, probes, fixtures, candidate manifests/locks and generated
@@ -2170,7 +2181,7 @@ products are concrete application projections, with no verified universal clean
 retirement predicate. Compare concrete borrowed application policy and owning
 cleanup facts before proposing another trait. A new receipt producer's panic
 must not consume the original result before parent custody is retained. Neither
-the attachment estimate nor the selected publication point supplies that proof.
+the attachment estimate nor an eventual publication-point choice supplies that proof.
 
 Existing typed parent Actions can request exact child stop without a new public
 `InstalledActor` method. `ShutdownChild` selects a typed occurrence and actual
@@ -2311,7 +2322,9 @@ superseded pending the safety decision and revised verification budget above:
   further production edit if measured scope exceeds this envelope or a new
   dependency contract/semantic gap appears.
 
-Approved first correction; packaging, final scope and verification remain open:
+Historical first-correction proposal (2026-10-08), superseded by the approved
+and locally verified package checkpoint above. Pending identities, scope and
+local verification in this initial record are not current decision gates:
 
 - Blocker: outgoing Zenoh trust includes public roots despite the user's
   configured-only policy. The actual TLS-link witness above violates this rule
@@ -2350,7 +2363,7 @@ Approved first correction; packaging, final scope and verification remain open:
   source location is selected; exact identities and cumulative scope are not.
   Present the final cumulative scope before production edits.
 
-Before implementation, replace the unresolved gates with concrete decisions
+Before remaining Bombay networking implementation, replace its unresolved gates with concrete decisions
 and add a pre-edit record naming the smallest failing end-to-end witness,
 expected paths and production delta, proposed added/removed public types and
 reused/deleted owners. Candidate areas are a Bombay network module, application

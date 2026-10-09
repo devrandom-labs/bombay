@@ -140,20 +140,21 @@ Fresh checks:
 - Dependency validation: all 12 edges across eight programme rows are reciprocal and acyclic.
 - `git diff --check`: passed.
 
-No new inversion, full flake/coverage/mutation/fuzz run or fresh remote CI is
-claimed for this documentation task. Precommit checkpoint: complete cumulative
-delta against the clean audit baseline, including the three then-untracked
-Markdown files. The branch is refreshed to main's release-only
+No new runtime inversion or completed final-head flake/coverage/mutation/fuzz
+or remote CI gate is claimed for this documentation task. Current delivery
+checkpoint: complete cumulative document delta against main. All seven files
+are now tracked on the requested feature branch in draft PR #329. The branch
+is refreshed to main's release-only
 `c3afb3011090ac4c9112fd39e4a76980db856df0`; its inherited version/lock updates
 are not edits made by this documentation task, and all Rust sources are unchanged.
 
 ```text
 production: +0 / -0 / net 0
 tests: +0 / -0 / net 0
-documentation: +2735 / -13 / net 2722
+documentation: +2749 / -13 / net 2736
 other: +0 / -0 / net 0
 public API: +0 types / -0 types
-cumulative changed paths: 7 (3 untracked at this checkpoint)
+cumulative changed paths: 7 (all tracked)
 ```
 
 The next PRD records the controlled dependency source's current package-stage
