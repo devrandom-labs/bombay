@@ -2226,11 +2226,11 @@ permitted observers when the acquired task result cannot establish full
 retirement; retain original causes with their native owner. Do not claim success
 or clean cleanup from that inability result. This selects failure visibility,
 not receipt fields, public API, classification policy or wait limits.
-Independent preparation compares concrete borrowed leaf and aggregate policies
-against adding a universal classifier. The current owners have no verified
-universal predicate for their application-owned descendant/failure products.
-That policy ownership and report fields remain separate decisions; the common
-report family is selected below.
+Earlier independent preparation compared concrete borrowed leaf and aggregate
+policies against adding a universal classifier. The current owners have no
+verified universal predicate for application-owned descendant/failure products.
+The common report family, outcome assessments and runtime derivation ownership
+are selected below; classification rules and exact fields remain separate.
 
 Fresh owning-regression checks use the root pinned Nix shell, current Engine
 0.2.2 and Bombay Macros 0.1.2. Each command below passed in debug and again
@@ -2261,16 +2261,75 @@ storing complete native errors; the parent still owns the full original.
 This does not select fields, public names/API, classification ownership or
 implementation. Reuse Observe; no type erasure or second observation primitive.
 
-Pending report-outcome decision: compare two separate typed assessments
-(retirement established/not established, and failures found/none found after a
-complete assessment/assessment incomplete) with three exclusive outcomes
-(clean retirement, retirement with failures, retirement unproven). Recommend
-separate assessments so inability to prove retirement does not erase already
-known failure presence. All original causes remain with the parent. No field
-names, public API, classifier or implementation is selected by this proposal.
-In particular, a successful task join is not evidence of a complete failure
-assessment. The question has been submitted; dependent implementation waits
-for the user's answer.
+Accepted report-outcome decision (2026-10-09 UTC): after the user requested
+the pros and cons, the user said **"go with the recommendation please"**.
+Select two separate typed assessments: retirement established/not established,
+and failures found/none found after a complete assessment/assessment incomplete.
+The rejected alternative was three exclusive outcomes (clean retirement,
+retirement with failures, retirement unproven), which hides known failure
+presence in the unproven case. Preserve both facts without cloning native
+errors; all original causes remain with the parent. A successful task join
+alone cannot justify either full retirement or a completed failure assessment.
+The additional combinations require construction and inversion tests against
+actual owning facts. Exact field/type names, public API, classifier ownership,
+classification scope and implementation remain separate decisions.
+
+Accepted report-derivation ownership decision (2026-10-09 UTC): the user
+selected **Bombay's existing runtime owners**, after comparison with a
+borrowed application-supplied classifier for each exported actor type.
+Derive the common report from actual owning task/resource evidence, conserving
+each child's small report before application conversion and carrying that
+evidence through existing typed child ownership. Keep the parent's complete
+original result and causes; require no application classifier or new generic
+classification trait. The current implementation does not conserve this
+evidence yet. Exact classification rules/scope, attachment/public API, root
+join ordering, notification-fault custody and production-stage budget remain
+unselected; this ownership choice alone does not authorize production edits.
+
+Accepted failure-scope decision (2026-10-09 UTC): the user selected
+**all recorded actor/runtime failures** in the exported actor's owned subtree,
+after comparison with cleanup failures only. Include Behavior errors, native
+panics, failed/abruptly cancelled tasks, descendant failures and cleanup
+failures. A normal graceful stop or fully settled owner-retirement request is
+not itself a failure. Later notification and parent-conversion faults retain
+their own attribution and cannot rewrite a previously published actor report.
+Native original causes stay with their owners. Complete evidence is required
+before claiming no failures found; absence of a result alone is not a known
+actor failure. Exact classification rules and notification-fault retention
+mechanisms remain unselected. Reporting failure presence does not select a new
+supervision or propagation policy; existing Behavior policies retain ownership.
+
+Pending notification-fault disposition choice: contain the report-notification
+panic, preserve the committed report and same native original, continue owning
+cleanup and retain the acquired cause as a separate typed parent fault
+(recommended); or secure custody/cleanup first and then propagate that panic
+through the containing task. Neither alternative may swallow the cause,
+rewrite the actor report or drop original native custody. Exact storage,
+error/API representation and production budget remain unselected. The user
+question is pending; no mechanism is adopted.
+
+Prepared independent two-assessment oracles, all **unexecuted**:
+
+| Actual owning evidence | Required observation / intended falsifier |
+| --- | --- |
+| Actor termination published while genuine actor-owned activation work remains held | Actor join and report remain pending; publication count stays zero. Publishing an incomplete-assessment report before join fails this timing oracle. |
+| Leaf's actual standard owners are retired, all retained tasks joined and every selected failure lane completely assessed without finding a failure | Establishment and completed no-failure assessment require those independent facts. An empty local error vector alone cannot establish either assessment. |
+| Full resource settlement independently proved, with a native error in the selected failure scope | Preserve establishment and failure presence together, plus the parent's exact original error. Classifying every native failure as unestablished retirement fails this case. |
+| Acquired actor-task failure or absent residual, with a known failure in the selected scope | Do not establish retirement; preserve known failure presence and the original cause. A normal settled owner-retirement request is a separate control. |
+| Parent owners acquired, but retirement evidence for an actually created descendant remains missing/unproved | Do not establish full subtree retirement or claim completed no-failure assessment. A genuine no-child product is the positive empty-ownership control. |
+| Missing descendant evidence coexists with a known in-scope failure | Preserve both non-establishment and known failure presence. Substituting incomplete assessment for an already known failure fails conservation. |
+| Shared receipt publication wakes an application waiter that panics | The published fact remains observable and the same native original must still reach its parent owner. Successful receipt reading alone does not prove native custody. |
+
+Use actual outside task/resource acquisition and original native lanes as the
+oracle, not a second call to the classifier. The failure scope is selected;
+exact classification rules and the implementation stage remain prerequisites.
+Existing raw-task controls are in `launch.rs`, actual
+public Behavior failure in `tests/run_with.rs`, held/late activation settlement
+in `local/environment.rs`, multi-task custody in `local/execution.rs`, and
+later projection-panic custody in `local/effects/creation.rs`. These controls
+do not execute new report conservation. Inversions must fail for the intended
+law in debug and optimized builds and restored controls must pass. Shared
+reobservation is not a second stop acceptance or replay-protection witness.
 
 Fresh owner-cut investigation (2026-10-09 UTC), independently checked against
 the unchanged locked source: `LocalResidual::Prepared`, `Uncommitted` and
@@ -2302,10 +2361,33 @@ The full roots-and-children stage must account for this owning source path;
 the smaller child-only estimate below does not cover it. No new implementation,
 timing inversion or full R11 acceptance was executed for these findings.
 
+Accepted root-ordering decision (2026-10-09 UTC): the user selected
+**acquire root join while work runs**, after comparison with keeping the
+current ordering and hosting the network/report consumer outside target
+Application work. Acquire the actual root join inside the existing cleanup
+task before application-work permission; derive and publish a borrowed common
+report while retaining the same full native original. Keep the permission
+barrier before native parent handoff and Application-owned family shutdown.
+The earlier join itself requests no stop. Work panic/drop must preserve actual cancellation
+authority, permission-drop handling and original surviving outputs. Root actor
+retirement does not imply Application-owned work/session/family retirement.
+Account for earlier native retention, observation resources and async frame
+size; do not claim zero resource growth merely because the existing task is
+reused. Observe can commit a fact and then resume a waiter panic, so native
+custody and that separate producer cause must survive publication. No recovery
+of values destroyed inside a consuming application conversion is promised.
+This selects ordering only; notification-fault custody, exact APIs and the
+production budget remain separate choices. No production edit is authorized
+by this decision alone.
+The intended prior-order inversion holds application work open, joins genuine
+root-owned work and expects the report before releasing the application gate;
+restoring permission-before-join must fail that specific readiness assertion.
+This is a planned oracle, not a current passing test or a selected public API.
+
 Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
 tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
 tests: +0 / -0 / net 0; public API: +0 types / -0 types.
-Documentation: +199 / -23 / net +176.
+Documentation: +289 / -29 / net +260.
 Pinned-Nix law-manifest tests pass all nine in debug and optimized builds;
 all 48 relative file links resolve and whitespace checks pass. These checks
 verify the decision records, not any new retirement or networking implementation.
@@ -2328,12 +2410,14 @@ unpublished receipt pending; bounded waiting and failure classification still
 require explicit decisions. Parent projection failure after publication remains
 a separate fact. No root/Entity constructors, ownership or public API change is
 approved by this proposed child attachment.
-The classification estimate is conditional: native descendant and child-failure
-products are concrete application projections, with no verified universal clean
-retirement predicate. Compare concrete borrowed application policy and owning
-cleanup facts before proposing another trait. A new receipt producer's panic
-must not consume the original result before parent custody is retained. Neither
-the attachment estimate nor an eventual publication-point choice supplies that proof.
+The earlier classification estimate is conditional and excludes preservation
+of descendant evidence before opaque application projection. Runtime-owned
+derivation is now selected; revise that estimate using the actual owning cuts
+before proposing a production stage. Require no application classifier or
+generic trait to inspect projected descendant/failure products. A new receipt
+producer's panic must not consume the original result before parent custody is
+retained. Neither the attachment estimate nor the publication decision supplies
+that proof.
 
 Existing typed parent Actions can request exact child stop without a new public
 `InstalledActor` method. `ShutdownChild` selects a typed occurrence and actual
