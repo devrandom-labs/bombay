@@ -1447,6 +1447,63 @@ pub enum ApplicationOutcome<
     },
 }
 
+impl<Inputs, Work, Output, Cleanup, StagingInputs, PreparedInputs, ColdWork>
+    ApplicationOutcome<Inputs, Work, Output, Cleanup, StagingInputs, PreparedInputs, ColdWork>
+{
+    /// Borrow the original completed work value, including a domain failure.
+    ///
+    /// Presence says only that work returned. Cleanup and actor retirement
+    /// remain independent facts; inspection consumes neither.
+    #[must_use]
+    pub const fn work_output(&self) -> Option<&Output> {
+        match self {
+            Self::Completed { output, .. } => Some(output),
+            Self::StagingRejected { .. }
+            | Self::Unstarted { .. }
+            | Self::Prepared { .. }
+            | Self::NotInvoked { .. }
+            | Self::Interrupted { .. } => None,
+        }
+    }
+
+    /// Borrow the received cleanup result without consuming its evidence.
+    ///
+    /// Cold declaration and staging rejection have no cleanup result. An
+    /// `Ok` cleanup value still owns the actor's actual retirement disposition;
+    /// it does not itself certify successful actor initialization or execution.
+    #[must_use]
+    pub const fn cleanup(&self) -> Option<&Result<Cleanup, ApplicationCleanupError>> {
+        match self {
+            Self::Prepared { cleanup, .. }
+            | Self::NotInvoked { cleanup, .. }
+            | Self::Completed { cleanup, .. }
+            | Self::Interrupted { cleanup } => Some(cleanup),
+            Self::StagingRejected { .. } | Self::Unstarted { .. } => None,
+        }
+    }
+
+    /// Consume completed work together with its independent cleanup result.
+    ///
+    /// Cleanup failure accompanies the original output on the successful side
+    /// of this selection. The caller retains responsibility for both values.
+    ///
+    /// # Errors
+    /// Returns the entire original outcome when work has not returned. No
+    /// original declaration, callable, prepared input or cleanup is discarded.
+    pub fn try_into_completed(
+        self,
+    ) -> Result<(Output, Result<Cleanup, ApplicationCleanupError>), Self> {
+        match self {
+            Self::Completed { output, cleanup } => Ok((output, cleanup)),
+            outcome @ (Self::StagingRejected { .. }
+            | Self::Unstarted { .. }
+            | Self::Prepared { .. }
+            | Self::NotInvoked { .. }
+            | Self::Interrupted { .. }) => Err(outcome),
+        }
+    }
+}
+
 pub(in crate::application) enum ApplicationWorkPresence<Work, NoWork> {
     Supplied(Work),
     Absent(NoWork),

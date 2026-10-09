@@ -1,7 +1,7 @@
 # Developer experience coordination
 
-Status: candidate. Documentation-only review; no new application API is
-implemented here. The paired work lives on `codex/developer-experience-docs`
+Status: active. Application result consumption is being implemented; topology
+and terminal inference remain open. The paired work lives on `codex/developer-experience-docs`
 in Bombay and Behavior, based on Bombay main
 `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior main
 `d69f992b371c12ab34e73b18e45b8112c90a1508`.
@@ -27,6 +27,13 @@ information. Preserve affine custody, creation provenance, service lanes,
 initialization order and static capability distinctions.
 
 ## Scope and next work
+
+The owning PRD now contains the single DX01–DX28 implementation checklist and
+the pre-edit application-result conservation law. Fresh pinned-shell child
+compile-pass/denial and result-consumption debug/optimized witnesses pass.
+This is a bounded stage-1 substep; it does not close the counter/heterogeneous
+inference gate or authorize broad migration. All requirement dispositions,
+change measurements and remaining acceptance live in the owning PRD.
 
 The owning PRD maps all 270 backlog requirement rows and all 100 failure
 records, seven executable examples, 45 catalogue entries and 19 inventoried

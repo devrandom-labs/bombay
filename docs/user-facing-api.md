@@ -68,6 +68,15 @@ retain the actual phase and values:
 - `Interrupted` retains cleanup when the Work publication does not provide an
   owned result; it does not infer whether an actor existed from channel closure.
 
+Use `work_output()` to borrow completed work and `cleanup()` to borrow the
+independent cleanup Result. `try_into_completed()` consumes a completed outcome
+into `(output, cleanup)` even when cleanup failed; another phase returns the
+entire original outcome in `Err`. These operations require no `Clone`, `Debug`
+or `Send` bound on caller values and do not classify actor success. The
+[counter](../examples/counter/src/main.rs) exercises owned consumption;
+[result tests](../crates/bombay/tests/application_outcome.rs) cover every phase,
+move-only values, cleanup failure and actual startup refusal.
+
 No supplied Work uses `Option<Never>` with `None` for both Work and output.
 `Completed { output: None }` records an acquired startup grant without supplied
 Work. For supplied Work, `output` is the original bare `WorkFuture::Output`. A user
