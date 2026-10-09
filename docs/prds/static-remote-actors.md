@@ -2229,7 +2229,8 @@ not receipt fields, public API, classification policy or wait limits.
 Independent preparation compares concrete borrowed leaf and aggregate policies
 against adding a universal classifier. The current owners have no verified
 universal predicate for their application-owned descendant/failure products.
-That policy ownership and a common report shape remain separate decisions.
+That policy ownership and report fields remain separate decisions; the common
+report family is selected below.
 
 Fresh owning-regression checks use the root pinned Nix shell, current Engine
 0.2.2 and Bombay Macros 0.1.2. Each command below passed in debug and again
@@ -2251,18 +2252,30 @@ They do not execute a new receipt, classifier, service connection, protected
 remote stop or R11 inversion. The creation test's outside-fold publication is
 a private fixture, not authorization for a production global callback.
 
-Pending report-family choice: one small Bombay-defined local report for all
-exported actor shapes (recommended), or an application-specific report type
-carried through each export/observation API. A common report would preserve
-typed service composition without cloning or storing complete native errors;
-the parent still owns the full original. This does not select fields, public
-names/API, classification ownership or implementation. Neither alternative
-permits type erasure or replacing the owning Observe primitive.
+Accepted report-family decision (2026-10-09 UTC): the user said
+"yes go with recommended" in reply to the pending report-family choice.
+Select **one small Bombay-defined local report for all exported actor shapes**,
+after comparison with application-specific types carried through each
+export/observation API. Preserve typed service composition without cloning or
+storing complete native errors; the parent still owns the full original.
+This does not select fields, public names/API, classification ownership or
+implementation. Reuse Observe; no type erasure or second observation primitive.
+
+Pending report-outcome decision: compare two separate typed assessments
+(retirement established/not established, and failures found/none found after a
+complete assessment/assessment incomplete) with three exclusive outcomes
+(clean retirement, retirement with failures, retirement unproven). Recommend
+separate assessments so inability to prove retirement does not erase already
+known failure presence. All original causes remain with the parent. No field
+names, public API, classifier or implementation is selected by this proposal.
+In particular, a successful task join is not evidence of a complete failure
+assessment. The question has been submitted; dependent implementation waits
+for the user's answer.
 
 Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
 tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
 tests: +0 / -0 / net 0; public API: +0 types / -0 types.
-Documentation: +156 / -23 / net +133.
+Documentation: +169 / -23 / net +146.
 Pinned-Nix law-manifest tests pass all nine in debug and optimized builds;
 all 48 relative file links resolve and whitespace checks pass. These checks
 verify the decision records, not any new retirement or networking implementation.
