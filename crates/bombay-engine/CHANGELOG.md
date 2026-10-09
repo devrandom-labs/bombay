@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.1...bombay-engine-v0.2.2) - 2026-10-08
+
+### Fixed
+
+- *(exec)* select and verify the published contract
+- *(exec)* Restore clean integrated verification
+
+### Other
+
+- *(exec)* Preserve complete failure outcomes
+- *(engine)* Verify Driver laws in optimized builds
+- Preserve causal retirement and exact terminal custody
+- select reviewed FIFO recovery release
+- keep Driver law actors pure
+- isolate Driver allocations from other threads
+- pin Rust 1.99 and published Behavior patches
+- select reviewed Behavior failure cause release
+- Retire audit ledger and adopt PRD workflow
+
 ## [0.2.1](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.0...bombay-engine-v0.2.1) - 2026-10-02
 
 ### Other
