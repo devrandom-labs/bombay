@@ -2262,7 +2262,7 @@ permits type erasure or replacing the owning Observe primitive.
 Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
 tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
 tests: +0 / -0 / net 0; public API: +0 types / -0 types.
-Documentation: +129 / -23 / net +106.
+Documentation: +156 / -23 / net +133.
 Pinned-Nix law-manifest tests pass all nine in debug and optimized builds;
 all 48 relative file links resolve and whitespace checks pass. These checks
 verify the decision records, not any new retirement or networking implementation.
@@ -2376,6 +2376,33 @@ dependency-source distillation, reviewed PRs, required CI or merges. Original
 Bombay and current controlled/consumer manifests/locks retain recorded hashes.
 The stronger selected remote-stop promise and other networking contracts remain
 unimplemented; no full acceptance row is marked passed.
+
+Independent correction reviews (2026-10-09): separate read-only agents reviewed
+the actual controlled TLS/feature patch and configuration-generator repair.
+Both found no blockers within those approved scopes; neither edited source or
+reran tests. Review binds the unchanged controlled manifest/lock and owning
+source hashes recorded above. The TLS review traced the real client through
+the private configured-root selector, incoming mTLS's existing verifier,
+missing/empty-root refusal, exact legacy controls and matching feature gates.
+The generator review compared original unsafe source with safe owned field
+movement, preserved parser/runtime bytes, field order/attributes/punctuation,
+shared test owner, generated shorthand/imports, aliases and provenance. It
+also inspected the recorded Miri and semantic-inversion failure artifacts.
+The pre-existing public validation findings below the original safety audit
+remain outside this repair; review does not certify the whole inherited API.
+
+Coordinator archive revalidation matched all nine actual checksums in the table
+and their published package identities. All 16 controlled edges in the
+normalized top-level dependency/build/dev tables use registry version
+requirements with no path or Git override. This is a narrower metadata check
+than the previously recorded full archive auditor and 29 lock checksum edges;
+it supplies no new compilation, registry or feature-acceptance credit.
+Production Bombay configuration still must enforce the approved private roots,
+mutual TLS, server-name checks and explicit permitted addresses; the dependency
+retains legacy configuration defaults and endpoint overrides. Actual Application
+and Linux subprocess security, resource/cancellation proofs, controlled-source
+PR/CI/merge and registry delivery remain outstanding. Bounded source review
+alone does not establish dependency-source distillation or PRD completion.
 
 Cached published archives for all seven upstream Zenoh owners contain the
 dual-license metadata expression but no license/notice file. License inclusion
