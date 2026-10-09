@@ -30,6 +30,10 @@ and minimization acceptance, and required local verification are retained.
 Section277 records actual delivery. Earlier checkpoints retain their source
 and diagnostic limits; the three Darwin Nix classifier crashes remain recorded.
 
+The [post-delivery audit](execution-ownership/post-delivery-audit.md) verifies
+the merge and selected findings, records remaining evidence limits, and links
+the next PRD and parallel work plan. It does not reopen accepted EXEC gates.
+
 This PRD replaces the earlier conversational criterion that EXEC must produce
 a net reduction in production lines. Model quality is the acceptance criterion:
 one semantic owner, truthful names, coherent hierarchy, narrow interfaces,
@@ -4030,7 +4034,7 @@ executed: Engine-fuzz metadata is inherited and its lock unchanged. This is a
 typed storage comparison; it does not establish a replacement runtime scheduler.
 
 
-The [current observation record](execution-ownership/observation.md#current-scheduling-selection-for-integration)
+The [observation scheduling record](execution-ownership/observation.md#scheduling-selection-for-integration-2026-10-04)
 records the recommended retained-task composition and nonauthor source-model
 review27d7ebb0. Full DG-OBSERVATION signatures and selected integration remain open.
 

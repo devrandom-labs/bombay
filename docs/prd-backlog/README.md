@@ -78,6 +78,7 @@ first release at all.
 | [Local runtime](local-runtime.md) | Activation, the six interpreter gaps found at this snapshot, supervisors, pools, execution, authoring and template verification. |
 | [Core integration and upstream changes](core-integration.md) | Source-level supervisor/pool diagnosis, reproduced contract failures and repository-by-repository implementation handoff. |
 | [Execution ownership PRD](../prds/execution-ownership.md) | Detailed EXEC contracts, module ownership, cancellation and observation laws, decision gates, verification matrix and coordinated multi-agent work packages. |
+| [Static remote actor PRD](../prds/static-remote-actors.md) | Next selected NET1/AUTH1 scope, fresh dependency verification, correctness gates and parallel work plan; [post-EXEC audit](../prds/execution-ownership/post-delivery-audit.md) records the selection rationale. |
 | [Networking](networking.md) | Wire contracts, Zenoh sessions, remote delivery, discovery, queries and subscriptions. |
 | [Identity and placement](identity-and-placement.md) | Mockable identity, permissions, placement, failover, simulation and downstream Selo. |
 | [Durability and operations](durability-and-operations.md) | Mnesis integration, recovery, outbox, reminders, Kubernetes, diagnostics, performance and releases. |
@@ -99,9 +100,9 @@ capability types, all with typed Bombay interpretation after ARC-010. This
 inventory count does not prove every template policy end to end; structural
 Behavior lanes and other runtime capabilities are outside that denominator.
 
-The EXEC source selects caller-host async execution and configured Builder-only
-owned blocking over one paired execution/result owner. Its independent gates,
-verification and delivery remain in the EXEC PRD. There is no standard
+EXEC delivered caller-host async execution and configured Builder-only owned
+blocking over one paired execution/result owner. Its accepted gates,
+verification and actual PR326 merge are recorded in the EXEC PRD. There is no standard
 integrated Zenoh, verified remote identity, distributed placement or
 Mnesis-backed actor execution path in this checkout. Neighboring repositories
 contain useful code; they are not interchangeable with a working integration.
@@ -118,7 +119,7 @@ ownership boundaries or repository change limits.
 | Executable pools | POOL | ACT and relevant INT leaves; customers receive correlated job outcomes across worker replacement. |
 | [Execution and application embedding](../prds/execution-ownership.md) | EXEC and the explicitly selected ACT/APP requirements | Ownership and API decision gates precede implementation; existing Driver laws preserved, real concurrent execution and caller-owned runtime examples. |
 | Capability composition and template coverage | CAP, CAT | Existing owner types reused; executable witnesses before claiming support. |
-| Static remote actors over Zenoh | WIRE, NET, ZEN, DISC | Local activation, identity test implementation and explicit static placement; two OS processes exchange a typed protocol. |
+| [Static remote actors over Zenoh](../prds/static-remote-actors.md) | WIRE, NET, ZEN, DISC and selected ID/AUTH/SIM | Local activation, identity test implementation and explicit static placement; two OS processes exchange a typed protocol. Identity, networking and verification research proceed in parallel; production depends on the PRD's exact contract gates. |
 | Distributed service interactions | QUERY, TOPIC | Remote envelope and authorization; bounded replies and subscriber pressure semantics. |
 | Identity and permissions | ID, AUTH | Existing Behavior effect composition; deterministic fake first, Selo adapter later. |
 | Durable local entities | DUR | Selected Mnesis contract migration; restart a process and recover a committed command. Can proceed independently of networking. |
