@@ -2272,10 +2272,40 @@ In particular, a successful task join is not evidence of a complete failure
 assessment. The question has been submitted; dependent implementation waits
 for the user's answer.
 
+Fresh owner-cut investigation (2026-10-09 UTC), independently checked against
+the unchanged locked source: `LocalResidual::Prepared`, `Uncommitted` and
+`Retired` describe different acquisition phases. Standard environment cleanup
+can finish in any of those phases; `settle_local_outcome` subsequently joins
+every retained activation task, conserving its original events and failures.
+Execution failure and acquired cleanup outputs can coexist. Residual-free
+cancellation/panic and an actor-task join error cannot establish full retirement.
+The child handoff in `ProjectedTask::project` can borrow the actual `LocalOutcome`
+after actor join and before native conversion and application projection.
+However, recursive child traversal currently retains opaque projected `Root`
+values or failed task handles; completing that traversal does not prove every
+descendant's resource settlement. A candidate is preserving each child's
+owner-derived common report before projection and retaining/composing that
+evidence in existing typed bindings. This would avoid requiring applications
+to inspect arbitrary descendant products, but the evidence is not conserved
+by the current implementation. No new classifier trait or mechanism is selected.
+
+Root integration has an additional concrete prerequisite:
+`application/execution.rs` currently waits for application-work permission
+before awaiting the root actor join, and sends that permission only after the
+application work finishes. A networking service awaiting a root-retirement
+report from inside that work cannot obtain an early report through this current
+cut. Separate-Application stop/join probes do not prove this service integration.
+Investigate the existing cleanup task's join/permission ordering while preserving
+the original native root result and the application's family-shutdown policy;
+no ordering change, extra task or public API is authorized by this finding.
+The full roots-and-children stage must account for this owning source path;
+the smaller child-only estimate below does not cover it. No new implementation,
+timing inversion or full R11 acceptance was executed for these findings.
+
 Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
 tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
 tests: +0 / -0 / net 0; public API: +0 types / -0 types.
-Documentation: +169 / -23 / net +146.
+Documentation: +199 / -23 / net +176.
 Pinned-Nix law-manifest tests pass all nine in debug and optimized builds;
 all 48 relative file links resolve and whitespace checks pass. These checks
 verify the decision records, not any new retirement or networking implementation.
