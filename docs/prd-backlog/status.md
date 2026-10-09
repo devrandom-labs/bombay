@@ -1,6 +1,6 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-08. This is the implementation index for the
+Updated: 2026-10-09. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
@@ -17,6 +17,13 @@ permission to implement an unverified interface. `blocked` names unresolved
 prerequisites. A feature becomes `active` only when its PRD records the required
 verification and accepted decisions. `merged` records actual reviewed delivery;
 other product rows remain incomplete.
+
+The audited static-remote-actor specification and post-EXEC audit merged through
+[PR329](https://github.com/devrandom-labs/bombay/pull/329), commit
+`a9c5b7d4a1cf2b15504acef43c20c0da9b5e320e`, after final-head review and all four
+observed CI checks passed. [Preparation delivery](../prds/static-remote-actors.md#change-record-and-current-checkpoint)
+records exact evidence and skipped optional Miri work. This is documentation
+delivery; AUTH1 and NET1 keep their implementation statuses below.
 
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |

@@ -936,12 +936,23 @@ The [audit checkpoint](execution-ownership/post-delivery-audit.md#verification-a
 owns its complete tracked/untracked counts. Isolated research remains separately
 measured and must be included in the cumulative checkpoint before retention.
 
-Documentation delivery: [draft PR #329](https://github.com/devrandom-labs/bombay/pull/329)
-was opened from `0de741ca7b23227ad554337e82241b27178ba432` against refreshed main.
-Its scope is this specification and post-delivery audit, not AUTH1/NET1 feature
-delivery. Required remote CI remains pending; independent document review
-accepted the corrected specification within its evidence limits. No merge or
-feature acceptance is recorded. Review of the initial frozen head independently
+Documentation delivery: [PR #329](https://github.com/devrandom-labs/bombay/pull/329)
+merged to main at `2026-10-09T04:04:46Z`, commit
+`a9c5b7d4a1cf2b15504acef43c20c0da9b5e320e`. Its reviewed head is
+`80d888dea26e812da4e955ae3aa7ec9ee76400eb`; the merged tree is identical.
+This delivers the specification and post-delivery audit, not AUTH1/NET1 feature
+implementation or acceptance. Independent agent document review is recorded
+in the [final-head review](https://github.com/devrandom-labs/bombay/pull/329#pullrequestreview-5465408768);
+this is a comment review, not a human approval. All four observed checks passed:
+[Nix CI](https://github.com/devrandom-labs/bombay/actions/runs/37879168840),
+[Rust analysis](https://github.com/devrandom-labs/bombay/actions/runs/37879168827),
+[dependency policy](https://github.com/devrandom-labs/bombay/actions/runs/37879168839)
+and [CodeQL](https://github.com/devrandom-labs/bombay/runs/113656003567).
+The Nix job passed the flake check and both bounded Driver/Observe fuzz campaigns
+and artifact uploads. Its optional Observe Miri campaign and upload were skipped;
+they supply no Miri evidence. Existing local-runtime campaigns are not remote
+actor witnesses. AUTH1 stays `candidate`, NET1 stays `blocked`, and all full
+R01–R25 witnesses remain unexecuted. Review of the initial frozen head independently
 confirmed all 93 inventory IDs, 25 witnesses and 12 reciprocal edges across
 eight acyclic programme rows. It found the unmarked historical first-correction
 proposal below; that wording is corrected without reopening any approved choice.
@@ -953,12 +964,21 @@ exit 101 identifying only this document. The notes now retain the direct owning
 macro dependency limitation while retiring that authoring form. No test or
 production source changed. Root pinned-Nix `cargo test --locked [--release]
 -p bombay-engine --test law_manifest` passes all nine tests in each build on
-Engine 0.2.2. This closes the local documentation failure; final-head remote CI
-remains required, and supplies no networking acceptance by itself.
+Engine 0.2.2. The successful final-head remote CI above closes preparation
+delivery's documentation failure, without supplying networking acceptance.
 Local verification also recovered from a full-disk error before Rust execution:
 only the superseded stock-Zenoh candidate's marked Cargo cache was removed
 (approximately 2.8 GiB). Candidate sources, fixtures, locks and the nine verified
 controlled archives remain retained; final local law checks pass in both builds.
+The next branch, `feat/static-remote-actors-implementation`, starts at the fetched
+merge commit above. The original feature branch and all source/probe evidence
+are preserved. This merge record does not authorize an unresolved design or
+expand the approved production stage.
+
+The merge-record follow-up against `a9c5b7d` changes three already-accounted
+documentation paths: production/test/public API delta zero; documentation
+`+45 / -14 / net +31`. Pinned-Nix law-manifest tests pass all nine in both builds.
+All 47 relative file links resolve; `git diff --check` passes.
 
 Pre-production cumulative scope checkpoint (2026-10-08), authorized by the user:
 the root and three isolated research trees contain 97 distinct non-snapshot

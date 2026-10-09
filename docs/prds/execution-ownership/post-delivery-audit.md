@@ -140,11 +140,15 @@ Fresh checks:
 - Dependency validation: all 12 edges across eight programme rows are reciprocal and acyclic.
 - `git diff --check`: passed.
 
-No new runtime inversion or completed final-head flake/coverage/mutation/fuzz
-or remote CI gate is claimed for this documentation task. Current delivery
-checkpoint: complete cumulative document delta against main. All seven files
-are now tracked on the requested feature branch in draft PR #329. The branch
-is refreshed to main's release-only
+Preparation delivery: [PR329](https://github.com/devrandom-labs/bombay/pull/329)
+merged at `2026-10-09T04:04:46Z`, commit
+`a9c5b7d4a1cf2b15504acef43c20c0da9b5e320e`. All four observed checks passed on
+reviewed head `80d888dea26e812da4e955ae3aa7ec9ee76400eb`; its tree equals the
+merged tree. [The next PRD's delivery record](../static-remote-actors.md#change-record-and-current-checkpoint)
+owns exact review/CI links, passed existing flake and fuzz checks, and the
+skipped optional Observe Miri campaign. No new runtime inversion, networking
+acceptance or new coverage/mutation proof is claimed. The delivered cumulative
+document delta below covers all seven tracked files against the release-only base
 `c3afb3011090ac4c9112fd39e4a76980db856df0`; its inherited version/lock updates
 are not edits made by this documentation task, and all Rust sources are unchanged.
 
