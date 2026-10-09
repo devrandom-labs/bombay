@@ -132,7 +132,7 @@ Fresh checks:
 
 - `gh pr view 326 --repo devrandom-labs/bombay --json state,mergedAt,mergeCommit,headRefOid,statusCheckRollup`: merged; all four required checks successful.
 - `git diff 6cf7736d6fdbec8cdb764af1664220b0c87d3b07 81256c8e00b580f37f4a1036ac28ec53b1ea948b --stat`: empty.
-- `nix develop -c cargo test --locked -p bombay-engine --test law_manifest`: 9 passed; repeated successfully after the specification audit edits.
+- `nix develop -c cargo test --locked -p bombay-engine --test law_manifest` and the same command with `--release`: 9 passed in each after correcting the historical derive wording; the unchanged obsolete-guidance guard failed for the original document in both builds.
 - `nix develop -c cargo test --locked -p bombay-rs --test completed_application_receiving --test application_terminal_custody`: 38 + 4 passed.
 - `nix develop -c cargo test --locked --release -p bombay-rs --test completed_application_receiving --test application_terminal_custody`: 38 + 4 passed.
 - Local Markdown validation: all 110 relative file/heading links in the seven changed documents resolve after repairing the stale observation anchor.
@@ -151,7 +151,7 @@ are not edits made by this documentation task, and all Rust sources are unchange
 ```text
 production: +0 / -0 / net 0
 tests: +0 / -0 / net 0
-documentation: +2749 / -13 / net 2736
+documentation: +2763 / -13 / net 2750
 other: +0 / -0 / net 0
 public API: +0 types / -0 types
 cumulative changed paths: 7 (all tracked)

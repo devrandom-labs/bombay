@@ -946,6 +946,19 @@ confirmed all 93 inventory IDs, 25 witnesses and 12 reciprocal edges across
 eight acyclic programme rows. It found the unmarked historical first-correction
 proposal below; that wording is corrected without reopening any approved choice.
 Required checks must pass on the final document head before preparation delivery.
+The Nix check on `4108e11` subsequently failed its existing obsolete-guidance
+guard because historical probe notes named a retired derive. The exact guard
+reproduced that intended failure locally in debug and optimized builds, each
+exit 101 identifying only this document. The notes now retain the direct owning
+macro dependency limitation while retiring that authoring form. No test or
+production source changed. Root pinned-Nix `cargo test --locked [--release]
+-p bombay-engine --test law_manifest` passes all nine tests in each build on
+Engine 0.2.2. This closes the local documentation failure; final-head remote CI
+remains required, and supplies no networking acceptance by itself.
+Local verification also recovered from a full-disk error before Rust execution:
+only the superseded stock-Zenoh candidate's marked Cargo cache was removed
+(approximately 2.8 GiB). Candidate sources, fixtures, locks and the nine verified
+controlled archives remain retained; final local law checks pass in both builds.
 
 Pre-production cumulative scope checkpoint (2026-10-08), authorized by the user:
 the root and three isolated research trees contain 97 distinct non-snapshot
@@ -1767,10 +1780,11 @@ implementation; permanent CI-source retention and the open authoring baseline
 remain required before promoting this evidence. This source-bound investigation does not retain
 feature implementation or silently expand the package-fixture stage.
 
-The probe imports the exact already-selected Behavior Macros owning
-`SendProduct` derive through Rust stdin extern arguments. That dependency is
-not added to any manifest or adopted as ordinary application authoring.
-Behavior does not currently reexport that derive; its existing behavior macro
+The historical probe required direct access to the exact already-selected
+Behavior Macros crate through Rust stdin extern arguments. That authoring form
+is retired from retained application guidance; its narrowly scoped lifecycle
+traces remain recorded above. No dependency was added to any manifest.
+The needed derive is not reexported; the existing owning behavior macro
 can generate a reusable named send product, but the ordinary-Rust comparison
 for this nominal typed-event root remains open. No new export, dependency,
 macro, handwritten interpretation trait or lifecycle API is justified here.
