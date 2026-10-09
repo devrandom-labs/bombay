@@ -21,15 +21,20 @@ other product rows remain incomplete.
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
 | EXEC1 | merged | — | — | [PR326](https://github.com/devrandom-labs/bombay/pull/326) merged at 2026-10-08T10:13:33Z, commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`, after all four required checks passed on6cf7736. [Current delivery](../prds/execution-ownership.md#277-actual-reviewed-delivery) retains all eight gates, scoped code/PRD/minimization, all15 local commands/21 Darwin checks, clean Linux checks/fuzz, unchanged coverage/mutation floors and all17 accepted agent contributions. Scope277/global public API+13/−1 remain. Earlier Darwin classifier/resource failures and inherited proof/style limits remain explicit. |
-| NET1 | blocked | External: immutable Zenoh/codec selection and verified typed extension contract | PLACE1, DIST1, SELO1 | [Networking](networking.md): two-process request/reply, exact versus ambiguous delivery, bounded queues and static routing; exercise the same law with Zenoh and a deterministic faulting test host. |
-| AUTH1 | candidate | — | PLACE1, DIST1, SELO1 | [Identity](identity-and-placement.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. |
-| PLACE1 | blocked | NET1, AUTH1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. |
-| MNE1 | blocked | External: Mnesis-Bombay release and dependency-graph alignment | DIST1, SELO1 | [Durability](durability-and-operations.md): select current Bombay and compatible Behavior; hydrate before routability and retain exact admission, decision, conflict, uncertain commit and durable completion outcomes. |
+| NET1 | blocked | AUTH1; external: verified typed composition, protocol/security and resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md): selected profile and service wiring are recorded. Owning trust/generator corrections pass Miri, semantic inversions, consumer assertions and strict lint checks. Authorized TLS packaging and feature corrections are applied locally; normal, test, unstable and combined maintainer library lint pass. Internal-only lint now passes in both builds after the approved owning constructor correction, whose original-defect inversion and public consumer compatibility also pass. Nine actual archives now match the final source and manifests; six inherited package READMEs are now corrected under the approved 166-path scope, with exact actual archive guidance and checksum edges verified. The owning mTLS test now passes in both builds after caller-matched test feature gates, with focused strict Clippy passing and no production growth or added paths. A current corrected-graph library campaign passes all six enabled checks in both builds: five actual Zenoh layout/certificate cases and one supplemental Rustls case; internet cases stay ignored. Registry delivery and remaining protocol/resource gates are pending. The actual Application revocation counterexample reproduces in debug and optimized builds; protected admission is not implemented. Parallel source-bound public Application lifecycle probes now prove exact-child stop, repeated/stale refusal, sibling progress and retained native joins in both builds; ordinary capability export to the existing service now passes without a direct macro import; the user now requires actor termination plus finished owned retirement before remote-stop completion; the private service seam, native joined-result timing and remote permission/freshness proofs remain open. Two-process/fault-host correctness, exact versus ambiguous delivery and bounded ownership remain unproved; remaining design choices require user steering. |
+| AUTH1 | candidate | — | NET1, PLACE1, DIST1, SELO1 | [Admission scope and gates](../prds/static-remote-actors.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. The user selected one coherent permission/time check and capacity-nonwaiting mailbox attempt, with permission updates excluded and fresh revalidation on retries. Local owner inspection is recorded; clock, coordination mechanism, resource and executable composition gates remain. |
+| PLACE1 | blocked | NET1, AUTH1, MNE1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. Static routing in NET1 does not wait for this automatic-placement milestone. |
+| MNE1 | blocked | External: Mnesis-Bombay release and dependency-graph alignment | PLACE1, DIST1, SELO1 | [Durability](durability-and-operations.md): select current Bombay and compatible Behavior; hydrate before routability and retain exact admission, decision, conflict, uncertain commit and durable completion outcomes. Local migration can proceed independently of NET1; complete distributed writer fencing with PLACE1. |
 | DIST1 | blocked | NET1, AUTH1, PLACE1, MNE1 | OPS1 | [Distributed composition](durability-and-operations.md): supervised, durable, authenticated actors recover across host failure. |
 | OPS1 | blocked | DIST1 | — | [Operations](durability-and-operations.md): equivalent semantics on self-hosted and Kubernetes deployments, bounded telemetry, drain and compatible upgrades. |
 | SELO1 | blocked | AUTH1, NET1, MNE1; external: Selo KERI runtime | — | [Downstream identity](identity-and-placement.md): run the admission contract suite against Selo, then prove rotation, delegation, revocation and deployment scenarios. |
 
 Every internal `Blocked by` edge has its reciprocal `Unblocks` edge here.
+The [post-EXEC audit](../prds/execution-ownership/post-delivery-audit.md) records
+fresh delivery/source checks and the corrected AUTH1 → NET1 and MNE1 → PLACE1
+edges. The [next PRD's parallel plan](../prds/static-remote-actors.md#parallel-execution-and-critical-path)
+separates concurrent contract research, independent implementation and shared
+integration gates. Neither research eligibility nor this plan completes a row.
 ARC-006 activation, ARC-010 capability interpretation and TEST-025 executable
 supervisor/pool evidence are completed local prerequisites, so they do not
 remain unresolved edges into PLACE1 or DIST1. Broader template-policy coverage
@@ -64,14 +69,18 @@ EXEC research. They are evidence locations, not a fresh test certification.
 | ARC-020, TEST-008 | Minimal retained module ownership and separate revision-bound actor-template inventory. | [Module map](../module-boundaries.md), [public API audit](../public-api-audit.md), [template manifest](../driver-template-manifest.json). |
 | TEST-020 | Corrected Linux fuzz shell and unconditional artifact-upload failures; CI run 36985076274 passed both bounded campaigns and uploads. | [CI workflow](../../.github/workflows/checks.yml), [Driver campaign](../../crates/bombay-engine/fuzz/verify-causal-turns.sh); exact historical receipt remains in Git. |
 
-Behavior Core/Actors 0.21.2 release revision is
+Historical local-audit selection: Behavior Core/Actors 0.21.2 release revision is
 `edc2d466a50df7cd396f891e3da31fc9e3747bbd`; Macros 0.13.1 revision is
 `5ca96444f0a66e9a013b6989e3e53d345cbabf65`. The Driver and template
 manifests retain revision-bound evidence. Earlier EXEC notes selected 0.17.0:
 their hashes, source inventories and open representation experiments are
-historical until their PRD explicitly reconciles them with the current owners.
+historical; EXEC's published selection and current manifests now use
+Core/Actors 0.23.0 and Macros 0.14.0 at
+`d69f992b371c12ab34e73b18e45b8112c90a1508`.
 
 ## Retirement change record
+
+Historical ledger for the closed audit retirement; these are not current worktree counts.
 
 Scope: preserve unresolved programme edges and relevant local evidence here;
 retire the closed audit chronology; redirect repository guidance and PRDs to
