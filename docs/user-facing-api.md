@@ -1,8 +1,10 @@
 # Bombay user-facing API
 
-This is the target product contract. Bombay owns the stable application and
-runtime experience over foundational Behavior and the reusable templates owned
-by Behavior Actors.
+This is the existing API guide, with source and test pointers. Bombay owns the
+application and runtime experience over Behavior and Behavior Actors. The
+[DevX proposal](prds/developer-experience.md) selects the future simplification
+path; proposed inference and consolidation are not implemented by this guide.
+When prose and source disagree, verify the source and correct the prose.
 
 Implementation status is separate from this target contract. Local application,
 external interface, timer, Entity, supervisor, and worker-pool paths have

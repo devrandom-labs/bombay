@@ -20,7 +20,8 @@ other product rows remain incomplete.
 
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
-| EXEC1 | merged | — | — | [PR326](https://github.com/devrandom-labs/bombay/pull/326) merged at 2026-10-08T10:13:33Z, commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`, after all four required checks passed on6cf7736. [Current delivery](../prds/execution-ownership.md#277-actual-reviewed-delivery) retains all eight gates, scoped code/PRD/minimization, all15 local commands/21 Darwin checks, clean Linux checks/fuzz, unchanged coverage/mutation floors and all17 accepted agent contributions. Scope277/global public API+13/−1 remain. Earlier Darwin classifier/resource failures and inherited proof/style limits remain explicit. |
+| EXEC1 | merged (historical record) | — | — | [Recorded delivery](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#277-actual-reviewed-delivery) cites PR326 and commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. [Preservation contract](../prds/execution-ownership.md) retains the eight gates and current source witnesses. Historical pass marks do not certify this checkout. |
+| DX1 | candidate | — | — | [Developer experience](../prds/developer-experience.md): paired source-grounded Behavior PRD, one application spine, inferred topology and complete terminal custody; stage-specific verification precedes production changes. |
 | NET1 | blocked | External: immutable Zenoh/codec selection and verified typed extension contract | PLACE1, DIST1, SELO1 | [Networking](networking.md): two-process request/reply, exact versus ambiguous delivery, bounded queues and static routing; exercise the same law with Zenoh and a deterministic faulting test host. |
 | AUTH1 | candidate | — | PLACE1, DIST1, SELO1 | [Identity](identity-and-placement.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. |
 | PLACE1 | blocked | NET1, AUTH1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. |
@@ -45,8 +46,8 @@ selected by this index.
 
 Automatic topology-owned actor-space materialization also remains an explicit
 inventory requirement; it is not supplied by named topology declarations.
-Select its owning contracts and acceptance witness in a separate PRD when that
-requirement is chosen. The product table groups the remaining programme work;
+DX1 now selects its owning contracts and acceptance witnesses; implementation
+remains subject to the paired PRD’s staged proofs. The product table groups the remaining programme work;
 it does not remove the inventory's finer requirements or optional decisions.
 
 ## Retained local evidence
@@ -64,44 +65,18 @@ EXEC research. They are evidence locations, not a fresh test certification.
 | ARC-020, TEST-008 | Minimal retained module ownership and separate revision-bound actor-template inventory. | [Module map](../module-boundaries.md), [public API audit](../public-api-audit.md), [template manifest](../driver-template-manifest.json). |
 | TEST-020 | Corrected Linux fuzz shell and unconditional artifact-upload failures; CI run 36985076274 passed both bounded campaigns and uploads. | [CI workflow](../../.github/workflows/checks.yml), [Driver campaign](../../crates/bombay-engine/fuzz/verify-causal-turns.sh); exact historical receipt remains in Git. |
 
-Behavior Core/Actors 0.21.2 release revision is
+Historical release pointers (not the current selection): Behavior Core/Actors
+0.21.2 revision is
 `edc2d466a50df7cd396f891e3da31fc9e3747bbd`; Macros 0.13.1 revision is
 `5ca96444f0a66e9a013b6989e3e53d345cbabf65`. The Driver and template
 manifests retain revision-bound evidence. Earlier EXEC notes selected 0.17.0:
 their hashes, source inventories and open representation experiments are
 historical until their PRD explicitly reconciles them with the current owners.
 
-## Retirement change record
+## Historical audit evidence
 
-Scope: preserve unresolved programme edges and relevant local evidence here;
-retire the closed audit chronology; redirect repository guidance and PRDs to
-this index and feature-local records. Preserve the user's existing document
-and research-probe deletions. No runtime contract, dependency selection or
-public Rust type changes. Remove the artifact audit's exemptions for the two
-retired historical documents. Verification and complete working-tree counts follow.
-
-Verification:
-
-- `nix develop -c cargo test -p bombay-engine --test law_manifest`: nine passed.
-- `nix develop -c cargo fmt --all -- --check`: passed.
-- `nix develop -c cargo test --locked -p bombay-rs --features axum --test run_with --test axum --test application_terminal_custody -- --skip compile_checked`: 20 passed; two compile checks filtered out (EXEC preservation baseline).
-- Local Markdown file links resolve; remaining programme dependency edges are
-  reciprocal; retired-document references and whitespace checks pass.
-
-The user's initial deletions cover nine tracked documents/research artifacts.
-The current complete-tree counts include those deletions and the new status
-index. Documentation counts include retired research fixtures stored under
-`docs/`; no production Rust or public type changed. The test delta is solely
-removal of two retired-document exceptions from the existing artifact audit.
-No full workspace or remote CI completion is claimed by these focused checks.
-
-<!-- complete-tree-counts -->
-
-```text
-production: +0 / -0 / net 0
-tests: +1 / -3 / net -2
-documentation: +320 / -14139 / net -13819
-other: +0 / -0 / net 0
-public API: +0 types / -0 types
-working tree: 30 changed paths (1 untracked)
-```
+The previous audit's change counts, commands and pass marks remain in the
+[pinned status record](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prd-backlog/status.md#retirement-change-record).
+They describe that earlier change, not this workspace. Current feature checks
+belong beside the selected PRD. Documentation cleanup is recorded in
+[DX1](../prds/developer-experience.md#documentation-change-record).

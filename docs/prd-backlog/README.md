@@ -26,7 +26,7 @@ The repository instructions define the feature states. Local verification
 alone does not establish merged delivery. Git preserves the retired audit
 chronology; active verification and decisions belong beside the feature PRD.
 
-The inventory contains 260 individually identified requirements, including
+The inventory contains 270 individually identified requirements, including
 verification obligations and optional decisions. The failure contract adds 22
 properties, 68 failure scenarios and 10 combined-failure campaigns.
 
@@ -77,7 +77,8 @@ first release at all.
 | --- | --- |
 | [Local runtime](local-runtime.md) | Activation, the six interpreter gaps found at this snapshot, supervisors, pools, execution, authoring and template verification. |
 | [Core integration and upstream changes](core-integration.md) | Source-level supervisor/pool diagnosis, reproduced contract failures and repository-by-repository implementation handoff. |
-| [Execution ownership PRD](../prds/execution-ownership.md) | Detailed EXEC contracts, module ownership, cancellation and observation laws, decision gates, verification matrix and coordinated multi-agent work packages. |
+| [Execution ownership PRD](../prds/execution-ownership.md) | Compact execution preservation contract, eight gates, source witnesses and pinned historical decisions. |
+| [Developer experience](../prds/developer-experience.md) | Paired Behavior PRD: one application path, inferred topology and terminal custody, owner-specific simplification and documentation pruning. |
 | [Networking](networking.md) | Wire contracts, Zenoh sessions, remote delivery, discovery, queries and subscriptions. |
 | [Identity and placement](identity-and-placement.md) | Mockable identity, permissions, placement, failover, simulation and downstream Selo. |
 | [Durability and operations](durability-and-operations.md) | Mnesis integration, recovery, outbox, reminders, Kubernetes, diagnostics, performance and releases. |

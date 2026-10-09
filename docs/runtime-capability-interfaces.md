@@ -288,7 +288,7 @@ for a new post-close send. The selected 0.1.3 corrects that defect while retaini
 already accepted messages and returning exact rejected payloads. Both the
 original failure and released correction are verified through actual ActorRef
 in debug and optimized builds; see
-[EXEC's delivery record](prds/execution-ownership.md#20-communication-correction-checkpoint-2026-10-02).
+[EXEC's delivery record (historical)](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#20-communication-correction-checkpoint-2026-10-02).
 That prerequisite correction does not accept the remaining EXEC laws.
 
 ### Affine user-admission retirement
