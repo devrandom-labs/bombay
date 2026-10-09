@@ -308,8 +308,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-timers"
-version = "0.1.0"
-source = "git+https://github.com/devrandom-labs/bombay-timers.git?rev=13e884da7ab41781f52337b0038060e375b00ee0#13e884da7ab41781f52337b0038060e375b00ee0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6dab836f6a802f6b36437b6850904f851ebc2ac0b630a2391a0cca5676a42b5d"
 dependencies = [
  "loom",
  "rustc-hash 2.1.3",

@@ -36,10 +36,11 @@ is held, without starting a replacement, and preserves exact source custody.
 | Address | bombay-address 0.3.0 | Owns local claims/leases and opaque resolution; its process-local representation is not a wire address. |
 | Communication | bombay-communication 0.1.3 | Owns bounded user delivery, separate control delivery, closure and payload recovery. |
 | Observe | Private Bombay implementation | Owns completion publication and waiting; is not a missing external dependency. |
-| Timers | 0.1.0 patched to `13e884da7ab41781f52337b0038060e375b00ee0` | Owns volatile actor scheduling/generations, not persistent reminders. |
+| Timers | Registry 0.2.0, archive revision `9369d1f6c7fcda91e7de5bf3c19e6769f92145bd` | Owns volatile actor scheduling/generations and complete typed exhaustion return, not persistent reminders. |
 | Tokio | 1.53.1 in this lockfile | Caller-host async execution and configured Builder-only owned current-thread/multithread execution share one paired owner; final acceptance remains separate. |
 
-Selected-contract table reconciled on 2026-10-08 for the final EXEC source. The earlier dated
+Selected-contract table reconciled on 2026-10-08 for the final EXEC source;
+the Timers registry delivery was verified on 2026-10-09. The earlier dated
 0.20.0 execution observations below remain historical evidence. Behavior
 Actors 0.21.2 publication retains its historical distinct live capability-failure
 cause evidence. The final selected source and full acceptance remain in EXEC. See the

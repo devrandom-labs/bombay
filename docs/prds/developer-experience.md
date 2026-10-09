@@ -35,6 +35,12 @@ This is a bounded stage-1 substep; it does not close the counter/heterogeneous
 inference gate or authorize broad migration. All requirement dispositions,
 change measurements and remaining acceptance live in the owning PRD.
 
+The Timers delivery prerequisite now uses published 0.2.0 rather than a
+workspace-only patch. Package verification and an unpatched extracted consumer
+pass; inference remains a separate open gate. The user authorized the expanded
+selected programme surface on 2026-10-09; its per-stage law, provenance,
+composition and measurement gates still apply.
+
 The owning PRD maps all 270 backlog requirement rows and all 100 failure
 records, seven executable examples, 45 catalogue entries and 19 inventoried
 actor-owned capabilities. Presence in that map does not certify an execution
