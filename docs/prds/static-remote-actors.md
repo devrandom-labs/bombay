@@ -2175,7 +2175,8 @@ Keep the complete original native result with its existing parent owner; derive
 a separate local service receipt only after the actual actor join. Preserve
 final state, rejected messages and original errors; do not clone native errors
 or serialize them onto the network. Receipt schema, attachment,
-public API, publication/error policy and implementation remain unselected.
+public API, failure policy and implementation remain unselected. Publication
+timing is selected below.
 Accepted receipt-observation decision (2026-10-09 UTC): the user selected
 **shared independent observations**, after comparison with one affine consumer
 and explicit redistribution. Reuse the existing Observe shared pair: permitted
@@ -2184,13 +2185,87 @@ without cancelling or consuming another observer's fact. Parent native ownership
 is unchanged. Access grants, observer counts/bounds, receipt fields, attachment
 and failure policy remain separate decisions. This is reuse of the owning
 observation primitive, not another observation implementation.
-Two unadopted owner-level placements are deriving a receipt after actor-task
-join before parent projection, or acquiring the exact projected task into its
-existing child-binding joined slot while the parent remains live. The latter
-cannot use current whole-product retirement unchanged because it cancels all
-siblings. Any retained capability is growth: neither proposal deletes current
-production code. Reuse owning Observe and task machinery rather than creating
-another registry, mailbox, observation implementation or lifecycle model.
+Accepted retirement-publication decision (2026-10-09 UTC): the user said
+"go on with recommended stuff" in reply to the pending choice between
+publication after the child's actual join and waiting for parent conversion too.
+Select **after actual actor-task join, before parent conversion**. Publish
+successful retirement only when owned settlement is established; otherwise
+publish the approved inability result. Control acceptance or termination
+observation remains insufficient. Borrow the
+native result without cloning its errors or consuming the parent's original.
+Later parent conversion failure is a separate fact and cannot erase the already
+published retirement fact. Joining alone does not establish clean retirement:
+receipt classification, failure details, attachment, service/API shape and
+bounded waiting remain explicit decisions, not approval supplied by this timing
+choice. No implementation or new production stage is authorized by this record.
+The former alternative was acquiring the exact projected task into its existing
+child-binding joined slot while the parent remains live. Current whole-product
+retirement cannot supply that alternative unchanged because it cancels all
+siblings. Any retained capability is growth; neither placement deletes current
+production code. Reuse owning Observe and task machinery.
+
+Fresh resumed investigation (2026-10-09): the clean starting tree was
+`73da8cf1d58f3ffb010bdfe43faa53f9d3e6c812`; lock/patches and all three
+Behavior archive revisions still match the table above. The complete selected
+Behavior instructions were reread (SHA-256
+`2b7a9195b27f073fec18426da43e9840f8ef668f333b9ad55934f520a37ae226`).
+Current `ProjectedTask::project` awaits the actual actor task before converting
+its native result; `settle_local_outcome` joins the retained activation tasks
+inside that actor task. Existing termination observation can precede those
+joins. `ActorRetirement::Completed` can retain late activation failures, typed
+child failures and descendant projections; it is not a clean-retirement flag.
+Observe publishes its outcome before notifying waiters and can resume a user
+waker panic after attempting every notification. Receipt derivation/publication
+must preserve the untouched original native result across those producer faults.
+No new receipt code or full R11 witness was executed in this investigation.
+
+Accepted failure-visibility decision (2026-10-09 UTC): the user selected
+**explicit result: retirement not established**, after comparison with leaving
+observers pending until the separately selected waiting policy ends. Notify
+permitted observers when the acquired task result cannot establish full
+retirement; retain original causes with their native owner. Do not claim success
+or clean cleanup from that inability result. This selects failure visibility,
+not receipt fields, public API, classification policy or wait limits.
+Independent preparation compares concrete borrowed leaf and aggregate policies
+against adding a universal classifier. The current owners have no verified
+universal predicate for their application-owned descendant/failure products.
+That policy ownership and a common report shape remain separate decisions.
+
+Fresh owning-regression checks use the root pinned Nix shell, current Engine
+0.2.2 and Bombay Macros 0.1.2. Each command below passed in debug and again
+with `--release`; each exact filter ran one test:
+
+```text
+nix develop -c cargo test --locked -p bombay-rs --lib local::environment::tests::dropped_finish_waiter_settles_actor_owned_activation_task -- --exact
+nix develop -c cargo test --locked -p bombay-rs --lib local::environment::tests::owner_retirement_preserves_later_activation_task_panic -- --exact
+nix develop -c cargo test --locked -p bombay-rs --lib launch::tests::startup_failure_retains_original_native_payload_lifetime -- --exact
+nix develop -c cargo test --locked -p bombay-rs --lib local::effects::creation::child_projection_panic::actual_projection_panic_keeps_origin_native_cause_and_later_sibling -- --exact
+```
+
+`nix develop -c cargo test --locked -p bombay-rs --lib
+observe::external_tests::panic_safety::` also passed all four tests in each
+profile. These existing owner controls prove held activation settlement, late
+native failure retention, exact panic-payload lifetime, projection-panic custody
+and notification/published-outcome preservation after a user waker panic.
+They do not execute a new receipt, classifier, service connection, protected
+remote stop or R11 inversion. The creation test's outside-fold publication is
+a private fixture, not authorization for a production global callback.
+
+Pending report-family choice: one small Bombay-defined local report for all
+exported actor shapes (recommended), or an application-specific report type
+carried through each export/observation API. A common report would preserve
+typed service composition without cloning or storing complete native errors;
+the parent still owns the full original. This does not select fields, public
+names/API, classification ownership or implementation. Neither alternative
+permits type erasure or replacing the owning Observe primitive.
+
+Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
+tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
+tests: +0 / -0 / net 0; public API: +0 types / -0 types.
+Documentation: +129 / -23 / net +106.
+Pinned-Nix law-manifest tests pass all nine in debug and optimized builds;
+all 48 relative file links resolve and whitespace checks pass. These checks
+verify the decision records, not any new retirement or networking implementation.
 
 The smaller child-only attachment proposal is prepared but **unadopted**:
 reuse the existing projected-task handoff's publication authority, retain its
