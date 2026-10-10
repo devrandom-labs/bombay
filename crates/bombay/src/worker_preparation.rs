@@ -138,7 +138,10 @@ mod tests {
     use crate::local::effects::{CapabilityRetirement, CommitActions};
     use crate::local::environment::LocalResidual;
     use crate::local::execution::{ActivationTasks, LocalRetirementRequest, OwnerCancellation};
-    use crate::{ActorExecutionOutcome, ActorSpace, MailAddr};
+    use crate::{
+        ActorExecutionOutcome, ActorFailureAssessment, ActorRetirementReport, ActorSpace, MailAddr,
+        RetirementAssessment,
+    };
     use behavior::{
         ActionItemResult, BehaviorSettlements, EventIngress, InitializationTurn, MessageProtocol,
         SourceAdmission, SourceProgress, SourceSettlementCustody, UserEvent,
@@ -963,6 +966,11 @@ mod tests {
                             mem::take(&mut owner.rejected),
                             mem::take(&mut owner.operations).into(),
                         ),
+                        operation_failures: ActorFailureAssessment::Incomplete,
+                        descendant_report: ActorRetirementReport::new(
+                            RetirementAssessment::NotEstablished,
+                            ActorFailureAssessment::Incomplete,
+                        ),
                         terminal_report: None,
                         retirement_failures: Vec::new(),
                     });
@@ -1225,6 +1233,7 @@ mod tests {
                         descendants,
                         terminal_report,
                         retirement_failures,
+                        ..
                     }),
                 ) => {
                     let (control, unexpected_failures) = activation_tasks.settle().await;
@@ -1438,6 +1447,7 @@ mod tests {
                 descendants,
                 terminal_report,
                 retirement_failures,
+                ..
             } = host.retire().await;
             assert!(terminal_report.is_none());
             assert!(retirement_failures.is_empty());
@@ -1560,6 +1570,7 @@ mod tests {
                     descendants,
                     terminal_report,
                     retirement_failures,
+                    ..
                 } = host.retire().await;
                 assert!(terminal_report.is_none());
                 assert!(retirement_failures.is_empty());
@@ -1761,6 +1772,7 @@ mod tests {
                 descendants,
                 terminal_report,
                 retirement_failures,
+                ..
             } = host.retire().await;
             let (events, failures) = activation_tasks.settle().await;
             (
@@ -2138,6 +2150,7 @@ mod tests {
                             descendants,
                             terminal_report,
                             retirement_failures,
+                            ..
                         } = retired;
                         let (events, failures) = activation_tasks.settle().await;
                         (
@@ -2168,6 +2181,7 @@ mod tests {
                             descendants,
                             terminal_report,
                             retirement_failures,
+                            ..
                         } = retired;
                         let (events, failures) = activation_tasks.settle().await;
                         (
@@ -2504,6 +2518,8 @@ mod tests {
             let Some(CapabilityRetirement {
                 activation_tasks,
                 descendants,
+                operation_failures,
+                descendant_report,
                 terminal_report,
                 retirement_failures,
             }) = owner.received_work.take()
@@ -2516,6 +2532,8 @@ mod tests {
             *received = Some(CapabilityRetirement {
                 activation_tasks: ActivationTasks::new(),
                 descendants: (descendants, owner.work_controls, owner.work_failures),
+                operation_failures,
+                descendant_report,
                 terminal_report,
                 retirement_failures,
             });
@@ -2710,6 +2728,7 @@ mod tests {
                     terminal_report,
                     retirement_failures,
                     unread_owner_cancellation,
+                    ..
                 },
         } = joined
         else {

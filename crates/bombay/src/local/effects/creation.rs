@@ -13,6 +13,7 @@ use crate::local::effects::{
 use crate::local::endpoint::InstalledActor;
 use crate::local::environment::{LocalActivationRejection, LocalResidual};
 use crate::local::ingress::DEFAULT_USER_CAPACITY;
+use crate::observe;
 use crate::terminal::{ActorRetirement, ProjectTerminal};
 use crate::worker_preparation::{WorkerPreparationSource, settle_worker_preparation};
 use behavior::{
@@ -254,7 +255,12 @@ where
                     .binding
                     .take()
                     .expect("fresh child installation awaits one binding acknowledgement");
-                let task = ProjectedTask::project(installed.task, Origins::origin(address, route));
+                let (retirement_publisher, retirement) = observe::pair();
+                let task = ProjectedTask::project(
+                    installed.task,
+                    Origins::origin(address, route),
+                    retirement_publisher,
+                );
                 self.child_bindings
                     .as_mut()
                     .expect("live child bindings remain installed")
@@ -267,7 +273,8 @@ where
                             control: installed.control,
                             task: Some(task),
                             joined: None,
-                            termination_notification: None,
+                            notifications: None,
+                            retirement: retirement.clone(),
                         },
                     );
                 let acknowledgement = binding.send(());
@@ -275,8 +282,9 @@ where
                     acknowledgement.is_ok(),
                     "the privately committed child awaits its recorded binding"
                 );
-                let actor =
-                    EstablishedActor::<Child>::issued(InstalledActor::new(endpoint, control));
+                let actor = EstablishedActor::<Child>::issued(InstalledActor::new(
+                    endpoint, control, retirement,
+                ));
                 ItemSettlement::Accepted(ChildCreationOutcome::Established(CommittedChild::new(
                     id, kind, actor,
                 )))
@@ -302,6 +310,7 @@ where
                 terminal_report,
                 retirement_failures,
                 termination_notification,
+                retirement_report,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -330,6 +339,7 @@ where
                             terminal_report,
                             retirement_failures,
                             termination_notification,
+                            retirement_report,
                         },
                     );
                 ItemSettlement::Accepted(ChildCreationOutcome::InitializationRejected {
@@ -348,6 +358,7 @@ where
                 terminal_report,
                 retirement_failures,
                 termination_notification,
+                retirement_report,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -376,6 +387,7 @@ where
                             terminal_report,
                             retirement_failures,
                             termination_notification,
+                            retirement_report,
                         },
                     );
                 ItemSettlement::Accepted(ChildCreationOutcome::InitializationPanicked {
@@ -394,6 +406,7 @@ where
                 terminal_report,
                 retirement_failures,
                 termination_notification,
+                retirement_report,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -430,6 +443,7 @@ where
                             terminal_report,
                             retirement_failures,
                             termination_notification,
+                            retirement_report,
                         },
                     );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
@@ -449,6 +463,7 @@ where
                 terminal_report,
                 retirement_failures,
                 termination_notification,
+                retirement_report,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -479,6 +494,7 @@ where
                             terminal_report,
                             retirement_failures,
                             termination_notification,
+                            retirement_report,
                         },
                     );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
@@ -489,6 +505,7 @@ where
             }
             Err(SpawnError::Unpublished {
                 termination_notification,
+                retirement_report,
                 outcome:
                     ActorExecutionOutcome::ActivationPanicked {
                         behavior,
@@ -506,6 +523,7 @@ where
                                 source_index: None,
                                 acquired_ingress: None,
                                 unread_owner_cancellation,
+                                ..
                             },
                         additional_failures,
                         payload,
@@ -537,6 +555,7 @@ where
                             terminal_report,
                             retirement_failures,
                             termination_notification,
+                            retirement_report,
                         },
                     );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {

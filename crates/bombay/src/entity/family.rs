@@ -24,7 +24,7 @@ use crate::address::{ApplicationAddresses, MailAddr};
 use crate::launch::SpawnError;
 use crate::local::endpoint::ActorRef;
 use crate::topology::Hosts as LocalHosts;
-use crate::{ActorRetirement, RetirementNotificationError};
+use crate::{ActorRetirement, ActorRetirementReport, RetirementNotificationError};
 
 use super::bombay::{
     BombayEntityRuntime, NativeEntityHost, NativeEntityLease, bombay_entity_runtime,
@@ -228,6 +228,7 @@ where
     /// Actor launch failed with exact native state and its acquired notification.
     Launch {
         retirement: ActorRetirement<B, Terminal, ChildFailures>,
+        retirement_report: ActorRetirementReport,
         termination_notification: Result<(), RetirementNotificationError>,
     },
 }
@@ -239,8 +240,9 @@ where
 {
     pub(crate) fn from_launch(failure: SpawnError<B, (Vec<Terminal>, ChildFailures)>) -> Self {
         match failure.into_retirement() {
-            Ok((retirement, termination_notification)) => Self::Launch {
+            Ok((retirement, retirement_report, termination_notification)) => Self::Launch {
                 retirement,
+                retirement_report,
                 termination_notification,
             },
             Err((behavior, reason)) => Self::AllocationRejected { behavior, reason },

@@ -15,6 +15,7 @@ use crate::local::ingress::{
 use crate::local::ingress::{EndpointMailbox, EntityIngress, LocalIngress};
 use crate::observe::Observation;
 use crate::termination::Termination;
+use crate::{ActorFailureAssessment, ActorRetirementReport, RetirementAssessment};
 #[cfg(test)]
 use behavior::InjectEvent;
 use behavior::{
@@ -236,6 +237,8 @@ where
                 Some(CapabilityRetirement {
                     activation_tasks,
                     descendants,
+                    operation_failures,
+                    descendant_report,
                     terminal_report,
                     retirement_failures,
                 }),
@@ -251,6 +254,8 @@ where
                         ingress,
                         activation_tasks,
                         descendants,
+                        operation_failures,
+                        descendant_report,
                         capability_failures: Vec::new(),
                         terminal_report,
                         retirement_failures,
@@ -264,6 +269,8 @@ where
                         ingress,
                         activation_tasks,
                         descendants,
+                        operation_failures,
+                        descendant_report,
                         capability_failures: Vec::new(),
                         terminal_report,
                         retirement_failures,
@@ -780,6 +787,8 @@ where
                     Some(CapabilityRetirement {
                         activation_tasks,
                         descendants,
+                        operation_failures,
+                        descendant_report,
                         terminal_report,
                         retirement_failures,
                     }),
@@ -807,6 +816,8 @@ where
                     ingress,
                     activation_tasks,
                     descendants,
+                    operation_failures,
+                    descendant_report,
                     capability_failures: Vec::new(),
                     terminal_report,
                     retirement_failures,
@@ -827,6 +838,8 @@ pub(crate) enum LocalResidual<B: BehaviorSettlements, U, Descendants = ()> {
         ingress: Drained<B::Event, U>,
         activation_tasks: ActivationTasks<B::Event>,
         descendants: Descendants,
+        operation_failures: ActorFailureAssessment,
+        descendant_report: ActorRetirementReport,
         capability_failures: Vec<JoinError>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
@@ -842,6 +855,8 @@ pub(crate) enum LocalResidual<B: BehaviorSettlements, U, Descendants = ()> {
         ingress: Drained<B::Event, U>,
         activation_tasks: ActivationTasks<B::Event>,
         descendants: Descendants,
+        operation_failures: ActorFailureAssessment,
+        descendant_report: ActorRetirementReport,
         capability_failures: Vec<JoinError>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
@@ -859,11 +874,165 @@ pub(crate) enum LocalResidual<B: BehaviorSettlements, U, Descendants = ()> {
         ingress: Drained<B::Event, U>,
         activation_tasks: ActivationTasks<B::Event>,
         descendants: Descendants,
+        operation_failures: ActorFailureAssessment,
+        descendant_report: ActorRetirementReport,
         capability_failures: Vec<JoinError>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         unread_owner_cancellation: Option<()>,
     },
+}
+
+impl<B: BehaviorSettlements, U, Descendants> LocalResidual<B, U, Descendants> {
+    /// These residuals cross the standard interpreter, mailbox and address retirement barrier.
+    /// Joined task custody and acquired descendant proof complete the independent resource axis.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one pure projection preserves both assessments across every retained residual phase"
+    )]
+    pub(crate) fn retirement_report(&self) -> ActorRetirementReport {
+        let progress =
+            match self {
+                Self::Prepared { .. } => ActorFailureAssessment::NoFailuresFound,
+                Self::Uncommitted { initialization, .. } => match initialization {
+                    InterpretationProgress::Original(_)
+                    | InterpretationProgress::Interpreting(_) => ActorFailureAssessment::Incomplete,
+                    InterpretationProgress::Completed(Interpretation::Corrupt(_)) => {
+                        ActorFailureAssessment::FailuresFound
+                    }
+                    InterpretationProgress::Completed(Interpretation::Complete(_)) => {
+                        ActorFailureAssessment::NoFailuresFound
+                    }
+                },
+                Self::Retired {
+                    interpretation,
+                    source,
+                    ..
+                } => {
+                    let interpretation = match interpretation {
+                        Some(
+                            InterpretationProgress::Original(_)
+                            | InterpretationProgress::Interpreting(_),
+                        ) => ActorFailureAssessment::Incomplete,
+                        Some(InterpretationProgress::Completed(Interpretation::Corrupt(_))) => {
+                            ActorFailureAssessment::FailuresFound
+                        }
+                        Some(InterpretationProgress::Completed(Interpretation::Complete(_)))
+                        | None => ActorFailureAssessment::NoFailuresFound,
+                    };
+                    let source = match source {
+                        Some(SourceProgress::Original(_) | SourceProgress::Offering(_)) => {
+                            ActorFailureAssessment::Incomplete
+                        }
+                        Some(SourceProgress::Completed(SourceCustody::Admitted(_))) => {
+                            ActorFailureAssessment::Incomplete
+                        }
+                        Some(SourceProgress::Completed(SourceCustody::Closed(_))) => {
+                            ActorFailureAssessment::FailuresFound
+                        }
+                        Some(SourceProgress::Completed(
+                            SourceCustody::Exhausted(_) | SourceCustody::Retained(_),
+                        ))
+                        | None => ActorFailureAssessment::NoFailuresFound,
+                    };
+                    interpretation.combine(source)
+                }
+            };
+        let (
+            activation_tasks,
+            operation_failures,
+            descendant_report,
+            capability_failures,
+            terminal_report,
+            retirement_failures,
+            received_interpretation,
+            received_source,
+            acquired_ingress,
+        ) = match self {
+            Self::Prepared {
+                activation_tasks,
+                operation_failures,
+                descendant_report,
+                capability_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                acquired_ingress,
+                ..
+            }
+            | Self::Uncommitted {
+                activation_tasks,
+                operation_failures,
+                descendant_report,
+                capability_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                acquired_ingress,
+                ..
+            }
+            | Self::Retired {
+                activation_tasks,
+                operation_failures,
+                descendant_report,
+                capability_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                acquired_ingress,
+                ..
+            } => (
+                activation_tasks,
+                operation_failures,
+                descendant_report,
+                capability_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                acquired_ingress,
+            ),
+        };
+        let retirement = if activation_tasks.is_empty() {
+            RetirementAssessment::Established
+        } else {
+            RetirementAssessment::NotEstablished
+        };
+        let native_failures = if !capability_failures.is_empty()
+            || !retirement_failures.is_empty()
+            || matches!(terminal_report, Some(Err(_)))
+            || matches!(received_interpretation, Some(Interpretation::Corrupt(_)))
+            || matches!(
+                acquired_ingress,
+                Some(ControlFlow::Break(
+                    LocalRetirementRequest::CapabilityFailed(_)
+                ))
+            ) {
+            ActorFailureAssessment::FailuresFound
+        } else if !activation_tasks.is_empty() {
+            ActorFailureAssessment::Incomplete
+        } else {
+            ActorFailureAssessment::NoFailuresFound
+        };
+        let source_failures = match received_source {
+            Some(SourceCustody::Closed(_)) => ActorFailureAssessment::FailuresFound,
+            Some(SourceCustody::Admitted(_)) => ActorFailureAssessment::Incomplete,
+            Some(SourceCustody::Exhausted(_) | SourceCustody::Retained(_)) | None => {
+                ActorFailureAssessment::NoFailuresFound
+            }
+        };
+        ActorRetirementReport::new(
+            retirement,
+            operation_failures
+                .combine(progress)
+                .combine(native_failures)
+                .combine(source_failures),
+        )
+        .combine(*descendant_report)
+    }
 }
 
 /// Exact failure selected by the concrete local activation owner.
@@ -1296,6 +1465,11 @@ mod tests {
             *received = Some(CapabilityRetirement {
                 activation_tasks,
                 descendants: RetirementCustody(23),
+                operation_failures: ActorFailureAssessment::Incomplete,
+                descendant_report: ActorRetirementReport::new(
+                    RetirementAssessment::NotEstablished,
+                    ActorFailureAssessment::Incomplete,
+                ),
                 terminal_report: None,
                 retirement_failures: Vec::new(),
             });
@@ -1586,6 +1760,7 @@ mod tests {
                     acquired_ingress,
                     terminal_report,
                     retirement_failures,
+                    ..
                 },
             behavior: ActivationProbe,
             additional_failures,
@@ -1688,6 +1863,7 @@ mod tests {
             source_index,
             acquired_ingress,
             retirement_failures,
+            ..
         } = residual
         else {
             panic!("actual interpreted activation retires through its owning port");
@@ -2141,6 +2317,7 @@ mod tests {
             source_index,
             acquired_ingress,
             retirement_failures,
+            ..
         } = residual
         else {
             panic!("interpreted initialization was returned as uncommitted")
@@ -2830,6 +3007,7 @@ mod tests {
             descendants,
             capability_failures,
             unread_owner_cancellation,
+            ..
         } = retired
         else {
             panic!("native acquisition comparison must return the actual joined retirement");
@@ -3000,6 +3178,11 @@ mod source_acquisition_custody {
             *received = Some(CapabilityRetirement {
                 activation_tasks: owner.activation_tasks,
                 descendants: (),
+                operation_failures: ActorFailureAssessment::Incomplete,
+                descendant_report: ActorRetirementReport::new(
+                    RetirementAssessment::NotEstablished,
+                    ActorFailureAssessment::Incomplete,
+                ),
                 terminal_report: None,
                 retirement_failures: Vec::new(),
             });
@@ -3159,6 +3342,7 @@ mod source_acquisition_custody {
             source_index,
             acquired_ingress,
             retirement_failures,
+            ..
         } = settled
         else {
             panic!("actual task retirement preserves all available source event custody");
@@ -3329,6 +3513,7 @@ mod source_acquisition_custody {
                 acquired_ingress,
                 terminal_report,
                 retirement_failures,
+                ..
             } = residual
             else {
                 panic!("the actual retirement retains its complete environment");
@@ -3471,6 +3656,7 @@ mod source_acquisition_custody {
                 source_index,
                 acquired_ingress,
                 retirement_failures,
+                ..
             } = residual
             else {
                 panic!("actual retirement preserves the complete available residual");
@@ -3695,6 +3881,7 @@ mod shutdown_admission_contract {
                     source_index,
                     acquired_ingress,
                     retirement_failures,
+                    ..
                 },
             completion,
             additional_failures,
@@ -3795,6 +3982,7 @@ mod shutdown_admission_contract {
                     source_index,
                     acquired_ingress,
                     retirement_failures,
+                    ..
                 },
             completion,
             additional_failures,
@@ -3861,6 +4049,8 @@ impl<B: BehaviorSettlements, U, Descendants, Capabilities>
                 terminal_report,
                 unread_owner_cancellation,
                 descendants: (descendants, capabilities),
+                operation_failures,
+                descendant_report,
                 received_interpretation,
                 received_source,
                 source_index,
@@ -3874,6 +4064,8 @@ impl<B: BehaviorSettlements, U, Descendants, Capabilities>
                     terminal_report,
                     unread_owner_cancellation,
                     descendants,
+                    operation_failures,
+                    descendant_report,
                     received_interpretation,
                     received_source,
                     source_index,
@@ -3890,6 +4082,8 @@ impl<B: BehaviorSettlements, U, Descendants, Capabilities>
                 terminal_report,
                 unread_owner_cancellation,
                 descendants: (descendants, capabilities),
+                operation_failures,
+                descendant_report,
                 received_interpretation,
                 received_source,
                 source_index,
@@ -3904,6 +4098,8 @@ impl<B: BehaviorSettlements, U, Descendants, Capabilities>
                     terminal_report,
                     unread_owner_cancellation,
                     descendants,
+                    operation_failures,
+                    descendant_report,
                     received_interpretation,
                     received_source,
                     source_index,
@@ -3920,6 +4116,8 @@ impl<B: BehaviorSettlements, U, Descendants, Capabilities>
                 terminal_report,
                 unread_owner_cancellation,
                 descendants: (descendants, capabilities),
+                operation_failures,
+                descendant_report,
                 interpretation,
                 source,
                 received_interpretation,
@@ -3936,6 +4134,8 @@ impl<B: BehaviorSettlements, U, Descendants, Capabilities>
                     terminal_report,
                     unread_owner_cancellation,
                     descendants,
+                    operation_failures,
+                    descendant_report,
                     interpretation,
                     source,
                     received_interpretation,

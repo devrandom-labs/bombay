@@ -10,11 +10,12 @@ use crate::local::effects::observation::TerminationObservations;
 use crate::local::effects::timers::LocalTimers;
 use crate::local::execution::ActivationTasks;
 use crate::termination::{TerminalReportDisposition, Termination};
+use crate::{ActorFailureAssessment, ActorRetirementReport, RetirementAssessment};
 use behavior::{
     ActionSettlement, ActionSettlements, Behavior, BehaviorAddr, BehaviorMessage,
-    BehaviorSettlements, CreationSettlements, InjectEvent, InterpretCreations, InterpretSends,
-    InterpretationProgress, Never, Protocol, SendSettlements, SourceProgress,
-    SourceSettlementCustody, Step,
+    BehaviorSettlements, ClassifySettlement, CreationSettlements, InjectEvent, InterpretCreations,
+    InterpretSends, InterpretationProgress, Never, Protocol, SendSettlements, SettlementStatus,
+    SourceProgress, SourceSettlementCustody, Step,
 };
 use behavior_actors::ObservationId;
 use bombay_engine::ActionsOf;
@@ -47,6 +48,7 @@ where
             timers: inputs.timers,
             observations: inputs.observations,
             next_child_route: 0,
+            operation_failures: ActorFailureAssessment::NoFailuresFound,
             child_bindings: Some(child_bindings),
             activation_tasks: Some(ActivationTasks::new()),
             exact_observations: Arc::new(Mutex::new(Some(HashMap::new()))),
@@ -73,6 +75,7 @@ where
             timers: self.timers,
             observations: self.observations,
             next_child_route: self.next_child_route,
+            operation_failures: self.operation_failures,
             child_bindings: self.child_bindings,
             activation_tasks: self.activation_tasks,
             exact_observations: self.exact_observations,
@@ -144,6 +147,11 @@ where
                 *received = Some(CapabilityRetirement {
                     activation_tasks,
                     descendants: (Vec::new(), failures),
+                    operation_failures: owner.operation_failures,
+                    descendant_report: ActorRetirementReport::new(
+                        RetirementAssessment::Established,
+                        ActorFailureAssessment::NoFailuresFound,
+                    ),
                     terminal_report: None,
                     retirement_failures: Vec::new(),
                 });
@@ -173,6 +181,7 @@ where
             &mut owner.child_bindings,
             &mut retirement.descendants.0,
             &mut retirement.descendants.1,
+            &mut retirement.descendant_report,
         )
         .await;
         if owner.child_bindings.is_some() {
@@ -330,7 +339,8 @@ where
             ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>,
             B::Event,
             Custody = B::SourceCustody,
-        > + Send,
+        > + ClassifySettlement
+        + Send,
     ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>:
         RetireCapabilities<Event = B::Event> + TerminalReportTransaction + Send,
 {
@@ -354,6 +364,16 @@ where
         };
         ActionsOf::<B>::interpret::<_, B::Event, behavior::Here>(progress, self.capabilities_mut())
             .await;
+        if let Some(InterpretationProgress::Completed(settlement)) = progress {
+            let failures = match settlement.settlement_status() {
+                SettlementStatus::Accepted => ActorFailureAssessment::NoFailuresFound,
+                SettlementStatus::Rejected | SettlementStatus::Corrupt => {
+                    ActorFailureAssessment::FailuresFound
+                }
+            };
+            let capabilities = self.capabilities_mut();
+            capabilities.operation_failures = capabilities.operation_failures.combine(failures);
+        }
         self.capabilities_mut()
             .finish_terminal_reports(terminal_disposition);
     }
@@ -448,6 +468,7 @@ pub(crate) struct ApplicationCapabilities<
     timers: LocalTimers<C::Event>,
     observations: TerminationObservations<MailAddr, C::Event>,
     next_child_route: u64,
+    operation_failures: ActorFailureAssessment,
     child_bindings: Option<Bindings>,
     activation_tasks: Option<ActivationTasks<C::Event>>,
     #[expect(
@@ -467,6 +488,8 @@ pub(crate) struct NoParent;
 pub(crate) struct CapabilityRetirement<E, Descendants> {
     pub(crate) activation_tasks: ActivationTasks<E>,
     pub(crate) descendants: Descendants,
+    pub(crate) operation_failures: ActorFailureAssessment,
+    pub(crate) descendant_report: ActorRetirementReport,
     pub(crate) terminal_report: Option<Result<(), Termination<MailAddr>>>,
     pub(crate) retirement_failures: Vec<Box<dyn Any + Send>>,
 }
@@ -2452,6 +2475,7 @@ mod atomic_interpretation_contract {
                 descendants,
                 capability_failures,
                 unread_owner_cancellation,
+                ..
             } = residual
             else {
                 panic!("whole local retirement");
@@ -2772,6 +2796,7 @@ mod atomic_interpretation_contract {
                 descendants,
                 capability_failures,
                 unread_owner_cancellation,
+                ..
             } = residual
             else {
                 panic!("whole local retirement");
@@ -3006,6 +3031,7 @@ mod live_capability_retirement {
             descendants,
             capability_failures,
             unread_owner_cancellation,
+            ..
         } = residual
         else {
             panic!("the failed live actor retains its actual retired environment");
@@ -3501,12 +3527,16 @@ mod capability_task_retirement {
             let CapabilityRetirement {
                 activation_tasks,
                 descendants,
+                operation_failures,
+                descendant_report,
                 terminal_report,
                 retirement_failures,
             } = lower;
             *received = Some(CapabilityRetirement {
                 activation_tasks,
                 descendants: (descendants, (activation, preparation)),
+                operation_failures,
+                descendant_report,
                 terminal_report,
                 retirement_failures,
             });
@@ -5385,6 +5415,11 @@ impl<E, Descendants> CapabilityRetirement<E, Descendants> {
         Self {
             activation_tasks: ActivationTasks::new(),
             descendants,
+            operation_failures: ActorFailureAssessment::Incomplete,
+            descendant_report: ActorRetirementReport::new(
+                RetirementAssessment::NotEstablished,
+                ActorFailureAssessment::Incomplete,
+            ),
             terminal_report: None,
             retirement_failures: Vec::new(),
         }

@@ -2,8 +2,12 @@ use crate::address::MailAddr;
 use crate::launch::{ActorSpace, ProjectedTask};
 use crate::local::endpoint::{ActorRef, InstalledActor};
 use crate::local::environment::LocalActivationRejection;
+use crate::observe::Observation;
 use crate::terminal::{ChildFailure, ChildOrigin, RetirementNotificationError};
 use crate::termination::Termination;
+use crate::{
+    ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport, RetirementAssessment,
+};
 use behavior::{
     Behavior, BirthMode, ChildHead, ChildOccurrenceProduct, ChildOccurrenceShape, ChildOccurrences,
     ChildTail, CreationId, CreationKind, EstablishedActor,
@@ -14,6 +18,7 @@ use core::marker::PhantomData;
 use std::any::Any;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use tokio::sync::oneshot::error::RecvError;
 use tokio::task::JoinError;
 
 pub(crate) trait ChildOriginAt<Position, Child: Behavior> {
@@ -142,6 +147,7 @@ where
                         terminal_report,
                         retirement_failures,
                         termination_notification,
+                        retirement_report,
                         ..
                     } => {
                         primary_failure.is_some()
@@ -149,6 +155,14 @@ where
                             || terminal_report.is_some()
                             || !retirement_failures.is_empty()
                             || termination_notification.is_err()
+                            || !matches!(
+                                retirement_report.failures(),
+                                ActorFailureAssessment::NoFailuresFound
+                            )
+                            || !matches!(
+                                retirement_report.retirement(),
+                                RetirementAssessment::Established
+                            )
                     }
                     CreationBinding::Rejected => false,
                 } {
@@ -237,6 +251,7 @@ pub(crate) trait RetireChildTasks {
         bindings: &mut Option<Self>,
         retired: &mut Vec<Self::Root>,
         failures: &mut Self::Failures,
+        descendant_report: &mut ActorRetirementReport,
     ) -> impl core::future::Future<Output = ()> + Send
     where
         Self: Sized;
@@ -263,6 +278,7 @@ impl<Root> RetireChildTasks for NoChildBindings<Root> {
         bindings: &mut Option<Self>,
         _retired: &mut Vec<Self::Root>,
         _failures: &mut Self::Failures,
+        _descendant_report: &mut ActorRetirementReport,
     ) -> impl core::future::Future<Output = ()> + Send {
         async move {
             *bindings = None;
@@ -326,6 +342,7 @@ where
         bindings: &mut Option<Self>,
         retired: &mut Vec<Self::Root>,
         failures: &mut Self::Failures,
+        descendant_report: &mut ActorRetirementReport,
     ) {
         let Some(owner) = bindings.as_mut() else {
             return;
@@ -359,18 +376,39 @@ where
                     endpoint,
                     task,
                     joined,
-                    termination_notification,
+                    notifications,
+                    retirement,
                     ..
                 } => {
-                    ProjectedTask::receive_retirement(task, joined, termination_notification).await;
-                    if task.is_some() || joined.is_none() || termination_notification.is_none() {
+                    ProjectedTask::receive_retirement(task, joined, notifications).await;
+                    if task.is_some() || joined.is_none() || notifications.is_none() {
                         return;
+                    }
+                    let report = retirement.try_get().unwrap_or_else(|| {
+                        ActorRetirementReport::new(
+                            RetirementAssessment::NotEstablished,
+                            ActorFailureAssessment::Incomplete,
+                        )
+                    });
+                    *descendant_report = descendant_report.combine(report);
+                    if matches!(joined, Some(Err(_) | Ok(Err(_))))
+                        || matches!(notifications, Some(Err(_)))
+                        || matches!(notifications, Some(Ok(receipts)) if receipts.has_failures())
+                    {
+                        *descendant_report =
+                            descendant_report.with_failures(ActorFailureAssessment::FailuresFound);
                     }
                     // Any origin construction borrows the original binding;
                     // no whole parent is taken across this policy call.
                     Origins::origin(endpoint.address(), *route)
                 }
-                CreationBinding::StartupRejected { address, route, .. } => {
+                CreationBinding::StartupRejected {
+                    address,
+                    route,
+                    retirement_report,
+                    ..
+                } => {
+                    *descendant_report = descendant_report.combine(*retirement_report);
                     Origins::origin(*address, *route)
                 }
                 CreationBinding::Rejected => {
@@ -392,39 +430,42 @@ where
                     endpoint,
                     control,
                     joined: Some(joined),
-                    termination_notification: Some(termination_notification),
+                    notifications: Some(notifications),
+                    retirement,
                     ..
                 } => match joined {
                     Ok(Ok(terminal)) => {
                         retired.push(terminal);
-                        if let Err(error) = termination_notification {
-                            failures
-                                .0
-                                .push(ChildFailure::TerminationNotificationFailed {
-                                    id,
-                                    kind,
-                                    origin,
-                                    actor: EstablishedActor::issued(InstalledActor::new(
-                                        endpoint, control,
-                                    )),
-                                    error,
-                                });
+                        if !matches!(&notifications, Ok(receipts) if !receipts.has_failures()) {
+                            failures.0.push(ChildFailure::NotificationsFailed {
+                                id,
+                                kind,
+                                origin,
+                                actor: EstablishedActor::issued(InstalledActor::new(
+                                    endpoint, control, retirement,
+                                )),
+                                notifications,
+                            });
                         }
                     }
                     Ok(Err(error)) => failures.0.push(ChildFailure::ActorTaskFailed {
-                        termination_notification,
+                        notifications,
                         id,
                         kind,
                         origin,
-                        actor: EstablishedActor::issued(InstalledActor::new(endpoint, control)),
+                        actor: EstablishedActor::issued(InstalledActor::new(
+                            endpoint, control, retirement,
+                        )),
                         error,
                     }),
                     Err(error) => failures.0.push(ChildFailure::ProjectionTaskFailed {
-                        termination_notification,
+                        notifications,
                         id,
                         kind,
                         origin,
-                        actor: EstablishedActor::issued(InstalledActor::new(endpoint, control)),
+                        actor: EstablishedActor::issued(InstalledActor::new(
+                            endpoint, control, retirement,
+                        )),
                         error,
                     }),
                 },
@@ -435,11 +476,13 @@ where
                     terminal_report,
                     retirement_failures,
                     termination_notification,
+                    retirement_report,
                     ..
                 } => match primary_failure {
                     Some(DriverError::InitializationPanicked(payload)) => {
                         failures.0.push(ChildFailure::InitializationPanicked {
                             termination_notification,
+                            retirement_report,
                             id,
                             kind,
                             origin,
@@ -451,6 +494,7 @@ where
                     }
                     primary_failure => failures.0.push(ChildFailure::StartupRetirementFailed {
                         termination_notification,
+                        retirement_report,
                         id,
                         kind,
                         origin,
@@ -466,7 +510,8 @@ where
             }
             owner.creation_order.remove(0);
         }
-        Tail::receive_retirement(&mut owner.tail, retired, &mut failures.1).await;
+        Tail::receive_retirement(&mut owner.tail, retired, &mut failures.1, descendant_report)
+            .await;
         if owner.tail.is_none() {
             drop(bindings.take());
         }
@@ -479,7 +524,17 @@ where
         let mut bindings = Some(self);
         let mut retired = Vec::new();
         let mut failures = Self::retirement_failures();
-        Self::receive_retirement(&mut bindings, &mut retired, &mut failures).await;
+        let mut descendant_report = ActorRetirementReport::new(
+            RetirementAssessment::Established,
+            ActorFailureAssessment::NoFailuresFound,
+        );
+        Self::receive_retirement(
+            &mut bindings,
+            &mut retired,
+            &mut failures,
+            &mut descendant_report,
+        )
+        .await;
         assert!(
             bindings.is_none(),
             "the concrete child product completes retirement"
@@ -522,7 +577,8 @@ pub(crate) enum CreationBinding<Child: Behavior, Root> {
         control: ControlSender<Child::Event>,
         task: Option<ProjectedTask<Child, Root>>,
         joined: Option<Result<Result<Root, JoinError>, JoinError>>,
-        termination_notification: Option<Result<(), RetirementNotificationError>>,
+        notifications: Option<Result<ActorNotificationReceipts, RecvError>>,
+        retirement: Observation<ActorRetirementReport>,
     },
     Rejected,
     StartupRejected {
@@ -534,6 +590,7 @@ pub(crate) enum CreationBinding<Child: Behavior, Root> {
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
         termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     },
 }
 
