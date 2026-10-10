@@ -3140,6 +3140,32 @@ cannot approve their own PR, so inventing an approver or using an administrator
 bypass would not establish review. This selects enforceable delivery gates,
 not a pass, review completion, merged correction or registry publication.
 
+Entity conversion refinement before edit: preserve the approved total startup
+sum through one private inherent `EntityActivationError::from_launch`
+conversion. Its two real consumers are address refusal before task creation
+and acquired launch failure after join. It maps the unstarted alternative to
+the exact allocation rejection and started alternatives to their independent
+native/first-notification product. This replaces the inline conversion match
+and keeps the existing private allocation alternative meaningfully owned;
+constructing and immediately destructuring a wrapper just to suppress a lint
+would add no law. The method uses exactly the existing Behavior bound, with
+no new trait/type/policy/default. The independent source review confirms this
+domain provenance rather than inventing an interface from compiler output.
+
+Registry authority investigation corrects the earlier local-credential
+assessment: the organization exposes an existing `CARGO_REGISTRY_SECRET`
+name to all repositories, already used by Bombay publication. No secret
+value was read or logged. Thus absence of a local token is not sufficient to
+classify publishing as blocked. Recommend a separately reviewed manual
+`workflow_dispatch` publisher using that existing secret, pinned Nix, verified
+current `main`, passing required CI and serial dependency-order publication.
+Adopt up to two additional CI/script paths and 150 lines, raising the dependency
+delivery path envelope from 18 to 20; the complete cumulative 250-path and
+4,000-artifact-line ceilings remain sufficient. Verify actual token/package
+authority without exposing the credential, then record registry checksums
+and the clean normal-install consumer. No push/schedule publication trigger,
+invented token authority or registry success is implied by secret availability.
+
 The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
 thirty-four distinct paths, because five sources occur in both sets. Add the
