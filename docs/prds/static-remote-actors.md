@@ -3128,6 +3128,18 @@ integrated; no passing repair gate, full retirement report or remote witness
 is claimed yet. Shared common-error library checking passes through pinned
 Nix; that check alone is not the feature regression.
 
+Controlled repository delivery is now concrete:
+<https://github.com/devrandom-labs/bombay-zenoh> preserves the exact upstream
+base/history on `main`. Actions were disabled during unchanged-base bootstrap,
+before removing incompatible inherited workflows. Adopt required
+`Controlled TLS dependencies` CI, current-head/base verification, enforcement
+for administrators and resolved review conversations. Set required GitHub
+approval count to zero, matching the available Bombay delivery model; retain
+an independent source/CI review before merge. The authenticated PR author
+cannot approve their own PR, so inventing an approver or using an administrator
+bypass would not establish review. This selects enforceable delivery gates,
+not a pass, review completion, merged correction or registry publication.
+
 The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
 thirty-four distinct paths, because five sources occur in both sets. Add the
