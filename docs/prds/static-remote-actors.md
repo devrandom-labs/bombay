@@ -5040,3 +5040,679 @@ this root recount does not invent an exact historical global-path union.
 Complete stage:13 tracked paths, zero untracked; documentation +384/-11/net373.
 Complete root cumulative task:60 tracked paths, zero untracked; documentation
 +2784/-79/net2705. No production/test count is replaced by a document count.
+
+### Parallel research checkpoint: actual local permission and transport custody
+
+Prepared while PR331 final-head CI runs, in the isolated
+`research/static-remote-contracts` branch created from latest main017ec760
+before any new commit. The coordinator fast-forwards that research branch to
+exact locally verified native candidate49254c3 for its public-API experiments;
+this is research against an unmerged candidate, not a claim of delivered API.
+The submitted PR331 tree remains frozen. The research lock selects actual
+registry Communication0.1.4; complete selected Behavior instructions, owning
+primitives and normative runtime/Driver documents remain unchanged.
+
+Automatically select the recommended ordinary-Rust local experiment: two
+independent provider functions through the existing Application Work/service
+and typed Actions result path, before introducing a provider trait or runtime
+attachment. Compare fixture lookup with explicitly scheduled typed provider
+transactions using the already locked Tokio oneshot. Provider observations
+remain Accepted, Invalid, Stale or Unavailable; a label alone cannot issue
+authenticated authority. These are deterministic fixture providers, without
+KERI, cryptographic or production freshness credit. Immutable verified-byte
+evidence and current permission/freshness usability remain separate concerns;
+a fresh local check does not necessarily rerun cryptography. Cache usability
+during a provider partition remains a production policy decision.
+
+Use controlled permission/time inputs only in application-owned service code.
+Prototype one directly borrowed owner, then compare a single owning service
+event loop with a short guarded state using standard Mutex or the already
+locked parking_lot0.12 if shared synchronous callers genuinely require it.
+No new synchronization dependency is selected. All fixture revocation,
+rotation and time updates must go through the same owner. The permission
+check and exact nonwaiting mailbox attempt contain no await; relinquish the
+owner before any provider/capacity wait. Plain functions and exclusive Rust
+ownership are the recommended first comparison because they add no runtime
+coordination state. Distinct atomics/watches or an earlier verdict followed
+by an awaited send cannot substitute for a coherent operation. Production
+clock/skew/freshness rules and coordination API are not inferred from fixtures.
+
+The smallest actual-Application regression uses current-thread Work to fill
+the real root mailbox without yielding, observes actual Full, and retains the
+same protected move-only allocation. Commit revocation or advance controlled
+fixture time beyond expiry before releasing capacity; each retry makes a
+fresh local check. A still-granted control admits the original once. Refused
+controls retain the identical allocation and have zero protected actor effects.
+An ordinary completion command receives its Actions-emitted processing receipt
+before stopping; the complete native root and both notification receipts
+conserve the accepted prefix and protected effect count. Restore the original
+precheck-plus-awaited-send defect and require the intended effect-count
+assertion to fail after cleanup, in debug and optimized builds. Do not copy
+implementation branch labels into the oracle, or claim a full R08 witness
+from this narrower local admission/identity substitution experiment.
+
+In parallel, prepare an actual subprocess transport comparison against the
+exact nine published dependency copies, using existing TLS fixtures and
+configured mutual TLS/private roots in peer and router/two-client layouts.
+Compare query/reply with explicit None consolidation and scoped Querier to
+publish/subscribe with typed test receipts. Native ingress ACL can refuse
+Query/DeclareQueryable before query routing; native low-pass filtering bounds
+payload plus attachment bytes through checked addition. Neither bounds all
+declarations, selector/header bytes or outstanding allowed queries. Source
+inspection finds native per-route pending-query maps and timeout tasks with
+no demonstrated count ceiling or supplied-timeout clamp. Therefore retaining
+native query routing needs an owning limit contract or a proved existing
+mechanism; local admission limits/querier drop do not bound router retention.
+Do not select an owner patch or production command mechanism without real
+subprocess/configuration/cancellation/custody evidence. This comparison can
+reuse owning primitives rather than inventing a transport guard or codec.
+
+Research change record before fixture implementation: no production changes,
+no new defined public types or production dependency/API/default. Maximum
+1400 research test/fixture lines in at most four new source paths: one local
+public-Application experiment, one transport executable source, one subprocess
+coordinator, and one exact evidence/experiment record. Existing source/manifest
+paths and supplied certificate fixtures are reused where possible. Coordinator
+owns manifests, lock, shared contracts and integration; subagents may author
+disjoint owning test/probe paths, with one serialized local Cargo lane.
+Automatically select a bounded cumulative test/fixture ceiling5500, replacing
+4300 before this experiment: current root4070 plus at most1400 fits5470.
+Production ceiling2200 and retained-source ceiling300 stay unchanged; all
+handwritten cross-repository research source counts, with exact local deltas
+and conservative historical global-path accounting retained. These bounds are
+review checkpoints, not runtime resource policies. Real Linux subprocess,
+cryptographic identity, full resource, replay and R01–R25 gates remain open.
+
+Transport fixture contract selected before retaining its executable source:
+closed WorkerRole alternatives Router/Recipient/Caller; ConnectionLayout
+alternatives Peer/RouterClient; TransportOperation alternatives Query/Publication.
+The subprocess coordinator supplies role/layout/operation, explicit TLS address
+and the existing certificate directory. Use Serde/serde_json for typed control
+commands and observation lines, rather than a handwritten framing/codec.
+Control commands Run/Cancel/Release/Exit and events Ready/PotentiallyTransmitted/
+Received/Receipt/WaitEnded/Closed are research observations only. They do not
+issue authenticated authority, actor admission, replay identity or shutdown
+completion. A literal JSON request with different whitespace/field order
+provides an independent exact-byte preservation oracle. A typed test receipt
+carries that original text and a finite observation count; the caller compares
+its bytes, not a reconstructed equivalent JSON object.
+
+The coordinator can release the recipient's retained query/publication receipt
+after cancelling a caller wait; a cancelled wait cannot establish nonexecution.
+Mark possible transmission before entering foreign into_future/wait logic.
+Explicit native fixture channel capacity4 and query timeout5seconds are
+experimental settings, not production defaults or a proof of complete bounds.
+Use stable scoped Querier with None consolidation and matching-query reply
+selection, or existing subscribers/publications; no production operation is
+chosen. Every acquired declaration/session retains its explicit close path.
+Add direct access to the already selected Tokio1.53.1 family in the isolated
+registry consumer only, with its existing runtime/time features. Alternatives
+are handwritten scheduling or a new async dependency; neither is justified.
+Prove that its narrow lock operation preserves every existing package record.
+The standalone manifest remains coordinator-owned; no Bombay production
+manifest, crate default, certificate lifetime or algorithm changes.
+
+Preserve the delivered registry consumer as original evidence: the transport
+experiment instead uses `/tmp/bombay-zenoh-transport-custody`, with exact copied
+manifest/lock inputs and one research package rename/direct existing Tokio
+edge. The original consumer manifest is byte-restored before any Cargo command;
+its lock and source remain untouched. The experiment's manifest and copied
+lock are two additional counted fixture paths; maximum new retained paths6
+replaces4, without changing the300-path cumulative ceiling. Its generated lock
+is separately accounted as an exact reused artifact plus narrow graph delta.
+No external package version may change during this research-only root update.
+
+Transport controller also has Wait: Run invokes native get/put then retains
+the pending receiver, allowing Cancel before a separate Wait. Cancelling
+undeclares the owned Querier or receipt subscriber, without inferring remote
+nonexecution. Prefer native stable matching-status readiness under the explicit
+fixture deadline to blind propagation sleeps. Recipient Release consumes its
+native request, observes the original exact text, then publishes the fixture
+receipt. Native FifoChannel capacity4 is a comparison setting, not a new queue.
+
+Local fixture profile selected before retaining source: controlled now9 and
+deadline10, with expiry when now is at or beyond deadline; fixture revision3
+and marker71 distinguish accepted lookup/scheduled observations. The marker
+has no cryptographic meaning and must not be called a signature or KERI proof.
+The exclusively borrowed PermissionAdmission owns Granted/Revoked and current
+fixture time. Lookup consults its finite fixture table; a scheduled provider
+receives an actual typed Tokio oneshot transaction and validates its marker
+and revision, preserving actual receipt closure as Unavailable. Invalid,
+Stale and Unavailable stay distinct and retain the original command. Both
+providers exercise granted/revoked/expired/invalid/stale/unavailable controls.
+Actual Actions-emitted snapshots and final native actor counts are independent
+of provider verdict labels. The old precheck-plus-awaited-send inversion must
+fail the protected effect-count assertion after complete cleanup in both
+profiles. No production expiry/skew/cache rule is selected from these numbers.
+
+Keep the actual provider result owned beside the final local policy rejection.
+The permission attempt borrows that result and returns the exact command with
+its distinct usability/refusal classification; it cannot erase a scheduled
+provider's original RecvError into an unavailable label. Valid evidence first
+observes actual mailbox Full; invalid/stale/unavailable evidence refuses before
+insertion while that same real mailbox is full. Processing snapshots establish
+accepted-prefix progress before retry, and complete native counts are checked
+after cleanup. This shares facts by observation without duplicating their cause.
+
+Use truthful transport fixture milestones InvocationReturned and
+SessionCloseReturned; replace the proposed Closed event rather than suggesting
+full callback/resource retirement. A native close return is narrower than the
+required owning cleanup proof. Matching readiness proves declarations only,
+not identity. Dedicated subprocess stdin control may block its own control
+thread; it must not run inside a Behavior fold or native networking callback.
+
+Formatted-source checkpoint before expansion: local draft252 handwritten lines
+projects486 under owning rustfmt, and transport draft346 projects up to600.
+Retaining the full native custody oracle and real provider-result consumer
+requires a larger per-file estimate, rather than compressed Rust or omitted
+assertions. Automatically select local650 and transport600 formatted-line
+ceilings, subprocess coordinator150, combined1400; cumulative test ceiling5500
+and source-path ceiling300 remain unchanged. No production/public/dependency
+expansion follows from this formatting estimate. Minimize by truthful ownership,
+not by removing evidence to satisfy a line target.
+
+The local result consumer must be an actual typed Behavior input supplied by a
+required ordinary function parameter shared by both provider bindings. Its
+private verification-observation sum preserves Accepted/Invalid/Stale/Unavailable
+as a derived view, while Work keeps the original native provider cause. The
+actor returns a useful typed Actions processing receipt after consuming it,
+not a no-op command. An explicit named private processing-receipt product
+carries accepted-prefix and protected-command counts, avoiding positional
+count ambiguity. These are fixture-only semantic products, not public
+authority or runtime contracts. Before filling capacity, await that actual
+processing receipt so verification notification does not steal a prefix slot.
+Compare complete final native settlements against the independently specified
+input/processing trace, including that additional genuine verification turn.
+
+Retain the public actor address acquired from the actual Application in the
+observation and compare it with native RootOrigin; do not predict it from
+MailAddr constants or allocation arithmetic. Delete the draft's forwarding
+async retry function: a direct fresh owner attempt already expresses the law,
+and the original-defect inversion can replace that actual service call site.
+No function is retained solely as an inversion seam. Both changes preserve
+the same authority law rather than introducing another policy or abstraction.
+
+Transport source review before execution found the draft control parser
+matching raw uppercase words, contrary to the selected Serde control path.
+Use serde_json to decode the closed control-command sum (JSON strings
+"RUN"/"WAIT"/"CANCEL"/"RELEASE"/"EXIT"); the controller encodes them with its
+standard JSON library. Also preserve worker outcome and native session-close
+result as two named coexisting native receipts through the terminal fixture
+consumer. Returning only the close error would erase an earlier worker error.
+The fixture's terminal consumer explicitly observes/discharges both originals
+after the close attempt, with failure exit if either fails; this is neither
+a new production error API nor proof of full Zenoh retirement.
+
+The concrete transport vector contains amount9007199254740993 and the fixture
+marker in reordered/whitespace-varied JSON. It exercises exact text and a
+large integer without normalization. QueryTarget::All is only a finite
+comparison configuration with one recipient, not an at-most-one authorized
+production targeting decision. Connection timeout2seconds and runtime2threads
+are explicit fixture settings. Their actual callback/resource/liveness limits
+remain unproved, and no numeric setting receives production-default credit.
+
+First actual local debug controls reach complete native cleanup, then fail
+an incorrect fixture oracle: the selected source discharges consumed earlier
+settlements under D-SETTLE1 and retains one final settlement, not a turn-history
+collection. This is an oracle error, not a semantic inverse or passing
+acceptance. Correct it to the complete retained Stop/empty-send/empty-creation
+settlement product. Earlier turns are proved by the independent ordered actor
+trace and all actual typed processing receipts; close and drain the service
+receive lane to establish no extra replies. No runtime retention contract or
+architecture changes. Existing BehaviorBase/NoSends module imports are ordinary
+source requirements, not newly invented interfaces. Final custody and complete
+actor/notification assertions remain. Record both failed setup commands and
+restored control results honestly before claiming the experiment passes.
+
+For that fixture terminal consumer, recommend a private named product of the
+two native Results implementing Rust's existing std::process::Termination,
+so ordinary main returns the preserved product through Result. Alternatives
+are a duplicate boxed aggregate error or dropping one original to fit the
+existing unit Result; neither is needed. The existing standard trait reports
+both results after the actual close attempt, attempts both observations before
+selecting exit status, then explicitly consumes/discharges the two originals.
+Notification failure must produce failure exit too. This is a private fixture
+terminal policy, not a new trait, public product or runtime lifecycle owner.
+
+Narrow the isolated transport manifest to its actual consumers: serde,
+serde_json, Tokio and the top-level published Zenoh copy. The copied generator/
+config/link aliases and maintainer feature declarations belonged to the
+delivered configuration-consumer test, not this executable; remove them.
+Select the already approved explicit TLS profile with defaults disabled.
+Owning transitive packages still resolve through the published graph, with
+no new family or external version selection. Preserve the original consumer
+as evidence and compare its complete external lock records after the update.
+
+The research root lock update selects no new external package or version.
+Removing inherited maintainer options prunes five unused TOML-feature packages
+and the corresponding optional Config-to-TOML edge. Two surviving TOML
+records shorten dependency labels after duplicate versions disappear; their
+resolved edges remain identical. The initial name-only record comparison
+caught these textual differences and stopped before formatting/compilation;
+it cannot distinguish duplicate package versions. Replace that invalid check
+with exact (name,version,source) identities, checksums and normalized resolved
+edges. Admit only the deliberate unused-feature prune, preserving every
+remaining external version/checksum. This is not a general lock refresh.
+
+### Exact-recipient local admission delivered
+
+[PR331](https://github.com/devrandom-labs/bombay/pull/331) merged normally at
+2026-10-10T09:45:37Z, commit
+`9fc225ee0e96e697f0b48b619abe6ea8c6721e7c`, matching reviewed head
+`49254c3d4114eb1ce8661ab61adae951f52a7784`. Required Nix run38039822580
+passed at09:42:14Z, including the authoritative flake checks, bounded Driver
+and Observe fuzz campaigns and their retained artifacts. CodeQL analysis
+38039822624/summary and Deny38039822614 also passed. Independent nonauthor
+source/evidence review is recorded in the truthful coordinator
+[COMMENTED review](https://github.com/devrandom-labs/bombay/pull/331#pullrequestreview-5478399384);
+no formal self-approval, independent Cargo rerun or protection bypass is claimed.
+Ruleset18433270 required the normal PR and passing Nix check; all four observed
+checks passed on the exact head. Full CI log remains
+`/tmp/bombay-exact-admission-final-ci.log`. This prerequisite is now merged.
+AUTH1/NET1 and all full R01–R25 obligations retain their incomplete status.
+
+### Actual local permission research evidence
+
+The final owning integration file permission_admission.rs is550 formatted test
+lines, zero production/API/dependency changes, source SHA
+`a2c112be25dfa979ed332ce5802b7c8f320c9502e1c5790260b955c93f08a69f`.
+Both independent fixture providers pass six actual Application cases each
+in debug and optimized profiles. Distinct revoked and expired inversions
+restore the old cached precheck plus awaited send at the actual service call
+site; each fails for both providers at the intended after-cleanup actor effect
+count1 rather than0, in both profiles. Byte-exact restoration passes. The
+semantic campaign source was e23463bf6f054cb7bafcd56cbd56ebe542c15d99e5511cc12bb4ec61954e4809;
+two subsequent style-only edits have separate final positive controls and
+format/strict target Clippy success, without claiming renewed inversions on
+the later hash. Exact commands, native original custody, source/lock/binary
+identities and setup failures remain in `/tmp/bombay-permission-campaign.json`.
+Independent source/ownership review passes without claiming a separate rerun.
+
+Accepted-prefix order and truthful origin, identical protected allocation,
+real provider-result Actions acknowledgement before capacity filling, snapshot
+processing receipts and service exhaustion, final retained settlement, complete
+root native results and both notification receipts are asserted. The scheduled
+provider is an immediate real oneshot handoff; it is not a timed scheduling,
+pending-provider or cancellation proof. Its actual RecvError stays owned
+outside Application cleanup; fixture lookup invents no native cause. Fixed
+now9/deadline10 and marker/revision values do not select production clocks,
+cache freshness, identity proof or concurrent shared-state coordination. No
+static authority-construction denial, op correlation, retry/resource bound,
+transport or full AUTH1/R08 acceptance is inferred.
+
+### Initial native TLS subprocess observations
+
+Exact published-package transport executable compiles through pinned Nix,
+with defaults disabled/TLS enabled, source546 formatted lines. All eight
+initial debug campaigns pass: receipt and cancelled-wait cases, query and
+publication, peer and router/two-client layouts. Processes have separate
+address spaces and configured mTLS/private roots, discovery disabled. Both
+request and receipt preserve the literal JSON bytes including whitespace,
+field order and integer9007199254740993. After caller cancellation, the
+recipient still obtains the transmitted request and invokes its reply. Native
+invocation/close milestones are recorded without claiming actor admission,
+full callback retirement or remote nonexecution. Exact worker argv, binary
+hash, event traces and exit statuses are in
+`/tmp/bombay-transport-custody-evidence/campaigns.json` with per-case stderr.
+
+Strict source-target Clippy finds two fixture-only issues: a redundant Ok/?
+return and a router control loop that executes at most once. Select direct
+return of the existing Config result and a single standard iterator next,
+with exhaustive control-command matching. No policy, dependency, warning
+allowance or production changes; rerun the eight affected controls after
+formatting, then strict lint. Optimized, adverse configuration, pressure,
+restart and semantic-inversion campaigns remain outstanding. These transport
+observations do not close R17/R20/R23 or select a production command mechanism.
+
+### Fresh native resource and shutdown source audit
+
+The published Zenoh1.10.1 TLS graph has configured session limits and queue
+batch inventories, but these do not prove an aggregate retained-resource
+ceiling. Native ACL passes DeclareKeyExpr before owning registration and
+low-pass passes declarations. Ordinary wire expression IDs/suffix lengths
+are u16; expanded prefix-plus-suffix names have no found configured quota,
+and Resource stores full expressions along its retained tree. RX pool
+exhaustion falls back to allocation, so buffer_size is an inventory rather
+than a hard retained-byte limit. Decode bounds available bytes before vector
+allocation, but occurs before ingress filtering. Eight receive priorities
+each have reliable/best-effort reassembly; their per-channel configured bound
+requires aggregate accounting. Source audit identifies obligations, not a
+measured end-to-end resource proof or selected production correction. Owning
+pressure assertions must precede new limits, interceptors or patches.
+
+Existing ShutdownEstablished carries exact established actor authority and
+correlation through typed Actions; InstalledActor publicly exposes its joined
+retirement observation. Investigate the ordinary application-owned service
+as existing InterpretInstalledActor consumer before retaining a new accessor
+or stop API. A queued parent request still does not prove fresh authorization
+at its later child-control attempt. Root/child mechanics and fresh remote
+permission remain distinct required witnesses. Prepare the smallest genuine
+public Application compile experiment, with no new production abstractions.
+
+For the current native transport fixture, automatically select an additional
+negative control: an invalid caller RELEASE must retain its worker failure,
+attempt Session.close, publish the distinct close milestone and exit failure.
+This uses existing role/control sums and native-result terminal policy. It
+adds no injected network failure, production policy or dependency. Add a
+separate exact-byte inversion by simulating decode/re-encode of the approved
+JSON; the independent literal-byte assertion must fail in both profiles,
+then byte-exact restoration must pass. Cancellation evidence remains limited
+to explicit local declaration relinquishment and observed later recipient
+execution, not remote cancellation or full resource retirement.
+
+### Portable evidence and parallel child-authoring checkpoint
+
+Automatically select retaining the already exercised transport fixture and
+its seven existing test certificate/key files beside this PRD. Their keys are
+public fixture credentials, not deployment identities. The alternative is
+leaving only temporary absolute-path probes; that prevents reviewers from
+reproducing the evidence. Require explicit certificate and evidence-directory
+arguments in the Python controller instead of embedded /tmp locations. Copy
+existing bytes, preserving provenance and hashes; no regeneration, production
+trust roots or TLS-policy change is implied. These fixtures expire in January
+2027 and do not select a deployment certificate-rotation policy.
+
+This research stage expands to at most16 new source/manifest/fixture paths,
+including one local admission test, the standalone transport manifest/lock,
+Rust executable, Python observer, seven certificate files and one meaningful
+child-authoring probe. The certificate files add167 fixture lines. Current
+local+transport+observer source is1229 lines; with certificates1396. Reserve
+up to430 lines for the independent ordinary-Rust child-authoring experiment
+by automatically expanding the research ceiling1400 to1900 and cumulative
+test/fixture ceiling5500 to6000 (existing4070 plus1900 is5970). Production
+ceiling2200, retained-source path ceiling300 and zero new public types remain
+unchanged. Generated lock bytes remain separately counted manifest/artifact
+material; copying them cannot erase their review cost. Research/test evidence
+may be delivered separately from any later production correction. A source
+compile failure is evidence of its specific gap, never positive feature proof.
+
+### Owning declaration-pressure research authorization
+
+Automatically select the prepared isolated owning-test alternative: extend
+Zenoh net/tests/tables.rs with a real TLS producer subprocess and borrowed
+private routing-table snapshots, reusing the existing standard test runner.
+This avoids a new public instrumentation API, binary target or production
+interceptor. The receiver owns the oracle: receiving peer for peer layout,
+router for router/client layout. Existing fixture credentials and native ACL
+with publication keys restricted are reused. Retain eight then sixteen native
+declarations outside the allowed namespace and observe exact remote mappings
+and unique namespace nodes/UTF-8 expression lengths. String capacity is only
+its allocation inventory, never total heap. Borrow under the real table lock;
+retained Arc clones would distort cleanup. Collect the producer exit and local
+session-close outcome even when the semantic test fails.
+
+Forecast one existing owning test path, up to300 formatted test lines, no
+production/public API/manifest/dependency edits. Omitted declaration must fail
+the growth oracle; omitted undeclaration must fail restoration. These are
+sensitivity inversions for a measured blocker, not enforcement or full R22
+acceptance. Automatically expand the research ceiling1900 to2200 and cumulative
+test/fixture ceiling6000 to6300 before this parallel test: root4070 plus2200
+is6270. Existing production2200/path300 ceilings remain; no resource quota
+or handwritten transport replacement is selected. Whole-heap/RX/reassembly/
+interest/query/accept-concurrency obligations remain separate and unresolved.
+
+### Parallel Linux transport evidence before CI edits
+
+Automatically select two independent Linux CI jobs, debug and optimized, for
+the retained standalone native TLS fixture. Reuse the existing pinned checkout,
+Nix-install and artifact actions; run all Cargo and subprocess commands through
+the repository's pinned Nix. The alternative is preserving only manual macOS
+observations, which leaves the Linux campaign unreproducible in normal review.
+Both profiles run the same twelve existing controls and retain complete JSON
+worker traces/stderr as artifacts. They add no actor/identity acceptance or
+production runtime, do not replace the required Nix check, and cannot close
+R17/R20/R23. Keep the original full-source required checks unchanged.
+
+Change record: one existing workflow path, at most80 new configuration lines,
+zero Rust production/API/dependency/lock changes, no new actions or runtime
+limits. Reuse the existing fixed published dependency graph and fixture
+credentials. Treat Linux results as unexecuted until these jobs actually pass
+on the reviewed source head. Recorded production2200 and path300 ceilings
+remain; workflow lines count as configuration production in full accounting.
+
+### Independent subprocess-oracle correction before retention
+
+Independent source review found close() skipped milestone/exit validation when
+a child had already exited. Existing passing traces did include both facts,
+but this branch could wrongly accept a later crashed worker. Automatically
+select requiring a live worker followed by its real close milestone and exit0.
+The deliberately rejected caller is excluded only after separately observing
+its worker failure, close milestone and actual exit1. This reuses the existing
+case sum and avoids another state wrapper. Preserve native process outcomes
+in every record. Simulate an actual late caller exit after its last successful
+TLS event; corrected close must refuse it in debug/optimized campaigns, and
+the original skip branch must fail that refusal oracle. Existing twelve-case
+positive controls must pass again. No production/dependency/profile changes.
+
+### Child result-oracle formatting checkpoint
+
+The ordinary nominal child-service mechanism executes, but its initial native
+result was explicitly discharged without complete inspection. Adding exhaustive
+native actor/sibling/root products, both notification receipts and borrowed-wait
+cancellation formats to478 test lines, exceeding the430 forecast. Automatically
+select a500-line ceiling for this same single research source before further
+edits, preserving the required observations. Alternatives are dropping custody
+assertions or forced compact formatting; neither improves correctness or
+reviewability. No production, public types, dependency or new source path.
+Current1398 local/transport/certificate fixture lines plus500 child and300
+pressure lines fit2198 within research2200/cumulative6300. The expanded draft
+has not compiled; only its earlier mechanism control has execution credit.
+
+### Retained late-exit oracle and final research reserve
+
+Retain the real late-exit control in the existing observer, rather than only
+a temporary command. After the actual receipt, kill and join the caller, then
+require close() to refuse that already-dead worker. Preserve the native-9
+exit and full events; distinguish this expected refusal from healthy controls
+and require its exact one failure, so unrelated errors cannot pass. This adds
+four cases per profile without Rust/manifest/profile changes. On injected
+crashes the fixture may abandon remaining workers; their-9 exits are retained
+without close/retirement credit. Returned worker errors remain independently
+covered by the prior close-and-exit1 controls. Neither case proves cleanup on
+an arbitrary panic or cancellation of a pending receive future.
+
+Automatically reserve research2300/cumulative6400 test lines before this
+retained oracle edit, replacing2200/6300. Current ordinary sources/fixtures
+plus500 child and300 pressure forecasts exceed2200 by only the added observer
+lines; the larger bounded reserve avoids omitting meaningful failure tests.
+Python observer remains below150 lines. Production2200, path300, source-path16
+and zero defined public types remain. Measure actual deltas before delivery.
+
+### Retained transport source verification and reproduction
+
+Retained Rust source SHA ce440e955a0e4428b1b1e2f9a75d0f4963f7bf3fc0be9af6277fea98a000de19
+passes pinned-Nix format/strict binary Clippy and both native build profiles.
+Controller SHA aa0fa98a46f92ab2c791d1d7225d79bf4344b75f7c3cfd90b30747adcff9f147
+is143 lines and now runs sixteen cases per profile: twelve healthy/returned-
+error/cancellation controls plus four actual late-exit refusal controls. All
+restored cases pass their distinct oracles. Restoring the old skip branch
+makes both campaigns fail specifically because late-exit records contain no
+refusal, while all twelve unrelated controls still pass. Source restoration
+is byte exact; `/tmp/bombay-transport-late-exit-inversion.json` retains exact
+argv/binary/controller identities, traces and command exits.
+
+Exact-byte inversions simulate JSON decode/re-encode only at the native send
+call sites. Eight controls per profile fail the receiver's exact-byte assertion
+at source line243; four returned-error controls remain healthy. The first
+harness bookkeeping expected stale line253 and interrupted its audit; the
+source was restored, actual assertion identity rechecked, optimized inverse
+executed, and both restored twelve-case controls passed. That bookkeeping
+failure has no semantic acceptance credit. Full command/oracle records remain
+in `/tmp/bombay-transport-custody-byte-inversion.json`. Subsequent observer-only
+changes did not mutate Rust bytes or broaden those source inversions.
+
+From the checked-out repository root, reproduce the retained debug controls:
+
+```sh
+nix develop -c cargo build --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --bin transport_custody --jobs 2
+nix develop -c python3 docs/prds/static-remote-actors/transport-custody/verify_transport_custody.py docs/prds/static-remote-actors/transport-custody/target/debug/transport_custody docs/prds/static-remote-actors/transport-custody/certificates /tmp/bombay-native-tls-debug-observations
+```
+
+For optimized controls add `--release` and use the corresponding target/release
+executable and a separate evidence directory. A preexisting CARGO_TARGET_DIR
+changes the executable location. Root workspace tests do not invoke this
+standalone manifest; the new separate Linux jobs explicitly do. Those jobs
+remain unexecuted until CI passes. Neither local nor future CI campaigns prove
+actor admission, authenticated proofs, complete cleanup or full remote gates.
+
+### Actual declaration-pressure assumption falsifier and owning alternative
+
+The first real TLS producer control completed its public declarations and
+cleanup, with child exit0 and native session close success, but the receiving
+peer retained zero remote mappings. Source inspection explains the result:
+public Session.declare_keyexpr registers its local face without independently
+forwarding a declaration. This falsifies the initial API assumption, not the
+resource gap, and has no remote-growth or boundedness credit. Preserve its
+command and actual complete outcomes before changing the fixture.
+
+Automatically select the existing owning TransportUnicast.schedule alternative
+for this pressure witness: obtain the established native transport, construct
+its existing typed DeclareKeyExpr/UndeclareKeyExpr protocol values, and schedule
+them through the native TLS encoder/decoder/ACL/resource path. The alternative
+uses public subscriptions/publications plus extra permissions/interests and
+changes the baseline; it obscures the precise ingress resource law. This is
+no handwritten encoding, production transport or interceptor. Explicitly
+match native Ok(true)/Ok(false); successful queue insertion is not remote
+admission. Retain every scheduling and cleanup result and always close/join.
+Use sixteen isolated fixture ExprIds40000..40015, not actor identities or
+predicted incarnation nonces. The narrowed claim is a node possessing fixture
+TLS credentials can emit valid native declarations outside allowed publication
+keys; it is not bare public declaration transmission. Forecast remains one
+existing owning test path, at most300 formatted lines; zero production/API/
+manifest/dependency edits. Stop and account if this estimate is exceeded.
+
+### Owning pressure receipt and ordinary fold lint checkpoint
+
+Preserving all native connection-acquisition, scheduling and undeclaration
+receipts projects the single pressure test to310–315 formatted lines.
+Automatically raise its same-source ceiling300 to325 before retention;
+current root research1896 plus325 is2221 within2300 and cumulative6291 within
+6400. No new source path, production/API/manifest/dependency changes. Preserve
+the earlier zero-growth public-API source as a derived diagnostic patch,
+separately accounted evidence rather than another selected implementation.
+
+Root strict Clippy rejects three unnecessary private Result wrappers in the
+child probe, the intentionally complete native enum's size/type, its contiguous
+trace length and two missing assertion semicolons. Automatically select
+inlining those three pure computations into their existing Behavior fold
+entrypoints, preserving Actions and complete state; no generic plumbing or
+new helpers. Keep the owning TerminalProjection native field shape with
+narrow reasoned expectations for its measured1080-byte enum/type complexity,
+and the one contiguous custody trace length. Alternative boxing/aliasing would
+change fixture allocation or obscure the exact derive contract to silence
+style checks. Fix assertion semicolons normally, then rerun affected controls
+and all required checks. No warning suppression applies to production code.
+
+### Native schedule outcome modeling refinement
+
+The foreign owning schedule operation returns Result<bool>. Automatically
+select a bijective private DeclarationScheduling sum, Queued/NotQueued, for
+the new fixture function's result, preserving every original native error.
+This prevents a new Bombay research function from encoding the semantic queue
+outcome in a boolean without replacing the owning native API or implying
+remote admission. The alternative forwards the semantic bool unchanged; it
+violates the repository's modeling rule. Forecast+10–12 test lines, up to324
+within the recorded325 pressure ceiling; no public/production/dependency/path
+change. Apply only after restoring the frozen semantic inversion source.
+The previous native-byte/cleanup campaign hashes remain distinct evidence.
+
+Final child fixture naming/minimization uses explicit target/sibling actor and
+creation names, and removes a redundant native amount predicate already
+checked against each exact role. No protocol, Actions or ownership changes.
+Affected debug/optimized controls and strict lint are rerun on the final hash;
+prior full workspace results retain their own source identities. Required
+CI will verify the exact combined reviewed head.
+
+The pressure fixture's exact rustfmt projection for the closed schedule sum
+is327 lines. Automatically adjust that same-source ceiling325 to330 before
+retention; no other surface changes. Overall research2300/cumulative6400
+reserves still cover current1894 plus330. Preserve native receipts and normal
+formatting. Earlier frozen source inversions retain their separate identities.
+
+### Actual ordinary child-service composition and final local checks
+
+The retained child_service_stop.rs was498 lines at the naming checkpoint, source SHA
+acea060539bbaaf8dc3479e910f516a2c0eb404799cacdaef64bacce3b9f0d0d.
+It uses a genuine application-owned service implementing existing
+InterpretInstalledActor, existing EventLayer/SendLayer products and the real
+correlated ShutdownEstablished interpreter. Target A performs useful work,
+then publishes an established/no-failures joined report while sibling B still
+replies. Cancelling a borrowed report wait preserves the original observer.
+Later parent acquisition retains full root/child state, every native terminal
+field, creation batch/settlements and both root notification receipts. Native
+OwnerCancelled's empty acquired slot is grounded in Driver.ingress.take and
+Completion conversion for this healthy trace, not assumed for every such phase.
+
+Historical source46af8ce1e72645337267c3aea0b483d9472a01bd6ee89edc3129dfe5d63ff334
+passes complete/restored debug and optimized controls. Same-callsite send-only
+substitution fails exactly E0308 in both profiles; direct installed shutdown
+fails exactly E0624 because the method is private. The nominal ordinary Rust
+construction succeeds; facade E0277 identifies its unsupported runtime-result
+ingress without proving a new macro necessary. Commands/diagnostics/actual
+final binaries remain `/tmp/bombay-child-stop-campaign.json`. Setup import,
+nonexistent parent accessor, unused native state and wrong optional-slot
+assumptions are author/model failures with no inversion credit. Final pure-
+fold/naming changes have separate debug/optimized positive controls and strict
+all-target Clippy in `/tmp/bombay-child-retained-final-checks.json`; they do not
+claim renewed static inversions on the later source hash.
+
+Combined workspace build, workspace unit/integration/doc tests, all-target
+tests and format check pass through pinned Nix on the recorded combined source;
+strict all-target Clippy passes on the final source. Exact argv, source/lock
+identities and logs remain `/tmp/bombay-remote-contract-combined-checks.json`.
+Final naming-only change has affected profile controls and unchanged contracts;
+required CI still needs to pass on the frozen reviewed candidate. Full AUTH1,
+NET1 and R01–R25 stay incomplete, including fresh remote stop, held actor-owned
+task barriers, pressure/restart/security and production identity obligations.
+
+### Automatically selected final research review corrections
+
+Independent review found the completed child's settlement loop accepted an
+empty vector. Select an explicit singleton assertion for Completed target A:
+the final Stop product is authoritative and must survive. Keep OwnerCancelled
+sibling B's cardinality unconstrained because its trace depends on timing.
+Simulate erasure of A's acquired settlements and prove refusal in debug and
+optimized builds, then restore the exact positive source. This is a test oracle
+repair, not a runtime defect or full R11 proof. Raise the same-file child test
+ceiling500 to510 before editing; no new paths, production Rust, dependencies,
+public types or interfaces. Existing overall reserves cover this correction.
+
+Select matrix fail-fast:false so one failed native TLS profile cannot cancel
+the other profile's independent evidence campaign. This adds one CI configuration
+line and changes no runtime policy. The alternative uses default cancellation
+and may lose diagnostic evidence. Required Nix checking remains unchanged;
+actual Linux CI execution is still required before delivery.
+
+### Final reviewed research candidate and complete change record
+
+The completed-child Stop-product correction passes debug and optimized positive
+and restored controls. Simulated erasure fails both profiles at the intended
+singleton assertion (observed0, required1), after complete native acquisition.
+The restored child file is501 lines, SHA
+04cb6bec3ddb7f030e334250b67ba120676a99c06c75a03422fc5de687e78eae.
+Strict workspace/all-target Clippy and formatting pass on this exact source;
+commands and logs: `/tmp/bombay-child-settlement-campaign.json`.
+Earlier combined workspace562 and all-target561 passing tests retain their
+recorded pre-final source identities. Exact-head CI remains a delivery gate.
+
+Complete tracked and untracked delta against latest merged main9fc225ee:
+16 paths; production configuration +51/-0/net51, production Rust0;
+tests/fixtures +1907/-0/net1907; documentation +677/-1/net676;
+manifest/generated lock +2983/-0/net2983; public API +0/-0 types, methods
+and reexports. The root cumulative delta against a9c5b7d4 has74 paths;
+production +1702/-474/net1228; tests +6629/-652/net5977;
+documentation +3460/-79/net3381; manifest/lock +2986/-3/net2983;
+public types +5/-0 from the previously merged runtime prerequisite.
+
+The separate controlled Zenoh pressure candidate is one owning test path,
++326/-3/net323, source42340b0473addd065169bc02f61b855453e2af2a489ba6e14c797ab95ad53450.
+Root research plus pressure2230 remains within2300; cumulative root tests plus
+pressure6300 remains within6400. These are exact source delta totals, not
+whole-process heap or a runtime resource limit. Generated source/locks and
+upstream imports retain their separate cross-repository accounting. Historical
+retained-path union remains a conservative lower bound because prior inventory
+was incomplete; do not fabricate a precise global path count. Current stage
+introduces13 retained source/manifest/fixture paths within its16-path reserve.
+No new runtime abstraction or dependency is selected. Full remote feature,
+resource enforcement, identity, restart and remaining acceptance witnesses stay
+incomplete. Reviewed PR, exact CI and actual merge must precede delivery status.
