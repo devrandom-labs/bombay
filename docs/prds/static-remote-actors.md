@@ -2501,6 +2501,31 @@ receiving-abandonment policy and actual classification rules, record the
 complete path union, then obtain explicit expanded-scope authorization required
 by AGENTS.md. No cap or design in this proposal is adopted by preparation.
 
+The proposed new-path union was checked against the actual tracked tree:
+thirteen owning source files plus the twenty-six existing public callers have
+thirty-four distinct paths, because five sources occur in both sets. Add the
+five current guidance paths below and three existing compile fixtures for
+forty-two new accounted paths, not forty-two newly created files. The four
+existing decision/index documents are already accounted separately. Every
+listed file exists; this is an impact inventory, not a measured patch.
+
+| Additional migration category | Exact existing paths |
+| --- | --- |
+| Integration callers, under `crates/bombay/tests/` | `actor_interface.rs`, `application_terminal_custody.rs`, `axum.rs`, `completed_application_receiving.rs`, `entity_application.rs`, `external_customer_templates.rs`, `fifo_pool_recovery.rs`, `fifo_pool_runtime.rs`, `fixed_supervisor_recovery.rs`, `fixed_supervisor_runtime.rs`, `run_with.rs`, `template_application.rs`, `terminal_projection.rs` |
+| Example callers, under `examples/` | `actor-templates/src/main.rs`, `application-topology/src/main.rs`, `axum/src/http.rs`, `axum/src/main.rs`, `counter/src/main.rs`, `entity/src/main.rs`, `supervision/src/main.rs`, `worker-pool/src/main.rs` |
+| Current guidance | `docs/runtime-capability-interfaces.md`, `docs/module-boundaries.md`, `docs/public-api-audit.md`, `examples/README.md`, `docs/prds/execution-ownership.md` |
+| Compile fixtures, under `crates/bombay/tests/compile/pass/` | `advanced_runtime_imports.rs`, `application_children.rs`, `shutdown_authority.rs` |
+
+Further source review distinguishes the known startup controls from an actual
+creation-interpreter reachability witness: `startup_failure_retains_original_native_payload_lifetime`
+and `startup_failure_retains_cancelled_task_failure_source` acquire genuine
+Tokio failures through the private startup helper, but inject their task
+directly. They do not prove that the normal privately committed child can
+reach that interpreter's unexpected-startup branch. No reachability claim,
+repair or R11 evidence is inferred from those controls. The existing standard
+pre-ACK initialization-rejection path does independently show why the common
+assessment must survive before its primary error transfers into the Core receipt.
+
 Prepared independent two-assessment oracles, all **unexecuted**:
 
 | Actual owning evidence | Required observation / intended falsifier |
@@ -2580,7 +2605,7 @@ This is a planned oracle, not a current passing test or a selected public API.
 Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
 tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
 tests: +0 / -0 / net 0; public API: +0 types / -0 types.
-Documentation: +484 / -29 / net +455.
+Documentation: +509 / -29 / net +480.
 Previously recorded pinned-Nix law-manifest controls pass all nine in debug
 and optimized builds; they were not rerun for these documentation edits.
 Current document-link and whitespace checks pass; all twenty-five unexecuted
