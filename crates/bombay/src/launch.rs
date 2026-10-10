@@ -5200,12 +5200,6 @@ mod root_join_custody {
             let released = release.send(());
             released.expect("the owning retirement remains waiting");
             let joined = task.await;
-            let notification = termination_notification
-                .await
-                .expect("the actual first producer transferred");
-            let terminated = termination.await;
-            assert_eq!(terminated, Ok(behavior_actors::Exit::Normal));
-            assert_eq!(waiter.attempts.load(Ordering::SeqCst), 1);
             assert_eq!(
                 original_state.strong_count(),
                 1,
@@ -5213,6 +5207,12 @@ mod root_join_custody {
             );
             let outcome = joined.expect("notification cannot erase the native joined result");
             assert_root_retirement(&outcome, RootFinish::Stop, allocation);
+            let notification = termination_notification
+                .await
+                .expect("the actual first producer transferred");
+            let terminated = termination.await;
+            assert_eq!(terminated, Ok(behavior_actors::Exit::Normal));
+            assert_eq!(waiter.attempts.load(Ordering::SeqCst), 1);
             assert_eq!(
                 *decisions.lock().unwrap(),
                 [Step::Continue, Step::Stop(Stopped)]
