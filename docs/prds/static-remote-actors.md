@@ -3480,6 +3480,42 @@ No new trait, macro, runtime task, registry, mailbox or dependency is selected.
 This remains within the approved local 2,200 production / 3,000 test / five-type
 stage and 250 cumulative paths; measure before any concrete excess.
 
+Connected receipt refinement under delegated recommendation: the projected
+child transfers one actual `ActorNotificationReceipts` product. Its receiver
+therefore preserves `Result<ActorNotificationReceipts, RecvError>` in the
+outside destination and the existing `ChildFailure` record, matching roots.
+One missing product cannot manufacture two inner receipt-closure causes or
+claim either stage succeeded. Successful native projection stays in its native
+lane, with `NotificationsFailed` retaining the separate outer/inner result.
+Startup conversion returns `(native, retirement_report, first_notification)`;
+it has no second publication. No additional public wrapper/type is needed.
+
+Resource and failure assessment remain independent. The private standard
+environment acquires every residual phase only after closing admission and
+retiring its actual interpreter, control and Address owners. Actual activation
+settlement and descendant proof must also complete. A caught cleanup panic is
+retained as failure evidence; its presence alone cannot negate separately
+proved resource retirement. The required standard-owner panic/held-resource
+observables still gate this classification. Likewise, a `Completed` native
+result with `Completion::RetirementRequested(CapabilityFailed(original))`
+contains a genuine runtime failure even when later failure vectors are empty;
+the joined classifier must inspect that actual primary request. Normal stop,
+source exhaustion and settled owner-retirement remain separate no-failure
+reasons. No classification callback runs after the joined cut.
+
+An independent source scan rejects the speculative custom-origin panic as a
+current defect: only private `StructuralOrigins::origin -> ChildOrigin::new`
+is implemented, with total concrete construction. No public arbitrary origin
+port is selected. Retain its current creation ordering rather than broaden
+production for an unsupported substitute. The actual public consuming
+`ProjectTerminal` remains a real panic boundary with report/cause conservation
+requirements. A projector that fails before issuing a shared report leaves
+absence, not successful retirement; preserve its actual parent join/outer
+receipt closure and conservative subtree assessment. No generic Observe
+publisher-drop synthesis is selected. Prove the required known actor-task
+failure notification and explicitly resolve any required service visibility
+gap for a pre-publication projector failure before final acceptance.
+
 The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
 thirty-four distinct paths, because five sources occur in both sets. Add the
@@ -3917,3 +3953,18 @@ The local retirement report/error/receipt names and access methods are selected
 above. Remaining network abstractions, default limits and protocol choices are
 unselected. Existing safety
 laws constrain the options; they do not authorize agent-selected representations.
+
+### Continued delegated recommendation policy
+
+The user reiterated that recommended answers are to be selected automatically
+until revoked. This replaces the earlier per-choice waiting requirement; retain
+the decision, alternatives and verification obligations before dependent edits.
+For the test-only child-retirement adapter, preserve its independently acquired
+report beside native results and failures in a three-element return product,
+rather than discard it. Two existing observation test callers receive the
+report and assert its actual assessment. No production interface or type is
+added; the existing observation source path remains within the 250-path cap.
+The actual standard-interpreter settlement regression and capture-deletion
+inversion are selected within the existing effects test module (90–120 expected
+test lines, no new production law or public API). This is owning-mechanism proof,
+not public Application or full remote acceptance evidence.
