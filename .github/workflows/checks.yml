@@ -90,3 +90,54 @@ jobs:
           path: target/miri-evidence/
           if-no-files-found: error
           retention-days: 14
+
+  native_tls_research:
+    name: Native TLS research (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [debug, release]
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_RELEASE_DEBUG: "0"
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target/static-remote-transport
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
+        with:
+          nix_conf: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+      - name: Format and lint native fixture
+        run: |
+          nix develop -c cargo fmt --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --all -- --check
+          nix develop -c cargo clippy --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --bin transport_custody -- -D warnings
+      - name: Build native fixture
+        shell: bash
+        run: |
+          profile_args=()
+          if [[ '${{ matrix.profile }}' == 'release' ]]; then
+            profile_args+=(--release)
+          fi
+          nix develop -c cargo build --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --bin transport_custody --jobs 2 "${profile_args[@]}"
+      - name: Observe both TLS layouts
+        run: |
+          nix develop -c python3 docs/prds/static-remote-actors/transport-custody/verify_transport_custody.py \
+            "$CARGO_TARGET_DIR/${{ matrix.profile }}/transport_custody" \
+            docs/prds/static-remote-actors/transport-custody/certificates \
+            "target/transport-evidence/${{ matrix.profile }}"
+      - name: Retain native transport observations
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: native-tls-${{ matrix.profile }}-${{ github.run_id }}
+          path: target/transport-evidence/${{ matrix.profile }}/
+          if-no-files-found: warn
+          retention-days: 14
