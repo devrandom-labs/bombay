@@ -3,7 +3,7 @@
 This retains ARC-020's owner inventory and reconciles the EXEC application
 surface against published Behavior Core/Actors 0.23.0 and Macros 0.14.0 at
 archive revision `d69f992b371c12ab34e73b18e45b8112c90a1508`, Address 0.3.0,
-Communication 0.1.3, private Observe, and patched Timers in `Cargo.lock`. It covers Bombay-owned
+Communication 0.1.4, private Observe, and patched Timers in `Cargo.lock`. It covers Bombay-owned
 items reachable from the `bombay`, `bombay::entity`, `bombay::actors`, and
 `bombay_engine` roots. Re-exported Behavior and Behavior Actors families retain
 their upstream ownership. The [Rust API Guidelines checklist](https://rust-lang.github.io/api-guidelines/checklist.html)
@@ -50,7 +50,8 @@ positive and negative boundaries. The Engine surface is exercised by its
 | `InstalledActor` | Bombay's installed endpoint plus typed control authority, used as Behavior's `EndpointAddress::Installed` product. Runtime alone constructs it after binding. | `Clone` for multiple typed interpreters and redacted `Debug`; no public constructor or direct shutdown method. Its generic behavior identity prevents cross-behavior substitution in compile fixtures. `retirement()` observes its exact shared runtime-issued report without adding stop authority. |
 | `SendError::into_message` | Communication rejection projected through `ActorRef`; caller regains the original payload. | `Debug`, `Display`, `Error`; no `Clone` requirement on the payload. |
 | `ActorInterface::api`, `external` | Bombay external-caller product; application explicitly exports an API value and the runner's allocation source. | `Clone` when API is cloneable, redacted `Debug`; `external` returns exact allocation error before issuing any recipient. |
-| `ExternalActor::address`, `recipient`, `send`, `receive`, `close_admission` | Bombay's allocated external actor; caller owns the sole receiver and may clone only its recipient. | Redacted `Debug`, intentionally no `Clone` ([denial fixture](../crates/bombay/tests/compile/fail/external_actor_receiver_is_affine.rs)); send returns the destination's exact rejection, receive returns the truthful origin. |
+| `ExternalActor::address`, `recipient`, `send`, `try_send`, `receive`, `close_admission` | Bombay's allocated external actor; caller owns the sole receiver and may clone only its recipient. | Redacted `Debug`, intentionally no `Clone` ([denial fixture](../crates/bombay/tests/compile/fail/external_actor_receiver_is_affine.rs)); send returns the destination's exact rejection, receive returns the truthful origin. Exact-recipient try_send returns native Full/Closed originals without a capacity wait or new message Clone/Debug/Send/static restriction; no stable Entity hydration or authentication is added. |
+| `TrySendError` | Deliberate re-export of Communication's existing user-delivery refusal sum; Bombay defines no duplicate. | Full and Closed retain the original message. Display describes pressure/closure; Debug/Error inherit the owner's payload Debug requirement and may expose payloads. Native closure is not actor termination or joined retirement. |
 | `ExternalActorError` | Bombay external allocation failure. | `Debug`, `Display`, `Error`; exact `AllocationRejection` source. |
 | `ExternalTarget::send_from` | Sealed Bombay delivery port for an exact actor recipient or Entity reference. | No object erasure; associated message and error preserve destination custody. Caller uses `ExternalActor::send`. |
 | `ActorSpace<P>` | Bombay's protocol-closed alias for Address's concrete space of exact `ActorRef<P>` endpoints; advanced topology caller supplies it. | Inherits Address's traits and claim/lease rules. The alias fixes protocol/address/endpoint relationships; it adds no wrapper or alternative registry. |

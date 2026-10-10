@@ -180,7 +180,7 @@ distributed acceptance properties, not guarantees already supplied by this
 release. Zenoh is the selected production networking direction; Mnesis-backed
 durability and downstream Selo identity integration remain planned work.
 
-The direct Driver and lower lifecycle layers exist. Communication 0.1.3's
+The direct Driver and lower lifecycle layers exist. Communication 0.1.4's
 affine mailbox admission owner, Bombay's private affine Observe import, and the
 actor-owned TimerQueue are integrated. The redundant runtime-stop channel,
 activation channels, keyed termination cell, timer task, and timer command

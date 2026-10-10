@@ -532,7 +532,7 @@ archive is a different revision and supplies no evidence for the Git patch.
 | --- | --- | --- |
 | Behavior 0.23.0; Actors 0.23.0; Macros 0.14.0; all archive VCS `d69f992b371c12ab34e73b18e45b8112c90a1508` | Complete revision AGENTS.md; Core `src/lib.rs`, `src/effects/sending.rs`, `tests/action_item_contract.rs`; Actors `src/lib.rs`, `tests/exact_shutdown_action.rs`. | Reuse Actions, ActionItem, InterpretItem, named products and exact input/reply custody; no second effect algebra or template policy. |
 | Address 0.3.0; archive VCS `9f058dc03d1239e1ef5c3147a893b134a1e74a83` | `src/lib.rs` and `tests/reservations.rs`. | Reservation is invisible until publication; local addresses/leases are not distributed identity or authority. |
-| Communication 0.1.3; archive VCS `272a2343187b40615ab26c2d0d2e136010a16e77` | `src/lib.rs`, `tests/mailbox_retirement.rs`. | Reuse bounded user admission and exact rejected payloads. The trusted control lane is unbounded and must not become raw network ingress. |
+| Communication 0.1.4; archive VCS `6b6d588e5ea94971590d03ccf063c5b38d07d107` | `src/lib.rs`, `tests/mailbox_retirement.rs`; reviewed owning closure correction and publication below. | Reuse bounded user admission and exact rejected payloads. The trusted control lane is unbounded and must not become raw network ingress. |
 | Observe, private source in the baseline Bombay commit | `src/observe/mod.rs`, `external_tests/affine.rs`; EXEC observation disposition. | Reuse acquired-result ownership and independent observation. Network suspicion is not an exact local terminal publication. |
 | Timers 0.1.0, root patch and lock Git revision `13e884da7ab41781f52337b0038060e375b00ee0` | `crates/timers/src/lib.rs`, `tests/semantics.rs`. | Reuse current-generation cancellation; process-local monotonic time is not portable expiry evidence. |
 | Engine 0.2.2, Bombay Macros 0.1.2 and Bombay 0.1.1 workspace sources | Driver law/strategy; `local/effects/{mod,delivery}.rs`, `application/{execution,interface}.rs`, `address.rs`, `entity/family.rs`; manifests and application custody tests. Rust sources match the original Engine 0.2.1 / Bombay Macros 0.1.1 baseline exactly. | Keep the current affine Driver and paired execution/result ownership; no network-specific Driver loop. |
@@ -757,7 +757,10 @@ visibility. ExternalActor's fixed 1,024-slot reply mailbox is an existing bound,
 not a bound on arbitrarily many pending futures. Do not open the sealed trait
 or add admission machinery without the precise failing law.
 
-Source-bound admission projection proposal (2026-10-09 UTC), **unadopted**:
+Historical source-bound admission proposal (2026-10-09 UTC), unadopted at
+that checkpoint. The [next prerequisite decision](#next-prerequisite-exact-recipient-nonwaiting-service-admission)
+records subsequent selection and current verification; the following probe
+details remain historical evidence:
 compare inherent `ActorRef::try_send_from` and
 `ExternalActor::try_send(&EstablishedRecipient<Target>, message)` with extending
 the sealed `ExternalTarget` contract. The narrow pair can reuse Communication's
@@ -4694,3 +4697,346 @@ fallback remains conservative. Full remote R01–R25, production identity,
 durability and SHM obligations remain exactly deferred/unexecuted. The complete
 networking PRD is not feature-complete/distilled/merged. Draft PR330 still needs
 fresh final-head required Linux CI, final review and actual protected merge.
+
+### Actual joined-retirement prerequisite delivery
+
+[PR330](https://github.com/devrandom-labs/bombay/pull/330) merged through the
+protected normal PR route at2026-10-10T08:11:03Z, commit
+`017ec7603e0193e26129e0af6d10b8c04fdad78e`. Exact reviewed head
+`690e6283140ed238e6a62241960d8924aaa6eac6` passed all four observed checks:
+required [Nix CI38035053836](https://github.com/devrandom-labs/bombay/actions/runs/38035053836)
+completed successfully at08:06:48Z; CodeQL Analyze38035053829, CodeQL summary,
+and dependency Deny38035053856 also passed. Linux Nix reports269 checks passing;
+both bounded Driver/Observe fuzz campaigns and their artifact uploads pass.
+Optional Observe Miri steps were skipped and receive no execution credit.
+The final log is retained at `/tmp/bombay-joined-retirement-final-ci.log`.
+
+The [recorded review](https://github.com/devrandom-labs/bombay/pull/330#pullrequestreview-5478186173)
+reports independent nonauthor source review and retained proof inspection;
+it is correctly a COMMENTED review, not fabricated author approval or an
+independent test rerun. Active ruleset18433270 requires a PR and passing Nix
+check, zero formal approving reviews, no bypass; merge matched the exact head.
+Scoped prerequisite disposition is now merged. Full AUTH1/NET1 and every remote
+R01–R25 obligation retain their incomplete status.
+
+Final committed root delta against preparation maina9c5b7d covers56 paths,
+zero untracked: production +1592/-472/net1120; tests/fixtures +4429/-636/net3793;
+documentation +2401/-69/net2332; manifests/lock +0/-0; public API +5 newly
+defined types/-0. The complete row/source-hash checkpoint is retained at
+`/tmp/bombay-public-receipt-checkpoint.json`. This records capability growth,
+not code reduction. Cargo.lock remains byte-identical.
+
+### Next prerequisite: exact-recipient nonwaiting service admission
+
+Prepared 2026-10-10 under the user's reiterated automatic recommended-choice
+instruction. PR330 source remains frozen while its required final-head CI runs;
+this preparation is isolated and will receive a branch from latest main before
+any commit. No complete AUTH1/NET1 witness is claimed by the following stage.
+
+The public service can currently check permission and then await capacity;
+permission can change during that wait. Communication already owns a synchronous
+capacity-nonwaiting attempt with exact Full/Closed payload return. The existing
+matched public Application compile probe fails specifically because
+`ExternalActor::try_send` is missing. Reusing that operation permits the selected
+one-local-check-and-attempt law without a second queue, permit or mailbox.
+
+Automatically select the recommended narrow inherent operation on ExternalActor
+for an exact `EstablishedRecipient`, implemented by a private ActorRef
+projection. Deliberately re-export the existing Communication `TrySendError`
+through Bombay so callers can exhaustively match Full and Closed. Alternatives
+are extending the sealed ExternalTarget to stable Entity hydration, exposing raw
+senders, or a new error wrapper. Those either require a different unproven
+admission law, expose excess authority, or duplicate the existing truthful sum.
+This selection leaves stable Entity hydration unchanged and adds no public
+ActorRef operation. The actual external actor's allocated address supplies
+User::from; this does not authenticate a remote principal. Native error Debug
+requires a Debug payload and can print it: callers with move-only non-Debug
+messages use exhaustive matching, and the later bounded remote diagnostic path
+must not format private payloads. No Clone or Debug message bound is added.
+Capacity-nonwaiting is not wait-free: the existing admission mutex and queue
+implementation keep their own synchronization laws. The naming, exhaustive
+native sum and deliberate owner-error exposure were checked against the
+[Rust API naming guidelines](https://rust-lang.github.io/api-guidelines/naming.html),
+[type-safety guidelines](https://rust-lang.github.io/api-guidelines/type-safety.html)
+and [future-proofing guidelines](https://rust-lang.github.io/api-guidelines/future-proofing.html).
+
+Fresh source investigation also proves a smaller owning diagnostic defect.
+Communication selected0.1.3, exact source272a2343187b40615ab26c2d0d2e136010a16e77,
+is still its repository's latest main. Its existing mailbox-retirement test
+closes admission, obtains Closed, then uses the still-live Consumer to drain
+accepted work. UserClosed and TrySendError::Closed incorrectly display
+"consumer dropped". Select an owning correction to "user lane closed", with
+documentation distinguishing admission closure and consumer disappearance;
+leave ControlClosed unchanged. Alternatives retaining the incorrect inference
+or wrapping it in Bombay are rejected. This changes diagnostics only, not
+delivery, custody, public types, or retirement. A corrected published version
+and narrow locked selection require actual owning review/CI/publication evidence;
+no version is invented or integrated from this preparation alone.
+
+Change record before production: Bombay's three expected production paths are
+local/endpoint.rs, application/interface.rs and lib.rs, estimated +65/-2/net63,
+bounded at net70; owning public-Application test expansion is bounded at320
+lines. Communication uses one existing production source path (diagnostic text
+and rustdoc only, maximum8 net lines), its existing mailbox-retirement test
+(maximum45 net lines), and owning guidance/release records as required. Public
+types +0/-0; no trait, dependency family, codec, coordination owner, clock,
+resource default, registry, task or macro. Existing native mailbox, exact
+recipient interpreter, typed User origin and Application composition are reused.
+The public surface adds one service method and one deliberate existing-owner
+error re-export; zero newly defined types is not a claim of zero API growth.
+Before applying the prototype, narrow its target contract to
+`Target: Protocol<Addr = MailAddr>`: synchronous mailbox delivery creates no
+future or task, and the owning recipient/mailbox interpretation requires no
+message Send or static bound. The awaited ExternalTarget's stronger bounds
+belong to its Send future and must not be copied here. Existing endpoint
+establishment keeps its own requirements. A borrowed-message public control
+will prove that no unnecessary static message restriction has been retained.
+These additions stay within the recorded cumulative2200 production/4300 test
+ceilings and300 retained-source-path ceiling; recount before implementation.
+
+Verification first extends the actual existing owner closure control so both
+diagnostics are asserted while the Consumer drains the full accepted prefix;
+restoring either original text must fail its intended assertion in debug and
+optimized builds. Bombay's public control fills a real external mailbox,
+recovers the identical move-only allocation on Full, drains one slot, admits
+that original once, and preserves all remaining accepted inputs after closure.
+Repeated rejection of the same Closed payload must retain its allocation and
+truthful sender origins. Complete native root and notification results remain
+independently checked. That native projection witness is distinct from future
+permission/expiry provider tests and remote replay-ID protection. Coordination,
+time, retry scheduling and retained-byte limits remain unresolved contracts;
+this method alone does not complete R08 or authorize a remote command.
+
+Fresh pre-production consumer check executes the prepared public test against
+unmodified690e628 source: pinned Bombay Nix `cargo check --locked -p bombay-rs
+--test actor_interface --jobs 2`, separate existing metadata target, symbols0,
+incremental0, exits101. Exactly E0432 for the selected owner-error re-export
+and six E0599 occurrences for the missing service operation; no unrelated
+diagnostic. Log `/tmp/bombay-exact-admission-before-api.log`. Prepared owning
+test +183/-11/net172, SHA
+`a6ec17589fed88b6a871725142ee58570fb2eaffb9316f668b013808ba450c82`.
+This is the actual missing public operation regression, not a runtime policy
+inversion. Communication's old diagnostic fails its new assertion after the
+complete live-consumer prefix drain; owning debug proof exits101 as intended.
+The separate owning Rust1.95 pinned Nix/CI remains the strict owner gate; newer
+Bombay Rust1.99 reports inherited fetch_update deprecation during exploratory
+owner compilation. Do not fix that by inventing an atomic protocol, raising
+the owning minimum or suppressing its warning inside this diagnostic stage.
+
+Delivered-Zenoh runtime source readiness remains investigation rather than a
+selected command mechanism. At exact sourcee82481825e313ff14e5ea3a1d6e842040945372a,
+query-builder into_future invokes synchronous wait/send_request before polling;
+mark possible transmission before that foreign call. Auto consolidation can
+become Latest and collapse/delay replies; explicit None avoids that map but
+does not prove all count/byte bounds. Stable Querier retirement removes its
+pending local queries, not remote actor work; session timeout tasks may remain
+until timer/session cancellation. Routed per-face pending-query maps have no
+discovered count ceiling and accept request timeouts without a discovered
+maximum clamp. FIFO callbacks can block at capacity; Ring callbacks evict.
+Pub/sub avoids native query tables but needs an explicit typed receipt protocol.
+Compare actual bounded callback custody, cancellation, late replies, router
+retention and close/restart behavior in both approved TLS layouts before
+retaining either mechanism. No unexplored native capacity setting is assumed,
+no command/correlation schema is selected, and no full remote gate passes here.
+
+The new public controls now compile without warnings and pass in both debug
+and optimized execution, including the borrowed-message control. Before
+expanding tests, record the concrete remaining owning branch witness:
+EndpointMailbox::Entity uses the same private ActorRef projection but wraps
+User inside Message ingress. Add at most106 owning test/import lines in the
+existing endpoint.rs test module, within the existing320 stage-test ceiling.
+Use an explicit existing Communication capacity2, real Admission, mailbox,
+Observe pair and owning MessageProtocol; no new test protocol or publisher law.
+Observe full/closed exact payloads, repeat the same closed original, and drain
+both accepted User inputs with their supplied origin and the complete terminal
+trace. The private component test does not prove actor installation, stable
+Entity hydration, joined retirement or authentication. Independently invert
+each Entity Full/Closed projection in debug and optimized profiles, restore
+byte-exact, then rerun controls. Production projection remains unchanged.
+
+### Owning closure correction delivery and registry selection
+
+Communication [PR9](https://github.com/devrandom-labs/bombay-communication/pull/9)
+merged at2026-10-10T08:21:31Z, commit
+`c9fb729df68d305f1bf7094a74fa117fba96e1e1`. Reviewed source
+`a95b61e489ff9d26f8d7774074655359e2da5f31` passed both observed owning Nix
+runs38037124854/38037094384, CodeQL38037124882/summary, and
+advisories/licenses38037124888. Coordinator source/proof review is a truthful
+COMMENTED review; no independent rerun or formal self-approval is asserted.
+Three existing owner paths: production rustdoc/text +6/-4/net2; tests
++24/-10/net14; guidance +54/-0/net54; zero public type/dependency/lock change.
+Only the diagnostic prerequisite is delivered; the registry version remains
+unselected until publication is observed.
+
+Automatic release-plz produced [release PR10](https://github.com/devrandom-labs/bombay-communication/pull/10),
+head `6b6d588e5ea94971590d03ccf063c5b38d07d107`, proposing0.1.4. Before its
+merge, automatically select the recommended normal owner patch release and
+Bombay minimum0.1.4 with a narrow locked update after actual publication.
+Alternatives are retaining known misleading diagnostics or a downstream
+Git/patch/source copy; they leave a correctness defect or complicate ordinary
+installation unnecessarily. The reviewed bot proposal changes three existing
+owner paths +11/-5/net6: workspace version, four workspace package versions
+inside Cargo.lock, and changelog. External versions/checksums, production source,
+public APIs, dependencies and pinned toolchain remain unchanged; only the
+existing communication package publishes, support packages stay unpublished.
+No manual version bump or release workflow dispatch/rerun is selected.
+
+Bombay's subsequent coordinator-owned manifest/lock edit is bounded to two
+existing paths, no new package family, and the one corrected registry node.
+Prove the actual archive checksum/source and unchanged remaining graph before
+integration. Existing native controls/inversions keep the original lock until
+their campaign completes. Required release-head CI/review, real publication
+and combined-root verification remain mandatory; a successful release workflow
+alone does not establish a published version. Existing cumulative ceilings
+apply unchanged and all owner/release paths count in the retained-source union.
+
+Separate SHM readiness source inspection confirms encoded-byte optimization,
+not elimination of JSON encode/decode or local typed Rust messages. Native
+segment compatibility/access is not KERI identity or actor permission; mapped
+bytes need stability throughout verification/decoding. Watchdog reclamation,
+handoff queues, crash retention, complete count/byte bounds and identical TLS
+fallback still require real subprocess proof. Current published TLS-only copies
+remain unchanged; this is the separately approved later-inclusion research,
+not current feature acceptance or a measured performance claim.
+
+Actual release PR10 merged at2026-10-10T08:30:59Z, commit
+`77bed2813e4d08af57457779152d767ddbbf69a0`, after coordinator review and all
+observed Nix/CodeQL/advisory checks passed on6b6d588. Release workflow38038147886
+passed. More strongly, crates.io and sparse-index metadata independently show
+0.1.4 published at2026-10-10T08:31:28Z, unyanked, Rust minimum1.95.0. Actual
+downloaded archive checksum equals registry/index checksum
+`d500dd06337251a02642e8170010fcf64d3c2dcf2a605397ae0abcbfbcbe541f`;
+archive VCS source is the reviewed release head6b6d588. Its lib.rs is byte-equal
+to the reviewed correction, SHA
+`003b01d35f0589a799ebcf24dde53637b8de0fe3f7423dd542e18f0a8928870e`.
+The initial API read lacked an acceptable User-Agent and returned403; the
+correct identified client read succeeded. That response was not absence or
+publication proof. Registry JSON/index, actual archive and release log are
+retained under `/tmp/bombay-communication-0.1.4*` and the registry-index record.
+
+The coordinator applied the selected minimum0.1.4 and pinned-Nix narrow
+`cargo update -p bombay-communication --precise 0.1.4`. Only that registry
+node's version/checksum changed; all other178 complete package records and
+the communication dependency contract are unchanged. New lock SHA
+`aa2b8c7f9b4fb917976a13167718b6cb462ec01420ea426578ae5951f7cc5bab`.
+Graph proof `/tmp/bombay-communication-narrow-lock-proof.json`; no Git/path
+override or new family. Behavior/Actors, Address, Observe, Timers, their patches
+and selected complete Behavior instructions stay unchanged. The native32-event
+campaign belongs to the original0.1.3 lock; restored combined controls and all
+required checks must now execute on this actual corrected registry selection.
+
+### Exact-recipient admission proof and minimization checkpoint
+
+The isolated branch `feat/static-remote-admission` starts at latest main
+`017ec7603e0193e26129e0af6d10b8c04fdad78e` before its first commit.
+The original-lock32-event campaign passes three actual public Application
+controls and one owning Entity projection control in debug and optimized builds.
+Five source inversions independently misclassify Standard Full/Closed, replace
+the actual sender origin, or misclassify Entity Full/Closed; every inversion
+fails its intended observable assertion in both profiles, then byte-exact
+restoration passes. Adding an unnecessary static message bound independently
+rejects the actual borrowed-message caller with E0597 in both profiles. This
+is compile-time evidence, not a runtime execution. Campaign commands, results,
+source custody and binary identities are retained in
+`/tmp/bombay-exact-native-admission-campaign.json`.
+
+After the narrow registry selection, the actual three public controls pass
+in each profile against Communication0.1.4. An initial Entity filter
+`nonwaiting_entity` matched zero tests; those exit0 commands receive no
+witness credit. Correcting it to the actual owning function
+`exact_entity_endpoint_keeps_full_and_closed_originals_and_ordered_prefix`
+executes one control in each profile and passes. Registry control logs and
+explicit executed counts are retained in
+`/tmp/bombay-exact-admission-registry-entity-controls.json` and the registry
+public-control logs. No regression is inferred merely from a command exit.
+
+Independent nonauthor source/minimization review finds no production blocker.
+The operation projects the existing mailbox refusal sum without changing
+its ownership or synchronization. No new state, result alternatives,
+transition authority, modules, wrappers, traits or defined public types are
+introduced; two existing endpoint alternatives each interpret the same
+operation. The caller needs only an exact recipient and original message,
+not an endpoint path or alternate runtime. The application-owned service
+consumer is concrete, and the borrowed-message control denies an unnecessary
+static restriction. The Entity Fence refusal branch is unreachable solely
+because Communication returns the exact submitted Message ingress; it is
+not a claim that Fence itself is uninhabited.
+
+Aggregate-drift disposition: pass for this local projection. Actor control
+states and subordinate sums are unchanged; existing Full/Closed alternatives
+retain their original message for the caller's next decision. No arrival
+history, duplicated cause, semantic boolean, nested actor authority or
+structural user syntax is added. The pure Behavior boundary and runtime
+capability/module contracts are unchanged. Production grows by57 net lines
+across three existing source paths; public surface grows by one method and
+one deliberate native-error re-export. This is a new local capability, not
+code reduction. Historical0.1.3 proofs retain their exact selections; current
+README, API audit, capability table and backlog evidence use0.1.4.
+
+Combined workspace build/tests/docs, formatting and strict all-target Clippy
+are running on the restored current source and registry lock. Required CI,
+final reviewed head and actual PR merge remain outstanding. No protected
+remote admission, authentication, expiry/revocation retry, remote replay ID,
+transport fault campaign or full R01–R25 gate is established by these local
+controls.
+
+Strict all-target Clippy rejected four new test-only wildcard refusal arms.
+Select exhaustive Full and Closed matches with separate diagnostic reasons,
+preserving the already selected native sum and non-Debug payload support.
+No production shape, dependency or warning suppression changes; this is
+assertion specificity inside the existing320-line test envelope. Rerun the
+affected public controls in both profiles, formatting and strict Clippy.
+
+The subsequent complete lint traversal also rejects similar `received` and
+`receiver` names in the owning Entity control. Name the obtained value
+`accepted_ingress`, which states its domain role; no semantic or production
+change. Recheck that owning control in both profiles and rerun strict lint.
+
+### Local admission final verification and delivery readiness
+
+The restored source passes all required local commands through Bombay's
+pinned Nix shell, with the actual registry0.1.4 lock, symbols0, incremental0
+and two build jobs:
+
+- `cargo build --locked --workspace --jobs 2`: exit0.
+- `cargo test --locked --workspace --jobs 2`: exit0,559 passed including
+  documentation, one existing parent-controlled ignored law.
+- `cargo test --locked --workspace --all-targets --jobs 2`: exit0,558 passed,
+  the same one ignored law; benchmark targets also complete.
+- `cargo fmt --all -- --check`: exit0 after final assertion/name edits.
+- `cargo clippy --locked --workspace --all-targets --jobs 2 -- -D warnings`:
+  exit0 after exhaustive test refusals and domain naming, with no allowances.
+- `cargo nextest run --locked --workspace --jobs 2`: exit0,558 passed across57
+  binaries, one skipped. This separately verifies the final exact test source.
+
+The affected public controls pass again after their exhaustive-match edits:
+`cargo test --locked -p bombay-rs --test actor_interface external_actor_
+--jobs 2`, and its `--release` counterpart, execute three each. The owning
+Entity control passes again after its binding rename in both profiles, one
+executed each. Combined/final/restored command receipts and logs are retained
+under `/tmp/bombay-exact-admission-{combined,final,restored}-checks.json` and
+the matching per-command logs. Production is unchanged by these test fixes.
+
+Independent nonauthor final source/ownership review approves this scoped
+capability and its current documentation. The reviewer inspected source and
+evidence, without independently rerunning Cargo. The stage is locally
+feature-complete and distilled: existing concrete primitives express the law,
+no retained competing abstraction or semantic owner was found. This applies
+only to exact-recipient local admission. Required final-head CI—including the
+authoritative Nix flake checks and owning law/fuzz gates—review and actual
+merge remain necessary before recording this prerequisite as merged.
+
+Final source/API checkpoint: production +59/-2/net57; tests +293/-16/net277;
+manifest/lock +3/-3/net0; newly defined public types +0/-0, one public service
+method and one exposed existing-owner error name. Complete root cumulative
+production +1651/-474/net1177 and tests +4722/-652/net4070 remain below the
+recorded2200/4300 ceilings. The tracked-and-untracked count and source hashes
+are recorded in `/tmp/bombay-exact-admission-stage-checkpoint.json` and
+`/tmp/bombay-exact-admission-cumulative-checkpoint.json` before commit; documentation
+is counted in those complete records as well. Cross-repository owning source
+and release changes remain separately accounted in their delivery records;
+this root recount does not invent an exact historical global-path union.
+
+Complete stage:13 tracked paths, zero untracked; documentation +384/-11/net373.
+Complete root cumulative task:60 tracked paths, zero untracked; documentation
++2784/-79/net2705. No production/test count is replaced by a document count.

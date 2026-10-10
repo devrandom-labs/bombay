@@ -34,12 +34,14 @@ is held, without starting a replacement, and preserves exact source custody.
 | Behavior Actors | bombay-behavior-actors 0.23.0, same registry archive revision | Owns existing supervision, pools and template policies. |
 | Behavior macros | bombay-behavior-macros 0.14.0, same registry archive revision | Owns syntax generation; Bombay must not replace its semantics. |
 | Address | bombay-address 0.3.0 | Owns local claims/leases and opaque resolution; its process-local representation is not a wire address. |
-| Communication | bombay-communication 0.1.3 | Owns bounded user delivery, separate control delivery, closure and payload recovery. |
+| Communication | bombay-communication 0.1.4 | Owns bounded user delivery, separate control delivery, closure and payload recovery. |
 | Observe | Private Bombay implementation | Owns completion publication and waiting; is not a missing external dependency. |
 | Timers | 0.1.0 patched to `13e884da7ab41781f52337b0038060e375b00ee0` | Owns volatile actor scheduling/generations, not persistent reminders. |
 | Tokio | 1.53.1 in this lockfile | Caller-host async execution and configured Builder-only owned current-thread/multithread execution share one paired owner; final acceptance remains separate. |
 
-Selected-contract table reconciled on 2026-10-08 for the final EXEC source. The earlier dated
+Selected-contract table reconciled on 2026-10-10 for the current lockfile,
+including the [published Communication diagnostic correction](../prds/static-remote-actors.md#owning-closure-correction-delivery-and-registry-selection).
+The execution observations retain their original dated source selections. The earlier dated
 0.20.0 execution observations below remain historical evidence. Behavior
 Actors 0.21.2 publication retains its historical distinct live capability-failure
 cause evidence. The final selected source and full acceptance remain in EXEC. See the

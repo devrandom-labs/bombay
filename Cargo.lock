@@ -183,9 +183,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-communication"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb0dc8a057efce6e387c9bc24955ffb020b2c138c5ce6b10c1f6c211d32ad268"
+checksum = "d500dd06337251a02642e8170010fcf64d3c2dcf2a605397ae0abcbfbcbe541f"
 dependencies = [
  "loom",
  "thiserror",
