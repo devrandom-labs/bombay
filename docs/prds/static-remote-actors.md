@@ -6496,7 +6496,7 @@ then run all eligible owning tests in debug/optimized and strict checks. Existin
 full native TLS campaigns remain separate. This budget fits cross-owner8300 and
 research4200. No bigger resource-quota redesign is included.
 
-Original broad baseline reproduces exactly31 pass/10 fail/two existing ignored: 
+Original broad baseline reproduces exactly31 pass/10 fail/two existing ignored:
 all same nine unsupported-TCP fixture failures plus the intended Unicode boundary
 regression. Source restores exactly0780c09f afterward. Evidence
 /tmp/bombay-zenoh-utf8-original-broad-baseline.json/.log. Both complete modules
@@ -6700,9 +6700,8 @@ CARGO_BUILD_JOBS=2 python3 -`, with orchestration script on stdin and cwd
 /tmp/bombay-verification-service. Every recorded Cargo subprocess ran in that
 pinned shell/environment. Standalone initial/refined Clippy used the identical
 launcher/environment followed directly by Cargo. Single-file formatting used
-`nix develop /Users/joel/orca/workspaces/bombay/main-2 -c rustfmt --edition2024
-crates/bombay/tests/verification_service.rs` (actual two argv tokens
-`--edition 2024`); final workspace fmt used recorded inner Cargo argv.
+`nix develop /Users/joel/orca/workspaces/bombay/main-2 -c rustfmt --edition 2024
+crates/bombay/tests/verification_service.rs`; final workspace fmt used recorded inner Cargo argv.
 No release-debug override was set; selected workspace release policy applies.
 Observed rustc1.99.0(b940084d7), Cargo1.99.0(5f94df478). Provenance clarification
 does not rerun or retrospectively change earlier commands/results.
