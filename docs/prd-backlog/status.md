@@ -36,6 +36,18 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | OPS1 | blocked | DIST1 | — | [Operations](durability-and-operations.md): equivalent semantics on self-hosted and Kubernetes deployments, bounded telemetry, drain and compatible upgrades. |
 | SELO1 | blocked | AUTH1, NET1, MNE1; external: Selo KERI runtime | — | [Downstream identity](identity-and-placement.md): run the admission contract suite against Selo, then prove rotation, delegation, revocation and deployment scenarios. |
 
+Latest research prerequisite delivery: [PR335](https://github.com/devrandom-labs/bombay/pull/335)
+merged `8cb82e5b785fcd04b0d991c51758fba6c75096f6` after review and all six
+checks passed, including both native TLS campaigns. Its typed local verification
+service and exact payload/proof custody tests preserve the full remote acceptance
+obligations. The controlled Unicode correction and successor release preparation
+also merged through [PR4](https://github.com/devrandom-labs/bombay-zenoh/pull/4)
+and [PR5](https://github.com/devrandom-labs/bombay-zenoh/pull/5); successor registry
+publication and final registry-only consumption remain open. The selected PRD
+records the additional endpoint-waker regression and unresolved resource-interest
+reclamation, identity, replay, bounds and actual actor-network integration gates.
+AUTH1 and NET1 retain their statuses above.
+
 Every internal `Blocked by` edge has its reciprocal `Unblocks` edge here.
 The [post-EXEC audit](../prds/execution-ownership/post-delivery-audit.md) records
 fresh delivery/source checks and the corrected AUTH1 → NET1 and MNE1 → PLACE1

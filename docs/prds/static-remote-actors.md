@@ -6728,3 +6728,458 @@ and generated lock inventories remain separately classified. Complete tracked/
 untracked measurement algorithm and per-path hashes are retained in
 /tmp/bombay-next-contracts-measure.py, stage-checkpoint.json and cumulative-checkpoint.json.
 Required CI and actual PR merge remain unproved at this checkpoint.
+
+### Successor release preparation checkpoint after submitted research head
+
+This append is later evidence, outside submitted PR335 head73f8a12. Controlled
+source starts actual main4bbd1d6f before any release commit. Prepared11 existing
+paths: script/config/docs+112/-41/net71, within220; manifest/lock
+five+1/-1 substitutions, production Rust+0/-0, public Rust API+0/-0.
+Complete worktree zero untracked. /tmp/bombay-zenoh-successor-prepackage-checkpoint.json
+records exact path hashes; /tmp/bombay-zenoh-successor-narrow-lock-proof.json
+proves only top source version1.10.1→1.10.2 and366/305 other complete records
+unchanged. No dependency or initial-cohort/resume/credential-SDK source change.
+
+Existing audit gains an explicit closed release-kind selection; historical
+default stays initial-cohort. Successor mode acquires/hash-checks eight actual
+published archives before normalized-manifest, source, clean original VCS and
+29-edge proof; only the new top archive may enter the credential ledger.
+Registry metadata/download receipts and expected source are recorded separately
+from actual later source verification. Package/verify cannot imply publication.
+Publication refusal retains priority over subsequent registry receipt success.
+Independent read-only review finds no blocker in this bounded preparation.
+
+Pinned shell syntax and historical release-cohort tests pass. Historical full
+archive audit passes all nine original artifacts,29 checksum edges and existing
+lock/manifest inversions using actual original e824 source. Initial invocation
+used the parent artifact directory and failed missing-file setup; corrected
+/tmp-crate directory passes. Both logs remain, no initial pass credit.
+Commit the reviewable preparation to obtain a clean exact-source Cargo package;
+actual successor package/source/archive inversion checks, full matrix/required
+CI, merge, registry publication and registry-only consumer remain unexecuted.
+
+### Successor immutable-archive reader regression before correction
+
+Actual pinned Cargo package succeeds at clean7d58f613; original candidate SHA
+2b474d12734f28219507a7b7f739a33c12ebac2dfe01b8d919ca5b79167fe88f.
+Actual successor audit downloads/validates eight registry archives, verifies
+all source/VCS and29 edges, and emits only the top candidate in its ledger.
+These passes do not establish publication.
+
+A new independent inversion changes only the gzip timestamp header in an actual
+published dependency archive: tar members, Rust/source manifests and original
+VCS remain identical, but the immutable published checksum differs. Direct
+existing verify_archive unexpectedly accepts it; baseline exits1 at the named
+exact-archive custody law (/tmp/bombay-zenoh-successor-immutable-baseline.json/.log).
+The acquisition path checks initial downloaded bytes, but its later reader also
+needs this check rather than assuming source equality implies archive equality.
+Select a four-line owning reader checksum guard for successor dependencies before
+member inspection, and a standard temporary-directory regression in the same
+auditor using that real owning reader. No replacement parser, credential change
+or dependency is needed. Historical original-cohort reads remain unchanged.
+Forecast up to30 additional script/test lines, within220. Repackage from the
+new clean commit and compare source/VCS/registry closure again; earlier7d58
+archive retains its own hash and cannot represent the new commit.
+
+Archive custody refinement before further verifier edits: use standard BytesIO
+to parse the same immutable bytes whose checksum was checked. Capture expected
+candidate checksums before source audit and pass them to later lock/source reads;
+keep published dependencies pinned to their immutable registry hashes. This
+prevents a second path read from silently becoming a different artifact between
+checksum and parsing. Re-reading a restored inversion is explicit revalidation,
+not a new authority. No custom parser or verified-archive wrapper is needed;
+extend the existing ordinary reader with an optional expected checksum and
+reuse existing source/lock checks. Forecast up to15 further lines, still220.
+
+### Public capacity-attempt wake-fault prerequisite decision
+
+The selected Communication0.1.4 owner publishes a user item before invoking its
+registered consumer waker. A waker can unwind after actual publication, so loss
+of the try_send return cannot establish refusal. Automatically select a small
+public Application witness using two actual ExternalActors: one allocated
+service sender, one exact service recipient with its real receive future polled
+using a standard panic Wake implementation. Keep that borrowed future alive
+through the actual sender try_send, catch and retain the original typed panic,
+then poll/acquire the actual queued original with exact allocation and sender.
+An ordinary root actor must independently process a useful Actions reply before
+full native/both-notification acquisition. No custom Engine host or fold I/O.
+
+This tests the public external endpoint seam, not injection into a Counter's
+Tokio-owned actor-task waker and not a full remote R08/R12 witness. The replay
+reservation-before-effect requirement remains mandatory. Use native Poll/Result
+and closed typed cause distinctions; do not turn unwind into Full or claim
+caller original recovery. Prefer ordinary std Wake and catch_unwind over a
+new executor/observation framework or unsafe RawWaker.
+
+Independent test-only stage: one new owning integration path
+crates/bombay/tests/admission_wake_custody.rs, forecast≤350 test lines, production
+Rust/API/dependencies0. Fresh branch from actual latest main before any commit;
+root retains shared manifests/lock/contracts. Automatically raise cross-owner
+8600→8800 and research4500→4700 before edits:8347+350=8697 and4277+350=4627.
+Actual complete worktree/source evidence must be measured before retention.
+Focused debug/optimized and intended inversion/restoration remain gates.
+Any actual source-order inversion requires a disposable exact Communication
+source copy and coordinator-controlled temporary Cargo patch, with provenance/
+lock restoration; do not mutate the registry cache or retained production.
+
+Wake witness refined before native-source inversion: initial228-line positive
+source stopped queued-Pending inside Work and receives no post-native negative
+credit. Retain actual Poll<Option<User>> as Work output instead, continue useful
+root Actions reply and full native/both notifications, then require exact queued
+original. Refined244-line source4f81ce0308841d221058f280dba5c082fb1e9527c44093170711151f269527bd
+passes both profiles, strict owning Clippy and rustfmt. Use this exact source
+for the owning Communication ordering inversion. Original registry source
+003b01d35f0589a799ebcf24dde53637b8de0fe3f7423dd542e18f0a8928870e
+is copied intact to /tmp/bombay-communication-wake-order-source; only disposable
+copy moves actual wake_consumer before try_push. Coordinator backs up exact
+manifest/lock and adds only a temporary same-version path patch in the isolated
+wake worktree. No cache edit/version change/retained production choice.
+Original/all other complete lock records and manifests must restore before final
+controls or integration. /tmp/bombay-admission-wake-override-preparation.json
+records origin/byte/source custody; no mutation outcome is yet credited.
+
+### Submitted research Linux artifact custody
+
+PR335 head73f8a12 remains unchanged while required Nix runs. Both actual Linux
+native TLS jobs pass at run38084734427; downloaded debug/release artifact
+campaigns each contain16 unique layout/operation/outcome cases. Independent
+inspection proves12 ordinary complete-close controls and four intended caller
+late-death close refusals per profile. Twelve recipient observations preserve
+whole JSON whitespace/Unicode/large-integer bytes and opaque request proof;
+eight caller receipts preserve exact reply proof and protected text. Native
+invocation milestones retain potentially-transmitted-before-return ordering.
+/tmp/bombay-pr335-linux-native-proof.json records original artifact and binary
+hashes; this is transport custody, not identity or actor admission acceptance.
+
+### Successor final candidate and inversion checkpoint
+
+Clean corrected head e7c8d2df yields actual top1.10.2 package SHA
+489ee61e4da7f2f8f7637e011a2626bf365b8d0490fd2a8a97641e3b7b78e5d9.
+Source/VCS157 Rust files, eight immutable published dependencies and29 registry
+edges pass the corrected same-byte archive reader. Historical original nine-
+package audit and four release-cohort tests also pass. Ten additional actual
+archive/lock inversions refuse old Unicode source, wrong version, dirty/wrong
+VCS, path/wrong-version edges, missing/duplicate closure, Git source and wrong
+checksum; each restored actual candidate passes. Immutable gzip-header mutation
+is now rejected despite identical members; the retained owning regression runs
+inside successor audit. /tmp/bombay-zenoh-successor-final-package-proof.json,
+final-archive-audit.log, final-historical-audit.log and archive-inversions.json
+retain separate provenance. Eleven paths, script/config/docs+150/-50/net100,
+Rust/API0, within220; both narrow locks preserve366/305 unrelated complete
+records. Local complete matrix and required PR5 CI38085801087 are running.
+Candidate package/audit does not mean merged or published; publication must
+repackage exact merged main and record its distinct actual immutable archive.
+
+### Successor complete local matrix and wake restoration
+
+The complete pinned-Nix ci/verify-release.sh exits0 at clean e7c8d2df. Both
+profiles exercise credential tests, actual TLS trust/open-close, shared Syn
+structure, declaration-pressure subprocesses, Unicode owner regression, strict
+profile/consumer Clippy and consumer execution; actual final successor packaging
+and archive audit also pass. Full outer command/script/log custody is retained
+in /tmp/bombay-zenoh-successor-full-matrix-proof.json. This local command does
+not run Miri; required remote CI separately owns its real Miri execution.
+Independent source/artifact review is posted at PR5 review5480816581 on exact
+e7c8d2df. Required CI, main merge and publication remain pending.
+
+Public wake-order inversion succeeds as a falsifier in both profiles: actual
+Communication wake-before-publication exits101 at the named queued-original
+assertion after complete native/both-notification acquisition and independent
+root Actions reply. No setup/timeout failure; actual mutant artifacts and exact
+command/source/lock records are in wake-inversion-campaign.json. Coordinator
+restores Cargo.toml and Cargo.lock byte-exact, confirms no retained Git diff,
+and independently rechecks cached Communication source003b01d unchanged.
+/tmp/bombay-admission-wake-restoration-proof.json records this restoration
+before final positive/lint/fmt controls, which are now running.
+
+### Restored public wake witness retained-source review
+
+Final244-line source4f81ce03 controls pass debug/optimized after byte-exact
+restoration, plus strict owning Clippy/fmt. Actual Cargo artifacts again select
+registry Communication0.1.4; restored cached binaries equal the earlier fresh
+healthy binaries, rather than claiming new rebuilds. Original manifest5b73f388
+and lockaa2b8c7f remain unchanged. Exact commands/log/artifact custody is in
+/tmp/bombay-admission-wake-restored-campaign.json. Independent opposite-source
+review checks both inversion/restored logs and finds no source/minimization
+blocker within the endpoint-waker law. No historical Communication defect,
+actor-task-waker injection, repeated-wake law or full remote acceptance credit.
+
+Root copies the restored test byte-exact into local combined source beside the
+submitted verification/native-proof witnesses. Required combined build/tests/
+all-targets/fmt/Clippy are now running; PR335 head remains73f8a12, with this later
+untracked test and PRD records kept outside that submitted head. Deliver them
+from a fresh actual-main branch after PR335 merge. No production/public API or
+retained manifest/lock change. Cross-owner tests including the244-line witness
+and72-line extra successor inversion runner:8663/8800; research4593/4700.
+/tmp/bombay-successor-archive-inversions.py is separately accounted test research,
+not production Rust or retained CI. Exact stage and cumulative records remain
+required before the next commit.
+
+### Resource-interest reclamation prerequisite before quota design
+
+Independent fresh source inspection at controlled e7c8d2df identifies an
+unexecuted retention candidate: register_expr_interest retains resources in
+remote_key_interests; interest_final removes that entry and native hat interest
+without calling existing Resource::clean. Actual face closure cleans mappings
+and local interests, but does not explicitly drain/clean remote_key_interests.
+Resource::clean owns parent-tree unlink; reference removal alone may retain
+parent/child cycles. This is source evidence, not an executed defect or a quota.
+
+Automatically select the smallest owning regression before any production
+repair: extend only existing zenoh/src/net/tests/regions/interest.rs using its
+genuine no-runtime gateway harness and Future + KEYEXPRS. Capture Weak resources
+and borrowed tree node/full-expression-byte inventories, without cloned strong
+references distorting native cleanup. Exercise finalization, repeated interest
+ID against a distinct expression, two faces sharing one resource, and actual
+DeMux::closed followed by dropping caller face ownership. Native map/face
+removal, baseline inventories and original weak expiry are independent oracles.
+Retain another face's resource until its last owner retires. Compare both
+profiles on unchanged source first; only a named failing law can authorize a
+later minimal repair and deletion-of-cleanup-call inversion.
+
+Alternatives are implementing quota first or treating source inspection as
+proof; neither establishes reclaimable ownership. Reuse native harness/Weak/
+Resource owner rather than a second registry or custom budget object. Test-only
+forecast one existing source path,150–180 lines, no production/API/dependency/
+configuration edit. Automatically raise cross-owner test cap8800→9000 and
+research4700→4900 before test edits:8663+180=8843;4593+180=4773. Any growth beyond
+180 or production repair needs its own recorded recommendation/checkpoint.
+Fresh isolated branch starts latest actual controlled main before commits;
+root keeps manifests/lock/release integration. This campaign cannot prove TLS
+subprocess reclamation, message bounds or full R14/R18/R19 acceptance.
+
+### Combined wake-source local verification
+
+Five pinned combined-source checks pass with exact restored244-line wake source
+beside PR335's unchanged service/native-proof witnesses: workspace build,567
+workspace/documentation tests with one ignored,566 all-target tests with one
+ignored, workspace rustfmt and strict all-target Clippy.
+/tmp/bombay-wake-combined-checks.json records exact outer commands, source/lock
+hashes, exits and per-binary counts. The owning selected lock93611085 remains
+PR335's original graph. Nextest exits0 on the same source:566 passed, one skipped; exact command/log
+custody is in /tmp/bombay-wake-nextest-proof.json. Actual reviewed PR/required
+CI/main delivery of this added witness remain gates.
+
+### Successor reviewed source merged; publication still open
+
+Controlled PR5 merged65e97beaf08ef532fc58421d778edb9e8f4b5721 at
+2026-10-10T21:24:34Z, exact reviewed head e7c8d2df, after required
+Controlled TLS dependencies38085801087 passed. Full actual CI log confirms
+Unicode controls and declaration pressure in both profiles, successor archive
+inversions/restored controls and two actual shared-Syn Miri tests.
+/tmp/bombay-zenoh-successor-final-ci.log SHA
+0c84889c0f53e6f054ad8ba34914a8aff22b86fe374e67bca0b05ffcb31aed70
+retains full log; review5480816581 names exact source. Normal match-head merge
+used no bypass. Current exact-main CI38087509710 is running; the release owner
+requires that main check before packaging/publishing. Top1.10.2 remains
+unpublished; local e7 archive cannot represent merged main's later VCS archive.
+
+### Interest retirement original-source laws executed
+
+Exact175-line test source5b9f4c6e96bafc4610e072604313dcddbb7f60f2de654f94639888f8f99df89a
+on actual controlled main4bbd1d6f leaves all production/manifests/locks unchanged,
+with touched production bytes equal corrected e7 successor. Existing owning
+finalization controls3/3 pass first in each profile. All three new regressions
+then fail101 at intended original-Weak custody assertions after finalized-map
+removal, other-owner preservation or actual native face removal. No setup or
+unsupported-transport failure; finalization inventory snapshots precede native
+close. Debug/release-test-feature-campaign.json and interest-source-proof.json
+record commands/source/artifacts. Initial zero-match command omitted the owning
+test feature and receives no regression credit. Pinned formatting passes.
+Production repair remains unimplemented and needs a smallest owning proposal;
+this establishes neither quota enforcement nor TLS subprocess reclamation.
+
+### First actual counter-command integration recommendation
+
+Automatically select a fixture-only two-public-Application Increment/Read
+witness before retaining any network abstraction. Preserve verification_service
+source byte-exact, including its18 cases. Reuse native TLS configuration/session/
+matching/declarations/byte attachment and controller cleanup; add a private
+counter_application module and explicit counter caller/recipient comparison
+roles. Parameterize existing native request construction only where it deletes
+duplicated calls. Importing a complete test, introducing a generic provider
+trait/common trusted receipt or replacing owners would add unjustified surface.
+
+Fixture JSON request has configured scope, supplied request identity and closed
+Increment{amount}|Read command; Read has no invented amount. Reply has independent
+reply purpose, exact matching scope/request/operation and value. Existing Serde
+checks reject unknown metadata and ordinary checks refuse command/operation
+disagreement. These are private finite vectors, not production wire grammar,
+version policy or canonical proof representation. Both independent deterministic
+providers own distinct private RequestReceipt and ReplyReceipt with exact known
+byte/proof tables; record and oneshot implementations remain independent. No
+cryptography or provider-common certificate. Request verification alone cannot
+verify a different reply schema.
+
+Use initial balance41, two fixture identities1/2 and increment1/read vectors42/42.
+Caller pure Actions emit concrete local service requests; receiver service
+acquires actual native ingress and exact protected/proof allocations, verifies
+request and independently configured scope/op, and applies fixture Granted/time
+9<deadline10 followed by existing exact-recipient try_send without an intervening
+await. Receiver pure Counter processes exactly increment then read and emits
+its actual typed reply in Actions. Service acquires that reply before protecting
+and publishing it. Caller separately verifies reply and uses a required concrete
+constructor to transfer its original ReplyReceipt exactly once into Behavior,
+whose complete native result is its sole eventual owner. Recipient Work retains
+original RequestReceipt; caller Work retains separate original raw buffers and
+transport facts. Concrete command/value projections are explicit, not cloned
+verification receipts. Actual local User::from is allocated service provenance,
+separate from the verified configured remote principal.
+
+Independent final oracle requires receiver native balance42/ordered processed
+trace and caller native original replies42/42 plus useful typed Actions
+acknowledgement, after acquiring complete Work/native/final Stop/both notification
+products and actual Session close/worker exit. Echo inversion emits valid known
+reply42 while bypassing actor admission/Actions processing; caller verification
+may still pass, but complete cleanup must precede the failing receiver native
+balance41/empty-trace assertion. Required-constructor, wrong provider receipt,
+raw DTO, private/Deserialize receipt and unrelated local protocol denials need
+actual expected diagnostics and compiling positives. Two providers × both
+approved layouts × query/publication run both profiles; no product operation
+default is selected by those comparisons.
+
+Forecast seven paths: private Rust module plus existing native binary/controller,
+CI≤15 lines, standalone manifest/lock and this PRD. Whole added Rust/Python
+ceiling1400, warning1300; production runtime/publicAPI/root Cargo files0.
+Automatically expand cross-owner tests9000→10500 and research4900→6300 before
+code:8663+175+1400=10238 and4593+175+1400=6168. CI/config and generated lock
+records remain separately classified; standalone generated-manifest/lock cap
+4200 replaces3500, retaining all unrelated complete locked records. Ordinary
+Application introduces existing Bombay/Engine/macro path packages only for this
+source witness; normal published-consumer proof remains separate. Add the already
+selected thiserror2.0.20 edge only if its derive is used. The standalone workspace
+must repeat exact Timers13e884 patch and verify every actor owner against the
+root lock; dependency-root patches are not inherited. Coordinator alone edits
+manifest/lock/CI/shared exports.
+
+Author independently while release delivery runs. Existing registry1.10.1 may
+be used solely as an explicitly attributed ASCII-fixture composition comparison;
+final retained transport support must select and verify actual published1.10.2
+without dependency patches. No source-only comparison receives successor
+publication credit. Replay/reservation/conflict/eviction, session/generation/ID
+issuer and exhaustion, public provider/schema/clock/cache coordination, numeric
+limits and remote authorized stop/held child scope remain open. Two finite
+correlations do not prove R12. No full R01–R25/AUTH1/NET1 completion is claimed.
+
+### Counter prototype graph reconciliation before source lowering
+
+Fresh research/counter-command-integration branch starts actual mainfbc714c,
+fast-forwards reviewed preparation73f8a12 and then actual main8cb82e5 before
+any author commit. Coordinator adds only standalone Bombay path/thiserror edges
+and exact Timers patch; root runtime Cargo files stay unchanged. Pinned offline
+metadata adds the expected owning packages and preserves every prior300
+external complete record; its own fixture dependency list changes as intended.
+
+Initial equality proof incorrectly required complete new path-package records
+to equal workspace lock records, including dev/optional feature edges. This
+assertion fails and receives no graph-alignment credit. Inspection separates
+legitimate omitted dev/feature edges and disambiguation from a real source
+difference: standalone existing Syn3.0.4 would compile the newly introduced
+Bombay/Behavior macros, whereas selected root uses3.0.5. Automatically select
+a narrow Syn3.0.4→3.0.5 update to align actual syntax ownership, using the already
+verified selected root package/checksum. Staying3.0.4 would require a distinct
+macro transitive-source proof. No serializer/identity/transport change or broad
+lock refresh. Record every affected dependency-edge spelling separately;
+preserve all other compatible locked package identities/checksums/edges.
+Standalone comparison still selects published controlled Zenoh1.10.1 only;
+final support selection awaits actual published successor1.10.2.
+
+### Research prerequisite actual PR335 delivery
+
+PR335 merged8cb82e5b785fcd04b0d991c51758fba6c75096f6 at
+2026-10-10T21:27:53Z on exact reviewed head73f8a12, after all six observed checks
+passed: Nix38084734427, both native TLS profiles, CodeQL38084734417/summary
+and Deny38084734437. Review5480747684 names exact head. Flake and Driver/Observe
+fuzz steps passed; optional Observe Miri was skipped and receives no credit.
+Full log /tmp/bombay-remote-contracts-pr335-final-ci.log and before-merge-proof.json
+retain actual statuses; downloaded32 native case observations are independently
+checked in pr335-linux-native-proof.json. Normal match-head merge used no bypass.
+These research prerequisites do not mark AUTH1/NET1 or any full R witness merged.
+
+### First counter prototype selected graph
+
+Pinned offline metadata and narrow Syn update produce standalone lockbc14c553:17
+new package identities/checksums equal selected root, including exact actor
+owners and Timers source;290 prior external complete records unchanged. The
+only updated existing package is Syn3.0.4→3.0.5; nine previous macro dependency
+edge spellings change accordingly. Three existing compatible dependency nodes
+remain at the already tested native graph versions rather than root versions:
+cc1.4.4, smallvec1.15.2 and bitflags2.13.1. New package edges may omit workspace
+dev/optional feature edges; their identities/checksums stay exact.
+/tmp/bombay-counter-comparison-lock-proof.json records every difference, rather
+than claiming complete edge equality across different feature graphs. Initial
+strict edge assertion and JSON parsing of shell-banner-prefixed metadata fail
+and receive no alignment credit; complete raw metadata is preserved separately
+from parsed Cargo JSON. Retained comparison still uses registry Zenoh1.10.1;
+successor source/support is not implied. Root source Cargo files are unchanged.
+
+### Interest regression scope expanded before correction
+
+Source refinement shows populated native remote-interest owners in broker and
+peer hats; client hat has no insertion and stays untouched. A two-file KEYEXPRS
+repair could omit non-keyexpr ownership and peer disconnect. Automatically
+select test expansion before any four-path production proposal: keep local
+replay test, parameterize shared-final/disconnect over actual remote Client/Peer
+kinds and KEYEXPRS/SUBSCRIBERS options, and add None-resource wildcard-final/
+repeated-final controls for both real hats. Native Gateway factory supplies the
+actual broker/peer stores, no inserted test state. Any cloned native diagnostic
+view must be dropped before transitions to avoid perturbing strong-count cleanup.
+
+Forecast65–90 further test lines, total240–265; raise this single-path ceiling
+180→280 before edits. Existing cross10500/research6300 ceilings accommodate
+this expansion plus pending1400-line counter witness:10328 and6258 respectively.
+Original controls then all actual original failures must execute in both
+profiles. Production remains unchanged until these independent laws and a
+smallest owning correction proposal are recorded. No quota/API/dependency or
+transport layout is added.
+
+### Counter terminal native custody control flow
+
+Automatically select ordinary role control flow returning existing
+TransportReceipts directly. Each concrete counter worker acquires the complete
+Application receiving product, then actual Session.close, then checks the
+independent processing law while keeping original provider/raw/native facts
+owned through this terminal inspection/discharge. Expected fixture-law mismatch
+returns a concrete existing invalid-control diagnostic through native terminal
+reporting; it must not panic before close observation. No generic retained-
+inspection wrapper/trait or extra runtime task. Explicit record/scheduled
+counter comparison roles reuse the existing caller/recipient certificates;
+these roles select finite fixture providers, not a public production API.
+The original16-case transport path stays semantically unchanged.
+
+### Actual workspace branch and scoped wake delivery
+
+User workspace was clean before switching to new
+feat/static-remote-actors-integration from latest actual main8cb82e5. Original
+feat/static-remote-actors-implementation branch is preserved. Exact244-line
+wake source and all later PRD records are copied without alteration; source
+contracts/manifests/lock/flake match the already verified combined source.
+/tmp/bombay-workspace-latest-main-branch-proof.json records clean-before-switch
+and source/main custody. The earlier isolated coordinator worktree remains
+preserved; this workspace now owns shared integration/documents.
+
+This delivery adds only the public endpoint wake-unwind witness and prerequisite
+delivery/decision records. Existing selected owners and ordinary public
+Application/ExternalActor composition suffice; no runtime/API/dependency or
+new semantic wrapper. Independent review, focused original-order inversions
+and restored debug/optimized controls, five combined commands and nextest all
+pass with the scoped limitations recorded above. Actual required CI and reviewed
+PR merge for this new test remain open. Other agents' counter prototype and
+interest expansion stay isolated, outside this patch. Expanded interest current
+source219 lines has conservative authored-variant bound250 (original175 plus75
+new lines,31 replaced); within280. Its extra laws are not yet executed.
+
+### Scoped wake delivery complete change record
+
+Against actual main8cb82e5: three paths, production+0/-0/net0,
+tests+244/-0/net244, documentation+467/-0/net467, manifest/lock0, public
+API+0/-0 types/methods. Complete tracked/untracked measurement includes the
+added test. Cumulative against a9c5b7d4:78 paths, production+1725/-475/net1250,
+tests+8436/-661/net7775, documentation+4957/-88/net4869,
+manifest/lock+2990/-3/net2987, defined public types+5/-0.
+/tmp/bombay-wake-delivery-measure.py and stage/cumulative-checkpoint.json retain
+per-path counts/hashes. Byte-equality transfer proof compares existing source,
+manifests, compiler diagnostics and exact added test against the already fully
+verified combined worktree; base73f8a12 tree equals actual main8cb82e5 tree.
+No repeat or new source claim is inferred from moving the branch. Required
+remote CI/review and actual merge remain outstanding for this three-path patch.
