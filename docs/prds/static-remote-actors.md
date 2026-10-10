@@ -4222,3 +4222,39 @@ PR 2 readability follow-up only, head
 versus retained source for resume; README retains its heading first. Actual
 stage +280/-3/net +277, unchanged scope and contract. Fresh exact-head required
 CI is [38030056828](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38030056828).
+
+
+### Public caller migration checkpoint before edits
+
+The combined root controls pass in both profiles, and the fresh owning launch
+campaign independently lists all 305 tests and passes its selected eight tests
+in both profiles. Its intended source inversions remain running. Complete the
+same report prerequisite by migrating existing callers; this adds no new actor
+or retirement law. There are 74 obsolete native-in-cleanup patterns across 21
+existing integration/example paths, plus ten Entity callback implementations
+and current guidance. The smallest existing end-to-end regression is that these
+actual public examples/integration targets fail to compile against the new
+independent native and notification receipt return contract. Their original
+phase, exact payload, failure and static-denial assertions must remain intact.
+
+Auto-select direct ordinary Rust tuple/struct matching, with no compatibility
+wrapper or reconstruction of the old combined cleanup result. Work-phase cleanup
+now checks its own unit result; native actor custody and the two named original
+notification results are inspected alongside it. Cold or failed startup still
+retains its actual receipt closure rather than fabricating an actor or successful
+notification. Entity callbacks retain the read-only report in their existing
+native-result owner. The alternative is a new compatibility adapter that folds
+independent receipts back into cleanup; reject that because it hides the proven
+independent ownership and adds a second application spelling.
+
+Expected migration: the 21 existing caller/example paths, affected compile-denial
+fixtures and at most four current guidance documents; estimated +100–250 net
+example production and +900–1,300 net tests/fixtures. Existing owners and values
+are reused. New public types/traits/macros/dependencies: zero; no legacy result
+wrapper is retained. Source report stage remains bounded by 2,200 net production
+and exactly five cumulative public types. Raise the cumulative local test/fixture
+ceiling from 3,000 to **4,300** before these necessary migrations; source-bound
+recount and an explicit further bounded recommendation precede any excess.
+The global 250-path ceiling remains. Isolated Entity migration preparation and
+root Application migration have disjoint owning edits; the coordinator alone
+integrates their imports/contracts, documentation and scope accounting.
